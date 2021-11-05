@@ -2017,6 +2017,11 @@ dir_parent (CtxEvent *event, void *a, void *b)
     {
     }
   }
+  if (metadata_key_int2 (focused_no, "was-folded", 0))
+  {
+    metadata_set_float2 (focused_no, "folded", 1.0);
+    metadata_unset2 (focused_no, "was-folded");
+  }
   focused_no--;
   if (focused_no < 0)
   {
@@ -2040,6 +2045,15 @@ dir_enter_children (CtxEvent *event, void *a, void *b)
 
   if (atom == CTX_ATOM_STARTGROUP)
   {
+    if (metadata_key_int2(focused_no, "folded", 0))
+    {
+      metadata_set_float2 (focused_no, "was-folded", 1);
+      metadata_set_float2 (focused_no, "folded", 0);
+      metadata_dirt();
+    }
+    else
+    {
+    }
     focused_no++;
   }
   else
@@ -3322,14 +3336,14 @@ static int card_files (ITK *itk_, void *data)
           if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT &&
               metadata_key_float2(focused_no, "x", -1234.0) == -1234.0)
           {
-            ctx_add_key_binding (ctx, "up", NULL, "previous sibling",
+            ctx_add_key_binding (ctx, "up", NULL, "focus previous sibling",
                           dir_previous_sibling,
                           NULL);
-            ctx_add_key_binding (ctx, "down", NULL, "next sibling",
+            ctx_add_key_binding (ctx, "down", NULL, "focus next sibling",
                           dir_next_sibling,
                           NULL);
 
-            ctx_add_key_binding (ctx, "left", NULL, "move to parent",
+            ctx_add_key_binding (ctx, "left", NULL, "focus parent",
                           dir_parent,
                           NULL);
 
