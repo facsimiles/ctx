@@ -2298,8 +2298,8 @@ static void dir_layout (ITK *itk, Files *files)
       int gotpos = 0;
       char *xstr = metadata_key_string2 (i, "x");
       char *ystr = metadata_key_string2 (i, "y");
-      float xorigin = metadata_key_float2(i, "x-origin", 0.0);
-      float yorigin = metadata_key_float2(i, "y-origin", 0.0);
+      float origin_x = metadata_key_float2(i, "origin-x", 0.0);
+      float origin_y = metadata_key_float2(i, "origin-y", 0.0);
 
 
       float padding_left = metadata_key_float2 (i, "padding-left", layout_config.padding_left);
@@ -2346,6 +2346,9 @@ static void dir_layout (ITK *itk, Files *files)
         else
           height *= saved_width;
       }
+
+      x -= (origin_x * width / saved_width);
+      y -= (origin_y * height / saved_width);
 
       int virtual = (item_get_type_atom (i) == CTX_ATOM_TEXT);
 
@@ -2762,6 +2765,24 @@ static void dir_layout (ITK *itk, Files *files)
         else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
         {
           draw_img (itk, itk->x, itk->y, width, height, newpath);
+          if (c->no == itk->focus_no && layout_find_item < 0)
+          {
+             float em = itk->font_size;
+             int resize_dim = 2;
+
+             ctx_arc (itk->ctx, itk->x + width * origin_x,
+                           itk->y + height * origin_y,
+                           0.5 * em,
+                           0.0,
+                           M_PI * 2, 0);
+             ctx_rgba (itk->ctx, 1, 1,0, 0.9);
+             ctx_fill (itk->ctx);
+
+             ctx_rectangle (itk->ctx, itk->x + resize_dim * em, itk->y, width - resize_dim * 2 * em, resize_dim * em);
+             ctx_rgba (itk->ctx, 0,0,0, 0.5);
+             ctx_fill (itk->ctx);
+
+          }
         }
         else if (!strcmp (media_type, "inode/directory"))
         {
