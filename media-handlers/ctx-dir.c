@@ -3198,6 +3198,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
     if (*arg == 0)
     {
       dm_set_path (files, "/home/pippin");
+      layout_find_item = 0;
     }
     else if (!strcmp (arg, ".."))
     {
@@ -3215,6 +3216,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
         dm_set_path (files, new_path);
         free (new_path);
       }
+      layout_find_item = 0;
     }
     layout_show_page = 0;
     itk_panels_reset_scroll (itk);
