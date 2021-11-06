@@ -1809,6 +1809,7 @@ void dir_prev_page (CtxEvent *event, void *a, void *b)
 }
 void dir_next_page (CtxEvent *event, void *a, void *b)
 {
+   if (layout_last_page > layout_show_page)
    dir_set_page (event, (void*)(size_t)(layout_show_page+1), NULL);
 }
 
@@ -2338,7 +2339,7 @@ static void dir_layout (ITK *itk, Files *files)
       float padding_top = metadata_key_float2 (i, "padding-top", layout_config.padding_top);
       float padding_bottom = metadata_key_float2 (i, "padding-bottom", layout_config.padding_bottom);
 
-      padding_left += level * layout_config.level_indent;
+      //padding_left += level * layout_config.level_indent;
 
       float x = metadata_key_float2 (i, "x", 0.0);
       float y = metadata_key_float2 (i, "y", 0.0);
@@ -2407,25 +2408,26 @@ static void dir_layout (ITK *itk, Files *files)
             {
               layout_box_no++;
 
-             itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
-             itk->y           = layout_box[layout_box_no].y * saved_width;
-             itk->width       = layout_box[layout_box_no].width * saved_width ;
-             y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+              itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
+              itk->y           = layout_box[layout_box_no].y * saved_width;
+              itk->width       = layout_box[layout_box_no].width * saved_width ;
+              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
             }
             else
             {
               layout_box_no = 0;
 
-             itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
-             itk->y           = layout_box[layout_box_no].y * saved_width;
-             itk->width       = layout_box[layout_box_no].width * saved_width ;
-             y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
+              itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
+              itk->y           = layout_box[layout_box_no].y * saved_width;
+              itk->width       = layout_box[layout_box_no].width * saved_width ;
+              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
 
-             layout_page_no++;
-             printing = (layout_page_no == layout_show_page);
-             layout_last_page = layout_page_no;
+              layout_page_no++;
+              printing = (layout_page_no == layout_show_page);
+              layout_last_page = layout_page_no;
             }
           }
+          itk->x  += level * em * layout_config.level_indent;
       }
       }
 
@@ -2452,6 +2454,7 @@ static void dir_layout (ITK *itk, Files *files)
 
       if (!hidden)
       {
+              //itk->x += level * em * 4;
       float saved_x = itk->x;
       float saved_y = itk->y;
       if (gotpos)
@@ -2478,7 +2481,7 @@ static void dir_layout (ITK *itk, Files *files)
           if (layout_config.stack_vertical && itk->x != itk->x0)
             itk->y += row_max_height;
 
-          itk->x = itk->x0;
+          itk->x = itk->x0 + level * layout_config.level_indent * em;
           /* measure height, and snap cursor */
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
                        space_width, width, em,
@@ -2742,11 +2745,14 @@ static void dir_layout (ITK *itk, Files *files)
                ctx_text (itk->ctx, "•");
                break;
                case CTX_BULLET_NUMBERS:
-               ctx_move_to (itk->ctx, x, itk->y + em);
+               ctx_move_to (itk->ctx, x + em * 0.5, itk->y + em);
                {
                  char buf[64]="";
                  sprintf (buf, "%i", item_get_list_index (i));
+                 ctx_save (itk->ctx);
+                 ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_RIGHT);
                  ctx_text (itk->ctx, buf);
+                 ctx_restore (itk->ctx);
                }
                break;
                case CTX_BULLET_DONE:
@@ -2764,6 +2770,7 @@ static void dir_layout (ITK *itk, Files *files)
             if (folded > 0)
             {
                float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
+               if (bullet != CTX_BULLET_NONE) x -= em * 0.6;
                ctx_move_to (itk->ctx, x, itk->y + em);
                ctx_text (itk->ctx, "▶");//▷▽▼");
             }
@@ -2971,6 +2978,7 @@ static void dir_layout (ITK *itk, Files *files)
           }
 
 #endif
+          itk->x += level * layout_config.level_indent * em;
         }
       }
 
