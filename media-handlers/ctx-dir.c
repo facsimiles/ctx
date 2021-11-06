@@ -697,97 +697,6 @@ static int items_to_move (int no)
   return count;
 }
 
-static void
-move_after_next_sibling (CtxEvent *event, void *a, void *b)
-{
-  //for (int i = 0; i < count; i++)
-  {
-  int start_no    = focused_no;
-  int count = items_to_move (start_no);
-  
-  int start_level = 0;
-  int level = 0;
-  int did_skips = 0;
-  int did_foo =0;
-
-  if (item_get_type_atom (focused_no + count) == CTX_ATOM_ENDGROUP)
-  {
-    event->stop_propagate=1;
-    return;
-  }
-
-  if (item_get_type_atom (focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
-      item_get_type_atom (focused_no + count) == CTX_ATOM_TEXT)
-  {
-    focused_no+=count;
-    did_foo = 1;
-  }
-
-  focused_no++;
-  int atom = item_get_type_atom (focused_no);
-  if (atom == CTX_ATOM_ENDGROUP)
-  {
-    focused_no--;
-    event->stop_propagate=1;
-    return;
-  }
-  if (atom == CTX_ATOM_STARTGROUP)
-     level++;
-
-  while (level > start_level)
-  {
-    focused_no++;
-    atom = item_get_type_atom (focused_no);
-    if (atom == CTX_ATOM_STARTGROUP)
-      {
-        level++;
-      }
-    else if (atom == CTX_ATOM_ENDGROUP)
-      {
-        level--;
-      }
-    else
-    {
-      did_skips = 1;
-    }
-  }
-  level++;
-  if (item_get_type_atom (focused_no) == CTX_ATOM_ENDGROUP)
-  {
-    level--;
-    focused_no++;
-  }
-  focused_no++;
-
-  if (level < start_level)
-  {
-     focused_no = start_no;
-  }
-  else
-  {
-    if (did_skips && did_foo) focused_no--;
-
-    //focused_no++;
-
-    for (int i = 0; i < count; i ++)
-    {
-      metadata_insert (focused_no, "fnord");
-      metadata_dirt ();
-      metadata_swap (focused_no, start_no);
-      metadata_dirt ();
-      metadata_remove (start_no);
-      metadata_dirt ();
-    }
-    focused_no-=count;
-  }
-  }
-
-  layout_find_item = focused_no;
-  itk->focus_no = -1;
-
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
-}
 
 static void grow_height (CtxEvent *e, void *d1, void *d2)
 {
@@ -928,6 +837,143 @@ static int dir_prev (int i)
      return -1;
   }
   return pos;
+}
+
+static int
+dir_next (int i)
+{
+  int start_level = 0;
+  int level = 0;
+
+  int atom = item_get_type_atom (i+1);
+  if (atom == CTX_ATOM_ENDGROUP)
+  {
+    return -1;
+  }
+  if (atom == CTX_ATOM_STARTGROUP)
+     level++;
+  i++;
+
+  while (level > start_level && i < files->count)
+  {
+    i++;
+    atom = item_get_type_atom (i);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level++;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level--;
+      }
+  }
+  level++;
+  while (item_get_type_atom (i) == CTX_ATOM_ENDGROUP)
+  {
+    level--;
+    i++;
+  }
+
+  if (level < start_level || i >= files->count)
+  {
+     return -1;
+  }
+  return i;
+}
+
+static void
+move_after_next_sibling (CtxEvent *event, void *a, void *b)
+{
+  if (dir_next (focused_no) < 0)
+    return;
+
+  //for (int i = 0; i < count; i++)
+  {
+  int start_no    = focused_no;
+  int count = items_to_move (start_no);
+  
+  int start_level = 0;
+  int level = 0;
+  int did_skips = 0;
+  int did_foo =0;
+
+  if (item_get_type_atom (focused_no + count) == CTX_ATOM_ENDGROUP)
+  {
+    event->stop_propagate=1;
+    return;
+  }
+
+  if (item_get_type_atom (focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
+      item_get_type_atom (focused_no + count) == CTX_ATOM_TEXT)
+  {
+    focused_no+=count;
+    did_foo = 1;
+  }
+
+  focused_no++;
+  int atom = item_get_type_atom (focused_no);
+  if (atom == CTX_ATOM_ENDGROUP)
+  {
+    focused_no--;
+    event->stop_propagate=1;
+    return;
+  }
+  if (atom == CTX_ATOM_STARTGROUP)
+     level++;
+
+  while (level > start_level)
+  {
+    focused_no++;
+    atom = item_get_type_atom (focused_no);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level++;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level--;
+      }
+    else
+    {
+      did_skips = 1;
+    }
+  }
+  level++;
+  if (item_get_type_atom (focused_no) == CTX_ATOM_ENDGROUP)
+  {
+    level--;
+    focused_no++;
+  }
+  focused_no++;
+
+  if (level < start_level)
+  {
+     focused_no = start_no;
+  }
+  else
+  {
+    if (did_skips && did_foo) focused_no--;
+
+    //focused_no++;
+
+    for (int i = 0; i < count; i ++)
+    {
+      metadata_insert (focused_no, "fnord");
+      metadata_dirt ();
+      metadata_swap (focused_no, start_no);
+      metadata_dirt ();
+      metadata_remove (start_no);
+      metadata_dirt ();
+    }
+    focused_no-=count;
+  }
+  }
+
+  layout_find_item = focused_no;
+  itk->focus_no = -1;
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
 }
 
 
@@ -1083,8 +1129,14 @@ make_child_of_previous (CtxEvent *e, void *d1, void *d2)
       }
     }
 
+#if 0
     layout_find_item = target;
     itk->focus_no = -1;
+#else
+    //itk->focus_no -= (target-focused_no);
+    focused_no = target;
+    //layout_find_item = focused_no;
+#endif
 
     metadata_dirt ();
     ctx_set_dirty (e->ctx, 1);
@@ -1569,7 +1621,6 @@ static void save_metadata(void)
 
 }
 
-
 void text_edit_return (CtxEvent *event, void *a, void *b)
 {
   char *str = strdup (files->items[focused_no]);
@@ -1580,6 +1631,7 @@ void text_edit_return (CtxEvent *event, void *a, void *b)
   str[text_edit]=0;
   metadata_rename (focused_no, str);
 
+  metadata_dirt ();
   free (str);
 
   ctx_set_dirty (event->ctx, 1);
@@ -1929,6 +1981,7 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
 }
 
 int item_context_active = 0;
+
 
 static void
 dir_next_sibling (CtxEvent *event, void *a, void *b)
