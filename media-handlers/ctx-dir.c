@@ -1931,7 +1931,16 @@ static int dir_prev (int i)
 
 static int item_get_list_index (int i)
 {
-  return 0;
+  int pos = i;
+  int count = 1;
+
+  while (pos >= 0 && metadata_key_int2(i, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBER)
+  {
+     pos = dir_prev (pos);
+     count++;
+  }
+
+  return count;
 }
 
 
