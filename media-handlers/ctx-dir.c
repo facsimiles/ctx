@@ -891,6 +891,46 @@ static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
 }
 #endif
 
+static int dir_prev (int i)
+{
+  int pos = i;
+  int start_level = 0;
+  int level = 0; // not absolute level, but relative level balance
+  pos --;
+  int atom = item_get_type_atom (pos);
+  if (atom == CTX_ATOM_ENDGROUP)
+          level ++;
+  else if (atom == CTX_ATOM_STARTGROUP)
+          level --;
+  while (level > start_level)
+  {
+    pos--;
+    atom = item_get_type_atom (pos);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level--;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level++;
+      }
+    else
+    {
+    }
+  }
+  while (atom == CTX_ATOM_STARTGROUP || atom == CTX_ATOM_LAYOUTBOX)
+  {
+    pos--;
+    atom = item_get_type_atom (pos);
+  }
+  if (level < start_level || pos < 0)
+  {
+     return -1;
+  }
+  return pos;
+}
+
+
 static void
 move_before_previous_sibling (CtxEvent *event, void *a, void *b)
 {
@@ -899,6 +939,9 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
   int level = 0;
   int start_level = 0;
   int did_skips = 0;
+
+  if (dir_prev (focused_no) < 0)
+     return;
 
   focused_no--;
   int atom = item_get_type_atom (focused_no);
@@ -1936,45 +1979,6 @@ dir_next_sibling (CtxEvent *event, void *a, void *b)
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
-}
-
-static int dir_prev (int i)
-{
-  int pos = i;
-  int start_level = 0;
-  int level = 0; // not absolute level, but relative level balance
-  pos --;
-  int atom = item_get_type_atom (pos);
-  if (atom == CTX_ATOM_ENDGROUP)
-          level ++;
-  else if (atom == CTX_ATOM_STARTGROUP)
-          level --;
-  while (level > start_level)
-  {
-    pos--;
-    atom = item_get_type_atom (pos);
-    if (atom == CTX_ATOM_STARTGROUP)
-      {
-        level--;
-      }
-    else if (atom == CTX_ATOM_ENDGROUP)
-      {
-        level++;
-      }
-    else
-    {
-    }
-  }
-  while (atom == CTX_ATOM_STARTGROUP || atom == CTX_ATOM_LAYOUTBOX)
-  {
-    pos--;
-    atom = item_get_type_atom (pos);
-  }
-  if (level < start_level || pos < 0)
-  {
-     return -1;
-  }
-  return pos;
 }
 
 static int item_get_list_index (int i)
