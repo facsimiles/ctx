@@ -1298,7 +1298,8 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
                          int sel_start, 
                          int sel_end, 
                          int print, float *ret_x, float *ret_y,
-                         int *prev_line, int *next_line)
+                         int *prev_line, int *next_line,
+                         int visible_markup)
 {
   char word[1024]="";
   int wlen = 0;
@@ -1314,13 +1315,19 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
   if (sel_start < 0)
     cursor_drawn = 1;
 
-
   int pot_cursor=-10;
   int best_end_cursor=-10;
 
+  int in_link = 0;
+  int was_in_link = 0;
+
   for (p = d_name; p == d_name || p[-1]; p++)
   {
-    if (*p == ' ' || *p == '\0' || *p == '\n')
+    switch (*p)
+    {
+      case ' ':
+      case '\0':
+      case '\n':
     {
       word[wlen]=0;
       int wlen_utf8 = ctx_utf8_strlen (word);
@@ -1430,6 +1437,14 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       if (print)
       {
         ctx_move_to (itk->ctx, x, y);
+        if (was_in_link)
+        {
+          ctx_save (itk->ctx);
+          ctx_rgba (itk->ctx, 1, 1, 0.3, 1);
+          ctx_text (itk->ctx, word);
+          ctx_restore (itk->ctx);
+        }
+        else
         ctx_text (itk->ctx, word);
       }
       }
@@ -1443,10 +1458,36 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         pot_cursor = -10;
       }
     }
-    else
-    {
+    break;
+      case '[':
+      case ']':
+        if (*p == '[')
+        {
+          in_link++;
+        }
+        else if (*p == ']')
+        {
+          in_link--;
+        }
+        if (!visible_markup)
+          break;
+      default:
       if (wlen < 1000)
         word[wlen++]=*p;
+    }
+    was_in_link = in_link;
+    switch (*p)
+    {
+      case '[':
+      case ']':
+        if (*p == '[')
+        {
+          in_link++;
+        }
+        else if (*p == ']')
+        {
+          in_link--;
+        }
     }
     if ((*p & 0xc0) != 0x80) pos++;
   }
@@ -1499,8 +1540,14 @@ void text_edit_return (CtxEvent *event, void *a, void *b)
   free (str);
 
   ctx_set_dirty (event->ctx, 1);
+#if 1
+  focused_no++;
+  layout_find_item = focused_no;
+  itk->focus_no++;
+#else
   layout_find_item = focused_no + 1;
   itk->focus_no = -1;
+#endif
   text_edit = 0;
   event->stop_propagate=1;
 }
@@ -2488,7 +2535,8 @@ static void dir_layout (ITK *itk, Files *files)
                        i == focused_no ? text_edit : -1,
                        i == focused_no ? text_edit + 2: -1,
                        0, NULL, &height,
-                       NULL, NULL);
+                       NULL, NULL,
+                       (i == focused_no && text_edit >= 0) );
           height = height - itk->y + em * 0.5;
           row_max_height = height;
         }
@@ -2720,7 +2768,8 @@ static void dir_layout (ITK *itk, Files *files)
                        space_width, width, em,
                        text_edit,text_edit,
                        1, NULL, NULL,
-                       &prev_line_pos, &next_line_pos);
+                       &prev_line_pos, &next_line_pos,
+                       (i == focused_no && text_edit >= 0) );
           }
           else
           {
@@ -2729,7 +2778,8 @@ static void dir_layout (ITK *itk, Files *files)
                        space_width, width, em,
                        -1, -1,
                        1, NULL, NULL,
-                       NULL, NULL);
+                       NULL, NULL,
+                       0);
           }
 
           int bullet = metadata_key_int2 (i, "bullet", CTX_BULLET_NONE);
