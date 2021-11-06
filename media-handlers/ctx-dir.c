@@ -102,6 +102,8 @@ typedef struct Files {
 
   char  **items;
   int     count;
+
+
 } Files;
 #define PATH_SEP "/"
 
@@ -258,6 +260,14 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
   layout_config.label = 1;
   layout_config.use_layout_boxes = 0;
 }
+
+typedef enum CtxBullet {
+  CTX_BULLET_NONE = 0,
+  CTX_BULLET_BULLET,
+  CTX_BULLET_NUMBERS,
+  CTX_BULLET_TODO,
+  CTX_BULLET_DONE,
+} CtxBullet;
 
 typedef enum CtxAtom {
  CTX_ATOM_TEXT = 0,
@@ -459,7 +469,6 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
   }
 }
 
-
 static void toggle_keybindings_display (CtxEvent *e, void *d1, void *d2)
 {
   show_keybindings = !show_keybindings;
@@ -595,8 +604,6 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
-
-
 static void item_delete (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
@@ -634,7 +641,6 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
     e->stop_propagate = 1;
   }
 }
-
 
 void itk_focus (ITK *itk, int dir);
 
@@ -885,8 +891,6 @@ static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
 }
 #endif
 
-
-
 static void
 move_before_previous_sibling (CtxEvent *event, void *a, void *b)
 {
@@ -945,8 +949,8 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-
-static void make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
+static void
+make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
   int level = item_get_level (no);
@@ -995,7 +999,8 @@ static void make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
   }
 }
 
-static void make_child_of_previous (CtxEvent *e, void *d1, void *d2)
+static void
+make_child_of_previous (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
   if (no < 1)
@@ -1043,19 +1048,26 @@ static void make_child_of_previous (CtxEvent *e, void *d1, void *d2)
   }
 }
 
-void item_toggle_todo (CtxEvent *event, void *a, void *b)
+void
+item_cycle_bullet (CtxEvent *event, void *a, void *b)
 {
-  int todo = metadata_key_int2 (focused_no, "todo", -10);
-  switch (todo)
+  int bullet = metadata_key_int2 (focused_no, "bullet", CTX_BULLET_NONE);
+  switch (bullet)
   {
-    default:
-      metadata_set_float2 (focused_no, "todo", 0);
+    case CTX_BULLET_NONE:
+      metadata_set_float2 (focused_no, "bullet", CTX_BULLET_BULLET);
       break;
-    case 0:
-      metadata_set_float2 (focused_no, "todo", 1);
+    case CTX_BULLET_BULLET:
+      metadata_set_float2 (focused_no, "bullet", CTX_BULLET_NUMBERS);
       break;
-    case 1:
-      metadata_unset2 (focused_no, "todo");
+    case CTX_BULLET_NUMBERS:
+      metadata_set_float2 (focused_no, "bullet", CTX_BULLET_TODO);
+      break;
+    case CTX_BULLET_TODO:
+      metadata_set_float2 (focused_no, "bullet", CTX_BULLET_DONE);
+      break;
+    case CTX_BULLET_DONE:
+      metadata_unset2 (focused_no, "bullet");
       break;
   }
   metadata_dirt ();
@@ -1878,25 +1890,21 @@ dir_next_sibling (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-static void
-dir_previous_sibling (CtxEvent *event, void *a, void *b)
+static int dir_prev (int i)
 {
-  int start_no = focused_no;
-  
-  int level = 0;
+  int pos = i;
   int start_level = 0;
-
-  focused_no--;
-  int atom = item_get_type_atom (focused_no);
+  int level = 0; // not absolute level, but relative level balance
+  pos --;
+  int atom = item_get_type_atom (pos);
   if (atom == CTX_ATOM_ENDGROUP)
-     level++;
+          level ++;
   else if (atom == CTX_ATOM_STARTGROUP)
-     level--;
-
+          level --;
   while (level > start_level)
   {
-    focused_no--;
-    atom = item_get_type_atom (focused_no);
+    pos--;
+    atom = item_get_type_atom (pos);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -1911,18 +1919,32 @@ dir_previous_sibling (CtxEvent *event, void *a, void *b)
   }
   while (atom == CTX_ATOM_STARTGROUP || atom == CTX_ATOM_LAYOUTBOX)
   {
-    focused_no--;
-    atom = item_get_type_atom (focused_no);
+    pos--;
+    atom = item_get_type_atom (pos);
   }
-  if (level < start_level || focused_no < 0)
+  if (level < start_level || pos < 0)
   {
-     focused_no = start_no;
+     return -1;
   }
+  return pos;
+}
 
-  layout_find_item = focused_no;
-  itk->focus_no = -1;
+static int item_get_list_index (int i)
+{
+  return 0;
+}
 
-  ctx_set_dirty (event->ctx, 1);
+
+static void
+dir_previous_sibling (CtxEvent *event, void *a, void *b)
+{
+  int pos = dir_prev (focused_no);
+  if (pos >= 0)
+  {
+    layout_find_item = focused_no = pos;
+    itk->focus_no = -1;
+    ctx_set_dirty (event->ctx, 1);
+  }
   event->stop_propagate=1;
 }
 
@@ -1991,7 +2013,6 @@ set_tool_no (CtxEvent *event, void *a, void *b)
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
-
 
 static void
 dir_parent (CtxEvent *event, void *a, void *b)
@@ -2568,16 +2589,18 @@ static void dir_layout (ITK *itk, Files *files)
             
 
             {
-              int todo = metadata_key_int2 (i, "todo", -3);
-              const char *label = "toggle todo";
-              switch (todo)
+              int bullet = metadata_key_int2 (i, "bullet", CTX_BULLET_NONE);
+              const char *label = "cycle bullet";
+              switch (bullet)
               {
-                case 0: label = "mark done"; break;
-                case 1: label = "no bullet"; break;
-                default: label = "make todo"; break;
+                case CTX_BULLET_NONE:   label = "make bullet"; break;
+                case CTX_BULLET_BULLET: label = "make numbered"; break;
+                case CTX_BULLET_NUMBERS: label = "make todo"; break;
+                case CTX_BULLET_TODO:   label = "mark done"; break;
+                case CTX_BULLET_DONE:   label = "no bullet"; break;
               }
               ctx_add_key_binding (ctx, "control-t", NULL, label,
-                          item_toggle_todo,
+                          item_cycle_bullet,
                           (void*)((size_t)i));
             }
 
@@ -2696,19 +2719,34 @@ static void dir_layout (ITK *itk, Files *files)
                        NULL, NULL);
           }
 
-          int todo = metadata_key_int2 (i, "todo", -3);
-          if (todo >= 0)
+          int bullet = metadata_key_int2 (i, "bullet", CTX_BULLET_NONE);
+          if (bullet != CTX_BULLET_NONE)
           {
              float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
-             if (todo)
+             switch (bullet)
              {
+               case CTX_BULLET_NONE:
+               break;
+               case CTX_BULLET_BULLET:
                ctx_move_to (itk->ctx, x, itk->y + em);
-               ctx_text (itk->ctx, "X");
-             }
-             else
-             {
+               ctx_text (itk->ctx, "•");
+               break;
+               case CTX_BULLET_NUMBERS:
                ctx_move_to (itk->ctx, x, itk->y + em);
-               ctx_text (itk->ctx, "O");
+               {
+                 char buf[64]="";
+                 sprintf (buf, "%i", item_get_list_index (i)+1);
+                 ctx_text (itk->ctx, buf);
+               }
+               break;
+               case CTX_BULLET_DONE:
+               ctx_move_to (itk->ctx, x, itk->y + em);
+               ctx_text (itk->ctx, "☑"); //☒
+               break;
+               case CTX_BULLET_TODO:
+               ctx_move_to (itk->ctx, x, itk->y + em);
+               ctx_text (itk->ctx, "☐");
+               break;
              }
           }
           {
@@ -3223,6 +3261,9 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
   }
   else
   {
+     // all other code should be doing absolute paths,
+     // this makes it easier to launch commands
+     chdir (files->path);
      system (commandline->str);
      metadata_dirt();
   }
