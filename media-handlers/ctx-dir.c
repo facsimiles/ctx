@@ -1932,9 +1932,10 @@ static int dir_prev (int i)
 static int item_get_list_index (int i)
 {
   int pos = i;
-  int count = 1;
+  int count = 0;
 
-  while (pos >= 0 && metadata_key_int2(i, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBER)
+  while (pos >= 0 &&
+         metadata_key_int2(pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
   {
      pos = dir_prev (pos);
      count++;
@@ -2744,7 +2745,7 @@ static void dir_layout (ITK *itk, Files *files)
                ctx_move_to (itk->ctx, x, itk->y + em);
                {
                  char buf[64]="";
-                 sprintf (buf, "%i", item_get_list_index (i)+1);
+                 sprintf (buf, "%i", item_get_list_index (i));
                  ctx_text (itk->ctx, buf);
                }
                break;
