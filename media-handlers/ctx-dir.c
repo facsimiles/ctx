@@ -2568,7 +2568,7 @@ static void dir_layout (ITK *itk, Files *files)
           itk->x = itk->x0 + level * layout_config.level_indent * em;
           /* measure height, and snap cursor */
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
-                       space_width, width, em,
+                       space_width, width - em * level * layout_config.level_indent, em,
                        i == focused_no ? text_edit : -1,
                        i == focused_no ? text_edit + 2: -1,
                        0, NULL, &height,
@@ -2580,14 +2580,12 @@ static void dir_layout (ITK *itk, Files *files)
         //fprintf (stderr, "%f\n", height);
       }
 
-
-
       CtxControl *c = NULL;
       if (printing)
       {
         ctx_begin_path (itk->ctx);
         c = itk_add_control (itk, UI_LABEL, "foo",
-        itk->x, itk->y - em * padding_top,
+        itk->x - em * padding_left, itk->y - em * padding_top,
         width + em * (padding_left+padding_right),
         height + em * (padding_top+padding_bottom));
         if (focused_no == i)
@@ -2802,7 +2800,7 @@ static void dir_layout (ITK *itk, Files *files)
           if (c->no == itk->focus_no && layout_find_item < 0)
           {
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
-                       space_width, width, em,
+                       space_width, width - em * level * layout_config.level_indent, em,
                        text_edit,text_edit,
                        1, NULL, NULL,
                        &prev_line_pos, &next_line_pos,
@@ -2812,7 +2810,7 @@ static void dir_layout (ITK *itk, Files *files)
           {
 
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
-                       space_width, width, em,
+                       space_width, width - em * level * layout_config.level_indent, em,
                        -1, -1,
                        1, NULL, NULL,
                        NULL, NULL,
@@ -3377,6 +3375,33 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
   ctx_string_free (word, 1);
 }
 
+int editing_location = 0;
+static void dir_location (CtxEvent *e, void *d1, void *d2)
+{
+  editing_location = 1;
+  ctx_string_set (commandline, files->path);
+  fprintf (stderr, "location!\n");
+  e->stop_propagate = 1;
+  ctx_set_dirty (e->ctx, 1);
+}
+
+static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
+{
+  editing_location = 0;
+  ctx_string_set (commandline, "");
+  e->stop_propagate = 1;
+  ctx_set_dirty (e->ctx, 1);
+}
+
+static void dir_location_return (CtxEvent *e, void *d1, void *d2)
+{
+  editing_location = 0;
+  fprintf (stderr, "location set [%s]\n", commandline->str);
+  ctx_string_set (commandline, "");
+  e->stop_propagate = 1;
+  ctx_set_dirty (e->ctx, 1);
+}
+
 static void dir_any (CtxEvent *e, void *d1, void *d2)
 {
   e->stop_propagate = 1;
@@ -3470,16 +3495,15 @@ static int card_files (ITK *itk_, void *data)
 
   }
 
-          if (!is_text_editing())
-          {
-          ctx_add_key_binding (ctx, "page-down", NULL, "next page",
-                          dir_next_page,
-                          NULL);
-          if (layout_show_page > 0)
-          ctx_add_key_binding (ctx, "page-up", NULL, "previous page",
-                          dir_prev_page,
-                          NULL);
-          }
+  if (!is_text_editing())
+  {
+    if (layout_show_page < layout_last_page)
+    ctx_add_key_binding (ctx, "page-down", NULL, "next page",
+                         dir_next_page, NULL);
+    if (layout_show_page > 0)
+      ctx_add_key_binding (ctx, "page-up", NULL, "previous page",
+                           dir_prev_page, NULL);
+  }
 
 
   if (!active && text_edit <= TEXT_EDIT_OFF && !layout_config.outliner)
@@ -3488,7 +3512,7 @@ static int card_files (ITK *itk_, void *data)
 
           if (commandline->str[0])
           {
-            ctx_add_key_binding (ctx, "backspace", NULL, "remove from commandline",
+            ctx_add_key_binding (ctx, "backspace", NULL, "remove char",
                             dir_backspace,
                             NULL);
             ctx_add_key_binding (ctx, "return", NULL, "run commandline",
@@ -3508,10 +3532,17 @@ static int card_files (ITK *itk_, void *data)
                             NULL);
           }
 
-          ctx_add_key_binding (ctx, "any", NULL, "add char to commandline", dir_any, NULL);
+          ctx_add_key_binding (ctx, "any", NULL, "add char", dir_any, NULL);
+          if (editing_location)
+          {
+            ctx_add_key_binding (ctx, "escape", NULL, "stop editing location", dir_location_escape, NULL);
+            ctx_add_key_binding (ctx, "return", NULL, "confirm new location", dir_location_return, NULL);
+          }
+          ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
 
           if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT &&
-              metadata_key_float2(focused_no, "x", -1234.0) == -1234.0)
+              metadata_key_float2(focused_no, "x", -1234.0) == -1234.0 &&
+              !is_text_editing())
           {
             ctx_add_key_binding (ctx, "up", NULL, "focus previous sibling",
                           dir_previous_sibling,
@@ -3717,12 +3748,23 @@ static int card_files (ITK *itk_, void *data)
     ctx_rectangle (ctx, 3 * em, 0, ctx_width (ctx) - 3 * em, 3 * em);
     ctx_rgba (ctx, 1,1,1, 0.1);
     ctx_fill (ctx);
+
     ctx_save (ctx);
-    ctx_move_to (ctx, 3.4 * em, 1.1 * em);
+    ctx_move_to (ctx, 3.4 * em, 1.5 * em);
     ctx_rgba (ctx, 1,1,1, 0.6);
-
+    if (editing_location)
     ctx_text (ctx, commandline->str);
+    else
+    ctx_text (ctx, files->path);
+    ctx_restore (ctx);
+  }
 
+  {
+    float em = itk->font_size;
+    ctx_save (ctx);
+    ctx_move_to (ctx, 3.4 * em, ctx_height (ctx) - 0.5 * em);
+    ctx_rgba (ctx, 1,1,1, 0.6);
+    ctx_text (ctx, commandline->str);
     ctx_restore (ctx);
   }
 
