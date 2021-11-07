@@ -301,11 +301,26 @@ if (type)
   return CTX_ATOM_TEXT;
 }
 
+Files file_state;
+Files *files = &file_state;
 static int metadata_dirty = 0;
+
+static void save_metadata(void)
+{  if (metadata_dirty)
+   {
+     metadata_save ();
+     dm_set_path (files, files->path);
+     metadata_dirty = 0;
+   }
+
+}
+
 static void metadata_dirt(void)
 {
   metadata_dirty++;
   metadata_cache_no=-3;
+  metadata_save ();
+//  save_metadata ();
 }
 
 void dm_set_path (Files *files, const char *path)
@@ -388,8 +403,6 @@ void dm_set_path (Files *files, const char *path)
   //  metadata_dirt();
 }
 
-Files file_state;
-Files *files = &file_state;
 
 #include <libgen.h>
 #include <limits.h>
@@ -604,36 +617,76 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
+static int item_get_level (int no)
+{
+  int level = 0;
+  for (int i = 0; i <= no; i++)
+  {
+    int atom = item_get_type_atom (i);
+    switch (atom)
+    {
+      case CTX_ATOM_STARTGROUP:
+        level++;
+        break;
+      case CTX_ATOM_ENDGROUP:
+        level--;
+        break;
+      default:
+        break;
+    }
+  }
+  return level;
+}
+
+
+static int items_to_move (int no)
+{
+  int count = 1;
+  int self_level = item_get_level (no);
+  int level;
+
+  do {
+    no ++;
+    level = item_get_level (no);
+    if (level > self_level) count++;
+  } while (level > self_level);
+  if (count > 1) count ++;
+  
+  return count;
+}
+
 static void item_delete (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
+  int count = items_to_move (no);
 
   //int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
   //if (virtual)
+  //
+  fprintf (stderr, "items to remove %i\n", count);
+  CtxAtom pre_atom = item_get_type_atom (no-1);
+  CtxAtom post_atom = item_get_type_atom (no+count);
+  for (int i = 0; i < count; i++)
   {
-    CtxAtom pre_atom = item_get_type_atom (no-1);
-    CtxAtom post_atom = item_get_type_atom (no+1);
-
-    if (pre_atom == CTX_ATOM_STARTGROUP &&
-        post_atom == CTX_ATOM_ENDGROUP)
-    {
-      metadata_remove (no-1);
-      metadata_remove (no-1);
-      layout_find_item = no-2;
-    }
-    else
-    {
-      metadata_remove (no);
-      layout_find_item = no;
-    }
-    text_edit = TEXT_EDIT_OFF;
-    itk->focus_no = -1;
-
-    metadata_dirt();
-    ctx_set_dirty (e->ctx, 1);
-    e->stop_propagate = 1;
-    return;
+    metadata_remove (no);
   }
+
+#if 1
+  if (pre_atom == CTX_ATOM_STARTGROUP &&
+      post_atom == CTX_ATOM_ENDGROUP)
+  {
+          fprintf (stderr, "removed group\n");
+    metadata_remove (no-1);
+    metadata_remove (no-1);
+    layout_find_item = no-2;
+    itk->focus_no = -1;
+  }
+  //se
+#endif
+  //layout_find_item = no;
+
+  text_edit = TEXT_EDIT_OFF;
+  metadata_dirt();
 
   if (e)
   {
@@ -659,43 +712,6 @@ static void move_after_next_sibling (CtxEvent *e, void *d1, void *d2)
   }
 }
 #endif
-
-static int item_get_level (int no)
-{
-  int level = 0;
-  for (int i = 0; i <= no; i++)
-  {
-    int atom = item_get_type_atom (i);
-    switch (atom)
-    {
-      case CTX_ATOM_STARTGROUP:
-        level++;
-        break;
-      case CTX_ATOM_ENDGROUP:
-        level--;
-        break;
-      default:
-        break;
-    }
-  }
-  return level;
-}
-
-static int items_to_move (int no)
-{
-  int count = 1;
-  int self_level = item_get_level (no);
-  int level;
-
-  do {
-    no ++;
-    level = item_get_level (no);
-    if (level > self_level) count++;
-  } while (level > self_level);
-  if (count > 1) count ++;
-  
-  return count;
-}
 
 
 static void grow_height (CtxEvent *e, void *d1, void *d2)
@@ -967,7 +983,7 @@ move_after_next_sibling (CtxEvent *event, void *a, void *b)
 
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (focused_no, "fnord");
+      metadata_insert (focused_no, "a");
       metadata_dirt ();
       metadata_swap (focused_no, start_no);
       metadata_dirt ();
@@ -1035,7 +1051,7 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
     if (!did_skips) focused_no++;
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (focused_no-1 + i, "");
+      metadata_insert (focused_no-1 + i, "b");
       metadata_swap (start_no+1 +i, focused_no-1 +i);
       metadata_remove (start_no+1 +i);
       metadata_dirt ();
@@ -1075,7 +1091,7 @@ make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
 
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (target+1+i, "a");
+      metadata_insert (target+1+i, "c");
       metadata_swap (no+i, target+1+i);
     }
 
@@ -1117,7 +1133,7 @@ make_child_of_previous (CtxEvent *e, void *d1, void *d2)
     {
       for (int i = 0; i < count; i++)
       {
-        metadata_insert (target+i, "a");
+        metadata_insert (target+i, "d");
         metadata_swap (no+1+i, target+i);
         metadata_remove (no+1+i);
       }
@@ -1126,12 +1142,12 @@ make_child_of_previous (CtxEvent *e, void *d1, void *d2)
     {
       // insert new group
       target = no;
-      metadata_insert (target, "a");
+      metadata_insert (target, "e");
       metadata_set2 (target, "type", "ctx/endgroup");
       for (int i = 0; i <count;i++)
-      metadata_insert (target, "b");
+      metadata_insert (target, "f");
 
-      metadata_insert (target, "c");
+      metadata_insert (target, "g");
       metadata_set2 (target, "type", "ctx/startgroup");
 
       for (int i = 0; i < count; i++)
@@ -1622,15 +1638,6 @@ void text_edit_stop (CtxEvent *event, void *a, void *b)
   text_edit = TEXT_EDIT_OFF;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
-}
-static void save_metadata(void)
-{  if (metadata_dirty)
-   {
-     metadata_save ();
-     dm_set_path (files, files->path);
-     metadata_dirty = 0;
-   }
-
 }
 
 void text_edit_return (CtxEvent *event, void *a, void *b)
@@ -2162,10 +2169,6 @@ dir_enter_children (CtxEvent *event, void *a, void *b)
     {
       metadata_set_float2 (focused_no, "was-folded", 1);
       metadata_set_float2 (focused_no, "folded", 0);
-      metadata_dirt();
-    }
-    else
-    {
     }
     focused_no++;
   }
@@ -2173,17 +2176,17 @@ dir_enter_children (CtxEvent *event, void *a, void *b)
   {
      focused_no = start_no;
 
-     metadata_insert(focused_no+1, "");
+     metadata_insert(focused_no+1, "j");
      metadata_set2(focused_no+1, "type", "ctx/startgroup");
 
      metadata_insert(focused_no+2, "");
      text_edit = 0;
 
-     metadata_insert(focused_no+3, "");
+     metadata_insert(focused_no+3, "l");
      metadata_set2(focused_no+3, "type", "ctx/endgroup");
-     metadata_dirt();
      focused_no++;
   }
+  metadata_dirt();
 
   layout_find_item = focused_no;
   itk->focus_no = -1;
