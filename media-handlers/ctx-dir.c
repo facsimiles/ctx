@@ -800,7 +800,8 @@ static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
 }
 #endif
 
-static int dir_prev (int i)
+static int
+dir_prev (int i)
 {
   int pos = i;
   int start_level = 0;
@@ -845,36 +846,41 @@ dir_next (int i)
   int start_level = 0;
   int level = 0;
 
-  int atom = item_get_type_atom (i+1);
+  int atom;
+ 
+  i++;
+  atom = item_get_type_atom (i);
   if (atom == CTX_ATOM_ENDGROUP)
   {
     return -1;
   }
   if (atom == CTX_ATOM_STARTGROUP)
-     level++;
-  i++;
-
-  while (level > start_level && i < files->count)
   {
-    i++;
-    atom = item_get_type_atom (i);
-    if (atom == CTX_ATOM_STARTGROUP)
+    level++;
+
+    while (level > start_level && i < files->count)
+    {
+      i++;
+      atom = item_get_type_atom (i);
+      if (atom == CTX_ATOM_STARTGROUP)
       {
         level++;
       }
-    else if (atom == CTX_ATOM_ENDGROUP)
+      else if (atom == CTX_ATOM_ENDGROUP)
       {
         level--;
       }
-  }
-  level++;
-  while (item_get_type_atom (i) == CTX_ATOM_ENDGROUP)
-  {
-    level--;
-    i++;
+    }
+    level++;
+    while (atom == CTX_ATOM_ENDGROUP)
+    {
+       level--;
+       i++;
+       atom = item_get_type_atom (i);
+    }
   }
 
-  if (level < start_level || i >= files->count)
+  if (level != start_level || i >= files->count)
   {
      return -1;
   }
@@ -885,7 +891,10 @@ static void
 move_after_next_sibling (CtxEvent *event, void *a, void *b)
 {
   if (dir_next (focused_no) < 0)
+  {
+    event->stop_propagate = 1;
     return;
+  }
 
   //for (int i = 0; i < count; i++)
   {
@@ -987,7 +996,10 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
   int did_skips = 0;
 
   if (dir_prev (focused_no) < 0)
+  {
+     event->stop_propagate = 1;
      return;
+  }
 
   focused_no--;
   int atom = item_get_type_atom (focused_no);
@@ -1986,48 +1998,13 @@ int item_context_active = 0;
 static void
 dir_next_sibling (CtxEvent *event, void *a, void *b)
 {
-  int start_no = focused_no;
-  
-  int start_level = 0;
-  int level = 0;
-
-  int atom = item_get_type_atom (focused_no+1);
-  if (atom == CTX_ATOM_ENDGROUP)
+  if (dir_next (focused_no) < 0)
   {
     event->stop_propagate=1;
-    ctx_set_dirty (event->ctx, 1);
     return;
   }
-  if (atom == CTX_ATOM_STARTGROUP)
-     level++;
-  focused_no++;
 
-  while (level > start_level && focused_no < files->count)
-  {
-    focused_no++;
-    atom = item_get_type_atom (focused_no);
-    if (atom == CTX_ATOM_STARTGROUP)
-      {
-        level++;
-      }
-    else if (atom == CTX_ATOM_ENDGROUP)
-      {
-        level--;
-      }
-  }
-  level++;
-  while (item_get_type_atom (focused_no) == CTX_ATOM_ENDGROUP)
-  {
-    level--;
-    focused_no++;
-  }
-
-  if (level < start_level)
-  {
-     focused_no = start_no;
-  }
-
-  layout_find_item = focused_no;
+  layout_find_item = focused_no = dir_next (focused_no);
   itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
