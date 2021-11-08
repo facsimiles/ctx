@@ -443,6 +443,8 @@ static int text_edit = TEXT_EDIT_OFF;
 static float text_edit_desired_x = -123;
 
 CtxString *commandline = NULL;
+int        commandline_cursor_start = 0;
+int        commandline_cursor_end = 0;
 
 static inline int is_text_editing (void)
 {
@@ -3372,6 +3374,9 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
   }
 
   ctx_string_set (commandline, "");
+  commandline_cursor_end =
+  commandline_cursor_start = 0;
+
   ctx_string_free (word, 1);
 }
 
@@ -3380,6 +3385,8 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 1;
   ctx_string_set (commandline, files->path);
+  commandline_cursor_end =
+  commandline_cursor_start = strlen (files->path);
   fprintf (stderr, "location!\n");
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
@@ -3397,23 +3404,52 @@ static void dir_location_return (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
   fprintf (stderr, "location set [%s]\n", commandline->str);
+
+  dm_set_path (files, commandline->str);
+  focused_no = -1;
+  layout_find_item = 0;
   ctx_string_set (commandline, "");
+  e->stop_propagate = 1;
+  ctx_set_dirty (e->ctx, 1);
+}
+
+// tab
+
+static void dir_location_left(CtxEvent *e, void *d1, void *d2)
+{
+  commandline_cursor_start --;
+  if (commandline_cursor_start < 0) commandline_cursor_start = 0;
+  commandline_cursor_end = commandline_cursor_start;
+  e->stop_propagate = 1;
+  ctx_set_dirty (e->ctx, 1);
+}
+
+static void dir_location_right (CtxEvent *e, void *d1, void *d2)
+{
+  commandline_cursor_start ++;
+  if (commandline_cursor_start > strlen (commandline->str))
+    commandline_cursor_start = strlen (commandline->str);
+  commandline_cursor_end = commandline_cursor_start;
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
 }
 
 static void dir_any (CtxEvent *e, void *d1, void *d2)
 {
+  const char *str = e->string;
   e->stop_propagate = 1;
 
-  if (!strcmp (e->string, "space"))
+  if (!strcmp (str, "space"))
   {
-    ctx_string_append_str (commandline, " ");
+    str = " ";
   }
-  if (ctx_utf8_strlen (e->string) <= 1)
+
+  if (ctx_utf8_strlen (str) == 1)
   {
-    ctx_string_append_str (commandline, e->string);
+    ctx_string_insert_utf8 (commandline, commandline_cursor_start, str);
     ctx_set_dirty (e->ctx, 1);
+    commandline_cursor_start += strlen (str);
+    commandline_cursor_end = commandline_cursor_start;
   }
 }
 
@@ -3518,12 +3554,8 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "return", NULL, "run commandline",
                             dir_run_commandline,
                             NULL);
-            ctx_add_key_binding (ctx, "left", NULL, NULL,
-                            dir_ignore,
-                            NULL);
-            ctx_add_key_binding (ctx, "right", NULL, NULL,
-                            dir_ignore,
-                            NULL);
+          ctx_add_key_binding (ctx, "left", NULL, "add char", dir_location_left, NULL);
+          ctx_add_key_binding (ctx, "right", NULL, "add char", dir_location_right, NULL);
             ctx_add_key_binding (ctx, "up", NULL, NULL,
                             dir_ignore,
                             NULL);
@@ -3745,17 +3777,49 @@ static int card_files (ITK *itk_, void *data)
   if (tool_no == 0)
   {
     float em = itk->font_size;
+    ctx_save (ctx);
     ctx_rectangle (ctx, 3 * em, 0, ctx_width (ctx) - 3 * em, 3 * em);
     ctx_rgba (ctx, 1,1,1, 0.1);
     ctx_fill (ctx);
 
-    ctx_save (ctx);
-    ctx_move_to (ctx, 3.4 * em, 1.5 * em);
-    ctx_rgba (ctx, 1,1,1, 0.6);
     if (editing_location)
-    ctx_text (ctx, commandline->str);
+    {
+      char *copy = strdup (commandline->str);
+      char tmp;
+      float sel_start = 0.0;
+      float sel_end = 0.0;
+
+      tmp = copy[commandline_cursor_start];
+      copy[commandline_cursor_start] = 0;
+      sel_start = ctx_text_width (ctx, copy) - 1;
+      copy[commandline_cursor_start] = tmp;
+
+      tmp = copy[commandline_cursor_end];
+      copy[commandline_cursor_end] = 0;
+      sel_end = ctx_text_width (ctx, copy) + 1;
+      copy[commandline_cursor_end] = tmp;
+
+      free (copy);
+
+          fprintf (stderr, "%i %i", commandline_cursor_start,
+                                    commandline_cursor_end);
+      ctx_rectangle (ctx, 3.4 * em + sel_start, 1.5 * em - em,
+                          sel_end-sel_start,em);
+      if (commandline_cursor_start==commandline_cursor_end)
+        ctx_rgba (ctx, 1,1, 0.2, 1);
+      else
+        ctx_rgba (ctx, 0.5,0, 0, 1);
+      ctx_fill (ctx);
+      ctx_move_to (ctx, 3.4 * em, 1.5 * em);
+      ctx_rgba (ctx, 1,1,1, 0.6);
+      ctx_text (ctx, commandline->str);
+    }
     else
-    ctx_text (ctx, files->path);
+    {
+      ctx_rgba (ctx, 1,1,1, 0.6);
+      ctx_move_to (ctx, 3.4 * em, 1.5 * em);
+      ctx_text (ctx, files->path);
+    }
     ctx_restore (ctx);
   }
 
