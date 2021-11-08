@@ -819,6 +819,53 @@ static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
 #endif
 
 static int
+dir_prev (int i)
+{
+ int pos = i;
+ int again = 0;
+
+ do {
+   pos -= 1;
+   int atom = item_get_type_atom (pos);
+   switch (atom)
+   {
+     case CTX_ATOM_STARTGROUP:
+     case CTX_ATOM_ENDGROUP:
+     case CTX_ATOM_LAYOUTBOX:
+       again = 1;
+       break;
+     default:
+       again = 0;
+   }
+ } while (pos >= 0 && again);
+ return pos;
+}
+
+
+static int
+dir_next (int i)
+{
+ int pos = i;
+ int again = 0;
+
+ do {
+   pos += 1;
+   int atom = item_get_type_atom (pos);
+   switch (atom)
+   {
+     case CTX_ATOM_STARTGROUP:
+     case CTX_ATOM_ENDGROUP:
+     case CTX_ATOM_LAYOUTBOX:
+       again = 1;
+       break;
+     default:
+       again = 0;
+   }
+ } while (pos >= 0 && again);
+ return pos;
+}
+
+static int
 dir_prev_sibling (int i)
 {
   int pos = i;
@@ -2035,6 +2082,32 @@ static int item_get_list_index (int i)
   return count;
 }
 
+
+static void
+focus_next (CtxEvent *event, void *a, void *b)
+{
+  int pos = dir_next (focused_no);
+  if (pos >= 0)
+  {
+    layout_find_item = focused_no = pos;
+    itk->focus_no = -1;
+    ctx_set_dirty (event->ctx, 1);
+  }
+  event->stop_propagate=1;
+}
+
+static void
+focus_previous (CtxEvent *event, void *a, void *b)
+{
+  int pos = dir_prev (focused_no);
+  if (pos >= 0)
+  {
+    layout_find_item = focused_no = pos;
+    itk->focus_no = -1;
+    ctx_set_dirty (event->ctx, 1);
+  }
+  event->stop_propagate=1;
+}
 
 static void
 focus_previous_sibling (CtxEvent *event, void *a, void *b)
@@ -3331,7 +3404,13 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
     ctx_string_append_byte (word, commandline->str[i]);
   }
 
-  if (!strcmp (word->str, "cd"))
+  if (!strcmp (word->str, "cd.."))
+  {
+    dir_go_parent (e, d1, d2);
+    layout_show_page = 0;
+    itk_panels_reset_scroll (itk);
+  }
+  else if (!strcmp (word->str, "cd"))
   {
     char *arg = &commandline->str[2];
     if (*arg) arg++;
@@ -3393,6 +3472,8 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
 static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
+  commandline_cursor_end =
+  commandline_cursor_start = 0;
   ctx_string_set (commandline, "");
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
@@ -3639,6 +3720,8 @@ static int card_files (ITK *itk_, void *data)
               metadata_key_float2(focused_no, "x", -1234.0) == -1234.0 &&
               !is_text_editing())
           {
+
+
             ctx_add_key_binding (ctx, "up", NULL, "focus previous sibling",
                           focus_previous_sibling,
                           NULL);
@@ -3646,6 +3729,18 @@ static int card_files (ITK *itk_, void *data)
                           focus_next_sibling,
                           NULL);
 
+            if (0)
+            {
+            ctx_add_key_binding (ctx, "left", NULL, "focus prev",
+                          focus_previous,
+                          NULL);
+
+            ctx_add_key_binding (ctx, "right", NULL, "focus next",
+                            focus_next,
+                          NULL);
+            }
+            else
+            {
             ctx_add_key_binding (ctx, "left", NULL, "focus parent",
                           dir_parent,
                           NULL);
@@ -3653,6 +3748,7 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "right", NULL, "enter children",
                           dir_enter_children,
                           NULL);
+            }
           }
   }
 
