@@ -2005,7 +2005,7 @@ int item_context_active = 0;
 
 
 static void
-dir_next_sibling (CtxEvent *event, void *a, void *b)
+focus_next_sibling (CtxEvent *event, void *a, void *b)
 {
   if (dir_next (focused_no) < 0)
   {
@@ -2037,7 +2037,7 @@ static int item_get_list_index (int i)
 
 
 static void
-dir_previous_sibling (CtxEvent *event, void *a, void *b)
+focus_previous_sibling (CtxEvent *event, void *a, void *b)
 {
   int pos = dir_prev (focused_no);
   if (pos >= 0)
@@ -2307,10 +2307,6 @@ static void dir_layout (ITK *itk, Files *files)
 
   for (int i = 0; i < files->count; i++)
   {
-    if ((files->items[i][0] == '.' && files->items[i][1] == '.') ||
-        (files->items[i][0] != '.') // skipping dot files
-       )
-    {
       if (layout_find_item == i)
       {
 
@@ -3096,7 +3092,6 @@ static void dir_layout (ITK *itk, Files *files)
       }
 
       }
-    }
   }
 
   ctx_restore (itk->ctx);
@@ -3317,7 +3312,10 @@ static void dir_ignore (CtxEvent *e, void *d1, void *d2)
 
 static void dir_backspace (CtxEvent *e, void *d1, void *d2)
 {
-  ctx_string_remove (commandline, ctx_string_get_length (commandline)-1);
+  if (commandline_cursor_start == 0) return;
+  ctx_string_remove (commandline, commandline_cursor_start-1);
+  commandline_cursor_start --;
+  commandline_cursor_end = commandline_cursor_start;
   ctx_set_dirty (e->ctx, 1);
   e->stop_propagate = 1;
 }
@@ -3400,14 +3398,25 @@ static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
+static int path_is_dir (const char *path)
+{
+  struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
+  lstat (path, &stat_buf);
+  return S_ISDIR (stat_buf.st_mode);
+}
+
 static void dir_location_return (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
   fprintf (stderr, "location set [%s]\n", commandline->str);
 
-  dm_set_path (files, commandline->str);
-  focused_no = -1;
-  layout_find_item = 0;
+  if (path_is_dir (commandline->str))
+  {
+    dm_set_path (files, commandline->str);
+    focused_no = -1;
+    layout_find_item = 0;
+  }
   ctx_string_set (commandline, "");
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
@@ -3415,9 +3424,20 @@ static void dir_location_return (CtxEvent *e, void *d1, void *d2)
 
 // tab
 
-static void dir_location_left(CtxEvent *e, void *d1, void *d2)
+static void dir_location_left (CtxEvent *e, void *d1, void *d2)
 {
-  commandline_cursor_start --;
+  int c_start = commandline_cursor_start;
+  int c_end   = commandline_cursor_end;
+  if (c_end < c_start)
+  {
+    c_end   = commandline_cursor_start;
+    c_start = commandline_cursor_end;
+  }
+  if (c_start == c_end) 
+    commandline_cursor_start = c_start - 1;
+  else
+    commandline_cursor_start = c_start;
+
   if (commandline_cursor_start < 0) commandline_cursor_start = 0;
   commandline_cursor_end = commandline_cursor_start;
   e->stop_propagate = 1;
@@ -3426,10 +3446,48 @@ static void dir_location_left(CtxEvent *e, void *d1, void *d2)
 
 static void dir_location_right (CtxEvent *e, void *d1, void *d2)
 {
-  commandline_cursor_start ++;
+  int c_start = commandline_cursor_start;
+  int c_end   = commandline_cursor_end;
+  if (c_end < c_start)
+  {
+    c_end   = commandline_cursor_start;
+    c_start = commandline_cursor_end;
+  }
+  if (c_start == c_end) 
+    commandline_cursor_start = c_end + 1;
+  else
+    commandline_cursor_start = c_end;
   if (commandline_cursor_start > strlen (commandline->str))
     commandline_cursor_start = strlen (commandline->str);
   commandline_cursor_end = commandline_cursor_start;
+  e->stop_propagate = 1;
+  ctx_set_dirty (e->ctx, 1);
+}
+
+static void dir_location_extend_sel_right (CtxEvent *e, void *d1, void *d2)
+{
+  commandline_cursor_end ++;
+  if (commandline_cursor_end > strlen (commandline->str))
+    commandline_cursor_end = strlen (commandline->str);
+
+  e->stop_propagate = 1;
+  ctx_set_dirty (e->ctx, 1);
+}
+
+static void dir_location_select_all (CtxEvent *e, void *d1, void *d2)
+{
+  commandline_cursor_start = 0;
+  commandline_cursor_end = strlen (commandline->str);
+
+  e->stop_propagate = 1;
+  ctx_set_dirty (e->ctx, 1);
+}
+
+static void dir_location_extend_sel_left (CtxEvent *e, void *d1, void *d2)
+{
+  commandline_cursor_end --;
+  if (commandline_cursor_end < 0) commandline_cursor_end = 0;
+
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
 }
@@ -3556,6 +3614,11 @@ static int card_files (ITK *itk_, void *data)
                             NULL);
           ctx_add_key_binding (ctx, "left", NULL, "add char", dir_location_left, NULL);
           ctx_add_key_binding (ctx, "right", NULL, "add char", dir_location_right, NULL);
+
+          ctx_add_key_binding (ctx, "control-a", NULL, "add char", dir_location_select_all, NULL);
+
+          ctx_add_key_binding (ctx, "shift-left", NULL, "add char", dir_location_extend_sel_left, NULL);
+          ctx_add_key_binding (ctx, "shift-right", NULL, "add char", dir_location_extend_sel_right, NULL);
             ctx_add_key_binding (ctx, "up", NULL, NULL,
                             dir_ignore,
                             NULL);
@@ -3577,10 +3640,10 @@ static int card_files (ITK *itk_, void *data)
               !is_text_editing())
           {
             ctx_add_key_binding (ctx, "up", NULL, "focus previous sibling",
-                          dir_previous_sibling,
+                          foucs_previous_sibling,
                           NULL);
             ctx_add_key_binding (ctx, "down", NULL, "focus next sibling",
-                          dir_next_sibling,
+                          focus_next_sibling,
                           NULL);
 
             ctx_add_key_binding (ctx, "left", NULL, "focus parent",
@@ -3788,24 +3851,30 @@ static int card_files (ITK *itk_, void *data)
       char tmp;
       float sel_start = 0.0;
       float sel_end = 0.0;
+      int c_start = commandline_cursor_start;
+      int c_end   = commandline_cursor_end;
 
-      tmp = copy[commandline_cursor_start];
-      copy[commandline_cursor_start] = 0;
+      if (c_end < c_start)
+      {
+        c_end   = commandline_cursor_start;
+        c_start = commandline_cursor_end;
+      }
+
+      tmp = copy[c_start];
+      copy[c_start] = 0;
       sel_start = ctx_text_width (ctx, copy) - 1;
-      copy[commandline_cursor_start] = tmp;
+      copy[c_start] = tmp;
 
-      tmp = copy[commandline_cursor_end];
-      copy[commandline_cursor_end] = 0;
+      tmp = copy[c_end];
+      copy[c_end] = 0;
       sel_end = ctx_text_width (ctx, copy) + 1;
-      copy[commandline_cursor_end] = tmp;
+      copy[c_end] = tmp;
 
       free (copy);
 
-          fprintf (stderr, "%i %i", commandline_cursor_start,
-                                    commandline_cursor_end);
       ctx_rectangle (ctx, 3.4 * em + sel_start, 1.5 * em - em,
                           sel_end-sel_start,em);
-      if (commandline_cursor_start==commandline_cursor_end)
+      if (c_start==c_end)
         ctx_rgba (ctx, 1,1, 0.2, 1);
       else
         ctx_rgba (ctx, 0.5,0, 0, 1);
@@ -3823,11 +3892,45 @@ static int card_files (ITK *itk_, void *data)
     ctx_restore (ctx);
   }
 
-  {
+  if (!editing_location && text_edit == TEXT_EDIT_OFF && commandline->str[0]){
     float em = itk->font_size;
     ctx_save (ctx);
+
+    char *copy = strdup (commandline->str);
+      float sel_start = 0.0;
+      float sel_end = 0.0;
+      int c_start = commandline_cursor_start;
+      int c_end   = commandline_cursor_end;
+      char tmp;
+
+      if (c_end < c_start)
+      {
+        c_end   = commandline_cursor_start;
+        c_start = commandline_cursor_end;
+      }
+
+      tmp = copy[c_start];
+      copy[c_start] = 0;
+      sel_start = ctx_text_width (ctx, copy) - 1;
+      copy[c_start] = tmp;
+
+      tmp = copy[c_end];
+      copy[c_end] = 0;
+      sel_end = ctx_text_width (ctx, copy) + 1;
+      copy[c_end] = tmp;
+
+      free (copy);
+
+      ctx_rectangle (ctx, 3.4 * em + sel_start, ctx_height (ctx) - 1.4 * em,
+                          sel_end-sel_start,em * 1.3);
+      if (c_start==c_end)
+        ctx_rgba (ctx, 1,1, 0.2, 1);
+      else
+        ctx_rgba (ctx, 0.5,0, 0, 1);
+      ctx_fill (ctx);
     ctx_move_to (ctx, 3.4 * em, ctx_height (ctx) - 0.5 * em);
     ctx_rgba (ctx, 1,1,1, 0.6);
+
     ctx_text (ctx, commandline->str);
     ctx_restore (ctx);
   }
