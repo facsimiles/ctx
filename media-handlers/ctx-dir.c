@@ -819,7 +819,7 @@ static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
 #endif
 
 static int
-dir_prev (int i)
+dir_prev_sibling (int i)
 {
   int pos = i;
   int start_level = 0;
@@ -859,7 +859,7 @@ dir_prev (int i)
 }
 
 static int
-dir_next (int i)
+dir_next_sibling (int i)
 {
   int start_level = 0;
   int level = 0;
@@ -908,7 +908,7 @@ dir_next (int i)
 static void
 move_after_next_sibling (CtxEvent *event, void *a, void *b)
 {
-  if (dir_next (focused_no) < 0)
+  if (dir_next_sibling (focused_no) < 0)
   {
     event->stop_propagate = 1;
     return;
@@ -1013,7 +1013,7 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
   int start_level = 0;
   int did_skips = 0;
 
-  if (dir_prev (focused_no) < 0)
+  if (dir_prev_sibling (focused_no) < 0)
   {
      event->stop_propagate = 1;
      return;
@@ -2007,13 +2007,13 @@ int item_context_active = 0;
 static void
 focus_next_sibling (CtxEvent *event, void *a, void *b)
 {
-  if (dir_next (focused_no) < 0)
+  if (dir_next_sibling (focused_no) < 0)
   {
     event->stop_propagate=1;
     return;
   }
 
-  layout_find_item = focused_no = dir_next (focused_no);
+  layout_find_item = focused_no = dir_next_sibling (focused_no);
   itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
@@ -2028,7 +2028,7 @@ static int item_get_list_index (int i)
   while (pos >= 0 &&
          metadata_key_int2(pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
   {
-     pos = dir_prev (pos);
+     pos = dir_prev_sibling (pos);
      count++;
   }
 
@@ -2039,7 +2039,7 @@ static int item_get_list_index (int i)
 static void
 focus_previous_sibling (CtxEvent *event, void *a, void *b)
 {
-  int pos = dir_prev (focused_no);
+  int pos = dir_prev_sibling (focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -3640,7 +3640,7 @@ static int card_files (ITK *itk_, void *data)
               !is_text_editing())
           {
             ctx_add_key_binding (ctx, "up", NULL, "focus previous sibling",
-                          foucs_previous_sibling,
+                          focus_previous_sibling,
                           NULL);
             ctx_add_key_binding (ctx, "down", NULL, "focus next sibling",
                           focus_next_sibling,
