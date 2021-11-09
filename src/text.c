@@ -79,6 +79,10 @@ ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
   float scale              = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   int advance, lsb;
   int glyph = ctx_glyph_stb_find (font, unichar);
+
+  if (ctx_renderer_is_term (ctx))
+    return 2;
+
   if (glyph==0)
     { return 0.0f; }
   stbtt_GetGlyphHMetrics (ttf_info, glyph, &advance, &lsb);
@@ -189,6 +193,10 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
   float font_size = ctx->state.gstate.font_size;
   int first_kern = ctx_glyph_find_ctx (font, ctx, unicharA);
   if (first_kern < 0) return 0.0;
+
+  if (ctx_renderer_is_term (ctx) && (3.02 - font_size) < 0.03)
+    return 0.0f;
+
   for (int i = first_kern + 1; i < font->ctx.length; i++)
     {
       CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
@@ -224,6 +232,10 @@ ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
   int   start     = ctx_glyph_find_ctx (font, ctx, unichar);
   if (start < 0)
     { return 0.0; }  // XXX : fallback
+
+  if (ctx_renderer_is_term (ctx) && (3.02 - font_size) < 0.03)
+    return 2.0f;
+
   for (int i = start; i < font->ctx.length; i++)
     {
       CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
