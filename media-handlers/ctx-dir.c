@@ -902,7 +902,8 @@ dir_prev_sibling (int i)
     {
     }
   }
-  while (atom == CTX_ATOM_STARTGROUP || atom == CTX_ATOM_LAYOUTBOX)
+  while (atom == CTX_ATOM_STARTGROUP || atom == CTX_ATOM_LAYOUTBOX ||
+         atom == CTX_ATOM_NEWPAGE)
   {
     pos--;
     atom = item_get_type_atom (pos);
@@ -952,6 +953,11 @@ dir_next_sibling (int i)
        i++;
        atom = item_get_type_atom (i);
     }
+  }
+  while (atom == CTX_ATOM_NEWPAGE)
+  {
+    i++;
+    atom = item_get_type_atom (i);
   }
 
   if (level != start_level || i >= files->count)
