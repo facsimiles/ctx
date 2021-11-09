@@ -472,7 +472,7 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
   dm_set_path (files, new_path);
 
   layout_find_item = metadata_item_to_no (strrchr (old_path, '/')+1);
-  fprintf (stderr, "%i, %s\n", layout_find_item, strrchr (old_path, '/')+1);
+  //fprintf (stderr, "%i, %s\n", layout_find_item, strrchr (old_path, '/')+1);
 
 
   free (old_path);
@@ -574,7 +574,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
 
 static void item_drag (CtxEvent *e, void *d1, void *d2)
 {
-  fprintf (stderr, "drag %i\n", e->type);
+  //fprintf (stderr, "drag %i\n", e->type);
   switch (e->type)
   {
     case CTX_DRAG_PRESS:
@@ -609,7 +609,7 @@ static void item_drag (CtxEvent *e, void *d1, void *d2)
 
 static void item_tap_and_hold (CtxEvent *e, void *d1, void *d2)
 {
-  fprintf (stderr, "tap and hold %i\n", e->type);
+  //fprintf (stderr, "tap and hold %i\n", e->type);
   e->stop_propagate = 1;
 }
 
@@ -707,7 +707,7 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
   //int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
   //if (virtual)
   //
-  fprintf (stderr, "items to remove %i\n", count);
+//  fprintf (stderr, "items to remove %i\n", count);
   CtxAtom pre_atom = item_get_type_atom (no-1);
   CtxAtom post_atom = item_get_type_atom (no+count);
   for (int i = 0; i < count; i++)
@@ -719,7 +719,7 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
   if (pre_atom == CTX_ATOM_STARTGROUP &&
       post_atom == CTX_ATOM_ENDGROUP)
   {
-          fprintf (stderr, "removed group\n");
+ //       fprintf (stderr, "removed group\n");
     metadata_remove (no-1);
     metadata_remove (no-1);
     layout_find_item = no-2;
@@ -3315,7 +3315,7 @@ int viewer_load_next (Ctx *ctx, void *data1)
 {
   if (viewer_no+1 >= metadata_count())
     return 0;
-  fprintf (stderr, "next!\n");
+  //fprintf (stderr, "next!\n");
   itk->focus_no ++;
   item_activate (NULL, (void*)(size_t)(viewer_no+1), NULL);
   ctx_set_dirty (ctx, 1);
@@ -3534,7 +3534,6 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
   ctx_string_set (commandline, files->path);
   commandline_cursor_end =
   commandline_cursor_start = strlen (files->path);
-  fprintf (stderr, "location!\n");
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
 }
@@ -3560,7 +3559,6 @@ static int path_is_dir (const char *path)
 static void dir_location_return (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
-  fprintf (stderr, "location set [%s]\n", commandline->str);
 
   if (path_is_dir (commandline->str))
   {
@@ -4006,7 +4004,7 @@ static int card_files (ITK *itk_, void *data)
     viewer_load_next_handler=0;
   }
 
-  if (tool_no == 0)
+  if (tool_no == 0 && !active)
   {
     float em = itk->font_size;
     ctx_save (ctx);
