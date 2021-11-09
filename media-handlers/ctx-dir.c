@@ -666,6 +666,39 @@ static int items_to_move (int no)
   return count;
 }
 
+static void item_duplicate(CtxEvent *e, void *d1, void *d2)
+{
+  int no = focused_no;
+  int count = items_to_move (no);
+
+  int insert_pos = no + count;
+  for (int i = 0; i < count; i ++)
+  {
+    metadata_insert (insert_pos + i, files->items[no + i]);
+    int keys = metadata_item_key_count2 (no + i);
+    for (int k = 0; k < keys; k++)
+    {
+      char *key = metadata_key_name2 (no + i, k);
+      if (key)
+      {
+        char *val = metadata_key_string2 (no + i, key);
+        if (val)
+        {
+          metadata_set2 (insert_pos + i, key, val);
+          //itk->x += level * em * 3 + em;
+          //itk_labelf (itk, "%s=%s", key, val);
+          free (val);
+        }
+        free (key);
+      }
+    }
+
+  }
+  metadata_dirt ();
+  ctx_set_dirty (e->ctx, 1);
+  e->stop_propagate = 1;
+}
+
 static void item_delete (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
@@ -902,7 +935,8 @@ dir_prev_sibling (int i)
     {
     }
   }
-  while (atom == CTX_ATOM_STARTGROUP || atom == CTX_ATOM_LAYOUTBOX ||
+  while (atom == CTX_ATOM_STARTGROUP ||
+         atom == CTX_ATOM_LAYOUTBOX ||
          atom == CTX_ATOM_NEWPAGE)
   {
     pos--;
@@ -2770,6 +2804,10 @@ static void dir_layout (ITK *itk, Files *files)
                           item_activate,
                           (void*)((size_t)i));
 
+
+            ctx_add_key_binding (ctx, "control-d", NULL, "duplicate item",
+                          item_duplicate,
+                          (void*)((size_t)i));
 
             ctx_add_key_binding (ctx, "delete", NULL, "remove item",
                           item_delete,
