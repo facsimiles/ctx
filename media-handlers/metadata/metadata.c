@@ -21,23 +21,43 @@ static void metadata_load (const char *path)
   metadata_cache_no = -3;
   metadata_cache = NULL;
   if (metadata_path) free (metadata_path);
-  metadata_path = malloc (strlen (path) + 10);
+  metadata_path = malloc (strlen (path) + 20);
   if (metadata)
     free (metadata);
   metadata = NULL;
   metadata_len = 0;
   metadata_size = 0;
-  snprintf (metadata_path, strlen(path)+10, "%s/ctx.idx", path);
+  snprintf (metadata_path, strlen(path)+20, "%s/.ctx/index", path);
   ctx_get_contents (metadata_path, (uint8_t**)&metadata, &metadata_size);
   metadata_len = metadata_size;
 
   //fprintf (stderr, "%s loaded len: %i %p\n", path, metadata_len, metadata);
 }
 
+void dir_mkdir_ancestors (const char *path, unsigned int mode)
+{
+  char *tmppaths=strdup (path);
+  char *sl = strchr (tmppaths, '/');
+  while (sl && *sl)
+  {
+    sl ++;
+    sl = strchr (sl, '/');
+    if (sl)
+    {
+      *sl = '\0';
+      mkdir (tmppaths, mode);
+      *sl = '/';
+    }
+  }
+  free (tmppaths);
+}
+
 #if 1
 static void metadata_save (void)
 {
   if (!metadata_path) return;
+  dir_mkdir_ancestors (metadata_path, 0777);
+
   FILE *file = fopen (metadata_path, "w");
   fwrite (metadata, metadata_len, 1, file);
   fclose (file);
