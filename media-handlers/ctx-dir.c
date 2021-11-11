@@ -83,6 +83,7 @@ int layout_last_page = 0;
 float dir_scale = 1.0f;
 int tool_no = 0;
 
+
 // TODO global variables that should be enclosed in a struct
 
 typedef struct _CtxSHA1 CtxSHA1;
@@ -287,7 +288,7 @@ typedef enum CtxAtom {
  CTX_ATOM_ENDGROUP,
  CTX_ATOM_RECTANGLE,
  CTX_ATOM_CTX,
- CTX_ATOM_FILE
+ CTX_ATOM_FILE,
 } CtxAtom;
 
 CtxAtom item_get_type_atom (int i)
@@ -298,7 +299,7 @@ if (type)
    if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
      return CTX_ATOM_LAYOUTBOX;
    else if (!strcmp (type, "ctx/newpage"))    return CTX_ATOM_NEWPAGE;
-   else if (!strcmp (type, "ctx/startpage"))    return CTX_ATOM_STARTPAGE;
+   else if (!strcmp (type, "ctx/startpage"))  return CTX_ATOM_STARTPAGE;
    else if (!strcmp (type, "ctx/startgroup")) return CTX_ATOM_STARTGROUP;
    else if (!strcmp (type, "ctx/endgroup"))   return CTX_ATOM_ENDGROUP;
    else if (!strcmp (type, "ctx/rectangle"))  return CTX_ATOM_RECTANGLE;
@@ -678,6 +679,9 @@ static int path_is_dir (const char *path)
   return S_ISDIR (stat_buf.st_mode);
 }
 
+
+static CtxList *history = NULL;
+static CtxList *future = NULL;
 
 static void set_location (const char *location)
 {
@@ -1491,6 +1495,32 @@ item_cycle_bullet (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+void
+item_cycle_heading (CtxEvent *event, void *a, void *b)
+{
+  char *klass = metadata_key_string2(focused_no, "class");
+
+  if (!klass) klass = strdup ("");
+
+  if (!strcmp (klass, "h1"))
+    metadata_set2 (focused_no, "class", "h2");
+  else if (!strcmp (klass, "h2"))
+    metadata_set2 (focused_no, "class", "h3");
+  else if (!strcmp (klass, "h3"))
+    metadata_set2 (focused_no, "class", "h4");
+  else if (!strcmp (klass, "h4"))
+    metadata_set2 (focused_no, "class", "h5");
+  else if (!strcmp (klass, "h5"))
+    metadata_set2 (focused_no, "class", "h6");
+  else if (!strcmp (klass, "h6"))
+    metadata_unset2 (focused_no, "class");
+  else
+    metadata_set2 (focused_no, "class", "h1");
+  metadata_dirt ();
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
 
 static void draw_folder (Ctx *ctx, float x, float y, float w, float h)
 {
@@ -3157,6 +3187,22 @@ static void dir_layout (ITK *itk, Files *files)
                           (void*)((size_t)i));
             }
 
+
+            {
+              const char *label = "make heading";
+              char *klass = metadata_key_string2 (i, "class");
+              if (klass)
+              {
+                label = "cycle heading";
+                free (klass);
+              }
+              else
+              {
+
+              }
+              ctx_add_key_binding (ctx, "control-h", NULL, label,
+                          item_cycle_heading, NULL);
+            }
 
             ctx_add_key_binding (ctx, "insert", NULL, "insert text",
                           dir_insert, NULL);
