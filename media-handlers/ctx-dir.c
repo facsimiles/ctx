@@ -3773,12 +3773,28 @@ static void dir_ignore (CtxEvent *e, void *d1, void *d2)
 
 static void dir_backspace (CtxEvent *e, void *d1, void *d2)
 {
+  ctx_set_dirty (e->ctx, 1);
+  e->stop_propagate = 1;
+  if (commandline_cursor_start != commandline_cursor_end)
+  {
+    int c_s = commandline_cursor_start;
+    int c_e = commandline_cursor_end;
+    if (c_s > c_e)
+    {
+      c_e = commandline_cursor_start;
+      c_s = commandline_cursor_end;
+    }
+    for (int i = c_s; i < c_e; i++)
+      ctx_string_remove (commandline, c_s);
+    commandline_cursor_start = c_s;
+    return;
+  }
+
   if (commandline_cursor_start == 0) return;
+
   ctx_string_remove (commandline, commandline_cursor_start-1);
   commandline_cursor_start --;
   commandline_cursor_end = commandline_cursor_start;
-  ctx_set_dirty (e->ctx, 1);
-  e->stop_propagate = 1;
 }
 
 static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
