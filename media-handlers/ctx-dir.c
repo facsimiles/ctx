@@ -2212,7 +2212,8 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
     return;
   }
 
-  if (item_get_type_atom (focused_no-1) != CTX_ATOM_TEXT)
+  if (item_get_type_atom (focused_no-1) != CTX_ATOM_TEXT && 
+      item_get_type_atom (focused_no-1) != CTX_ATOM_ENDGROUP)
   {
     event->stop_propagate=1;
     return;
@@ -2226,9 +2227,9 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
       item_get_type_atom (focused_no+1) == CTX_ATOM_ENDGROUP))
     {
       text_edit = 0;
+      int next_focus = dir_prev_sibling (focused_no);
       item_delete (event, (void*)(size_t)focused_no, NULL);
-      //layout_find_item = focused_no-1;
-      //itk->focus_no = -1;
+      focused_no = next_focus+1;
       metadata_dirt();
     }
 
@@ -2302,7 +2303,7 @@ int item_context_active = 0;
 static void
 make_tail_entry ()
 {
-  metadata_insert (focused_no+1, "");
+  metadata_insert (focused_no+items_to_move(focused_no), "");
   metadata_dirt ();
   layout_find_item = focused_no = dir_next_sibling (focused_no);
   itk->focus_no = -1;
