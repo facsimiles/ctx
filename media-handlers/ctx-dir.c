@@ -414,6 +414,7 @@ void dm_set_path (Files *files, const char *path, const char *title)
 }
 
 
+
 #include <libgen.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -531,6 +532,181 @@ static void toggle_reveal_codes (CtxEvent *e, void *d1, void *d2)
   layout_config.codes = !layout_config.codes;
   ctx_set_dirty (e->ctx, 1);
 }
+static int layout_focused_link = -1;
+
+static int dir_item_count_links (int i)
+{
+  char *p = files->items[i];
+  int in_link = 0;
+  int count = 0;
+  while (*p)
+  {
+    switch (*p)
+    {
+      case '[':
+        in_link = 1;
+        break;
+      case ']': 
+        if (in_link) count ++;
+        in_link = 0;
+        break;
+    }
+    p++;
+  }
+  return count;
+}
+
+static char *dir_item_link_no (int item, int link_no)
+{
+  CtxString *str = ctx_string_new ("");
+  CtxString *str_secondary = ctx_string_new ("");
+
+  char *p = files->items[item];
+  int in_link = 0;
+  int was_in_link = 0;
+  int count = 0;
+  while (p == files->items[item] || p[-1])
+  {
+    switch (*p)
+    {
+      case '[':
+        in_link = 1;
+        ctx_string_set (str, "");
+        ctx_string_set (str_secondary, "");
+        break;
+      case ']': 
+        if (in_link) count ++;
+        in_link = 0;
+        break;
+      case '(':
+        ctx_string_set (str_secondary, "");
+        if (p[-1]==']'){
+                in_link = 2;
+                count--;
+        }
+        break;
+      case ')':
+        if (in_link == 2){
+          in_link = 0;
+          count++;
+        }
+        break;
+      case '\0':
+      default:
+
+        if (*p && in_link == 2)
+        ctx_string_append_byte (str_secondary, *p);
+        else if (*p && in_link == 1)
+        ctx_string_append_byte (str, *p);
+        else if (link_no == count-1)
+        {
+          char *ret = NULL;
+          if (str_secondary->str[0])
+            ret = ctx_string_dissolve (str_secondary);
+          else
+            ctx_string_free (str_secondary, 1);
+          if (!ret)
+            ret = ctx_string_dissolve (str);
+          else
+            ctx_string_free (str, 1);
+          return ret;
+        }
+        break;
+    }
+    was_in_link = in_link;
+    p++;
+  }
+  ctx_string_free (str_secondary, 1);
+  ctx_string_free (str, 1);
+  return NULL;
+}
+
+static const char *ctx_basedir (void)
+{
+  static char *val = NULL;
+  if (!val)
+  {
+    char *home = getenv ("HOME");
+    if (home)
+    {
+      val = ctx_strdup_printf ("%s/.ctx", home);
+    }
+    else
+      val = strdup ("/tmp/ctx");
+  }
+  return val;
+}
+
+
+static char *dir_metadata_path (const char *path)
+{
+  char *ret;
+  char *hex="0123456789abcdef";
+  unsigned char hash[40];
+  unsigned char hash_hex[51];
+  CtxSHA1 *sha1 = ctx_sha1_new ();
+  ctx_sha1_process (sha1, path, strlen (path));
+  ctx_sha1_done (sha1, hash);
+  ctx_sha1_free (sha1);
+  for (int j = 0; j < 20; j++)
+  {
+    hash_hex[j*2+0]=hex[hash[j]/16];
+    hash_hex[j*2+1]=hex[hash[j]%16];
+  }
+  hash_hex[40]=0;
+  ret = ctx_strdup_printf ("%s/%s", ctx_basedir(), hash_hex);
+  return ret;
+}
+
+static int path_is_dir (const char *path)
+{
+  struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
+  lstat (path, &stat_buf);
+  return S_ISDIR (stat_buf.st_mode);
+}
+
+
+static void set_location (const char *location)
+{
+  if (location[0] == '/')
+  {
+    if (path_is_dir (location))
+    {
+      dm_set_path (files, location, NULL);
+      focused_no = -1;
+      layout_find_item = 0;
+    }
+  } else
+  {
+    char *path = dir_metadata_path (location);
+    if (path_is_dir (path))
+    {
+    }
+    else
+    {
+      mkdir (path, 0777);
+    }
+    dm_set_path (files, path, location);
+    free (path);
+    focused_no = 0;
+    layout_find_item = 0;
+  }
+}
+
+static void dir_follow_link (CtxEvent *e, void *d1, void *d2)
+{
+  fprintf (stderr, "follow link %i\n", layout_focused_link);
+  char *target = dir_item_link_no (focused_no, layout_focused_link);
+  fprintf (stderr, " %s\n", target);
+  set_location (target);
+
+  //dm_set_path (files, files->path, files->title);
+
+  layout_focused_link = 0;
+  ctx_set_dirty (e->ctx, 1);
+}
+
 
 static void item_activate (CtxEvent *e, void *d1, void *d2)
 {
@@ -1528,13 +1704,15 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
                          int sel_end, 
                          int print, float *ret_x, float *ret_y,
                          int *prev_line, int *next_line,
-                         int visible_markup)
+                         int visible_markup,
+                         int is_focused)
 {
   char word[1024]="";
   int wlen = 0;
   const char *p;
   int pos = 0;
   float x0 = x;
+  int link_no = 0;
 
   int cursor_drawn = 0;
   int compute_neighbor_lines = 0;
@@ -1669,6 +1847,9 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         if (was_in_link)
         {
           ctx_save (itk->ctx);
+          if (was_in_link > 1)
+          ctx_rgba (itk->ctx, 1, 0, 0, 1);
+          else
           ctx_rgba (itk->ctx, 1, 1, 0.3, 1);
           ctx_text (itk->ctx, word);
           ctx_restore (itk->ctx);
@@ -1688,23 +1869,26 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       }
     }
     break;
-      case '[':
-      case ']':
-        if (*p == '[')
-        {
-          in_link++;
-        }
-        else if (*p == ']')
-        {
-          in_link--;
-        }
         if (!visible_markup)
           break;
       default:
-      if (wlen < 1000)
-        word[wlen++]=*p;
+
+      if (visible_markup)
+      {
+        if (wlen < 1000)
+          word[wlen++]=*p;
+      }
+      else
+      {
+        if (*p !='[' && *p!=']')
+        if (wlen < 1000 && (in_link <= 1))
+          word[wlen++]=*p;
+      }
     }
-    was_in_link = in_link;
+
+    was_in_link = (in_link != 0);
+    if (was_in_link && is_focused) was_in_link += (link_no == layout_focused_link);
+
     switch (*p)
     {
       case '[':
@@ -1716,7 +1900,25 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         else if (*p == ']')
         {
           in_link--;
+          link_no ++;
         }
+        break;
+      case '(':
+        if (p != d_name && p[-1] == ']')
+        {
+                link_no--;
+        in_link+=2;
+        if (!visible_markup)
+          word[--wlen]=0;
+        }
+        break;
+      case ')':
+        if (in_link > 1)
+        {
+                link_no++;
+          in_link-=2;
+        }
+        break;
     }
     if ((*p & 0xc0) != 0x80) pos++;
   }
@@ -2094,30 +2296,6 @@ void dir_next_page (CtxEvent *event, void *a, void *b)
    dir_set_page (event, (void*)(size_t)(layout_show_page+1), NULL);
 }
 
-void text_edit_down (CtxEvent *event, void *a, void *b)
-{
-  if (next_line_pos >= 0)
-  {
-    text_edit = next_line_pos;
-    ctx_set_dirty (event->ctx, 1);
-    event->stop_propagate=1;
-    return;
-  }
-
-  if (item_get_type_atom (focused_no+1) != CTX_ATOM_TEXT)
-  {
-    event->stop_propagate=1;
-    return;
-  }
-  text_edit = TEXT_EDIT_FIND_CURSOR_FIRST_ROW;
-
-  layout_find_item = focused_no + 1;
-  itk->focus_no = -1;
-
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
-  // -- - //
-}
 
 int item_context_active = 0;
 
@@ -2131,9 +2309,57 @@ make_tail_entry ()
   text_edit = 0;
 }
 
+
+void text_edit_down (CtxEvent *event, void *a, void *b)
+{
+  if (next_line_pos >= 0)
+  {
+    text_edit = next_line_pos;
+    ctx_set_dirty (event->ctx, 1);
+    event->stop_propagate=1;
+    return;
+  }
+
+  if (item_get_type_atom (focused_no+1) != CTX_ATOM_TEXT)
+  {
+    if (files->items[focused_no][0])
+      make_tail_entry ();
+    ctx_set_dirty (event->ctx, 1);
+    event->stop_propagate=1;
+    return;
+  }
+  text_edit = TEXT_EDIT_FIND_CURSOR_FIRST_ROW;
+
+  layout_find_item = focused_no + 1;
+  itk->focus_no = -1;
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+  // -- - //
+}
+
+
+
+static void
+focus_next_link (CtxEvent *event, void *a, void *b)
+{
+  layout_focused_link ++;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+static void
+focus_previous_link (CtxEvent *event, void *a, void *b)
+{
+  layout_focused_link --;
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
 static void
 focus_next_sibling (CtxEvent *event, void *a, void *b)
 {
+  layout_focused_link = -1;
   if (dir_next_sibling (focused_no) < 0)
   {
     make_tail_entry ();
@@ -2168,6 +2394,7 @@ static int item_get_list_index (int i)
 static void
 focus_next (CtxEvent *event, void *a, void *b)
 {
+  layout_focused_link = -1;
   int pos = dir_next (focused_no);
   if (pos >= 0)
   {
@@ -2181,6 +2408,7 @@ focus_next (CtxEvent *event, void *a, void *b)
 static void
 focus_previous (CtxEvent *event, void *a, void *b)
 {
+  layout_focused_link = -1;
   int pos = dir_prev (focused_no);
   if (pos >= 0)
   {
@@ -2194,6 +2422,7 @@ focus_previous (CtxEvent *event, void *a, void *b)
 static void
 focus_previous_sibling (CtxEvent *event, void *a, void *b)
 {
+  layout_focused_link = -1;
   int pos = dir_prev_sibling (focused_no);
   if (pos >= 0)
   {
@@ -2273,6 +2502,7 @@ set_tool_no (CtxEvent *event, void *a, void *b)
 static void
 dir_parent (CtxEvent *event, void *a, void *b)
 {
+  layout_focused_link = -1;
   int start_no = focused_no;
   
   int level = 1;
@@ -2317,6 +2547,7 @@ static void
 dir_enter_children (CtxEvent *event, void *a, void *b)
 {
   int start_no = focused_no;
+  layout_focused_link = -1;
   
   focused_no++;
   CtxAtom  atom = item_get_type_atom (focused_no);
@@ -2744,7 +2975,8 @@ static void dir_layout (ITK *itk, Files *files)
                        i == focused_no ? text_edit + 2: -1,
                        0, NULL, &height,
                        NULL, NULL,
-                       (i == focused_no && text_edit >= 0) );
+                       (i == focused_no && text_edit >= 0),
+                       i == focused_no);
           height = height - itk->y + em * 0.5;
           row_max_height = height;
         }
@@ -2854,6 +3086,13 @@ static void dir_layout (ITK *itk, Files *files)
                           (void*)((size_t)i));
 
 
+            if (layout_focused_link >= 0)
+            {
+            ctx_add_key_binding (ctx, "return", NULL, "follow link",
+                          dir_follow_link,
+                          (void*)((size_t)i));
+            }
+            else
             ctx_add_key_binding (ctx, "return", NULL, "activate/edit",
                           item_activate,
                           (void*)((size_t)i));
@@ -2979,7 +3218,8 @@ static void dir_layout (ITK *itk, Files *files)
                        text_edit,text_edit,
                        1, NULL, NULL,
                        &prev_line_pos, &next_line_pos,
-                       (i == focused_no && text_edit >= 0) );
+                       (i == focused_no && text_edit >= 0),
+                       1);
           }
           else
           {
@@ -2989,6 +3229,7 @@ static void dir_layout (ITK *itk, Files *files)
                        -1, -1,
                        1, NULL, NULL,
                        NULL, NULL,
+                       0,
                        0);
           }
 
@@ -3582,77 +3823,12 @@ static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
-static int path_is_dir (const char *path)
-{
-  struct stat stat_buf;
-  if (!path || path[0]==0) return 0;
-  lstat (path, &stat_buf);
-  return S_ISDIR (stat_buf.st_mode);
-}
 
-static const char *ctx_basedir (void)
-{
-  static char *val = NULL;
-  if (!val)
-  {
-    char *home = getenv ("HOME");
-    if (home)
-    {
-      val = ctx_strdup_printf ("%s/.ctx", home);
-    }
-    else
-      val = strdup ("/tmp/ctx");
-  }
-  return val;
-}
-
-static char *dir_metadata_path (const char *path)
-{
-  char *ret;
-  char *hex="0123456789abcdef";
-  unsigned char hash[40];
-  unsigned char hash_hex[51];
-  CtxSHA1 *sha1 = ctx_sha1_new ();
-  ctx_sha1_process (sha1, path, strlen (path));
-  ctx_sha1_done (sha1, hash);
-  ctx_sha1_free (sha1);
-  for (int j = 0; j < 20; j++)
-  {
-    hash_hex[j*2+0]=hex[hash[j]/16];
-    hash_hex[j*2+1]=hex[hash[j]%16];
-  }
-  hash_hex[40]=0;
-  ret = ctx_strdup_printf ("%s/%s", ctx_basedir(), hash_hex);
-  return ret;
-}
 
 static void dir_location_return (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
-  if (commandline->str[0] == '/')
-  {
-    if (path_is_dir (commandline->str))
-    {
-      dm_set_path (files, commandline->str, NULL);
-      focused_no = -1;
-      layout_find_item = 0;
-    }
-  } else
-  {
-
-    char *path = dir_metadata_path (commandline->str);
-    if (path_is_dir (path))
-    {
-    }
-    else
-    {
-      mkdir (path, 0777);
-    }
-    dm_set_path (files, path, commandline->str);
-    free (path);
-    focused_no = 0;
-    layout_find_item = 0;
-  }
+  set_location (commandline->str);
   ctx_string_set (commandline, "");
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
@@ -3893,10 +4069,24 @@ static int card_files (ITK *itk_, void *data)
               !is_text_editing())
           {
 
+            if (layout_focused_link >= 0)
+            ctx_add_key_binding (ctx, "up", NULL, "focus previous link",
+                          focus_previous_link,
+                          NULL);
+            else
 
             ctx_add_key_binding (ctx, "up", NULL, "focus previous sibling",
                           focus_previous_sibling,
                           NULL);
+
+            //fprintf (stderr, "%i \n", dir_item_count_links (focused_no));
+
+            if (focused_no >=0 &&
+                layout_focused_link < dir_item_count_links (focused_no)-1)
+            ctx_add_key_binding (ctx, "down", NULL, "focus next link",
+                          focus_next_link,
+                          NULL);
+            else
             ctx_add_key_binding (ctx, "down", NULL, "focus next sibling",
                           focus_next_sibling,
                           NULL);
