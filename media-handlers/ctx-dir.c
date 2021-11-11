@@ -64,6 +64,8 @@ typedef struct LayoutConfig
   int use_layout_boxes;
   int outliner;
   int codes;
+
+  int hide_non_file;
 } LayoutConfig;
 
 LayoutConfig layout_config = {
@@ -222,6 +224,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.outliner = 0;
   layout_config.codes = 0;
 
+  layout_config.hide_non_file = 0;
   if (focused_no>=0)
   {
     layout_find_item = focused_no;
@@ -252,6 +255,7 @@ static void set_list (CtxEvent *e, void *d1, void *d2)
   layout_config.padding_top = 0.1f;
   layout_config.padding_bottom = 0.1f;
   layout_config.use_layout_boxes = 0;
+  layout_config.hide_non_file = 1;
 }
 
 static void set_grid (CtxEvent *e, void *d1, void *d2)
@@ -263,6 +267,7 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
   layout_config.stack_vertical = 1;
   layout_config.label = 1;
   layout_config.use_layout_boxes = 0;
+  layout_config.hide_non_file = 1;
 }
 
 typedef enum CtxBullet {
@@ -1862,6 +1867,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
           char *href = string_link_no (d_name, was_no);
           ctx_listen_with_finalize (itk->ctx, CTX_CLICK,
                           goto_link, href, NULL, free, NULL);
+          ctx_listen_set_cursor (itk->ctx, CTX_CURSOR_HAND);
           ctx_begin_path (itk->ctx);
 
           if (was_in_link > 1)
@@ -2797,6 +2803,9 @@ static void dir_layout (ITK *itk, Files *files)
           if (!layout_config.codes) hidden = 1;
           break;
       }
+
+      if (layout_config.hide_non_file)
+      if (atom != CTX_ATOM_FILE) hidden = 1;
 
       if (is_folded)
         hidden = 1;
