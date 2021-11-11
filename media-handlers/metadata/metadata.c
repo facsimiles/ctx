@@ -787,6 +787,8 @@ void metadata_set_float2 (int no, const char *key, float value)
   sprintf (str, "%f", value);
   while (str[strlen(str)-1] == '0')
     str[strlen(str)-1] = 0;
+  if (str[strlen(str)-1] == '.')
+    str[strlen(str)-1] = 0;
   metadata_set2 (no, key, str);
 }
 
