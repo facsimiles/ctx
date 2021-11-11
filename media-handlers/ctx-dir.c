@@ -218,7 +218,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.padding_bottom = 0.5f;
 
   layout_config.use_layout_boxes = 1;
-  layout_config.level_indent = 2.5;
+  layout_config.level_indent = 2.0;
   layout_config.outliner = 0;
   layout_config.codes = 0;
 
@@ -556,16 +556,17 @@ static int dir_item_count_links (int i)
   return count;
 }
 
-static char *dir_item_link_no (int item, int link_no)
+
+static char *string_link_no (const char *string, int link_no)
 {
   CtxString *str = ctx_string_new ("");
   CtxString *str_secondary = ctx_string_new ("");
 
-  char *p = files->items[item];
+  char *p = string;
   int in_link = 0;
   int was_in_link = 0;
   int count = 0;
-  while (p == files->items[item] || p[-1])
+  while (p == string || p[-1])
   {
     switch (*p)
     {
@@ -619,6 +620,12 @@ static char *dir_item_link_no (int item, int link_no)
   ctx_string_free (str_secondary, 1);
   ctx_string_free (str, 1);
   return NULL;
+}
+
+
+static char *dir_item_link_no (int item, int link_no)
+{
+  return string_link_no (files->items[item], link_no);
 }
 
 static const char *ctx_basedir (void)
@@ -696,9 +703,7 @@ static void set_location (const char *location)
 
 static void dir_follow_link (CtxEvent *e, void *d1, void *d2)
 {
-  fprintf (stderr, "follow link %i\n", layout_focused_link);
   char *target = dir_item_link_no (focused_no, layout_focused_link);
-  fprintf (stderr, " %s\n", target);
   set_location (target);
 
   //dm_set_path (files, files->path, files->title);
@@ -1679,6 +1684,12 @@ static void dir_key_any (CtxEvent *event, void *userdata, void *userdata2)
   }
 }
 
+static void goto_link (CtxEvent *event, void *data1, void *data2)
+{
+  set_location (data1);
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
 
 static void dir_revert (CtxEvent *event, void *data1, void *data2)
 {
@@ -1713,7 +1724,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
   int pos = 0;
   float x0 = x;
   int link_no = 0;
-
+  int was_no = 0;
   int cursor_drawn = 0;
   int compute_neighbor_lines = 0;
   if (prev_line || next_line) compute_neighbor_lines = 1;
@@ -1843,19 +1854,40 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         }
       if (print)
       {
-        ctx_move_to (itk->ctx, x, y);
         if (was_in_link)
         {
           ctx_save (itk->ctx);
+          ctx_begin_path (itk->ctx);
+          ctx_rectangle (itk->ctx, x - ctx_text_width (itk->ctx, " ")/2, y - itk->font_size, ctx_text_width (itk->ctx, word) + ctx_text_width (itk->ctx, " "), itk->font_size * 1.2);
+          char *href = string_link_no (d_name, was_no);
+          ctx_listen_with_finalize (itk->ctx, CTX_CLICK,
+                          goto_link, href, NULL, free, NULL);
+          ctx_begin_path (itk->ctx);
+
           if (was_in_link > 1)
-          ctx_rgba (itk->ctx, 1, 0, 0, 1);
+          {
+            ctx_rgba (itk->ctx, 1, 1, 1, 0.8);
+            ctx_rectangle (itk->ctx, x - ctx_text_width (itk->ctx, " ")/2, y - itk->font_size, ctx_text_width (itk->ctx, word) + ctx_text_width (itk->ctx, " "), itk->font_size * 1.2);
+            ctx_fill (itk->ctx);
+            ctx_rgba (itk->ctx, 0,0,0,1.0);
+          }
           else
-          ctx_rgba (itk->ctx, 1, 1, 0.3, 1);
+          {
+            ctx_rgba (itk->ctx, 1, 1, 0.3, 1);
+            ctx_rectangle (itk->ctx, x - ctx_text_width (itk->ctx, " ")/2, y + itk->font_size * 0.1, ctx_text_width (itk->ctx, word) + ctx_text_width (itk->ctx, " "), itk->font_size * 0.05);
+            ctx_fill (itk->ctx);
+          }
+
+
+          ctx_move_to (itk->ctx, x, y);
           ctx_text (itk->ctx, word);
           ctx_restore (itk->ctx);
         }
         else
+        {
+        ctx_move_to (itk->ctx, x, y);
         ctx_text (itk->ctx, word);
+        }
       }
       }
 
@@ -1888,6 +1920,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
 
     was_in_link = (in_link != 0);
     if (was_in_link && is_focused) was_in_link += (link_no == layout_focused_link);
+    was_no = link_no;
 
     switch (*p)
     {
@@ -3237,14 +3270,14 @@ static void dir_layout (ITK *itk, Files *files)
           int bullet = metadata_key_int2 (i, "bullet", CTX_BULLET_NONE);
           if (bullet != CTX_BULLET_NONE)
           {
-             float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
+             float x = itk->x - em * 0.7 ;//+ level * em * layout_config.level_indent;
              switch (bullet)
              {
                case CTX_BULLET_NONE:
                break;
                case CTX_BULLET_BULLET:
                ctx_move_to (itk->ctx, x, itk->y + em);
-               ctx_text (itk->ctx, "•");
+               ctx_text (itk->ctx, "-");
                break;
                case CTX_BULLET_NUMBERS:
                ctx_move_to (itk->ctx, x + em * 0.5, itk->y + em);
@@ -3271,7 +3304,7 @@ static void dir_layout (ITK *itk, Files *files)
             int folded = metadata_key_int2 (i+1, "folded", -3);
             if (folded > 0)
             {
-               float x = itk->x - em * 0.5 + level * em * layout_config.level_indent;
+               float x = itk->x - em * 0.5;//
                if (bullet != CTX_BULLET_NONE) x -= em * 0.6;
                ctx_move_to (itk->ctx, x, itk->y + em);
                ctx_text (itk->ctx, "▶");//▷▽▼");
@@ -4107,6 +4140,11 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "left", NULL, "focus parent",
                           dir_parent,
                           NULL);
+
+            if (layout_focused_link >= 0)
+            ctx_add_key_binding (ctx, "right", NULL, "follow link",
+                          dir_follow_link, NULL);
+            else
 
             ctx_add_key_binding (ctx, "right", NULL, "enter children",
                           dir_enter_children,
