@@ -482,8 +482,6 @@ static void dir_insert (CtxEvent *e, void *d1, void *d2)
 }
 
 
-static CtxList *history = NULL;
-static CtxList *future = NULL;
 
 static int path_is_dir (const char *path)
 {
@@ -495,7 +493,10 @@ static int path_is_dir (const char *path)
 
 static char *dir_metadata_path (const char *path);
 
-static void set_location (const char *location)
+static CtxList *history = NULL;
+static CtxList *future = NULL;
+
+static void _set_location (const char *location)
 {
   if (location[0] == '/' || location[0] == '.')
   {
@@ -523,6 +524,64 @@ static void set_location (const char *location)
 }
 
 
+static void history_forward (CtxEvent *event, void *d1, void *d2)
+{
+  if (future == NULL)
+     return;
+
+  char *location = future->data;
+  ctx_list_remove (&future, location);
+
+  if (files->title)
+    ctx_list_prepend (&history, strdup (files->title));
+  else
+    ctx_list_prepend (&history, strdup (files->path));
+
+  _set_location (location);
+  free (location);
+
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate = 1;
+}
+
+static void history_back (CtxEvent *event, void *d1, void *d2)
+{
+  if (history == NULL)
+     return;
+  char *location = history->data;
+  ctx_list_remove (&history, location);
+
+  if (files->title)
+    ctx_list_prepend (&future, strdup (files->title));
+  else
+    ctx_list_prepend (&future, strdup (files->path));
+
+  _set_location (location);
+  ctx_set_dirty (event->ctx, 1);
+
+  free (location);
+  event->stop_propagate = 1;
+}
+
+
+static void set_location (const char *location)
+{
+  while (future)
+  {
+    free (future->data);
+    ctx_list_remove (&future, future->data);
+  }
+  if (files->path)
+  {
+  if (files->title)
+    ctx_list_prepend (&history, strdup (files->title));
+  else
+    ctx_list_prepend (&history, strdup (files->path));
+  }
+  _set_location (location);
+}
+
+
 static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
 {
   char *old_path = strdup (files->path);
@@ -531,8 +590,6 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
 
   layout_find_item = metadata_item_to_no (strrchr (old_path, '/')+1);
   //fprintf (stderr, "%i, %s\n", layout_find_item, strrchr (old_path, '/')+1);
-
-
   free (old_path);
 
   itk->focus_no = -1;
@@ -3135,6 +3192,11 @@ static void dir_layout (ITK *itk, Files *files)
           {
           if (!is_text_editing())
           {
+
+            if (history)
+            ctx_add_key_binding (ctx, "alt-left", NULL, "back", history_back, NULL);
+            if (future)
+            ctx_add_key_binding (ctx, "alt-right", NULL, "forward", history_forward, NULL);
 
             ctx_add_key_binding (ctx, "alt-up", NULL, "go to parent",
                           dir_go_parent,
