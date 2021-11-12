@@ -351,7 +351,7 @@ void dm_set_path (Files *files, const char *path, const char *title)
     files->items[files->count++] = metadata_item_name (pos);
   }
 
-
+#if 0
   {
     if (0)
     {
@@ -375,6 +375,7 @@ void dm_set_path (Files *files, const char *path, const char *title)
     }
     }
   }
+#endif
 
   CtxList *to_add = NULL;
   for (int i = 0; i < files->n; i++)
@@ -3768,9 +3769,11 @@ void viewer_load_path (const char *path, const char *name)
   if (viewer_loaded_name) free (viewer_loaded_name);
   viewer_loaded_name = strdup (name);
 
+  int no = metadata_item_to_no (name);
+
   float duration = 10.0;
-  float in = metadata_key_float (name, "in");
-  float out = metadata_key_float (name, "out");
+  float in = metadata_key_float2 (no, "in", -1);
+  float out = metadata_key_float2 (no, "out", -1);
   if (out > 0 && in > 0)
   {
     duration = out - in;

@@ -102,8 +102,6 @@ static char *metadata_item_name_escaped (int no)
   return NULL;
 }
 
-
-
 static char *metadata_item_name (int no)
 {
   const char *m = metadata;
@@ -221,7 +219,6 @@ char *metadata_escape_item (const char *item)
   {
     switch (item[i])
     {
-      //case '.': // TODO: remove hack depending on it not being done
       case ' ':
         if (i != 0)
         {
@@ -286,20 +283,6 @@ int metadata_item_to_no (const char *item)
   return -1;
 }
 
-static int metadata_item_key_count (const char *item)
-{
-  const char *m = metadata_find_item (item);
-  if (!m) return -1;
-  int count = 0;
-  if (m[0] == ' ')
-  do {
-     while (m && *m && *m != '\n') m++;
-     if (*m == '\n') m++;
-     count ++;
-  } while (m[0] == ' ');
-  return count;
-}
-
 static int metadata_item_key_count2 (int no)
 {
   const char *m = metadata_find_no (no);
@@ -312,30 +295,6 @@ static int metadata_item_key_count2 (int no)
      count ++;
   } while (m[0] == ' ');
   return count;
-}
-
-static char *metadata_key_name (const char *item, int no)
-{
-  const char *m = metadata_find_item (item);
-  CtxString *str = ctx_string_new ("");
-  if (!m) return NULL;
-  int count = 0;
-  if (m[0] == ' ')
-  do {
-     if (count == no)
-     {
-     while (*m && m[0] == ' ') m++;
-     while (*m && m[0] != '=') {
-       ctx_string_append_byte (str, m[0]);
-       m++;
-     }
-       return ctx_string_dissolve (str);
-     }
-     while (m && *m && *m != '\n') m++;
-     if (*m == '\n') m++;
-     count ++;
-  } while (m[0] == ' ');
-  return NULL;
 }
 
 static char *metadata_key_name2 (int ino, int no)
@@ -361,7 +320,6 @@ static char *metadata_key_name2 (int ino, int no)
   } while (m[0] == ' ');
   return NULL;
 }
-
 
 static char *metadata_key_string2 (int no, const char *key)
 {
@@ -393,48 +351,6 @@ static char *metadata_key_string2 (int no, const char *key)
   return NULL;
 }
 
-static char *metadata_key_string (const char *item, const char *key)
-{
-  const char *m = metadata_find_item (item);
-  CtxString *str = ctx_string_new ("");
-  if (!m) return NULL;
-  if (m[0] == ' ')
-  do {
-     ctx_string_set (str, "");
-     while (*m && m[0] == ' ') m++;
-     while (*m && m[0] != '=') {
-       ctx_string_append_byte (str, m[0]);
-       m++;
-     }
-     if (!strcmp (key, str->str))
-     {
-       ctx_string_set (str, "");
-       m++;
-       while (*m && m[0] != '\n') {
-         ctx_string_append_byte (str, m[0]);
-         m++;
-       }
-       return ctx_string_dissolve (str);
-     }
-     while (m && *m && *m != '\n') m++;
-     if (*m == '\n') m++;
-  } while (m[0] == ' ');
-  ctx_string_free (str, 1);
-  return NULL;
-}
-
-static float metadata_key_float (const char *item, const char *key)
-{
-   char *value = metadata_key_string (item, key);
-   float ret = -1234.0f;
-   if (value)
-   {
-     ret = atof (value);
-     free (value);
-   }
-   return ret;
-}
-
 static float metadata_key_float2 (int no, const char *key, float def_val)
 {
    char *value = metadata_key_string2 (no, key);
@@ -447,18 +363,6 @@ static float metadata_key_float2 (int no, const char *key, float def_val)
    return ret;
 }
 
-
-static int metadata_key_int (const char *item, const char *key, int def_val)
-{
-   char *value = metadata_key_string (item, key);
-   int ret = def_val;
-   if (value)
-   {
-     ret = atoi (value);
-     free (value);
-   }
-   return ret;
-}
 
 static int metadata_key_int2 (int no, const char *key, int def_val)
 {
@@ -535,64 +439,13 @@ void metadata_remove (int no)
    metadata_cache_no = -3;
 }
 
-void metadata_unset (const char *item, const char *key)
-{
-   const char *a_meta = metadata_find_item (item);
-   CtxString *str = ctx_string_new ("");
-   const char *m = a_meta;
-
-   const char *prop_start = m;
-   int a_len = 0;
-
-  if (!m) return;
-  if (m[0] == ' ')
-  do {
-     ctx_string_set (str, "");
-     a_len = 0;
-     prop_start = m;
-     while (*m && m[0] == ' '){ m++;
-       a_len++;
-     }
-     while (*m && m[0] != '=') {
-       ctx_string_append_byte (str, m[0]);
-       m++;
-       a_len++;
-     }
-     while (m && *m && *m != '\n'){
-       m++;
-       a_len++;
-     }
-     if (*m == '\n'){
-       m++;
-       a_len ++;
-     }
-     if (!strcmp (key, str->str))
-     {
-       break;
-     }
-     prop_start = NULL;
-  } while (m[0] == ' ');
-
-  if (!prop_start)
-    return;
-   
-   int a_start = prop_start - metadata;
-   //int a_len = a_name_len + 1 + _metadata_metalen (a_meta);
-
-   memmove (metadata + a_start, metadata + a_start + a_len, metadata_len - a_start - a_len);
-   metadata_len -= a_len;
-   metadata[metadata_len]=0;
-
-}
-
 void metadata_unset2 (int no, const char *key)
 {
-   const char *a_meta = metadata_find_no (no);
-   CtxString *str = ctx_string_new ("");
-   const char *m = a_meta;
-
-   const char *prop_start = m;
-   int a_len = 0;
+  const char *a_meta = metadata_find_no (no);
+  CtxString *str = ctx_string_new ("");
+  const char *m = a_meta;
+  const char *prop_start = m;
+  int a_len = 0;
 
   if (!m) return;
   if (m[0] == ' ')
@@ -690,43 +543,11 @@ void metadata_rename (int pos, const char *new_name)
   }
 
   char *new_escaped = metadata_escape_item (new_name);
-
   char tmp[strlen (new_escaped) + 3];
   snprintf (tmp, sizeof(tmp), "%s\n", new_escaped);
   free (new_escaped);
 
   _metadata_insert (m-metadata, tmp, strlen (tmp));
-}
-
-void metadata_add (const char *item, const char *key, const char *value)
-{
-  CtxString *str = ctx_string_new ( " ");
-  metadata_unset (item, key);
-
-  const char *m = metadata_find_item (item);
-  int offset = metadata_len;
-  if (m)
-  {
-    while (m[0] == ' ')
-    {
-       while (m[0] != '\n') m++;
-       if (m[0] == '\n') m++;
-    }
-    offset = m - metadata;
-  }
-  else
-  {
-    char *escaped_item = metadata_escape_item (item);
-    ctx_string_append_str (str, escaped_item);
-    ctx_string_append_byte (str, '\n');
-    free (escaped_item);
-  }
-  ctx_string_append_str (str, key);
-  ctx_string_append_byte (str, '=');
-  ctx_string_append_str (str, value);
-  ctx_string_append_byte (str, '\n');
-
-  _metadata_insert (offset, str->str, str->length);
 }
 
 void metadata_add2 (int no, const char *key, const char *value)
@@ -759,26 +580,10 @@ void metadata_add2 (int no, const char *key, const char *value)
   _metadata_insert (offset, str->str, str->length);
 }
 
-
-void metadata_set (const char *item, const char *key, const char *value)
-{
-  metadata_unset (item, key);
-  metadata_add (item, key, value);
-}
-
 void metadata_set2 (int no, const char *key, const char *value)
 {
   metadata_unset2 (no, key);
   metadata_add2 (no, key, value);
-}
-
-void metadata_set_float (const char *item, const char *key, float value)
-{
-  char str[64];
-  sprintf (str, "%f", value);
-  while (str[strlen(str)-1] == '0')
-    str[strlen(str)-1] = 0;
-  metadata_set (item, key, str);
 }
 
 void metadata_set_float2 (int no, const char *key, float value)
@@ -800,36 +605,13 @@ void metadata_dump (void)
   {
     char *item_name = metadata_item_name (i);
     fprintf (stdout, "%i : %s : %i\n", i, item_name, metadata_item_to_no (item_name));
-    int keys = metadata_item_key_count (item_name);
+    int keys = metadata_item_key_count2 (i);
     for (int k = 0; k < keys; k ++)
     {
-      char *key_name = metadata_key_name (item_name, k);
+      char *key_name = metadata_key_name2 (i, k);
       fprintf (stdout, " %s=%s\n", key_name,
-                      metadata_key_string (item_name, key_name));
+                      metadata_key_string2 (i, key_name));
     }
     fflush (stdout);
   }
 }
-
-#ifndef METADATA_NOTEST
-int main (int argc, char **argv)
-{
-  if (argv[1])
-    metadata_load (argv[1]);
-  metadata_dump ();
-  metadata_unset ("ctx.c", "label");
-  metadata_set ("README", "hello", "there");
-  metadata_set ("README", "hello", "void");
-  metadata_swap (0, 3);
-  metadata_remove(3);
-//metadata_rename(0, "we need speedier access");
-  metadata_insert(0, "abc");
-  metadata_insert(1, "def");
-  //metadata_save ();
-
-  fprintf (stdout, "{%s}\n", metadata);
-  metadata_dump ();
-  return 0;
-}
-
-#endif
