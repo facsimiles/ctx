@@ -283,7 +283,7 @@ int metadata_item_to_no (const char *item)
   return -1;
 }
 
-static int metadata_item_key_count2 (int no)
+static int metadata_item_key_count (int no)
 {
   const char *m = metadata_find_no (no);
   if (!m) return -1;
@@ -297,7 +297,7 @@ static int metadata_item_key_count2 (int no)
   return count;
 }
 
-static char *metadata_key_name2 (int ino, int no)
+static char *metadata_key_name (int ino, int no)
 {
   const char *m = metadata_find_no (ino);
   CtxString *str = ctx_string_new ("");
@@ -321,7 +321,7 @@ static char *metadata_key_name2 (int ino, int no)
   return NULL;
 }
 
-static char *metadata_key_string2 (int no, const char *key)
+static char *metadata_key_string (int no, const char *key)
 {
   const char *m = metadata_find_no (no);
   CtxString *str = ctx_string_new ("");
@@ -351,9 +351,9 @@ static char *metadata_key_string2 (int no, const char *key)
   return NULL;
 }
 
-static float metadata_key_float2 (int no, const char *key, float def_val)
+static float metadata_key_float (int no, const char *key, float def_val)
 {
-   char *value = metadata_key_string2 (no, key);
+   char *value = metadata_key_string (no, key);
    float ret = def_val;//-1234.0f;
    if (value)
    {
@@ -364,9 +364,9 @@ static float metadata_key_float2 (int no, const char *key, float def_val)
 }
 
 
-static int metadata_key_int2 (int no, const char *key, int def_val)
+static int metadata_key_int (int no, const char *key, int def_val)
 {
-   char *value = metadata_key_string2 (no, key);
+   char *value = metadata_key_string (no, key);
    int ret = def_val;
    if (value)
    {
@@ -439,7 +439,7 @@ void metadata_remove (int no)
    metadata_cache_no = -3;
 }
 
-void metadata_unset2 (int no, const char *key)
+void metadata_unset (int no, const char *key)
 {
   const char *a_meta = metadata_find_no (no);
   CtxString *str = ctx_string_new ("");
@@ -550,10 +550,10 @@ void metadata_rename (int pos, const char *new_name)
   _metadata_insert (m-metadata, tmp, strlen (tmp));
 }
 
-void metadata_add2 (int no, const char *key, const char *value)
+void metadata_add (int no, const char *key, const char *value)
 {
   CtxString *str = ctx_string_new ( " ");
-  metadata_unset2 (no, key);
+  metadata_unset (no, key);
 
   const char *m = metadata_find_no (no);
   int offset = metadata_len;
@@ -580,13 +580,13 @@ void metadata_add2 (int no, const char *key, const char *value)
   _metadata_insert (offset, str->str, str->length);
 }
 
-void metadata_set2 (int no, const char *key, const char *value)
+void metadata_set (int no, const char *key, const char *value)
 {
-  metadata_unset2 (no, key);
-  metadata_add2 (no, key, value);
+  metadata_unset (no, key);
+  metadata_add (no, key, value);
 }
 
-void metadata_set_float2 (int no, const char *key, float value)
+void metadata_set_float (int no, const char *key, float value)
 {
   char str[64];
   sprintf (str, "%f", value);
@@ -594,7 +594,7 @@ void metadata_set_float2 (int no, const char *key, float value)
     str[strlen(str)-1] = 0;
   if (str[strlen(str)-1] == '.')
     str[strlen(str)-1] = 0;
-  metadata_set2 (no, key, str);
+  metadata_set (no, key, str);
 }
 
 void metadata_dump (void)
@@ -605,12 +605,12 @@ void metadata_dump (void)
   {
     char *item_name = metadata_item_name (i);
     fprintf (stdout, "%i : %s : %i\n", i, item_name, metadata_item_to_no (item_name));
-    int keys = metadata_item_key_count2 (i);
+    int keys = metadata_item_key_count (i);
     for (int k = 0; k < keys; k ++)
     {
-      char *key_name = metadata_key_name2 (i, k);
+      char *key_name = metadata_key_name (i, k);
       fprintf (stdout, " %s=%s\n", key_name,
-                      metadata_key_string2 (i, key_name));
+                      metadata_key_string (i, key_name));
     }
     fflush (stdout);
   }
