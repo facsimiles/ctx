@@ -315,23 +315,6 @@ Files file_state;
 Files *files = &file_state;
 static int metadata_dirty = 0;
 
-static void save_metadata(void)
-{  if (metadata_dirty)
-   {
-     metadata_save ();
-     dm_set_path (files, files->path, files->title);
-     metadata_dirty = 0;
-   }
-
-}
-
-static void metadata_dirt(void)
-{
-  metadata_dirty++;
-  metadata_cache_no=-3;
-  metadata_save ();
-//  save_metadata ();
-}
 
 void dm_set_path (Files *files, const char *path, const char *title)
 {
@@ -419,6 +402,24 @@ void dm_set_path (Files *files, const char *path, const char *title)
   //  metadata_dirt();
 }
 
+static void save_metadata(void)
+{  if (metadata_dirty)
+   {
+     metadata_save ();
+     dm_set_path (files, files->path, files->title);
+     metadata_dirty = 0;
+   }
+
+}
+
+static void metadata_dirt(void)
+{
+  metadata_dirty++;
+  metadata_cache_no=-3;
+  metadata_save ();
+//  save_metadata ();
+}
+
 
 
 #include <libgen.h>
@@ -480,11 +481,53 @@ static void dir_insert (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
 }
 
+
+static CtxList *history = NULL;
+static CtxList *future = NULL;
+
+static int path_is_dir (const char *path)
+{
+  struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
+  lstat (path, &stat_buf);
+  return S_ISDIR (stat_buf.st_mode);
+}
+
+static char *dir_metadata_path (const char *path);
+
+static void set_location (const char *location)
+{
+  if (location[0] == '/' || location[0] == '.')
+  {
+    if (path_is_dir (location))
+    {
+      dm_set_path (files, location, NULL);
+      focused_no = -1;
+      layout_find_item = 0;
+    }
+  } else
+  {
+    char *path = dir_metadata_path (location);
+    if (path_is_dir (path))
+    {
+    }
+    else
+    {
+      mkdir (path, 0777);
+    }
+    dm_set_path (files, path, location);
+    free (path);
+    focused_no = 0;
+    layout_find_item = 0;
+  }
+}
+
+
 static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
 {
   char *old_path = strdup (files->path);
   char *new_path = get_dirname (files->path);
-  dm_set_path (files, new_path, NULL);
+  set_location (new_path);
 
   layout_find_item = metadata_item_to_no (strrchr (old_path, '/')+1);
   //fprintf (stderr, "%i, %s\n", layout_find_item, strrchr (old_path, '/')+1);
@@ -568,9 +611,8 @@ static char *string_link_no (const char *string, int link_no)
   CtxString *str = ctx_string_new ("");
   CtxString *str_secondary = ctx_string_new ("");
 
-  char *p = string;
+  const char *p = string;
   int in_link = 0;
-  int was_in_link = 0;
   int count = 0;
   while (p == string || p[-1])
   {
@@ -620,7 +662,6 @@ static char *string_link_no (const char *string, int link_no)
         }
         break;
     }
-    was_in_link = in_link;
     p++;
   }
   ctx_string_free (str_secondary, 1);
@@ -658,7 +699,7 @@ static char *dir_metadata_path (const char *path)
   unsigned char hash[40];
   unsigned char hash_hex[51];
   CtxSHA1 *sha1 = ctx_sha1_new ();
-  ctx_sha1_process (sha1, path, strlen (path));
+  ctx_sha1_process (sha1, (uint8_t*)path, strlen (path));
   ctx_sha1_done (sha1, hash);
   ctx_sha1_free (sha1);
   for (int j = 0; j < 20; j++)
@@ -671,51 +712,12 @@ static char *dir_metadata_path (const char *path)
   return ret;
 }
 
-static int path_is_dir (const char *path)
-{
-  struct stat stat_buf;
-  if (!path || path[0]==0) return 0;
-  lstat (path, &stat_buf);
-  return S_ISDIR (stat_buf.st_mode);
-}
 
-
-static CtxList *history = NULL;
-static CtxList *future = NULL;
-
-static void set_location (const char *location)
-{
-  if (location[0] == '/')
-  {
-    if (path_is_dir (location))
-    {
-      dm_set_path (files, location, NULL);
-      focused_no = -1;
-      layout_find_item = 0;
-    }
-  } else
-  {
-    char *path = dir_metadata_path (location);
-    if (path_is_dir (path))
-    {
-    }
-    else
-    {
-      mkdir (path, 0777);
-    }
-    dm_set_path (files, path, location);
-    free (path);
-    focused_no = 0;
-    layout_find_item = 0;
-  }
-}
 
 static void dir_follow_link (CtxEvent *e, void *d1, void *d2)
 {
   char *target = dir_item_link_no (focused_no, layout_focused_link);
   set_location (target);
-
-  //dm_set_path (files, files->path, files->title);
 
   layout_focused_link = 0;
   ctx_set_dirty (e->ctx, 1);
@@ -754,7 +756,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   const char *media_type = ctx_path_get_media_type (new_path); 
   if (!strcmp(media_type, "inode/directory"))
   {
-    dm_set_path (files, new_path, NULL);
+    set_location (new_path);
     itk->focus_no = 0;
   }
   else
@@ -1896,7 +1898,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
           ctx_rectangle (itk->ctx, x - ctx_text_width (itk->ctx, " ")/2, y - itk->font_size, ctx_text_width (itk->ctx, word) + ctx_text_width (itk->ctx, " "), itk->font_size * 1.2);
           char *href = string_link_no (d_name, was_no);
           ctx_listen_with_finalize (itk->ctx, CTX_CLICK,
-                          goto_link, href, NULL, free, NULL);
+                          goto_link, href, NULL, (void*)free, NULL);
           ctx_listen_set_cursor (itk->ctx, CTX_CURSOR_HAND);
           ctx_begin_path (itk->ctx);
 
@@ -1939,6 +1941,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
     break;
         if (!visible_markup)
           break;
+        /* FALLTHROUGH */
       default:
 
       if (visible_markup)
@@ -2821,16 +2824,15 @@ static void dir_layout (ITK *itk, Files *files)
           break;
         case CTX_ATOM_NEWPAGE:
         case CTX_ATOM_STARTPAGE:
+          layout_box_count = 0;
+          layout_box_no = 0;
+          layout_box[0].x = 0.05;
+          layout_box[0].y = 0.02;
+          layout_box[0].width = 0.9;
+          layout_box[0].height = 4000.0;
 
-
-  layout_box_count = 0;
-  layout_box_no = 0;
-  layout_box[0].x = 0.05;
-  layout_box[0].y = 0.02;
-  layout_box[0].width = 0.9;
-  layout_box[0].height = 4000.0;
-
-          if (!layout_config.codes) hidden = 1;
+          if (!layout_config.codes)
+             hidden = 1;
           break;
       }
 
@@ -2848,7 +2850,6 @@ static void dir_layout (ITK *itk, Files *files)
           label = layout_config.label;
       }
 
-
       int gotpos = 0;
       char *xstr = metadata_key_string2 (i, "x");
       char *ystr = metadata_key_string2 (i, "y");
@@ -2865,7 +2866,7 @@ static void dir_layout (ITK *itk, Files *files)
 
       float x = metadata_key_float2 (i, "x", 0.0);
       float y = metadata_key_float2 (i, "y", 0.0);
-      float opacity = metadata_key_float2 (i, "opacity", 1.0f);
+      //float opacity = metadata_key_float2 (i, "opacity", 1.0f);
 
       if (xstr)
       {
@@ -3002,8 +3003,8 @@ static void dir_layout (ITK *itk, Files *files)
         case CTX_ATOM_NEWPAGE:    d_name = "newpage"; break;
         case CTX_ATOM_STARTPAGE:  d_name = "startpage"; break;
       }
-    if (atom != CTX_ATOM_FILE &&
-        atom != CTX_ATOM_RECTANGLE || layout_config.outliner)
+    if ((atom != CTX_ATOM_FILE &&
+         atom != CTX_ATOM_RECTANGLE) || layout_config.outliner)
     {
       atom = CTX_ATOM_TEXT;
       label = 0;
@@ -3378,7 +3379,7 @@ static void dir_layout (ITK *itk, Files *files)
           char *fill       = metadata_key_string2(i, "fill");
           char *stroke     = metadata_key_string2(i, "stroke");
           float line_width = metadata_key_float2(i, "line-width", 1.0);
-          float opacity    = metadata_key_float2(i, "opacity", 1.0);
+          //float opacity    = metadata_key_float2(i, "opacity", 1.0);
 
           ctx_rectangle (itk->ctx, itk->x, itk->y, width, height);
           if (fill)
@@ -3867,7 +3868,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
 
     if (*arg == 0)
     {
-      dm_set_path (files, "/home/pippin", NULL);
+      set_location (getenv ("HOME"));
       layout_find_item = 0;
     }
     else if (!strcmp (arg, ".."))
@@ -3878,12 +3879,12 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
     {
       if (arg[0] == '/')
       {
-        dm_set_path (files, arg, NULL);
+        set_location (arg);
       }
       else
       {
         char *new_path = ctx_strdup_printf ("%s/%s", files->path, arg);
-        dm_set_path (files, new_path, NULL);
+        set_location (new_path);
         free (new_path);
       }
       layout_find_item = 0;
@@ -3974,7 +3975,7 @@ static void dir_location_right (CtxEvent *e, void *d1, void *d2)
     commandline_cursor_start = c_end + 1;
   else
     commandline_cursor_start = c_end;
-  if (commandline_cursor_start > strlen (commandline->str))
+  if (commandline_cursor_start > (int)strlen (commandline->str))
     commandline_cursor_start = strlen (commandline->str);
   commandline_cursor_end = commandline_cursor_start;
   e->stop_propagate = 1;
@@ -3984,7 +3985,7 @@ static void dir_location_right (CtxEvent *e, void *d1, void *d2)
 static void dir_location_extend_sel_right (CtxEvent *e, void *d1, void *d2)
 {
   commandline_cursor_end ++;
-  if (commandline_cursor_end > strlen (commandline->str))
+  if (commandline_cursor_end > (int) strlen (commandline->str))
     commandline_cursor_end = strlen (commandline->str);
 
   e->stop_propagate = 1;
@@ -4592,7 +4593,6 @@ static int card_files (ITK *itk_, void *data)
         float tx = x;
         ctx_rgba (ctx, 1,1,0,0.9);
         {
-          char name[64];
           char *n = &binding[i].nick[0];
 
           if (!strncmp (n, "alt-", 4))
@@ -4709,8 +4709,7 @@ int ctx_dir_main (int argc, char **argv)
   signal (SIGCHLD, ctx_clients_signal_child);
 
   set_layout (NULL, NULL, NULL);
-  //set_outline (NULL, NULL, NULL);
-  dm_set_path (files, path?path:"./", NULL);
+  set_location (path);
   itk_main (card_files, NULL);
 
   ctx_string_free (commandline, 1);
