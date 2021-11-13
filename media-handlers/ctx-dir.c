@@ -105,7 +105,7 @@ typedef struct Files {
   struct  dirent **namelist;
   int     n;
 
-  char  **items;
+  //char  **items;
   int     count;
 
 
@@ -336,20 +336,8 @@ void dm_set_path (Files *files, const char *path, const char *title)
   files->n = scandir (files->path, &files->namelist, NULL, custom_sort);
   metadata_load (resolved_path);
 
-  if (files->items)
-  {
-     for (int i = 0; i < files->count; i++)
-       free (files->items[i]);
-     free (files->items);
-  }
-  int meta_count = metadata_count ();
-  files->count = 0;
-  files->items = calloc (sizeof (char*), files->n + meta_count + 1);
-  int pos;
-  for (pos = 0; pos < meta_count; pos++)
-  {
-    files->items[files->count++] = metadata_item_name (pos);
-  }
+  files->count = metadata_count ();
+
 
 #if 0
   {
@@ -395,7 +383,6 @@ void dm_set_path (Files *files, const char *path, const char *title)
     char *name = to_add->data;
     int n = metadata_insert(-1, name);
     metadata_set (n, "type", "ctx/file");
-    files->items[files->count++] = name;
     ctx_list_remove (&to_add, name);
     added++;
   }
@@ -663,7 +650,8 @@ static int layout_focused_link = -1;
 
 static int dir_item_count_links (int i)
 {
-  char *p = files->items[i];
+  char *name = metadata_item_name (i);
+  char *p = name;
   int in_link = 0;
   int count = 0;
   while (*p)
@@ -680,6 +668,7 @@ static int dir_item_count_links (int i)
     }
     p++;
   }
+  free (name);
   return count;
 }
 
@@ -750,7 +739,10 @@ static char *string_link_no (const char *string, int link_no)
 
 static char *dir_item_link_no (int item, int link_no)
 {
-  return string_link_no (files->items[item], link_no);
+  char *name = metadata_item_name (item);
+  char *ret = string_link_no (name, link_no);
+  free (name);
+  return ret;
 }
 
 static const char *ctx_basedir (void)
@@ -820,16 +812,17 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   }
 
   char *new_path;
+  char *name = metadata_item_name (no);
 
-  if (!strcmp (files->items[no], ".."))
+  if (!strcmp (name, ".."))
   {
     dir_go_parent (e, d1, d2);
+    free (name);
     return;
   }
   else
   {
-    new_path = ctx_strdup_printf ("%s/%s", files->path, 
-                                  files->items[no]);
+    new_path = ctx_strdup_printf ("%s/%s", files->path, name);
   }
   const char *media_type = ctx_path_get_media_type (new_path); 
   if (!strcmp(media_type, "inode/directory"))
@@ -839,8 +832,9 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   }
   else
   {
-    viewer_load_path (new_path, files->items[no]);
+    viewer_load_path (new_path, name);
   }
+  free (name);
   free (new_path);
 
   if (e)
@@ -952,7 +946,9 @@ static void item_duplicate(CtxEvent *e, void *d1, void *d2)
   int insert_pos = no + count;
   for (int i = 0; i < count; i ++)
   {
-    metadata_insert (insert_pos + i, files->items[no + i]);
+    char *name = metadata_item_name (no + 1);
+    metadata_insert (insert_pos + i, name);
+    free (name);
     int keys = metadata_item_key_count (no + i);
     for (int k = 0; k < keys; k++)
     {
@@ -2100,8 +2096,8 @@ void text_edit_stop (CtxEvent *event, void *a, void *b)
 
 void text_edit_return (CtxEvent *event, void *a, void *b)
 {
-  char *str = strdup (files->items[focused_no]);
-  metadata_insert (focused_no+1, files->items[focused_no]);
+  char *str = metadata_item_name (focused_no);
+  metadata_insert (focused_no+1, str);
 
   if (metadata_key_int (focused_no, "bullet", 0))
   {
@@ -2137,7 +2133,9 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
   {
     if (text_edit>0)
     {
-      CtxString *str = ctx_string_new (files->items[focused_no]);
+      char *name = metadata_item_name (focused_no);
+      CtxString *str = ctx_string_new (name);
+      free (name);
       ctx_string_remove (str, text_edit-1);
       metadata_rename (focused_no, str->str);
       ctx_string_free (str, 1);
@@ -2148,9 +2146,13 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
             (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
             )
     {
-      CtxString *str = ctx_string_new (files->items[focused_no-1]);
+      char *name_prev = metadata_item_name (focused_no-1);
+      char *name = metadata_item_name (focused_no);
+      CtxString *str = ctx_string_new (name_prev);
       text_edit = strlen (str->str);
-      ctx_string_append_str (str, files->items[focused_no]);
+      ctx_string_append_str (str, name);
+      free (name);
+      free (name_prev);
       metadata_rename (focused_no-1, str->str);
       ctx_string_free (str, 1);
       metadata_remove (focused_no);
@@ -2167,12 +2169,17 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
 void text_edit_delete (CtxEvent *event, void *a, void *b)
 {
   if (focused_no>=0){
-    CtxString *str = ctx_string_new (files->items[focused_no]);
+
+    char *name = metadata_item_name (focused_no);
+    CtxString *str = ctx_string_new (name);
+    free (name);
     if (text_edit == (int)strlen(str->str))
     {
       if (item_get_type_atom (focused_no+1) == CTX_ATOM_TEXT)
       {
-        ctx_string_append_str (str, files->items[focused_no+1]);
+        char *name_next = metadata_item_name (focused_no+1);
+        ctx_string_append_str (str, name_next);
+        free (name_next);
         metadata_remove (focused_no+1);
       }
     }
@@ -2195,7 +2202,9 @@ void text_edit_shift_return (CtxEvent *event, void *a, void *b)
   if (focused_no>=0){
     const char *insertedA = "\\";
     const char *insertedB = "n";
-    CtxString *str = ctx_string_new (files->items[focused_no]);
+    char *name = metadata_item_name (focused_no);
+    CtxString *str = ctx_string_new (name);
+    free (name);
     ctx_string_insert_utf8 (str, text_edit, insertedB);
     ctx_string_insert_utf8 (str, text_edit, insertedA);
     metadata_rename (focused_no, str->str);
@@ -2220,8 +2229,9 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
   if (ctx_utf8_strlen (inserted) > 1)
     return;
   if (focused_no>=0){
-
-    CtxString *str = ctx_string_new (files->items[focused_no]);
+    char *name = metadata_item_name (focused_no);
+    CtxString *str = ctx_string_new (name);
+    free (name);
     ctx_string_insert_utf8 (str, text_edit, inserted);
     metadata_rename (focused_no, str->str);
     ctx_string_free (str, 1);
@@ -2235,7 +2245,9 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
 
 void text_edit_right (CtxEvent *event, void *a, void *b)
 {
-  int len = ctx_utf8_strlen (files->items[focused_no]);
+  char *name = metadata_item_name (focused_no);
+  int len = ctx_utf8_strlen (name);
+  free (name);
   text_edit_desired_x = -100;
 
   text_edit ++;
@@ -2265,7 +2277,8 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit < 0)
   {
-    if (files->items[focused_no][0]==0 &&
+    char *name = metadata_item_name (focused_no);
+    if (name[0]==0 &&
         item_get_type_atom (focused_no-1) == CTX_ATOM_STARTGROUP &&
         item_get_type_atom (focused_no+1) == CTX_ATOM_ENDGROUP)
     {
@@ -2279,7 +2292,9 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
     else if (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
 
     {
-      text_edit=ctx_utf8_strlen(files->items[focused_no-1]);
+      char *name = metadata_item_name (focused_no-1);
+      text_edit=ctx_utf8_strlen(name);
+      free (name);
       layout_find_item = focused_no -1;
       itk->focus_no = -1;
     }
@@ -2287,6 +2302,7 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
     {
       text_edit = 0;
     }
+    free (name);
   }
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -2300,7 +2316,9 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
   {
     if (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
     {
-      text_edit=ctx_utf8_strlen(files->items[focused_no-1]);
+      char *name = metadata_item_name (focused_no-1);
+      text_edit=ctx_utf8_strlen(name);
+      free (name);
       focused_no--;
       itk->focus_no--;
     }
@@ -2351,7 +2369,8 @@ void text_edit_home (CtxEvent *event, void *a, void *b)
 void text_edit_end (CtxEvent *event, void *a, void *b)
 {
   text_edit_desired_x = -100;
-  text_edit = ctx_utf8_strlen (files->items[focused_no]);
+  char *name = metadata_item_name (focused_no);
+  text_edit = ctx_utf8_strlen (name);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -2379,8 +2398,9 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   //text_edit=strlen(files->items[focused_no-1]);
   //
   //
+  char *name = metadata_item_name (focused_no);
 
-  if (files->items[focused_no][0]==0 &&
+  if (name[0]==0 &&
       (focused_no+1 >= files->count ||
       item_get_type_atom (focused_no+1) == CTX_ATOM_ENDGROUP))
     {
@@ -2389,7 +2409,6 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
       if (was_editing_before_tail)
       {
         text_edit = TEXT_EDIT_FIND_CURSOR_LAST_ROW;
-        fprintf (stderr, "yp!\n");
       }
       else
         text_edit = TEXT_EDIT_OFF;
@@ -2400,6 +2419,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
     {
       text_edit = TEXT_EDIT_FIND_CURSOR_LAST_ROW;
     }
+  free (name);
   layout_find_item = focused_no - 1;
   itk->focus_no = -1;
 
@@ -2491,8 +2511,10 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
 
   if (item_get_type_atom (focused_no+1) != CTX_ATOM_TEXT)
   {
-    if (files->items[focused_no][0])
+    char *str = metadata_item_name (focused_no);
+    if (str[0])
       make_tail_entry ();
+    free (str);
     ctx_set_dirty (event->ctx, 1);
     event->stop_propagate=1;
     return;
@@ -2863,6 +2885,7 @@ static void dir_layout (ITK *itk, Files *files)
 
   for (int i = 0; i < files->count; i++)
   {
+      char *d_name = metadata_item_name (i);
       if (layout_find_item == i)
       {
 
@@ -2885,7 +2908,6 @@ static void dir_layout (ITK *itk, Files *files)
         focused_no = i;
       }
 
-      const char *d_name = files->items[i];
       float width = 0;
       float height = 0;
       
@@ -3086,18 +3108,18 @@ static void dir_layout (ITK *itk, Files *files)
   {
       switch (atom)
       {
-        case CTX_ATOM_RECTANGLE: d_name = "rectangle"; break;
+        case CTX_ATOM_RECTANGLE: free(d_name);d_name = strdup("rectangle"); break;
         case CTX_ATOM_TEXT:      break;
         case CTX_ATOM_FILE: break;
-        case CTX_ATOM_CTX:       d_name = "ctx"; break;
-        case CTX_ATOM_LAYOUTBOX: d_name = "layoutbox"; break;
-        case CTX_ATOM_STARTGROUP: d_name = "startgroup";
+        case CTX_ATOM_CTX:       free(d_name);d_name = strdup("ctx"); break;
+        case CTX_ATOM_LAYOUTBOX: free(d_name);d_name = strdup("layoutbox"); break;
+        case CTX_ATOM_STARTGROUP: free(d_name);d_name = strdup("startgroup");
                                   if (layout_config.outliner)
                                     level--; 
                                   break;
-        case CTX_ATOM_ENDGROUP:   d_name = "endgroup"; break;
-        case CTX_ATOM_NEWPAGE:    d_name = "newpage"; break;
-        case CTX_ATOM_STARTPAGE:  d_name = "startpage"; break;
+        case CTX_ATOM_ENDGROUP:   free(d_name);d_name = strdup("endgroup"); break;
+        case CTX_ATOM_NEWPAGE:    free(d_name);d_name = strdup("newpage"); break;
+        case CTX_ATOM_STARTPAGE:  free(d_name);d_name = strdup("startpage"); break;
       }
     if ((atom != CTX_ATOM_FILE &&
          atom != CTX_ATOM_RECTANGLE) || layout_config.outliner)
@@ -3579,8 +3601,8 @@ static void dir_layout (ITK *itk, Files *files)
 
       if (label)
       {
-      char *title = malloc (strlen (files->items[i]) + 32);
-      strcpy (title, files->items[i]);
+      char *title = malloc (strlen (d_name) + 32);
+      strcpy (title, d_name);
       int title_len = strlen (title);
       {
         int wraplen = 10;
@@ -3701,6 +3723,7 @@ static void dir_layout (ITK *itk, Files *files)
       }
 
       }
+      free (d_name);
   }
 
   ctx_restore (itk->ctx);
