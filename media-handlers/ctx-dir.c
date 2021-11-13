@@ -385,7 +385,11 @@ void dm_set_path (Files *files, const char *path, const char *title)
     metadata_set (n, "type", "ctx/file");
     ctx_list_remove (&to_add, name);
     added++;
+    files->count++;
   }
+
+  // TODO remove non-existent files
+
   //if (added)
   //  metadata_dirt();
 }
@@ -405,6 +409,7 @@ static void metadata_dirt(void)
   metadata_dirty++;
   metadata_cache_no=-3;
   metadata_save ();
+  files->count = metadata_count ();
 //  save_metadata ();
 }
 

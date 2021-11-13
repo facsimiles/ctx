@@ -102,61 +102,6 @@ static char *metadata_item_name_escaped (int no)
   return NULL;
 }
 
-static char *metadata_item_name (int no)
-{
-  const char *m = metadata;
-  if (!m) return NULL;
-  int count = 0;
-  do {
-     if (m && m[0] != ' '){
-        if (count == no)
-        {
-          CtxString *str = ctx_string_new ("");
-          for (int i = 0; m[i] && (m[i]!='\n'); i++)
-          {
-            switch (m[i])
-            {
-              case '\\':
-                if (m[i+1])
-                {
-                  switch (m[i+1])
-                  {
-                    case 'n':
-                      ctx_string_append_byte (str, '\n');
-                      break;
-                    case ' ':
-                      ctx_string_append_byte (str, ' ');
-                      break;
-                    case '.':
-                      ctx_string_append_byte (str, '.');
-                      break;
-                    //case '-': // soft-hyphen
-                    //  ctx_string_append_byte (str, '.');
-                    //  break;
-                    default:
-                      ctx_string_append_byte (str, m[i+1]);
-                  }
-                  i++;
-                }
-                else
-                {
-                  ctx_string_append_byte (str, m[i]);
-                }
-                break;
-              default:
-                ctx_string_append_byte (str, m[i]);
-            }
-          }
-          return ctx_string_dissolve (str);
-        }
-        count ++;
-     }
-     while (m && *m && *m != '\n') m++;
-     if (*m == '\n') m++;
-  } while (m && m[0]);
-  return NULL;
-}
-
 static char *metadata_find_no (int no)
 {
   char *m = metadata;
@@ -200,6 +145,56 @@ static char *metadata_find_no (int no)
   }
   return NULL;
 }
+
+static char *metadata_item_name (int no)
+{
+  /* this makes use reuse the cache */
+  const char *m = metadata_find_no (no);
+  if (!m) return NULL;
+  m--;
+  m--;
+  while (m[0]!='\n' && m != metadata)m--;
+  if (m !=metadata) m++;
+
+  CtxString *str = ctx_string_new ("");
+  for (int i = 0; m[i] && (m[i]!='\n'); i++)
+  {
+    switch (m[i])
+    {
+      case '\\':
+        if (m[i+1])
+        {
+          switch (m[i+1])
+          {
+            case 'n':
+              ctx_string_append_byte (str, '\n');
+              break;
+            case ' ':
+              ctx_string_append_byte (str, ' ');
+              break;
+            case '.':
+              ctx_string_append_byte (str, '.');
+              break;
+            //case '-': // soft-hyphen
+            //  ctx_string_append_byte (str, '.');
+            //  break;
+            default:
+              ctx_string_append_byte (str, m[i+1]);
+          }
+          i++;
+        }
+        else
+        {
+          ctx_string_append_byte (str, m[i]);
+        }
+        break;
+      default:
+        ctx_string_append_byte (str, m[i]);
+    }
+  }
+  return ctx_string_dissolve (str);
+}
+
 
 static int _metadata_metalen (const char *m)
 {
