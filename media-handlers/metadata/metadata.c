@@ -78,7 +78,7 @@ static int metadata_count (void)
   return count;
 }
 
-static char *metadata_item_name_escaped (int no)
+static char *metadata_get_name_escaped (int no)
 {
   const char *m = metadata;
   if (!m) return NULL;
@@ -146,7 +146,7 @@ static char *metadata_find_no (int no)
   return NULL;
 }
 
-static char *metadata_item_name (int no)
+static char *metadata_get_name (int no)
 {
   /* this makes use reuse the cache */
   const char *m = metadata_find_no (no);
@@ -380,8 +380,8 @@ static void metadata_swap (int no_a, int no_b)
      no_a = no_b; no_b = tmp;
    }
 
-   char *a_name = metadata_item_name_escaped (no_a);
-   char *b_name = metadata_item_name_escaped (no_b);
+   char *a_name = metadata_get_name_escaped (no_a);
+   char *b_name = metadata_get_name_escaped (no_b);
    int a_name_len = strlen (a_name);
    int b_name_len = strlen (b_name);
    const char *a_meta = metadata_find_no (no_a);
@@ -421,7 +421,7 @@ static void metadata_swap (int no_a, int no_b)
 
 void metadata_remove (int no)
 {
-   char *a_name = metadata_item_name_escaped (no);
+   char *a_name = metadata_get_name_escaped (no);
    int a_name_len = strlen (a_name);
    const char *a_meta = metadata_find_no (no);
 
@@ -502,7 +502,7 @@ int metadata_insert (int pos, const char *item)
   const char *m = metadata_find_no (pos);
   if (m)
   {
-    char *name = metadata_item_name_escaped (pos);
+    char *name = metadata_get_name_escaped (pos);
     m -= strlen (name) + 1;
     free (name);
   }
@@ -519,12 +519,12 @@ int metadata_insert (int pos, const char *item)
   return pos;
 }
 
-void metadata_rename (int pos, const char *new_name)
+void metadata_set_name (int pos, const char *new_name)
 {
   char *m = metadata_find_no (pos);
   if (m)
   {
-    char *name = metadata_item_name_escaped (pos);
+    char *name = metadata_get_name_escaped (pos);
     int name_len = strlen (name);
     free (name);
 
@@ -598,7 +598,7 @@ void metadata_dump (void)
   fprintf (stdout, "item count: %i\n", item_count);
   for (int i = 0; i < item_count; i ++)
   {
-    char *item_name = metadata_item_name (i);
+    char *item_name = metadata_get_name (i);
     fprintf (stdout, "%i : %s : %i\n", i, item_name, metadata_item_to_no (item_name));
     int keys = metadata_item_key_count (i);
     for (int k = 0; k < keys; k ++)
