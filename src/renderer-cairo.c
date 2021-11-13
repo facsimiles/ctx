@@ -227,6 +227,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
             }
           cairo_set_operator (cr, cairo_val);
         }
+        break;
       case CTX_LINE_JOIN:
         {
           int cairo_val = CAIRO_LINE_JOIN_ROUND;

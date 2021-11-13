@@ -50,7 +50,7 @@ ctx_invsqrtf (float x)
 {
   void *foo = &x;
   float xhalf = 0.5f * x;
-  int i=* (int *) foo;
+  int i=* ((int *) foo);
   void *bar = &i;
   i = 0x5f3759df - (i >> 1);
   x = * (float *) bar;

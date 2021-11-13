@@ -132,8 +132,7 @@ int ctx_text_main(int argc, char *argv[])
 
   ctx = ctx_new_ui (-1, -1);
 
-  char eid[65]="";
-
+  //char eid[65]="";
 
   float cursor_translate = ctx_height (ctx) * 0.25;
   float shift_cursor_translate = 1;//cursor_translate / 8;

@@ -2611,16 +2611,12 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   if (rasterizer->term_glyphs)
   {
     float tx = 0;
-    float ty = rasterizer->state->gstate.font_size;
-    float txb = 0;
-    float tyb = 0;
+    font_size = rasterizer->state->gstate.font_size;
 
     ch = ctx_term_get_cell_height (rasterizer->ctx);
     cw = ctx_term_get_cell_width (rasterizer->ctx);
 
-    _ctx_user_to_device (rasterizer->state, &tx, &ty);
-    _ctx_user_to_device (rasterizer->state, &txb, &tyb);
-    font_size = ty-tyb;
+    _ctx_user_to_device_distance (rasterizer->state, &tx, &font_size);
   }
   if (rasterizer->term_glyphs && !stroke &&
       fabs (font_size - ch) < 0.5)
@@ -2643,7 +2639,6 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   _ctx_glyph (rasterizer->ctx, unichar, stroke);
 }
 
-
 static void
 _ctx_text (Ctx        *ctx,
            const char *string,
@@ -2656,10 +2651,9 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
   float font_size = 0;
   if (rasterizer->term_glyphs)
   {
-  float tx = 0;
-  float ty = rasterizer->state->gstate.font_size;
-  _ctx_user_to_device (rasterizer->state, &tx, &ty);
-  font_size = ty;
+    float tx = 0;
+    font_size = rasterizer->state->gstate.font_size;
+    _ctx_user_to_device_distance (rasterizer->state, &tx, &font_size);
   }
   int   ch = ctx_term_get_cell_height (rasterizer->ctx);
   int   cw = ctx_term_get_cell_width (rasterizer->ctx);
