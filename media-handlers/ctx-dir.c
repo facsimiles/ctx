@@ -499,7 +499,27 @@ static CtxList *future = NULL;
 
 static void _set_location (const char *location)
 {
-  if (location[0] == '/' || location[0] == '.')
+  if (location[0] == '~' && location[1] == '0')
+  {
+    if (path_is_dir (getenv ("HOME")))
+    {
+      dm_set_path (files, getenv ("HOME"), NULL);
+      focused_no = -1;
+      layout_find_item = 0;
+    }
+  }
+  else if (location[0] == '~')
+  {
+    char *tpath = ctx_strdup_printf ("%s/%s", getenv("HOME"), &location[2]);
+    if (path_is_dir (tpath))
+    {
+      dm_set_path (files, tpath, NULL);
+      focused_no = -1;
+      layout_find_item = 0;
+    }
+    free (tpath);
+  }
+  else if (location[0] == '/' || location[0] == '.')
   {
     if (path_is_dir (location))
     {
@@ -2082,6 +2102,13 @@ void text_edit_return (CtxEvent *event, void *a, void *b)
 {
   char *str = strdup (files->items[focused_no]);
   metadata_insert (focused_no+1, files->items[focused_no]);
+
+  if (metadata_key_int (focused_no, "bullet", 0))
+  {
+    metadata_set_float (focused_no+1, "bullet",
+                      metadata_key_int (focused_no, "bullet", 0));
+  }
+
   metadata_dirt ();
 
   metadata_rename (focused_no+1, str + text_edit);
