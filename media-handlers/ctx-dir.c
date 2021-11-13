@@ -2358,6 +2358,7 @@ void text_edit_end (CtxEvent *event, void *a, void *b)
 
 int prev_line_pos = 0;
 int next_line_pos = 0;
+int was_editing_before_tail = 0;
 
 void text_edit_up (CtxEvent *event, void *a, void *b)
 {
@@ -2383,14 +2384,22 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
       (focused_no+1 >= files->count ||
       item_get_type_atom (focused_no+1) == CTX_ATOM_ENDGROUP))
     {
-      text_edit = 0;
       int next_focus = dir_prev_sibling (focused_no);
       item_delete (event, (void*)(size_t)focused_no, NULL);
+      if (was_editing_before_tail)
+      {
+        text_edit = TEXT_EDIT_FIND_CURSOR_LAST_ROW;
+        fprintf (stderr, "yp!\n");
+      }
+      else
+        text_edit = TEXT_EDIT_OFF;
       focused_no = next_focus+1;
       metadata_dirt();
     }
-
-  text_edit = TEXT_EDIT_FIND_CURSOR_LAST_ROW;
+  else
+    {
+      text_edit = TEXT_EDIT_FIND_CURSOR_LAST_ROW;
+    }
   layout_find_item = focused_no - 1;
   itk->focus_no = -1;
 
@@ -2457,6 +2466,7 @@ void dir_next_page (CtxEvent *event, void *a, void *b)
 
 int item_context_active = 0;
 
+
 static void
 make_tail_entry ()
 {
@@ -2464,6 +2474,7 @@ make_tail_entry ()
   metadata_dirt ();
   layout_find_item = focused_no = dir_next_sibling (focused_no);
   itk->focus_no = -1;
+  was_editing_before_tail = (text_edit != TEXT_EDIT_OFF);
   text_edit = 0;
 }
 
