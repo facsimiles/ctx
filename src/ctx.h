@@ -534,8 +534,9 @@ typedef enum
 
 typedef enum
 {
-  CTX_TEXT_ALIGN_START = 0,
-  CTX_TEXT_ALIGN_END,
+  CTX_TEXT_ALIGN_START = 0,  // in mrg these didnt exist
+  CTX_TEXT_ALIGN_END,        // but left/right did
+  CTX_TEXT_ALIGN_JUSTIFY, // not handled in ctx
   CTX_TEXT_ALIGN_CENTER,
   CTX_TEXT_ALIGN_LEFT,
   CTX_TEXT_ALIGN_RIGHT

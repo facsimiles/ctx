@@ -4,16 +4,16 @@
 
 #if CTX_EVENTS
 
-#define MRG_MAX_STYLE_DEPTH  CTX_MAX_STATES
-#define MRG_MAX_STATE_DEPTH  CTX_MAX_STATES
-#define MRG_MAX_FLOATS           16
-#define MRG_MAX_SELECTOR_LENGTH  64
-#define MRG_MAX_CSS_STRINGLEN    512
-#define MRG_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
-#define MRG_MAX_CSS_RULES        128
+#define CTX_MAX_STYLE_DEPTH  CTX_MAX_STATES
+#define CTX_MAX_STATE_DEPTH  CTX_MAX_STATES
+#define CTX_MAX_FLOATS           16
+#define CTX_MAX_SELECTOR_LENGTH  64
+#define CTX_MAX_CSS_STRINGLEN    512
+#define CTX_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
+#define CTX_MAX_CSS_RULES        128
 
 /* other important maximums */
-#define MRG_MAX_TEXT_LISTEN      256
+#define CTX_MAX_TEXT_LISTEN      256
 #define CTX_XML_INBUF_SIZE       1024
 
 #define PROP(a)          (ctx_get_float(mrg->ctx, CTX_##a))
@@ -460,7 +460,7 @@ struct _MrgHtmlState
   float        block_start_y;
   float        ptly;
   float        vmarg;
-  CtxFloatData float_data[MRG_MAX_FLOATS];
+  CtxFloatData float_data[CTX_MAX_FLOATS];
   int          floats;
 };
 
@@ -472,7 +472,7 @@ struct _MrgHtml
 {
   Mrg *mrg;
   int foo;
-  MrgHtmlState  states[MRG_MAX_STYLE_DEPTH];
+  MrgHtmlState  states[CTX_MAX_STYLE_DEPTH];
   MrgHtmlState *state;
   int state_no;
   CtxList *geo_cache;
@@ -500,26 +500,26 @@ struct _MrgColor {
 };
 
 typedef enum {
-  MRG_DISPLAY_INLINE = 0,
-  MRG_DISPLAY_BLOCK,
-  MRG_DISPLAY_LIST_ITEM,
-  MRG_DISPLAY_NONE,
-  MRG_DISPLAY_INLINE_BLOCK,
-  MRG_DISPLAY_FLEX,
-  MRG_DISPLAY_GRID,
-  MRG_DISPLAY_INLINE_FLEX,
-  MRG_DISPLAY_INLINE_GRID,
-  MRG_DISPLAY_INLINE_TABLE,
-  MRG_DISPLAY_RUN_IN,
-  MRG_DISPLAY_TABLE,
-  MRG_DISPLAY_TABLE_CAPTION,
-  MRG_DISPLAY_TABLE_COLUMN_GROUP,
-  MRG_DISPLAY_TABLE_HEADER_GROUP,
-  MRG_DISPLAY_TABLE_FOOTER_GROUP,
-  MRG_DISPLAY_TABLE_ROW_GROUP,
-  MRG_DISPLAY_TABLE_CELL,
-  MRG_DISPLAY_TABLE_COLUMN
-} MrgDisplay;
+  CTX_DISPLAY_INLINE = 0,
+  CTX_DISPLAY_BLOCK,
+  CTX_DISPLAY_LIST_ITEM,
+  CTX_DISPLAY_NONE,
+  CTX_DISPLAY_INLINE_BLOCK,
+  CTX_DISPLAY_FLEX,
+  CTX_DISPLAY_GRID,
+  CTX_DISPLAY_INLINE_FLEX,
+  CTX_DISPLAY_INLINE_GRID,
+  CTX_DISPLAY_INLINE_TABLE,
+  CTX_DISPLAY_RUN_IN,
+  CTX_DISPLAY_TABLE,
+  CTX_DISPLAY_TABLE_CAPTION,
+  CTX_DISPLAY_TABLE_COLUMN_GROUP,
+  CTX_DISPLAY_TABLE_HEADER_GROUP,
+  CTX_DISPLAY_TABLE_FOOTER_GROUP,
+  CTX_DISPLAY_TABLE_ROW_GROUP,
+  CTX_DISPLAY_TABLE_CELL,
+  CTX_DISPLAY_TABLE_COLUMN
+} CtxDisplay;
 
 /* matches cairo order */
 typedef enum
@@ -545,59 +545,53 @@ typedef enum
 /* matching nchanterm definitions */
 
 typedef enum {
-  MRG_REGULAR     = 0,
-  MRG_BOLD        = (1 << 0),
-  MRG_DIM         = (1 << 1),
-  MRG_UNDERLINE   = (1 << 2),
-  MRG_REVERSE     = (1 << 3),
-  MRG_OVERLINE    = (1 << 4),
-  MRG_LINETHROUGH = (1 << 5),
-  MRG_BLINK       = (1 << 6)
-} MrgTextDecoration;
+  CTX_TEXT_DECORATION_REGULAR     = 0,
+  CTX_TEXT_DECORATION_BOLD        = (1 << 0),
+  CTX_TEXT_DECORATION_DIM         = (1 << 1),
+  CTX_TEXT_DECORATION_UNDERLINE   = (1 << 2),
+  CTX_TEXT_DECORATION_REVERSE     = (1 << 3),
+  CTX_TEXT_DECORATION_OVERLINE    = (1 << 4),
+  CTX_TEXT_DECORATION_LINETHROUGH = (1 << 5),
+  CTX_TEXT_DECORATION_BLINK       = (1 << 6)
+} CtxTextDecoration;
 
 typedef enum {
-  MRG_POSITION_STATIC = 0,
-  MRG_POSITION_RELATIVE,
-  MRG_POSITION_FIXED,
-  MRG_POSITION_ABSOLUTE
+  CTX_POSITION_STATIC = 0,
+  CTX_POSITION_RELATIVE,
+  CTX_POSITION_FIXED,
+  CTX_POSITION_ABSOLUTE
 } CtxPosition;
 
 typedef enum {
-  MRG_OVERFLOW_VISIBLE = 0,
-  MRG_OVERFLOW_HIDDEN,
-  MRG_OVERFLOW_SCROLL,
-  MRG_OVERFLOW_AUTO
-} MrgOverflow;
+  CTX_OVERFLOW_VISIBLE = 0,
+  CTX_OVERFLOW_HIDDEN,
+  CTX_OVERFLOW_SCROLL,
+  CTX_OVERFLOW_AUTO
+} CtxOverflow;
 
 typedef enum {
-  MRG_CLEAR_NONE = 0,
-  MRG_CLEAR_LEFT,
-  MRG_CLEAR_RIGHT,
-  MRG_CLEAR_BOTH
+  CTX_CLEAR_NONE = 0,
+  CTX_CLEAR_LEFT,
+  CTX_CLEAR_RIGHT,
+  CTX_CLEAR_BOTH
 } CtxClear;
 
-typedef enum {
-  MRG_TEXT_ALIGN_LEFT = 0,
-  MRG_TEXT_ALIGN_RIGHT,
-  MRG_TEXT_ALIGN_JUSTIFY,
-  MRG_TEXT_ALIGN_CENTER
-} MrgTextAlign;
 
 typedef enum {
-  MRG_WHITE_SPACE_NORMAL = 0,
-  MRG_WHITE_SPACE_NOWRAP,
-  MRG_WHITE_SPACE_PRE,
-  MRG_WHITE_SPACE_PRE_LINE,
-  MRG_WHITE_SPACE_PRE_WRAP
+  CTX_WHITE_SPACE_NORMAL = 0,
+  CTX_WHITE_SPACE_NOWRAP,
+  CTX_WHITE_SPACE_PRE,
+  CTX_WHITE_SPACE_PRE_LINE,
+  CTX_WHITE_SPACE_PRE_WRAP
 } CtxWhiteSpace;
 
 typedef enum {
-  MRG_VERTICAL_ALIGN_BASELINE = 0,
-  MRG_VERTICAL_ALIGN_MIDDLE,
-  MRG_VERTICAL_ALIGN_BOTTOM,
-  MRG_VERTICAL_ALIGN_TOP,
-  MRG_VERTICAL_ALIGN_SUB,
-  MRG_VERTICAL_ALIGN_SUPER
+  CTX_VERTICAL_ALIGN_BASELINE = 0,
+  CTX_VERTICAL_ALIGN_MIDDLE,
+  CTX_VERTICAL_ALIGN_BOTTOM,
+  CTX_VERTICAL_ALIGN_TOP,
+  CTX_VERTICAL_ALIGN_SUB,
+  CTX_VERTICAL_ALIGN_SUPER
 } CtxVerticalAlign;
 
 typedef enum {
@@ -638,19 +632,19 @@ typedef enum {
 
 
 typedef enum {
-  MRG_UNICODE_BIDI_NORMAL = 0,
-  MRG_UNICODE_BIDI_EMBED,
-  MRG_UNICODE_BIDI_BIDI_OVERRIDE
+  CTX_UNICODE_BIDI_NORMAL = 0,
+  CTX_UNICODE_BIDI_EMBED,
+  CTX_UNICODE_BIDI_BIDI_OVERRIDE
 } CtxUnicodeBidi;
 
 typedef enum {
-  MRG_VISIBILITY_VISIBLE = 0,
-  MRG_VISIBILITY_HIDDEN
+  CTX_VISIBILITY_VISIBLE = 0,
+  CTX_VISIBILITY_HIDDEN
 } CtxVisibility;
 
 typedef enum {
-  MRG_LIST_STYLE_OUTSIDE = 0,
-  MRG_LIST_STYLE_INSIDE
+  CTX_LIST_STYLE_OUTSIDE = 0,
+  CTX_LIST_STYLE_INSIDE
 } CtxListStyle;
 
 /* This style class should be able to grow to contain some color names with
@@ -670,7 +664,7 @@ struct _CtxStyle {
   MrgFontWeight       font_weight:4;
   CtxLineCap          stroke_linecap:2;
   CtxLineJoin         stroke_linejoin:2;
-  MrgTextAlign        text_align:2;
+  CtxTextAlign        text_align:3;
   CtxPosition         position:2;
   CtxBoxSizing        box_sizing:1;
   CtxVerticalAlign    vertical_align:3;
@@ -681,19 +675,18 @@ struct _CtxStyle {
   CtxClear            clear:2;
   unsigned char       fill:1;
   MrgCursor           cursor:6;
-  MrgTextDecoration   text_decoration:7;
+  CtxTextDecoration   text_decoration:7;
   unsigned char       width_auto:1;
   unsigned char       margin_left_auto:1;
   unsigned char       margin_right_auto:1;
   unsigned char       print_symbols:1;
   CtxFloat            float_:2;
   unsigned char       stroke:1;
-  MrgOverflow         overflow:2;
-  MrgDisplay          display:5;
+  CtxOverflow         overflow:2;
+  CtxDisplay          display:5;
   void               *id_ptr;
 };
 
-typedef struct _MrgString MrgString;
 typedef struct _CtxStyle CtxStyle;
 
 typedef struct MrgState {
@@ -728,8 +721,8 @@ struct _Mrg {
   float            ddpx;
   CtxList         *stylesheet;
   void            *css_parse_state;
-  MrgString       *style;
-  MrgString       *style_global;
+  CtxString       *style;
+  CtxString       *style_global;
   //int          is_press_grabbed;
   int              quit;
   float            x; /* in px */
@@ -738,7 +731,7 @@ struct _Mrg {
   CtxIntRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;
   CtxList         *geo_cache;
-  MrgState         states[MRG_MAX_STATE_DEPTH];
+  MrgState         states[CTX_MAX_STATE_DEPTH];
   int              state_no;
   int              in_paint;
   void            *backend_data;
@@ -759,7 +752,7 @@ struct _Mrg {
     /** text editing state follows **/
   int              text_edited;
   int              got_edit;
-  MrgString       *edited_str;
+  CtxString       *edited_str;
   char           **edited;
 
   int              text_edit_blocked;
@@ -779,13 +772,13 @@ struct _Mrg {
   float            offset_y;
   //cairo_scaled_font_t *scaled_font;
 
-  CtxEventType          text_listen_types[MRG_MAX_TEXT_LISTEN];
-  CtxCb            text_listen_cb[MRG_MAX_TEXT_LISTEN];
-  void            *text_listen_data1[MRG_MAX_TEXT_LISTEN];
-  void            *text_listen_data2[MRG_MAX_TEXT_LISTEN];
+  CtxEventType          text_listen_types[CTX_MAX_TEXT_LISTEN];
+  CtxCb            text_listen_cb[CTX_MAX_TEXT_LISTEN];
+  void            *text_listen_data1[CTX_MAX_TEXT_LISTEN];
+  void            *text_listen_data2[CTX_MAX_TEXT_LISTEN];
 
-  void     (*text_listen_finalize[MRG_MAX_TEXT_LISTEN])(void *listen_data, void *listen_data2, void *finalize_data);
-  void      *text_listen_finalize_data[MRG_MAX_TEXT_LISTEN];
+  void     (*text_listen_finalize[CTX_MAX_TEXT_LISTEN])(void *listen_data, void *listen_data2, void *finalize_data);
+  void      *text_listen_finalize_data[CTX_MAX_TEXT_LISTEN];
   int        text_listen_count;
   int        text_listen_active;
 
@@ -936,31 +929,6 @@ int     xmltok_get     (MrgXml *t, char **data, int *pos);
  */
 
 
-
-struct _MrgString
-{
-  char *str;
-  int   length;
-  int   utf8_length;
-  int   allocated_length;
-}  __attribute((packed));
-
-MrgString   *mrg_string_new_with_size  (const char *initial, int initial_size);
-MrgString   *mrg_string_new            (const char *initial);
-MrgString   *mrg_string_new_printf     (const char *format, ...);
-void         mrg_string_free           (MrgString  *string, int freealloc);
-char        *mrg_string_dissolve       (MrgString  *string);
-const char  *mrg_string_get            (MrgString  *string);
-int          mrg_string_get_length     (MrgString  *string);
-void         mrg_string_set            (MrgString  *string, const char *new_string);
-void         mrg_string_clear          (MrgString  *string);
-void         mrg_string_append_str     (MrgString  *string, const char *str);
-void         mrg_string_append_byte    (MrgString  *string, char  val);
-void         mrg_string_append_string  (MrgString  *string, MrgString *string2);
-void         mrg_string_append_data    (MrgString  *string, const char *data, int len);
-void         mrg_string_append_printf  (MrgString  *string, const char *format, ...);
-
-
 /* mrg - MicroRaptor Gui
  * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
  *
@@ -987,173 +955,12 @@ void         mrg_string_append_printf  (MrgString  *string, const char *format, 
 #include <stdlib.h>
 #include <string.h>
 
-static void mrg_string_init (MrgString *string, int initial_size)
-{
-  string->allocated_length = initial_size;
-  string->length = 0;
-  string->utf8_length = 0;
-  string->str = malloc (string->allocated_length);
-  string->str[0]='\0';
-}
-
-static void mrg_string_destroy (MrgString *string)
-{
-  if (string->str)
-  {
-    free (string->str);
-    string->str = NULL;
-  }
-}
-
-void mrg_string_clear (MrgString *string)
-{
-  string->length = 0;
-  string->utf8_length = 0;
-  string->str[string->length]=0;
-}
-
-static inline void _mrg_string_append_byte (MrgString *string, char  val)
-{
-  if ((val & 0xC0) != 0x80)
-    string->utf8_length++;
-  if (string->length + 1 >= string->allocated_length)
-    {
-      char *old = string->str;
-      string->allocated_length *= 2;
-      string->str = malloc (string->allocated_length);
-      memcpy (string->str, old, string->allocated_length/2);
-      free (old);
-    }
-  string->str[string->length++] = val;
-  string->str[string->length] = '\0';
-}
-void mrg_string_append_byte (MrgString *string, char  val)
-{
-  _mrg_string_append_byte (string, val);
-}
-
-static inline void _mrg_string_append_str (MrgString *string, const char *str)
-{
-  if (!str) return;
-  while (*str)
-    {
-      _mrg_string_append_byte (string, *str);
-      str++;
-    }
-}
-void mrg_string_append_str (MrgString *string, const char *str)
-{
-  _mrg_string_append_str (string, str);
-}
-
-MrgString *mrg_string_new_with_size (const char *initial, int initial_size)
-{
-  MrgString *string = calloc (sizeof (MrgString), 1);
-  mrg_string_init (string, initial_size);
-  if (initial)
-    _mrg_string_append_str (string, initial);
-  return string;
-}
-
-MrgString *mrg_string_new (const char *initial)
-{
-  return mrg_string_new_with_size (initial, 8);
-}
-
-void mrg_string_append_data (MrgString *string, const char *str, int len)
-{
-  int i;
-  for (i = 0; i<len; i++)
-    _mrg_string_append_byte (string, str[i]);
-}
-
-void mrg_string_append_string (MrgString *string, MrgString *string2)
-{
-  const char *str = mrg_string_get (string2);
-  while (str && *str)
-    {
-      _mrg_string_append_byte (string, *str);
-      str++;
-    }
-}
-const char *mrg_string_get (MrgString *string)
-{
-  return string->str;
-}
-int mrg_string_get_length (MrgString *string)
-{
-  return string->length;
-}
-
-/* dissolving a string, means destroying it, but returning
- * the string, that should be manually freed.
- */
-char *mrg_string_dissolve   (MrgString *string)
-{
-  char *ret = string->str;
-  string->str = NULL;
-  free (string);
-  return ret;
-}
-
-void
-mrg_string_free (MrgString *string, int freealloc)
-{
-  if (freealloc)
-    {
-      mrg_string_destroy (string);
-    }
-  free (string);
-}
-
-void
-mrg_string_append_printf (MrgString *string, const char *format, ...)
-{
-  va_list ap;
-  size_t needed;
-  char  *buffer;
-  va_start(ap, format);
-  needed = vsnprintf(NULL, 0, format, ap) + 1;
-  buffer = malloc(needed);
-  va_end (ap);
-  va_start(ap, format);
-  vsnprintf(buffer, needed, format, ap);
-  va_end (ap);
-  _mrg_string_append_str (string, buffer);
-  free (buffer);
-}
-
-MrgString *mrg_string_new_printf (const char *format, ...)
-{
-  MrgString *string = mrg_string_new_with_size ("", 8);
-  va_list ap;
-  size_t needed;
-  char  *buffer;
-  va_start(ap, format);
-  needed = vsnprintf(NULL, 0, format, ap) + 1;
-  buffer = malloc(needed);
-  va_end (ap);
-  va_start(ap, format);
-  vsnprintf(buffer, needed, format, ap);
-  va_end (ap);
-  _mrg_string_append_str (string, buffer);
-  free (buffer);
-  return string;
-}
-
-void
-mrg_string_set (MrgString *string, const char *new_string)
-{
-  mrg_string_clear (string);
-  _mrg_string_append_str (string, new_string);
-}
-
 struct _MrgXml
 {
   FILE      *file_in;
   int        state;
-  MrgString *curdata;
-  MrgString *curtag;
+  CtxString *curdata;
+  CtxString *curtag;
   int        c;
   int        c_held;
 
@@ -1444,7 +1251,7 @@ xmltok_get (MrgXml *t, char **data, int *pos)
   state_entry *s;
 
   init_statetable ();
-  mrg_string_clear (t->curdata);
+  ctx_string_clear (t->curdata);
   while (1)
     {
       if (!t->c_held)
@@ -1467,7 +1274,7 @@ xmltok_get (MrgXml *t, char **data, int *pos)
 
           /*            int sbracket = 0; */
 
-          mrg_string_append_byte (t->curdata, t->c);
+          ctx_string_append_byte (t->curdata, t->c);
 
           while (abracket)
             {
@@ -1478,20 +1285,20 @@ xmltok_get (MrgXml *t, char **data, int *pos)
                 case '<':
                   if ((!squote) && (!dquote))
                     abracket++;
-                  mrg_string_append_byte (t->curdata, t->c);
+                  ctx_string_append_byte (t->curdata, t->c);
                   break;
                 case '>':
                   if ((!squote) && (!dquote))
                     abracket--;
                   if (abracket)
-                    mrg_string_append_byte (t->curdata, t->c);
+                    ctx_string_append_byte (t->curdata, t->c);
                   break;
                 case '"':
                 case '\'':
                 case '[':
                 case ']':
                 default:
-                  mrg_string_append_byte (t->curdata, t->c);
+                  ctx_string_append_byte (t->curdata, t->c);
                   break;
                 }
             }
@@ -1506,14 +1313,14 @@ xmltok_get (MrgXml *t, char **data, int *pos)
         {
           if (s->return_type != t_none)
             {
-              *data = (char *) mrg_string_get (t->curdata);
+              *data = (char *) ctx_string_get (t->curdata);
               t->state = s->next_state;
               if (s->return_type == t_tag)
-                mrg_string_set (t->curtag, mrg_string_get (t->curdata));
+                ctx_string_set (t->curtag, ctx_string_get (t->curdata));
               if (s->return_type == t_endtag)
-                *data = (char *) mrg_string_get (t->curtag);
+                *data = (char *) ctx_string_get (t->curtag);
               if (s->return_type == t_closeemptytag)
-                *data = (char *) mrg_string_get (t->curtag);
+                *data = (char *) ctx_string_get (t->curtag);
               if (pos)
                 *pos = t->inbufpos;
               return s->return_type;
@@ -1524,7 +1331,7 @@ xmltok_get (MrgXml *t, char **data, int *pos)
             {
               if (s->charhandling & c_store)
                 {
-                  mrg_string_append_byte (t->curdata, t->c);
+                  ctx_string_append_byte (t->curdata, t->c);
                 }
               if (s->charhandling & c_eat)
                 {
@@ -1549,8 +1356,8 @@ xmltok_new (FILE * file_in)
   ret = calloc (1, sizeof (MrgXml));
   ret->file_in = file_in;
   ret->state = s_start;
-  ret->curtag = mrg_string_new ("");
-  ret->curdata = mrg_string_new ("");
+  ret->curtag = ctx_string_new ("");
+  ret->curdata = ctx_string_new ("");
   ret->inbuf = calloc (1, CTX_XML_INBUF_SIZE);
   return ret;
 }
@@ -1563,8 +1370,8 @@ xmltok_buf_new (char *membuf)
   ret = calloc (1, sizeof (MrgXml));
   ret->file_in = NULL;
   ret->state = s_start;
-  ret->curtag = mrg_string_new ("");
-  ret->curdata = mrg_string_new ("");
+  ret->curtag = ctx_string_new ("");
+  ret->curdata = ctx_string_new ("");
   ret->inbuf = (void*)membuf;
   ret->inbuflen = strlen (membuf);
   ret->inbufpos = 0;
@@ -1574,8 +1381,8 @@ xmltok_buf_new (char *membuf)
 void
 xmltok_free (MrgXml *t)
 {
-  mrg_string_free (t->curtag, 1);
-  mrg_string_free (t->curdata, 1);
+  ctx_string_free (t->curtag, 1);
+  ctx_string_free (t->curdata, 1);
 
   if (t->file_in)
     {
@@ -1965,7 +1772,7 @@ static void ctx_parse_style_id (Mrg          *mrg,
   }
 }
 
-void _mrg_init_style (Mrg *mrg)
+void _ctx_init_style (Mrg *mrg)
 {
   CtxStyle *s = ctx_style (mrg);
 
@@ -1975,11 +1782,11 @@ void _mrg_init_style (Mrg *mrg)
    */
 
   s->text_decoration= 0;
-  s->display  = MRG_DISPLAY_INLINE;
+  s->display  = CTX_DISPLAY_INLINE;
   s->float_   = CTX_FLOAT_NONE;
-  s->clear    = MRG_CLEAR_NONE;
-  s->overflow = MRG_OVERFLOW_VISIBLE;
-  s->position = MRG_POSITION_STATIC;
+  s->clear    = CTX_CLEAR_NONE;
+  s->overflow = CTX_OVERFLOW_VISIBLE;
+  s->position = CTX_POSITION_STATIC;
 #if 0
   s->border_top_color.alpha = 0;
   s->border_left_color.alpha = 0;
@@ -2025,6 +1832,7 @@ void _mrg_init_style (Mrg *mrg)
   //s->background_color.blue = 1;
   //s->background_color.alpha = 0;
 }
+
 
 
 /* mrg - MicroRaptor Gui
@@ -2124,7 +1932,7 @@ const char * html_css =
 
 typedef struct StyleEntry {
   char        *selector;
-  CtxStyleNode parsed[MRG_MAX_SELECTOR_LENGTH];
+  CtxStyleNode parsed[CTX_MAX_SELECTOR_LENGTH];
   int          sel_len;
   char        *css;
   int          specificity;
@@ -2260,10 +2068,10 @@ typedef struct _CtxCssParseState CtxCssParseState;
 
 struct _CtxCssParseState {
   int   state;
-  char  rule[MRG_MAX_CSS_RULES][MRG_MAX_CSS_RULELEN];
+  char  rule[CTX_MAX_CSS_RULES][CTX_MAX_CSS_RULELEN];
   int   rule_no ;
-  int   rule_l[MRG_MAX_CSS_RULES];
-  char  val[MRG_MAX_CSS_STRINGLEN];
+  int   rule_l[CTX_MAX_CSS_RULES];
+  char  val[CTX_MAX_CSS_STRINGLEN];
   int   val_l;
 };
 
@@ -2830,7 +2638,7 @@ static int _mrg_get_ancestry (Mrg *mrg, CtxStyleNode **ancestry)
 
 char *_ctx_stylesheet_collate_style (Mrg *mrg)
 {
-  CtxStyleNode *ancestry[MRG_MAX_STYLE_DEPTH];
+  CtxStyleNode *ancestry[CTX_MAX_STYLE_DEPTH];
   int ancestors = _mrg_get_ancestry (mrg, ancestry);
   char *ret = _mrg_css_compute_style (mrg, ancestry, ancestors);
   return ret;
@@ -2863,12 +2671,12 @@ void  mrg_set_em (Mrg *mrg, float em)
 
 void mrg_css_set (Mrg *mrg, const char *css)
 {
-  mrg_string_set (mrg->style, css);
+  ctx_string_set (mrg->style, css);
 }
 
 void mrg_css_add (Mrg *mrg, const char *css)
 {
-  mrg_string_append_str (mrg->style, css);
+  ctx_string_append_str (mrg->style, css);
 }
 
 void _mrg_layout_pre (Mrg *mrg, MrgHtml *ctx);
@@ -2893,10 +2701,10 @@ void mrg_start_with_style (Mrg        *mrg,
 
   ctx_parse_style_id (mrg, mrg->state->style_id, &mrg->state->style_node);
 
-  mrg->state->style.display = MRG_DISPLAY_INLINE;
+  mrg->state->style.display = CTX_DISPLAY_INLINE;
   mrg->state->style.id_ptr = id_ptr;
 
-  _mrg_init_style (mrg);
+  _ctx_init_style (mrg);
 
   if (mrg->in_paint)
     ctx_save (mrg_cr (mrg));
@@ -3325,9 +3133,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
       break;
     case CTX_visibility:
     {
-      if      (val_hash == CTX_visible) s->visibility = MRG_VISIBILITY_VISIBLE;
-      else if (val_hash == CTX_hidden)  s->visibility = MRG_VISIBILITY_HIDDEN;
-      else                              s->visibility = MRG_VISIBILITY_VISIBLE;
+      if      (val_hash == CTX_visible) s->visibility = CTX_VISIBILITY_VISIBLE;
+      else if (val_hash == CTX_hidden)  s->visibility = CTX_VISIBILITY_HIDDEN;
+      else                              s->visibility = CTX_VISIBILITY_VISIBLE;
     }
     break;
   
@@ -3651,11 +3459,11 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
       {
         case CTX_bold:
         case CTX_bolder:
-          s->text_decoration |= MRG_BOLD;
+          s->text_decoration |= CTX_TEXT_DECORATION_BOLD;
           s->font_weight = MRG_FONT_WEIGHT_BOLD;
           break;
         default:
-          s->text_decoration ^= (s->text_decoration & MRG_BOLD);
+          s->text_decoration ^= (s->text_decoration & CTX_TEXT_DECORATION_BOLD);
           s->font_weight = MRG_FONT_WEIGHT_NORMAL;
       }
   #if 0 // XXX 
@@ -3670,11 +3478,11 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
         switch (val_hash)
         {
           default:
-          case CTX_normal:   s->white_space = MRG_WHITE_SPACE_NORMAL; break;
-          case CTX_nowrap:   s->white_space = MRG_WHITE_SPACE_NOWRAP; break;
-          case CTX_pre:      s->white_space = MRG_WHITE_SPACE_PRE; break;
-          case CTX_pre_line: s->white_space = MRG_WHITE_SPACE_PRE_LINE; break;
-          case CTX_pre_wrap: s->white_space = MRG_WHITE_SPACE_PRE_WRAP; break;
+          case CTX_normal:   s->white_space = CTX_WHITE_SPACE_NORMAL; break;
+          case CTX_nowrap:   s->white_space = CTX_WHITE_SPACE_NOWRAP; break;
+          case CTX_pre:      s->white_space = CTX_WHITE_SPACE_PRE; break;
+          case CTX_pre_line: s->white_space = CTX_WHITE_SPACE_PRE_LINE; break;
+          case CTX_pre_wrap: s->white_space = CTX_WHITE_SPACE_PRE_WRAP; break;
         }
       }
       break;
@@ -3698,20 +3506,20 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
     case CTX_overflow:
       switch(val_hash)
       {
-        case CTX_visible: s->overflow = MRG_OVERFLOW_VISIBLE; break;
-        case CTX_hidden:  s->overflow = MRG_OVERFLOW_HIDDEN; break;
-        case CTX_scroll:  s->overflow = MRG_OVERFLOW_SCROLL; break;
-        case CTX_auto:    s->overflow = MRG_OVERFLOW_AUTO; break;
-        default:          s->overflow = MRG_OVERFLOW_VISIBLE; break;
+        case CTX_visible: s->overflow = CTX_OVERFLOW_VISIBLE; break;
+        case CTX_hidden:  s->overflow = CTX_OVERFLOW_HIDDEN; break;
+        case CTX_scroll:  s->overflow = CTX_OVERFLOW_SCROLL; break;
+        case CTX_auto:    s->overflow = CTX_OVERFLOW_AUTO; break;
+        default:          s->overflow = CTX_OVERFLOW_VISIBLE; break;
       }
       break;
     case CTX_clear:
       switch(val_hash)
       {
-        case CTX_left:  s->clear = MRG_CLEAR_LEFT; break;
-        case CTX_right: s->clear = MRG_CLEAR_RIGHT; break;
-        case CTX_both:  s->clear = MRG_CLEAR_BOTH; break;
-        default:        s->clear = MRG_CLEAR_NONE; break;
+        case CTX_left:  s->clear = CTX_CLEAR_LEFT; break;
+        case CTX_right: s->clear = CTX_CLEAR_RIGHT; break;
+        case CTX_both:  s->clear = CTX_CLEAR_BOTH; break;
+        default:        s->clear = CTX_CLEAR_NONE; break;
       }
       break;
     case CTX_font_style:
@@ -3772,12 +3580,12 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
     case CTX_vertical_align:
       switch (val_hash)
       {
-        case CTX_middle: s->vertical_align = MRG_VERTICAL_ALIGN_MIDDLE; break;
-        case CTX_top:    s->vertical_align = MRG_VERTICAL_ALIGN_TOP; break;
-        case CTX_sub:    s->vertical_align = MRG_VERTICAL_ALIGN_SUB;break;
-        case CTX_super:  s->vertical_align = MRG_VERTICAL_ALIGN_SUPER;break;
-        case CTX_bottom: s->vertical_align = MRG_VERTICAL_ALIGN_BOTTOM; break;
-        default:         s->vertical_align = MRG_VERTICAL_ALIGN_BASELINE;
+        case CTX_middle: s->vertical_align = CTX_VERTICAL_ALIGN_MIDDLE; break;
+        case CTX_top:    s->vertical_align = CTX_VERTICAL_ALIGN_TOP; break;
+        case CTX_sub:    s->vertical_align = CTX_VERTICAL_ALIGN_SUB;break;
+        case CTX_super:  s->vertical_align = CTX_VERTICAL_ALIGN_SUPER;break;
+        case CTX_bottom: s->vertical_align = CTX_VERTICAL_ALIGN_BOTTOM; break;
+        default:         s->vertical_align = CTX_VERTICAL_ALIGN_BASELINE;
       }
       break;
     case CTX_cursor:
@@ -3822,21 +3630,21 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
     case CTX_display:
       switch (val_hash)
       {
-        case CTX_hidden:       s->display = MRG_DISPLAY_NONE; break;
-        case CTX_block:        s->display = MRG_DISPLAY_BLOCK; break;
-        case CTX_list_item:    s->display = MRG_DISPLAY_LIST_ITEM; break;
-        case CTX_inline_block: s->display = MRG_DISPLAY_INLINE_BLOCK; break;
-        default:               s->display = MRG_DISPLAY_INLINE;
+        case CTX_hidden:       s->display = CTX_DISPLAY_NONE; break;
+        case CTX_block:        s->display = CTX_DISPLAY_BLOCK; break;
+        case CTX_list_item:    s->display = CTX_DISPLAY_LIST_ITEM; break;
+        case CTX_inline_block: s->display = CTX_DISPLAY_INLINE_BLOCK; break;
+        default:               s->display = CTX_DISPLAY_INLINE;
       }
       break;
     case CTX_position:
       switch (val_hash)
       {
-        case CTX_relative:  s->position = MRG_POSITION_RELATIVE; break;
-        case CTX_static:    s->position = MRG_POSITION_STATIC; break;
-        case CTX_absolute:  s->position = MRG_POSITION_ABSOLUTE; break;
-        case CTX_fixed:     s->position = MRG_POSITION_FIXED; break;
-        default:            s->position = MRG_POSITION_STATIC;
+        case CTX_relative:  s->position = CTX_POSITION_RELATIVE; break;
+        case CTX_static:    s->position = CTX_POSITION_STATIC; break;
+        case CTX_absolute:  s->position = CTX_POSITION_ABSOLUTE; break;
+        case CTX_fixed:     s->position = CTX_POSITION_FIXED; break;
+        default:            s->position = CTX_POSITION_STATIC;
       }
       break;
     case CTX_direction:
@@ -3850,33 +3658,35 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
     case CTX_unicode_bidi:
       switch (val_hash)
       {
-        case CTX_normal: s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL; break;
-        case CTX_embed:  s->unicode_bidi = MRG_UNICODE_BIDI_EMBED; break;
-        case CTX_bidi_override: s->unicode_bidi = MRG_UNICODE_BIDI_BIDI_OVERRIDE; break;
-        default:         s->unicode_bidi = MRG_UNICODE_BIDI_NORMAL; break;
+        case CTX_normal: s->unicode_bidi = CTX_UNICODE_BIDI_NORMAL; break;
+        case CTX_embed:  s->unicode_bidi = CTX_UNICODE_BIDI_EMBED; break;
+        case CTX_bidi_override: s->unicode_bidi = CTX_UNICODE_BIDI_BIDI_OVERRIDE; break;
+        default:         s->unicode_bidi = CTX_UNICODE_BIDI_NORMAL; break;
       }
       break;
     case CTX_text_align:
       switch (val_hash)
       {
-        case CTX_left:    s->text_align = MRG_TEXT_ALIGN_LEFT; break;
-        case CTX_right:   s->text_align = MRG_TEXT_ALIGN_RIGHT; break;
-        case CTX_justify: s->text_align = MRG_TEXT_ALIGN_JUSTIFY; break;
-        case CTX_center:  s->text_align = MRG_TEXT_ALIGN_CENTER; break;
-        default:          s->text_align = MRG_TEXT_ALIGN_LEFT;
+        case CTX_start:    s->text_align = CTX_TEXT_ALIGN_START; break;
+        case CTX_end:     s->text_align = CTX_TEXT_ALIGN_END; break;
+        case CTX_left:    s->text_align = CTX_TEXT_ALIGN_LEFT; break;
+        case CTX_right:   s->text_align = CTX_TEXT_ALIGN_RIGHT; break;
+        case CTX_justify: s->text_align = CTX_TEXT_ALIGN_JUSTIFY; break;
+        case CTX_center:  s->text_align = CTX_TEXT_ALIGN_CENTER; break;
+        default:          s->text_align = CTX_TEXT_ALIGN_LEFT;
       }
       break;
     case CTX_text_decoration:
       switch (val_hash)
       {
-        case CTX_reverse:     s->text_decoration|= MRG_REVERSE; break;
-        case CTX_underline:   s->text_decoration|= MRG_UNDERLINE; break;
-        case CTX_overline:    s->text_decoration|= MRG_OVERLINE; break;
-        case CTX_linethrough: s->text_decoration|= MRG_LINETHROUGH; break;
-        case CTX_blink:       s->text_decoration|= MRG_BLINK; break;
+        case CTX_reverse:     s->text_decoration|= CTX_TEXT_DECORATION_REVERSE; break;
+        case CTX_underline:   s->text_decoration|= CTX_TEXT_DECORATION_UNDERLINE; break;
+        case CTX_overline:    s->text_decoration|= CTX_TEXT_DECORATION_OVERLINE; break;
+        case CTX_linethrough: s->text_decoration|= CTX_TEXT_DECORATION_LINETHROUGH; break;
+        case CTX_blink:       s->text_decoration|= CTX_TEXT_DECORATION_BLINK; break;
         case CTX_none:
           s->text_decoration ^= (s->text_decoration &
-        (MRG_UNDERLINE|MRG_REVERSE|MRG_OVERLINE|MRG_LINETHROUGH|MRG_BLINK));
+        (CTX_TEXT_DECORATION_UNDERLINE|CTX_TEXT_DECORATION_REVERSE|CTX_TEXT_DECORATION_OVERLINE|CTX_TEXT_DECORATION_LINETHROUGH|CTX_TEXT_DECORATION_BLINK));
         break;
       }
       break;
@@ -3900,7 +3710,7 @@ static void mrg_css_handle_property_pass1med (Mrg *mrg, uint64_t key,
       s->width_auto = 0;
       SET_PROP(width, mrg_parse_px_x (mrg, value, NULL));
 
-      if (s->position == MRG_POSITION_FIXED) // XXX: seems wrong
+      if (s->position == CTX_POSITION_FIXED) // XXX: seems wrong
       {
         //s->width -= s->border_left_width + s->border_right_width;
       }
@@ -3922,8 +3732,8 @@ static void css_parse_properties (Mrg *mrg, const char *style,
                            const char *value))
 {
   const char *p;
-  char name[MRG_MAX_CSS_STRINGLEN] = "";
-  char string[MRG_MAX_CSS_STRINGLEN] = "";
+  char name[CTX_MAX_CSS_STRINGLEN] = "";
+  char string[CTX_MAX_CSS_STRINGLEN] = "";
   int name_l = 0;
   int string_l = 0;
   int state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
@@ -4083,7 +3893,7 @@ void mrg_set_style (Mrg *mrg, const char *style)
 
   s = ctx_style (mrg);
 
-  if (s->position == MRG_POSITION_STATIC &&
+  if (s->position == CTX_POSITION_STATIC &&
       !s->float_)
   {
     if (s->width_auto && (s->margin_right_auto || s->margin_left_auto))
@@ -4131,7 +3941,7 @@ void mrg_set_style (Mrg *mrg, const char *style)
 
 void _mrg_set_style_properties (Mrg *mrg, const char *style_properties)
 {
-  _mrg_init_style (mrg);
+  _ctx_init_style (mrg);
 
   if (style_properties)
   {
@@ -4493,7 +4303,7 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
   if (style->background_color.alpha <= 0.0001)
     return;
 #endif
-  if (style->display == MRG_DISPLAY_INLINE &&
+  if (style->display == CTX_DISPLAY_INLINE &&
       style->float_ == CTX_FLOAT_NONE)
     return;
 
@@ -4785,7 +4595,7 @@ static void mrg_hl_token (Ctx *cr, const char *word)
 void mrg_hl_text (Ctx *cr, const char *text)
 {
   int i;
-  MrgString *word = mrg_string_new ("");
+  CtxString *word = ctx_string_new ("");
   for (i = 0; i < text[i]; i++)
   {
     switch (text[i])
@@ -4811,22 +4621,22 @@ void mrg_hl_text (Ctx *cr, const char *text)
         if (word->length)
         {
           mrg_hl_token (cr, word->str);
-          mrg_string_set (word, "");
+          ctx_string_set (word, "");
         }
-        mrg_string_append_byte (word, text[i]);
+        ctx_string_append_byte (word, text[i]);
         mrg_hl_token (cr, word->str);
-        mrg_string_set (word, "");
+        ctx_string_set (word, "");
         break;
       default:
         ctx_rgb (cr, 0,0,0);
-        mrg_string_append_byte (word, text[i]);
+        ctx_string_append_byte (word, text[i]);
         break;
     }
   }
   if (word->length)
     mrg_hl_token (cr, word->str);
 
-  mrg_string_free (word, 1);
+  ctx_string_free (word, 1);
 }
 
 void ctx_listen (Ctx     *ctx,
@@ -4895,7 +4705,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
         mrg->styles[styleno] = mrg->state->fg +
                                mrg->state->bg * 8 +
                                (mrg->state->style.text_decoration & 
-                                (MRG_BOLD|MRG_DIM|MRG_UNDERLINE|MRG_REVERSE)) * 64;;
+                                (CTX_TEXT_DECORATION_BOLD|CTX_TEXT_DECORATION_DIM|CTX_TEXT_DECORATION_UNDERLINE|CTX_TEXT_DECORATION_REVERSE)) * 64;;
       }
       t += ctx_utf8_len (*t);
       offset += 4;
@@ -4947,19 +4757,19 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
 
     ctx_current_point (cr, &new_x, NULL);
 
-    if (style->text_decoration & MRG_UNDERLINE)
+    if (style->text_decoration & CTX_TEXT_DECORATION_UNDERLINE)
       {
         ctx_move_to (cr, old_x, y);
         ctx_line_to (cr, new_x, y);
         ctx_stroke (cr);
       }
-    if (style->text_decoration & MRG_LINETHROUGH)
+    if (style->text_decoration & CTX_TEXT_DECORATION_LINETHROUGH)
       {
         ctx_move_to (cr, old_x, y - style->font_size / 2);
         ctx_line_to (cr, new_x, y - style->font_size / 2);
         ctx_stroke (cr);
       }
-    if (style->text_decoration & MRG_OVERLINE)
+    if (style->text_decoration & CTX_TEXT_DECORATION_OVERLINE)
       {
         ctx_move_to (cr, old_x, y - style->font_size);
         ctx_line_to (cr, new_x, y - style->font_size);
@@ -5008,7 +4818,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
 {
   CtxStyle *style = ctx_style (mrg);
   Ctx *cr = mrg_cr (mrg);
-  if (style->display != MRG_DISPLAY_INLINE)
+  if (style->display != CTX_DISPLAY_INLINE)
     return 0.0;
   CtxColor *background_color = ctx_color_new ();
   ctx_get_color (cr, CTX_background_color, background_color);
@@ -5043,7 +4853,7 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
     return 0.0;
   float left_pad = 0.0;
   float left_border = 0.0;
-  if (style->display != MRG_DISPLAY_INLINE)
+  if (style->display != CTX_DISPLAY_INLINE)
     return 0.0;
 
   CtxColor *background_color = ctx_color_new ();
@@ -5191,7 +5001,7 @@ static void _mrg_spaces (Mrg *mrg, int count)
         else
 #endif
         {
-          if (mrg->state->style.text_decoration & MRG_REVERSE)
+          if (mrg->state->style.text_decoration & CTX_TEXT_DECORATION_REVERSE)
           {
             Ctx *cr = mrg_cr (mrg);
             ctx_rectangle (cr, mrg->x + diff*0.1, mrg->y + mrg_em(mrg)*0.2, diff*0.8, -mrg_em (mrg)*1.1);
@@ -5751,9 +5561,9 @@ int mrg_print (Mrg *mrg, const char *string)
 #endif
 
   if (mrg->text_edited)
-    mrg_string_append_str (mrg->edited_str, string);
+    ctx_string_append_str (mrg->edited_str, string);
 
-  if (style->display == MRG_DISPLAY_NONE)
+  if (style->display == CTX_DISPLAY_NONE)
     return 0.0;
 
   if (!string)
@@ -5796,7 +5606,7 @@ void  mrg_text_listen_full (Mrg *mrg, CtxEventType types,
     mrg_text_listen_done (mrg);
     return;
   }
-  if (no + 1 >= MRG_MAX_TEXT_LISTEN)
+  if (no + 1 >= CTX_MAX_TEXT_LISTEN)
   {
     fprintf (stderr, "mrg text listen overflow\n");
     return;
@@ -5853,7 +5663,7 @@ static void cmd_backspace (CtxEvent *event, void *data1, void *data2)
       memcpy (new + ((mark - mrg->edited_str->str)), rest, strlen (rest));
       new [strlen (mrg->edited_str->str)-(rest-mark)] = 0;
       mrg->update_string (new, mrg->update_string_user_data);
-      mrg_string_set (mrg->edited_str, new);
+      ctx_string_set (mrg->edited_str, new);
       free (new);
       mrg->cursor_pos--;
     }
@@ -5874,7 +5684,7 @@ static void cmd_delete (CtxEvent *event, void *data1, void *data2)
   new [strlen (mrg->edited_str->str)-(rest-mark)] = 0;
 
   mrg->update_string (new, mrg->update_string_user_data);
-  mrg_string_set (mrg->edited_str, new);
+  ctx_string_set (mrg->edited_str, new);
   free (new);
   mrg_queue_draw (mrg, NULL);
   ctx_event_stop_propagate (event);
@@ -6075,7 +5885,7 @@ static void add_utf8 (Mrg *mrg, const char *string)
           rest, strlen (rest));
   new [strlen (string) + strlen (mrg->edited_str->str)] = 0;
   mrg->update_string (new, mrg->update_string_user_data);
-  mrg_string_set (mrg->edited_str, new);
+  ctx_string_set (mrg->edited_str, new);
   free (new);
   mrg_queue_draw (mrg, NULL);
   mrg->cursor_pos++;
@@ -6251,13 +6061,13 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
     dynamic_edge_left = mrg_edge_left(mrg);
   }
 
-  if (style->clear & MRG_CLEAR_RIGHT)
+  if (style->clear & CTX_CLEAR_RIGHT)
     clear_right (html);
-  if (style->clear & MRG_CLEAR_LEFT)
+  if (style->clear & CTX_CLEAR_LEFT)
     clear_left (html);
 
-  if (style->display == MRG_DISPLAY_BLOCK ||
-      style->display == MRG_DISPLAY_LIST_ITEM)
+  if (style->display == CTX_DISPLAY_BLOCK ||
+      style->display == CTX_DISPLAY_LIST_ITEM)
   {
     if (PROP(padding_left) + PROP(margin_left) + PROP(border_left_width)
         != 0)
@@ -6284,7 +6094,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
     html->state->block_start_y = mrg_y (mrg);
   }
 
-  if (style->display == MRG_DISPLAY_LIST_ITEM)
+  if (style->display == CTX_DISPLAY_LIST_ITEM)
   {
     float x = mrg->x;
     _mrg_draw_background_increment (mrg, html, 0);
@@ -6295,12 +6105,12 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
   switch (style->position)
   {
-    case MRG_POSITION_RELATIVE:
+    case CTX_POSITION_RELATIVE:
       /* XXX: deal with style->right and style->bottom */
       ctx_translate (mrg_cr (mrg), PROP(left), PROP(top));
       /* fallthrough */
 
-    case MRG_POSITION_STATIC:
+    case CTX_POSITION_STATIC:
 
       if (style->float_ == CTX_FLOAT_RIGHT)
       {
@@ -6396,7 +6206,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
             y - style->font_size + PROP(padding_top) + PROP(border_top_width));
       } /* XXX: maybe spot for */
       break;
-    case MRG_POSITION_ABSOLUTE:
+    case CTX_POSITION_ABSOLUTE:
       {
         html->state->floats = 0;
         mrg_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
@@ -6406,7 +6216,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         html->state->block_start_y = mrg_y (mrg);
       }
       break;
-    case MRG_POSITION_FIXED:
+    case CTX_POSITION_FIXED:
       {
         int width = PROP(width);
 
@@ -6432,8 +6242,8 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
       break;
   }
 
-  if (style->display == MRG_DISPLAY_BLOCK ||
-      style->display == MRG_DISPLAY_INLINE_BLOCK ||
+  if (style->display == CTX_DISPLAY_BLOCK ||
+      style->display == CTX_DISPLAY_INLINE_BLOCK ||
       style->float_)
   {
      float height = PROP(height);
@@ -6458,7 +6268,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
     if (height  /* XXX: if we knew height of dynamic elements
                         from previous frame, we could use it here */
-       && style->overflow == MRG_OVERFLOW_HIDDEN)
+       && style->overflow == CTX_OVERFLOW_HIDDEN)
        {
          ctx_rectangle (mrg_cr(mrg),
             html->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
@@ -6520,7 +6330,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
   
   /* adjust cursor back to before display */
 
-  if ((style->display == MRG_DISPLAY_BLOCK || style->float_) &&
+  if ((style->display == CTX_DISPLAY_BLOCK || style->float_) &&
        height != 0.0)
   {
     float diff = height - (mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
@@ -6556,7 +6366,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
     html->states[html->state_no-1].floats++;
   }
 
-  if (style->display == MRG_DISPLAY_BLOCK || style->float_)
+  if (style->display == CTX_DISPLAY_BLOCK || style->float_)
   {
     MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
 
@@ -6610,7 +6420,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
 
     //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
 
-    if (!style->float_ && style->display == MRG_DISPLAY_BLOCK)
+    if (!style->float_ && style->display == CTX_DISPLAY_BLOCK)
     {
       vmarg = PROP(margin_bottom);
 
@@ -6619,17 +6429,17 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
           mrg_y (mrg) + vmarg + PROP(border_bottom_width));
     }
   }
-  else if (style->display == MRG_DISPLAY_INLINE)
+  else if (style->display == CTX_DISPLAY_INLINE)
   {
     mrg->x += paint_span_bg_final (mrg, mrg->x, mrg->y, 0);
   }
 
-  if (style->position == MRG_POSITION_RELATIVE)
+  if (style->position == CTX_POSITION_RELATIVE)
     ctx_translate (mrg_cr (mrg), -PROP(left), -PROP(top));
 
   if (style->float_ ||
-      style->position == MRG_POSITION_ABSOLUTE ||
-      style->position == MRG_POSITION_FIXED)
+      style->position == CTX_POSITION_ABSOLUTE ||
+      style->position == CTX_POSITION_FIXED)
   {
     mrg_set_xy (mrg, html->state->original_x,
                      html->state->original_y);
@@ -7509,14 +7319,14 @@ void mrg_xml_render (Mrg *mrg,
   char *html;
   MrgXml *xmltok;
   MrgHtml *htmlctx        = &mrg->html;
-  uint64_t tag[MRG_MAX_STATE_DEPTH];
+  uint64_t tag[CTX_MAX_STATE_DEPTH];
   int pos             = 0;
   int type            = t_none;
   static int depth    = 0;
   int in_style        = 0;
   int should_be_empty = 0;
   int tagpos          = 0;
-  MrgString *style = mrg_string_new ("");
+  CtxString *style = ctx_string_new ("");
   int whitespaces = 0;
   uint64_t att = 0;
 
@@ -7604,11 +7414,11 @@ void mrg_xml_render (Mrg *mrg,
         {
           switch (ctx_style (mrg)->white_space)
           {
-            case MRG_WHITE_SPACE_PRE: /* handles as pre-wrap for now */
-            case MRG_WHITE_SPACE_PRE_WRAP:
+            case CTX_WHITE_SPACE_PRE: /* handles as pre-wrap for now */
+            case CTX_WHITE_SPACE_PRE_WRAP:
               mrg_print (mrg, data);
               break;
-            case MRG_WHITE_SPACE_PRE_LINE:
+            case CTX_WHITE_SPACE_PRE_LINE:
               switch (*data)
               {
                 case ' ':
@@ -7621,8 +7431,8 @@ void mrg_xml_render (Mrg *mrg,
                   break;
               }
               break;
-            case MRG_WHITE_SPACE_NOWRAP: /* XXX: handled like normal, this is bad.. */
-            case MRG_WHITE_SPACE_NORMAL: 
+            case CTX_WHITE_SPACE_NOWRAP: /* XXX: handled like normal, this is bad.. */
+            case CTX_WHITE_SPACE_NORMAL: 
               whitespaces ++;
               if (whitespaces == 1)
                 mrg_print (mrg, " ");
@@ -7634,7 +7444,7 @@ void mrg_xml_render (Mrg *mrg,
         //htmlctx->attributes = 0;
         //ctx_save (mrg->ctx);
         tagpos = pos;
-        mrg_string_clear (style);
+        ctx_string_clear (style);
         break;
       case t_att:
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
@@ -7686,7 +7496,7 @@ void mrg_xml_render (Mrg *mrg,
               for (j = 0; style_attribute[j]; j++)
                 if (att == style_attribute[j])
                 {
-                  mrg_string_append_printf (style, "%s: %s;",
+                  ctx_string_append_printf (style, "%s: %s;",
                       style_attribute_names[j], data);
                   break;
                 }
@@ -7772,7 +7582,7 @@ void mrg_xml_render (Mrg *mrg,
           if (klass)
             free (klass);
             /* collect XML attributes and convert into CSS declarations */
-          mrg_string_append_str (style, PROPS(style));
+          ctx_string_append_str (style, PROPS(style));
           mrg_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
@@ -8027,7 +7837,7 @@ void mrg_xml_render (Mrg *mrg,
   }
 
 //  ctx_list_free (&htmlctx->geo_cache); /* XXX: no point in doing that here */
-  mrg_string_free (style, 1);
+  ctx_string_free (style, 1);
   free (html);
 }
 
@@ -8302,10 +8112,10 @@ void _mrg_init (Mrg *mrg, int width, int height)
 
   mrg->html.state = &mrg->html.states[0];
   mrg->html.mrg = mrg;
-  mrg->style = mrg_string_new ("");
+  mrg->style = ctx_string_new ("");
 
   mrg_set_mrg_get_contents (mrg, mrg_get_contents_default, NULL);
-  mrg->style_global = mrg_string_new ("");
+  mrg->style_global = ctx_string_new ("");
 
 
   {
@@ -8319,7 +8129,7 @@ void _mrg_init (Mrg *mrg, int width, int height)
     mrg_get_contents (mrg, NULL, global_css_uri, &contents, &length);
     if (contents)
     {
-      mrg_string_set (mrg->style_global, contents);
+      ctx_string_set (mrg->style_global, contents);
       free (contents);
     }
   }
@@ -8352,7 +8162,7 @@ void ctx_style_defaults (Mrg *mrg)
   }
 
   ctx_stylesheet_clear (mrg);
-  _mrg_init_style (mrg);
+  _ctx_init_style (mrg);
 
   if (mrg->style_global->length)
   {
@@ -8392,7 +8202,7 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
 void mrg_destroy (Mrg *mrg)
 {
   if (mrg->edited_str)
-    mrg_string_free (mrg->edited_str, 1);
+    ctx_string_free (mrg->edited_str, 1);
   mrg->edited_str = NULL;
   free (mrg);
 }
