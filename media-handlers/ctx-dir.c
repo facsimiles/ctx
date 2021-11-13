@@ -338,9 +338,7 @@ void dm_set_path (Files *files, const char *path, const char *title)
   files->namelist = NULL;
   files->n = scandir (files->path, &files->namelist, NULL, custom_sort);
   metadata_load (resolved_path);
-
   files->count = metadata_count ();
-
 
 #if 0
   {
@@ -411,7 +409,7 @@ static void metadata_dirt(void)
 {
   metadata_dirty++;
   metadata_cache_no=-3;
-  metadata_save ();
+  //metadata_save ();
   files->count = metadata_count ();
 //  save_metadata ();
 }
@@ -494,6 +492,8 @@ static CtxList *future = NULL;
 
 static void _set_location (const char *location)
 {
+  save_metadata();
+
   if (location[0] == '~' && location[1] == '0')
   {
     if (path_is_dir (getenv ("HOME")))
@@ -2168,7 +2168,6 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
       itk->focus_no--;
       metadata_dirt ();
     }
-    save_metadata();
   }
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -2199,7 +2198,6 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     metadata_set_name (focused_no, str->str);
     ctx_string_free (str, 1);
     metadata_dirt ();
-    save_metadata();
   }
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -2223,7 +2221,6 @@ void dir_join (CtxEvent *event, void *a, void *b)
     metadata_set_name (focused_no, str->str);
     ctx_string_free (str, 1);
     metadata_dirt ();
-    save_metadata();
   }
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -2245,7 +2242,6 @@ void text_edit_shift_return (CtxEvent *event, void *a, void *b)
     text_edit++;
   }
   metadata_dirt ();
-  save_metadata();
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -2271,7 +2267,7 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
     text_edit++;
   }
   metadata_dirt ();
-  save_metadata();
+  //save_metadata();
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -4219,7 +4215,6 @@ static int card_files (ITK *itk_, void *data)
     first = 0;
   }
   //thumb_monitor (ctx, NULL);
-  save_metadata();
 
   ctx_add_key_binding (ctx, "F1", NULL, "toggle keybinding help",
                        toggle_keybindings_display,
