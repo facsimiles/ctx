@@ -316,7 +316,7 @@ static char *metadata_key_name (int ino, int no)
   return NULL;
 }
 
-static char *metadata_key_string (int no, const char *key)
+static char *metadata_get_string (int no, const char *key)
 {
   const char *m = metadata_find_no (no);
   CtxString *str = ctx_string_new ("");
@@ -346,9 +346,14 @@ static char *metadata_key_string (int no, const char *key)
   return NULL;
 }
 
-static float metadata_key_float (int no, const char *key, float def_val)
+static char *metadata_get (int no, const char *key)
 {
-   char *value = metadata_key_string (no, key);
+  return metadata_get_string (no, key);
+}
+
+static float metadata_get_float (int no, const char *key, float def_val)
+{
+   char *value = metadata_get_string (no, key);
    float ret = def_val;//-1234.0f;
    if (value)
    {
@@ -359,9 +364,9 @@ static float metadata_key_float (int no, const char *key, float def_val)
 }
 
 
-static int metadata_key_int (int no, const char *key, int def_val)
+static int metadata_get_int (int no, const char *key, int def_val)
 {
-   char *value = metadata_key_string (no, key);
+   char *value = metadata_get_string (no, key);
    int ret = def_val;
    if (value)
    {
@@ -605,7 +610,7 @@ void metadata_dump (void)
     {
       char *key_name = metadata_key_name (i, k);
       fprintf (stdout, " %s=%s\n", key_name,
-                      metadata_key_string (i, key_name));
+                      metadata_get_string (i, key_name));
     }
     fflush (stdout);
   }

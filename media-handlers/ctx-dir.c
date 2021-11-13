@@ -296,7 +296,7 @@ typedef enum CtxAtom {
 
 CtxAtom item_get_type_atom (int i)
 {
-char *type = metadata_key_string (i, "type");
+char *type = metadata_get_string (i, "type");
 if (type)
 {
    if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
@@ -347,7 +347,7 @@ void dm_set_path (Files *files, const char *path, const char *title)
     if (0)
     {
     //set_grid (NULL, NULL, NULL);
-    char *v_type = metadata_key_string (".", "view");
+    char *v_type = metadata_get_string (".", "view");
     if (v_type)
     {
       if (!strcmp (v_type, "layout"))
@@ -861,18 +861,18 @@ static void item_drag (CtxEvent *e, void *d1, void *d2)
       e->stop_propagate = 1;
       break;
     case CTX_DRAG_MOTION:
-      float x = metadata_key_float (focused_no, "x", -10000);
+      float x = metadata_get_float (focused_no, "x", -10000);
       if (x >=0)
       {
-        x = metadata_key_float (focused_no, "x", 0.0f);
+        x = metadata_get_float (focused_no, "x", 0.0f);
         x += e->delta_x / ctx_width (e->ctx);
         metadata_set_float (focused_no, "x", x);
         ctx_set_dirty (e->ctx, 1);
       }
-      float y = metadata_key_float (focused_no, "y", -10000);
+      float y = metadata_get_float (focused_no, "y", -10000);
       if (y >=0)
       {
-        y = metadata_key_float (focused_no, "y", 0.0f);
+        y = metadata_get_float (focused_no, "y", 0.0f);
         y += e->delta_y / ctx_width (e->ctx);
         metadata_set_float (focused_no, "y", y);
         ctx_set_dirty (e->ctx, 1);
@@ -963,7 +963,7 @@ static void item_duplicate(CtxEvent *e, void *d1, void *d2)
       char *key = metadata_key_name (no + i, k);
       if (key)
       {
-        char *val = metadata_key_string (no + i, key);
+        char *val = metadata_get_string (no + i, key);
         if (val)
         {
           metadata_set (insert_pos + i, key, val);
@@ -1043,7 +1043,7 @@ static void move_after_next_sibling (CtxEvent *e, void *d1, void *d2)
 static void grow_height (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float height = metadata_key_float (no, "height", -100.0);
+  float height = metadata_get_float (no, "height", -100.0);
   height += 0.01;
   if (height > 1.2) height = 1.2;
   metadata_set_float (no, "height", height);
@@ -1054,7 +1054,7 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
 static void shrink_height (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float height = metadata_key_float (no, "height", -100.0);
+  float height = metadata_get_float (no, "height", -100.0);
   height -= 0.01;
   if (height < 0.01) height = 0.01;
   metadata_set_float (no, "height", height);
@@ -1065,7 +1065,7 @@ static void shrink_height (CtxEvent *e, void *d1, void *d2)
 static void grow_width (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float width = metadata_key_float (no, "width", -100.0);
+  float width = metadata_get_float (no, "width", -100.0);
   width += 0.01;
   if (width > 1.5) width = 1.5;
   metadata_set_float (no, "width", width);
@@ -1076,7 +1076,7 @@ static void grow_width (CtxEvent *e, void *d1, void *d2)
 static void shrink_width (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float width = metadata_key_float (no, "width", -100.0);
+  float width = metadata_get_float (no, "width", -100.0);
   width -= 0.01;
   if (width < 0.0) width = 0.01;
   metadata_set_float (no, "width", width);
@@ -1087,7 +1087,7 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
 static void move_left (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float x = metadata_key_float (no, "x", -100.0);
+  float x = metadata_get_float (no, "x", -100.0);
   x -= 0.01;
   if (x < 0.0) x = 0.0;
   metadata_set_float (no, "x", x);
@@ -1098,7 +1098,7 @@ static void move_left (CtxEvent *e, void *d1, void *d2)
 static void move_right (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float x = metadata_key_float (no, "x", -100.0);
+  float x = metadata_get_float (no, "x", -100.0);
   x += 0.01;
   if (x < 0) x = 0;
   metadata_set_float (no, "x", x);
@@ -1109,7 +1109,7 @@ static void move_right (CtxEvent *e, void *d1, void *d2)
 static void move_up (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float y = metadata_key_float (no, "y", -100.0);
+  float y = metadata_get_float (no, "y", -100.0);
   y -= 0.01;
   if (y< 0) y = 0.01;
   metadata_set_float (no, "y", y);
@@ -1120,7 +1120,7 @@ static void move_up (CtxEvent *e, void *d1, void *d2)
 static void move_down (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float y = metadata_key_float (no, "y", -100.0);
+  float y = metadata_get_float (no, "y", -100.0);
   y += 0.01;
   if (y< 0) y = 0.01;
   metadata_set_float (no, "y", y);
@@ -1554,7 +1554,7 @@ make_child_of_previous (CtxEvent *e, void *d1, void *d2)
 void
 item_cycle_bullet (CtxEvent *event, void *a, void *b)
 {
-  int bullet = metadata_key_int (focused_no, "bullet", CTX_BULLET_NONE);
+  int bullet = metadata_get_int (focused_no, "bullet", CTX_BULLET_NONE);
   switch (bullet)
   {
     case CTX_BULLET_NONE:
@@ -1582,7 +1582,7 @@ item_cycle_bullet (CtxEvent *event, void *a, void *b)
 void
 item_cycle_heading (CtxEvent *event, void *a, void *b)
 {
-  char *klass = metadata_key_string (focused_no, "class");
+  char *klass = metadata_get_string (focused_no, "class");
 
   if (!klass) klass = strdup ("");
 
@@ -2107,10 +2107,10 @@ void text_edit_return (CtxEvent *event, void *a, void *b)
   char *str = metadata_get_name (focused_no);
   metadata_insert (focused_no+1, str);
 
-  if (metadata_key_int (focused_no, "bullet", 0))
+  if (metadata_get_int (focused_no, "bullet", 0))
   {
     metadata_set_float (focused_no+1, "bullet",
-                      metadata_key_int (focused_no, "bullet", 0));
+                      metadata_get_int (focused_no, "bullet", 0));
   }
 
   metadata_dirt ();
@@ -2605,7 +2605,7 @@ static int item_get_list_index (int i)
   int count = 0;
 
   while (pos >= 0 &&
-         metadata_key_int (pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
+         metadata_get_int (pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
   {
      pos = dir_prev_sibling (pos);
      count++;
@@ -2748,7 +2748,7 @@ dir_parent (CtxEvent *event, void *a, void *b)
     {
     }
   }
-  if (metadata_key_int (focused_no, "was-folded", 0))
+  if (metadata_get_int (focused_no, "was-folded", 0))
   {
     metadata_set_float (focused_no, "folded", 1.0);
     metadata_unset (focused_no, "was-folded");
@@ -2778,7 +2778,7 @@ dir_enter_children (CtxEvent *event, void *a, void *b)
 
   if (atom == CTX_ATOM_STARTGROUP)
   {
-    if (metadata_key_int (focused_no, "folded", 0))
+    if (metadata_get_int (focused_no, "folded", 0))
     {
       metadata_set_float (focused_no, "was-folded", 1);
       metadata_set_float (focused_no, "folded", 0);
@@ -2960,7 +2960,7 @@ static void dir_layout (ITK *itk, Files *files)
           if (!layout_config.codes) hidden = 1;
           level ++;
           {
-            int folded = metadata_key_int (i, "folded", 0);
+            int folded = metadata_get_int (i, "folded", 0);
 
             if (folded && ! is_folded) is_folded = level;
           }
@@ -2993,7 +2993,7 @@ static void dir_layout (ITK *itk, Files *files)
       if (is_folded)
         hidden = 1;
 
-      int label = metadata_key_int (i, "label", -1234);
+      int label = metadata_get_int (i, "label", -1234);
       if (label == -1234) {
         if (atom == CTX_ATOM_TEXT)
           label = 0;
@@ -3002,22 +3002,22 @@ static void dir_layout (ITK *itk, Files *files)
       }
 
       int gotpos = 0;
-      char *xstr = metadata_key_string (i, "x");
-      char *ystr = metadata_key_string (i, "y");
-      float origin_x = metadata_key_float (i, "origin-x", 0.0);
-      float origin_y = metadata_key_float (i, "origin-y", 0.0);
+      char *xstr = metadata_get_string (i, "x");
+      char *ystr = metadata_get_string (i, "y");
+      float origin_x = metadata_get_float (i, "origin-x", 0.0);
+      float origin_y = metadata_get_float (i, "origin-y", 0.0);
 
 
-      float padding_left = metadata_key_float (i, "padding-left", layout_config.padding_left);
-      float padding_right = metadata_key_float (i, "padding-right", layout_config.padding_right);
-      float padding_top = metadata_key_float (i, "padding-top", layout_config.padding_top);
-      float padding_bottom = metadata_key_float (i, "padding-bottom", layout_config.padding_bottom);
+      float padding_left = metadata_get_float (i, "padding-left", layout_config.padding_left);
+      float padding_right = metadata_get_float (i, "padding-right", layout_config.padding_right);
+      float padding_top = metadata_get_float (i, "padding-top", layout_config.padding_top);
+      float padding_bottom = metadata_get_float (i, "padding-bottom", layout_config.padding_bottom);
 
       //padding_left += level * layout_config.level_indent;
 
-      float x = metadata_key_float (i, "x", 0.0);
-      float y = metadata_key_float (i, "y", 0.0);
-      //float opacity = metadata_key_float (i, "opacity", 1.0f);
+      float x = metadata_get_float (i, "x", 0.0);
+      float y = metadata_get_float (i, "y", 0.0);
+      //float opacity = metadata_get_float (i, "opacity", 1.0f);
 
       if (xstr)
       {
@@ -3034,7 +3034,7 @@ static void dir_layout (ITK *itk, Files *files)
         gotpos = 0;
 
       {
-        width  = metadata_key_float (i, "width", -1000.0);
+        width  = metadata_get_float (i, "width", -1000.0);
         if (width < 0 || layout_config.fixed_size)
           width = 
             layout_config.fill_width? itk->width * 1.0:
@@ -3045,7 +3045,7 @@ static void dir_layout (ITK *itk, Files *files)
       }
 
       {
-        height = metadata_key_float (i, "height", -1000.0);
+        height = metadata_get_float (i, "height", -1000.0);
         if (height < 0 || layout_config.fixed_size)  height =
           layout_config.fill_height? itk->height * 1.0:
           layout_config.height * em;
@@ -3329,7 +3329,7 @@ static void dir_layout (ITK *itk, Files *files)
             
 
             {
-              int bullet = metadata_key_int (i, "bullet", CTX_BULLET_NONE);
+              int bullet = metadata_get_int (i, "bullet", CTX_BULLET_NONE);
               const char *label = "cycle bullet";
               switch (bullet)
               {
@@ -3350,7 +3350,7 @@ static void dir_layout (ITK *itk, Files *files)
 
             {
               const char *label = "make heading";
-              char *klass = metadata_key_string (i, "class");
+              char *klass = metadata_get_string (i, "class");
               if (klass)
               {
                 label = "cycle heading";
@@ -3419,7 +3419,7 @@ static void dir_layout (ITK *itk, Files *files)
 
            if (!is_text_editing())
            {
-               if (metadata_key_int (i + 1, "folded", -1)>0)
+               if (metadata_get_int (i + 1, "folded", -1)>0)
                {
                ctx_add_key_binding (ctx, "+", NULL, "expand",
                           outline_expand,
@@ -3482,7 +3482,7 @@ static void dir_layout (ITK *itk, Files *files)
                        0);
           }
 
-          int bullet = metadata_key_int (i, "bullet", CTX_BULLET_NONE);
+          int bullet = metadata_get_int (i, "bullet", CTX_BULLET_NONE);
           if (bullet != CTX_BULLET_NONE)
           {
              float x = itk->x - em * 0.7 ;//+ level * em * layout_config.level_indent;
@@ -3516,7 +3516,7 @@ static void dir_layout (ITK *itk, Files *files)
              }
           }
           {
-            int folded = metadata_key_int (i+1, "folded", -3);
+            int folded = metadata_get_int (i+1, "folded", -3);
             if (folded > 0)
             {
                float x = itk->x - em * 0.5;//
@@ -3535,10 +3535,10 @@ static void dir_layout (ITK *itk, Files *files)
       else
         if (atom == CTX_ATOM_RECTANGLE)
         {
-          char *fill       = metadata_key_string (i, "fill");
-          char *stroke     = metadata_key_string (i, "stroke");
-          float line_width = metadata_key_float (i, "line-width", 1.0);
-          //float opacity    = metadata_key_float (i, "opacity", 1.0);
+          char *fill       = metadata_get_string (i, "fill");
+          char *stroke     = metadata_get_string (i, "stroke");
+          float line_width = metadata_get_float (i, "line-width", 1.0);
+          //float opacity    = metadata_get_float (i, "opacity", 1.0);
 
           ctx_rectangle (itk->ctx, itk->x, itk->y, width, height);
           if (fill)
@@ -3741,7 +3741,7 @@ static void dir_layout (ITK *itk, Files *files)
     char *key = metadata_key_name (i, k);
     if (key)
     {
-      char *val = metadata_key_string (i, key);
+      char *val = metadata_get_string (i, key);
       if (val)
       {
         itk->x += level * em * 3 + em;
@@ -3869,8 +3869,8 @@ void viewer_load_path (const char *path, const char *name)
   int no = metadata_item_to_no (name);
 
   float duration = 10.0;
-  float in = metadata_key_float (no, "in", -1);
-  float out = metadata_key_float (no, "out", -1);
+  float in = metadata_get_float (no, "in", -1);
+  float out = metadata_get_float (no, "out", -1);
   if (out > 0 && in > 0)
   {
     duration = out - in;
@@ -4333,7 +4333,7 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
 
           if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT &&
-              metadata_key_float (focused_no, "x", -1234.0) == -1234.0 &&
+              metadata_get_float (focused_no, "x", -1234.0) == -1234.0 &&
               !is_text_editing())
           {
 
@@ -4518,7 +4518,7 @@ static int card_files (ITK *itk_, void *data)
     char *key = metadata_key_name (files->items[focused_no], k);
     if (key)
     {
-      char *val = metadata_key_string (files->items[focused_no], key);
+      char *val = metadata_get_string (files->items[focused_no], key);
       if (val)
       {
         itk_labelf (itk, "%s=%s", key, val);
