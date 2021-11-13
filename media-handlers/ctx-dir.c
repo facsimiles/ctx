@@ -4868,6 +4868,7 @@ int ctx_dir_main (int argc, char **argv)
   set_layout (NULL, NULL, NULL);
   set_location (path);
   itk_main (card_files, NULL);
+  save_metadata ();
 
   ctx_string_free (commandline, 1);
 

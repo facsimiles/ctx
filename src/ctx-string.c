@@ -396,3 +396,21 @@ void ctx_string_append_printf (CtxString *string, const char *format, ...)
   ctx_string_append_str (string, buffer);
   free (buffer);
 }
+
+CtxString *ctx_string_new_printf (const char *format, ...)
+{
+  CtxString *string = ctx_string_new ("");
+  va_list ap;
+  size_t needed;
+  char *buffer;
+  va_start (ap, format);
+  needed = vsnprintf (NULL, 0, format, ap) + 1;
+  buffer = (char*)malloc (needed);
+  va_end (ap);
+  va_start (ap, format);
+  vsnprintf (buffer, needed, format, ap);
+  va_end (ap);
+  ctx_string_append_str (string, buffer);
+  free (buffer);
+  return string;
+}

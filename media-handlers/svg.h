@@ -437,20 +437,20 @@ struct _CtxStyleNode
 };
 
 typedef enum {
-  MRG_FLOAT_NONE = 0,
-  MRG_FLOAT_LEFT,
-  MRG_FLOAT_RIGHT,
-  MRG_FLOAT_FIXED
-} MrgFloat;
+  CTX_FLOAT_NONE = 0,
+  CTX_FLOAT_LEFT,
+  CTX_FLOAT_RIGHT,
+  CTX_FLOAT_FIXED
+} CtxFloat;
 
 
-typedef struct MrgFloatData {
-  MrgFloat  type;
+typedef struct CtxFloatData {
+  CtxFloat  type;
   float     x;
   float     y;
   float     width;
   float     height;
-} MrgFloatData;
+} CtxFloatData;
 
 struct _MrgHtmlState
 {
@@ -460,7 +460,7 @@ struct _MrgHtmlState
   float        block_start_y;
   float        ptly;
   float        vmarg;
-  MrgFloatData float_data[MRG_MAX_FLOATS];
+  CtxFloatData float_data[MRG_MAX_FLOATS];
   int          floats;
 };
 
@@ -686,7 +686,7 @@ struct _CtxStyle {
   unsigned char       margin_left_auto:1;
   unsigned char       margin_right_auto:1;
   unsigned char       print_symbols:1;
-  MrgFloat            float_:2;
+  CtxFloat            float_:2;
   unsigned char       stroke:1;
   MrgOverflow         overflow:2;
   MrgDisplay          display:5;
@@ -1670,8 +1670,8 @@ static float _mrg_dynamic_edge_right2 (Mrg *mrg, MrgHtmlState *state)
   if (state->floats)
     for (i = 0; i < state->floats; i++)
     {
-      MrgFloatData *f = &state->float_data[i];
-      if (f->type == MRG_FLOAT_RIGHT &&
+      CtxFloatData *f = &state->float_data[i];
+      if (f->type == CTX_FLOAT_RIGHT &&
           y >= f->y  &&
           y - em < f->y + f->height &&
 
@@ -1691,8 +1691,8 @@ static float _mrg_dynamic_edge_left2 (Mrg *mrg, MrgHtmlState *state)
   if (state->floats)
     for (i = 0; i < state->floats; i++)
     {
-      MrgFloatData *f = &state->float_data[i];
-      if (f->type == MRG_FLOAT_LEFT &&
+      CtxFloatData *f = &state->float_data[i];
+      if (f->type == CTX_FLOAT_LEFT &&
           y >= f->y &&
           y - em < f->y + f->height &&
           f->x + f->width > ret)
@@ -1766,9 +1766,9 @@ static void clear_left (MrgHtml *ctx)
   {
     for (i = 0; i < ctx->state->floats; i++)
       {
-        MrgFloatData *f = &ctx->state->float_data[i];
+        CtxFloatData *f = &ctx->state->float_data[i];
         {
-          if (f->type == MRG_FLOAT_LEFT)
+          if (f->type == CTX_FLOAT_LEFT)
           {
             if (f->y + f->height > y)
               y = f->y + f->height;
@@ -1789,9 +1789,9 @@ static void clear_right (MrgHtml *ctx)
   {
     for (i = 0; i < ctx->state->floats; i++)
       {
-        MrgFloatData *f = &ctx->state->float_data[i];
+        CtxFloatData *f = &ctx->state->float_data[i];
         {
-          if (f->type == MRG_FLOAT_RIGHT)
+          if (f->type == CTX_FLOAT_RIGHT)
           {
             if (f->y + f->height > y)
               y = f->y + f->height;
@@ -1828,7 +1828,7 @@ static void clear_both (MrgHtml *ctx)
   {
     for (i = 0; i < ctx->state->floats; i++)
       {
-        MrgFloatData *f = &ctx->state->float_data[i];
+        CtxFloatData *f = &ctx->state->float_data[i];
         {
           if (f->y + f->height > y)
             y = f->y + f->height;
@@ -1901,7 +1901,7 @@ void mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
                             const char *format, ...);
 uint64_t ctx_strhash(const char *str) ;
 
-static void mrg_parse_style_id (Mrg          *mrg,
+static void ctx_parse_style_id (Mrg          *mrg,
                                 const char   *style_id,
                                 CtxStyleNode *node)
 {
@@ -1976,7 +1976,7 @@ void _mrg_init_style (Mrg *mrg)
 
   s->text_decoration= 0;
   s->display  = MRG_DISPLAY_INLINE;
-  s->float_   = MRG_FLOAT_NONE;
+  s->float_   = CTX_FLOAT_NONE;
   s->clear    = MRG_CLEAR_NONE;
   s->overflow = MRG_OVERFLOW_VISIBLE;
   s->position = MRG_POSITION_STATIC;
@@ -2891,7 +2891,7 @@ void mrg_start_with_style (Mrg        *mrg,
 
   mrg->state->style_id = style_id ? strdup (style_id) : NULL;
 
-  mrg_parse_style_id (mrg, mrg->state->style_id, &mrg->state->style_node);
+  ctx_parse_style_id (mrg, mrg->state->style_id, &mrg->state->style_node);
 
   mrg->state->style.display = MRG_DISPLAY_INLINE;
   mrg->state->style.id_ptr = id_ptr;
@@ -3690,9 +3690,9 @@ static void mrg_css_handle_property_pass1 (Mrg *mrg, uint64_t key,
     case CTX_float:
       switch (val_hash)
       {
-        case CTX_left:  s->float_ = MRG_FLOAT_LEFT; break;
-        case CTX_right: s->float_ = MRG_FLOAT_RIGHT; break;
-        default:        s->float_ = MRG_FLOAT_NONE;
+        case CTX_left:  s->float_ = CTX_FLOAT_LEFT; break;
+        case CTX_right: s->float_ = CTX_FLOAT_RIGHT; break;
+        default:        s->float_ = CTX_FLOAT_NONE;
       }
       break;
     case CTX_overflow:
@@ -4494,7 +4494,7 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
     return;
 #endif
   if (style->display == MRG_DISPLAY_INLINE &&
-      style->float_ == MRG_FLOAT_NONE)
+      style->float_ == CTX_FLOAT_NONE)
     return;
 
   if (last)
@@ -6302,7 +6302,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
     case MRG_POSITION_STATIC:
 
-      if (style->float_ == MRG_FLOAT_RIGHT)
+      if (style->float_ == CTX_FLOAT_RIGHT)
       {
         float width = PROP(width);
 
@@ -6346,7 +6346,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         html->state->block_start_y = mrg_y (mrg);
         html->state->floats = 0;
 
-      } else if (style->float_ == MRG_FLOAT_LEFT)
+      } else if (style->float_ == CTX_FLOAT_LEFT)
       {
         float left, y;
         float width = PROP(width);
