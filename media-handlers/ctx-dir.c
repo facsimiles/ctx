@@ -61,11 +61,13 @@ typedef struct LayoutConfig
   float padding_top;
   float padding_bottom;
   float level_indent;
+
   int use_layout_boxes;
   int outliner;
   int codes;
 
   int hide_non_file;
+  float margin_top; // page_margin
 } LayoutConfig;
 
 LayoutConfig layout_config = {
@@ -219,6 +221,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.padding_right = 0.5f;
   layout_config.padding_top = 0.5f;
   layout_config.padding_bottom = 0.5f;
+  layout_config.margin_top = 3.5f;
 
   layout_config.use_layout_boxes = 1;
   layout_config.level_indent = 2.0;
@@ -365,7 +368,7 @@ void dm_set_path (Files *files, const char *path, const char *title)
   }
 #endif
 
-  CtxList *to_add = NULL;
+  CtxList *to_add = NULL; // XXX a temporary list here might be redundant
   for (int i = 0; i < files->n; i++)
   {
     int found = 0;
@@ -2171,6 +2174,7 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+
 void text_edit_delete (CtxEvent *event, void *a, void *b)
 {
   if (focused_no>=0){
@@ -2191,6 +2195,30 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     else
     {
       ctx_string_remove (str, text_edit);
+    }
+    metadata_rename (focused_no, str->str);
+    ctx_string_free (str, 1);
+    metadata_dirt ();
+    save_metadata();
+  }
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
+}
+
+void dir_join (CtxEvent *event, void *a, void *b)
+{
+  if (focused_no>=0){
+    char *name = metadata_item_name (focused_no);
+    CtxString *str = ctx_string_new (name);
+    free (name);
+    if (item_get_type_atom (focused_no+1) == CTX_ATOM_TEXT)
+    {
+      char *name_next = metadata_item_name (focused_no+1);
+      if (name[strlen(name)-1]!=' ')
+        ctx_string_append_str (str, " ");
+      ctx_string_append_str (str, name_next);
+      free (name_next);
+      metadata_remove (focused_no+1);
     }
     metadata_rename (focused_no, str->str);
     ctx_string_free (str, 1);
@@ -2823,7 +2851,7 @@ static void dir_layout (ITK *itk, Files *files)
   layout_box_count = 0;
   layout_box_no = 0;
   layout_box[0].x = 0.1;
-  layout_box[0].y = 0.02;
+  layout_box[0].y = (layout_config.margin_top * em) / itk->width;
   layout_box[0].width = 0.8;
   layout_box[0].height = 4000.0;
 
@@ -3316,6 +3344,9 @@ static void dir_layout (ITK *itk, Files *files)
                           (void*)((size_t)i));
             }
 
+
+            ctx_add_key_binding (ctx, "control-j", NULL, "join",
+                          dir_join, NULL);
 
             {
               const char *label = "make heading";
