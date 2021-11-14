@@ -68,6 +68,7 @@ typedef struct LayoutConfig
 
   int hide_non_file;
   float margin_top; // page_margin
+  int monospace;
 } LayoutConfig;
 
 LayoutConfig layout_config = {
@@ -227,6 +228,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.level_indent = 2.0;
   layout_config.outliner = 0;
   layout_config.codes = 0;
+  layout_config.monospace = 0;
 
   layout_config.hide_non_file = 0;
   if (focused_no>=0)
@@ -236,6 +238,12 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
       itk->focus_no = -1;
   }
 };
+
+static void set_text_edit (CtxEvent *e, void *d1, void *d2)
+{
+  set_layout (e, d1, d2);
+  layout_config.monospace = 1;
+}
 
 static void set_outline (CtxEvent *e, void *d1, void *d2)
 {
@@ -2226,7 +2234,6 @@ void dir_join (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-
 void text_edit_shift_return (CtxEvent *event, void *a, void *b)
 {
   if (focused_no>=0){
@@ -2892,6 +2899,8 @@ static void dir_layout (ITK *itk, Files *files)
   itk->width       = layout_box[layout_box_no].width * saved_width ;
   y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
   ctx_save (itk->ctx);
+  if (layout_config.monospace)
+          ctx_font (itk->ctx, "mono");
   ctx_font_size (itk->ctx, itk->font_size);
 
 
@@ -3762,7 +3771,7 @@ static void dir_layout (ITK *itk, Files *files)
 
   itk->x0    = saved_x0;
   itk->width = saved_width;
-  itk->y     = saved_y;
+//  itk->y     = saved_y;
 
 
 }
@@ -4272,6 +4281,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_key_binding (ctx, "control-2", NULL, "layout view", set_layout, NULL);
     ctx_add_key_binding (ctx, "control-3", NULL, "list view", set_list, NULL);
     ctx_add_key_binding (ctx, "control-4", NULL, "folder view", set_grid, NULL);
+    ctx_add_key_binding (ctx, "control-5", NULL, "text edit view", set_text_edit, NULL);
     }
 
     //if (layout_config.outliner)

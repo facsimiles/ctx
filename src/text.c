@@ -154,16 +154,41 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 
 #if CTX_FONT_ENGINE_CTX
 
-/* XXX: todo remove this, and rely on a binary search instead
- */
 static int ctx_font_find_glyph_cached (CtxFont *font, uint32_t glyph)
 {
+#if 1
+  int min       = 0;
+  int max       = font->ctx.glyphs-1;
+  uint32_t found;
+
+  do {
+    int pos = (min + max)/2;
+    found = font->ctx.index[pos*2];
+    if (found == glyph)
+    {
+      return font->ctx.index[pos*2+1];
+    } else if (min == max)
+      return -1;
+    else if (min == max-1)
+      return -1;
+    else if (found < glyph)
+    {
+      min = pos;
+    } else {
+      max = pos;
+    }
+
+  } while (min != max);
+
+  return -1;
+#else
   for (int i = 0; i < font->ctx.glyphs; i++)
     {
       if (font->ctx.index[i * 2] == glyph)
         { return font->ctx.index[i * 2 + 1]; }
     }
   return -1;
+#endif
 }
 
 static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
