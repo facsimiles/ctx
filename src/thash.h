@@ -198,8 +198,18 @@ static inline uint64_t _thash (const char *utf8)
     }
     else
     {
+#if 1
       hash = hash ^ ((hash << 4) + val);
       hash &= (((uint64_t)1<<52)-1);
+#else
+      // XXX this has better avalanche effect, but we need to tune it -
+      // and rewrite all defined constants
+      //
+      hash = hash ^ val;
+      hash = hash * 0x7f31891af3;  // XXX optimize this for avalanche effect
+      hash = hash ^ ((hash >> 16));
+      hash &= (((uint64_t)1<<52)-1);
+#endif
     }
     wordlen++;
   }
