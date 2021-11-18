@@ -1630,7 +1630,7 @@ static void draw_folder (Ctx *ctx, float x, float y, float w, float h)
   ctx_restore (ctx);
 }
 
-static void draw_img (ITK *itk, float x, float y, float w, float h, const char *path)
+static void draw_img (ITK *itk, float x, float y, float w, float h, const char *path, int fit)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
@@ -1655,8 +1655,17 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
       ctx_rectangle (ctx, x + layout_config.padding_left * em, y + layout_config.padding_top*em, w - (layout_config.padding_left + layout_config.padding_right) * em, h - (layout_config.padding_top + layout_config.padding_bottom) * em);
       ctx_save (ctx);
       ctx_translate (ctx, x + layout_config.padding_left * em, y + layout_config.padding_top * em);
-      ctx_scale (ctx, (target_width)/ imgw,
-                      (target_height) / imgh);
+      float scale_w = (target_width)/imgw;
+      float scale_h = (target_height)/imgh;
+      if (fit)
+      {
+        if (scale_w < scale_h)
+          scale_h = scale_w;
+        else
+          scale_w = scale_h;
+      }
+      ctx_scale (ctx, scale_w, scale_h);
+
       ctx_texture (ctx, reteid, 0,0);
       ctx_fill (ctx);
       ctx_restore (ctx);
@@ -1679,8 +1688,16 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
 #else
       ctx_rectangle (ctx, x + layout_config.padding_left * em, y + layout_config.padding_top*em, w - (layout_config.padding_left+layout_config.padding_right) * em, h - (layout_config.padding_top+layout_config.padding_bottom) * em);
       ctx_translate (ctx, x + layout_config.padding_left * em, y + layout_config.padding_top * em);
-      ctx_scale (ctx, (target_width)/ imgw,
-                      (target_height) / imgh);
+      float scale_w = (target_width)/imgw;
+      float scale_h = (target_height)/imgh;
+      if (fit)
+      {
+        if (scale_w < scale_h)
+          scale_h = scale_w;
+        else
+          scale_w = scale_h;
+      }
+      ctx_scale (ctx, scale_w, scale_h);
       ctx_texture (ctx, reteid, 0,0);
       ctx_fill (ctx);
      #endif
@@ -3007,8 +3024,11 @@ static void dir_layout (ITK *itk, Files *files)
       }
 
       int gotpos = 0;
+      int gotdim = 0;
       char *xstr = metadata_get_string (i, "x");
       char *ystr = metadata_get_string (i, "y");
+      char *wstr = metadata_get_string (i, "width");
+      char *hstr = metadata_get_string (i, "height");
       float origin_x = metadata_get_float (i, "origin-x", 0.0);
       float origin_y = metadata_get_float (i, "origin-y", 0.0);
 
@@ -3033,6 +3053,16 @@ static void dir_layout (ITK *itk, Files *files)
       {
         free (ystr);
         gotpos = 1;
+      }
+      if (wstr)
+      {
+        free (wstr);
+        gotdim = 1;
+      }
+      if (hstr)
+      {
+        free (hstr);
+        gotdim = 1;
       }
 
       if (layout_config.fixed_pos)
@@ -3576,7 +3606,7 @@ static void dir_layout (ITK *itk, Files *files)
         else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
         {
           if (gotpos) label = 0;
-          draw_img (itk, itk->x, itk->y, width, height, newpath);
+          draw_img (itk, itk->x, itk->y, width, height, newpath, gotdim?0:1);
           if (c->no == itk->focus_no && layout_find_item < 0 && gotpos)
           {
              float em = itk->font_size;
