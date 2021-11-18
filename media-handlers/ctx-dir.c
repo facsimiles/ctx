@@ -1660,9 +1660,15 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
       if (fit)
       {
         if (scale_w < scale_h)
+        {
           scale_h = scale_w;
+        }
         else
+        {
           scale_w = scale_h;
+          ctx_translate (ctx, 
+                   (target_width - imgw * scale_w)/2, 0.0);
+        }
       }
       ctx_scale (ctx, scale_w, scale_h);
 
@@ -1693,9 +1699,15 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
       if (fit)
       {
         if (scale_w < scale_h)
+        {
           scale_h = scale_w;
+        }
         else
+        {
           scale_w = scale_h;
+          ctx_translate (ctx, 
+                   (target_width - imgw * scale_w)/2, 0.0);
+        }
       }
       ctx_scale (ctx, scale_w, scale_h);
       ctx_texture (ctx, reteid, 0,0);
