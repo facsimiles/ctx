@@ -119,6 +119,46 @@ typedef struct Files {
 #define TEXT_EDIT_FIND_CURSOR_FIRST_ROW -9
 #define TEXT_EDIT_FIND_CURSOR_LAST_ROW  -8
 
+#define DIR_LOG_ERROR    0
+#define DIR_LOG_MESSAGE  1
+#define DIR_LOG_WARNING  2
+#define DIR_LOG_INFO     3
+#define DIR_LOG_DETAIL   4
+
+static int dir_log_level = DIR_LOG_DETAIL;
+
+static inline void dir_log (int level, const char *format, ...)
+{
+  char *log_label[] = {"  ERROR",
+                       "MESSAGE",
+                       "WARNING",
+                       "   INFO",
+                       " DETAIL"};
+  if (level > dir_log_level)
+    return;
+  va_list ap;
+  size_t needed;
+  char *buffer;
+  va_start (ap, format);
+  needed = vsnprintf (NULL, 0, format, ap) + 1;
+  buffer = (char*)malloc (needed);
+  va_end (ap);
+  va_start (ap, format);
+  vsnprintf (buffer, needed, format, ap);
+  va_end (ap);
+
+  if (level < 0) level = 0; if (level > DIR_LOG_DETAIL) level = DIR_LOG_DETAIL;
+  fprintf (stderr, "%s %s\n", log_label[level], buffer);
+  free (buffer);
+}
+
+#define DIR_MESSAGE(args...) dir_log(DIR_LOG_MESSAGE, args)
+#define DIR_INFO(args...)    dir_log(DIR_LOG_INFO, args)
+#define DIR_ERROR(args...)   dir_log(DIR_LOG_ERROR, args)
+#define DIR_WARNING(args...) dir_log(DIR_LOG_WARNING, args)
+#define DIR_DETAIL(args...)  dir_log(DIR_LOG_DETAIL,  args)
+
+
 CtxList *thumb_queue = NULL;
 typedef struct ThumbQueueItem
 {
@@ -129,6 +169,7 @@ typedef struct ThumbQueueItem
 static void queue_thumb (const char *path, const char *thumbpath)
 {
   ThumbQueueItem *item;
+  DIR_INFO("queue thumb ", path);
   for (CtxList *l = thumb_queue; l; l=l->next)
   {
     item = l->data;
@@ -332,6 +373,8 @@ void dm_set_path (Files *files, const char *path, const char *title)
   char *resolved_path = realpath (path, NULL);
   char *title2 = NULL;
 
+  DIR_INFO("setting path %s %s", path, title);
+
   if (title) title2 = strdup (title);
 
   if (files->path)
@@ -393,9 +436,8 @@ void dm_set_path (Files *files, const char *path, const char *title)
     int n = metadata_insert(-1, name);
     metadata_set (n, "type", "ctx/file");
     ctx_list_remove (&to_add, name);
-    added++;
-    files->count++;
   }
+  files->count = metadata_count ();
 
   // TODO remove non-existent files
 
@@ -524,12 +566,18 @@ static void _set_location (const char *location)
   }
   else if (location[0] == '/' || location[0] == '.')
   {
-    if (path_is_dir (location))
+    char *loc = location;
+    if (location[0] == '.' && location[1] == '/')
     {
-      dm_set_path (files, location, NULL);
+      loc = ctx_strdup_printf ("%s/%s", files->path, location+2);
+    }
+    if (path_is_dir (loc))
+    {
+      dm_set_path (files, loc, NULL);
       focused_no = -1;
       layout_find_item = 0;
     }
+    if (loc != location) free (loc);
   } else
   {
     char *path = dir_metadata_path (location);
@@ -613,7 +661,6 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
   set_location (new_path);
 
   layout_find_item = metadata_item_to_no (strrchr (old_path, '/')+1);
-  //fprintf (stderr, "%i, %s\n", layout_find_item, strrchr (old_path, '/')+1);
   free (old_path);
 
   itk->focus_no = -1;
@@ -997,7 +1044,7 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
   //int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
   //if (virtual)
   //
-//  fprintf (stderr, "items to remove %i\n", count);
+  DIR_DETAIL("items to remove %i", count);
   CtxAtom pre_atom = item_get_type_atom (no-1);
   CtxAtom post_atom = item_get_type_atom (no+count);
   for (int i = 0; i < count; i++)
@@ -1009,7 +1056,7 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
   if (pre_atom == CTX_ATOM_STARTGROUP &&
       post_atom == CTX_ATOM_ENDGROUP)
   {
- //       fprintf (stderr, "removed group\n");
+    DIR_DETAIL("removed group");
     metadata_remove (no-1);
     metadata_remove (no-1);
     layout_find_item = no-2;
@@ -2340,6 +2387,12 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
 
   text_edit--;
 
+  if (focused_no < 0)
+  {
+     event->stop_propagate = 1;
+     return;
+  }
+
   if (text_edit < 0)
   {
     char *name = metadata_get_name (focused_no);
@@ -2446,6 +2499,11 @@ int was_editing_before_tail = 0;
 
 void text_edit_up (CtxEvent *event, void *a, void *b)
 {
+  if (focused_no < 0){
+    event->stop_propagate=1;
+    return;
+  }
+
   if (prev_line_pos >= 0)
   {
     text_edit = prev_line_pos;
@@ -2555,9 +2613,18 @@ int item_context_active = 0;
 static void
 make_tail_entry ()
 {
+  if (focused_no == -1)
+  {
+    metadata_insert (0, " ");
+    focused_no = 0;
+    layout_find_item = focused_no = focused_no;
+  }
+  else
+  {
   metadata_insert (focused_no+items_to_move(focused_no), "");
-  metadata_dirt ();
   layout_find_item = focused_no = dir_next_sibling (focused_no);
+  }
+  metadata_dirt ();
   itk->focus_no = -1;
   was_editing_before_tail = (text_edit != TEXT_EDIT_OFF);
   text_edit = 0;
@@ -3340,39 +3407,32 @@ static void dir_layout (ITK *itk, Files *files)
             ctx_add_key_binding (ctx, "alt-right", NULL, "forward", history_forward, NULL);
 
             ctx_add_key_binding (ctx, "alt-up", NULL, "go to parent",
-                          dir_go_parent,
-                          (void*)((size_t)i));
+                          dir_go_parent, NULL);
 
             ctx_add_key_binding (ctx, "alt-down", NULL, "enter item",
-                          item_activate,
-                          (void*)((size_t)i));
+                          item_activate, NULL);
 
 
             ctx_add_key_binding (ctx, "control-d", NULL, "duplicate item",
-                          item_duplicate,
-                          (void*)((size_t)i));
+                          item_duplicate, NULL);
 
             ctx_add_key_binding (ctx, "delete", NULL, "remove item",
-                          item_delete,
-                          (void*)((size_t)i));
+                          item_delete, NULL);
 
             if (!layout_config.outliner)
             {
                ctx_add_key_binding (ctx, "alt-return", NULL, "item properties",
-                          item_properties,
-                          (void*)((size_t)i));
+                          item_properties, NULL);
 
 
             if (layout_focused_link >= 0)
             {
             ctx_add_key_binding (ctx, "return", NULL, "follow link",
-                          dir_follow_link,
-                          (void*)((size_t)i));
+                          dir_follow_link, NULL);
             }
             else
             ctx_add_key_binding (ctx, "return", NULL, "activate/edit",
-                          item_activate,
-                          (void*)((size_t)i));
+                          item_activate, NULL);
             
 
             {
@@ -3387,13 +3447,12 @@ static void dir_layout (ITK *itk, Files *files)
                 case CTX_BULLET_DONE:   label = "no bullet"; break;
               }
               ctx_add_key_binding (ctx, "control-t", NULL, label,
-                          item_cycle_bullet,
-                          (void*)((size_t)i));
+                          item_cycle_bullet, NULL);
             }
 
 
             ctx_add_key_binding (ctx, "control-j", NULL, "join",
-                          dir_join, NULL);
+                                 dir_join, NULL);
 
             {
               const char *label = "make heading";
@@ -3408,7 +3467,7 @@ static void dir_layout (ITK *itk, Files *files)
 
               }
               ctx_add_key_binding (ctx, "control-h", NULL, label,
-                          item_cycle_heading, NULL);
+                                   item_cycle_heading, NULL);
             }
 
             ctx_add_key_binding (ctx, "insert", NULL, "insert text",
@@ -3420,45 +3479,35 @@ static void dir_layout (ITK *itk, Files *files)
           if (!layout_config.outliner && !is_text_editing ())
           {
 
-          ctx_add_key_binding (ctx, "control-page-down", NULL, "move after next sibling", move_after_next_sibling, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-page-up", NULL, "move before previous sibling", move_before_previous_sibling, 
-                         (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "control-page-down", NULL, "move after next sibling", move_after_next_sibling, NULL);
+          ctx_add_key_binding (ctx, "control-page-up", NULL, "move before previous sibling", move_before_previous_sibling, NULL);
 
           if (gotpos)
           {
-          ctx_add_key_binding (ctx, "shift-control-down", NULL, "grow height", grow_height, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "shift-control-up", NULL, "shrink height", shrink_height, 
-                         (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "shift-control-down", NULL, "grow height", grow_height, NULL);
+          ctx_add_key_binding (ctx, "shift-control-up", NULL, "shrink height", shrink_height, NULL);
 
-          ctx_add_key_binding (ctx, "shift-control-left", NULL, "shrink width", shrink_width, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "shift-control-right", NULL, "grow width", grow_width, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-left", NULL, "move left", move_left, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-right", NULL, "move right", move_right, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-up", NULL, "move up", move_up, 
-                         (void*)((size_t)i));
-          ctx_add_key_binding (ctx, "control-down", NULL, "move down", move_down, 
-                         (void*)((size_t)i));
+          ctx_add_key_binding (ctx, "shift-control-left", NULL, "shrink width", shrink_width, NULL);
+          ctx_add_key_binding (ctx, "shift-control-right", NULL, "grow width", grow_width, NULL);
+          ctx_add_key_binding (ctx, "control-left", NULL, "move left", move_left, NULL);
+          ctx_add_key_binding (ctx, "control-right", NULL, "move right", move_right, NULL);
+          ctx_add_key_binding (ctx, "control-up", NULL, "move up", move_up, NULL);
+          ctx_add_key_binding (ctx, "control-down", NULL, "move down", move_down, NULL);
           }
           else
           {
             ctx_add_key_binding (ctx, "control-down", NULL,
-                            "move after next sibling", move_after_next_sibling, (void*)((size_t)i));
+                            "move after next sibling", move_after_next_sibling, NULL);
             ctx_add_key_binding (ctx, "control-up", NULL,
-                            "move before previous sibling", move_before_previous_sibling, (void*)((size_t)i));
+                            "move before previous sibling", move_before_previous_sibling, NULL);
 
             ctx_add_key_binding (ctx, "control-left", NULL,
                             "make sibling of parent", make_sibling_of_parent, 
-                           (void*)((size_t)i));
+                            NULL);
 
             ctx_add_key_binding (ctx, "control-right", NULL,
                             "make child of previous", make_child_of_previous, 
-                           (void*)((size_t)i));
+                            NULL);
 
           }
           }
@@ -3469,17 +3518,14 @@ static void dir_layout (ITK *itk, Files *files)
                if (metadata_get_int (i + 1, "folded", -1)>0)
                {
                ctx_add_key_binding (ctx, "+", NULL, "expand",
-                          outline_expand,
-                          (void*)((size_t)i));
+                          outline_expand, NULL);
                ctx_add_key_binding (ctx, "=", NULL, "expand",
-                          outline_expand,
-                          (void*)((size_t)i));
+                          outline_expand, NULL);
                }
                else if (item_get_type_atom (i + 1) == CTX_ATOM_STARTGROUP)
                {
                ctx_add_key_binding (ctx, "-", NULL, "fold",
-                          outline_collapse,
-                          (void*)((size_t)i));
+                          outline_collapse, NULL);
                }
            }
 
