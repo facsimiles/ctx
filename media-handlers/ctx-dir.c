@@ -97,12 +97,23 @@ int  ctx_sha1_done    (CtxSHA1 *sha1, unsigned char *out);
 
 extern Ctx *ctx;
 
-typedef struct Files {
+#define METADATA_NOTEST 1
+
+typedef struct Collection {
   char   *path;
   char   *title;
-
   int     count;
-} Files;
+
+  char   *metadata;
+  int     metadata_len;
+  long    metadata_size;
+  char   *metadata_path;
+  char   *metadata_cache;
+  int     metadata_cache_no;
+} Collection;
+
+#include "metadata/metadata.c"
+
 
 
 #define PATH_SEP "/"
@@ -117,7 +128,7 @@ typedef struct Files {
 #define DIR_LOG_INFO     3
 #define DIR_LOG_DETAIL   4
 
-static int dir_log_level = DIR_LOG_DETAIL;
+static int dir_log_level = DIR_LOG_ERROR;
 
 static inline void dir_log (int level, const char *format, ...)
 {
@@ -139,7 +150,8 @@ static inline void dir_log (int level, const char *format, ...)
   vsnprintf (buffer, needed, format, ap);
   va_end (ap);
 
-  if (level < 0) level = 0; if (level > DIR_LOG_DETAIL) level = DIR_LOG_DETAIL;
+  if (level < 0) level = 0;
+  if (level > DIR_LOG_DETAIL) level = DIR_LOG_DETAIL;
   fprintf (stderr, "%s %s\n", log_label[level], buffer);
   free (buffer);
 }
@@ -222,8 +234,6 @@ static int custom_sort (const struct dirent **a,
   return strcmp ((*a)->d_name , (*b)->d_name);
 }
 
-#define METADATA_NOTEST 1
-#include "metadata/metadata.c"
 
 typedef enum {
   CTX_DIR_LAYOUT,
@@ -335,32 +345,36 @@ typedef enum CtxAtom {
  CTX_ATOM_FILE,
 } CtxAtom;
 
-CtxAtom item_get_type_atom (int i)
+Collection file_state;
+Collection *collection = &file_state;
+
+
+CtxAtom item_get_type_atom (Collection *collection, int i)
 {
-char *type = metadata_get_string (i, "type");
-if (type)
-{
-   if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
-     return CTX_ATOM_LAYOUTBOX;
-   else if (!strcmp (type, "ctx/newpage"))    return CTX_ATOM_NEWPAGE;
-   else if (!strcmp (type, "ctx/startpage"))  return CTX_ATOM_STARTPAGE;
-   else if (!strcmp (type, "ctx/startgroup")) return CTX_ATOM_STARTGROUP;
-   else if (!strcmp (type, "ctx/endgroup"))   return CTX_ATOM_ENDGROUP;
-   else if (!strcmp (type, "ctx/rectangle"))  return CTX_ATOM_RECTANGLE;
-   else if (!strcmp (type, "ctx/text"))       return CTX_ATOM_TEXT;
-   else if (!strcmp (type, "ctx/ctx"))        return CTX_ATOM_CTX;
-   else if (!strcmp (type, "ctx/file"))       return CTX_ATOM_FILE;
-   free (type);
-}
+  char *type = metadata_get_string (collection, i, "type");
+  if (type)
+  {
+    if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
+      return CTX_ATOM_LAYOUTBOX;
+    else if (!strcmp (type, "ctx/newpage"))    return CTX_ATOM_NEWPAGE;
+    else if (!strcmp (type, "ctx/startpage"))  return CTX_ATOM_STARTPAGE;
+    else if (!strcmp (type, "ctx/startgroup")) return CTX_ATOM_STARTGROUP;
+    else if (!strcmp (type, "ctx/endgroup"))   return CTX_ATOM_ENDGROUP;
+    else if (!strcmp (type, "ctx/rectangle"))  return CTX_ATOM_RECTANGLE;
+    else if (!strcmp (type, "ctx/text"))       return CTX_ATOM_TEXT;
+    else if (!strcmp (type, "ctx/ctx"))        return CTX_ATOM_CTX;
+    else if (!strcmp (type, "ctx/file"))       return CTX_ATOM_FILE;
+    free (type);
+  }
   return CTX_ATOM_TEXT;
 }
 
-Files file_state;
-Files *files = &file_state;
 static int metadata_dirty = 0;
 
-
-void dm_set_path (Files *files, const char *path, const char *title)
+void
+collection_set_path (Collection *collection,
+                     const char *path,
+                     const char *title)
 {
   char *resolved_path = realpath (path, NULL);
   char *title2 = NULL;
@@ -372,16 +386,16 @@ void dm_set_path (Files *files, const char *path, const char *title)
 
   if (title) title2 = strdup (title);
 
-  if (files->path)
-    free (files->path);
-  files->path = resolved_path;
-  if (files->title)
-    free (files->title);
-  files->title = title2;
+  if (collection->path)
+    free (collection->path);
+  collection->path = resolved_path;
+  if (collection->title)
+    free (collection->title);
+  collection->title = title2;
 
-  n = scandir (files->path, &namelist, NULL, custom_sort);
-  metadata_load (resolved_path);
-  files->count = metadata_count ();
+  n = scandir (collection->path, &namelist, NULL, custom_sort);
+  metadata_load (collection, resolved_path);
+  collection->count = metadata_count (collection);
 
 #if 0
   {
@@ -414,32 +428,31 @@ void dm_set_path (Files *files, const char *path, const char *title)
   {
     int found = 0;
     const char *name = namelist[i]->d_name;
-    if (metadata_item_to_no (name)>=0)
+    if (metadata_item_to_no (collection, name)>=0)
        found = 1;
     if (!found && (name[0] != '.'))
     {
       ctx_list_prepend (&to_add, strdup (name));
     }
   }
-  int added = 0;
   while (to_add)
   {
     char *name = to_add->data;
-    int n = metadata_insert(-1, name);
-    metadata_set (n, "type", "ctx/file");
+    int n = metadata_insert(collection, -1, name);
+    metadata_set (collection, n, "type", "ctx/file");
     ctx_list_remove (&to_add, name);
     free (name);
   }
 
-  files->count = metadata_count ();
+  collection->count = metadata_count (collection);
   CtxList *to_remove = NULL;
-  for (int i = 0; i < files->count; i++)
+  for (int i = 0; i < collection->count; i++)
   {
-    int atom = item_get_type_atom (i);
+    int atom = item_get_type_atom (collection, i);
     if (atom == CTX_ATOM_FILE)
     {
-      char *name = metadata_get_name (i);
-      char *path = ctx_strdup_printf ("%s/%s", files->path, name);
+      char *name = metadata_get_name (collection, i);
+      char *path = ctx_strdup_printf ("%s/%s", collection->path, name);
       struct stat stat_buf;
       if (lstat (path, &stat_buf) != 0)
       {
@@ -454,18 +467,18 @@ void dm_set_path (Files *files, const char *path, const char *title)
   {
     char *name = to_remove->data;
     int no = 0;
-    if ((no = metadata_item_to_no (name))>=0)
+    if ((no = metadata_item_to_no (collection, name))>=0)
     {
-      metadata_remove (no);
+      metadata_remove (collection, no);
     }
     ctx_list_remove (&to_remove, name);
     free (name);
   }
 
-  files->count = metadata_count ();
+  collection->count = metadata_count (collection);
   free (namelist);
 
-  // TODO remove non-existent files
+  // TODO remove non-existent collection
 
   //if (added)
   //  metadata_dirt();
@@ -474,8 +487,8 @@ void dm_set_path (Files *files, const char *path, const char *title)
 static void save_metadata(void)
 {  if (metadata_dirty)
    {
-     metadata_save ();
-     dm_set_path (files, files->path, files->title);
+     metadata_save (collection);
+     collection_set_path (collection, collection->path, collection->title);
      metadata_dirty = 0;
    }
 
@@ -484,9 +497,9 @@ static void save_metadata(void)
 static void metadata_dirt(void)
 {
   metadata_dirty++;
-  metadata_cache_no=-3;
+  collection->metadata_cache_no=-3;
   //metadata_save ();
-  files->count = metadata_count ();
+  collection->count = metadata_count (collection);
 //  save_metadata ();
 }
 
@@ -544,14 +557,12 @@ static inline int is_text_editing (void)
 
 static void dir_insert (CtxEvent *e, void *d1, void *d2)
 {
-  metadata_insert (focused_no, "");
+  metadata_insert (collection, focused_no, "");
   text_edit = 0;
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
   e->stop_propagate = 1;
 }
-
-
 
 static int path_is_dir (const char *path)
 {
@@ -574,7 +585,7 @@ static void _set_location (const char *location)
   {
     if (path_is_dir (getenv ("HOME")))
     {
-      dm_set_path (files, getenv ("HOME"), NULL);
+      collection_set_path (collection, getenv ("HOME"), NULL);
       focused_no = -1;
       layout_find_item = 0;
     }
@@ -584,7 +595,7 @@ static void _set_location (const char *location)
     char *tpath = ctx_strdup_printf ("%s/%s", getenv("HOME"), &location[2]);
     if (path_is_dir (tpath))
     {
-      dm_set_path (files, tpath, NULL);
+      collection_set_path (collection, tpath, NULL);
       focused_no = -1;
       layout_find_item = 0;
     }
@@ -592,14 +603,14 @@ static void _set_location (const char *location)
   }
   else if (location[0] == '/' || location[0] == '.')
   {
-    char *loc = location;
+    char *loc = (char*)location;
     if (location[0] == '.' && location[1] == '/')
     {
-      loc = ctx_strdup_printf ("%s/%s", files->path, location+2);
+      loc = ctx_strdup_printf ("%s/%s", collection->path, location+2);
     }
     if (path_is_dir (loc))
     {
-      dm_set_path (files, loc, NULL);
+      collection_set_path (collection, loc, NULL);
       focused_no = -1;
       layout_find_item = 0;
     }
@@ -614,7 +625,7 @@ static void _set_location (const char *location)
     {
       mkdir (path, 0777);
     }
-    dm_set_path (files, path, location);
+    collection_set_path (collection, path, location);
     free (path);
     focused_no = 0;
     layout_find_item = 0;
@@ -630,10 +641,10 @@ static void history_forward (CtxEvent *event, void *d1, void *d2)
   char *location = future->data;
   ctx_list_remove (&future, location);
 
-  if (files->title)
-    ctx_list_prepend (&history, strdup (files->title));
+  if (collection->title)
+    ctx_list_prepend (&history, strdup (collection->title));
   else
-    ctx_list_prepend (&history, strdup (files->path));
+    ctx_list_prepend (&history, strdup (collection->path));
 
   _set_location (location);
   free (location);
@@ -649,10 +660,10 @@ static void history_back (CtxEvent *event, void *d1, void *d2)
   char *location = history->data;
   ctx_list_remove (&history, location);
 
-  if (files->title)
-    ctx_list_prepend (&future, strdup (files->title));
+  if (collection->title)
+    ctx_list_prepend (&future, strdup (collection->title));
   else
-    ctx_list_prepend (&future, strdup (files->path));
+    ctx_list_prepend (&future, strdup (collection->path));
 
   _set_location (location);
   ctx_set_dirty (event->ctx, 1);
@@ -669,12 +680,12 @@ static void set_location (const char *location)
     free (future->data);
     ctx_list_remove (&future, future->data);
   }
-  if (files->path)
+  if (collection->path)
   {
-  if (files->title)
-    ctx_list_prepend (&history, strdup (files->title));
+  if (collection->title)
+    ctx_list_prepend (&history, strdup (collection->title));
   else
-    ctx_list_prepend (&history, strdup (files->path));
+    ctx_list_prepend (&history, strdup (collection->path));
   }
   _set_location (location);
 }
@@ -682,11 +693,11 @@ static void set_location (const char *location)
 
 static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
 {
-  char *old_path = strdup (files->path);
-  char *new_path = get_dirname (files->path);
+  char *old_path = strdup (collection->path);
+  char *new_path = get_dirname (collection->path);
   set_location (new_path);
 
-  layout_find_item = metadata_item_to_no (strrchr (old_path, '/')+1);
+  layout_find_item = metadata_item_to_no (collection, strrchr (old_path, '/')+1);
   free (old_path);
 
   itk->focus_no = -1;
@@ -708,10 +719,10 @@ static void outline_expand (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
   e->stop_propagate = 1;
-  if (item_get_type_atom (no+1) != CTX_ATOM_STARTGROUP)
+  if (item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
     return;
 
-  metadata_unset (no+1, "folded");
+  metadata_unset (collection, no+1, "folded");
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -721,10 +732,10 @@ static void outline_collapse (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
   int no = focused_no;
   e->stop_propagate = 1;
-  if (item_get_type_atom (no+1) != CTX_ATOM_STARTGROUP)
+  if (item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
     return;
 
-  metadata_set_float (no+1, "folded", 1);
+  metadata_set_float (collection, no+1, "folded", 1);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -739,7 +750,7 @@ static int layout_focused_link = -1;
 
 static int dir_item_count_links (int i)
 {
-  char *name = metadata_get_name (i);
+  char *name = metadata_get_name (collection, i);
   char *p = name;
   int in_link = 0;
   int count = 0;
@@ -828,7 +839,7 @@ static char *string_link_no (const char *string, int link_no)
 
 static char *dir_item_link_no (int item, int link_no)
 {
-  char *name = metadata_get_name (item);
+  char *name = metadata_get_name (collection, item);
   char *ret = string_link_no (name, link_no);
   free (name);
   return ret;
@@ -888,7 +899,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   //CtxEvent *e = &event; // we make a copy to permit recursion
   int no = focused_no;
   viewer_no = no;
-  int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
+  int virtual = (item_get_type_atom (collection, no) == CTX_ATOM_TEXT);
 
   if (virtual)
   {
@@ -901,7 +912,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   }
 
   char *new_path;
-  char *name = metadata_get_name (no);
+  char *name = metadata_get_name (collection, no);
 
   if (!strcmp (name, ".."))
   {
@@ -911,7 +922,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   }
   else
   {
-    new_path = ctx_strdup_printf ("%s/%s", files->path, name);
+    new_path = ctx_strdup_printf ("%s/%s", collection->path, name);
   }
   const char *media_type = ctx_path_get_media_type (new_path); 
   if (!strcmp(media_type, "inode/directory"))
@@ -942,20 +953,20 @@ static void item_drag (CtxEvent *e, void *d1, void *d2)
       e->stop_propagate = 1;
       break;
     case CTX_DRAG_MOTION:
-      float x = metadata_get_float (focused_no, "x", -10000);
+      float x = metadata_get_float (collection, focused_no, "x", -10000);
       if (x >=0)
       {
-        x = metadata_get_float (focused_no, "x", 0.0f);
+        x = metadata_get_float (collection, focused_no, "x", 0.0f);
         x += e->delta_x / ctx_width (e->ctx);
-        metadata_set_float (focused_no, "x", x);
+        metadata_set_float (collection, focused_no, "x", x);
         ctx_set_dirty (e->ctx, 1);
       }
-      float y = metadata_get_float (focused_no, "y", -10000);
+      float y = metadata_get_float (collection, focused_no, "y", -10000);
       if (y >=0)
       {
-        y = metadata_get_float (focused_no, "y", 0.0f);
+        y = metadata_get_float (collection, focused_no, "y", 0.0f);
         y += e->delta_y / ctx_width (e->ctx);
-        metadata_set_float (focused_no, "y", y);
+        metadata_set_float (collection, focused_no, "y", y);
         ctx_set_dirty (e->ctx, 1);
       }
       e->stop_propagate = 1;
@@ -989,12 +1000,12 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
-static int item_get_level (int no)
+static int item_get_level (Collection *collection, int no)
 {
   int level = 0;
   for (int i = 0; i <= no; i++)
   {
-    int atom = item_get_type_atom (i);
+    int atom = item_get_type_atom (collection, i);
     switch (atom)
     {
       case CTX_ATOM_STARTGROUP:
@@ -1011,15 +1022,15 @@ static int item_get_level (int no)
 }
 
 
-static int items_to_move (int no)
+static int items_to_move (Collection *collection, int no)
 {
   int count = 1;
-  int self_level = item_get_level (no);
+  int self_level = item_get_level (collection, no);
   int level;
 
   do {
     no ++;
-    level = item_get_level (no);
+    level = item_get_level (collection, no);
     if (level > self_level) count++;
   } while (level > self_level);
   if (count > 1) count ++;
@@ -1030,24 +1041,24 @@ static int items_to_move (int no)
 static void item_duplicate(CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  int count = items_to_move (no);
+  int count = items_to_move (collection, no);
 
   int insert_pos = no + count;
   for (int i = 0; i < count; i ++)
   {
-    char *name = metadata_get_name (no);
-    metadata_insert (insert_pos + i, name);
+    char *name = metadata_get_name (collection, no);
+    metadata_insert (collection, insert_pos + i, name);
     free (name);
-    int keys = metadata_item_key_count (no + i);
+    int keys = metadata_item_key_count (collection, no + i);
     for (int k = 0; k < keys; k++)
     {
-      char *key = metadata_key_name (no + i, k);
+      char *key = metadata_key_name (collection, no + i, k);
       if (key)
       {
-        char *val = metadata_get_string (no + i, key);
+        char *val = metadata_get_string (collection, no + i, key);
         if (val)
         {
-          metadata_set (insert_pos + i, key, val);
+          metadata_set (collection, insert_pos + i, key, val);
           //itk->x += level * em * 3 + em;
           //itk_labelf (itk, "%s=%s", key, val);
           free (val);
@@ -1065,17 +1076,17 @@ static void item_duplicate(CtxEvent *e, void *d1, void *d2)
 static void item_delete (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  int count = items_to_move (no);
+  int count = items_to_move (collection, no);
 
-  //int virtual = (item_get_type_atom (no) == CTX_ATOM_TEXT);
+  //int virtual = (item_get_type_atom (collection, no) == CTX_ATOM_TEXT);
   //if (virtual)
   //
   DIR_DETAIL("items to remove %i", count);
-  CtxAtom pre_atom = item_get_type_atom (no-1);
-  CtxAtom post_atom = item_get_type_atom (no+count);
+  CtxAtom pre_atom = item_get_type_atom (collection, no-1);
+  CtxAtom post_atom = item_get_type_atom (collection, no+count);
   for (int i = 0; i < count; i++)
   {
-    metadata_remove (no);
+    metadata_remove (collection, no);
   }
 
 #if 1
@@ -1083,8 +1094,8 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
       post_atom == CTX_ATOM_ENDGROUP)
   {
     DIR_DETAIL("removed group");
-    metadata_remove (no-1);
-    metadata_remove (no-1);
+    metadata_remove (collection, no-1);
+    metadata_remove (collection, no-1);
     layout_find_item = no-2;
     itk->focus_no = -1;
   }
@@ -1109,8 +1120,8 @@ static void move_after_next_sibling (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
   //char *new_path;
-  //if (!strcmp (files->items[no], ".."))dd
-  if (no<files->count-1)
+  //if (!strcmp (collection->items[no], ".."))dd
+  if (no<collection->count-1)
   {
     metadata_swap (no, no+1);
     metadata_dirt();
@@ -1124,10 +1135,10 @@ static void move_after_next_sibling (CtxEvent *e, void *d1, void *d2)
 static void grow_height (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float height = metadata_get_float (no, "height", -100.0);
+  float height = metadata_get_float (collection, no, "height", -100.0);
   height += 0.01;
   if (height > 1.2) height = 1.2;
-  metadata_set_float (no, "height", height);
+  metadata_set_float (collection, no, "height", height);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1135,10 +1146,10 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
 static void shrink_height (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float height = metadata_get_float (no, "height", -100.0);
+  float height = metadata_get_float (collection, no, "height", -100.0);
   height -= 0.01;
   if (height < 0.01) height = 0.01;
-  metadata_set_float (no, "height", height);
+  metadata_set_float (collection, no, "height", height);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1146,10 +1157,10 @@ static void shrink_height (CtxEvent *e, void *d1, void *d2)
 static void grow_width (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float width = metadata_get_float (no, "width", -100.0);
+  float width = metadata_get_float (collection, no, "width", -100.0);
   width += 0.01;
   if (width > 1.5) width = 1.5;
-  metadata_set_float (no, "width", width);
+  metadata_set_float (collection, no, "width", width);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1157,10 +1168,10 @@ static void grow_width (CtxEvent *e, void *d1, void *d2)
 static void shrink_width (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float width = metadata_get_float (no, "width", -100.0);
+  float width = metadata_get_float (collection, no, "width", -100.0);
   width -= 0.01;
   if (width < 0.0) width = 0.01;
-  metadata_set_float (no, "width", width);
+  metadata_set_float (collection, no, "width", width);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1168,10 +1179,10 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
 static void move_left (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float x = metadata_get_float (no, "x", -100.0);
+  float x = metadata_get_float (collection, no, "x", -100.0);
   x -= 0.01;
   if (x < 0.0) x = 0.0;
-  metadata_set_float (no, "x", x);
+  metadata_set_float (collection, no, "x", x);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1179,10 +1190,10 @@ static void move_left (CtxEvent *e, void *d1, void *d2)
 static void move_right (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float x = metadata_get_float (no, "x", -100.0);
+  float x = metadata_get_float (collection, no, "x", -100.0);
   x += 0.01;
   if (x < 0) x = 0;
-  metadata_set_float (no, "x", x);
+  metadata_set_float (collection, no, "x", x);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1190,10 +1201,10 @@ static void move_right (CtxEvent *e, void *d1, void *d2)
 static void move_up (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float y = metadata_get_float (no, "y", -100.0);
+  float y = metadata_get_float (collection, no, "y", -100.0);
   y -= 0.01;
   if (y< 0) y = 0.01;
-  metadata_set_float (no, "y", y);
+  metadata_set_float (collection, no, "y", y);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1201,10 +1212,10 @@ static void move_up (CtxEvent *e, void *d1, void *d2)
 static void move_down (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float y = metadata_get_float (no, "y", -100.0);
+  float y = metadata_get_float (collection, no, "y", -100.0);
   y += 0.01;
   if (y< 0) y = 0.01;
-  metadata_set_float (no, "y", y);
+  metadata_set_float (collection, no, "y", y);
   metadata_dirt ();
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1215,7 +1226,7 @@ static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
   int no = focused_no;
   if (no>0)
   {
-    metadata_swap (no, no-1);
+    metadata_swap (collection, no, no-1);
     metadata_dirt ();
     ctx_set_dirty (e->ctx, 1);
     itk_focus (itk, -1);
@@ -1224,14 +1235,14 @@ static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
 #endif
 
 static int
-dir_prev (int i)
+dir_prev (Collection *collection, int i)
 {
  int pos = i;
  int again = 0;
 
  do {
    pos -= 1;
-   int atom = item_get_type_atom (pos);
+   int atom = item_get_type_atom (collection, pos);
    switch (atom)
    {
      case CTX_ATOM_STARTGROUP:
@@ -1248,14 +1259,14 @@ dir_prev (int i)
 
 
 static int
-dir_next (int i)
+dir_next (Collection *collection, int i)
 {
  int pos = i;
  int again = 0;
 
  do {
    pos += 1;
-   int atom = item_get_type_atom (pos);
+   int atom = item_get_type_atom (collection, pos);
    switch (atom)
    {
      case CTX_ATOM_STARTGROUP:
@@ -1271,13 +1282,13 @@ dir_next (int i)
 }
 
 static int
-dir_prev_sibling (int i)
+dir_prev_sibling (Collection *collection, int i)
 {
   int pos = i;
   int start_level = 0;
   int level = 0; // not absolute level, but relative level balance
   pos --;
-  int atom = item_get_type_atom (pos);
+  int atom = item_get_type_atom (collection, pos);
   if (atom == CTX_ATOM_ENDGROUP)
           level ++;
   else if (atom == CTX_ATOM_STARTGROUP)
@@ -1285,7 +1296,7 @@ dir_prev_sibling (int i)
   while (level > start_level)
   {
     pos--;
-    atom = item_get_type_atom (pos);
+    atom = item_get_type_atom (collection, pos);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -1303,7 +1314,7 @@ dir_prev_sibling (int i)
          atom == CTX_ATOM_NEWPAGE)
   {
     pos--;
-    atom = item_get_type_atom (pos);
+    atom = item_get_type_atom (collection, pos);
   }
   if (level < start_level || pos < 0)
   {
@@ -1313,7 +1324,7 @@ dir_prev_sibling (int i)
 }
 
 static int
-dir_next_sibling (int i)
+dir_next_sibling (Collection *collection, int i)
 {
   int start_level = 0;
   int level = 0;
@@ -1321,7 +1332,7 @@ dir_next_sibling (int i)
   int atom;
  
   i++;
-  atom = item_get_type_atom (i);
+  atom = item_get_type_atom (collection, i);
   if (atom == CTX_ATOM_ENDGROUP)
   {
     return -1;
@@ -1330,10 +1341,10 @@ dir_next_sibling (int i)
   {
     level++;
 
-    while (level > start_level && i < files->count)
+    while (level > start_level && i < collection->count)
     {
       i++;
-      atom = item_get_type_atom (i);
+      atom = item_get_type_atom (collection, i);
       if (atom == CTX_ATOM_STARTGROUP)
       {
         level++;
@@ -1348,16 +1359,16 @@ dir_next_sibling (int i)
     {
        level--;
        i++;
-       atom = item_get_type_atom (i);
+       atom = item_get_type_atom (collection, i);
     }
   }
   while (atom == CTX_ATOM_NEWPAGE)
   {
     i++;
-    atom = item_get_type_atom (i);
+    atom = item_get_type_atom (collection, i);
   }
 
-  if (level != start_level || i >= files->count)
+  if (level != start_level || i >= collection->count)
   {
      return -1;
   }
@@ -1367,7 +1378,7 @@ dir_next_sibling (int i)
 static void
 move_after_next_sibling (CtxEvent *event, void *a, void *b)
 {
-  if (dir_next_sibling (focused_no) < 0)
+  if (dir_next_sibling (collection, focused_no) < 0)
   {
     event->stop_propagate = 1;
     return;
@@ -1376,28 +1387,28 @@ move_after_next_sibling (CtxEvent *event, void *a, void *b)
   //for (int i = 0; i < count; i++)
   {
   int start_no    = focused_no;
-  int count = items_to_move (start_no);
+  int count = items_to_move (collection, start_no);
   
   int start_level = 0;
   int level = 0;
   int did_skips = 0;
   int did_foo =0;
 
-  if (item_get_type_atom (focused_no + count) == CTX_ATOM_ENDGROUP)
+  if (item_get_type_atom (collection, focused_no + count) == CTX_ATOM_ENDGROUP)
   {
     event->stop_propagate=1;
     return;
   }
 
-  if (item_get_type_atom (focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
-      item_get_type_atom (focused_no + count) == CTX_ATOM_TEXT)
+  if (item_get_type_atom (collection, focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
+      item_get_type_atom (collection, focused_no + count) == CTX_ATOM_TEXT)
   {
     focused_no+=count;
     did_foo = 1;
   }
 
   focused_no++;
-  int atom = item_get_type_atom (focused_no);
+  int atom = item_get_type_atom (collection, focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
   {
     focused_no--;
@@ -1410,7 +1421,7 @@ move_after_next_sibling (CtxEvent *event, void *a, void *b)
   while (level > start_level)
   {
     focused_no++;
-    atom = item_get_type_atom (focused_no);
+    atom = item_get_type_atom (collection, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level++;
@@ -1425,7 +1436,7 @@ move_after_next_sibling (CtxEvent *event, void *a, void *b)
     }
   }
   level++;
-  if (item_get_type_atom (focused_no) == CTX_ATOM_ENDGROUP)
+  if (item_get_type_atom (collection, focused_no) == CTX_ATOM_ENDGROUP)
   {
     level--;
     focused_no++;
@@ -1444,11 +1455,11 @@ move_after_next_sibling (CtxEvent *event, void *a, void *b)
 
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (focused_no, "a");
+      metadata_insert (collection, focused_no, "a");
       metadata_dirt ();
-      metadata_swap (focused_no, start_no);
+      metadata_swap (collection, focused_no, start_no);
       metadata_dirt ();
-      metadata_remove (start_no);
+      metadata_remove (collection, start_no);
       metadata_dirt ();
     }
     focused_no-=count;
@@ -1472,14 +1483,14 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
   int start_level = 0;
   int did_skips = 0;
 
-  if (dir_prev_sibling (focused_no) < 0)
+  if (dir_prev_sibling (collection, focused_no) < 0)
   {
      event->stop_propagate = 1;
      return;
   }
 
   focused_no--;
-  int atom = item_get_type_atom (focused_no);
+  int atom = item_get_type_atom (collection, focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
      level++;
   else if (atom == CTX_ATOM_STARTGROUP)
@@ -1488,7 +1499,7 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
   while (level > start_level)
   {
     focused_no--;
-    atom = item_get_type_atom (focused_no);
+    atom = item_get_type_atom (collection, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -1508,13 +1519,13 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
   }
   else
   {
-    int count = items_to_move (start_no);
+    int count = items_to_move (collection, start_no);
     if (!did_skips) focused_no++;
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (focused_no-1 + i, "b");
-      metadata_swap (start_no+1 +i, focused_no-1 +i);
-      metadata_remove (start_no+1 +i);
+      metadata_insert (collection, focused_no-1 + i, "b");
+      metadata_swap (collection, start_no+1 +i, focused_no-1 +i);
+      metadata_remove (collection, start_no+1 +i);
       metadata_dirt ();
     }
     focused_no--;
@@ -1531,9 +1542,9 @@ static void
 make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  int level = item_get_level (no);
+  int level = item_get_level (collection, no);
 
-  int count = items_to_move (no);
+  int count = items_to_move (collection, no);
 
   if (level>0)
   {
@@ -1541,31 +1552,31 @@ make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
     int target_level;
     do {
       target++;
-      target_level = item_get_level (target);
+      target_level = item_get_level (collection, target);
     } while (target_level >= level);
 
     int remove_level = 0;
     
-    if (item_get_type_atom (no-1) == CTX_ATOM_STARTGROUP &&
-        item_get_type_atom (no+count) == CTX_ATOM_ENDGROUP)
+    if (item_get_type_atom (collection, no-1) == CTX_ATOM_STARTGROUP &&
+        item_get_type_atom (collection, no+count) == CTX_ATOM_ENDGROUP)
       remove_level = 1;
 
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (target+1+i, "c");
-      metadata_swap (no+i, target+1+i);
+      metadata_insert (collection, target+1+i, "c");
+      metadata_swap (collection, no+i, target+1+i);
     }
 
     if (remove_level)
     {
       for (int i = 0; i < count + 2; i++)
-        metadata_remove (no-1);
+        metadata_remove (collection, no-1);
       layout_find_item = no - 1;
     }
     else
     {
       for (int i = 0; i < count; i++)
-        metadata_remove (no);
+        metadata_remove (collection, no);
       layout_find_item = target - count;
     }
 
@@ -1585,36 +1596,36 @@ make_child_of_previous (CtxEvent *e, void *d1, void *d2)
     return;
 
   {
-    int count = items_to_move (no);
+    int count = items_to_move (collection, no);
     int target = no-1;
-    int atom = item_get_type_atom (target);
+    int atom = item_get_type_atom (collection, target);
     if (atom == CTX_ATOM_STARTGROUP)
        return;
     if (atom == CTX_ATOM_ENDGROUP)
     {
       for (int i = 0; i < count; i++)
       {
-        metadata_insert (target+i, "d");
-        metadata_swap (no+1+i, target+i);
-        metadata_remove (no+1+i);
+        metadata_insert (collection, target+i, "d");
+        metadata_swap (collection, no+1+i, target+i);
+        metadata_remove (collection, no+1+i);
       }
     }
     else
     {
       // insert new group
       target = no;
-      metadata_insert (target, "e");
-      metadata_set (target, "type", "ctx/endgroup");
+      metadata_insert (collection, target, "e");
+      metadata_set (collection, target, "type", "ctx/endgroup");
       for (int i = 0; i <count;i++)
-      metadata_insert (target, "f");
+      metadata_insert (collection, target, "f");
 
-      metadata_insert (target, "g");
-      metadata_set (target, "type", "ctx/startgroup");
+      metadata_insert (collection, target, "g");
+      metadata_set (collection, target, "type", "ctx/startgroup");
 
       for (int i = 0; i < count; i++)
       {
-        metadata_swap (no+count+2, target+1+i);
-        metadata_remove (no+count+2);
+        metadata_swap (collection, no+count+2, target+1+i);
+        metadata_remove (collection, no+count+2);
       }
     }
 
@@ -1635,23 +1646,23 @@ make_child_of_previous (CtxEvent *e, void *d1, void *d2)
 void
 item_cycle_bullet (CtxEvent *event, void *a, void *b)
 {
-  int bullet = metadata_get_int (focused_no, "bullet", CTX_BULLET_NONE);
+  int bullet = metadata_get_int (collection, focused_no, "bullet", CTX_BULLET_NONE);
   switch (bullet)
   {
     case CTX_BULLET_NONE:
-      metadata_set_float (focused_no, "bullet", CTX_BULLET_BULLET);
+      metadata_set_float (collection, focused_no, "bullet", CTX_BULLET_BULLET);
       break;
     case CTX_BULLET_BULLET:
-      metadata_set_float (focused_no, "bullet", CTX_BULLET_NUMBERS);
+      metadata_set_float (collection, focused_no, "bullet", CTX_BULLET_NUMBERS);
       break;
     case CTX_BULLET_NUMBERS:
-      metadata_set_float (focused_no, "bullet", CTX_BULLET_TODO);
+      metadata_set_float (collection, focused_no, "bullet", CTX_BULLET_TODO);
       break;
     case CTX_BULLET_TODO:
-      metadata_set_float (focused_no, "bullet", CTX_BULLET_DONE);
+      metadata_set_float (collection, focused_no, "bullet", CTX_BULLET_DONE);
       break;
     case CTX_BULLET_DONE:
-      metadata_unset (focused_no, "bullet");
+      metadata_unset (collection, focused_no, "bullet");
       break;
   }
   metadata_dirt ();
@@ -1663,24 +1674,24 @@ item_cycle_bullet (CtxEvent *event, void *a, void *b)
 void
 item_cycle_heading (CtxEvent *event, void *a, void *b)
 {
-  char *klass = metadata_get_string (focused_no, "class");
+  char *klass = metadata_get_string (collection, focused_no, "class");
 
   if (!klass) klass = strdup ("");
 
   if (!strcmp (klass, "h1"))
-    metadata_set (focused_no, "class", "h2");
+    metadata_set (collection, focused_no, "class", "h2");
   else if (!strcmp (klass, "h2"))
-    metadata_set (focused_no, "class", "h3");
+    metadata_set (collection, focused_no, "class", "h3");
   else if (!strcmp (klass, "h3"))
-    metadata_set (focused_no, "class", "h4");
+    metadata_set (collection, focused_no, "class", "h4");
   else if (!strcmp (klass, "h4"))
-    metadata_set (focused_no, "class", "h5");
+    metadata_set (collection, focused_no, "class", "h5");
   else if (!strcmp (klass, "h5"))
-    metadata_set (focused_no, "class", "h6");
+    metadata_set (collection, focused_no, "class", "h6");
   else if (!strcmp (klass, "h6"))
-    metadata_unset (focused_no, "class");
+    metadata_unset (collection, focused_no, "class");
   else
-    metadata_set (focused_no, "class", "h1");
+    metadata_set (collection, focused_no, "class", "h1");
   metadata_dirt ();
 
   ctx_set_dirty (event->ctx, 1);
@@ -2214,20 +2225,20 @@ void text_edit_stop (CtxEvent *event, void *a, void *b)
 
 void text_edit_return (CtxEvent *event, void *a, void *b)
 {
-  char *str = metadata_get_name (focused_no);
-  metadata_insert (focused_no+1, str);
+  char *str = metadata_get_name (collection, focused_no);
+  metadata_insert (collection, focused_no+1, str);
 
-  if (metadata_get_int (focused_no, "bullet", 0))
+  if (metadata_get_int (collection, focused_no, "bullet", 0))
   {
-    metadata_set_float (focused_no+1, "bullet",
-                      metadata_get_int (focused_no, "bullet", 0));
+    metadata_set_float (collection, focused_no+1, "bullet",
+                      metadata_get_int (collection, focused_no, "bullet", 0));
   }
 
   metadata_dirt ();
 
-  metadata_set_name (focused_no+1, str + text_edit);
+  metadata_set_name (collection, focused_no+1, str + text_edit);
   str[text_edit]=0;
-  metadata_set_name (focused_no, str);
+  metadata_set_name (collection, focused_no, str);
 
   metadata_dirt ();
   free (str);
@@ -2251,29 +2262,29 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
   {
     if (text_edit>0)
     {
-      char *name = metadata_get_name (focused_no);
+      char *name = metadata_get_name (collection, focused_no);
       CtxString *str = ctx_string_new (name);
       free (name);
       ctx_string_remove (str, text_edit-1);
-      metadata_set_name (focused_no, str->str);
+      metadata_set_name (collection, focused_no, str->str);
       ctx_string_free (str, 1);
       text_edit--;
       metadata_dirt ();
     }
     else if (text_edit == 0 && focused_no > 0 &&
-            (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
+            (item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
             )
     {
-      char *name_prev = metadata_get_name (focused_no-1);
-      char *name = metadata_get_name (focused_no);
+      char *name_prev = metadata_get_name (collection, focused_no-1);
+      char *name = metadata_get_name (collection, focused_no);
       CtxString *str = ctx_string_new (name_prev);
       text_edit = strlen (str->str);
       ctx_string_append_str (str, name);
       free (name);
       free (name_prev);
-      metadata_set_name (focused_no-1, str->str);
+      metadata_set_name (collection, focused_no-1, str->str);
       ctx_string_free (str, 1);
-      metadata_remove (focused_no);
+      metadata_remove (collection, focused_no);
       focused_no--;
       itk->focus_no--;
       metadata_dirt ();
@@ -2288,24 +2299,24 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
 {
   if (focused_no>=0){
 
-    char *name = metadata_get_name (focused_no);
+    char *name = metadata_get_name (collection, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     if (text_edit == (int)strlen(str->str))
     {
-      if (item_get_type_atom (focused_no+1) == CTX_ATOM_TEXT)
+      if (item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
       {
-        char *name_next = metadata_get_name (focused_no+1);
+        char *name_next = metadata_get_name (collection, focused_no+1);
         ctx_string_append_str (str, name_next);
         free (name_next);
-        metadata_remove (focused_no+1);
+        metadata_remove (collection, focused_no+1);
       }
     }
     else
     {
       ctx_string_remove (str, text_edit);
     }
-    metadata_set_name (focused_no, str->str);
+    metadata_set_name (collection, focused_no, str->str);
     ctx_string_free (str, 1);
     metadata_dirt ();
   }
@@ -2316,19 +2327,19 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
 void dir_join (CtxEvent *event, void *a, void *b)
 {
   if (focused_no>=0){
-    char *name = metadata_get_name (focused_no);
+    char *name = metadata_get_name (collection, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
-    if (item_get_type_atom (focused_no+1) == CTX_ATOM_TEXT)
+    if (item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
     {
-      char *name_next = metadata_get_name (focused_no+1);
+      char *name_next = metadata_get_name (collection, focused_no+1);
       if (name[strlen(name)-1]!=' ')
         ctx_string_append_str (str, " ");
       ctx_string_append_str (str, name_next);
       free (name_next);
-      metadata_remove (focused_no+1);
+      metadata_remove (collection, focused_no+1);
     }
-    metadata_set_name (focused_no, str->str);
+    metadata_set_name (collection, focused_no, str->str);
     ctx_string_free (str, 1);
     metadata_dirt ();
   }
@@ -2341,12 +2352,12 @@ void text_edit_shift_return (CtxEvent *event, void *a, void *b)
   if (focused_no>=0){
     const char *insertedA = "\\";
     const char *insertedB = "n";
-    char *name = metadata_get_name (focused_no);
+    char *name = metadata_get_name (collection, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     ctx_string_insert_utf8 (str, text_edit, insertedB);
     ctx_string_insert_utf8 (str, text_edit, insertedA);
-    metadata_set_name (focused_no, str->str);
+    metadata_set_name (collection, focused_no, str->str);
     ctx_string_free (str, 1);
     text_edit++;
   }
@@ -2367,11 +2378,11 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
   if (ctx_utf8_strlen (inserted) > 1)
     return;
   if (focused_no>=0){
-    char *name = metadata_get_name (focused_no);
+    char *name = metadata_get_name (collection, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     ctx_string_insert_utf8 (str, text_edit, inserted);
-    metadata_set_name (focused_no, str->str);
+    metadata_set_name (collection, focused_no, str->str);
     ctx_string_free (str, 1);
     text_edit++;
   }
@@ -2383,7 +2394,7 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
 
 void text_edit_right (CtxEvent *event, void *a, void *b)
 {
-  char *name = metadata_get_name (focused_no);
+  char *name = metadata_get_name (collection, focused_no);
   int len = ctx_utf8_strlen (name);
   free (name);
   text_edit_desired_x = -100;
@@ -2392,7 +2403,7 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
 
   if (text_edit>len)
   {
-    if (item_get_type_atom (focused_no+1) == CTX_ATOM_TEXT)
+    if (item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
     {
       text_edit=0;
       layout_find_item = focused_no  + 1;
@@ -2421,10 +2432,10 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit < 0)
   {
-    char *name = metadata_get_name (focused_no);
+    char *name = metadata_get_name (collection, focused_no);
     if (name[0]==0 &&
-        item_get_type_atom (focused_no-1) == CTX_ATOM_STARTGROUP &&
-        item_get_type_atom (focused_no+1) == CTX_ATOM_ENDGROUP)
+        item_get_type_atom (collection, focused_no-1) == CTX_ATOM_STARTGROUP &&
+        item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP)
     {
       text_edit = 0;
       item_delete (event, (void*)(size_t)focused_no, NULL);
@@ -2433,10 +2444,10 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
       //itk->focus_no = -1;
       metadata_dirt();
     }
-    else if (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
+    else if (item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
 
     {
-      char *name = metadata_get_name (focused_no-1);
+      char *name = metadata_get_name (collection, focused_no-1);
       text_edit=ctx_utf8_strlen(name);
       free (name);
       layout_find_item = focused_no -1;
@@ -2458,9 +2469,9 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit == 0)
   {
-    if (item_get_type_atom (focused_no-1) == CTX_ATOM_TEXT)
+    if (item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
     {
-      char *name = metadata_get_name (focused_no-1);
+      char *name = metadata_get_name (collection, focused_no-1);
       text_edit=ctx_utf8_strlen(name);
       free (name);
       focused_no--;
@@ -2473,7 +2484,7 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
   }
   else
   {
-    char *text = metadata_get_name (focused_no); 
+    char *text = metadata_get_name (collection, focused_no); 
     if (text_edit >0 && text[text_edit-1]==' ')  // XXX should be utf8 aware
       text_edit--;
     while (text_edit>0 && text[text_edit-1]!=' ') 
@@ -2490,7 +2501,7 @@ void text_edit_control_right (CtxEvent *event, void *a, void *b)
   text_edit_desired_x = -100;
 
   {
-    char *text = metadata_get_name (focused_no); 
+    char *text = metadata_get_name (collection, focused_no); 
     if (text[text_edit]==' ')  // XXX should be utf8 aware
       text_edit++;
     while (text[text_edit] && text[text_edit]!=' ') 
@@ -2513,7 +2524,7 @@ void text_edit_home (CtxEvent *event, void *a, void *b)
 void text_edit_end (CtxEvent *event, void *a, void *b)
 {
   text_edit_desired_x = -100;
-  char *name = metadata_get_name (focused_no);
+  char *name = metadata_get_name (collection, focused_no);
   text_edit = ctx_utf8_strlen (name);
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
@@ -2538,22 +2549,22 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
     return;
   }
 
-  if (item_get_type_atom (focused_no-1) != CTX_ATOM_TEXT && 
-      item_get_type_atom (focused_no-1) != CTX_ATOM_ENDGROUP)
+  if (item_get_type_atom (collection, focused_no-1) != CTX_ATOM_TEXT && 
+      item_get_type_atom (collection, focused_no-1) != CTX_ATOM_ENDGROUP)
   {
     event->stop_propagate=1;
     return;
   }
-  //text_edit=strlen(files->items[focused_no-1]);
+  //text_edit=strlen(collection->items[focused_no-1]);
   //
   //
-  char *name = metadata_get_name (focused_no);
+  char *name = metadata_get_name (collection, focused_no);
 
   if (name[0]==0 &&
-      (focused_no+1 >= files->count ||
-      item_get_type_atom (focused_no+1) == CTX_ATOM_ENDGROUP))
+      (focused_no+1 >= collection->count ||
+      item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP))
     {
-      int next_focus = dir_prev_sibling (focused_no);
+      int next_focus = dir_prev_sibling (collection, focused_no);
       item_delete (event, (void*)(size_t)focused_no, NULL);
       if (was_editing_before_tail)
       {
@@ -2637,18 +2648,18 @@ int item_context_active = 0;
 
 
 static void
-make_tail_entry ()
+make_tail_entry (Collection *collection)
 {
   if (focused_no == -1)
   {
-    metadata_insert (0, " ");
+    metadata_insert (collection, 0, " ");
     focused_no = 0;
     layout_find_item = focused_no = focused_no;
   }
   else
   {
-  metadata_insert (focused_no+items_to_move(focused_no), "");
-  layout_find_item = focused_no = dir_next_sibling (focused_no);
+  metadata_insert (collection, focused_no+items_to_move(collection,focused_no), "");
+  layout_find_item = focused_no = dir_next_sibling (collection, focused_no);
   }
   metadata_dirt ();
   itk->focus_no = -1;
@@ -2667,11 +2678,11 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
     return;
   }
 
-  if (item_get_type_atom (focused_no+1) != CTX_ATOM_TEXT)
+  if (item_get_type_atom (collection, focused_no+1) != CTX_ATOM_TEXT)
   {
-    char *str = metadata_get_name (focused_no);
+    char *str = metadata_get_name (collection, focused_no);
     if (str[0])
-      make_tail_entry ();
+      make_tail_entry (collection);
     free (str);
     ctx_set_dirty (event->ctx, 1);
     event->stop_propagate=1;
@@ -2709,30 +2720,30 @@ static void
 focus_next_sibling (CtxEvent *event, void *a, void *b)
 {
   layout_focused_link = -1;
-  if (dir_next_sibling (focused_no) < 0)
+  if (dir_next_sibling (collection, focused_no) < 0)
   {
-    make_tail_entry ();
+    make_tail_entry (collection);
     ctx_set_dirty (event->ctx, 1);
     event->stop_propagate=1;
     return;
   }
 
-  layout_find_item = focused_no = dir_next_sibling (focused_no);
+  layout_find_item = focused_no = dir_next_sibling (collection, focused_no);
   itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
 
-static int item_get_list_index (int i)
+static int item_get_list_index (Collection *collection, int i)
 {
   int pos = i;
   int count = 0;
 
   while (pos >= 0 &&
-         metadata_get_int (pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
+         metadata_get_int (collection, pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
   {
-     pos = dir_prev_sibling (pos);
+     pos = dir_prev_sibling (collection, pos);
      count++;
   }
 
@@ -2744,7 +2755,7 @@ static void
 focus_next (CtxEvent *event, void *a, void *b)
 {
   layout_focused_link = -1;
-  int pos = dir_next (focused_no);
+  int pos = dir_next (collection, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -2758,7 +2769,7 @@ static void
 focus_previous (CtxEvent *event, void *a, void *b)
 {
   layout_focused_link = -1;
-  int pos = dir_prev (focused_no);
+  int pos = dir_prev (collection, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -2772,7 +2783,7 @@ static void
 focus_previous_sibling (CtxEvent *event, void *a, void *b)
 {
   layout_focused_link = -1;
-  int pos = dir_prev_sibling (focused_no);
+  int pos = dir_prev_sibling (collection, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -2796,36 +2807,36 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
   {
     case CTX_DRAG_PRESS:
        fprintf (stderr, "rect drag %f %f\n", e->x, e->y);
-       metadata_insert (focused_no, "");
-       metadata_set (focused_no, "type", "ctx/rectangle");
+       metadata_insert (collection, focused_no, "");
+       metadata_set (collection, focused_no, "type", "ctx/rectangle");
        x0 = e->x;
        y0 = e->y;
-       metadata_set_float (focused_no, "x", x0 / itk->width);
-       metadata_set_float (focused_no, "y", y0 / itk->width);
+       metadata_set_float (collection, focused_no, "x", x0 / itk->width);
+       metadata_set_float (collection, focused_no, "y", y0 / itk->width);
        metadata_dirt ();
        break;
     case CTX_DRAG_MOTION:
 
        if (e->x > x0)
        {
-         metadata_set_float (focused_no, "x", x0 / itk->width);
-         metadata_set_float (focused_no, "width", (e->x-x0) / itk->width);
+         metadata_set_float (collection, focused_no, "x", x0 / itk->width);
+         metadata_set_float (collection, focused_no, "width", (e->x-x0) / itk->width);
        }
        else
        {
-         metadata_set_float (focused_no, "x", e->x / itk->width);
-         metadata_set_float (focused_no, "width", (x0-e->x) / itk->width);
+         metadata_set_float (collection, focused_no, "x", e->x / itk->width);
+         metadata_set_float (collection, focused_no, "width", (x0-e->x) / itk->width);
        }
 
        if (e->y > y0)
        {
-         metadata_set_float (focused_no, "y", y0 / itk->width);
-         metadata_set_float (focused_no, "height", (e->y-y0) / itk->width);
+         metadata_set_float (collection, focused_no, "y", y0 / itk->width);
+         metadata_set_float (collection, focused_no, "height", (e->y-y0) / itk->width);
        }
        else
        {
-         metadata_set_float (focused_no, "y", e->y / itk->width);
-         metadata_set_float (focused_no, "height", (y0-e->y) / itk->width);
+         metadata_set_float (collection, focused_no, "y", e->y / itk->width);
+         metadata_set_float (collection, focused_no, "height", (y0-e->y) / itk->width);
        }
 
        metadata_dirt ();
@@ -2860,7 +2871,7 @@ dir_parent (CtxEvent *event, void *a, void *b)
   while (level > 0 && focused_no >= 0)
   {
     focused_no--;
-    atom = item_get_type_atom (focused_no);
+    atom = item_get_type_atom (collection, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -2873,10 +2884,10 @@ dir_parent (CtxEvent *event, void *a, void *b)
     {
     }
   }
-  if (metadata_get_int (focused_no, "was-folded", 0))
+  if (metadata_get_int (collection, focused_no, "was-folded", 0))
   {
-    metadata_set_float (focused_no, "folded", 1.0);
-    metadata_unset (focused_no, "was-folded");
+    metadata_set_float (collection, focused_no, "folded", 1.0);
+    metadata_unset (collection, focused_no, "was-folded");
   }
   focused_no--;
   if (focused_no < 0)
@@ -2899,14 +2910,14 @@ dir_enter_children (CtxEvent *event, void *a, void *b)
   layout_focused_link = -1;
   
   focused_no++;
-  CtxAtom  atom = item_get_type_atom (focused_no);
+  CtxAtom  atom = item_get_type_atom (collection, focused_no);
 
   if (atom == CTX_ATOM_STARTGROUP)
   {
-    if (metadata_get_int (focused_no, "folded", 0))
+    if (metadata_get_int (collection, focused_no, "folded", 0))
     {
-      metadata_set_float (focused_no, "was-folded", 1);
-      metadata_set_float (focused_no, "folded", 0);
+      metadata_set_float (collection, focused_no, "was-folded", 1);
+      metadata_set_float (collection, focused_no, "folded", 0);
     }
     focused_no++;
   }
@@ -2914,14 +2925,14 @@ dir_enter_children (CtxEvent *event, void *a, void *b)
   {
      focused_no = start_no;
 
-     metadata_insert(focused_no+1, "j");
-     metadata_set (focused_no+1, "type", "ctx/startgroup");
+     metadata_insert(collection, focused_no+1, "j");
+     metadata_set (collection, focused_no+1, "type", "ctx/startgroup");
 
-     metadata_insert(focused_no+2, "");
+     metadata_insert(collection, focused_no+2, "");
      text_edit = 0;
 
-     metadata_insert(focused_no+3, "l");
-     metadata_set (focused_no+3, "type", "ctx/endgroup");
+     metadata_insert(collection, focused_no+3, "l");
+     metadata_set (collection, focused_no+3, "type", "ctx/endgroup");
      focused_no++;
   }
   metadata_dirt();
@@ -2964,7 +2975,7 @@ int layout_box_no = 0;
 static CtxControl *focused_control = NULL;
 
 
-static void dir_layout (ITK *itk, Files *files)
+static void dir_layout (ITK *itk, Collection *collection)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
@@ -2980,7 +2991,7 @@ static void dir_layout (ITK *itk, Files *files)
   layout_box[0].width = 0.8;
   layout_box[0].height = 4000.0;
 
-  metadata_cache_no = -3;
+  collection->metadata_cache_no = -3;
   prev_line_pos = -1;
   next_line_pos = -1;
 
@@ -3008,7 +3019,7 @@ static void dir_layout (ITK *itk, Files *files)
 
   float saved_x0 = itk->x0;
   float saved_width = itk->width;
-  float saved_y = itk->y;
+  //float saved_y = itk->y;
   float space_width = ctx_text_width (itk->ctx, " ");
 
 
@@ -3043,9 +3054,9 @@ static void dir_layout (ITK *itk, Files *files)
   if (layout_config.outliner)
      printing = 1;
 
-  for (int i = 0; i < files->count; i++)
+  for (int i = 0; i < collection->count; i++)
   {
-      char *d_name = metadata_get_name (i);
+      char *d_name = metadata_get_name (collection, i);
       if (layout_find_item == i)
       {
 
@@ -3072,7 +3083,7 @@ static void dir_layout (ITK *itk, Files *files)
       float height = 0;
       
       int hidden = 0;
-      CtxAtom atom = item_get_type_atom (i);
+      CtxAtom atom = item_get_type_atom (collection, i);
 
       switch (atom)
       {
@@ -3087,7 +3098,7 @@ static void dir_layout (ITK *itk, Files *files)
           if (!layout_config.codes) hidden = 1;
           level ++;
           {
-            int folded = metadata_get_int (i, "folded", 0);
+            int folded = metadata_get_int (collection, i, "folded", 0);
 
             if (folded && ! is_folded) is_folded = level;
           }
@@ -3120,7 +3131,7 @@ static void dir_layout (ITK *itk, Files *files)
       if (is_folded)
         hidden = 1;
 
-      int label = metadata_get_int (i, "label", -1234);
+      int label = metadata_get_int (collection, i, "label", -1234);
       if (label == -1234) {
         if (atom == CTX_ATOM_TEXT)
           label = 0;
@@ -3130,23 +3141,23 @@ static void dir_layout (ITK *itk, Files *files)
 
       int gotpos = 0;
       int gotdim = 0;
-      char *xstr = metadata_get_string (i, "x");
-      char *ystr = metadata_get_string (i, "y");
-      char *wstr = metadata_get_string (i, "width");
-      char *hstr = metadata_get_string (i, "height");
-      float origin_x = metadata_get_float (i, "origin-x", 0.0);
-      float origin_y = metadata_get_float (i, "origin-y", 0.0);
+      char *xstr = metadata_get_string (collection, i, "x");
+      char *ystr = metadata_get_string (collection, i, "y");
+      char *wstr = metadata_get_string (collection, i, "width");
+      char *hstr = metadata_get_string (collection, i, "height");
+      float origin_x = metadata_get_float (collection, i, "origin-x", 0.0);
+      float origin_y = metadata_get_float (collection, i, "origin-y", 0.0);
 
 
-      float padding_left = metadata_get_float (i, "padding-left", layout_config.padding_left);
-      float padding_right = metadata_get_float (i, "padding-right", layout_config.padding_right);
-      float padding_top = metadata_get_float (i, "padding-top", layout_config.padding_top);
-      float padding_bottom = metadata_get_float (i, "padding-bottom", layout_config.padding_bottom);
+      float padding_left = metadata_get_float (collection, i, "padding-left", layout_config.padding_left);
+      float padding_right = metadata_get_float (collection, i, "padding-right", layout_config.padding_right);
+      float padding_top = metadata_get_float (collection, i, "padding-top", layout_config.padding_top);
+      float padding_bottom = metadata_get_float (collection, i, "padding-bottom", layout_config.padding_bottom);
 
       //padding_left += level * layout_config.level_indent;
 
-      float x = metadata_get_float (i, "x", 0.0);
-      float y = metadata_get_float (i, "y", 0.0);
+      float x = metadata_get_float (collection, i, "x", 0.0);
+      float y = metadata_get_float (collection, i, "y", 0.0);
       //float opacity = metadata_get_float (i, "opacity", 1.0f);
 
       if (xstr)
@@ -3174,7 +3185,7 @@ static void dir_layout (ITK *itk, Files *files)
         gotpos = 0;
 
       {
-        width  = metadata_get_float (i, "width", -1000.0);
+        width  = metadata_get_float (collection, i, "width", -1000.0);
         if (width < 0 || layout_config.fixed_size)
           width = 
             layout_config.fill_width? itk->width * 1.0:
@@ -3185,7 +3196,7 @@ static void dir_layout (ITK *itk, Files *files)
       }
 
       {
-        height = metadata_get_float (i, "height", -1000.0);
+        height = metadata_get_float (collection, i, "height", -1000.0);
         if (height < 0 || layout_config.fixed_size)  height =
           layout_config.fill_height? itk->height * 1.0:
           layout_config.height * em;
@@ -3198,7 +3209,7 @@ static void dir_layout (ITK *itk, Files *files)
 
 
 
-      int virtual = (item_get_type_atom (i) == CTX_ATOM_TEXT);
+      int virtual = (item_get_type_atom (collection, i) == CTX_ATOM_TEXT);
 
       if (virtual)
         atom = CTX_ATOM_TEXT;
@@ -3365,11 +3376,11 @@ static void dir_layout (ITK *itk, Files *files)
               //ctx_rgb(itk->ctx,1,0,0);
               //ctx_fill(itk->ctx);
         struct stat stat_buf;
-        char *newpath = malloc (strlen(files->path)+strlen(d_name) + 2);
-        if (!strcmp (files->path, PATH_SEP))
+        char *newpath = malloc (strlen(collection->path)+strlen(d_name) + 2);
+        if (!strcmp (collection->path, PATH_SEP))
           sprintf (newpath, "%s%s", PATH_SEP, d_name);
         else
-          sprintf (newpath, "%s%s%s", files->path, PATH_SEP, d_name);
+          sprintf (newpath, "%s%s%s", collection->path, PATH_SEP, d_name);
         int focused = 0;
 
         const char *media_type = "inline/text";
@@ -3410,7 +3421,7 @@ static void dir_layout (ITK *itk, Files *files)
         {
           focused = 1;
           //fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
-          //viewer_load_path (newpath, files->items[i]);
+          //viewer_load_path (newpath, collection->items[i]);
           ctx_begin_path (itk->ctx);
           ctx_rectangle (itk->ctx, c->x, c->y, c->width, c->height);
           ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_activate, (void*)(size_t)i, NULL);
@@ -3462,7 +3473,7 @@ static void dir_layout (ITK *itk, Files *files)
             
 
             {
-              int bullet = metadata_get_int (i, "bullet", CTX_BULLET_NONE);
+              int bullet = metadata_get_int (collection, i, "bullet", CTX_BULLET_NONE);
               const char *label = "cycle bullet";
               switch (bullet)
               {
@@ -3482,7 +3493,7 @@ static void dir_layout (ITK *itk, Files *files)
 
             {
               const char *label = "make heading";
-              char *klass = metadata_get_string (i, "class");
+              char *klass = metadata_get_string (collection, i, "class");
               if (klass)
               {
                 label = "cycle heading";
@@ -3541,14 +3552,14 @@ static void dir_layout (ITK *itk, Files *files)
 
            if (!is_text_editing())
            {
-               if (metadata_get_int (i + 1, "folded", -1)>0)
+               if (metadata_get_int (collection, i + 1, "folded", -1)>0)
                {
                ctx_add_key_binding (ctx, "+", NULL, "expand",
                           outline_expand, NULL);
                ctx_add_key_binding (ctx, "=", NULL, "expand",
                           outline_expand, NULL);
                }
-               else if (item_get_type_atom (i + 1) == CTX_ATOM_STARTGROUP)
+               else if (item_get_type_atom (collection, i + 1) == CTX_ATOM_STARTGROUP)
                {
                ctx_add_key_binding (ctx, "-", NULL, "fold",
                           outline_collapse, NULL);
@@ -3601,7 +3612,7 @@ static void dir_layout (ITK *itk, Files *files)
                        0);
           }
 
-          int bullet = metadata_get_int (i, "bullet", CTX_BULLET_NONE);
+          int bullet = metadata_get_int (collection, i, "bullet", CTX_BULLET_NONE);
           if (bullet != CTX_BULLET_NONE)
           {
              float x = itk->x - em * 0.7 ;//+ level * em * layout_config.level_indent;
@@ -3617,7 +3628,7 @@ static void dir_layout (ITK *itk, Files *files)
                ctx_move_to (itk->ctx, x + em * 0.5, itk->y + em);
                {
                  char buf[64]="";
-                 sprintf (buf, "%i", item_get_list_index (i));
+                 sprintf (buf, "%i", item_get_list_index (collection, i));
                  ctx_save (itk->ctx);
                  ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_RIGHT);
                  ctx_text (itk->ctx, buf);
@@ -3635,7 +3646,7 @@ static void dir_layout (ITK *itk, Files *files)
              }
           }
           {
-            int folded = metadata_get_int (i+1, "folded", -3);
+            int folded = metadata_get_int (collection, i+1, "folded", -3);
             if (folded > 0)
             {
                float x = itk->x - em * 0.5;//
@@ -3654,10 +3665,10 @@ static void dir_layout (ITK *itk, Files *files)
       else
         if (atom == CTX_ATOM_RECTANGLE)
         {
-          char *fill       = metadata_get_string (i, "fill");
-          char *stroke     = metadata_get_string (i, "stroke");
-          float line_width = metadata_get_float (i, "line-width", 1.0);
-          //float opacity    = metadata_get_float (i, "opacity", 1.0);
+          char *fill       = metadata_get_string (collection, i, "fill");
+          char *stroke     = metadata_get_string (collection, i, "stroke");
+          float line_width = metadata_get_float (collection, i, "line-width", 1.0);
+          //float opacity    = metadata_get_float (collection, i, "opacity", 1.0);
 
           ctx_rectangle (itk->ctx, itk->x, itk->y, width, height);
           if (fill)
@@ -3854,13 +3865,13 @@ static void dir_layout (ITK *itk, Files *files)
 
       if (layout_config.outliner)
       {
-  int keys = metadata_item_key_count (i);
+  int keys = metadata_item_key_count (collection, i);
   for (int k = 0; k < keys; k++)
   {
-    char *key = metadata_key_name (i, k);
+    char *key = metadata_key_name (collection, i, k);
     if (key)
     {
-      char *val = metadata_get_string (i, key);
+      char *val = metadata_get_string (collection, i, key);
       if (val)
       {
         itk->x += level * em * 3 + em;
@@ -3957,7 +3968,7 @@ static char *viewer_loaded_name = NULL;
 
 int viewer_load_next (Ctx *ctx, void *data1)
 {
-  if (viewer_no+1 >= metadata_count())
+  if (viewer_no+1 >= metadata_count(collection))
     return 0;
   //fprintf (stderr, "next!\n");
   itk->focus_no ++;
@@ -3985,11 +3996,11 @@ void viewer_load_path (const char *path, const char *name)
   if (viewer_loaded_name) free (viewer_loaded_name);
   viewer_loaded_name = strdup (name);
 
-  int no = metadata_item_to_no (name);
+  int no = metadata_item_to_no (collection, name);
 
   float duration = 10.0;
-  float in = metadata_get_float (no, "in", -1);
-  float out = metadata_get_float (no, "out", -1);
+  float in = metadata_get_float (collection, no, "in", -1);
+  float out = metadata_get_float (collection, no, "out", -1);
   if (out > 0 && in > 0)
   {
     duration = out - in;
@@ -4164,7 +4175,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
       }
       else
       {
-        char *new_path = ctx_strdup_printf ("%s/%s", files->path, arg);
+        char *new_path = ctx_strdup_printf ("%s/%s", collection->path, arg);
         set_location (new_path);
         free (new_path);
       }
@@ -4177,7 +4188,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
   {
      // all other code should be doing absolute paths,
      // this makes it easier to launch commands
-     chdir (files->path);
+     chdir (collection->path);
      system (commandline->str);
      metadata_dirt();
      save_metadata();
@@ -4194,7 +4205,7 @@ int editing_location = 0;
 static void dir_location (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 1;
-  ctx_string_set (commandline, files->title?files->title:files->path);
+  ctx_string_set (commandline, collection->title?collection->title:collection->path);
   commandline_cursor_end = 0;
   commandline_cursor_start = strlen (commandline->str);
   e->stop_propagate = 1;
@@ -4400,9 +4411,9 @@ static int card_files (ITK *itk_, void *data)
     }
 
     //if (layout_config.outliner)
-    //  outliner_layout (itk, files);
+    //  outliner_layout (itk, collection);
     //else
-      dir_layout (itk, files);
+      dir_layout (itk, collection);
 
   }
 
@@ -4452,8 +4463,8 @@ static int card_files (ITK *itk_, void *data)
           }
           ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
 
-          if (item_get_type_atom (focused_no) == CTX_ATOM_TEXT &&
-              metadata_get_float (focused_no, "x", -1234.0) == -1234.0 &&
+          if (item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT &&
+              metadata_get_float (collection, focused_no, "x", -1234.0) == -1234.0 &&
               !is_text_editing())
           {
 
@@ -4631,14 +4642,14 @@ static int card_files (ITK *itk_, void *data)
        focused_control->x + focused_control->width, focused_control->y, 200, 200);
                   
        //           ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*8);
-  int keys = metadata_item_key_count (files->items[focused_no]);
-  itk_labelf (itk, "%s - %i", files->items[focused_no], keys);
+  int keys = metadata_item_key_count (collection->items[focused_no]);
+  itk_labelf (itk, "%s - %i", collection->items[focused_no], keys);
   for (int k = 0; k < keys; k++)
   {
-    char *key = metadata_key_name (files->items[focused_no], k);
+    char *key = metadata_key_name (collection->items[focused_no], k);
     if (key)
     {
-      char *val = metadata_get_string (files->items[focused_no], key);
+      char *val = metadata_get_string (collection->items[focused_no], key);
       if (val)
       {
         itk_labelf (itk, "%s=%s", key, val);
@@ -4738,10 +4749,10 @@ static int card_files (ITK *itk_, void *data)
     {
       ctx_rgba (ctx, 1,1,1, 0.6);
       ctx_move_to (ctx, 3.4 * em, 1.5 * em);
-      if (files->title)
-        ctx_text (ctx, files->title);
+      if (collection->title)
+        ctx_text (ctx, collection->title);
       else
-        ctx_text (ctx, files->path);
+        ctx_text (ctx, collection->path);
     }
     ctx_restore (ctx);
   }

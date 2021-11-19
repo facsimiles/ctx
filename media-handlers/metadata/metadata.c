@@ -8,30 +8,22 @@
 #endif
 #include <stdio.h>
 
-static char *metadata      = NULL;
-static long  metadata_len  = 0;
-static long  metadata_size = 0;
-static char *metadata_path = NULL;
-
-static char *metadata_cache = NULL;
-static int metadata_cache_no = -3;
-
-static void metadata_load (const char *path)
+static void metadata_load (Collection *collection, const char *path)
 {
-  metadata_cache_no = -3;
-  metadata_cache = NULL;
-  if (metadata_path) free (metadata_path);
-  metadata_path = malloc (strlen (path) + 20);
-  if (metadata)
-    free (metadata);
-  metadata = NULL;
-  metadata_len = 0;
-  metadata_size = 0;
-  snprintf (metadata_path, strlen(path)+20, "%s/.ctx/index", path);
-  ctx_get_contents (metadata_path, (uint8_t**)&metadata, &metadata_size);
-  metadata_len = metadata_size;
+  collection->metadata_cache_no = -3;
+  collection->metadata_cache = NULL;
+  if (collection->metadata_path) free (collection->metadata_path);
+  collection->metadata_path = malloc (strlen (path) + 20);
+  if (collection->metadata)
+    free (collection->metadata);
+  collection->metadata = NULL;
+  collection->metadata_len = 0;
+  collection->metadata_size = 0;
+  snprintf (collection->metadata_path, strlen(path)+20, "%s/.ctx/index", path);
+  ctx_get_contents (collection->metadata_path, (uint8_t**)&collection->metadata, &collection->metadata_size);
+  collection->metadata_len = (int)collection->metadata_size;
 
-  //fprintf (stderr, "%s loaded len: %i %p\n", path, metadata_len, metadata);
+  //fprintf (stderr, "%s loaded len: %i %p\n", path, collection->metadata_len, metadata);
 }
 
 void dir_mkdir_ancestors (const char *path, unsigned int mode)
@@ -53,20 +45,20 @@ void dir_mkdir_ancestors (const char *path, unsigned int mode)
 }
 
 #if 1
-static void metadata_save (void)
+static void metadata_save (Collection *collection)
 {
-  if (!metadata_path) return;
-  dir_mkdir_ancestors (metadata_path, 0777);
+  if (!collection->metadata_path) return;
+  dir_mkdir_ancestors (collection->metadata_path, 0777);
 
-  FILE *file = fopen (metadata_path, "w");
-  fwrite (metadata, metadata_len, 1, file);
+  FILE *file = fopen (collection->metadata_path, "w");
+  fwrite (collection->metadata, collection->metadata_len, 1, file);
   fclose (file);
 }
 #endif
 
-static int metadata_count (void)
+static int metadata_count (Collection *collection)
 {
-  const char *m = metadata;
+  const char *m = collection->metadata;
   if (!m) return -1;
   int count = 0;
   if (m[0])
@@ -78,9 +70,9 @@ static int metadata_count (void)
   return count;
 }
 
-static char *metadata_get_name_escaped (int no)
+static char *metadata_get_name_escaped (Collection *collection, int no)
 {
-  const char *m = metadata;
+  const char *m = collection->metadata;
   if (!m) return NULL;
   int count = 0;
   do {
@@ -102,21 +94,21 @@ static char *metadata_get_name_escaped (int no)
   return NULL;
 }
 
-static char *metadata_find_no (int no)
+static char *metadata_find_no (Collection *collection, int no)
 {
-  char *m = metadata;
+  char *m = collection->metadata;
   int count = 0;
 
   int update_cache = 1;
 #if 1
-  if (metadata_cache_no == no) return metadata_cache;
-  if (metadata_cache_no < no && metadata_cache_no > 0)
+  if (collection->metadata_cache_no == no) return collection->metadata_cache;
+  if (collection->metadata_cache_no < no && collection->metadata_cache_no > 0)
   {
-    if (no - metadata_cache_no < 4) /* keep a small look-ahead, much of the
+    if (no - collection->metadata_cache_no < 4) /* keep a small look-ahead, much of the
                                        time */
       update_cache = 0;
-    m = metadata_cache;
-    count = metadata_cache_no;
+    m = collection->metadata_cache;
+    count = collection->metadata_cache_no;
     m-= 1;
   }
 #endif
@@ -131,8 +123,8 @@ static char *metadata_find_no (int no)
       {
         if (update_cache)
         {
-          metadata_cache = m;
-          metadata_cache_no = no;
+          collection->metadata_cache = m;
+          collection->metadata_cache_no = no;
         }
         return m;
       }
@@ -147,15 +139,15 @@ static char *metadata_find_no (int no)
   return NULL;
 }
 
-static char *metadata_get_name (int no)
+static char *metadata_get_name (Collection *collection, int no)
 {
   /* this makes use reuse the cache */
-  const char *m = metadata_find_no (no);
+  const char *m = metadata_find_no (collection, no);
   if (!m) return NULL;
   m--;
   m--;
-  while (m[0]!='\n' && m != metadata)m--;
-  if (m !=metadata) m++;
+  while (m[0]!='\n' && m != collection->metadata)m--;
+  if (m !=collection->metadata) m++;
 
   CtxString *str = ctx_string_new ("");
   for (int i = 0; m[i] && (m[i]!='\n'); i++)
@@ -197,7 +189,7 @@ static char *metadata_get_name (int no)
 }
 
 
-static int _metadata_metalen (const char *m)
+static int _metadata_metalen (Collection *collection, const char *m)
 {
   int len = 0;
   do {
@@ -237,11 +229,11 @@ char *metadata_escape_item (const char *item)
   return ctx_string_dissolve (str);
 }
 
-static const char *metadata_find_item (const char *item)
+static const char *metadata_find_item (Collection *collection, const char *item)
 {
   char *escaped_item = metadata_escape_item (item);
   int item_len = strlen (escaped_item);
-  const char *m = metadata;
+  const char *m = collection->metadata;
 
   while (m && *m)
   {
@@ -257,11 +249,11 @@ static const char *metadata_find_item (const char *item)
   return NULL;
 }
 
-int metadata_item_to_no (const char *item)
+int metadata_item_to_no (Collection *collection, const char *item)
 {
   char *escaped_item = metadata_escape_item (item);
   int item_len = strlen (escaped_item);
-  const char *m = metadata;
+  const char *m = collection->metadata;
   int no = 0;
 
   while (m && *m)
@@ -279,9 +271,9 @@ int metadata_item_to_no (const char *item)
   return -1;
 }
 
-static int metadata_item_key_count (int no)
+static int metadata_item_key_count (Collection *collection, int no)
 {
-  const char *m = metadata_find_no (no);
+  const char *m = metadata_find_no (collection, no);
   if (!m) return -1;
   int count = 0;
   if (m[0] == ' ')
@@ -293,9 +285,9 @@ static int metadata_item_key_count (int no)
   return count;
 }
 
-static char *metadata_key_name (int ino, int no)
+static char *metadata_key_name (Collection *collection, int ino, int no)
 {
-  const char *m = metadata_find_no (ino);
+  const char *m = metadata_find_no (collection, ino);
   CtxString *str = ctx_string_new ("");
   if (!m) return NULL;
   int count = 0;
@@ -317,9 +309,9 @@ static char *metadata_key_name (int ino, int no)
   return NULL;
 }
 
-static char *metadata_get_string (int no, const char *key)
+static char *metadata_get_string (Collection *collection, int no, const char *key)
 {
-  const char *m = metadata_find_no (no);
+  const char *m = metadata_find_no (collection, no);
   CtxString *str = ctx_string_new ("");
   if (!m) return NULL;
   if (m[0] == ' ')
@@ -347,14 +339,14 @@ static char *metadata_get_string (int no, const char *key)
   return NULL;
 }
 
-static char *metadata_get (int no, const char *key)
+static char *metadata_get (Collection *collection, int no, const char *key)
 {
-  return metadata_get_string (no, key);
+  return metadata_get_string (collection, no, key);
 }
 
-static float metadata_get_float (int no, const char *key, float def_val)
+static float metadata_get_float (Collection *collection, int no, const char *key, float def_val)
 {
-   char *value = metadata_get_string (no, key);
+   char *value = metadata_get_string (collection, no, key);
    float ret = def_val;//-1234.0f;
    if (value)
    {
@@ -365,9 +357,9 @@ static float metadata_get_float (int no, const char *key, float def_val)
 }
 
 
-static int metadata_get_int (int no, const char *key, int def_val)
+static int metadata_get_int (Collection *collection, int no, const char *key, int def_val)
 {
-   char *value = metadata_get_string (no, key);
+   char *value = metadata_get_string (collection, no, key);
    int ret = def_val;
    if (value)
    {
@@ -378,7 +370,7 @@ static int metadata_get_int (int no, const char *key, int def_val)
 }
 
 
-static void metadata_swap (int no_a, int no_b)
+static void metadata_swap (Collection *collection, int no_a, int no_b)
 {
    if (no_b < no_a)
    {
@@ -386,63 +378,65 @@ static void metadata_swap (int no_a, int no_b)
      no_a = no_b; no_b = tmp;
    }
 
-   char *a_name = metadata_get_name_escaped (no_a);
-   char *b_name = metadata_get_name_escaped (no_b);
+   char *a_name = metadata_get_name_escaped (collection, no_a);
+   char *b_name = metadata_get_name_escaped (collection, no_b);
    int a_name_len = strlen (a_name);
    int b_name_len = strlen (b_name);
-   const char *a_meta = metadata_find_no (no_a);
-   const char *b_meta = metadata_find_no (no_b);
+   const char *a_meta = metadata_find_no (collection, no_a);
+   const char *b_meta = metadata_find_no (collection, no_b);
 
-   int a_start = (a_meta - metadata) - a_name_len - 1;
-   int a_len = a_name_len + 1 + _metadata_metalen (a_meta);
+   int a_start = (a_meta - collection->metadata) - a_name_len - 1;
+   int a_len = a_name_len + 1 + _metadata_metalen (collection, a_meta);
 
 
-   int b_start = (b_meta - metadata) - b_name_len - 1;
-   int b_len = b_name_len + 1 + _metadata_metalen (b_meta);
+   int b_start = (b_meta - collection->metadata) - b_name_len - 1;
+   int b_len = b_name_len + 1 + _metadata_metalen (collection, b_meta);
 
    char *a_temp = malloc (a_len);
    char *b_temp = malloc (b_len);
 
-   memcpy (a_temp, metadata + a_start, a_len);
-   memcpy (b_temp, metadata + b_start, b_len);
+   memcpy (a_temp, collection->metadata + a_start, a_len);
+   memcpy (b_temp, collection->metadata + b_start, b_len);
 
-   memmove (metadata + b_start, metadata + b_start + b_len, metadata_len - b_start - b_len);
-   metadata_len -= b_len;
-   memmove (metadata + a_start, metadata + a_start + a_len, metadata_len - a_start - a_len);
-   metadata_len -= a_len;
+   memmove (collection->metadata + b_start, collection->metadata + b_start + b_len, collection->metadata_len - b_start - b_len);
+   collection->metadata_len -= b_len;
+   memmove (collection->metadata + a_start, collection->metadata + a_start + a_len, collection->metadata_len - a_start - a_len);
+   collection->metadata_len -= a_len;
 
    b_start -= a_len;
-   memmove (metadata + b_start + a_len, metadata + b_start, metadata_len - b_start);
-   memcpy (metadata + b_start, a_temp, a_len);
-   metadata_len += a_len;
-   memmove (metadata + a_start + b_len, metadata + a_start, metadata_len - a_start);
-   memcpy (metadata + a_start, b_temp, b_len);
-   metadata_len += b_len;
+   memmove (collection->metadata + b_start + a_len, collection->metadata + b_start, collection->metadata_len - b_start);
+   memcpy (collection->metadata + b_start, a_temp, a_len);
+   collection->metadata_len += a_len;
+   memmove (collection->metadata + a_start + b_len, collection->metadata + a_start, collection->metadata_len - a_start);
+   memcpy (collection->metadata + a_start, b_temp, b_len);
+   collection->metadata_len += b_len;
 
    free (a_temp);
    free (b_temp);
 
-   metadata_cache_no = -3;
+   collection->metadata_cache_no = -3;
 }
 
-void metadata_remove (int no)
+void metadata_remove (Collection *collection, int no)
 {
-   char *a_name = metadata_get_name_escaped (no);
+   char *a_name = metadata_get_name_escaped (collection, no);
    int a_name_len = strlen (a_name);
-   const char *a_meta = metadata_find_no (no);
+   const char *a_meta = metadata_find_no (collection, no);
 
-   int a_start = (a_meta - metadata) - a_name_len - 1;
-   int a_len = a_name_len + 1 + _metadata_metalen (a_meta);
+   int a_start = (a_meta - collection->metadata) - a_name_len - 1;
+   int a_len = a_name_len + 1 + _metadata_metalen (collection, a_meta);
 
-   memmove (metadata + a_start, metadata + a_start + a_len, metadata_len - a_start - a_len);
-   metadata_len -= a_len;
-   metadata[metadata_len]=0;
-   metadata_cache_no = -3;
+   memmove (collection->metadata + a_start,
+            collection->metadata + a_start + a_len,
+            collection->metadata_len - a_start - a_len);
+   collection->metadata_len -= a_len;
+   collection->metadata[collection->metadata_len]=0;
+   collection->metadata_cache_no = -3;
 }
 
-void metadata_unset (int no, const char *key)
+void metadata_unset (Collection *collection, int no, const char *key)
 {
-  const char *a_meta = metadata_find_no (no);
+  const char *a_meta = metadata_find_no (collection, no);
   CtxString *str = ctx_string_new ("");
   const char *m = a_meta;
   const char *prop_start = m;
@@ -480,63 +474,64 @@ void metadata_unset (int no, const char *key)
   if (!prop_start)
     return;
    
-   int a_start = prop_start - metadata;
+   int a_start = prop_start - collection->metadata;
    //int a_len = a_name_len + 1 + _metadata_metalen (a_meta);
 
-   memmove (metadata + a_start, metadata + a_start + a_len, metadata_len - a_start - a_len);
-   metadata_len -= a_len;
-   metadata[metadata_len]=0;
+   memmove (collection->metadata + a_start,
+            collection->metadata + a_start + a_len, collection->metadata_len - a_start - a_len);
+   collection->metadata_len -= a_len;
+   collection->metadata[collection->metadata_len]=0;
 }
 
-static void _metadata_insert (int pos, const char *data, int len)
+static void _metadata_insert (Collection *collection, int pos, const char *data, int len)
 {
-  if (metadata_len + len >= metadata_size - 1)
+  if (collection->metadata_len + len >= collection->metadata_size - 1)
   {
-     metadata_size = metadata_len + len + 1024;
-     metadata = realloc (metadata, metadata_size);
+     collection->metadata_size = collection->metadata_len + len + 1024;
+     collection->metadata = realloc (collection->metadata, collection->metadata_size);
   }
-  memmove (metadata + pos + len, metadata + pos, metadata_len - pos);
-  memcpy (metadata + pos, data, len);
-  metadata_len += len;
-  metadata[metadata_len] = 0;
-  metadata_cache_no = -3;
+  memmove (collection->metadata + pos + len, collection->metadata + pos, collection->metadata_len - pos);
+  memcpy (collection->metadata + pos, data, len);
+  collection->metadata_len += len;
+  collection->metadata[collection->metadata_len] = 0;
+  collection->metadata_cache_no = -3;
 }
 
-int metadata_insert (int pos, const char *item)
+int metadata_insert (Collection *collection, int pos, const char *item)
 {
-  if (pos == -1) pos = metadata_len;
-  const char *m = metadata_find_no (pos);
+  if (pos == -1) pos = collection->metadata_len;
+  const char *m = metadata_find_no (collection, pos);
   if (m)
   {
-    char *name = metadata_get_name_escaped (pos);
+    char *name = metadata_get_name_escaped (collection, pos);
     m -= strlen (name) + 1;
     free (name);
   }
   else
   {
-    m = metadata + metadata_len;
+    m = collection->metadata + collection->metadata_len;
   }
   char *escaped_item = metadata_escape_item (item);
   char tmp[strlen (escaped_item) + 3];
   snprintf (tmp, sizeof(tmp), "%s\n", escaped_item);
   free (escaped_item);
 
-  _metadata_insert (m-metadata, tmp, strlen (tmp));
+  _metadata_insert (collection, m-collection->metadata, tmp, strlen (tmp));
   return pos;
 }
 
-void metadata_set_name (int pos, const char *new_name)
+void metadata_set_name (Collection *collection, int pos, const char *new_name)
 {
-  char *m = metadata_find_no (pos);
+  char *m = metadata_find_no (collection, pos);
   if (m)
   {
-    char *name = metadata_get_name_escaped (pos);
+    char *name = metadata_get_name_escaped (collection, pos);
     int name_len = strlen (name);
     free (name);
 
     m -= name_len + 1;
-    memmove (m, m + name_len + 1, metadata_len - (m-metadata) - name_len - 1);
-    metadata_len -= name_len + 1;
+    memmove (m, m + name_len + 1, collection->metadata_len - (m-collection->metadata) - name_len - 1);
+    collection->metadata_len -= name_len + 1;
   }
   else
   {
@@ -548,16 +543,16 @@ void metadata_set_name (int pos, const char *new_name)
   snprintf (tmp, sizeof(tmp), "%s\n", new_escaped);
   free (new_escaped);
 
-  _metadata_insert (m-metadata, tmp, strlen (tmp));
+  _metadata_insert (collection, m-collection->metadata, tmp, strlen (tmp));
 }
 
-void metadata_add (int no, const char *key, const char *value)
+void metadata_add (Collection *collection, int no, const char *key, const char *value)
 {
   CtxString *str = ctx_string_new ( " ");
-  metadata_unset (no, key);
+  metadata_unset (collection, no, key);
 
-  const char *m = metadata_find_no (no);
-  int offset = metadata_len;
+  const char *m = metadata_find_no (collection, no);
+  int offset = collection->metadata_len;
   if (m)
   {
     while (m[0] == ' ')
@@ -565,7 +560,7 @@ void metadata_add (int no, const char *key, const char *value)
        while (m[0] != '\n') m++;
        if (m[0] == '\n') m++;
     }
-    offset = m - metadata;
+    offset = m - collection->metadata;
   }
   else
   {
@@ -578,16 +573,16 @@ void metadata_add (int no, const char *key, const char *value)
   ctx_string_append_str (str, value);
   ctx_string_append_byte (str, '\n');
 
-  _metadata_insert (offset, str->str, str->length);
+  _metadata_insert (collection, offset, str->str, str->length);
 }
 
-void metadata_set (int no, const char *key, const char *value)
+void metadata_set (Collection *collection, int no, const char *key, const char *value)
 {
-  metadata_unset (no, key);
-  metadata_add (no, key, value);
+  metadata_unset (collection, no, key);
+  metadata_add (collection, no, key, value);
 }
 
-void metadata_set_float (int no, const char *key, float value)
+void metadata_set_float (Collection *collection, int no, const char *key, float value)
 {
   char str[64];
   sprintf (str, "%f", value);
@@ -595,23 +590,23 @@ void metadata_set_float (int no, const char *key, float value)
     str[strlen(str)-1] = 0;
   if (str[strlen(str)-1] == '.')
     str[strlen(str)-1] = 0;
-  metadata_set (no, key, str);
+  metadata_set (collection, no, key, str);
 }
 
-void metadata_dump (void)
+void metadata_dump (Collection *collection)
 {
-  int item_count = metadata_count ();
+  int item_count = metadata_count (collection);
   fprintf (stdout, "item count: %i\n", item_count);
   for (int i = 0; i < item_count; i ++)
   {
-    char *item_name = metadata_get_name (i);
-    fprintf (stdout, "%i : %s : %i\n", i, item_name, metadata_item_to_no (item_name));
-    int keys = metadata_item_key_count (i);
+    char *item_name = metadata_get_name (collection, i);
+    fprintf (stdout, "%i : %s : %i\n", i, item_name, metadata_item_to_no (collection, item_name));
+    int keys = metadata_item_key_count (collection, i);
     for (int k = 0; k < keys; k ++)
     {
-      char *key_name = metadata_key_name (i, k);
+      char *key_name = metadata_key_name (collection, i, k);
       fprintf (stdout, " %s=%s\n", key_name,
-                      metadata_get_string (i, key_name));
+                      metadata_get_string (collection, i, key_name));
     }
     fflush (stdout);
   }
