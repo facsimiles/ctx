@@ -97,22 +97,14 @@ int  ctx_sha1_done    (CtxSHA1 *sha1, unsigned char *out);
 
 extern Ctx *ctx;
 
-typedef struct Item {
-  char *label;
-  char *val;
-} Item;
-
 typedef struct Files {
   char   *path;
   char   *title;
-  struct  dirent **namelist;
-  int     n;
 
-  //char  **items;
   int     count;
-
-
 } Files;
+
+
 #define PATH_SEP "/"
 
 #define TEXT_EDIT_OFF                   -10
@@ -373,6 +365,9 @@ void dm_set_path (Files *files, const char *path, const char *title)
   char *resolved_path = realpath (path, NULL);
   char *title2 = NULL;
 
+  struct  dirent **namelist = NULL;
+  int     n;
+
   DIR_INFO("setting path %s %s", path, title);
 
   if (title) title2 = strdup (title);
@@ -384,10 +379,7 @@ void dm_set_path (Files *files, const char *path, const char *title)
     free (files->title);
   files->title = title2;
 
-  if (files->namelist)
-    free (files->namelist);
-  files->namelist = NULL;
-  files->n = scandir (files->path, &files->namelist, NULL, custom_sort);
+  n = scandir (files->path, &namelist, NULL, custom_sort);
   metadata_load (resolved_path);
   files->count = metadata_count ();
 
@@ -418,10 +410,10 @@ void dm_set_path (Files *files, const char *path, const char *title)
 #endif
 
   CtxList *to_add = NULL; // XXX a temporary list here might be redundant
-  for (int i = 0; i < files->n; i++)
+  for (int i = 0; i < n; i++)
   {
     int found = 0;
-    const char *name = files->namelist[i]->d_name;
+    const char *name = namelist[i]->d_name;
     if (metadata_item_to_no (name)>=0)
        found = 1;
     if (!found && (name[0] != '.'))
@@ -436,8 +428,42 @@ void dm_set_path (Files *files, const char *path, const char *title)
     int n = metadata_insert(-1, name);
     metadata_set (n, "type", "ctx/file");
     ctx_list_remove (&to_add, name);
+    free (name);
   }
+
   files->count = metadata_count ();
+  CtxList *to_remove = NULL;
+  for (int i = 0; i < files->count; i++)
+  {
+    int atom = item_get_type_atom (i);
+    if (atom == CTX_ATOM_FILE)
+    {
+      char *name = metadata_get_name (i);
+      char *path = ctx_strdup_printf ("%s/%s", files->path, name);
+      struct stat stat_buf;
+      if (lstat (path, &stat_buf) != 0)
+      {
+        DIR_INFO ("removing file item %s", name);
+        ctx_list_prepend (&to_remove, strdup (name));
+      }
+      free (name);
+      free (path);
+    }
+  }
+  while (to_remove)
+  {
+    char *name = to_remove->data;
+    int no = 0;
+    if ((no = metadata_item_to_no (name))>=0)
+    {
+      metadata_remove (no);
+    }
+    ctx_list_remove (&to_remove, name);
+    free (name);
+  }
+
+  files->count = metadata_count ();
+  free (namelist);
 
   // TODO remove non-existent files
 
@@ -1009,7 +1035,7 @@ static void item_duplicate(CtxEvent *e, void *d1, void *d2)
   int insert_pos = no + count;
   for (int i = 0; i < count; i ++)
   {
-    char *name = metadata_get_name (no + 1);
+    char *name = metadata_get_name (no);
     metadata_insert (insert_pos + i, name);
     free (name);
     int keys = metadata_item_key_count (no + i);
@@ -4154,6 +4180,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
      chdir (files->path);
      system (commandline->str);
      metadata_dirt();
+     save_metadata();
   }
 
   ctx_string_set (commandline, "");
@@ -4354,11 +4381,11 @@ static int card_files (ITK *itk_, void *data)
     }
 
 
-  if (!files->n)
-  {
-    itk_labelf (itk, "no items\n");
-  }
-  else
+  //if (!n)
+  //{
+  //  itk_labelf (itk, "no items\n");
+ // }
+ // else
   {
     if (!is_text_editing())
     {
