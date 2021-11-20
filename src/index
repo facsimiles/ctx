@@ -17,7 +17,7 @@ audio.h
 start-implementation
 audio.c
 a85.c
-thash.h
+squoze5.h
 base64.h
 ctx-yenc.c
 drawlist.h
