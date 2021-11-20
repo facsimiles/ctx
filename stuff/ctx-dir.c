@@ -97,24 +97,7 @@ int  ctx_sha1_done    (CtxSHA1 *sha1, unsigned char *out);
 
 extern Ctx *ctx;
 
-#define METADATA_NOTEST 1
-
-typedef struct Collection {
-  char   *path;
-  char   *title;
-  int     count;
-
-  char   *metadata;
-  int     metadata_len;
-  long    metadata_size;
-  char   *metadata_path;
-  char   *metadata_cache;
-  int     metadata_cache_no;
-} Collection;
-
-#include "metadata/metadata.c"
-
-
+#include "collection.h"
 
 #define PATH_SEP "/"
 

@@ -1,14 +1,10 @@
-#ifndef METADATA_NOTEST
-
-#define NO_LIBCURL 1
-#define CTX_GET_CONTENTS 1
-#define CTX_IMPLEMENTATION
+#include "collection.h"
 #include "ctx.h"
-
-#endif
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <stdio.h>
 
-static void metadata_load (Collection *collection, const char *path)
+void metadata_load (Collection *collection, const char *path)
 {
   collection->metadata_cache_no = -3;
   collection->metadata_cache = NULL;
@@ -45,7 +41,7 @@ void dir_mkdir_ancestors (const char *path, unsigned int mode)
 }
 
 #if 1
-static void metadata_save (Collection *collection)
+void metadata_save (Collection *collection)
 {
   if (!collection->metadata_path) return;
   dir_mkdir_ancestors (collection->metadata_path, 0777);
@@ -56,7 +52,7 @@ static void metadata_save (Collection *collection)
 }
 #endif
 
-static int metadata_count (Collection *collection)
+int metadata_count (Collection *collection)
 {
   const char *m = collection->metadata;
   if (!m) return -1;
@@ -70,7 +66,7 @@ static int metadata_count (Collection *collection)
   return count;
 }
 
-static char *metadata_get_name_escaped (Collection *collection, int no)
+char *metadata_get_name_escaped (Collection *collection, int no)
 {
   const char *m = collection->metadata;
   if (!m) return NULL;
@@ -139,7 +135,7 @@ static char *metadata_find_no (Collection *collection, int no)
   return NULL;
 }
 
-static char *metadata_get_name (Collection *collection, int no)
+char *metadata_get_name (Collection *collection, int no)
 {
   /* this makes use reuse the cache */
   const char *m = metadata_find_no (collection, no);
@@ -271,7 +267,7 @@ int metadata_item_to_no (Collection *collection, const char *item)
   return -1;
 }
 
-static int metadata_item_key_count (Collection *collection, int no)
+int metadata_item_key_count (Collection *collection, int no)
 {
   const char *m = metadata_find_no (collection, no);
   if (!m) return -1;
@@ -285,7 +281,7 @@ static int metadata_item_key_count (Collection *collection, int no)
   return count;
 }
 
-static char *metadata_key_name (Collection *collection, int ino, int no)
+char *metadata_key_name (Collection *collection, int ino, int no)
 {
   const char *m = metadata_find_no (collection, ino);
   CtxString *str = ctx_string_new ("");
@@ -309,7 +305,7 @@ static char *metadata_key_name (Collection *collection, int ino, int no)
   return NULL;
 }
 
-static char *metadata_get_string (Collection *collection, int no, const char *key)
+char *metadata_get_string (Collection *collection, int no, const char *key)
 {
   const char *m = metadata_find_no (collection, no);
   CtxString *str = ctx_string_new ("");
@@ -339,12 +335,12 @@ static char *metadata_get_string (Collection *collection, int no, const char *ke
   return NULL;
 }
 
-static char *metadata_get (Collection *collection, int no, const char *key)
+char *metadata_get (Collection *collection, int no, const char *key)
 {
   return metadata_get_string (collection, no, key);
 }
 
-static float metadata_get_float (Collection *collection, int no, const char *key, float def_val)
+float metadata_get_float (Collection *collection, int no, const char *key, float def_val)
 {
    char *value = metadata_get_string (collection, no, key);
    float ret = def_val;//-1234.0f;
@@ -357,7 +353,7 @@ static float metadata_get_float (Collection *collection, int no, const char *key
 }
 
 
-static int metadata_get_int (Collection *collection, int no, const char *key, int def_val)
+int metadata_get_int (Collection *collection, int no, const char *key, int def_val)
 {
    char *value = metadata_get_string (collection, no, key);
    int ret = def_val;
@@ -370,7 +366,7 @@ static int metadata_get_int (Collection *collection, int no, const char *key, in
 }
 
 
-static void metadata_swap (Collection *collection, int no_a, int no_b)
+void metadata_swap (Collection *collection, int no_a, int no_b)
 {
    if (no_b < no_a)
    {
