@@ -7,9 +7,9 @@ dostr()
   echo -n '       squoze-6: ' ; ./squoze5 -e -6 "$1"
   echo -n '      squoze-10: ' ; ./squoze5 -e -10 "$1"
   echo -n '      squoze-12: ' ; ./squoze5 -e -12 "$1"
-  echo -n 'squoze-5 base64: ' ; ./squoze5 --utfv -e --base64 "$1"
-  echo -n 'UTF-8    base64: ' ; echo -n "$1" | base64 --wrap=0 ; echo
-  echo -n '       squoze-5: ' ; ./squoze5 -e --utfv "$1"
+  echo -n 'squoze-5 base64: ' ; ./squoze5 -v -e --base64 "$1"
+  echo -n '   UTF-8 base64: ' ; echo -n "$1" | base64 --wrap=0 ; echo
+  echo -n '       squoze-5: ' ; ./squoze5 -ev "$1"
   echo -n '          UTF-5: ' ; ./squoze5 -e --utf5 "$1"
   echo ""
 }

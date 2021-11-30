@@ -1,5 +1,6 @@
 
-  squoze5 a 5-bit compression format for unicode.
+  squoze5 a 5-bit transfer format for unicode.
+  ============================================
 
   Squoze5 extends the UTF-8 like variable length encoding of UTF-5 with
   a direct encoding mode, acting in a role for 5-bit datastreams that
@@ -41,22 +42,22 @@ The quintets meaning of the quintets in squeeze mode are as follows:
 29  T     offset -= 26 * 1   XXX todo:
 30  U     offset += 26 * 1
 
-    T T   offset -= 26 *     XXX docs todo: generate and copy values for doc + document formula
-    T U   offset -= 26 *                    to compute values
-    R R   offset -= 26 * 
-    R S   offset -= 26 * 
-    R T   offset -= 26 * 
-    R U   offset -= 26 * 
-    T R   offset -= 26 * 
-    T S   offset -= 26 * 
-    U T   offset += 26 * 
-    U U   offset += 26 * 
-    S R   offset += 26 * 
-    S S   offset += 26 * 
-    S T   offset += 26 * 
-    S U   offset += 26 * 
-    U R   offset += 26 * 
-    U S   offset += 26 * 
+    R R   offset += 26 * 3   
+    R S   offset += 26 * 4  
+    R T   offset += 26 * 5
+    R U   offset += 26 * 6
+    S R   offset += 26 * 7
+    S S   offset += 26 * 8
+    S T   offset += 26 * 9
+    S U   offset += 26 * 10
+    T R   offset -= 26 * 3
+    T S   offset -= 26 * 4
+    T T   offset -= 26 * 5
+    T U   offset -= 26 * 6
+    U R   offset -= 26 * 7
+    U S   offset -= 26 * 8
+    U T   offset -= 26 * 9
+    U U   offset -= 26 * 10
 
 31  V     switch to UTF-5 mode
 
@@ -75,18 +76,57 @@ The quintets meaning of the quintets in squeeze mode are as follows:
   For example the string "Hello World" is encoded as follows:
 
   H   e  l l o   W  o  r l d                             11 bytes
-  GT3 U6 D D G 0 TI UG J D 5     16 quintets = 80 bits = 10 bytes
+  GT2 U5 C C F 0 TH UF I C 4     16 quintets = 80 bits = 10 bytes
 
   h  e l l o   w o r l d     11 bytes
-  G9 6 D D G 0 O G J D 5     12 quintets = 60 bits     = 7.5bytes padded to 8 bytes
+  G8 5 C C F 0 N F I C 4     12 quintets = 60 bits = 7.5bytes padded to 8 bytes
 
-2. Sample squoze-5 encodings and information density comparison.
+2. squoze-10
+
+  squoze-6, squoze-10 and squoze-12) are reversible string hash
+  hashes that result in 32bit 52bit or 62bit unsigned integers. The hashes
+  are reversible back to their original string as long as it encodes as
+  squoze5 to less to or equal to 10, 6 or 12 quintets. If the first bit is
+  set it indicates starting off in squeeze-mode, saving the need for an initial
+  'G'. If the number of encoded quintets to encode is too high, the highest
+  bit is set which indicates overflow - and the rest of the bits act as
+  a regular hash function.
+
+    $ ./squoze5 -e This is a test øæå ØÆÅ
+    1294529466 1234 2 1349992 6600566 1595769403
+
+    $ ./squoze5 1294529466 1234 2 1349992 6600566 1595769403
+    This is a test
+
+    We can use the squoze binary to encode to squoze5 to see what is going on:
+
+    $ ./squoze5 -ev This is a test øæå ØÆÅ
+    GTEU89J G9J G1 GK5JK GRTM43 T8GTON
+
+    $ ./squoze5 -ev 'This is a test øæå ØÆÅ'
+    GTEU89J09J010K5JK0RTM430TGTON
+
+  To avoid ambiguity, if the final quintet is 0 a mode-change using either
+  'G' or 'V' as appropriate is used, this can for example happen when a
+  string ends in a space.
+
+  Squoze-10 can be used for memory efficient interning of strings, and
+  in parsers for switching on tokens.
+
+  The origins of the 5-bit encoding is a hash that was done at compile-time
+  for ascii in a switch, as a replacement for a perfect hash. This hash
+  was almost reversible and squoze-10 is the result of iterating on it,
+  being able to evaluate the hash on compile time resulted in huge compile
+  time performance cost. The current squoze code is not optimized for
+  performance yet, but for some parsing use a generic hash is likely faster
+  than the more complex logic of squoze.
+
+3. Sample squoze-5 encodings and information density comparison.
 
   The following are following are a sample sentence in different languages and
   scripts, The first line shows the unicode input string, and the four following
   lines are pairs for comparing informtion packing performance against UTF-8 and
-  UTF-5 without the squoze-5 direct encoding extension. The scripts are sorted from
-  shortest to longest in squoze-5 encoding.
+  UTF-5 without the squoze-5 direct encoding extension.
 
   Interstingly the variance in lengths in squoze-5 encoding is smaller than both
   UTF-8 and UTF-5, with small self-contained alphabeths with high codepoints
@@ -98,284 +138,422 @@ The quintets meaning of the quintets in squeeze mode are as follows:
   equivalent to the UTF-5 encoding, the entropy
 
 
+          UTF-8: ខ្ញុំអាចញុំកញ្ចក់បាន ដោយគ្មានបញ្ហារ
+       squoze-6: 2609551377
+      squoze-10: 2444104107370663
+      squoze-12: 3652182147418048795
+squoze-5 base64: 8aAA97Y7+OzV1p7u64PPXvUtfeC27yv3fpt52hcQHO3Y6d52Q0/7YoHbjT3t
+                 Eg==
+   UTF-8 base64: 4Z6B4Z+S4Z6J4Z674Z+G4Z6i4Z624Z6F4Z6J4Z674Z+G4Z6A4Z6J4Z+S4Z6F
+                 4Z6A4Z+L4Z6U4Z624Z6TIOGeiuGfhOGemeGeguGfkuGemOGetuGek+GelOGe
+                 ieGfkuGeoOGetuGemg==
+       squoze-5: H781GRRMR1UPUARQUKRNU1UPUATRIU1SMTRNIRRFRCUKTB02S8RHTKRRMRGU
+                 KTBC1SMROUKTI
+          UTF-5: H781H7D2H789H7BBH7C6H7A2H7B6H785H789H7BBH7C6H780H789H7D2H785
+                 H780H7CBH794H7B6H793I0H78AH7C4H799H782H7D2H798H7B6H793H794H7
+                 89H7D2H7A0H7B6H79A
+
+          UTF-8: ຂອ້ຍກິນແກ້ວໄດ້ໂດຍທີ່ມັນບໍ່ໄດ້ເຮັດໃຫ້ຂອ້ຍເຈັບ.
+       squoze-6: 2929417361
+      squoze-10: 2511261709785153
+      squoze-12: 4193667591074771905
+squoze-5 base64: Hgnoq7/7DS568G8Pfvvzclt+4bYv82F7ykHw0K3cll/Xbe6Wxz793cRXf/fj
+                 biufxZcO
+   UTF-8 base64: 4LqC4Lqt4LuJ4LqN4LqB4Lq04LqZ4LuB4LqB4LuJ4Lqn4LuE4LqU4LuJ4LuC
+                 4LqU4LqN4LqX4Lq14LuI4Lqh4Lqx4LqZ4Lqa4LuN4LuI4LuE4LqU4LuJ4LuA
+                 4Lqu4Lqx4LqU4LuD4Lqr4LuJ4LqC4Lqt4LuJ4LqN4LuA4LqI4Lqx4LqaLg==
+       squoze-5: U82GULUNRF3S2T1UFR3SNTFUIRMSNGRMFPS3MT9P12S1TMIRMSNETMPTMSHT
+                 JUNR4ULUNRFSERAUP2VIE
+          UTF-5: U82UADUC9U8DU81UB4U99UC1U81UC9UA7UC4U94UC9UC2U94U8DU97UB5UC8
+                 UA1UB1U99U9AUCDUC8UC4U94UC9UC0UAEUB1U94UC3UABUC9U82UADUC9U8D
+                 UC0U88UB1U9AIE
+
+          UTF-8: ฉันกินกระจกได้ แต่มันไม่ทำให้ฉันเจ็บ
+       squoze-6: 3561692653
+      squoze-10: 3406773201956395
+      squoze-12: 2375284615384540261
+squoze-5 base64: HiTIQx+9cNJHL77pzgqnG/MM4s4c9+VDH5725XEPfsxefd6Nhz483IzfTgA=
+   UTF-8 base64: 4LiJ4Lix4LiZ4LiB4Li04LiZ4LiB4Lij4Liw4LiI4LiB4LmE4LiU4LmJIOC5
+                 geC4leC5iOC4oeC4seC4meC5hOC4oeC5iOC4l+C4s+C5g+C4q+C5ieC4ieC4
+                 seC4meC5gOC4iOC5h+C4mg==
+       squoze-5: U09GS1T3T5S4T3T5UDQTC5SKROSP0HRPSOTBU1T3UKTBUOT1U3JTLUPRDS1T
+                 3UGRCSNT4
+          UTF-5: U09U31U19U01U34U19U01U23U30U08U01U44U14U49I0U41U15U48U21U31U
+                 19U44U21U48U17U33U43U2BU49U09U31U19U40U08U47U1A
+
+          UTF-8: ᠪᠢ ᠰᠢᠯᠢ ᠢᠳᠡᠶᠦ ᠴᠢᠳᠠᠨᠠ ᠂ ᠨᠠᠳᠤᠷ ᠬᠣᠤᠷᠠᠳᠠᠢ ᠪᠢᠰᠢ
+       squoze-6: 2821592611
+      squoze-10: 2325219188707887
+      squoze-12: 2508558040432899421
+squoze-5 base64: EQkFOwaedexXxwD716+XAsCO/evWk25Bl4CTbv3r2k+AetZ+dutftxh407Fn
+                 HQM=
+   UTF-8 base64: 4aCq4aCiIOGgsOGgouGgr+GgoiDhoKLhoLPhoKHhoLbhoKYg4aC04aCi4aCz
+                 4aCg4aCo4aCgIOGggiDhoKjhoKDhoLPhoKThoLcg4aCs4aCj4aCk4aC34aCg
+                 4aCz4aCg4aCiIOGgquGgouGgsOGgog==
+       squoze-5: H82AGTO0UCTOUBTO0OUFTNUI20GTOUFTMU4TM0TI0S4TMUFTQUJ08TPQUJTM
+                 UFTMO0U6TOUCTO
+          UTF-5: H82AH822I0H830H822H82FH822I0H822H833H821H836H826I0H834H822H8
+                 33H820H828H820I0H802I0H828H820H833H824H837I0H82CH823H824H837
+                 H820H833H820H822I0H82AH822H830H822
+
+          UTF-8: ﻿म काँच खान सक्छू र मलाई केहि नी हुन्‍न् ।
+       squoze-6: 3277568125
+      squoze-10: 3196289250728615
+      squoze-12: 4223307343559140491
+squoze-5 base64: 372XhYOgT476zh4DylFnwIs9+d2ZM9ApkNajbcDkcSTQmVdgrM78/RKAlgWC
+                 /gJPAQ==
+   UTF-8 base64: 77u/4KSuIOCkleCkvuCkgeCkmiDgpJbgpL7gpKgg4KS44KSV4KWN4KSb4KWC
+                 IOCksCDgpK7gpLLgpL7gpIgg4KSV4KWH4KS54KS/IOCkqOClgCDgpLngpYHg
+                 pKjgpY3igI3gpKjgpY0g4KWk
+       squoze-5: VEFFP2EG0TJS8TRPUO0KS8TC0U2RJSNRPSC0TK0IMU8R60JSH390TCUA03BT
+                 CUNVI00DP28GUN0UK
+          UTF-5: VEFFP2EI0P15P3EP01P1AI0P16P3EP28I0P38P15P4DP1BP42I0P30I0P2EP
+                 32P3EP08I0P15P47P39P3FI0P28P40I0P39P41P28P4DI00DP28P4DI0P64
+
+          UTF-8: ཤེལ་སྒོ་ཟ་ནས་ང་ན་གི་མ་རེད།
+       squoze-6: 2212698313
+      squoze-10: 3432170530767611
+      squoze-12: 4387460911461262495
+squoze-5 base64: 3xDoZa99r70xh512vvaOfa+9C+57cbjX3qXvxR1Xna+9Vd9rb+plH303
+   UTF-8 base64: 4L2k4L264L2j4LyL4L2m4L6S4L284LyL4L2f4LyL4L2T4L2m4LyL4L2E4LyL
+                 4L2T4LyL4L2C4L2y4LyL4L2Y4LyL4L2i4L264L2R4LyN
+       squoze-5: V64GUITLTRBRROSGTKTSBRRHTRBRR5OTRBSGRBRR5TRBSESATSBRRATRBRRK
+                 UIT3TRD
+          UTF-5: V64V7AV63V0BV66V92V7CV0BV5FV0BV53V66V0BV44V0BV53V0BV42V72V0B
+                 V58V0BV62V7AV51V0D
+
+          UTF-8: 我能吞下玻璃而不傷身體。
+       squoze-6: 4100148753
+      squoze-10: 3571652464248875
+      squoze-12: 2380565403371480947
+squoze-5 base64: VoSAwWuVBEcdWHesdQkaGABGHWgVrIOdWlk1MgEQ
+   UTF-8 base64: 5oiR6IO95ZCe5LiL546755KD6ICM5LiN5YK36Lqr6auU44CC
+       squoze-5: M211O0FDL41EKE0BN3BBN483O00CKE0DL0B7OEABPAD4J002
+          UTF-5: M211O0FDL41EKE0BN3BBN483O00CKE0DL0B7OEABPAD4J002
+
+          UTF-8: Góa ē-tàng chia̍h po-lê, mā bē tio̍h-siong.
+       squoze-6: 4128705349
+      squoze-10: 2747197069977087
+      squoze-12: 3745194566167939043
+squoze-5 base64: 9PxhAwTbX88Dp98D6+ABA6XwJ2gWQQDfDpx9rySTwDa4fQHdi+0v6J6m9ydo
+                 FskG+UzPnS0A
+   UTF-8 base64: R8OzYSDEky10w6BuZyBjaGlhzI1oIHBvLWzDqiwgbcSBIGLEkyB0aW/MjWgt
+                 c2lvbmcu
+       squoze-5: K7V3M1G0RUNUS1SKVU0MEG703891VJ0DM8G0GFR1SCVUAICI0MDGRU50TU2R
+                 UN0TUK9FVJ0DM8IDGSJ9FE7R2
+          UTF-5: K7V3M1I0H13IDN4U0MEM7I0M3M8M9M1J0DM8I0N0MFIDMCUAICI0MDH01I0M
+                 2H13I0N4M9MFJ0DM8IDN3M9MFMEM7IE
+
+          UTF-8: 私はガラスを食べられます。それは私を傷つけません。
+       squoze-6: 3240199103
+      squoze-10: 3772642930274533
+      squoze-12: 3490758197106243221
+squoze-5 base64: N7EwgXmQO3572O5n1N4EJ0FfUKc9da43bxz18m9iYYIkKlhnAkNg8LQv/rrX
+   UTF-8 base64: 56eB44Gv44Ks44Op44K544KS6aOf44G544KJ44KM44G+44GZ44CC44Gd44KM
+                 44Gv56eB44KS5YK344Gk44GR44G+44Gb44KT44CC
+       squoze-5: N9C1J06FGSESNT1REVP8DFJ079GU58TKT9TSQRSDS8T5VN9C1J092L0B7J06
+                 4G1UKTBSFTUQ
+          UTF-5: N9C1J06FJ0ACJ0E9J0B9J092P8DFJ079J089J08CJ07EJ059J002J05DJ08C
+                 J06FN9C1J092L0B7J064J051J07EJ05BJ093J002
+
+          UTF-8: 나는 유리를 먹을 수 있어요. 그래도 아프지 않아요
+       squoze-6: 3285210985
+      squoze-10: 2387619226737737
+      squoze-12: 3033542852120231037
+squoze-5 base64: GyS0RSIS8CPATorBDQHf9/NDiARcBCQBPwjxsgg3iUgngW4P7ZPQHoxIwAsh
+                 vQDCEwMS8EIUhJ+bRAA=
+   UTF-8 base64: 64KY64qUIOycoOumrOulvCDrqLnsnYQg7IiYIOyeiOyWtOyalC4g6re4656Y
+                 64+EIOyVhO2UhOyngCDslYrslYTsmpQ=
+       squoze-5: R098R294I0S720R9ACGRG0SRNVS744I0S218I0S788S5B4S694IEI0QDF8R7
+                 98R3C4I0S544T504S9C0I0S54AGGVS694
+          UTF-5: R098R294I0S720R9ACR97CI0RA39S744I0S218I0S788S5B4S694IEI0QDF8
+                 R798R3C4I0S544T504S9C0I0S54AS544S694
+
+          UTF-8: ᐊᓕᒍᖅ ᓂᕆᔭᕌᖓᒃᑯ ᓱᕋᙱᑦᑐᓐᓇᖅᑐᖓ
+       squoze-6: 3412326469
+      squoze-10: 3773553622030475
+      squoze-12: 3000647601369895139
+squoze-5 base64: kQAFOV99R+4L8FzuTnv1eu/p/ekN7N72zj+aEyIxBna0u+mX8/IjKSCWNAA=
+   UTF-8 base64: 4ZCK4ZOV4ZKN4ZaFIOGTguGVhuGUreGVjOGWk+GSg+GRryDhk7HhlYvhmbHh
+                 kabhkZDhk5Dhk4fhloXhkZDhlpM=
+       squoze-5: H40AGSSBTRHSU50USIRTKTLUQRRJUU7TD0RTDRRPVH671H466GT8RT6TNSS5
+                 VH450H593
+          UTF-5: H40AH4D5H48DH585I0H4C2H546H52DH54CH593H483H46FI0H4F1H54BH671
+                 H466H450H4D0H4C7H585H450H593
+
+          UTF-8: Tsésǫʼ yishą́ągo bííníshghah dóó doo shił neezgai da.
+       squoze-6: 3321330136
+      squoze-10: 3777430806821146
+      squoze-12: 3854981093851361840
+squoze-5 base64: sDs/v093RLcg5wb8m2CaaPv0JwgRFHvgA2L3tb51vt0B0UEBAbJ7jKB38h6Y
+                 KHEugeeuFH1CAiRsAQ==
+   UTF-8 base64: VHPDqXPHq8q8IHlpc2jEhcyBxIVnbyBiw63DrW7DrXNoZ2hhaCBkw7PDsyBk
+                 b28gc2hpxYIgbmVlemdhaSBkYS4=
+       squoze-5: GTEUJVU9N3HEBGSS60VN9G9J8RU9VJ01H05M7GF02RTBBVMEUDN3G8781804
+                 RTHH0TT4FF0J89SSI0USE55Q719041R2
+          UTF-5: L4N3U9N3HEBIBCI0N9M9N3M8H05J01H05M7MFI0M2UDUDMEUDN3M8M7M8M1M
+                 8I0M4V3V3I0M4MFMFI0N3M8M9H42I0MEM5M5NAM7M1M9I0M4M1IE
+
+          UTF-8: Ljœr ye caudran créneþ ý jor cẃran. 
+       squoze-6: 4227474412
+      squoze-10: 2727684925178404
+      squoze-12: 2822242689484773512
+squoze-5 base64: sBuveE++S5ALGKESGRwY8vtknS3fQRBA9+pJMH50aFwBg9sCAA==
+   UTF-8 base64: TGrFk3IgeWUgY2F1ZHJhbiBjcsOpbmXDviDDvSBqb3IgY+G6g3Jhbi4g
+       squoze-5: GT6UAST9UTI0P5031L4I1E03IVU9MEM5VEG010TUAFI03VHE83N2G1ER20
+          UTF-5: KCMAH53N2I0N9M5I0M3M1N5M4N2M1MEI0M3N2U9MEM5VEI0VDI0MAMFN2I0M
+                 3HE83N2M1MEIEI0
+
           UTF-8: ᛖᚴ ᚷᛖᛏ ᛖᛏᛁ ᚧ ᚷᛚᛖᚱ ᛘᚾ ᚦᛖᛋᛋ ᚨᚧ ᚡᛖ ᚱᚧᚨ ᛋᚨᚱ
-       squoze-6: 3526552107
-      squoze-10: 3242398787301963
-      squoze-12: 4507676435822165329
-squoze-5 base64: 0TQD9wWal46BLx0r0BXQPJVNAT/9gJ546ZSCvhQgvIBN1QKe9kUB
+       squoze-6: 2176105493
+      squoze-10: 3367249542711599
+      squoze-12: 2790853332870996097
+squoze-5 base64: 0TQDtwWZk36BJ/0m0BPIHJE9ATfdgI446XOCrhIYnIA9kwJ+djUB
    UTF-8 base64: 4ZuW4Zq0IOGat+GbluGbjyDhm5bhm4/hm4Eg4ZqnIOGat+GbmuGbluGasSDh
                  m5jhmr4g4Zqm4ZuW4ZuL4ZuLIOGaqOGapyDhmqHhm5Yg4Zqx4Zqn4ZqoIOGb
                  i+GaqOGasQ==
-       squoze-5: H6D6GRN0QS5TO0U5TOA0TA0QS95RK0S7T70T9S5TKK0TBA04S50RKAB0UKTB
-                 K
+       squoze-5: H6D6GRM0PS4TN0U4TN90T90PS84RJ0S6T60T8S4TJJ0TA903S40RJ9A0UJTA
+                 J
           UTF-5: H6D6H6B4I0H6B7H6D6H6CFI0H6D6H6CFH6C1I0H6A7I0H6B7H6DAH6D6H6B1
                  I0H6D8H6BEI0H6A6H6D6H6CBH6CBI0H6A8H6A7I0H6A1H6D6I0H6B1H6A7H6
                  A8I0H6CBH6A8H6B1
 
           UTF-8: Ek get etið gler án þess að verða sár.
-       squoze-6: 2265672050
-      squoze-10: 3064342519668710
-      squoze-12: 2637148871872737738
-squoze-5 base64: cGvOADIVmKp2f6B31MwEm+vOH9h+dG8oBWL3B3q/Zu7+eheAbq47n3sA
+       squoze-6: 2225374532
+      squoze-10: 3057847711728432
+      squoze-12: 3560066634807833862
+squoze-5 base64: cGe+wCkUFJp2d6D3w4oE3wfrJPjOFjgnCLs70Lst8n9gAwTz+3CFdA==
    UTF-8 base64: RWsgZ2V0IGV0acOwIGdsZXIgw6FuIMO+ZXNzIGHDsCB2ZXLDsGEgc8Ohci4=
-       squoze-5: GRQSC086L06LARTF0TT8D6J0RSQTSF0RU3TU6KK02RTF0TTN6JRTFTT20KRS
-                 QTSJR3
+       squoze-5: GRPSB075K05K9RTE0TT7C5I0VU1MEI0VEM5GJJ01RTE0TTM5IVV0M1G0JVU1
+                 N2IE
           UTF-5: K5MBI0M7M5N4I0M5N4M9V0I0M7MCM5N2I0U1MEI0VEM5N3N3I0M1V0I0N6M5
                  N2V0M1I0N3U1N2IE
 
           UTF-8: Я могу есть стекло, оно мне не вредит.
-       squoze-6: 2417077423
-      squoze-10: 3925608843472897
-      squoze-12: 3056272599534738521
-squoze-5 base64: VDwIfBhdegQ69eZEYE6nWfvxJZOADgfFAEF0CrzoFERfOp3Xny8d
+       squoze-6: 2318276589
+      squoze-10: 2274231190503813
+      squoze-12: 2969140160652287371
+squoze-5 base64: VDwItBc9+gP69MVAUEyfOHvxJZOADgeDAF370CfwoU8APelTWm++dA==
    UTF-8 base64: 0K8g0LzQvtCz0YMg0LXRgdGC0Ywg0YHRgtC10LrQu9C+LCDQvtC90L4g0LzQ
                  vdC1INC90LUg0LLRgNC10LTQuNGCLg==
-       squoze-5: K2FG0U13TIU80TKU67H067TKPQU3VICI0K3EG23012TK0U2TK0HU5TKJNU7V
-                 IE
+       squoze-5: K2FG0QU2THU70TJU56G056TJOPU2VICI0K3EG120TQU1TJ0U1TJ0GU4TJIMU
+                 6VIE
           UTF-5: K2FI0K3CK3EK33K43I0K35K41K42K4CI0K41K42K35K3AK3BK3EICI0K3EK3
                  DK3EI0K3CK3DK35I0K3DK35I0K32K40K35K34K38K42IE
 
           UTF-8: ﺄﻧﺍ ﻕﺍﺩﺭ ﻊﻟﻯ ﺄﻜﻟ ﺎﻟﺰﺟﺎﺟ ﻭ ﻩﺫﺍ ﻻ ﻱﺆﻠﻤﻨﻳ.
-       squoze-6: 3866820899
-      squoze-10: 2410305971958753
-      squoze-12: 3739440547107622365
-squoze-5 base64: 3yECNyedS7A361t6igEP1jPQedp7WtD33Nv20FWfXoG9FTB92y7B5hi4ztfe
-                 14cCv3Q=
+       squoze-6: 3953997749
+      squoze-10: 3777092042652131
+      squoze-12: 4321279865229509779
+squoze-5 base64: 3yECNx+dR7D36jv6eYHXvvoFOkd7ywr6lnvXrVOXPoG9Eyh91x7B5he0ztXe
+                 VnvyvnQ=
    UTF-8 base64: 77qE77un77qNIO+7le+6je+6qe+6rSDvu4rvu5/vu68g77qE77uc77ufIO+6
                  ju+7n++6sO+6n++6ju+6nyDvu60g77up77qr77qNIO+7uyDvu7Hvuobvu6Dv
                  u6Tvu6jvu7Mu
-       squoze-5: VE84GRS4TSI0RRCTRIUKO0S1MUC0TS9RRJM0TRJRRMT1TATJUA0RRA06TRMT
-                 I0RSO0ETSBRRNU15GVIE
+       squoze-5: VE84GRS3TSH0RRBTRHUJN0UQULUB0TS8RRIL0TRIRRLRQ9TIU90RR905TRLT
+                 H0RSN0DTSARRMQU4FVIE
           UTF-5: VE84VEE7VE8DI0VED5VE8DVEA9VEADI0VECAVEDFVEEFI0VE84VEDCVEDFI0
                  VE8EVEDFVEB0VE9FVE8EVE9FI0VEEDI0VEE9VEABVE8DI0VEFBI0VEF1VE86
                  VEE0VEE4VEE8VEF3IE
 
           UTF-8: 我能吞下玻璃而不伤身体。
-       squoze-6: 2288793135
-      squoze-10: 4113532770958139
-      squoze-12: 3848467649243340313
+       squoze-6: 3200528077
+      squoze-10: 3621339426347921
+      squoze-12: 2784505510521068479
 squoze-5 base64: VoSAwWuVBEcdWHesdQkaGABGHWj0CYKdWvSVMQEQ
    UTF-8 base64: 5oiR6IO95ZCe5LiL546755KD6ICM5LiN5Lyk6Lqr5L2T44CC
        squoze-5: M211O0FDL41EKE0BN3BBN483O00CKE0DKF24OEABKF53J002
           UTF-5: M211O0FDL41EKE0BN3BBN483O00CKE0DKF24OEABKF53J002
 
           UTF-8: 私はガラスを食べられます。それは私を傷つけません。
-       squoze-6: 4253840519
-      squoze-10: 4247854228609295
-      squoze-12: 3120161782195157425
-squoze-5 base64: N7EwgXmQP4672O9n1N4EJ0FvUq9d9R32djx1829iYYIkKlhnAkOg8LUzDnsP
+       squoze-6: 3240199103
+      squoze-10: 3772642930274533
+      squoze-12: 3490758197106243221
+squoze-5 base64: N7EwgXmQO3572O5n1N4EJ0FfUKc9da43bxz18m9iYYIkKlhnAkNg8LQv/rrX
    UTF-8 base64: 56eB44Gv44Ks44Op44K544KS6aOf44G544KJ44KM44G+44GZ44CC44Gd44KM
                  44Gv56eB44KS5YK344Gk44GR44G+44Gb44KT44CC
-       squoze-5: N9C1J06FGSFSOT2RFVP8DFJ079GU69TLTATR1RRES9T6VN9C1J092L0B7J06
-                 4G2ULTCSGTT1
+       squoze-5: N9C1J06FGSESNT1REVP8DFJ079GU58TKT9TSQRSDS8T5VN9C1J092L0B7J06
+                 4G1UKTBSFTUQ
           UTF-5: N9C1J06FJ0ACJ0E9J0B9J092P8DFJ079J089J08CJ07EJ059J002J05DJ08C
                  J06FN9C1J092L0B7J064J051J07EJ05BJ093J002
 
           UTF-8: ฉันกินกระจกได้ แต่มันไม่ทำให้ฉันเจ็บ
-       squoze-6: 3509581673
-      squoze-10: 2745937281527691
-      squoze-12: 2461815986410923841
-squoze-5 base64: HiTIRSfd8NJJN975sJvhdWeugdya58686MTXznzuwhPardfbcdGJj7tx3As=
+       squoze-6: 3561692653
+      squoze-10: 3406773201956395
+      squoze-12: 2375284615384540261
+squoze-5 base64: HiTIQx+9cNJHL77pzgqnG/MM4s4c9+VDH5725XEPfsxefd6Nhz483IzfTgA=
    UTF-8 base64: 4LiJ4Lix4LiZ4LiB4Li04LiZ4LiB4Lij4Liw4LiI4LiB4LmE4LiU4LmJIOC5
                  geC4leC5iOC4oeC4seC4meC5hOC4oeC5iOC4l+C4s+C5g+C4q+C5ieC4ieC4
                  seC4meC5gOC4iOC5h+C4mg==
-       squoze-5: U09GS2T4T6S5T4T6UEU1RD6SLRPSQ0IRQSPTCU2T4ULTCUPT2U4KTMUQRES2
-                 T4UHRDSOT5
+       squoze-5: U09GS1T3T5S4T3T5UDQTC5SKROSP0HRPSOTBU1T3UKTBUOT1U3JTLUPRDS1T
+                 3UGRCSNT4
           UTF-5: U09U31U19U01U34U19U01U23U30U08U01U44U14U49I0U41U15U48U21U31U
                  19U44U21U48U17U33U43U2BU49U09U31U19U40U08U47U1A
 
           UTF-8: אני יכול לאכול זכוכית וזה לא מזיק לי.
-       squoze-6: 2841420881
-      squoze-10: 2979263847190945
-      squoze-12: 2462286098237142535
-squoze-5 base64: tQHoS8cAa+oDCP1p6gPoVVON/QOd1gl86A/40Sv2DISOv3Q=
+       squoze-6: 3567965985
+      squoze-10: 4282237826603171
+      squoze-12: 2832990075796903759
+squoze-5 base64: tQHoSb/g5qmBdnlqQPPM1zvQJ5VAO+BFp9cv0PX90gE=
    UTF-8 base64: 15DXoNeZINeZ15vXldecINec15DXm9eV15wg15bXm9eV15vXmdeqINeV15bX
                  lCDXnNeQINee15bXmdenINec15ku
-       squoze-5: LD0GU5TO0OQKU101TFQKU10TLQKQOUF0TKLJ0U1TF0U3TLOUC01TOVIE
+       squoze-5: LD0GU4TN0NPJQ0QEPJQ0KPJPNUE0TJKI0QE0U2TKNUB0TQNVIE
           UTF-5: LD0LE0LD9I0LD9LDBLD5LDCI0LDCLD0LDBLD5LDCI0LD6LDBLD5LDBLD9LEA
                  I0LD5LD6LD4I0LDCLD0I0LDELD6LD9LE7I0LDCLD9IE
 
           UTF-8: मैं काँच खा सकता हूँ और मुझे उससे कोई चोट नहीं पहुंचती.
-       squoze-6: 3957738425
-      squoze-10: 2731467373444357
-      squoze-12: 3596584034402137495
-squoze-5 base64: WTjo5w6A8tS39hlUnsDY1CefAGl9a+Cnr2B61oWXYCM+hgSbcrsPyNx2Apon
-                 awfgnydsh+yTX186
+       squoze-6: 4234851963
+      squoze-10: 3859180424251261
+      squoze-12: 4058429371963583071
+squoze-5 base64: WTjoZd8a+MlR39ljQDkCYk+PPAKD9Z2Bl54C6VcPPoJ9uBAR7MnrNgDz2gdg
+                 fqi+NeDOj9W39tgjr750
    UTF-8 base64: 4KSu4KWI4KSCIOCkleCkvuCkgeCkmiDgpJbgpL4g4KS44KSV4KSk4KS+IOCk
                  ueClguCkgSDgpJTgpLAg4KSu4KWB4KSd4KWHIOCkieCkuOCkuOClhyDgpJXg
                  pYvgpIgg4KSa4KWL4KSfIOCkqOCkueClgOCkgiDgpKrgpLngpYHgpILgpJrg
                  pKTgpYAu
-       squoze-5: P2EGUJR10KS9TRQUP0LS903RKU9U904DTRQ0UJUL0JUCT2UI0R8S33I0RKSM
-                 R70PSMT40DU4BR10UFU4CR1PU9UBVIE
+       squoze-5: P2EGUITRQ0UJS8TRPUO0KS802RJU8U803CTRP0UIUK0IUBT1UH0R7S22H0RJ
+                 SLR60OSLT30CU3ATRQ0SEU3BTRQUOU8UAVIE
           UTF-5: P2EP48P02I0P15P3EP01P1AI0P16P3EI0P38P15P24P3EI0P39P42P01I0P1
                  4P30I0P2EP41P1DP47I0P09P38P38P47I0P15P4BP08I0P1AP4BP1FI0P28P
                  39P40P02I0P2AP39P41P02P1AP24P40IE
 
           UTF-8: ﺝﺎﻣ ﻲﻴﻫ ﺐﻟﻭﺮﻣ ﺏڭﺍ ﺽﺭﺭﻯ ﻁﻮﻗﻮﻨﻣﺯ
-       squoze-6: 2348966023
-      squoze-10: 3253071830000695
-      squoze-12: 2799830060321578499
-squoze-5 base64: 36UG+9xbA/8iAp3Xva1XfWeuQd/0W9W+Qw0C7jrGezOwJV/d+VW63ho=
+       squoze-6: 2754726647
+      squoze-10: 4159667461633135
+      squoze-12: 2610068624847158347
+squoze-5 base64: 36UGu9w7A+/gAZ3TvatPfWOeQd/zW9W+Qw0C3vq9ey+wI1e9eUV63hk=
    UTF-8 base64: 77qd77qO77ujIO+7su+7tO+7qyDvupDvu5/vu63vuq7vu6Mg77qP2q3vuo0g
                  77q977qt77qt77uvIO+7ge+7ru+7l++7ru+7qO+7o++6rw==
-       squoze-5: VE9DGTJRRQ0UFH80TSLRRMUATRPSQ0TRKVMADVE8DG0SETOORRC0RISBTEUB
-                 5TQRQ
+       squoze-5: VE9DGTIRRP0UEG70TSKRRLU9TROSP0TRJVMADVE8DG0SDTNNRRB0RHSATDUA
+                 4TPRP
           UTF-5: VE9DVE8EVEE3I0VEF2VEF4VEEBI0VE90VEDFVEEDVEAEVEE3I0VE8FMADVE8
                  DI0VEBDVEADVEADVEEFI0VEC1VEEEVED7VEEEVEE8VEE3VEAF
 
           UTF-8: Կրնամ ապակի ուտել և ինծի անհանգիստ չըներ։
-       squoze-6: 2364963415
-      squoze-10: 3002190882301081
-      squoze-12: 3560943390680932985
-squoze-5 base64: dTy4dxsd+QA68qcjK4Evj3U2gaegSz96lQD50S/yoyvpFQOmPz86880C
+       squoze-6: 2978768367
+      squoze-10: 2739291411930877
+      squoze-12: 3607150378925373619
+squoze-5 base64: dTy4NxP9aHC86adG4IlbfUngJ+jRi04jOF50e7zoKfq0QOnOi748qw==
    UTF-8 base64: 1L/WgNW21aHVtCDVodW61aHVr9WrINW41oLVv9Wl1awg1ocg1avVttWu1asg
                  1aHVttWw1aHVttWj1avVvdW/INW51ajVttWl1oDWiQ==
-       squoze-5: L3FGRRD3T8U10T8U7T8MI0U5FCTCJ0UK0TIU3TLI08U3TN8U3TAIUAC06TFU
-                 3TCUDM
+       squoze-5: L3FGRRC2T7Q07U6T7LH0U4EBTBI0UJ0THU2TKH07U2TM7U2T9HU9B05TEU2T
+                 BUCL
           UTF-5: L3FL80L76L61L74I0L61L7AL61L6FL6BI0L78L82L7FL65L6CI0L87I0L6BL
                  76L6EL6BI0L61L76L70L61L76L63L6BL7DL7FI0L79L68L76L65L80L89
 
           UTF-8: მინას ვჭამ და არა მტკივა.
-       squoze-6: 4270029547
-      squoze-10: 2437808711949797
-      squoze-12: 3748106025079504363
-squoze-5 base64: EbQFS+rXOyB0vx6Bri+4vvULPHqmiH6/dA==
+       squoze-6: 2965583339
+      squoze-10: 2557541213543881
+      squoze-12: 2327505667973175759
+squoze-5 base64: EbQFCerWNxByt/6Ani2wnnUL/HGFhG6/dA==
    UTF-8 base64: 4YOb4YOY4YOc4YOQ4YOhIOGDleGDreGDkOGDmyDhg5Phg5Ag4YOQ4YOg4YOQ
                  IOGDm+GDouGDmeGDmOGDleGDkC4=
-       squoze-5: H0DBG59TNUE02QTNU80TQN0NUDTN0U8F652TNVIE
+       squoze-5: H0DBG48TMUD01PTMU70TPM0MUCTM0U7E541TMVIE
           UTF-5: H0DBH0D8H0DCH0D0H0E1I0H0D5H0EDH0D0H0DBI0H0D3H0D0I0H0D0H0E0H0
                  D0I0H0DBH0E2H0D9H0D8H0D5H0D0IE
 
           UTF-8: Ich kann Glas essen, ohne mir zu schaden.
-       squoze-6: 4280728326
-      squoze-10: 3541058199844190
-      squoze-12: 3891428828103255246
-squoze-5 base64: sBNPEmDiPdCFb4ICQ6l5OwAO0zPAqQl86BZQkkQxbw8=
+       squoze-6: 4126436712
+      squoze-10: 3802409292847860
+      squoze-12: 4072555170184367616
+squoze-5 base64: sA8/EFjBOdCDZ2GCMmdxfWuw90OugJYk0BXMgQIpbgs=
    UTF-8 base64: SWNoIGthbm4gR2xhcyBlc3Nlbiwgb2huZSBtaXIgenUgc2NoYWRlbi4=
-       squoze-5: GT4U490C2FF0T2UD2K06KK6FR10SG9F60EAJ0U1TM0K49256FR3
+       squoze-5: GT3U380B1EE0T1UC1J05JJ5ETRQ0RRF8E50D9I0QL0J38145ER2
           UTF-5: K9M3M8I0MBM1MEMEI0K7MCM1N3I0M5N3N3M5MEICI0MFM8MEM5I0MDM9N2I0
                  NAN5I0N3M3M8M1M4M5MEIE
 
           UTF-8: Ég get etið gler án þess að meiða mig.
-       squoze-6: 3535293363
-      squoze-10: 4357008395515965
-      squoze-12: 3970885501797770359
-squoze-5 base64: PNkDATIVmKp2f6B31MwEm+vOH9h+dG8oBWL3B3p3Ru3+ehfAKbQH
+       squoze-6: 3759652831
+      squoze-10: 4035461672249879
+      squoze-12: 4086714294340776245
+squoze-5 base64: PNkDwSkUFJp2d6D3w4oE3wfrJPjOFjgnCLs70Hsr6X9gAwQtnS0A
    UTF-8 base64: w4lnIGdldCBldGnDsCBnbGVyIMOhbiDDvmVzcyBhw7AgbWVpw7BhIG1pZy4=
-       squoze-5: S9M7G086L06LARTF0TT8D6J0RSQTSF0RU3TU6KK02RTF0TTE6ARTFTT20EA8
-                 R3
+       squoze-5: S9M7G075K05K9RTE0TT7C5I0VU1MEI0VEM5GJJ01RTE0TTD59VV0M1G0D97R
+                 2
           UTF-5: S9M7I0M7M5N4I0M5N4M9V0I0M7MCM5N2I0U1MEI0VEM5N3N3I0M1V0I0MDM5
                  M9V0M1I0MDM9M7IE
 
           UTF-8: Eg kan eta glas utan å skada meg.
-       squoze-6: 3979632182
-      squoze-10: 4471744086171518
-      squoze-12: 4342733886280836280
-squoze-5 base64: cGuOABMPmCoAaoICW8UDuxPQO2WiCOAM2gM=
+       squoze-6: 2193476110
+      squoze-10: 2726350560652556
+      squoze-12: 4165317075394769768
+squoze-5 base64: cGd+wAoOFBrAYWGCSoMDuw/Q+1yBBNDK2QI=
    UTF-8 base64: RWcga2FuIGV0YSBnbGFzIHV0YW4gw6Ugc2thZGEgbWVnLg==
-       squoze-5: GRQS80C2F06L208D2K0ML2F0RT40TTKC2520E68R3
+       squoze-5: GRPS70B1E05K107C1J0LK1E0RT30TTJB1410D57R2
           UTF-5: K5M7I0MBM1MEI0M5N4M1I0M7MCM1N3I0N5N4M1MEI0U5I0N3MBM1M4M1I0MD
                  M5M7IE
 
           UTF-8: ⠊⠀⠉⠁⠝⠀⠑⠁⠞⠀⠛⠇⠁⠎⠎⠀⠁⠝⠙⠀⠊⠞⠀⠙⠕⠑⠎⠝⠞⠀⠓⠥⠗⠞⠀⠍⠑
-       squoze-6: 3516474171
-      squoze-10: 3768559789742443
-      squoze-12: 4417182371365117439
-squoze-5 base64: EgEFizMe9WKNT71405mZsxiPSC/Pp1486dpOj1Iv2EORepEW
+       squoze-6: 2801231497
+      squoze-10: 3819972792274711
+      squoze-12: 3284002198775622749
+squoze-5 base64: EgEFSSv+dFKLR5340leRkhR/RifOo0786LlKf1An17+AOokV
    UTF-8 base64: 4qCK4qCA4qCJ4qCB4qCd4qCA4qCR4qCB4qCe4qCA4qCb4qCH4qCB4qCO4qCO
                  4qCA4qCB4qCd4qCZ4qCA4qCK4qCe4qCA4qCZ4qCV4qCR4qCO4qCd4qCe4qCA
                  4qCT4qCl4qCX4qCe4qCA4qCN4qCR
-       squoze-5: I80AG5E6U8T5M6U9T5U6TC6JJ56U84T5FU9T5U4TQMJU89T5OUG29T5IM
+       squoze-5: I80AG4D5U7T4L5U8T4U5TB5II45U73T4EU8T4U3TPLIU78T4NUF18T4HL
           UTF-5: I80AI800I809I801I81DI800I811I801I81EI800I81BI807I801I80EI80E
                  I800I801I81DI819I800I80AI81EI800I819I815I811I80EI81DI81EI800
                  I813I825I817I81EI800I80DI811
 
           UTF-8: I can eat glass and it doesn't hurt me.
-       squoze-6: 3473082544
-      squoze-10: 3420795122337148
-      squoze-12: 2401066477071927232
-squoze-5 base64: sBPgiXjAiApQE5QC8QpQFRRo6Ovb7l1BsrMCZ/YA
+       squoze-6: 2771151886
+      squoze-10: 3312924339491426
+      squoze-12: 2806989256871068114
+squoze-5 base64: sA/gR3CgBAoOC3OC4AhIFJBXpvvyXAIBqpKCVrYA
    UTF-8 base64: SSBjYW4gZWF0IGdsYXNzIGFuZCBpdCBkb2Vzbid0IGh1cnQgbWUu
-       squoze-5: GT40U42F062L08D2KK02F50AL05G6KFTRMRRL09MJL0E6R3
+       squoze-5: GT30U31E051K07C1JJ01E409K04F5JEVI7N4G08LIK0D5R2
           UTF-5: K9I0M3M1MEI0M5M1N4I0M7MCM1N3N3I0M1MEM4I0M9N4I0M4MFM5N3MEI7N4
                  I0M8N5N2N4I0MDM5IE
 
           UTF-8: Μπορώ να φάω σπασμένα γυαλιά χωρίς να πάθω τίποτα.
-       squoze-6: 2273325301
-      squoze-10: 3114857147373135
-      squoze-12: 2515711319900330059
-squoze-5 base64: MzHIj0EVkC6Bb715CNTp0qvRnSddAupZl1503YB3EHXoEyBdAn96yx6C1aE/
-                 ZnX5pQM=
+       squoze-6: 4142213439
+      squoze-10: 3884789828190095
+      squoze-12: 2649809253312812105
+squoze-5 base64: MzHITTkUjB6BZ535B5Lp0SfRmx89gulXjz70zIBv7/TnERg9Am86w/4B1Z83
+                 RfX4pQM=
    UTF-8 base64: zpzPgM6/z4HPjiDOvc6xIM+GzqzPiSDPg8+AzrHPg868zq3Ovc6xIM6zz4XO
                  sc67zrnOrCDPh8+Jz4HOr8+CIM69zrEgz4DOrM64z4kgz4TOr8+Azr/PhM6x
                  Lg==
-       squoze-5: J9CGS768L04TI0UDTDUG0A7TIUA3TEU4TI0KUCTIU2TQD0UEG8TGU904TI0U
-                 7TDPUG0BTGU76BTIVIE
+       squoze-5: J9CGS657K03TH0UCTCUF096THU92TDU3TH0JUBTHU1TPC0UDF7TFU803TH0U
+                 6TCOUF0ATFU65ATHVIE
           UTF-5: J9CJC0JBFJC1JCEI0JBDJB1I0JC6JACJC9I0JC3JC0JB1JC3JBCJADJBDJB1
                  I0JB3JC5JB1JBBJB9JACI0JC7JC9JC1JAFJC2I0JBDJB1I0JC0JACJB8JC9I
                  0JC4JAFJC0JBFJC4JB1IE
 
           UTF-8: ὕαλον ϕαγεῖν δύναμαι· τοῦτο οὔ με βλάπτει.
-       squoze-6: 3399747819
-      squoze-10: 3612819612961749
-      squoze-12: 4506236811577237729
-squoze-5 base64: 8ZUyV4BeGAK82JLaH18zczUIev3xnTVXg1360aXuAvBlfnzOTEagAebHV4gE
-                 czHYLZhe/PhOmAzA1a3+0gE=
+       squoze-6: 3440439329
+      squoze-10: 3907590541470067
+      squoze-12: 4565056230832750551
+squoze-5 base64: 8ZUyV4A+lAF82HHWH18zczUIOv3xnTVXgz160WPuAXBVfnzOTEZgAeXHV4gE
+                 czHYK5A+/PhOmAxA1Wv+0gE=
    UTF-8 base64: 4b2VzrHOu86/zr0gz5XOsc6zzrXhv5bOvSDOtOG9u869zrHOvM6xzrnOhyDP
                  hM6/4b+mz4TOvyDOv+G9lCDOvM61IM6yzrvhvbHPgM+EzrXOuS4=
-       squoze-5: HF55JB1GU2640U2RIKMVHFD6JBDG0TLVHF7BJBDGTIU3TIQT20SB6VHFE6JC
-                 4G606VHF54I0JBCGTM0JU2VHF71JC0GBTMQVIE
+       squoze-5: HF55JB1GU1530U1RHJLVHFD6JBDG0TKVHF7BJBDGTHU2THPT10SA5VHFE6JC
+                 4G505VHF54I0JBCGTL0IU1VHF71JC0GATLPVIE
           UTF-5: HF55JB1JBBJBFJBDI0JD5JB1JB3JB5HFD6JBDI0JB4HF7BJBDJB1JBCJB1JB
                  9J87I0JC4JBFHFE6JC4JBFI0JBFHF54I0JBCJB5I0JB2JBBHF71JC0JC4JB5
                  JB9IE
 
           UTF-8: काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥
-       squoze-6: 2657856545
-      squoze-10: 4081816886106625
-      squoze-12: 3130941378811221893
-squoze-5 base64: ORTI084B8LApx71526fHnSaPe/KsT4+Br2A3b/vzRPXmB+7JK9CnT316DLwF
+       squoze-6: 2732323579
+      squoze-10: 3270926063750139
+      squoze-12: 3565317359643344489
+squoze-5 base64: ORTI0cZdA6775LczX7v0t0/kb0d+dekv8BRs5mt3fqTOvLgd+QS69KhLf4Gv
    UTF-8 base64: 4KSV4KS+4KSa4KSCIOCktuCkleCljeCkqOCli+CkruCljeCkr+CkpOCljeCk
                  pOClgeCkruCljSDgpaQg4KSo4KWL4KSq4KS54KS/4KSo4KS44KWN4KSk4KS/
                  IOCkruCkvuCkruCljSDgpaU=
-       squoze-5: P15GS9RP10S1RKSOTDUMTJUOTK9UOT9UCTJUO0UL0RDUMTFU4ATDU3OT9UA0
-                 TJU9TJUO0UM
+       squoze-5: P15GS8ROTQ0SQTJSNTCULTIUNTJ8UNT8UBTIUN0UK0RCULTEU39TCU2NT8U9
+                 0TIU8TIUN0UL
           UTF-5: P15P3EP1AP02I0P36P15P4DP28P4BP2EP4DP2FP24P4DP24P41P2EP4DI0P6
                  4I0P28P4BP2AP39P3FP28P38P4DP24P3FI0P2EP3EP2EP4DI0P65
 
           UTF-8: “Moscow” is Москва.
-       squoze-6: 3262364519
-      squoze-10: 3406369104349163
-      squoze-12: 4439318805482162315
-squoze-5 base64: EgRGG/SQEoi/BKFJYBOk4NPAIB+m5/i+dA==
+       squoze-6: 3548961171
+      squoze-10: 4133369485471299
+      squoze-12: 3847952608948084985
+squoze-5 base64: EgRGG/Rvjne/BKFJYBOc4NPAIBelY+i+dA==
    UTF-8 base64: 4oCcTW9zY2934oCdIGlzINCc0L7RgdC60LLQsC4=
-       squoze-5: I01CKDGUGK4GOVI01DI0M9GK0VK1CGS36TPHFVIE
+       squoze-5: I01CKDGUFJ3FNVI01DI0M9GJ0VK1CGS25TOGEVIE
           UTF-5: I01CKDMFN3M3MFN7I01DI0M9N3I0K1CK3EK41K3AK32K30IE
-
-
-
-3. CASH
-
-  CASH a content addressed string hash family built on squoze-5. For input strings
-  that encode to fewer than a limit squoze-5 words can be decoded, beyond the
-  limit CASH acts like a regular non-cryptographic hash. This can be used for
-  memory efficient interning of strings.
-
-  CASH is a 32bit / 52bit / 62bit hash that is reversible for short strings,
-  the intended use for CASH is hashing of words/tokens/interned strings. There
-  is three subvariants of CASH: CASH-6, CASH-10 and CASH-12. CASH-6 packs
-  6 squoze-5 words in a 32bit unsigned number, while CASH-12 encodes 12 words
-  with some slack suitable for 64bit storage. CASH-10 is also useful since it
-  fits within the range representable as exact integers in doubles, and thus
-  can be used for in many interpreted languages.
-
-  For messages that fit, the first bit indicates if the decoder should start
-  in UTF-5 or squeeze mode. This is followed by the squoze quintets, the
-  unused part is padded with 0s. If the message does not fit the highest bit
-  is set and the UTF-V words are used as input to a non-cryptographic hash
-  function.
-
-  The hash
-
-
-
 

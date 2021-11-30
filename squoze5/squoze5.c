@@ -2,7 +2,7 @@
 #include <libgen.h>
 #include "squoze5.h"
 
-static int cash_is_number (const char *str)
+static int squoze_is_number (const char *str)
 {
   if (str[0] == 0) return 0;
   for (const char *s = str; *s; s++)
@@ -11,7 +11,7 @@ static int cash_is_number (const char *str)
   return 1;
 }
 
-static int cash_is_utfv (const char *str)
+static int squoze_is_utfv (const char *str)
 {
   if (str[0] == 0) return 0;
   for (const char *s = str; *s; s++)
@@ -24,29 +24,33 @@ static int cash_is_utfv (const char *str)
 }
 
 void
-cash_bin2base64 (const void *bin,
+squoze_bin2base64 (const void *bin,
                 int         bin_length,
                 char       *ascii);
 
 int
-cash_base642bin (const char    *ascii,
+squoze_base642bin (const char    *ascii,
                 int           *length,
                 unsigned char *bin);
 
 int usage (const char *base)
 {
-  fprintf (stderr, "Usage: %s [options] <string|encoded> [string|encoded]\n", base);
-  fprintf (stderr, "\nwhere options are:\n"
-                   "  --cash6 -6   32 bit content adressed string hash\n"
-                   "  --cash10 -10 52 bit content adressed string hash\n"
-                   "  --cash12 -12 62 bit content adressed string hash\n"
-                   "  --utf-v -v   UTF-V encoding, with [0-9][A-V] alphabet\n"
-                   "  --utf-5 -5   UTF-5 encoding, with [0-9][A-V] alphabet\n"
-                   "\n"
-                   "  --encode -e  force encoding, the default is autodetect\n"
-                   "  --base64 -b  use base64 as encoding for UTF-5/UTF-V\n"
-                   "\n"
-                   "Multiple short options can be set together -e6 forces encoding in CASH-6\n");
+  fprintf (stderr,
+"Usage: %s [options] <string|encoded> [string|encoded]\n", base);
+  fprintf (stderr,
+"\nwhere options are:\n"
+"  --squoze6 -6   32 bit content adressed string hash\n"
+"  --squoze10 -10 52 bit content adressed string hash\n"
+"  --squoze12 -12 62 bit content adressed string hash\n"
+"  --squoze5 -v   squoze-5 encoding, with [0-9][A-V] alphabet\n"
+"  --utf-5 -5     UTF-5 encoding, with [0-9][A-V] alphabet\n"
+"\n"
+"  --encode -e    force encoding, the default is autodetect\n"
+"  --base64 -b    use base64 as encoding for UTF-5/UTF-V\n"
+"\n"
+"Multiple short options can be set together -e6 forces encoding in SQUOZE-6\n"
+"Without parameters it is as if --squoze10 has been passed as arguments.\n"
+"\n");
   return 0;
 }
 
@@ -62,6 +66,12 @@ void print_sep (void)
   count ++;
 }
 
+static int
+squoze5_file_get_contents (const char     *path,
+                           unsigned char **contents,
+                           long           *length);
+
+
 int main (int argc, char **argv)
 {
   int dim = 10;
@@ -69,16 +79,12 @@ int main (int argc, char **argv)
   int arg = 0;
   int force_encode = 0;
   char *base = basename (argv[arg++]);
-  if (base && !strcmp (base, "cash10")) dim = 10;
-  if (base && !strcmp (base, "cash12")) dim = 12;
-  if (base && !strcmp (base, "cash6")) dim = 6;
-  if (base && !strcmp (base, "cash5")) dim = 5;
-  if (base && !strcmp (base, "cashV")) dim = 4;
 
   if (!argv[arg])
   {
      return usage (base);
   }
+  const char *input_path = NULL;
 
   for (; argv[arg]; arg++)
   {
@@ -86,14 +92,22 @@ int main (int argc, char **argv)
        break;
      if (argv[arg][1] == '-')
      {
+     if (!strcmp (argv[arg], "--input")) { input_path = argv[arg+1];
+             
+             input_path = realpath (input_path, NULL);
+             arg++; }
+
      if (!strcmp (argv[arg], "--help")) return usage (base);
-     if (!strcmp (argv[arg], "--cash10")) dim = 10;
-     if (!strcmp (argv[arg], "--cash12")) dim = 12;
-     if (!strcmp (argv[arg], "--cash6")) dim = 6;
+     if (!strcmp (argv[arg], "--squoze10")) dim = 10;
+     if (!strcmp (argv[arg], "--squoze12")) dim = 12;
+     if (!strcmp (argv[arg], "--squoze6")) dim = 6;
+     if (!strcmp (argv[arg], "--squoze-10")) dim = 10;
+     if (!strcmp (argv[arg], "--squoze-12")) dim = 12;
+     if (!strcmp (argv[arg], "--squoze-6")) dim = 6;
      if (!strcmp (argv[arg], "--utf-5")) dim = 5;
      if (!strcmp (argv[arg], "--utf5")) dim = 5;
-     if (!strcmp (argv[arg], "--utfv")) dim = 4;
-     if (!strcmp (argv[arg], "--utf-v")) dim = 4;
+     if (!strcmp (argv[arg], "--squoze5")) dim = 4;
+     if (!strcmp (argv[arg], "--squoze-5")) dim = 4;
      if (!strcmp (argv[arg], "--encode")) force_encode = 1;
      if (!strcmp (argv[arg], "--base64")) use_base64 = 1;
      }
@@ -123,6 +137,102 @@ int main (int argc, char **argv)
      }
   }
 
+
+  if (input_path)
+  {
+    uint8_t  line[4095];
+    int      len = 0;
+    uint8_t *contents = NULL;
+    long     length = 0;
+    squoze5_file_get_contents (input_path, &contents, &length);
+    if (length)
+    {
+      for (int i = 0; i <= length; i ++)
+      {
+        uint8_t val = 0;
+        if (i < length) val = contents[i];
+
+        switch (val)
+        {
+          case 0:
+          case '\n':
+            line[len] = 0;
+            if (!strstr ((char*)line, "define TOKENHASH")
+                    &&
+               (strstr ((char*)line, "TOKENHASH(") &&
+                strstr ((char*)line, "define")))
+            {
+              const char *input_str = NULL;
+              
+              if (strstr ((char*)line, "str="))
+              {
+                input_str = strdup ((strstr ((char*)line, "str=")+4));
+              } else
+              {
+                if (strchr ((char*)line, '_'))
+                {
+                  input_str = strdup (strchr ((char*)line, '_') + 1);
+                  if (strchr ((char*)input_str, ' '))
+                    strchr ((char*)input_str, ' ')[0] = 0;
+                }
+                else
+                  exit(-3);
+              }
+
+              char *escaped = strdup (input_str);
+
+              for (int i = 0; escaped[i]; i++)
+              {
+                switch (escaped[i])
+                {
+                  case '-':
+                  case ' ':
+                    escaped[i] = '_';
+                    break;
+                  default:
+                    break;
+                }
+              }
+              {
+                uint64_t val = 0;
+                switch (dim)
+                {
+                  case 6:
+                    val = squoze6 (input_str);
+                    break;
+                  case 10:
+                    val = squoze10 (input_str);
+                    break;
+                  case 12:
+                    val = squoze12 (input_str);
+                    break;
+                  default:
+                    val = squoze10 (input_str);
+                    break;
+                }
+                if (!strcmp (escaped, input_str))
+                  printf ("#define CTX_%s TOKENHASH(%lu)\n", escaped, val);
+                else
+                  printf ("#define CTX_%s TOKENHASH(%lu)  // str=%s\n", escaped, val,
+                                  input_str);
+              }
+              free (escaped);
+            }
+            else
+            printf ("%s\n", line);
+            len = 0;
+            break;
+          default:
+            line[len++] = val;
+            break;
+        }
+      }
+    }
+    return 0;
+  }
+
+
+
   switch (dim)
   {
     case 4:
@@ -130,7 +240,7 @@ int main (int argc, char **argv)
       for (int i = arg; argv[i]; i++)
       {
         print_sep ();
-        if ((!force_encode) && (cash_is_utfv (argv[i]) || use_base64  ))
+        if ((!force_encode) && (squoze_is_utfv (argv[i]) || use_base64  ))
         {
           int len = strlen (argv[i]);
 
@@ -141,7 +251,7 @@ int main (int argc, char **argv)
           {
             temp = calloc (len + 1, 1);
             uint8_t *binary = calloc (len + 10, 1);
-            cash_base642bin (argv[i], &len, binary);
+            squoze_base642bin (argv[i], &len, binary);
 
 #define get_bit(no) ((binary[no/8] & (1<<(no%8)))!=0)
             int bitno = 0;
@@ -172,7 +282,7 @@ int main (int argc, char **argv)
           }
 
           int outlen = 0;
-          cash_decode_utf5_bytes (1, (uint8_t*)temp, len,
+          squoze_decode_utf5_bytes (1, (uint8_t*)temp, len,
                                   result, &outlen);
           free (temp);
           result[outlen]=0;
@@ -183,8 +293,8 @@ int main (int argc, char **argv)
         {
           char utf5[1024];
           int utf5_len = 0;
-          cash_encode_utf5 (argv[i], strlen (argv[i]),
-                            utf5, &utf5_len, dim==4);
+          squoze5_encode (argv[i], strlen (argv[i]),
+                            utf5, &utf5_len, dim==4, 0);
           if (use_base64)
           {
             uint8_t binary[1024];
@@ -198,7 +308,7 @@ int main (int argc, char **argv)
                 set_bit(bitno, ( utf5[j] & (1<< (b))) != 0);
             }
 #undef set_bit
-            cash_bin2base64 (binary, (bitno+7)/8, (char*)base64);
+            squoze_bin2base64 (binary, (bitno+7)/8, (char*)base64);
             printf ("%s", base64);
           }
           else
@@ -215,30 +325,30 @@ int main (int argc, char **argv)
       for (int i = arg; argv[i]; i++)
       {
         print_sep ();
-        if ((!force_encode) && cash_is_number (argv[i]))
-          printf ("%s", cash6_decode (atol(argv[i])));
+        if ((!force_encode) && squoze_is_number (argv[i]))
+          printf ("%s", squoze6_decode (atol(argv[i])));
         else
-          printf ("%u", cash6 (argv[i]));
+          printf ("%u", squoze6 (argv[i]));
       }
       break;
     case 10:
       for (int i = arg; argv[i]; i++)
       {
         print_sep ();
-        if ((!force_encode) && cash_is_number (argv[i]))
-          printf ("%s", cash10_decode (atol(argv[i])));
+        if ((!force_encode) && squoze_is_number (argv[i]))
+          printf ("%s", squoze10_decode (atol(argv[i])));
         else
-          printf ("%lu", cash10 (argv[i]));
+          printf ("%lu", squoze10 (argv[i]));
       }
       break;
     case 12:
       for (int i = arg; argv[i]; i++)
       {
         print_sep ();
-        if ((!force_encode) && cash_is_number (argv[i]))
-          printf ("%s", cash12_decode (atol(argv[i])));
+        if ((!force_encode) && squoze_is_number (argv[i]))
+          printf ("%s", squoze12_decode (atol(argv[i])));
         else
-          printf ("%lu", cash12 (argv[i]));
+          printf ("%lu", squoze12 (argv[i]));
       }
       break;
   }
@@ -265,7 +375,7 @@ static void bin2base64_group (const unsigned char *in, int remaining, char *out)
 }
 
 void
-cash_bin2base64 (const void *bin,
+squoze_bin2base64 (const void *bin,
                 int         bin_length,
                 char       *ascii)
 {
@@ -309,7 +419,7 @@ static void base64_revmap_init (void)
 
 
 int
-cash_base642bin (const char    *ascii,
+squoze_base642bin (const char    *ascii,
                 int           *length,
                 unsigned char *bin)
 {
@@ -356,5 +466,43 @@ cash_base642bin (const char    *ascii,
   if (length)
     *length= outputno;
   return outputno;
+}
+
+
+
+static int
+squoze5_file_get_contents (const char     *path,
+                           unsigned char **contents,
+                           long           *length)
+{
+  FILE *file;
+  long  size;
+  long  remaining;
+  char *buffer;
+  file = fopen (path, "rb");
+  if (!file)
+    { return -1; }
+  fseek (file, 0, SEEK_END);
+  size = remaining = ftell (file);
+  if (length)
+    { *length =size; }
+  rewind (file);
+  buffer = malloc (size + 8);
+  if (!buffer)
+    {
+      fclose (file);
+      return -1;
+    }
+  remaining -= fread (buffer, 1, remaining, file);
+  if (remaining)
+    {
+      fclose (file);
+      free (buffer);
+      return -1;
+    }
+  fclose (file);
+  *contents = (void *) buffer;
+  buffer[size] = 0;
+  return 0;
 }
 

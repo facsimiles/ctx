@@ -12,6 +12,8 @@ const char *strings[]={"0",
   "\n",
   "☺",
   "foo", "oof", "bar", "abc" "foo", "bar", "FOO", "Foo", "ooF",
+  "lineTo","line_to","moveTo","curveTo","reset",
+  "TEST",
   "abc",
   "a-_.b",
   "ᛖᚴ","ᚷᛖᛏ","ᛖᛏᛁ","ᚧᚷ","ᛚᛖᚱ","ᛘᚾᚦ","ᛖᛋᛋᚨ","ᚧᚡᛖ","ᚱᚧᚨ","ᛋᚨᚱ",
@@ -38,34 +40,7 @@ const char *strings[]={"0",
   "zzzzzk",
   "zzzzzzk",
   "zzzzzzzk",
-  "margin_top_x0",
-  "margin_top_x1",
-  "margin_top_x2",
-  "margin_top_x3",
-  "margin_top_x4",
-  "margin_top_x5",
   "margin_top_x6",
-  "margin_top_x7",
-  "margin_top_x8",
-  "margin_top_x9",
-  "margin_top_x10",
-  "margin_top_x11",
-  "margin_top_x12",
-  "margin_top_x13",
-  "margin_top_y0",
-  "margin_top_y1",
-  "margin_top_y2",
-  "margin_top_y3",
-  "margin_top_y4",
-  "margin_top_y5",
-  "margin_top_y6",
-  "margin_top_y7",
-  "margin_top_y8",
-  "margin_top_y9",
-  "margin_top_y10",
-  "margin_top_y11",
-  "margin_top_y12",
-  "margin_top_y13",
   "zzzzzzzzk",
   "zzzzzzzzzk",
   "zzzzzzzzzzk",
@@ -81,20 +56,6 @@ const char *strings[]={"0",
   "the",
   "this",
   "zzz",
-  "snake_case",
-  "snake_case1",
-  "snake_case2",
-  "snake_case3",
-  "snake_case4",
-  "snake_case5",
-  "snake_case6",
-  "snake_case7",
-  "snake_case8",
-  "snake_case9",
-  "snake_case0",
-  "snake_casea",
-  "snake_caseb",
-  "snake_cash",
   "Abcdefghijklmn",
   "abcdefghijkl",
   "abcdefghijklmn",
@@ -156,9 +117,11 @@ const char *strings[]={"0",
   "n ",
   "n",
   "ø ",
+  /*
   " ø",
   " ø ",
   " n",
+  */
   "if this is",
   "if the ",
   "if the n",
@@ -177,6 +140,8 @@ const char *strings[]={"0",
   ",.",
   "1",
   "10",
+  "æøå",
+  "ÆØÅ",
   "bjørn",
   "Bjørn",
   "Bjørnd",
@@ -192,17 +157,46 @@ const char *strings[]={"0",
 int main (int argc, char **argv)
 {
   int wrong = 0;
+  int dim = 6;
+
   for (int i = 0; strings[i]; i++)
   {
-    uint64_t hash = cash10 (strings[i]);
-    const char *decoded = cash10_decode (hash);
-    printf ("%s = %lu = %s\n", strings[i], hash, decoded);
-    if (decoded && strcmp (strings[i], decoded))
+    uint64_t hash;
+    const char *decoded;
+
+    char input[4096];
+    for (int j = 0; j < 1000; j++)
     {
-      printf ("  wrong\n");
+      if (j)
+        sprintf (input, "%s-%i", strings[i], j);
+      else
+        sprintf (input, "%s", strings[i]);
+
+    switch (dim)
+    {
+       case 6:
+        hash = squoze6 (input);
+        decoded = squoze6_decode (hash);
+        break;
+       case 12:
+        hash = squoze12 (input);
+        decoded = squoze12_decode (hash);
+        break;
+       case 10:
+       default:
+        hash = squoze10 (input);
+        decoded = squoze10_decode (hash);
+        break;
+    }
+    if (decoded && strcmp (input, decoded))
+    {
+      printf ("%s = %lu = %s\n", input, hash, decoded);
       wrong ++;
     }
+    }
+    fprintf (stderr, "\r%.1f%% %i ", (100.0*i) / ((sizeof(strings)/sizeof(strings[0]))-1), i);
   }
+  fprintf (stderr, "\r            ");
   if (wrong)
   {
     printf ("%i WRONG\n", wrong);
