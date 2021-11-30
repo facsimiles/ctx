@@ -443,7 +443,7 @@ uint64_t squoze12 (const char *utf8)
 }
 
 uint64_t ctx_strhash(const char *str) {
-  return squoze (10, str);
+  return squoze (6, str);
 }
 
 typedef struct CashUtf5Dec {
@@ -480,13 +480,9 @@ static void squoze_decode_jump (CashUtf5Dec *dec, uint8_t in)
   int jump_len = (dec->jump_mode - SQUOZE_DEC_OFFSET_A) * 4 +
                  (in - SQUOZE_DEC_OFFSET_A);
   if (jump_len > 7)
-  {
     jump_len = 5 - jump_len;
-  }
   else
-  {
     jump_len += 3;
-  }
   dec->offset += jump_len * SQUOZE_JUMP_OFFSET;
   dec->jump_mode = 0;
 }
@@ -521,23 +517,24 @@ static void squoze_decode_utf5 (CashUtf5Dec *dec, uint8_t in)
   }
   else
   {
-      if (dec->jump_mode)
+    if (dec->jump_mode)
+    {
+      switch (in)
       {
-        switch (in)
-        {
-          case SQUOZE_DEC_OFFSET_A:
-          case SQUOZE_DEC_OFFSET_B:
-          case SQUOZE_INC_OFFSET_A:
-          case SQUOZE_INC_OFFSET_B:
-            squoze_decode_jump (dec, in);
-            break;
-          default:
-            dec->append_unichar (dec->offset + (in - 1), dec->write_data);
-            dec->jump_mode = 0;
-            break;
-        }
+        case SQUOZE_DEC_OFFSET_A:
+        case SQUOZE_DEC_OFFSET_B:
+        case SQUOZE_INC_OFFSET_A:
+        case SQUOZE_INC_OFFSET_B:
+          squoze_decode_jump (dec, in);
+          break;
+        default:
+          dec->append_unichar (dec->offset + (in - 1), dec->write_data);
+          dec->jump_mode = 0;
+          break;
       }
-      else
+    }
+    else
+    {
       switch (in)
       {
         case SQUOZE_ENTER_UTF5:
@@ -573,6 +570,7 @@ static void squoze_decode_utf5 (CashUtf5Dec *dec, uint8_t in)
           dec->append_unichar (dec->offset + (in - 1), dec->write_data);
           dec->jump_mode = 0;
       }
+    }
   }
 }
 
@@ -580,7 +578,7 @@ static void squoze_decode_utf5_bytes (int is_utf5,
                         const unsigned char *input, int inlen,
                         char *output, int *r_outlen)
 {
-  CashUtf5DecDefaultData append_data= {(unsigned char*)output, };
+  CashUtf5DecDefaultData append_data = {(unsigned char*)output, };
   CashUtf5Dec dec = {is_utf5,
                      squoze_new_offset('a'),
                      &append_data,
@@ -589,12 +587,11 @@ static void squoze_decode_utf5_bytes (int is_utf5,
                      0
                     };
   for (int i = 0; i < inlen; i++)
-  {
     squoze_decode_utf5 (&dec, input[i]);
-  }
   if (dec.current)
     dec.append_unichar (dec.current, dec.write_data);
-  if (r_outlen)*r_outlen = append_data.length;
+  if (r_outlen)
+    *r_outlen = append_data.length;
 }
 
 const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retlen)
@@ -619,7 +616,8 @@ const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retle
     return NULL;
   }
 
-  uint8_t utf5[140]=""; // we newer get to 40
+  uint8_t utf5[140]=""; // we newer go really high since there isnt room
+                        // in the integers
   uint64_t tmp = hash & (overflowed_mask-1);
   int len = 0;
   int is_utf5 = tmp & 1;
@@ -637,10 +635,6 @@ const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retle
     tmp -= remnant;
     tmp /= 32;
   }
-  //if (in_utf5 && len && utf5[len-1] > 'G')
-  //{
-  //  utf5[len++] = 0;
-  //}
   utf5[len]=0;
   squoze_decode_utf5_bytes (is_utf5, utf5, len, ret, &retlen);
   //ret[retlen]=0;
