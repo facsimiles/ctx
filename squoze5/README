@@ -129,8 +129,9 @@ The quintets meaning of the quintets in squeeze mode are as follows:
   }
   hash |= overflowed_mask;
 
-  Where multiplier, all_bits, overflowed_mask and rshift are set depending on the
-  digest length.
+  Where multiplier, all_bits, overflowed_mask and rshift are set depending on
+  the digest length. This appears to give a reasonable good collision avoidance,
+  the constants used are likely to still change a bit.
 
   Squoze-10 can be used for memory efficient interning of strings, and in
   parsers for switching on tokens, for minimal and embedded language interpreters

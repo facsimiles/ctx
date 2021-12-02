@@ -28,76 +28,76 @@
 
 #define CTX_1 TOKENHASH(374)
 #define CTX_a TOKENHASH(2)
-#define CTX_absolute TOKENHASH(2439746586)
+#define CTX_absolute TOKENHASH(3367356941)
 #define CTX_aelig TOKENHASH(15294786)
-#define CTX_Aelig TOKENHASH(2933605204)
-#define CTX_AElig TOKENHASH(3097202518)
+#define CTX_Aelig TOKENHASH(2540544426)
+#define CTX_AElig TOKENHASH(2622343083)
 #define CTX_alias TOKENHASH(39930626)
-#define CTX_all_scroll TOKENHASH(3278493280)  // str=all-scroll
+#define CTX_all_scroll TOKENHASH(3786730288)  // str=all-scroll
 #define CTX_alpha TOKENHASH(2654978)
 #define CTX_amp TOKENHASH(33602)
 #define CTX_apos TOKENHASH(1276930)
 #define CTX_aring TOKENHASH(15617154)
-#define CTX_Aring TOKENHASH(2652778332)
+#define CTX_Aring TOKENHASH(3473872814)
 #define CTX_auto TOKENHASH(1025346)
 #define CTX_align TOKENHASH(29838082)
-#define CTX_align_content TOKENHASH(3971073484)  // str=align-content
-#define CTX_align_items TOKENHASH(3839454802)  // str=align-items
-#define CTX_align_self TOKENHASH(2846030206)  // str=align-self
-#define CTX_aspect_ratio TOKENHASH(4279107520)  // str=aspect-ratio
+#define CTX_align_content TOKENHASH(3059278566)  // str=align-content
+#define CTX_align_items TOKENHASH(2993469225)  // str=align-items
+#define CTX_align_self TOKENHASH(2496756927)  // str=align-self
+#define CTX_aspect_ratio TOKENHASH(4287037408)  // str=aspect-ratio
 #define CTX_avoid TOKENHASH(9010562)
-#define CTX_background TOKENHASH(4217207424)
-#define CTX_background_color TOKENHASH(3716242864)  // str=background-color
-#define CTX_background_clip TOKENHASH(2417430224)  // str=background-clip
-#define CTX_background_attachment TOKENHASH(3696053574)  // str=background-attachment
-#define CTX_background_image TOKENHASH(2775762676)  // str=background-image
-#define CTX_background_origin TOKENHASH(3402301320)  // str=background-origin
-#define CTX_background_size TOKENHASH(2698221198)  // str=background-size
-#define CTX_background_position TOKENHASH(3614646292)  // str=background-position
-#define CTX_background_position_x TOKENHASH(2162172774)  // str=background-position-x
-#define CTX_background_position_y TOKENHASH(3090944536)  // str=background-position-y
-#define CTX_background_repeat TOKENHASH(2637019172)  // str=background-repeat
+#define CTX_background TOKENHASH(3182345536)
+#define CTX_background_color TOKENHASH(4005605080)  // str=background-color
+#define CTX_background_clip TOKENHASH(2282456936)  // str=background-clip
+#define CTX_background_attachment TOKENHASH(3995510435)  // str=background-attachment
+#define CTX_background_image TOKENHASH(3535364986)  // str=background-image
+#define CTX_background_origin TOKENHASH(2774892484)  // str=background-origin
+#define CTX_background_size TOKENHASH(2422852423)  // str=background-size
+#define CTX_background_position TOKENHASH(2881064970)  // str=background-position
+#define CTX_background_position_x TOKENHASH(3228570035)  // str=background-position-x
+#define CTX_background_position_y TOKENHASH(2619214092)  // str=background-position-y
+#define CTX_background_repeat TOKENHASH(3465993234)  // str=background-repeat
 #define CTX_base TOKENHASH(366660)
-#define CTX_bidi_override TOKENHASH(3285675028)  // str=bidi-override
+#define CTX_bidi_override TOKENHASH(3790321162)  // str=bidi-override
 #define CTX_blink TOKENHASH(24005380)
 #define CTX_block TOKENHASH(23296772)
 #define CTX_body TOKENHASH(1647556)
 #define CTX_bold TOKENHASH(287684)
 #define CTX_bolder TOKENHASH(1218732996)
 #define CTX_border TOKENHASH(1218745284)
-#define CTX_background_bottom TOKENHASH(2329510360)  // str=background-bottom
-#define CTX_background_bottom_width TOKENHASH(2471091050)  // str=background-bottom-width
-#define CTX_background_bottom TOKENHASH(2329510360)  // str=background-bottom
-#define CTX_border_bottom_width TOKENHASH(2934416580)  // str=border-bottom-width
-#define CTX_border_bottom_color TOKENHASH(2952452408)  // str=border-bottom-color
-#define CTX_border_bottom TOKENHASH(3674500734)  // str=border-bottom
-#define CTX_border_box TOKENHASH(3090268304)  // str=border-box
-#define CTX_border_collapse TOKENHASH(3012273832)  // str=border-collapse
-#define CTX_border_color TOKENHASH(3124256460)  // str=border-color
-#define CTX_border_image TOKENHASH(3606764308)  // str=border-image
-#define CTX_border_left TOKENHASH(2268676574)  // str=border-left
-#define CTX_border_left_width TOKENHASH(3125379874)  // str=border-left-width
-#define CTX_border_left_color TOKENHASH(2649050200)  // str=border-left-color
-#define CTX_border_radius TOKENHASH(3170730522)  // str=border-radius
-#define CTX_border_right TOKENHASH(3820476690)  // str=border-right
-#define CTX_border_right_width TOKENHASH(2343550834)  // str=border-right-width
-#define CTX_border_right_color TOKENHASH(3305771840)  // str=border-right-color
-#define CTX_border_style TOKENHASH(2269600594)  // str=border-style
-#define CTX_border_spacing TOKENHASH(2649126660)  // str=border-spacing
-#define CTX_border_top TOKENHASH(2185101070)  // str=border-top
-#define CTX_border_top_color TOKENHASH(4077599790)  // str=border-top-color
-#define CTX_border_top_width TOKENHASH(4072363556)  // str=border-top-width
-#define CTX_border_width TOKENHASH(2239680116)  // str=border-width
+#define CTX_background_bottom TOKENHASH(3312238828)  // str=background-bottom
+#define CTX_background_bottom_width TOKENHASH(3383029173)  // str=background-bottom-width
+#define CTX_background_bottom TOKENHASH(3312238828)  // str=background-bottom
+#define CTX_border_bottom_width TOKENHASH(2540950114)  // str=border-bottom-width
+#define CTX_border_bottom_color TOKENHASH(2549968028)  // str=border-bottom-color
+#define CTX_border_bottom TOKENHASH(2910992191)  // str=border-bottom
+#define CTX_border_box TOKENHASH(2618875976)  // str=border-box
+#define CTX_border_collapse TOKENHASH(2579878740)  // str=border-collapse
+#define CTX_border_color TOKENHASH(3709611878)  // str=border-color
+#define CTX_border_image TOKENHASH(3950865802)  // str=border-image
+#define CTX_border_left TOKENHASH(3281821935)  // str=border-left
+#define CTX_border_left_width TOKENHASH(3710173585)  // str=border-left-width
+#define CTX_border_left_color TOKENHASH(3472008748)  // str=border-left-color
+#define CTX_border_radius TOKENHASH(2659107085)  // str=border-radius
+#define CTX_border_right TOKENHASH(4057721993)  // str=border-right
+#define CTX_border_right_width TOKENHASH(3319259065)  // str=border-right-width
+#define CTX_border_right_color TOKENHASH(3800369568)  // str=border-right-color
+#define CTX_border_style TOKENHASH(2208542121)  // str=border-style
+#define CTX_border_spacing TOKENHASH(3472046978)  // str=border-spacing
+#define CTX_border_top TOKENHASH(3240034183)  // str=border-top
+#define CTX_border_top_color TOKENHASH(4186283543)  // str=border-top-color
+#define CTX_border_top_width TOKENHASH(3109923602)  // str=border-top-width
+#define CTX_border_width TOKENHASH(2193581882)  // str=border-width
 #define CTX_both TOKENHASH(566212)
 #define CTX_bottom TOKENHASH(905225156)
-#define CTX_border_decoration_break TOKENHASH(3959723274)  // str=border-decoration-break
-#define CTX_box_shadow TOKENHASH(3899389198)  // str=box-shadow
-#define CTX_box_sizing TOKENHASH(2974161360)  // str=box-sizing
+#define CTX_border_decoration_break TOKENHASH(4127345285)  // str=border-decoration-break
+#define CTX_box_shadow TOKENHASH(3023436423)  // str=box-shadow
+#define CTX_box_sizing TOKENHASH(3634564328)  // str=box-sizing
 #define CTX_br TOKENHASH(1156)
 #define CTX_bull TOKENHASH(812356)
 #define CTX_butt TOKENHASH(1353028)
 #define CTX_button TOKENHASH(972334404)
-#define CTX_caption_side TOKENHASH(3255560308)  // str=caption-side
+#define CTX_caption_side TOKENHASH(2701521978)  // str=caption-side
 #define CTX_cedil TOKENHASH(25764166)
 #define CTX_cell TOKENHASH(811334)
 #define CTX_cent TOKENHASH(1339718)
@@ -105,69 +105,69 @@
 #define CTX_clear TOKENHASH(37825286)
 #define CTX_color TOKENHASH(38757318)
 #define CTX_copy TOKENHASH(1672134)
-#define CTX_color_index TOKENHASH(3420092372)  // str=color-index
-#define CTX_content TOKENHASH(2369649924)
-#define CTX_col_resize TOKENHASH(3543089240)  // str=col-resize
-#define CTX_counter_increment TOKENHASH(3249761572)  // str=counter-increment
-#define CTX_counter_reset TOKENHASH(2729247094)  // str=counter-reset
-#define CTX_context_menu TOKENHASH(2392666484)  // str=context-menu
-#define CTX_crosshair TOKENHASH(3337266298)
+#define CTX_color_index TOKENHASH(3857529834)  // str=color-index
+#define CTX_content TOKENHASH(2258566786)
+#define CTX_col_resize TOKENHASH(2845286444)  // str=col-resize
+#define CTX_counter_increment TOKENHASH(2698622610)  // str=counter-increment
+#define CTX_counter_reset TOKENHASH(3512107195)  // str=counter-reset
+#define CTX_context_menu TOKENHASH(2270075066)  // str=context-menu
+#define CTX_crosshair TOKENHASH(2742374973)
 #define CTX_curren TOKENHASH(951227718)
 #define CTX_cursor TOKENHASH(1240700230)
-#define CTX_cursor_wait TOKENHASH(4172756886)  // str=cursor-wait
+#define CTX_cursor_wait TOKENHASH(3160120267)  // str=cursor-wait
 #define CTX_d TOKENHASH(8)
 #define CTX_dd TOKENHASH(264)
-#define CTX_default TOKENHASH(3932692138)
-#define CTX_device_width TOKENHASH(3355374356)  // str=device-width
-#define CTX_device_height TOKENHASH(2775792468)  // str=device-height
-#define CTX_device_aspect_ratio TOKENHASH(3919173870)  // str=device-aspect-ratio
+#define CTX_default TOKENHASH(4113829717)
+#define CTX_device_width TOKENHASH(3825170826)  // str=device-width
+#define CTX_device_height TOKENHASH(2461638058)  // str=device-height
+#define CTX_device_aspect_ratio TOKENHASH(3033328759)  // str=device-aspect-ratio
 #define CTX_deg TOKENHASH(14664)
 #define CTX_dim TOKENHASH(27208)
 #define CTX_div TOKENHASH(45640)
 #define CTX_dir TOKENHASH(37448)
-#define CTX_direction TOKENHASH(3227213762)
-#define CTX_display TOKENHASH(2591813154)
+#define CTX_direction TOKENHASH(3761090529)
+#define CTX_display TOKENHASH(2369648401)
 #define CTX_dotted TOKENHASH(280273864)
 #define CTX_dt TOKENHASH(1288)
 #define CTX_embed TOKENHASH(8721226)
-#define CTX_empty_cells TOKENHASH(3165756558)  // str=empty-cells
-#define CTX_e_resize TOKENHASH(2410290708)  // str=e-resize
+#define CTX_empty_cells TOKENHASH(2656620103)  // str=empty-cells
+#define CTX_e_resize TOKENHASH(3352629002)  // str=e-resize
 #define CTX_euro TOKENHASH(1021258)
 #define CTX_even TOKENHASH(929162)
-#define CTX_evenodd TOKENHASH(2323783104)
-#define CTX_ew_resize TOKENHASH(3972848608)  // str=ew-resize
+#define CTX_evenodd TOKENHASH(3309375200)
+#define CTX_ew_resize TOKENHASH(4133907952)  // str=ew-resize
 #define CTX_fill TOKENHASH(811596)
 #define CTX_file TOKENHASH(352844)
-#define CTX_fill_color TOKENHASH(3905680616)  // str=fill-color
-#define CTX_first_child TOKENHASH(2703672378)  // str=first-child
+#define CTX_fill_color TOKENHASH(4100323956)  // str=fill-color
+#define CTX_first_child TOKENHASH(2425578013)  // str=first-child
 #define CTX_fixed TOKENHASH(8766028)
 #define CTX_flex TOKENHASH(1583884)
-#define CTX_flex_direction TOKENHASH(3292543264)  // str=flex-direction
-#define CTX_flex_flow TOKENHASH(3275621988)  // str=flex-flow
-#define CTX_flex_grow TOKENHASH(3344601784)  // str=flex-grow
-#define CTX_flex_wrap TOKENHASH(3345465848)  // str=flex-wrap
-#define CTX_flex_shrink TOKENHASH(4108455336)  // str=flex-shrink
+#define CTX_flex_direction TOKENHASH(3793755280)  // str=flex-direction
+#define CTX_flex_flow TOKENHASH(3785294642)  // str=flex-flow
+#define CTX_flex_grow TOKENHASH(2746042716)  // str=flex-grow
+#define CTX_flex_wrap TOKENHASH(2746474748)  // str=flex-wrap
+#define CTX_flex_shrink TOKENHASH(3127969492)  // str=flex-shrink
 #define CTX_float TOKENHASH(42040076)
-#define CTX_font_family TOKENHASH(3846361290)  // str=font-family
-#define CTX_font_size_adjust TOKENHASH(3519321404)  // str=font-size-adjust
-#define CTX_font_style TOKENHASH(2392864710)  // str=font-style
-#define CTX_font_stretch TOKENHASH(4088738310)  // str=font-stretch
-#define CTX_font_feature_settings TOKENHASH(2630363786)  // str=font-feature-settings
-#define CTX_font_kerning TOKENHASH(3766658074)  // str=font-kerning
-#define CTX_font_language_override TOKENHASH(2224946266)  // str=font-language-override
-#define CTX_font_synthesize TOKENHASH(3522314118)  // str=font-synthesize
-#define CTX_font_variant_alternates TOKENHASH(3383206564)  // str=font-variant-alternates
-#define CTX_font_variant_caps TOKENHASH(3200939224)  // str=font-variant-caps
-#define CTX_font_variant_east_asian TOKENHASH(3304479954)  // str=font-variant-east-asian
-#define CTX_font_variant_ligatures TOKENHASH(2205405398)  // str=font-variant-ligatures
-#define CTX_font_variant_numeric TOKENHASH(2924933242)  // str=font-variant-numeric
-#define CTX_font_variant_positoin TOKENHASH(4157287280)  // str=font-variant-positoin
-#define CTX_font_weight TOKENHASH(3052872494)  // str=font-weight
-#define CTX_font_variant TOKENHASH(3903407448)  // str=font-variant
+#define CTX_font_family TOKENHASH(4070664293)  // str=font-family
+#define CTX_font_size_adjust TOKENHASH(3907144350)  // str=font-size-adjust
+#define CTX_font_style TOKENHASH(2270174179)  // str=font-style
+#define CTX_font_stretch TOKENHASH(4191852803)  // str=font-stretch
+#define CTX_font_feature_settings TOKENHASH(3462665541)  // str=font-feature-settings
+#define CTX_font_kerning TOKENHASH(4030812685)  // str=font-kerning
+#define CTX_font_language_override TOKENHASH(3259956781)  // str=font-language-override
+#define CTX_font_synthesize TOKENHASH(3908640707)  // str=font-synthesize
+#define CTX_font_variant_alternates TOKENHASH(3839086930)  // str=font-variant-alternates
+#define CTX_font_variant_caps TOKENHASH(3747953260)  // str=font-variant-caps
+#define CTX_font_variant_east_asian TOKENHASH(2725981801)  // str=font-variant-east-asian
+#define CTX_font_variant_ligatures TOKENHASH(3250186347)  // str=font-variant-ligatures
+#define CTX_font_variant_numeric TOKENHASH(2536208445)  // str=font-variant-numeric
+#define CTX_font_variant_positoin TOKENHASH(3152385464)  // str=font-variant-positoin
+#define CTX_font_weight TOKENHASH(3673919895)  // str=font-weight
+#define CTX_font_variant TOKENHASH(4099187372)  // str=font-variant
 #define CTX_g TOKENHASH(14)
 #define CTX_grid TOKENHASH(281742)
 #define CTX_gt TOKENHASH(1294)
-#define CTX_hanging_punctuation TOKENHASH(2758569780)  // str=hanging-punctuation
+#define CTX_hanging_punctuation TOKENHASH(3526768538)  // str=hanging-punctuation
 #define CTX_head TOKENHASH(264528)
 #define CTX_height TOKENHASH(1359432016)
 #define CTX_hellip TOKENHASH(1093427536)
@@ -176,169 +176,169 @@
 #define CTX_hr TOKENHASH(1168)
 #define CTX_href TOKENHASH(404624)
 #define CTX_http TOKENHASH(1090832)
-#define CTX_hyphens TOKENHASH(4180032820)
+#define CTX_hyphens TOKENHASH(4237500058)
 #define CTX_id TOKENHASH(274)
 #define CTX_iexcl TOKENHASH(25411922)
-#define CTX_image_orientation TOKENHASH(2152348990)  // str=image-orientation
+#define CTX_image_orientation TOKENHASH(3223658143)  // str=image-orientation
 #define CTX_img TOKENHASH(15186)
-#define CTX_inline_block TOKENHASH(2977214772)  // str=inline-block
+#define CTX_inline_block TOKENHASH(3636091034)  // str=inline-block
 #define CTX_input TOKENHASH(43352978)
 #define CTX_inset TOKENHASH(42310546)
 #define CTX_italic TOKENHASH(220990738)
-#define CTX_justify TOKENHASH(4093045330)
-#define CTX_justify_content TOKENHASH(4057794158)  // str=justify-content
-#define CTX_justify_items TOKENHASH(2510229916)  // str=justify-items
-#define CTX_justify_self TOKENHASH(2426377926)  // str=justify-self
+#define CTX_justify TOKENHASH(4194006313)
+#define CTX_justify_content TOKENHASH(3102638903)  // str=justify-content
+#define CTX_justify_items TOKENHASH(3402598606)  // str=justify-items
+#define CTX_justify_self TOKENHASH(3360672611)  // str=justify-self
 #define CTX_label TOKENHASH(25497688)
 #define CTX_lang TOKENHASH(487512)
 #define CTX_laquo TOKENHASH(32868440)
-#define CTX_letter_spacing TOKENHASH(2800482816)  // str=letter-spacing
+#define CTX_letter_spacing TOKENHASH(3547725056)  // str=letter-spacing
 #define CTX_li TOKENHASH(600)
-#define CTX_linethrough TOKENHASH(2452092608)
-#define CTX_line_break TOKENHASH(3780803660)  // str=line-break
+#define CTX_linethrough TOKENHASH(2299788128)
+#define CTX_line_break TOKENHASH(4037885478)  // str=line-break
 #define CTX_link TOKENHASH(750168)
-#define CTX_list_item TOKENHASH(3251930696)  // str=list-item
-#define CTX_list_style TOKENHASH(2400119338)  // str=list-style
-#define CTX_list_style_image TOKENHASH(3130338464)  // str=list-style-image
-#define CTX_list_style_position TOKENHASH(3327170108)  // str=list-style-position
-#define CTX_list_style_type TOKENHASH(2372704278)  // str=list-style-type
+#define CTX_list_item TOKENHASH(2699707172)  // str=list-item
+#define CTX_list_style TOKENHASH(2273801493)  // str=list-style
+#define CTX_list_style_image TOKENHASH(3712652880)  // str=list-style-image
+#define CTX_list_style_position TOKENHASH(2737326878)  // str=list-style-position
+#define CTX_list_style_type TOKENHASH(2260093963)  // str=list-style-type
 #define CTX_lt TOKENHASH(1304)
 #define CTX_ltr TOKENHASH(38168)
 #define CTX_margin TOKENHASH(958894170)
-#define CTX_margin_bottom TOKENHASH(3442808052)  // str=margin-bottom
-#define CTX_margin_left TOKENHASH(3621506572)  // str=margin-left
-#define CTX_margin_right TOKENHASH(4282582792)  // str=margin-right
-#define CTX_margin_top TOKENHASH(2308296582)  // str=margin-top
+#define CTX_margin_bottom TOKENHASH(2795145850)  // str=margin-bottom
+#define CTX_margin_left TOKENHASH(3958236934)  // str=margin-left
+#define CTX_margin_right TOKENHASH(3215033220)  // str=margin-right
+#define CTX_margin_top TOKENHASH(3301631939)  // str=margin-top
 #define CTX_matrix TOKENHASH(1630707802)
-#define CTX_max_height TOKENHASH(3664299628)  // str=max-height
-#define CTX_max_lines TOKENHASH(3114151284)  // str=max-lines
-#define CTX_max_width TOKENHASH(2870254696)  // str=max-width
+#define CTX_max_height TOKENHASH(3979633462)  // str=max-height
+#define CTX_max_lines TOKENHASH(2630817466)  // str=max-lines
+#define CTX_max_width TOKENHASH(2508869172)  // str=max-width
 #define CTX_mdash TOKENHASH(18024730)
 #define CTX_meta TOKENHASH(106842)
 #define CTX_middot TOKENHASH(1373905498)
-#define CTX_min_height TOKENHASH(3904568124)  // str=min-height
-#define CTX_min_width TOKENHASH(2738000136)  // str=min-width
-#define CTX_monochrome TOKENHASH(4150987020)
+#define CTX_min_height TOKENHASH(4099767710)  // str=min-height
+#define CTX_min_width TOKENHASH(3516483716)  // str=min-width
+#define CTX_monochrome TOKENHASH(4222977158)
 #define CTX_move TOKENHASH(373722)
 #define CTX_nbsp TOKENHASH(1087644)
-#define CTX_ne_resize TOKENHASH(2525569132)  // str=ne-resize
-#define CTX_nesw_resize TOKENHASH(3924724550)  // str=nesw-resize
-#define CTX_no_drop TOKENHASH(4276419054)  // str=no-drop
-#define CTX_nonzero TOKENHASH(2312687182)
+#define CTX_ne_resize TOKENHASH(3410268214)  // str=ne-resize
+#define CTX_nesw_resize TOKENHASH(4109845923)  // str=nesw-resize
+#define CTX_no_drop TOKENHASH(3211951351)  // str=no-drop
+#define CTX_nonzero TOKENHASH(2230085415)
 #define CTX_normal TOKENHASH(808293340)
-#define CTX_not_allowed TOKENHASH(2829560132)  // str=not-allowed
+#define CTX_not_allowed TOKENHASH(3562263714)  // str=not-allowed
 #define CTX_nowrap TOKENHASH(1077066716)
-#define CTX_n_resize TOKENHASH(2786900954)  // str=n-resize
-#define CTX_ns_resize TOKENHASH(3818964344)  // str=ns-resize
-#define CTX_nth_child TOKENHASH(2625866520)  // str=nth-child
-#define CTX_nw_resize TOKENHASH(2801745914)  // str=nw-resize
+#define CTX_n_resize TOKENHASH(3540934125)  // str=n-resize
+#define CTX_ns_resize TOKENHASH(2983223996)  // str=ns-resize
+#define CTX_nth_child TOKENHASH(2386675084)  // str=nth-child
+#define CTX_nw_resize TOKENHASH(2474614781)  // str=nw-resize
 #define CTX_object TOKENHASH(1348817054)
-#define CTX_object_fit TOKENHASH(3217706510)  // str=object-fit
-#define CTX_object_position TOKENHASH(4196683928)  // str=object-position
-#define CTX_oblique TOKENHASH(2253630070)
+#define CTX_object_fit TOKENHASH(2682595079)  // str=object-fit
+#define CTX_object_position TOKENHASH(4245825612)  // str=object-position
+#define CTX_oblique TOKENHASH(2200556859)
 #define CTX_odd TOKENHASH(8478)
 #define CTX_omega TOKENHASH(2567006)
-#define CTX_opacity TOKENHASH(2640079768)
+#define CTX_opacity TOKENHASH(2393781708)
 #define CTX_ordm TOKENHASH(861342)
 #define CTX_order TOKENHASH(38085790)
 #define CTX_oslash TOKENHASH(576808158)
-#define CTX_Oslash TOKENHASH(3528501082)
-#define CTX_orphans TOKENHASH(2895673892)
-#define CTX_outline TOKENHASH(2241519218)
-#define CTX_outline_color TOKENHASH(3762440684)  // str=outline-color
-#define CTX_outline_style TOKENHASH(4271427346)  // str=outline-style
-#define CTX_outline_width TOKENHASH(2463391608)  // str=outline-width
-#define CTX_overflow TOKENHASH(3918898504)
-#define CTX_overflow_x TOKENHASH(4231291354)  // str=overflow-x
-#define CTX_overflow_y TOKENHASH(3294688094)  // str=overflow-y
-#define CTX_overflow_wrap TOKENHASH(4035072106)  // str=overflow-wrap
-#define CTX_overline TOKENHASH(3973204750)
-#define CTX_orientation TOKENHASH(3024251932)
+#define CTX_Oslash TOKENHASH(3911734189)
+#define CTX_orphans TOKENHASH(2521578770)
+#define CTX_outline TOKENHASH(3268243257)
+#define CTX_outline_color TOKENHASH(4028703990)  // str=outline-color
+#define CTX_outline_style TOKENHASH(4283197321)  // str=outline-style
+#define CTX_outline_width TOKENHASH(3379179452)  // str=outline-width
+#define CTX_overflow TOKENHASH(3033191076)
+#define CTX_overflow_x TOKENHASH(3189387501)  // str=overflow-x
+#define CTX_overflow_y TOKENHASH(3794827695)  // str=overflow-y
+#define CTX_overflow_wrap TOKENHASH(4165019701)  // str=overflow-wrap
+#define CTX_overline TOKENHASH(4134086023)
+#define CTX_orientation TOKENHASH(2585867790)
 #define CTX_p TOKENHASH(32)
 #define CTX_page TOKENHASH(342112)
-#define CTX_page_break_before TOKENHASH(4271596216)  // str=page-break-before
-#define CTX_page_break_after TOKENHASH(4275241516)  // str=page-break-after
-#define CTX_page_break_inside TOKENHASH(3455852450)  // str=page-break-inside
-#define CTX_padding TOKENHASH(3358861828)
-#define CTX_padding_bottom TOKENHASH(3759134708)  // str=padding-bottom
-#define CTX_padding_left TOKENHASH(4217322008)  // str=padding-left
-#define CTX_padding_right TOKENHASH(3361954884)  // str=padding-right
-#define CTX_padding_top TOKENHASH(2374212984)  // str=padding-top
+#define CTX_page_break_before TOKENHASH(3209539932)  // str=page-break-before
+#define CTX_page_break_after TOKENHASH(4285104406)  // str=page-break-after
+#define CTX_page_break_inside TOKENHASH(3875409873)  // str=page-break-inside
+#define CTX_padding TOKENHASH(2753172738)
+#define CTX_padding_bottom TOKENHASH(2953309178)  // str=padding-bottom
+#define CTX_padding_left TOKENHASH(4256144652)  // str=padding-left
+#define CTX_padding_right TOKENHASH(2754719266)  // str=padding-right
+#define CTX_padding_top TOKENHASH(3334590140)  // str=padding-top
 #define CTX_para TOKENHASH(102496)
 #define CTX_path TOKENHASH(565344)
 #define CTX_phi TOKENHASH(18976)
 #define CTX_plusmn TOKENHASH(968076064)
-#define CTX_pointer TOKENHASH(4092966998)
-#define CTX_polygon TOKENHASH(4181345876)
-#define CTX_position TOKENHASH(2689404382)
+#define CTX_pointer TOKENHASH(4193967147)
+#define CTX_polygon TOKENHASH(4238156586)
+#define CTX_position TOKENHASH(3492185839)
 #define CTX_pound TOKENHASH(9350112)
 #define CTX_pre TOKENHASH(11424)
-#define CTX_pre_line TOKENHASH(3930450530)  // str=pre-line
-#define CTX_pre_wrap TOKENHASH(3869764818)  // str=pre-wrap
-#define CTX_print_symbols TOKENHASH(3718298910)  // str=print-symbols
-#define CTX_progress TOKENHASH(2441387226)
+#define CTX_pre_line TOKENHASH(4112708913)  // str=pre-line
+#define CTX_pre_wrap TOKENHASH(4082366057)  // str=pre-wrap
+#define CTX_print_symbols TOKENHASH(2932891279)  // str=print-symbols
+#define CTX_progress TOKENHASH(3368177261)
 #define CTX_quot TOKENHASH(1342818)
 #define CTX_quotes TOKENHASH(1286896994)
 #define CTX_raquo TOKENHASH(32868452)
 #define CTX_rect TOKENHASH(1317220)
 #define CTX_rel TOKENHASH(24932)
 #define CTX_reg TOKENHASH(14692)
-#define CTX_relative TOKENHASH(2518979704)
-#define CTX_reverse TOKENHASH(3058259418)
+#define CTX_relative TOKENHASH(2333231676)
+#define CTX_reverse TOKENHASH(2602871533)
 #define CTX_resize TOKENHASH(390699364)
-#define CTX_resolution TOKENHASH(3124888524)
+#define CTX_resolution TOKENHASH(3709927910)
 #define CTX_rotate TOKENHASH(377594852)
-#define CTX_row_resize TOKENHASH(3521711426)  // str=row-resize
+#define CTX_row_resize TOKENHASH(3908339361)  // str=row-resize
 #define CTX_rtl TOKENHASH(25892)
 #define CTX_scale TOKENHASH(11274470)
 #define CTX_scan TOKENHASH(919782)
 #define CTX_scroll TOKENHASH(831492326)
-#define CTX_sans_serif TOKENHASH(2281527038)  // str=sans-serif
+#define CTX_sans_serif TOKENHASH(3288247167)  // str=sans-serif
 #define CTX_serif TOKENHASH(13209958)
 #define CTX_sect TOKENHASH(1317222)
 #define CTX_select TOKENHASH(1348821350)
-#define CTX_se_resize TOKENHASH(2634052080)  // str=se-resize
+#define CTX_se_resize TOKENHASH(2390767864)  // str=se-resize
 #define CTX_shy TOKENHASH(51750)
 #define CTX_size TOKENHASH(381542)
 #define CTX_solid TOKENHASH(9004006)
 #define CTX_span TOKENHASH(920614)
 #define CTX_src TOKENHASH(7334)
 #define CTX_svg TOKENHASH(15782)
-#define CTX_s_resize TOKENHASH(2696148794)  // str=s-resize
+#define CTX_s_resize TOKENHASH(3495558045)  // str=s-resize
 #define CTX_static TOKENHASH(221515046)
 #define CTX_stroke TOKENHASH(359634214)
 #define CTX_strong TOKENHASH(500143398)
-#define CTX_stroke_color TOKENHASH(3815936920)  // str=stroke-color
-#define CTX_stroke_linecap TOKENHASH(2374317992)  // str=stroke-linecap
-#define CTX_stroke_linejoin TOKENHASH(3177514678)  // str=stroke-linejoin
-#define CTX_stroke_miterlimit TOKENHASH(2623901680)  // str=stroke-miterlimit
-#define CTX_stroke_width TOKENHASH(2232999490)  // str=stroke-width
+#define CTX_stroke_color TOKENHASH(2981710284)  // str=stroke-color
+#define CTX_stroke_linecap TOKENHASH(2260900820)  // str=stroke-linecap
+#define CTX_stroke_linejoin TOKENHASH(2662499163)  // str=stroke-linejoin
+#define CTX_stroke_miterlimit TOKENHASH(3459434488)  // str=stroke-miterlimit
+#define CTX_stroke_width TOKENHASH(2190241569)  // str=stroke-width
 #define CTX_style TOKENHASH(11324710)
 #define CTX_sub TOKENHASH(5478)
 #define CTX_sup1 TOKENHASH(12289382)
 #define CTX_sup2 TOKENHASH(14386534)
 #define CTX_sup3 TOKENHASH(16483686)
 #define CTX_super TOKENHASH(38110566)
-#define CTX_sw_resize TOKENHASH(2938499546)  // str=sw-resize
-#define CTX_syntax_highlight TOKENHASH(3931777904)  // str=syntax-highlight
+#define CTX_sw_resize TOKENHASH(2542991597)  // str=sw-resize
+#define CTX_syntax_highlight TOKENHASH(3039630776)  // str=syntax-highlight
 #define CTX_table TOKENHASH(11276392)
-#define CTX_table_cell TOKENHASH(2447179346)  // str=table-cell
-#define CTX_table_layout TOKENHASH(2500664170)  // str=table-layout
-#define CTX_tab_size TOKENHASH(3338717762)  // str=tab-size
+#define CTX_table_cell TOKENHASH(3371073321)  // str=table-cell
+#define CTX_table_layout TOKENHASH(3397815733)  // str=table-layout
+#define CTX_tab_size TOKENHASH(3816842529)  // str=tab-size
 #define CTX_td TOKENHASH(296)
 #define CTX_text TOKENHASH(1360232)
-#define CTX_textarea TOKENHASH(4169930906)
-#define CTX_text_align_last TOKENHASH(2562854568)  // str=text-align-last
-#define CTX_text_combine_horizontal TOKENHASH(4221959982)  // str=text-combine-horizontal
-#define CTX_text_emphasis TOKENHASH(4224186246)  // str=text-emphasis
-#define CTX_text_indent TOKENHASH(2318492580)  // str=text-indent
-#define CTX_text_justify TOKENHASH(3520873746)  // str=text-justify
-#define CTX_text_decoration TOKENHASH(2332358994)  // str=text-decoration
-#define CTX_text_orientation TOKENHASH(4144295190)  // str=text-orientation
-#define CTX_text_shadow TOKENHASH(2988010946)  // str=text-shadow
-#define CTX_text_stroke_color TOKENHASH(2608682356)  // str=text-stroke-color
-#define CTX_text_stroke_width TOKENHASH(4063345458)  // str=text-stroke-width
-#define CTX_text_transform TOKENHASH(2912117770)
+#define CTX_textarea TOKENHASH(4232449101)
+#define CTX_text_align_last TOKENHASH(2355169108)  // str=text-align-last
+#define CTX_text_combine_horizontal TOKENHASH(3184721815)  // str=text-combine-horizontal
+#define CTX_text_emphasis TOKENHASH(3185834947)  // str=text-emphasis
+#define CTX_text_indent TOKENHASH(3306729938)  // str=text-indent
+#define CTX_text_justify TOKENHASH(2834178697)  // str=text-justify
+#define CTX_text_decoration TOKENHASH(3313663145)  // str=text-decoration
+#define CTX_text_orientation TOKENHASH(3145889419)  // str=text-orientation
+#define CTX_text_shadow TOKENHASH(2567747297)  // str=text-shadow
+#define CTX_text_stroke_color TOKENHASH(2378083002)  // str=text-stroke-color
+#define CTX_text_stroke_width TOKENHASH(3105414553)  // str=text-stroke-width
+#define CTX_text_transform TOKENHASH(2529800709)
 #define CTX_title TOKENHASH(11313768)
 #define CTX_thead TOKENHASH(8464936)
 #define CTX_tbody TOKENHASH(52721832)
@@ -346,34 +346,34 @@
 #define CTX_thin TOKENHASH(936488)
 #define CTX_tr TOKENHASH(1192)
 #define CTX_trade TOKENHASH(10751144)
-#define CTX_transform TOKENHASH(3139647636)
-#define CTX_transform_origin TOKENHASH(3740313372)  // str=transform-origin
-#define CTX_transform_style TOKENHASH(2968471832)  // str=transform-style
-#define CTX_backface_visibility TOKENHASH(2908235844)  // str=backface-visibility
-#define CTX_translate TOKENHASH(3345123962)
+#define CTX_transform TOKENHASH(3717307466)
+#define CTX_transform_origin TOKENHASH(2943898510)  // str=transform-origin
+#define CTX_transform_style TOKENHASH(3631719564)  // str=transform-style
+#define CTX_backface_visibility TOKENHASH(3601601570)  // str=backface-visibility
+#define CTX_translate TOKENHASH(2746303805)
 #define CTX_true TOKENHASH(371880)
-#define CTX_underline TOKENHASH(3024344196)
-#define CTX_unicode_bidi TOKENHASH(3310222044)  // str=unicode-bidi
-#define CTX_unicode_range TOKENHASH(2644329930)  // str=unicode-range
-#define CTX_vertical_align TOKENHASH(2789055188)  // str=vertical-align
-#define CTX_vertical_text TOKENHASH(3270136070)  // str=vertical-text
-#define CTX_viewbox TOKENHASH(2306391128)
-#define CTX_visibility TOKENHASH(3584415306)
-#define CTX_visible TOKENHASH(3553271700)
-#define CTX_white_space TOKENHASH(3863244274)  // str=white-space
+#define CTX_underline TOKENHASH(2585913922)
+#define CTX_unicode_bidi TOKENHASH(2728852846)  // str=unicode-bidi
+#define CTX_unicode_range TOKENHASH(3469648613)  // str=unicode-range
+#define CTX_vertical_align TOKENHASH(3542011242)  // str=vertical-align
+#define CTX_vertical_text TOKENHASH(3782551683)  // str=vertical-text
+#define CTX_viewbox TOKENHASH(2226937388)
+#define CTX_visibility TOKENHASH(2865949477)
+#define CTX_visible TOKENHASH(2850377674)
+#define CTX_white_space TOKENHASH(3005363961)  // str=white-space
 #define CTX_width TOKENHASH(18096750)
-#define CTX_word_break TOKENHASH(4138735122)  // str=word-break
-#define CTX_word_wrap TOKENHASH(2926450576)  // str=word-wrap
-#define CTX_word_spacing TOKENHASH(2959118384)  // str=word-spacing
-#define CTX_writing_mode TOKENHASH(2524509226)  // str=writing-mode
-#define CTX_w_resize TOKENHASH(3578805448)  // str=w-resize
+#define CTX_word_break TOKENHASH(3143109385)  // str=word-break
+#define CTX_word_wrap TOKENHASH(2536967112)  // str=word-wrap
+#define CTX_word_spacing TOKENHASH(3627042840)  // str=word-spacing
+#define CTX_writing_mode TOKENHASH(2335996437)  // str=writing-mode
+#define CTX_w_resize TOKENHASH(2863144548)  // str=w-resize
 #define CTX_x TOKENHASH(48)
 #define CTX_y TOKENHASH(50)
 #define CTX_yen TOKENHASH(29042)
 #define CTX_yes TOKENHASH(39282)
-#define CTX_z_index TOKENHASH(2827200958)  // str=z-index
-#define CTX_zoom_in TOKENHASH(4282352924)  // str=zoom-in
-#define CTX_zoom_out TOKENHASH(2733495870)  // str=zoom-out
+#define CTX_z_index TOKENHASH(2487342303)  // str=z-index
+#define CTX_zoom_in TOKENHASH(3214918286)  // str=zoom-in
+#define CTX_zoom_out TOKENHASH(2440489759)  // str=zoom-out
 
 
 #ifndef TRUE
@@ -8215,6 +8215,7 @@ void mrg_destroy (Mrg *mrg)
   free (mrg);
 }
 #endif
+
 
 
 
