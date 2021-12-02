@@ -25,6 +25,12 @@ static inline uint32_t squoze_utf8_to_unichar (const char *input);
 static inline int      squoze_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 static inline int      squoze_utf8_len        (const unsigned char first_byte);
 
+
+/* returns the base-offset of the segment this unichar belongs to,
+ *
+ * segments are 26 items long and are offset so that the 'a'-'z' is
+ * one segment.
+ */
 static inline int squoze_new_offset (uint32_t unichar)
 {
   uint32_t ret = unichar - (unichar % SQUOZE_JUMP_STRIDE) + SQUOZE_JUMP_OFFSET;
@@ -40,6 +46,8 @@ static int squoze_needed_jump (uint32_t off, uint32_t unicha)
 
   if (unichar == 32) // space is always in range
     return 0;
+
+  /* TODO: replace this with direct computation of values instead of loops */
 
   while (unichar < offset)
   {
@@ -152,8 +160,7 @@ static int squoze_compute_cost_squeezed (int offset, int val, int next_val)
   }
   else
   {
-    // not to be reached, 
-    cost += 100;
+    cost += 100; // very expensive, makes the other choice win
   }
 
   if (next_val)
@@ -161,6 +168,7 @@ static int squoze_compute_cost_squeezed (int offset, int val, int next_val)
     int change_cost = 1 + squoze_utf5_length (next_val);
     int no_change_cost = 0;
     needed_jump = squoze_needed_jump (offset, next_val);
+
     if (needed_jump == 0)
     {
       no_change_cost += 1;
@@ -193,8 +201,7 @@ static void squoze5_encode (const char *input, int inlen,
                             int permit_squeezed,
                             int escape_endzero)
 {
-  int offset = squoze_new_offset('a');
-
+  int offset  = squoze_new_offset('a');
   int is_utf5 = 1;
   int len     = 0;
 
@@ -282,7 +289,7 @@ static void squoze5_encode (const char *input, int inlen,
         val /= 16;
       }
       for (int j = 0; j < octets/2; j++) // mirror in-place
-      {                                  // refactor to be more direct
+      {                                  // TODO refactor to be single pass
         int tmp = output[len+j];
         output[len+j] = output[len+octets-1-j];
         output[len+octets-1-j] = tmp;
@@ -564,13 +571,8 @@ static void squoze_decode_utf5 (CashUtf5Dec *dec, uint8_t in)
           dec->jump_mode = in;
           break;
         case SQUOZE_INC_OFFSET_B:
-          if (dec->jump_mode)
-              squoze_decode_jump (dec, in);
-          else
-          {
-            dec->offset += SQUOZE_JUMP_STRIDE;
-            dec->jump_mode = in;
-          }
+          dec->offset += SQUOZE_JUMP_STRIDE;
+          dec->jump_mode = in;
           break;
         default:
           dec->append_unichar (dec->offset + (in - 1), dec->write_data);
