@@ -209,7 +209,6 @@
 #define CTX_text TOKENHASH(1360232)
 #define CTX_text_direction TOKENHASH(3219222300)
 #define CTX_textDirection TOKENHASH(2459165804)
-#define CTX_text_indent TOKENHASH(3875547036)
 #define CTX_text_stroke TOKENHASH(2642275182)
 #define CTX_strokeText TOKENHASH(3859239658)
 #define CTX_strokeRect TOKENHASH(3541958090)

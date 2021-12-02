@@ -5,7 +5,7 @@ PREFIX  ?= /usr/local
 CLIENTS_CFILES = $(wildcard demos/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
-all: build.conf tools/ctx-fontgen ctx $(CLIENTS_BINS)
+all: build.conf ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
 include build.conf
 
 CFLAGS_warnings= -Wall \
@@ -135,6 +135,7 @@ src/%.o: src/%.c split/*.h
 terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c
+	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 stuff/%.o: stuff/%.c ctx.h stuff/*.h 
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o deps.o build.conf Makefile
@@ -187,7 +188,7 @@ flatpak:
 	rm -rf build-dir;flatpak-builder --user build-dir meta/graphics.ctx.terminal.yml
 	flatpak-builder --collection-id=graphics.ctx --repo=docs/flatpak --force-clean build-dir meta/graphics.ctx.terminal.yml
 
-ctx.h: src/* fonts/ctx-font-ascii.h
+ctx.h: src/*.[ch] src/index fonts/ctx-font-ascii.h
 	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@)
 
 ctx-nofont.h: src/*
