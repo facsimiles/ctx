@@ -344,7 +344,7 @@ static inline uint64_t _squoze (int squoze_dim, const char *utf8)
       uint64_t val = encoded[i];
       hash = hash | (val << (5*(i-(!utf5))));
     }
-    hash <<= 1;
+    hash <<= 1; // make room for the bit that encodes utf5 or squeeze
   }
   else
   {
@@ -356,7 +356,6 @@ static inline uint64_t _squoze (int squoze_dim, const char *utf8)
       hash = hash & all_bits;
       hash = hash ^ ((hash >> rshift));
     }
-    hash <<= 1; // make room for the bit that encodes utf5 or squeeze
     hash |= overflowed_mask;
   }
   return hash | utf5;
@@ -465,6 +464,7 @@ typedef struct CashUtf5Dec {
   void     *write_data;
   uint32_t  current;
   void    (*append_unichar) (uint32_t unichar, void *write_data);
+  int       jumped_amount;
   int       jump_mode;
 } CashUtf5Dec;
 
@@ -482,14 +482,7 @@ static void squoze_decode_utf5_append_unichar_as_utf8 (uint32_t unichar, void *w
 
 static void squoze_decode_jump (CashUtf5Dec *dec, uint8_t in)
 {
-  switch (dec->jump_mode) /*first we reverse adjustment side-effect of
-                            parsing first part*/
-  {
-    case SQUOZE_DEC_OFFSET_A: dec->offset += SQUOZE_JUMP_STRIDE * 2; break;
-    case SQUOZE_INC_OFFSET_A: dec->offset -= SQUOZE_JUMP_STRIDE * 2; break;
-    case SQUOZE_DEC_OFFSET_B: dec->offset += SQUOZE_JUMP_STRIDE * 1; break;
-    case SQUOZE_INC_OFFSET_B: dec->offset -= SQUOZE_JUMP_STRIDE * 1; break;
-  }
+  dec->offset -= SQUOZE_JUMP_STRIDE * dec->jumped_amount;
   int jump_len = (dec->jump_mode - SQUOZE_DEC_OFFSET_A) * 4 +
                  (in - SQUOZE_DEC_OFFSET_A);
   if (jump_len > 7)
@@ -497,7 +490,7 @@ static void squoze_decode_jump (CashUtf5Dec *dec, uint8_t in)
   else
     jump_len += 3;
   dec->offset += jump_len * SQUOZE_JUMP_STRIDE;
-  dec->jump_mode = 0;
+  dec->jumped_amount = 0;
 }
 
 static void squoze_decode_utf5 (CashUtf5Dec *dec, uint8_t in)
@@ -530,7 +523,7 @@ static void squoze_decode_utf5 (CashUtf5Dec *dec, uint8_t in)
   }
   else
   {
-    if (dec->jump_mode)
+    if (dec->jumped_amount)
     {
       switch (in)
       {
@@ -542,6 +535,7 @@ static void squoze_decode_utf5 (CashUtf5Dec *dec, uint8_t in)
           break;
         default:
           dec->append_unichar (dec->offset + (in - 1), dec->write_data);
+          dec->jumped_amount = 0;
           dec->jump_mode = 0;
           break;
       }
@@ -552,30 +546,37 @@ static void squoze_decode_utf5 (CashUtf5Dec *dec, uint8_t in)
       {
         case SQUOZE_ENTER_UTF5:
           dec->is_utf5 = 1;
+          dec->jumped_amount = 0;
           dec->jump_mode = 0;
           break;
         case SQUOZE_SPACE: 
           dec->append_unichar (' ', dec->write_data);
+          dec->jumped_amount = 0;
           dec->jump_mode = 0;
           break;
         case SQUOZE_DEC_OFFSET_A:
-          dec->offset -= SQUOZE_JUMP_STRIDE * 2;
+          dec->jumped_amount = -2;
           dec->jump_mode = in;
+          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
           break;
         case SQUOZE_INC_OFFSET_A:
-          dec->offset += SQUOZE_JUMP_STRIDE * 2;
+          dec->jumped_amount = 2;
           dec->jump_mode = in;
+          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
           break;
         case SQUOZE_DEC_OFFSET_B:
-          dec->offset -= SQUOZE_JUMP_STRIDE;
+          dec->jumped_amount = -1;
           dec->jump_mode = in;
+          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
           break;
         case SQUOZE_INC_OFFSET_B:
-          dec->offset += SQUOZE_JUMP_STRIDE;
+          dec->jumped_amount = 1;
           dec->jump_mode = in;
+          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
           break;
         default:
           dec->append_unichar (dec->offset + (in - 1), dec->write_data);
+          dec->jumped_amount = 0;
           dec->jump_mode = 0;
       }
     }
@@ -649,13 +650,11 @@ const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retle
   return ret;
 }
 
+/* copy the value as soon as possible, some mitigation is in place
+ * for more than one value in use and cross-thread interactions.
+ */
 const char *squoze_decode (int squoze_dim, uint64_t hash)
 {
-  /* this is not really re-entrant - copy the value as soon as possible
-   * since another thread might be churning through decodes as well.
-   *
-   * having thread local storage for this string could make it safe.
-   */
 #define THREAD __thread  // use thread local storage
   static THREAD int no = 0;
   static THREAD char ret[8][256];

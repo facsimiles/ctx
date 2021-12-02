@@ -98,6 +98,7 @@ The quintets meaning of the quintets in squeeze mode are as follows:
   highest bit is set which indicates overflow - and the rest of the bits act as a
   regular hash function.
 
+
     $ ./squoze5 -e This is a test øæå ØÆÅ
     1294529466 1234 2 1349992 6600566 1595769403
 
@@ -115,6 +116,21 @@ The quintets meaning of the quintets in squeeze mode are as follows:
   To avoid ambiguity, if the final quintet is 0 a mode-change using either
   'G' or 'V' as appropriate is used, this can for example happen when a
   string ends in a space.
+
+  The hashing is implemented on top of utf-5 as follows:
+
+  for (int i = 0; i < encoded5bit_len; i++)
+  {
+    int val = encoded5bit[i];
+    hash = hash ^ val;
+    hash = hash * multiplier;
+    hash = hash & all_bits;
+    hash = hash ^ ((hash >> rshift));
+  }
+  hash |= overflowed_mask;
+
+  Where multiplier, all_bits, overflowed_mask and rshift are set depending on the
+  digest length.
 
   Squoze-10 can be used for memory efficient interning of strings, and in
   parsers for switching on tokens, for minimal and embedded language interpreters
