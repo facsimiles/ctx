@@ -936,6 +936,7 @@ static void item_drag (CtxEvent *e, void *d1, void *d2)
       e->stop_propagate = 1;
       break;
     case CTX_DRAG_MOTION:
+      {
       float x = metadata_get_float (collection, focused_no, "x", -10000);
       if (x >=0)
       {
@@ -953,6 +954,7 @@ static void item_drag (CtxEvent *e, void *d1, void *d2)
         ctx_set_dirty (e->ctx, 1);
       }
       e->stop_propagate = 1;
+      }
       break;
     case CTX_DRAG_RELEASE:
       e->stop_propagate = 1;
