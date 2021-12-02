@@ -1700,7 +1700,6 @@ void mrg_start_with_style (Mrg        *mrg,
                            const char *style);
 void mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
                             const char *format, ...);
-uint64_t ctx_strhash(const char *str) ;
 
 static void ctx_parse_style_id (Mrg          *mrg,
                                 const char   *style_id,

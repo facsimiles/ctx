@@ -283,7 +283,7 @@ struct _CtxDrawlist
 typedef struct _CtxKeyDbEntry CtxKeyDbEntry;
 struct _CtxKeyDbEntry
 {
-  uint64_t key;
+  uint32_t key;
   float value;
   //union { float f[1]; uint8_t u8[4]; }value;
 };
@@ -787,7 +787,7 @@ struct _CtxCtx
 extern int _ctx_max_threads;
 extern int _ctx_enable_hash_cache;
 void
-ctx_set (Ctx *ctx, uint64_t key_hash, const char *string, int len);
+ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 const char *
 ctx_get (Ctx *ctx, const char *key);
 
@@ -852,11 +852,11 @@ CTX_STATIC void ctx_color_set_graya (CtxState *state, CtxColor *color, float gra
 
 int ctx_color_model_get_components (CtxColorModel model);
 
-static void ctx_state_set (CtxState *state, uint64_t key, float value);
+static void ctx_state_set (CtxState *state, uint32_t key, float value);
 CTX_STATIC void
 ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f);
 CTX_STATIC void ctx_font_setup ();
-static float ctx_state_get (CtxState *state, uint64_t hash);
+static float ctx_state_get (CtxState *state, uint32_t hash);
 
 #if CTX_RASTERIZER
 

@@ -234,8 +234,8 @@ static inline float _ctx_parse_float (const char *str, char **endptr)
   return strtod (str, endptr); /* XXX: , vs . problem in some locales */
 }
 
-const char *ctx_get_string (Ctx *ctx, uint64_t hash);
-void ctx_set_string (Ctx *ctx, uint64_t hash, const char *value);
+const char *ctx_get_string (Ctx *ctx, uint32_t hash);
+void ctx_set_string (Ctx *ctx, uint32_t hash, const char *value);
 typedef struct _CtxColor CtxColor;
 
 void
@@ -253,8 +253,8 @@ CtxState *ctx_get_state (Ctx *ctx);
 void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out);
 void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);
 void ctx_color_free (CtxColor *color);
-void ctx_set_color (Ctx *ctx, uint64_t hash, CtxColor *color);
-int  ctx_get_color (Ctx *ctx, uint64_t hash, CtxColor *color);
+void ctx_set_color (Ctx *ctx, uint32_t hash, CtxColor *color);
+int  ctx_get_color (Ctx *ctx, uint32_t hash, CtxColor *color);
 int  ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string);
 
 int ctx_color_is_transparent (CtxColor *color);
@@ -263,7 +263,7 @@ int ctx_utf8_len (const unsigned char first_byte);
 void ctx_user_to_device          (Ctx *ctx, float *x, float *y);
 void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y);
 const char *ctx_utf8_skip (const char *s, int utf8_length);
-int ctx_is_set_now (Ctx *ctx, uint64_t hash);
+int ctx_is_set_now (Ctx *ctx, uint32_t hash);
 void ctx_set_size (Ctx *ctx, int width, int height);
 
 static inline float ctx_matrix_get_scale (CtxMatrix *matrix)

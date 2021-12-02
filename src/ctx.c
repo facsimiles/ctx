@@ -775,7 +775,7 @@ void ctx_clip (Ctx *ctx)
 }
 
 void
-ctx_set (Ctx *ctx, uint64_t key_hash, const char *string, int len);
+ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 
 void ctx_save (Ctx *ctx)
 {
@@ -913,7 +913,7 @@ _ctx_font (Ctx *ctx, const char *name)
 
 #if 0
 void
-ctx_set (Ctx *ctx, uint64_t key_hash, const char *string, int len)
+ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len)
 {
   if (len <= 0) len = strlen (string);
   ctx_process_cmd_str (ctx, CTX_SET, string, key_hash, len);

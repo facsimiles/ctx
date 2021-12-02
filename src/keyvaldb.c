@@ -1,6 +1,6 @@
 #include "ctx-split.h"
 
-static float ctx_state_get (CtxState *state, uint64_t hash)
+static float ctx_state_get (CtxState *state, uint32_t hash)
 {
   for (int i = state->gstate.keydb_pos-1; i>=0; i--)
     {
@@ -10,7 +10,7 @@ static float ctx_state_get (CtxState *state, uint64_t hash)
   return -0.0;
 }
 
-static void ctx_state_set (CtxState *state, uint64_t key, float value)
+static void ctx_state_set (CtxState *state, uint32_t key, float value)
 {
   if (key != CTX_new_state)
     {
@@ -58,7 +58,7 @@ CTX_STATIC float ctx_string_index_to_float (int index)
   return CTX_KEYDB_STRING_START + index;
 }
 
-static void *ctx_state_get_blob (CtxState *state, uint64_t key)
+static void *ctx_state_get_blob (CtxState *state, uint32_t key)
 {
   float stored = ctx_state_get (state, key);
   int idx = ctx_float_to_string_index (stored);
@@ -72,7 +72,7 @@ static void *ctx_state_get_blob (CtxState *state, uint64_t key)
   return NULL;
 }
 
-static const char *ctx_state_get_string (CtxState *state, uint64_t key)
+static const char *ctx_state_get_string (CtxState *state, uint32_t key)
 {
   const char *ret = (char*)ctx_state_get_blob (state, key);
   if (ret && ret[0] == 127)
@@ -81,7 +81,7 @@ static const char *ctx_state_get_string (CtxState *state, uint64_t key)
 }
 
 
-static void ctx_state_set_blob (CtxState *state, uint64_t key, uint8_t *data, int len)
+static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len)
 {
   int idx = state->gstate.stringpool_pos;
 
@@ -105,7 +105,7 @@ static void ctx_state_set_blob (CtxState *state, uint64_t key, uint8_t *data, in
   ctx_state_set (state, key, ctx_string_index_to_float (idx));
 }
 
-CTX_STATIC void ctx_state_set_string (CtxState *state, uint64_t key, const char *string)
+CTX_STATIC void ctx_state_set_string (CtxState *state, uint32_t key, const char *string)
 {
   float old_val = ctx_state_get (state, key);
   int   old_idx = ctx_float_to_string_index (old_val);
@@ -132,7 +132,7 @@ CTX_STATIC void ctx_state_set_string (CtxState *state, uint64_t key, const char 
   ctx_state_set_blob (state, key, (uint8_t*)string, strlen(string));
 }
 
-static int ctx_state_get_color (CtxState *state, uint64_t key, CtxColor *color)
+static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
 {
   CtxColor *stored = (CtxColor*)ctx_state_get_blob (state, key);
   if (stored)
@@ -146,7 +146,7 @@ static int ctx_state_get_color (CtxState *state, uint64_t key, CtxColor *color)
   return -1;
 }
 
-CTX_STATIC void ctx_state_set_color (CtxState *state, uint64_t key, CtxColor *color)
+CTX_STATIC void ctx_state_set_color (CtxState *state, uint32_t key, CtxColor *color)
 {
   CtxColor mod_color;
   CtxColor old_color;
@@ -160,39 +160,39 @@ CTX_STATIC void ctx_state_set_color (CtxState *state, uint64_t key, CtxColor *co
   ctx_state_set_blob (state, key, (uint8_t*)&mod_color, sizeof (CtxColor));
 }
 
-const char *ctx_get_string (Ctx *ctx, uint64_t hash)
+const char *ctx_get_string (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get_string (&ctx->state, hash);
 }
-float ctx_get_float (Ctx *ctx, uint64_t hash)
+float ctx_get_float (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
 }
-int ctx_get_int (Ctx *ctx, uint64_t hash)
+int ctx_get_int (Ctx *ctx, uint32_t hash)
 {
   return ctx_state_get (&ctx->state, hash);
 }
-void ctx_set_float (Ctx *ctx, uint64_t hash, float value)
+void ctx_set_float (Ctx *ctx, uint32_t hash, float value)
 {
   ctx_state_set (&ctx->state, hash, value);
 }
-void ctx_set_string (Ctx *ctx, uint64_t hash, const char *value)
+void ctx_set_string (Ctx *ctx, uint32_t hash, const char *value)
 {
   ctx_state_set_string (&ctx->state, hash, value);
 }
-void ctx_set_color (Ctx *ctx, uint64_t hash, CtxColor *color)
+void ctx_set_color (Ctx *ctx, uint32_t hash, CtxColor *color)
 {
   ctx_state_set_color (&ctx->state, hash, color);
 }
-int  ctx_get_color (Ctx *ctx, uint64_t hash, CtxColor *color)
+int  ctx_get_color (Ctx *ctx, uint32_t hash, CtxColor *color)
 {
   return ctx_state_get_color (&ctx->state, hash, color);
 }
-int ctx_is_set (Ctx *ctx, uint64_t hash)
+int ctx_is_set (Ctx *ctx, uint32_t hash)
 {
   return ctx_get_float (ctx, hash) != -0.0f;
 }
-int ctx_is_set_now (Ctx *ctx, uint64_t hash)
+int ctx_is_set_now (Ctx *ctx, uint32_t hash)
 {
   return ctx_is_set (ctx, hash);
 }

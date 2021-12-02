@@ -442,7 +442,7 @@ uint64_t squoze12 (const char *utf8)
   return squoze (12, utf8);
 }
 
-uint64_t ctx_strhash(const char *str) {
+uint32_t ctx_strhash(const char *str) {
   return squoze (6, str);
 }
 
