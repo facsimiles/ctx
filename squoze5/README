@@ -2,9 +2,15 @@
   squoze5 a 5-bit transfer format for unicode.
   ============================================
 
-  Squoze5 extends the UTF-8 like variable length encoding of UTF-5 with
-  a direct encoding mode, acting in a role for 5-bit datastreams that
-  SCSU and BOCU do for 8-bit datastreams.
+  Øyvind Kolås, https://ctx.graphics/ 2021-12-02 
+
+  Squoze5 extends the UTF-8 like variable length encoding of UTF-5 with a
+  direct encoding mode.  Permitting transmission of short messages in more
+  writing systems with RTTY, lora and other bandwidth constrained mediums where 
+  a 5-bit stream works better than 8bit, most text is at any time often using a
+  smaller subset of character; this is an advantage english/latin text has with
+  UTF-8 that falls apart in other scripts, for 8-bit data streams SCSU and
+  BOCU-1 fil lthe same role as squoze5.
 
   In UTF-5 each quintet, 5-bit word, stores 4bits of data and a bit indicating
   if it is the start of a new character. UTF-5 uses the alphabet 0-9 followed
@@ -21,9 +27,8 @@
   a phase offset of 19, which makes ASCII lowercase a-z be within initial
   range. Squoze5 encodes the same character with the same quintet value
   no matter which initial offset, this makes repeating patterns have a
-  chance of being repeated in the output and will make compression of
-  resulting bitstream easier. (compressors relying on multiple of bitsize
-  will suffer, but still work in a reduced set of cases).
+  chance of being repeated in the output and makes post-processing
+  compression relying on substring matching possible.
 
 The quintets meaning of the quintets in squeeze mode are as follows:
 
@@ -42,6 +47,11 @@ The quintets meaning of the quintets in squeeze mode are as follows:
 29  T     offset -= 26 * 1   XXX todo:
 30  U     offset += 26 * 1
 
+31  V     switch to UTF-5 mode
+
+  two jump commands in a row are encoding larger offset changes, TODO:
+  confirm that the transcription of the bitpattern here matches implementation.
+
     R R   offset += 26 * 3   
     R S   offset += 26 * 4  
     R T   offset += 26 * 5
@@ -58,8 +68,6 @@ The quintets meaning of the quintets in squeeze mode are as follows:
     U S   offset -= 26 * 8
     U T   offset -= 26 * 9
     U U   offset -= 26 * 10
-
-31  V     switch to UTF-5 mode
 
   How to encode
   -------------
@@ -81,16 +89,15 @@ The quintets meaning of the quintets in squeeze mode are as follows:
   h  e l l o   w o r l d     11 bytes
   G8 5 C C F 0 N F I C 4     12 quintets = 60 bits = 7.5bytes padded to 8 bytes
 
-2. squoze-10
+2. squoze-6, squoze-10 and squoze-12
 
-  squoze-6, squoze-10 and squoze-12) are reversible string hash
-  hashes that result in 32bit 52bit or 62bit unsigned integers. The hashes
-  are reversible back to their original string as long as it encodes as
-  squoze5 to less to or equal to 10, 6 or 12 quintets. If the first bit is
-  set it indicates starting off in squeeze-mode, saving the need for an initial
-  'G'. If the number of encoded quintets to encode is too high, the highest
-  bit is set which indicates overflow - and the rest of the bits act as
-  a regular hash function.
+  These are reversible string hash hashes that result in 32bit 52bit or 62bit
+  unsigned integers. The hashes are reversible back to their original string as
+  long as it encodes as squoze5 to less to or equal to 10, 6 or 12 quintets. If
+  the first bit is set it indicates starting off in squeeze-mode, saving the
+  need for an initial 'G'. If the number of encoded quintets to encode is too
+  high, the highest bit is set which indicates overflow - and the rest of the
+  bits act as a regular hash function.
 
     $ ./squoze5 -e This is a test øæå ØÆÅ
     1294529466 1234 2 1349992 6600566 1595769403
