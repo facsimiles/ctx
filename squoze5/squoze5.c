@@ -39,9 +39,9 @@ int usage (const char *base)
 "Usage: %s [options] <string|encoded> [string|encoded]\n", base);
   fprintf (stderr,
 "\nwhere options are:\n"
-"  --squoze6 -6   32 bit content adressed string hash\n"
-"  --squoze10 -10 52 bit content adressed string hash\n"
-"  --squoze12 -12 62 bit content adressed string hash\n"
+"  --squoze32 -32  32 bit content adressed string hash\n"
+"  --squoze52 -52 52 bit content adressed string hash\n"
+"  --squoze62 -62 62 bit content adressed string hash\n"
 "  --squoze5 -v   squoze-5 encoding, with [0-9][A-V] alphabet\n"
 "  --utf-5 -5     UTF-5 encoding, with [0-9][A-V] alphabet\n"
 "\n"
@@ -98,12 +98,12 @@ int main (int argc, char **argv)
              arg++; }
 
      if (!strcmp (argv[arg], "--help")) return usage (base);
-     if (!strcmp (argv[arg], "--squoze10")) dim = 10;
-     if (!strcmp (argv[arg], "--squoze12")) dim = 12;
-     if (!strcmp (argv[arg], "--squoze6")) dim = 6;
-     if (!strcmp (argv[arg], "--squoze-10")) dim = 10;
-     if (!strcmp (argv[arg], "--squoze-12")) dim = 12;
-     if (!strcmp (argv[arg], "--squoze-6")) dim = 6;
+     if (!strcmp (argv[arg], "--squoze32")) dim = 6;
+     if (!strcmp (argv[arg], "--squoze52")) dim = 10;
+     if (!strcmp (argv[arg], "--squoze62")) dim = 12;
+     if (!strcmp (argv[arg], "--squoze-52")) dim = 10;
+     if (!strcmp (argv[arg], "--squoze-62")) dim = 12;
+     if (!strcmp (argv[arg], "--squoze-32")) dim = 6;
      if (!strcmp (argv[arg], "--utf-5")) dim = 5;
      if (!strcmp (argv[arg], "--utf5")) dim = 5;
      if (!strcmp (argv[arg], "--squoze5")) dim = 4;
@@ -119,6 +119,15 @@ int main (int argc, char **argv)
          if (c >= '0' && c <= '9')
          {
            dim = atoi (&argv[arg][i]);
+           switch (dim)
+           {
+             case 32: dim = 6; break;
+             default:
+             case 52: dim = 10; break;
+             case 62: dim = 12; break;
+             case 5: dim = 5; break;
+             case 4: dim = 4; break;
+           }
            break;
          }
        }

@@ -121,6 +121,26 @@ The quintets meaning of the quintets in squeeze mode are as follows:
   it allows treating a limited set of strings the same as numbers, allowing
   simpler implementation and memory handling.
 
+  The commandline tool shown above is being used for evaluating and developing
+  squoze-5, it is part of the source files in the same folder as this README
+  and has the following documentation of its commandline options:
+
+  Usage: squoze5 [options] <string|encoded> [string|encoded]
+
+  where options are:
+    --squoze32 -32  32 bit content adressed string hash
+    --squoze52 -52 52 bit content adressed string hash
+    --squoze62 -62 62 bit content adressed string hash
+    --squoze5 -v   squoze-5 encoding, with [0-9][A-V] alphabet
+    --utf-5 -5     UTF-5 encoding, with [0-9][A-V] alphabet
+
+    --encode -e    force encoding, the default is autodetect
+    --base64 -b    use base64 as encoding for UTF-5/UTF-V
+
+Multiple short options can be set together -e6 forces encoding in SQUOZE-6
+Without parameters it is as if --squoze10 has been passed as arguments.
+
+
 3. Sample squoze-5 encodings and information density comparison.
 
   The following are following are a sample sentence in different languages and
