@@ -39,6 +39,7 @@ TERMINAL_OBJS = terminal/terminal.o terminal/ctx-keyboard.o
 #MEDIA_HANDLERS_OBJS   = $(MEDIA_HANDLERS_CFILES:.c=.o)
 MEDIA_HANDLERS_OBJS = \
   stuff/ctx-dir.o \
+  stuff/argvs.o \
   stuff/collection.o \
   media-handlers/ctx-gif.o \
   media-handlers/ctx-img.o \
@@ -136,7 +137,7 @@ terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-stuff/%.o: stuff/%.c ctx.h stuff/*.h 
+stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o deps.o build.conf Makefile
 	$(AR) rcs $@ $?

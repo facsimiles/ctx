@@ -27,6 +27,7 @@
 #include "ctx.h"
 #include "itk.h"
 #include <signal.h>
+#include "argvs.h"
 
 typedef enum ImageZoom
 {
@@ -537,14 +538,12 @@ static inline int is_text_editing (void)
 }
 
 
-
-static void dir_insert (CtxEvent *e, void *d1, void *d2)
+int dir_insert (COMMAND_ARGS) /* "insert-text", 0, "", "" */
 {
   metadata_insert (collection, focused_no, "");
   text_edit = 0;
   metadata_dirt ();
-  ctx_set_dirty (e->ctx, 1);
-  e->stop_propagate = 1;
+  return 0;
 }
 
 static int path_is_dir (const char *path)
@@ -615,45 +614,43 @@ static void _set_location (const char *location)
   }
 }
 
-
-static void history_forward (CtxEvent *event, void *d1, void *d2)
+int cmd_history (COMMAND_ARGS) /* "history", 1, "<forward|back>", "moved history forward or back" */
 {
-  if (future == NULL)
-     return;
+  if (!strcmp (argv[1], "back"))
+  {
+    if (history == NULL)
+      return -1;
+    char *location = history->data;
+    ctx_list_remove (&history, location);
 
-  char *location = future->data;
-  ctx_list_remove (&future, location);
+    if (collection->title)
+      ctx_list_prepend (&future, strdup (collection->title));
+    else
+      ctx_list_prepend (&future, strdup (collection->path));
 
-  if (collection->title)
-    ctx_list_prepend (&history, strdup (collection->title));
-  else
-    ctx_list_prepend (&history, strdup (collection->path));
+    _set_location (location);
 
-  _set_location (location);
-  free (location);
+    free (location);
+  }
+  else if (!strcmp (argv[1], "forward"))
+  {
+    if (future == NULL)
+      return -1;
 
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate = 1;
+    char *location = future->data;
+    ctx_list_remove (&future, location);
+
+    if (collection->title)
+      ctx_list_prepend (&history, strdup (collection->title));
+    else
+      ctx_list_prepend (&history, strdup (collection->path));
+
+    _set_location (location);
+    free (location);
+  }
+  return 0;
 }
 
-static void history_back (CtxEvent *event, void *d1, void *d2)
-{
-  if (history == NULL)
-     return;
-  char *location = history->data;
-  ctx_list_remove (&history, location);
-
-  if (collection->title)
-    ctx_list_prepend (&future, strdup (collection->title));
-  else
-    ctx_list_prepend (&future, strdup (collection->path));
-
-  _set_location (location);
-  ctx_set_dirty (event->ctx, 1);
-
-  free (location);
-  event->stop_propagate = 1;
-}
 
 
 static void set_location (const char *location)
@@ -674,7 +671,7 @@ static void set_location (const char *location)
 }
 
 
-static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
+int cmd_go_parent (COMMAND_ARGS) /* "go-parent", 0, "", "" */
 {
   char *old_path = strdup (collection->path);
   char *new_path = get_dirname (collection->path);
@@ -685,42 +682,35 @@ static void dir_go_parent (CtxEvent *e, void *d1, void *d2)
 
   itk->focus_no = -1;
   free (new_path);
-  if (e)
-  {
-    ctx_set_dirty (e->ctx, 1);
-    e->stop_propagate = 1;
-  }
+  return 0;
 }
 
-static void toggle_keybindings_display (CtxEvent *e, void *d1, void *d2)
+int toggle_keybindings_display (COMMAND_ARGS) /* "toggle-keybindings-display", 0, "", ""*/
 {
   show_keybindings = !show_keybindings;
-  ctx_set_dirty (e->ctx, 1);
+  return 0;
 }
 
-static void outline_expand (CtxEvent *e, void *d1, void *d2)
+int outline_expand (COMMAND_ARGS) /* "expand", 0, "", "" */
 {
   int no = focused_no;
-  e->stop_propagate = 1;
   if (item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
-    return;
+    return -1;
 
   metadata_unset (collection, no+1, "folded");
   metadata_dirt ();
-  ctx_set_dirty (e->ctx, 1);
+  return 0;
 }
 
-static void outline_collapse (CtxEvent *e, void *d1, void *d2)
+int outline_collapse (COMMAND_ARGS) /* "fold", 0, "", "" */
 {
-  e->stop_propagate = 1;
   int no = focused_no;
-  e->stop_propagate = 1;
   if (item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
-    return;
+    return 0;
 
   metadata_set_float (collection, no+1, "folded", 1);
   metadata_dirt ();
-  ctx_set_dirty (e->ctx, 1);
+  return 0;
 }
 
 
@@ -866,20 +856,16 @@ static char *dir_metadata_path (const char *path)
 }
 
 
-
-static void dir_follow_link (CtxEvent *e, void *d1, void *d2)
+int dir_follow_link (COMMAND_ARGS) /* "follow-link", 0, "", "" */
 {
   char *target = dir_item_link_no (focused_no, layout_focused_link);
   set_location (target);
-
   layout_focused_link = 0;
-  ctx_set_dirty (e->ctx, 1);
+  return 0;
 }
 
-
-static void item_activate (CtxEvent *e, void *d1, void *d2)
+int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
 {
-  //CtxEvent *e = &event; // we make a copy to permit recursion
   int no = focused_no;
   viewer_no = no;
   int virtual = (item_get_type_atom (collection, no) == CTX_ATOM_TEXT);
@@ -887,11 +873,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   if (virtual)
   {
     text_edit = 0;
-    ctx_set_dirty (e->ctx, 1);
-    //_itk_key_bindings_active = 0;
-    if (e)
-      e->stop_propagate = 1;
-    return;
+    return 0;
   }
 
   char *new_path;
@@ -899,9 +881,9 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
 
   if (!strcmp (name, ".."))
   {
-    dir_go_parent (e, d1, d2);
+    argvs_eval ("go-parent");
     free (name);
-    return;
+    return 0;
   }
   else
   {
@@ -919,12 +901,7 @@ static void item_activate (CtxEvent *e, void *d1, void *d2)
   }
   free (name);
   free (new_path);
-
-  if (e)
-  {
-    ctx_set_dirty (e->ctx, 1);
-    e->stop_propagate = 1;
-  }
+  return 0;
 }
 
 static void item_drag (CtxEvent *e, void *d1, void *d2)
@@ -970,6 +947,19 @@ static void item_tap_and_hold (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
 }
 
+void
+ui_run_command (CtxEvent *event, void *data1, void *data2)
+{
+  char *commandline = data1;
+  if (event)
+    event->stop_propagate = 1;
+  while (commandline && commandline[strlen(commandline)-1]==' ')
+    commandline[strlen(commandline)-1]=0;
+
+  ctx_set_dirty (event->ctx, 1);
+  argvs_eval (commandline);
+}
+
 static int viewer_load_next_handler = 0;
 
 static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
@@ -1006,7 +996,6 @@ static int item_get_level (Collection *collection, int no)
   return level;
 }
 
-
 static int items_to_move (Collection *collection, int no)
 {
   int count = 1;
@@ -1023,7 +1012,7 @@ static int items_to_move (Collection *collection, int no)
   return count;
 }
 
-static void item_duplicate(CtxEvent *e, void *d1, void *d2)
+int cmd_duplicate (COMMAND_ARGS) /* "duplicate", 0, "", "duplicate item" */
 {
   int no = focused_no;
   int count = items_to_move (collection, no);
@@ -1051,14 +1040,12 @@ static void item_duplicate(CtxEvent *e, void *d1, void *d2)
         free (key);
       }
     }
-
   }
   metadata_dirt ();
-  ctx_set_dirty (e->ctx, 1);
-  e->stop_propagate = 1;
+  return 0;
 }
 
-static void item_delete (CtxEvent *e, void *d1, void *d2)
+int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
 {
   int no = focused_no;
   int count = items_to_move (collection, no);
@@ -1090,12 +1077,7 @@ static void item_delete (CtxEvent *e, void *d1, void *d2)
 
   text_edit = TEXT_EDIT_OFF;
   metadata_dirt();
-
-  if (e)
-  {
-    ctx_set_dirty (e->ctx, 1);
-    e->stop_propagate = 1;
-  }
+  return 0;
 }
 
 void itk_focus (ITK *itk, int dir);
@@ -1161,48 +1143,40 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
-static void move_left (CtxEvent *e, void *d1, void *d2)
+int cmd_move (COMMAND_ARGS) /* "move", 1, "<up|left|right|down>", "shift items position" */
 {
   int no = focused_no;
   float x = metadata_get_float (collection, no, "x", -100.0);
-  x -= 0.01;
-  if (x < 0.0) x = 0.0;
-  metadata_set_float (collection, no, "x", x);
-  metadata_dirt ();
-  ctx_set_dirty (e->ctx, 1);
-}
-
-static void move_right (CtxEvent *e, void *d1, void *d2)
-{
-  int no = focused_no;
-  float x = metadata_get_float (collection, no, "x", -100.0);
-  x += 0.01;
-  if (x < 0) x = 0;
-  metadata_set_float (collection, no, "x", x);
-  metadata_dirt ();
-  ctx_set_dirty (e->ctx, 1);
-}
-
-static void move_up (CtxEvent *e, void *d1, void *d2)
-{
-  int no = focused_no;
   float y = metadata_get_float (collection, no, "y", -100.0);
-  y -= 0.01;
-  if (y< 0) y = 0.01;
-  metadata_set_float (collection, no, "y", y);
-  metadata_dirt ();
-  ctx_set_dirty (e->ctx, 1);
-}
-
-static void move_down (CtxEvent *e, void *d1, void *d2)
-{
-  int no = focused_no;
-  float y = metadata_get_float (collection, no, "y", -100.0);
-  y += 0.01;
-  if (y< 0) y = 0.01;
-  metadata_set_float (collection, no, "y", y);
-  metadata_dirt ();
-  ctx_set_dirty (e->ctx, 1);
+  if (!strcmp (argv[1], "up"))
+  {
+    y -= 0.01;
+    if (y< 0) y = 0.01;
+    metadata_set_float (collection, no, "y", y);
+    metadata_dirt ();
+  }
+  else if (!strcmp (argv[1], "left"))
+  {
+    x -= 0.01;
+    if (x < 0.0) x = 0.0;
+    metadata_set_float (collection, no, "x", x);
+    metadata_dirt ();
+  }
+  else if (!strcmp (argv[1], "down"))
+  {
+    y += 0.01;
+    if (y< 0) y = 0.01;
+    metadata_set_float (collection, no, "y", y);
+    metadata_dirt ();
+  }
+  else if (!strcmp (argv[1], "right"))
+  {
+    x += 0.01;
+    if (x < 0) x = 0;
+    metadata_set_float (collection, no, "x", x);
+    metadata_dirt ();
+  }
+  return 0;
 }
 
 #if 0
@@ -1360,13 +1334,11 @@ dir_next_sibling (Collection *collection, int i)
   return i;
 }
 
-static void
-move_after_next_sibling (CtxEvent *event, void *a, void *b)
+int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", "" */
 {
   if (dir_next_sibling (collection, focused_no) < 0)
   {
-    event->stop_propagate = 1;
-    return;
+    return -1;
   }
 
   //for (int i = 0; i < count; i++)
@@ -1381,8 +1353,7 @@ move_after_next_sibling (CtxEvent *event, void *a, void *b)
 
   if (item_get_type_atom (collection, focused_no + count) == CTX_ATOM_ENDGROUP)
   {
-    event->stop_propagate=1;
-    return;
+    return -1;
   }
 
   if (item_get_type_atom (collection, focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
@@ -1397,8 +1368,7 @@ move_after_next_sibling (CtxEvent *event, void *a, void *b)
   if (atom == CTX_ATOM_ENDGROUP)
   {
     focused_no--;
-    event->stop_propagate=1;
-    return;
+    return -1;
   }
   if (atom == CTX_ATOM_STARTGROUP)
      level++;
@@ -1454,13 +1424,10 @@ move_after_next_sibling (CtxEvent *event, void *a, void *b)
   layout_find_item = focused_no;
   itk->focus_no = -1;
 
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
-
-static void
-move_before_previous_sibling (CtxEvent *event, void *a, void *b)
+int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling", 0, "", "" */
 {
   int start_no = focused_no;
   
@@ -1470,8 +1437,7 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
 
   if (dir_prev_sibling (collection, focused_no) < 0)
   {
-     event->stop_propagate = 1;
-     return;
+     return -1;
   }
 
   focused_no--;
@@ -1518,13 +1484,10 @@ move_before_previous_sibling (CtxEvent *event, void *a, void *b)
 
   layout_find_item = focused_no;
   itk->focus_no = -1;
-
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
-static void
-make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
+int make_sibling_of_parent (COMMAND_ARGS) /* "make-sibling-of-parent", 0, "", "" */
 {
   int no = focused_no;
   int level = item_get_level (collection, no);
@@ -1568,24 +1531,22 @@ make_sibling_of_parent (CtxEvent *e, void *d1, void *d2)
     itk->focus_no = -1;
 
     metadata_dirt ();
-    ctx_set_dirty (e->ctx, 1);
-
   }
+  return 0;
 }
 
-static void
-make_child_of_previous (CtxEvent *e, void *d1, void *d2)
+int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", "" */
 {
   int no = focused_no;
   if (no < 1)
-    return;
+    return -1;
 
   {
     int count = items_to_move (collection, no);
     int target = no-1;
     int atom = item_get_type_atom (collection, target);
     if (atom == CTX_ATOM_STARTGROUP)
-       return;
+       return -1;
     if (atom == CTX_ATOM_ENDGROUP)
     {
       for (int i = 0; i < count; i++)
@@ -1624,12 +1585,11 @@ make_child_of_previous (CtxEvent *e, void *d1, void *d2)
 #endif
 
     metadata_dirt ();
-    ctx_set_dirty (e->ctx, 1);
   }
+  return 0;
 }
 
-void
-item_cycle_bullet (CtxEvent *event, void *a, void *b)
+int item_cycle_bullet (COMMAND_ARGS) /* "cycle-bullet", 0, "", "" */
 {
   int bullet = metadata_get_int (collection, focused_no, "bullet", CTX_BULLET_NONE);
   switch (bullet)
@@ -1651,13 +1611,10 @@ item_cycle_bullet (CtxEvent *event, void *a, void *b)
       break;
   }
   metadata_dirt ();
-
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
-void
-item_cycle_heading (CtxEvent *event, void *a, void *b)
+int item_cycle_heading (COMMAND_ARGS) /* "cycle-heading", 0, "", "" */
 {
   char *klass = metadata_get_string (collection, focused_no, "class");
 
@@ -1678,9 +1635,7 @@ item_cycle_heading (CtxEvent *event, void *a, void *b)
   else
     metadata_set (collection, focused_no, "class", "h1");
   metadata_dirt ();
-
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
 static void draw_folder (Ctx *ctx, float x, float y, float w, float h)
@@ -1843,13 +1798,14 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     ctx_client_unlock (client);
     deactivate_viewer (ctx_event, NULL, NULL);
     return;
-  } 
+  }
+
   if (media_class == CTX_MEDIA_TYPE_IMAGE && (!strcmp (event, "space")))
   {
     ctx_client_unlock (client);
     //itk->focus_no ++;
     itk->focus_no ++;
-    item_activate (NULL, (void*)(size_t)(viewer_no+1), NULL);
+    argvs_eval ("activate");
     ctx_set_dirty (ctx, 1);
 
     return;
@@ -1859,7 +1815,7 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   {
     ctx_client_unlock (client);
     itk->focus_no ++;
-    item_activate (NULL, (void*)(size_t)viewer_no+1, NULL);
+    argvs_eval ("activate");
     ctx_set_dirty (ctx, 1);
 
     return;
@@ -1870,7 +1826,7 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     ctx_client_unlock (client);
     //itk->focus_no ++;
     itk->focus_no --;
-    item_activate (NULL, (void*)(size_t)viewer_no-1, NULL);
+    argvs_eval ("activate");
     ctx_set_dirty (ctx, 1);
 
     return;
@@ -2309,7 +2265,7 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-void dir_join (CtxEvent *event, void *a, void *b)
+int dir_join (CtxEvent *event, void *a, void *b) /* "join-with-next", 0, "", "" */
 {
   if (focused_no>=0){
     char *name = metadata_get_name (collection, focused_no);
@@ -2328,8 +2284,7 @@ void dir_join (CtxEvent *event, void *a, void *b)
     ctx_string_free (str, 1);
     metadata_dirt ();
   }
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
 void text_edit_shift_return (CtxEvent *event, void *a, void *b)
@@ -2423,7 +2378,7 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
         item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP)
     {
       text_edit = 0;
-      item_delete (event, (void*)(size_t)focused_no, NULL);
+      argvs_eval ("remove");
 
       //layout_find_item = focused_no-1;
       //itk->focus_no = -1;
@@ -2550,7 +2505,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
       item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP))
     {
       int next_focus = dir_prev_sibling (collection, focused_no);
-      item_delete (event, (void*)(size_t)focused_no, NULL);
+      argvs_eval ("remove");
       if (was_editing_before_tail)
       {
         text_edit = TEXT_EDIT_FIND_CURSOR_LAST_ROW;
@@ -2572,27 +2527,17 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-
-
-void dir_zoom_in (CtxEvent *event, void *a, void *b)
+int dir_zoom (COMMAND_ARGS) /* "zoom", 1, "<in|out|val>", "" */
 {
-  dir_scale *= 1.1f;
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
-}
-
-void dir_zoom_out (CtxEvent *event, void *a, void *b)
-{
-  dir_scale /= 1.1f;
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
-}
-
-void dir_zoom_reset (CtxEvent *event, void *a, void *b)
-{
-  dir_scale = 1.0f;
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  if (!strcmp (argv[1], "in"))
+    dir_scale *= 1.1f;
+  else if (!strcmp (argv[1], "out"))
+    dir_scale /= 1.1f;
+  else {
+    dir_scale = atof (argv[1]);
+    if (dir_scale <= 0.001) dir_scale = 1.0f;
+  }
+  return 0;
 }
 
 void dir_font_up (CtxEvent *event, void *a, void *b)
@@ -2611,23 +2556,37 @@ void dir_font_down (CtxEvent *event, void *a, void *b)
 
 void dir_set_page (CtxEvent *event, void *a, void *b)
 {
-  layout_show_page = (size_t)a;
-  if (layout_show_page < 0) layout_show_page = 0;
+  layout_show_page = (size_t)(a);
+  if (layout_show_page < 0)
+    layout_show_page = 0;
+  if (layout_last_page < layout_show_page)
+    layout_show_page = layout_last_page;
   itk->focus_no = 0;
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  if (event)
+  {
+    ctx_set_dirty (event->ctx, 1);
+    event->stop_propagate=1;
+  }
 }
 
-void dir_prev_page (CtxEvent *event, void *a, void *b)
+int cmd_page (COMMAND_ARGS) /* "page", 1, "<next|prev|previous|integer>", "" */
 {
-   dir_set_page (event, (void*)(size_t)(layout_show_page-1), NULL);
+  int target = layout_show_page;
+  if (!strcmp (argv[1], "next"))
+  {
+    target++;
+  }
+  else if ((!strcmp (argv[1], "prev")) || (!strcmp (argv[1], "previous")))
+  {
+    target--;
+  }
+  else
+  {
+    target = atoi(argv[1]);
+  }
+  dir_set_page (NULL, (void*)(size_t)(target), NULL);
+  return 0;
 }
-void dir_next_page (CtxEvent *event, void *a, void *b)
-{
-   if (layout_last_page > layout_show_page)
-   dir_set_page (event, (void*)(size_t)(layout_show_page+1), NULL);
-}
-
 
 int item_context_active = 0;
 
@@ -2655,11 +2614,11 @@ make_tail_entry (Collection *collection)
 
 void text_edit_down (CtxEvent *event, void *a, void *b)
 {
+  ctx_set_dirty (event->ctx, 1);
+  event->stop_propagate=1;
   if (next_line_pos >= 0)
   {
     text_edit = next_line_pos;
-    ctx_set_dirty (event->ctx, 1);
-    event->stop_propagate=1;
     return;
   }
 
@@ -2669,55 +2628,39 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
     if (str[0])
       make_tail_entry (collection);
     free (str);
-    ctx_set_dirty (event->ctx, 1);
-    event->stop_propagate=1;
     return;
   }
   text_edit = TEXT_EDIT_FIND_CURSOR_FIRST_ROW;
 
   layout_find_item = focused_no + 1;
   itk->focus_no = -1;
-
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
   // -- - //
 }
 
-
-
-static void
-focus_next_link (CtxEvent *event, void *a, void *b)
+int focus_next_link (COMMAND_ARGS) /* "focus-next-link", 0, "", "" */
 {
   layout_focused_link ++;
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
-static void
-focus_previous_link (CtxEvent *event, void *a, void *b)
+int focus_previous_link (COMMAND_ARGS) /* "focus-previous-link", 0, "", "" */
 {
   layout_focused_link --;
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
-static void
-focus_next_sibling (CtxEvent *event, void *a, void *b)
+int focus_next_sibling (COMMAND_ARGS) /* "focus-next-sibling", 0, "", "" */
 {
   layout_focused_link = -1;
   if (dir_next_sibling (collection, focused_no) < 0)
   {
     make_tail_entry (collection);
-    ctx_set_dirty (event->ctx, 1);
-    event->stop_propagate=1;
-    return;
+    return -1;
   }
 
   layout_find_item = focused_no = dir_next_sibling (collection, focused_no);
   itk->focus_no = -1;
-
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
 static int item_get_list_index (Collection *collection, int i)
@@ -2735,9 +2678,7 @@ static int item_get_list_index (Collection *collection, int i)
   return count;
 }
 
-
-static void
-focus_next (CtxEvent *event, void *a, void *b)
+int focus_next (COMMAND_ARGS) /* "focus-next", 0, "", "" */
 {
   layout_focused_link = -1;
   int pos = dir_next (collection, focused_no);
@@ -2745,13 +2686,11 @@ focus_next (CtxEvent *event, void *a, void *b)
   {
     layout_find_item = focused_no = pos;
     itk->focus_no = -1;
-    ctx_set_dirty (event->ctx, 1);
   }
-  event->stop_propagate=1;
+  return 0;
 }
 
-static void
-focus_previous (CtxEvent *event, void *a, void *b)
+int focus_previous (COMMAND_ARGS) /* "focus-previous", 0, "", "" */
 {
   layout_focused_link = -1;
   int pos = dir_prev (collection, focused_no);
@@ -2759,13 +2698,11 @@ focus_previous (CtxEvent *event, void *a, void *b)
   {
     layout_find_item = focused_no = pos;
     itk->focus_no = -1;
-    ctx_set_dirty (event->ctx, 1);
   }
-  event->stop_propagate=1;
+  return 0;
 }
 
-static void
-focus_previous_sibling (CtxEvent *event, void *a, void *b)
+int focus_previous_sibling (COMMAND_ARGS) /* "focus-previous-sibling", 0, "", "" */
 {
   layout_focused_link = -1;
   int pos = dir_prev_sibling (collection, focused_no);
@@ -2773,9 +2710,8 @@ focus_previous_sibling (CtxEvent *event, void *a, void *b)
   {
     layout_find_item = focused_no = pos;
     itk->focus_no = -1;
-    ctx_set_dirty (event->ctx, 1);
   }
-  event->stop_propagate=1;
+  return 0;
 }
 
 static void
@@ -2844,8 +2780,7 @@ set_tool_no (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-static void
-dir_parent (CtxEvent *event, void *a, void *b)
+int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
 {
   layout_focused_link = -1;
   int start_no = focused_no;
@@ -2883,13 +2818,11 @@ dir_parent (CtxEvent *event, void *a, void *b)
   layout_find_item = focused_no;
   itk->focus_no = -1;
 
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
 
-static void
-dir_enter_children (CtxEvent *event, void *a, void *b)
+int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
 {
   int start_no = focused_no;
   layout_focused_link = -1;
@@ -2924,12 +2857,10 @@ dir_enter_children (CtxEvent *event, void *a, void *b)
 
   layout_find_item = focused_no;
   itk->focus_no = -1;
-
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  return 0;
 }
 
-void item_properties (CtxEvent *event, void *a, void *b)
+int item_properties (COMMAND_ARGS) /* "toggle-context", 0, "", "" */
 {
   if (item_context_active)
   {
@@ -2939,8 +2870,7 @@ void item_properties (CtxEvent *event, void *a, void *b)
   {
     item_context_active = 1;
   }
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate = 1;
+  return 0;
 }
 #define CTX_MAX_LAYOUT_BOXES    16
 
@@ -3409,7 +3339,8 @@ static void dir_layout (ITK *itk, Collection *collection)
           //viewer_load_path (newpath, collection->items[i]);
           ctx_begin_path (itk->ctx);
           ctx_rectangle (itk->ctx, c->x, c->y, c->width, c->height);
-          ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_activate, (void*)(size_t)i, NULL);
+         
+          //ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_activate, NULL);
           ctx_listen (itk->ctx, CTX_DRAG, item_drag, (void*)(size_t)i, NULL);
           //ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_tap_and_hold, (void*)(size_t)i, NULL);
 
@@ -3422,40 +3353,35 @@ static void dir_layout (ITK *itk, Collection *collection)
           {
           if (!is_text_editing())
           {
+#define BIND_KEY(key, command, help) \
+            do {ctx_add_key_binding (ctx, key, NULL, help, ui_run_command, command);} while(0)
+
+            BIND_KEY("control-o", "?", "get help");
+            BIND_KEY("control-p", "? ?", "get help");
 
             if (history)
-            ctx_add_key_binding (ctx, "alt-left", NULL, "back", history_back, NULL);
+              BIND_KEY("alt-left", "history back", "back");
             if (future)
-            ctx_add_key_binding (ctx, "alt-right", NULL, "forward", history_forward, NULL);
+              BIND_KEY("alt-right", "history forward", "forward");
 
-            ctx_add_key_binding (ctx, "alt-up", NULL, "go to parent",
-                          dir_go_parent, NULL);
+            BIND_KEY ("alt-up",    "go-parent",    "go to parent");
+            BIND_KEY ("alt-down",  "activate",  "enter item");
+            BIND_KEY ("control-d", "duplicate", "duplicate item");
 
-            ctx_add_key_binding (ctx, "alt-down", NULL, "enter item",
-                          item_activate, NULL);
-
-
-            ctx_add_key_binding (ctx, "control-d", NULL, "duplicate item",
-                          item_duplicate, NULL);
-
-            ctx_add_key_binding (ctx, "delete", NULL, "remove item",
-                          item_delete, NULL);
+            BIND_KEY ("delete", "remove", "remove item");
 
             if (!layout_config.outliner)
             {
-               ctx_add_key_binding (ctx, "alt-return", NULL, "item properties",
-                          item_properties, NULL);
+               BIND_KEY ("alt-return", "toggle-context", "item properties");
 
-
-            if (layout_focused_link >= 0)
-            {
-            ctx_add_key_binding (ctx, "return", NULL, "follow link",
-                          dir_follow_link, NULL);
-            }
-            else
-            ctx_add_key_binding (ctx, "return", NULL, "activate/edit",
-                          item_activate, NULL);
-            
+               if (layout_focused_link >= 0)
+               {
+                 BIND_KEY ("return", "follow-link", "follow link");
+               }
+               else
+              {
+                BIND_KEY ("return", "activate", "activate/edit");
+              }
 
             {
               int bullet = metadata_get_int (collection, i, "bullet", CTX_BULLET_NONE);
@@ -3468,13 +3394,11 @@ static void dir_layout (ITK *itk, Collection *collection)
                 case CTX_BULLET_TODO:   label = "mark done"; break;
                 case CTX_BULLET_DONE:   label = "no bullet"; break;
               }
-              ctx_add_key_binding (ctx, "control-t", NULL, label,
-                          item_cycle_bullet, NULL);
+              BIND_KEY ("control-t", "cycle-byllet", label);
             }
 
 
-            ctx_add_key_binding (ctx, "control-j", NULL, "join",
-                                 dir_join, NULL);
+            BIND_KEY ("control-j", "join-with-next", "join");
 
             {
               const char *label = "make heading";
@@ -3488,48 +3412,49 @@ static void dir_layout (ITK *itk, Collection *collection)
               {
 
               }
-              ctx_add_key_binding (ctx, "control-h", NULL, label,
-                                   item_cycle_heading, NULL);
+              BIND_KEY ("control-h", "cycle-heading", label);
             }
 
-            ctx_add_key_binding (ctx, "insert", NULL, "insert text",
-                          dir_insert, NULL);
+            BIND_KEY ("insert", "insert-text", "insert text");
             }
           }
 
 
           if (!layout_config.outliner && !is_text_editing ())
           {
-
-          ctx_add_key_binding (ctx, "control-page-down", NULL, "move after next sibling", move_after_next_sibling, NULL);
-          ctx_add_key_binding (ctx, "control-page-up", NULL, "move before previous sibling", move_before_previous_sibling, NULL);
+            BIND_KEY ("control-page-down",
+                      "move-after-next-sibling",
+                      "move after next sibling");
+            BIND_KEY ("control-page-up",
+                      "move-before-previous-sibling",
+                      "move before previoue sibling");
 
           if (gotpos)
           {
-          ctx_add_key_binding (ctx, "shift-control-down", NULL, "grow height", grow_height, NULL);
-          ctx_add_key_binding (ctx, "shift-control-up", NULL, "shrink height", shrink_height, NULL);
+            ctx_add_key_binding (ctx, "shift-control-down", NULL, "grow height", grow_height, NULL);
+            ctx_add_key_binding (ctx, "shift-control-up", NULL, "shrink height", shrink_height, NULL);
 
-          ctx_add_key_binding (ctx, "shift-control-left", NULL, "shrink width", shrink_width, NULL);
-          ctx_add_key_binding (ctx, "shift-control-right", NULL, "grow width", grow_width, NULL);
-          ctx_add_key_binding (ctx, "control-left", NULL, "move left", move_left, NULL);
-          ctx_add_key_binding (ctx, "control-right", NULL, "move right", move_right, NULL);
-          ctx_add_key_binding (ctx, "control-up", NULL, "move up", move_up, NULL);
-          ctx_add_key_binding (ctx, "control-down", NULL, "move down", move_down, NULL);
+            ctx_add_key_binding (ctx, "shift-control-left", NULL, "shrink width", shrink_width, NULL);
+            ctx_add_key_binding (ctx, "shift-control-right", NULL, "grow width", grow_width, NULL);
+
+          BIND_KEY("control-left", "move left", "move left");
+          BIND_KEY("control-up", "move up", "move up");
+          BIND_KEY("control-right", "move right", "move right");
+          BIND_KEY("control-down", "move down", "move down");
+
           }
           else
           {
-            ctx_add_key_binding (ctx, "control-down", NULL,
-                            "move after next sibling", move_after_next_sibling, NULL);
-            ctx_add_key_binding (ctx, "control-up", NULL,
-                            "move before previous sibling", move_before_previous_sibling, NULL);
+            BIND_KEY ("control-down",
+                      "move-after-next-sibling",
+                      "move after next sibling");
+            BIND_KEY ("control-up",
+                      "move-before-previous-sibling",
+                      "move before previoue sibling");
 
-            ctx_add_key_binding (ctx, "control-left", NULL,
-                            "make sibling of parent", make_sibling_of_parent, 
-                            NULL);
+            BIND_KEY ("control-left", "make-sibling-of-parent", "make sibling of parent");
 
-            ctx_add_key_binding (ctx, "control-right", NULL,
-                            "make child of previous", make_child_of_previous, 
-                            NULL);
+            BIND_KEY ("control-right", "make-child-of-previous", "make child of previous");
 
           }
           }
@@ -3539,15 +3464,12 @@ static void dir_layout (ITK *itk, Collection *collection)
            {
                if (metadata_get_int (collection, i + 1, "folded", -1)>0)
                {
-               ctx_add_key_binding (ctx, "+", NULL, "expand",
-                          outline_expand, NULL);
-               ctx_add_key_binding (ctx, "=", NULL, "expand",
-                          outline_expand, NULL);
+                 BIND_KEY ("+", "expand", "expand");
+                 BIND_KEY ("=", "expand", "expand");
                }
                else if (item_get_type_atom (collection, i + 1) == CTX_ATOM_STARTGROUP)
                {
-               ctx_add_key_binding (ctx, "-", NULL, "fold",
-                          outline_collapse, NULL);
+                 BIND_KEY ("-", "fold", "fold");
                }
            }
 
@@ -3956,8 +3878,8 @@ int viewer_load_next (Ctx *ctx, void *data1)
   if (viewer_no+1 >= metadata_count(collection))
     return 0;
   //fprintf (stderr, "next!\n");
-  itk->focus_no ++;
-  item_activate (NULL, (void*)(size_t)(viewer_no+1), NULL);
+  focused_no++;
+  argvs_eval ("activate");
   ctx_set_dirty (ctx, 1);
   return 0;
 }
@@ -4134,7 +4056,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
 
   if (!strcmp (word->str, "cd.."))
   {
-    dir_go_parent (e, d1, d2);
+    argvs_eval ("go-parent");
     layout_show_page = 0;
     itk_panels_reset_scroll (itk);
   }
@@ -4150,7 +4072,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
     }
     else if (!strcmp (arg, ".."))
     {
-      dir_go_parent (e, d1, d2);
+      argvs_eval ("go-parent");
     }
     else
     {
@@ -4336,9 +4258,7 @@ static int card_files (ITK *itk_, void *data)
   }
   //thumb_monitor (ctx, NULL);
 
-  ctx_add_key_binding (ctx, "F1", NULL, "toggle keybinding help",
-                       toggle_keybindings_display,
-                       NULL);
+  BIND_KEY ("F1", "toggle-keybindings-display", "toggle keybinding help");
 
   itk_panel_start (itk, "", 0,0, ctx_width(ctx),
                   ctx_height (ctx));
@@ -4349,18 +4269,10 @@ static int card_files (ITK *itk_, void *data)
 
     if (!is_text_editing())
     {
-          ctx_add_key_binding (ctx, "control-+", NULL, "zoom in",
-                          dir_zoom_in,
-                          NULL);
-          ctx_add_key_binding (ctx, "control-=", NULL, "zoom in",
-                          dir_zoom_in,
-                          NULL);
-          ctx_add_key_binding (ctx, "control--", NULL, "zoom out",
-                          dir_zoom_out,
-                          NULL);
-          ctx_add_key_binding (ctx, "control-0", NULL, "zoom reset",
-                          dir_zoom_reset,
-                          NULL);
+      BIND_KEY ("control-+", "zoom in", "zoom in");
+      BIND_KEY ("control-=", "zoom in", "zoom in");
+      BIND_KEY ("control--", "zoom out", "zoom out");
+      BIND_KEY ("control-0", "zoom 1.0", "zoom reset");
 
           ctx_add_key_binding (ctx, "shift-control-+", NULL, "increase font size",
                           dir_font_up,
@@ -4405,11 +4317,9 @@ static int card_files (ITK *itk_, void *data)
   if (!is_text_editing())
   {
     if (layout_show_page < layout_last_page)
-    ctx_add_key_binding (ctx, "page-down", NULL, "next page",
-                         dir_next_page, NULL);
+      BIND_KEY("page-down", "page next", "next page");
     if (layout_show_page > 0)
-      ctx_add_key_binding (ctx, "page-up", NULL, "previous page",
-                           dir_prev_page, NULL);
+      BIND_KEY("page-down", "page previous", "previous page");
   }
 
 
@@ -4432,12 +4342,17 @@ static int card_files (ITK *itk_, void *data)
 
           ctx_add_key_binding (ctx, "shift-left", NULL, "add char", dir_location_extend_sel_left, NULL);
           ctx_add_key_binding (ctx, "shift-right", NULL, "add char", dir_location_extend_sel_right, NULL);
+#if 1
+          BIND_KEY ("up", "", "<ignored>");
+          BIND_KEY ("down", "", "<ignored>");
+#else
             ctx_add_key_binding (ctx, "up", NULL, NULL,
                             dir_ignore,
                             NULL);
             ctx_add_key_binding (ctx, "down", NULL, NULL,
                             dir_ignore,
                             NULL);
+#endif
           }
 
           ctx_add_key_binding (ctx, "any", NULL, "add char", dir_any, NULL);
@@ -4454,51 +4369,31 @@ static int card_files (ITK *itk_, void *data)
           {
 
             if (layout_focused_link >= 0)
-            ctx_add_key_binding (ctx, "up", NULL, "focus previous link",
-                          focus_previous_link,
-                          NULL);
+              BIND_KEY ("up", "focus-previous-link", "focus previous link");
             else
-
-            ctx_add_key_binding (ctx, "up", NULL, "focus previous sibling",
-                          focus_previous_sibling,
-                          NULL);
+              BIND_KEY ("up", "focus-previous", "focus previous");
 
             //fprintf (stderr, "%i \n", dir_item_count_links (focused_no));
 
             if (focused_no >=0 &&
                 layout_focused_link < dir_item_count_links (focused_no)-1)
-            ctx_add_key_binding (ctx, "down", NULL, "focus next link",
-                          focus_next_link,
-                          NULL);
+              BIND_KEY ("down", "focus-next-link", "focus next link");
             else
-            ctx_add_key_binding (ctx, "down", NULL, "focus next sibling",
-                          focus_next_sibling,
-                          NULL);
+              BIND_KEY ("down", "focus-next", "focus next");
 
             if (0)
             {
-            ctx_add_key_binding (ctx, "left", NULL, "focus prev",
-                          focus_previous,
-                          NULL);
-
-            ctx_add_key_binding (ctx, "right", NULL, "focus next",
-                            focus_next,
-                          NULL);
+              BIND_KEY ("left", "focus-previous", "focus prev");
+              BIND_KEY ("left", "focus-next", "focus next");
             }
             else
             {
-            ctx_add_key_binding (ctx, "left", NULL, "focus parent",
-                          dir_parent,
-                          NULL);
+              BIND_KEY ("left", "parent", "focus parent");
 
             if (layout_focused_link >= 0)
-            ctx_add_key_binding (ctx, "right", NULL, "follow link",
-                          dir_follow_link, NULL);
+               BIND_KEY ("right", "follow-link", "follow link");
             else
-
-            ctx_add_key_binding (ctx, "right", NULL, "enter children",
-                          dir_enter_children,
-                          NULL);
+               BIND_KEY ("right", "enter-children", "enter children");
             }
           }
   }
