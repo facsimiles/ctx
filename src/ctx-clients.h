@@ -10,6 +10,9 @@ typedef enum CtxClientFlags {
   ITK_CLIENT_TITLEBAR     = 1<<5
 } CtxClientFlags;
 
+typedef struct _CtxClient CtxClient;
+typedef void (*CtxClientFinalize)(CtxClient *client, void *user_data);
+
 struct _CtxClient {
   VT    *vt;
   Ctx   *ctx;
@@ -34,6 +37,7 @@ struct _CtxClient {
   int    id;
   int    internal; // render a settings window rather than a vt
   void  *user_data;
+  CtxClientFinalize finalize;
 #if CTX_THREADS
   mtx_t  mtx;
 #endif
@@ -42,7 +46,6 @@ struct _CtxClient {
 #endif
 };
 
-typedef struct _CtxClient CtxClient;
 
 
 extern CtxList *clients;
@@ -53,13 +56,16 @@ extern CtxClient *active_tab;
 int ctx_client_resize (int id, int width, int height);
 void ctx_client_maximize (int id);
 
+
 CtxClient *vt_get_client (VT *vt);
 CtxClient *ctx_client_new (Ctx *ctx,
                            const char *commandline,
                            int x, int y, int width, int height,
                            CtxClientFlags flags,
-                           void *user_data);
-CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags, void *user_data);
+                           void *user_data,
+                           CtxClientFinalize client_finalize);
+CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags, void *user_data,
+                CtxClientFinalize client_finalize);
 int ctx_clients_need_redraw (Ctx *ctx);
 
 extern float ctx_shape_cache_rate;

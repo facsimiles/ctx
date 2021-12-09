@@ -4025,7 +4025,7 @@ void viewer_load_path (const char *path, const char *name)
     {
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
       active = viewer = ctx_client_new (ctx, command,
-        0, 0, ctx_width(ctx), ctx_height(ctx), 0, ".viewer");
+        0, 0, ctx_width(ctx), ctx_height(ctx), 0, ".viewer", NULL);
     //fprintf (stderr, "[%s]\n", command);
 #if 0
       fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
@@ -4304,7 +4304,7 @@ static int card_files (ITK *itk_, void *data)
     first = 0;
 
     ctx_client_new (ctx, "top",
-          0, 0, 400, 400, 0, "boo");
+          0, 0, 400, 400, 0, "boo", NULL);
 
   }
   //thumb_monitor (ctx, NULL);
