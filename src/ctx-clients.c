@@ -168,7 +168,8 @@ CtxClient *vt_get_client (VT *vt)
 CtxClient *ctx_client_new (Ctx *ctx,
                            const char *commandline,
                            int x, int y, int width, int height,
-                           CtxClientFlags flags)
+                           CtxClientFlags flags,
+                           void *user_data)
 {
   static int global_id = 0;
   float font_size = ctx_get_font_size (ctx);
@@ -181,6 +182,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
   client->ctx = ctx;
   client->width = width;
   client->height = height;
+  client->user_data = NULL;
 
   if (ctx_renderer_is_term (ctx))
   {
@@ -197,7 +199,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
   return client;
 }
 
-CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags)
+CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags, void *user_data)
 {
   CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
@@ -215,7 +217,7 @@ CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int w
        }
     }
   }
-  CtxClient *ret = ctx_client_new (ctx, string->str, x, y, width, height, flags);
+  CtxClient *ret = ctx_client_new (ctx, string->str, x, y, width, height, flags, user_data);
   ctx_string_free (string, 1);
   return ret;
 }

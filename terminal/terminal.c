@@ -103,7 +103,7 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
 
   ctx_font_size (ctx, start_font_size);
   active = ctx_client_new (ctx, commandline, add_x, add_y,
-                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags);
+                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags, NULL);
   add_y += ctx_height (ctx) / 20;
   add_x += ctx_height (ctx) / 20;
 
@@ -131,7 +131,7 @@ int add_settings_tab (const char *commandline, int can_launch)
   if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
   active = ctx_client_new (ctx, commandline, add_x, add_y,
-                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags);
+                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2, flags, NULL);
   active->internal = 1;
 
   add_y += ctx_height (ctx) / 20;

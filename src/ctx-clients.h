@@ -33,6 +33,7 @@ struct _CtxClient {
   long   drawn_rev;
   int    id;
   int    internal; // render a settings window rather than a vt
+  void  *user_data;
 #if CTX_THREADS
   mtx_t  mtx;
 #endif
@@ -53,10 +54,12 @@ int ctx_client_resize (int id, int width, int height);
 void ctx_client_maximize (int id);
 
 CtxClient *vt_get_client (VT *vt);
-CtxClient *ctx_client_new (Ctx *ctx, const char *commandline,
-                       int x, int y, int width, int height,
-                       CtxClientFlags flags);
-CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags);
+CtxClient *ctx_client_new (Ctx *ctx,
+                           const char *commandline,
+                           int x, int y, int width, int height,
+                           CtxClientFlags flags,
+                           void *user_data);
+CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags, void *user_data);
 int ctx_clients_need_redraw (Ctx *ctx);
 
 extern float ctx_shape_cache_rate;
