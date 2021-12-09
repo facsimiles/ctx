@@ -969,9 +969,15 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
     ctx_remove_idle (ctx, viewer_load_next_handler);
   viewer_load_next_handler = 0;
 
-  while (clients)
-    ctx_client_remove (ctx, clients->data);
-  active = NULL;
+  if (active)
+  {
+    for (CtxList *c = clients; c; c = c->next)
+    {
+      if (c->data == active)
+        ctx_client_remove (ctx, active);
+    }
+    active = NULL;
+  }
   ctx_set_dirty (e->ctx, 1);
 }
 
@@ -2489,6 +2495,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
     return;
   }
 
+#if 0
   if (item_get_type_atom (collection, focused_no-1) != CTX_ATOM_TEXT && 
       item_get_type_atom (collection, focused_no-1) != CTX_ATOM_ENDGROUP)
   {
@@ -2514,13 +2521,18 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
         text_edit = TEXT_EDIT_OFF;
       focused_no = next_focus+1;
       metadata_dirt();
+  free (name);
     }
   else
+#else
+    focused_no--;
+    while (item_get_type_atom (collection, focused_no) != CTX_ATOM_TEXT)
+      focused_no --;
+#endif
     {
       text_edit = TEXT_EDIT_FIND_CURSOR_LAST_ROW;
     }
-  free (name);
-  layout_find_item = focused_no - 1;
+  layout_find_item = focused_no;
   itk->focus_no = -1;
 
   ctx_set_dirty (event->ctx, 1);
@@ -2622,6 +2634,7 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
     return;
   }
 
+#if 0
   if (item_get_type_atom (collection, focused_no+1) != CTX_ATOM_TEXT)
   {
     char *str = metadata_get_name (collection, focused_no);
@@ -2630,9 +2643,14 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
     free (str);
     return;
   }
+#else
+  focused_no ++;
+  while (item_get_type_atom (collection, focused_no) != CTX_ATOM_TEXT)
+    focused_no ++;
+#endif
   text_edit = TEXT_EDIT_FIND_CURSOR_FIRST_ROW;
 
-  layout_find_item = focused_no + 1;
+  layout_find_item = focused_no;
   itk->focus_no = -1;
   // -- - //
 }
@@ -3892,9 +3910,16 @@ void viewer_load_path (const char *path, const char *name)
   }
   if (viewer_loaded_path)
   {
-    while (clients)
-      ctx_client_remove (ctx, clients->data);
-    active = NULL;
+    if (active)
+    {
+      for (CtxList *c = clients; c; c = c->next)
+      {
+        if (c->data == active)
+          ctx_client_remove (ctx, active);
+      }
+      active = NULL;
+    }
+
     ctx_set_dirty (ctx, 1);
     free (viewer_loaded_path);
     viewer_loaded_path = NULL;
@@ -4726,11 +4751,12 @@ static int card_files (ITK *itk_, void *data)
   }
 
 
-  if (clients && active)
+  if (clients) // && active)
   {
     ctx_font_size (ctx, itk->font_size);
     ctx_clients_draw (ctx);
-    ctx_clients_handle_events (ctx);
+    if (active)
+      ctx_clients_handle_events (ctx);
   }
 
   if (show_keybindings && !active)
