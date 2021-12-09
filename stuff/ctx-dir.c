@@ -961,6 +961,7 @@ ui_run_command (CtxEvent *event, void *data1, void *data2)
 }
 
 static int viewer_load_next_handler = 0;
+CtxClient *viewer = NULL;
 
 static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 {
@@ -969,14 +970,17 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
     ctx_remove_idle (ctx, viewer_load_next_handler);
   viewer_load_next_handler = 0;
 
-  if (active)
+  if (viewer)
   {
-    for (CtxList *c = clients; c; c = c->next)
+    for (CtxList *c = clients; c; c = c?c->next:NULL)
     {
-      if (c->data == active)
-        ctx_client_remove (ctx, active);
+      if (c->data == viewer)
+      {
+        ctx_client_remove (ctx, viewer);
+        c = NULL;
+      }
     }
-    active = NULL;
+    viewer = active = NULL;
   }
   ctx_set_dirty (e->ctx, 1);
 }
@@ -1791,10 +1795,12 @@ void ctx_client_unlock (CtxClient *client);
 
 static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 {
-  if (!active)
+  if (!viewer)
     return;
-  VT *vt = active->vt;
+  VT *vt = viewer->vt;
   CtxClient *client = vt_get_client (vt);
+  if (!client)
+    return;
   ctx_client_lock (client);
   int media_class = ctx_media_type_class (viewer_media_type);
 
@@ -3304,7 +3310,7 @@ static void dir_layout (ITK *itk, Collection *collection)
            focused_control = c;
       }
 
-      if (!active && printing && sy + height > 0 && sy < ctx_height (itk->ctx))
+      if (!viewer && printing && sy + height > 0 && sy < ctx_height (itk->ctx))
       {
               //ctx_rgb(itk->ctx,1,0,0);
               //ctx_fill(itk->ctx);
@@ -3367,7 +3373,7 @@ static void dir_layout (ITK *itk, Collection *collection)
           //ctx_rgb(itk->ctx,1,0,0);
           //ctx_fill(itk->ctx);
 
-          if (!active)
+          if (!viewer)
           {
           if (!is_text_editing())
           {
@@ -3910,14 +3916,17 @@ void viewer_load_path (const char *path, const char *name)
   }
   if (viewer_loaded_path)
   {
-    if (active)
+    if (viewer)
     {
-      for (CtxList *c = clients; c; c = c->next)
+      for (CtxList *c = clients; c; c = c?c->next:NULL)
       {
-        if (c->data == active)
-          ctx_client_remove (ctx, active);
+        if (c->data == viewer)
+        {
+          ctx_client_remove (ctx, viewer);
+          c = NULL;
+        }
       }
-      active = NULL;
+      viewer = NULL;
     }
 
     ctx_set_dirty (ctx, 1);
@@ -4015,7 +4024,7 @@ void viewer_load_path (const char *path, const char *name)
     if (command[0])
     {
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
-      active = ctx_client_new (ctx, command,
+      active = viewer = ctx_client_new (ctx, command,
         0, 0, ctx_width(ctx), ctx_height(ctx), 0);
     //fprintf (stderr, "[%s]\n", command);
 #if 0
@@ -4025,7 +4034,7 @@ void viewer_load_path (const char *path, const char *name)
     }
     else
     {
-      active = NULL;
+      viewer = active = NULL;
     }
 
     free (escaped_path);
@@ -4033,7 +4042,7 @@ void viewer_load_path (const char *path, const char *name)
   }
   else
   {
-    active = NULL;
+    viewer = active = NULL;
   }
 }
 
@@ -4275,11 +4284,28 @@ static int card_files (ITK *itk_, void *data)
   //float em = itk_em (itk);
   //float row_height = em * 1.2;
   static int first = 1;
+
+  if (viewer)
+  {
+    int found = 0;
+    for (CtxList *l = clients; l; l = l->next)
+    {
+      if (l->data == viewer)
+        found = 1;
+    }
+    if (!found)
+      viewer = active = NULL;
+  }
+
   if (first)
   {
     ctx_add_timeout (ctx, 1000, thumb_monitor, NULL);
     font_size = itk->font_size;
     first = 0;
+
+    ctx_client_new (ctx, "top",
+          0, 0, 400, 400, 0);
+
   }
   //thumb_monitor (ctx, NULL);
 
@@ -4337,6 +4363,12 @@ static int card_files (ITK *itk_, void *data)
     //else
       dir_layout (itk, collection);
 
+
+      if (clients)
+      {
+        ctx_font_size (ctx, itk->font_size);
+        ctx_clients_draw (ctx);
+      }
   }
 
   if (!is_text_editing())
@@ -4348,7 +4380,7 @@ static int card_files (ITK *itk_, void *data)
   }
 
 
-  if (!active && text_edit <= TEXT_EDIT_OFF && !layout_config.outliner)
+  if (!viewer && text_edit <= TEXT_EDIT_OFF && !layout_config.outliner)
   {
 
 
@@ -4425,7 +4457,7 @@ static int card_files (ITK *itk_, void *data)
 
 
 #if 1
-      if (!active && text_edit>TEXT_EDIT_OFF)
+      if (!viewer && text_edit>TEXT_EDIT_OFF)
       {
           ctx_add_key_binding (ctx, "tab", NULL, NULL,
                           text_edit_ignore,
@@ -4591,7 +4623,7 @@ static int card_files (ITK *itk_, void *data)
   }
 #endif
 
-  if (active)
+  if (viewer)
   {
     ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
     ctx_listen (ctx, CTX_KEY_DOWN,  dir_key_any, NULL, NULL);
@@ -4604,7 +4636,7 @@ static int card_files (ITK *itk_, void *data)
     viewer_load_next_handler=0;
   }
 
-  if (tool_no == 0 && !active)
+  if (tool_no == 0 && !viewer)
   {
     float em = itk->font_size;
     ctx_save (ctx);
@@ -4750,16 +4782,27 @@ static int card_files (ITK *itk_, void *data)
       ctx_fill (ctx);
   }
 
-
-  if (clients) // && active)
+  if (viewer) //clients) // && active)
   {
     ctx_font_size (ctx, itk->font_size);
     ctx_clients_draw (ctx);
-    if (active)
+  if (viewer)
+  {
+    int found = 0;
+    for (CtxList *c = clients; c; c = c->next)
+    {
+      if (c->data == viewer)
+        found = 1;
+    }
+    if (!found)
+      viewer = active = NULL;
+    else
       ctx_clients_handle_events (ctx);
   }
 
-  if (show_keybindings && !active)
+  }
+
+  if (show_keybindings && !viewer)
   {
     float bindings_height = ctx_height (ctx) * 0.3;
     float bindings_pos = ctx_height (ctx) - bindings_height;
@@ -4909,6 +4952,8 @@ int ctx_dir_main (int argc, char **argv)
 
   set_layout (NULL, NULL, NULL);
   set_location (path);
+
+
   itk_main (card_files, NULL);
   save_metadata ();
 
