@@ -38,7 +38,7 @@ TERMINAL_OBJS = terminal/terminal.o terminal/ctx-keyboard.o
 #MEDIA_HANDLERS_CFILES = $(wildcard media-handlers/*.c)
 #MEDIA_HANDLERS_OBJS   = $(MEDIA_HANDLERS_CFILES:.c=.o)
 MEDIA_HANDLERS_OBJS = \
-  stuff/ctx-dir.o \
+  stuff/stuff.o \
   stuff/argvs.o \
   stuff/collection.o \
   media-handlers/ctx-gif.o \

@@ -197,6 +197,19 @@ char *ctx_get_thumb_path (const char *path) // XXX add dim as arg?
   return ctx_strdup_printf ("%s/.ctx-thumbnails/%s", getenv ("HOME"), path_hash_hex);
 }
 
+CtxClient *find_client (const char *label)
+{
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->user_data && !strcmp (client->user_data, label))
+    {
+      return client;
+    }
+  }
+  return NULL;
+}
+
 void ui_queue_thumb (const char *path)
 {
   char *rp = realpath (path, NULL);
@@ -355,6 +368,20 @@ CtxAtom item_get_type_atom (Collection *collection, int i)
 
 static int metadata_dirty = 0;
 
+static void drop_item_renderers (Ctx *ctx)
+{
+  again:
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (!(client->flags & ITK_CLIENT_LAYER2))
+    {
+      ctx_client_remove (ctx, client);
+      goto again;
+    }
+  }
+}
+
 void
 collection_set_path (Collection *collection,
                      const char *path,
@@ -369,6 +396,8 @@ collection_set_path (Collection *collection,
   DIR_INFO("setting path %s %s", path, title);
 
   if (title) title2 = strdup (title);
+
+  drop_item_renderers (ctx);
 
   if (collection->path)
     free (collection->path);
@@ -2555,6 +2584,7 @@ int dir_zoom (COMMAND_ARGS) /* "zoom", 1, "<in|out|val>", "" */
     dir_scale = atof (argv[1]);
     if (dir_scale <= 0.001) dir_scale = 1.0f;
   }
+  drop_item_renderers (itk->ctx);
   return 0;
 }
 
@@ -2563,6 +2593,7 @@ void dir_font_up (CtxEvent *event, void *a, void *b)
   itk->font_size *= 1.05f;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
+  drop_item_renderers (itk->ctx);
 }
 
 void dir_font_down (CtxEvent *event, void *a, void *b)
@@ -2570,6 +2601,7 @@ void dir_font_down (CtxEvent *event, void *a, void *b)
   itk->font_size /= 1.05f;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
+  drop_item_renderers (itk->ctx);
 }
 
 void dir_set_page (CtxEvent *event, void *a, void *b)
@@ -3632,6 +3664,26 @@ static void dir_layout (ITK *itk, Collection *collection)
         else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
         {
           if (gotpos) label = 0;
+
+          if (strstr (newpath, "gif") && 1)
+          {
+            CtxClient *client = find_client (newpath);
+            if (!client)
+            {
+              char *command = ctx_strdup_printf ("ctx %s", newpath);
+              fprintf (stderr, "{%s}\n", command);
+              ctx_client_new (ctx, command,
+        itk->x, itk->y, width, height, 0, strdup(newpath), NULL);
+              free (command);
+            }
+            else
+            {
+              ctx_client_move (client->id, itk->x, itk->y);
+              ctx_client_resize (client->id, width, height);
+
+            }
+          }
+          else
           draw_img (itk, itk->x, itk->y, width, height, newpath, gotdim?0:1);
           if (c->no == itk->focus_no && layout_find_item < 0 && gotpos)
           {
@@ -3891,7 +3943,6 @@ static int thumb_monitor (Ctx *ctx, void *data)
 }
 
 extern float font_size;
-int  ctx_clients_draw (Ctx *ctx);
 void ctx_clients_handle_events (Ctx *ctx);
 
 static char *viewer_loaded_path = NULL;
@@ -4130,7 +4181,15 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
      // all other code should be doing absolute paths,
      // this makes it easier to launch commands
      chdir (collection->path);
-     system (commandline->str);
+    // system (commandline->str);
+
+    CtxClient *old = find_client ("stdout");
+    if (old)
+      ctx_client_remove (ctx, old);
+
+    int terminal_height = 24;
+    ctx_client_new (ctx, commandline->str, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height, ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE, "stdout", NULL);
+
      metadata_dirt();
      save_metadata();
   }
@@ -4243,6 +4302,12 @@ static void dir_location_extend_sel_left (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
 }
+int vt_get_line_count (VT *vt);
+
+int         vt_get_scrollback_lines (VT *vt);
+int vt_get_cursor_x (VT *vt);
+int vt_get_cursor_y (VT *vt);
+
 
 static void dir_any (CtxEvent *e, void *d1, void *d2)
 {
@@ -4303,8 +4368,9 @@ static int card_files (ITK *itk_, void *data)
     font_size = itk->font_size;
     first = 0;
 
-    ctx_client_new (ctx, "top",
-          0, 0, 400, 400, 0, "boo", NULL);
+#if 1
+    //ctx_client_new (ctx, "bashtop", font_size * 5, font_size * 40, font_size*42, font_size*24, 0, "boo2", NULL);
+#endif
 
   }
   //thumb_monitor (ctx, NULL);
@@ -4367,7 +4433,7 @@ static int card_files (ITK *itk_, void *data)
       if (clients)
       {
         ctx_font_size (ctx, itk->font_size);
-        ctx_clients_draw (ctx);
+        ctx_clients_draw (ctx, 0);
       }
   }
 
@@ -4785,7 +4851,7 @@ static int card_files (ITK *itk_, void *data)
   if (viewer) //clients) // && active)
   {
     ctx_font_size (ctx, itk->font_size);
-    ctx_clients_draw (ctx);
+    ctx_clients_draw (ctx, 0);
   if (viewer)
   {
     int found = 0;
@@ -4800,6 +4866,28 @@ static int card_files (ITK *itk_, void *data)
       ctx_clients_handle_events (ctx);
   }
 
+  }
+  else
+  {
+
+    for (CtxList *c = clients; c; c = c->next)
+    {
+      CtxClient *client = c->data;
+      if (client->flags & ITK_CLIENT_LAYER2)
+      {
+        VT *vt = client->vt;
+        int line_count = vt_get_cursor_y (vt) + 1;
+        //line_count += vt_get_scrollback_lines (vt);
+
+        fprintf (stderr, "%p %i %i\n", vt, client->id,  line_count);
+          
+        //if (line_count > 2)
+        //ctx_client_resize (client->id, client->width,
+        //                   itk->font_size * (line_count));
+      }
+    }
+
+    ctx_clients_draw (ctx, 1);
   }
 
   if (show_keybindings && !viewer)
@@ -4937,7 +5025,7 @@ static int card_files (ITK *itk_, void *data)
 
 void ctx_clients_signal_child (int signum);
 
-int ctx_dir_main (int argc, char **argv)
+int stuff_main (int argc, char **argv)
 {
   char *path = argv[1];
   if (path && strchr (path, ':'))

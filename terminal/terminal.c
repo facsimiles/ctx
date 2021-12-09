@@ -380,8 +380,6 @@ static void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, voi
   event->stop_propagate = 1;
 }
 
-int ctx_clients_draw (Ctx *ctx);
-
 static float consume_float (char **argv, int *i)
 {
  float ret = 0.0;
@@ -690,7 +688,7 @@ int terminal_main (int argc, char **argv)
         itk_style_color (ctx, "wallpaper");
         ctx_fill (ctx);
         ctx_font_size (ctx, itk->font_size);
-        ctx_clients_draw (ctx);
+        ctx_clients_draw (ctx, 0);
         if ((n_clients != 1) || (clients && !flag_is_set((((CtxClient*)clients->data))->flags, ITK_CLIENT_MAXIMIZED)))
           draw_panel (itk, ctx);
         else

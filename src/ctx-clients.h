@@ -7,7 +7,14 @@ typedef enum CtxClientFlags {
   ITK_CLIENT_MAXIMIZED    = 1<<2,
   ITK_CLIENT_ICONIFIED    = 1<<3,
   ITK_CLIENT_SHADED       = 1<<4,
-  ITK_CLIENT_TITLEBAR     = 1<<5
+  ITK_CLIENT_TITLEBAR     = 1<<5,
+  ITK_CLIENT_LAYER2       = 1<<6,  // used for having a second set
+                                   // to draw - useful for splitting
+                                   // scrolled and HUD items
+                                   // with HUD being LAYER2
+                                  
+  ITK_CLIENT_KEEP_ALIVE   = 1<<7   // do not automatically
+                                   // remove after process quits
 } CtxClientFlags;
 
 typedef struct _CtxClient CtxClient;
@@ -78,6 +85,8 @@ float ctx_client_min_y_pos (Ctx *ctx);
 float ctx_client_max_y_pos (Ctx *ctx);
 
 CtxClient *client_by_id (int id);
+
+int ctx_clients_draw (Ctx *ctx, int layer2);
 
 void ctx_client_remove (Ctx *ctx, CtxClient *client);
 

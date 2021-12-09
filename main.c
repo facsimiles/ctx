@@ -30,7 +30,7 @@ int convert_main (int argc, char **argv);
 
 int ctx_img_main (int argc, char **argv);
 int ctx_gif_main (int argc, char **argv);
-int ctx_dir_main (int argc, char **argv);
+int stuff_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
 int ctx_tcp_main (int argc, char **argv);
 int ctx_text_main (int argc, char **argv);
@@ -271,8 +271,12 @@ static const char *get_suffix (const char *path)
     }
 }
 
+#include <libgen.h>
+
 int main (int argc, char **argv)
 {
+  if (!strcmp (basename(argv[0]), "stuff"))
+    return stuff_main (argc, argv);
   for (int i = 1; argv[i]; i++)
   {
     char *a = argv[i];
@@ -333,7 +337,7 @@ int main (int argc, char **argv)
     }
     if (input_path[strlen(input_path)-1]=='/')
     {
-      return ctx_dir_main (argc, argv);
+      return stuff_main (argc, argv);
     }
 
     if (media_type_class == CTX_MEDIA_TYPE_TEXT)

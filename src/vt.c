@@ -5546,7 +5546,14 @@ void vt_destroy (VT *vt)
 
 int vt_get_line_count (VT *vt)
 {
-  return vt->line_count;
+  int max_pop = 0;
+  int no = 0;
+  for (CtxList *l = vt->lines; l; l = l->next, no++)
+  {
+    CtxString *str = l->data;
+    if (str->str[0]) max_pop = no;
+  }
+  return max_pop + 1;
 }
 
 const char *vt_get_line (VT *vt, int no)

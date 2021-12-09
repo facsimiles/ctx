@@ -183,7 +183,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
   client->ctx = ctx;
   client->width = width;
   client->height = height;
-  client->user_data = NULL;
+  client->user_data = user_data;
   client->finalize = finalize;
 
   if (ctx_renderer_is_term (ctx))
@@ -1061,7 +1061,7 @@ static void key_press (CtxEvent *event, void *data1, void *data2)
 }
 #endif
 
-int ctx_clients_draw (Ctx *ctx)
+int ctx_clients_draw (Ctx *ctx, int layer2)
 {
   _ctx_font_size = ctx_get_font_size (ctx);
   float titlebar_height = _ctx_font_size;
@@ -1094,6 +1094,18 @@ int ctx_clients_draw (Ctx *ctx)
   {
     CtxClient *client = l->data;
     VT *vt = client->vt;
+
+    if (layer2)
+    {
+      if (!flag_is_set (client->flags, ITK_CLIENT_LAYER2))
+        continue;
+    }
+    else
+    {
+      if (flag_is_set (client->flags, ITK_CLIENT_LAYER2))
+        continue;
+    }
+
     if (vt && !flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED))
     {
       if (flag_is_set(client->flags, ITK_CLIENT_SHADED))
@@ -1103,7 +1115,6 @@ int ctx_clients_draw (Ctx *ctx)
       else
       {
         ctx_client_draw (ctx, client, client->x, client->y);
-      }
 
       // resize regions
       if (client == active &&
@@ -1179,6 +1190,8 @@ int ctx_clients_draw (Ctx *ctx)
 
       }
 
+      }
+
       if (client->flags & ITK_CLIENT_TITLEBAR)
         ctx_client_titlebar_draw (ctx, client, client->x, client->y, client->width, titlebar_height);
     }
@@ -1237,7 +1250,8 @@ int ctx_clients_need_redraw (Ctx *ctx)
      CtxClient *client = l->data;
      if (client->vt)
        {
-         if (vt_is_done (client->vt))
+         if (vt_is_done (client->vt) && 
+            !(client->flags & ITK_CLIENT_KEEP_ALIVE))
            ctx_list_prepend (&to_remove, client);
        }
    }
