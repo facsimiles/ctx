@@ -1250,9 +1250,17 @@ int ctx_clients_need_redraw (Ctx *ctx)
      CtxClient *client = l->data;
      if (client->vt)
        {
-         if (vt_is_done (client->vt) && 
-            !(client->flags & ITK_CLIENT_KEEP_ALIVE))
-           ctx_list_prepend (&to_remove, client);
+         if (vt_is_done (client->vt))
+         {
+           if ((client->flags & ITK_CLIENT_KEEP_ALIVE))
+           {
+             client->flags |= ITK_CLIENT_FINISHED;
+           }
+           else
+           {
+             ctx_list_prepend (&to_remove, client);
+           }
+         }
        }
    }
    for (CtxList *l = to_remove; l; l = l->next)

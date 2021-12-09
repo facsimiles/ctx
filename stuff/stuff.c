@@ -1238,6 +1238,9 @@ dir_prev (Collection *collection, int i)
  int pos = i;
  int again = 0;
 
+ /* XXX : does not work properly with collapsed predecessors
+  *
+  */
  do {
    pos -= 1;
    int atom = item_get_type_atom (collection, pos);
@@ -3671,7 +3674,7 @@ static void dir_layout (ITK *itk, Collection *collection)
             if (!client)
             {
               char *command = ctx_strdup_printf ("ctx %s", newpath);
-              fprintf (stderr, "{%s}\n", command);
+              //fprintf (stderr, "{%s}\n", command);
               ctx_client_new (ctx, command,
         itk->x, itk->y, width, height, 0, strdup(newpath), NULL);
               free (command);
@@ -4188,7 +4191,9 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
       ctx_client_remove (ctx, old);
 
     int terminal_height = 24;
-    ctx_client_new (ctx, commandline->str, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height, ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE, "stdout", NULL);
+    char *wrapped_commandline = ctx_strdup_printf ("bash -l -c '%s'", commandline->str);
+    ctx_client_new (ctx, wrapped_commandline, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height, ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE, "stdout", NULL);
+    free (wrapped_commandline);
 
      metadata_dirt();
      save_metadata();

@@ -13,7 +13,8 @@ typedef enum CtxClientFlags {
                                    // scrolled and HUD items
                                    // with HUD being LAYER2
                                   
-  ITK_CLIENT_KEEP_ALIVE   = 1<<7   // do not automatically
+  ITK_CLIENT_KEEP_ALIVE   = 1<<7,  // do not automatically
+  ITK_CLIENT_FINISHED     = 1<<8,  // do not automatically
                                    // remove after process quits
 } CtxClientFlags;
 

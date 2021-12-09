@@ -497,7 +497,7 @@
 #endif
 
 #ifndef CTX_MAX_TEXTURES
-#define CTX_MAX_TEXTURES         16
+#define CTX_MAX_TEXTURES         32
 #endif
 
 #ifndef CTX_HASH_ROWS
