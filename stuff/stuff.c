@@ -3990,6 +3990,31 @@ int viewer_load_next (Ctx *ctx, void *data1)
   return 0;
 }
 
+void escape_path (const char *path, char *escaped_path)
+{
+    int j = 0;
+    for (int i = 0; path[i]; i++)
+    {
+      switch (path[i])
+      {
+        case ' ':
+        case '`':
+        case '$':
+        case '[':
+        case ']':
+        case '\'':
+        case '"':
+          escaped_path[j++]='\\';
+          escaped_path[j++]=path[i];
+          break;
+        default:
+          escaped_path[j++]=path[i];
+          break;
+      }
+    }
+    escaped_path[j]=0;
+}
+
 void viewer_load_path (const char *path, const char *name)
 {
   if (path && viewer_loaded_path && !strcmp (viewer_loaded_path, path) && clients)
@@ -4043,28 +4068,8 @@ void viewer_load_path (const char *path, const char *name)
     viewer_media_type = media_type;
     CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
     char *escaped_path = malloc (strlen (path) * 2 + 2);
+    escape_path (path, escaped_path);
     char *command = malloc (32 + strlen (path) * 2 + 64);
-    int j = 0;
-    for (int i = 0; path[i]; i++)
-    {
-      switch (path[i])
-      {
-        case ' ':
-        case '`':
-        case '$':
-        case '[':
-        case ']':
-        case '\'':
-        case '"':
-          escaped_path[j++]='\\';
-          escaped_path[j++]=path[i];
-          break;
-        default:
-          escaped_path[j++]=path[i];
-          break;
-      }
-    }
-    escaped_path[j]=0;
     command[0]=0;
     if (!strcmp (media_type, "inode/directory"))
     {
@@ -4219,7 +4224,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
       ctx_client_remove (ctx, old);
 
     int terminal_height = 24;
-    char *wrapped_commandline = ctx_strdup_printf ("bash -l -c '%s'", commandline->str);
+    char *wrapped_commandline = ctx_strdup_printf ("bash -c \"%s\"", commandline->str);
     ctx_client_new (ctx, wrapped_commandline, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height, ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE, "stdout", NULL);
     free (wrapped_commandline);
 
