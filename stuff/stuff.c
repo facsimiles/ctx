@@ -210,6 +210,15 @@ CtxClient *find_client (const char *label)
   return NULL;
 }
 
+int stuff_stdout_is_running (void)
+{
+  CtxClient *client = find_client ("stdout");
+  if (!client) return 0;
+  if (client->flags & ITK_CLIENT_FINISHED)
+     return 0;
+  return 1;
+}
+
 void ui_queue_thumb (const char *path)
 {
   char *rp = realpath (path, NULL);
@@ -1255,6 +1264,12 @@ dir_prev (Collection *collection, int i)
        again = 0;
    }
  } while (pos >= 0 && again);
+
+ //int prev_sibling = dir_prev_sibling (collection, i);
+ // move forward towards pos, as far as we can, skipping folded
+ // our last position is what we should return
+
+
  return pos;
 }
 
@@ -1827,6 +1842,19 @@ void ctx_client_unlock (CtxClient *client);
 
 static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 {
+  if(stuff_stdout_is_running())
+  {
+    CtxClient *client = find_client ("stdout");
+    if (!client)
+      return;
+    VT *vt = client->vt;
+    ctx_client_lock (client);
+    if (vt)
+      vt_feed_keystring (vt, ctx_event, event);
+    ctx_client_unlock (client);
+    return;
+  }
+
   if (!viewer)
     return;
   VT *vt = viewer->vt;
@@ -4694,7 +4722,7 @@ static int card_files (ITK *itk_, void *data)
   }
 #endif
 
-  if (viewer)
+  if (viewer || stuff_stdout_is_running ())
   {
     ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
     ctx_listen (ctx, CTX_KEY_DOWN,  dir_key_any, NULL, NULL);
@@ -4881,10 +4909,10 @@ static int card_files (ITK *itk_, void *data)
       if (client->flags & ITK_CLIENT_LAYER2)
       {
         VT *vt = client->vt;
-        int line_count = vt_get_cursor_y (vt) + 1;
+        //int line_count = vt_get_cursor_y (vt) + 1;
         //line_count += vt_get_scrollback_lines (vt);
 
-        fprintf (stderr, "%p %i %i\n", vt, client->id,  line_count);
+        //fprintf (stderr, "%p %i %i\n", vt, client->id,  line_count);
           
         //if (line_count > 2)
         //ctx_client_resize (client->id, client->width,
@@ -4893,6 +4921,8 @@ static int card_files (ITK *itk_, void *data)
     }
 
     ctx_clients_draw (ctx, 1);
+    if (stuff_stdout_is_running ())
+      ctx_clients_handle_events (ctx);
   }
 
   if (show_keybindings && !viewer)
