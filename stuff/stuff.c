@@ -2995,7 +2995,6 @@ static void escape_path (const char *path, char *escaped_path)
     {
       switch (path[i])
       {
-        case ' ':
         case '`':
         case '$':
         case '[':
@@ -3042,7 +3041,7 @@ char *dir_get_viewer_command (const char *path)
     if (!command[0])
     if (media_type_class == CTX_MEDIA_TYPE_TEXT)
     {
-      sprintf (command, "vim +1 -R %s", escaped_path);
+      sprintf (command, "vim +1 -R \"%s\"", escaped_path);
     }
     free (basname);
    
@@ -3050,21 +3049,21 @@ char *dir_get_viewer_command (const char *path)
     {
     if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
     {
-      sprintf (command, "ctx %s", escaped_path);
+      sprintf (command, "ctx \"%s\"", escaped_path);
     }
     else if (!strcmp (media_type, "video/mpeg"))
     {
-      sprintf (command, "ctx -s %s", escaped_path);
+      sprintf (command, "ctx -s \"%s\"", escaped_path);
     }
     else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
     {
-      sprintf (command, "ctx-audioplayer %s", escaped_path);
+      sprintf (command, "ctx-audioplayer \"%s\"", escaped_path);
     }
     }
 
     if (!command[0])
     {
-      sprintf (command, "sh -c 'xxd %s | vim -R -'", escaped_path);
+      sprintf (command, "sh -c 'xxd \"%s\" | vim -R -'", escaped_path);
     }
 
     if (!command[0])
@@ -4285,9 +4284,8 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
       ctx_client_remove (ctx, old);
 
     int terminal_height = 24;
-    char *wrapped_commandline = ctx_strdup_printf ("bash -c \"%s\"", commandline->str);
-    ctx_client_new (ctx, wrapped_commandline, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height, ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE, "stdout", NULL);
-    free (wrapped_commandline);
+
+    ctx_client_new (ctx, commandline->str, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height, ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE, "stdout", NULL);
 
      metadata_dirt();
      save_metadata();
