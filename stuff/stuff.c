@@ -1008,29 +1008,46 @@ ui_run_command (CtxEvent *event, void *data1, void *data2)
 }
 
 static int viewer_load_next_handler = 0;
+static int viewer_pre_next_handler = 0;
 CtxClient *viewer = NULL;
 static char *viewer_loaded_path = NULL;
 static char *viewer_loaded_name = NULL;
+static int viewer_was_live = 0;
 
 static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 {
 
   if (viewer_load_next_handler!=0)
     ctx_remove_idle (ctx, viewer_load_next_handler);
+  if (viewer_pre_next_handler!=0)
+    ctx_remove_idle (ctx, viewer_pre_next_handler);
   viewer_load_next_handler = 0;
+  viewer_pre_next_handler = 0;
 
+#if 1
   if (viewer)
   {
     for (CtxList *c = clients; c; c = c?c->next:NULL)
     {
       if (c->data == viewer)
       {
-        ctx_client_remove (ctx, viewer);
+        //int was_live = 1;
+        if (viewer_was_live)
+        {
+          ctx_client_resize (viewer->id, 2, 2); // just to get it out of the way
+        }
+        else
+        {
+          ctx_client_remove (ctx, viewer);
+        }
         c = NULL;
       }
     }
     viewer = active = NULL;
   }
+#else
+  viewer = active = NULL;
+#endif
   if (viewer_loaded_path)
           free (viewer_loaded_path);
   viewer_loaded_path = NULL;
@@ -1898,10 +1915,14 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
       media_class == CTX_MEDIA_TYPE_VIDEO)&& (!strcmp (event, "page-down")))
   {
     ctx_client_unlock (client);
+#if 1
+    viewer_load_next (ctx_event->ctx, NULL);
+#else
     focused_no++;
     layout_find_item = focused_no;
     argvs_eval ("activate");
     ctx_set_dirty (ctx, 1);
+#endif
     ctx_event->stop_propagate = 1;
 
     return;
@@ -3792,12 +3813,10 @@ static void dir_layout (ITK *itk, Collection *collection)
           ctx_parse (itk->ctx, d_name);
           ctx_restore (itk->ctx);
         }
-        else if (!strcmp (media_type, "application/ctx")
-                // || strstr (newpath, ".gif")
-                 )
+        else if (metadata_get_int (collection, i, "live", 0))
           {
             CtxClient *client = find_client (newpath);
-
+            float live_font_factor = 0.33;
             if (!client)
             {
 #if 0
@@ -3823,7 +3842,7 @@ static void dir_layout (ITK *itk, Collection *collection)
               {
               client = ctx_client_new (ctx, command,
                 itk->x, itk->y, width, height,
-                itk->font_size * 0.5,
+                itk->font_size * live_font_factor,
                 ITK_CLIENT_UI_RESIZABLE,
                 strdup(newpath), NULL);
               free (command);
@@ -3832,7 +3851,7 @@ static void dir_layout (ITK *itk, Collection *collection)
             else
             {
               ctx_client_move (client->id, itk->x, itk->y);
-              ctx_client_set_font_size (client->id, itk->font_size * 0.5);
+              ctx_client_set_font_size (client->id, itk->font_size * live_font_factor);
               ctx_client_resize (client->id, width, height);
 
             }
@@ -4103,12 +4122,10 @@ static int thumb_monitor (Ctx *ctx, void *data)
 extern float font_size;
 void ctx_clients_handle_events (Ctx *ctx);
 
-
 int viewer_load_next (Ctx *ctx, void *data1)
 {
   if (focused_no+1 >= metadata_count(collection))
     return 0;
-  //fprintf (stderr, "next!\n");
   focused_no++;
   layout_find_item = focused_no;
   argvs_eval ("activate");
@@ -4116,6 +4133,55 @@ int viewer_load_next (Ctx *ctx, void *data1)
   return 0;
 }
 
+int in_slide_show = 0;
+
+int viewer_pre_next (Ctx *ctx, void *data1)
+{
+  if (focused_no+1 >= metadata_count(collection))
+    return 0;
+  //focused_no++;
+  //layout_find_item = focused_no;
+  //argvs_eval ("activate");
+  fprintf (stderr, "pre ! %i \n", focused_no + 1);
+
+  char *name = metadata_get_name (collection, focused_no+1);
+  char *path = ctx_strdup_printf ("%s/%s", collection->path, name);
+
+  if (find_client (path))
+  {
+     free (path);
+     return;
+  }
+  char *command = dir_get_viewer_command (path);
+  if (command)
+    {
+      CtxClient *client;
+      //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
+      if ((client=find_client (path)))
+      {
+        in_slide_show = 0;
+        //active = viewer = find_client (path);
+        //ctx_client_move (client->id, 0, 0);
+        //ctx_client_set_font_size (client->id, itk->font_size);
+        //ctx_client_resize (client->id, ctx_width (ctx), ctx_height (ctx));
+      }
+      else
+      {
+        in_slide_show = 1;
+        //fprintf (stderr, "[%s]\n", command);
+        ctx_client_new (ctx, command,
+          ctx_width (ctx) - itk->font_size * 8.0, 0,
+          itk->font_size * 8.0,
+          itk->font_size * 8.0,
+          itk->font_size, 0, (char*)path, NULL);
+      }
+      free (command);
+    }
+  free (path);
+
+  ctx_set_dirty (ctx, 1);
+  return 0;
+}
 
 void viewer_load_path (const char *path, const char *name)
 {
@@ -4165,8 +4231,14 @@ void viewer_load_path (const char *path, const char *name)
     ctx_remove_idle (ctx, viewer_load_next_handler);
   viewer_load_next_handler = 0;
 
+  if (viewer_pre_next_handler!=0)
+    ctx_remove_idle (ctx, viewer_pre_next_handler);
+  viewer_pre_next_handler = 0;
+
   //fprintf (stderr, "%f\n", duration);
+  float pre_duration = 0.5;
   viewer_load_next_handler = ctx_add_timeout (ctx, 1000 * duration, viewer_load_next, NULL);
+  viewer_pre_next_handler = ctx_add_timeout (ctx, 1000 * pre_duration, viewer_pre_next, NULL);
 
   if (path)
   {
@@ -4180,12 +4252,15 @@ void viewer_load_path (const char *path, const char *name)
       if (find_client (path))
       {
         active = viewer = find_client (path);
+        viewer_was_live = 1;
+        if (in_slide_show) viewer_was_live = 0;
         ctx_client_move (viewer->id, 0, 0);
         ctx_client_set_font_size (viewer->id, itk->font_size);
         ctx_client_resize (viewer->id, ctx_width (ctx), ctx_height (ctx));
       }
       else
       {
+        viewer_was_live = 0;
         active = viewer = ctx_client_new (ctx, command,
           0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, 0, (char*)path, NULL);
       }
@@ -4303,7 +4378,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
 
     ctx_client_new (ctx, commandline->str, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height,
                     itk->font_size,
-                    ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE, "stdout", NULL);
+                    ITK_CLIENT_LAYER2, "stdout", NULL);
 
      metadata_dirt();
      save_metadata();
@@ -4746,7 +4821,7 @@ static int card_files (ITK *itk_, void *data)
 
     ctx_begin_path (itk->ctx);
     ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.4);
-    ctx_rectangle (itk->ctx, 0, 0, ctx_width (itk->ctx), ctx_height (itk->ctx));
+    ctx_rectangle (itk->ctx, 0, itk->panel->scroll, ctx_width (itk->ctx), ctx_height (itk->ctx));
     ctx_fill (itk->ctx);
     ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.8);
     ctx_rectangle (itk->ctx, x, y, width, height);
@@ -5157,6 +5232,7 @@ void ctx_clients_signal_child (int signum);
 
 int stuff_main (int argc, char **argv)
 {
+  setenv ("CTX_HASH_CACHE", "0", 1);
   char *path = argv[1];
   if (path && strchr (path, ':'))
   {
