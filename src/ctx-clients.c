@@ -168,12 +168,13 @@ CtxClient *vt_get_client (VT *vt)
 CtxClient *ctx_client_new (Ctx *ctx,
                            const char *commandline,
                            int x, int y, int width, int height,
+                           float font_size,
                            CtxClientFlags flags,
                            void *user_data,
                            CtxClientFinalize finalize)
 {
   static int global_id = 0;
-  float font_size = ctx_get_font_size (ctx);
+  if (font_size <= 0.0) font_size = ctx_get_font_size (ctx);
   CtxClient *client = calloc (sizeof (CtxClient), 1);
   ctx_list_append (&clients, client);
   client->id = global_id++;
@@ -201,7 +202,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
   return client;
 }
 
-CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
+CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {
   CtxString *string = ctx_string_new ("");
   for (int i = 0; argv[i]; i++)
@@ -219,7 +220,7 @@ CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int w
        }
     }
   }
-  CtxClient *ret = ctx_client_new (ctx, string->str, x, y, width, height, flags, user_data, finalize);
+  CtxClient *ret = ctx_client_new (ctx, string->str, x, y, width, height, font_size, flags, user_data, finalize);
   ctx_string_free (string, 1);
   return ret;
 }
@@ -526,6 +527,22 @@ void ctx_client_move (int id, int x, int y)
      client->y = y;
      vt_rev_inc (client->vt);
    }
+}
+
+void ctx_client_set_font_size (int id, float font_size)
+{
+   CtxClient *client = ctx_client_by_id (id);
+   if (client->vt)
+   {
+     if (vt_get_font_size (client->vt) != font_size)
+       vt_set_font_size (client->vt, font_size);
+   }
+}
+float ctx_client_get_font_size (int id)
+{
+   CtxClient *client = ctx_client_by_id (id);
+   if (client->vt)
+     return vt_get_font_size (client->vt);
 }
 
 int ctx_client_resize (int id, int width, int height)
