@@ -22,7 +22,7 @@ int focus_next_sibling (COMMAND_ARGS);
 int focus_previous (COMMAND_ARGS);
 int focus_previous_link (COMMAND_ARGS);
 int focus_previous_sibling (COMMAND_ARGS);
-int item_cycle_bullet (COMMAND_ARGS);
+int item_cycle_bullet(COMMAND_ARGS);
 int item_cycle_heading (COMMAND_ARGS);
 int item_properties (COMMAND_ARGS);
 int make_child_of_previous (COMMAND_ARGS);
@@ -54,7 +54,7 @@ void argvs_register(void) {
  argvs_add (focus_previous ,  "focus-previous", 0, "", "" );
  argvs_add (focus_previous_link ,  "focus-previous-link", 0, "", "" );
  argvs_add (focus_previous_sibling ,  "focus-previous-sibling", 0, "", "" );
- argvs_add (item_cycle_bullet ,  "cycle-bullet", 0, "", "" );
+ argvs_add (item_cycle_bullet,  "cycle-bullet", 0, "", "" );
  argvs_add (item_cycle_heading ,  "cycle-heading", 0, "", "" );
  argvs_add (item_properties ,  "toggle-context", 0, "", "" );
  argvs_add (make_child_of_previous ,  "make-child-of-previous", 0, "", "" );

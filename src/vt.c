@@ -298,8 +298,6 @@ static Image *image_add (int width,
   return image;
 }
 
-
-
 void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
 {
   VtPty *vtpty = data;

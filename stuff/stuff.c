@@ -1658,7 +1658,7 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
   return 0;
 }
 
-int item_cycle_bullet (COMMAND_ARGS) /* "cycle-bullet", 0, "", "" */
+int item_cycle_bullet(COMMAND_ARGS) /* "cycle-bullet", 0, "", "" */
 {
   int bullet = metadata_get_int (collection, focused_no, "bullet", CTX_BULLET_NONE);
   switch (bullet)
@@ -2627,7 +2627,7 @@ int dir_zoom (COMMAND_ARGS) /* "zoom", 1, "<in|out|val>", "" */
     dir_scale = atof (argv[1]);
     if (dir_scale <= 0.001) dir_scale = 1.0f;
   }
-  drop_item_renderers (itk->ctx);
+  //drop_item_renderers (itk->ctx);
   return 0;
 }
 
@@ -2636,7 +2636,7 @@ void dir_font_up (CtxEvent *event, void *a, void *b)
   itk->font_size *= 1.05f;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
-  drop_item_renderers (itk->ctx);
+  //drop_item_renderers (itk->ctx);
 }
 
 void dir_font_down (CtxEvent *event, void *a, void *b)
@@ -2644,7 +2644,7 @@ void dir_font_down (CtxEvent *event, void *a, void *b)
   itk->font_size /= 1.05f;
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
-  drop_item_renderers (itk->ctx);
+  //drop_item_renderers (itk->ctx);
 }
 
 void dir_set_page (CtxEvent *event, void *a, void *b)
@@ -3578,7 +3578,7 @@ static void dir_layout (ITK *itk, Collection *collection)
                 case CTX_BULLET_TODO:   label = "mark done"; break;
                 case CTX_BULLET_DONE:   label = "no bullet"; break;
               }
-              BIND_KEY ("control-t", "cycle-byllet", label);
+              BIND_KEY ("control-t", "cycle-bullet", label);
             }
 
 
@@ -3789,13 +3789,14 @@ static void dir_layout (ITK *itk, Collection *collection)
           ctx_parse (itk->ctx, d_name);
           ctx_restore (itk->ctx);
         }
-        else  if (c->no == itk->focus_no) //   1)//strstr (newpath, "gif") && 1)
+        else if (!strcmp (media_type, "application/ctx") ||
+                 strstr (newpath, ".gif"))
           {
             CtxClient *client = find_client (newpath);
 
             if (!client)
             {
-
+#if 0
               // destory all clients that are not this one //
               CtxList *to_remove = NULL;
               for (CtxList *l = clients; l; l = l->next)
@@ -3811,13 +3812,13 @@ static void dir_layout (ITK *itk, Collection *collection)
                 ctx_client_remove (ctx, to_remove->data);
                 ctx_list_remove (&to_remove, to_remove->data);
               }
+#endif
 
               char *command = dir_get_viewer_command (newpath);
               if (command)
               {
-              //fprintf (stderr, "{%s}\n", command);
               ctx_client_new (ctx, command,
-        itk->x, itk->y, width, height, 0, strdup(newpath), NULL);
+        itk->x, itk->y, width, height, ITK_CLIENT_UI_RESIZABLE, strdup(newpath), NULL);
               free (command);
               }
             }
@@ -4439,6 +4440,15 @@ static void dir_any (CtxEvent *e, void *d1, void *d2)
   }
 }
 
+static int malloc_trim_cb (Ctx *ctx, void *data)
+{
+#if GNU_C
+  malloc_trim (64*1024);
+#endif
+  return 1;
+}
+
+
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
@@ -4461,6 +4471,9 @@ static int card_files (ITK *itk_, void *data)
 
   if (first)
   {
+#if GNU_C
+    ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
+#endif
     ctx_add_timeout (ctx, 1000, thumb_monitor, NULL);
     font_size = itk->font_size;
     first = 0;
@@ -5137,6 +5150,7 @@ int stuff_main (int argc, char **argv)
   commandline = ctx_string_new ("");
 
   signal (SIGCHLD, ctx_clients_signal_child);
+
 
   set_layout (NULL, NULL, NULL);
   set_location (path);

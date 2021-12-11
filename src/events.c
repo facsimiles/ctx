@@ -1194,6 +1194,13 @@ void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
 CtxEvent *ctx_get_event (Ctx *ctx)
 {
   static CtxEvent event_copy;
+  if (ctx->events.events)
+    {
+      event_copy = *((CtxEvent*)(ctx->events.events->data));
+      ctx_list_remove (&ctx->events.events, ctx->events.events->data);
+      return &event_copy;
+    }
+
   _ctx_idle_iteration (ctx);
   if (!ctx->events.ctx_get_event_enabled)
     ctx->events.ctx_get_event_enabled = 1;

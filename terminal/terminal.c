@@ -247,6 +247,7 @@ static void handle_event (Ctx        *ctx,
       if ( (pid=fork() ) ==0)
         {
           unsetenv ("CTX_VERSION");
+          unsetenv ("CTX_BACKEND");
           execlp (execute_self, execute_self, NULL);
           exit (0);
         }

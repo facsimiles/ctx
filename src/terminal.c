@@ -8,6 +8,7 @@
 #include <sys/ioctl.h>
 #endif
 
+#if 0
 int ctx_terminal_width (void)
 {
   char buf[1024];
@@ -104,6 +105,26 @@ int ctx_terminal_height (void)
   }
   return 0;
 }
+#else
+
+
+int ctx_terminal_width (void)
+{
+  struct winsize ws; 
+  if (ioctl(0,TIOCGWINSZ,&ws)!=0)
+    return 640;
+  return ws.ws_xpixel;
+} 
+
+int ctx_terminal_height (void)
+{
+  struct winsize ws; 
+  if (ioctl(0,TIOCGWINSZ,&ws)!=0)
+    return 450;
+  return ws.ws_ypixel;
+}
+
+#endif
 
 int ctx_terminal_cols (void)
 {
@@ -149,7 +170,7 @@ int ctx_terminal_rows (void)
 #endif
 
 static int  size_changed = 0;       /* XXX: global state */
-static int  signal_installed = 0;   /* XXX: global state */
+static int  ctx_term_signal_installed = 0;   /* XXX: global state */
 
 static const char *mouse_modes[]=
 {TERMINAL_MOUSE_OFF,
@@ -556,10 +577,10 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
   if (x) *x = -1;
   if (y) *y = -1;
 
-  if (!signal_installed)
+  if (!ctx_term_signal_installed)
     {
       _nc_raw ();
-      signal_installed = 1;
+      ctx_term_signal_installed = 1;
       signal (SIGWINCH, nc_resize_term);
     }
   if (mouse_mode) // XXX too often to do it all the time!
@@ -806,10 +827,10 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
   static unsigned char buf[256];
   int length;
 
-  if (!signal_installed)
+  if (!ctx_term_signal_installed)
     {
       _nc_raw ();
-      signal_installed = 1;
+      ctx_term_signal_installed = 1;
       signal (SIGWINCH, nc_resize_term);
     }
 //if (mouse_mode) // XXX too often to do it all the time!

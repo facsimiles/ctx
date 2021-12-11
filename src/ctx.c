@@ -2203,6 +2203,7 @@ ctx_get_contents (const char     *uri,
 }
 
 
+
 typedef struct CtxMagicEntry {
   const char *mime_type;
   const char *ext1;
@@ -2241,6 +2242,7 @@ static CtxMagicEntry ctx_magics[]={
   {"text/x-perl", ".pl", 0, {0x0}},
   {"text/x-perl", ".pm", 0, {0x0}},
   {"application/pdf", ".pdf", 0, {0x0}},
+  {"application/ctx", ".ctx", 0, {0x0}},
   {"text/xml", ".xml",     0, {0x0}},
   {"video/mp4", ".mp4",    0, {0x0}},
   {"video/ogg", ".ogv",    0, {0x0}},
@@ -2260,6 +2262,22 @@ static CtxMagicEntry ctx_magics[]={
   {"font/ttf", ".ttf", 0,{0x0}},
   // inode-directory
 };
+
+static int ctx_path_is_dir (const char *path)
+{
+  struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
+  lstat (path, &stat_buf);
+  return S_ISDIR (stat_buf.st_mode);
+}
+
+static int ctx_path_is_exec (const char *path)
+{
+  struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
+  lstat (path, &stat_buf);
+  return stat_buf.st_mode & 0x1;
+}
 
 const char *ctx_guess_media_type (const char *path, const char *content, int len)
 {
@@ -2289,7 +2307,17 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
        }
     }
   }
+
+  if (extension_match && !strcmp (extension_match, "application/ctx"))
+  {
+          fprintf (stderr, "!!\n");
+    //if (!ctx_path_is_exec (path))
+    //  extension_match = NULL;
+  }
+
   if (extension_match) return extension_match;
+
+
   int non_ascii=0;
   for (int i = 0; i < len; i++)
   {
@@ -2302,13 +2330,6 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
   return "text/plain";
 }
 
-static int ctx_path_is_dir (const char *path)
-{
-  struct stat stat_buf;
-  if (!path || path[0]==0) return 0;
-  lstat (path, &stat_buf);
-  return S_ISDIR (stat_buf.st_mode);
-}
 
 const char *ctx_path_get_media_type (const char *path)
 {

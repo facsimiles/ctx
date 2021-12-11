@@ -382,6 +382,7 @@ void ctx_ctx_free (CtxCtx *ctx)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
+
 Ctx *ctx_new_ctx (int width, int height)
 {
   float font_size = 12.0;
@@ -428,19 +429,33 @@ int ctx_ctx_consume_events (Ctx *ctx)
 #if CTX_AUDIO
   ctx_ctx_pcm (ctx);
 #endif
+  assert (ctx_native_events);
+
+#if 1
+    { /* XXX : this is a work-around for signals not working properly, we are polling the
+         size with an ioctl per consume-events
+         */
+      struct winsize ws;
+      ioctl(0,TIOCGWINSZ,&ws);
+      ctxctx->cols = ws.ws_col;
+      ctxctx->rows = ws.ws_row;
+      ctxctx->width = ws.ws_xpixel;
+      ctxctx->height = ws.ws_ypixel;
+      ctx_set_size (ctx, ctxctx->width, ctxctx->height);
+    }
+#endif
+    //char *cmd = ctx_strdup_printf ("touch /tmp/ctx-%ix%i", ctxctx->width, ctxctx->height);
+    //system (cmd);
+    //free (cmd);
+
   if (ctx_native_events)
     {
+
       float x = 0, y = 0;
       int b = 0;
       char event_type[128]="";
       event = ctx_native_get_event (ctx, 1000/120);
-#if 0
-      if(event){
-        FILE *file = fopen ("/tmp/log", "a");
-        fprintf (file, "[%s]\n", event);
-        fclose (file);
-      }
-#endif
+
       if (event)
       {
       sscanf (event, "%s %f %f %i", event_type, &x, &y, &b);
@@ -470,6 +485,9 @@ int ctx_ctx_consume_events (Ctx *ctx)
         ctxctx->rows = ctx_terminal_rows ();
         ctxctx->width  = ctx_terminal_width ();
         ctxctx->height = ctx_terminal_height ();
+
+        //system ("touch /tmp/ctx-abc");
+
         ctx_set_size (ctx, ctxctx->width, ctxctx->height);
 
         if (prev_frame_contents)
@@ -477,7 +495,8 @@ int ctx_ctx_consume_events (Ctx *ctx)
         prev_frame_contents = NULL;
         prev_frame_len = 0;
         ctx_set_dirty (ctx, 1);
-        //ctx_key_press (ctx, 0, "size-changed", 0);
+
+      //   ctx_key_press(ctx,0,"size-changed",0);
       }
       else if (!strcmp (event_type, "keyup"))
       {
@@ -493,63 +512,6 @@ int ctx_ctx_consume_events (Ctx *ctx)
       {
         ctx_key_press (ctx, 0, event, 0);
       }
-      }
-    }
-  else
-    {
-      float x, y;
-      event = ctx_nct_get_event (ctx, 20, &ix, &iy);
-
-      x = (ix - 1.0 + 0.5) / ctxctx->cols * ctx->events.width;
-      y = (iy - 1.0)       / ctxctx->rows * ctx->events.height;
-
-      if (!strcmp (event, "mouse-press"))
-      {
-        ctx_pointer_press (ctx, x, y, 0, 0);
-        ctxctx->was_down = 1;
-      } else if (!strcmp (event, "mouse-release"))
-      {
-        ctx_pointer_release (ctx, x, y, 0, 0);
-      } else if (!strcmp (event, "mouse-motion"))
-      {
-        //nct_set_cursor_pos (backend->term, ix, iy);
-        //nct_flush (backend->term);
-        if (ctxctx->was_down)
-        {
-          ctx_pointer_release (ctx, x, y, 0, 0);
-          ctxctx->was_down = 0;
-        }
-        ctx_pointer_motion (ctx, x, y, 0, 0);
-      } else if (!strcmp (event, "mouse-drag"))
-      {
-        ctx_pointer_motion (ctx, x, y, 0, 0);
-      } else if (!strcmp (event, "size-changed"))
-      {
-        fprintf (stdout, "\e[H\e[2J\e[?25l");
-        ctxctx->cols = ctx_terminal_cols ();
-        ctxctx->rows = ctx_terminal_rows ();
-        ctxctx->width  = ctx_terminal_width ();
-        ctxctx->height = ctx_terminal_height ();
-        ctx_set_size (ctx, ctxctx->width, ctxctx->height);
-
-        if (prev_frame_contents)
-           free (prev_frame_contents);
-        prev_frame_contents = NULL;
-        prev_frame_len = 0;
-        ctx_set_dirty (ctx, 1);
-        //ctx_key_press (ctx, 0, "size-changed", 0);
-      }
-      else
-      {
-        if (!strcmp (event, "esc"))
-          ctx_key_press (ctx, 0, "escape", 0);
-        else if (!strcmp (event, "space"))
-          ctx_key_press (ctx, 0, "space", 0);
-        else if (!strcmp (event, "enter")||
-                 !strcmp (event, "return"))
-          ctx_key_press (ctx, 0, "\n", 0);
-        else
-        ctx_key_press (ctx, 0, event, 0);
       }
     }
 
