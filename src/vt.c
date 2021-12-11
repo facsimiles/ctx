@@ -830,7 +830,6 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   if (vt->rows == irows && vt->cols == icols)
     return;
 
-
   if (vt->state == vt_state_ctx)
   {
     // we should queue a pending resize instead,
@@ -886,8 +885,6 @@ void vt_set_px_size (VT *vt, int width, int height)
   vt->height = height;
   vt_set_term_size (vt, cols, rows);
 }
-
-
 
 static void vt_argument_buf_reset (VT *vt, const char *start)
 {

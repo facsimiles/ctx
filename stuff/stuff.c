@@ -555,7 +555,9 @@ const char *get_suffix (const char *path)
   const char *last_slash = strrchr (path, '/');
 
   if (last_slash > last_dot) return "";
-  return last_dot + 1;
+  if (last_dot)
+    return last_dot + 1;
+  return "";
 }
 
 int viewer_no = 0;
@@ -583,6 +585,16 @@ int dir_insert (COMMAND_ARGS) /* "insert-text", 0, "", "" */
   metadata_dirt ();
   return 0;
 }
+
+static int path_is_executable (const char *path)
+{
+  struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
+  lstat (path, &stat_buf);
+  return stat_buf.st_mode & 0x1;
+  //return S_ISDIR (stat_buf.st_mode);
+}
+
 
 static int path_is_dir (const char *path)
 {
@@ -2976,6 +2988,93 @@ int layout_box_no = 0;
 
 static CtxControl *focused_control = NULL;
 
+static void escape_path (const char *path, char *escaped_path)
+{
+    int j = 0;
+    for (int i = 0; path[i]; i++)
+    {
+      switch (path[i])
+      {
+        case ' ':
+        case '`':
+        case '$':
+        case '[':
+        case ']':
+        case '\'':
+        case '"':
+          escaped_path[j++]='\\';
+          escaped_path[j++]=path[i];
+          break;
+        default:
+          escaped_path[j++]=path[i];
+          break;
+      }
+    }
+    escaped_path[j]=0;
+}
+
+
+char *dir_get_viewer_command (const char *path)
+{
+  const char *media_type = ctx_path_get_media_type (path);
+  CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
+  char *escaped_path = malloc (strlen (path) * 2 + 2);
+  escape_path (path, escaped_path);
+  char *command = malloc (32 + strlen (path) * 2 + 64);
+  command[0]=0;
+  if (!strcmp (media_type, "inode/directory"))
+  {
+       //fprintf (stderr, "is dir\n");
+       free (command);
+       free (escaped_path);
+       return NULL;
+       //sprintf (command, "du -h '%s'", path);
+  }
+
+    if (!command[0])
+    if (path_is_executable (path) && !strcmp (get_suffix(path), "ctx"))
+    {
+      sprintf (command, "%s", path);
+    }
+
+    char *basname = get_basename (path);
+
+    if (!command[0])
+    if (media_type_class == CTX_MEDIA_TYPE_TEXT)
+    {
+      sprintf (command, "vim +1 -R %s", escaped_path);
+    }
+    free (basname);
+   
+    if (!command[0])
+    {
+    if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
+    {
+      sprintf (command, "ctx %s", escaped_path);
+    }
+    else if (!strcmp (media_type, "video/mpeg"))
+    {
+      sprintf (command, "ctx -s %s", escaped_path);
+    }
+    else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
+    {
+      sprintf (command, "ctx-audioplayer %s", escaped_path);
+    }
+    }
+
+    if (!command[0])
+    {
+      sprintf (command, "sh -c 'xxd %s | vim -R -'", escaped_path);
+    }
+
+    if (!command[0])
+    {
+      free (command);
+      return NULL;
+    }
+    return command;
+}
+
 
 static void dir_layout (ITK *itk, Collection *collection)
 {
@@ -3423,7 +3522,6 @@ static void dir_layout (ITK *itk, Collection *collection)
         {
           focused = 1;
           //fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
-          //viewer_load_path (newpath, collection->items[i]);
           ctx_begin_path (itk->ctx);
           ctx_rectangle (itk->ctx, c->x, c->y, c->width, c->height);
          
@@ -3692,20 +3790,37 @@ static void dir_layout (ITK *itk, Collection *collection)
           ctx_parse (itk->ctx, d_name);
           ctx_restore (itk->ctx);
         }
-        else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
-        {
-          if (gotpos) label = 0;
-
-          if (strstr (newpath, "gif") && 1)
+        else  if (c->no == itk->focus_no) //   1)//strstr (newpath, "gif") && 1)
           {
             CtxClient *client = find_client (newpath);
+
             if (!client)
             {
-              char *command = ctx_strdup_printf ("ctx %s", newpath);
+
+              // destory all clients that are not this one //
+              CtxList *to_remove = NULL;
+              for (CtxList *l = clients; l; l = l->next)
+              {
+                CtxClient *client = l->data;
+                if (!(client->flags & ITK_CLIENT_LAYER2))
+                {
+                  ctx_list_prepend (&to_remove, client);
+                }
+              }
+              while (to_remove)
+              {
+                ctx_client_remove (ctx, to_remove->data);
+                ctx_list_remove (&to_remove, to_remove->data);
+              }
+
+              char *command = dir_get_viewer_command (newpath);
+              if (command)
+              {
               //fprintf (stderr, "{%s}\n", command);
               ctx_client_new (ctx, command,
         itk->x, itk->y, width, height, 0, strdup(newpath), NULL);
               free (command);
+              }
             }
             else
             {
@@ -3714,7 +3829,11 @@ static void dir_layout (ITK *itk, Collection *collection)
 
             }
           }
-          else
+
+        else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
+        {
+          if (gotpos) label = 0;
+
           draw_img (itk, itk->x, itk->y, width, height, newpath, gotdim?0:1);
           if (c->no == itk->focus_no && layout_find_item < 0 && gotpos)
           {
@@ -3990,30 +4109,6 @@ int viewer_load_next (Ctx *ctx, void *data1)
   return 0;
 }
 
-void escape_path (const char *path, char *escaped_path)
-{
-    int j = 0;
-    for (int i = 0; path[i]; i++)
-    {
-      switch (path[i])
-      {
-        case ' ':
-        case '`':
-        case '$':
-        case '[':
-        case ']':
-        case '\'':
-        case '"':
-          escaped_path[j++]='\\';
-          escaped_path[j++]=path[i];
-          break;
-        default:
-          escaped_path[j++]=path[i];
-          break;
-      }
-    }
-    escaped_path[j]=0;
-}
 
 void viewer_load_path (const char *path, const char *name)
 {
@@ -4064,68 +4159,34 @@ void viewer_load_path (const char *path, const char *name)
   if (path)
   {
     viewer_loaded_path = strdup (path);
-    const char *media_type = ctx_path_get_media_type (path);
-    viewer_media_type = media_type;
-    CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
-    char *escaped_path = malloc (strlen (path) * 2 + 2);
-    escape_path (path, escaped_path);
-    char *command = malloc (32 + strlen (path) * 2 + 64);
-    command[0]=0;
-    if (!strcmp (media_type, "inode/directory"))
-    {
-       //fprintf (stderr, "is dir\n");
-       return;
-       //sprintf (command, "du -h '%s'", path);
-    }
 
-    char *basname = get_basename (path);
+    char *command = dir_get_viewer_command (path);
 
-    if (!command[0])
-    if (media_type_class == CTX_MEDIA_TYPE_TEXT)
-    {
-      sprintf (command, "vim +1 -R %s", escaped_path);
-    }
-    free (basname);
-   
-    if (!command[0])
-    {
-    if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
-    {
-      sprintf (command, "ctx %s", escaped_path);
-    }
-    else if (!strcmp (media_type, "video/mpeg"))
-    {
-      sprintf (command, "ctx -s %s", escaped_path);
-    }
-    else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
-    {
-      sprintf (command, "ctx-audioplayer %s", escaped_path);
-    }
-    }
-
-    if (!command[0])
-    {
-      sprintf (command, "sh -c 'xxd %s | vim -R -'", escaped_path);
-    }
-
-    if (command[0])
+    if (command)
     {
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
+      if (find_client (path))
+      {
+        active = viewer = find_client (path);
+        ctx_client_move (viewer->id, 0, 0);
+        ctx_client_resize (viewer->id, ctx_width (ctx), ctx_height (ctx));
+      }
+      else
+      {
       active = viewer = ctx_client_new (ctx, command,
-        0, 0, ctx_width(ctx), ctx_height(ctx), 0, ".viewer", NULL);
+        0, 0, ctx_width(ctx), ctx_height(ctx), 0, path, NULL);
+      }
     //fprintf (stderr, "[%s]\n", command);
 #if 0
       fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
         (int)ctx_width(ctx)/2, (int)0, (int)ctx_width(ctx)/2, (int)(ctx_height(ctx)-font_size*2), 0);
 #endif
+      free (command);
     }
     else
     {
       viewer = active = NULL;
     }
-
-    free (escaped_path);
-    free (command);
   }
   else
   {
@@ -4900,8 +4961,8 @@ static int card_files (ITK *itk_, void *data)
     }
     if (!found)
       viewer = active = NULL;
-    else
-      ctx_clients_handle_events (ctx);
+    //else
+      //ctx_clients_handle_events (ctx);
   }
 
   }
@@ -4926,9 +4987,10 @@ static int card_files (ITK *itk_, void *data)
     }
 
     ctx_clients_draw (ctx, 1);
-    if (stuff_stdout_is_running ())
-      ctx_clients_handle_events (ctx);
+    //if (stuff_stdout_is_running ())
+    //  ctx_clients_handle_events (ctx);
   }
+      ctx_clients_handle_events (ctx);
 
   if (show_keybindings && !viewer)
   {

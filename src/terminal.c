@@ -770,6 +770,14 @@ int ctx_nct_consume_events (Ctx *ctx)
       mrg_set_size (mrg, width, height);
       mrg_queue_draw (mrg, NULL);
 #endif
+      //if (ctx_renderer_is_ctx (ctx))
+#if 0
+      {
+        int width = ctx_terminal_width ();
+        int height = ctx_terminal_height ();
+        ctx_set_size (ctx, width, height);
+      }
+#endif
 
     }
     else

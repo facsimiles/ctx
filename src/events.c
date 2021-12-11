@@ -274,6 +274,14 @@ void ctx_set_size (Ctx *ctx, int width, int height)
     ctx->events.width = width;
     ctx->events.height = height;
     _ctx_resized (ctx, width, height, 0);
+#if 1
+    if (ctx_renderer_is_ctx (ctx))
+    {
+      CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
+      ctxctx->width = width;
+      ctxctx->height= height;
+    }
+#endif
   }
 #endif
 }
