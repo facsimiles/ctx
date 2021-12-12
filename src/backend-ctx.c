@@ -423,7 +423,7 @@ void ctx_ctx_pcm (Ctx *ctx);
 
 int ctx_ctx_consume_events (Ctx *ctx)
 {
-  int ix, iy;
+  //int ix, iy;
   CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
   const char *event = NULL;
 #if CTX_AUDIO

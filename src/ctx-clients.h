@@ -16,6 +16,7 @@ typedef enum CtxClientFlags {
   ITK_CLIENT_KEEP_ALIVE   = 1<<7,  // do not automatically
   ITK_CLIENT_FINISHED     = 1<<8,  // do not automatically
                                    // remove after process quits
+  ITK_CLIENT_PRELOAD      = 1<<9
 } CtxClientFlags;
 
 typedef struct _CtxClient CtxClient;

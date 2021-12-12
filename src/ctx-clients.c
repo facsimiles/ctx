@@ -1280,13 +1280,10 @@ int ctx_clients_need_redraw (Ctx *ctx)
          }
        }
    }
-   for (CtxList *l = to_remove; l; l = l->next)
-   {
-     ctx_client_remove (ctx, l->data);
-     changes++;
-   }
    while (to_remove)
    {
+     changes++;
+     ctx_client_remove (ctx, to_remove->data);
      ctx_list_remove (&to_remove, to_remove->data);
    }
 
