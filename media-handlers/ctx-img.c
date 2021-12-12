@@ -23,6 +23,9 @@ static float oy0 = 0;
 static float scale = 1.0;
 static int dirty = 1;
 
+static int auto_size = 1;
+
+
 /****************************/
 static char *path = NULL;
 
@@ -34,6 +37,7 @@ static void image_drag (CtxEvent *event, void *data0, void *data1)
    ox0 += event->delta_x / scale;
    oy0 += event->delta_y / scale;
    dirty++;
+   auto_size = 0;
 }
 
 static void image_scroll (CtxEvent *event, void *data0, void *data1)
@@ -44,6 +48,7 @@ static void image_scroll (CtxEvent *event, void *data0, void *data1)
    scale *= 1.1;
    dirty++;
 #endif
+   //auto_sisze = 0;
 }
 
 void ctx_handle_img (Ctx *ctx, const char *path)
@@ -55,7 +60,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
 
   if (!stb_pixels) return;
 
-
+  auto_size = 1;
   scale  = ctx_width (ctx) * 1.0 / stb_w;
   float scaleh = ctx_height (ctx) * 1.0 / stb_h;
 
@@ -78,6 +83,16 @@ void ctx_handle_img (Ctx *ctx, const char *path)
     CtxEvent *event;
     if (dirty)
     {
+      if (auto_size)
+      {
+         scale = ctx_width (ctx) * 1.0 / stb_w;
+         scaleh = ctx_height (ctx) * 1.0 / stb_h;
+         if (scaleh < scale)
+           scale = scaleh;
+         ox0 = (ctx_width(ctx)/scale-(stb_w)) / 2;
+         oy0 = (ctx_height(ctx)/scale-(stb_h)) / 2;
+      }
+
       ctx_reset (ctx);
       ctx_save (ctx);
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
