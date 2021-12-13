@@ -15,6 +15,9 @@ typedef struct Collection {
 } Collection;
 
 void metadata_load (Collection *collection, const char *path);
+
+
+
 void dir_mkdir_ancestors (const char *path, unsigned int mode);
 void metadata_save (Collection *collection);
 int metadata_count (Collection *collection);

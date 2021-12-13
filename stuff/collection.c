@@ -59,7 +59,7 @@ int metadata_count (Collection *collection)
   int count = 0;
   if (m[0])
   do {
-     if (m[0] != ' ' && m[0] != '\n') count ++;
+     if (m[0] != ' ') count ++;
      while (m && *m && *m != '\n') m++;
      if (*m == '\n') m++;
   } while (m[0]);
