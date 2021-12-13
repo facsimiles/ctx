@@ -1933,6 +1933,25 @@ static void draw_doc (Ctx *ctx, float x, float y, float w, float h)
 
 const char *viewer_media_type = NULL;
 
+int viewer_load_next (Ctx *ctx, void *data1)
+{
+  if (focused_no+1 >= metadata_count(collection))
+    return 0;
+  if (viewer_media_type && viewer_media_type[0]=='v')
+  {
+     VT *vt = viewer->vt;
+     vt_feed_keystring (vt, NULL, "space");
+     fprintf (stderr, "{%s}\n", viewer_media_type);
+  }
+
+  focused_no++;
+  layout_find_item = focused_no;
+  argvs_eval ("activate");
+  ctx_set_dirty (ctx, 1);
+  viewer_load_next_handler = 0;
+  return 0;
+}
+
 void ctx_client_lock (CtxClient *client);
 void ctx_client_unlock (CtxClient *client);
 
@@ -3103,13 +3122,15 @@ static void escape_path (const char *path, char *escaped_path)
 }
 
 
-char *dir_get_viewer_command (const char *path)
+char *dir_get_viewer_command (const char *path, int no)
 {
   const char *media_type = ctx_path_get_media_type (path);
   CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
-  char *escaped_path = malloc (strlen (path) * 2 + 2);
+  char *escaped_path = malloc (strlen (path) * 2 + 20);
   escape_path (path, escaped_path);
-  char *command = malloc (32 + strlen (path) * 2 + 64);
+  float in = metadata_get_float (collection, no, "in", 0.0f);
+  float out = metadata_get_float (collection, no, "out", 0.0f);
+  char *command = malloc (64 + strlen (escaped_path)  + 64);
   command[0]=0;
   if (!strcmp (media_type, "inode/directory"))
   {
@@ -3143,7 +3164,8 @@ char *dir_get_viewer_command (const char *path)
     }
     else if (!strcmp (media_type, "video/mpeg"))
     {
-      sprintf (command, "ctx -s \"%s\"", escaped_path);
+      sprintf (command, "ctx \"%s\" --paused --seek-to %f", escaped_path, in);
+      fprintf (stderr, "[%s] out:%f duration:%f\n", command, out, out-in);
     }
     else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
     {
@@ -3903,7 +3925,7 @@ static void dir_layout (ITK *itk, Collection *collection)
               }
 #endif
 
-              char *command = dir_get_viewer_command (newpath);
+              char *command = dir_get_viewer_command (newpath, i);
               if (command)
               {
               client = ctx_client_new (ctx, command,
@@ -4188,16 +4210,6 @@ static int thumb_monitor (Ctx *ctx, void *data)
 extern float font_size;
 void ctx_clients_handle_events (Ctx *ctx);
 
-int viewer_load_next (Ctx *ctx, void *data1)
-{
-  if (focused_no+1 >= metadata_count(collection))
-    return 0;
-  focused_no++;
-  layout_find_item = focused_no;
-  argvs_eval ("activate");
-  ctx_set_dirty (ctx, 1);
-  return 0;
-}
 
 int viewer_pre_next (Ctx *ctx, void *data1)
 {
@@ -4220,11 +4232,10 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   pathA = ctx_strdup_printf ("%s/%s", collection->path, name);
   free (name);
 
-  float pre_thumb_size = 6.0;
+  float pre_thumb_size = 2.0;
 
   if ((client=find_client (pathA)))
   {
-     ctx_client_raise_top (client->id);
      ctx_client_move (client->id, 
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size);
@@ -4234,10 +4245,10 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   }
   else
   {
-    char *command = dir_get_viewer_command (pathA);
+    char *command = dir_get_viewer_command (pathA, focused_no+1);
     if (command)
     {
-      ctx_client_new (ctx, command,
+     client= ctx_client_new (ctx, command,
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size,
@@ -4246,9 +4257,10 @@ int viewer_pre_next (Ctx *ctx, void *data1)
       free (command);
     }
   }
+  ctx_client_raise_top (client->id);
   //leaking pathA
 
-#if 1
+#if 0
   name = metadata_get_name (collection, focused_no-1);
   pathB = ctx_strdup_printf ("%s/%s", collection->path, name);
   free (name);
@@ -4260,14 +4272,13 @@ int viewer_pre_next (Ctx *ctx, void *data1)
      ctx_client_resize (client->id, 
           itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size);
-     ctx_client_raise_top (client->id);
   }
   else
   {
-    char *command = dir_get_viewer_command (pathB);
+    char *command = dir_get_viewer_command (pathB, focused_no-1);
     if (command)
     {
-      ctx_client_new (ctx, command,
+      client=ctx_client_new (ctx, command,
           0,
           ctx_height (ctx) - itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size,
@@ -4276,6 +4287,7 @@ int viewer_pre_next (Ctx *ctx, void *data1)
       free (command);
     }
   }
+  ctx_client_raise_top (client->id);
   //leaking pathB
 #else
   pathB = strdup ("foo");
@@ -4292,7 +4304,7 @@ int viewer_pre_next (Ctx *ctx, void *data1)
               (!strcmp (pathB, client->user_data)) ||
               (!strcmp (path, client->user_data))))
       {
-         fprintf (stderr, "%s %s %s cur:%s\n", pathB, path, pathA,   client->user_data);
+         if(0)fprintf (stderr, "%s %s %s cur:%s\n", pathB, path, pathA,   client->user_data);
          ctx_list_prepend (&to_remove, client);
       }
     }
@@ -4303,6 +4315,13 @@ int viewer_pre_next (Ctx *ctx, void *data1)
     ctx_list_remove (&to_remove, to_remove->data);
   }
 #endif
+  viewer_pre_next_handler = 0;
+  return 0;
+}
+
+static int viewer_space (Ctx *ctx, void *a)
+{
+  vt_feed_keystring (viewer->vt, NULL, "space");
   return 0;
 }
 
@@ -4344,40 +4363,19 @@ void viewer_load_path (const char *path, const char *name)
 
   int no = metadata_item_to_no (collection, name);
 
-  float duration = 10.0;
-  float in = metadata_get_float (collection, no, "in", -1);
-  float out = metadata_get_float (collection, no, "out", -1);
-  if (out > 0 && in > 0)
-  {
-    duration = out - in;
-  }
-
-  if (viewer_load_next_handler!=0)
-    ctx_remove_idle (ctx, viewer_load_next_handler);
-  viewer_load_next_handler = 0;
-
-  if (viewer_pre_next_handler!=0)
-    ctx_remove_idle (ctx, viewer_pre_next_handler);
-  viewer_pre_next_handler = 0;
-
-  //fprintf (stderr, "%f\n", duration);
-  float pre_duration = 0.05;
-  viewer_load_next_handler = ctx_add_timeout (ctx, 1000 * duration, viewer_load_next, NULL);
-  viewer_pre_next_handler = ctx_add_timeout (ctx, 1000 * pre_duration, viewer_pre_next, NULL);
-  //viewer_pre_next (ctx, NULL);
 
   if (path)
   {
     viewer_loaded_path = strdup (path);
 
-    char *command = dir_get_viewer_command (path);
+    char *command = dir_get_viewer_command (path, no);
 
     if (command)
     {
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
-      if (find_client (path))
+      if ((viewer=find_client (path)))
       {
-        viewer = find_client (path);
+        fprintf (stderr, "reloading %s\n", path);
         if (viewer->flags & ITK_CLIENT_PRELOAD)
         {
           viewer_was_live = 0;
@@ -4387,15 +4385,19 @@ void viewer_load_path (const char *path, const char *name)
           viewer_was_live = 1;
         }
         ctx_client_set_font_size (viewer->id, itk->font_size);
-        ctx_client_resize (viewer->id, ctx_width (ctx), ctx_height (ctx));
         ctx_client_move (viewer->id, 0, 0);
+        ctx_client_resize (viewer->id, ctx_width (ctx), ctx_height (ctx));
+        vt_feed_keystring (viewer->vt, NULL, "space");
       }
       else
       {
         viewer_was_live = 0;
         viewer = ctx_client_new (ctx, command,
           0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, ITK_CLIENT_PRELOAD, (char*)strdup(path), NULL);
+        ctx_add_timeout (ctx, 1000 * 0.05, viewer_space, NULL);
       }
+      ctx_client_raise_top (viewer->id);
+
     //fprintf (stderr, "[%s]\n", command);
 #if 0
       fprintf (stderr, "run:%s %i %i %i %i,   %i\n", command,
@@ -4414,6 +4416,28 @@ void viewer_load_path (const char *path, const char *name)
   {
     viewer = NULL;
   }
+
+
+  float duration = 10.0;
+  float in = metadata_get_float (collection, no, "in", -1);
+  float out = metadata_get_float (collection, no, "out", -1);
+  if (out > 0 && in > 0)
+  {
+    duration = out - in;
+  }
+
+  if (viewer_load_next_handler!=0)
+    ctx_remove_idle (ctx, viewer_load_next_handler);
+  if (viewer_pre_next_handler!=0)
+    ctx_remove_idle (ctx, viewer_pre_next_handler);
+  viewer_load_next_handler = 0;
+  viewer_pre_next_handler = 0;
+
+  //fprintf (stderr, "%f\n", duration);
+  float pre_duration = 0.05;
+  viewer_load_next_handler = ctx_add_timeout (ctx, 1000 * duration, viewer_load_next, NULL);
+  //viewer_pre_next_handler = ctx_add_timeout (ctx, 1000 * pre_duration, viewer_pre_next, NULL);
+  if(1)viewer_pre_next (ctx, NULL); // YYY
 }
 
 static void dir_ignore (CtxEvent *e, void *d1, void *d2)
@@ -4544,8 +4568,6 @@ static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
   ctx_set_dirty (e->ctx, 1);
 }
 
-
-
 static void dir_location_return (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
@@ -4626,7 +4648,7 @@ static void dir_location_extend_sel_left (CtxEvent *e, void *d1, void *d2)
 }
 int vt_get_line_count (VT *vt);
 
-int         vt_get_scrollback_lines (VT *vt);
+int vt_get_scrollback_lines (VT *vt);
 int vt_get_cursor_x (VT *vt);
 int vt_get_cursor_y (VT *vt);
 
@@ -5033,7 +5055,10 @@ static int card_files (ITK *itk_, void *data)
   {
     if (viewer_load_next_handler!=0)
       ctx_remove_idle (ctx, viewer_load_next_handler);
+    if (viewer_pre_next_handler!=0)
+      ctx_remove_idle (ctx, viewer_pre_next_handler);
     viewer_load_next_handler=0;
+    viewer_pre_next_handler=0;
   }
 
   if (tool_no == 0 && !viewer)
@@ -5186,8 +5211,6 @@ static int card_files (ITK *itk_, void *data)
   {
     ctx_font_size (ctx, itk->font_size);
     ctx_clients_draw (ctx, 0);
-  if (viewer)
-  {
     int found = 0;
     for (CtxList *c = clients; c; c = c->next)
     {
@@ -5195,10 +5218,14 @@ static int card_files (ITK *itk_, void *data)
         found = 1;
     }
     if (!found)
+    {
+      CtxEvent fake_event;
+      fake_event.ctx = ctx;
+      deactivate_viewer (&fake_event, NULL, NULL);
       viewer = NULL;
+    }
     //else
       //ctx_clients_handle_events (ctx);
-  }
 
   }
   else

@@ -202,6 +202,9 @@ void app_update(app_t *self) {
               else if (!strcmp (event->string, "space")) {
 		 paused = !paused;
               }
+              else if (!strcmp (event->string, "p")) {
+		 paused = !paused;
+              }
               break;
             default:
               break;

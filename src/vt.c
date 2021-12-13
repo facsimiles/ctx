@@ -840,7 +840,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
 
   while (irows > vt->rows)
     {
-      if (vt->scrollback_count)
+      if (vt->scrollback_count && vt->scrollback)
         {
           vt->scrollback_count--;
           ctx_list_append (&vt->lines, vt->scrollback->data);
