@@ -81,7 +81,8 @@ typedef struct {
 
 int yuv420 = 1; 
 int smoothing = 0;
-
+int verbose = 0;
+int report_duration = 0;
 app_t * app_create(const char *filename, int texture_mode);
 void app_update(app_t *self);
 void app_destroy(app_t *self);
@@ -105,7 +106,13 @@ app_t * app_create(const char *filename, int texture_mode) {
 	}
 
 	int samplerate = plm_get_samplerate(self->plm);
+        if (report_duration)
+        {
+           fprintf (stdout, "%.2f\n", plm_get_duration(self->plm));
+           exit(0);
+        }
 
+        if (verbose)
 	SDL_Log(
 		"Opened %s - framerate: %f, samplerate: %d, duration: %f",
 		filename, 
@@ -113,6 +120,7 @@ app_t * app_create(const char *filename, int texture_mode) {
 		plm_get_samplerate(self->plm),
 		plm_get_duration(self->plm)
 	);
+
 
         self->ctx = ctx_new_ui (-1, -1);
 	
@@ -157,10 +165,19 @@ void app_destroy(app_t *self) {
 
 int paused = 0;
 
+
+double g_seek_to = -1.0;
+
 void app_update(app_t *self) {
 	double seek_to = -1;
 
         const CtxEvent *event = NULL;
+
+        if (g_seek_to > 0.0)
+        {
+          seek_to = g_seek_to;
+          g_seek_to = -1;
+        }
 
         while ((event = ctx_get_event(self->ctx)))
         {
@@ -215,6 +232,7 @@ void app_update(app_t *self) {
 	}
 
 	if (plm_has_ended(self->plm)) {
+                fprintf (stderr, "!!!\n");
 		self->wants_to_quit = TRUE;
 	}
 }
@@ -278,6 +296,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
 
 void app_on_audio(plm_t *mpeg, plm_samples_t *samples, void *user) {
 	app_t *self = (app_t *)user;
+        if (!paused)
         ctx_pcm_queue (self->ctx, (const signed char*)(samples->interleaved), samples->count);
 }
 
@@ -285,12 +304,17 @@ int ctx_mpg_main(int argc, char *argv[]) {
         const char *path = NULL;
 
 	if (argc < 2) {
-		SDL_Log("Usage: ctx mpg <file.mpg>");
+		SDL_Log("Usage: ctx mpg [options] <file.mpg>\n"
+                                "where options are --seek-to <seconds>\n"
+                                " --paused to start off in a paused state\n"
+                                " --rgb  used RGB rather than yuv for transport\n"
+                                " --smoothing  to turn on bilinear interpolation\n"
+                                " --report-duration print duration in seconds and exit\n"
+                                " --framedrop <1..32> \n"
+                                );
 		exit(1);
 	}
         if (getenv ("FRAMEDROP"))frame_drop = atoi (getenv("FRAMEDROP"));
-        if (frame_drop < 1) frame_drop = 1;
-        if (frame_drop > 32) frame_drop = 32;
 
         //char *path = NULL;
        
@@ -298,13 +322,40 @@ int ctx_mpg_main(int argc, char *argv[]) {
         {
           if (argv[i][0] == '-')
           {
-            if (argv[i][1] == 'r')
+            if (argv[i][1] == 'r' ||
+                !strcmp(argv[i], "--rgb"))
             {
               yuv420 = 0;
             }
-            else if (argv[i][1] == 's')
+            else if (!strcmp(argv[i], "--report-duration"))
+            {
+              report_duration = 1;
+            }
+            else if (!strcmp(argv[i], "--framedrop"))
+            {
+              i++;
+              frame_drop = atoi (argv[i]);
+            }
+            else if (argv[i][1] == 'v' ||
+                    !strcmp(argv[i], "--verbose"))
+            {
+              verbose = 1;
+            }
+            else if (argv[i][1] == 's' ||
+                    !strcmp(argv[i], "--smoothing"))
             {
               smoothing = 1;
+            }
+            else if (argv[i][1] == 'O' ||
+                    !strcmp(argv[i], "--seek-to"))
+            {
+              i++;
+              g_seek_to = atof (argv[i]);
+            }
+            else if (argv[i][1] == 'P' ||
+                    !strcmp(argv[i], "--paused"))
+            {
+              paused = 1;
             }
           }
           else
@@ -312,6 +363,9 @@ int ctx_mpg_main(int argc, char *argv[]) {
             path = argv[i];
           }
         }
+
+        if (frame_drop < 1) frame_drop = 1;
+        if (frame_drop > 32) frame_drop = 32;
          //= argv[1];
         if (path && strchr (path, ':'))
         {
