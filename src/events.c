@@ -381,11 +381,6 @@ void _ctx_idle_iteration (Ctx *ctx)
   for (l = ctx->events.idles; l; l = l->next)
   {
     CtxIdleCb *item = l->data;
-  }
-
-  for (l = ctx->events.idles; l; l = l->next)
-  {
-    CtxIdleCb *item = l->data;
 
     long rem = item->ticks_remaining;
     if (item->ticks_remaining >= 0)
@@ -396,24 +391,44 @@ void _ctx_idle_iteration (Ctx *ctx)
 
     if (rem < 0)
     {
+      int to_be_removed = 0;
+      for (CtxList *l2 = ctx->events.idles_to_remove; l2; l2=l2->next)
+      {
+        CtxIdleCb *item2 = l2->data;
+        if (item2 == item) to_be_removed = 1;
+      }
+      
+      if (!to_be_removed)
+      {
       if (item->cb (ctx, item->idle_data) == 0)
       {
         ctx_list_prepend (&ctx->events.idles_to_remove, item);
       }
       else
         item->ticks_remaining = item->ticks_full;
+      }
     }
     else
         item->ticks_remaining = rem;
     }
     else
     {
-      if (item->cb (ctx, item->idle_data) == 0)
+      int to_be_removed = 0;
+      for (CtxList *l2 = ctx->events.idles_to_remove; l2; l2=l2->next)
       {
-        ctx_list_prepend (&ctx->events.idles_to_remove, item);
+        CtxIdleCb *item2 = l2->data;
+        if (item2 == item) to_be_removed = 1;
       }
-      else
-        item->ticks_remaining = item->ticks_full;
+      
+      if (!to_be_removed)
+      {
+        if (item->cb (ctx, item->idle_data) == 0)
+        {
+          ctx_list_prepend (&ctx->events.idles_to_remove, item);
+        }
+        else
+          item->ticks_remaining = item->ticks_full;
+      }
     }
   }
 
@@ -535,7 +550,7 @@ CtxBinding *ctx_get_bindings (Ctx *ctx)
 void ctx_remove_idle (Ctx *ctx, int handle)
 {
   CtxList *l;
-  CtxList *to_remove = NULL;
+  //CtxList *to_remove = NULL;
 
   if (!ctx->events.idles)
   {

@@ -87,6 +87,9 @@ int layout_last_page = 0;
 float dir_scale = 1.0f;
 int tool_no = 0;
 
+unsigned long viewer_slide_start = 0;
+unsigned long viewer_slide_trigger = 0;
+int viewer_slideshow = 1; // slide-show / video theater mode active
 
 // TODO global variables that should be enclosed in a struct
 
@@ -1009,7 +1012,6 @@ ui_run_command (CtxEvent *event, void *data1, void *data2)
   argvs_eval (commandline);
 }
 
-static int viewer_load_next_handler = 0;
 static int viewer_pre_next_handler = 0;
 CtxClient *viewer = NULL;
 static char *viewer_loaded_path = NULL;
@@ -1019,11 +1021,8 @@ static int viewer_was_live = 0;
 static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 {
 
-  if (viewer_load_next_handler!=0)
-    ctx_remove_idle (ctx, viewer_load_next_handler);
   if (viewer_pre_next_handler!=0)
     ctx_remove_idle (ctx, viewer_pre_next_handler);
-  viewer_load_next_handler = 0;
   viewer_pre_next_handler = 0;
 
 #if 0
@@ -1098,9 +1097,7 @@ static int item_get_level (Collection *collection, int no)
 int
 collection_get_parent (Collection *collection, int no)
 {
-  int start_no = no;
   int level = 1;
-
   CtxAtom atom;
   while (level > 0 && no >= 0)
   {
@@ -1114,12 +1111,10 @@ collection_get_parent (Collection *collection, int no)
       {
         level++;
       }
-    else
-    {
-    }
   }
   no--;
-  if (no < 0) no = 0;
+  if (no < 0)
+    no = 0;
   return no;
 }
 
@@ -1543,6 +1538,12 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
       did_skips = 1;
     }
   }
+
+// the global field gets both start/end times and x/y positions
+// of vectors, within a clip local time applies similarily
+//
+// thus text needs to be extended to exist over multiple frames
+
   level++;
   if (item_get_type_atom (collection, focused_no) == CTX_ATOM_ENDGROUP)
   {
@@ -1937,18 +1938,17 @@ int viewer_load_next (Ctx *ctx, void *data1)
 {
   if (focused_no+1 >= metadata_count(collection))
     return 0;
-  if (viewer_media_type && viewer_media_type[0]=='v')
+     fprintf (stderr, "{%s}\n", viewer_media_type);
+  if (viewer && viewer_media_type && viewer_media_type[0]=='v')
   {
      VT *vt = viewer->vt;
      vt_feed_keystring (vt, NULL, "space");
-     fprintf (stderr, "{%s}\n", viewer_media_type);
   }
 
   focused_no++;
   layout_find_item = focused_no;
   argvs_eval ("activate");
   ctx_set_dirty (ctx, 1);
-  viewer_load_next_handler = 0;
   return 0;
 }
 
@@ -1988,10 +1988,18 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   if (media_class == CTX_MEDIA_TYPE_IMAGE && (!strcmp (event, "space")))
   {
     ctx_client_unlock (client);
+#if 1
+    if (viewer_pre_next_handler!=0)
+      ctx_remove_idle (ctx, viewer_pre_next_handler);
+    viewer_pre_next_handler = 0;
+
+    viewer_load_next (ctx_event->ctx, NULL);
+#else
     focused_no++;
     layout_find_item = focused_no;
     argvs_eval ("activate");
     ctx_set_dirty (ctx, 1);
+#endif
 
     return;
   }
@@ -2000,6 +2008,10 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   {
     ctx_client_unlock (client);
 #if 1
+    if (viewer_pre_next_handler!=0)
+      ctx_remove_idle (ctx, viewer_pre_next_handler);
+    viewer_pre_next_handler = 0;
+
     viewer_load_next (ctx_event->ctx, NULL);
 #else
     focused_no++;
@@ -3903,7 +3915,9 @@ static void dir_layout (ITK *itk, Collection *collection)
         }
         else if (metadata_get_int (collection, i, "live", 0))
           {
-            CtxClient *client = find_client (newpath);
+            char *client_name = ctx_strdup_printf ("%s-%i", newpath, i);
+            CtxClient *client = find_client (client_name);
+            free (client_name);
             float live_font_factor = 0.33;
             if (!client)
             {
@@ -3931,8 +3945,8 @@ static void dir_layout (ITK *itk, Collection *collection)
               client = ctx_client_new (ctx, command,
                 itk->x, itk->y, width, height,
                 itk->font_size * live_font_factor,
-                ITK_CLIENT_UI_RESIZABLE,
-                strdup(newpath), NULL);
+                ITK_CLIENT_UI_RESIZABLE|ITK_CLIENT_PRELOAD,
+                ctx_strdup_printf ("%s-%i", newpath, i), NULL);
               free (command);
               }
             }
@@ -4226,6 +4240,8 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   CtxClient *client;
   name = metadata_get_name (collection, focused_no);
   path = ctx_strdup_printf ("%s/%s", collection->path, name);
+
+  char *client_cur = ctx_strdup_printf ("%s-%i", path, focused_no);
   free (name);
 
   name = metadata_get_name (collection, focused_no+1);
@@ -4234,8 +4250,10 @@ int viewer_pre_next (Ctx *ctx, void *data1)
 
   float pre_thumb_size = 2.0;
 
-  if ((client=find_client (pathA)))
+  char *client_a = ctx_strdup_printf ("%s-%i", pathA, focused_no+1);
+  if ((client=find_client (client_a)))
   {
+     fprintf (stderr, "reusing %s\n", client_a);
      ctx_client_move (client->id, 
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size);
@@ -4248,51 +4266,19 @@ int viewer_pre_next (Ctx *ctx, void *data1)
     char *command = dir_get_viewer_command (pathA, focused_no+1);
     if (command)
     {
+     fprintf (stderr, "preloading %s\n", client_a);
+     fprintf (stderr, "%s\n", command);
      client= ctx_client_new (ctx, command,
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size,
-          itk->font_size, ITK_CLIENT_PRELOAD, (char*)pathA, NULL);
+          itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_a), NULL);
       free (command);
     }
   }
   ctx_client_raise_top (client->id);
-  //leaking pathA
 
-#if 0
-  name = metadata_get_name (collection, focused_no-1);
-  pathB = ctx_strdup_printf ("%s/%s", collection->path, name);
-  free (name);
-
-  if ((client=find_client (pathB)))
-  {
-     ctx_client_move (client->id, 0.0, 
-          ctx_height (ctx) - itk->font_size * pre_thumb_size);
-     ctx_client_resize (client->id, 
-          itk->font_size * pre_thumb_size,
-          itk->font_size * pre_thumb_size);
-  }
-  else
-  {
-    char *command = dir_get_viewer_command (pathB, focused_no-1);
-    if (command)
-    {
-      client=ctx_client_new (ctx, command,
-          0,
-          ctx_height (ctx) - itk->font_size * pre_thumb_size,
-          itk->font_size * pre_thumb_size,
-          itk->font_size * pre_thumb_size,
-          itk->font_size, ITK_CLIENT_PRELOAD, (char*)pathB, NULL);
-      free (command);
-    }
-  }
-  ctx_client_raise_top (client->id);
-  //leaking pathB
-#else
-  pathB = strdup ("foo");
-  
-#endif
 #if 1
   CtxList *to_remove = NULL;
   for (CtxList *l = clients; l; l = l->next)
@@ -4300,11 +4286,12 @@ int viewer_pre_next (Ctx *ctx, void *data1)
     CtxClient *client = l->data;
     if (client->flags & ITK_CLIENT_PRELOAD)
     {
-      if (! ( (!strcmp (pathA, client->user_data)) ||
-              (!strcmp (pathB, client->user_data)) ||
-              (!strcmp (path, client->user_data))))
+      if (! ( (!strcmp (client_cur, client->user_data)) ||
+              (!strcmp (client_a, client->user_data))))
       {
+#if 0
          if(0)fprintf (stderr, "%s %s %s cur:%s\n", pathB, path, pathA,   client->user_data);
+#endif
          ctx_list_prepend (&to_remove, client);
       }
     }
@@ -4315,18 +4302,22 @@ int viewer_pre_next (Ctx *ctx, void *data1)
     ctx_list_remove (&to_remove, to_remove->data);
   }
 #endif
+  free (client_a);
+  free (client_cur);
   viewer_pre_next_handler = 0;
   return 0;
 }
 
 static int viewer_space (Ctx *ctx, void *a)
 {
+        if (viewer && viewer->vt)
   vt_feed_keystring (viewer->vt, NULL, "space");
   return 0;
 }
 
 void viewer_load_path (const char *path, const char *name)
 {
+   viewer_slide_start = ctx_ticks ();
 #if 0
   // if image viewers are quitted with 'q' we do not call deactivate_viewer, and
   // we fail.
@@ -4361,21 +4352,25 @@ void viewer_load_path (const char *path, const char *name)
   if (viewer_loaded_name) free (viewer_loaded_name);
   viewer_loaded_name = strdup (name);
 
-  int no = metadata_item_to_no (collection, name);
+  int no = focused_no;//metadata_item_to_no (collection, name);
 
 
   if (path)
   {
     viewer_loaded_path = strdup (path);
 
+    // not entirely precise?
+    viewer_media_type = ctx_path_get_media_type (path);
+
     char *command = dir_get_viewer_command (path, no);
 
     if (command)
     {
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
-      if ((viewer=find_client (path)))
+      char *client_name = ctx_strdup_printf ("%s-%i", path, no);
+      if ((viewer=find_client (client_name)))
       {
-        fprintf (stderr, "reloading %s\n", path);
+        fprintf (stderr, "reloading %s\n", client_name);
         if (viewer->flags & ITK_CLIENT_PRELOAD)
         {
           viewer_was_live = 0;
@@ -4392,10 +4387,14 @@ void viewer_load_path (const char *path, const char *name)
       else
       {
         viewer_was_live = 0;
+        fprintf (stderr, "loading %s\n", client_name);
+        fprintf (stderr, "%s\n", command);
         viewer = ctx_client_new (ctx, command,
-          0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, ITK_CLIENT_PRELOAD, (char*)strdup(path), NULL);
-        ctx_add_timeout (ctx, 1000 * 0.05, viewer_space, NULL);
+          0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_name), NULL);
+        if (viewer_media_type[0] == 'v')
+        ctx_add_timeout (ctx, 1000 * 0.2, viewer_space, NULL);
       }
+      free (client_name);
       ctx_client_raise_top (viewer->id);
 
     //fprintf (stderr, "[%s]\n", command);
@@ -4405,7 +4404,6 @@ void viewer_load_path (const char *path, const char *name)
 #endif
       free (command);
 
-      viewer_media_type = ctx_path_get_media_type (path);
     }
     else
     {
@@ -4426,18 +4424,18 @@ void viewer_load_path (const char *path, const char *name)
     duration = out - in;
   }
 
-  if (viewer_load_next_handler!=0)
-    ctx_remove_idle (ctx, viewer_load_next_handler);
+  viewer_slide_trigger = viewer_slide_start + 1000 * 1000 * duration;
+
+#if 0
   if (viewer_pre_next_handler!=0)
     ctx_remove_idle (ctx, viewer_pre_next_handler);
-  viewer_load_next_handler = 0;
   viewer_pre_next_handler = 0;
 
-  //fprintf (stderr, "%f\n", duration);
   float pre_duration = 0.05;
-  viewer_load_next_handler = ctx_add_timeout (ctx, 1000 * duration, viewer_load_next, NULL);
-  //viewer_pre_next_handler = ctx_add_timeout (ctx, 1000 * pre_duration, viewer_pre_next, NULL);
-  if(1)viewer_pre_next (ctx, NULL); // YYY
+  viewer_pre_next_handler = ctx_add_timeout (ctx, 1000 * pre_duration, viewer_pre_next, NULL);
+#else
+  viewer_pre_next (ctx, NULL);
+#endif
 }
 
 static void dir_ignore (CtxEvent *e, void *d1, void *d2)
@@ -4747,18 +4745,18 @@ static int card_files (ITK *itk_, void *data)
       BIND_KEY ("control--", "zoom out", "zoom out");
       BIND_KEY ("control-0", "zoom 1.0", "zoom reset");
 
-          ctx_add_key_binding (ctx, "shift-control-+", NULL, "increase font size",
-                          dir_font_up,
-                          NULL);
-          ctx_add_key_binding (ctx, "shift-control-=", NULL, "increase font size",
-                          dir_font_up,
-                          NULL);
-          ctx_add_key_binding (ctx, "shift-control--", NULL, "decrease font size",
-                          dir_font_down,
-                          NULL);
-          //ctx_add_key_binding (ctx, "control-0", NULL, "reset font size",
-         //                 dir_zoom_reset,
-         //                 NULL);
+      ctx_add_key_binding (ctx, "shift-control-+", NULL, "increase font size",
+                      dir_font_up,
+                      NULL);
+      ctx_add_key_binding (ctx, "shift-control-=", NULL, "increase font size",
+                      dir_font_up,
+                      NULL);
+      ctx_add_key_binding (ctx, "shift-control--", NULL, "decrease font size",
+                      dir_font_down,
+                      NULL);
+      //ctx_add_key_binding (ctx, "control-0", NULL, "reset font size",
+      //                 dir_zoom_reset,
+      //                 NULL);
     }
 
 
@@ -5050,14 +5048,19 @@ static int card_files (ITK *itk_, void *data)
     ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
     ctx_listen (ctx, CTX_KEY_DOWN,  dir_key_any, NULL, NULL);
     ctx_listen (ctx, CTX_KEY_UP,    dir_key_any, NULL, NULL);
+
+    if (viewer_slideshow)
+    {
+      if (ctx_ticks () > viewer_slide_trigger)
+      {
+        viewer_load_next (ctx, NULL);   
+      }
+    }
   }
   else
   {
-    if (viewer_load_next_handler!=0)
-      ctx_remove_idle (ctx, viewer_load_next_handler);
     if (viewer_pre_next_handler!=0)
       ctx_remove_idle (ctx, viewer_pre_next_handler);
-    viewer_load_next_handler=0;
     viewer_pre_next_handler=0;
   }
 
@@ -5252,7 +5255,7 @@ static int card_files (ITK *itk_, void *data)
     //if (stuff_stdout_is_running ())
     //  ctx_clients_handle_events (ctx);
   }
-      ctx_clients_handle_events (ctx);
+  ctx_clients_handle_events (ctx);
 
   if (show_keybindings && !viewer)
   {
