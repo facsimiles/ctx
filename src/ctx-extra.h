@@ -55,7 +55,6 @@ ctx_invsqrtf (float x)
   } u = { x };
   float xhalf = 0.5f * x;
   int i=u.i;
-  void *bar = &i;
   i = 0x5f3759df - (i >> 1);
   x = u.f;
   x *= (1.5f - xhalf * x * x);
@@ -66,12 +65,16 @@ ctx_invsqrtf (float x)
 static inline float
 ctx_invsqrtf_fast (float x)
 {
-  void *foo = &x;
+  union
+  {
+    float f;
+    uint32_t i;
+  } u = { x };
+
 //float xhalf = 0.5f * x;
-  int i=* (int *) foo;
-  void *bar = &i;
+  int i=u.i;
   i = 0x5f3759df - (i >> 1);
-  x = * (float *) bar;
+  x = u.f;
 //x *= (1.5f - xhalf * x * x);
   return x;
 }
