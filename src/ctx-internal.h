@@ -451,6 +451,9 @@ struct _CtxEvents
   unsigned char    pointer_down[CTX_MAX_DEVICES];
   CtxEvent         drag_event[CTX_MAX_DEVICES];
   CtxList         *idles;
+  CtxList         *idles_to_remove;
+  CtxList         *idles_to_add;
+  int              in_idle_dispatch;
   CtxList         *events; // for ctx_get_event
   int              ctx_get_event_enabled;
   int              idle_id;

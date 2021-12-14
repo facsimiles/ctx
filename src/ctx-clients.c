@@ -543,6 +543,7 @@ float ctx_client_get_font_size (int id)
    CtxClient *client = ctx_client_by_id (id);
    if (client->vt)
      return vt_get_font_size (client->vt);
+   return 14.0;
 }
 
 int ctx_client_resize (int id, int width, int height)
