@@ -2199,6 +2199,7 @@ qagain:
                         vt->line_count++;
                       }
                     vt->in_alt_screen = 1;
+                    vt->had_alt_screen = 1;
                     vt_line_feed (vt);
                     _vt_move_to (vt, 1, 1);
                     vt_carriage_return (vt);
@@ -7848,6 +7849,11 @@ static void scrollbar_leave (CtxEvent *event, void *data, void *data2)
   scrollbar_focused = 0;
 }
 #endif
+
+int ctx_vt_had_alt_screen (VT *vt)
+{
+  return vt?vt->had_alt_screen:0;
+}
 
 static void scrollbar_drag (CtxEvent *event, void *data, void *data2)
 {

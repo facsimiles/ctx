@@ -98,6 +98,7 @@ struct _VT
 
   CtxList   *saved_lines;
   int       in_alt_screen;
+  int       had_alt_screen;
   int       saved_line_count;
   CtxList   *lines;
   int       line_count;
@@ -230,6 +231,7 @@ struct _VT
 
   int popped;
 
+
   /* used to make runs of background on one line be drawn
    * as a single filled rectangle
    */
@@ -246,6 +248,7 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
 
 void vt_open_log (VT *vt, const char *path);
 
+int         ctx_vt_had_alt_screen (VT *vt);
 void        vt_set_px_size        (VT *vt, int width, int height);
 void        vt_set_term_size      (VT *vt, int cols, int rows);
 
