@@ -2841,6 +2841,7 @@ ctx_rasterizer_pset (CtxRasterizer *rasterizer, int x, int y, uint8_t cov)
   rasterizer->format->from_comp (rasterizer, x, &pixel[0], dst, 1);
 }
 
+#if 0
 static void
 ctx_rasterizer_stroke_1px (CtxRasterizer *rasterizer)
 {
@@ -2907,6 +2908,7 @@ foo:
     }
   ctx_rasterizer_reset (rasterizer);
 }
+#endif
 
 static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)

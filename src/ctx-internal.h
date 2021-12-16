@@ -1157,5 +1157,7 @@ static void
 _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
                                       CtxBuffer     *buffer);
 
+int ctx_is_set (Ctx *ctx, uint32_t hash);
+
 #endif
 

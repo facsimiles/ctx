@@ -347,7 +347,7 @@ ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
       static CtxEntry sbuf[CTX_MAX_JOURNAL_SIZE];
       drawlist->entries = &sbuf[0];
       drawlist->size = CTX_MAX_JOURNAL_SIZE;
-      ctx_drawlist_compact (drawlist);
+      if(0)ctx_drawlist_compact (drawlist);
     }
 #else
   int new_size = desired_size;
@@ -738,24 +738,24 @@ ctx_u8 (CtxCode code,
 }
 
 #define CTX_PROCESS_VOID(cmd) do {\
-  CtxEntry command = {cmd};\
-  ctx_process (ctx, &command);}while(0) \
+  CtxEntry commands[4] = {{cmd}};\
+  ctx_process (ctx, &commands[0]);}while(0) \
 
-#define CTX_PROCESS_F(cmd, x, y) do {\
-  CtxEntry command = ctx_f(cmd, x, y);\
-  ctx_process (ctx, &command);}while(0)
+#define CTX_PROCESS_F(cmd,x,y) do {\
+  CtxEntry commands[4] = {ctx_f(cmd,x,y),};\
+  ctx_process (ctx, &commands[0]);}while(0) \
 
-#define CTX_PROCESS_F1(cmd, x) do {\
-  CtxEntry command = ctx_f(cmd, x, 0);\
-  ctx_process (ctx, &command);}while(0)
+#define CTX_PROCESS_F1(cmd,x) do {\
+  CtxEntry commands[4] = {ctx_f(cmd,x,0),};\
+  ctx_process (ctx, &commands[0]);}while(0) \
 
 #define CTX_PROCESS_U32(cmd, x, y) do {\
-  CtxEntry command = ctx_u32(cmd, x, y);\
-  ctx_process (ctx, &command);}while(0)
+  CtxEntry commands[4] = {ctx_u32(cmd, x, y)};\
+  ctx_process (ctx, &commands[0]);}while(0)
 
 #define CTX_PROCESS_U8(cmd, x) do {\
-  CtxEntry command = ctx_u8(cmd, x,0,0,0,0,0,0,0);\
-  ctx_process (ctx, &command);}while(0)
+  CtxEntry commands[4] = {ctx_u8(cmd, x,0,0,0,0,0,0,0)};\
+  ctx_process (ctx, &commands[0]);}while(0)
 
 
 CTX_STATIC void

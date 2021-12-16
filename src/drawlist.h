@@ -43,24 +43,24 @@ ctx_u8 (CtxCode code,
         uint8_t e, uint8_t f, uint8_t g, uint8_t h);
 
 #define CTX_PROCESS_VOID(cmd) do {\
-  CtxEntry command = {cmd};\
-  ctx_process (ctx, &command);}while(0) \
+  CtxEntry commands[4] = {{cmd}};\
+  ctx_process (ctx, &commands[0]);}while(0) \
 
-#define CTX_PROCESS_F(cmd, x, y) do {\
-  CtxEntry command = ctx_f(cmd, x, y);\
-  ctx_process (ctx, &command);}while(0)
+#define CTX_PROCESS_F(cmd,x,y) do {\
+  CtxEntry commands[4] = {ctx_f(cmd,x,y),};\
+  ctx_process (ctx, &commands[0]);}while(0) \
 
-#define CTX_PROCESS_F1(cmd, x) do {\
-  CtxEntry command = ctx_f(cmd, x, 0);\
-  ctx_process (ctx, &command);}while(0)
+#define CTX_PROCESS_F1(cmd,x) do {\
+  CtxEntry commands[4] = {ctx_f(cmd,x,0),};\
+  ctx_process (ctx, &commands[0]);}while(0) \
 
 #define CTX_PROCESS_U32(cmd, x, y) do {\
-  CtxEntry command = ctx_u32(cmd, x, y);\
-  ctx_process (ctx, &command);}while(0)
+  CtxEntry commands[4] = {ctx_u32(cmd, x, y)};\
+  ctx_process (ctx, &commands[0]);}while(0)
 
 #define CTX_PROCESS_U8(cmd, x) do {\
-  CtxEntry command = ctx_u8(cmd, x,0,0,0,0,0,0,0);\
-  ctx_process (ctx, &command);}while(0)
+  CtxEntry commands[4] = {ctx_u8(cmd, x,0,0,0,0,0,0,0)};\
+  ctx_process (ctx, &commands[0]);}while(0)
 
 
 #if CTX_BITPACK_PACKER
