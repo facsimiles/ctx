@@ -5539,8 +5539,20 @@ int stuff_main (int argc, char **argv)
 
 
   set_layout (NULL, NULL, NULL);
-  set_location (path);
 
+  {
+    char *dir = strdup (path);
+    char *name = NULL;
+    if (strrchr (dir, '/'))
+    {
+      name = strrchr (dir, '/')+1;
+      strrchr (dir, '/')[0] = 0;
+    }
+    set_location (dir);
+    focused_no = metadata_item_to_no (collection, name);
+    layout_find_item = focused_no;
+    free (dir);
+  }
 
   itk_main (card_files, NULL);
   save_metadata ();
