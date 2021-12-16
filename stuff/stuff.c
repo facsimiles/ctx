@@ -5551,6 +5551,11 @@ int stuff_main (int argc, char **argv)
     set_location (dir);
     focused_no = metadata_item_to_no (collection, name);
     layout_find_item = focused_no;
+
+    if (name && name[0])
+    {
+      argvs_eval ("activate");
+    }
     free (dir);
   }
 
