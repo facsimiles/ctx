@@ -637,6 +637,8 @@ ctx_fragment_image_rgb8_RGBA8_box_swap_red_green (CtxRasterizer *rasterizer,
   ctx_fragment_swap_red_green_u8 (out, count);
 }
 
+
+#if CTX_FRAGMENT_SPECIALIZE
 static void
 ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
                                   float x,
@@ -1260,6 +1262,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     rgba += 4;
   }
 }
+#endif
 
 #define ctx_clampi(val,min,max) \
      ctx_mini (ctx_maxi ((val), (min)), (max))
@@ -1368,6 +1371,8 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   }
 }
 
+#if CTX_FRAGMENT_SPECIALIZE
+
 static void
 ctx_fragment_image_rgba8_RGBA8_box_swap_red_green (CtxRasterizer *rasterizer,
                                     float x,
@@ -1446,6 +1451,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
                       rasterizer->format->dither_green);
 #endif
 }
+#endif
 
 static void
 ctx_fragment_image_gray1_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy)
@@ -1666,9 +1672,11 @@ static void ctx_fragment_image_RGBAF (CtxRasterizer *rasterizer, float x, float 
   CtxBuffer *buffer = gstate->source_fill.texture.buffer;
   switch (buffer->format->bpp)
     {
+#if CTX_FRAGMENT_SPECIALIZE
       case 1:  ctx_fragment_image_gray1_RGBA8 (rasterizer, x, y, rgba, count, dx, dy); break;
       case 24: ctx_fragment_image_rgb8_RGBA8 (rasterizer, x, y, rgba, count, dx, dy);  break;
       case 32: ctx_fragment_image_rgba8_RGBA8 (rasterizer, x, y, rgba, count, dx, dy); break;
+#endif
       default: ctx_fragment_image_RGBA8 (rasterizer, x, y, rgba, count, dx, dy);       break;
     }
   for (int c = 0; c < 4 * count; c ++) { outf[c] = ctx_u8_to_float (rgba[c]); }
@@ -1705,6 +1713,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
           return ctx_fragment_image_yuv420_RGBA8_nearest;
         }
         else
+#if CTX_FRAGMENT_SPECIALIZE
         switch (buffer->format->bpp)
           {
             case 1:  return ctx_fragment_image_gray1_RGBA8;
@@ -1779,6 +1788,10 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
               }
             default: return ctx_fragment_image_RGBA8;
           }
+#else
+          return ctx_fragment_image_RGBA8;
+#endif
+
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_RGBA8;
 #if CTX_GRADIENTS
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_RGBA8;
@@ -3387,9 +3400,11 @@ static void ctx_fragment_image_GRAYAF (CtxRasterizer *rasterizer, float x, float
   CtxBuffer *buffer = gstate->source_fill.texture.buffer;
   switch (buffer->format->bpp)
     {
+#if CTX_FRAGMENT_SPECIALIZE
       case 1:  ctx_fragment_image_gray1_RGBA8 (rasterizer, x, y, rgba, count, dx, dy); break;
       case 24: ctx_fragment_image_rgb8_RGBA8 (rasterizer, x, y, rgba, count, dx, dy);  break;
       case 32: ctx_fragment_image_rgba8_RGBA8 (rasterizer, x, y, rgba, count, dx, dy); break;
+#endif
       default: ctx_fragment_image_RGBA8 (rasterizer, x, y, rgba, count, dx, dy);       break;
     }
   for (int c = 0; c < 2 * count; c ++) { 
@@ -4325,9 +4340,11 @@ static void ctx_fragment_image_GRAYA8 (CtxRasterizer *rasterizer, float x, float
   CtxBuffer *buffer = gstate->source_fill.texture.buffer;
   switch (buffer->format->bpp)
     {
+#if CTX_FRAGMENT_SPECIALIZE
       case 1:  ctx_fragment_image_gray1_RGBA8 (rasterizer, x, y, rgba, count, dx, dy); break;
       case 24: ctx_fragment_image_rgb8_RGBA8 (rasterizer, x, y, rgba, count, dx, dy);  break;
       case 32: ctx_fragment_image_rgba8_RGBA8 (rasterizer, x, y, rgba, count, dx, dy); break;
+#endif
       default: ctx_fragment_image_RGBA8 (rasterizer, x, y, rgba, count, dx, dy);       break;
     }
   for (int i = 0; i < count; i++)

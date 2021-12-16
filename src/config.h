@@ -511,7 +511,9 @@
 #define CTX_MAX_THREADS          8 // runtime is max of cores/2 and this
 #endif
 
-
+#ifndef CTX_FRAGMENT_SPECIALIZE
+#define CTX_FRAGMENT_SPECIALIZE 1
+#endif
 
 #define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
                                         // increasing this to 2048

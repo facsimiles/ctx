@@ -1496,7 +1496,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
         parser->prev_byte = byte;
         return;
     }
-    else if (CTX_LIKELY(parser->state == CTX_PARSER_STRING_A85))
+    else if (parser->state == CTX_PARSER_STRING_A85)
     {
         /* since these are our largest bulk transfers, minimize
          * overhead for this case. */
