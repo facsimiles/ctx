@@ -48,7 +48,9 @@ extern "C" {
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#if CTX_EVENTS
 #include <sys/select.h> // XXX if events?
+#endif
 #endif
 
 typedef struct _Ctx            Ctx;
