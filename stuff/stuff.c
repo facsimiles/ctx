@@ -86,9 +86,20 @@ int layout_show_page = 0;
 int layout_last_page = 0;
 float dir_scale = 1.0f;
 int tool_no = 0;
+typedef enum {
+   STUFF_TOOL_SELECT,
+   STUFF_TOOL_LOCATION,
+   STUFF_TOOL_RECTANGLE,
+   STUFF_TOOL_TEXT,
+   STUFF_TOOL_BEZIER,
+   STUFF_TOOL_CIRCLE
+} StuffTool;
 
 unsigned long viewer_slide_start = 0;
 unsigned long viewer_slide_trigger = 0;
+
+long viewer_slide_duration = 0;
+
 int viewer_slideshow = 1; // slide-show / video theater mode active
 
 // TODO global variables that should be enclosed in a struct
@@ -200,6 +211,12 @@ char *ctx_get_thumb_path (const char *path) // XXX add dim as arg?
   return ctx_strdup_printf ("%s/.ctx-thumbnails/%s", getenv ("HOME"), path_hash_hex);
 }
 
+static void user_data_free (CtxClient *client, void *user_data)
+{
+  free (user_data);
+}
+
+
 CtxClient *find_client (const char *label)
 {
   for (CtxList *l = clients; l; l = l->next)
@@ -213,14 +230,6 @@ CtxClient *find_client (const char *label)
   return NULL;
 }
 
-int stuff_stdout_is_running (void)
-{
-  CtxClient *client = find_client ("stdout");
-  if (!client) return 0;
-  if (client->flags & ITK_CLIENT_FINISHED)
-     return 0;
-  return 1;
-}
 
 void ui_queue_thumb (const char *path)
 {
@@ -252,6 +261,26 @@ CtxDirView;
 
 static int layout_find_item = -1;
 ITK *itk = NULL;
+
+int ctx_vt_had_alt_screen (VT *vt);
+
+int stuff_stdout_is_running (void)
+{
+  CtxClient *client = find_client ("stdout");
+  if (!client) return 0;
+  if (client->flags & ITK_CLIENT_FINISHED)
+  {
+     if (client->vt)
+     {
+       if (ctx_vt_had_alt_screen (client->vt))
+       {
+          ctx_client_remove (itk->ctx, client);
+       }
+     }
+     return 0;
+  }
+  return 1;
+}
 
 static void set_layout (CtxEvent *e, void *d1, void *d2)
 {
@@ -1938,7 +1967,7 @@ int viewer_load_next (Ctx *ctx, void *data1)
 {
   if (focused_no+1 >= metadata_count(collection))
     return 0;
-     fprintf (stderr, "{%s}\n", viewer_media_type);
+     //fprintf (stderr, "{%s}\n", viewer_media_type);
   if (viewer && viewer_media_type && viewer_media_type[0]=='v')
   {
      VT *vt = viewer->vt;
@@ -1985,6 +2014,7 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     return;
   }
 
+#if 0
   if (media_class == CTX_MEDIA_TYPE_IMAGE && (!strcmp (event, "space")))
   {
     ctx_client_unlock (client);
@@ -2003,8 +2033,22 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 
     return;
   }
+#endif
+#if 1
   if ((media_class == CTX_MEDIA_TYPE_IMAGE || 
-      media_class == CTX_MEDIA_TYPE_VIDEO)&& (!strcmp (event, "page-down")))
+       media_class == CTX_MEDIA_TYPE_VIDEO)&& (!strcmp (event, "space")))
+  {
+    ctx_client_unlock (client);
+    viewer_slideshow = !viewer_slideshow;
+    if (vt)
+      vt_feed_keystring (vt, ctx_event, event);
+    ctx_event->stop_propagate=1;
+    return;
+  }
+#endif
+
+  if ((media_class == CTX_MEDIA_TYPE_IMAGE || 
+      media_class  == CTX_MEDIA_TYPE_VIDEO) && (!strcmp (event, "page-down")))
   {
     ctx_client_unlock (client);
 #if 1
@@ -2990,10 +3034,82 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
 }
 
-static void
-set_tool_no (CtxEvent *event, void *a, void *b)
+int editing_location = 0;
+static void dir_location (CtxEvent *e, void *d1, void *d2)
 {
-  tool_no = (size_t)(a);
+  editing_location = 1;
+  ctx_string_set (commandline, collection->title?collection->title:collection->path);
+  commandline_cursor_end = 0;
+  commandline_cursor_start = strlen (commandline->str);
+  tool_no = STUFF_TOOL_LOCATION;
+  if (e)
+  {
+    e->stop_propagate = 1;
+    ctx_set_dirty (e->ctx, 1);
+  }
+}
+
+static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
+{
+  editing_location = 0;
+  commandline_cursor_end =
+  commandline_cursor_start = 0;
+  ctx_string_set (commandline, "");
+  if (e)
+  {
+    e->stop_propagate = 1;
+    ctx_set_dirty (e->ctx, 1);
+  }
+}
+
+static void
+set_tool_no (int a)
+{
+  if (tool_no == STUFF_TOOL_LOCATION && a != tool_no)
+  {
+    dir_location_escape (NULL, NULL, NULL);
+  }
+  tool_no = a;
+  if (tool_no == STUFF_TOOL_LOCATION)
+  {
+    dir_location (NULL, NULL, NULL);
+  }
+}
+
+float toolbar_x = 100.0;
+float toolbar_y = 100.0;
+
+static void
+tool_drag (CtxEvent *event, void *a, void *b)
+{
+  static float start_x;
+  static float start_y;
+
+  static float orig_x;
+  static float orig_y;
+
+
+  switch (event->type)
+  {
+    case CTX_DRAG_PRESS:
+      tool_no = (size_t)(a);
+      set_tool_no (tool_no);
+      start_x = event->x;
+      start_y = event->y;
+      orig_x = toolbar_x;
+      orig_y = toolbar_y;
+      break;
+    case CTX_DRAG_MOTION:
+      toolbar_x = orig_x + (event->x-start_x);
+      toolbar_y = orig_y + (event->y-start_y);
+      ctx_set_dirty (event->ctx, 1);
+      break;
+    case CTX_DRAG_RELEASE:
+      break;
+    default:
+      break;
+  }
+
   ctx_set_dirty (event->ctx, 1);
   event->stop_propagate=1;
 }
@@ -3263,7 +3379,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
   if (!layout_config.outliner)
   {
-  if (tool_no == 1)
+  if (tool_no == STUFF_TOOL_RECTANGLE)
   {
     ctx_rectangle (itk->ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
     ctx_listen (itk->ctx, CTX_DRAG, tool_rect_drag, NULL, NULL);
@@ -3640,7 +3756,8 @@ static void dir_layout (ITK *itk, Collection *collection)
 
         switch (tool_no)
         {
-                case 0:
+          case STUFF_TOOL_SELECT:
+          case STUFF_TOOL_LOCATION:
         if (c->no == itk->focus_no && layout_find_item < 0)
         {
           focused = 1;
@@ -3942,12 +4059,12 @@ static void dir_layout (ITK *itk, Collection *collection)
               char *command = dir_get_viewer_command (newpath, i);
               if (command)
               {
-              client = ctx_client_new (ctx, command,
-                itk->x, itk->y, width, height,
-                itk->font_size * live_font_factor,
-                ITK_CLIENT_UI_RESIZABLE|ITK_CLIENT_PRELOAD,
-                ctx_strdup_printf ("%s-%i", newpath, i), NULL);
-              free (command);
+                client = ctx_client_new (ctx, command,
+                  itk->x, itk->y, width, height,
+                  itk->font_size * live_font_factor,
+                  ITK_CLIENT_PRELOAD,
+                  ctx_strdup_printf ("%s-%i", newpath, i), user_data_free);
+                free (command);
               }
             }
             else
@@ -4224,7 +4341,6 @@ static int thumb_monitor (Ctx *ctx, void *data)
 extern float font_size;
 void ctx_clients_handle_events (Ctx *ctx);
 
-
 int viewer_pre_next (Ctx *ctx, void *data1)
 {
   if (focused_no+1 >= metadata_count(collection))
@@ -4236,7 +4352,6 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   char *name;
   char *path;
   char *pathA;
-  char *pathB;
   CtxClient *client;
   name = metadata_get_name (collection, focused_no);
   path = ctx_strdup_printf ("%s/%s", collection->path, name);
@@ -4273,7 +4388,7 @@ int viewer_pre_next (Ctx *ctx, void *data1)
           ctx_height (ctx) - itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size,
-          itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_a), NULL);
+          itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_a), user_data_free);
       free (command);
     }
   }
@@ -4289,9 +4404,6 @@ int viewer_pre_next (Ctx *ctx, void *data1)
       if (! ( (!strcmp (client_cur, client->user_data)) ||
               (!strcmp (client_a, client->user_data))))
       {
-#if 0
-         if(0)fprintf (stderr, "%s %s %s cur:%s\n", pathB, path, pathA,   client->user_data);
-#endif
          ctx_list_prepend (&to_remove, client);
       }
     }
@@ -4310,8 +4422,8 @@ int viewer_pre_next (Ctx *ctx, void *data1)
 
 static int viewer_space (Ctx *ctx, void *a)
 {
-        if (viewer && viewer->vt)
-  vt_feed_keystring (viewer->vt, NULL, "space");
+  if (viewer && viewer->vt)
+    vt_feed_keystring (viewer->vt, NULL, "space");
   return 0;
 }
 
@@ -4390,7 +4502,7 @@ void viewer_load_path (const char *path, const char *name)
         fprintf (stderr, "loading %s\n", client_name);
         fprintf (stderr, "%s\n", command);
         viewer = ctx_client_new (ctx, command,
-          0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_name), NULL);
+          0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_name), user_data_free);
         if (viewer_media_type[0] == 'v')
         ctx_add_timeout (ctx, 1000 * 0.2, viewer_space, NULL);
       }
@@ -4424,7 +4536,7 @@ void viewer_load_path (const char *path, const char *name)
     duration = out - in;
   }
 
-  viewer_slide_trigger = viewer_slide_start + 1000 * 1000 * duration;
+  viewer_slide_duration = 1000 * 1000 * duration;
 
 #if 0
   if (viewer_pre_next_handler!=0)
@@ -4532,7 +4644,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
 
     ctx_client_new (ctx, commandline->str, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height,
                     itk->font_size,
-                    ITK_CLIENT_LAYER2, "stdout", NULL);
+                    ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE|ITK_CLIENT_TITLEBAR, strdup("stdout"), user_data_free);
 
      metadata_dirt();
      save_metadata();
@@ -4545,32 +4657,16 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
   ctx_string_free (word, 1);
 }
 
-int editing_location = 0;
-static void dir_location (CtxEvent *e, void *d1, void *d2)
-{
-  editing_location = 1;
-  ctx_string_set (commandline, collection->title?collection->title:collection->path);
-  commandline_cursor_end = 0;
-  commandline_cursor_start = strlen (commandline->str);
-  e->stop_propagate = 1;
-  ctx_set_dirty (e->ctx, 1);
-}
 
-static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
-{
-  editing_location = 0;
-  commandline_cursor_end =
-  commandline_cursor_start = 0;
-  ctx_string_set (commandline, "");
-  e->stop_propagate = 1;
-  ctx_set_dirty (e->ctx, 1);
-}
 
 static void dir_location_return (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
   set_location (commandline->str);
   ctx_string_set (commandline, "");
+
+  set_tool_no (STUFF_TOOL_SELECT);
+  
   e->stop_propagate = 1;
   ctx_set_dirty (e->ctx, 1);
 }
@@ -4692,6 +4788,11 @@ static int malloc_trim_cb (Ctx *ctx, void *data)
   return 1;
 }
 
+static int delayed_dirt (Ctx *ctx, void *data)
+{
+  ctx_set_dirty (ctx, 1);
+  return 0;
+}
 
 static int card_files (ITK *itk_, void *data)
 {
@@ -4723,7 +4824,7 @@ static int card_files (ITK *itk_, void *data)
     first = 0;
 
 #if 1
-    //ctx_client_new (ctx, "bashtop", font_size * 5, font_size * 40, font_size*42, font_size*24, 0, "boo2", NULL);
+    //ctx_client_new (ctx, "bashtop", font_size * 5, font_size * 40, font_size*42, font_size*24, 0, strdup("boo2"), user_data_free);
 #endif
 
   }
@@ -5043,17 +5144,34 @@ static int card_files (ITK *itk_, void *data)
   }
 #endif
 
+  static unsigned long viewer_slide_prev_time = 0;
+  unsigned long viewer_slide_time = ctx_ticks ();
+  long elapsed = viewer_slide_time - viewer_slide_prev_time;
+  viewer_slide_prev_time = viewer_slide_time;
+
+
   if (viewer || stuff_stdout_is_running ())
   {
     ctx_listen (ctx, CTX_KEY_PRESS, dir_key_any, NULL, NULL);
     ctx_listen (ctx, CTX_KEY_DOWN,  dir_key_any, NULL, NULL);
     ctx_listen (ctx, CTX_KEY_UP,    dir_key_any, NULL, NULL);
 
-    if (viewer_slideshow)
+    if (viewer_slideshow && viewer_slide_prev_time)
     {
-      if (ctx_ticks () > viewer_slide_trigger)
+
+      if (viewer_slide_duration >= 0)
       {
-        viewer_load_next (ctx, NULL);   
+        viewer_slide_duration -= elapsed;
+        if (viewer_slide_duration < 0)
+        {
+          viewer_load_next (ctx, NULL);   
+        }
+        else
+        { /* to keep events being processed, without it we need to
+             wiggle mouse on images
+           */
+          ctx_add_timeout (ctx, 500, delayed_dirt, NULL);
+        }
       }
     }
   }
@@ -5064,7 +5182,36 @@ static int card_files (ITK *itk_, void *data)
     viewer_pre_next_handler=0;
   }
 
-  if (tool_no == 0 && !viewer)
+  ctx_save (ctx);
+  ctx_translate (ctx, toolbar_x, toolbar_y);
+
+  // toolbar
+  {
+    float em = itk->font_size;
+
+    int n_tools = 5;
+    if (tool_no == 1) n_tools = 1;
+
+    ctx_rectangle (ctx, 0, 0, 2.5 * (n_tools + 0.25) * em, 3 * em);
+    ctx_rgba (ctx, 1,1,1, 0.1);
+    ctx_fill (ctx);
+
+    for (int i = 0; i < n_tools; i ++)
+    {
+      ctx_rectangle (ctx, (2.5 * i + 0.5) * em,
+                          0.5 * em,
+                          2 * em, 2 * em);
+      ctx_listen (ctx, CTX_DRAG, tool_drag, (void*)((size_t)i), NULL);
+      if (i == tool_no)
+        ctx_rgba (ctx, 1,1,1, 0.3);
+      else
+        ctx_rgba (ctx, 1,1,1, 0.05);
+      ctx_fill (ctx);
+    }
+
+  }
+
+  if (tool_no == STUFF_TOOL_LOCATION && !viewer)
   {
     float em = itk->font_size;
     ctx_save (ctx);
@@ -5165,24 +5312,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_restore (ctx);
   }
 
-  // toolbar
-  {
-    float em = itk->font_size;
-    ctx_rectangle (ctx, 0, 0, 3 * em, ctx_height (ctx));
-    ctx_rgba (ctx, 1,1,1, 0.1);
-    ctx_fill (ctx);
 
-    for (int i = 0; i < 5; i ++)
-    {
-      ctx_rectangle (ctx, 0.5 * em, (3 * i + 0.5) * em,  2 * em, 2 * em);
-      ctx_listen (ctx, CTX_CLICK, set_tool_no, (void*)((size_t)i), NULL);
-      if (i == tool_no)
-        ctx_rgba (ctx, 1,1,1, 0.3);
-      else
-        ctx_rgba (ctx, 1,1,1, 0.05);
-      ctx_fill (ctx);
-    }
-  }
 
   // pages
   if (tool_no == 0)
@@ -5209,6 +5339,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * (layout_last_page+1+1) + 0.5) * em,  2 * em, 2 * em);
       ctx_fill (ctx);
   }
+  ctx_restore (ctx);
 
   if (viewer) 
   {

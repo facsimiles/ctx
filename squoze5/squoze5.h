@@ -7,6 +7,13 @@
 #include <string.h>
 #include <assert.h>
 
+uint32_t squoze6 (const char *utf8);
+uint64_t squoze10 (const char *utf8);
+uint64_t squoze12 (const char *utf8);
+const char *squoze6_decode (uint32_t hash);
+const char *squoze10_decode (uint64_t hash);
+const char *squoze12_decode (uint64_t hash);
+
 //#define SQUOZE_NO_INTERNING  // this disables the interning - providing only a hash (and decode for non-overflowed hashes)
 
 #define SQUOZE_ENTER_SQUEEZE    16
@@ -603,7 +610,7 @@ static void squoze_decode_utf5_bytes (int is_utf5,
     *r_outlen = append_data.length;
 }
 
-const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retlen)
+static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retlen)
 {
   uint64_t overflowed_mask = ((uint64_t)1<<(squoze_dim * 5 + 1));
 
@@ -653,7 +660,7 @@ const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retle
 /* copy the value as soon as possible, some mitigation is in place
  * for more than one value in use and cross-thread interactions.
  */
-const char *squoze_decode (int squoze_dim, uint64_t hash)
+static const char *squoze_decode (int squoze_dim, uint64_t hash)
 {
 #define THREAD __thread  // use thread local storage
   static THREAD int no = 0;
