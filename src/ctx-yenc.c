@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#if CTX_FORMATTER
+
 static int ctx_yenc (const char *src, char *dst, int count)
 {
   int out_len = 0;
@@ -31,7 +33,9 @@ static int ctx_yenc (const char *src, char *dst, int count)
   dst[out_len]=0;
   return out_len;
 }
+#endif
 
+#if CTX_PARSER
 static int ctx_ydec (const char *tmp_src, char *dst, int count)
 {
   const char *src = tmp_src;
@@ -79,6 +83,7 @@ static int ctx_ydec (const char *tmp_src, char *dst, int count)
 #endif
   return out_len;
 }
+#endif
 
 #if 0
 int main (){
