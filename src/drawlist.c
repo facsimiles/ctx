@@ -618,18 +618,18 @@ ctx_add_data (Ctx *ctx, void *data, int length)
 
 int ctx_drawlist_add_u32 (CtxDrawlist *drawlist, CtxCode code, uint32_t u32[2])
 {
-  CtxEntry entry = {code, {{0},}};
-  entry.data.u32[0] = u32[0];
-  entry.data.u32[1] = u32[1];
-  return ctx_drawlist_add_single (drawlist, &entry);
+  CtxEntry entry[3] = {{code, {{0},}},};
+  entry[0].data.u32[0] = u32[0];
+  entry[0].data.u32[1] = u32[1];
+  return ctx_drawlist_add_single (drawlist, &entry[0]);
 }
 
 int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
 {
-  CtxEntry entry = {CTX_DATA, {{0},}};
-  entry.data.u32[0] = 0;
-  entry.data.u32[1] = 0;
-  int ret = ctx_drawlist_add_single (drawlist, &entry);
+  CtxEntry entry[3] = {{CTX_DATA, {{0},}}};
+  entry[0].data.u32[0] = 0;
+  entry[0].data.u32[1] = 0;
+  int ret = ctx_drawlist_add_single (drawlist, &entry[0]);
   if (CTX_UNLIKELY(!data)) { return -1; }
   int length_in_blocks;
   if (length <= 0) { length = strlen ( (char *) data) + 1; }
@@ -645,10 +645,11 @@ int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
   memcpy (&drawlist->entries[ret+1], data, length);
   {
     //int reverse = ctx_drawlist_add (drawlist, CTX_DATA_REV);
-    CtxEntry entry = {CTX_DATA_REV, {{0},}};
-    entry.data.u32[0] = length;
-    entry.data.u32[1] = length_in_blocks;
-    ctx_drawlist_add_single (drawlist, &entry);
+    CtxEntry entry[3] = {{CTX_DATA_REV, {{0},}}};
+    entry[0].data.u32[0] = length;
+    entry[0].data.u32[1] = length_in_blocks;
+    ctx_drawlist_add_single (drawlist, &entry[0]);
+
     /* this reverse marker exist to enable more efficient
        front to back traversal, can be ignored in other
        direction, is this needed after string setters as well?
