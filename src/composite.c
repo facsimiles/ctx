@@ -2748,7 +2748,7 @@ ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 }
 
 
-static void
+static inline void
 ctx_float_source_over_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   float *dstf = (float*)dst;
