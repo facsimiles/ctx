@@ -5530,6 +5530,7 @@ void ctx_clients_signal_child (int signum);
 int stuff_main (int argc, char **argv)
 {
   setenv ("CTX_HASH_CACHE", "0", 1);
+  setenv ("CTX_SHAPE_CACHE", "1", 1);
   char *path = argv[1];
   if (path && strchr (path, ':'))
   {

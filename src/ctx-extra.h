@@ -1,12 +1,18 @@
 #ifndef __CTX_EXTRA_H
 #define __CTX_EXTRA_H
 
+#if CTX_FORCE_INLINES
+#define CTX_INLINE inline __attribute__((always_inline))
+#else
+#define CTX_INLINE inline
+#endif
+
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
-static inline int   ctx_mini (int a, int b)     { return (a < b) * a + (a >= b) * b; }
-static inline float ctx_minf (float a, float b) { return (a < b) * a + (a >= b) * b; }
-static inline int   ctx_maxi (int a, int b)     { return (a > b) * a + (a <= b) * b; }
-static inline float ctx_maxf (float a, float b) { return (a > b) * a + (a <= b) * b; }
+static CTX_INLINE int   ctx_mini (int a, int b)     { return (a < b) * a + (a >= b) * b; }
+static CTX_INLINE float ctx_minf (float a, float b) { return (a < b) * a + (a >= b) * b; }
+static CTX_INLINE int   ctx_maxi (int a, int b)     { return (a > b) * a + (a <= b) * b; }
+static CTX_INLINE float ctx_maxf (float a, float b) { return (a > b) * a + (a <= b) * b; }
 
 
 typedef enum CtxOutputmode
@@ -24,16 +30,11 @@ typedef enum CtxOutputmode
 
 
 
-#if CTX_FORCE_INLINES
-#define CTX_INLINE inline __attribute__((always_inline))
-#else
-#define CTX_INLINE inline
-#endif
 
 static inline float ctx_pow2 (float a) { return a * a; }
 #if CTX_MATH
 
-static inline float
+static CTX_INLINE float
 ctx_fabsf (float x)
 {
   union
@@ -45,7 +46,7 @@ ctx_fabsf (float x)
   return u.f;
 }
 
-static inline float
+static CTX_INLINE float
 ctx_invsqrtf (float x)
 {
   union
@@ -62,7 +63,7 @@ ctx_invsqrtf (float x)
   return x;
 }
 
-static inline float
+static CTX_INLINE float
 ctx_invsqrtf_fast (float x)
 {
   union
@@ -150,7 +151,7 @@ ctx_sinf (float x)
          (x + CTX_PI - 0.00000008742278f) * p1 * x;
 }
 
-static inline float ctx_atan2f (float y, float x)
+static CTX_INLINE float ctx_atan2f (float y, float x)
 {
   float atan, z;
   if ( x == 0.0f )
@@ -181,17 +182,17 @@ static inline float ctx_atan2f (float y, float x)
 }
 
 
-static inline float ctx_atanf (float a)
+static CTX_INLINE float ctx_atanf (float a)
 {
   return ctx_atan2f ( (a), 1.0f);
 }
 
-static inline float ctx_asinf (float x)
+static CTX_INLINE float ctx_asinf (float x)
 {
   return ctx_atanf ( (x) * (ctx_invsqrtf (1.0f-ctx_pow2 (x) ) ) );
 }
 
-static inline float ctx_acosf (float x)
+static CTX_INLINE float ctx_acosf (float x)
 {
   return ctx_atanf ( (ctx_sqrtf (1.0f-ctx_pow2 (x) ) / (x) ) );
 }
@@ -201,16 +202,16 @@ CTX_INLINE static float ctx_cosf (float a)
   return ctx_sinf ( (a) + CTX_PI/2.0f);
 }
 
-static inline float ctx_tanf (float a)
+static CTX_INLINE float ctx_tanf (float a)
 {
   return (ctx_cosf (a) /ctx_sinf (a) );
 }
-static inline float
+static CTX_INLINE float
 ctx_floorf (float x)
 {
   return (int)x; // XXX
 }
-static inline float
+static CTX_INLINE float
 ctx_expf (float x)
 {
   union { uint32_t i; float f; } v =

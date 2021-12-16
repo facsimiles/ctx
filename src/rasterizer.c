@@ -363,7 +363,7 @@ ctx_bezier_sample_1d (float x0, float x1, float x2, float x3, float dt)
   return ctx_lerpf (abbc, bccd, dt);
 }
 
-inline static void
+CTX_INLINE static void
 ctx_bezier_sample (float x0, float y0,
                    float x1, float y1,
                    float x2, float y2,
