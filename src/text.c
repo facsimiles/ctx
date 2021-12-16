@@ -80,8 +80,10 @@ ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
   int advance, lsb;
   int glyph = ctx_glyph_stb_find (font, unichar);
 
+#if CTX_EVENTS
   if (ctx_renderer_is_term (ctx))
     return 2;
+#endif
 
   if (glyph==0)
     { return 0.0f; }
@@ -219,8 +221,10 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
   int first_kern = ctx_glyph_find_ctx (font, ctx, unicharA);
   if (first_kern < 0) return 0.0;
 
+#if CTX_EVENTS
   if (ctx_renderer_is_term (ctx) && (3.02 - font_size) < 0.03)
     return 0.0f;
+#endif
 
   for (int i = first_kern + 1; i < font->ctx.length; i++)
     {
@@ -258,8 +262,10 @@ ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
   if (start < 0)
     { return 0.0; }  // XXX : fallback
 
+#if CTX_EVENTS
   if (ctx_renderer_is_term (ctx) && (3.02 - font_size) < 0.03)
     return 2.0f;
+#endif
 
   for (int i = start; i < font->ctx.length; i++)
     {
