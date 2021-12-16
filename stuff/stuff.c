@@ -4794,6 +4794,8 @@ static int delayed_dirt (Ctx *ctx, void *data)
   return 0;
 }
 
+static int activate_from_start = 0;
+
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
@@ -4827,6 +4829,8 @@ static int card_files (ITK *itk_, void *data)
     //ctx_client_new (ctx, "bashtop", font_size * 5, font_size * 40, font_size*42, font_size*24, 0, strdup("boo2"), user_data_free);
 #endif
 
+    if (activate_from_start)
+            argvs_eval ("activate");
   }
   //thumb_monitor (ctx, NULL);
 
@@ -5554,7 +5558,7 @@ int stuff_main (int argc, char **argv)
 
     if (name && name[0])
     {
-      argvs_eval ("activate");
+      activate_from_start = 1;
     }
     free (dir);
   }
