@@ -88,6 +88,7 @@ void ctx_buffer_free (CtxBuffer *buffer)
   free (buffer);
 }
 
+#if 0
 static int
 ctx_texture_check_eid (Ctx *ctx, const char *eid, int *tw, int *th)
 {
@@ -105,6 +106,7 @@ ctx_texture_check_eid (Ctx *ctx, const char *eid, int *tw, int *th)
   }
   return -1;
 }
+#endif
 
 const char* ctx_texture_init (Ctx           *ctx,
                               const char    *eid,

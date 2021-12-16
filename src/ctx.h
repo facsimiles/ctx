@@ -1823,11 +1823,12 @@ float ctx_term_get_cell_height (Ctx *ctx);
 #if 1 // CTX_VT
 
 typedef struct _VT VT;
-void vt_feed_keystring  (VT *vt, CtxEvent *event, const char *str);
-void vt_paste           (VT *vt, const char *str);
-char *vt_get_selection  (VT *vt);
-long vt_rev             (VT *vt);
-int  vt_has_blink       (VT *vt);
+void vt_feed_keystring    (VT *vt, CtxEvent *event, const char *str);
+void vt_paste             (VT *vt, const char *str);
+char *vt_get_selection    (VT *vt);
+long vt_rev               (VT *vt);
+int  vt_has_blink         (VT *vt);
+int ctx_vt_had_alt_screen (VT *vt);
 
 int  ctx_clients_need_redraw   (Ctx *ctx);
 void ctx_clients_handle_events (Ctx *ctx);

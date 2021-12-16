@@ -2804,6 +2804,7 @@ ctx_rasterizer_rel_quad_to (CtxRasterizer *rasterizer,
 }
 
 #define LENGTH_OVERSAMPLE 1
+#if 0
 static void
 ctx_rasterizer_pset (CtxRasterizer *rasterizer, int x, int y, uint8_t cov)
 {
@@ -2840,6 +2841,7 @@ ctx_rasterizer_pset (CtxRasterizer *rasterizer, int x, int y, uint8_t cov)
     }
   rasterizer->format->from_comp (rasterizer, x, &pixel[0], dst, 1);
 }
+#endif
 
 #if 0
 static void

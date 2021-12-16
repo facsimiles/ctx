@@ -623,6 +623,7 @@ void ctx_cmyk (Ctx *ctx, float c, float m, float y, float k)
   ctx_color_raw (ctx, CTX_CMYK, components, 0);
 }
 
+#if 0
 static void ctx_dcmyk_raw (Ctx *ctx, float c, float m, float y, float k, int stroke)
 {
   float components[5]={c,m,y,k,1.0f};
@@ -639,6 +640,7 @@ static void ctx_dcmyka_raw (Ctx *ctx, float c, float m, float y, float k, float 
   };
   ctx_process (ctx, command);
 }
+#endif
 
 void ctx_dcmyk_stroke   (Ctx *ctx, float c, float m, float y, float k)
 {

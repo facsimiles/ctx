@@ -3218,7 +3218,7 @@ ctx_RGBAF_clear_normal (CTX_COMPOSITE_ARGUMENTS)
   ctx_float_clear_normal (4, rasterizer, dst, src, x0, coverage, count);
 }
 
-#if 1
+#if 0
 static void
 ctx_RGBAF_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {

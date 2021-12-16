@@ -1102,7 +1102,7 @@ ctx_drawlist_bitpack (CtxDrawlist *drawlist, int start_pos)
 
 #endif
 
-CTX_STATIC void
+CTX_STATIC inline void
 ctx_drawlist_compact (CtxDrawlist *drawlist)
 {
 #if CTX_BITPACK_PACKER
