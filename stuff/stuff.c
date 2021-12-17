@@ -4788,9 +4788,11 @@ static int malloc_trim_cb (Ctx *ctx, void *data)
   return 1;
 }
 
+static int dirtcb = 0;
 static int delayed_dirt (Ctx *ctx, void *data)
 {
   ctx_set_dirty (ctx, 1);
+  dirtcb = 0;
   return 0;
 }
 
@@ -5170,6 +5172,7 @@ static int card_files (ITK *itk_, void *data)
         {
           viewer_load_next (ctx, NULL);   
         }
+#if 0
         else if (viewer_slide_duration < fade_ticks)
         {
           float opacity = (fade_ticks - viewer_slide_duration) / (1.0 * fade_ticks);
@@ -5184,18 +5187,23 @@ static int card_files (ITK *itk_, void *data)
             ctx_client_resize (client->id, ctx_width (ctx), ctx_height (ctx));
             ctx_client_raise_top (client->id);
             ctx_client_set_opacity (client->id, opacity);
-            ctx_add_timeout (ctx, 1, delayed_dirt, NULL);
+            if (!dirtcb)
+              dirtcb = ctx_add_timeout (ctx, 50, delayed_dirt, NULL);
+            //ctx_set_dirty (ctx, 1);
           }
+#endif
           else
           {
-            ctx_add_timeout (ctx, 200, delayed_dirt, NULL);
+            if (!dirtcb)
+              dirtcb = ctx_add_timeout (ctx, 200, delayed_dirt, NULL);
           }
         }
         else
         { /* to keep events being processed, without it we need to
              wiggle mouse on images
            */
-          ctx_add_timeout (ctx, 250, delayed_dirt, NULL);
+          if (!dirtcb)
+            dirtcb = ctx_add_timeout (ctx, 250, delayed_dirt, NULL);
         }
       }
     }
@@ -5550,8 +5558,8 @@ void ctx_clients_signal_child (int signum);
 
 int stuff_main (int argc, char **argv)
 {
-  setenv ("CTX_HASH_CACHE", "0", 1);
-  setenv ("CTX_SHAPE_CACHE", "0", 1);
+  //setenv ("CTX_HASH_CACHE", "0", 1);
+  //setenv ("CTX_SHAPE_CACHE", "0", 1);
   char *path = argv[1];
   if (path && strchr (path, ':'))
   {
