@@ -4309,7 +4309,6 @@ static int thumb_monitor (Ctx *ctx, void *data)
 }
 
 extern float font_size;
-void ctx_clients_handle_events (Ctx *ctx);
 
 int viewer_pre_next (Ctx *ctx, void *data1)
 {
@@ -5101,7 +5100,9 @@ static int card_files (ITK *itk_, void *data)
 
     if (viewer_slideshow && viewer_slide_prev_time)
     {
-      long int fade_ticks = 1000 * 1000 * 2.0;
+      float fade_duration = metadata_get_float (collection, focused_no, "fade", 0.0f);
+      long int fade_ticks = 1000 * 1000 * fade_duration;
+
       if (viewer_slide_duration >= 0)
       {
         viewer_slide_duration -= elapsed;
@@ -5124,9 +5125,9 @@ static int card_files (ITK *itk_, void *data)
             ctx_client_resize (client->id, ctx_width (ctx), ctx_height (ctx));
             ctx_client_raise_top (client->id);
             ctx_client_set_opacity (client->id, opacity);
-            if (!dirtcb)
-              dirtcb = ctx_add_timeout (ctx, 50, delayed_dirt, NULL);
-            //ctx_set_dirty (ctx, 1);
+            //if (!dirtcb)
+            //  dirtcb = ctx_add_timeout (ctx, 50, delayed_dirt, NULL);
+            ctx_set_dirty (ctx, 1);
           }
           else
           {
@@ -5325,8 +5326,6 @@ static int card_files (ITK *itk_, void *data)
       deactivate_viewer (&fake_event, NULL, NULL);
       viewer = NULL;
     }
-    //else
-      //ctx_clients_handle_events (ctx);
 
   }
   else
@@ -5350,10 +5349,7 @@ static int card_files (ITK *itk_, void *data)
     }
 
     ctx_clients_draw (ctx, 1);
-    //if (stuff_stdout_is_running ())
-    //  ctx_clients_handle_events (ctx);
   }
-  //ctx_clients_handle_events (ctx);
 
   if (show_keybindings && !viewer)
   {
