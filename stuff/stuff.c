@@ -5173,8 +5173,6 @@ static int card_files (ITK *itk_, void *data)
         else if (viewer_slide_duration < fade_ticks)
         {
           float opacity = (fade_ticks - viewer_slide_duration) / (1.0 * fade_ticks);
-          //fprintf (stderr, "%.2f \r", opacity);
-
           char *name = metadata_get_name (collection, focused_no+1);
           char *pathA = ctx_strdup_printf ("%s/%s", collection->path, name);
           free (name);
@@ -5182,17 +5180,14 @@ static int card_files (ITK *itk_, void *data)
           CtxClient *client;
           if ((client=find_client (client_a)))
           {
-            //fprintf (stderr, "reusing %s \r", client_a);
-            ctx_client_move (client->id, opacity * 100, 0);
-            ctx_client_resize (client->id, ctx_width (ctx)/2, ctx_height (ctx)/2);
+            ctx_client_move (client->id, 0, 0);
+            ctx_client_resize (client->id, ctx_width (ctx), ctx_height (ctx));
             ctx_client_raise_top (client->id);
             ctx_client_set_opacity (client->id, opacity);
-            ctx_set_dirty (ctx, 1);
-            //fprintf (stderr, ".");
+            ctx_add_timeout (ctx, 1, delayed_dirt, NULL);
           }
           else
           {
-            fprintf (stderr, "missing next for fading \r");
             ctx_add_timeout (ctx, 200, delayed_dirt, NULL);
           }
         }
@@ -5200,7 +5195,7 @@ static int card_files (ITK *itk_, void *data)
         { /* to keep events being processed, without it we need to
              wiggle mouse on images
            */
-          ctx_add_timeout (ctx, 500, delayed_dirt, NULL);
+          ctx_add_timeout (ctx, 250, delayed_dirt, NULL);
         }
       }
     }
