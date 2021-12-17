@@ -328,6 +328,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
   ctx_assert (rasterizer);
   ctx_assert (g);
   ctx_assert (buffer);
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
 
   for (int i = 0; i < count; i ++)
   {
@@ -369,13 +370,14 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
       case 1:
         rgba[0] = rgba[1] = rgba[2] = ctx_lerp_u8 (ctx_lerp_u8 (src00[0], src01[0], dx),
                                ctx_lerp_u8 (src10[0], src11[0], dx), dy);
-        rgba[3] = 255;
+        rgba[3] = global_alpha_u8;
         break;
       case 2:
         rgba[0] = rgba[1] = rgba[2] = ctx_lerp_u8 (ctx_lerp_u8 (src00[0], src01[0], dx),
                                ctx_lerp_u8 (src10[0], src11[0], dx), dy);
         rgba[3] = ctx_lerp_u8 (ctx_lerp_u8 (src00[1], src01[1], dx),
                                ctx_lerp_u8 (src10[1], src11[1], dx), dy);
+        rgba[3] = (rgba[3] * global_alpha_u8) / 255;
         break;
       case 3:
       for (int c = 0; c < bpp; c++)
@@ -383,7 +385,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
                                  ctx_lerp_u8 (src10[c], src11[c], dx), dy);
                 
         }
-        rgba[3]=255;
+        rgba[3]=global_alpha_u8;
         break;
       break;
       case 4:
@@ -392,7 +394,9 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
                                  ctx_lerp_u8 (src10[c], src11[c], dx), dy);
                 
         }
+        rgba[3] = (rgba[3] * global_alpha_u8) / 255;
       }
+
       }
       else
       {
@@ -403,23 +407,26 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
           case 1:
             for (int c = 0; c < 3; c++)
               { rgba[c] = src[0]; }
-            rgba[3] = 255;
+            rgba[3] = global_alpha_u8;
             break;
           case 2:
             for (int c = 0; c < 3; c++)
               { rgba[c] = src[0]; }
             rgba[3] = src[1];
+            rgba[3] = (rgba[3] * global_alpha_u8) / 255;
             break;
           case 3:
             for (int c = 0; c < 3; c++)
               { rgba[c] = src[c]; }
-            rgba[3] = 255;
+            rgba[3] = global_alpha_u8;
             break;
           case 4:
             for (int c = 0; c < 4; c++)
               { rgba[c] = src[c]; }
+            rgba[3] = (rgba[3] * global_alpha_u8) / 255;
             break;
         }
+
       }
       if (rasterizer->swap_red_green)
       {
