@@ -1041,7 +1041,6 @@ ui_run_command (CtxEvent *event, void *data1, void *data2)
   argvs_eval (commandline);
 }
 
-static int viewer_pre_next_handler = 0;
 CtxClient *viewer = NULL;
 static char *viewer_loaded_path = NULL;
 static char *viewer_loaded_name = NULL;
@@ -1049,11 +1048,6 @@ static int viewer_was_live = 0;
 
 static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 {
-
-  if (viewer_pre_next_handler!=0)
-    ctx_remove_idle (ctx, viewer_pre_next_handler);
-  viewer_pre_next_handler = 0;
-
 #if 0
   if (viewer)
   {
@@ -2014,26 +2008,6 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     return;
   }
 
-#if 0
-  if (media_class == CTX_MEDIA_TYPE_IMAGE && (!strcmp (event, "space")))
-  {
-    ctx_client_unlock (client);
-#if 1
-    if (viewer_pre_next_handler!=0)
-      ctx_remove_idle (ctx, viewer_pre_next_handler);
-    viewer_pre_next_handler = 0;
-
-    viewer_load_next (ctx_event->ctx, NULL);
-#else
-    focused_no++;
-    layout_find_item = focused_no;
-    argvs_eval ("activate");
-    ctx_set_dirty (ctx, 1);
-#endif
-
-    return;
-  }
-#endif
 #if 1
   if ((media_class == CTX_MEDIA_TYPE_IMAGE || 
        media_class == CTX_MEDIA_TYPE_VIDEO)&& (!strcmp (event, "space")))
@@ -2052,10 +2026,6 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   {
     ctx_client_unlock (client);
 #if 1
-    if (viewer_pre_next_handler!=0)
-      ctx_remove_idle (ctx, viewer_pre_next_handler);
-    viewer_pre_next_handler = 0;
-
     viewer_load_next (ctx_event->ctx, NULL);
 #else
     focused_no++;
@@ -4416,7 +4386,6 @@ int viewer_pre_next (Ctx *ctx, void *data1)
 #endif
   free (client_a);
   free (client_cur);
-  viewer_pre_next_handler = 0;
   return 0;
 }
 
@@ -4429,33 +4398,9 @@ static int viewer_space (Ctx *ctx, void *a)
 
 void viewer_load_path (const char *path, const char *name)
 {
-   viewer_slide_start = ctx_ticks ();
-#if 0
-  // if image viewers are quitted with 'q' we do not call deactivate_viewer, and
-  // we fail.
-
-  if (path && viewer_loaded_path && !strcmp (viewer_loaded_path, path) && clients)
-  {
-    return;
-  }
-#endif
+  viewer_slide_start = ctx_ticks ();
   if (viewer_loaded_path)
   {
-#if 0
-    if (viewer)
-    {
-      for (CtxList *c = clients; c; c = c?c->next:NULL)
-      {
-        if (c->data == viewer)
-        {
-          ctx_client_remove (ctx, viewer);
-          c = NULL;
-        }
-      }
-      viewer = NULL;
-    }
-#endif
-
     ctx_set_dirty (ctx, 1);
     free (viewer_loaded_path);
     viewer_loaded_path = NULL;
@@ -4531,23 +4476,15 @@ void viewer_load_path (const char *path, const char *name)
   float duration = 5.0;
   float in = metadata_get_float (collection, no, "in", -1);
   float out = metadata_get_float (collection, no, "out", -1);
-  if (out > 0 && in > 0)
+  if (out > 0)
   {
     duration = out - in;
   }
 
   viewer_slide_duration = 1000 * 1000 * duration;
 
-#if 0
-  if (viewer_pre_next_handler!=0)
-    ctx_remove_idle (ctx, viewer_pre_next_handler);
-  viewer_pre_next_handler = 0;
-
-  float pre_duration = 0.05;
-  viewer_pre_next_handler = ctx_add_timeout (ctx, 1000 * pre_duration, viewer_pre_next, NULL);
-#else
-  viewer_pre_next (ctx, NULL);
-#endif
+  viewer_pre_next (ctx, NULL); /* on initial opening of viewer mode we spawn both this image and the
+                                */
 }
 
 static void dir_ignore (CtxEvent *e, void *d1, void *d2)
@@ -5172,7 +5109,7 @@ static int card_files (ITK *itk_, void *data)
         {
           viewer_load_next (ctx, NULL);   
         }
-#if 0
+#if 1
         else if (viewer_slide_duration < fade_ticks)
         {
           float opacity = (fade_ticks - viewer_slide_duration) / (1.0 * fade_ticks);
@@ -5191,13 +5128,13 @@ static int card_files (ITK *itk_, void *data)
               dirtcb = ctx_add_timeout (ctx, 50, delayed_dirt, NULL);
             //ctx_set_dirty (ctx, 1);
           }
-#endif
           else
           {
             if (!dirtcb)
               dirtcb = ctx_add_timeout (ctx, 200, delayed_dirt, NULL);
           }
         }
+#endif
         else
         { /* to keep events being processed, without it we need to
              wiggle mouse on images
@@ -5210,9 +5147,6 @@ static int card_files (ITK *itk_, void *data)
   }
   else
   {
-    if (viewer_pre_next_handler!=0)
-      ctx_remove_idle (ctx, viewer_pre_next_handler);
-    viewer_pre_next_handler=0;
   }
 
   ctx_save (ctx);
@@ -5419,7 +5353,7 @@ static int card_files (ITK *itk_, void *data)
     //if (stuff_stdout_is_running ())
     //  ctx_clients_handle_events (ctx);
   }
-  ctx_clients_handle_events (ctx);
+  //ctx_clients_handle_events (ctx);
 
   if (show_keybindings && !viewer)
   {
