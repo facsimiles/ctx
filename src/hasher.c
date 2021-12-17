@@ -330,6 +330,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_DEFINE_TEXTURE:
         {
         ctx_sha1_init (&hasher->sha1_fill);
+        ctx_sha1_process(&hasher->sha1_fill, &rasterizer->state->gstate.global_alpha_u8, 1);
         ctx_sha1_process (&hasher->sha1_fill, (uint8_t*)c->define_texture.eid, strlen (c->define_texture.eid));
         ctx_sha1_process(&hasher->sha1_fill, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
 
@@ -338,6 +339,7 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
         break;
       case CTX_TEXTURE:
         ctx_sha1_init (&hasher->sha1_fill);
+        ctx_sha1_process(&hasher->sha1_fill, &rasterizer->state->gstate.global_alpha_u8, 1);
         ctx_sha1_process (&hasher->sha1_fill, (uint8_t*)c->texture.eid, strlen (c->texture.eid));
         ctx_sha1_process (&hasher->sha1_fill, (uint8_t*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
         rasterizer->comp_op = NULL; // why?
@@ -349,24 +351,28 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           {
             ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_stroke.color, (uint8_t*)(&color));
             ctx_sha1_init (&hasher->sha1_stroke);
+            ctx_sha1_process(&hasher->sha1_stroke, &rasterizer->state->gstate.global_alpha_u8, 1);
             ctx_sha1_process(&hasher->sha1_stroke, (unsigned char*)&color, 4);
           }
           else
           {
             ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
             ctx_sha1_init (&hasher->sha1_fill);
+            ctx_sha1_process(&hasher->sha1_fill, &rasterizer->state->gstate.global_alpha_u8, 1);
             ctx_sha1_process(&hasher->sha1_fill, (unsigned char*)&color, 4);
           }
         }
         break;
       case CTX_LINEAR_GRADIENT:
           ctx_sha1_init (&hasher->sha1_fill);
+          ctx_sha1_process(&hasher->sha1_fill, &rasterizer->state->gstate.global_alpha_u8, 1);
           ctx_sha1_process(&hasher->sha1_fill, 
                            (uint8_t*)c, sizeof (c->linear_gradient));
           ctx_sha1_process (&hasher->sha1_fill, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
         break;
       case CTX_RADIAL_GRADIENT:
           ctx_sha1_init (&hasher->sha1_fill);
+          ctx_sha1_process(&hasher->sha1_fill, &rasterizer->state->gstate.global_alpha_u8, 1);
           ctx_sha1_process(&hasher->sha1_fill, 
                            (uint8_t*)c, sizeof (c->radial_gradient));
           ctx_sha1_process (&hasher->sha1_fill, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
