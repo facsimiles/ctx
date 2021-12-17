@@ -186,6 +186,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
   client->height = height;
   client->user_data = user_data;
   client->finalize = finalize;
+  client->opacity = 1.0f;
 
   if (ctx_renderer_is_term (ctx))
   {
@@ -546,6 +547,23 @@ float ctx_client_get_font_size (int id)
    return 14.0;
 }
 
+void ctx_client_set_opacity (int id, float opacity)
+{
+   CtxClient *client = ctx_client_by_id (id);
+   if (!client)
+     return;
+   if (opacity > 0.98) opacity = 1.0f;
+   client->opacity = opacity;
+}
+
+float ctx_client_get_opacity (int id)
+{
+   CtxClient *client = ctx_client_by_id (id);
+   if (!client)
+     return 1.0f;
+   return client->opacity;
+}
+
 int ctx_client_resize (int id, int width, int height)
 {
    CtxClient *client = ctx_client_by_id (id);
@@ -794,13 +812,25 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
       {
         ctx_save (ctx);
         ctx_translate (ctx, x, y);
+        if (client->opacity != 1.0f)
+        {
+          ctx_global_alpha (ctx, client->opacity);
+        }
         ctx_render_ctx (client->recording, ctx);
         vt_register_events (client->vt, ctx, 0.0, 0.0);
         ctx_restore (ctx);
       }
 #else
-
+      if (client->opacity != 1.0)
+      {
+        ctx_save (ctx);
+        ctx_global_alpha (ctx, client->opacity);
+      }
       vt_draw (client->vt, ctx, x, y);
+      if (client->opacity != 1.0)
+      {
+        ctx_restore (ctx);
+      }
       vt_register_events (client->vt, ctx, x, y);
 #endif
       client->drawn_rev = rev;
@@ -827,6 +857,10 @@ static void ctx_client_use_images (Ctx *ctx, CtxClient *client)
       if (client->recording)
       {
         ctx_save (ctx);
+        if (client->opacity != 1.0f)
+        {
+          ctx_global_alpha (ctx, client->opacity);
+        }
         ctx_render_ctx_textures (client->recording, ctx);
         ctx_restore (ctx);
       }

@@ -30,6 +30,7 @@ struct _CtxClient {
   int    y;
   int    width;
   int    height;
+  float  opacity;
   CtxClientFlags flags;
 #if 0
   int    shaded;
@@ -97,24 +98,25 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client);
 
 int ctx_client_height (int id);
 
-int ctx_client_x (int id);
-int ctx_client_y (int id);
+int  ctx_client_x (int id);
+int  ctx_client_y (int id);
 void ctx_client_raise_top (int id);
 void ctx_client_lower_bottom (int id);
 void ctx_client_iconify (int id);
-int ctx_client_is_iconified (int id);
+int  ctx_client_is_iconified (int id);
 void ctx_client_uniconify (int id);
 void ctx_client_maximize (int id);
-int ctx_client_is_maximized (int id);
+int  ctx_client_is_maximized (int id);
 void ctx_client_unmaximize (int id);
 void ctx_client_maximized_toggle (int id);
 void ctx_client_shade (int id);
-int ctx_client_is_shaded (int id);
+int  ctx_client_is_shaded (int id);
 void ctx_client_unshade (int id);
 void ctx_client_toggle_maximized (int id);
 void ctx_client_shade_toggle (int id);
 void ctx_client_move (int id, int x, int y);
-int ctx_client_resize (int id, int width, int height);
-
+int  ctx_client_resize (int id, int width, int height);
+void ctx_client_set_opacity (int id, float opacity);
+float ctx_client_get_opacity (int id);
 
 #endif

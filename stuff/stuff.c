@@ -4368,7 +4368,7 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   char *client_a = ctx_strdup_printf ("%s-%i", pathA, focused_no+1);
   if ((client=find_client (client_a)))
   {
-     fprintf (stderr, "reusing %s\n", client_a);
+     //fprintf (stderr, "reusing %s\n", client_a);
      ctx_client_move (client->id, 
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size);
@@ -4528,7 +4528,7 @@ void viewer_load_path (const char *path, const char *name)
   }
 
 
-  float duration = 10.0;
+  float duration = 5.0;
   float in = metadata_get_float (collection, no, "in", -1);
   float out = metadata_get_float (collection, no, "out", -1);
   if (out > 0 && in > 0)
@@ -5162,13 +5162,39 @@ static int card_files (ITK *itk_, void *data)
 
     if (viewer_slideshow && viewer_slide_prev_time)
     {
-
+      long int fade_ticks = 1000 * 1000 * 2.0;
       if (viewer_slide_duration >= 0)
       {
         viewer_slide_duration -= elapsed;
         if (viewer_slide_duration < 0)
         {
           viewer_load_next (ctx, NULL);   
+        }
+        else if (viewer_slide_duration < fade_ticks)
+        {
+          float opacity = (fade_ticks - viewer_slide_duration) / (1.0 * fade_ticks);
+          //fprintf (stderr, "%.2f \r", opacity);
+
+          char *name = metadata_get_name (collection, focused_no+1);
+          char *pathA = ctx_strdup_printf ("%s/%s", collection->path, name);
+          free (name);
+          char *client_a = ctx_strdup_printf ("%s-%i", pathA, focused_no+1);
+          CtxClient *client;
+          if ((client=find_client (client_a)))
+          {
+            //fprintf (stderr, "reusing %s \r", client_a);
+            ctx_client_move (client->id, opacity * 100, 0);
+            ctx_client_resize (client->id, ctx_width (ctx)/2, ctx_height (ctx)/2);
+            ctx_client_raise_top (client->id);
+            ctx_client_set_opacity (client->id, opacity);
+            ctx_set_dirty (ctx, 1);
+            //fprintf (stderr, ".");
+          }
+          else
+          {
+            fprintf (stderr, "missing next for fading \r");
+            ctx_add_timeout (ctx, 200, delayed_dirt, NULL);
+          }
         }
         else
         { /* to keep events being processed, without it we need to
@@ -5530,7 +5556,7 @@ void ctx_clients_signal_child (int signum);
 int stuff_main (int argc, char **argv)
 {
   setenv ("CTX_HASH_CACHE", "0", 1);
-  setenv ("CTX_SHAPE_CACHE", "1", 1);
+  setenv ("CTX_SHAPE_CACHE", "0", 1);
   char *path = argv[1];
   if (path && strchr (path, ':'))
   {
