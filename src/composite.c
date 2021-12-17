@@ -581,6 +581,7 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
   CtxBuffer *buffer = g->texture.buffer->color_managed;
   int width = buffer->width;
   int height = buffer->height;
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
 
   for (int i = 0; i < count; i++)
   {
@@ -596,7 +597,7 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
   else
     {
       int bpp = 3;
-      rgba[3]=255;
+      rgba[3]=global_alpha_u8;
       float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
           int dim = (1.0 / factor) / 2;
           uint64_t sum[4]={0,0,0,0};
@@ -659,6 +660,7 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
   int width = buffer->width;
   int height = buffer->height;
 
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   for (int i = 0; i < count; i++)
   {
 
@@ -673,7 +675,6 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
   else
     {
       int bpp = 3;
-      rgba[3]=255;
       uint8_t *src00 = (uint8_t *) buffer->data;
       int stride = buffer->stride;
       src00 += v * stride + u * bpp;
@@ -696,6 +697,7 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
         rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
                                ctx_lerp_u8 (src10[c], src11[c], dx), dy);
       }
+      rgba[3] = global_alpha_u8;
       ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     x += dx;
@@ -728,6 +730,7 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
   CtxBuffer *buffer = g->texture.buffer;
   if (buffer->color_managed)
    buffer = buffer->color_managed;
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   uint8_t *rgba = (uint8_t *) out;
   uint8_t *src = (uint8_t *) buffer->data;
   int bwidth = buffer->width;
@@ -759,7 +762,7 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
         rgba[0] = src[o];
         rgba[1] = src[o+1];
         rgba[2] = src[o+2]; 
-        rgba[3]=255;
+        rgba[3]=global_alpha_u8;
         rgba += 4;
         o += 3;
         u+=1;
@@ -807,7 +810,7 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
         rgba[0] = src[o];
         rgba[1] = src[o+1];
         rgba[2] = src[o+2]; 
-        rgba[3]=255;
+        rgba[3] = global_alpha_u8;
       }
   
       rgba += 4;
@@ -899,6 +902,7 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed;
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
 
   for (int i = 0; i < count; i ++)
   {
@@ -940,6 +944,7 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
             for (int c = 0; c < bpp; c++)
               rgba[c] = sum[c]*recip>>16;
           }
+          rgba[3] = (rgba[3] * global_alpha_u8)/255;
           ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     rgba += 4;
@@ -952,6 +957,30 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
 #endif
 }
 
+static inline void
+ctx_RGBA8_apply_global_alpha_and_associate (CtxRasterizer *rasterizer,
+                                         uint8_t *buf, int count)
+{
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  uint8_t *rgba = (uint8_t *) buf;
+  if (global_alpha_u8 != 255)
+  {
+    for (int i = 0; i < count; i++)
+    {
+      rgba[3] = (rgba[3] * global_alpha_u8) / 255;
+      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+      rgba += 4;
+    }
+  }
+  else
+  {
+    for (int i = 0; i < count; i++)
+    {
+      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+      rgba += 4;
+    }
+  }
+}
 
 static void
 ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
@@ -1047,6 +1076,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       dst++;
     }
   }
+  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, out, count);
 }
 
 static void
@@ -1268,6 +1298,8 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     *((uint32_t*)(rgba))= 0;
     rgba += 4;
   }
+
+  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, out, count);
 }
 #endif
 
@@ -1376,6 +1408,8 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       rgba += 4;
     }
   }
+
+  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, out, count);
 }
 
 #if CTX_FRAGMENT_SPECIALIZE
@@ -1724,6 +1758,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
         switch (buffer->format->bpp)
           {
             case 1:  return ctx_fragment_image_gray1_RGBA8;
+#if 0
             case 24: 
               {
                 if (gstate->image_smoothing)
@@ -1759,6 +1794,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                 }
               }
               break;
+#endif
             case 32:
               {
                 if (gstate->image_smoothing)
@@ -1779,6 +1815,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     return ctx_fragment_image_rgba8_RGBA8_nearest;
                   }
 #endif
+
                   else
                   {
                     if (rasterizer->swap_red_green)
