@@ -169,10 +169,10 @@ proc text*(ctx:Ctx, val:string)=
   echo "x \"", val, "\""
 
 proc identity*(ctx:Ctx)=
-  echo "y "
+  echo "y"
 
 proc closePath*(ctx:Ctx)=
-  echo "z "
+  echo "z"
 
 proc arcTo*(ctx:Ctx, a,b,c,d,e,f:float)=
   echo "A ", a, " ", b, " ", c, " ", d, " ", e, " ", f
@@ -226,7 +226,7 @@ proc verLineTo*(ctx:Ctx, val:float)=
   echo "V ", val
 
 proc done*(ctx:Ctx)=
-  echo "X "
+  echo "X"
 
 proc roundRectangle*(ctx:Ctx, a,b,c,d,e:float)=
   echo "Y ", a, " ", b, " ", c, " ", d, " ", e
@@ -237,19 +237,19 @@ proc closePath2*(ctx:Ctx)=
 proc transform*(ctx:Ctx, a,b,c,d,e,f:float)=
   echo "W ", a, " ", b, " ", c, " ", d, " ", e, " ", f
 
-proc srokeSource*(ctx:Ctx)=
-  echo "_ "
+proc strokeSource*(ctx:Ctx)=
+  echo "_"
 
 proc startGroup*(ctx:Ctx)=
-  echo "{ "
+  echo "{"
 
 proc endGroup*(ctx:Ctx)=
-  echo "} "
+  echo "}"
 
 proc startFrame*(ctx:Ctx)=
   write stdout, "\e[H\e[?200h reset "
 
 proc endFrame*(ctx:Ctx)=
-  echo "flush X"
+  echo "; X"
 
 addExitProc(cleanup)

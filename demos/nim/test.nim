@@ -1,3 +1,6 @@
+#  from the same folder, run this test with:
+#    $ nim r test.nim
+
 import ctx2d
 import terminal
 
