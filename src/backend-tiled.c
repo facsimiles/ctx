@@ -44,6 +44,7 @@ static long sdl_icc_length = 0;
 
 inline static void ctx_tiled_flush (CtxTiled *tiled)
 {
+  mtx_lock (&tiled->mtx);
   if (tiled->shown_frame == tiled->render_frame)
   {
     int dirty_tiles = 0;
@@ -136,10 +137,9 @@ inline static void ctx_tiled_flush (CtxTiled *tiled)
 #endif
 
 
-    mtx_lock (&tiled->mtx);
     cnd_broadcast (&tiled->cond);
-    mtx_unlock (&tiled->mtx);
   }
+  mtx_unlock (&tiled->mtx);
 }
 
 static

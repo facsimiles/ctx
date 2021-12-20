@@ -1,7 +1,7 @@
 #ifndef __CTX_CONSTANTS
 #define __CTX_CONSTANTS
 
-#define TOKENHASH(a)    ((uint64_t)a)
+#define TOKENHASH(a)    ((uint32_t)a)
 
 #define CTX_strokeSource TOKENHASH(3387288669)
 #define CTX_add_stop TOKENHASH(3572486242)

@@ -2,7 +2,7 @@ DESTDIR ?=
 PREFIX  ?= /usr/local
 
 #CCACHE=`command -v ccache`
-CLIENTS_CFILES = $(wildcard demos/*.c)
+CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
 all: build.conf ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
@@ -63,7 +63,7 @@ build.conf:
 	@echo "!! now run Make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
-demos/%: demos/%.c build.conf Makefile build.conf ctx.o media-handlers/itk.h libctx.a
+demos/c/%: demos/c/%.c build.conf Makefile build.conf ctx.o media-handlers/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
