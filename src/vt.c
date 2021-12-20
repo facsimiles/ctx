@@ -7767,6 +7767,11 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
   VT   *vt = data;
   CtxClient *client = vt_get_client (vt);
+  if (!client)
+  {
+    event->stop_propagate = 1;
+    return;
+  }
   float  x = event->x;
   float  y = event->y;
   int device_no = event->device_no;
