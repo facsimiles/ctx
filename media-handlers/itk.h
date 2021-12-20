@@ -2353,6 +2353,10 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
     if (ctx_clients_need_redraw (ctx))
       ctx_set_dirty (ctx, 1);
   }
+
+  while (clients)
+    ctx_client_remove (ctx, clients->data);
+
   itk_free (itk);
   ctx_free (ctx);
   return NULL;
