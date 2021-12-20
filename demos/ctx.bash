@@ -49,10 +49,12 @@ function rgba()            { echo "rgba $1 $2 $3 $4" ; }
 function relArcTo()        { echo "a $1 $2 $3 $4 $5 $6"; }
 function clip()            { echo "b"; }
 function relCurveTo()      { echo "c $1 $2 $3 $4 $5 $6"; }
-function save()            { echo "g"; }
 function translate()       { echo "e $1 $2" ; }
 function linearGradient()  { echo "f $1 $2 $3 $4" ; }
+function save()            { echo "g"; }
 function relHorLine()      { echo "h $1" ; }
+function preserve()        { echo "j" ; }
+
 function globalAlpha()     { echo "ka $1" ; }
 function textBaseline()    { echo "kb $1" ; }
 function blendMode()       { echo "kB $1" ; }
