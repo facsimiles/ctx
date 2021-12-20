@@ -532,6 +532,9 @@ collection_set_path (Collection *collection,
   }
 
   collection->count = metadata_count (collection);
+
+  while (n--)
+    free (namelist[n]);
   free (namelist);
 
   // TODO remove non-existent collection
@@ -4361,7 +4364,8 @@ int viewer_pre_next (Ctx *ctx, void *data1)
       free (command);
     }
   }
-  ctx_client_raise_top (client->id);
+  if (client)
+    ctx_client_raise_top (client->id);
 
 #if 1
   CtxList *to_remove = NULL;
@@ -5118,6 +5122,7 @@ static int card_files (ITK *itk_, void *data)
           char *pathA = ctx_strdup_printf ("%s/%s", collection->path, name);
           free (name);
           char *client_a = ctx_strdup_printf ("%s-%i", pathA, focused_no+1);
+          free (pathA);
           CtxClient *client;
           if ((client=find_client (client_a)))
           {
@@ -5528,7 +5533,5 @@ int stuff_main (int argc, char **argv)
 
   ctx_string_free (commandline, 1);
 
-  while (clients)
-    ctx_client_remove (ctx, clients->data);
   return 0;
 }
