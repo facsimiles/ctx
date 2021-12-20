@@ -64,19 +64,28 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
     {
       case CTX_TEXT:
         {
+          const char *str = ctx_arg_string();
           CtxSHA1 sha1;
           memcpy (&sha1, &hasher->sha1_fill, sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
-          float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
+          float width = ctx_text_width (rasterizer->ctx, str);
 
 
           float height = ctx_get_font_size (rasterizer->ctx);
            CtxIntRectangle shape_rect;
+
+           float tx = rasterizer->x;
+           float ty = rasterizer->y;
+           float tw = width;
+           float th = height * (ctx_str_count_lines (str));
+
+           _ctx_user_to_device (rasterizer->state, &tx, &ty);
+           _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
           
-           shape_rect.x=rasterizer->x;
-           shape_rect.y=rasterizer->y - height,
-           shape_rect.width = width;
-           shape_rect.height = height * (ctx_str_count_lines (ctx_arg_string()) + 1.5);
+           shape_rect.x=tx;
+           shape_rect.y=ty;
+           shape_rect.width = tw;
+           shape_rect.height = th;
           switch ((int)ctx_state_get (rasterizer->state, CTX_text_align))
           {
           case CTX_TEXT_ALIGN_LEFT:
@@ -112,15 +121,26 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
       case CTX_STROKE_TEXT:
         {
           CtxSHA1 sha1;
+          const char *str = ctx_arg_string();
           memcpy (&sha1, &hasher->sha1_stroke, sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
-          float width = ctx_text_width (rasterizer->ctx, ctx_arg_string());
+          float width = ctx_text_width (rasterizer->ctx, str);
           float height = ctx_get_font_size (rasterizer->ctx);
 
-           CtxIntRectangle shape_rect = {
-              (int)rasterizer->x, (int)(rasterizer->y - height),
-              (int)width, (int)(height * 2)
-           };
+           CtxIntRectangle shape_rect;
+
+           float tx = rasterizer->x;
+           float ty = rasterizer->y;
+           float tw = width;
+           float th = height * (ctx_str_count_lines (str));
+
+           _ctx_user_to_device (rasterizer->state, &tx, &ty);
+           _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
+          
+           shape_rect.x=tx;
+           shape_rect.y=ty;
+           shape_rect.width = tw;
+           shape_rect.height = th;
 
 #if 0
           uint32_t color;
