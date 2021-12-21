@@ -10,14 +10,13 @@
 #   read back of state (hard, requires keeping stack of transforms and
 #                       fill/stroke sources)
 #
-#
+# This is an implementaiton of most of https://ctx.graphics/protocol/
 
 import  std/exitprocs
 
 type
   Ctx* = ref object
     foo: bool      #  unused; kept as syntax reminder
-
 
   FillRule* = enum
     FillRuleWinding, FillRuleEvenOdd
@@ -247,7 +246,7 @@ proc endGroup*(ctx:Ctx)=
   echo "}"
 
 proc startFrame*(ctx:Ctx)=
-  write stdout, "\e[H\e[?200h reset "
+  write stdout, "\e[H\e[?200h U "
 
 proc endFrame*(ctx:Ctx)=
   echo "; X"
