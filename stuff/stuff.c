@@ -560,7 +560,7 @@ collection_set_path (Collection *collection,
 static void save_metadata(void)
 {  if (metadata_dirty)
    {
-     metadata_save (collection);
+     metadata_save (collection, text_editor);
      collection_set_path (collection, collection->path, collection->title);
      metadata_dirty = 0;
    }
@@ -3806,19 +3806,24 @@ static void dir_layout (ITK *itk, Collection *collection)
             BIND_KEY("control-o", "?", "get help");
             BIND_KEY("control-p", "? ?", "get help");
 
-            if (history)
-              BIND_KEY("alt-left", "history back", "back");
-            if (future)
-              BIND_KEY("alt-right", "history forward", "forward");
+            if (!text_editor)
+            {
 
-            BIND_KEY ("alt-up",    "go-parent",    "go to parent");
-            BIND_KEY ("alt-down",  "activate",  "enter item");
+              if (history)
+                BIND_KEY("alt-left", "history back", "back");
+              if (future)
+                BIND_KEY("alt-right", "history forward", "forward");
+
+              BIND_KEY ("alt-up",    "go-parent",    "go to parent");
+              BIND_KEY ("alt-down",  "activate",  "enter item");
+            }
             BIND_KEY ("control-d", "duplicate", "duplicate item");
 
             BIND_KEY ("delete", "remove", "remove item");
 
             if (!layout_config.outliner)
             {
+               if (!text_editor)
                BIND_KEY ("alt-return", "toggle-context", "item properties");
 
                if (layout_focused_link >= 0)
@@ -3830,6 +3835,7 @@ static void dir_layout (ITK *itk, Collection *collection)
                 BIND_KEY ("return", "activate", "activate/edit");
               }
 
+            if (!text_editor)
             {
               int bullet = metadata_get_int (collection, i, "bullet", CTX_BULLET_NONE);
               const char *label = "cycle bullet";
@@ -3847,6 +3853,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
             BIND_KEY ("control-j", "join-with-next", "join");
 
+            if (!text_editor)
             {
               const char *label = "make heading";
               char *klass = metadata_get_string (collection, i, "class");
@@ -3899,9 +3906,12 @@ static void dir_layout (ITK *itk, Collection *collection)
                       "move-before-previous-sibling",
                       "move before previoue sibling");
 
-            BIND_KEY ("control-left", "make-sibling-of-parent", "make sibling of parent");
+            if (!text_editor)
+            {
+              BIND_KEY ("control-left", "make-sibling-of-parent", "make sibling of parent");
 
-            BIND_KEY ("control-right", "make-child-of-previous", "make child of previous");
+              BIND_KEY ("control-right", "make-child-of-previous", "make child of previous");
+            }
 
           }
           }
@@ -4848,7 +4858,7 @@ static int card_files (ITK *itk_, void *data)
  // }
  // else
   {
-    if (!is_text_editing())
+    if (!is_text_editing() && !text_editor)
     {
 
     ctx_add_key_binding (ctx, "control-r", NULL, 
@@ -4921,7 +4931,10 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "escape", NULL, "stop editing location", dir_location_escape, NULL);
             ctx_add_key_binding (ctx, "return", NULL, "confirm new location", dir_location_return, NULL);
           }
-          ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
+          if (!text_editor)
+          {
+            ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
+          }
 
           if (item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT &&
               metadata_get_float (collection, focused_no, "x", -1234.0) == -1234.0 &&
@@ -4941,6 +4954,8 @@ static int card_files (ITK *itk_, void *data)
             else
               BIND_KEY ("down", "focus-next", "focus next");
 
+            if (!text_editor)
+            {
             BIND_KEY ("left", "fold", "fold");
             if (layout_focused_link >= 0)
                BIND_KEY ("right", "follow-link", "follow link");
@@ -4951,6 +4966,7 @@ static int card_files (ITK *itk_, void *data)
                else
                  BIND_KEY ("right", "enter-children", "enter children");
                  // enter-children creates child if it doesnt exist
+            }
             }
           }
   }

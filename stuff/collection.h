@@ -18,11 +18,11 @@ typedef struct Collection {
 } Collection;
 
 void metadata_load (Collection *collection, const char *path, int text_file);
+void metadata_save (Collection *collection, int text_file);
 
 
 
 void dir_mkdir_ancestors (const char *path, unsigned int mode);
-void metadata_save (Collection *collection);
 int metadata_count (Collection *collection);
 char *metadata_get_name_escaped (Collection *collection, int no);
 char *metadata_get_name (Collection *collection, int no);

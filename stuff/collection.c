@@ -72,13 +72,27 @@ void dir_mkdir_ancestors (const char *path, unsigned int mode)
 }
 
 #if 1
-void metadata_save (Collection *collection)
+void metadata_save (Collection *collection, int text_file)
 {
   if (!collection->metadata_path) return;
   dir_mkdir_ancestors (collection->metadata_path, 0777);
 
   FILE *file = fopen (collection->metadata_path, "w");
-  fwrite (collection->metadata, collection->metadata_len, 1, file);
+  if (text_file)
+  {
+    int count = metadata_count (collection);
+    for (int i = 0; i < count; i++)
+    {
+      char *line = metadata_get_name (collection, i);
+      fwrite (line, strlen (line), 1, file);
+      fwrite ("\n", 1, 1, file);
+      free (line);
+    }
+  }
+  else
+  {
+    fwrite (collection->metadata, collection->metadata_len, 1, file);
+  }
   fclose (file);
 }
 #endif
