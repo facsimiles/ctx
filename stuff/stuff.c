@@ -395,6 +395,9 @@ Collection *collection = &file_state;
 
 CtxAtom item_get_type_atom (Collection *collection, int i)
 {
+  if (text_editor)
+    return CTX_ATOM_TEXT;
+
   char *type = metadata_get_string (collection, i, "type");
   if (type)
   {
@@ -3351,7 +3354,6 @@ static void dir_layout (ITK *itk, Collection *collection)
   float saved_x0 = itk->x0;
   float saved_width = itk->width;
   //float saved_y = itk->y;
-  float space_width = ctx_text_width (itk->ctx, " ");
 
 
   float y1;
@@ -3365,6 +3367,7 @@ static void dir_layout (ITK *itk, Collection *collection)
   ctx_save (itk->ctx);
   if (layout_config.monospace)
           ctx_font (itk->ctx, "mono");
+  float space_width = ctx_text_width (itk->ctx, " ");
   ctx_font_size (itk->ctx, itk->font_size);
 
 
@@ -3462,7 +3465,30 @@ static void dir_layout (ITK *itk, Collection *collection)
       if (is_folded)
         hidden = 1;
 
-      int label = metadata_get_int (collection, i, "label", -1234);
+      int label = 0;
+      int gotpos = 0;
+      int gotdim = 0;
+      char *xstr = NULL;
+      char *ystr = NULL;
+      char *wstr = NULL;
+      char *hstr = NULL;
+      float origin_x = 0.0;
+      float origin_y = 0.0;
+
+      float padding_left = layout_config.padding_left;
+      float padding_right = layout_config.padding_right;
+      float padding_top = layout_config.padding_top;
+      float padding_bottom = layout_config.padding_bottom;
+
+      //padding_left += level * layout_config.level_indent;
+
+      float x = 0.0;
+      float y = 0.0;
+      
+      if (!text_editor)
+      {
+
+      label = metadata_get_int (collection, i, "label", -1234);
       if (label == -1234) {
         if (atom == CTX_ATOM_TEXT)
           label = 0;
@@ -3470,26 +3496,25 @@ static void dir_layout (ITK *itk, Collection *collection)
           label = layout_config.label;
       }
 
-      int gotpos = 0;
-      int gotdim = 0;
-      char *xstr = metadata_get_string (collection, i, "x");
-      char *ystr = metadata_get_string (collection, i, "y");
-      char *wstr = metadata_get_string (collection, i, "width");
-      char *hstr = metadata_get_string (collection, i, "height");
-      float origin_x = metadata_get_float (collection, i, "origin-x", 0.0);
-      float origin_y = metadata_get_float (collection, i, "origin-y", 0.0);
+      xstr = metadata_get_string (collection, i, "x");
+      ystr = metadata_get_string (collection, i, "y");
+      wstr = metadata_get_string (collection, i, "width");
+      hstr = metadata_get_string (collection, i, "height");
+      origin_x = metadata_get_float (collection, i, "origin-x", 0.0);
+      origin_y = metadata_get_float (collection, i, "origin-y", 0.0);
 
 
-      float padding_left = metadata_get_float (collection, i, "padding-left", layout_config.padding_left);
-      float padding_right = metadata_get_float (collection, i, "padding-right", layout_config.padding_right);
-      float padding_top = metadata_get_float (collection, i, "padding-top", layout_config.padding_top);
-      float padding_bottom = metadata_get_float (collection, i, "padding-bottom", layout_config.padding_bottom);
+      padding_left = metadata_get_float (collection, i, "padding-left", layout_config.padding_left);
+      padding_right = metadata_get_float (collection, i, "padding-right", layout_config.padding_right);
+      padding_top = metadata_get_float (collection, i, "padding-top", layout_config.padding_top);
+      padding_bottom = metadata_get_float (collection, i, "padding-bottom", layout_config.padding_bottom);
 
       //padding_left += level * layout_config.level_indent;
 
-      float x = metadata_get_float (collection, i, "x", 0.0);
-      float y = metadata_get_float (collection, i, "y", 0.0);
+      x = metadata_get_float (collection, i, "x", 0.0);
+      y = metadata_get_float (collection, i, "y", 0.0);
       //float opacity = metadata_get_float (i, "opacity", 1.0f);
+      }
 
       if (xstr)
       {
@@ -3516,7 +3541,10 @@ static void dir_layout (ITK *itk, Collection *collection)
         gotpos = 0;
 
       {
-        width  = metadata_get_float (collection, i, "width", -1000.0);
+        if (text_editor)
+          width = -1000.0;
+        else
+          width  = metadata_get_float (collection, i, "width", -1000.0);
         if (width < 0 || layout_config.fixed_size)
           width = 
             layout_config.fill_width? itk->width * 1.0:
@@ -3527,7 +3555,10 @@ static void dir_layout (ITK *itk, Collection *collection)
       }
 
       {
-        height = metadata_get_float (collection, i, "height", -1000.0);
+        if (text_editor)
+          height = -1000.0;
+        else
+          height = metadata_get_float (collection, i, "height", -1000.0);
         if (height < 0 || layout_config.fixed_size)  height =
           layout_config.fill_height? itk->height * 1.0:
           layout_config.height * em;
@@ -5531,16 +5562,17 @@ int stuff_main (int argc, char **argv)
 
   signal (SIGCHLD, ctx_clients_signal_child);
 
-  set_layout (NULL, NULL, NULL);
 
   if (text_editor)
   {
+    set_text_edit (NULL, NULL, NULL);
     set_location (path);
     focused_no = 0;
     layout_find_item = focused_no;
   }
   else
   {
+    set_layout (NULL, NULL, NULL);
     char *dir = strdup (path);
     char *name = NULL;
     if (strrchr (dir, '/'))

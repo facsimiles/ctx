@@ -12,6 +12,9 @@ typedef struct Collection {
   char   *metadata_path;
   char   *metadata_cache;
   int     metadata_cache_no;
+
+  char  **cache;
+  int     cache_size;
 } Collection;
 
 void metadata_load (Collection *collection, const char *path, int text_file);

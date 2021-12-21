@@ -16,13 +16,41 @@ void metadata_load (Collection *collection, const char *path, int text_file)
   collection->metadata_len = 0;
   collection->metadata_size = 0;
   if (text_file)
+  {
+    uint8_t *contents = NULL;
+    long length = 0;
+
     strcpy (collection->metadata_path, path);
+    ctx_get_contents (collection->metadata_path, &contents, &length);
+    if (contents)
+    {
+       CtxString *line = ctx_string_new ("");
+       int i;
+       for (i = 0; contents[i]; i++)
+       {
+         char p = contents[i];
+         if (p == '\n')
+         {
+           metadata_insert (collection, -1, line->str);
+           ctx_string_set (line, "");
+         }
+         else
+         {
+           ctx_string_append_byte (line, p);
+         }
+       }
+       if (line->str[0])
+         metadata_insert (collection, -1, line->str);
+       free (contents);
+    }
+
+  }
   else
+  {
     snprintf (collection->metadata_path, strlen(path)+20, "%s/.ctx/index", path);
   ctx_get_contents (collection->metadata_path, (uint8_t**)&collection->metadata, &collection->metadata_size);
   collection->metadata_len = (int)collection->metadata_size;
-
-  fprintf (stderr, "%s loaded len: %i \n", path, collection->metadata_len);
+  }
 }
 
 void dir_mkdir_ancestors (const char *path, unsigned int mode)
@@ -140,6 +168,16 @@ static char *metadata_find_no (Collection *collection, int no)
 
 char *metadata_get_name (Collection *collection, int no)
 {
+  if (collection->cache)
+  { if (collection->cache[no])
+      return strdup (collection->cache[no]);
+  }
+  else
+  {
+    int new_count = metadata_count (collection);
+    collection->cache_size = new_count;
+    collection->cache = calloc (sizeof(void*), new_count);
+  }
   /* this makes use reuse the cache */
   const char *m = metadata_find_no (collection, no);
   if (!m) return NULL;
@@ -184,6 +222,8 @@ char *metadata_get_name (Collection *collection, int no)
         ctx_string_append_byte (str, m[i]);
     }
   }
+
+  collection->cache[no]=strdup(str->str);
   return ctx_string_dissolve (str);
 }
 
@@ -368,6 +408,26 @@ int metadata_get_int (Collection *collection, int no, const char *key, int def_v
    return ret;
 }
 
+void metadata_wipe_cache (Collection *collection, int full)
+{
+  if (full)
+    collection->metadata_cache_no = -3;
+  if (collection->cache)
+  {
+    for (int i = 0; i < collection->cache_size; i++)
+    {
+       if (collection->cache[i])
+       {
+        free (collection->cache[i]);
+        collection->cache[i] = NULL;
+       }
+    }
+    free (collection->cache);
+    collection->cache = NULL;
+    collection->cache_size = 0;
+  }
+
+}
 
 void metadata_swap (Collection *collection, int no_a, int no_b)
 {
@@ -414,7 +474,9 @@ void metadata_swap (Collection *collection, int no_a, int no_b)
    free (b_temp);
 
    collection->metadata_cache_no = -3;
+   metadata_wipe_cache (collection, 1);
 }
+
 
 void metadata_remove (Collection *collection, int no)
 {
@@ -430,7 +492,7 @@ void metadata_remove (Collection *collection, int no)
             collection->metadata_len - a_start - a_len);
    collection->metadata_len -= a_len;
    collection->metadata[collection->metadata_len]=0;
-   collection->metadata_cache_no = -3;
+   metadata_wipe_cache (collection, 1);
 }
 
 void metadata_unset (Collection *collection, int no, const char *key)
@@ -480,10 +542,12 @@ void metadata_unset (Collection *collection, int no, const char *key)
             collection->metadata + a_start + a_len, collection->metadata_len - a_start - a_len);
    collection->metadata_len -= a_len;
    collection->metadata[collection->metadata_len]=0;
+   metadata_wipe_cache (collection, 1);
 }
 
 static void _metadata_insert (Collection *collection, int pos, const char *data, int len)
 {
+  int wipe_full = (pos != collection->metadata_len);
   if (collection->metadata_len + len >= collection->metadata_size - 1)
   {
      collection->metadata_size = collection->metadata_len + len + 1024;
@@ -493,13 +557,16 @@ static void _metadata_insert (Collection *collection, int pos, const char *data,
   memcpy (collection->metadata + pos, data, len);
   collection->metadata_len += len;
   collection->metadata[collection->metadata_len] = 0;
-  collection->metadata_cache_no = -3;
+  metadata_wipe_cache (collection, wipe_full);
 }
 
 int metadata_insert (Collection *collection, int pos, const char *item)
 {
-  if (pos == -1) pos = collection->metadata_len;
-  const char *m = metadata_find_no (collection, pos);
+  const char *m = NULL;
+  if (pos == -1)
+    pos = collection->metadata_len;
+  else
+    m = metadata_find_no (collection, pos);
   if (m)
   {
     char *name = metadata_get_name_escaped (collection, pos);
