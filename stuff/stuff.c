@@ -963,6 +963,28 @@ int dir_follow_link (COMMAND_ARGS) /* "follow-link", 0, "", "" */
   return 0;
 }
 
+int cmd_edit_text_home (COMMAND_ARGS) /* "edit-text-home", 0, "", "edit start of line" */
+{
+  int virtual = (item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT);
+  if (!virtual) return 0;
+
+  text_edit = 0;
+}
+
+int cmd_edit_text_end (COMMAND_ARGS) /* "edit-text-end", 0, "", "edit end of line" */
+{
+  int virtual = (item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT);
+  if (!virtual) return 0;
+  char *name = metadata_get_name (collection, focused_no);
+  int pos = 0;
+  if (name)
+  {
+    pos = strlen (name);
+    free (name);
+  }
+  text_edit = pos;
+}
+
 int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
 {
   int no = focused_no;
@@ -970,7 +992,8 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
 
   if (virtual)
   {
-    text_edit = 0;
+    argvs_eval ("edit-text-end");
+
     return 0;
   }
 
@@ -2702,8 +2725,11 @@ void text_edit_end (CtxEvent *event, void *a, void *b)
   text_edit_desired_x = -100;
   char *name = metadata_get_name (collection, focused_no);
   text_edit = ctx_utf8_strlen (name);
-  ctx_set_dirty (event->ctx, 1);
-  event->stop_propagate=1;
+  if (event)
+  {
+    ctx_set_dirty (event->ctx, 1);
+    event->stop_propagate=1;
+  }
 }
 
 int prev_line_pos = 0;
@@ -3833,7 +3859,10 @@ static void dir_layout (ITK *itk, Collection *collection)
                }
                else
               {
-                BIND_KEY ("return", "activate", "activate/edit");
+                if (text_editor)
+                  BIND_KEY ("return", "edit-text-end", "edit at end");
+                else
+                  BIND_KEY ("return", "activate", "activate/edit");
               }
 
             if (!text_editor)
@@ -3870,7 +3899,13 @@ static void dir_layout (ITK *itk, Collection *collection)
               BIND_KEY ("control-h", "cycle-heading", label);
             }
 
-            BIND_KEY ("insert", "insert-text", "insert text");
+
+              if (text_editor)
+              {
+                BIND_KEY ("i", "edit-text-home", "insert text");
+                BIND_KEY ("A", "edit-text-end", "insert text");
+              }
+              BIND_KEY ("insert", "insert-text", "insert text");
             }
           }
 
@@ -5016,12 +5051,21 @@ static int card_files (ITK *itk_, void *data)
                           text_edit_any,
                           NULL);
 
+          ctx_add_key_binding (ctx, "control-a", NULL, "go to start of paragraph",
+                          text_edit_home,
+                          NULL);
+          ctx_add_key_binding (ctx, "control-e", NULL, "go to end of paragraph",
+                          text_edit_end,
+                          NULL);
           ctx_add_key_binding (ctx, "home", NULL, "go to start of paragraph",
                           text_edit_home,
                           NULL);
           ctx_add_key_binding (ctx, "end", NULL, "go to end of paragraph",
                           text_edit_end,
                           NULL);
+
+
+
 
           ctx_add_key_binding (ctx, "return", NULL, "split paragraph",
                           text_edit_return,
@@ -5205,6 +5249,9 @@ static int card_files (ITK *itk_, void *data)
   {
   }
 
+
+  if (!text_editor)
+  {
   ctx_save (ctx);
   ctx_translate (ctx, toolbar_x, toolbar_y);
 
@@ -5349,7 +5396,7 @@ static int card_files (ITK *itk_, void *data)
 
     for (int i = 0; i < layout_last_page + 1; i ++)
     {
-      ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * (1+i) + 0.5) * em,  2 * em, 2 * em);
+      ctx_rectangle (ctx, 0.5 * em, (3 * (1+i) + 0.5) * em,  2 * em, 2 * em);
       ctx_listen (ctx, CTX_CLICK, dir_set_page, (void*)((size_t)i), NULL);
       if (i == layout_show_page)
         ctx_rgba (ctx, 1,1,1, 0.3);
@@ -5363,6 +5410,7 @@ static int card_files (ITK *itk_, void *data)
       ctx_fill (ctx);
   }
   ctx_restore (ctx);
+  }
 
   if (viewer) 
   {

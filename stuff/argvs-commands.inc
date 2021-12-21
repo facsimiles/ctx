@@ -5,6 +5,8 @@ int cmd_aa_help (COMMAND_ARGS);
 int cmd_activate (COMMAND_ARGS);
 int cmd_argvs (COMMAND_ARGS);
 int cmd_duplicate (COMMAND_ARGS);
+int cmd_edit_text_end (COMMAND_ARGS);
+int cmd_edit_text_home (COMMAND_ARGS);
 int cmd_go_parent (COMMAND_ARGS);
 int cmd_history (COMMAND_ARGS);
 int cmd_move (COMMAND_ARGS);
@@ -37,6 +39,8 @@ void argvs_register(void) {
  argvs_add (cmd_activate ,  "activate", 0, "", "activate item" );
  argvs_add (cmd_argvs ,  "argvs", 0, "<script | -c <command> >", "the minimalistic shell with int argc, char **argv semantics you now use" );
  argvs_add (cmd_duplicate ,  "duplicate", 0, "", "duplicate item" );
+ argvs_add (cmd_edit_text_end ,  "edit-text-end", 0, "", "edit end of line" );
+ argvs_add (cmd_edit_text_home ,  "edit-text-home", 0, "", "edit start of line" );
  argvs_add (cmd_go_parent ,  "go-parent", 0, "", "" );
  argvs_add (cmd_history ,  "history", 1, "<forward|back>", "moved history forward or back" );
  argvs_add (cmd_move ,  "move", 1, "<up|left|right|down>", "shift items position" );
