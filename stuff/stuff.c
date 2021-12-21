@@ -3301,7 +3301,7 @@ char *dir_get_viewer_command (const char *path, int no)
     if (!command[0])
     if (media_type_class == CTX_MEDIA_TYPE_TEXT)
     {
-      sprintf (command, "vim +1 -R \"%s\"", escaped_path);
+      sprintf (command, "ctx \"%s\"", escaped_path);
     }
     free (basname);
    

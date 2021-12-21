@@ -342,6 +342,10 @@ int main (int argc, char **argv)
 
     if (media_type_class == CTX_MEDIA_TYPE_TEXT)
     {
+      char *new_argc[] = {argv[0], "-e", input_path, NULL};
+
+      return stuff_main (3, new_argc);
+
       return ctx_text_main (argc, argv);
     }
 
