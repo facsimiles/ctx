@@ -3130,6 +3130,13 @@ int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
   return 0;
 }
 
+int collection_has_children (Collection *collection, int no)
+{
+  CtxAtom  atom = item_get_type_atom (collection, no+1);
+  if (atom == CTX_ATOM_STARTGROUP)
+    return 1;
+  return 0;
+}
 
 int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
 {
@@ -3856,20 +3863,6 @@ static void dir_layout (ITK *itk, Collection *collection)
 
           }
           }
-
-
-           if (!is_text_editing())
-           {
-               if (metadata_get_int (collection, i + 1, "folded", -1)>0)
-               {
-                 BIND_KEY ("+", "expand", "expand");
-                 BIND_KEY ("=", "expand", "expand");
-               }
-               else if (item_get_type_atom (collection, i + 1) == CTX_ATOM_STARTGROUP)
-               {
-                 BIND_KEY ("-", "fold", "fold");
-               }
-           }
 
           }
           //itk_labelf (itk, "%s\n", ctx_path_get_media_type (newpath));
@@ -4859,6 +4852,7 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "return", NULL, "run commandline",
                             dir_run_commandline,
                             NULL);
+
           ctx_add_key_binding (ctx, "left", NULL, "add char", dir_location_left, NULL);
           ctx_add_key_binding (ctx, "right", NULL, "add char", dir_location_right, NULL);
 
@@ -4905,19 +4899,16 @@ static int card_files (ITK *itk_, void *data)
             else
               BIND_KEY ("down", "focus-next", "focus next");
 
-            if (0)
-            {
-              BIND_KEY ("left", "focus-previous", "focus prev");
-              BIND_KEY ("left", "focus-next", "focus next");
-            }
-            else
-            {
-              BIND_KEY ("left", "parent", "focus parent");
-
+            BIND_KEY ("left", "fold", "fold");
             if (layout_focused_link >= 0)
                BIND_KEY ("right", "follow-link", "follow link");
             else
-               BIND_KEY ("right", "enter-children", "enter children");
+            {
+               if (collection_has_children (collection, focused_no))
+                 BIND_KEY ("right", "expand", "expand");
+               else
+                 BIND_KEY ("right", "enter-children", "enter children");
+                 // enter-children creates child if it doesnt exist
             }
           }
   }
