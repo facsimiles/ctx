@@ -1,11 +1,9 @@
 #if !__COSMOPOLITAN__
-
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>
 
 #endif
-
 #ifndef NO_BABL
 #include <babl/babl.h>
 #endif

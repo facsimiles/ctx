@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-void metadata_load (Collection *collection, const char *path)
+void metadata_load (Collection *collection, const char *path, int text_file)
 {
   collection->metadata_cache_no = -3;
   collection->metadata_cache = NULL;
@@ -15,11 +15,14 @@ void metadata_load (Collection *collection, const char *path)
   collection->metadata = NULL;
   collection->metadata_len = 0;
   collection->metadata_size = 0;
-  snprintf (collection->metadata_path, strlen(path)+20, "%s/.ctx/index", path);
+  if (text_file)
+    strcpy (collection->metadata_path, path);
+  else
+    snprintf (collection->metadata_path, strlen(path)+20, "%s/.ctx/index", path);
   ctx_get_contents (collection->metadata_path, (uint8_t**)&collection->metadata, &collection->metadata_size);
   collection->metadata_len = (int)collection->metadata_size;
 
-  //fprintf (stderr, "%s loaded len: %i %p\n", path, collection->metadata_len, metadata);
+  fprintf (stderr, "%s loaded len: %i \n", path, collection->metadata_len);
 }
 
 void dir_mkdir_ancestors (const char *path, unsigned int mode)

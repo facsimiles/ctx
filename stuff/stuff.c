@@ -79,6 +79,12 @@ LayoutConfig layout_config = {
   1
 };
 
+int text_editor = 0; /* global variable that changes how some loading/saving
+                        is done - we are not expected to run within a regular
+                        instance but our own process
+                      */
+
+
 int show_keybindings = 0;
 int focused_no = -1;
 int layout_page_no = 0;
@@ -439,6 +445,7 @@ collection_set_path (Collection *collection,
   DIR_INFO("setting path %s %s", path, title);
 
   if (title) title2 = strdup (title);
+  else title2 = strdup (path);
 
   drop_item_renderers (ctx);
 
@@ -450,8 +457,12 @@ collection_set_path (Collection *collection,
   collection->title = title2;
 
   n = scandir (collection->path, &namelist, NULL, custom_sort);
-  metadata_load (collection, resolved_path);
+
+  metadata_load (collection, resolved_path, text_editor);
   collection->count = metadata_count (collection);
+
+  if (text_editor)
+    return;
 
 #if 0
   {
@@ -675,7 +686,7 @@ static void _set_location (const char *location)
     {
       loc = ctx_strdup_printf ("%s/%s", collection->path, location+2);
     }
-    if (path_is_dir (loc))
+    //if (path_is_dir (loc))
     {
       collection_set_path (collection, loc, NULL);
       focused_no = -1;
@@ -736,25 +747,25 @@ int cmd_history (COMMAND_ARGS) /* "history", 1, "<forward|back>", "moved history
   return 0;
 }
 
-
-
 static void set_location (const char *location)
 {
-  while (future)
+  if (!text_editor)
   {
-    free (future->data);
-    ctx_list_remove (&future, future->data);
-  }
-  if (collection->path)
-  {
-  if (collection->title)
-    ctx_list_prepend (&history, strdup (collection->title));
-  else
-    ctx_list_prepend (&history, strdup (collection->path));
+    while (future)
+    {
+      free (future->data);
+      ctx_list_remove (&future, future->data);
+    }
+    if (collection->path)
+    {
+      if (collection->title)
+        ctx_list_prepend (&history, strdup (collection->title));
+      else
+        ctx_list_prepend (&history, strdup (collection->path));
+    }
   }
   _set_location (location);
 }
-
 
 int cmd_go_parent (COMMAND_ARGS) /* "go-parent", 0, "", "" */
 {
@@ -5482,10 +5493,34 @@ static int card_files (ITK *itk_, void *data)
 
 void ctx_clients_signal_child (int signum);
 
+
 int stuff_main (int argc, char **argv)
 {
   setenv ("CTX_SHAPE_CACHE", "0", 1);
-  char *path = argv[1];
+
+  const char *path = NULL;
+  
+  for (int i = 1; argv[i]; i++)
+  {
+    if (argv[i][0]!='-')
+    {
+      if (!path) path = argv[i];
+    }
+    else
+    {
+      if (!strcmp (argv[i], "-e"))
+      {
+        text_editor = 1;
+      }
+    }
+  }
+
+  if (!path)
+  {
+    fprintf (stderr, "need a path argument");
+    exit(1);
+  }
+
   if (path && strchr (path, ':'))
   {
     path = strchr (path, ':');
@@ -5496,9 +5531,15 @@ int stuff_main (int argc, char **argv)
 
   signal (SIGCHLD, ctx_clients_signal_child);
 
-
   set_layout (NULL, NULL, NULL);
 
+  if (text_editor)
+  {
+    set_location (path);
+    focused_no = 0;
+    layout_find_item = focused_no;
+  }
+  else
   {
     char *dir = strdup (path);
     char *name = NULL;

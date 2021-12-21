@@ -14,7 +14,7 @@ typedef struct Collection {
   int     metadata_cache_no;
 } Collection;
 
-void metadata_load (Collection *collection, const char *path);
+void metadata_load (Collection *collection, const char *path, int text_file);
 
 
 
