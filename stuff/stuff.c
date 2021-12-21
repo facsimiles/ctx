@@ -2143,6 +2143,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
   int was_no = 0;
   int cursor_drawn = 0;
   int compute_neighbor_lines = 0;
+  if (text_editor) visible_markup=1;
   if (prev_line || next_line) compute_neighbor_lines = 1;
 
   y += line_height;
@@ -2270,7 +2271,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         }
       if (print)
       {
-        if (was_in_link)
+        if (was_in_link && !text_editor)
         {
           ctx_save (itk->ctx);
           ctx_begin_path (itk->ctx);
