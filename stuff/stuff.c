@@ -3323,7 +3323,7 @@ char *dir_get_viewer_command (const char *path, int no)
     else if (!strcmp (media_type, "video/mpeg"))
     {
       sprintf (command, "ctx \"%s\" --paused --seek-to %f", escaped_path, in);
-      fprintf (stderr, "[%s] out:%f duration:%f\n", command, out, out-in);
+      //fprintf (stderr, "[%s] out:%f duration:%f\n", command, out, out-in);
     }
     else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
     {
@@ -4443,8 +4443,8 @@ int viewer_pre_next (Ctx *ctx, void *data1)
     char *command = dir_get_viewer_command (pathA, focused_no+1);
     if (command)
     {
-     fprintf (stderr, "preloading %s\n", client_a);
-     fprintf (stderr, "%s\n", command);
+     //fprintf (stderr, "preloading %s\n", client_a);
+     //fprintf (stderr, "%s\n", command);
      client= ctx_client_new (ctx, command,
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size,
@@ -4520,7 +4520,7 @@ void viewer_load_path (const char *path, const char *name)
       char *client_name = ctx_strdup_printf ("%s-%i", path, no);
       if ((viewer=find_client (client_name)))
       {
-        fprintf (stderr, "reloading %s\n", client_name);
+        //fprintf (stderr, "reloading %s\n", client_name);
         if (viewer->flags & ITK_CLIENT_PRELOAD)
         {
           viewer_was_live = 0;
@@ -4537,8 +4537,8 @@ void viewer_load_path (const char *path, const char *name)
       else
       {
         viewer_was_live = 0;
-        fprintf (stderr, "loading %s\n", client_name);
-        fprintf (stderr, "%s\n", command);
+        //fprintf (stderr, "loading %s\n", client_name);
+        //fprintf (stderr, "%s\n", command);
         viewer = ctx_client_new (ctx, command,
           0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_name), user_data_free);
         if (viewer_media_type[0] == 'v')

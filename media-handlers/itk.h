@@ -458,7 +458,7 @@ void itk_reset (ITK *itk)
 "wallpaper: #355\n"
 //"wallpaper: #677\n"
 "\n"
-"itk-font-size: 20.0;\n"
+"itk-font-size: 32.0;\n"
 
 "titlebar-bg:          #0007;\n"
 "titlebar-fg:          #999a\n"
