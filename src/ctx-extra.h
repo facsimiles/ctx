@@ -55,8 +55,7 @@ ctx_invsqrtf (float x)
     uint32_t i;
   } u = { x };
   float xhalf = 0.5f * x;
-  int i=u.i;
-  i = 0x5f3759df - (i >> 1);
+  u.i = 0x5f3759df - (u.i >> 1);
   x = u.f;
   x *= (1.5f - xhalf * x * x);
   x *= (1.5f - xhalf * x * x); //repeating Newton-Raphson step for higher precision
