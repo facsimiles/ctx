@@ -3102,8 +3102,8 @@ set_tool_no (int a)
   }
 }
 
-float toolbar_x = 100.0;
-float toolbar_y = 100.0;
+float toolbar_x = 0.0;
+float toolbar_y = 0.0;
 
 static void
 tool_drag (CtxEvent *event, void *a, void *b)
@@ -5262,6 +5262,49 @@ static int card_files (ITK *itk_, void *data)
   }
 
 
+  if (viewer) 
+  {
+    ctx_font_size (ctx, itk->font_size);
+    ctx_clients_draw (ctx, 0);
+    int found = 0;
+    for (CtxList *c = clients; c; c = c->next)
+    {
+      if (c->data == viewer)
+        found = 1;
+    }
+    if (!found)
+    {
+      CtxEvent fake_event;
+      fake_event.ctx = ctx;
+      deactivate_viewer (&fake_event, NULL, NULL);
+      viewer = NULL;
+    }
+
+  }
+  else
+  {
+
+    for (CtxList *c = clients; c; c = c->next)
+    {
+      CtxClient *client = c->data;
+      if (client->flags & ITK_CLIENT_LAYER2)
+      {
+        //VT *vt = client->vt;
+        //int line_count = vt_get_cursor_y (vt) + 1;
+        //line_count += vt_get_scrollback_lines (vt);
+
+        //fprintf (stderr, "%p %i %i\n", vt, client->id,  line_count);
+          
+        //if (line_count > 2)
+        //ctx_client_resize (client->id, client->width,
+        //                   itk->font_size * (line_count));
+      }
+    }
+
+    ctx_clients_draw (ctx, 1);
+  }
+
+
   if (!text_editor)
   {
   ctx_save (ctx);
@@ -5272,7 +5315,10 @@ static int card_files (ITK *itk_, void *data)
     float em = itk->font_size;
 
     int n_tools = 5;
-    if (tool_no == 1) n_tools = 1;
+
+    if (viewer) n_tools = 3;
+
+    if (tool_no == 1) n_tools = 2;
 
     ctx_rectangle (ctx, 0, 0, 2.5 * (n_tools + 0.25) * em, 3 * em);
     ctx_rgba (ctx, 1,1,1, 0.1);
@@ -5293,11 +5339,11 @@ static int card_files (ITK *itk_, void *data)
 
   }
 
-  if (tool_no == STUFF_TOOL_LOCATION && !viewer)
+  if (tool_no == STUFF_TOOL_LOCATION)
   {
     float em = itk->font_size;
     ctx_save (ctx);
-    ctx_rectangle (ctx, 3 * em, 0, ctx_width (ctx) - 3 * em, 3 * em);
+    ctx_rectangle (ctx, 6 * em, 0, ctx_width (ctx) - 3 * em, 3 * em);
     ctx_rgba (ctx, 1,1,1, 0.1);
     ctx_fill (ctx);
 
@@ -5328,27 +5374,54 @@ static int card_files (ITK *itk_, void *data)
 
       free (copy);
 
-      ctx_rectangle (ctx, 3.4 * em + sel_start, 1.5 * em - em,
+      ctx_rectangle (ctx, 6.4 * em + sel_start, 1.5 * em - em,
                           sel_end-sel_start,em);
       if (c_start==c_end)
         ctx_rgba (ctx, 1,1, 0.2, 1);
       else
         ctx_rgba (ctx, 0.5,0, 0, 1);
       ctx_fill (ctx);
-      ctx_move_to (ctx, 3.4 * em, 1.5 * em);
+      ctx_move_to (ctx, 6.4 * em, 1.5 * em);
       ctx_rgba (ctx, 1,1,1, 0.6);
       ctx_text (ctx, commandline->str);
     }
     else
     {
       ctx_rgba (ctx, 1,1,1, 0.6);
-      ctx_move_to (ctx, 3.4 * em, 1.5 * em);
+      ctx_move_to (ctx, 6.4 * em, 1.5 * em);
       if (collection->title)
         ctx_text (ctx, collection->title);
       else
         ctx_text (ctx, collection->path);
     }
     ctx_restore (ctx);
+  }
+  // pages
+  if (tool_no == STUFF_TOOL_LOCATION)
+  {
+    float em = itk->font_size * 1.4;
+/*
+    ctx_rectangle (ctx, ctx_width (ctx) - 3 * em, 0, 3 * em, ctx_height (ctx));
+    ctx_rgba (ctx, 1,1,1, 0.1);
+    ctx_fill (ctx);
+    */
+
+    for (int i = 0; i < layout_last_page + 1; i ++)
+    {
+      ctx_rectangle (ctx, 0.5 * em, (3 * (1+i) + 0.5) * em,  2 * em, 2 * em);
+      ctx_listen (ctx, CTX_CLICK, dir_set_page, (void*)((size_t)i), NULL);
+      if (i == layout_show_page)
+        ctx_rgba (ctx, 1,1,1, 0.3);
+      else
+        ctx_rgba (ctx, 1,1,1, 0.05);
+      ctx_fill (ctx);
+    }
+
+    ctx_rgba (ctx, 1,1,1, 0.025);
+    ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * (layout_last_page+1+1) + 0.5) * em,  2 * em, 2 * em);
+      ctx_fill (ctx);
+  }
+  ctx_restore (ctx);
   }
 
   if (!editing_location && text_edit == TEXT_EDIT_OFF && commandline->str[0]){
@@ -5396,75 +5469,6 @@ static int card_files (ITK *itk_, void *data)
 
 
 
-  // pages
-  if (tool_no == 0)
-  {
-    float em = itk->font_size * 1.4;
-/*
-    ctx_rectangle (ctx, ctx_width (ctx) - 3 * em, 0, 3 * em, ctx_height (ctx));
-    ctx_rgba (ctx, 1,1,1, 0.1);
-    ctx_fill (ctx);
-    */
-
-    for (int i = 0; i < layout_last_page + 1; i ++)
-    {
-      ctx_rectangle (ctx, 0.5 * em, (3 * (1+i) + 0.5) * em,  2 * em, 2 * em);
-      ctx_listen (ctx, CTX_CLICK, dir_set_page, (void*)((size_t)i), NULL);
-      if (i == layout_show_page)
-        ctx_rgba (ctx, 1,1,1, 0.3);
-      else
-        ctx_rgba (ctx, 1,1,1, 0.05);
-      ctx_fill (ctx);
-    }
-
-    ctx_rgba (ctx, 1,1,1, 0.025);
-    ctx_rectangle (ctx, ctx_width (ctx) - 3 * em + 0.5 * em, (3 * (layout_last_page+1+1) + 0.5) * em,  2 * em, 2 * em);
-      ctx_fill (ctx);
-  }
-  ctx_restore (ctx);
-  }
-
-  if (viewer) 
-  {
-    ctx_font_size (ctx, itk->font_size);
-    ctx_clients_draw (ctx, 0);
-    int found = 0;
-    for (CtxList *c = clients; c; c = c->next)
-    {
-      if (c->data == viewer)
-        found = 1;
-    }
-    if (!found)
-    {
-      CtxEvent fake_event;
-      fake_event.ctx = ctx;
-      deactivate_viewer (&fake_event, NULL, NULL);
-      viewer = NULL;
-    }
-
-  }
-  else
-  {
-
-    for (CtxList *c = clients; c; c = c->next)
-    {
-      CtxClient *client = c->data;
-      if (client->flags & ITK_CLIENT_LAYER2)
-      {
-        //VT *vt = client->vt;
-        //int line_count = vt_get_cursor_y (vt) + 1;
-        //line_count += vt_get_scrollback_lines (vt);
-
-        //fprintf (stderr, "%p %i %i\n", vt, client->id,  line_count);
-          
-        //if (line_count > 2)
-        //ctx_client_resize (client->id, client->width,
-        //                   itk->font_size * (line_count));
-      }
-    }
-
-    ctx_clients_draw (ctx, 1);
-  }
 
   if (show_keybindings && !viewer)
   {
