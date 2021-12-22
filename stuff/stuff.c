@@ -969,6 +969,7 @@ int cmd_edit_text_home (COMMAND_ARGS) /* "edit-text-home", 0, "", "edit start of
   if (!virtual) return 0;
 
   text_edit = 0;
+  return 0;
 }
 
 int cmd_edit_text_end (COMMAND_ARGS) /* "edit-text-end", 0, "", "edit end of line" */
@@ -983,6 +984,7 @@ int cmd_edit_text_end (COMMAND_ARGS) /* "edit-text-end", 0, "", "edit end of lin
     free (name);
   }
   text_edit = pos;
+  return 0;
 }
 
 int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */

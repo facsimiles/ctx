@@ -712,10 +712,77 @@ static void ctx_term_output_buf_braille (uint8_t *pixels,
 }
 
 
+inline static int
+ctx_is_half_opaque (CtxRasterizer *rasterizer)
+{
+  CtxGState *gstate = &rasterizer->state->gstate;
+  if (gstate->source_fill.type == CTX_SOURCE_COLOR)
+  {
+    uint8_t ga[2];
+    ctx_color_get_graya_u8 (rasterizer->state, &gstate->source_fill.color, ga);
+    if ( (ga[1] * gstate->global_alpha_f) >= 127)
+      return 1;
+    return 0;
+  }
+  return gstate->global_alpha_f > 0.5f;
+}
+
 inline static void ctx_term_render (void *ctx,
                                        CtxCommand *command)
 {
   CtxTerm *term = (void*)ctx;
+
+#if CTX_BRAILLE_TEXT
+  if (command->code == CTX_FILL)
+  {
+     CtxRasterizer *rasterizer = (CtxRasterizer*)term->host->renderer;
+
+     if (ctx_is_half_opaque (rasterizer))
+     {
+        CtxIntRectangle shape_rect = {
+          ((int)(rasterizer->col_min / CTX_SUBDIV - 2))/2,
+          ((int)(rasterizer->scan_min / 15 - 2))/3,
+          ((int)(3+((int)rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV))/2,
+          ((int)(3+((int)rasterizer->scan_max - rasterizer->scan_min + 1) / 15))/3
+        };
+#if 0
+  CtxGState *gstate = &rasterizer->state->gstate;
+       fprintf (stderr, "{%i,%i %ix%i %.2f %i}",
+                       shape_rect.x, shape_rect.y,
+                       shape_rect.width, shape_rect.height,
+
+                       gstate->global_alpha_f,
+                       ga[1]
+                       
+                       );
+   //  sleep(1);
+#endif
+
+       if (shape_rect.y > 0) // XXX : workaround 
+       for (int row = shape_rect.y;
+            row < (shape_rect.y+(int)shape_rect.height);
+            row++)
+       for (int col = shape_rect.x;
+            col < (shape_rect.x+(int)shape_rect.width);
+            col++)
+
+       {
+         for (CtxList *l = rasterizer->glyphs; l; l=l?l->next:NULL)
+         {
+           CtxTermGlyph *glyph = l->data;
+           if ((glyph->row == row+1) &&
+               (glyph->col == col+1))
+           {
+              ctx_list_remove (&rasterizer->glyphs, glyph);
+              free (glyph);
+              l = NULL;
+           }
+         }
+       }
+     }
+  }
+#endif
+
   /* directly forward */
   ctx_process (term->host, &command->entry);
 }
