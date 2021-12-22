@@ -2263,7 +2263,7 @@ static CtxMagicEntry ctx_magics[]={
   // inode-directory
 };
 
-static int ctx_path_is_dir (const char *path)
+int ctx_path_is_dir (const char *path)
 {
   struct stat stat_buf;
   if (!path || path[0]==0) return 0;
@@ -2335,6 +2335,13 @@ const char *ctx_path_get_media_type (const char *path)
 {
   char *content = NULL;
   long length = 0;
+
+  if (strchr(path, ':'))
+  {
+    path = strchr (path, ':') + 1;
+    if (path[0]=='/')path++;
+    if (path[0]=='/')path++;
+  }
 
   /* XXX : code duplication, factor out in separate fun */
   if (path && strrchr (path, '.'))

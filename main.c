@@ -239,11 +239,20 @@ int thumb_main (int argc, char **argv)
   }
   for (int i = 1; argv[i]; i++)
   {
-    char *thumb_path = ctx_thumb_path (argv[i]);
-    ctx_mkdir_ancestors (thumb_path, 0777);
-    fprintf (stderr, "%s", argv[i]);
-    make_thumb (argv[i], thumb_path);
-    fprintf (stderr, "\n");
+    char *ip = argv[i];
+
+    if (strchr (ip, ':'))
+    {
+      ip = strchr (ip, ':') + 1;
+      if (ip[0]=='/')ip++;
+      if (ip[0]=='/')ip++;
+    }
+    char *thumb_path = ctx_thumb_path (ip);
+
+    {
+      ctx_mkdir_ancestors (thumb_path, 0777);
+      make_thumb (ip, thumb_path);
+    }
     free (thumb_path);
   }
 
@@ -270,6 +279,8 @@ static const char *get_suffix (const char *path)
       return "";
     }
 }
+
+int ctx_path_is_dir (const char *path);
 
 #include <libgen.h>
 
@@ -311,13 +322,15 @@ int main (int argc, char **argv)
 
   if (input_path)
   {
-    if (!strchr (input_path, ':') ||
-         ((strchr (input_path, ':') - input_path) > 6))
-      {
-         char *path = malloc (strlen (input_path) + 10);
-         sprintf (path, "file://%s", input_path);
-         input_path = path;
-      }
+    if (strchr (input_path, ':'))
+    {
+      input_path = strchr (input_path, ':') + 1;
+      if (input_path[0] == '/') input_path++;
+      if (input_path[0] == '/') input_path++;
+    }
+
+    input_path = realpath (input_path, NULL);
+
     const char *media_type = ctx_path_get_media_type (input_path);
     CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
 
@@ -335,9 +348,10 @@ int main (int argc, char **argv)
     {
       return ctx_mpg_main (argc, argv);
     }
-    if (input_path[strlen(input_path)-1]=='/')
+    if (!strcmp (media_type, "inode/directory"))
     {
-      return stuff_main (argc, argv);
+      char *argv[]={"stuff", input_path, NULL};
+      return stuff_main (2, argv);
     }
 
     if (media_type_class == CTX_MEDIA_TYPE_TEXT)

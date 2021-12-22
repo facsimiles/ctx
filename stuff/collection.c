@@ -4,6 +4,26 @@
 #include <sys/types.h>
 #include <stdio.h>
 
+void metadata_wipe_cache (Collection *collection, int full)
+{
+  if (full)
+    collection->metadata_cache_no = -3;
+  if (collection->cache)
+  {
+    for (int i = 0; i < collection->cache_size; i++)
+    {
+       if (collection->cache[i])
+       {
+        free (collection->cache[i]);
+        collection->cache[i] = NULL;
+       }
+    }
+    free (collection->cache);
+    collection->cache = NULL;
+    collection->cache_size = 0;
+  }
+}
+
 void metadata_load (Collection *collection, const char *path, int text_file)
 {
   collection->metadata_cache_no = -3;
@@ -51,6 +71,7 @@ void metadata_load (Collection *collection, const char *path, int text_file)
   ctx_get_contents (collection->metadata_path, (uint8_t**)&collection->metadata, &collection->metadata_size);
   collection->metadata_len = (int)collection->metadata_size;
   }
+  metadata_wipe_cache (collection, 1);
 }
 
 void dir_mkdir_ancestors (const char *path, unsigned int mode)
@@ -422,26 +443,6 @@ int metadata_get_int (Collection *collection, int no, const char *key, int def_v
    return ret;
 }
 
-void metadata_wipe_cache (Collection *collection, int full)
-{
-  if (full)
-    collection->metadata_cache_no = -3;
-  if (collection->cache)
-  {
-    for (int i = 0; i < collection->cache_size; i++)
-    {
-       if (collection->cache[i])
-       {
-        free (collection->cache[i]);
-        collection->cache[i] = NULL;
-       }
-    }
-    free (collection->cache);
-    collection->cache = NULL;
-    collection->cache_size = 0;
-  }
-
-}
 
 void metadata_swap (Collection *collection, int no_a, int no_b)
 {
