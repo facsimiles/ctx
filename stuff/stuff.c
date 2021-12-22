@@ -70,6 +70,7 @@ typedef struct LayoutConfig
   int hide_non_file;
   float margin_top; // page_margin
   int monospace;
+  float line_height;
 } LayoutConfig;
 
 LayoutConfig layout_config = {
@@ -316,6 +317,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.outliner = 0;
   layout_config.codes = 0;
   layout_config.monospace = 0;
+  layout_config.line_height = 1.0;
 
   layout_config.hide_non_file = 0;
   if (focused_no>=0)
@@ -330,6 +332,11 @@ static void set_text_edit (CtxEvent *e, void *d1, void *d2)
 {
   set_layout (e, d1, d2);
   layout_config.monospace = 1;
+  layout_config.padding_left   = 0.0f;
+  layout_config.padding_top    = 0.0f;
+  layout_config.padding_bottom = 0.0f;
+  layout_config.padding_right  = 0.0f;
+  layout_config.margin_top    = 0.0f;
 }
 
 static void set_outline (CtxEvent *e, void *d1, void *d2)
@@ -2288,7 +2295,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       if (print)
       {
           ctx_rectangle (itk->ctx,
-                    cursor_x-1, y - line_height, 2, line_height * 1.2);
+                    cursor_x-1, y - line_height*0.8, text_editor?space_width:2, line_height);
           ctx_fill (itk->ctx);
           ctx_restore (ctx);
       }
@@ -3744,7 +3751,7 @@ static void dir_layout (ITK *itk, Collection *collection)
                        NULL, NULL,
                        (i == focused_no && text_edit >= 0),
                        i == focused_no);
-          height = height - itk->y + em * 0.5;
+          height = height - itk->y; // + em;// * 0.5;
           row_max_height = height;
         }
         //fprintf (stderr, "%f\n", height);
