@@ -694,7 +694,10 @@ static void _set_location (const char *location)
     char *loc = (char*)location;
     if (location[0] == '.' && location[1] == '/')
     {
+      if (collection->path)
       loc = ctx_strdup_printf ("%s/%s", collection->path, location+2);
+      else
+      loc = realpath (location+2, NULL);
     }
     //if (path_is_dir (loc))
     {
@@ -5628,7 +5631,7 @@ int stuff_main (int argc, char **argv)
 
   if (path && strchr (path, ':'))
   {
-    path = strchr (path, ':');
+    path = strchr (path, ':') + 1;
     if (path[1] == '/') path++;
     if (path[1] == '/') path++;
   }
@@ -5653,6 +5656,10 @@ int stuff_main (int argc, char **argv)
     {
       name = strrchr (dir, '/')+1;
       strrchr (dir, '/')[0] = 0;
+    }
+    else
+    {
+      name = 0;
     }
     set_location (dir);
     focused_no = metadata_item_to_no (collection, name);
