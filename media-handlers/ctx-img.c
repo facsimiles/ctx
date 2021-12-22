@@ -172,6 +172,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
               scale = scaleh;
             ox0 = (ctx_width(ctx)/scale-(stb_w)) / 2;
             oy0 = (ctx_height(ctx)/scale-(stb_h)) / 2;
+            auto_size = 1;
           }
           else if (!strcmp (event->string, "1"))
           {
@@ -180,6 +181,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             scale = 1.0;
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
+            auto_size = 0;
           }
           else if (!strcmp (event->string, "2"))
           {
@@ -188,6 +190,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             scale = 2.0;
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
+            auto_size = 0;
           }
           else if (!strcmp (event->string, "5"))
           {
@@ -196,6 +199,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             scale = 0.5;
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
+            auto_size = 0;
           }
           else if (!strcmp (event->string, "+")||
                    !strcmp (event->string, "="))
@@ -205,6 +209,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             scale *= 1.1;
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
+            auto_size = 0;
           }
           else if (!strcmp (event->string, "-"))
           {
@@ -213,6 +218,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             scale /= 1.1;
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
+            auto_size = 0;
           }
           else if (!strcmp (event->string, "."))
           {
@@ -221,6 +227,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             scale *= 1.01;
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
+            auto_size = 0;
           }
           else if (!strcmp (event->string, ","))
           {
@@ -229,6 +236,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             scale /= 1.01;
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
+            auto_size = 0;
           }
           dirty ++;
           break;
