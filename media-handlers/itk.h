@@ -447,7 +447,9 @@ void itk_reset (ITK *itk)
   if (itk_style)
     free (itk_style);
   unsigned char *style = NULL;
+#if CTX_MAX_THREADS
   ctx_get_contents ("/tmp/itk-style", &style, NULL);
+#endif
   if (style)
   {
     itk_style = (void*)style;
@@ -532,7 +534,6 @@ void itk_reset (ITK *itk)
     ctx_list_remove (&itk->choices, choice);
   }
   itk->control_no = 0;
-  ctx_set_dirty (itk->ctx, 0);
 }
 
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)
@@ -668,6 +669,7 @@ static void itk_text (ITK *itk, const char *text)
   itk->x += ctx_text_width (ctx, text);
 }
 
+#if 0
 static void itk_base (ITK *itk, const char *label, float x, float y, float width, float height, int focused)
 {
   Ctx *ctx = itk->ctx;
@@ -690,6 +692,7 @@ static void itk_base (ITK *itk, const char *label, float x, float y, float width
   }
 #endif
 }
+#endif
 
 void itk_newline (ITK *itk)
 {
@@ -2253,6 +2256,7 @@ int ctx_renderer_is_fb  (Ctx *ctx);
 void
 itk_ctx_settings (ITK *itk)
 {
+#ifdef CTX_MAX_THREADS
   static int ctx_settings = 0;
   static int inited = 0;
   static int threads;
@@ -2291,6 +2295,7 @@ itk_ctx_settings (ITK *itk)
     if (set != choice)
       ctx_set_antialias (ctx, choice);
   }
+#endif
 }
 
 void
@@ -2348,14 +2353,20 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
       usleep (1000 * 10);
     }
 
+#if CTX_VT
     ctx_clients_handle_events (ctx);
+#endif
     while ((event = ctx_get_event (ctx))){}
+#if CTX_VT
     if (ctx_clients_need_redraw (ctx))
       ctx_set_dirty (ctx, 1);
+#endif
   }
 
+#if CTX_VT
   while (clients)
     ctx_client_remove (ctx, clients->data);
+#endif
 
   itk_free (itk);
   ctx_free (ctx);
