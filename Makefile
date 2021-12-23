@@ -188,6 +188,9 @@ afl/ctx: ctx.h
 flatpak:
 	rm -rf build-dir;flatpak-builder --user build-dir meta/graphics.ctx.terminal.yml
 	flatpak-builder --collection-id=graphics.ctx --repo=docs/flatpak --force-clean build-dir meta/graphics.ctx.terminal.yml
+	
+flatpak-install:
+	rm -rf build-dir;flatpak-builder --install --user build-dir meta/graphics.ctx.terminal.yml
 
 ctx.h: src/*.[ch] src/index fonts/ctx-font-ascii.h
 	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@)

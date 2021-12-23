@@ -725,8 +725,9 @@ struct _CtxHasher
   int           cols;
   int           rows;
   uint8_t      *hashes;
-  CtxSHA1       sha1_fill; 
-  CtxSHA1       sha1_stroke;
+  int           source_level;
+  CtxSHA1       sha1_fill[CTX_MAX_STATES]; 
+  CtxSHA1       sha1_stroke[CTX_MAX_STATES];
 };
 
 #if CTX_RASTERIZER
