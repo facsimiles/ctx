@@ -22,11 +22,6 @@ int ctx_height (Ctx *ctx)
 }
 #endif
 
-int ctx_rev (Ctx *ctx)
-{
-  return ctx->rev;
-}
-
 CtxState *ctx_get_state (Ctx *ctx)
 {
   return &ctx->state;
@@ -1294,7 +1289,6 @@ ctx_flush (Ctx *ctx)
    *      to permit different behavior and get rid
    *      of the extranous flush() vfunc.
    */
-  ctx->rev++;
 //  CTX_PROCESS_VOID (CTX_FLUSH);
 #if 0
   //printf (" \e[?2222h");

@@ -205,7 +205,6 @@ const char *ctx_get_font  (Ctx *ctx);
 float ctx_get_line_width  (Ctx *ctx);
 int   ctx_width           (Ctx *ctx);
 int   ctx_height          (Ctx *ctx);
-int   ctx_rev             (Ctx *ctx);
 float ctx_x               (Ctx *ctx);
 float ctx_y               (Ctx *ctx);
 void  ctx_current_point   (Ctx *ctx, float *x, float *y);

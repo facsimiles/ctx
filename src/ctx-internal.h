@@ -489,7 +489,6 @@ struct _Ctx
   CtxBuffer          texture[CTX_MAX_TEXTURES];
   Ctx               *texture_cache;
   CtxList           *eid_db;
-  int                rev;
   void              *backend;
   CtxState           state;        /**/
   int                frame; /* used for texture lifetime */
