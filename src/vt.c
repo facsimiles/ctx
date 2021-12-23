@@ -5122,11 +5122,11 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
       vt_set_local (vt, !vt_get_local (vt) );
       return;
     }
-  else if (!strncmp (str, "mouse-", 5) )
+  else if (str[0]=='p' && str[1] != 0 && str[2] == ' ')
     {
       int cw = vt_cw (vt);
       int ch = vt_ch (vt);
-      if (!strncmp (str + 6, "motion", 6) )
+      if (!strncmp (str, "pm", 2))
         {
           int x = 0, y = 0;
           char *s = strchr (str, ' ');
@@ -5141,7 +5141,7 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
                 }
             }
         }
-      else if (!strncmp (str + 6, "press", 5) )
+      else if (!strncmp (str, "pp", 2))
         {
           int x = 0, y = 0, b = 0;
           char *s = strchr (str, ' ');
@@ -5162,7 +5162,7 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
             }
           //clients[active].drawn_rev = 0;
         }
-      else if (!strncmp (str + 6, "drag", 4) )
+      else if (!strncmp (str, "pd", 2))
         {
           int x = 0, y = 0, b = 0; // XXX initialize B
           char *s = strchr (str, ' ');
@@ -5182,7 +5182,7 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
             }
           //clients[active].drawn_rev = 0;
         }
-      else if (!strncmp (str + 6, "release", 7) )
+      else if (!strncmp (str, "pr", 2))
         {
           int x = 0, y = 0, b = 0;
           char *s = strchr (str, ' ');
