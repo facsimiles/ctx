@@ -154,6 +154,7 @@ void ctx_mkdir_ancestors (const char *path, unsigned int mode)
   free (tmppaths);
 }
 
+int stuff_make_thumb (const char *src_path, const char *dst_path);
 int make_thumb (const char *src_path, const char *dst_path)
 {
   /* XXX  does nearest neighbor which is horrid for thumbs  */
@@ -251,7 +252,9 @@ int thumb_main (int argc, char **argv)
 
     {
       ctx_mkdir_ancestors (thumb_path, 0777);
-      make_thumb (ip, thumb_path);
+      //make_thumb (ip, thumb_path);
+      stuff_make_thumb (ip, thumb_path);
+      //stuff_make_thumb (const char *src_path, const char *dst_path);
     }
     free (thumb_path);
   }
@@ -320,7 +323,7 @@ int main (int argc, char **argv)
   if (argv[1] && !strcmp (argv[1], "launch"))
     return launch_main (argc-1, argv+1);
 
-  if (input_path)
+  if (input_path && !commandline)
   {
     if (strchr (input_path, ':'))
     {
@@ -356,7 +359,7 @@ int main (int argc, char **argv)
 
     if (media_type_class == CTX_MEDIA_TYPE_TEXT)
     {
-      char *new_argc[] = {argv[0], "-e", input_path, NULL};
+      char *new_argc[] = {argv[0], "-E", input_path, NULL};
 
       return stuff_main (3, new_argc);
 

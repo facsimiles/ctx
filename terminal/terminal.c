@@ -124,6 +124,37 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
   return active->id;
 }
 
+int add_tab_argv (Ctx  *ctx, const char **argv, int can_launch)
+{
+  float titlebar_h = ctx_height (ctx)/40;
+  int was_maximized = 0;
+  int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
+  if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
+  if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
+
+  //ctx_font_size (ctx, start_font_size); // we pass it as arg instead
+  active = ctx_client_new_argv (ctx, argv, add_x, add_y,
+                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
+                    start_font_size,
+                    flags, NULL, NULL);
+  add_y += ctx_height (ctx) / 20;
+  add_x += ctx_height (ctx) / 20;
+
+  if (was_maximized)
+  {
+    ctx_client_maximize (active->id);
+    active_tab = active;
+  }
+
+  if (add_y + ctx_height(ctx)/2 > ctx_client_max_y_pos (ctx))
+  {
+    add_y = ctx_client_min_y_pos (ctx);
+    add_x -= ctx_height (ctx) / 40 * 4;
+  }
+  ensure_layout ();
+  return active->id;
+}
+
 int add_settings_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
@@ -567,6 +598,8 @@ void terminal_long_tap (Ctx *ctx, VT *vt)
   ctx_set_dirty (ctx, 1);
 }
 
+int commandline_argv_start = 0;
+
 int terminal_main (int argc, char **argv)
 {
   execute_self = argv[0];
@@ -604,6 +637,12 @@ int terminal_main (int argc, char **argv)
     {
       commandline = argv[i+1];
       i++;
+      if (!strcmp (commandline, "--"))
+      {
+        i++;
+        commandline_argv_start = i;
+        fprintf (stderr, "%s\n", argv[i]);
+      }
     }
     else if (!strcmp (argv[i], "--width"))
         width = consume_float (argv, &i);
@@ -658,9 +697,17 @@ int terminal_main (int argc, char **argv)
   itk->font_size = font_size;
   start_font_size = font_size;
   ctx_font_size (ctx, font_size);
-  if (!commandline)
-    commandline = vt_find_shell_command();
-  ctx_client_maximize (add_tab (ctx, commandline, 1));
+
+  if (commandline_argv_start)
+  {
+    ctx_client_maximize (add_tab_argv (ctx, &argv[commandline_argv_start], 1));
+  }
+  else
+  {
+    if (!commandline)
+      commandline = vt_find_shell_command();
+    ctx_client_maximize (add_tab (ctx, commandline, 1));
+  }
 
   if (!active)
     return 1;
