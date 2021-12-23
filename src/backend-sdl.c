@@ -74,6 +74,8 @@ void ctx_sdl_set_title (void *self, const char *new_title)
    SDL_SetWindowTitle (sdl->window, new_title);
 }
 
+static long ctx_sdl_start_time = 0;
+
 static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
 {
   CtxTiled *tiled = &sdl->tiled;
@@ -197,11 +199,13 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
 
   if (ctx_show_fps)
   {
-    static uint64_t prev_time = 0;
     static char tmp_title[1024];
     uint64_t time = ctx_ticks ();
-    sprintf (tmp_title, "FPS: %.1f", 1000000.0/  (time - prev_time));
-    prev_time = time;
+    float fps = 1000000.0/  (time - ctx_sdl_start_time);
+    static float fps_avg = 0.0f;
+    fps_avg = (fps_avg * 0.9f + fps *  0.1f);
+    sprintf (tmp_title, "FPS: %.1f ", (fps*0.75+fps_avg*0.25));
+
     SDL_SetWindowTitle (sdl->window, tmp_title);
   }
   }
@@ -502,9 +506,11 @@ static char *ctx_sdl_get_clipboard (CtxSDL *sdl)
   return SDL_GetClipboardText ();
 }
 
+
 inline static void ctx_sdl_reset (CtxSDL *sdl)
 {
   ctx_sdl_show_frame (sdl, 1);
+  ctx_sdl_start_time = ctx_ticks ();
 }
 
 inline static void ctx_sdl_flush (CtxSDL *sdl)
