@@ -5620,7 +5620,7 @@ int stuff_main (int argc, char **argv)
     }
     else
     {
-      if (!strcmp (argv[i], "-e"))
+      if (!strcmp (argv[i], "-E"))
       {
         text_editor = 1;
       }
@@ -5682,4 +5682,10 @@ int stuff_main (int argc, char **argv)
   ctx_string_free (commandline, 1);
 
   return 0;
+}
+
+int stuff_make_thumb (const char *src_path, const char *dst_path)
+{
+   fprintf (stderr, "mkthumb %s %s\n", src_path ,dst_path);
+   return 0;
 }
