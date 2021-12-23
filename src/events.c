@@ -1831,12 +1831,12 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
   char event_type[128]="";
   float x, y; int b;
   sscanf (string, "%s %f %f %i", event_type, &x, &y, &b);
-  if (!strcmp (event_type, "mouse-motion") ||
-      !strcmp (event_type, "mouse-drag"))
+  if (!strcmp (event_type, "pm") ||
+      !strcmp (event_type, "pd"))
     return ctx_pointer_motion (ctx, x, y, b, 0);
-  else if (!strcmp (event_type, "mouse-press"))
+  else if (!strcmp (event_type, "pp"))
     return ctx_pointer_press (ctx, x, y, b, 0);
-  else if (!strcmp (event_type, "mouse-release"))
+  else if (!strcmp (event_type, "pr"))
     return ctx_pointer_release (ctx, x, y, b, 0);
   //else if (!strcmp (event_type, "keydown"))
   //  return ctx_key_down (ctx, keyval, string + 8, time);

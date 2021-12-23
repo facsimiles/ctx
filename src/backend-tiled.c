@@ -485,7 +485,7 @@ static int mice_has_event ()
 
 static char *mice_get_event ()
 {
-  const char *ret = "mouse-motion";
+  const char *ret = "pm";
   double relx, rely;
   signed char buf[3];
   int n_read = 0;
@@ -543,17 +543,17 @@ static char *mice_get_event ()
     {
       if (buf[0] & 1)
         {
-          ret = "mouse-press";
+          ret = "pp";
         }
       else
         {
-          ret = "mouse-release";
+          ret = "pr";
         }
       button = 1;
     }
   else if (buf[0] & 1)
   {
-    ret = "mouse-drag";
+    ret = "pd";
     button = 1;
   }
 
@@ -563,17 +563,17 @@ static char *mice_get_event ()
     {
       if (buf[0] & 2)
         {
-          ret = "mouse-press";
+          ret = "pp";
         }
       else
         {
-          ret = "mouse-release";
+          ret = "pr";
         }
       button = 3;
     }
     else if (buf[0] & 2)
     {
-      ret = "mouse-drag";
+      ret = "pd";
       button = 3;
     }
   }
@@ -584,17 +584,17 @@ static char *mice_get_event ()
     {
       if (buf[0] & 4)
         {
-          ret = "mouse-press";
+          ret = "pp";
         }
       else
         {
-          ret = "mouse-release";
+          ret = "pr";
         }
       button = 2;
     }
     else if (buf[0] & 4)
     {
-      ret = "mouse-drag";
+      ret = "pd";
       button = 2;
     }
   }

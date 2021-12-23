@@ -462,16 +462,16 @@ int ctx_ctx_consume_events (Ctx *ctx)
       if (!strcmp (event_type, "idle"))
       {
       }
-      else if (!strcmp (event_type, "mouse-press"))
+      else if (!strcmp (event_type, "pp"))
       {
         ctx_pointer_press (ctx, x, y, b, 0);
       }
-      else if (!strcmp (event_type, "mouse-drag")||
-               !strcmp (event_type, "mouse-motion"))
+      else if (!strcmp (event_type, "pd")||
+               !strcmp (event_type, "pm"))
       {
         ctx_pointer_motion (ctx, x, y, b, 0);
       }
-      else if (!strcmp (event_type, "mouse-release"))
+      else if (!strcmp (event_type, "pr"))
       {
         ctx_pointer_release (ctx, x, y, b, 0);
       }

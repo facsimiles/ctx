@@ -381,7 +381,7 @@ nc_at_exit (void)
 static const char *mouse_get_event_int (Ctx *n, int *x, int *y)
 {
   static int prev_state = 0;
-  const char *ret = "mouse-motion";
+  const char *ret = "pm";
   float relx, rely;
   signed char buf[3];
   read (n->mouse_fd, buf, 3);
@@ -401,10 +401,10 @@ static const char *mouse_get_event_int (Ctx *n, int *x, int *y)
 
   if ((prev_state & 1) != (buf[0] & 1))
     {
-      if (buf[0] & 1) ret = "mouse-press";
+      if (buf[0] & 1) ret = "pp";
     }
   else if (buf[0] & 1)
-    ret = "mouse-drag";
+    ret = "pd";
 
   if ((prev_state & 2) != (buf[0] & 2))
     {
@@ -474,7 +474,7 @@ static int mouse_has_event (Ctx *n)
           return mouse_has_event (n);
         }
 
-      if ((mev_type && !strcmp (type, mev_type) && !strcmp (type, "mouse-motion")) ||
+      if ((mev_type && !strcmp (type, mev_type) && !strcmp (type, "pm")) ||
          (mev_type && !strcmp (type, mev_type) && !strcmp (type, "mouse1-drag")) ||
          (mev_type && !strcmp (type, mev_type) && !strcmp (type, "mouse2-drag")))
         {
@@ -652,32 +652,32 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
               switch (buf[3])
                 {
                         /* XXX : todo reduce this to less string constants */
-                  case 32:  return "mouse-press";
+                  case 32:  return "pp";
                   case 33:  return "mouse1-press";
                   case 34:  return "mouse2-press";
-                  case 40:  return "alt-mouse-press";
+                  case 40:  return "alt-pp";
                   case 41:  return "alt-mouse1-press";
                   case 42:  return "alt-mouse2-press";
-                  case 48:  return "control-mouse-press";
+                  case 48:  return "control-pp";
                   case 49:  return "control-mouse1-press";
                   case 50:  return "control-mouse2-press";
-                  case 56:  return "alt-control-mouse-press";
+                  case 56:  return "alt-control-pp";
                   case 57:  return "alt-control-mouse1-press";
                   case 58:  return "alt-control-mouse2-press";
-                  case 64:  return "mouse-drag";
+                  case 64:  return "pd";
                   case 65:  return "mouse1-drag";
                   case 66:  return "mouse2-drag";
-                  case 71:  return "mouse-motion"; /* shift+motion */
-                  case 72:  return "alt-mouse-drag";
+                  case 71:  return "pm"; /* shift+motion */
+                  case 72:  return "alt-pd";
                   case 73:  return "alt-mouse1-drag";
                   case 74:  return "alt-mouse2-drag";
-                  case 75:  return "mouse-motion"; /* alt+motion */
-                  case 80:  return "control-mouse-drag";
+                  case 75:  return "pm"; /* alt+motion */
+                  case 80:  return "control-pd";
                   case 81:  return "control-mouse1-drag";
                   case 82:  return "control-mouse2-drag";
-                  case 83:  return "mouse-motion"; /* ctrl+motion */
-                  case 91:  return "mouse-motion"; /* ctrl+alt+motion */
-                  case 95:  return "mouse-motion"; /* ctrl+alt+shift+motion */
+                  case 83:  return "pm"; /* ctrl+motion */
+                  case 91:  return "pm"; /* ctrl+alt+motion */
+                  case 95:  return "pm"; /* ctrl+alt+shift+motion */
                   case 96:  return "scroll-up";
                   case 97:  return "scroll-down";
                   case 100: return "shift-scroll-up";
@@ -691,8 +691,8 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
                   case 35: /* (or release) */
                   case 51: /* (or ctrl-release) */
                   case 43: /* (or alt-release) */
-                  case 67: return "mouse-motion";
-                           /* have a separate mouse-drag ? */
+                  case 67: return "pm";
+                           /* have a separate pd ? */
                   default: {
                              static char rbuf[100];
                              sprintf (rbuf, "mouse (unhandled state: %i)", buf[3]);
@@ -753,15 +753,15 @@ int ctx_nct_consume_events (Ctx *ctx)
     x = (ix - 1.0 + 0.5) / ctxctx->cols * ctx->events.width;
     y = (iy - 1.0)       / ctxctx->rows * ctx->events.height;
 
-    if (!strcmp (event, "mouse-press"))
+    if (!strcmp (event, "pp"))
     {
       ctx_pointer_press (ctx, x, y, 0, 0);
       ctxctx->was_down = 1;
-    } else if (!strcmp (event, "mouse-release"))
+    } else if (!strcmp (event, "pr"))
     {
       ctx_pointer_release (ctx, x, y, 0, 0);
       ctxctx->was_down = 0;
-    } else if (!strcmp (event, "mouse-motion"))
+    } else if (!strcmp (event, "pm"))
     {
       //nct_set_cursor_pos (backend->term, ix, iy);
       //nct_flush (backend->term);
@@ -771,7 +771,7 @@ int ctx_nct_consume_events (Ctx *ctx)
         ctxctx->was_down = 0;
       }
       ctx_pointer_motion (ctx, x, y, 0, 0);
-    } else if (!strcmp (event, "mouse-drag"))
+    } else if (!strcmp (event, "pd"))
     {
       ctx_pointer_motion (ctx, x, y, 0, 0);
     } else if (!strcmp (event, "size-changed"))

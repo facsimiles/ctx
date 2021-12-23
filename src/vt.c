@@ -7788,7 +7788,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
     case CTX_DRAG_MOTION:
       //if (event->device_no==1)
       {
-        sprintf (buf, "mouse-motion %.0f %.0f %i", x, y, device_no);
+        sprintf (buf, "pm %.0f %.0f %i", x, y, device_no);
 //      ctx_set_dirty (event->ctx, 1);
         ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
@@ -7811,7 +7811,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       }
       else
       {
-        sprintf (buf, "mouse-press %.0f %.0f %i", x, y, device_no);
+        sprintf (buf, "pp %.0f %.0f %i", x, y, device_no);
         ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
         ctx_client_unlock (client);
@@ -7825,7 +7825,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
         vt->popped = 0;
       }
         ctx_set_dirty (event->ctx, 1);
-        sprintf (buf, "mouse-release %.0f %.0f %i", x, y, device_no);
+        sprintf (buf, "pr %.0f %.0f %i", x, y, device_no);
         ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
         ctx_client_unlock (client);

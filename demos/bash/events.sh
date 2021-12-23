@@ -96,17 +96,17 @@ while [ "x$ev" == "xc" -a $count -lt 4 ];do
    "-")     radius=$(($radius - 1)) ;;
    "q")  exit ;;
    "control-c") exit;;
-   *"mouse-motion"*) 
+   *"pm"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
         ev=c
         ;;
-   *"mouse-drag"*) 
+   *"pd"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
         ev=c
         ;;
-   *"mouse-press"*) 
+   *"pp"*) 
         cx=`echo $event|cut -f 2 -d ' '`
         cy=`echo $event|cut -f 3 -d ' '`
         ;;
