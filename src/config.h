@@ -527,6 +527,10 @@
 #endif
 
 
+#ifndef CTX_SYNC_FRAMES
+#define CTX_SYNC_FRAMES  1
+#endif
+
 #ifdef CTX_RASTERIZER
 #if CTX_RASTERIZER==0
 #if CTX_SDL || CTX_FB

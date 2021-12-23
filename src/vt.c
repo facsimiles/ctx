@@ -2703,11 +2703,72 @@ static void vtcmd_graphics (VT *vt, const char *sequence)
   fprintf (stderr, "gfx intro [%s]\n",sequence); // maybe implement such as well?
 }
 
+#if CTX_TILED
+static void ctx_show_frame (Ctx *ctx, int block)
+{
+  CtxTiled *tiled = (CtxTiled*)(ctx->renderer);
+  if (0)
+  {
+  }
+#if CTX_KMS
+  else if (ctx_renderer_is_kms (ctx))
+  {
+    ctx_kms_show_frame ((CtxKMS*)tiled, block);
+  }
+#endif
+#if CTX_FB
+  else if (ctx_renderer_is_fb (ctx))
+  {
+    ctx_fb_show_frame ((CtxFb*)tiled, block);
+  }
+#endif
+#if CTX_SDL
+  else if (ctx_renderer_is_sdl (ctx))
+  {
+    ctx_sdl_show_frame ((CtxSDL*)tiled, block);
+  }
+#endif
+}
+#endif
+
+static void ctx_wait_frame (Ctx *ctx, VT *vt)
+{
+#if CTX_TILED
+  if (ctx_renderer_is_tiled (ctx))
+  {
+    CtxTiled *tiled = (CtxTiled*)(ctx->renderer);
+    int max_wait    = 300;
+    //int wait_frame  = tiled->frame;  // tiled->frame and tiled->render_frame are expected
+                                       // to be equal, unless something else has timed out
+    int wait_frame  = tiled->render_frame;
+    ctx_show_frame (ctx, 0);
+    while (wait_frame > tiled->shown_frame &&
+           max_wait-- > 0)
+    {
+#if CTX_AUDIO
+      usleep (5);
+      vt_audio_task (vt, 0);
+#else
+      usleep (5);
+#endif
+      ctx_show_frame (ctx, 0);
+    }
+#if 1
+    if (max_wait > 0)
+    {}//fprintf (stderr, "[%i]", max_wait);
+    else
+      fprintf (stderr, "[wait-drop]");
+#endif
+  }
+#endif
+}
+
 static void vtcmd_report (VT *vt, const char *sequence)
 {
   char buf[64]="";
   if (!strcmp (sequence, "[5n") ) // DSR device status report
     {
+      ctx_wait_frame (vt->root_ctx, vt);
       sprintf (buf, "\033[0n"); // we're always OK :)
     }
   else if (!strcmp (sequence, "[?15n") ) // printer status
@@ -2755,7 +2816,8 @@ static void vtcmd_report (VT *vt, const char *sequence)
         { sprintf (buf, "\033[2;1;1;120;120;1;0x"); }
     }
   if (buf[0])
-    { vt_write (vt, buf, strlen (buf) ); }
+    { vt_write (vt, buf, strlen (buf) );
+    }
 }
 
 static char *charmap_cp437[]=

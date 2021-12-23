@@ -139,6 +139,10 @@ inline static void ctx_tiled_flush (CtxTiled *tiled)
 
     cnd_broadcast (&tiled->cond);
   }
+  else
+  {
+    fprintf (stderr, "{drip}");
+  }
   mtx_unlock (&tiled->mtx);
 }
 

@@ -4783,7 +4783,12 @@ int vt_get_cursor_y (VT *vt);
 static void dir_any (CtxEvent *e, void *d1, void *d2)
 {
   const char *str = e->string;
+  
+  if (!editing_location)
+          return; // generic commandline will move to tooldock
+  
   e->stop_propagate = 1;
+
 
   if (!strcmp (str, "space"))
   {

@@ -67,28 +67,27 @@ void _ctx_texture_unlock (void)
 #endif
 }
 
-
 void
 ctx_init (int *argc, char ***argv)
 {
 #if 0
-  if (!getenv ("CTX_VERSION"))
+  const char *backend = getenv ("CTX_BACKEND");
+  if (!backend || strcmp (backend, "ctx"))
   {
     int i;
-    char *new_argv[*argc+3];
+    char *new_argv[*argc+5];
     new_argv[0] = "ctx";
+    new_argv[1] = "-e";
+    new_argv[2] = "--";
     for (i = 0; i < *argc; i++)
     {
-      new_argv[i+1] = *argv[i];
+      new_argv[i+3] = *argv[i];
     }
-    new_argv[i+1] = NULL;
+    new_argv[i+3] = NULL;
     execvp (new_argv[0], new_argv);
-    // if this fails .. we continue normal startup
-    // and end up in self-hosted braille
   }
 #endif
 }
-
 
 #if 0
 int ctx_count (Ctx *ctx)

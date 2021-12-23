@@ -295,7 +295,7 @@ static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int
 
 #define CTX_START_STRING "U\n"  // or " reset "
 #define CTX_END_STRING   "\nX"  // or "\ndone"
-#define CTX_END_STRING2  "\n\e"
+#define CTX_END_STRING2  "\n"
 
 int ctx_frame_ack = -1;
 static char *prev_frame_contents = NULL;
@@ -361,11 +361,12 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
     prev_frame_len = cur_frame_len;
   }
 #endif
+  fprintf (stdout, CTX_END_STRING2);
 #if 0
     fclose (debug);
 #endif
-  fprintf (stdout, CTX_END_STRING2);
 
+#if CTX_SYNC_FRAMES
   fprintf (stdout, "\e[5n");
   fflush (stdout);
 
@@ -373,6 +374,9 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   do {
      ctx_consume_events (ctxctx->ctx);
   } while (ctx_frame_ack != 1);
+#else
+  fflush (stdout);
+#endif
 }
 
 void ctx_ctx_free (CtxCtx *ctx)

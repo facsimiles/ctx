@@ -154,6 +154,7 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
       if (count > 100)
       {
         tiled->shown_frame = tiled->render_frame;
+        fprintf (stderr, "[drop]");
         return;
       }
     }

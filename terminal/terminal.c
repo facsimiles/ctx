@@ -700,7 +700,7 @@ int terminal_main (int argc, char **argv)
 
   if (commandline_argv_start)
   {
-    ctx_client_maximize (add_tab_argv (ctx, &argv[commandline_argv_start], 1));
+    ctx_client_maximize (add_tab_argv (ctx, (const char **)&argv[commandline_argv_start], 1));
   }
   else
   {
