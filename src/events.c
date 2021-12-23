@@ -1251,7 +1251,10 @@ CtxEvent *ctx_get_event (Ctx *ctx)
 
   _ctx_idle_iteration (ctx);
   if (!ctx->events.ctx_get_event_enabled)
+  {
     ctx->events.ctx_get_event_enabled = 1;
+    ctx_set_dirty (ctx, 1);
+  }
 
   ctx_consume_events (ctx);
 
