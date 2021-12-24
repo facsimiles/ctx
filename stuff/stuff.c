@@ -298,8 +298,8 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.fill_width = 0;
   layout_config.fill_height = 0;
   layout_config.zoom = 0;
-  layout_config.width = 5;
-  layout_config.height = 5;
+  layout_config.width = 7;
+  layout_config.height = 7;
   layout_config.border = 0;
   layout_config.margin = 0.0;
   layout_config.fixed_size = 0;
@@ -3336,7 +3336,7 @@ char *dir_get_viewer_command (const char *path, int no)
 
     if (!command[0])
     {
-      sprintf (command, "sh -c 'xxd \"%s\" | vim -R -'", escaped_path);
+      sprintf (command, "sh -c 'xxd \"%s\" | vim -OR -'", escaped_path);
     }
 
     if (!command[0])
@@ -4143,6 +4143,40 @@ static void dir_layout (ITK *itk, Collection *collection)
           }
 
         else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
+        {
+          if (gotpos) label = 0;
+
+          draw_img (itk, itk->x, itk->y, width, height, newpath, gotdim?0:1);
+          if (c->no == itk->focus_no && layout_find_item < 0 && gotpos)
+          {
+             float em = itk->font_size;
+             int resize_dim = 4;
+
+             ctx_arc (itk->ctx, itk->x + width * origin_x,
+                           itk->y + height * origin_y,
+                           0.5 * em,
+                           0.0,
+                           M_PI * 2, 0);
+             ctx_rgba (itk->ctx, 1, 1,0, 0.9);
+             ctx_fill (itk->ctx);
+
+             ctx_rectangle (itk->ctx, itk->x + resize_dim * em, itk->y, width - resize_dim * 2 * em, resize_dim * em);
+             ctx_rgba (itk->ctx, 0,0,0, 0.5);
+             ctx_fill (itk->ctx);
+
+
+             ctx_rectangle (itk->ctx, itk->x + width - resize_dim * em,
+                                      itk->y + height - resize_dim * em,
+                                      resize_dim * em, resize_dim * em);
+             ctx_rgba (itk->ctx, 0,0,0, 0.5);
+             ctx_fill (itk->ctx);
+          }
+        }
+
+        else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_TEXT ||
+                 ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_VIDEO ||
+                 ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_APPLICATION
+                )
         {
           if (gotpos) label = 0;
 
@@ -5702,7 +5736,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    char *base = strdup(basename (strdup(src_path)));
    collection_set_path (collection, dir, dir);
    char *command = dir_get_viewer_command (src_path, metadata_item_to_no (collection, base));
-   float font_size = 22.0;
+   float font_size = 14.0;
    float live_font_factor = 1.0;
    CtxClient *client = ctx_client_new (ctx, command,
                   0, 0, width, height,
@@ -5713,9 +5747,13 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    {
      CtxEvent *event = NULL;
      ctx_reset (ctx);
+     ctx_rectangle (ctx, 0, 0, width, height);
+     ctx_gray (ctx, 0);
+     ctx_fill (ctx);
      ctx_clients_draw (ctx, 0);
      ctx_flush (ctx);
      usleep (1000 * 5);
+     while(ctx_get_event (ctx));
      ctx_clients_handle_events (ctx);
    }
    ctx_screenshot (ctx, dst_path);

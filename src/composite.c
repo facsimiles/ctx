@@ -1379,13 +1379,12 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
     {
       int u = ix >> 16;
       int v = iy >> 16;
-      if (u >= 0 && v >= 0 && u < bwidth && v < bheight)
+      if (CTX_LIKELY(u >= 0 && v >= 0 && u < bwidth && v < bheight))
       {
         uint32_t y  = v * bwidth + u;
         uint32_t uv = (v / 2) * bwidth_div_2 + (u / 2);
 
         *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y],
-                        //127, 127);
                         src[u_offset+uv], src[v_offset+uv]);
         //ctx_RGBA8_associate_alpha_probably_opaque (rgba);
 #if CTX_DITHER
@@ -1409,7 +1408,8 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
     }
   }
 
-  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, out, count);
+  if (rasterizer->state->gstate.global_alpha_u8 != 255)
+    ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, out, count);
 }
 
 #if CTX_FRAGMENT_SPECIALIZE
