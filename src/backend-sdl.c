@@ -30,7 +30,7 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
 {
 #if CTX_SCREENSHOT
   int valid = 0;
-  CtxSDL *sdl = (void*)ctx->renderer;
+  CtxTiled *tiled = (CtxTiled*)ctx->renderer;
 
   if (ctx_renderer_is_sdl (ctx)) valid = 1;
 #if CTX_FB
@@ -39,30 +39,28 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
 #if CTX_KMS
   if (ctx_renderer_is_kms (ctx)) valid = 1;
 #endif
+  // need a headless
 
   if (!valid)
     return;
 
   // we rely on the same struxt layout XXX !
-  for (int i = 0; i < sdl->width * sdl->height; i++)
+  for (int i = 0; i < tiled->width * tiled->height; i++)
   {
-    int tmp = sdl->pixels[i*4];
-    sdl->pixels[i*4] = sdl->pixels[i*4 + 2];
-    sdl->pixels[i*4 + 2] = tmp;
+    int tmp = tiled->pixels[i*4];
+    tiled->pixels[i*4] = tiled->pixels[i*4 + 2];
+    tiled->pixels[i*4 + 2] = tmp;
   }
 
-  stbi_write_png (output_path, sdl->width, sdl->height, 4, sdl->pixels, sdl->width*4);
-
-#if 0
-#if CTX_FB || CTX_KMS
-  for (int i = 0; i < sdl->width * sdl->height; i++)
+#if 1
+  for (int i = 0; i < tiled->width * tiled->height; i++)
   {
-    int tmp = sdl->pixels[i*4];
-    sdl->pixels[i*4] = sdl->pixels[i*4 + 2];
-    sdl->pixels[i*4 + 2] = tmp;
+    int tmp = tiled->pixels[i*4];
+    tiled->pixels[i*4] = tiled->pixels[i*4 + 2];
+    tiled->pixels[i*4 + 2] = tmp;
   }
 #endif
-#endif
+  stbi_write_png (output_path, tiled->width, tiled->height, 4, tiled->pixels, tiled->width*4);
 #endif
 }
 

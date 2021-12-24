@@ -3290,7 +3290,7 @@ char *dir_get_viewer_command (const char *path, int no)
   char *escaped_path = malloc (strlen (path) * 2 + 20);
   escape_path (path, escaped_path);
   float in = metadata_get_float (collection, no, "in", 0.0f);
-  float out = metadata_get_float (collection, no, "out", 0.0f);
+  //float out = metadata_get_float (collection, no, "out", 0.0f);
   char *command = malloc (64 + strlen (escaped_path)  + 64);
   command[0]=0;
   if (!strcmp (media_type, "inode/directory"))
@@ -5689,8 +5689,38 @@ int stuff_main (int argc, char **argv)
   return 0;
 }
 
+#include <libgen.h>
+
+void ctx_screenshot (Ctx *ctx, const char *path);
+
 int stuff_make_thumb (const char *src_path, const char *dst_path)
 {
-   fprintf (stderr, "mkthumb %s %s\n", src_path ,dst_path);
+   int width = 256;
+   int height = 256;
+   Ctx *ctx = ctx_new_ui (width, height);
+   char *dir = dirname (strdup(src_path));
+   char *base = strdup(basename (strdup(src_path)));
+   collection_set_path (collection, dir, dir);
+   char *command = dir_get_viewer_command (src_path, metadata_item_to_no (collection, base));
+   float font_size = 22.0;
+   float live_font_factor = 1.0;
+   CtxClient *client = ctx_client_new (ctx, command,
+                  0, 0, width, height,
+                  font_size * live_font_factor,
+                  ITK_CLIENT_PRELOAD,
+                  NULL, NULL);
+   for (int i = 0; i < 50; i ++)
+   {
+     CtxEvent *event = NULL;
+     ctx_reset (ctx);
+     ctx_clients_draw (ctx, 0);
+     ctx_flush (ctx);
+     usleep (1000 * 5);
+     ctx_clients_handle_events (ctx);
+   }
+   ctx_screenshot (ctx, dst_path);
+   ctx_client_remove (ctx, client);
+   ctx_free (ctx);
+
    return 0;
 }

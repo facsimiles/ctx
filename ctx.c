@@ -69,7 +69,7 @@
 #define CTX_SHAPE_CACHE_DIM      (64*64)
 #define CTX_SHAPE_CACHE_ENTRIES  (2048)   // max-total of 8mb, in normal use a lot less
 
-#define CTX_SCREENSHOT           0  // it brings in stb_save_image dep so is not default,
+#define CTX_SCREENSHOT           1  // it brings in stb_save_image dep so is not default,
                                     // rewrite as ppm?
 
 #define CTX_IMPLEMENTATION 1
