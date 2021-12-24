@@ -60,7 +60,9 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
     tiled->pixels[i*4 + 2] = tmp;
   }
 #endif
+#ifdef INCLUDE_STB_IMAGE_WRITE_H
   stbi_write_png (output_path, tiled->width, tiled->height, 4, tiled->pixels, tiled->width*4);
+#endif
 #endif
 }
 
