@@ -15,7 +15,6 @@ int ctx_terminal_cols (void);
 int ctx_terminal_width (void);
 int ctx_terminal_height (void);
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
 // ctx should be a busy box like wrapper

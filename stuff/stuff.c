@@ -5729,8 +5729,10 @@ void ctx_screenshot (Ctx *ctx, const char *path);
 
 int stuff_make_thumb (const char *src_path, const char *dst_path)
 {
-   int width = 256;
-   int height = 256;
+   //int width = 256;
+   //int height = 256;
+   int width = 512;
+   int height = 512;
    Ctx *ctx = ctx_new_ui (width, height);
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
