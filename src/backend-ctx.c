@@ -510,6 +510,7 @@ Ctx *ctx_new_ctx (int width, int height)
   backend->flush = (void(*)(void *))ctx_ctx_flush;
   backend->free  = (void(*)(void *))ctx_ctx_free;
   backend->consume_events = (void(*)(void *))ctx_ctx_consume_events;
+  backend->has_event = (void*)ctx_nct_has_event;
   ctx_set_backend (ctx, ctxctx);
   ctx_set_size (ctx, width, height);
   return ctx;

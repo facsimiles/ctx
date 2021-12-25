@@ -121,6 +121,7 @@ Ctx *ctx_new_termimg (int width, int height)
   backend->free  = (void(*)(void*))ctx_termimg_free;
   backend->consume_events = (void(*)(void*))ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
+  backend->has_event = (void*)ctx_nct_has_event; // doesnt use mice fd
 #endif
 
   return ctx;

@@ -547,6 +547,10 @@ int ctx_sdl_get_fullscreen (Ctx *ctx)
   return sdl->fullscreen;
 }
 
+static int ctx_sdl_has_event (Ctx *ctx, int timeout)
+{
+  return SDL_WaitEventTimeout (NULL, timeout);
+}
 
 Ctx *ctx_new_sdl (int width, int height)
 {

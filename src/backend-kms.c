@@ -598,6 +598,7 @@ Ctx *ctx_new_kms (int width, int height)
   backend->get_event_fds = (void*) ctx_fb_get_event_fds;
   backend->set_clipboard = (void*)ctx_fb_set_clipboard;
   backend->get_clipboard = (void*)ctx_fb_get_clipboard;
+  backend->has_event = (void*)ctx_nct_has_event; // doesnt use mice fd
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

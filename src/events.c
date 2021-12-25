@@ -1149,62 +1149,20 @@ void ctx_consume_events (Ctx *ctx)
 
 int ctx_has_event (Ctx *ctx, int timeout)
 {
-#if CTX_SDL
-  if (ctx_sdl_events)
-  {
-    return SDL_WaitEventTimeout (NULL, timeout);
-  }
-  else
-#endif
-#if CTX_HEADLESS
-  if (ctx_headless_events)
-  {
-    return 0; // XXX : we want events to work though
-  }
-  else
-#endif
-#if CTX_FB
-  if (ctx_fb_events)
-  {
-    return ctx_nct_has_event (ctx, timeout);
-  }
-  else
-#endif
-  if (ctx_native_events)
-  {
-    return ctx_nct_has_event (ctx, timeout);
-  }
-  else
-  {
-    return ctx_nct_has_event (ctx, timeout);
-  }
+  CtxBackend *backend = ctx->backend;
+  if (ctx->events.events)
+    return 1;
 
+  if (backend && backend->has_event)
+    return backend->has_event (ctx, timeout);
+
+  /* fallback, read events and return if there is one */
   ctx_consume_events (ctx);
   if (ctx->events.events)
     return 1;
   return 0;
 }
 
-#if CTX_FB
-static int ctx_fb_get_mice_fd (Ctx *ctx);
-#endif
-
-void ctx_fb_get_event_fds (Ctx *ctx, int *fd, int *count)
-{
-#if CTX_FB
-    int mice_fd = ctx_fb_get_mice_fd (ctx);
-    fd[0] = STDIN_FILENO;
-    if (mice_fd)
-    {
-      fd[1] = mice_fd;
-      *count = 2;
-    }
-    else
-    {
-      *count = 1;
-    }
-#endif
-}
 
 void ctx_stdin_get_event_fds (Ctx *ctx, int *fd, int *count)
 {

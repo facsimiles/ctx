@@ -40,8 +40,8 @@ ctx-string.c
 backend-cairo.c
 backend-ctx.c
 backend-tiled.c
-backend-kms.c
 backend-fb.c
+backend-kms.c
 backend-headless.c
 backend-sdl.c
 backend-term.c

@@ -8,12 +8,30 @@
 #include <signal.h>
 #endif
 
-#if CTX_FB
+#if CTX_FB || CTX_KMS
 static int ctx_fb_get_mice_fd (Ctx *ctx)
 {
   //CtxFb *fb = (void*)ctx->backend;
   return _ctx_mice_fd;
 }
+
+static void ctx_fb_get_event_fds (Ctx *ctx, int *fd, int *count)
+{
+  int mice_fd = ctx_fb_get_mice_fd (ctx);
+  fd[0] = STDIN_FILENO;
+  if (mice_fd)
+  {
+    fd[1] = mice_fd;
+    *count = 2;
+  }
+  else
+  {
+    *count = 1;
+  }
+}
+#endif
+
+#if CTX_FB
 
 #ifdef __linux__
   #include <linux/fb.h>
@@ -559,6 +577,7 @@ Ctx *ctx_new_fb (int width, int height)
   backend->get_clipboard = (void*)ctx_fb_get_clipboard;
   backend->consume_events = (void(*)(void *))ctx_fb_consume_events;
   backend->get_event_fds = (void*) ctx_fb_get_event_fds;
+  backend->has_event = (void*)ctx_nct_has_event; // doesnt use mice fd
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {
