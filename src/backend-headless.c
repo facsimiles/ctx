@@ -42,21 +42,11 @@ struct _CtxHeadless
   #define fbdrmuint_t uint64_t
 #endif
 
-
-static void ctx_headless_flip (CtxHeadless *fb)
-{
-}
-
 static void ctx_headless_show_frame (CtxHeadless *fb, int block)
 {
   CtxTiled *tiled = (void*)fb;
   if (tiled->shown_frame == tiled->render_frame)
   {
-    if (block == 0) // consume event call
-    {
-//    ctx_tiled_draw_cursor (tiled);
-      ctx_headless_flip (fb);
-    }
     return;
   }
 
@@ -79,7 +69,6 @@ static void ctx_headless_show_frame (CtxHeadless *fb, int block)
     if (ctx_tiled_threads_done (tiled) != _ctx_max_threads)
       return;
   }
-
     if (tiled->vt_active)
     {
        int pre_skip = tiled->min_row * tiled->height/CTX_HASH_ROWS * tiled->width;
@@ -101,20 +90,13 @@ static void ctx_headless_show_frame (CtxHeadless *fb, int block)
        if (tiled->min_row == 100){
           pre_skip = 0;
           post_skip = 0;
- //       ctx_tiled_undraw_cursor (tiled);
        }
        else
        {
-
-      tiled->min_row = 100;
-      tiled->max_row = 0;
-      tiled->min_col = 100;
-      tiled->max_col = 0;
-//   ctx_tiled_undraw_cursor (tiled);
-     switch (fb->fb_bits)
-     {
-       case 32:
-#if 1
+         tiled->min_row = 100;
+         tiled->max_row = 0;
+         tiled->min_col = 100;
+         tiled->max_col = 0;
          {
            uint8_t *dst = tiled->fb + pre_skip * 4;
            uint8_t *src = tiled->pixels + pre_skip * 4;
@@ -132,106 +114,7 @@ static void ctx_headless_show_frame (CtxHeadless *fb, int block)
              src  += post;
            }
          }
-#else
-         { int count = tiled->width * tiled->height;
-           const uint32_t *src = (void*)tiled->pixels;
-           uint32_t *dst = (void*)tiled->fb;
-           count-= pre_skip;
-           src+= pre_skip;
-           dst+= pre_skip;
-           count-= post_skip;
-           while (count -- > 0)
-           {
-             dst[0] = ctx_swap_red_green2 (src[0]);
-             src++;
-             dst++;
-           }
-         }
-#endif
-         break;
-         /* XXX  :  note: converting a scanline (or all) to target and
-          * then doing a bulk memcpy be faster (at least with som /dev/fbs)  */
-       case 24:
-         { int count = tiled->width * tiled->height;
-           const uint8_t *src = tiled->pixels;
-           uint8_t *dst = tiled->fb;
-           count-= pre_skip;
-           src+= pre_skip * 4;
-           dst+= pre_skip * 3;
-           count-= post_skip;
-           while (count -- > 0)
-           {
-             dst[0] = src[0];
-             dst[1] = src[1];
-             dst[2] = src[2];
-             dst+=3;
-             src+=4;
-           }
-         }
-         break;
-       case 16:
-         { int count = tiled->width * tiled->height;
-           const uint8_t *src = tiled->pixels;
-           uint8_t *dst = tiled->fb;
-           count-= post_skip;
-           count-= pre_skip;
-           src+= pre_skip * 4;
-           dst+= pre_skip * 2;
-           while (count -- > 0)
-           {
-             int big = ((src[0] >> 3)) +
-                ((src[1] >> 2)<<5) +
-                ((src[2] >> 3)<<11);
-             dst[0] = big & 255;
-             dst[1] = big >>  8;
-             dst+=2;
-             src+=4;
-           }
-         }
-         break;
-       case 15:
-         { int count = tiled->width * tiled->height;
-           const uint8_t *src = tiled->pixels;
-           uint8_t *dst = tiled->fb;
-           count-= post_skip;
-           count-= pre_skip;
-           src+= pre_skip * 4;
-           dst+= pre_skip * 2;
-           while (count -- > 0)
-           {
-             int big = ((src[2] >> 3)) +
-                       ((src[1] >> 2)<<5) +
-                       ((src[0] >> 3)<<10);
-             dst[0] = big & 255;
-             dst[1] = big >>  8;
-             dst+=2;
-             src+=4;
-           }
-         }
-         break;
-       case 8:
-         { int count = tiled->width * tiled->height;
-           const uint8_t *src = tiled->pixels;
-           uint8_t *dst = tiled->fb;
-           count-= post_skip;
-           count-= pre_skip;
-           src+= pre_skip * 4;
-           dst+= pre_skip;
-           while (count -- > 0)
-           {
-             dst[0] = ((src[0] >> 5)) +
-                      ((src[1] >> 5)<<3) +
-                      ((src[2] >> 6)<<6);
-             dst+=1;
-             src+=4;
-           }
-         }
-         break;
-     }
     }
- // ctx_tiled_cursor_drawn = 0;
- // ctx_tiled_draw_cursor (tiled);
-    ctx_headless_flip (fb);
     tiled->shown_frame = tiled->render_frame;
   }
 }
@@ -250,7 +133,7 @@ inline static void ctx_headless_reset (Ctx *ctx)
 
 void ctx_headless_free (CtxHeadless *fb)
 {
-  CtxTiled*tiled=(CtxTiled*)fb;
+  CtxTiled *tiled=(CtxTiled*)fb;
 
   munmap (tiled->fb, fb->fb_mapped_size);
   close (fb->fb_fd);
