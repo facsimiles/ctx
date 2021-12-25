@@ -538,7 +538,6 @@ Ctx *ctx_new_fb (int width, int height)
   backend->get_clipboard = ctx_fb_get_clipboard;
   backend->consume_events = (void(*)(void *))ctx_fb_consume_events;
   backend->get_event_fds = (void*) ctx_fb_get_event_fds;
-  backend->has_event = (void*)ctx_nct_has_event; // doesnt use mice fd
   backend->backend = "fb";
 
   for (int i = 0; i < _ctx_max_threads; i++)

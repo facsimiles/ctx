@@ -1128,23 +1128,6 @@ void ctx_consume_events (Ctx *ctx)
     backend->consume_events (ctx);
 }
 
-int ctx_has_event (Ctx *ctx, int timeout)
-{
-  CtxBackend *backend = ctx->backend;
-  if (ctx->events.events)
-    return 1;
-
-  if (backend && backend->has_event)
-    return backend->has_event (ctx, timeout);
-
-  /* fallback, read events and return if there is one */
-  ctx_consume_events (ctx);
-  if (ctx->events.events)
-    return 1;
-  return 0;
-}
-
-
 void ctx_stdin_get_event_fds (Ctx *ctx, int *fd, int *count)
 {
   fd[0] = STDIN_FILENO;

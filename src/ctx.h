@@ -857,7 +857,6 @@ void  ctx_listen_with_finalize (Ctx          *ctx,
 void ctx_init (int *argc, char ***argv); // is a no-op but could launch
                                          // terminal
 CtxEvent *ctx_get_event (Ctx *ctx);
-int       ctx_has_event (Ctx *ctx, int timeout);
 void      ctx_get_event_fds (Ctx *ctx, int *fd, int *count);
 
 int   ctx_pointer_is_down (Ctx *ctx, int no);
@@ -1606,8 +1605,6 @@ struct _CtxBackend
   void  (*set_windowtitle) (Ctx *ctx, const char *text);
 
   char *(*get_event)       (Ctx *ctx, int timout_ms);
-  int   (*has_event)       (Ctx *ctx, int timout_ms); /* if not implemented, consume_events will
-                                                             be called  */
 
   void                     (*consume_events) (Ctx *ctx);
   void                     (*get_event_fds)  (Ctx *ctx, int *fd, int *count);
