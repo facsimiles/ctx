@@ -234,11 +234,8 @@ char *metadata_get_name (Collection *collection, int no)
             case 'n':
               ctx_string_append_byte (str, '\n');
               break;
-            case ' ':
-              ctx_string_append_byte (str, ' ');
-              break;
-            case '.':
-              ctx_string_append_byte (str, '.');
+            case '0':
+              ctx_string_append_byte (str, '\0');
               break;
             //case '-': // soft-hyphen
             //  ctx_string_append_byte (str, '.');
@@ -274,7 +271,9 @@ static int _metadata_metalen (Collection *collection, const char *m)
   return len;
 }
 
-char *metadata_escape_item (const char *item)
+char *metadata_escape_item (const char *item) // XXX expand with length to
+                                              // handle \0 and
+                                              // thus arbitrary blobs?
 {
   CtxString *str = ctx_string_new ("");
   for (int i = 0; item[i]; i++)
@@ -292,9 +291,17 @@ char *metadata_escape_item (const char *item)
           ctx_string_append_byte (str, item[i]);
         }
         break;
+      case '\0':
+        ctx_string_append_byte (str, '\\');
+        ctx_string_append_byte (str, '0');
+        break;
       case '\n':
         ctx_string_append_byte (str, '\\');
         ctx_string_append_byte (str, 'n');
+        break;
+      case '\\':
+        ctx_string_append_byte (str, '\\');
+        ctx_string_append_byte (str, '\\');
         break;
       default:
         ctx_string_append_byte (str, item[i]);
@@ -400,8 +407,36 @@ char *metadata_get_string (Collection *collection, int no, const char *key)
      {
        ctx_string_set (str, "");
        m++;
+       int gotesc = 0;
        while (*m && m[0] != '\n') {
-         ctx_string_append_byte (str, m[0]);
+         char val = m[0];
+         if (gotesc)
+         {
+           switch (val)
+           {
+             case '0':
+               ctx_string_append_byte (str, '\0');
+               break;
+             case 'n':
+               ctx_string_append_byte (str, '\n');
+               break;
+             default:
+               ctx_string_append_byte (str, m[0]);
+               break;
+           }
+           gotesc = 0;
+         }
+         else
+         switch (val)
+         {
+           case '\\':
+             gotesc = 1;
+             break;
+           default:
+             ctx_string_append_byte (str, m[0]);
+             gotesc = 0;
+             break;
+         }
          m++;
        }
        return ctx_string_dissolve (str);
