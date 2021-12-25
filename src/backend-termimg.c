@@ -22,10 +22,10 @@ struct _CtxTermImg
    CtxList    *lines;
 };
 
-inline static void ctx_termimg_render (void       *ctx,
-                                       CtxCommand *command)
+inline static void ctx_termimg_process (Ctx        *ctx,
+                                        CtxCommand *command)
 {
-  CtxTermImg *termimg = (void*)ctx;
+  CtxTermImg *termimg = (void*)ctx->backend;
   /* directly forward */
   ctx_process (termimg->host, &command->entry);
 }
@@ -118,7 +118,7 @@ Ctx *ctx_new_termimg (int width, int height)
 
   backend->ctx = ctx;
   backend->backend = "termimg";
-  backend->process = ctx_termimg_render;
+  backend->process = ctx_termimg_process;
   backend->flush = (void(*)(void*))ctx_termimg_flush;
   backend->free  = (void(*)(void*))ctx_termimg_free;
   backend->consume_events = (void(*)(void*))ctx_nct_consume_events;

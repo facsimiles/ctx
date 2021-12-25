@@ -674,7 +674,7 @@ typedef enum _CtxScrollDirection CtxScrollDirection;
 typedef struct _CtxEvent CtxEvent;
 
 void ctx_set_backend (Ctx *ctx,
-                       void *backend);
+                      void *backend);
 void *ctx_get_backend (Ctx *ctx);
 
 /* the following API is only available when CTX_EVENTS is defined to 1
@@ -1609,7 +1609,7 @@ struct _CtxBackend
   int   (*has_event)       (void *backend, int timout_ms); /* if not implemented, consume_events will
                                                              be called  */
 
-  void                     (*consume_events) (void *ctx);
+  void                     (*consume_events) (Ctx *ctx);
   void                     (*get_event_fds)  (Ctx *ctx, int *fd, int *count);
   void (*free)             (void *backend); /* the free pointers are abused as the differentiatior
                                                between different backends   */

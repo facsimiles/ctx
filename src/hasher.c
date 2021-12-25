@@ -48,11 +48,11 @@ ctx_str_count_lines (const char *str)
 }
 
 static void
-ctx_hasher_process (void *user_data, CtxCommand *command)
+ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 {
   CtxEntry *entry = &command->entry;
-  CtxRasterizer *rasterizer = (CtxRasterizer *) user_data;
-  CtxHasher *hasher = (CtxHasher*) user_data;
+  CtxRasterizer *rasterizer = (CtxRasterizer *) ctx->backend;
+  CtxHasher *hasher = (CtxHasher*) ctx->backend;
   CtxState *state = rasterizer->state;
   CtxCommand *c = (CtxCommand *) entry;
   int aa = 15;//rasterizer->aa;

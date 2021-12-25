@@ -18,8 +18,9 @@ struct
 };
 
 static void
-ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
+ctx_cairo_process (Ctx *ctx, CtxCommand *c)
 {
+  CtxCairo *ctx_cairo = (void*)ctx->backend;
   CtxEntry *entry = (CtxEntry *) &c->entry;
   cairo_t *cr = ctx_cairo->cr;
   switch (entry->code)
@@ -336,7 +337,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   CtxIterator iterator;
   CtxCommand *command;
   ctx_cairo.cr = cr;
-  backend->process = (void*)ctx_cairo_process;
+  backend->process = ctx_cairo_process;
   backend->ctx = ctx;
   backend->backend = "cairo";
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,

@@ -721,10 +721,10 @@ ctx_is_half_opaque (CtxRasterizer *rasterizer)
   return gstate->global_alpha_f > 0.5f;
 }
 
-inline static void ctx_term_render (void *ctx,
-                                       CtxCommand *command)
+inline static void ctx_term_process (Ctx *ctx,
+                                     CtxCommand *command)
 {
-  CtxTerm *term = (void*)ctx;
+  CtxTerm *term = (void*)ctx->backend;
 
 #if CTX_BRAILLE_TEXT
   if (command->code == CTX_FILL)
@@ -943,7 +943,7 @@ Ctx *ctx_new_term (int width, int height)
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, ctx_term_ch); 
   backend->backend = "term";
-  backend->process = ctx_term_render;
+  backend->process = ctx_term_process;
   backend->flush   = (void(*)(void*))ctx_term_flush;
   backend->free    = (void(*)(void*))ctx_term_free;
   backend->consume_events = (void(*)(void*))ctx_nct_consume_events;
