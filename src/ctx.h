@@ -1601,12 +1601,12 @@ struct _CtxBackend
   void  (*reset)           (Ctx *ctx);
   void  (*flush)           (Ctx *ctx);
 
-  char *(*get_clipboard)   (void *ctxctx);
-  void  (*set_clipboard)   (void *ctxctx, const char *text);
-  void  (*set_windowtitle) (void *ctxctx, const char *text);
+  char *(*get_clipboard)   (Ctx *ctx);
+  void  (*set_clipboard)   (Ctx *ctx, const char *text);
+  void  (*set_windowtitle) (Ctx *ctx, const char *text);
 
-  char *(*get_event)       (void *backend, int timout_ms);
-  int   (*has_event)       (void *backend, int timout_ms); /* if not implemented, consume_events will
+  char *(*get_event)       (Ctx *ctx, int timout_ms);
+  int   (*has_event)       (Ctx *ctx, int timout_ms); /* if not implemented, consume_events will
                                                              be called  */
 
   void                     (*consume_events) (Ctx *ctx);

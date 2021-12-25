@@ -314,8 +314,8 @@ Ctx *ctx_new_headless (int width, int height)
   backend->flush = ctx_headless_flush;
   backend->reset = ctx_headless_reset;
   backend->free  = (void*)ctx_headless_free;
-  backend->set_clipboard = (void*)ctx_fb_set_clipboard;
-  backend->get_clipboard = (void*)ctx_fb_get_clipboard;
+  backend->set_clipboard = ctx_fb_set_clipboard;
+  backend->get_clipboard = ctx_fb_get_clipboard;
   backend->consume_events = ctx_headless_consume_events;
 
   tiled->ctx_copy = ctx_new ();

@@ -486,13 +486,13 @@ void ctx_screenshot (Ctx *ctx, const char *path)
 
 #if CTX_SDL
 
-static void ctx_sdl_set_clipboard (CtxSDL *sdl, const char *text)
+static void ctx_sdl_set_clipboard (Ctx *ctx, const char *text)
 {
   if (text)
     SDL_SetClipboardText (text);
 }
 
-static char *ctx_sdl_get_clipboard (CtxSDL *sdl)
+static char *ctx_sdl_get_clipboard (Ctx *ctx)
 {
   return SDL_GetClipboardText ();
 }
@@ -616,8 +616,8 @@ Ctx *ctx_new_sdl (int width, int height)
   backend->free  = (void*)ctx_sdl_free;
   backend->consume_events = ctx_sdl_consume_events;
 
-  backend->set_clipboard = (void*)ctx_sdl_set_clipboard;
-  backend->get_clipboard = (void*)ctx_sdl_get_clipboard;
+  backend->set_clipboard = ctx_sdl_set_clipboard;
+  backend->get_clipboard = ctx_sdl_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

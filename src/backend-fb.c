@@ -57,40 +57,6 @@ typedef struct _CtxFb CtxFb;
 struct _CtxFb
 {
    CtxTiled tiled;
-#if 0
-   void (*render) (void *fb, CtxCommand *command);
-   void (*reset)  (void *fb);
-   void (*flush)  (void *fb);
-   char *(*get_clipboard) (void *ctxctx);
-   void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)   (void *fb);
-   int           width;
-   int           height;
-   int           cols; // unused
-   int           rows; // unused
-   int           was_down;
-   uint8_t      *pixels;
-   Ctx          *ctx_copy;
-   Ctx          *host[CTX_MAX_THREADS];
-   CtxAntialias  antialias;
-   int           quit;
-   _Atomic int   thread_quit;
-   int           shown_frame;
-   int           render_frame;
-   int           rendered_frame[CTX_MAX_THREADS];
-   int           frame;
-   int           min_col; // hasher cols and rows
-   int           min_row;
-   int           max_col;
-   int           max_row;
-   uint8_t       hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
-   int8_t        tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
-                                                           // responsible for a tile
-                                                           //
-
-
-   int           pointer_down[3];
-#endif
    int           key_balance;
    int           key_repeat;
    int           lctrl;
@@ -573,8 +539,8 @@ Ctx *ctx_new_fb (int width, int height)
   backend->flush = ctx_fb_flush;
   backend->reset = ctx_fb_reset;
   backend->free  = (void*)ctx_fb_free;
-  backend->set_clipboard = (void*)ctx_fb_set_clipboard;
-  backend->get_clipboard = (void*)ctx_fb_get_clipboard;
+  backend->set_clipboard = ctx_fb_set_clipboard;
+  backend->get_clipboard = ctx_fb_get_clipboard;
   backend->consume_events = (void(*)(void *))ctx_fb_consume_events;
   backend->get_event_fds = (void*) ctx_fb_get_event_fds;
   backend->has_event = (void*)ctx_nct_has_event; // doesnt use mice fd

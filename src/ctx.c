@@ -2029,7 +2029,7 @@ void ctx_set_clipboard (Ctx *ctx, const char *text)
 {
   if (ctx->backend && ctx->backend->set_clipboard)
   {
-    ctx->backend->set_clipboard (ctx->backend, text);
+    ctx->backend->set_clipboard (ctx, text);
     return;
   }
 }
@@ -2038,7 +2038,7 @@ void ctx_windowtitle (Ctx *ctx, const char *text)
 {
   if (ctx->backend && ctx->backend->set_windowtitle)
   {
-    ctx->backend->set_windowtitle (ctx->backend, text);
+    ctx->backend->set_windowtitle (ctx, text);
     return;
   }
 }
@@ -2047,7 +2047,7 @@ char *ctx_get_clipboard (Ctx *ctx)
 {
   if (ctx->backend && ctx->backend->get_clipboard)
   {
-    return ctx->backend->get_clipboard (ctx->backend);
+    return ctx->backend->get_clipboard (ctx);
   }
   return strdup ("");
 }
