@@ -1606,8 +1606,8 @@ struct _CtxBackend
   void  (*set_clipboard)   (void *ctxctx, const char *text);
   void  (*set_windowtitle) (void *ctxctx, const char *text);
 
-  char *(*get_event)      (void *backend, int timout_ms);
-  int   (*has_event)      (void *backend, int timout_ms); /* if not implemented, consume_events will
+  char *(*get_event)       (void *backend, int timout_ms);
+  int   (*has_event)       (void *backend, int timout_ms); /* if not implemented, consume_events will
                                                              be called  */
 
   void        (*consume_events) (void *ctx);

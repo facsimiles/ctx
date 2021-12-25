@@ -732,25 +732,6 @@ struct _CtxHasher
 void ctx_rasterizer_deinit (CtxRasterizer *rasterizer);
 #endif
 
-#if CTX_EVENTS
-extern int ctx_native_events;
-
-#if CTX_SDL
-extern int ctx_sdl_events;
-void ctx_sdl_consume_events (Ctx *ctx);
-#endif
-
-#if CTX_FB
-extern int ctx_fb_events;
-void ctx_fb_consume_events (Ctx *ctx);
-#endif
-
-
-void ctx_nct_consume_events (Ctx *ctx);
-void ctx_ctx_consume_events (Ctx *ctx);
-
-#endif
-
 enum {
   NC_MOUSE_NONE  = 0,
   NC_MOUSE_PRESS = 1,  /* "mouse-pressed", "mouse-released" */
@@ -765,8 +746,6 @@ int ctx_terminal_height (void);
 int ctx_terminal_cols   (void);
 int ctx_terminal_rows   (void);
 extern int ctx_frame_ack;
-
-void ctx_nct_consume_events (Ctx *ctx);
 
 typedef struct _CtxCtx CtxCtx;
 struct _CtxCtx

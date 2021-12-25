@@ -301,6 +301,8 @@ int ctx_frame_ack = -1;
 static char *prev_frame_contents = NULL;
 static int   prev_frame_len = 0;
 
+static int ctx_native_events = 1;
+
 static void ctx_ctx_flush (CtxCtx *ctxctx)
 {
 #if 0

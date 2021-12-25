@@ -299,7 +299,6 @@ Ctx *ctx_new_headless (int width, int height)
     return NULL;
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
   tiled->show_frame = (void*)ctx_headless_show_frame;
-  ctx_headless_events = 1;
 
 #if CTX_BABL
   babl_init ();

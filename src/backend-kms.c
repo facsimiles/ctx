@@ -570,7 +570,6 @@ Ctx *ctx_new_kms (int width, int height)
   if (!tiled->fb)
     return NULL;
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
-  ctx_kms_events = 1;
 
 #if CTX_BABL
   babl_init ();

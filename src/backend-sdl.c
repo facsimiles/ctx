@@ -583,7 +583,6 @@ Ctx *ctx_new_sdl (int width, int height)
 
   ctx_show_fps = getenv ("CTX_SHOW_FPS")!=NULL;
 
-  ctx_sdl_events = 1;
   sdl->texture = SDL_CreateTexture (sdl->backend,
         SDL_PIXELFORMAT_ABGR8888,
         SDL_TEXTUREACCESS_STREAMING,

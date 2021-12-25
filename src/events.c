@@ -1121,25 +1121,6 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 #include <stdatomic.h>
 #endif
 
-int ctx_native_events = 0;
-#if CTX_SDL
-int ctx_sdl_events = 0;
-#endif
-
-#if CTX_HEADLESS
-int ctx_headless_events = 0;
-#endif
-
-#if CTX_FB
-int ctx_fb_events = 0;
-#endif
-
-#if CTX_KMS
-int ctx_kms_events = 0;
-#endif
-
-int ctx_nct_has_event (Ctx  *n, int delay_ms);
-
 void ctx_consume_events (Ctx *ctx)
 {
   CtxBackend *backend = ctx->backend;
