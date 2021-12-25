@@ -81,14 +81,6 @@ void ctx_termimg_free (CtxTermImg *termimg)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
-int ctx_renderer_is_termimg (Ctx *ctx)
-{
-  if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_termimg_free)
-          return 1;
-  return 0;
-}
-
 Ctx *ctx_new_termimg (int width, int height)
 {
   Ctx *ctx = ctx_new ();

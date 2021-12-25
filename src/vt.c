@@ -2707,6 +2707,18 @@ static void vtcmd_graphics (VT *vt, const char *sequence)
 static void ctx_show_frame (Ctx *ctx, int block)
 {
   CtxTiled *tiled = (CtxTiled*)(ctx->renderer);
+  tiled->show_frame (tiled, block);
+#if 0
+  switch (ctx_backend_type (ctx))
+  {
+#if CTX_KMS:
+          case CTX_BACKEND_KMS:
+            ctx_kms_show_frame ((CtxKMS*)tiled, block);
+            break;
+#endif
+
+
+  }
   if (0)
   {
   }
@@ -2734,13 +2746,14 @@ static void ctx_show_frame (Ctx *ctx, int block)
     ctx_sdl_show_frame ((CtxSDL*)tiled, block);
   }
 #endif
+#endif
 }
 #endif
 
 static void ctx_wait_frame (Ctx *ctx, VT *vt)
 {
 #if CTX_TILED
-  if (ctx_renderer_is_tiled (ctx))
+  if (ctx_backend_is_tiled (ctx))
   {
     CtxTiled *tiled = (CtxTiled*)(ctx->renderer);
     int max_wait    = 300;
@@ -7290,7 +7303,9 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
   scale_x *= vt->scale_x;
   scale_y *= vt->scale_y;
 
-  if (!ctx_renderer_is_term (ctx))
+  CtxBackendType backend_type = ctx_backend_type (ctx);
+
+  if (backend_type != CTX_BACKEND_TERM)
   {
     // TODO : use our own special glyphs when glyphs are not passed through
     if (!vt_special_glyph (ctx, vt, x, y + offset_y * vt->ch, vt->cw * scale_x, vt->ch * scale_y, unichar) )
@@ -7320,8 +7335,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
   }
   y -= vt->font_size * 0.22;
   if (bold
-      && !ctx_renderer_is_term (ctx)
-     )
+      && backend_type != CTX_BACKEND_TERM)
     {
       ctx_move_to (ctx, x - vt->font_size/30.0, y);
       //ctx_line_width (ctx, vt->font_size/30.0);

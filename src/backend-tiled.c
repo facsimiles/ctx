@@ -1061,12 +1061,4 @@ static int event_check_pending (CtxTiled *tiled)
   return events;
 }
 
-int ctx_renderer_is_tiled (Ctx *ctx)
-{
-  return ctx_renderer_is_headless (ctx)
-          || ctx_renderer_is_fb (ctx)
-          || ctx_renderer_is_sdl (ctx)
-          || ctx_renderer_is_kms (ctx);
-}
-
 #endif

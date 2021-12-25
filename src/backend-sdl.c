@@ -26,27 +26,12 @@ struct _CtxSDL
 
 #include "stb_image_write.h"
 
+
 void ctx_screenshot (Ctx *ctx, const char *output_path)
 {
 #if CTX_SCREENSHOT
-  int valid = 0;
   CtxTiled *tiled = (CtxTiled*)ctx->renderer;
-
-#if CTX_HEADLESS
-  if (ctx_renderer_is_headless (ctx)) valid = 1;
-#endif
-#if CTX_SDL
-  if (ctx_renderer_is_sdl (ctx)) valid = 1;
-#endif
-#if CTX_FB
-  if (ctx_renderer_is_fb  (ctx)) valid = 1;
-#endif
-#if CTX_KMS
-  if (ctx_renderer_is_kms (ctx)) valid = 1;
-#endif
-  // need a headless
-
-  if (!valid)
+  if (!ctx_backend_is_tiled (ctx))
     return;
 
   // we rely on the same struxt layout XXX !
@@ -542,15 +527,6 @@ void ctx_sdl_free (CtxSDL *sdl)
 #endif
 }
 
-
-int ctx_renderer_is_sdl (Ctx *ctx)
-{
-  if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_sdl_free)
-          return 1;
-  return 0;
-}
-
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
 {
   CtxSDL *sdl = (void*)ctx->renderer;
@@ -624,6 +600,7 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
   tiled->pixels = (uint8_t*)malloc (width * height * 4);
+  tiled->show_frame = (void*)ctx_sdl_show_frame;
 
   ctx_set_size (backend->ctx,    width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
@@ -675,11 +652,5 @@ Ctx *ctx_new_sdl (int width, int height)
 #else
   return NULL;
 #endif
-}
-#else
-
-int ctx_renderer_is_sdl (Ctx *ctx)
-{
-  return 0;
 }
 #endif

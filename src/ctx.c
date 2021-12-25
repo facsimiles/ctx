@@ -199,21 +199,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
      }
    }
 #endif
-   else if (format == CTX_FORMAT_RGBA8 &&
-                   ( 1
-#if CTX_HEADLESS
-                   || ctx_renderer_is_headless (ctx)
-#endif
-#if CTX_FB
-                   || ctx_renderer_is_fb (ctx)
-#endif
-#if CTX_KMS
-                   || ctx_renderer_is_kms (ctx)
-#endif
-#if CTX_SDL
-                   || ctx_renderer_is_sdl (ctx)
-#endif
-                   ))
+   else if (format == CTX_FORMAT_RGBA8 && ctx_backend_is_tiled (ctx))
    {
      CtxTiled *tiled = (CtxTiled*)ctx->renderer;
      {
@@ -2425,6 +2411,38 @@ CtxMediaTypeClass ctx_media_type_class (const char *media_type)
     if (media_type[4]!='e')ret = 0;*/
   }
   return ret;
+}
+
+CtxBackendType ctx_backend_type (Ctx *ctx)
+{
+  CtxBackend *backend = ctx->renderer;
+  if (backend == NULL)
+    return CTX_BACKEND_NONE;
+#if CTX_EVENTS
+  else if (backend->free == (void*) ctx_ctx_free) return CTX_BACKEND_CTX;
+#endif
+#if CTX_HEADLESS
+  else if (backend->free == (void*) ctx_headless_free) return CTX_BACKEND_HEADLESS;
+#endif
+#if CTX_SDL
+  else if (backend->free == (void*) ctx_sdl_free) return CTX_BACKEND_SDL;
+#endif
+#if CTX_CAIRO
+  else if (backend->free == (void*) ctx_cairo_free) return CTX_BACKEND_CAIRO;
+#endif
+#if CTX_KMS
+  else if (backend->free == (void*) ctx_kms_free) return CTX_BACKEND_KMS;
+#endif
+#if CTX_FB
+  else if (backend->free == (void*) ctx_fb_free) return CTX_BACKEND_FB;
+#endif
+#if CTX_TERM
+  else if (backend->free == (void*) ctx_term_free) return CTX_BACKEND_TERM;
+#endif
+#if CTX_TERMIMG
+  else if (backend->free == (void*) ctx_termimg_free) return CTX_BACKEND_TERMIMG;
+#endif
+  return CTX_BACKEND_NONE;
 }
 
 #endif

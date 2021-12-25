@@ -1,12 +1,13 @@
 #include "ctx-split.h"
 
 #if CTX_EVENTS
+#if CTX_HEADLESS
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <signal.h>
 
-#if CTX_HEADLESS
+
 static int ctx_headless_get_mice_fd (Ctx *ctx)
 {
   //CtxHeadless *fb = (void*)ctx->renderer;
@@ -270,14 +271,6 @@ void ctx_headless_free (CtxHeadless *fb)
 //static unsigned char *fb_icc = NULL;
 //static long fb_icc_length = 0;
 
-int ctx_renderer_is_headless (Ctx *ctx)
-{
-  if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_headless_free)
-          return 1;
-  return 0;
-}
-
 static CtxHeadless *ctx_headless = NULL;
 
 
@@ -306,6 +299,7 @@ Ctx *ctx_new_headless (int width, int height)
   if (!tiled->fb)
     return NULL;
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
+  tiled->show_frame = (void*)ctx_headless_show_frame;
   ctx_headless_events = 1;
 
 #if CTX_BABL
@@ -374,12 +368,6 @@ Ctx *ctx_new_headless (int width, int height)
   tiled->vt_active = 1;
 
   return backend->ctx;
-}
-#else
-
-int ctx_renderer_is_headless (Ctx *ctx)
-{
-  return 0;
 }
 #endif
 #endif

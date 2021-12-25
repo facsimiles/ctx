@@ -40,12 +40,6 @@ extern Ctx *ctx;
 //#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
 void terminal_update_title    (const char *title);
-int  ctx_renderer_is_sdl      (Ctx *ctx);
-int  ctx_renderer_is_fb       (Ctx *ctx);
-int  ctx_renderer_is_headless (Ctx *ctx);
-int  ctx_renderer_is_kms      (Ctx *ctx);
-int  ctx_renderer_is_tiled    (Ctx *ctx);
-int  ctx_renderer_is_term     (Ctx *ctx);
 void ctx_sdl_set_fullscreen   (Ctx *ctx, int val);
 int  ctx_sdl_get_fullscreen   (Ctx *ctx);
 float ctx_target_fps = 25.0;
@@ -189,7 +183,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
   client->finalize = finalize;
   client->opacity = 1.0f;
 
-  if (ctx_renderer_is_term (ctx))
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM)
   {
     font_size = 3;
   }
@@ -600,7 +594,7 @@ static void ctx_client_titlebar_drag (CtxEvent *event, void *data, void *data2)
 
   float snap_threshold = 8;
 
-  if (ctx_renderer_is_term (event->ctx))
+  if (ctx_backend_type (event->ctx) == CTX_BACKEND_TERM)
      snap_threshold = 1;
 
   if (new_y < ctx_client_min_y_pos (event->ctx)) new_y = ctx_client_min_y_pos (event->ctx);

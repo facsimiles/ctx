@@ -677,14 +677,6 @@ void ctx_set_renderer (Ctx *ctx,
                        void *renderer);
 void *ctx_get_renderer (Ctx *ctx);
 
-int ctx_renderer_is_sdl (Ctx *ctx);
-int ctx_renderer_is_fb (Ctx *ctx);
-int ctx_renderer_is_headless (Ctx *ctx);
-int ctx_renderer_is_kms (Ctx *ctx);
-int ctx_renderer_is_tiled (Ctx *ctx);
-int ctx_renderer_is_ctx (Ctx *ctx);
-int ctx_renderer_is_term (Ctx *ctx);
-
 /* the following API is only available when CTX_EVENTS is defined to 1
  *
  * it provides the ability to register callbacks with the current path
@@ -1859,11 +1851,33 @@ CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     void (*freefunc) (void *pixels, void *user_data),
                                     void *user_data);
 
+typedef enum CtxBackendType {
+  CTX_BACKEND_NONE,
+  CTX_BACKEND_CTX,
+  CTX_BACKEND_HEADLESS,
+  CTX_BACKEND_TERM,
+  CTX_BACKEND_FB,
+  CTX_BACKEND_KMS,
+  CTX_BACKEND_TERMIMG,
+  CTX_BACKEND_CAIRO,
+  CTX_BACKEND_SDL,
+} CtxBackendType;
 
+CtxBackendType ctx_backend_type (Ctx *ctx);
 
-
-
-
+static inline int ctx_backend_is_tiled (Ctx *ctx)
+{
+  switch (ctx_backend_type (ctx))
+  {
+    case CTX_BACKEND_FB:
+    case CTX_BACKEND_SDL:
+    case CTX_BACKEND_KMS:
+    case CTX_BACKEND_HEADLESS:
+      return 1;
+    default:
+      return 0;
+  }
+}
 
 #endif
 

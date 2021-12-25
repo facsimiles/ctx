@@ -523,12 +523,4 @@ int ctx_ctx_consume_events (Ctx *ctx)
   return 1;
 }
 
-int ctx_renderer_is_ctx (Ctx *ctx)
-{
-  if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_ctx_free)
-          return 1;
-  return 0;
-}
-
 #endif

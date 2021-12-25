@@ -352,14 +352,6 @@ void ctx_fb_free (CtxFb *fb)
 //static unsigned char *fb_icc = NULL;
 //static long fb_icc_length = 0;
 
-int ctx_renderer_is_fb (Ctx *ctx)
-{
-  if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_fb_free)
-          return 1;
-  return 0;
-}
-
 static CtxFb *ctx_fb = NULL;
 #ifdef __linux__
 static void fb_vt_switch_cb (int sig)
@@ -539,6 +531,7 @@ Ctx *ctx_new_fb (int width, int height)
   if (!tiled->fb)
     return NULL;
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
+  tiled->show_frame = (void*)ctx_fb_show_frame;
   ctx_fb_events = 1;
 
 #if CTX_BABL
@@ -648,12 +641,6 @@ Ctx *ctx_new_fb (int width, int height)
 #else
   return NULL;
 #endif
-}
-#else
-
-int ctx_renderer_is_fb (Ctx *ctx)
-{
-  return 0;
 }
 #endif
 #endif

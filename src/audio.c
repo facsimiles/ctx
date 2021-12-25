@@ -336,7 +336,7 @@ int ctx_pcm_init (Ctx *ctx)
   }
   else
 #endif
-  if (ctx_renderer_is_ctx (ctx))
+  if (ctx_backend_type (ctx) == CTX_BACKEND_CTX)
   {
      ctx_host_freq = 8000;
      ctx_host_format = CTX_s16;
@@ -441,7 +441,7 @@ int ctx_pcm_get_frame_chunk (Ctx *ctx)
     return mmm_pcm_get_frame_chunk (ctx->backend_data);
   }
 #endif
-  if (ctx_renderer_is_ctx (ctx))
+  if (ctx_backend_type (ctx) == CTX_BACKEND_CTX)
   {
     // 300 stuttering
     // 350 nothing

@@ -14,6 +14,7 @@ ctx-internal.h
 ctx-decls.h
 sha1.c
 audio.h
+ctx-clients.h
 start-implementation
 audio.c
 a85.c
@@ -47,8 +48,6 @@ backend-term.c
 backend-termimg.c
 formatter.c
 ctx.c
-end-implementation
-ctx-clients.h
 vt-utf8.h
 vt-line.h
 vt-line.c
@@ -56,6 +55,7 @@ vt.h
 vt-audio.h
 vt.c
 ctx-clients.c
+end-implementation
 
 endguard
 

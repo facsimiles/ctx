@@ -1,4 +1,5 @@
 #include "itk.h"
+#include <ctype.h>
 
 static char name[20]="";
 static char surname[20]="";
@@ -119,6 +120,6 @@ static int crud_ui (ITK *itk, int frame_no)
 
 int main (int argc, char **argv)
 {
-  itk_main (crud_ui, NULL);
+  itk_main ((void*)crud_ui, NULL);
   return 0;
 }

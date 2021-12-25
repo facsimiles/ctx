@@ -132,15 +132,6 @@ struct _CtxBuffer
 #endif
 };
 
-typedef enum CtxBackendType {
-  CTX_BACKEND_CTX,
-  CTX_BACKEND_HEADLESS,
-  CTX_BACKEND_TERM,
-  CTX_BACKEND_FB,
-  CTX_BACKEND_SDL,
-  CTX_BACKEND_KMS,
-  CTX_BACKEND_TERMIMG,
-} CtxBackendType;
 
 //void _ctx_user_to_device          (CtxState *state, float *x, float *y);
 //void _ctx_user_to_device_distance (CtxState *state, float *x, float *y);
@@ -797,7 +788,6 @@ ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 const char *
 ctx_get (Ctx *ctx, const char *key);
 
-int ctx_renderer_is_term (Ctx *ctx);
 Ctx *ctx_new_ctx (int width, int height);
 Ctx *ctx_new_fb (int width, int height);
 Ctx *ctx_new_headless (int width, int height);
@@ -1112,6 +1102,7 @@ struct _EvSource
 struct _CtxTiled
 {
    CtxBackend renderer;
+   void (*show_frame) (void *renderer, int block);
    int           width;
    int           height;
    int           cols;

@@ -283,7 +283,7 @@ void ctx_set_size (Ctx *ctx, int width, int height)
     ctx->events.height = height;
     _ctx_resized (ctx, width, height, 0);
 #if 1
-    if (ctx_renderer_is_ctx (ctx))
+    if (ctx_backend_type (ctx) == CTX_BACKEND_CTX)
     {
       CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
       ctxctx->width = width;
@@ -2137,7 +2137,7 @@ void ctx_set_title (Ctx *ctx, const char *title)
 {
 #if CTX_SDL
      // XXX also check we're first/only client?
-   if (ctx_renderer_is_sdl (ctx))
+   if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
      ctx_sdl_set_title (ctx_get_renderer (ctx), title);
 #endif
 }

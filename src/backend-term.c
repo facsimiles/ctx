@@ -868,14 +868,6 @@ void ctx_term_free (CtxTerm *term)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
-int ctx_renderer_is_term (Ctx *ctx)
-{
-  if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_term_free)
-          return 1;
-  return 0;
-}
-
 float ctx_term_get_cell_width (Ctx *ctx)
 {
   return ctx_term_cw;

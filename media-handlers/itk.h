@@ -386,7 +386,7 @@ ITK *itk_new (Ctx *ctx)
   itk->scroll_speed     = 4.0;
   itk->light_mode       = 1;
   ctx_set_dirty (ctx, 1);
-  if (ctx_renderer_is_term (ctx))
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM)
   {
     itk->scale     = 1.0;
     itk->font_size = 3;
@@ -2264,7 +2264,7 @@ itk_ctx_settings (ITK *itk)
   Ctx *ctx = itk->ctx;
 
   if (!inited){
-    if (!(ctx_renderer_is_sdl (ctx) || ctx_renderer_is_fb (ctx)))
+    if (!ctx_backend_is_tiled (ctx))
        return;
     inited = 1;
     threads = ctx_get_render_threads (ctx);

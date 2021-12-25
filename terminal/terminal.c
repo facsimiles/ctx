@@ -227,6 +227,7 @@ static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
 {
+  CtxBackendType backend_type = ctx_backend_type (ctx);
   if (!active)
     return;
   if (active->internal)
@@ -240,7 +241,7 @@ static void handle_event (Ctx        *ctx,
   if (!strcmp (event, "F11"))
   {
 #if CTX_SDL
-    if (ctx_renderer_is_sdl (ctx))
+    if (backend_type == CTX_BACKEND_SDL)
     {
       ctx_sdl_set_fullscreen (ctx, !ctx_sdl_get_fullscreen (ctx));
     }
@@ -270,8 +271,9 @@ static void handle_event (Ctx        *ctx,
         }
     }
   else if (!strcmp (event, "shift-control-t") ||
-           ((ctx_renderer_is_fb (ctx) || ctx_renderer_is_term (ctx) ||
-             ctx_renderer_is_kms (ctx))
+           ((backend_type == CTX_BACKEND_FB ||  // workaround for not having
+            backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
+            backend_type == CTX_BACKEND_KMS)
            &&   !strcmp (event, "control-t") ))
   {
     add_tab (ctx, vt_find_shell_command(), 1);
@@ -375,7 +377,9 @@ static void ctx_client_titlebar_drag (CtxEvent *event, void *data, void *data2)
 
   float snap_threshold = 8;
 
-  if (ctx_renderer_is_term (event->ctx))
+  CtxBackendType backend_type = CTX_BACKEND_TERM;
+
+  if (backend_type == CTX_BACKEND_TERM)
      snap_threshold = 1;
 
   if (new_y < ctx_client_min_y_pos (ctx))
@@ -675,7 +679,7 @@ int terminal_main (int argc, char **argv)
   width = ctx_width (ctx);
   height = ctx_height (ctx);
 
-  if (ctx_renderer_is_term (ctx) && font_size <= 0)
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && font_size <= 0)
   {
     font_size = ctx_term_get_cell_height (ctx);
   }

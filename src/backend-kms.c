@@ -497,14 +497,6 @@ void ctx_kms_free (CtxKMS *fb)
 //static unsigned char *fb_icc = NULL;
 //static long fb_icc_length = 0;
 
-int ctx_renderer_is_kms (Ctx *ctx)
-{
-  if (ctx->renderer &&
-      ctx->renderer->free == (void*)ctx_kms_free)
-          return 1;
-  return 0;
-}
-
 #if 0
 static CtxKMS *ctx_fb = NULL;
 static void vt_switch_cb (int sig)
@@ -591,6 +583,7 @@ Ctx *ctx_new_kms (int width, int height)
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;
   tiled->height   = height;
+  tiled->show_frame = (void*)ctx_kms_show_frame;
 
   ctx_set_renderer (backend->ctx, fb);
   ctx_set_renderer (tiled->ctx_copy, fb);
@@ -692,12 +685,5 @@ Ctx *ctx_new_kms (int width, int height)
   return NULL;
 #endif
 }
-#else
-
-int ctx_renderer_is_kms (Ctx *ctx)
-{
-  return 0;
-}
-
 #endif
 #endif
