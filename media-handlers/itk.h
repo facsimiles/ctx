@@ -567,7 +567,7 @@ itk_panels_reset_scroll (ITK *itk)
   {
     ITKPanel *panel = l->data;
     panel->scroll = 0.0;
-    panel->jump_scroll = 1;
+    panel->do_scroll_jump = 1;
   }
 }
 
@@ -613,7 +613,7 @@ CtxControl *itk_add_control (ITK *itk,
      {
         if (itk->panel->scroll != 0.0f)
         {
-          itk->panel->scroll -= itk->scroll_speed * panel->height * itk->panel->scroll_jump * 5;
+          itk->panel->scroll -= itk->scroll_speed * itk->panel->height * (itk->panel->do_scroll_jump?5:1);
           if (itk->panel->scroll<0.0)
             itk->panel->scroll=0.0;
           ctx_set_dirty (itk->ctx, 1);
@@ -621,7 +621,7 @@ CtxControl *itk_add_control (ITK *itk,
      }
      else if (itk->y - itk->panel->scroll +  control->height > itk->panel->y + itk->panel->height - em * 2 && control->height < itk->panel->height - em * 2)
      {
-          itk->panel->scroll += itk->scroll_speed * panel->height * itk->panel->scroll_jump * 5;
+          itk->panel->scroll += itk->scroll_speed * itk->panel->height * (itk->panel->do_scroll_jump?5:1);
 #if 0
         if (itk->panel->scroll > itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y)) - em * itk->rel_ver_advance;
             itk->panel->scroll = itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y) - em * itk->rel_ver_advance;
@@ -631,7 +631,7 @@ CtxControl *itk_add_control (ITK *itk,
      }
      else
      {
-       itk->panel->scroll_jump = 0;
+       itk->panel->do_scroll_jump = 0;
      }
 
   }
