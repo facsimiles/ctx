@@ -493,13 +493,13 @@ Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
   CtxState    *state = &ctx->state;
   CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (sizeof (CtxHasher), 1);
   ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows);
-  ctx_set_renderer (ctx, (void*)rasterizer);
+  ctx_set_backend (ctx, (void*)rasterizer);
   return ctx;
 }
 
 uint8_t *ctx_hasher_get_hash (Ctx *ctx, int col, int row)
 {
-  CtxHasher *hasher = (CtxHasher*)ctx->renderer;
+  CtxHasher *hasher = (CtxHasher*)ctx->backend;
   if (row < 0) row =0;
   if (col < 0) col =0;
   if (row >= hasher->rows) row = hasher->rows-1;

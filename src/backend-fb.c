@@ -11,7 +11,7 @@
 #if CTX_FB
 static int ctx_fb_get_mice_fd (Ctx *ctx)
 {
-  //CtxFb *fb = (void*)ctx->renderer;
+  //CtxFb *fb = (void*)ctx->backend;
   return _ctx_mice_fd;
 }
 
@@ -310,7 +310,7 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 
 int ctx_fb_consume_events (Ctx *ctx)
 {
-  CtxFb *fb = (void*)ctx->renderer;
+  CtxFb *fb = (void*)ctx->backend;
   ctx_fb_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
   return 0;
@@ -357,6 +357,7 @@ static CtxFb *ctx_fb = NULL;
 static void fb_vt_switch_cb (int sig)
 {
   CtxTiled *tiled = (void*)ctx_fb;
+  CtxBackend *backend = (void*)ctx_fb;
   if (sig == SIGUSR1)
   {
     ioctl (0, VT_RELDISP, 1);
@@ -371,7 +372,7 @@ static void fb_vt_switch_cb (int sig)
     tiled->render_frame = ++tiled->frame;
     ioctl (0, KDSETMODE, KD_GRAPHICS);
     {
-      tiled->ctx->dirty=1;
+      backend->ctx->dirty=1;
 
       for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
@@ -388,8 +389,8 @@ Ctx *ctx_new_fb (int width, int height)
 {
 #if CTX_RASTERIZER
   CtxFb *fb = calloc (sizeof (CtxFb), 1);
-
   CtxTiled *tiled = (void*)fb;
+  CtxBackend *backend = (void*)fb;
   ctx_fb = fb;
   {
 #ifdef __linux__
@@ -540,23 +541,23 @@ Ctx *ctx_new_fb (int width, int height)
 
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 
-  tiled->ctx      = ctx_new ();
+  backend->ctx      = ctx_new ();
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;
   tiled->height   = height;
 
-  ctx_set_renderer (tiled->ctx, fb);
-  ctx_set_renderer (tiled->ctx_copy, fb);
-  ctx_set_texture_cache (tiled->ctx_copy, tiled->ctx);
+  ctx_set_backend (backend->ctx, fb);
+  ctx_set_backend (tiled->ctx_copy, fb);
+  ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
-  ctx_set_size (tiled->ctx, width, height);
+  ctx_set_size (backend->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  tiled->flush = (void*)ctx_fb_flush;
-  tiled->reset = (void*)ctx_fb_reset;
-  tiled->free  = (void*)ctx_fb_free;
-  tiled->set_clipboard = (void*)ctx_fb_set_clipboard;
-  tiled->get_clipboard = (void*)ctx_fb_get_clipboard;
+  backend->flush = (void*)ctx_fb_flush;
+  backend->reset = (void*)ctx_fb_reset;
+  backend->free  = (void*)ctx_fb_free;
+  backend->set_clipboard = (void*)ctx_fb_set_clipboard;
+  backend->get_clipboard = (void*)ctx_fb_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {
@@ -564,8 +565,8 @@ Ctx *ctx_new_fb (int width, int height)
                    tiled->width/CTX_HASH_COLS, tiled->height/CTX_HASH_ROWS,
                    tiled->width * 4, CTX_FORMAT_BGRA8); // this format
                                   // is overriden in  thread
-    ((CtxRasterizer*)(tiled->host[i]->renderer))->swap_red_green = 1;
-    ctx_set_texture_source (tiled->host[i], tiled->ctx);
+    ((CtxRasterizer*)(tiled->host[i]->backend))->swap_red_green = 1;
+    ctx_set_texture_source (tiled->host[i], backend->ctx);
   }
 
   mtx_init (&tiled->mtx, mtx_plain);
@@ -637,7 +638,7 @@ Ctx *ctx_new_fb (int width, int height)
   }
 #endif
 
-  return tiled->ctx;
+  return backend->ctx;
 #else
   return NULL;
 #endif

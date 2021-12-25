@@ -48,8 +48,8 @@ inline static void ctx_tiled_flush (CtxTiled *tiled)
   if (tiled->shown_frame == tiled->render_frame)
   {
     int dirty_tiles = 0;
-    ctx_set_drawlist (tiled->ctx_copy, &tiled->renderer.ctx->drawlist.entries[0],
-                                           tiled->renderer.ctx->drawlist.count * 9);
+    ctx_set_drawlist (tiled->ctx_copy, &tiled->backend.ctx->drawlist.entries[0],
+                                           tiled->backend.ctx->drawlist.count * 9);
     if (_ctx_enable_hash_cache)
     {
       Ctx *hasher = ctx_hasher_new (tiled->width, tiled->height,
@@ -71,7 +71,7 @@ inline static void ctx_tiled_flush (CtxTiled *tiled)
             tiled->tile_affinity[row * CTX_HASH_COLS + col] = -1;
           }
         }
-      free (((CtxHasher*)(hasher->renderer))->hashes);
+      free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_free (hasher);
     }
     else
@@ -119,15 +119,15 @@ inline static void ctx_tiled_flush (CtxTiled *tiled)
             int height = tiled->height / CTX_HASH_ROWS;
             Ctx *host = tiled->host[0];
 
-            CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
-            int swap_red_green = ((CtxRasterizer*)(host->renderer))->swap_red_green;
+            CtxRasterizer *rasterizer = (CtxRasterizer*)host->backend;
+            int swap_red_green = ((CtxRasterizer*)(host->backend))->swap_red_green;
             ctx_rasterizer_init (rasterizer,
-                                 host, tiled->renderer.ctx, &host->state,
+                                 host, tiled->backend.ctx, &host->state,
                                  &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
                                  0, 0, 1, 1,
                                  tiled->width*4, CTX_FORMAT_BGRA8,
                                  tiled->antialias);
-            ((CtxRasterizer*)(host->renderer))->swap_red_green = swap_red_green;
+            ((CtxRasterizer*)(host->backend))->swap_red_green = swap_red_green;
             if (sdl_icc_length)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
 
@@ -173,7 +173,7 @@ void ctx_tiled_render_fun (void **data)
             int width = tiled->width / CTX_HASH_COLS;
             int height = tiled->height / CTX_HASH_ROWS;
 
-            CtxRasterizer *rasterizer = (CtxRasterizer*)host->renderer;
+            CtxRasterizer *rasterizer = (CtxRasterizer*)host->backend;
 #if 1 // merge horizontally adjecant tiles of same affinity into one job
             while (col + 1 < CTX_HASH_COLS &&
                    tiled->tile_affinity[hno+1] == no)
@@ -183,14 +183,14 @@ void ctx_tiled_render_fun (void **data)
               hno++;
             }
 #endif
-            int swap_red_green = ((CtxRasterizer*)(host->renderer))->swap_red_green;
+            int swap_red_green = ((CtxRasterizer*)(host->backend))->swap_red_green;
             ctx_rasterizer_init (rasterizer,
-                                 host, tiled->renderer.ctx, &host->state,
+                                 host, tiled->backend.ctx, &host->state,
                                  &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
                                  tiled->width*4, CTX_FORMAT_BGRA8,
                                  tiled->antialias);
-            ((CtxRasterizer*)(host->renderer))->swap_red_green = swap_red_green;
+            ((CtxRasterizer*)(host->backend))->swap_red_green = swap_red_green;
             if (sdl_icc_length)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
 
@@ -302,7 +302,7 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
 
 static void ctx_tiled_undraw_cursor (CtxTiled *tiled)
 {
-    int cursor_size = ctx_height (tiled->renderer.ctx) / 28;
+    int cursor_size = ctx_height (tiled->backend.ctx) / 28;
 
     if (ctx_tiled_cursor_drawn)
     {
@@ -333,10 +333,10 @@ static void ctx_tiled_undraw_cursor (CtxTiled *tiled)
 
 static void ctx_tiled_draw_cursor (CtxTiled *tiled)
 {
-    int cursor_x    = ctx_pointer_x (tiled->renderer.ctx);
-    int cursor_y    = ctx_pointer_y (tiled->renderer.ctx);
-    int cursor_size = ctx_height (tiled->renderer.ctx) / 28;
-    CtxCursor cursor_shape = tiled->renderer.ctx->cursor;
+    int cursor_x    = ctx_pointer_x (tiled->backend.ctx);
+    int cursor_y    = ctx_pointer_y (tiled->backend.ctx);
+    int cursor_size = ctx_height (tiled->backend.ctx) / 28;
+    CtxCursor cursor_shape = tiled->backend.ctx->cursor;
     int no = 0;
 
     if (cursor_x == ctx_tiled_cursor_drawn_x &&
@@ -1051,7 +1051,7 @@ static int event_check_pending (CtxTiled *tiled)
       {
         if (tiled->vt_active)
         {
-          ctx_key_press (tiled->renderer.ctx, 0, event, 0); // we deliver all events as key-press, the key_press handler disambiguates
+          ctx_key_press (tiled->backend.ctx, 0, event, 0); // we deliver all events as key-press, the key_press handler disambiguates
           events++;
         }
         free (event);

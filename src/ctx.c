@@ -180,7 +180,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 #if CTX_RASTERIZER
    else if (_ctx_is_rasterizer (ctx))
    {
-     CtxRasterizer *rasterizer = (CtxRasterizer*)ctx->renderer;
+     CtxRasterizer *rasterizer = (CtxRasterizer*)ctx->backend;
      if (rasterizer->format->pixel_format == format)
      {
        if (dst_stride <= 0) dst_stride = ctx_pixel_format_get_stride (format, sw);
@@ -201,7 +201,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 #endif
    else if (format == CTX_FORMAT_RGBA8 && ctx_backend_is_tiled (ctx))
    {
-     CtxTiled *tiled = (CtxTiled*)ctx->renderer;
+     CtxTiled *tiled = (CtxTiled*)ctx->backend;
      {
        if (dst_stride <= 0) dst_stride = ctx_pixel_format_get_stride (format, sw);
        int bytes_per_pix = 4;
@@ -401,7 +401,7 @@ void ctx_define_texture (Ctx *ctx,
   {
     CtxEntry *commands;
     int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
-    if (ctx->renderer && ctx->renderer->process)
+    if (ctx->backend && ctx->backend->process)
     {
        commands = (CtxEntry*)calloc (sizeof (CtxEntry), command_size);
     }
@@ -447,7 +447,7 @@ void ctx_define_texture (Ctx *ctx,
     }
     ((char *) &commands[pos+1].data.u8[0])[data_len]=0;
 
-    if (ctx->renderer && ctx->renderer->process)
+    if (ctx->backend && ctx->backend->process)
     {
       ctx_process (ctx, commands);
       free (commands);
@@ -668,7 +668,7 @@ void ctx_stroke (Ctx *ctx)
 static void ctx_empty (Ctx *ctx)
 {
 #if CTX_RASTERIZER
-  if (ctx->renderer == NULL)
+  if (ctx->backend == NULL)
 #endif
     {
       ctx->drawlist.count = 0;
@@ -714,8 +714,8 @@ void ctx_reset (Ctx *ctx)
          *
          * tiled fb and sdl needs to sync
          */
-  if (ctx->renderer && ctx->renderer->reset)
-    ctx->renderer->reset (ctx->renderer);
+  if (ctx->backend && ctx->backend->reset)
+    ctx->backend->reset (ctx->backend);
 
   //CTX_PROCESS_VOID (CTX_RESET);
   //if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
@@ -1274,7 +1274,7 @@ ctx_exit (Ctx *ctx)
 void
 ctx_flush (Ctx *ctx)
 {
-  /* XXX: should be fully moved into the renderers
+  /* XXX: should be fully moved into the backends
    *      to permit different behavior and get rid
    *      of the extranous flush() vfunc.
    */
@@ -1295,8 +1295,8 @@ ctx_flush (Ctx *ctx)
   printf ("Xx.Xx.Xx.");
   fflush (NULL);
 #endif
-  if (ctx->renderer && ctx->renderer->flush)
-    ctx->renderer->flush (ctx->renderer);
+  if (ctx->backend && ctx->backend->flush)
+    ctx->backend->flush (ctx->backend);
   ctx->frame++;
   if (ctx->texture_cache != ctx)
     ctx->texture_cache->frame++;
@@ -1834,7 +1834,6 @@ _ctx_init (Ctx *ctx)
 
   ctx_state_init (&ctx->state);
 
-  ctx->renderer = NULL;
 #if CTX_CURRENT_PATH
   ctx->current_path.flags |= CTX_DRAWLIST_CURRENT_PATH;
 #endif
@@ -1852,17 +1851,17 @@ static void ctx_setup (void);
 static Ctx ctx_state;
 #endif
 
-void ctx_set_renderer (Ctx  *ctx,
-                       void *renderer)
+void ctx_set_backend (Ctx  *ctx,
+                       void *backend)
 {
-  if (ctx->renderer && ctx->renderer->free)
-    ctx->renderer->free (ctx->renderer);
-  ctx->renderer = (CtxBackend*)renderer;
+  if (ctx->backend && ctx->backend->free)
+    ctx->backend->free (ctx->backend);
+  ctx->backend = (CtxBackend*)backend;
 }
 
-void *ctx_get_renderer (Ctx *ctx)
+void *ctx_get_backend (Ctx *ctx)
 {
-  return ctx->renderer;
+  return ctx->backend;
 }
 
 Ctx *
@@ -1894,11 +1893,11 @@ ctx_drawlist_deinit (CtxDrawlist *drawlist)
 
 static void ctx_deinit (Ctx *ctx)
 {
-  if (ctx->renderer)
+  if (ctx->backend)
     {
-      if (ctx->renderer->free)
-        ctx->renderer->free (ctx->renderer);
-      ctx->renderer    = NULL;
+      if (ctx->backend->free)
+        ctx->backend->free (ctx->backend);
+      ctx->backend    = NULL;
     }
   ctx_drawlist_deinit (&ctx->drawlist);
 #if CTX_CURRENT_PATH
@@ -2049,34 +2048,34 @@ CtxCursor    ctx_get_cursor (Ctx *ctx)
 
 void ctx_set_clipboard (Ctx *ctx, const char *text)
 {
-  if (ctx->renderer && ctx->renderer->set_clipboard)
+  if (ctx->backend && ctx->backend->set_clipboard)
   {
-    ctx->renderer->set_clipboard (ctx->renderer, text);
+    ctx->backend->set_clipboard (ctx->backend, text);
     return;
   }
 }
 
 void ctx_windowtitle (Ctx *ctx, const char *text)
 {
-  if (ctx->renderer && ctx->renderer->set_windowtitle)
+  if (ctx->backend && ctx->backend->set_windowtitle)
   {
-    ctx->renderer->set_windowtitle (ctx->renderer, text);
+    ctx->backend->set_windowtitle (ctx->backend, text);
     return;
   }
 }
 
 char *ctx_get_clipboard (Ctx *ctx)
 {
-  if (ctx->renderer && ctx->renderer->get_clipboard)
+  if (ctx->backend && ctx->backend->get_clipboard)
   {
-    return ctx->renderer->get_clipboard (ctx->renderer);
+    return ctx->backend->get_clipboard (ctx->backend);
   }
   return strdup ("");
 }
 
 void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source)
 {
-  ((CtxRasterizer*)ctx->renderer)->texture_source = texture_source;
+  ((CtxRasterizer*)ctx->backend)->texture_source = texture_source;
 }
 
 void ctx_set_texture_cache (Ctx *ctx, Ctx *texture_cache)
@@ -2424,7 +2423,7 @@ CtxMediaTypeClass ctx_media_type_class (const char *media_type)
 
 CtxBackendType ctx_backend_type (Ctx *ctx)
 {
-  CtxBackend *backend = ctx->renderer;
+  CtxBackend *backend = ctx->backend;
   if (backend == NULL)
     return CTX_BACKEND_NONE;
 #if CTX_EVENTS

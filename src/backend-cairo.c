@@ -6,7 +6,7 @@ typedef struct _CtxCairo CtxCairo;
 struct
   _CtxCairo
 {
-  CtxBackend        renderer;
+  CtxBackend        backend;
   cairo_t          *cr;
   cairo_pattern_t  *pat;
   cairo_surface_t  *image;
@@ -316,7 +316,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
       case CTX_FLUSH:
         break;
     }
-  ctx_process (ctx_cairo->renderer.ctx, entry);
+  ctx_process (ctx_cairo->backend.ctx, entry);
 }
 
 void ctx_cairo_free (CtxCairo *ctx_cairo)
@@ -354,7 +354,7 @@ ctx_new_for_cairo (cairo_t *cr)
   backend->process = (void*)ctx_cairo_process;
   backend->ctx = ctx;
   ctx_cairo->cr = cr;
-  ctx_set_renderer (ctx, (void*)ctx_cairo);
+  ctx_set_backend (ctx, (void*)ctx_cairo);
   return ctx;
 }
 

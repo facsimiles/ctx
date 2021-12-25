@@ -53,7 +53,7 @@ ctx_conts_for_entry (CtxEntry *entry)
 }
 
 // expanding arc_to to arc can be the job
-// of a layer in front of renderer?
+// of a layer in front of backend?
 //   doing:
 //     rectangle
 //     arc

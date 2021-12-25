@@ -3682,7 +3682,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command);
 int
 _ctx_is_rasterizer (Ctx *ctx)
 {
-  if (ctx->renderer && ctx->renderer->process == ctx_rasterizer_process)
+  if (ctx->backend && ctx->backend->process == ctx_rasterizer_process)
     return 1;
   return 0;
 }
@@ -4356,13 +4356,13 @@ CtxAntialias ctx_get_antialias (Ctx *ctx)
 #if CTX_EVENTS
   if (ctx_backend_is_tiled (ctx))
   {
-     CtxTiled *fb = (CtxTiled*)(ctx->renderer);
+     CtxTiled *fb = (CtxTiled*)(ctx->backend);
      return fb->antialias;
   }
 #endif
   if (!_ctx_is_rasterizer (ctx)) return CTX_ANTIALIAS_DEFAULT;
 
-  switch (((CtxRasterizer*)(ctx->renderer))->aa)
+  switch (((CtxRasterizer*)(ctx->backend))->aa)
   {
     case 1: return CTX_ANTIALIAS_NONE;
     case 3: return CTX_ANTIALIAS_FAST;
@@ -4390,7 +4390,7 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 #if CTX_EVENTS
   if (ctx_backend_is_tiled (ctx))
   {
-     CtxTiled *fb = (CtxTiled*)(ctx->renderer);
+     CtxTiled *fb = (CtxTiled*)(ctx->backend);
      fb->antialias = antialias;
      for (int i = 0; i < _ctx_max_threads; i++)
      {
@@ -4401,12 +4401,12 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 #endif
   if (!_ctx_is_rasterizer (ctx)) return;
 
-  ((CtxRasterizer*)(ctx->renderer))->aa = 
+  ((CtxRasterizer*)(ctx->backend))->aa = 
      _ctx_antialias_to_aa (antialias);
-  ((CtxRasterizer*)(ctx->renderer))->fast_aa = 0;
+  ((CtxRasterizer*)(ctx->backend))->fast_aa = 0;
   if (antialias == CTX_ANTIALIAS_DEFAULT||
       antialias == CTX_ANTIALIAS_FAST)
-    ((CtxRasterizer*)(ctx->renderer))->fast_aa = 1;
+    ((CtxRasterizer*)(ctx->backend))->fast_aa = 1;
 }
 
 CtxRasterizer *
@@ -4458,7 +4458,7 @@ Ctx *
 ctx_new_for_buffer (CtxBuffer *buffer)
 {
   Ctx *ctx = ctx_new ();
-  ctx_set_renderer (ctx,
+  ctx_set_backend (ctx,
                     ctx_rasterizer_init ( (CtxRasterizer *) malloc (sizeof (CtxRasterizer) ),
                                           ctx, NULL, &ctx->state,
                                           buffer->data, 0, 0, buffer->width, buffer->height,
@@ -4476,7 +4476,7 @@ ctx_new_for_framebuffer (void *data, int width, int height,
   CtxRasterizer *r = ctx_rasterizer_init ( (CtxRasterizer *) ctx_calloc (sizeof (CtxRasterizer), 1),
                                           ctx, NULL, &ctx->state, data, 0, 0, width, height,
                                           stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
-  ctx_set_renderer (ctx, r);
+  ctx_set_backend (ctx, r);
   return ctx;
 }
 
@@ -4514,10 +4514,10 @@ ctx_current_point (Ctx *ctx, float *x, float *y)
       if (y) { *y = 0.0f; }
     }
 #if CTX_RASTERIZER
-  if (ctx->renderer)
+  if (ctx->backend)
     {
-      if (x) { *x = ( (CtxRasterizer *) (ctx->renderer) )->x; }
-      if (y) { *y = ( (CtxRasterizer *) (ctx->renderer) )->y; }
+      if (x) { *x = ( (CtxRasterizer *) (ctx->backend) )->x; }
+      if (y) { *y = ( (CtxRasterizer *) (ctx->backend) )->y; }
       return;
     }
 #endif
@@ -4579,15 +4579,15 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
     }
 #endif
 #if CTX_RASTERIZER
-  if (CTX_LIKELY(ctx->renderer && ctx->renderer->process == ctx_rasterizer_process))
+  if (CTX_LIKELY(ctx->backend && ctx->backend->process == ctx_rasterizer_process))
     {
-      ctx_rasterizer_process (ctx->renderer, (CtxCommand *) entry);
+      ctx_rasterizer_process (ctx->backend, (CtxCommand *) entry);
     }
   else
 #endif
-  if (CTX_LIKELY(ctx->renderer && ctx->renderer->process))
+  if (CTX_LIKELY(ctx->backend && ctx->backend->process))
     {
-      ctx->renderer->process (ctx->renderer, (CtxCommand *) entry);
+      ctx->backend->process (ctx->backend, (CtxCommand *) entry);
     }
   else
     {

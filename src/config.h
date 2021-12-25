@@ -229,7 +229,7 @@
 #endif
 
 /*  only source-over clear and copy will work, the API still
- *  through - but the renderer is limited, for use to measure
+ *  through - but the backend is limited, for use to measure
  *  size and possibly in severely constrained ROMs.
  */
 #ifndef CTX_BLENDING_AND_COMPOSITING

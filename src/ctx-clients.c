@@ -890,7 +890,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   if (!strcmp (event, "F11"))
   {
 #if CTX_SDL
-    if (ctx_renderer_is_sdl (ctx))
+    if (ctx_backend_is_sdl (ctx))
     {
       ctx_sdl_set_fullscreen (ctx, !ctx_sdl_get_fullscreen (ctx));
     }
@@ -920,7 +920,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
         }
     }
   else if (!strcmp (event, "shift-control-t") ||
-           ((ctx_renderer_is_fb (ctx) || ctx_renderer_is_term (ctx) || ctx_renderer_is_kms (ctx))
+           ((ctx_backend_is_fb (ctx) || ctx_backend_is_term (ctx) || ctx_backend_is_kms (ctx))
            &&   !strcmp (event, "control-t") ))
   {
     //XXX add_tab (vt_find_shell_command(), 1);

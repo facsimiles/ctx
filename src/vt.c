@@ -2900,7 +2900,7 @@ static void vtcmd_graphics (VT *vt, const char *sequence)
 #if CTX_TILED
 static void ctx_show_frame (Ctx *ctx, int block)
 {
-  CtxTiled *tiled = (CtxTiled*)(ctx->renderer);
+  CtxTiled *tiled = (CtxTiled*)(ctx->backend);
   tiled->show_frame (tiled, block);
 }
 #endif
@@ -2910,7 +2910,7 @@ static void ctx_wait_frame (Ctx *ctx, VT *vt)
 #if CTX_TILED
   if (ctx_backend_is_tiled (ctx))
   {
-    CtxTiled *tiled = (CtxTiled*)(ctx->renderer);
+    CtxTiled *tiled = (CtxTiled*)(ctx->backend);
     int max_wait    = 300;
     //int wait_frame  = tiled->frame;  // tiled->frame and tiled->render_frame are expected
                                        // to be equal, unless something else has timed out

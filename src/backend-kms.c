@@ -461,7 +461,7 @@ static void ctx_kms_show_frame (CtxKMS *fb, int block)
 
 int ctx_kms_consume_events (Ctx *ctx)
 {
-  CtxKMS *fb = (void*)ctx->renderer;
+  CtxKMS *fb = (void*)ctx->backend;
   ctx_kms_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
   return 0;
@@ -542,7 +542,7 @@ static void vt_switch_cb (int sig)
 
 static int ctx_kms_get_mice_fd (Ctx *ctx)
 {
-  //CtxKMS *fb = (void*)ctx->renderer;
+  //CtxKMS *fb = (void*)ctx->backend;
   return _ctx_mice_fd;
 }
 
@@ -585,8 +585,8 @@ Ctx *ctx_new_kms (int width, int height)
   tiled->height   = height;
   tiled->show_frame = (void*)ctx_kms_show_frame;
 
-  ctx_set_renderer (backend->ctx, fb);
-  ctx_set_renderer (tiled->ctx_copy, fb);
+  ctx_set_backend (backend->ctx, fb);
+  ctx_set_backend (tiled->ctx_copy, fb);
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
   ctx_set_size (backend->ctx, width, height);
@@ -604,7 +604,7 @@ Ctx *ctx_new_kms (int width, int height)
                    tiled->width/CTX_HASH_COLS, tiled->height/CTX_HASH_ROWS,
                    tiled->width * 4, CTX_FORMAT_BGRA8); // this format
                                   // is overriden in  thread
-    ((CtxRasterizer*)(tiled->host[i]->renderer))->swap_red_green = 1;
+    ((CtxRasterizer*)(tiled->host[i]->backend))->swap_red_green = 1;
     ctx_set_texture_source (tiled->host[i], backend->ctx);
   }
 

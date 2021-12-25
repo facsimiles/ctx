@@ -3347,6 +3347,78 @@ char *dir_get_viewer_command (const char *path, int no)
     return command;
 }
 
+static char **ctx_str_list_to_pasv (CtxList **list)
+{
+  int count = ctx_list_length (*list);
+  int size = 0;
+}
+
+char **dir_get_viewer_argv (const char *path, int no)
+{
+  CtxList *args;
+  const char *media_type = ctx_path_get_media_type (path);
+  CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
+  char *escaped_path = malloc (strlen (path) * 2 + 20);
+  escape_path (path, escaped_path);
+  float in = metadata_get_float (collection, no, "in", 0.0f);
+  //float out = metadata_get_float (collection, no, "out", 0.0f);
+  char *command = malloc (64 + strlen (escaped_path)  + 64);
+  command[0]=0;
+  if (!strcmp (media_type, "inode/directory"))
+  {
+       //fprintf (stderr, "is dir\n");
+       free (command);
+       free (escaped_path);
+       return NULL;
+       //sprintf (command, "du -h '%s'", path);
+  }
+
+    if (!command[0])
+    if (path_is_executable (path) && !strcmp (get_suffix(path), "ctx"))
+    {
+      sprintf (command, "%s", path);
+    }
+
+    char *basname = get_basename (path);
+
+    if (!command[0])
+    if (media_type_class == CTX_MEDIA_TYPE_TEXT)
+    {
+      sprintf (command, "ctx \"%s\"", escaped_path);
+    }
+    free (basname);
+   
+    if (!command[0])
+    {
+    if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
+    {
+      sprintf (command, "ctx \"%s\"", escaped_path);
+    }
+    else if (!strcmp (media_type, "video/mpeg"))
+    {
+      sprintf (command, "ctx \"%s\" --paused --seek-to %f", escaped_path, in);
+      //fprintf (stderr, "[%s] out:%f duration:%f\n", command, out, out-in);
+    }
+    else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
+    {
+      sprintf (command, "ctx-audioplayer \"%s\"", escaped_path);
+    }
+    }
+
+    if (!command[0])
+    {
+      sprintf (command, "sh -c 'xxd \"%s\" | vim -OR -'", escaped_path);
+    }
+
+    if (!command[0])
+    {
+      free (command);
+      return NULL;
+    }
+    return command;
+}
+
+
 
 static void dir_layout (ITK *itk, Collection *collection)
 {
@@ -4446,7 +4518,6 @@ int viewer_pre_next (Ctx *ctx, void *data1)
     return 0;
   //focused_no++;
   //layout_find_item = focused_no;
-  //argvs_eval ("activate");
 
   char *name;
   char *path;

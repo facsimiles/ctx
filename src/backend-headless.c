@@ -10,7 +10,7 @@
 
 static int ctx_headless_get_mice_fd (Ctx *ctx)
 {
-  //CtxHeadless *fb = (void*)ctx->renderer;
+  //CtxHeadless *fb = (void*)ctx->backend;
   return _ctx_mice_fd;
 }
 
@@ -238,7 +238,7 @@ static void ctx_headless_show_frame (CtxHeadless *fb, int block)
 
 int ctx_headless_consume_events (Ctx *ctx)
 {
-  CtxHeadless *fb = (void*)ctx->renderer;
+  CtxHeadless *fb = (void*)ctx->backend;
   ctx_headless_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
   return 0;
@@ -313,8 +313,8 @@ Ctx *ctx_new_headless (int width, int height)
   tiled->width    = width;
   tiled->height   = height;
 
-  ctx_set_renderer (backend->ctx, fb);
-  ctx_set_renderer (tiled->ctx_copy, fb);
+  ctx_set_backend (backend->ctx, fb);
+  ctx_set_backend (tiled->ctx_copy, fb);
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
   ctx_set_size (backend->ctx, width, height);
@@ -332,7 +332,7 @@ Ctx *ctx_new_headless (int width, int height)
                    tiled->width/CTX_HASH_COLS, tiled->height/CTX_HASH_ROWS,
                    tiled->width * 4, CTX_FORMAT_BGRA8); // this format
                                   // is overriden in  thread
-    ((CtxRasterizer*)(tiled->host[i]->renderer))->swap_red_green = 1;
+    ((CtxRasterizer*)(tiled->host[i]->backend))->swap_red_green = 1;
     ctx_set_texture_source (tiled->host[i], backend->ctx);
   }
 

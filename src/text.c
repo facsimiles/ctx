@@ -311,10 +311,10 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
                 {
 #if CTX_RASTERIZER
 #if CTX_ENABLE_SHADOW_BLUR
-      if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
+      if (ctx->backend && ((CtxRasterizer*)(ctx->backend))->in_shadow)
       {
-        ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->renderer);
-        ((CtxRasterizer*)(ctx->renderer))->in_shadow = 1;
+        ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->backend);
+        ((CtxRasterizer*)(ctx->backend))->in_shadow = 1;
       }
       else
 #endif
@@ -346,10 +346,10 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
     
 #if CTX_RASTERIZER
 #if CTX_ENABLE_SHADOW_BLUR
-      if (ctx->renderer && ((CtxRasterizer*)(ctx->renderer))->in_shadow)
+      if (ctx->backend && ((CtxRasterizer*)(ctx->backend))->in_shadow)
       {
-        ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->renderer);
-        ((CtxRasterizer*)(ctx->renderer))->in_shadow = 1;
+        ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->backend);
+        ((CtxRasterizer*)(ctx->backend))->in_shadow = 1;
       }
       else
 #endif

@@ -313,7 +313,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   fprintf (stdout, "\e[H\e[?25l\e[?200h");
 #if 1
   fprintf (stdout, CTX_START_STRING);
-  ctx_render_stream (ctxctx->renderer.ctx, stdout, 0);
+  ctx_render_stream (ctxctx->backend.ctx, stdout, 0);
   fprintf (stdout, CTX_END_STRING);
 #else
   {
@@ -372,7 +372,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
 
   ctx_frame_ack = 0;
   do {
-     ctx_consume_events (ctxctx->renderer.ctx);
+     ctx_consume_events (ctxctx->backend.ctx);
   } while (ctx_frame_ack != 1);
 #else
   fflush (stdout);
@@ -392,7 +392,7 @@ Ctx *ctx_new_ctx (int width, int height)
   float font_size = 12.0;
   Ctx    *ctx    = ctx_new ();
   CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
-  CtxBackend *renderer = (CtxBackend*)ctxctx;
+  CtxBackend *backend = (CtxBackend*)ctxctx;
   fprintf (stdout, "\e[?1049h");
   fflush (stdout);
   //fprintf (stderr, "\e[H");
@@ -414,12 +414,12 @@ Ctx *ctx_new_ctx (int width, int height)
     ctxctx->cols   = width / 80;
     ctxctx->rows   = height / 24;
   }
-  renderer->ctx = ctx;
+  backend->ctx = ctx;
   if (!ctx_native_events)
     _ctx_mouse (ctx, NC_MOUSE_DRAG);
-  renderer->flush = (void(*)(void *))ctx_ctx_flush;
-  renderer->free  = (void(*)(void *))ctx_ctx_free;
-  ctx_set_renderer (ctx, ctxctx);
+  backend->flush = (void(*)(void *))ctx_ctx_flush;
+  backend->free  = (void(*)(void *))ctx_ctx_free;
+  ctx_set_backend (ctx, ctxctx);
   ctx_set_size (ctx, width, height);
   return ctx;
 }
@@ -429,7 +429,7 @@ void ctx_ctx_pcm (Ctx *ctx);
 int ctx_ctx_consume_events (Ctx *ctx)
 {
   //int ix, iy;
-  CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
+  CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
   const char *event = NULL;
 #if CTX_AUDIO
   ctx_ctx_pcm (ctx);

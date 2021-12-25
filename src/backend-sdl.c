@@ -18,7 +18,7 @@ struct _CtxSDL
    int           rshift;
 
    SDL_Window   *window;
-   SDL_Renderer *renderer;
+   SDL_Renderer *backend;
    SDL_Texture  *texture;
 
    int           fullscreen;
@@ -30,7 +30,7 @@ struct _CtxSDL
 void ctx_screenshot (Ctx *ctx, const char *output_path)
 {
 #if CTX_SCREENSHOT
-  CtxTiled *tiled = (CtxTiled*)ctx->renderer;
+  CtxTiled *tiled = (CtxTiled*)ctx->backend;
   if (!ctx_backend_is_tiled (ctx))
     return;
 
@@ -183,9 +183,9 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
                       (void*)(tiled->pixels + y * tiled->width * 4 + x * 4),
                       
                       tiled->width * 4);
-    SDL_RenderClear (sdl->renderer);
-    SDL_RenderCopy (sdl->renderer, sdl->texture, NULL, NULL);
-    SDL_RenderPresent (sdl->renderer);
+    SDL_RenderClear (sdl->backend);
+    SDL_RenderCopy (sdl->backend, sdl->texture, NULL, NULL);
+    SDL_RenderPresent (sdl->backend);
 
 
   if (ctx_show_fps)
@@ -272,7 +272,7 @@ static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
 
 int ctx_sdl_consume_events (Ctx *ctx)
 {
-  CtxBackend *backend = (void*)ctx->renderer;
+  CtxBackend *backend = (void*)ctx->backend;
   CtxTiled    *tiled = (void*)backend;
   CtxSDL      *sdl = (void*)backend;
   SDL_Event event;
@@ -464,7 +464,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
           int width = event.window.data1;
           int height = event.window.data2;
           SDL_DestroyTexture (sdl->texture);
-          sdl->texture = SDL_CreateTexture (sdl->renderer, SDL_PIXELFORMAT_ABGR8888,
+          sdl->texture = SDL_CreateTexture (sdl->backend, SDL_PIXELFORMAT_ABGR8888,
                           SDL_TEXTUREACCESS_STREAMING, width, height);
           free (tiled->pixels);
           tiled->pixels = calloc (4, width * height);
@@ -516,8 +516,8 @@ void ctx_sdl_free (CtxSDL *sdl)
 
   if (sdl->texture)
   SDL_DestroyTexture (sdl->texture);
-  if (sdl->renderer)
-  SDL_DestroyRenderer (sdl->renderer);
+  if (sdl->backend)
+  SDL_DestroyRenderer (sdl->backend);
   if (sdl->window)
   SDL_DestroyWindow (sdl->window);
 
@@ -529,7 +529,7 @@ void ctx_sdl_free (CtxSDL *sdl)
 
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
 {
-  CtxSDL *sdl = (void*)ctx->renderer;
+  CtxSDL *sdl = (void*)ctx->backend;
 
   if (val)
   {
@@ -544,7 +544,7 @@ void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
 }
 int ctx_sdl_get_fullscreen (Ctx *ctx)
 {
-  CtxSDL *sdl = (void*)ctx->renderer;
+  CtxSDL *sdl = (void*)ctx->backend;
   return sdl->fullscreen;
 }
 
@@ -564,9 +564,9 @@ Ctx *ctx_new_sdl (int width, int height)
     height = 1080;
   }
   sdl->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
-  //sdl->renderer = SDL_CreateRenderer (sdl->window, -1, SDL_RENDERER_SOFTWARE);
-  sdl->renderer = SDL_CreateRenderer (sdl->window, -1, 0);
-  if (!sdl->renderer)
+  //sdl->backend = SDL_CreateRenderer (sdl->window, -1, SDL_RENDERER_SOFTWARE);
+  sdl->backend = SDL_CreateRenderer (sdl->window, -1, 0);
+  if (!sdl->backend)
   {
      ctx_free (backend->ctx);
      free (sdl);
@@ -581,7 +581,7 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_show_fps = getenv ("CTX_SHOW_FPS")!=NULL;
 
   ctx_sdl_events = 1;
-  sdl->texture = SDL_CreateTexture (sdl->renderer,
+  sdl->texture = SDL_CreateTexture (sdl->backend,
         SDL_PIXELFORMAT_ABGR8888,
         SDL_TEXTUREACCESS_STREAMING,
         width, height);
@@ -595,8 +595,8 @@ Ctx *ctx_new_sdl (int width, int height)
   tiled->height   = height;
   tiled->cols     = 80;
   tiled->rows     = 20;
-  ctx_set_renderer (backend->ctx, sdl);
-  ctx_set_renderer (tiled->ctx_copy, sdl);
+  ctx_set_backend (backend->ctx, sdl);
+  ctx_set_backend (tiled->ctx_copy, sdl);
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
   tiled->pixels = (uint8_t*)malloc (width * height * 4);

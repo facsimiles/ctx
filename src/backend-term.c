@@ -38,7 +38,7 @@ typedef enum
 typedef struct _CtxTerm CtxTerm;
 struct _CtxTerm
 {
-   CtxBackend  rendererer;
+   CtxBackend  backender;
    int         width;
    int         height;
    int         cols;
@@ -729,7 +729,7 @@ inline static void ctx_term_render (void *ctx,
 #if CTX_BRAILLE_TEXT
   if (command->code == CTX_FILL)
   {
-     CtxRasterizer *rasterizer = (CtxRasterizer*)term->host->renderer;
+     CtxRasterizer *rasterizer = (CtxRasterizer*)term->host->backend;
 
      if (ctx_is_half_opaque (rasterizer))
      {
@@ -813,7 +813,7 @@ inline static void ctx_term_flush (CtxTerm *term)
        break;
   }
 #if CTX_BRAILLE_TEXT
-  CtxRasterizer *rasterizer = (CtxRasterizer*)(term->host->renderer);
+  CtxRasterizer *rasterizer = (CtxRasterizer*)(term->host->backend);
   // XXX instead sort and inject along with braille
   //
 
@@ -936,10 +936,10 @@ Ctx *ctx_new_term (int width, int height)
                                            width, height,
                                            width * 4, CTX_FORMAT_RGBA8);
 #if CTX_BRAILLE_TEXT
-  ((CtxRasterizer*)term->host->renderer)->term_glyphs=1;
+  ((CtxRasterizer*)term->host->backend)->term_glyphs=1;
 #endif
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
-  ctx_set_renderer (ctx, term);
+  ctx_set_backend (ctx, term);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, ctx_term_ch); 
   backend->process = ctx_term_render;

@@ -10,7 +10,7 @@
 typedef struct _CtxTermImg CtxTermImg;
 struct _CtxTermImg
 {
-   CtxBackend renderer;
+   CtxBackend backend;
    int         width;
    int         height;
    int         cols;
@@ -113,7 +113,7 @@ Ctx *ctx_new_termimg (int width, int height)
                                            width, height,
                                            width * 3, CTX_FORMAT_RGB8);
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
-  ctx_set_renderer (ctx, termimg);
+  ctx_set_backend (ctx, termimg);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, 14.0f);
   backend->process = ctx_termimg_render;

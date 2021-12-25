@@ -23,7 +23,7 @@
  *
  * Ctx contains a minimal default fallback font with only ascii, so
  * you probably want to also include a font, and perhaps enable
- * the cairo or SDL2 optional renderers, a more complete example
+ * the cairo or SDL2 optional backends, a more complete example
  * could be:
  *
  * #include <cairo.h>
@@ -673,9 +673,9 @@ typedef enum _CtxScrollDirection CtxScrollDirection;
 
 typedef struct _CtxEvent CtxEvent;
 
-void ctx_set_renderer (Ctx *ctx,
-                       void *renderer);
-void *ctx_get_renderer (Ctx *ctx);
+void ctx_set_backend (Ctx *ctx,
+                       void *backend);
+void *ctx_get_backend (Ctx *ctx);
 
 /* the following API is only available when CTX_EVENTS is defined to 1
  *
@@ -1597,9 +1597,9 @@ struct _CtxBackend
 {
   Ctx  *ctx;
   const char *backend;
-  void (*process)        (void *renderer, CtxCommand *entry);
-  void (*reset)          (void *renderer);
-  void (*flush)          (void *renderer);
+  void (*process)        (void *backend, CtxCommand *entry);
+  void (*reset)          (void *backend);
+  void (*flush)          (void *backend);
 
   char *(*get_clipboard)   (void *ctxctx);
   void (*set_clipboard)    (void *ctxctx, const char *text);
@@ -1610,7 +1610,7 @@ struct _CtxBackend
   void        (*consume_events) (void *backend);
   void        (*get_event_fds)  (void *backend);
 
-  void (*free)           (void *renderer);
+  void (*free)           (void *backend);
 };
 
 CtxCommand *ctx_iterator_next (CtxIterator *iterator);

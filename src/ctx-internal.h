@@ -483,27 +483,26 @@ typedef struct _CtxEidInfo
 
 struct _Ctx
 {
-  CtxBackend       *renderer;
-  CtxDrawlist        drawlist;
-  int                transformation;
-  CtxBuffer          texture[CTX_MAX_TEXTURES];
-  Ctx               *texture_cache;
-  CtxList           *eid_db;
-  void              *backend;
-  CtxState           state;        /**/
-  int                frame; /* used for texture lifetime */
+  CtxBackend       *backend;
+  CtxDrawlist       drawlist;
+  int               transformation;
+  CtxBuffer         texture[CTX_MAX_TEXTURES];
+  Ctx              *texture_cache;
+  CtxList          *eid_db;
+  CtxState          state;        /**/
+  int               frame; /* used for texture lifetime */
 #if CTX_EVENTS 
-  CtxCursor          cursor;
-  int                quit;
-  int                dirty;
-  CtxEvents          events;
-  int                mouse_fd;
-  int                mouse_x;
-  int                mouse_y;
+  CtxCursor         cursor;
+  int               quit;
+  int               dirty;
+  CtxEvents         events;
+  int               mouse_fd;
+  int               mouse_x;
+  int               mouse_y;
 #endif
 #if CTX_CURRENT_PATH
-  CtxDrawlist    current_path; // possibly transformed coordinates !
-  CtxIterator        current_path_iterator;
+  CtxDrawlist       current_path; // possibly transformed coordinates !
+  CtxIterator       current_path_iterator;
 #endif
 };
 
@@ -772,7 +771,7 @@ int ctx_nct_consume_events (Ctx *ctx);
 typedef struct _CtxCtx CtxCtx;
 struct _CtxCtx
 {
-   CtxBackend renderer;
+   CtxBackend backend;
    int  cols;
    int  rows;
    int  was_down;
@@ -1099,8 +1098,8 @@ struct _EvSource
 
 struct _CtxTiled
 {
-   CtxBackend renderer;
-   void (*show_frame) (void *renderer, int block);
+   CtxBackend backend;
+   void (*show_frame) (void *backend, int block);
    int           width;
    int           height;
    int           cols;
@@ -1140,9 +1139,9 @@ struct _CtxTiled
 #endif
 };
 
-static inline Ctx *ctx_renderer_get_ctx (void *renderer)
+static inline Ctx *ctx_backend_get_ctx (void *backend)
 {
-  CtxBackend *r = (CtxBackend*)renderer;
+  CtxBackend *r = (CtxBackend*)backend;
   if (r) return r->ctx;
   return NULL;
 }

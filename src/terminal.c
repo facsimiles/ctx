@@ -743,7 +743,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
 int ctx_nct_consume_events (Ctx *ctx)
 {
   int ix, iy;
-  CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
+  CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
   const char *event = NULL;
 
   {
@@ -791,7 +791,7 @@ int ctx_nct_consume_events (Ctx *ctx)
       mrg_set_size (mrg, width, height);
       mrg_queue_draw (mrg, NULL);
 #endif
-      //if (ctx_renderer_is_ctx (ctx))
+      //if (ctx_backend_is_ctx (ctx))
 #if 0
       {
         int width = ctx_terminal_width ();
