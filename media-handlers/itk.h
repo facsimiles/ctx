@@ -103,6 +103,7 @@ struct _ITKPanel{
   float scroll_start_y;
   float scroll;
 
+  int do_scroll_jump;
   const char *title;
 };
 
@@ -383,7 +384,7 @@ ITK *itk_new (Ctx *ctx)
   itk->menu_path = strdup ("main/foo");
   itk->rel_hpad         = 0.3;
   itk->rel_vgap         = 0.2;
-  itk->scroll_speed     = 4.0;
+  itk->scroll_speed     = 1.0/8.0;
   itk->light_mode       = 1;
   ctx_set_dirty (ctx, 1);
   if (ctx_backend_type (ctx) == CTX_BACKEND_TERM)
@@ -566,6 +567,7 @@ itk_panels_reset_scroll (ITK *itk)
   {
     ITKPanel *panel = l->data;
     panel->scroll = 0.0;
+    panel->jump_scroll = 1;
   }
 }
 
@@ -611,7 +613,7 @@ CtxControl *itk_add_control (ITK *itk,
      {
         if (itk->panel->scroll != 0.0f)
         {
-          itk->panel->scroll -= itk->scroll_speed * em;
+          itk->panel->scroll -= itk->scroll_speed * panel->height * itk->panel->scroll_jump * 5;
           if (itk->panel->scroll<0.0)
             itk->panel->scroll=0.0;
           ctx_set_dirty (itk->ctx, 1);
@@ -619,13 +621,17 @@ CtxControl *itk_add_control (ITK *itk,
      }
      else if (itk->y - itk->panel->scroll +  control->height > itk->panel->y + itk->panel->height - em * 2 && control->height < itk->panel->height - em * 2)
      {
-        itk->panel->scroll += itk->scroll_speed * em;
+          itk->panel->scroll += itk->scroll_speed * panel->height * itk->panel->scroll_jump * 5;
 #if 0
         if (itk->panel->scroll > itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y)) - em * itk->rel_ver_advance;
             itk->panel->scroll = itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y) - em * itk->rel_ver_advance;
 #endif
 
         ctx_set_dirty (itk->ctx, 1);
+     }
+     else
+     {
+       itk->panel->scroll_jump = 0;
      }
 
   }
@@ -2311,7 +2317,7 @@ itk_itk_settings (ITK *itk)
         itk_slider_float (itk, "font size ", &itk->font_size, 3.0, 60.0, 0.25);
         itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
         itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
-        itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 16.0, 0.1);
+        itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 1.0, 0.01);
         itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
         itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
         itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);

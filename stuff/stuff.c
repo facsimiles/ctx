@@ -724,6 +724,7 @@ static void _set_location (const char *location)
     focused_no = 0;
     layout_find_item = 0;
   }
+  itk_panels_reset_scroll (itk);
 }
 
 int cmd_history (COMMAND_ARGS) /* "history", 1, "<forward|back>", "moved history forward or back" */
@@ -3377,7 +3378,7 @@ char **dir_get_viewer_argv (const char *path, int no)
 //  args = NULL;
 //   ctx_list_append (&args, strdup ("/bin/dash"));
 
-#if 1
+#if 0
 
 #if 0
   ctx_list_prepend (&args, strdup("/"));
@@ -3849,9 +3850,9 @@ static void dir_layout (ITK *itk, Collection *collection)
       {
         ctx_begin_path (itk->ctx);
         c = itk_add_control (itk, UI_LABEL, "foo",
-        itk->x - em * padding_left/2, itk->y - em * padding_top/2,
+        itk->x - em * padding_left/2, itk->y - em * padding_top/3,
         width + em * (padding_left/2+padding_right/2),
-        height + em * (padding_top/2+padding_bottom/2));
+        height + em * (padding_top/3+padding_bottom/2));
         if (focused_no == i)
            focused_control = c;
       }
@@ -4745,7 +4746,6 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
   {
     argvs_eval ("go-parent");
     layout_show_page = 0;
-    itk_panels_reset_scroll (itk);
   }
   else if (!strcmp (word->str, "cd"))
   {
@@ -4776,7 +4776,6 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
       layout_find_item = 0;
     }
     layout_show_page = 0;
-    itk_panels_reset_scroll (itk);
   }
   else
   {
@@ -5841,7 +5840,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    //int height = 256;
    int width = 512;
    int height = 512;
-   float font_size = height * 0.1;
+   float font_size = height * 0.075;
    float live_font_factor = 1.0;
    Ctx *ctx = ctx_new_ui (width, height, "headless");
    char *dir = dirname (strdup(src_path));
