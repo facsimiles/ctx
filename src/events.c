@@ -442,10 +442,10 @@ void _ctx_idle_iteration (Ctx *ctx)
   while (ctx->events.idles_to_remove)
   {
     CtxIdleCb *item = ctx->events.idles_to_remove->data;
-    if (item->destroy_notify)
-      item->destroy_notify (item->destroy_data);
     ctx_list_remove (&ctx->events.idles, item);
     ctx_list_remove (&ctx->events.idles_to_remove, item);
+    if (item->destroy_notify)
+      item->destroy_notify (item->destroy_data);
   }
   ctx->events.in_idle_dispatch=0;
 }
@@ -572,10 +572,10 @@ void ctx_remove_idle (Ctx *ctx, int handle)
   while (ctx->events.idles_to_remove)
   {
     CtxIdleCb *item = ctx->events.idles_to_remove->data;
-    if (item->destroy_notify)
-      item->destroy_notify (item->destroy_data);
     ctx_list_remove (&ctx->events.idles, item);
     ctx_list_remove (&ctx->events.idles_to_remove, item);
+    if (item->destroy_notify)
+      item->destroy_notify (item->destroy_data);
   }
 }
 
