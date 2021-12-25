@@ -605,6 +605,7 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_set_size (backend->ctx,    width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
+  backend->set_windowtitle = (void*)ctx_sdl_set_title;
   backend->flush = (void*)ctx_sdl_flush;
   backend->reset = (void*)ctx_sdl_reset;
   backend->free  = (void*)ctx_sdl_free;

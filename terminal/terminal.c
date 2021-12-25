@@ -586,7 +586,7 @@ terminal_update_title (const char *title)
     free (set_title);
   }
   set_title = strdup (title);
-  ctx_set_title (ctx, set_title);
+  ctx_windowtitle (ctx, set_title);
 }
 
 int ctx_input_pending (Ctx *ctx, int timeout);

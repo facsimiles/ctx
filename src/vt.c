@@ -2708,45 +2708,6 @@ static void ctx_show_frame (Ctx *ctx, int block)
 {
   CtxTiled *tiled = (CtxTiled*)(ctx->renderer);
   tiled->show_frame (tiled, block);
-#if 0
-  switch (ctx_backend_type (ctx))
-  {
-#if CTX_KMS:
-          case CTX_BACKEND_KMS:
-            ctx_kms_show_frame ((CtxKMS*)tiled, block);
-            break;
-#endif
-
-
-  }
-  if (0)
-  {
-  }
-#if CTX_KMS
-  else if (ctx_renderer_is_kms (ctx))
-  {
-    ctx_kms_show_frame ((CtxKMS*)tiled, block);
-  }
-#endif
-#if CTX_HEADLESS
-  else if (ctx_renderer_is_headless (ctx))
-  {
-    ctx_headless_show_frame ((CtxHeadless*)tiled, block);
-  }
-#endif
-#if CTX_FB
-  else if (ctx_renderer_is_fb (ctx))
-  {
-    ctx_fb_show_frame ((CtxFb*)tiled, block);
-  }
-#endif
-#if CTX_SDL
-  else if (ctx_renderer_is_sdl (ctx))
-  {
-    ctx_sdl_show_frame ((CtxSDL*)tiled, block);
-  }
-#endif
-#endif
 }
 #endif
 

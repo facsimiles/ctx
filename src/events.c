@@ -210,7 +210,7 @@ Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_HEADLESS
   if (!ret)
     {
-      if (!strcmp (backend, "headless"))
+      if (backend && !strcmp (backend, "headless"))
         ret = ctx_new_headless (width, height);
     }
 #endif
@@ -282,14 +282,6 @@ void ctx_set_size (Ctx *ctx, int width, int height)
     ctx->events.width = width;
     ctx->events.height = height;
     _ctx_resized (ctx, width, height, 0);
-#if 1
-    if (ctx_backend_type (ctx) == CTX_BACKEND_CTX)
-    {
-      CtxCtx *ctxctx = (CtxCtx*)ctx->renderer;
-      ctxctx->width = width;
-      ctxctx->height= height;
-    }
-#endif
   }
 #endif
 }
@@ -2132,14 +2124,5 @@ int ctx_input_pending (Ctx *ctx, int timeout)
   return retval;
 }
 
-void ctx_sdl_set_title (void *self, const char *new_title);
-void ctx_set_title (Ctx *ctx, const char *title)
-{
-#if CTX_SDL
-     // XXX also check we're first/only client?
-   if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
-     ctx_sdl_set_title (ctx_get_renderer (ctx), title);
-#endif
-}
 
 #endif

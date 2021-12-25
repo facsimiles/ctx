@@ -827,8 +827,6 @@ int   ctx_add_idle           (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data
 
 void ctx_add_hit_region (Ctx *ctx, const char *id);
 
-void ctx_set_title (Ctx *ctx, const char *title);
-
 void ctx_listen_full (Ctx     *ctx,
                       float    x,
                       float    y,
@@ -1594,6 +1592,7 @@ struct
 };
 
 typedef struct _CtxBackend CtxBackend;
+void ctx_windowtitle (Ctx *ctx, const char *text);
 struct _CtxBackend
 {
   Ctx  *ctx;
@@ -1602,8 +1601,9 @@ struct _CtxBackend
   void (*reset)          (void *renderer);
   void (*flush)          (void *renderer);
 
-  char *(*get_clipboard) (void *ctxctx);
-  void (*set_clipboard)  (void *ctxctx, const char *text);
+  char *(*get_clipboard)   (void *ctxctx);
+  void (*set_clipboard)    (void *ctxctx, const char *text);
+  void (*set_windowtitle)  (void *ctxctx, const char *text);
 
   char  (*get_event)      (void *backend, int timout_ms);
 

@@ -402,15 +402,15 @@ Ctx *ctx_new_ctx (int width, int height)
   {
     ctxctx->cols = ctx_terminal_cols ();
     ctxctx->rows = ctx_terminal_rows ();
-    width  = ctxctx->width  = ctx_terminal_width ();
-    height = ctxctx->height = ctx_terminal_height ();
+    width  = ctx->events.width  = ctx_terminal_width ();
+    height = ctx->events.height = ctx_terminal_height ();
     font_size = height / ctxctx->rows;
     ctx_font_size (ctx, font_size);
   }
   else
   {
-    ctxctx->width  = width;
-    ctxctx->height = height;
+    ctx->events.width  = width;
+    ctx->events.height = height;
     ctxctx->cols   = width / 80;
     ctxctx->rows   = height / 24;
   }
@@ -444,9 +444,7 @@ int ctx_ctx_consume_events (Ctx *ctx)
       ioctl(0,TIOCGWINSZ,&ws);
       ctxctx->cols = ws.ws_col;
       ctxctx->rows = ws.ws_row;
-      ctxctx->width = ws.ws_xpixel;
-      ctxctx->height = ws.ws_ypixel;
-      ctx_set_size (ctx, ctxctx->width, ctxctx->height);
+      ctx_set_size (ctx, ws.ws_xpixel, ws.ws_ypixel);
     }
 #endif
     //char *cmd = ctx_strdup_printf ("touch /tmp/ctx-%ix%i", ctxctx->width, ctxctx->height);
@@ -488,12 +486,10 @@ int ctx_ctx_consume_events (Ctx *ctx)
         fprintf (stdout, "\e[H\e[2J\e[?25l");
         ctxctx->cols = ctx_terminal_cols ();
         ctxctx->rows = ctx_terminal_rows ();
-        ctxctx->width  = ctx_terminal_width ();
-        ctxctx->height = ctx_terminal_height ();
 
         //system ("touch /tmp/ctx-abc");
 
-        ctx_set_size (ctx, ctxctx->width, ctxctx->height);
+        ctx_set_size (ctx, ctx_terminal_width(), ctx_terminal_height());
 
         if (prev_frame_contents)
           free (prev_frame_contents);

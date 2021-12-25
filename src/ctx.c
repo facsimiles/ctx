@@ -2056,6 +2056,15 @@ void ctx_set_clipboard (Ctx *ctx, const char *text)
   }
 }
 
+void ctx_windowtitle (Ctx *ctx, const char *text)
+{
+  if (ctx->renderer && ctx->renderer->set_windowtitle)
+  {
+    ctx->renderer->set_windowtitle (ctx->renderer, text);
+    return;
+  }
+}
+
 char *ctx_get_clipboard (Ctx *ctx)
 {
   if (ctx->renderer && ctx->renderer->get_clipboard)
@@ -2421,14 +2430,11 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 #if CTX_EVENTS
   else if (backend->free == (void*) ctx_ctx_free) return CTX_BACKEND_CTX;
 #endif
+#if CTX_TERM
+  else if (backend->free == (void*) ctx_term_free) return CTX_BACKEND_TERM;
+#endif
 #if CTX_HEADLESS
   else if (backend->free == (void*) ctx_headless_free) return CTX_BACKEND_HEADLESS;
-#endif
-#if CTX_SDL
-  else if (backend->free == (void*) ctx_sdl_free) return CTX_BACKEND_SDL;
-#endif
-#if CTX_CAIRO
-  else if (backend->free == (void*) ctx_cairo_free) return CTX_BACKEND_CAIRO;
 #endif
 #if CTX_KMS
   else if (backend->free == (void*) ctx_kms_free) return CTX_BACKEND_KMS;
@@ -2436,8 +2442,11 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 #if CTX_FB
   else if (backend->free == (void*) ctx_fb_free) return CTX_BACKEND_FB;
 #endif
-#if CTX_TERM
-  else if (backend->free == (void*) ctx_term_free) return CTX_BACKEND_TERM;
+#if CTX_SDL
+  else if (backend->free == (void*) ctx_sdl_free) return CTX_BACKEND_SDL;
+#endif
+#if CTX_CAIRO
+  else if (backend->free == (void*) ctx_cairo_free) return CTX_BACKEND_CAIRO;
 #endif
 #if CTX_TERMIMG
   else if (backend->free == (void*) ctx_termimg_free) return CTX_BACKEND_TERMIMG;
