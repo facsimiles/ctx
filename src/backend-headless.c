@@ -243,14 +243,14 @@ void ctx_headless_consume_events (Ctx *ctx)
   event_check_pending (&fb->tiled);
 }
 
-inline static void ctx_headless_reset (CtxHeadless *fb)
+inline static void ctx_headless_reset (Ctx *ctx)
 {
-  ctx_headless_show_frame (fb, 1);
+  ctx_headless_show_frame ((CtxHeadless*)ctx->backend, 1);
 }
 
-inline static void ctx_headless_flush (CtxHeadless *fb)
+inline static void ctx_headless_flush (Ctx *ctx)
 {
-  ctx_tiled_flush ((CtxTiled*)fb);
+  ctx_tiled_flush ((CtxTiled*)ctx->backend);
 }
 
 void ctx_headless_free (CtxHeadless *fb)
@@ -311,12 +311,12 @@ Ctx *ctx_new_headless (int width, int height)
 
   backend->ctx    = ctx_new ();
   backend->backend = "headless";
-  backend->flush = (void*)ctx_headless_flush;
-  backend->reset = (void*)ctx_headless_reset;
+  backend->flush = ctx_headless_flush;
+  backend->reset = ctx_headless_reset;
   backend->free  = (void*)ctx_headless_free;
   backend->set_clipboard = (void*)ctx_fb_set_clipboard;
   backend->get_clipboard = (void*)ctx_fb_get_clipboard;
-  backend->consume_events = (void(*)(void *))ctx_headless_consume_events;
+  backend->consume_events = ctx_headless_consume_events;
 
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;

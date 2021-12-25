@@ -3677,7 +3677,7 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
 }
 
 static void
-ctx_rasterizer_process (void *user_data, CtxCommand *command);
+ctx_rasterizer_process (Ctx *ctx, CtxCommand *command);
 
 int
 _ctx_is_rasterizer (Ctx *ctx)

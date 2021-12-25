@@ -30,8 +30,9 @@ inline static void ctx_termimg_process (Ctx        *ctx,
   ctx_process (termimg->host, &command->entry);
 }
 
-inline static void ctx_termimg_flush (CtxTermImg *termimg)
+inline static void ctx_termimg_flush (Ctx *ctx)
 {
+  CtxTermImg *termimg = (CtxTermImg*)ctx->backend;
   int width =  termimg->width;
   int height = termimg->height;
   if (!termimg->pixels) return;
@@ -119,9 +120,9 @@ Ctx *ctx_new_termimg (int width, int height)
   backend->ctx = ctx;
   backend->backend = "termimg";
   backend->process = ctx_termimg_process;
-  backend->flush = (void(*)(void*))ctx_termimg_flush;
+  backend->flush = ctx_termimg_flush;
   backend->free  = (void(*)(void*))ctx_termimg_free;
-  backend->consume_events = (void(*)(void*))ctx_nct_consume_events;
+  backend->consume_events = ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
   backend->has_event = (void*)ctx_nct_has_event; // doesnt use mice fd
 #endif

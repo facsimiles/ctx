@@ -498,15 +498,17 @@ static char *ctx_sdl_get_clipboard (CtxSDL *sdl)
 }
 
 
-inline static void ctx_sdl_reset (CtxSDL *sdl)
+inline static void ctx_sdl_reset (Ctx *ctx)
 {
+  CtxSDL  *sdl = (CtxSDL*)ctx->backend;
   ctx_sdl_show_frame (sdl, 1);
   ctx_sdl_start_time = ctx_ticks ();
 }
 
-inline static void ctx_sdl_flush (CtxSDL *sdl)
+inline static void ctx_sdl_flush (Ctx *ctx)
 {
-  ctx_tiled_flush ((void*)sdl);
+  CtxSDL  *sdl = (CtxSDL*)ctx->backend;
+  ctx_tiled_flush ((CtxTiled*)sdl);
   //CtxTiled *tiled = (void*)sdl;
 }
 
@@ -609,10 +611,10 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_set_size (tiled->ctx_copy, width, height);
 
   backend->set_windowtitle = (void*)ctx_sdl_set_title;
-  backend->flush = (void*)ctx_sdl_flush;
-  backend->reset = (void*)ctx_sdl_reset;
+  backend->flush = ctx_sdl_flush;
+  backend->reset = ctx_sdl_reset;
   backend->free  = (void*)ctx_sdl_free;
-  backend->consume_events = (void*)ctx_sdl_consume_events;
+  backend->consume_events = ctx_sdl_consume_events;
 
   backend->set_clipboard = (void*)ctx_sdl_set_clipboard;
   backend->get_clipboard = (void*)ctx_sdl_get_clipboard;

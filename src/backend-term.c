@@ -781,8 +781,9 @@ inline static void ctx_term_process (Ctx *ctx,
   ctx_process (term->host, &command->entry);
 }
 
-inline static void ctx_term_flush (CtxTerm *term)
+inline static void ctx_term_flush (Ctx *ctx)
 {
+  CtxTerm *term = (CtxTerm*)ctx->backend;
   int width =  term->width;
   int height = term->height;
   switch (term->mode)
@@ -944,9 +945,9 @@ Ctx *ctx_new_term (int width, int height)
   ctx_font_size (ctx, ctx_term_ch); 
   backend->backend = "term";
   backend->process = ctx_term_process;
-  backend->flush   = (void(*)(void*))ctx_term_flush;
+  backend->flush   = ctx_term_flush;
   backend->free    = (void(*)(void*))ctx_term_free;
-  backend->consume_events = (void(*)(void*))ctx_nct_consume_events;
+  backend->consume_events = ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
   backend->has_event = (void*)ctx_nct_has_event; // doesnt use mice fd
 #endif

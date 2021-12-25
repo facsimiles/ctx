@@ -343,7 +343,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
-    { ctx_cairo_process (&ctx_cairo, command); }
+    { ctx_cairo_process (ctx, command); }
 }
 
 Ctx *
@@ -353,7 +353,7 @@ ctx_new_for_cairo (cairo_t *cr)
   CtxCairo *ctx_cairo = calloc(sizeof(CtxCairo),1);
   CtxBackend *backend  = (CtxBackend*)ctx_cairo;
   backend->free    = (void*)ctx_cairo_free;
-  backend->process = (void*)ctx_cairo_process;
+  backend->process = ctx_cairo_process;
   backend->ctx = ctx;
   backend->backend = "cairo";
   ctx_cairo->cr = cr;

@@ -1597,9 +1597,9 @@ struct _CtxBackend
 {
   Ctx                       *ctx;
   const char                *backend;
-  void  (*process)         (void *backend, CtxCommand *entry);
-  void  (*reset)           (void *backend);
-  void  (*flush)           (void *backend);
+  void  (*process)         (Ctx *ctx, CtxCommand *entry);
+  void  (*reset)           (Ctx *ctx);
+  void  (*flush)           (Ctx *ctx);
 
   char *(*get_clipboard)   (void *ctxctx);
   void  (*set_clipboard)   (void *ctxctx, const char *text);

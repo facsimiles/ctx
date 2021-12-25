@@ -333,14 +333,14 @@ void ctx_fb_consume_events (Ctx *ctx)
   event_check_pending (&fb->tiled);
 }
 
-inline static void ctx_fb_reset (CtxFb *fb)
+inline static void ctx_fb_reset (Ctx *ctx)
 {
-  ctx_fb_show_frame (fb, 1);
+  ctx_fb_show_frame ((CtxFb*)ctx->backend, 1);
 }
 
-inline static void ctx_fb_flush (CtxFb *fb)
+inline static void ctx_fb_flush (Ctx *ctx)
 {
-  ctx_tiled_flush ((CtxTiled*)fb);
+  ctx_tiled_flush ((CtxTiled*)ctx->backend);
 }
 
 void ctx_fb_free (CtxFb *fb)
@@ -570,8 +570,8 @@ Ctx *ctx_new_fb (int width, int height)
   ctx_set_size (backend->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  backend->flush = (void*)ctx_fb_flush;
-  backend->reset = (void*)ctx_fb_reset;
+  backend->flush = ctx_fb_flush;
+  backend->reset = ctx_fb_reset;
   backend->free  = (void*)ctx_fb_free;
   backend->set_clipboard = (void*)ctx_fb_set_clipboard;
   backend->get_clipboard = (void*)ctx_fb_get_clipboard;

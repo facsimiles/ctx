@@ -45,40 +45,6 @@ typedef struct _CtxKMS CtxKMS;
 struct _CtxKMS
 {
    CtxTiled tiled;
-#if 0
-   void (*render) (void *fb, CtxCommand *command);
-   void (*reset)  (void *fb);
-   void (*flush)  (void *fb);
-   char *(*get_clipboard) (void *ctxctx);
-   void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)   (void *fb);
-   int           width;
-   int           height;
-   int           cols; // unused
-   int           rows; // unused
-   int           was_down;
-   uint8_t      *pixels;
-   Ctx          *ctx_copy;
-   Ctx          *host[CTX_MAX_THREADS];
-   CtxAntialias  antialias;
-   int           quit;
-   _Atomic int   thread_quit;
-   int           shown_frame;
-   int           render_frame;
-   int           rendered_frame[CTX_MAX_THREADS];
-   int           frame;
-   int           min_col; // hasher cols and rows
-   int           min_row;
-   int           max_col;
-   int           max_row;
-   uint8_t       hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
-   int8_t        tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
-                                                           // responsible for a tile
-                                                           //
-
-
-   int           pointer_down[3];
-#endif
    int           key_balance;
    int           key_repeat;
    int           lctrl;
@@ -466,14 +432,14 @@ void ctx_kms_consume_events (Ctx *ctx)
   event_check_pending (&fb->tiled);
 }
 
-inline static void ctx_kms_reset (CtxKMS *fb)
+inline static void ctx_kms_reset (Ctx *ctx)
 {
-  ctx_kms_show_frame (fb, 1);
+  ctx_kms_show_frame ((CtxKMS*)ctx->backend, 1);
 }
 
-inline static void ctx_kms_flush (CtxKMS *fb)
+inline static void ctx_kms_flush (Ctx *ctx)
 {
-  ctx_tiled_flush ((CtxTiled*)fb);
+  ctx_tiled_flush ((CtxTiled*)ctx->backend);
 }
 
 void ctx_kms_free (CtxKMS *fb)
@@ -592,10 +558,10 @@ Ctx *ctx_new_kms (int width, int height)
   ctx_set_size (backend->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  backend->flush = (void*)ctx_kms_flush;
-  backend->reset = (void*)ctx_kms_reset;
+  backend->flush = ctx_kms_flush;
+  backend->reset = ctx_kms_reset;
   backend->free  = (void*)ctx_kms_free;
-  backend->consume_events = (void(*)(void *))ctx_kms_consume_events;
+  backend->consume_events = ctx_kms_consume_events;
   backend->get_event_fds = (void*) ctx_fb_get_event_fds;
   backend->set_clipboard = (void*)ctx_fb_set_clipboard;
   backend->get_clipboard = (void*)ctx_fb_get_clipboard;

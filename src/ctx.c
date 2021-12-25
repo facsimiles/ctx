@@ -715,7 +715,7 @@ void ctx_reset (Ctx *ctx)
          * tiled fb and sdl needs to sync
          */
   if (ctx->backend && ctx->backend->reset)
-    ctx->backend->reset (ctx->backend);
+    ctx->backend->reset (ctx);
 
   //CTX_PROCESS_VOID (CTX_RESET);
   //if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
@@ -1275,7 +1275,7 @@ void
 ctx_flush (Ctx *ctx)
 {
   if (ctx->backend && ctx->backend->flush)
-    ctx->backend->flush (ctx->backend);
+    ctx->backend->flush (ctx);
   ctx->frame++;
   if (ctx->texture_cache != ctx)
     ctx->texture_cache->frame++;

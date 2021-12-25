@@ -303,8 +303,9 @@ static int   prev_frame_len = 0;
 
 static int ctx_native_events = 1;
 
-static void ctx_ctx_flush (CtxCtx *ctxctx)
+static void ctx_ctx_flush (Ctx *ctx)
 {
+  CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
 #if 0
   FILE *debug = fopen ("/tmp/ctx-debug", "a");
   fprintf (debug, "------\n");
@@ -509,9 +510,9 @@ Ctx *ctx_new_ctx (int width, int height)
   backend->ctx = ctx;
   if (!ctx_native_events)
     _ctx_mouse (ctx, NC_MOUSE_DRAG);
-  backend->flush = (void(*)(void *))ctx_ctx_flush;
+  backend->flush = ctx_ctx_flush;
   backend->free  = (void(*)(void *))ctx_ctx_free;
-  backend->consume_events = (void(*)(void *))ctx_ctx_consume_events;
+  backend->consume_events = ctx_ctx_consume_events;
   backend->backend = "ctx";
   backend->has_event = (void*)ctx_nct_has_event;
   ctx_set_backend (ctx, ctxctx);
