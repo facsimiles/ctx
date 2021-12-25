@@ -43,6 +43,7 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
   }
 
 #if 1
+  if (ctx_backend_type (ctx) != CTX_BACKEND_HEADLESS)
   for (int i = 0; i < tiled->width * tiled->height; i++)
   {
     int tmp = tiled->pixels[i*4];
