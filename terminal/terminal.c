@@ -671,7 +671,7 @@ int terminal_main (int argc, char **argv)
     height = font_size * 25;
   }
 
-  ctx  = ctx_new_ui (width, height);
+  ctx  = ctx_new_ui (width, height, NULL);
   width = ctx_width (ctx);
   height = ctx_height (ctx);
 

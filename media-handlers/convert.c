@@ -737,7 +737,7 @@ again:
     static Ctx *ui = NULL;
     if (!ui)
     {
-      ui = ctx_new_ui (width, height);
+      ui = ctx_new_ui (width, height, NULL);
       ctx_get_event (ui); // forces enabling of get event
     }
     dirty=1;

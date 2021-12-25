@@ -2200,7 +2200,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
                * really include this file
                */
 
-              mrg_get_contents (mrg, uri_base, uri, &contents, &length);
+              ctx_get_contents (uri, (uint8_t**)&contents, &length);
               if (contents)
               {
                 CtxCssParseState child_parser = {0,};

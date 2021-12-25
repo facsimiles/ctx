@@ -109,8 +109,11 @@ Ctx *ctx_new_for_framebuffer (void *data,
  *
  * Create a new interactive ctx context, might depend on additional
  * integration.
+ *
+ * The values for backend are as for the environment variable,
+ * NULL for auto.
  */
-Ctx *ctx_new_ui (int width, int height);
+Ctx *ctx_new_ui (int width, int height, const char *backend);
 
 /**
  * ctx_new_for_drawlist:

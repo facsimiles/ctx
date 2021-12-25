@@ -124,9 +124,8 @@ static uint32_t ctx_ms (Ctx *ctx)
   return _ctx_ticks () / 1000;
 }
 
-
 static int is_in_ctx (void);
-Ctx *ctx_new_ui (int width, int height)
+Ctx *ctx_new_ui (int width, int height, const char *backend)
 {
 #if CTX_TILED
   if (getenv ("CTX_DAMAGE_CONTROL"))
@@ -180,7 +179,8 @@ Ctx *ctx_new_ui (int width, int height)
   if (_ctx_max_threads > CTX_MAX_THREADS) _ctx_max_threads = CTX_MAX_THREADS;
 
   //fprintf (stderr, "ctx using %i threads\n", _ctx_max_threads);
-  const char *backend = getenv ("CTX_BACKEND");
+  if (!backend)
+    backend = getenv ("CTX_BACKEND");
 
   if (backend && !strcmp (backend, ""))
     backend = NULL;
@@ -207,6 +207,14 @@ Ctx *ctx_new_ui (int width, int height)
     }
   }
 
+#if CTX_HEADLESS
+  if (!ret)
+    {
+      if (!strcmp (backend, "headless"))
+        ret = ctx_new_headless (width, height);
+    }
+#endif
+
 #if CTX_SDL
   if (!ret && getenv ("DISPLAY"))
   {
@@ -222,6 +230,7 @@ Ctx *ctx_new_ui (int width, int height)
       ret = ctx_new_kms (width, height);
   }
 #endif
+
 
 #if CTX_FB
   if (!ret && !getenv ("DISPLAY"))

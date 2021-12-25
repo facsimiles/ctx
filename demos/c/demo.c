@@ -32,7 +32,7 @@ static void demo_prev (CtxEvent *event, void *data1, void *data2)
 
 int main (int argc, char **argv)
 {
-  Ctx *ctx = ctx_new_ui (-1, -1);
+  Ctx *ctx = ctx_new_ui (-1, -1, NULL);
 
   ITK *itk = itk_new (ctx);
 

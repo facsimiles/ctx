@@ -130,7 +130,7 @@ int ctx_text_main(int argc, char *argv[])
   }
   lines[n_lines]=NULL;
 
-  ctx = ctx_new_ui (-1, -1);
+  ctx = ctx_new_ui (-1, -1, NULL);
 
   //char eid[65]="";
 

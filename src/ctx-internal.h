@@ -91,6 +91,15 @@ struct _CtxGradientStop
   CtxColor color;
 };
 
+typedef enum CtxBackendType {
+  CTX_BACKEND_CTX,
+  CTX_BACKEND_HEADLESS,
+  CTX_BACKEND_TERM,
+  CTX_BACKEND_FB,
+  CTX_BACKEND_SDL,
+  CTX_BACKEND_KMS,
+  CTX_BACKEND_TERMIMG,
+} CtxBackendType;
 
 enum _CtxSourceType
 {
@@ -104,7 +113,6 @@ enum _CtxSourceType
 typedef enum _CtxSourceType CtxSourceType;
 
 typedef struct _CtxPixelFormatInfo CtxPixelFormatInfo;
-
 
 struct _CtxBuffer
 {
@@ -797,6 +805,7 @@ ctx_get (Ctx *ctx, const char *key);
 int ctx_renderer_is_term (Ctx *ctx);
 Ctx *ctx_new_ctx (int width, int height);
 Ctx *ctx_new_fb (int width, int height);
+Ctx *ctx_new_headless (int width, int height);
 Ctx *ctx_new_kms (int width, int height);
 Ctx *ctx_new_sdl (int width, int height);
 Ctx *ctx_new_term (int width, int height);

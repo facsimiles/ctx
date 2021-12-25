@@ -5733,7 +5733,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    //int height = 256;
    int width = 512;
    int height = 512;
-   Ctx *ctx = ctx_new_ui (width, height);
+   Ctx *ctx = ctx_new_ui (width, height, "headless");
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
    collection_set_path (collection, dir, dir);
@@ -5747,7 +5747,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
                   NULL, NULL);
    for (int i = 0; i < 50; i ++)
    {
-     CtxEvent *event = NULL;
+     //CtxEvent *event = NULL;
      ctx_reset (ctx);
      ctx_rectangle (ctx, 0, 0, width, height);
      ctx_gray (ctx, 0);
