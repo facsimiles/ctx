@@ -3351,7 +3351,7 @@ char **dir_get_viewer_argv (const char *path, int no)
   {
   if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
   {
-    ctx_list_append (&args, strdup ("ctx"));
+    ctx_list_append (&args, strdup ("/bin/ctx.static"));
     ctx_list_append (&args, strdup (path));
   }
   else if (!strcmp (media_type, "video/mpeg"))
@@ -3368,15 +3368,48 @@ char **dir_get_viewer_argv (const char *path, int no)
   }
   }
 
-#if 0
+#if 1
   ctx_list_prepend (&args, strdup("--unshare-all"));
+
+#if 1
   ctx_list_prepend (&args, strdup("/"));
   ctx_list_prepend (&args, strdup("/"));
   ctx_list_prepend (&args, strdup("--ro-bind"));
-  ctx_list_prepend (&args, strdup("--256"));
+#endif
+
+#if 0
+  char *foo = strdup (path);
+  ctx_list_prepend (&args, strdup(dirname (foo)));
+  ctx_list_prepend (&args, strdup(dirname (foo)));
+  free (foo);
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+
+  ctx_list_prepend (&args, strdup("/bin"));
+  ctx_list_prepend (&args, strdup("/bin"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+  ctx_list_prepend (&args, strdup("/dev"));
+  ctx_list_prepend (&args, strdup("--dev"));
+  ctx_list_prepend (&args, strdup("/proc"));
+  ctx_list_prepend (&args, strdup("/proc"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+  ctx_list_prepend (&args, strdup("/lib"));
+  ctx_list_prepend (&args, strdup("/lib"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+  ctx_list_prepend (&args, strdup("/usr"));
+  ctx_list_prepend (&args, strdup("/usr"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+  ctx_list_prepend (&args, strdup("/var"));
+  ctx_list_prepend (&args, strdup("/var"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+#endif
+
+  ctx_list_prepend (&args, strdup("256"));
   ctx_list_prepend (&args, strdup("--gid"));
-  ctx_list_prepend (&args, strdup("--512"));
-  ctx_list_prepend (&args, strdup("--pid"));
+  ctx_list_prepend (&args, strdup("512"));
+  ctx_list_prepend (&args, strdup("--uid"));
+  ctx_list_prepend (&args, strdup("ctx"));
+  ctx_list_prepend (&args, strdup("CTX_BACKEND"));
+  ctx_list_prepend (&args, strdup("--setenv"));
   ctx_list_prepend (&args, strdup("bwrap"));
 #endif
 
