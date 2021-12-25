@@ -6,11 +6,15 @@ typedef struct _CtxCairo CtxCairo;
 struct
   _CtxCairo
 {
-  CtxBackend       renderer;
+  CtxBackend        renderer;
   cairo_t          *cr;
   cairo_pattern_t  *pat;
   cairo_surface_t  *image;
   int               preserve;
+
+  // maintain separate fill and stroke state - even though the more limited use of ctx
+  // then suffers?
+  //
 };
 
 static void
@@ -327,10 +331,13 @@ void ctx_cairo_free (CtxCairo *ctx_cairo)
 void
 ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
+  CtxCairo    ctx_cairo; /* on-stack backend */
+  CtxBackend *backend = (CtxBackend*)&ctx_cairo;
   CtxIterator iterator;
   CtxCommand *command;
-  CtxCairo    ctx_cairo = {
-     {(void*)ctx_cairo_process, NULL, NULL}, cr, NULL, NULL};
+  ctx_cairo.cr = cr;
+  backend->process = (void*)ctx_cairo_process;
+  backend->ctx = ctx;
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
@@ -342,11 +349,11 @@ ctx_new_for_cairo (cairo_t *cr)
 {
   Ctx *ctx = ctx_new ();
   CtxCairo *ctx_cairo = calloc(sizeof(CtxCairo),1);
-  ctx_cairo->renderer.free = (void*)ctx_cairo_free;
-  ctx_cairo->renderer.process = (void*)ctx_cairo_process;
-  ctx_cairo->renderer.ctx = ctx;
+  CtxBackend *backend  = (CtxBackend*)ctx_cairo;
+  backend->free    = (void*)ctx_cairo_free;
+  backend->process = (void*)ctx_cairo_process;
+  backend->ctx = ctx;
   ctx_cairo->cr = cr;
-
   ctx_set_renderer (ctx, (void*)ctx_cairo);
   return ctx;
 }

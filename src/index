@@ -36,7 +36,7 @@ events.c
 parser.c
 text.c
 ctx-string.c
-renderer-cairo.c
+backend-cairo.c
 backend-ctx.c
 backend-tiled.c
 backend-kms.c
