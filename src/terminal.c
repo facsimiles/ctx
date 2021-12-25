@@ -740,7 +740,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
   return "fail";
 }
 
-int ctx_nct_consume_events (Ctx *ctx)
+void ctx_nct_consume_events (Ctx *ctx)
 {
   int ix, iy;
   CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
@@ -818,8 +818,6 @@ int ctx_nct_consume_events (Ctx *ctx)
       ctx_key_press (ctx, 0, event, 0);
     }
   }
-
-  return 1;
 }
 
 const char *ctx_native_get_event (Ctx *n, int timeoutms)

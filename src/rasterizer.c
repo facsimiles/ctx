@@ -2613,8 +2613,8 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
     float tx = 0;
     font_size = rasterizer->state->gstate.font_size;
 
-    ch = ctx_term_get_cell_height (rasterizer->ctx);
-    cw = ctx_term_get_cell_width (rasterizer->ctx);
+    ch = ctx_term_get_cell_height (rasterizer->backend.ctx);
+    cw = ctx_term_get_cell_width (rasterizer->backend.ctx);
 
     _ctx_user_to_device_distance (rasterizer->state, &tx, &font_size);
   }
@@ -2636,7 +2636,7 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   }
   else
 #endif
-  _ctx_glyph (rasterizer->ctx, unichar, stroke);
+  _ctx_glyph (rasterizer->backend.ctx, unichar, stroke);
 }
 
 static void
@@ -2655,8 +2655,8 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
     font_size = rasterizer->state->gstate.font_size;
     _ctx_user_to_device_distance (rasterizer->state, &tx, &font_size);
   }
-  int   ch = ctx_term_get_cell_height (rasterizer->ctx);
-  int   cw = ctx_term_get_cell_width (rasterizer->ctx);
+  int   ch = ctx_term_get_cell_height (rasterizer->backend.ctx);
+  int   cw = ctx_term_get_cell_width (rasterizer->backend.ctx);
 
   if (rasterizer->term_glyphs && !stroke &&
       fabs (font_size - ch) < 0.5)
@@ -2680,7 +2680,7 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
   else
 #endif
   {
-    _ctx_text (rasterizer->ctx, string, stroke, 1);
+    _ctx_text (rasterizer->backend.ctx, string, stroke, 1);
   }
 }
 
@@ -2689,7 +2689,7 @@ _ctx_font (Ctx *ctx, const char *name);
 CTX_STATIC void
 ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name)
 {
-  _ctx_font (rasterizer->ctx, font_name);
+  _ctx_font (rasterizer->backend.ctx, font_name);
 }
 
 CTX_STATIC void
@@ -3583,7 +3583,7 @@ ctx_rasterizer_load_image (CtxRasterizer *rasterizer,
 {
   // decode PNG, put it in image is slot 1,
   // magic width height stride format data
-  ctx_buffer_load_png (&rasterizer->ctx->texture[0], path);
+  ctx_buffer_load_png (&rasterizer->backend.ctx->texture[0], path);
   ctx_rasterizer_set_texture (rasterizer, 0, x, y);
 }
 #endif
@@ -3745,7 +3745,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
     rasterizer->buf = rasterizer->group[no-1]->data;
   }
   // XXX use texture_source ?
-   ctx_texture_init (rasterizer->ctx, ".ctx-group", // XXX ? count groups..
+   ctx_texture_init (rasterizer->backend.ctx, ".ctx-group", // XXX ? count groups..
                   rasterizer->blit_width,  // or have group based on thread-id?
                   rasterizer->blit_height, // .. this would mean threadsafe
                                            // allocation
@@ -3782,7 +3782,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
     CtxEntry commands[1]= { ctx_void (CTX_FILL) };
     ctx_rasterizer_process (rasterizer, (CtxCommand*)commands);
   }
-  //ctx_texture_release (rasterizer->ctx, ".ctx-group");
+  //ctx_texture_release (rasterizer->backend.ctx, ".ctx-group");
   ctx_buffer_free (rasterizer->group[no]);
   rasterizer->group[no] = 0;
   ctx_rasterizer_process (rasterizer, (CtxCommand*)&restore_command);
@@ -3797,7 +3797,7 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
   CtxEntry save_command = ctx_void(CTX_SAVE);
 
   float rgba[4] = {0, 0, 0, 1.0};
-  if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
+  if (ctx_get_color (rasterizer->backend.ctx, CTX_shadowColor, &color) == 0)
     ctx_color_get_rgba (rasterizer->state, &color, rgba);
 
   CtxEntry set_color_command [3]=
@@ -3845,7 +3845,7 @@ ctx_rasterizer_shadow_text (CtxRasterizer *rasterizer, const char *str)
   CtxEntry save_command = ctx_void(CTX_SAVE);
 
   float rgba[4] = {0, 0, 0, 1.0};
-  if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
+  if (ctx_get_color (rasterizer->backend.ctx, CTX_shadowColor, &color) == 0)
     ctx_color_get_rgba (rasterizer->state, &color, rgba);
 
   CtxEntry set_color_command [3]=
@@ -3891,7 +3891,7 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
   CtxEntry save_command = ctx_void(CTX_SAVE);
 
   float rgba[4] = {0, 0, 0, 1.0};
-  if (ctx_get_color (rasterizer->ctx, CTX_shadowColor, &color) == 0)
+  if (ctx_get_color (rasterizer->backend.ctx, CTX_shadowColor, &color) == 0)
     ctx_color_get_rgba (rasterizer->state, &color, rgba);
 
   CtxEntry set_color_command [3]=
@@ -3996,7 +3996,7 @@ ctx_rasterizer_process (void *user_data, CtxCommand *command)
                 ctx_color_set_graya (state, color, c->graya.g, 1.0f);
                 break;
             }
-          ctx_set_color (rasterizer->ctx, CTX_shadowColor, color);
+          ctx_set_color (rasterizer->backend.ctx, CTX_shadowColor, color);
         }
         break;
 #endif
@@ -4420,11 +4420,12 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
     ctx_drawlist_deinit (&rasterizer->edge_list);
 
   memset (rasterizer, 0, sizeof (CtxRasterizer) );
-  rasterizer->vfuncs.process = ctx_rasterizer_process;
-  rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
+  CtxBackend *backend = (CtxBackend*)rasterizer;
+  backend->process = ctx_rasterizer_process;
+  backend->free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
+  backend->ctx     = ctx;
   rasterizer->edge_list.flags |= CTX_DRAWLIST_EDGE_LIST;
   rasterizer->state       = state;
-  rasterizer->ctx         = ctx;
   rasterizer->texture_source = texture_source?texture_source:ctx;
 
   rasterizer->aa          = _ctx_antialias_to_aa (antialias);

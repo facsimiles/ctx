@@ -68,10 +68,10 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           CtxSHA1 sha1;
           memcpy (&sha1, &hasher->sha1_fill[hasher->source_level], sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
-          float width = ctx_text_width (rasterizer->ctx, str);
+          float width = ctx_text_width (rasterizer->backend.ctx, str);
 
 
-          float height = ctx_get_font_size (rasterizer->ctx);
+          float height = ctx_get_font_size (rasterizer->backend.ctx);
            CtxIntRectangle shape_rect;
 
            float tx = rasterizer->x;
@@ -124,8 +124,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           const char *str = ctx_arg_string();
           memcpy (&sha1, &hasher->sha1_stroke[hasher->source_level], sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
-          float width = ctx_text_width (rasterizer->ctx, str);
-          float height = ctx_get_font_size (rasterizer->ctx);
+          float width = ctx_text_width (rasterizer->backend.ctx, str);
+          float height = ctx_get_font_size (rasterizer->backend.ctx);
 
            CtxIntRectangle shape_rect;
 
@@ -167,8 +167,8 @@ ctx_hasher_process (void *user_data, CtxCommand *command)
           char ctx_sha1_hash[20];
           uint8_t string[8];
           string[ctx_unichar_to_utf8 (c->u32.a0, string)]=0;
-          float width = ctx_text_width (rasterizer->ctx, (char*)string);
-          float height = ctx_get_font_size (rasterizer->ctx);
+          float width = ctx_text_width (rasterizer->backend.ctx, (char*)string);
+          float height = ctx_get_font_size (rasterizer->backend.ctx);
 
           float tx = rasterizer->x;
           float ty = rasterizer->y;
@@ -458,12 +458,13 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
 {
   CtxHasher *hasher = (CtxHasher*)rasterizer;
   ctx_memset (rasterizer, 0, sizeof (CtxHasher) );
-  rasterizer->vfuncs.process = ctx_hasher_process;
-  rasterizer->vfuncs.free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
+  CtxBackend *backend = (CtxBackend*)hasher;
+  backend->ctx         = ctx;
+  backend->process = ctx_hasher_process;
+  backend->free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
   // XXX need own destructor to not leak ->hashes
   rasterizer->edge_list.flags |= CTX_DRAWLIST_EDGE_LIST;
   rasterizer->state       = state;
-  rasterizer->ctx         = ctx;
   ctx_state_init (rasterizer->state);
   rasterizer->blit_x      = 0;
   rasterizer->blit_y      = 0;

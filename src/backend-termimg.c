@@ -119,6 +119,7 @@ Ctx *ctx_new_termimg (int width, int height)
   backend->process = ctx_termimg_render;
   backend->flush = (void(*)(void*))ctx_termimg_flush;
   backend->free  = (void(*)(void*))ctx_termimg_free;
+  backend->consume_events = (void(*)(void*))ctx_nct_consume_events;
 #endif
 
   return ctx;

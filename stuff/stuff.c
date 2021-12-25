@@ -107,7 +107,7 @@ unsigned long viewer_slide_trigger = 0;
 
 long viewer_slide_duration = 0;
 
-int viewer_slideshow = 1; // slide-show / video theater mode active
+int viewer_slideshow = 0; // slide-show / video theater mode active
 
 // TODO global variables that should be enclosed in a struct
 
@@ -621,6 +621,9 @@ const char *get_suffix (const char *path)
 int ctx_handle_img (Ctx *ctx, const char *path);
 
 static int text_edit = TEXT_EDIT_OFF;
+
+//static int nav_edit = 4;
+
 static float text_edit_desired_x = -123;
 
 CtxString *commandline = NULL;
@@ -3342,7 +3345,7 @@ char **dir_get_viewer_argv (const char *path, int no)
   if (!args)
   if (media_type_class == CTX_MEDIA_TYPE_TEXT)
   {
-    ctx_list_append (&args, strdup ("ctx"));
+    ctx_list_append (&args, strdup ("/bin/ctx.static"));
     ctx_list_append (&args, strdup (path));
   }
   free (basname);
@@ -3356,9 +3359,10 @@ char **dir_get_viewer_argv (const char *path, int no)
   }
   else if (!strcmp (media_type, "video/mpeg"))
   {
-    ctx_list_append (&args, strdup ("ctx"));
+    ctx_list_append (&args, strdup ("/bin/ctx.static"));
     ctx_list_append (&args, strdup (path));
     ctx_list_append (&args, strdup ("--paused"));
+    ctx_list_append (&args, strdup ("--seek-to"));
     ctx_list_append (&args, ctx_strdup_printf ("%.2f", in));
   }
   else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
@@ -3368,39 +3372,42 @@ char **dir_get_viewer_argv (const char *path, int no)
   }
   }
 
-#if 1
-  ctx_list_prepend (&args, strdup("--unshare-all"));
+//  args = NULL;
+//   ctx_list_append (&args, strdup ("/bin/dash"));
 
 #if 1
-  ctx_list_prepend (&args, strdup("/"));
-  ctx_list_prepend (&args, strdup("/"));
-  ctx_list_prepend (&args, strdup("--ro-bind"));
-#endif
 
 #if 0
-  char *foo = strdup (path);
-  ctx_list_prepend (&args, strdup(dirname (foo)));
-  ctx_list_prepend (&args, strdup(dirname (foo)));
-  free (foo);
+  ctx_list_prepend (&args, strdup("/"));
+  ctx_list_prepend (&args, strdup("/"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+#else
+//  char *foo = strdup (path);
+//  ctx_list_prepend (&args, strdup(dirname (foo)));
+//  ctx_list_prepend (&args, strdup(dirname (foo)));
+//  free (foo);
+//  ctx_list_prepend (&args, strdup("--ro-bind"));
+
+//  ctx_list_prepend (&args, strdup("/dev"));
+//  ctx_list_prepend (&args, strdup("/dev"));
+//  ctx_list_prepend (&args, strdup("--dev-bind"));
+
+  ctx_list_prepend (&args, strdup("/lib64"));
+  ctx_list_prepend (&args, strdup("/lib64"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+
+  ctx_list_prepend (&args, strdup("/lib"));
+  ctx_list_prepend (&args, strdup("/lib"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+
+  ctx_list_prepend (&args, strdup("/home")); // XXX drop the need for this
+  ctx_list_prepend (&args, strdup("/home")); // in ctx!
   ctx_list_prepend (&args, strdup("--ro-bind"));
 
   ctx_list_prepend (&args, strdup("/bin"));
   ctx_list_prepend (&args, strdup("/bin"));
   ctx_list_prepend (&args, strdup("--ro-bind"));
-  ctx_list_prepend (&args, strdup("/dev"));
-  ctx_list_prepend (&args, strdup("--dev"));
-  ctx_list_prepend (&args, strdup("/proc"));
-  ctx_list_prepend (&args, strdup("/proc"));
-  ctx_list_prepend (&args, strdup("--ro-bind"));
-  ctx_list_prepend (&args, strdup("/lib"));
-  ctx_list_prepend (&args, strdup("/lib"));
-  ctx_list_prepend (&args, strdup("--ro-bind"));
-  ctx_list_prepend (&args, strdup("/usr"));
-  ctx_list_prepend (&args, strdup("/usr"));
-  ctx_list_prepend (&args, strdup("--ro-bind"));
-  ctx_list_prepend (&args, strdup("/var"));
-  ctx_list_prepend (&args, strdup("/var"));
-  ctx_list_prepend (&args, strdup("--ro-bind"));
+
 #endif
 
   ctx_list_prepend (&args, strdup("256"));
@@ -3410,6 +3417,12 @@ char **dir_get_viewer_argv (const char *path, int no)
   ctx_list_prepend (&args, strdup("ctx"));
   ctx_list_prepend (&args, strdup("CTX_BACKEND"));
   ctx_list_prepend (&args, strdup("--setenv"));
+
+  ctx_list_prepend (&args, strdup("localhost"));
+  ctx_list_prepend (&args, strdup("--hostname"));
+
+  ctx_list_prepend (&args, strdup("--unshare-all"));
+
   ctx_list_prepend (&args, strdup("bwrap"));
 #endif
 

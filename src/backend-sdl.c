@@ -144,7 +144,7 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     {
       usleep (500);
       count ++;
-      if (count > 100)
+      if (count > 300)
       {
         tiled->shown_frame = tiled->render_frame;
         fprintf (stderr, "[drop]");
@@ -270,7 +270,7 @@ static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
    return name;
 }
 
-int ctx_sdl_consume_events (Ctx *ctx)
+void ctx_sdl_consume_events (Ctx *ctx)
 {
   CtxBackend *backend = (void*)ctx->backend;
   CtxTiled    *tiled = (void*)backend;
@@ -477,7 +477,6 @@ int ctx_sdl_consume_events (Ctx *ctx)
         break;
     }
   }
-  return 1;
 }
 #else
 void ctx_screenshot (Ctx *ctx, const char *path)
@@ -609,6 +608,8 @@ Ctx *ctx_new_sdl (int width, int height)
   backend->flush = (void*)ctx_sdl_flush;
   backend->reset = (void*)ctx_sdl_reset;
   backend->free  = (void*)ctx_sdl_free;
+  backend->consume_events = (void*)ctx_sdl_consume_events;
+
   backend->set_clipboard = (void*)ctx_sdl_set_clipboard;
   backend->get_clipboard = (void*)ctx_sdl_get_clipboard;
 

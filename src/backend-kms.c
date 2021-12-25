@@ -459,12 +459,11 @@ static void ctx_kms_show_frame (CtxKMS *fb, int block)
   }
 }
 
-int ctx_kms_consume_events (Ctx *ctx)
+void ctx_kms_consume_events (Ctx *ctx)
 {
   CtxKMS *fb = (void*)ctx->backend;
   ctx_kms_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
-  return 0;
 }
 
 inline static void ctx_kms_reset (CtxKMS *fb)
@@ -595,6 +594,7 @@ Ctx *ctx_new_kms (int width, int height)
   backend->flush = (void*)ctx_kms_flush;
   backend->reset = (void*)ctx_kms_reset;
   backend->free  = (void*)ctx_kms_free;
+  backend->consume_events = (void(*)(void *))ctx_kms_consume_events;
   backend->set_clipboard = (void*)ctx_fb_set_clipboard;
   backend->get_clipboard = (void*)ctx_fb_get_clipboard;
 

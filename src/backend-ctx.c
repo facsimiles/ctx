@@ -386,47 +386,7 @@ void ctx_ctx_free (CtxCtx *ctx)
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
-
-Ctx *ctx_new_ctx (int width, int height)
-{
-  float font_size = 12.0;
-  Ctx    *ctx    = ctx_new ();
-  CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
-  CtxBackend *backend = (CtxBackend*)ctxctx;
-  fprintf (stdout, "\e[?1049h");
-  fflush (stdout);
-  //fprintf (stderr, "\e[H");
-  //fprintf (stderr, "\e[2J");
-  ctx_native_events = 1;
-  if (width <= 0 || height <= 0)
-  {
-    ctxctx->cols = ctx_terminal_cols ();
-    ctxctx->rows = ctx_terminal_rows ();
-    width  = ctx->events.width  = ctx_terminal_width ();
-    height = ctx->events.height = ctx_terminal_height ();
-    font_size = height / ctxctx->rows;
-    ctx_font_size (ctx, font_size);
-  }
-  else
-  {
-    ctx->events.width  = width;
-    ctx->events.height = height;
-    ctxctx->cols   = width / 80;
-    ctxctx->rows   = height / 24;
-  }
-  backend->ctx = ctx;
-  if (!ctx_native_events)
-    _ctx_mouse (ctx, NC_MOUSE_DRAG);
-  backend->flush = (void(*)(void *))ctx_ctx_flush;
-  backend->free  = (void(*)(void *))ctx_ctx_free;
-  ctx_set_backend (ctx, ctxctx);
-  ctx_set_size (ctx, width, height);
-  return ctx;
-}
-
-void ctx_ctx_pcm (Ctx *ctx);
-
-int ctx_ctx_consume_events (Ctx *ctx)
+void ctx_ctx_consume_events (Ctx *ctx)
 {
   //int ix, iy;
   CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
@@ -515,8 +475,47 @@ int ctx_ctx_consume_events (Ctx *ctx)
       }
       }
     }
-
-  return 1;
 }
+
+Ctx *ctx_new_ctx (int width, int height)
+{
+  float font_size = 12.0;
+  Ctx    *ctx    = ctx_new ();
+  CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
+  CtxBackend *backend = (CtxBackend*)ctxctx;
+  fprintf (stdout, "\e[?1049h");
+  fflush (stdout);
+  //fprintf (stderr, "\e[H");
+  //fprintf (stderr, "\e[2J");
+  ctx_native_events = 1;
+  if (width <= 0 || height <= 0)
+  {
+    ctxctx->cols = ctx_terminal_cols ();
+    ctxctx->rows = ctx_terminal_rows ();
+    width  = ctx->events.width  = ctx_terminal_width ();
+    height = ctx->events.height = ctx_terminal_height ();
+    font_size = height / ctxctx->rows;
+    ctx_font_size (ctx, font_size);
+  }
+  else
+  {
+    ctx->events.width  = width;
+    ctx->events.height = height;
+    ctxctx->cols   = width / 80;
+    ctxctx->rows   = height / 24;
+  }
+  backend->ctx = ctx;
+  if (!ctx_native_events)
+    _ctx_mouse (ctx, NC_MOUSE_DRAG);
+  backend->flush = (void(*)(void *))ctx_ctx_flush;
+  backend->free  = (void(*)(void *))ctx_ctx_free;
+  backend->consume_events = (void(*)(void *))ctx_ctx_consume_events;
+  ctx_set_backend (ctx, ctxctx);
+  ctx_set_size (ctx, width, height);
+  return ctx;
+}
+
+void ctx_ctx_pcm (Ctx *ctx);
+
 
 #endif

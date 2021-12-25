@@ -2911,7 +2911,7 @@ static void ctx_wait_frame (Ctx *ctx, VT *vt)
   if (ctx_backend_is_tiled (ctx))
   {
     CtxTiled *tiled = (CtxTiled*)(ctx->backend);
-    int max_wait    = 300;
+    int max_wait    = 500;
     //int wait_frame  = tiled->frame;  // tiled->frame and tiled->render_frame are expected
                                        // to be equal, unless something else has timed out
     int wait_frame  = tiled->render_frame;

@@ -1605,10 +1605,11 @@ struct _CtxBackend
   void (*set_clipboard)    (void *ctxctx, const char *text);
   void (*set_windowtitle)  (void *ctxctx, const char *text);
 
-  char  (*get_event)      (void *backend, int timout_ms);
+  char *(*get_event)      (void *backend, int timout_ms);
+  int   (*has_event)      (void *backend, int timout_ms);
 
-  void        (*consume_events) (void *backend);
-  void        (*get_event_fds)  (void *backend);
+  void        (*consume_events) (void *ctx);
+  void        (*get_event_fds)  (void *ctx);
 
   void (*free)           (void *backend);
 };

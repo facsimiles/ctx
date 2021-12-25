@@ -236,12 +236,11 @@ static void ctx_headless_show_frame (CtxHeadless *fb, int block)
   }
 }
 
-int ctx_headless_consume_events (Ctx *ctx)
+void ctx_headless_consume_events (Ctx *ctx)
 {
   CtxHeadless *fb = (void*)ctx->backend;
   ctx_headless_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
-  return 0;
 }
 
 inline static void ctx_headless_reset (CtxHeadless *fb)
@@ -325,6 +324,7 @@ Ctx *ctx_new_headless (int width, int height)
   backend->free  = (void*)ctx_headless_free;
   backend->set_clipboard = (void*)ctx_fb_set_clipboard;
   backend->get_clipboard = (void*)ctx_fb_get_clipboard;
+  backend->consume_events = (void(*)(void *))ctx_headless_consume_events;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

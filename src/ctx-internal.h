@@ -613,7 +613,7 @@ typedef enum {
 
 struct _CtxRasterizer
 {
-  CtxBackend vfuncs;
+  CtxBackend backend;
   /* these should be initialized and used as the bounds for rendering into the
      buffer as well XXX: not yet in use, and when in use will only be
      correct for axis aligned clips - proper rasterization of a clipping path
@@ -624,7 +624,7 @@ struct _CtxRasterizer
 #define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, int count
   void (*comp_op)(CTX_COMPOSITE_ARGUMENTS);
   CtxFragment fragment;
-  Ctx       *ctx;
+  //Ctx       *ctx;
   CtxState  *state;
   void      *buf;
   int fast_aa;
@@ -737,17 +737,17 @@ extern int ctx_native_events;
 
 #if CTX_SDL
 extern int ctx_sdl_events;
-int ctx_sdl_consume_events (Ctx *ctx);
+void ctx_sdl_consume_events (Ctx *ctx);
 #endif
 
 #if CTX_FB
 extern int ctx_fb_events;
-int ctx_fb_consume_events (Ctx *ctx);
+void ctx_fb_consume_events (Ctx *ctx);
 #endif
 
 
-int ctx_nct_consume_events (Ctx *ctx);
-int ctx_ctx_consume_events (Ctx *ctx);
+void ctx_nct_consume_events (Ctx *ctx);
+void ctx_ctx_consume_events (Ctx *ctx);
 
 #endif
 
@@ -766,7 +766,7 @@ int ctx_terminal_cols   (void);
 int ctx_terminal_rows   (void);
 extern int ctx_frame_ack;
 
-int ctx_nct_consume_events (Ctx *ctx);
+void ctx_nct_consume_events (Ctx *ctx);
 
 typedef struct _CtxCtx CtxCtx;
 struct _CtxCtx

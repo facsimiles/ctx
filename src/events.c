@@ -1124,56 +1124,27 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 int ctx_native_events = 0;
 #if CTX_SDL
 int ctx_sdl_events = 0;
-int ctx_sdl_consume_events (Ctx *ctx);
 #endif
 
 #if CTX_HEADLESS
 int ctx_headless_events = 0;
-int ctx_headless_consume_events (Ctx *ctx);
 #endif
 
 #if CTX_FB
 int ctx_fb_events = 0;
-int ctx_fb_consume_events (Ctx *ctx);
 #endif
 
 #if CTX_KMS
 int ctx_kms_events = 0;
-int ctx_kms_consume_events (Ctx *ctx);
 #endif
 
-int ctx_nct_consume_events (Ctx *ctx);
 int ctx_nct_has_event (Ctx  *n, int delay_ms);
-int ctx_ctx_consume_events (Ctx *ctx);
-
-
 
 void ctx_consume_events (Ctx *ctx)
 {
-#if CTX_SDL
-  if (ctx_sdl_events)
-    ctx_sdl_consume_events (ctx);
-  else
-#endif
-#if CTX_HEADLESS
-  if (ctx_headless_events)
-    ctx_headless_consume_events (ctx);
-  else
-#endif
-#if CTX_FB
-  if (ctx_fb_events)
-    ctx_fb_consume_events (ctx);
-  else
-#endif
-#if CTX_KMS
-  if (ctx_kms_events)
-    ctx_kms_consume_events (ctx);
-  else
-#endif
-  if (ctx_native_events)
-    ctx_ctx_consume_events (ctx);
-  else
-    ctx_nct_consume_events (ctx);
+  CtxBackend *backend = ctx->backend;
+  if (backend && backend->consume_events)
+    backend->consume_events (ctx);
 }
 
 int ctx_has_event (Ctx *ctx, int timeout)
