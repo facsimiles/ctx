@@ -104,7 +104,6 @@ Ctx *ctx_new_termimg (int width, int height)
   }
   if (width > maxwidth) width = maxwidth;
   if (height > maxheight) height = maxheight;
-  backend->ctx = ctx;
   termimg->width  = width;
   termimg->height = height;
   termimg->lines = 0;
@@ -116,6 +115,9 @@ Ctx *ctx_new_termimg (int width, int height)
   ctx_set_backend (ctx, termimg);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, 14.0f);
+
+  backend->ctx = ctx;
+  backend->backend = "termimg";
   backend->process = ctx_termimg_render;
   backend->flush = (void(*)(void*))ctx_termimg_flush;
   backend->free  = (void(*)(void*))ctx_termimg_free;

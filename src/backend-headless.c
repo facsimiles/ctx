@@ -304,9 +304,20 @@ Ctx *ctx_new_headless (int width, int height)
   babl_init ();
 #endif
 
-  ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
+ // ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
+ //
+ // not to be done for headless, we want sRGB thumbs - at least not device specific
+ // perhaps rec2020 or similar?
 
   backend->ctx    = ctx_new ();
+  backend->backend = "headless";
+  backend->flush = (void*)ctx_headless_flush;
+  backend->reset = (void*)ctx_headless_reset;
+  backend->free  = (void*)ctx_headless_free;
+  backend->set_clipboard = (void*)ctx_fb_set_clipboard;
+  backend->get_clipboard = (void*)ctx_fb_get_clipboard;
+  backend->consume_events = (void(*)(void *))ctx_headless_consume_events;
+
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;
   tiled->height   = height;
@@ -318,12 +329,6 @@ Ctx *ctx_new_headless (int width, int height)
   ctx_set_size (backend->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  backend->flush = (void*)ctx_headless_flush;
-  backend->reset = (void*)ctx_headless_reset;
-  backend->free  = (void*)ctx_headless_free;
-  backend->set_clipboard = (void*)ctx_fb_set_clipboard;
-  backend->get_clipboard = (void*)ctx_fb_get_clipboard;
-  backend->consume_events = (void(*)(void *))ctx_headless_consume_events;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

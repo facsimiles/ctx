@@ -592,6 +592,7 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_EnableScreenSaver ();
 
   backend->ctx      = ctx_new ();
+  backend->backend = "sdl";
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;
   tiled->height   = height;

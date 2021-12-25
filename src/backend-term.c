@@ -942,6 +942,7 @@ Ctx *ctx_new_term (int width, int height)
   ctx_set_backend (ctx, term);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, ctx_term_ch); 
+  backend->backend = "term";
   backend->process = ctx_term_render;
   backend->flush   = (void(*)(void*))ctx_term_flush;
   backend->free    = (void(*)(void*))ctx_term_free;

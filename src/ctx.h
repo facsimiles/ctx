@@ -1595,9 +1595,8 @@ typedef struct _CtxBackend CtxBackend;
 void ctx_windowtitle (Ctx *ctx, const char *text);
 struct _CtxBackend
 {
-  Ctx  *ctx;
-  const char *backend;
-
+  Ctx                       *ctx;
+  const char                *backend;
   void  (*process)         (void *backend, CtxCommand *entry);
   void  (*reset)           (void *backend);
   void  (*flush)           (void *backend);
@@ -1610,10 +1609,10 @@ struct _CtxBackend
   int   (*has_event)       (void *backend, int timout_ms); /* if not implemented, consume_events will
                                                              be called  */
 
-  void        (*consume_events) (void *ctx);
-  void        (*get_event_fds)  (void *ctx, int *fd, int *count);
-
-  void (*free)           (void *backend);
+  void                     (*consume_events) (void *ctx);
+  void                     (*get_event_fds)  (Ctx *ctx, int *fd, int *count);
+  void (*free)             (void *backend); /* the free pointers are abused as the differentiatior
+                                               between different backends   */
 };
 
 CtxCommand *ctx_iterator_next (CtxIterator *iterator);

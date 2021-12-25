@@ -1274,27 +1274,6 @@ ctx_exit (Ctx *ctx)
 void
 ctx_flush (Ctx *ctx)
 {
-  /* XXX: should be fully moved into the backends
-   *      to permit different behavior and get rid
-   *      of the extranous flush() vfunc.
-   */
-//  CTX_PROCESS_VOID (CTX_FLUSH);
-#if 0
-  //printf (" \e[?2222h");
-  ctx_drawlist_compact (&ctx->drawlist);
-  for (int i = 0; i < ctx->drawlist.count - 1; i++)
-    {
-      CtxEntry *entry = &ctx->drawlist.entries[i];
-      fwrite (entry, 9, 1, stdout);
-#if 0
-      uint8_t  *buf = (void *) entry;
-      for (int j = 0; j < 9; j++)
-        { printf ("%c", buf[j]); }
-#endif
-    }
-  printf ("Xx.Xx.Xx.");
-  fflush (NULL);
-#endif
   if (ctx->backend && ctx->backend->flush)
     ctx->backend->flush (ctx->backend);
   ctx->frame++;
