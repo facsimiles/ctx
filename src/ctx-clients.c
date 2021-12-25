@@ -160,18 +160,15 @@ CtxClient *vt_get_client (VT *vt)
   return NULL;
 }
 
-CtxClient *ctx_client_new (Ctx *ctx,
-                           const char *commandline,
-                           int x, int y, int width, int height,
-                           float font_size,
-                           CtxClientFlags flags,
-                           void *user_data,
-                           CtxClientFinalize finalize)
+static void ctx_client_init (Ctx *ctx, CtxClient *client, int x, int y, int width, int height, float font_size,
+                             CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {
   static int global_id = 0;
   if (font_size <= 0.0) font_size = ctx_get_font_size (ctx);
-  CtxClient *client = calloc (sizeof (CtxClient), 1);
-  ctx_list_append (&clients, client);
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM)
+  {
+    font_size = 3;
+  }
   client->id = global_id++;
   client->x = x;
   client->y = y;
@@ -183,42 +180,40 @@ CtxClient *ctx_client_new (Ctx *ctx,
   client->finalize = finalize;
   client->opacity = 1.0f;
 
-  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM)
-  {
-    font_size = 3;
-  }
-
       //fprintf (stderr, "client new:%f\n", font_size);
 #if CTX_THREADS
   mtx_init (&client->mtx, mtx_plain);
 #endif
+}
+
+CtxClient *ctx_client_new (Ctx *ctx,
+                           const char *commandline,
+                           int x, int y, int width, int height,
+                           float font_size,
+                           CtxClientFlags flags,
+                           void *user_data,
+                           CtxClientFinalize finalize)
+{
+  CtxClient *client = calloc (sizeof (CtxClient), 1);
+  ctx_list_append (&clients, client);
+  ctx_client_init (ctx, client, x, y, width, height, font_size, flags, user_data, finalize);
   float line_spacing = 2.0f;
   client->vt = vt_new (commandline, width, height, font_size,line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
   vt_set_ctx (client->vt, ctx);
   return client;
 }
 
-CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
+CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {
-  CtxString *string = ctx_string_new ("");
-  for (int i = 0; argv[i]; i++)
-  {
-    char space = ' ';
-    if (i > 0)
-      ctx_string_append_data (string, &space, 1);
-    for (int c = 0; argv[i][c]; c++)
-    {
-       switch (argv[i][c])
-       {
-         case '"':ctx_string_append_str (string, "\\\"");break;
-         case '\'':ctx_string_append_str (string, "\\\'");break;
-         default:ctx_string_append_data (string, &argv[i][c], 1);break;
-       }
-    }
-  }
-  CtxClient *ret = ctx_client_new (ctx, string->str, x, y, width, height, font_size, flags, user_data, finalize);
-  ctx_string_free (string, 1);
-  return ret;
+
+  CtxClient *client = calloc (sizeof (CtxClient), 1);
+  ctx_client_init (ctx, client, x, y, width, height, font_size, flags, user_data, finalize);
+  ctx_list_append (&clients, client);
+
+  float line_spacing = 2.0f;
+  client->vt = vt_new_argv (argv, width, height, font_size,line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
+  vt_set_ctx (client->vt, ctx);
+  return client;
 }
 
 extern float ctx_shape_cache_rate;

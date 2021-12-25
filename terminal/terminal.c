@@ -124,7 +124,7 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
   return active->id;
 }
 
-int add_tab_argv (Ctx  *ctx, const char **argv, int can_launch)
+int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = 0;
@@ -704,7 +704,7 @@ int terminal_main (int argc, char **argv)
 
   if (commandline_argv_start)
   {
-    ctx_client_maximize (add_tab_argv (ctx, (const char **)&argv[commandline_argv_start], 1));
+    ctx_client_maximize (add_tab_argv (ctx, &argv[commandline_argv_start], 1));
   }
   else
   {

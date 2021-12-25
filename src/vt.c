@@ -29,13 +29,11 @@
  *
  */
 
-#if !__COSMOPOLITAN__
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
 #include <assert.h>
-
 #include <string.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -49,7 +47,6 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <zlib.h>
-#endif
 
 #include "ctx.h"
 
@@ -611,9 +608,8 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
   _vt_compute_cw_ch (vt);
 }
 
-VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch)
+static void vt_init (VT *vt, int width, int height, float font_size, float line_spacing, int id, int can_launch)
 {
-  VT *vt                 = calloc (sizeof (VT), 1);
   vt->id                 = id;
   vt->lastx              = -1;
   vt->lasty              = -1;
@@ -643,27 +639,225 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
   vt->line_spacing       = 1.0;
   vt->scale_x            = 1.0;
   vt->scale_y            = 1.0;
-  vt_set_font_size (vt, font_size);
-  vt_set_line_spacing (vt, line_spacing);
-  if (command)
-    {
-      vt_run_command (vt, command, NULL);
-    }
-  if (width <= 0) width = 640;
-  if (height <= 0) width = 480;
-  vt_set_px_size (vt, width, height);
-
   vt->fg_color[0] = 216;
   vt->fg_color[1] = 216;
   vt->fg_color[2] = 216;
   vt->bg_color[0] = 0;
   vt->bg_color[1] = 0;
   vt->bg_color[2] = 0;
+}
+
+static pid_t
+vt_forkpty (int  *amaster,
+            char *aname,
+            const struct termios *termp,
+            const struct winsize *winsize)
+{
+  pid_t pid;
+  int master = posix_openpt (O_RDWR|O_NOCTTY);
+  int slave;
+
+  if (master < 0)
+    return -1;
+  if (grantpt (master) != 0)
+    return -1;
+  if (unlockpt (master) != 0)
+    return -1;
+#if 0
+  char name[1024];
+  if (ptsname_r (master, name, sizeof(name)-1))
+    return -1;
+#else
+  char *name = NULL;
+  if ((name = ptsname (master)) == NULL)
+    return -1;
+#endif
+
+  slave = open(name, O_RDWR|O_NOCTTY);
+
+  if (termp)   tcsetattr(slave, TCSAFLUSH, termp);
+  if (winsize) ioctl(slave, TIOCSWINSZ, winsize);
+
+  pid = fork();
+  if (pid < 0)
+  {
+    return pid;
+  } else if (pid == 0)
+  {
+    close (master);
+    setsid ();
+    dup2 (slave, STDIN_FILENO);
+    dup2 (slave, STDOUT_FILENO);
+    dup2 (slave, STDERR_FILENO);
+
+    close (slave);
+    return 0;
+  }
+  ioctl (slave, TIOCSCTTY, NULL);
+  close (slave);
+  *amaster = master;
+  return pid;
+}
+
+static void
+ctx_child_prepare_env (int was_pidone, const char *term)
+{
+  if (was_pidone)
+  {
+    if (setuid(1000)) fprintf (stderr, "setuid failed\n");
+  }
+  else
+  {
+    for (int i = 3; i<768; i++) { close (i); } /*hack, trying to close xcb */
+  }
+  unsetenv ("TERM");
+  unsetenv ("COLUMNS");
+  unsetenv ("LINES");
+  unsetenv ("TERMCAP");
+  unsetenv ("COLOR_TERM");
+  unsetenv ("COLORTERM");
+  unsetenv ("VTE_VERSION");
+  unsetenv ("CTX_BACKEND");
+  //setenv ("TERM", "ansi", 1);
+  //setenv ("TERM", "vt102", 1);
+  //setenv ("TERM", "vt100", 1);
+  // setenv ("TERM", term?term:"xterm", 1);
+  setenv ("TERM", term?term:"xterm-256color", 1);
+  setenv ("COLORTERM", "truecolor", 1);
+  //setenv ("CTX_VERSION", "0", 1);
+  setenv ("CTX_BACKEND", "ctx", 1); // speeds up launching of clients
+}
+
+void _ctx_add_listen_fd (int fd);
+void _ctx_remove_listen_fd (int fd);
+
+static void vt_run_argv (VT *vt, char **argv, const char *term)
+{
+  struct winsize ws;
+  //signal (SIGCHLD,signal_child);
+#if 0
+  int was_pidone = (getpid () == 1);
+#else
+  int was_pidone = 0; // do no special treatment, all child processes belong
+                      // to root
+#endif
+  signal (SIGINT,SIG_DFL);
+  ws.ws_row = vt->rows;
+  ws.ws_col = vt->cols;
+  ws.ws_xpixel = ws.ws_col * vt->cw;
+  ws.ws_ypixel = ws.ws_row * vt->ch;
+  vt->vtpty.pid = vt_forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
+  if (vt->vtpty.pid == 0)
+    {
+      ctx_child_prepare_env (was_pidone, term);
+
+      execvp (argv[0], (char**)argv);
+      exit (0);
+    }
+  else if (vt->vtpty.pid < 0)
+    {
+      VT_error ("forkpty failed (%s)", argv[0]);
+      return;
+    }
+  fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
+  _ctx_add_listen_fd (vt->vtpty.pty);
+}
+
+VT *vt_new_argv (char **argv, int width, int height, float font_size, float line_spacing, int id, int can_launch)
+{
+  VT *vt                 = calloc (sizeof (VT), 1);
+  vt_init (vt, width, height, font_size, line_spacing, id, can_launch);
+  vt_set_font_size (vt, font_size);
+  vt_set_line_spacing (vt, line_spacing);
+  if (argv)
+    {
+      vt_run_argv (vt, argv, NULL);
+    }
+  if (width <= 0) width = 640;
+  if (height <= 0) width = 480;
+  vt_set_px_size (vt, width, height);
+
   vtcmd_reset_to_initial_state (vt, NULL);
   //vt->ctx = ctx_new ();
   ctx_list_prepend (&vts, vt);
   return vt;
 }
+
+static char *string_chop_head (char *orig) /* return pointer to reset after arg */
+{
+  int j=0;
+  int eat=0; /* number of chars to eat at start */
+
+  if(orig)
+    {
+      int got_more;
+      char *o = orig;
+      while(o[j] == ' ')
+        {j++;eat++;}
+
+      if (o[j]=='"')
+        {
+          eat++;j++;
+          while(o[j] != '"' &&
+                o[j] != 0)
+            j++;
+          o[j]='\0';
+          j++;
+        }
+      else if (o[j]=='\'')
+        {
+          eat++;j++;
+          while(o[j] != '\'' &&
+                o[j] != 0)
+            j++;
+          o[j]='\0';
+          j++;
+        }
+      else
+        {
+          while(o[j] != ' ' &&
+                o[j] != 0 &&
+                o[j] != ';')
+            j++;
+        }
+      if (o[j] == 0 ||
+          o[j] == ';')
+        got_more = 0;
+      else
+        got_more = 1;
+      o[j]=0; /* XXX: this is where foo;bar won't work but foo ;bar works*/
+
+      if(eat)
+       {
+         int k;
+         for (k=0; k<j-eat; k++)
+           orig[k] = orig[k+eat];
+       }
+      if (got_more)
+        return &orig[j+1];
+    }
+  return NULL;
+}
+
+
+VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch)
+{
+  char *cargv[32];
+  int   cargc;
+  char *rest, *copy;
+  copy = calloc (strlen (command)+2, 1);
+  strcpy (copy, command);
+  rest = copy;
+  cargc = 0;
+  while (rest && cargc < 30 && rest[0] != ';')
+  {
+    cargv[cargc++] = rest;
+    rest = string_chop_head (rest);
+  }
+  cargv[cargc] = NULL;
+  return vt_new_argv ((char**)cargv, width, height, font_size, line_spacing, id, can_launch);
+}
+
 
 int vt_cw (VT *vt)
 {
@@ -5371,116 +5565,8 @@ const char *vt_find_shell_command (void)
   return command;
 }
 
-static char *string_chop_head (char *orig) /* return pointer to reset after arg */
-{
-  int j=0;
-  int eat=0; /* number of chars to eat at start */
 
-  if(orig)
-    {
-      int got_more;
-      char *o = orig;
-      while(o[j] == ' ')
-        {j++;eat++;}
 
-      if (o[j]=='"')
-        {
-          eat++;j++;
-          while(o[j] != '"' &&
-                o[j] != 0)
-            j++;
-          o[j]='\0';
-          j++;
-        }
-      else if (o[j]=='\'')
-        {
-          eat++;j++;
-          while(o[j] != '\'' &&
-                o[j] != 0)
-            j++;
-          o[j]='\0';
-          j++;
-        }
-      else
-        {
-          while(o[j] != ' ' &&
-                o[j] != 0 &&
-                o[j] != ';')
-            j++;
-        }
-      if (o[j] == 0 ||
-          o[j] == ';')
-        got_more = 0;
-      else
-        got_more = 1;
-      o[j]=0; /* XXX: this is where foo;bar won't work but foo ;bar works*/
-
-      if(eat)
-       {
-         int k;
-         for (k=0; k<j-eat; k++)
-           orig[k] = orig[k+eat];
-       }
-      if (got_more)
-        return &orig[j+1];
-    }
-  return NULL;
-}
-
-void _ctx_add_listen_fd (int fd);
-void _ctx_remove_listen_fd (int fd);
-
-static pid_t
-vt_forkpty (int  *amaster,
-            char *aname,
-            const struct termios *termp,
-            const struct winsize *winsize)
-{
-  pid_t pid;
-  int master = posix_openpt (O_RDWR|O_NOCTTY);
-  int slave;
-
-  if (master < 0)
-    return -1;
-  if (grantpt (master) != 0)
-    return -1;
-  if (unlockpt (master) != 0)
-    return -1;
-#if 0
-  char name[1024];
-  if (ptsname_r (master, name, sizeof(name)-1))
-    return -1;
-#else
-  char *name = NULL;
-  if ((name = ptsname (master)) == NULL)
-    return -1;
-#endif
-
-  slave = open(name, O_RDWR|O_NOCTTY);
-
-  if (termp)   tcsetattr(slave, TCSAFLUSH, termp);
-  if (winsize) ioctl(slave, TIOCSWINSZ, winsize);
-
-  pid = fork();
-  if (pid < 0)
-  {
-    return pid;
-  } else if (pid == 0)
-  {
-    close (master);
-    setsid ();
-    dup2 (slave, STDIN_FILENO);
-    dup2 (slave, STDOUT_FILENO);
-    dup2 (slave, STDERR_FILENO);
-
-    close (slave);
-    return 0;
-  }
-  ioctl (slave, TIOCSCTTY, NULL);
-  close (slave);
-  *amaster = master;
-  return pid;
-}
 
 static void vt_run_command (VT *vt, const char *command, const char *term)
 {
@@ -5500,48 +5586,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
   vt->vtpty.pid = vt_forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
   if (vt->vtpty.pid == 0)
     {
-      int i;
-      if (was_pidone)
-      {
-        if (setuid(1000)) fprintf (stderr, "setuid failed\n");
-      }
-      else
-      {
-        for (i = 3; i<768; i++) { close (i); } /*hack, trying to close xcb */
-      }
-      unsetenv ("TERM");
-      unsetenv ("COLUMNS");
-      unsetenv ("LINES");
-      unsetenv ("TERMCAP");
-      unsetenv ("COLOR_TERM");
-      unsetenv ("COLORTERM");
-      unsetenv ("VTE_VERSION");
-      unsetenv ("CTX_BACKEND");
-      //setenv ("TERM", "ansi", 1);
-      //setenv ("TERM", "vt102", 1);
-      //setenv ("TERM", "vt100", 1);
-      // setenv ("TERM", term?term:"xterm", 1);
-      setenv ("TERM", term?term:"xterm-256color", 1);
-      setenv ("COLORTERM", "truecolor", 1);
-      //setenv ("CTX_VERSION", "0", 1);
-      setenv ("CTX_BACKEND", "ctx", 1); // speeds up launching of clients
-
-      {
-        char *cargv[32];
-        int   cargc;
-        char *rest, *copy;
-        copy = calloc (strlen (command)+2, 1);
-        strcpy (copy, command);
-        rest = copy;
-        cargc = 0;
-        while (rest && cargc < 30 && rest[0] != ';')
-        {
-          cargv[cargc++] = rest;
-          rest = string_chop_head (rest);
-        }
-        cargv[cargc] = NULL;
-        execvp (cargv[0], cargv);
-      }
+      ctx_child_prepare_env (was_pidone, term);
       exit (0);
     }
   else if (vt->vtpty.pid < 0)
@@ -5552,6 +5597,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
   fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
   _ctx_add_listen_fd (vt->vtpty.pty);
 }
+
 
 void vt_destroy (VT *vt)
 {

@@ -245,6 +245,7 @@ struct _VT
 
 
 VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch);
+VT *vt_new_argv (char **argv, int width, int height, float font_size, float line_spacing, int id, int can_launch);
 
 void vt_open_log (VT *vt, const char *path);
 

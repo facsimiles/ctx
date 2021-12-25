@@ -77,7 +77,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
                            CtxClientFlags flags,
                            void *user_data,
                            CtxClientFinalize client_finalize);
-CtxClient *ctx_client_new_argv (Ctx *ctx, const char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data,
+CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data,
                 CtxClientFinalize client_finalize);
 int ctx_clients_need_redraw (Ctx *ctx);
 
