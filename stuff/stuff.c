@@ -3282,143 +3282,109 @@ static void escape_path (const char *path, char *escaped_path)
     escaped_path[j]=0;
 }
 
-
-char *dir_get_viewer_command (const char *path, int no)
-{
-  const char *media_type = ctx_path_get_media_type (path);
-  CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
-  char *escaped_path = malloc (strlen (path) * 2 + 20);
-  escape_path (path, escaped_path);
-  float in = metadata_get_float (collection, no, "in", 0.0f);
-  //float out = metadata_get_float (collection, no, "out", 0.0f);
-  char *command = malloc (64 + strlen (escaped_path)  + 64);
-  command[0]=0;
-  if (!strcmp (media_type, "inode/directory"))
-  {
-       //fprintf (stderr, "is dir\n");
-       free (command);
-       free (escaped_path);
-       return NULL;
-       //sprintf (command, "du -h '%s'", path);
-  }
-
-    if (!command[0])
-    if (path_is_executable (path) && !strcmp (get_suffix(path), "ctx"))
-    {
-      sprintf (command, "%s", path);
-    }
-
-    char *basname = get_basename (path);
-
-    if (!command[0])
-    if (media_type_class == CTX_MEDIA_TYPE_TEXT)
-    {
-      sprintf (command, "ctx \"%s\"", escaped_path);
-    }
-    free (basname);
-   
-    if (!command[0])
-    {
-    if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
-    {
-      sprintf (command, "ctx \"%s\"", escaped_path);
-    }
-    else if (!strcmp (media_type, "video/mpeg"))
-    {
-      sprintf (command, "ctx \"%s\" --paused --seek-to %f", escaped_path, in);
-      //fprintf (stderr, "[%s] out:%f duration:%f\n", command, out, out-in);
-    }
-    else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
-    {
-      sprintf (command, "ctx-audioplayer \"%s\"", escaped_path);
-    }
-    }
-
-    if (!command[0])
-    {
-      sprintf (command, "sh -c 'xxd \"%s\" | vim -OR -'", escaped_path);
-    }
-
-    if (!command[0])
-    {
-      free (command);
-      return NULL;
-    }
-    return command;
-}
-
 static char **ctx_str_list_to_pasv (CtxList **list)
 {
   int count = ctx_list_length (*list);
   int size = 0;
+
+  char **ret;
+  char  *str;
+
+  for (CtxList *l = *list; l; l=l->next)
+  {
+    char *data = l->data;
+    size +=  sizeof(char*);
+    size +=  strlen (data);
+    size +=  1;
+  }
+  size += sizeof (void*); // NULL
+
+  int no = 0;
+  ret = calloc (1, size);
+
+  str = ((char*)ret)+(count + 1) * sizeof (void*);
+
+  while (*list)
+  {
+    char *data = (*list)->data;
+    ret[no] = str;
+    strcpy (ret[no++], data);
+    str += strlen (data) + 1;
+    ctx_list_remove (list, data);
+    free (data);
+  }
+  return ret;
 }
 
 char **dir_get_viewer_argv (const char *path, int no)
 {
-  CtxList *args;
+  CtxList *args = NULL;
   const char *media_type = ctx_path_get_media_type (path);
   CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
   char *escaped_path = malloc (strlen (path) * 2 + 20);
   escape_path (path, escaped_path);
   float in = metadata_get_float (collection, no, "in", 0.0f);
   //float out = metadata_get_float (collection, no, "out", 0.0f);
-  char *command = malloc (64 + strlen (escaped_path)  + 64);
-  command[0]=0;
   if (!strcmp (media_type, "inode/directory"))
   {
-       //fprintf (stderr, "is dir\n");
-       free (command);
-       free (escaped_path);
-       return NULL;
-       //sprintf (command, "du -h '%s'", path);
+    //fprintf (stderr, "is dir\n");
+    return NULL;
   }
 
-    if (!command[0])
-    if (path_is_executable (path) && !strcmp (get_suffix(path), "ctx"))
-    {
-      sprintf (command, "%s", path);
-    }
+  if (!args)
+  if (path_is_executable (path) && !strcmp (get_suffix(path), "ctx"))
+  {
+    ctx_list_append (&args, strdup (path));
+  }
 
-    char *basname = get_basename (path);
+  char *basname = get_basename (path);
 
-    if (!command[0])
-    if (media_type_class == CTX_MEDIA_TYPE_TEXT)
-    {
-      sprintf (command, "ctx \"%s\"", escaped_path);
-    }
-    free (basname);
-   
-    if (!command[0])
-    {
-    if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
-    {
-      sprintf (command, "ctx \"%s\"", escaped_path);
-    }
-    else if (!strcmp (media_type, "video/mpeg"))
-    {
-      sprintf (command, "ctx \"%s\" --paused --seek-to %f", escaped_path, in);
-      //fprintf (stderr, "[%s] out:%f duration:%f\n", command, out, out-in);
-    }
-    else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
-    {
-      sprintf (command, "ctx-audioplayer \"%s\"", escaped_path);
-    }
-    }
+  if (!args)
+  if (media_type_class == CTX_MEDIA_TYPE_TEXT)
+  {
+    ctx_list_append (&args, strdup ("ctx"));
+    ctx_list_append (&args, strdup (path));
+  }
+  free (basname);
+  
+  if (!args)
+  {
+  if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
+  {
+    ctx_list_append (&args, strdup ("ctx"));
+    ctx_list_append (&args, strdup (path));
+  }
+  else if (!strcmp (media_type, "video/mpeg"))
+  {
+    ctx_list_append (&args, strdup ("ctx"));
+    ctx_list_append (&args, strdup (path));
+    ctx_list_append (&args, strdup ("--paused"));
+    ctx_list_append (&args, ctx_strdup_printf ("%.2f", in));
+  }
+  else if (media_type_class == CTX_MEDIA_TYPE_AUDIO)
+  {
+    ctx_list_append (&args, strdup ("ctx-audioplayer"));
+    ctx_list_append (&args, strdup (path));
+  }
+  }
 
-    if (!command[0])
-    {
-      sprintf (command, "sh -c 'xxd \"%s\" | vim -OR -'", escaped_path);
-    }
+#if 0
+  ctx_list_prepend (&args, strdup("--unshare-all"));
+  ctx_list_prepend (&args, strdup("/"));
+  ctx_list_prepend (&args, strdup("/"));
+  ctx_list_prepend (&args, strdup("--ro-bind"));
+  ctx_list_prepend (&args, strdup("--256"));
+  ctx_list_prepend (&args, strdup("--gid"));
+  ctx_list_prepend (&args, strdup("--512"));
+  ctx_list_prepend (&args, strdup("--pid"));
+  ctx_list_prepend (&args, strdup("bwrap"));
+#endif
 
-    if (!command[0])
-    {
-      free (command);
-      return NULL;
-    }
-    return command;
+
+  if (!args)
+    return NULL;
+  return ctx_str_list_to_pasv (&args);
 }
-
-
 
 static void dir_layout (ITK *itk, Collection *collection)
 {
@@ -4194,10 +4160,10 @@ static void dir_layout (ITK *itk, Collection *collection)
               }
 #endif
 
-              char *command = dir_get_viewer_command (newpath, i);
+              char **command = dir_get_viewer_argv (newpath, i);
               if (command)
               {
-                client = ctx_client_new (ctx, command,
+                client = ctx_client_new_argv (ctx, command,
                   itk->x, itk->y, width, height,
                   itk->font_size * live_font_factor,
                   ITK_CLIENT_PRELOAD,
@@ -4548,12 +4514,12 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   }
   else
   {
-    char *command = dir_get_viewer_command (pathA, focused_no+1);
+    char **command = dir_get_viewer_argv (pathA, focused_no+1);
     if (command)
     {
      //fprintf (stderr, "preloading %s\n", client_a);
      //fprintf (stderr, "%s\n", command);
-     client= ctx_client_new (ctx, command,
+     client= ctx_client_new_argv (ctx, command,
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size,
@@ -4620,7 +4586,7 @@ void viewer_load_path (const char *path, const char *name)
     // not entirely precise?
     viewer_media_type = ctx_path_get_media_type (path);
 
-    char *command = dir_get_viewer_command (path, no);
+    char **command = dir_get_viewer_argv (path, no);
 
     if (command)
     {
@@ -4647,7 +4613,7 @@ void viewer_load_path (const char *path, const char *name)
         viewer_was_live = 0;
         //fprintf (stderr, "loading %s\n", client_name);
         //fprintf (stderr, "%s\n", command);
-        viewer = ctx_client_new (ctx, command,
+        viewer = ctx_client_new_argv (ctx, command,
           0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_name), user_data_free);
         if (viewer_media_type[0] == 'v')
         ctx_add_timeout (ctx, 1000 * 0.2, viewer_space, NULL);
@@ -5808,10 +5774,10 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
    collection_set_path (collection, dir, dir);
-   char *command = dir_get_viewer_command (src_path, metadata_item_to_no (collection, base));
+   char **command = dir_get_viewer_argv (src_path, metadata_item_to_no (collection, base));
    float font_size = 14.0;
    float live_font_factor = 1.0;
-   CtxClient *client = ctx_client_new (ctx, command,
+   CtxClient *client = ctx_client_new_argv (ctx, command,
                   0, 0, width, height,
                   font_size * live_font_factor,
                   ITK_CLIENT_PRELOAD,
