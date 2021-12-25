@@ -77,12 +77,12 @@ static void ctx_tiled_flush (Ctx *ctx)
     }
     else
     {
-    for (int row = 0; row < CTX_HASH_ROWS; row++)
-      for (int col = 0; col < CTX_HASH_COLS; col++)
-        {
-          tiled->tile_affinity[row * CTX_HASH_COLS + col] = 1;
-          dirty_tiles++;
-        }
+      for (int row = 0; row < CTX_HASH_ROWS; row++)
+        for (int col = 0; col < CTX_HASH_COLS; col++)
+          {
+            tiled->tile_affinity[row * CTX_HASH_COLS + col] = 1;
+            dirty_tiles++;
+          }
     }
     int dirty_no = 0;
     if (dirty_tiles)
@@ -136,8 +136,6 @@ static void ctx_tiled_flush (Ctx *ctx)
             ctx_render_ctx (tiled->ctx_copy, host);
           }
 #endif
-
-
     cnd_broadcast (&tiled->cond);
   }
   else

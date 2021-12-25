@@ -4,6 +4,6 @@
 # this folder
 
 all:
-	make -C .. 
+	make -C .. ctx.h && make -C .. -j10
 test: all
 	./demo

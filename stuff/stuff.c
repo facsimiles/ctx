@@ -85,7 +85,7 @@ int text_editor = 0; /* global variable that changes how some loading/saving
                         instance but our own process
                       */
 
-
+static int vim_keys = 1;
 int show_keybindings = 0;
 int focused_no = -1;
 int layout_page_no = 0;
@@ -1003,12 +1003,14 @@ int cmd_edit_text_end (COMMAND_ARGS) /* "edit-text-end", 0, "", "edit end of lin
 int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
 {
   int no = focused_no;
-  int virtual = (item_get_type_atom (collection, no) == CTX_ATOM_TEXT);
 
-  if (virtual)
+  if (item_get_type_atom (collection, no) == CTX_ATOM_TEXT)
   {
-    argvs_eval ("edit-text-end");
-
+    if (item_get_type_atom (collection, no+1) == CTX_ATOM_ENDGROUP||
+        no >= metadata_count (collection)-1)
+      argvs_eval ("edit-text-end");
+    else
+      argvs_eval ("edit-text-home");
     return 0;
   }
 
@@ -3407,7 +3409,6 @@ char **dir_get_viewer_argv (const char *path, int no)
   ctx_list_prepend (&args, strdup("/bin"));
   ctx_list_prepend (&args, strdup("/bin"));
   ctx_list_prepend (&args, strdup("--ro-bind"));
-
 #endif
 
   ctx_list_prepend (&args, strdup("256"));
@@ -3841,7 +3842,6 @@ static void dir_layout (ITK *itk, Collection *collection)
           height = height - itk->y; // + em;// * 0.5;
           row_max_height = height;
         }
-        //fprintf (stderr, "%f\n", height);
       }
 
       CtxControl *c = NULL;
@@ -3849,9 +3849,9 @@ static void dir_layout (ITK *itk, Collection *collection)
       {
         ctx_begin_path (itk->ctx);
         c = itk_add_control (itk, UI_LABEL, "foo",
-        itk->x - em * padding_left, itk->y - em * padding_top,
-        width + em * (padding_left+padding_right),
-        height + em * (padding_top+padding_bottom));
+        itk->x - em * padding_left/2, itk->y - em * padding_top/2,
+        width + em * (padding_left/2+padding_right/2),
+        height + em * (padding_top/2+padding_bottom/2));
         if (focused_no == i)
            focused_control = c;
       }
@@ -3956,7 +3956,7 @@ static void dir_layout (ITK *itk, Collection *collection)
                else
               {
                 if (text_editor)
-                  BIND_KEY ("return", "edit-text-end", "edit at end");
+                  BIND_KEY ("return", "edit-text-home", "edit paragraph");
                 else
                   BIND_KEY ("return", "activate", "activate/edit");
               }
@@ -3967,11 +3967,11 @@ static void dir_layout (ITK *itk, Collection *collection)
               const char *label = "cycle bullet";
               switch (bullet)
               {
-                case CTX_BULLET_NONE:   label = "make bullet"; break;
-                case CTX_BULLET_BULLET: label = "make numbered"; break;
+                case CTX_BULLET_NONE:    label = "make bullet"; break;
+                case CTX_BULLET_BULLET:  label = "make numbered"; break;
                 case CTX_BULLET_NUMBERS: label = "make todo"; break;
-                case CTX_BULLET_TODO:   label = "mark done"; break;
-                case CTX_BULLET_DONE:   label = "no bullet"; break;
+                case CTX_BULLET_TODO:    label = "mark done"; break;
+                case CTX_BULLET_DONE:    label = "no bullet"; break;
               }
               BIND_KEY ("control-t", "cycle-bullet", label);
             }
@@ -3995,13 +3995,12 @@ static void dir_layout (ITK *itk, Collection *collection)
               BIND_KEY ("control-h", "cycle-heading", label);
             }
 
-
-              if (text_editor)
+              if (text_editor || vim_keys)
               {
                 BIND_KEY ("i", "edit-text-home", "insert text");
                 BIND_KEY ("A", "edit-text-end", "insert text");
               }
-              BIND_KEY ("insert", "insert-text", "insert text");
+              BIND_KEY ("insert", "insert-text", "insert text item");
             }
           }
 
@@ -4953,6 +4952,7 @@ static int delayed_dirt (Ctx *ctx, void *data)
 
 static int activate_from_start = 0;
 
+
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
@@ -5114,7 +5114,11 @@ static int card_files (ITK *itk_, void *data)
             if (layout_focused_link >= 0)
               BIND_KEY ("up", "focus-previous-link", "focus previous link");
             else
+            {
               BIND_KEY ("up", "focus-previous", "focus previous");
+              if (vim_keys)
+              BIND_KEY ("k", "focus-previous", "focus previous");
+            }
 
             //fprintf (stderr, "%i \n", dir_item_count_links (focused_no));
 
@@ -5122,7 +5126,11 @@ static int card_files (ITK *itk_, void *data)
                 layout_focused_link < dir_item_count_links (focused_no)-1)
               BIND_KEY ("down", "focus-next-link", "focus next link");
             else
+            {
               BIND_KEY ("down", "focus-next", "focus next");
+            }
+            if (vim_keys)
+              BIND_KEY ("j", "focus-next", "focus next");
 
             if (!text_editor)
             {
@@ -5137,6 +5145,23 @@ static int card_files (ITK *itk_, void *data)
                  BIND_KEY ("right", "enter-children", "enter children");
                  // enter-children creates child if it doesnt exist
             }
+
+            if (vim_keys)
+            {
+              BIND_KEY ("h", "fold", "fold");
+              if (layout_focused_link >= 0)
+                 BIND_KEY ("l", "follow-link", "follow link");
+              else
+              {
+                 if (collection_has_children (collection, focused_no))
+                   BIND_KEY ("l", "expand", "expand");
+                 else
+                   BIND_KEY ("l", "enter-children", "enter children");
+                 // enter-children creates child if it doesnt exist
+              }
+            }
+
+
             }
           }
   }
@@ -5816,13 +5841,13 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    //int height = 256;
    int width = 512;
    int height = 512;
+   float font_size = height * 0.1;
+   float live_font_factor = 1.0;
    Ctx *ctx = ctx_new_ui (width, height, "headless");
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
    collection_set_path (collection, dir, dir);
    char **command = dir_get_viewer_argv (src_path, metadata_item_to_no (collection, base));
-   float font_size = 14.0;
-   float live_font_factor = 1.0;
    CtxClient *client = ctx_client_new_argv (ctx, command,
                   0, 0, width, height,
                   font_size * live_font_factor,
