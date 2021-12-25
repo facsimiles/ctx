@@ -1452,6 +1452,9 @@ dir_next (Collection *collection, int i)
  int pos = i;
  int again = 0;
 
+ if (i+1>=collection->count)
+   return -1;
+
  do {
    pos += 1;
    int atom = item_get_type_atom (collection, pos);
