@@ -437,11 +437,6 @@ inline static void ctx_kms_reset (Ctx *ctx)
   ctx_kms_show_frame ((CtxKMS*)ctx->backend, 1);
 }
 
-inline static void ctx_kms_flush (Ctx *ctx)
-{
-  ctx_tiled_flush ((CtxTiled*)ctx->backend);
-}
-
 void ctx_kms_free (CtxKMS *fb)
 {
   if (fb->is_kms)
@@ -558,7 +553,7 @@ Ctx *ctx_new_kms (int width, int height)
   ctx_set_size (backend->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  backend->flush = ctx_kms_flush;
+  backend->flush = ctx_tiled_flush;
   backend->reset = ctx_kms_reset;
   backend->free  = (void*)ctx_kms_free;
   backend->consume_events = ctx_kms_consume_events;
@@ -624,7 +619,6 @@ Ctx *ctx_new_kms (int width, int height)
   ioctl(0, KDSETMODE, KD_GRAPHICS);
 #endif
   tiled->shown_frame = tiled->render_frame;
-  //ctx_flush (tiled->ctx);
 #if 0
   signal (SIGUSR1, vt_switch_cb);
   signal (SIGUSR2, vt_switch_cb);

@@ -1178,7 +1178,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           }
         break;
       case CTX_FLUSH:
-        //ctx_flush (ctx);
+        //ctx_flush (ctx); // XXX  XXX  flush only does things inside backends
         break;
       case CTX_RESET:
         ctx_reset (ctx);

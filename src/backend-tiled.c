@@ -42,8 +42,9 @@ void ctx_tiled_free (CtxTiled *tiled)
 static unsigned char *sdl_icc = NULL;
 static long sdl_icc_length = 0;
 
-inline static void ctx_tiled_flush (CtxTiled *tiled)
+static void ctx_tiled_flush (Ctx *ctx)
 {
+  CtxTiled *tiled = (CtxTiled*)ctx->backend;
   mtx_lock (&tiled->mtx);
   if (tiled->shown_frame == tiled->render_frame)
   {
@@ -399,8 +400,6 @@ static void ctx_tiled_draw_cursor (CtxTiled *tiled)
 #define evsource_destroy(es)     do{if((es)->destroy)(es)->destroy((es));}while(0)
 #define evsource_set_coord(es,x,y) do{if((es)->set_coord)(es)->set_coord((es),(x),(y));}while(0)
 #define evsource_get_fd(es)      ((es)->get_fd?(es)->get_fd((es)):0)
-
-
 
 static int mice_has_event ();
 static char *mice_get_event ();

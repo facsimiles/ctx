@@ -304,11 +304,6 @@ inline static void ctx_fb_reset (Ctx *ctx)
   ctx_fb_show_frame ((CtxFb*)ctx->backend, 1);
 }
 
-inline static void ctx_fb_flush (Ctx *ctx)
-{
-  ctx_tiled_flush ((CtxTiled*)ctx->backend);
-}
-
 void ctx_fb_free (CtxFb *fb)
 {
   CtxTiled*tiled=(CtxTiled*)fb;
@@ -536,7 +531,7 @@ Ctx *ctx_new_fb (int width, int height)
   ctx_set_size (backend->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  backend->flush = ctx_fb_flush;
+  backend->flush = ctx_tiled_flush;
   backend->reset = ctx_fb_reset;
   backend->free  = (void*)ctx_fb_free;
   backend->set_clipboard = ctx_fb_set_clipboard;
@@ -583,8 +578,6 @@ Ctx *ctx_new_fb (int width, int height)
   start_thread(14);
   start_thread(15);
 #undef start_thread
-
-  //ctx_flush (tiled->ctx);
 
   EvSource *kb = evsource_kb_new ();
   if (kb)

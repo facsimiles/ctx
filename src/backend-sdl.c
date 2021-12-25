@@ -207,65 +207,65 @@ static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
 {
   static char buf[16]="";
   buf[ctx_unichar_to_utf8 (sym, (void*)buf)]=0;
-  int code = sym;
+  int scan_code = sym;
   const char *name = &buf[0];
    switch (sym)
    {
-     case SDLK_RSHIFT: code = 16 ; break;
-     case SDLK_LSHIFT: code = 16 ; break;
-     case SDLK_LCTRL: code = 17 ; break;
-     case SDLK_RCTRL: code = 17 ; break;
-     case SDLK_LALT:  code = 18 ; break;
-     case SDLK_RALT:  code = 18 ; break;
-     case SDLK_CAPSLOCK: name = "capslock"; code = 20 ; break;
-     //case SDLK_NUMLOCK: name = "numlock"; code = 144 ; break;
-     //case SDLK_SCROLLLOCK: name = "scrollock"; code = 145 ; break;
+     case SDLK_RSHIFT: scan_code = 16 ; break;
+     case SDLK_LSHIFT: scan_code = 16 ; break;
+     case SDLK_LCTRL: scan_code = 17 ; break;
+     case SDLK_RCTRL: scan_code = 17 ; break;
+     case SDLK_LALT:  scan_code = 18 ; break;
+     case SDLK_RALT:  scan_code = 18 ; break;
+     case SDLK_CAPSLOCK: name = "capslock"; scan_code = 20 ; break;
+     //case SDLK_NUMLOCK: name = "numlock"; scan_code = 144 ; break;
+     //case SDLK_SCROLLLOCK: name = "scrollock"; scan_code = 145 ; break;
 
-     case SDLK_F1:     name = "F1"; code = 112; break;
-     case SDLK_F2:     name = "F2"; code = 113; break;
-     case SDLK_F3:     name = "F3"; code = 114; break;
-     case SDLK_F4:     name = "F4"; code = 115; break;
-     case SDLK_F5:     name = "F5"; code = 116; break;
-     case SDLK_F6:     name = "F6"; code = 117; break;
-     case SDLK_F7:     name = "F7"; code = 118; break;
-     case SDLK_F8:     name = "F8"; code = 119; break;
-     case SDLK_F9:     name = "F9"; code = 120; break;
-     case SDLK_F10:    name = "F10"; code = 121; break;
-     case SDLK_F11:    name = "F11"; code = 122; break;
-     case SDLK_F12:    name = "F12"; code = 123; break;
+     case SDLK_F1:     name = "F1"; scan_code = 112; break;
+     case SDLK_F2:     name = "F2"; scan_code = 113; break;
+     case SDLK_F3:     name = "F3"; scan_code = 114; break;
+     case SDLK_F4:     name = "F4"; scan_code = 115; break;
+     case SDLK_F5:     name = "F5"; scan_code = 116; break;
+     case SDLK_F6:     name = "F6"; scan_code = 117; break;
+     case SDLK_F7:     name = "F7"; scan_code = 118; break;
+     case SDLK_F8:     name = "F8"; scan_code = 119; break;
+     case SDLK_F9:     name = "F9"; scan_code = 120; break;
+     case SDLK_F10:    name = "F10"; scan_code = 121; break;
+     case SDLK_F11:    name = "F11"; scan_code = 122; break;
+     case SDLK_F12:    name = "F12"; scan_code = 123; break;
      case SDLK_ESCAPE: name = "escape"; break;
-     case SDLK_DOWN:   name = "down"; code = 40; break;
-     case SDLK_LEFT:   name = "left"; code = 37; break;
-     case SDLK_UP:     name = "up"; code = 38;  break;
-     case SDLK_RIGHT:  name = "right"; code = 39; break;
+     case SDLK_DOWN:   name = "down"; scan_code = 40; break;
+     case SDLK_LEFT:   name = "left"; scan_code = 37; break;
+     case SDLK_UP:     name = "up"; scan_code = 38;  break;
+     case SDLK_RIGHT:  name = "right"; scan_code = 39; break;
      case SDLK_BACKSPACE: name = "backspace"; break;
      case SDLK_SPACE:  name = "space"; break;
      case SDLK_TAB:    name = "tab"; break;
-     case SDLK_DELETE: name = "delete"; code = 46; break;
-     case SDLK_INSERT: name = "insert"; code = 45; break;
+     case SDLK_DELETE: name = "delete"; scan_code = 46; break;
+     case SDLK_INSERT: name = "insert"; scan_code = 45; break;
      case SDLK_RETURN:
        //if (key_repeat == 0) // return never should repeat
        name = "return";   // on a DEC like terminal
        break;
-     case SDLK_HOME:     name = "home"; code = 36; break;
-     case SDLK_END:      name = "end"; code = 35; break;
-     case SDLK_PAGEDOWN: name = "page-down"; code = 34; break;
-     case SDLK_PAGEUP:   name = "page-up"; code = 33; break;
-     case ',': code = 188; break;
-     case '.': code = 190; break;
-     case '/': code = 191; break;
-     case '`': code = 192; break;
-     case '[': code = 219; break;
-     case '\\': code = 220; break;
-     case ']':  code = 221; break;
-     case '\'': code = 222; break;
+     case SDLK_HOME:     name = "home"; scan_code = 36; break;
+     case SDLK_END:      name = "end"; scan_code = 35; break;
+     case SDLK_PAGEDOWN: name = "page-down"; scan_code = 34; break;
+     case SDLK_PAGEUP:   name = "page-up"; scan_code = 33; break;
+     case ',': scan_code = 188; break;
+     case '.': scan_code = 190; break;
+     case '/': scan_code = 191; break;
+     case '`': scan_code = 192; break;
+     case '[': scan_code = 219; break;
+     case '\\': scan_code = 220; break;
+     case ']':  scan_code = 221; break;
+     case '\'': scan_code = 222; break;
      default:
        ;
    }
-   if (sym >= 'a' && sym <='z') code -= 32;
+   if (sym >= 'a' && sym <='z') scan_code -= 32;
    if (r_keycode)
    {
-     *r_keycode = code;
+     *r_keycode = scan_code;
    }
    return name;
 }
@@ -505,13 +505,6 @@ inline static void ctx_sdl_reset (Ctx *ctx)
   ctx_sdl_start_time = ctx_ticks ();
 }
 
-inline static void ctx_sdl_flush (Ctx *ctx)
-{
-  CtxSDL  *sdl = (CtxSDL*)ctx->backend;
-  ctx_tiled_flush ((CtxTiled*)sdl);
-  //CtxTiled *tiled = (void*)sdl;
-}
-
 void ctx_sdl_free (CtxSDL *sdl)
 {
 
@@ -611,7 +604,7 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_set_size (tiled->ctx_copy, width, height);
 
   backend->set_windowtitle = (void*)ctx_sdl_set_title;
-  backend->flush = ctx_sdl_flush;
+  backend->flush = ctx_tiled_flush;
   backend->reset = ctx_sdl_reset;
   backend->free  = (void*)ctx_sdl_free;
   backend->consume_events = ctx_sdl_consume_events;
@@ -655,7 +648,6 @@ Ctx *ctx_new_sdl (int width, int height)
   start_thread(15);
 #undef start_thread
 
-  //ctx_flush (tiled->ctx);
   return backend->ctx;
 #else
   return NULL;

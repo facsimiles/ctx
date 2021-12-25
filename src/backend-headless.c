@@ -248,11 +248,6 @@ inline static void ctx_headless_reset (Ctx *ctx)
   ctx_headless_show_frame ((CtxHeadless*)ctx->backend, 1);
 }
 
-inline static void ctx_headless_flush (Ctx *ctx)
-{
-  ctx_tiled_flush ((CtxTiled*)ctx->backend);
-}
-
 void ctx_headless_free (CtxHeadless *fb)
 {
   CtxTiled*tiled=(CtxTiled*)fb;
@@ -311,7 +306,7 @@ Ctx *ctx_new_headless (int width, int height)
 
   backend->ctx    = ctx_new ();
   backend->backend = "headless";
-  backend->flush = ctx_headless_flush;
+  backend->flush = ctx_tiled_flush;
   backend->reset = ctx_headless_reset;
   backend->free  = (void*)ctx_headless_free;
   backend->set_clipboard = ctx_fb_set_clipboard;
@@ -368,7 +363,6 @@ Ctx *ctx_new_headless (int width, int height)
   start_thread(15);
 #undef start_thread
 
-  //ctx_flush (tiled->ctx);
   tiled->vt_active = 1;
 
   return backend->ctx;
