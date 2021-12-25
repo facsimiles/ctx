@@ -595,6 +595,7 @@ Ctx *ctx_new_kms (int width, int height)
   backend->reset = (void*)ctx_kms_reset;
   backend->free  = (void*)ctx_kms_free;
   backend->consume_events = (void(*)(void *))ctx_kms_consume_events;
+  backend->get_event_fds = (void*) ctx_fb_get_event_fds;
   backend->set_clipboard = (void*)ctx_fb_set_clipboard;
   backend->get_clipboard = (void*)ctx_fb_get_clipboard;
 

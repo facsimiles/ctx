@@ -1597,19 +1597,20 @@ struct _CtxBackend
 {
   Ctx  *ctx;
   const char *backend;
-  void (*process)        (void *backend, CtxCommand *entry);
-  void (*reset)          (void *backend);
-  void (*flush)          (void *backend);
+
+  void  (*process)         (void *backend, CtxCommand *entry);
+  void  (*reset)           (void *backend);
+  void  (*flush)           (void *backend);
 
   char *(*get_clipboard)   (void *ctxctx);
-  void (*set_clipboard)    (void *ctxctx, const char *text);
-  void (*set_windowtitle)  (void *ctxctx, const char *text);
+  void  (*set_clipboard)   (void *ctxctx, const char *text);
+  void  (*set_windowtitle) (void *ctxctx, const char *text);
 
   char *(*get_event)      (void *backend, int timout_ms);
   int   (*has_event)      (void *backend, int timout_ms);
 
   void        (*consume_events) (void *ctx);
-  void        (*get_event_fds)  (void *ctx);
+  void        (*get_event_fds)  (void *ctx, int *fd, int *count);
 
   void (*free)           (void *backend);
 };

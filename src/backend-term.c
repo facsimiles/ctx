@@ -946,6 +946,7 @@ Ctx *ctx_new_term (int width, int height)
   backend->flush   = (void(*)(void*))ctx_term_flush;
   backend->free    = (void(*)(void*))ctx_term_free;
   backend->consume_events = (void(*)(void*))ctx_nct_consume_events;
+  backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
 #endif
 
 

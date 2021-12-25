@@ -1189,18 +1189,9 @@ int ctx_has_event (Ctx *ctx, int timeout)
 static int ctx_fb_get_mice_fd (Ctx *ctx);
 #endif
 
-void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
+void ctx_fb_get_event_fds (Ctx *ctx, int *fd, int *count)
 {
-#if CTX_SDL
-  if (ctx_sdl_events)
-  {
-    *count = 0;
-  }
-  else
-#endif
 #if CTX_FB
-  if (ctx_fb_events)
-  {
     int mice_fd = ctx_fb_get_mice_fd (ctx);
     fd[0] = STDIN_FILENO;
     if (mice_fd)
@@ -1212,19 +1203,21 @@ void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
     {
       *count = 1;
     }
-  }
-  else
 #endif
-  if (ctx_native_events)
-  {
-    fd[0] = STDIN_FILENO;
-    *count = 1;
-  }
-  else
-  {
-    fd[0] = STDIN_FILENO;
-    *count = 1;
-  }
+}
+
+void ctx_stdin_get_event_fds (Ctx *ctx, int *fd, int *count)
+{
+  fd[0] = STDIN_FILENO;
+  *count = 1;
+}
+
+void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
+{
+  CtxBackend *backend = ctx->backend;
+  if (backend && backend->get_event_fds)
+    backend->get_event_fds (ctx, fd, count);
+  *count = 0;
 }
 
 CtxEvent *ctx_get_event (Ctx *ctx)
