@@ -2716,6 +2716,12 @@ static void ctx_show_frame (Ctx *ctx, int block)
     ctx_kms_show_frame ((CtxKMS*)tiled, block);
   }
 #endif
+#if CTX_HEADLESS
+  else if (ctx_renderer_is_headless (ctx))
+  {
+    ctx_headless_show_frame ((CtxHeadless*)tiled, block);
+  }
+#endif
 #if CTX_FB
   else if (ctx_renderer_is_fb (ctx))
   {

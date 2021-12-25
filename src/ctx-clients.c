@@ -39,14 +39,15 @@ extern Ctx *ctx;
 #define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
 //#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
-void terminal_update_title  (const char *title);
-int  ctx_renderer_is_sdl    (Ctx *ctx);
-int  ctx_renderer_is_fb     (Ctx *ctx);
-int  ctx_renderer_is_kms    (Ctx *ctx);
-int  ctx_renderer_is_tiled  (Ctx *ctx);
-int  ctx_renderer_is_term   (Ctx *ctx);
-void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
-int  ctx_sdl_get_fullscreen (Ctx *ctx);
+void terminal_update_title    (const char *title);
+int  ctx_renderer_is_sdl      (Ctx *ctx);
+int  ctx_renderer_is_fb       (Ctx *ctx);
+int  ctx_renderer_is_headless (Ctx *ctx);
+int  ctx_renderer_is_kms      (Ctx *ctx);
+int  ctx_renderer_is_tiled    (Ctx *ctx);
+int  ctx_renderer_is_term     (Ctx *ctx);
+void ctx_sdl_set_fullscreen   (Ctx *ctx, int val);
+int  ctx_sdl_get_fullscreen   (Ctx *ctx);
 float ctx_target_fps = 25.0;
 static int ctx_fetched_bytes = 1;
 

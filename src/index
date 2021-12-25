@@ -41,6 +41,7 @@ backend-ctx.c
 backend-tiled.c
 backend-kms.c
 backend-fb.c
+backend-headless.c
 backend-sdl.c
 backend-term.c
 backend-termimg.c

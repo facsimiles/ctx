@@ -1126,6 +1126,11 @@ int ctx_sdl_events = 0;
 int ctx_sdl_consume_events (Ctx *ctx);
 #endif
 
+#if CTX_HEADLESS
+int ctx_headless_events = 0;
+int ctx_headless_consume_events (Ctx *ctx);
+#endif
+
 #if CTX_FB
 int ctx_fb_events = 0;
 int ctx_fb_consume_events (Ctx *ctx);
@@ -1147,6 +1152,11 @@ void ctx_consume_events (Ctx *ctx)
 #if CTX_SDL
   if (ctx_sdl_events)
     ctx_sdl_consume_events (ctx);
+  else
+#endif
+#if CTX_HEADLESS
+  if (ctx_headless_events)
+    ctx_headless_consume_events (ctx);
   else
 #endif
 #if CTX_FB
@@ -1171,6 +1181,13 @@ int ctx_has_event (Ctx *ctx, int timeout)
   if (ctx_sdl_events)
   {
     return SDL_WaitEventTimeout (NULL, timeout);
+  }
+  else
+#endif
+#if CTX_HEADLESS
+  if (ctx_headless_events)
+  {
+    return 0; // XXX : we want events to work though
   }
   else
 #endif

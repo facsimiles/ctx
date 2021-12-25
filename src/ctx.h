@@ -388,6 +388,10 @@ int ctx_utf8_strlen (const char *s);
 #endif
 #endif
 
+#ifndef CTX_HEADLESS
+#define CTX_HEADLESS 0
+#endif
+
 #ifndef CTX_FB
 #define CTX_FB 0
 #endif
@@ -672,6 +676,7 @@ void *ctx_get_renderer (Ctx *ctx);
 
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb (Ctx *ctx);
+int ctx_renderer_is_headless (Ctx *ctx);
 int ctx_renderer_is_kms (Ctx *ctx);
 int ctx_renderer_is_tiled (Ctx *ctx);
 int ctx_renderer_is_ctx (Ctx *ctx);

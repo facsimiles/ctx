@@ -533,7 +533,7 @@
 
 #ifdef CTX_RASTERIZER
 #if CTX_RASTERIZER==0
-#if CTX_SDL || CTX_FB
+#if CTX_SDL || CTX_FB || CTX_HEADLESS
 #undef CTX_RASTERIZER
 #define CTX_RASTERIZER 1
 #endif
@@ -580,7 +580,7 @@
 #endif
 
 #ifndef CTX_TILED
-#if CTX_SDL || CTX_FB || CTX_KMS
+#if CTX_SDL || CTX_FB || CTX_KMS || CTX_HEADLESS
 #define CTX_TILED 1
 #else
 #define CTX_TILED 0

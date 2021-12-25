@@ -32,6 +32,7 @@
 #include "stb_image.h"
 #endif
 
+#define CTX_HEADLESS             1
 #define CTX_DITHER               0 //
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl backends
 #define CTX_PARSER               1

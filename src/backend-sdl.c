@@ -32,7 +32,12 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
   int valid = 0;
   CtxTiled *tiled = (CtxTiled*)ctx->renderer;
 
+#if CTX_HEADLESS
+  if (ctx_renderer_is_headless (ctx)) valid = 1;
+#endif
+#if CTX_SDL
   if (ctx_renderer_is_sdl (ctx)) valid = 1;
+#endif
 #if CTX_FB
   if (ctx_renderer_is_fb  (ctx)) valid = 1;
 #endif

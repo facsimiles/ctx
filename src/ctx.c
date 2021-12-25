@@ -201,6 +201,9 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 #endif
    else if (format == CTX_FORMAT_RGBA8 &&
                    ( 1
+#if CTX_HEADLESS
+                   || ctx_renderer_is_headless (ctx)
+#endif
 #if CTX_FB
                    || ctx_renderer_is_fb (ctx)
 #endif
