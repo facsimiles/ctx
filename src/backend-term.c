@@ -38,23 +38,17 @@ typedef enum
 typedef struct _CtxTerm CtxTerm;
 struct _CtxTerm
 {
-   void (*render) (void *term, CtxCommand *command);
-   void (*reset)  (void *term);
-   void (*flush)  (void *term);
-   char *(*get_clipboard) (void *ctxctx);
-   void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)   (void *term);
-   Ctx      *ctx;
-   int       width;
-   int       height;
-   int       cols;
-   int       rows;
-   int       was_down;
+   CtxBackend  rendererer;
+   int         width;
+   int         height;
+   int         cols;
+   int         rows;
+   int         was_down;
 
-   uint8_t  *pixels;
+   uint8_t    *pixels;
 
-   Ctx      *host;
-   CtxList  *lines;
+   Ctx        *host;
+   CtxList    *lines;
    CtxTermMode mode;
 };
 
@@ -897,6 +891,7 @@ Ctx *ctx_new_term (int width, int height)
   Ctx *ctx = ctx_new ();
 #if CTX_RASTERIZER
   CtxTerm *term = (CtxTerm*)calloc (sizeof (CtxTerm), 1);
+  CtxBackend *backend = (void*)term;
  
   const char *mode = getenv ("CTX_TERM_MODE");
   ctx_term_cw = 2;
@@ -937,7 +932,7 @@ Ctx *ctx_new_term (int width, int height)
   }
   if (width > maxwidth) width = maxwidth;
   if (height > maxheight) height = maxheight;
-  term->ctx = ctx;
+  backend->ctx = ctx;
   term->width  = width;
   term->height = height;
 
@@ -955,9 +950,9 @@ Ctx *ctx_new_term (int width, int height)
   ctx_set_renderer (ctx, term);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, ctx_term_ch); 
-  term->render = ctx_term_render;
-  term->flush = (void(*)(void*))ctx_term_flush;
-  term->free  = (void(*)(void*))ctx_term_free;
+  backend->process = ctx_term_render;
+  backend->flush   = (void(*)(void*))ctx_term_flush;
+  backend->free    = (void(*)(void*))ctx_term_free;
 #endif
 
 

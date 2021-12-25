@@ -91,15 +91,6 @@ struct _CtxGradientStop
   CtxColor color;
 };
 
-typedef enum CtxBackendType {
-  CTX_BACKEND_CTX,
-  CTX_BACKEND_HEADLESS,
-  CTX_BACKEND_TERM,
-  CTX_BACKEND_FB,
-  CTX_BACKEND_SDL,
-  CTX_BACKEND_KMS,
-  CTX_BACKEND_TERMIMG,
-} CtxBackendType;
 
 enum _CtxSourceType
 {
@@ -140,6 +131,16 @@ struct _CtxBuffer
                                         */
 #endif
 };
+
+typedef enum CtxBackendType {
+  CTX_BACKEND_CTX,
+  CTX_BACKEND_HEADLESS,
+  CTX_BACKEND_TERM,
+  CTX_BACKEND_FB,
+  CTX_BACKEND_SDL,
+  CTX_BACKEND_KMS,
+  CTX_BACKEND_TERMIMG,
+} CtxBackendType;
 
 //void _ctx_user_to_device          (CtxState *state, float *x, float *y);
 //void _ctx_user_to_device_distance (CtxState *state, float *x, float *y);
@@ -491,7 +492,7 @@ typedef struct _CtxEidInfo
 
 struct _Ctx
 {
-  CtxImplementation *renderer;
+  CtxBackend       *renderer;
   CtxDrawlist        drawlist;
   int                transformation;
   CtxBuffer          texture[CTX_MAX_TEXTURES];
@@ -622,7 +623,7 @@ typedef enum {
 
 struct _CtxRasterizer
 {
-  CtxImplementation vfuncs;
+  CtxBackend vfuncs;
   /* these should be initialized and used as the bounds for rendering into the
      buffer as well XXX: not yet in use, and when in use will only be
      correct for axis aligned clips - proper rasterization of a clipping path
@@ -780,13 +781,7 @@ int ctx_nct_consume_events (Ctx *ctx);
 typedef struct _CtxCtx CtxCtx;
 struct _CtxCtx
 {
-   void (*render) (void *ctxctx, CtxCommand *command);
-   void (*reset)  (void *ctxvtx);
-   void (*flush)  (void *ctxctx);
-   char *(*get_clipboard) (void *ctxctx);
-   void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)   (void *ctxctx);
-   Ctx *ctx;
+   CtxBackend renderer;
    int  width;
    int  height;
    int  cols;
@@ -1116,13 +1111,7 @@ struct _EvSource
 
 struct _CtxTiled
 {
-   void (*render)    (void *term, CtxCommand *command);
-   void (*reset)     (void *term);
-   void (*flush)     (void *term);
-   char *(*get_clipboard) (void *ctxctx);
-   void (*set_clipboard) (void *ctxctx, const char *text);
-   void (*free)      (void *term);
-   Ctx          *ctx;
+   CtxBackend renderer;
    int           width;
    int           height;
    int           cols;
@@ -1161,6 +1150,13 @@ struct _CtxTiled
    mtx_t  mtx;
 #endif
 };
+
+static inline Ctx *ctx_renderer_get_ctx (void *renderer)
+{
+  CtxBackend *r = (CtxBackend*)renderer;
+  if (r) return r->ctx;
+  return NULL;
+}
 
 static void
 _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,

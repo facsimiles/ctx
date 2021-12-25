@@ -6,8 +6,7 @@ typedef struct _CtxCairo CtxCairo;
 struct
   _CtxCairo
 {
-  CtxImplementation vfuncs;
-  Ctx              *ctx;
+  CtxBackend       renderer;
   cairo_t          *cr;
   cairo_pattern_t  *pat;
   cairo_surface_t  *image;
@@ -313,7 +312,7 @@ ctx_cairo_process (CtxCairo *ctx_cairo, CtxCommand *c)
       case CTX_FLUSH:
         break;
     }
-  ctx_process (ctx_cairo->ctx, entry);
+  ctx_process (ctx_cairo->renderer.ctx, entry);
 }
 
 void ctx_cairo_free (CtxCairo *ctx_cairo)
@@ -330,7 +329,8 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 {
   CtxIterator iterator;
   CtxCommand *command;
-  CtxCairo    ctx_cairo = {{(void*)ctx_cairo_process, NULL, NULL}, ctx, cr, NULL, NULL};
+  CtxCairo    ctx_cairo = {
+     {(void*)ctx_cairo_process, NULL, NULL}, cr, NULL, NULL};
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
@@ -342,9 +342,9 @@ ctx_new_for_cairo (cairo_t *cr)
 {
   Ctx *ctx = ctx_new ();
   CtxCairo *ctx_cairo = calloc(sizeof(CtxCairo),1);
-  ctx_cairo->vfuncs.free = (void*)ctx_cairo_free;
-  ctx_cairo->vfuncs.process = (void*)ctx_cairo_process;
-  ctx_cairo->ctx = ctx;
+  ctx_cairo->renderer.free = (void*)ctx_cairo_free;
+  ctx_cairo->renderer.process = (void*)ctx_cairo_process;
+  ctx_cairo->renderer.ctx = ctx;
   ctx_cairo->cr = cr;
 
   ctx_set_renderer (ctx, (void*)ctx_cairo);

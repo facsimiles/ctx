@@ -10,22 +10,16 @@
 typedef struct _CtxTermImg CtxTermImg;
 struct _CtxTermImg
 {
-   void (*render)         (void *termimg, CtxCommand *command);
-   void (*reset)          (void *termimg);
-   void (*flush)          (void *termimg);
-   char *(*get_clipboard) (void *ctxctx);
-   void (*set_clipboard)  (void *ctxctx, const char *text);
-   void (*free)           (void *termimg);
-   Ctx      *ctx;
-   int       width;
-   int       height;
-   int       cols;
-   int       rows;
-   int       was_down;
+   CtxBackend renderer;
+   int         width;
+   int         height;
+   int         cols;
+   int         rows;
+   int         was_down;
    // we need to have the above members in that order up to here
-   uint8_t  *pixels;
-   Ctx      *host;
-   CtxList  *lines;
+   uint8_t    *pixels;
+   Ctx        *host;
+   CtxList    *lines;
 };
 
 inline static void ctx_termimg_render (void       *ctx,
@@ -102,6 +96,7 @@ Ctx *ctx_new_termimg (int width, int height)
   fprintf (stdout, "\e[?1049h");
   fprintf (stdout, "\e[?25l"); // cursor off
   CtxTermImg *termimg = (CtxTermImg*)calloc (sizeof (CtxTermImg), 1);
+  CtxBackend *backend = (void*)termimg;
 
 
   int maxwidth = ctx_terminal_width ();
@@ -117,7 +112,7 @@ Ctx *ctx_new_termimg (int width, int height)
   }
   if (width > maxwidth) width = maxwidth;
   if (height > maxheight) height = maxheight;
-  termimg->ctx = ctx;
+  backend->ctx = ctx;
   termimg->width  = width;
   termimg->height = height;
   termimg->lines = 0;
@@ -129,9 +124,9 @@ Ctx *ctx_new_termimg (int width, int height)
   ctx_set_renderer (ctx, termimg);
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, 14.0f);
-  termimg->render = ctx_termimg_render;
-  termimg->flush = (void(*)(void*))ctx_termimg_flush;
-  termimg->free  = (void(*)(void*))ctx_termimg_free;
+  backend->process = ctx_termimg_render;
+  backend->flush = (void(*)(void*))ctx_termimg_flush;
+  backend->free  = (void(*)(void*))ctx_termimg_free;
 #endif
 
   return ctx;

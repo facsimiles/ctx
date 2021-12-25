@@ -1871,7 +1871,7 @@ void ctx_set_renderer (Ctx  *ctx,
 {
   if (ctx->renderer && ctx->renderer->free)
     ctx->renderer->free (ctx->renderer);
-  ctx->renderer = (CtxImplementation*)renderer;
+  ctx->renderer = (CtxBackend*)renderer;
 }
 
 void *ctx_get_renderer (Ctx *ctx)

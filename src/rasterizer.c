@@ -4487,7 +4487,7 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
                                    int stride, CtxPixelFormat pixel_format)
 {
   CtxState    *state    = (CtxState *) malloc (sizeof (CtxState) );
-  CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxRenderer) );
+  CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxBackend) );
   ctx_rasterizer_init (rasterizer, state, data, x, y, width, height,
                        stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
 }

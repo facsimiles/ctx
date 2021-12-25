@@ -52,7 +52,6 @@ struct _CtxKMS
    char *(*get_clipboard) (void *ctxctx);
    void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)   (void *fb);
-   Ctx          *ctx;
    int           width;
    int           height;
    int           cols; // unused
@@ -559,6 +558,7 @@ Ctx *ctx_new_kms (int width, int height)
 {
 #if CTX_RASTERIZER
   CtxKMS *fb = calloc (sizeof (CtxKMS), 1);
+  CtxBackend *backend = (CtxBackend*)fb;
 
   CtxTiled *tiled = (void*)fb;
   tiled->fb = ctx_fbkms_new (fb, &tiled->width, &tiled->height);
@@ -587,23 +587,23 @@ Ctx *ctx_new_kms (int width, int height)
 
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 
-  tiled->ctx      = ctx_new ();
+  backend->ctx      = ctx_new ();
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;
   tiled->height   = height;
 
-  ctx_set_renderer (tiled->ctx, fb);
+  ctx_set_renderer (backend->ctx, fb);
   ctx_set_renderer (tiled->ctx_copy, fb);
-  ctx_set_texture_cache (tiled->ctx_copy, tiled->ctx);
+  ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
-  ctx_set_size (tiled->ctx, width, height);
+  ctx_set_size (backend->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  tiled->flush = (void*)ctx_kms_flush;
-  tiled->reset = (void*)ctx_kms_reset;
-  tiled->free  = (void*)ctx_kms_free;
-  tiled->set_clipboard = (void*)ctx_fb_set_clipboard;
-  tiled->get_clipboard = (void*)ctx_fb_get_clipboard;
+  backend->flush = (void*)ctx_kms_flush;
+  backend->reset = (void*)ctx_kms_reset;
+  backend->free  = (void*)ctx_kms_free;
+  backend->set_clipboard = (void*)ctx_fb_set_clipboard;
+  backend->get_clipboard = (void*)ctx_fb_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {
@@ -612,7 +612,7 @@ Ctx *ctx_new_kms (int width, int height)
                    tiled->width * 4, CTX_FORMAT_BGRA8); // this format
                                   // is overriden in  thread
     ((CtxRasterizer*)(tiled->host[i]->renderer))->swap_red_green = 1;
-    ctx_set_texture_source (tiled->host[i], tiled->ctx);
+    ctx_set_texture_source (tiled->host[i], backend->ctx);
   }
 
   mtx_init (&tiled->mtx, mtx_plain);
@@ -687,7 +687,7 @@ Ctx *ctx_new_kms (int width, int height)
   }
 #endif
 
-  return tiled->ctx;
+  return backend->ctx;
 #else
   return NULL;
 #endif

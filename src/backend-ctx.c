@@ -313,7 +313,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
   fprintf (stdout, "\e[H\e[?25l\e[?200h");
 #if 1
   fprintf (stdout, CTX_START_STRING);
-  ctx_render_stream (ctxctx->ctx, stdout, 0);
+  ctx_render_stream (ctxctx->renderer.ctx, stdout, 0);
   fprintf (stdout, CTX_END_STRING);
 #else
   {
@@ -372,7 +372,7 @@ static void ctx_ctx_flush (CtxCtx *ctxctx)
 
   ctx_frame_ack = 0;
   do {
-     ctx_consume_events (ctxctx->ctx);
+     ctx_consume_events (ctxctx->renderer.ctx);
   } while (ctx_frame_ack != 1);
 #else
   fflush (stdout);
@@ -390,8 +390,9 @@ void ctx_ctx_free (CtxCtx *ctx)
 Ctx *ctx_new_ctx (int width, int height)
 {
   float font_size = 12.0;
-  Ctx *ctx = ctx_new ();
+  Ctx    *ctx    = ctx_new ();
   CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
+  CtxBackend *renderer = (CtxBackend*)ctxctx;
   fprintf (stdout, "\e[?1049h");
   fflush (stdout);
   //fprintf (stderr, "\e[H");
@@ -413,13 +414,13 @@ Ctx *ctx_new_ctx (int width, int height)
     ctxctx->cols   = width / 80;
     ctxctx->rows   = height / 24;
   }
-  ctxctx->ctx = ctx;
+  renderer->ctx = ctx;
   if (!ctx_native_events)
     _ctx_mouse (ctx, NC_MOUSE_DRAG);
+  renderer->flush = (void(*)(void *))ctx_ctx_flush;
+  renderer->free  = (void(*)(void *))ctx_ctx_free;
   ctx_set_renderer (ctx, ctxctx);
   ctx_set_size (ctx, width, height);
-  ctxctx->flush = (void(*)(void *))ctx_ctx_flush;
-  ctxctx->free  = (void(*)(void *))ctx_ctx_free;
   return ctx;
 }
 

@@ -1601,14 +1601,23 @@ struct
   CtxEntry next_entry; // also pads size of CtxCommand slightly.
 };
 
-typedef struct _CtxImplementation CtxImplementation;
-struct _CtxImplementation
+typedef struct _CtxBackend CtxBackend;
+struct _CtxBackend
 {
+  Ctx  *ctx;
+  const char *backend;
   void (*process)        (void *renderer, CtxCommand *entry);
   void (*reset)          (void *renderer);
   void (*flush)          (void *renderer);
+
   char *(*get_clipboard) (void *ctxctx);
   void (*set_clipboard)  (void *ctxctx, const char *text);
+
+  char  (*get_event)      (void *backend, int timout_ms);
+
+  void        (*consume_events) (void *backend);
+  void        (*get_event_fds)  (void *backend);
+
   void (*free)           (void *renderer);
 };
 

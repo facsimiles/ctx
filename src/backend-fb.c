@@ -46,7 +46,6 @@ struct _CtxFb
    char *(*get_clipboard) (void *ctxctx);
    void (*set_clipboard) (void *ctxctx, const char *text);
    void (*free)   (void *fb);
-   Ctx          *ctx;
    int           width;
    int           height;
    int           cols; // unused

@@ -84,9 +84,10 @@ static long ctx_sdl_start_time = 0;
 static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
 {
   CtxTiled *tiled = &sdl->tiled;
-  if (tiled->shown_cursor != tiled->ctx->cursor)
+  CtxBackend *backend = (CtxBackend*)tiled;
+  if (tiled->shown_cursor != backend->ctx->cursor)
   {
-    tiled->shown_cursor = tiled->ctx->cursor;
+    tiled->shown_cursor = backend->ctx->cursor;
     SDL_Cursor *new_cursor =  NULL;
     switch (tiled->shown_cursor)
     {
@@ -286,8 +287,9 @@ static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
 
 int ctx_sdl_consume_events (Ctx *ctx)
 {
-  CtxTiled *tiled = (void*)ctx->renderer;
-  CtxSDL *sdl = (void*)ctx->renderer;
+  CtxBackend *backend = (void*)ctx->renderer;
+  CtxTiled    *tiled = (void*)backend;
+  CtxSDL      *sdl = (void*)backend;
   SDL_Event event;
   int got_events = 0;
 
@@ -484,7 +486,7 @@ int ctx_sdl_consume_events (Ctx *ctx)
 
           tiled->width  = width;
           tiled->height = height;
-          ctx_set_size (tiled->ctx, width, height);
+          ctx_set_size (backend->ctx, width, height);
           ctx_set_size (tiled->ctx_copy, width, height);
         }
         break;
@@ -577,6 +579,7 @@ Ctx *ctx_new_sdl (int width, int height)
 
   CtxSDL *sdl = (CtxSDL*)calloc (sizeof (CtxSDL), 1);
   CtxTiled *tiled = (void*)sdl;
+  CtxBackend *backend = (CtxBackend*)sdl;
 
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
   if (width <= 0 || height <= 0)
@@ -589,7 +592,7 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->renderer = SDL_CreateRenderer (sdl->window, -1, 0);
   if (!sdl->renderer)
   {
-     ctx_free (tiled->ctx);
+     ctx_free (backend->ctx);
      free (sdl);
      return NULL;
   }
@@ -610,33 +613,33 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
 
-  tiled->ctx      = ctx_new ();
+  backend->ctx      = ctx_new ();
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;
   tiled->height   = height;
   tiled->cols     = 80;
   tiled->rows     = 20;
-  ctx_set_renderer (tiled->ctx, sdl);
+  ctx_set_renderer (backend->ctx, sdl);
   ctx_set_renderer (tiled->ctx_copy, sdl);
-  ctx_set_texture_cache (tiled->ctx_copy, tiled->ctx);
+  ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
   tiled->pixels = (uint8_t*)malloc (width * height * 4);
 
-  ctx_set_size (tiled->ctx,      width, height);
+  ctx_set_size (backend->ctx,    width, height);
   ctx_set_size (tiled->ctx_copy, width, height);
 
-  tiled->flush = (void*)ctx_sdl_flush;
-  tiled->reset = (void*)ctx_sdl_reset;
-  tiled->free  = (void*)ctx_sdl_free;
-  tiled->set_clipboard = (void*)ctx_sdl_set_clipboard;
-  tiled->get_clipboard = (void*)ctx_sdl_get_clipboard;
+  backend->flush = (void*)ctx_sdl_flush;
+  backend->reset = (void*)ctx_sdl_reset;
+  backend->free  = (void*)ctx_sdl_free;
+  backend->set_clipboard = (void*)ctx_sdl_set_clipboard;
+  backend->get_clipboard = (void*)ctx_sdl_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {
     tiled->host[i] = ctx_new_for_framebuffer (tiled->pixels,
                      tiled->width/CTX_HASH_COLS, tiled->height/CTX_HASH_ROWS,
                      tiled->width * 4, CTX_FORMAT_RGBA8);
-    ctx_set_texture_source (tiled->host[i], tiled->ctx);
+    ctx_set_texture_source (tiled->host[i], backend->ctx);
   }
 
   mtx_init (&tiled->mtx, mtx_plain);
@@ -668,7 +671,7 @@ Ctx *ctx_new_sdl (int width, int height)
 #undef start_thread
 
   //ctx_flush (tiled->ctx);
-  return tiled->ctx;
+  return backend->ctx;
 #else
   return NULL;
 #endif
