@@ -192,11 +192,17 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
   if (ctx_show_fps)
   {
     static char tmp_title[1024];
+    static uint64_t prev_time = 0;
     uint64_t time = ctx_ticks ();
     float fps = 1000000.0/  (time - ctx_sdl_start_time);
+    float fps2 = 1000000.0/  (time - prev_time);
+    prev_time = time;
     static float fps_avg = 0.0f;
-    fps_avg = (fps_avg * 0.9f + fps *  0.1f);
-    sprintf (tmp_title, "FPS: %.1f ", (fps*0.75+fps_avg*0.25));
+
+    if (time - prev_time < 1000 * 1000 * 0.05)
+    fps_avg = (fps_avg * 0.9f + fps2 *  0.1f);
+
+    sprintf (tmp_title, "FPS: %.1f %.1f %.1f", (fps2*0.75+fps_avg*0.25), fps2, fps);
 
     SDL_SetWindowTitle (sdl->window, tmp_title);
   }

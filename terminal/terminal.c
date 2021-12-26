@@ -590,7 +590,6 @@ terminal_update_title (const char *title)
 }
 
 int ctx_input_pending (Ctx *ctx, int timeout);
-void ctx_clients_handle_events (Ctx *ctx);
 
 void terminal_long_tap (Ctx *ctx, VT *vt)
 {
@@ -762,14 +761,12 @@ int terminal_main (int argc, char **argv)
       {
               // only needed when threads are enabled, when not
               // this causes unnecesary jag
-        usleep (1000 * 5); // should wake up from vt poll thread instead.
+        //usleep (1000 * 5); // should wake up from vt poll thread instead.
       }
      if (active)
        terminal_update_title (active->title);
 
-      ctx_clients_handle_events (ctx);
-
-      while (ctx_get_event (ctx)) { }
+     ctx_handle_events (ctx);
     }
 
   while (clients)

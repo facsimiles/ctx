@@ -1326,20 +1326,19 @@ float ctx_avg_bytespeed = 0.0;
 #endif /* CTX_VT */
 
 
-void ctx_clients_handle_events (Ctx *ctx)
+int ctx_clients_handle_events (Ctx *ctx)
 {
-  static int fail_safe = 0;
   //int n_clients = ctx_list_length (clients);
   int pending_data = 0;
   long time_start = ctx_ticks ();
   int sleep_time = 1000000/ctx_target_fps;
-  pending_data = ctx_input_pending (ctx, sleep_time);
+  pending_data += ctx_input_pending (ctx, sleep_time);
 
 #if CTX_VT
   if (!clients)
-    return;
+    return 0;
   ctx_fetched_bytes = 0;
-  if (pending_data || fail_safe>100)
+  if (pending_data)
   {
     if (!pending_data)pending_data = 1;
     /* record amount of time spent - and adjust time of reading for
@@ -1362,11 +1361,11 @@ void ctx_clients_handle_events (Ctx *ctx)
       ctx_client_unlock (client);
     }
 done:
-    fail_safe = 0;
+    if(0){
+    }
   }
   else
   {
-    fail_safe ++;
     for (CtxList *l = clients; l; l = l->next)
     {
       CtxClient *client = l->data;
@@ -1399,7 +1398,7 @@ done:
 
   //ctx_target_fps = 30.0;
 #else
-  ctx_target_fps = 70.0; // need to be higher than vsync rate to hit vsync
+  ctx_target_fps = 100.0; // need to be higher than vsync rate to hit vsync
 #endif
 
   long time_end = ctx_ticks ();
@@ -1412,5 +1411,5 @@ done:
   fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, ctx_fetched_bytes, timed, ctx_target_fps);
 #endif
 #endif
+  return 0;
 }
-

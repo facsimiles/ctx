@@ -1841,7 +1841,7 @@ int  vt_has_blink         (VT *vt);
 int ctx_vt_had_alt_screen (VT *vt);
 
 int  ctx_clients_need_redraw   (Ctx *ctx);
-void ctx_clients_handle_events (Ctx *ctx);
+int ctx_clients_handle_events (Ctx *ctx);
 
 
 typedef struct _CtxBuffer CtxBuffer;
