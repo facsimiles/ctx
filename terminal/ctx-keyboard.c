@@ -83,7 +83,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
          key = cap;
          if (cap->hovered != 1)
          {
-           ctx_set_dirty (event->ctx, 1);
+           ctx_queue_draw (event->ctx);
          }
          cap->hovered = 1;
        }
@@ -102,19 +102,19 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
      default:
        break;
      case CTX_MOTION:
-         ctx_set_dirty (event->ctx, 1);
+         ctx_queue_draw (event->ctx);
        break;
      case CTX_DRAG_MOTION:
        if (!key)
-         ctx_set_dirty (event->ctx, 1);
+         ctx_queue_draw (event->ctx);
        break;
      case CTX_DRAG_PRESS:
        kb->down = 1;
-       ctx_set_dirty (event->ctx, 1);
+       ctx_queue_draw (event->ctx);
        break;
      case CTX_DRAG_RELEASE:
        kb->down = 0;
-        ctx_set_dirty (event->ctx, 1);
+        ctx_queue_draw (event->ctx);
        if (!key)
          return;
 

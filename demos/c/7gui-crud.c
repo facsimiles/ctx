@@ -24,7 +24,7 @@ static void select_name (CtxEvent *event, void *data1, void *data2)
 {
   Name *item = data1;
   selected_name = item->id;
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   strcpy (name, item->name);
   strcpy (surname, item->surname);
 }

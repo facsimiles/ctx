@@ -7879,7 +7879,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       //if (event->device_no==1)
       {
         sprintf (buf, "pm %.0f %.0f %i", x, y, device_no);
-//      ctx_set_dirty (event->ctx, 1);
+//      ctx_queue_draw (event->ctx);
         ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
         ctx_client_unlock (client);
@@ -7905,7 +7905,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
         ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
         ctx_client_unlock (client);
-//      ctx_set_dirty (event->ctx, 1);
+//      ctx_queue_draw (event->ctx);
 //      vt->rev++;
       }
       break;
@@ -7914,7 +7914,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       {
         vt->popped = 0;
       }
-        ctx_set_dirty (event->ctx, 1);
+        ctx_queue_draw (event->ctx);
         sprintf (buf, "pr %.0f %.0f %i", x, y, device_no);
         ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
@@ -7960,7 +7960,7 @@ static void scrollbar_drag (CtxEvent *event, void *data, void *data2)
   if (vt->scroll < 0) { vt->scroll = 0.0; }
   if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
   vt->rev++;
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 
   switch (event->type)

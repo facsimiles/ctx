@@ -745,7 +745,7 @@ void ctx_reset (Ctx *ctx)
                      ctx_collect_events, ctx, ctx,
                      NULL, NULL);
   }
-  ctx_set_dirty (ctx, 0);
+  ctx_queue_draw (ctx);
 #endif
 }
 
@@ -2017,7 +2017,7 @@ void         ctx_set_cursor (Ctx *ctx, CtxCursor cursor)
 {
   if (ctx->cursor != cursor)
   {
-    ctx_set_dirty (ctx, 1);
+    ctx_queue_draw (ctx);
     ctx->cursor = cursor;
   }
 }

@@ -20,14 +20,14 @@ static void circle_editor_release_cb (CtxEvent *event, void *data1, void *data2)
   nearest_circle = circle_count;
   circle_count++;
   event->stop_propagate = 1;
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
 }
 
 static void circle_editor_circle_release_cb (CtxEvent *event, void *data1, void *data2)
 {
   fprintf (stderr, "!!!!!!\n");
   event->stop_propagate = 1;
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
 }
 
 static void circle_editor_motion_cb (CtxEvent *event, void *data1, void *data2)
@@ -51,7 +51,7 @@ static void circle_editor_motion_cb (CtxEvent *event, void *data1, void *data2)
   {
     // it's changed
     nearest_circle = nearest;
-    ctx_set_dirty (event->ctx, 1);
+    ctx_queue_draw (event->ctx);
   }
 
   event->stop_propagate = 1;

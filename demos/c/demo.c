@@ -21,13 +21,13 @@ extern int _ctx_enable_hash_cache;
 static void demo_next (CtxEvent *event, void *data1, void *data2)
 {
         test_no ++;
-        ctx_set_dirty (event->ctx, 1);
+        ctx_queue_draw (event->ctx);
 }
 
 static void demo_prev (CtxEvent *event, void *data1, void *data2)
 {
         test_no --;
-        ctx_set_dirty (event->ctx, 1);
+        ctx_queue_draw (event->ctx);
 }
 
 int main (int argc, char **argv)
@@ -41,7 +41,7 @@ int main (int argc, char **argv)
   int chosen = 1;
   int enable_keybindings = 1;
   char input[256]="fnord";
-  //ctx_set_dirty (ctx, 1);
+  //ctx_queue_draw (ctx);
   while (!ctx_has_quit (ctx))
   {
     int width  = ctx_width (ctx);
@@ -54,7 +54,7 @@ int main (int argc, char **argv)
 #endif
 
 //  itk->dirty=1;
-    if (ctx_is_dirty (ctx))
+    if (ctx_need_redraw (ctx))
     {
       itk_reset (itk);
 
@@ -191,7 +191,7 @@ static void card_gradients (ITK *itk, int frame_no)
   ctx_gradient_add_stop (ctx, 1, 0, 0, 0, 1);
   ctx_arc (ctx, width/2 + frame_no, height/2, height * 0.3, 0, 2.0 * CTX_PI, 0);
   ctx_fill (ctx);
-  ctx_set_dirty (ctx, 1);
+  ctx_queue_draw (ctx);
 }
 
 static void card_dots (ITK *itk, int frame_no)
@@ -268,7 +268,7 @@ static void card_sliders (ITK *itk, int frame_no)
   slider (ctx, height * 0.2, height * 0.4, width - height * 0.4, (frame_no  % 400) / 400.0);
   slider (ctx, height * 0.2, height * 0.5, width - height * 0.4, (frame_no  % 330) / 330.0);
   slider (ctx, height * 0.2, height * 0.6, width - height * 0.4, (frame_no  % 100) / 100.0);
-  ctx_set_dirty (ctx, 1);
+  ctx_queue_draw (ctx);
 }
 
 static void _analog_clock (Ctx     *ctx,
@@ -367,7 +367,7 @@ static void card_clock1 (ITK *itk, int frame_no)
   int width = ctx_width (ctx);
   int height = ctx_height (ctx);
   _analog_clock (ctx, ms64, width/2, height/2, height/2, 1);
-  ctx_set_dirty (ctx, 1);
+  ctx_queue_draw (ctx);
 }
 
 static void card_clock2 (ITK *itk, int frame_no)
@@ -377,7 +377,7 @@ static void card_clock2 (ITK *itk, int frame_no)
   int width = ctx_width (ctx);
   int height = ctx_height (ctx);
   _analog_clock (ctx, ms64, width/2, height/2, height/2, 0);
-  ctx_set_dirty (ctx, 1);
+  ctx_queue_draw (ctx);
 }
 
 static void card_fill_rule (ITK *itk, int frame_no)
@@ -475,7 +475,7 @@ static void object_drag (CtxEvent *event, void *data1, void *data2)
   obj->x += event->delta_x;
   obj->y += event->delta_y;
   event->stop_propagate=1;
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
 }
 
 static void card_drag (ITK *itk, int frame_no)

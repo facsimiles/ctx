@@ -1,6 +1,8 @@
 #endif
 
-float ctx_target_fps = 25.0;
+float ctx_target_fps = 100.0; /* this might end up being the resolution of our
+                                 idle callback firing
+                               */
 
 #if CTX_VT
 
@@ -607,7 +609,7 @@ static void ctx_client_titlebar_drag (CtxEvent *event, void *data, void *data2)
   ctx_client_move (client->id, new_x, new_y);
 
   //vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
 
   event->stop_propagate = 1;
 }
@@ -624,7 +626,7 @@ static void ctx_client_resize_se (CtxEvent *event, void *data, void *data2)
   ctx_client_resize (client->id, new_w, new_h);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -636,7 +638,7 @@ static void ctx_client_resize_e (CtxEvent *event, void *data, void *data2)
   ctx_client_resize (client->id, new_w, client->height);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -648,7 +650,7 @@ static void ctx_client_resize_s (CtxEvent *event, void *data, void *data2)
   ctx_client_resize (client->id, client->width, new_h);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -662,7 +664,7 @@ static void ctx_client_resize_n (CtxEvent *event, void *data, void *data2)
   ctx_client_move (client->id, client->x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -678,7 +680,7 @@ static void ctx_client_resize_ne (CtxEvent *event, void *data, void *data2)
   ctx_client_move (client->id, client->x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -696,7 +698,7 @@ static void ctx_client_resize_sw (CtxEvent *event, void *data, void *data2)
   ctx_client_move (client->id, new_x, client->y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -713,7 +715,7 @@ static void ctx_client_resize_nw (CtxEvent *event, void *data, void *data2)
   ctx_client_move (client->id, new_x, new_y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -728,7 +730,7 @@ static void ctx_client_resize_w (CtxEvent *event, void *data, void *data2)
   ctx_client_move (client->id, new_x, client->y);
   if (client->vt) // force redraw
     vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
 
   event->stop_propagate = 1;
 }
@@ -742,7 +744,7 @@ static void ctx_client_close (CtxEvent *event, void *data, void *data2)
   
   ctx_client_remove (event->ctx, client);
 
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -1013,7 +1015,7 @@ static void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, voi
     }
     prev_drag_end_time = event->time;
   }
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   vt_rev_inc (client->vt);
   event->stop_propagate = 1;
 }
@@ -1325,18 +1327,21 @@ float ctx_avg_bytespeed = 0.0;
 
 #endif /* CTX_VT */
 
-
 int ctx_clients_handle_events (Ctx *ctx)
 {
   //int n_clients = ctx_list_length (clients);
   int pending_data = 0;
+#if CTX_VT
   long time_start = ctx_ticks ();
+#endif
   int sleep_time = 1000000/ctx_target_fps;
   pending_data += ctx_input_pending (ctx, sleep_time);
 
 #if CTX_VT
+
+
   if (!clients)
-    return 0;
+    return pending_data != 0;
   ctx_fetched_bytes = 0;
   if (pending_data)
   {

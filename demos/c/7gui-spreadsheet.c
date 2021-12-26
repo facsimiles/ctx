@@ -238,7 +238,7 @@ static void spreadsheet_keynav (CtxEvent *event, void *data, void *data2)
   }
 
   event->stop_propagate=1;
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
 }
 
 static void dirty_cell (Cell *cell)
@@ -569,7 +569,7 @@ static int spreadsheet_ui (ITK  *itk, void *data)
   if (!found)
   {
     spreadsheet_first_col++;
-    ctx_set_dirty (ctx, 1);
+    ctx_queue_draw (ctx);
   }
   }
 
@@ -592,7 +592,7 @@ static int spreadsheet_ui (ITK  *itk, void *data)
   if (!found)
   {
     spreadsheet_first_row++;
-    ctx_set_dirty (ctx, 1);
+    ctx_queue_draw (ctx);
   }
   }
 

@@ -1156,7 +1156,7 @@ CtxEvent *ctx_get_event (Ctx *ctx)
   if (!ctx->events.ctx_get_event_enabled)
   {
     ctx->events.ctx_get_event_enabled = 1;
-    ctx_set_dirty (ctx, 1);
+    ctx_queue_draw (ctx);
   }
 
   ctx_consume_events (ctx);
@@ -1588,7 +1588,7 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
     static CtxItem *prev_hovered_item = NULL;
     if (prev_hovered_item != hovered_item)
     {
-      ctx_set_dirty (ctx, 1);
+      ctx_queue_draw (ctx);
     }
     prev_hovered_item = hovered_item;
   }
@@ -1940,13 +1940,21 @@ int ctx_get_hash_cache (Ctx *ctx)
   return _ctx_enable_hash_cache;
 }
 
-int ctx_is_dirty (Ctx *ctx)
+int ctx_need_redraw (Ctx *ctx)
 {
-  return ctx->dirty;
+  return ctx->dirty
+#if CTX_VT
+    || ctx_clients_need_redraw (ctx)
+#endif
+    ;
 }
-void ctx_set_dirty (Ctx *ctx, int dirty)
+void ctx_queue_draw (Ctx *ctx)
 {
-  ctx->dirty = dirty;
+  ctx->dirty = 1;
+}
+void ctx_clear_dirty (Ctx *ctx)
+{
+  ctx->dirty = 0;
 }
 
 /*
@@ -2012,14 +2020,10 @@ int ctx_input_pending (Ctx *ctx, int timeout)
 
 void ctx_handle_events (Ctx *ctx)
 {
-    ctx_clients_handle_events (ctx);
-    while (ctx_get_event (ctx)){}
 #if CTX_VT
-    if (ctx_clients_need_redraw (ctx))
-    {
-      ctx_set_dirty (ctx, 1);
-    }
+  ctx_clients_handle_events (ctx);
 #endif
+  while (ctx_get_event (ctx)){}
 }
 
 #endif

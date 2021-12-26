@@ -212,7 +212,7 @@ void switch_to_tab (int desired_no)
       {
         active = active_tab = client;
         //vt_rev_inc (active->vt);
-        ctx_set_dirty (active->ctx, 1);
+        ctx_queue_draw (active->ctx);
         return;
       }
       no++;
@@ -353,7 +353,7 @@ static void ctx_client_close (CtxEvent *event, void *data, void *data2)
   if (clients == NULL)
     ctx_quit (ctx);//
 
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 
@@ -393,7 +393,7 @@ static void ctx_client_titlebar_drag (CtxEvent *event, void *data, void *data2)
   ctx_client_move (client->id, new_x, new_y);
 
   //vt_rev_inc (client->vt);
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
 
   event->stop_propagate = 1;
 }
@@ -415,7 +415,7 @@ static void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, voi
     }
     prev_drag_end_time = event->time;
   }
-  ctx_set_dirty (event->ctx, 1);
+  ctx_queue_draw (event->ctx);
 //  vt_rev_inc (client->vt);
   event->stop_propagate = 1;
 }
@@ -460,7 +460,7 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
       !strcmp (event->string, "resize-event"))
   {
     ensure_layout ();
-    ctx_set_dirty (ctx, 1);
+    ctx_queue_draw (ctx);
   }
   else
   {
@@ -598,7 +598,7 @@ void terminal_long_tap (Ctx *ctx, VT *vt)
   //  need deghosting or something on fbdev?
   //
   on_screen_keyboard = !on_screen_keyboard;
-  ctx_set_dirty (ctx, 1);
+  ctx_queue_draw (ctx);
 }
 
 int commandline_argv_start = 0;
@@ -736,7 +736,7 @@ int terminal_main (int argc, char **argv)
       if (print_shape_cache_rate)
         fprintf (stderr, "\r%f ", ctx_shape_cache_rate);
 
-      if (ctx_clients_need_redraw (ctx) || ctx_is_dirty(ctx))
+      if (ctx_need_redraw(ctx))
       {
         itk_reset (itk);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
@@ -748,20 +748,12 @@ int terminal_main (int argc, char **argv)
           draw_panel (itk, ctx);
         else
           draw_mini_panel (ctx);
-        ctx_set_dirty (ctx, 0);
         ctx_osk_draw (ctx);
         //ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
         ctx_flush (ctx);
-        //usleep (1000 * 25); // should wake up from vt poll thread instead.
-      }
-      else
-      {
-              // only needed when threads are enabled, when not
-              // this causes unnecesary jag
-        //usleep (1000 * 5); // should wake up from vt poll thread instead.
       }
      if (active)
        terminal_update_title (active->title);

@@ -682,8 +682,9 @@ void *ctx_get_backend (Ctx *ctx);
  * it provides the ability to register callbacks with the current path
  * that get delivered with transformed coordinates.
  */
-int ctx_is_dirty (Ctx *ctx);
-void ctx_set_dirty (Ctx *ctx, int dirty);
+int ctx_need_redraw (Ctx *ctx);
+void ctx_queue_draw (Ctx *ctx);
+void ctx_clear_dirty (Ctx *ctx);
 float ctx_get_float (Ctx *ctx, uint32_t hash);
 void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
 
@@ -1840,7 +1841,6 @@ long vt_rev               (VT *vt);
 int  vt_has_blink         (VT *vt);
 int ctx_vt_had_alt_screen (VT *vt);
 
-int  ctx_clients_need_redraw   (Ctx *ctx);
 int ctx_clients_handle_events (Ctx *ctx);
 
 
