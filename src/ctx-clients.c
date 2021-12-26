@@ -1408,8 +1408,9 @@ static int ctx_clients_handle_events_fun (void *data)
   Ctx *ctx = data;
   while (!ctx->quit)
   {
-    int n_clients = ctx_list_length (clients);
     ctx_client_handle_events_iteration (data);
+#if 0
+    int n_clients = ctx_list_length (clients);
     switch (n_clients)
     {
       case 0:
@@ -1422,6 +1423,7 @@ static int ctx_clients_handle_events_fun (void *data)
         usleep (0); // the switching between clients should be enough
         break;
     }
+#endif
   }
   return 0;
 }

@@ -2334,13 +2334,13 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 
 int _itk_key_bindings_active = 1;
 
+
 ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
 {
   Ctx *ctx = ctx_new_ui (-1, -1, NULL);
   ITK  *itk = itk_new (ctx);
   int   ret_val = 0;
 
-  const CtxEvent *event;
   while (!ctx_has_quit (ctx) && (ret_val == 0))
   {
     if (ctx_is_dirty (ctx))
@@ -2354,19 +2354,8 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
       itk_done (itk);
       ctx_flush (ctx);
     }
-    else
-    {
-      usleep (1000 * 10);
-    }
 
-#if CTX_VT
-    ctx_clients_handle_events (ctx);
-#endif
-    while ((event = ctx_get_event (ctx))){}
-#if CTX_VT
-    if (ctx_clients_need_redraw (ctx))
-      ctx_set_dirty (ctx, 1);
-#endif
+    ctx_handle_events (ctx);
   }
 
 #if CTX_VT

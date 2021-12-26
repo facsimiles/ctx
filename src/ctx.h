@@ -1614,6 +1614,7 @@ struct _CtxBackend
 
 CtxCommand *ctx_iterator_next (CtxIterator *iterator);
 
+void ctx_handle_events (Ctx *ctx);
 #define ctx_arg_string()  ((char*)&entry[2].data.u8[0])
 
 
