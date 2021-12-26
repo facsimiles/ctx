@@ -1,3 +1,10 @@
+#endif
+
+float ctx_target_fps = 25.0;
+
+#if CTX_VT
+
+
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
 #endif
@@ -42,7 +49,6 @@ extern Ctx *ctx;
 void terminal_update_title    (const char *title);
 void ctx_sdl_set_fullscreen   (Ctx *ctx, int val);
 int  ctx_sdl_get_fullscreen   (Ctx *ctx);
-float ctx_target_fps = 25.0;
 static int ctx_fetched_bytes = 1;
 
 CtxClient *vt_get_client (VT *vt);
@@ -1315,130 +1321,96 @@ int ctx_clients_need_redraw (Ctx *ctx)
    changes += ctx_clients_dirty_count ();
    return changes != 0;
 }
-
 float ctx_avg_bytespeed = 0.0;
 
-static void ctx_client_handle_events_iteration (Ctx *ctx)
-{
-  static int fail_safe = 0;
-  //int n_clients = ctx_list_length (clients);
-      int pending_data = 0;
-      long time_start = ctx_ticks ();
-      int sleep_time = 1000000/ctx_target_fps;
+#endif /* CTX_VT */
 
-      pending_data = ctx_input_pending (ctx, sleep_time);
-
-      ctx_fetched_bytes = 0;
-      if (pending_data || fail_safe>100)
-      {
-        if (!pending_data)pending_data = 1;
-        /* record amount of time spent - and adjust time of reading for
-         * vts?
-         */
-        long int fractional_sleep = sleep_time / pending_data;
-        for (CtxList *l = clients; l; l = l->next)
-        {
-          CtxClient *client = l->data;
-          ctx_client_lock (client);
-          int found = 0;
-          for (CtxList *l2 = clients; l2; l2 = l2->next)
-            if (l2->data == client) found = 1;
-          if (!found)
-            goto done;
-          
-          ctx_fetched_bytes += vt_poll (client->vt, fractional_sleep);
-          //ctx_fetched_bytes += vt_poll (client->vt, sleep_time); //fractional_sleep);
-          ctx_client_unlock (client);
-        }
-done:
-        fail_safe = 0;
-      }
-      else
-      {
-        fail_safe ++;
-        for (CtxList *l = clients; l; l = l->next)
-        {
-          CtxClient *client = l->data;
-          vt_audio_task (client->vt, 0);
-        }
-      }
-
-      //int got_events = 0;
-
-      //while (ctx_get_event (ctx)) { }
-#if 0
-      if (changes /*|| pending_data */)
-      {
-        ctx_target_fps *= 1.6;
-        if (ctx_target_fps > 60) ctx_target_fps = 60;
-      }
-      else
-      {
-        ctx_target_fps = ctx_target_fps * 0.95 + 30.0 * 0.05;
-
-        // 20fps is the lowest where sun 8bit ulaw 8khz works reliably
-      }
-
-      if (ctx_avg_bytespeed > 1024 * 1024) ctx_target_fps = 10.0;
-
-      if (_ctx_green < 0.4)
-        ctx_target_fps = 120.0;
-      else if (_ctx_green > 0.6)
-        ctx_target_fps = 25.0;
-
-      //ctx_target_fps = 30.0;
-#else
-      ctx_target_fps = 30.0;
-#endif
-
-      long time_end = ctx_ticks ();
-
-      int timed = (time_end-time_start);
-      float bytespeed = ctx_fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
-
-      ctx_avg_bytespeed = bytespeed * 0.2 + ctx_avg_bytespeed * 0.8;
-#if 0
-      fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, ctx_fetched_bytes, timed, ctx_target_fps);
-#endif
-}
-
-
-static int ctx_clients_handle_events_fun (void *data)
-{
-  Ctx *ctx = data;
-  while (!ctx->quit)
-  {
-    ctx_client_handle_events_iteration (data);
-#if 0
-    int n_clients = ctx_list_length (clients);
-    switch (n_clients)
-    {
-      case 0:
-        usleep (1000 * 10);
-        break;
-      case 1:
-        usleep (1); // letting quit work - and also makes framerate for dump
-        break;
-      default:
-        usleep (0); // the switching between clients should be enough
-        break;
-    }
-#endif
-  }
-  return 0;
-}
 
 void ctx_clients_handle_events (Ctx *ctx)
 {
-#if 1 //#if CTX_THREADS==0
-    ctx_client_handle_events_iteration (ctx);
-#else
-    static thrd_t tid = 0;
-    if (tid == 0)
+  static int fail_safe = 0;
+  //int n_clients = ctx_list_length (clients);
+  int pending_data = 0;
+  long time_start = ctx_ticks ();
+  int sleep_time = 1000000/ctx_target_fps;
+  pending_data = ctx_input_pending (ctx, sleep_time);
+
+#if CTX_VT
+  if (!clients)
+    return;
+  ctx_fetched_bytes = 0;
+  if (pending_data || fail_safe>100)
+  {
+    if (!pending_data)pending_data = 1;
+    /* record amount of time spent - and adjust time of reading for
+     * vts?
+     */
+    //long int fractional_sleep = sleep_time / pending_data;
+    long int fractional_sleep = sleep_time * 0.75;
+    for (CtxList *l = clients; l; l = l->next)
     {
-      thrd_create (&tid, (void*)ctx_clients_handle_events_fun, ctx);
+      CtxClient *client = l->data;
+      ctx_client_lock (client);
+      int found = 0;
+      for (CtxList *l2 = clients; l2; l2 = l2->next)
+        if (l2->data == client) found = 1;
+      if (!found)
+        goto done;
+      
+      ctx_fetched_bytes += vt_poll (client->vt, fractional_sleep);
+      //ctx_fetched_bytes += vt_poll (client->vt, sleep_time); //fractional_sleep);
+      ctx_client_unlock (client);
     }
+done:
+    fail_safe = 0;
+  }
+  else
+  {
+    fail_safe ++;
+    for (CtxList *l = clients; l; l = l->next)
+    {
+      CtxClient *client = l->data;
+      vt_audio_task (client->vt, 0);
+    }
+  }
+
+  //int got_events = 0;
+
+  //while (ctx_get_event (ctx)) { }
+#if 0
+  if (changes /*|| pending_data */)
+  {
+    ctx_target_fps *= 1.6;
+    if (ctx_target_fps > 60) ctx_target_fps = 60;
+  }
+  else
+  {
+    ctx_target_fps = ctx_target_fps * 0.95 + 30.0 * 0.05;
+
+    // 20fps is the lowest where sun 8bit ulaw 8khz works reliably
+  }
+
+  if (ctx_avg_bytespeed > 1024 * 1024) ctx_target_fps = 10.0;
+
+  if (_ctx_green < 0.4)
+    ctx_target_fps = 120.0;
+  else if (_ctx_green > 0.6)
+    ctx_target_fps = 25.0;
+
+  //ctx_target_fps = 30.0;
+#else
+  ctx_target_fps = 70.0; // need to be higher than vsync rate to hit vsync
+#endif
+
+  long time_end = ctx_ticks ();
+
+  int timed = (time_end-time_start);
+  float bytespeed = ctx_fetched_bytes / ((timed)/ (1000.0f * 1000.0f));
+
+  ctx_avg_bytespeed = bytespeed * 0.2 + ctx_avg_bytespeed * 0.8;
+#if 0
+  fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, ctx_fetched_bytes, timed, ctx_target_fps);
+#endif
 #endif
 }
 
-#endif /* CTX_VT */

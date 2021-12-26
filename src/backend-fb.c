@@ -8,7 +8,26 @@
 #include <signal.h>
 #endif
 
-#if CTX_FB || CTX_KMS
+
+#if CTX_KMS || CTX_FB
+static char *ctx_fb_clipboard = NULL;
+static void ctx_fb_set_clipboard (Ctx *ctx, const char *text)
+{
+  if (ctx_fb_clipboard)
+    free (ctx_fb_clipboard);
+  ctx_fb_clipboard = NULL;
+  if (text)
+  {
+    ctx_fb_clipboard = strdup (text);
+  }
+}
+
+static char *ctx_fb_get_clipboard (Ctx *ctx)
+{
+  if (ctx_fb_clipboard) return strdup (ctx_fb_clipboard);
+  return strdup ("");
+}
+
 static int ctx_fb_get_mice_fd (Ctx *ctx)
 {
   //CtxFb *fb = (void*)ctx->backend;
@@ -511,7 +530,6 @@ Ctx *ctx_new_fb (int width, int height)
     return NULL;
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
   tiled->show_frame = (void*)ctx_fb_show_frame;
-  ctx_fb_events = 1;
 
 #if CTX_BABL
   babl_init ();
@@ -536,8 +554,8 @@ Ctx *ctx_new_fb (int width, int height)
   backend->free  = (void*)ctx_fb_free;
   backend->set_clipboard = ctx_fb_set_clipboard;
   backend->get_clipboard = ctx_fb_get_clipboard;
-  backend->consume_events = (void(*)(void *))ctx_fb_consume_events;
-  backend->get_event_fds = (void*) ctx_fb_get_event_fds;
+  backend->consume_events = ctx_fb_consume_events;
+  backend->get_event_fds = ctx_fb_get_event_fds;
   backend->backend = "fb";
 
   for (int i = 0; i < _ctx_max_threads; i++)

@@ -581,6 +581,7 @@ Ctx *ctx_new_sdl (int width, int height)
 
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
+  SDL_GL_SetSwapInterval (1);
 
   backend->ctx      = ctx_new ();
   backend->backend = "sdl";

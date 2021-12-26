@@ -8,25 +8,6 @@
 #include <signal.h>
 #endif
 
-#if CTX_KMS || CTX_FB
-static char *ctx_fb_clipboard = NULL;
-static void ctx_fb_set_clipboard (Ctx *ctx, const char *text)
-{
-  if (ctx_fb_clipboard)
-    free (ctx_fb_clipboard);
-  ctx_fb_clipboard = NULL;
-  if (text)
-  {
-    ctx_fb_clipboard = strdup (text);
-  }
-}
-
-static char *ctx_fb_get_clipboard (Ctx *ctx)
-{
-  if (ctx_fb_clipboard) return strdup (ctx_fb_clipboard);
-  return strdup ("");
-}
-#endif
 
 
 #if CTX_KMS

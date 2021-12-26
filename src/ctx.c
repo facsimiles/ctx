@@ -745,6 +745,7 @@ void ctx_reset (Ctx *ctx)
                      ctx_collect_events, ctx, ctx,
                      NULL, NULL);
   }
+  ctx_set_dirty (ctx, 0);
 #endif
 }
 

@@ -2896,6 +2896,7 @@ static void vtcmd_graphics (VT *vt, const char *sequence)
 {
   fprintf (stderr, "gfx intro [%s]\n",sequence); // maybe implement such as well?
 }
+void vt_audio_task (VT *vt, int click);
 
 #if CTX_TILED
 static void ctx_show_frame (Ctx *ctx, int block)

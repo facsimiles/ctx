@@ -36,7 +36,6 @@ int main (int argc, char **argv)
 
   ITK *itk = itk_new (ctx);
 
-  const CtxEvent *event;
   uint8_t abc = 11;
   int   baz = 1;
   int chosen = 1;
@@ -171,12 +170,7 @@ int main (int argc, char **argv)
     {
        usleep (1000 * 20);
     }
-    while ((event = ctx_get_event (ctx)))
-    {
-   //   if (event->type == CTX_MOTION){
-   //           itk->dirty++;
-   //   };//
-    }
+    ctx_handle_events (ctx);
   }
   ctx_free (ctx);
   return 0;

@@ -1996,7 +1996,6 @@ int ctx_input_pending (Ctx *ctx, int timeout)
   {
     FD_SET (input_fds[i], &fdset);
   }
-
   tv.tv_sec = 0;
   tv.tv_usec = timeout;
   tv.tv_sec = timeout / 1000000;
@@ -2013,13 +2012,13 @@ int ctx_input_pending (Ctx *ctx, int timeout)
 
 void ctx_handle_events (Ctx *ctx)
 {
-#if CTX_VT
     ctx_clients_handle_events (ctx);
-#endif
     while (ctx_get_event (ctx)){}
 #if CTX_VT
     if (ctx_clients_need_redraw (ctx))
+    {
       ctx_set_dirty (ctx, 1);
+    }
 #endif
 }
 
