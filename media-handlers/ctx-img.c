@@ -136,8 +136,6 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       ctx_flush (ctx);
       dirty = 0;
     }
-    else
-      usleep (1000);
    
     while ((event = ctx_get_event (ctx)))
     {

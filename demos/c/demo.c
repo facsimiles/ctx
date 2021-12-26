@@ -166,10 +166,6 @@ int main (int argc, char **argv)
 
       ctx_flush (ctx);
     }
-    else
-    {
-       usleep (1000 * 20);
-    }
     ctx_handle_events (ctx);
   }
   ctx_free (ctx);
