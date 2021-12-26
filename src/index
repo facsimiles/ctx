@@ -12,10 +12,10 @@ constants.h
 libc.c
 ctx-internal.h
 ctx-decls.h
-sha1.c
 audio.h
 ctx-clients.h
 start-implementation
+sha1.c
 audio.c
 a85.c
 squoze5.h

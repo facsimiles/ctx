@@ -747,6 +747,7 @@ enum _CtxEventType {
 typedef enum _CtxEventType CtxEventType;
 
 #define CTX_CLICK   CTX_PRESS   // SHOULD HAVE MORE LOGIC
+typedef struct _CtxClient CtxClient;
 
 struct _CtxEvent {
   CtxEventType  type;
@@ -781,7 +782,13 @@ struct _CtxEvent {
                          * MESSAGE events
                          *
                          * and the data for drop events are delivered
+                         *
                          */
+                         /* XXX lifetime of this string should be longer
+                         * than the events, preferably interned. XXX
+                         * maybe add a flag for this?
+                         */
+  int owns_string; /* if 1 call free.. */
   CtxScrollDirection scroll_direction;
 
 

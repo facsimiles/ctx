@@ -2307,25 +2307,24 @@ itk_ctx_settings (ITK *itk)
 void
 itk_itk_settings (ITK *itk)
 {
-      static int itk_settings = 0;
-      if (itk_expander (itk, "ITK settings", &itk_settings))
-      {
-        //itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
-        //itk_toggle (itk, "enable keybindings", &enable_keybindings);
-        //itk_toggle (itk, "light mode", &itk->light_mode);
-        itk_slider_float (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
-        itk_slider_float (itk, "font size ", &itk->font_size, 3.0, 60.0, 0.25);
-        itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
-        itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
-        itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 1.0, 0.01);
-        itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
-        itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
-        itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
-        itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
-        itk_slider_float (itk, "label width", &itk->label_width, 0.0, 40.0, 0.02);
-      }
+   static int itk_settings = 0;
+   if (itk_expander (itk, "ITK settings", &itk_settings))
+   {
+     //itk_toggle (itk, "focus wraparound", &itk->focus_wraparound);
+     //itk_toggle (itk, "enable keybindings", &enable_keybindings);
+     //itk_toggle (itk, "light mode", &itk->light_mode);
+     itk_slider_float (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
+     itk_slider_float (itk, "font size ", &itk->font_size, 3.0, 60.0, 0.25);
+     itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
+     itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
+     itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 1.0, 0.01);
+     itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
+     itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
+     itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
+     itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
+     itk_slider_float (itk, "label width", &itk->label_width, 0.0, 40.0, 0.02);
+   }
 }
-
 
 void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 {
@@ -2333,7 +2332,6 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 }
 
 int _itk_key_bindings_active = 1;
-
 
 ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
 {
@@ -2347,17 +2345,15 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
     {
       itk_reset (itk);
       if (_itk_key_bindings_active)
-      itk_key_bindings (itk);
+        itk_key_bindings (itk);
       ctx_add_key_binding (itk->ctx, "control-q", NULL, "Quit", itk_key_quit, NULL);
       ret_val = ui_fun (itk, ui_data);
 
       itk_done (itk);
       ctx_flush (ctx);
     }
-
     ctx_handle_events (ctx);
   }
-
 
   itk_free (itk);
   ctx_free (ctx);

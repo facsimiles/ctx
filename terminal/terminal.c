@@ -40,8 +40,6 @@ vt_screenshot (const char *output_path)
 void ctx_client_lock (CtxClient *client);
 void ctx_client_unlock (CtxClient *client);
 
-void ctx_clients_signal_child (int signum);
-
 #define VT_RECORD 0
 
 static char *execute_self = NULL;
@@ -123,6 +121,36 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
   return active->id;
 }
 
+
+static void settings_thread (Ctx *ctx, void *user_data)
+{
+   static int frame = 0;
+   while (!ctx_has_quit (ctx))
+   {
+     fprintf (stderr, "[%i]", frame++);
+     if (ctx_need_redraw (ctx))
+     {
+        ctx_reset (ctx);
+        ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+        ctx_rgb (ctx, 0.1, 0.2, 0.3);
+        ctx_fill (ctx);
+        ctx_rgba (ctx, 1, 1, 1, 0.5);
+        ctx_line_width (ctx, 5.0);
+        ctx_move_to (ctx, 0,0);
+        ctx_line_to (ctx, ctx_width (ctx), ctx_height (ctx));
+        ctx_move_to (ctx, ctx_width (ctx), 0);
+        ctx_line_to (ctx, 0, ctx_height (ctx));
+        ctx_stroke (ctx);
+
+        ctx_flush (ctx);
+     }
+     if (frame > 100) ctx_quit (ctx);
+     
+     ctx_handle_events (ctx);
+   }
+}
+
+
 int add_settings_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
@@ -130,11 +158,10 @@ int add_settings_tab (const char *commandline, int can_launch)
   int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
   if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
-  CtxClient *active = ctx_client_new (ctx, commandline, add_x, add_y,
+  CtxClient *active = ctx_client_new_thread (ctx, settings_thread, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
                     start_font_size,
                     flags, NULL, NULL);
-  active->internal = 1;
 
   add_y += ctx_height (ctx) / 20;
   add_x += ctx_height (ctx) / 20;
@@ -178,6 +205,8 @@ void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
 int ctx_sdl_get_fullscreen (Ctx *ctx);
 CtxClient *ctx_client_by_id (Ctx *ctx, int id);
 
+CtxEvent *ctx_event_copy (CtxEvent *event);
+
 static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
@@ -191,7 +220,14 @@ static void handle_event (Ctx        *ctx,
     return;
   VT *vt = active->vt;
 
-  CtxClient *client = vt_get_client (vt);
+  CtxClient *client = active; //vt_get_client (vt);
+
+  if (!vt)
+  {
+     CtxEvent *copy = ctx_event_copy (ctx_event);
+     ctx_list_append (&active->ctx_events, copy);
+     return;
+  }
 
   ctx_client_lock (client);
 
@@ -606,8 +642,6 @@ int terminal_main (int argc, char **argv)
       commandline = vt_find_shell_command();
     ctx_client_maximize (ctx, add_tab (ctx, commandline, 1));
   }
-
-  signal (SIGCHLD,ctx_clients_signal_child);
 
   ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 

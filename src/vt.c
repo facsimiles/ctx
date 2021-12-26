@@ -263,6 +263,7 @@ static Image *image_query (int id)
 
 static int image_eid_no = 0;
 
+static CtxList *ctx_vts;
 static Image *image_add (int width,
                          int height,
                          int id,
@@ -399,18 +400,6 @@ static int vt_margin_right (VT *vt)
 }
 
 #define VT_MARGIN_RIGHT vt_margin_right(vt)
-
-
-void vt_rev_inc (VT *vt)
-{
-  if (vt)
-    vt->rev++;
-}
-
-long vt_rev (VT *vt)
-{
-  return vt?vt->rev:0;
-}
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val);
@@ -608,8 +597,36 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
   _vt_compute_cw_ch (vt);
 }
 
+
+static void ctx_clients_signal_child (int signum)
+{
+  pid_t pid;
+  int   status;
+  if ( (pid = waitpid (-1, &status, WNOHANG) ) != -1)
+    {
+      if (pid)
+        {
+          for (CtxList *l = ctx_vts; l; l=l->next)
+            {
+              VtPty *vt = l->data;
+              if (vt->pid == pid)
+                {
+                  vt->done = 1;
+                  //vt->result = status;
+                }
+            }
+        }
+    }
+}
+
 static void vt_init (VT *vt, int width, int height, float font_size, float line_spacing, int id, int can_launch)
 {
+  static int signal_installed = 0;
+  if (!signal_installed)
+  {
+    signal (SIGCHLD,ctx_clients_signal_child);
+    signal_installed = 1;
+  }
   vt->id                 = id;
   vt->lastx              = -1;
   vt->lasty              = -1;
@@ -763,6 +780,7 @@ static void vt_run_argv (VT *vt, char **argv, const char *term)
   _ctx_add_listen_fd (vt->vtpty.pty);
 }
 
+
 VT *vt_new_argv (char **argv, int width, int height, float font_size, float line_spacing, int id, int can_launch)
 {
   VT *vt                 = calloc (sizeof (VT), 1);
@@ -779,7 +797,7 @@ VT *vt_new_argv (char **argv, int width, int height, float font_size, float line
 
   vtcmd_reset_to_initial_state (vt, NULL);
   //vt->ctx = ctx_new ();
-  ctx_list_prepend (&vts, vt);
+  ctx_list_prepend (&ctx_vts, vt);
   return vt;
 }
 
@@ -1062,7 +1080,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   vt->margin_bottom  = vt->rows;
   vt->margin_right   = vt->cols;
   _vt_move_to (vt, vt->cursor_y, vt->cursor_x);
-  vt->rev++;
+  ctx_client_rev_inc (vt->client);
   VT_info ("resize %i %i", irows, icols);
   if (vt->ctxp)
     ctx_parser_free (vt->ctxp);
@@ -1130,7 +1148,7 @@ _vt_move_to (VT *vt, int y, int x)
         }
     }
   VT_cursor ("%i,%i (_vt_move_to)", y, x);
-  vt->rev++;
+  ctx_client_rev_inc (vt->client);
 }
 
 static void vt_scroll (VT *vt, int amount);
@@ -1200,7 +1218,7 @@ static void _vt_add_str (VT *vt, const char *str)
   vt_line_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
   vt->cursor_x += 1;
   vt->at_line_home = 0;
-  vt->rev++;
+  ctx_client_rev_inc (vt->client);
 }
 
 static void _vt_backspace (VT *vt)
@@ -1216,7 +1234,7 @@ static void _vt_backspace (VT *vt)
         }
       VT_cursor ("backspace");
     }
-  vt->rev++;
+  ctx_client_rev_inc (vt->client);
 }
 
 static void vtcmd_set_top_and_bottom_margins (VT *vt, const char *sequence)
@@ -2189,7 +2207,7 @@ static void vt_ctx_exit (void *data)
 {
   VT *vt = data;
   vt->state = vt_state_neutral;
-  vt->rev ++;
+  ctx_client_rev_inc (vt->client);
   if (!vt->current_line)
     return;
 #if 0
@@ -2696,7 +2714,9 @@ static void vtcmd_set_t (VT *vt, const char *sequence)
   }
   else if (!strcmp (sequence, "[5t") ) { ctx_client_raise_top (vt->root_ctx, vt->id); } 
   else if (!strcmp (sequence, "[6t") ) { ctx_client_lower_bottom (vt->root_ctx, vt->id); } 
-  else if (!strcmp (sequence, "[7t") ) { vt->rev++; /* refresh */ }
+  else if (!strcmp (sequence, "[7t") ) { 
+          ctx_client_rev_inc (vt->client);
+          /* refresh */ }
   else if (!strncmp (sequence, "[8;", 3) )
   {
     int cols = 0, rows = 0;
@@ -3274,7 +3294,7 @@ ESC [ 2 0 0 ~,
 {
   int i0 = strlen (sequence)-1;
   int i;
-  vt->rev ++;
+  ctx_client_rev_inc (vt->client);
   for (i = 0; sequences[i].prefix; i++)
     {
       if (!strncmp (sequence, sequences[i].prefix, strlen (sequences[i].prefix) ) )
@@ -4106,7 +4126,7 @@ static void vt_sixels (VT *vt, const char *sixels)
       vt_line_feed (vt);
       vt_carriage_return (vt);
     }
-  vt->rev++;
+  ctx_client_rev_inc (vt->client);
 }
 
 static inline void vt_ctx_unrled (VT *vt, char byte)
@@ -5280,28 +5300,28 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
   else if (!strcmp (str, "shift-control-home"))
     {
       vt_set_scroll (vt, vt->scrollback_count);
-      vt_rev_inc (vt);
+      ctx_client_rev_inc (vt->client);
       return;
     }
   else if (!strcmp (str, "shift-control-end"))
     {
       int new_scroll = 0;
       vt_set_scroll (vt, new_scroll);
-      vt_rev_inc (vt);
+      ctx_client_rev_inc (vt->client);
       return;
     }
   else if (!strcmp (str, "shift-control-down"))
     {
       int new_scroll = vt_get_scroll (vt) - 1;
       vt_set_scroll (vt, new_scroll);
-      vt_rev_inc (vt);
+      ctx_client_rev_inc (vt->client);
       return;
     }
   else if (!strcmp (str, "shift-control-up"))
     {
       int new_scroll = vt_get_scroll (vt) + 1;
       vt_set_scroll (vt, new_scroll);
-      vt_rev_inc (vt);
+      ctx_client_rev_inc (vt->client);
       return;
     }
   else if (!strcmp (str, "shift-page-up") ||
@@ -5309,7 +5329,7 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
     {
       int new_scroll = vt_get_scroll (vt) + vt_get_rows (vt) /2;
       vt_set_scroll (vt, new_scroll);
-      vt_rev_inc (vt);
+      ctx_client_rev_inc (vt->client);
       return;
     }
   else if (!strcmp (str, "shift-page-down") ||
@@ -5318,7 +5338,7 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
       int new_scroll = vt_get_scroll (vt) - vt_get_rows (vt) /2;
       if (new_scroll < 0) { new_scroll = 0; }
       vt_set_scroll (vt, new_scroll);
-      vt_rev_inc (vt);
+      ctx_client_rev_inc (vt->client);
       return;
     }
   else if (!strcmp (str, "shift-control--") ||
@@ -5618,7 +5638,7 @@ void vt_destroy (VT *vt)
   //if (vt->ctx)
   //  { ctx_free (vt->ctx); }
   free (vt->argument_buf);
-  ctx_list_remove (&vts, vt);
+  ctx_list_remove (&ctx_vts, vt);
   kill (vt->vtpty.pid, 9);
   _ctx_remove_listen_fd (vt->vtpty.pty);
   close (vt->vtpty.pty);
@@ -7853,6 +7873,92 @@ static char *primary = NULL;
 static void scrollbar_drag (CtxEvent *event, void *data, void *data2);
 static int scrollbar_down = 0;
 
+void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
+{
+  CtxClient *client = data;
+  if (!client)
+  {
+    event->stop_propagate = 1;
+    return;
+  }
+  VT *vt = client->vt;
+
+  float  x = event->x;
+  float  y = event->y;
+  int device_no = event->device_no;
+  char buf[128]="";
+
+  if (vt)
+  {
+  if ((!vt->in_alt_screen) &&
+      (event->x > vt->width - vt->cw * 1.5 || scrollbar_down) &&
+      (event->type == CTX_DRAG_MOTION ||
+      event->type == CTX_DRAG_PRESS ||
+      event->type == CTX_DRAG_RELEASE))
+    return scrollbar_drag (event, data, data2);
+  switch (event->type)
+  {
+    case CTX_MOTION:
+    case CTX_DRAG_MOTION:
+      //if (event->device_no==1)
+      {
+        sprintf (buf, "pm %.0f %.0f %i", x, y, device_no);
+//      ctx_queue_draw (event->ctx);
+        ctx_client_lock (client);
+        vt_feed_keystring (vt, event, buf);
+        ctx_client_unlock (client);
+//      vt->rev++;
+      }
+      break;
+    case CTX_DRAG_PRESS:
+      if (event->device_no==2)
+      {
+        if (primary)
+        {
+          if (vt)
+            vt_paste (vt, primary);
+        }
+      }
+      else if (event->device_no==3 && !vt->in_alt_screen)
+      {
+        vt->popped = 1;
+      }
+      else
+      {
+        sprintf (buf, "pp %.0f %.0f %i", x, y, device_no);
+        ctx_client_lock (client);
+        vt_feed_keystring (vt, event, buf);
+        ctx_client_unlock (client);
+//      ctx_queue_draw (event->ctx);
+//      vt->rev++;
+      }
+      break;
+    case CTX_DRAG_RELEASE:
+      if (event->device_no==3 && !vt->in_alt_screen)
+      {
+        vt->popped = 0;
+      }
+        ctx_queue_draw (event->ctx);
+        sprintf (buf, "pr %.0f %.0f %i", x, y, device_no);
+        ctx_client_lock (client);
+        vt_feed_keystring (vt, event, buf);
+        ctx_client_unlock (client);
+      break;
+    default:
+      // we should not stop propagation
+      return;
+      break;
+  }
+  }
+  else
+  {
+     CtxEvent *copy = ctx_event_copy (event);
+     ctx_list_append (&client->ctx_events, copy);
+  }
+  event->stop_propagate = 1;
+//vt->rev++;
+}
+
 void vt_mouse_event (CtxEvent *event, void *data, void *data2)
 {
   VT   *vt = data;
@@ -7959,7 +8065,7 @@ static void scrollbar_drag (CtxEvent *event, void *data, void *data2)
   vt->scroll = tot_lines - disp_lines - (event->y*1.0/ ctx_client_height (vt->root_ctx, vt->id)) * tot_lines + disp_lines/2;
   if (vt->scroll < 0) { vt->scroll = 0.0; }
   if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
-  vt->rev++;
+  ctx_client_rev_inc (vt->client);
   ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 
@@ -8048,6 +8154,19 @@ void vt_use_images (VT *vt, Ctx *ctx)
 }
 
 
+void ctx_client_register_events (CtxClient *client, Ctx *ctx, double x0, double y0)
+{
+  ctx_begin_path (ctx);
+  ctx_save (ctx);
+  ctx_translate (ctx, x0, y0);
+  ctx_rectangle (ctx, 0, 0, client->width, client->height);
+  ctx_listen (ctx, CTX_DRAG,   ctx_client_mouse_event, client, NULL);
+  ctx_listen (ctx, CTX_MOTION, ctx_client_mouse_event, client, NULL);
+  ctx_begin_path (ctx);
+  ctx_restore (ctx);
+}
+
+#if 0
 void vt_register_events (VT *vt, Ctx *ctx, double x0, double y0)
 {
   ctx_begin_path (ctx);
@@ -8059,6 +8178,7 @@ void vt_register_events (VT *vt, Ctx *ctx, double x0, double y0)
   ctx_begin_path (ctx);
   ctx_restore (ctx);
 }
+#endif
 
 void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 {
@@ -8321,7 +8441,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
            {
              vt->scroll_offset = 0;
              vt->in_smooth_scroll = 0;
-             vt->rev++;
+             ctx_client_rev_inc (vt->client);
            }
        }
      else
@@ -8331,7 +8451,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
            {
              vt->scroll_offset = 0;
              vt->in_smooth_scroll = 0;
-             vt->rev++;
+             ctx_client_rev_inc (vt->client);
            }
        }
    }
@@ -8490,7 +8610,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
 {
  char buf[64]="";
  int button_state = 0;
- vt->rev++;
+ ctx_client_rev_inc (vt->client);
  ctx_ticks();
  if ((! (vt->mouse | vt->mouse_all | vt->mouse_drag)) ||
      (event && (event->state & CTX_MODIFIER_STATE_SHIFT)))
@@ -8595,7 +8715,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
          vt->select_begin_x = px_x;
          vt->select_begin_y = px_y;
          prev_press_time = ctx_ticks ();
-         vt->rev++;
+         ctx_client_rev_inc (vt->client);
        }
      else if (type == VT_MOUSE_RELEASE)
        {
@@ -8654,7 +8774,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
              vt->scroll = 0.0f;
          }
 
-         vt->rev++;
+         ctx_client_rev_inc (vt->client);
        }
      return;
    }

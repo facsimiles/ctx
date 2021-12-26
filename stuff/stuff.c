@@ -5752,9 +5752,6 @@ static int card_files (ITK *itk_, void *data)
   return 0;
 }
 
-void ctx_clients_signal_child (int signum);
-
-
 int stuff_main (int argc, char **argv)
 {
   setenv ("CTX_SHAPE_CACHE", "0", 1);
@@ -5789,9 +5786,6 @@ int stuff_main (int argc, char **argv)
     if (path[1] == '/') path++;
   }
   commandline = ctx_string_new ("");
-
-  signal (SIGCHLD, ctx_clients_signal_child);
-
 
   if (text_editor)
   {

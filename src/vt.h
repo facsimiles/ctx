@@ -1,16 +1,23 @@
 
 typedef struct VtPty
 {
-  int        pty;
-  pid_t      pid;
+  int        pty; //    0 if thread
+  pid_t      pid; //    0 if thread
   int        done;
+
+  void      *userdata;
+
+  uint8_t   *shm;
+  int        shm_size;
 } VtPty;
+
+
+
 ssize_t vtpty_read     (void *vtpty, void *buf, size_t count);
 ssize_t vtpty_write    (void *vtpty, const void *buf, size_t count);
 void    vtpty_resize   (void *vtpty, int cols, int rows,
                         int px_width, int px_height);
 int     vtpty_waitdata (void  *vtpty, int timeout);
-extern  CtxList *vts;
 #define MAX_COLS 2048 // used for tabstops
 
 
@@ -75,14 +82,13 @@ struct _VT
   int       lastx;
   int       lasty;
   int        result;
-  long       rev;
   //SDL_Rect   dirty;
   float  dirtpad;
   float  dirtpad1;
   float  dirtpad2;
   float  dirtpad3;
 
-  void  *client;
+  CtxClient *client;
 
   ssize_t (*write)   (void *serial_obj, const void *buf, size_t count);
   ssize_t (*read)    (void *serial_obj, void *buf, size_t count);
@@ -246,6 +252,9 @@ struct _VT
 
 VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch);
 VT *vt_new_argv (char **argv, int width, int height, float font_size, float line_spacing, int id, int can_launch);
+VT *vt_new_thread (void (*start_routine)(void *userdata), void *userdata,
+                   int width, int height, float font_size, float line_spacing, int id, int can_launch);
+
 
 void vt_open_log (VT *vt, const char *path);
 
@@ -307,7 +316,9 @@ int         vt_get_cursor_x         (VT *vt);
 int         vt_get_cursor_y         (VT *vt);
 
 void        vt_draw                 (VT *vt, Ctx *ctx, double x, double y);
+#if 0
 void        vt_register_events      (VT *vt, Ctx *ctx, double x0, double y0);
+#endif
 
 void        vt_rev_inc              (VT *vt);
 

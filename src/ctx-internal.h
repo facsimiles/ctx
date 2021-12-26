@@ -470,6 +470,8 @@ struct _CtxEvents
   double           tap_hysteresis;
 #if CTX_VT
   CtxList         *clients;
+  CtxClient *active;
+  CtxClient *active_tab;
 #endif
 };
 
