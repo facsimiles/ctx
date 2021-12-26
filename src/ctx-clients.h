@@ -56,11 +56,6 @@ struct _CtxClient {
 #endif
 };
 
-
-extern CtxClient *active;
-extern CtxClient *active_tab;
-
-
 int   ctx_client_resize        (Ctx *ctx, int id, int width, int height);
 void  ctx_client_set_font_size (Ctx *ctx, int id, float font_size);
 float ctx_client_get_font_size (Ctx *ctx, int id);
@@ -75,6 +70,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
                            CtxClientFlags flags,
                            void *user_data,
                            CtxClientFinalize client_finalize);
+
 CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data,
                 CtxClientFinalize client_finalize);
 int ctx_clients_need_redraw (Ctx *ctx);
@@ -82,12 +78,14 @@ int ctx_clients_need_redraw (Ctx *ctx);
 extern float ctx_shape_cache_rate;
 extern int _ctx_max_threads;
 
-void ctx_client_move (Ctx *ctx, int id, int x, int y);
-void ctx_client_shade_toggle (Ctx *ctx, int id);
-float ctx_client_min_y_pos (Ctx *ctx);
-float ctx_client_max_y_pos (Ctx *ctx);
+void  ctx_client_move         (Ctx *ctx, int id, int x, int y);
+void  ctx_client_shade_toggle (Ctx *ctx, int id);
+float ctx_client_min_y_pos    (Ctx *ctx);
+float ctx_client_max_y_pos    (Ctx *ctx);
 
-CtxClient *client_by_id (Ctx *ctx, int id);
+int   ctx_clients_active      (Ctx *ctx);
+
+CtxClient *ctx_client_by_id (Ctx *ctx, int id);
 
 int ctx_clients_draw (Ctx *ctx, int layer2);
 

@@ -148,10 +148,8 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 
 static float _ctx_font_size = 10.0;
 
-CtxClient *active = NULL;
-CtxClient *active_tab = NULL;
-
-static CtxClient *ctx_client_by_id (Ctx *ctx, int id);
+static CtxClient *active = NULL;
+static CtxClient *active_tab = NULL;
 
 int ctx_client_resize (Ctx *ctx, int id, int width, int height);
 void ctx_client_maximize (Ctx *ctx, int id);
@@ -279,9 +277,9 @@ void ctx_client_shade_toggle (Ctx *ctx, int id);
 float ctx_client_min_y_pos (Ctx *ctx);
 float ctx_client_max_y_pos (Ctx *ctx);
 
-#if 0
-void ensure_layout ()
+static void ctx_clients_ensure_layout (Ctx *ctx)
 {
+  CtxList *clients = ctx_clients (ctx);
   int n_clients = ctx_list_length (clients);
   if (n_clients == 1)
   {
@@ -295,12 +293,12 @@ void ensure_layout ()
     }
   }
   else
-  for (CtxList *l = ctx_clients (ctx); l; l = l->next)
+  for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
     if (client->flags & ITK_CLIENT_MAXIMIZED)
     {
-      ctx_client_move   (ctx, client->id, 0, client_min_y_pos (ctx));
+      ctx_client_move (ctx, client->id, 0, ctx_client_min_y_pos (ctx));
       ctx_client_resize (ctx, client->id, ctx_width (ctx), ctx_height(ctx) -
                       ctx_client_min_y_pos (ctx) / 2);   // /2 to counter the double titlebar of non-maximized
       if (active_tab == NULL)
@@ -308,9 +306,8 @@ void ensure_layout ()
     }
   }
 }
-#endif
 
-static CtxClient *ctx_client_by_id (Ctx *ctx, int id)
+CtxClient *ctx_client_by_id (Ctx *ctx, int id)
 {
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
@@ -361,17 +358,14 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
 
   ctx_client_unlock (client);
   free (client);
-  //ensure_layout();
 }
 
-#if 0
-void ctx_client_remove_by_id (int id)
+void ctx_client_remove_by_id (Ctx *ctx, int id)
 {
-  int no = id_to_no (ctx, id);
-  if (no>=0)
-    ctx_client_remove (no);
+  CtxClient *client = ctx_client_by_id (ctx, id);
+  if (client)
+    ctx_client_remove (ctx, client);
 }
-#endif
 
 int ctx_client_height (Ctx *ctx, int id)
 {
@@ -440,19 +434,20 @@ void ctx_client_maximize (Ctx *ctx, int id)
 {
    CtxClient *client = ctx_client_by_id (ctx, id);
    if (!client) return;
-   if (client->flags &  ITK_CLIENT_MAXIMIZED)
-     return;
-   client->flags |= ITK_CLIENT_MAXIMIZED;
-   client->unmaximized_x = client->x;
-   client->unmaximized_y = client->y;
-   client->unmaximized_width  = client->width;
-   client->unmaximized_height = client->height;
+   if (!(client->flags &  ITK_CLIENT_MAXIMIZED))
+   {
+     client->flags |= ITK_CLIENT_MAXIMIZED;
+     client->unmaximized_x = client->x;
+     client->unmaximized_y = client->y;
+     client->unmaximized_width  = client->width;
+     client->unmaximized_height = client->height;
+     ctx_client_move (ctx, id, 0, ctx_client_min_y_pos (client->ctx));
+   }
 
    // enforce_layout does the size
    //client_resize (ctx, id, ctx_width (ctx), ctx_height(ctx) - ctx_client_min_y_pos (ctx));
    
-   ctx_client_move (ctx, id, 0, ctx_client_min_y_pos (client->ctx));
-   active_tab = client;
+   active = active_tab = client;
    ctx_queue_draw (ctx);
 }
 
@@ -1269,13 +1264,18 @@ extern int _ctx_enable_hash_cache;
 void vt_audio_task (VT *vt, int click);
 
 int ctx_input_pending (Ctx *ctx, int timeout);
+int ctx_clients_active (Ctx *ctx)
+{
+  if (active) return active->id;
+  return -1;
+}
 
 int ctx_clients_need_redraw (Ctx *ctx)
 {
   int changes = 0;
   int follow_mouse = focus_follows_mouse;
       CtxList *to_remove = NULL;
-  //ensure_layout ();
+  ctx_clients_ensure_layout (ctx);
 
 //  if (print_shape_cache_rate)
 //    fprintf (stderr, "\r%f ", ctx_shape_cache_rate);
@@ -1338,6 +1338,23 @@ int ctx_clients_need_redraw (Ctx *ctx)
    return changes != 0;
 }
 float ctx_avg_bytespeed = 0.0;
+
+int ctx_clients_tab_to_id (Ctx *ctx, int tab_no)
+{
+  CtxList *clients = ctx_clients (ctx);
+  int no = 0;
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED))
+    {
+      if (no == tab_no)
+        return client->id;
+      no++;
+    }
+  }
+  return -1;
+}
 
 CtxList *ctx_clients (Ctx *ctx)
 {
@@ -1433,6 +1450,7 @@ done:
 #if 0
   fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, ctx_fetched_bytes, timed, ctx_target_fps);
 #endif
+
 
 
 

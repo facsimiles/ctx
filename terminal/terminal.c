@@ -49,36 +49,6 @@ static char *execute_self = NULL;
 float font_size    = -1;
 float line_spacing = 2.0;
 
-static void ensure_layout (Ctx *ctx)
-{
-  CtxList *clients = ctx_clients (ctx);
-  int n_clients = ctx_list_length (clients);
-  if (n_clients == 1)
-  {
-    CtxClient *client = clients->data;
-    if (client->flags & ITK_CLIENT_MAXIMIZED)
-    {
-      ctx_client_move (ctx, client->id, 0, 0);
-      ctx_client_resize (ctx, client->id, ctx_width (ctx), ctx_height(ctx));
-      if (active_tab == NULL)
-        active_tab = client;
-    }
-  }
-  else
-  for (CtxList *l = clients; l; l = l->next)
-  {
-    CtxClient *client = l->data;
-    if (client->flags & ITK_CLIENT_MAXIMIZED)
-    {
-      ctx_client_move (ctx, client->id, 0, ctx_client_min_y_pos (ctx));
-      ctx_client_resize (ctx, client->id, ctx_width (ctx), ctx_height(ctx) -
-                      ctx_client_min_y_pos (ctx) / 2);   // /2 to counter the double titlebar of non-maximized
-      if (active_tab == NULL)
-        active_tab = client;
-    }
-  }
-}
-
 /********************/
 extern float _ctx_green;
 
@@ -97,13 +67,12 @@ const char *vt_find_shell_command (void);
 int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
-  int was_maximized = 0;
+  int was_maximized = ctx_client_is_maximized (ctx, ctx_clients_active (ctx));
   int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
-  if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
   if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
   //ctx_font_size (ctx, start_font_size); // we pass it as arg instead
-  active = ctx_client_new (ctx, commandline, add_x, add_y,
+  CtxClient *active = ctx_client_new (ctx, commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
                     start_font_size,
                     flags, NULL, NULL);
@@ -113,7 +82,6 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
   if (was_maximized)
   {
     ctx_client_maximize (ctx, active->id);
-    active_tab = active;
   }
 
   if (add_y + ctx_height(ctx)/2 > ctx_client_max_y_pos (ctx))
@@ -121,20 +89,20 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
     add_y = ctx_client_min_y_pos (ctx);
     add_x -= ctx_height (ctx) / 40 * 4;
   }
-  ensure_layout (ctx);
+//  ensure_layout (ctx);
+  ctx_queue_draw (ctx);
   return active->id;
 }
 
 int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
-  int was_maximized = 0;
+  int was_maximized = ctx_client_is_maximized (ctx, ctx_clients_active (ctx));
   int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
-  if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
   if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
   //ctx_font_size (ctx, start_font_size); // we pass it as arg instead
-  active = ctx_client_new_argv (ctx, argv, add_x, add_y,
+  CtxClient *active = ctx_client_new_argv (ctx, argv, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
                     start_font_size,
                     flags, NULL, NULL);
@@ -144,7 +112,6 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
   if (was_maximized)
   {
     ctx_client_maximize (ctx, active->id);
-    active_tab = active;
   }
 
   if (add_y + ctx_height(ctx)/2 > ctx_client_max_y_pos (ctx))
@@ -152,19 +119,18 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
     add_y = ctx_client_min_y_pos (ctx);
     add_x -= ctx_height (ctx) / 40 * 4;
   }
-  ensure_layout (ctx);
+  ctx_queue_draw (ctx);
   return active->id;
 }
 
 int add_settings_tab (const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
-  int was_maximized = 0;
-  if (active) was_maximized = flag_is_set(active->flags, ITK_CLIENT_MAXIMIZED);
+  int was_maximized = ctx_client_is_maximized (ctx, ctx_clients_active (ctx));
   int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
   if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
 
-  active = ctx_client_new (ctx, commandline, add_x, add_y,
+  CtxClient *active = ctx_client_new (ctx, commandline, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
                     start_font_size,
                     flags, NULL, NULL);
@@ -176,7 +142,6 @@ int add_settings_tab (const char *commandline, int can_launch)
   if (was_maximized)
   {
     ctx_client_maximize (ctx, active->id);
-    active_tab = active;
   }
 
   if (add_y + ctx_height(ctx)/2 > ctx_client_max_y_pos (ctx))
@@ -184,7 +149,7 @@ int add_settings_tab (const char *commandline, int can_launch)
     add_y = ctx_client_min_y_pos (ctx);
     add_x -= ctx_height (ctx) / 40 * 4;
   }
-  ensure_layout (ctx);
+  ctx_queue_draw (ctx);
   return active->id;
 }
 
@@ -200,36 +165,26 @@ static void add_settings_tab_cb (CtxEvent *event, void *data, void *data2)
   add_settings_tab (vt_find_shell_command(), 1);
 }
 
+int ctx_clients_tab_to_id (Ctx *ctx, int tab_no);
 
-void switch_to_tab (Ctx *ctx, int desired_no)
+void switch_to_tab (Ctx *ctx, int tab_no)
 {
-  CtxList *clients = ctx_clients (ctx);
-  int no = 0;
-  for (CtxList *l = clients; l; l = l->next)
-  {
-    CtxClient *client = l->data;
-    if (flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED))
-    {
-      if (no == desired_no)
-      {
-        active = active_tab = client;
-        //vt_rev_inc (active->vt);
-        ctx_queue_draw (active->ctx);
-        return;
-      }
-      no++;
-    }
-  }
+  int id = ctx_clients_tab_to_id (ctx, tab_no);
+  if (id >= 0)
+    ctx_client_maximize (ctx, id);
 }
 
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
 int ctx_sdl_get_fullscreen (Ctx *ctx);
+CtxClient *ctx_client_by_id (Ctx *ctx, int id);
 
 static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
 {
   CtxBackendType backend_type = ctx_backend_type (ctx);
+  int active_id = ctx_clients_active (ctx);
+  CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
   if (!active)
     return;
   if (active->internal)
@@ -400,7 +355,6 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
       event->string &&
       !strcmp (event->string, "resize-event"))
   {
-    ensure_layout (ctx);
     ctx_queue_draw (ctx);
   }
   else
@@ -653,11 +607,6 @@ int terminal_main (int argc, char **argv)
     ctx_client_maximize (ctx, add_tab (ctx, commandline, 1));
   }
 
-  if (!active)
-    return 1;
-
-
-
   signal (SIGCHLD,ctx_clients_signal_child);
 
   ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
@@ -672,7 +621,7 @@ int terminal_main (int argc, char **argv)
     {
       //int changes = 0;
       int n_clients = ctx_list_length (ctx_clients (ctx));
-      ensure_layout (ctx);
+      //ensure_layout (ctx);
 
       if (print_shape_cache_rate)
         fprintf (stderr, "\r%f ", ctx_shape_cache_rate);
@@ -697,8 +646,13 @@ int terminal_main (int argc, char **argv)
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
         ctx_flush (ctx);
       }
+
+     {
+     int active_id = ctx_clients_active (ctx);
+     CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
      if (active)
        terminal_update_title (active->title);
+     }
 
      ctx_handle_events (ctx);
     }
