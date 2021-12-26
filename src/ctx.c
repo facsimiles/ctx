@@ -745,7 +745,7 @@ void ctx_reset (Ctx *ctx)
                      ctx_collect_events, ctx, ctx,
                      NULL, NULL);
   }
-  ctx_queue_draw (ctx);
+  ctx->dirty = 0;
 #endif
 }
 
@@ -1889,6 +1889,12 @@ void ctx_free (Ctx *ctx)
 {
   if (!ctx)
     { return; }
+
+#if CTX_VT
+  while (ctx_clients (ctx))
+    ctx_client_remove (ctx, ctx_clients(ctx)->data);
+#endif
+
 #if CTX_EVENTS
   ctx_clear_bindings (ctx);
 #endif
@@ -1953,6 +1959,11 @@ ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx)
 
 void ctx_quit (Ctx *ctx)
 {
+#if CTX_VT
+  while (ctx_clients (ctx))
+    ctx_client_remove (ctx, ctx_clients(ctx)->data);
+#endif
+
 #if CTX_EVENTS
   ctx->quit ++;
 #endif

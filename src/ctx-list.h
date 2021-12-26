@@ -18,7 +18,6 @@ static inline void *ctx_calloc (size_t size, size_t count)
   return ret;
 }
 
-typedef struct _CtxList CtxList;
 struct _CtxList {
   void *data;
   CtxList *next;

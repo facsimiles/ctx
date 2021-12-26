@@ -684,7 +684,6 @@ void *ctx_get_backend (Ctx *ctx);
  */
 int ctx_need_redraw (Ctx *ctx);
 void ctx_queue_draw (Ctx *ctx);
-void ctx_clear_dirty (Ctx *ctx);
 float ctx_get_float (Ctx *ctx, uint32_t hash);
 void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
 
@@ -1843,6 +1842,8 @@ int ctx_vt_had_alt_screen (VT *vt);
 
 int ctx_clients_handle_events (Ctx *ctx);
 
+typedef struct _CtxList CtxList;
+CtxList *ctx_clients (Ctx *ctx);
 
 typedef struct _CtxBuffer CtxBuffer;
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,

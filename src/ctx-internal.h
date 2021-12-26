@@ -468,6 +468,9 @@ struct _CtxEvents
   int              tap_delay_max;
   int              tap_delay_hold;
   double           tap_hysteresis;
+#if CTX_VT
+  CtxList         *clients;
+#endif
 };
 
 

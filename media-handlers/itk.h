@@ -2358,10 +2358,6 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
     ctx_handle_events (ctx);
   }
 
-#if CTX_VT
-  while (clients)
-    ctx_client_remove (ctx, clients->data);
-#endif
 
   itk_free (itk);
   ctx_free (ctx);

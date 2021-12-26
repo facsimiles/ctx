@@ -57,16 +57,14 @@ struct _CtxClient {
 };
 
 
-
-extern CtxList *clients;
 extern CtxClient *active;
 extern CtxClient *active_tab;
 
 
-int ctx_client_resize (int id, int width, int height);
-void ctx_client_set_font_size (int id, float font_size);
-float ctx_client_get_font_size (int id);
-void ctx_client_maximize (int id);
+int   ctx_client_resize        (Ctx *ctx, int id, int width, int height);
+void  ctx_client_set_font_size (Ctx *ctx, int id, float font_size);
+float ctx_client_get_font_size (Ctx *ctx, int id);
+void  ctx_client_maximize      (Ctx *ctx, int id);
 
 
 CtxClient *vt_get_client (VT *vt);
@@ -84,39 +82,38 @@ int ctx_clients_need_redraw (Ctx *ctx);
 extern float ctx_shape_cache_rate;
 extern int _ctx_max_threads;
 
-void ctx_client_move (int id, int x, int y);
-int ctx_client_resize (int id, int w, int h);
-void ctx_client_shade_toggle (int id);
+void ctx_client_move (Ctx *ctx, int id, int x, int y);
+void ctx_client_shade_toggle (Ctx *ctx, int id);
 float ctx_client_min_y_pos (Ctx *ctx);
 float ctx_client_max_y_pos (Ctx *ctx);
 
-CtxClient *client_by_id (int id);
+CtxClient *client_by_id (Ctx *ctx, int id);
 
 int ctx_clients_draw (Ctx *ctx, int layer2);
 
 void ctx_client_remove (Ctx *ctx, CtxClient *client);
 
-int ctx_client_height (int id);
+int ctx_client_height (Ctx *ctx, int id);
 
-int  ctx_client_x (int id);
-int  ctx_client_y (int id);
-void ctx_client_raise_top (int id);
-void ctx_client_lower_bottom (int id);
-void ctx_client_iconify (int id);
-int  ctx_client_is_iconified (int id);
-void ctx_client_uniconify (int id);
-void ctx_client_maximize (int id);
-int  ctx_client_is_maximized (int id);
-void ctx_client_unmaximize (int id);
-void ctx_client_maximized_toggle (int id);
-void ctx_client_shade (int id);
-int  ctx_client_is_shaded (int id);
-void ctx_client_unshade (int id);
-void ctx_client_toggle_maximized (int id);
-void ctx_client_shade_toggle (int id);
-void ctx_client_move (int id, int x, int y);
-int  ctx_client_resize (int id, int width, int height);
-void ctx_client_set_opacity (int id, float opacity);
-float ctx_client_get_opacity (int id);
+int  ctx_client_x (Ctx *ctx, int id);
+int  ctx_client_y (Ctx *ctx, int id);
+void ctx_client_raise_top (Ctx *ctx, int id);
+void ctx_client_lower_bottom (Ctx *ctx, int id);
+void ctx_client_iconify (Ctx *ctx, int id);
+int  ctx_client_is_iconified (Ctx *ctx, int id);
+void ctx_client_uniconify (Ctx *ctx, int id);
+void ctx_client_maximize (Ctx *ctx, int id);
+int  ctx_client_is_maximized (Ctx *ctx, int id);
+void ctx_client_unmaximize (Ctx *ctx, int id);
+void ctx_client_maximized_toggle (Ctx *ctx, int id);
+void ctx_client_shade (Ctx *ctx, int id);
+int  ctx_client_is_shaded (Ctx *ctx, int id);
+void ctx_client_unshade (Ctx *ctx, int id);
+void ctx_client_toggle_maximized (Ctx *ctx, int id);
+void ctx_client_shade_toggle (Ctx *ctx, int id);
+void ctx_client_move (Ctx *ctx, int id, int x, int y);
+int  ctx_client_resize (Ctx *ctx, int id, int width, int height);
+void ctx_client_set_opacity (Ctx *ctx, int id, float opacity);
+float ctx_client_get_opacity (Ctx *ctx, int id);
 
 #endif

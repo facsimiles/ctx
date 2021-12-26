@@ -226,7 +226,7 @@ static void user_data_free (CtxClient *client, void *user_data)
 
 CtxClient *find_client (const char *label)
 {
-  for (CtxList *l = clients; l; l = l->next)
+  for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
     if (client->user_data && !strcmp (client->user_data, label))
@@ -430,7 +430,7 @@ static int metadata_dirty = 0;
 static void drop_item_renderers (Ctx *ctx)
 {
   again:
-  for (CtxList *l = clients; l; l = l->next)
+  for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
     if (!(client->flags & ITK_CLIENT_LAYER2))
@@ -1131,7 +1131,7 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 
 
   CtxList *to_remove = NULL;
-  for (CtxList *l = clients; l; l = l->next)
+  for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
     if (client->flags & ITK_CLIENT_PRELOAD)
@@ -4222,9 +4222,9 @@ static void dir_layout (ITK *itk, Collection *collection)
             }
             else
             {
-              ctx_client_move (client->id, itk->x, itk->y);
-              ctx_client_set_font_size (client->id, itk->font_size * live_font_factor);
-              ctx_client_resize (client->id, width, height);
+              ctx_client_move (ctx, client->id, itk->x, itk->y);
+              ctx_client_set_font_size (ctx, client->id, itk->font_size * live_font_factor);
+              ctx_client_resize (ctx, client->id, width, height);
 
             }
           }
@@ -4554,10 +4554,10 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   if ((client=find_client (client_a)))
   {
      //fprintf (stderr, "reusing %s\n", client_a);
-     ctx_client_move (client->id, 
+     ctx_client_move (ctx, client->id, 
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size);
-     ctx_client_resize (client->id, 
+     ctx_client_resize (ctx, client->id, 
           itk->font_size * pre_thumb_size,
           itk->font_size * pre_thumb_size);
   }
@@ -4578,11 +4578,11 @@ int viewer_pre_next (Ctx *ctx, void *data1)
     }
   }
   if (client)
-    ctx_client_raise_top (client->id);
+    ctx_client_raise_top (ctx, client->id);
 
 #if 1
   CtxList *to_remove = NULL;
-  for (CtxList *l = clients; l; l = l->next)
+  for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
     if (client->flags & ITK_CLIENT_PRELOAD)
@@ -4652,9 +4652,9 @@ void viewer_load_path (const char *path, const char *name)
         {
           viewer_was_live = 1;
         }
-        ctx_client_set_font_size (viewer->id, itk->font_size);
-        ctx_client_move (viewer->id, 0, 0);
-        ctx_client_resize (viewer->id, ctx_width (ctx), ctx_height (ctx));
+        ctx_client_set_font_size (ctx, viewer->id, itk->font_size);
+        ctx_client_move (ctx, viewer->id, 0, 0);
+        ctx_client_resize (ctx, viewer->id, ctx_width (ctx), ctx_height (ctx));
         vt_feed_keystring (viewer->vt, NULL, "space");
       }
       else
@@ -4668,7 +4668,7 @@ void viewer_load_path (const char *path, const char *name)
         ctx_add_timeout (ctx, 1000 * 0.2, viewer_space, NULL);
       }
       free (client_name);
-      ctx_client_raise_top (viewer->id);
+      ctx_client_raise_top (ctx, viewer->id);
 
     //fprintf (stderr, "[%s]\n", command);
 #if 0
@@ -4966,7 +4966,7 @@ static int card_files (ITK *itk_, void *data)
   if (viewer)
   {
     int found = 0;
-    for (CtxList *l = clients; l; l = l->next)
+    for (CtxList *l = ctx_clients (ctx); l; l = l->next)
     {
       if (l->data == viewer)
         found = 1;
@@ -5048,7 +5048,7 @@ static int card_files (ITK *itk_, void *data)
       dir_layout (itk, collection);
 
 
-      if (clients)
+      if (ctx_clients (ctx))
       {
         ctx_font_size (ctx, itk->font_size);
         ctx_clients_draw (ctx, 0);
@@ -5381,10 +5381,10 @@ static int card_files (ITK *itk_, void *data)
           CtxClient *client;
           if ((client=find_client (client_a)))
           {
-            ctx_client_move (client->id, 0, 0);
-            ctx_client_resize (client->id, ctx_width (ctx), ctx_height (ctx));
-            ctx_client_raise_top (client->id);
-            ctx_client_set_opacity (client->id, opacity);
+            ctx_client_move (ctx, client->id, 0, 0);
+            ctx_client_resize (ctx, client->id, ctx_width (ctx), ctx_height (ctx));
+            ctx_client_raise_top (ctx, client->id);
+            ctx_client_set_opacity (ctx, client->id, opacity);
             //if (!dirtcb)
             //  dirtcb = ctx_add_timeout (ctx, 50, delayed_dirt, NULL);
             ctx_queue_draw (ctx);
@@ -5416,7 +5416,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_font_size (ctx, itk->font_size);
     ctx_clients_draw (ctx, 0);
     int found = 0;
-    for (CtxList *c = clients; c; c = c->next)
+    for (CtxList *c = ctx_clients (ctx); c; c = c->next)
     {
       if (c->data == viewer)
         found = 1;
@@ -5433,7 +5433,7 @@ static int card_files (ITK *itk_, void *data)
   else
   {
 
-    for (CtxList *c = clients; c; c = c->next)
+    for (CtxList *c = ctx_clients (ctx); c; c = c->next)
     {
       CtxClient *client = c->data;
       if (client->flags & ITK_CLIENT_LAYER2)

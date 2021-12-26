@@ -1942,19 +1942,16 @@ int ctx_get_hash_cache (Ctx *ctx)
 
 int ctx_need_redraw (Ctx *ctx)
 {
-  return ctx->dirty
+  return (ctx->dirty != 0)
 #if CTX_VT
     || ctx_clients_need_redraw (ctx)
 #endif
     ;
 }
+
 void ctx_queue_draw (Ctx *ctx)
 {
-  ctx->dirty = 1;
-}
-void ctx_clear_dirty (Ctx *ctx)
-{
-  ctx->dirty = 0;
+  ctx->dirty ++;
 }
 
 /*
