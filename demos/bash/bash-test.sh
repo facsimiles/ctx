@@ -1,7 +1,7 @@
 #!/bin/bash
-source ctx.bash
 
-ctx_init
+# the latter part is enough to act as an import when installed
+source ctx2d.bash || source `command -v ctx2d.bash`
 
 function zoom_word(){
 for frame in {1..99}; do
@@ -39,9 +39,8 @@ while [ x$event != xq ];do
   textBaseline middle
   if [ x$event != x ]; then message=$event; fi
   text "$1 $message"
-  update_event
   endFrame
+  update_event
 done
-
 
 
