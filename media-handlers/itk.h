@@ -2259,6 +2259,8 @@ void itk_done (ITK *itk)
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb  (Ctx *ctx);
 
+extern int ctx_show_fps;
+
 void
 itk_ctx_settings (ITK *itk)
 {
@@ -2280,6 +2282,9 @@ itk_ctx_settings (ITK *itk)
   {
 
     itk_toggle (itk, "hash cache", &hash_cache_enabled);
+#if CTX_SDL
+    itk_toggle (itk, "fps debug", &ctx_show_fps);
+#endif
     if (hash_cache_enabled != ctx_get_hash_cache (ctx)){
       ctx_set_hash_cache (ctx, hash_cache_enabled);
     }
