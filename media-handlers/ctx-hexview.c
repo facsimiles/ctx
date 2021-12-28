@@ -117,7 +117,6 @@ int ctx_hexview_main(int argc, char *argv[])
   {
     CtxEvent *event;
 
-
     uint64_t ticks = ctx_ticks ();
 
     uint64_t delta = 0;
@@ -194,10 +193,21 @@ int ctx_hexview_main(int argc, char *argv[])
            y += font_size;
          }
       }
+      ctx_move_to (ctx, 0,20);
+      char buf[23];
+      static int frame = 0;
+      sprintf (buf, "%i", frame++);
+      ctx_text (ctx, buf);
 
       ctx_restore (ctx);
       ctx_flush (ctx);
+
       dirty = 0;
+      if (1)
+      {
+      ctx_queue_draw (ctx);
+      dirty = 1;
+      }
 
       float target_y = 0.0 + (cursor_line_no + 1 - line_no) * line_height * font_size;
 

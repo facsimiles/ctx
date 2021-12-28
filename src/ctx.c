@@ -2426,6 +2426,12 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 #if CTX_HEADLESS
   else if (backend->free == (void*) ctx_headless_free) return CTX_BACKEND_HEADLESS;
 #endif
+#if CTX_RASTERIZER
+  else if (backend->process == (void*) ctx_hasher_process) return CTX_BACKEND_HASHER;
+#endif
+#if CTX_RASTERIZER
+  else if (backend->free == (void*) ctx_rasterizer_deinit) return CTX_BACKEND_RASTERIZER;
+#endif
 #if CTX_KMS
   else if (backend->free == (void*) ctx_kms_free) return CTX_BACKEND_KMS;
 #endif

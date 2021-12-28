@@ -1862,6 +1862,8 @@ CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
 typedef enum CtxBackendType {
   CTX_BACKEND_NONE,
   CTX_BACKEND_CTX,
+  CTX_BACKEND_RASTERIZER,
+  CTX_BACKEND_HASHER,
   CTX_BACKEND_HEADLESS,
   CTX_BACKEND_TERM,
   CTX_BACKEND_FB,
