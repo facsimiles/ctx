@@ -645,6 +645,30 @@ ctx_fragment_image_rgb8_RGBA8_box_swap_red_green (CtxRasterizer *rasterizer,
   ctx_fragment_swap_red_green_u8 (out, count);
 }
 
+static inline void
+ctx_RGBA8_apply_global_alpha_and_associate (CtxRasterizer *rasterizer,
+                                         uint8_t *buf, int count)
+{
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  uint8_t *rgba = (uint8_t *) buf;
+  if (global_alpha_u8 != 255)
+  {
+    for (int i = 0; i < count; i++)
+    {
+      rgba[3] = (rgba[3] * global_alpha_u8) / 255;
+      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+      rgba += 4;
+    }
+  }
+  else
+  {
+    for (int i = 0; i < count; i++)
+    {
+      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+      rgba += 4;
+    }
+  }
+}
 
 #if CTX_FRAGMENT_SPECIALIZE
 static void
@@ -957,30 +981,6 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
 #endif
 }
 
-static inline void
-ctx_RGBA8_apply_global_alpha_and_associate (CtxRasterizer *rasterizer,
-                                         uint8_t *buf, int count)
-{
-  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
-  uint8_t *rgba = (uint8_t *) buf;
-  if (global_alpha_u8 != 255)
-  {
-    for (int i = 0; i < count; i++)
-    {
-      rgba[3] = (rgba[3] * global_alpha_u8) / 255;
-      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
-      rgba += 4;
-    }
-  }
-  else
-  {
-    for (int i = 0; i < count; i++)
-    {
-      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
-      rgba += 4;
-    }
-  }
-}
 
 static void
 ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
@@ -1076,7 +1076,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       dst++;
     }
   }
-  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, out, count);
+  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
 
 static void
@@ -1299,7 +1299,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     rgba += 4;
   }
 
-  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, out, count);
+  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
 #endif
 
@@ -1409,7 +1409,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   }
 
   if (rasterizer->state->gstate.global_alpha_u8 != 255)
-    ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, out, count);
+    ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
 
 #if CTX_FRAGMENT_SPECIALIZE

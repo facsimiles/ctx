@@ -2412,6 +2412,8 @@ CtxMediaTypeClass ctx_media_type_class (const char *media_type)
   return ret;
 }
 
+#endif
+
 CtxBackendType ctx_backend_type (Ctx *ctx)
 {
   CtxBackend *backend = ctx->backend;
@@ -2449,5 +2451,3 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 #endif
   return CTX_BACKEND_NONE;
 }
-
-#endif

@@ -1381,7 +1381,9 @@ int ctx_clients_handle_events (Ctx *ctx)
   long time_start = ctx_ticks ();
 #endif
   int sleep_time = 1000000/ctx_target_fps;
+#if CTX_VT
   pending_data += ctx_input_pending (ctx, sleep_time);
+#endif
 
 #if CTX_VT
   CtxList *clients = ctx_clients (ctx);
