@@ -322,20 +322,6 @@ static void handle_event (Ctx        *ctx,
   ctx_client_unlock (client);
 }
 
-static int ctx_clients_dirty_count (Ctx *ctx)
-{
-  CtxList *clients = ctx_clients (ctx);
-  int changes = 0;
-  for (CtxList *l = clients; l; l = l->next)
-  {
-    CtxClient *client = l->data;
-    if ((client->drawn_rev != vt_rev (client->vt) ) ||
-        vt_has_blink (client->vt))
-      changes++;
-  }
-  return changes;
-}
-
 static void ctx_client_close (CtxEvent *event, void *data, void *data2)
 {
   Ctx *ctx = event->ctx;

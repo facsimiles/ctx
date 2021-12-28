@@ -400,21 +400,23 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
         /* bailing - because for the mid-point straight line difference is
            tiny */
         { return; }
+#if 0
       dx = sx - ex;
       dy = ey - ey;
       if (CTX_UNLIKELY( (dx*dx+dy*dy) < tolerance))
         /* bailing on tiny segments */
         { return; }
+#endif
     }
-  if (iteration < 8)
+  if (iteration < 5)
   {
-  ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                sx, sy, x, y, s, t, iteration + 1,
-                                tolerance);
-  ctx_rasterizer_line_to (rasterizer, x, y);
-  ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                x, y, ex, ey, t, e, iteration + 1,
-                                tolerance);
+    ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
+                                  sx, sy, x, y, s, t, iteration + 1,
+                                  tolerance);
+    ctx_rasterizer_line_to (rasterizer, x, y);
+    ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
+                                  x, y, ex, ey, t, e, iteration + 1,
+                                  tolerance);
   }
 }
 
@@ -431,11 +433,12 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float ox = rasterizer->x;
   float oy = rasterizer->y;
   //tolerance *= tolerance;
-  tolerance = 2.0/(tolerance*tolerance);
+  tolerance = 1.0/(tolerance);
+
+  tolerance *= 2.0;
+  tolerance = tolerance * tolerance;
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
-  //tolerance = 10.0/(tolerance*tolerance);
-  //tolerance = 10.0f/tolerance;
 #if 0 // skipping this to preserve hash integrity
   if (tolerance == 1.0f || 1)
   {
@@ -479,7 +482,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                                     ox, oy, x0, y0,
                                     x1, y1, x2, y2,
                                     ox, oy, x2, y2,
-                                    0.0f, 1.0f, 0.0f, tolerance);
+                                    0.0f, 1.0f, 0, tolerance);
     }
   ctx_rasterizer_line_to (rasterizer, x2, y2);
 }
