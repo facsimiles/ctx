@@ -30,13 +30,12 @@ keyvaldb.c
 composite.c
 texture.c
 utf8.c
-hasher.c
 terminal.c
 events.c
 parser.c
-text.c
 ctx-string.c
 backend-rasterizer.c
+backend-hasher.c
 backend-cairo.c
 backend-ctx.c
 backend-tiled.c
@@ -46,6 +45,7 @@ backend-headless.c
 backend-sdl.c
 backend-term.c
 backend-termimg.c
+text.c
 formatter.c
 ctx.c
 vt-utf8.h
