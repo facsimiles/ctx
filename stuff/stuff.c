@@ -3351,7 +3351,8 @@ char **dir_get_viewer_argv (const char *path, int no)
   if (!args)
   if (media_type_class == CTX_MEDIA_TYPE_TEXT)
   {
-    ctx_list_append (&args, strdup ("/bin/ctx.static"));
+    ctx_list_append (&args, strdup ("stuff"));
+    ctx_list_append (&args, strdup ("-E"));
     ctx_list_append (&args, strdup (path));
   }
   free (basname);
@@ -3360,12 +3361,12 @@ char **dir_get_viewer_argv (const char *path, int no)
   {
   if (media_type_class == CTX_MEDIA_TYPE_IMAGE)
   {
-    ctx_list_append (&args, strdup ("/bin/ctx.static"));
+    ctx_list_append (&args, strdup ("ctx"));
     ctx_list_append (&args, strdup (path));
   }
   else if (!strcmp (media_type, "video/mpeg"))
   {
-    ctx_list_append (&args, strdup ("/bin/ctx.static"));
+    ctx_list_append (&args, strdup ("ctx"));
     ctx_list_append (&args, strdup (path));
     ctx_list_append (&args, strdup ("--paused"));
     ctx_list_append (&args, strdup ("--seek-to"));
@@ -3376,12 +3377,21 @@ char **dir_get_viewer_argv (const char *path, int no)
     ctx_list_append (&args, strdup ("ctx-audioplayer"));
     ctx_list_append (&args, strdup (path));
   }
+  else
+  {
+    ctx_list_append (&args, strdup ("ctx"));
+    ctx_list_append (&args, strdup ("hexview"));
+    ctx_list_append (&args, strdup (path));
+  }
+
   }
 
 //  args = NULL;
 //   ctx_list_append (&args, strdup ("/bin/dash"));
 
 #if 0
+  if (argc)
+  {
 
 #if 0
   ctx_list_prepend (&args, strdup("/"));
@@ -3429,8 +3439,8 @@ char **dir_get_viewer_argv (const char *path, int no)
   ctx_list_prepend (&args, strdup("--unshare-all"));
 
   ctx_list_prepend (&args, strdup("bwrap"));
+  }
 #endif
-
 
   if (!args)
     return NULL;
@@ -4490,7 +4500,7 @@ static int thumb_monitor (Ctx *ctx, void *data)
 
   if (thumb_pid == 0 || kill (thumb_pid, 0) == -1)
   {
-    int batch_size = 16;
+    int batch_size = 4;
     int count = initial_args;
     for (CtxList *iter = thumb_queue;iter && count < batch_size + initial_args; iter = iter->next)
     {
@@ -4980,7 +4990,7 @@ static int card_files (ITK *itk_, void *data)
 #if GNU_C
     ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 #endif
-    ctx_add_timeout (ctx, 1000, thumb_monitor, NULL);
+    ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
     font_size = itk->font_size;
     first = 0;
 
@@ -5844,12 +5854,15 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    char *base = strdup(basename (strdup(src_path)));
    collection_set_path (collection, dir, dir);
    char **command = dir_get_viewer_argv (src_path, metadata_item_to_no (collection, base));
+   if (!command)
+           return -1;
    CtxClient *client = ctx_client_new_argv (ctx, command,
                   0, 0, width, height,
                   font_size * live_font_factor,
                   ITK_CLIENT_PRELOAD,
                   NULL, NULL);
-   for (int i = 0; i < 50; i ++)
+   //usleep (1000 * 200);
+   for (int i = 0; i < 15; i ++)
    {
      //CtxEvent *event = NULL;
      ctx_reset (ctx);
@@ -5858,12 +5871,13 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
      ctx_fill (ctx);
      ctx_clients_draw (ctx, 0);
      ctx_flush (ctx);
-     usleep (1000 * 5);
      while(ctx_get_event (ctx));
      ctx_clients_handle_events (ctx);
    }
    ctx_screenshot (ctx, dst_path);
+//   fprintf (stderr, ".");
    ctx_client_remove (ctx, client);
+// fprintf (stderr, "!");
    ctx_free (ctx);
 
    return 0;

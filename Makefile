@@ -44,9 +44,9 @@ MEDIA_HANDLERS_OBJS = \
   media-handlers/ctx-gif.o \
   media-handlers/ctx-img.o \
   media-handlers/ctx-mpg.o \
+  media-handlers/ctx-hexview.o \
   media-handlers/convert.o \
   media-handlers/tcp.o
-
 
 
 SRC_CFILES = $(wildcard src/*.c)

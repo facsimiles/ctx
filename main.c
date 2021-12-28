@@ -33,7 +33,7 @@ int ctx_gif_main (int argc, char **argv);
 int stuff_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
 int ctx_tcp_main (int argc, char **argv);
-int ctx_text_main (int argc, char **argv);
+int ctx_hexview_main (int argc, char **argv);
 
 int launch_main (int argc, char **argv)
 {
@@ -254,7 +254,6 @@ int thumb_main (int argc, char **argv)
       ctx_mkdir_ancestors (thumb_path, 0777);
       //make_thumb (ip, thumb_path);
       stuff_make_thumb (ip, thumb_path);
-      //stuff_make_thumb (const char *src_path, const char *dst_path);
     }
     free (thumb_path);
   }
@@ -289,8 +288,12 @@ int ctx_path_is_dir (const char *path);
 
 int main (int argc, char **argv)
 {
+  if (!strcmp (basename(argv[1]), "stuff"))
+    return stuff_main (argc-1, argv+1);
   if (!strcmp (basename(argv[0]), "stuff"))
     return stuff_main (argc, argv);
+  if (!strcmp (basename(argv[1]), "hexview"))
+    return ctx_hexview_main (argc-1, argv+1);
   for (int i = 1; argv[i]; i++)
   {
     char *a = argv[i];
@@ -363,7 +366,7 @@ int main (int argc, char **argv)
 
       return stuff_main (3, new_argc);
 
-      return ctx_text_main (argc, argv);
+  //  return ctx_text_main (argc, argv);
     }
 
     return -1;

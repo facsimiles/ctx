@@ -135,9 +135,10 @@ void ctx_headless_free (CtxHeadless *fb)
 {
   CtxTiled *tiled=(CtxTiled*)fb;
 
-  munmap (tiled->fb, fb->fb_mapped_size);
-  close (fb->fb_fd);
-  if (system("stty sane")){};
+  free (tiled->fb);
+  //munmap (tiled->fb, fb->fb_mapped_size);
+  //close (fb->fb_fd);
+  //if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
   //free (fb);
 #if CTX_BABL
