@@ -28,7 +28,6 @@ transform.c
 color.c
 keyvaldb.c
 composite.c
-rasterizer.c
 texture.c
 utf8.c
 hasher.c
@@ -37,6 +36,7 @@ events.c
 parser.c
 text.c
 ctx-string.c
+backend-rasterizer.c
 backend-cairo.c
 backend-ctx.c
 backend-tiled.c
