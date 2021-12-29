@@ -11,7 +11,7 @@
   non-western languages with high code points UTF-8 takes many more bits in
   relation to message length, for 8-bit data streams SCSU and BOCU-1 fil lthe
   same role as squoze5. This document also specifies squoze-32, squoze-52 and
-  squoze-322 which are reversible string to integer hashes.
+  squoze-62 which are reversible string to integer hashes.
 
   In UTF-5 each quintet, 5-bit word, stores 4bits of data and a bit indicating
   if it is the start of a new character. UTF-5 uses the alphabet 0-9 followed
