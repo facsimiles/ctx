@@ -847,6 +847,45 @@ again:
                             CTX_FORMAT_RGBA8,
                             width, height, stride, reverse);
     }
+  else if (dest_path == NULL || !strcmp (dest_path, "RGB565") )
+    {
+      int reverse = 0;
+      int stride = width * 4;
+      int stride_565 = width * 2;
+      uint8_t pixels_565[stride_565*height];
+      uint8_t pixels[stride*height];
+      Ctx *dctx = ctx_new_for_framebuffer (&pixels_565[0], width, height, stride_565, CTX_FORMAT_RGB565);
+      memset (pixels, 0, sizeof (pixels) );
+      memset (pixels_565, 0, sizeof (pixels_565) );
+      ctx_render_ctx (ctx, dctx);
+      ctx_free (dctx);
+
+      for (int i = 0; i < width * height; i++)
+      {
+         uint16_t pixel = ((uint16_t*)(pixels_565))[i];
+
+          uint16_t byteswapped;
+          int byteswap = 0;
+          int r,g,b;
+  if (byteswap)
+    { byteswapped = (pixel>>8) | (pixel<<8); }
+  else
+    { byteswapped  = pixel; }
+  b   =  (byteswapped & 31) <<3;
+  g = ( (byteswapped>>5) & 63) <<2;
+  r   = ( (byteswapped>>11) & 31) <<3;
+
+         pixels[i*4 + 0] = r;
+         pixels[i*4 + 1] = g;
+         pixels[i*4 + 2] = b;
+         pixels[i*4 + 3] = 255;
+      }
+
+
+      ctx_utf8_output_buf ( (uint8_t *) pixels,
+                            CTX_FORMAT_RGBA8,
+                            width, height, stride, reverse);
+    }
   else if (!strcmp (dest_path, "GRAY1") )
     {
       int reverse = 0;
