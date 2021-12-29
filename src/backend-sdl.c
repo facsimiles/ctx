@@ -355,7 +355,6 @@ void ctx_sdl_consume_events (Ctx *ctx)
               }
             }
             ctx_key_press (ctx, keycode, name, 0);
-            //got_event = 1;
           }
         break;
 #endif
@@ -516,11 +515,11 @@ void ctx_sdl_free (CtxSDL *sdl)
 {
 
   if (sdl->texture)
-  SDL_DestroyTexture (sdl->texture);
+    SDL_DestroyTexture (sdl->texture);
   if (sdl->backend)
-  SDL_DestroyRenderer (sdl->backend);
+    SDL_DestroyRenderer (sdl->backend);
   if (sdl->window)
-  SDL_DestroyWindow (sdl->window);
+    SDL_DestroyWindow (sdl->window);
 
   ctx_tiled_free ((CtxTiled*)sdl);
 #if CTX_BABL

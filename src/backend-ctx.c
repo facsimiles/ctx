@@ -415,7 +415,7 @@ void ctx_ctx_consume_events (Ctx *ctx)
     //free (cmd);
 
   if (ctx_native_events)
-    {
+    do {
 
       float x = 0, y = 0;
       int b = 0;
@@ -427,6 +427,7 @@ void ctx_ctx_consume_events (Ctx *ctx)
       sscanf (event, "%s %f %f %i", event_type, &x, &y, &b);
       if (!strcmp (event_type, "idle"))
       {
+              event = NULL;
       }
       else if (!strcmp (event_type, "pp"))
       {
@@ -477,7 +478,7 @@ void ctx_ctx_consume_events (Ctx *ctx)
         ctx_key_press (ctx, 0, event, 0);
       }
       }
-    }
+    } while (event);
 }
 
 Ctx *ctx_new_ctx (int width, int height)

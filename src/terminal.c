@@ -746,7 +746,7 @@ void ctx_nct_consume_events (Ctx *ctx)
   CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
   const char *event = NULL;
 
-  {
+  do {
     float x, y;
     event = ctx_nct_get_event (ctx, 50, &ix, &iy);
 
@@ -813,11 +813,12 @@ void ctx_nct_consume_events (Ctx *ctx)
         ctx_key_press (ctx, 0, "return", 0);
       else if (!strcmp (event, "idle"))
       {
+        event = NULL;
       }
       else
       ctx_key_press (ctx, 0, event, 0);
     }
-  }
+  }  while (event);
 }
 
 const char *ctx_native_get_event (Ctx *n, int timeoutms)
