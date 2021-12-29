@@ -2733,6 +2733,13 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 }
 
 static void
+ctx_setup_RGB565 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_RGBA8 (rasterizer);
+  rasterizer->comp = CTX_COV_PATH_FALLBACK;
+}
+
+static void
 ctx_composite_convert (CTX_COMPOSITE_ARGUMENTS)
 {
   uint8_t pixels[count * rasterizer->format->ebpp];
@@ -4889,7 +4896,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
     CTX_FORMAT_RGB565, 3, 16, 4, 32, 64, CTX_FORMAT_RGBA8,
     ctx_RGB565_to_RGBA8, ctx_RGBA8_to_RGB565,
-    ctx_composite_RGB565, ctx_setup_RGBA8,
+    ctx_composite_RGB565, ctx_setup_RGB565,
   },
 #endif
 #if CTX_ENABLE_RGB565_BYTESWAPPED
@@ -4897,7 +4904,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     CTX_FORMAT_RGB565_BYTESWAPPED, 3, 16, 4, 32, 64, CTX_FORMAT_RGBA8,
     ctx_RGB565_BS_to_RGBA8,
     ctx_RGBA8_to_RGB565_BS,
-    ctx_composite_RGB565_BS, ctx_setup_RGBA8,
+    ctx_composite_RGB565_BS, ctx_setup_RGB565,
   },
 #endif
 #if CTX_ENABLE_CMYKAF
