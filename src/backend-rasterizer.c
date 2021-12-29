@@ -2079,6 +2079,22 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         return;
       }
     }
+    else if (comp == CTX_COV_PATH_RGB565_COPY)
+    {
+      uint32_t color32 = *((uint32_t*)rasterizer->color);
+      uint16_t color;
+      rasterizer->format->from_comp (rasterizer, 0, (uint8_t*)&color32, (uint8_t*)&color, 1);
+      for (int y = y0; y < y1; y++)
+      {
+        uint16_t *dst_i = (uint16_t*)&dst[0];
+        for (int x = 0; x < width; x++)
+        {
+          dst_i[x] = color;
+        }
+        dst += blit_stride;
+      }
+      return;
+    }
     else if (comp == CTX_COV_PATH_RGBA8_OVER)
     {
       uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];
