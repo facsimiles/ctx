@@ -2019,7 +2019,7 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
-#define CTX_RECT_FILL 1
+#define CTX_RECT_FILL 0
 
 #if CTX_RECT_FILL
 static void
