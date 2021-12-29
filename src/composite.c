@@ -4889,7 +4889,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
     CTX_FORMAT_RGB332, 3, 8, 4, 10, 12, CTX_FORMAT_RGBA8,
     ctx_RGB332_to_RGBA8, ctx_RGBA8_to_RGB332,
-    ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_composite_convert, ctx_setup_RGB565,
   },
 #endif
 #if CTX_ENABLE_RGB565

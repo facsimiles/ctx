@@ -2019,7 +2019,7 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
-#define CTX_RECT_FILL 0
+#define CTX_RECT_FILL 1
 
 #if CTX_RECT_FILL
 static void
@@ -2043,7 +2043,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   if (CTX_UNLIKELY(width <=0))
     return;
 
-  void (*comp_op)(CTX_COMPOSITE_ARGUMENTS) = rasterizer->comp_op;
+  CtxCovPath comp = rasterizer->comp;
 
   y0 = ctx_maxi (y0, blit_y);
   y1 = ctx_mini (y1, blit_y + blit_height);
@@ -2056,7 +2056,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 
   if (cov == 255)
   {
-    if (comp_op == ctx_RGBA8_source_copy_normal_color)
+    if (comp == CTX_COV_PATH_COPY)
     {
       uint32_t color = *((uint32_t*)rasterizer->color);
       if (width == 1)
@@ -2079,7 +2079,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         return;
       }
     }
-    else if (comp_op == ctx_RGBA8_source_over_normal_color)
+    else if (comp == CTX_COV_PATH_OVER)
     {
       uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];
       uint32_t si_rb_full = ((uint32_t*)rasterizer->color)[4];
@@ -2109,7 +2109,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         return;
       }
     }
-    else if (comp_op == ctx_RGBA8_source_copy_normal_fragment)
+    else if (comp == CTX_COV_PATH_COPY_FRAGMENT)
     {
       for (int y = y0; y < y1; y++)
       {
@@ -2122,7 +2122,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       }
       return;
     }
-    else if (comp_op == ctx_RGBA8_source_over_normal_fragment)
+    else if (comp == CTX_COV_PATH_OVER_FRAGMENT)
     {
       for (int y = y0; y < y1; y++)
       {
@@ -2136,7 +2136,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   }
   else
   {
-  if (comp_op == ctx_RGBA8_source_copy_normal_color)
+  if (comp == CTX_COV_PATH_COPY)
     {
       uint32_t color = *((uint32_t*)rasterizer->color);
       if (width == 1)
@@ -2163,7 +2163,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         return;
       }
     }
-    else if (comp_op == ctx_RGBA8_source_over_normal_color)
+    if (comp == CTX_COV_PATH_OVER)
     {
       uint32_t color = *((uint32_t*)rasterizer->color);
       if (width == 1)
