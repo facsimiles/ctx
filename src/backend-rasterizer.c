@@ -1183,7 +1183,6 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
     break;
 #endif
 
-
               case CTX_COV_PATH_RGBA8_OVER:
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
@@ -1607,6 +1606,19 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           }
             switch (comp)
             {
+              case CTX_COV_PATH_RGB565_COPY:
+            {
+              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)]);
+              uint16_t* dst_i = (uint16_t*)dsts;
+              uint16_t color = rasterizer->color_u16;
+              dst_i+=pre;
+              for (int i = first + pre; i <= last - post; i++)
+              {
+                dst_i[0] = color;
+                dst_i++;
+              }
+            }
+            break;
               case CTX_COV_PATH_RGBA8_COPY:
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
