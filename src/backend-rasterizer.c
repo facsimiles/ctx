@@ -2039,9 +2039,12 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
-#define CTX_RECT_FILL 1
+#define CTX_RECT_FILL 0
 
 #if CTX_RECT_FILL
+
+/* TODO: refactor this to have x1 and y1 be included in fill */
+
 static void
 ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int          x0,
@@ -2580,7 +2583,9 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                                    );
     }
   }
+#if CTX_RECT_FILL
 done:
+#endif
   if (CTX_UNLIKELY(rasterizer->preserve))
     {
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
@@ -3257,7 +3262,9 @@ foo:
       gstate->transform = transform_backup;
     }
   }
+#if CTX_RECT_FILL
 done:
+#endif
   if (preserved)
     {
       memcpy (rasterizer->edge_list.entries, temp, sizeof (temp) );
