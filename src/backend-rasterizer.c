@@ -1075,11 +1075,11 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                         CtxCovPath     comp)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
-  int *edges  = rasterizer->edges;
+  int *edges          = rasterizer->edges;
   int scanline        = rasterizer->scanline;
-  const int bpp             = rasterizer->format->bpp/8;
+  const int bpp       = rasterizer->format->bpp/8;
   int active_edges    = rasterizer->active_edges;
-  int parity        = 0;
+  int parity          = 0;
   const uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
   const uint32_t si_ga = ((uint32_t*)rasterizer->color)[1];
   const uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
@@ -1164,6 +1164,26 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 #endif
             }
             break;
+
+#if 1
+            case CTX_COV_PATH_RGB565_COPY:
+    {
+            uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)]);
+            uint8_t  startcov = graystart;
+            ctx_rasterizer_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
+            uint16_t* dst_i = (uint16_t*)dsts;
+            uint16_t color = rasterizer->color_u16;
+            dst_i++;
+            for (int i = first + 1; i < last; i++)
+            {
+              dst_i[0] = color;
+              dst_i++;
+            }
+      }
+    break;
+#endif
+
+
               case CTX_COV_PATH_RGBA8_OVER:
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
@@ -2079,11 +2099,10 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
         return;
       }
     }
+#if 1
     else if (comp == CTX_COV_PATH_RGB565_COPY)
     {
-      uint32_t color32 = *((uint32_t*)rasterizer->color);
-      uint16_t color;
-      rasterizer->format->from_comp (rasterizer, 0, (uint8_t*)&color32, (uint8_t*)&color, 1);
+      uint16_t color = rasterizer->color_u16;
       for (int y = y0; y < y1; y++)
       {
         uint16_t *dst_i = (uint16_t*)&dst[0];
@@ -2095,6 +2114,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       }
       return;
     }
+#endif
     else if (comp == CTX_COV_PATH_RGBA8_OVER)
     {
       uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];

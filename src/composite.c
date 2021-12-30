@@ -2737,9 +2737,16 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
   if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
+  {
     rasterizer->comp = CTX_COV_PATH_RGB565_COPY;
+    rasterizer->format->from_comp (rasterizer, 0,
+      &rasterizer->color[0],
+      &rasterizer->color_u16,
+      1);
+  }
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
+
 }
 
 static void

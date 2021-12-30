@@ -1376,16 +1376,12 @@ CtxList *ctx_clients (Ctx *ctx)
 int ctx_clients_handle_events (Ctx *ctx)
 {
   //int n_clients = ctx_list_length (clients);
+#if CTX_VT
   int pending_data = 0;
-#if CTX_VT
   long time_start = ctx_ticks ();
-#endif
   int sleep_time = 1000000/ctx_target_fps;
-#if CTX_VT
   pending_data += ctx_input_pending (ctx, sleep_time);
-#endif
 
-#if CTX_VT
   CtxList *clients = ctx_clients (ctx);
   if (!clients)
     return pending_data != 0;
@@ -1462,9 +1458,6 @@ done:
 #if 0
   fprintf (stderr, "%.2fmb/s %i/%i  %.2f                    \r", ctx_avg_bytespeed/1024/1024, ctx_fetched_bytes, timed, ctx_target_fps);
 #endif
-
-
-
 
 #endif
   return 0;

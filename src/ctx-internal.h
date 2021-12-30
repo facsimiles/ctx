@@ -690,7 +690,7 @@ struct _CtxRasterizer
   int shadow_y;
 
   int swap_red_green;
-  uint8_t             color[4*5];
+  uint8_t    color[4*5];
 
   int clip_rectangle;
 
@@ -714,6 +714,7 @@ struct _CtxRasterizer
   int        term_glyphs:1; // store appropriate glyphs for redisplay
   CtxList   *glyphs;
 #endif
+  uint16_t   color_u16;
 };
 
 struct _CtxSHA1 {
