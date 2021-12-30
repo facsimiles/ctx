@@ -2414,6 +2414,43 @@ CtxMediaTypeClass ctx_media_type_class (const char *media_type)
 
 #endif
 
+
+void
+ctx_current_point (Ctx *ctx, float *x, float *y)
+{
+  if (!ctx)
+    { 
+      if (x) { *x = 0.0f; }
+      if (y) { *y = 0.0f; }
+    }
+#if CTX_RASTERIZER
+  if (ctx->backend)
+    {
+      if (x) { *x = ( (CtxRasterizer *) (ctx->backend) )->x; }
+      if (y) { *y = ( (CtxRasterizer *) (ctx->backend) )->y; }
+      return;
+    }
+#endif
+  if (x) { *x = ctx->state.x; }
+  if (y) { *y = ctx->state.y; }
+}
+
+
+
+float ctx_x (Ctx *ctx)
+{
+  float x = 0, y = 0;
+  ctx_current_point (ctx, &x, &y);
+  return x;
+}
+
+float ctx_y (Ctx *ctx)
+{
+  float x = 0, y = 0;
+  ctx_current_point (ctx, &x, &y);
+  return y;
+}
+
 CtxBackendType ctx_backend_type (Ctx *ctx)
 {
   CtxBackend *backend = ctx->backend;
@@ -2450,4 +2487,60 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   else if (backend->free == (void*) ctx_termimg_free) return CTX_BACKEND_TERMIMG;
 #endif
   return CTX_BACKEND_NONE;
+}
+
+
+static void
+ctx_process (Ctx *ctx, CtxEntry *entry)
+{
+#if CTX_CURRENT_PATH
+  switch (entry->code)
+    {
+      case CTX_TEXT:
+      case CTX_STROKE_TEXT:
+      case CTX_BEGIN_PATH:
+        ctx->current_path.count = 0;
+        break;
+      case CTX_CLIP:
+      case CTX_FILL:
+      case CTX_STROKE:
+              // XXX unless preserve
+        ctx->current_path.count = 0;
+        break;
+      case CTX_CLOSE_PATH:
+      case CTX_LINE_TO:
+      case CTX_MOVE_TO:
+      case CTX_QUAD_TO:
+      case CTX_SMOOTH_TO:
+      case CTX_SMOOTHQ_TO:
+      case CTX_REL_QUAD_TO:
+      case CTX_REL_SMOOTH_TO:
+      case CTX_REL_SMOOTHQ_TO:
+      case CTX_CURVE_TO:
+      case CTX_REL_CURVE_TO:
+      case CTX_ARC:
+      case CTX_ARC_TO:
+      case CTX_REL_ARC_TO:
+      case CTX_RECTANGLE:
+      case CTX_ROUND_RECTANGLE:
+        ctx_drawlist_add_entry (&ctx->current_path, entry);
+        break;
+      default:
+        break;
+    }
+#endif
+  if (CTX_LIKELY(ctx->backend && ctx->backend->process))
+    {
+      ctx->backend->process (ctx, (CtxCommand *) entry);
+    }
+  else
+    {
+      /* these functions might alter the code and coordinates of
+         command that in the end gets added to the drawlist
+       */
+      ctx_interpret_style (&ctx->state, entry, ctx);
+      ctx_interpret_transforms (&ctx->state, entry, ctx);
+      ctx_interpret_pos (&ctx->state, entry, ctx);
+      ctx_drawlist_add_entry (&ctx->drawlist, entry);
+    }
 }

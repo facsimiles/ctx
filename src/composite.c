@@ -2741,7 +2741,8 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
     rasterizer->comp = CTX_COV_PATH_RGB565_COPY;
     rasterizer->format->from_comp (rasterizer, 0,
       &rasterizer->color[0],
-      &rasterizer->color_u16,
+      &rasterizer->color_u16,  // XXX : also used for 332,
+                               // which is not a problem
       1);
   }
   else
