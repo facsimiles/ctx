@@ -522,9 +522,7 @@ void ctx_sdl_free (CtxSDL *sdl)
     SDL_DestroyWindow (sdl->window);
 
   ctx_tiled_free ((CtxTiled*)sdl);
-#if CTX_BABL
-  babl_exit ();
-#endif
+  ctx_babl_exit ();
 }
 
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
@@ -571,9 +569,7 @@ Ctx *ctx_new_sdl (int width, int height)
      free (sdl);
      return NULL;
   }
-#if CTX_BABL
-  babl_init ();
-#endif
+  ctx_babl_init ();
   sdl->fullscreen = 0;
 
 

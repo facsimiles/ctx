@@ -1036,6 +1036,28 @@ static EvSource *evsource_kb_new (void)
   return NULL;
 }
 
+#if CTX_BABL
+static int _ctx_babl_inits = 0;
+#endif
+static void ctx_babl_init (void)
+{
+#if CTX_BABL
+  _ctx_babl_inits ++;
+  if (_ctx_babl_inits == 1)
+  {
+    babl_init ();
+  }
+#endif
+}
+static void ctx_babl_exit (void)
+{
+#if CTX_BABL
+  _ctx_babl_inits --;
+  if (_ctx_babl_inits == 0)
+    babl_exit ();
+#endif
+}
+
 static int event_check_pending (CtxTiled *tiled)
 {
   int events = 0;

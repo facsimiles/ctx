@@ -135,15 +135,14 @@ void ctx_headless_free (CtxHeadless *fb)
 {
   CtxTiled *tiled=(CtxTiled*)fb;
 
-  free (tiled->fb);
+  free (tiled->fb); // it is not the tiled renderers responsibilty,
+                    // since it might not be allocated this way
   //munmap (tiled->fb, fb->fb_mapped_size);
   //close (fb->fb_fd);
   //if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
   //free (fb);
-#if CTX_BABL
-  babl_exit ();
-#endif
+  ctx_babl_exit ();
 }
 
 //static unsigned char *fb_icc = NULL;
@@ -179,9 +178,7 @@ Ctx *ctx_new_headless (int width, int height)
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
   tiled->show_frame = (void*)ctx_headless_show_frame;
 
-#if CTX_BABL
-  babl_init ();
-#endif
+  ctx_babl_init ();
 
  // ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
  //

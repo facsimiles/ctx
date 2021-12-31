@@ -430,9 +430,7 @@ void ctx_kms_free (CtxKMS *fb)
   if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
   //free (fb);
-#if CTX_BABL
-  babl_exit ();
-#endif
+  ctx_babl_exit ();
 }
 
 //static unsigned char *fb_icc = NULL;
@@ -513,9 +511,7 @@ Ctx *ctx_new_kms (int width, int height)
     return NULL;
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
 
-#if CTX_BABL
-  babl_init ();
-#endif
+  ctx_babl_init ();
 
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 
