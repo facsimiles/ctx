@@ -649,6 +649,7 @@ float ctx_glyph_width   (Ctx *ctx, int unichar);
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
 
+void ctx_drawlist_clear (Ctx *ctx);
 
 enum _CtxModifierState
 {
@@ -865,6 +866,7 @@ void ctx_init (int *argc, char ***argv); // is a no-op but could launch
                                          // terminal
 CtxEvent *ctx_get_event (Ctx *ctx);
 void      ctx_get_event_fds (Ctx *ctx, int *fd, int *count);
+
 
 int   ctx_pointer_is_down (Ctx *ctx, int no);
 float ctx_pointer_x (Ctx *ctx);

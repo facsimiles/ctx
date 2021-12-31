@@ -665,15 +665,18 @@ void ctx_stroke (Ctx *ctx)
 }
 
 
+void ctx_drawlist_clear (Ctx *ctx)
+{
+  ctx->drawlist.count = 0;
+  ctx->drawlist.bitpack_pos = 0;
+}
+
 static void ctx_empty (Ctx *ctx)
 {
 #if CTX_RASTERIZER
   if (ctx->backend == NULL)
 #endif
-    {
-      ctx->drawlist.count = 0;
-      ctx->drawlist.bitpack_pos = 0;
-    }
+    ctx_drawlist_clear (ctx);
 }
 
 void _ctx_set_store_clear (Ctx *ctx)
@@ -1280,7 +1283,7 @@ ctx_flush (Ctx *ctx)
   ctx->frame++;
   if (ctx->texture_cache != ctx)
     ctx->texture_cache->frame++;
-  ctx->drawlist.count = 0;
+  ctx_drawlist_clear (ctx);
   ctx_state_init (&ctx->state);
 }
 
