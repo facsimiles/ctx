@@ -1039,31 +1039,28 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
     float u1 = x + dx * (count-1);
     float v1 = y + dy * (count-1);
     uint32_t *edst = ((uint32_t*)out)+count - 1;
-    for (; i < count; )
+
+    while (i < count &&
+         ((u1 < 0.0f || v1 < 0.0f || u1 >= bwidth || v1 >= bheight)))
     {
-      if ((u1 < 0.0f || v1 < 0.0f || u1 >= bwidth || v1 >= bheight))
-      {
         *edst-- = 0;
         count --;
         u1 -= dx;
         v1 -= dy;
-      }
-      else break;
+        i++;
     }
 
 
-    for (i = 0; i < count; i ++)
+    i = 0;
+    while (i < count &&
+          ((x < 0.0f || y < 0.0f || x >= bwidth || y >= bheight)))
     {
-      if ((x < 0.0f || y < 0.0f || x >= bwidth || y >= bheight))
-      {
         *dst = 0;
         dst++;
         x += dx;
         y += dy;
-      }
-      else break;
+        i++;
     }
-
 
     uint32_t ix = x * 65536;
     uint32_t iy = y * 65536;
