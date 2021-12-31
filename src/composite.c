@@ -1242,18 +1242,14 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   int v = yi >> 16;
   int offset = bwidth * v + u;
 
-  for (; i < count; i ++)
+  while (i < count &&
+         !(u >= buffer->width ||
+          v  <= -65536 ||
+          u  <= -65536 ||
+          v >= buffer->height))
   {
-  if (CTX_UNLIKELY(
-       u >= buffer->width ||
-       v  <= -65536 ||
-       u  <= -65536 ||
-       v >= buffer->height))
-    {
-      break;
-    }
 #if 1
-  else if (CTX_UNLIKELY(u < 0 || v < 0)) // default to next sample down and to right
+  if (CTX_UNLIKELY(u < 0 || v < 0)) // default to next sample down and to right
   {
       int got_prev_pix = (u >= 0);
       int got_prev_row = (v>=0);
@@ -1290,6 +1286,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     u = xi >> 16;
     v = yi >> 16;
     offset = bwidth * v + u;
+    i++;
   }
   }
 
