@@ -124,12 +124,13 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
 
 static void settings_thread (Ctx *ctx, void *user_data)
 {
-   static int frame = 0;
+   int frame = 0;
    while (!ctx_has_quit (ctx))
    {
      fprintf (stderr, "[%i]", frame++);
      if (ctx_need_redraw (ctx))
      {
+        char buf[1024];
         ctx_reset (ctx);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         ctx_rgb (ctx, 0.1, 0.2, 0.3);
@@ -141,6 +142,12 @@ static void settings_thread (Ctx *ctx, void *user_data)
         ctx_move_to (ctx, ctx_width (ctx), 0);
         ctx_line_to (ctx, 0, ctx_height (ctx));
         ctx_stroke (ctx);
+
+        sprintf (buf, "frame: %i", frame);
+        ctx_rgba (ctx, 1, 1, 0, 1);
+        ctx_move_to (ctx, ctx_width (ctx) * 0.1, ctx_height (ctx) * 0.5);
+        ctx_font_size (ctx, ctx_height (ctx) * 0.1);
+        ctx_text (ctx, buf);
 
         ctx_flush (ctx);
      }

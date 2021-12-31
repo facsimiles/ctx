@@ -135,14 +135,21 @@ void ctx_headless_free (CtxHeadless *fb)
 {
   CtxTiled *tiled=(CtxTiled*)fb;
 
+  if (tiled->fb)
+  {
   free (tiled->fb); // it is not the tiled renderers responsibilty,
                     // since it might not be allocated this way
+  tiled->fb = NULL;
+  ctx_babl_exit (); // we do this together with the fb,
+                    // which makes it happen only once
+                    // even if the headless_free is called
+                    // twice
+  }
   //munmap (tiled->fb, fb->fb_mapped_size);
   //close (fb->fb_fd);
   //if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
   //free (fb);
-  ctx_babl_exit ();
 }
 
 //static unsigned char *fb_icc = NULL;

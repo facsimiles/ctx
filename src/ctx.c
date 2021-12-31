@@ -2489,6 +2489,17 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   return CTX_BACKEND_NONE;
 }
 
+static void
+ctx_drawlist_process (Ctx *ctx, CtxEntry *entry)
+{
+  /* these functions might alter the code and coordinates of
+     command that in the end gets added to the drawlist
+   */
+  ctx_interpret_style (&ctx->state, entry, ctx);
+  ctx_interpret_transforms (&ctx->state, entry, ctx);
+  ctx_interpret_pos (&ctx->state, entry, ctx);
+  ctx_drawlist_add_entry (&ctx->drawlist, entry);
+}
 
 static void
 ctx_process (Ctx *ctx, CtxEntry *entry)
@@ -2535,12 +2546,6 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
     }
   else
     {
-      /* these functions might alter the code and coordinates of
-         command that in the end gets added to the drawlist
-       */
-      ctx_interpret_style (&ctx->state, entry, ctx);
-      ctx_interpret_transforms (&ctx->state, entry, ctx);
-      ctx_interpret_pos (&ctx->state, entry, ctx);
-      ctx_drawlist_add_entry (&ctx->drawlist, entry);
+      ctx_drawlist_process (ctx, entry);
     }
 }
