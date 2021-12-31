@@ -1055,7 +1055,6 @@ static void ctx_babl_exit (void)
   _ctx_babl_inits --;
   if (_ctx_babl_inits == 0)
   {
-          fprintf (stderr, "deiniting babl!\n");
     babl_exit ();
   }
 #endif
