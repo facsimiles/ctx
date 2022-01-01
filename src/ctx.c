@@ -178,7 +178,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
    {
    }
 #if CTX_RASTERIZER
-   else if (_ctx_is_rasterizer (ctx))
+   else if (ctx_backend_type (ctx) == CTX_BACKEND_RASTERIZER)
    {
      CtxRasterizer *rasterizer = (CtxRasterizer*)ctx->backend;
      if (rasterizer->format->pixel_format == format)
@@ -2489,8 +2489,3 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   return CTX_BACKEND_NONE;
 }
 
-static inline void
-ctx_process (Ctx *ctx, CtxEntry *entry)
-{
-  ctx->backend->process (ctx, (CtxCommand *) entry);
-}

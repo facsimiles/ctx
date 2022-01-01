@@ -3693,14 +3693,6 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
 static void
 ctx_rasterizer_process (Ctx *ctx, CtxCommand *command);
 
-int
-_ctx_is_rasterizer (Ctx *ctx)
-{
-  if (ctx->backend && ctx->backend->process == ctx_rasterizer_process)
-    return 1;
-  return 0;
-}
-
 #if CTX_COMPOSITING_GROUPS
 static void
 ctx_rasterizer_start_group (CtxRasterizer *rasterizer) /* add a radius? */
@@ -4379,7 +4371,7 @@ CtxAntialias ctx_get_antialias (Ctx *ctx)
      return fb->antialias;
   }
 #endif
-  if (!_ctx_is_rasterizer (ctx)) return CTX_ANTIALIAS_DEFAULT;
+  if (ctx_backend_type (ctx) != CTX_BACKEND_RASTERIZER) return CTX_ANTIALIAS_DEFAULT;
 
   switch (((CtxRasterizer*)(ctx->backend))->aa)
   {
@@ -4418,7 +4410,7 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
      return;
   }
 #endif
-  if (!_ctx_is_rasterizer (ctx)) return;
+  if (ctx_backend_type (ctx) != CTX_BACKEND_RASTERIZER) return;
 
   ((CtxRasterizer*)(ctx->backend))->aa = 
      _ctx_antialias_to_aa (antialias);

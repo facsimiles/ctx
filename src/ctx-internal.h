@@ -511,8 +511,12 @@ struct _Ctx
 #endif
 };
 
+static inline void
+ctx_process (Ctx *ctx, CtxEntry *entry)
+{
+  ctx->backend->process (ctx, (CtxCommand *) entry);
+}
 
-static void ctx_process (Ctx *ctx, CtxEntry *entry);
 CtxBuffer *ctx_buffer_new (int width, int height,
                            CtxPixelFormat pixel_format);
 void ctx_buffer_free (CtxBuffer *buffer);
