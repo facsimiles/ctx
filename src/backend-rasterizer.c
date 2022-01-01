@@ -2006,7 +2006,7 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
-#define CTX_RECT_FILL 0 /* currently disabled, vertical stroked single line segments get confused and mishandled
+#define CTX_RECT_FILL 1 /* currently disabled, vertical stroked single line segments get confused and mishandled
                            we lose a tiny bit of performance, but compiled size is reduced which is a win */
 
 #if CTX_RECT_FILL
@@ -2026,10 +2026,20 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
   int blit_stride = rasterizer->blit_stride;
-  x0 = ctx_maxi (x0, blit_x);
-  x1 = ctx_mini (x1, blit_x + blit_width);
 
-  int width = x1 - x0;
+  if (x0 > x1)
+  {
+    int tmp = x0; x0 = x1; x1 = tmp;
+  }
+  if (y0 > y1)
+  {
+    int tmp = y0; y0 = y1; y1 = tmp;
+  }
+
+  x0 = ctx_maxi (x0, blit_x);
+  x1 = ctx_mini (x1, blit_x + blit_width - 1);
+
+  int width = x1 - x0 + 1;
 
   if (CTX_UNLIKELY(width <=0))
     return;
@@ -2037,7 +2047,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   CtxCovPath comp = rasterizer->comp;
 
   y0 = ctx_maxi (y0, blit_y);
-  y1 = ctx_mini (y1, blit_y + blit_height);
+  y1 = ctx_mini (y1, blit_y + blit_height - 1);
   rasterizer->scanline = y0 * CTX_FULL_AA;
   _ctx_setup_compositor (rasterizer);
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
@@ -2052,7 +2062,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       uint32_t color = *((uint32_t*)rasterizer->color);
       if (width == 1)
       {
-        for (int y = y0; y < y1; y++)
+        for (int y = y0; y <= y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           *dst_i = color;
@@ -2062,7 +2072,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       }
       else
       {
-        for (int y = y0; y < y1; y++)
+        for (int y = y0; y <= y1; y++)
         {
           ctx_span_set_color ((uint32_t*)&dst[0], color, width);
           dst += blit_stride;
@@ -2074,7 +2084,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     else if (comp == CTX_COV_PATH_RGB565_COPY)
     {
       uint16_t color = rasterizer->color_u16;
-      for (int y = y0; y < y1; y++)
+      for (int y = y0; y <= y1; y++)
       {
         uint16_t *dst_i = (uint16_t*)&dst[0];
         for (int x = 0; x < width; x++)
@@ -2094,7 +2104,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 
       if (width == 1)
       {
-        for (int y = y0; y < y1; y++)
+        for (int y = y0; y <= y1; y++)
         {
           ((uint32_t*)(dst))[0] = ctx_over_RGBA8_full_2 (
              ((uint32_t*)(dst))[0], si_ga_full, si_rb_full, si_a);
@@ -2104,7 +2114,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       }
       else
       {
-        for (int y = y0; y < y1; y++)
+        for (int y = y0; y <= y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (int i = 0; i < width; i++)
@@ -2118,7 +2128,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     }
     else if (comp == CTX_COV_PATH_RGBA8_COPY_FRAGMENT)
     {
-      for (int y = y0; y < y1; y++)
+      for (int y = y0; y <= y1; y++)
       {
         float u0 = 0; float v0 = 0;
         float ud = 0; float vd = 0;
@@ -2131,7 +2141,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     }
     else if (comp == CTX_COV_PATH_RGBA8_OVER_FRAGMENT)
     {
-      for (int y = y0; y < y1; y++)
+      for (int y = y0; y <= y1; y++)
       {
         ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
                                 &dst[0], NULL, x0, NULL, width);
@@ -2148,7 +2158,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       uint32_t color = *((uint32_t*)rasterizer->color);
       if (width == 1)
       {
-        for (int y = y0; y < y1; y++)
+        for (int y = y0; y <= y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           *dst_i = ctx_lerp_RGBA8 (*dst_i, color, cov);
@@ -2158,7 +2168,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       }
       else
       {
-        for (int y = y0; y < y1; y++)
+        for (int y = y0; y <= y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (int i = 0; i < width; i++)
@@ -2175,7 +2185,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       uint32_t color = *((uint32_t*)rasterizer->color);
       if (width == 1)
       {
-        for (int y = y0; y < y1; y++)
+        for (int y = y0; y <= y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           *dst_i = ctx_over_RGBA8 (*dst_i, color, cov);
@@ -2185,7 +2195,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
       }
       else
       {
-        for (int y = y0; y < y1; y++)
+        for (int y = y0; y <= y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (int i = 0; i < width; i++)
@@ -2202,7 +2212,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   {
     uint8_t coverage[width];
     memset (coverage, cov, sizeof (coverage) );
-    for (int y = y0; y < y1; y++)
+    for (int y = y0; y <= y1; y++)
     {
       ctx_rasterizer_apply_coverage (rasterizer, &dst[0], x0, coverage, width);
       rasterizer->scanline += CTX_FULL_AA;
@@ -2297,11 +2307,12 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            int x1 = entry1->data.s16[2] / CTX_SUBDIV;
            int y1 = entry1->data.s16[3] / CTX_FULL_AA;
 
-           ctx_rasterizer_fill_rect (rasterizer, x0, y0, x1, y1, 255);
+           ctx_rasterizer_fill_rect (rasterizer, x0, y0, x1-1, y1-1, 255);
            ctx_rasterizer_reset (rasterizer);
            goto done;
          }
-        else
+#if 0
+        else 
          {
            float x0 = entry3->data.s16[2] * (1.0f / CTX_SUBDIV);
            float y0 = entry3->data.s16[3] * (1.0f / CTX_FULL_AA);
@@ -2310,8 +2321,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
            x0 = ctx_maxf (x0, blit_x);
            y0 = ctx_maxf (y0, blit_y);
-           x1 = ctx_minf (x1, blit_x + blit_width);
-           y1 = ctx_minf (y1, blit_y + blit_height);
+           x1 = ctx_minf (x1, blit_x + blit_width - 1);
+           y1 = ctx_minf (y1, blit_y + blit_height - 1);
 
            uint8_t left = 255-ctx_fmod1f (x0) * 255;
            uint8_t top  = 255-ctx_fmod1f (y0) * 255;
@@ -2381,9 +2392,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
            {
              if (has_left)
-               ctx_rasterizer_fill_rect (rasterizer, x0, y0 + has_top, x0+1, y1 - has_bottom, left);
+               ctx_rasterizer_fill_rect (rasterizer, x0, y0 + has_top,
+                                          x0-1, y1 - has_bottom-1, left);
              if (has_right)
-               ctx_rasterizer_fill_rect (rasterizer, x1-1, y0 + has_top, x1, y1 - has_bottom, right);
+               ctx_rasterizer_fill_rect (rasterizer, x1-1, y0 + has_top,
+                                                     x1-1, y1 - has_bottom-1, right);
              x0 += has_left;
              y0 += has_top;
              y1 -= has_bottom;
@@ -2409,6 +2422,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
            ctx_rasterizer_reset (rasterizer);
            goto done;
          }
+#endif
 
        }
     }
@@ -2978,10 +2992,14 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         {
           bw = lw/2;
         }
-        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y0-bwb, x1+bw, y0+bw, 255);
-        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y1-bwb, x1-bwb, y1+bw, 255);
-        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y0, x0+bw, y1, 255);
-        ctx_rasterizer_fill_rect (rasterizer, x1-bwb, y0, x1+bw, y1+bw, 255);
+        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y0-bwb,
+                                              x1+bw-1, y0+bw-1, 255);
+        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y1-bwb,
+                                              x1-bwb-1, y1+bw-1, 255);
+        ctx_rasterizer_fill_rect (rasterizer, x0-bwb, y0,
+                                              x0+bw-1, y1-1, 255);
+        ctx_rasterizer_fill_rect (rasterizer, x1-bwb, y0,
+                                              x1+bw-1, y1+bw-1, 255);
         ctx_rasterizer_reset (rasterizer);
         goto done;
       }
