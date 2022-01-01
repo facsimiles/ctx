@@ -2729,6 +2729,13 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 }
 
 static void
+ctx_setup_RGB332 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_RGBA8 (rasterizer);
+  rasterizer->comp = CTX_COV_PATH_FALLBACK;
+}
+
+static void
 ctx_setup_RGB565 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
@@ -2743,8 +2750,8 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
   }
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
-
 }
+
 
 static void
 ctx_composite_convert (CTX_COMPOSITE_ARGUMENTS)
@@ -4834,7 +4841,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_RGB8
   {
     CTX_FORMAT_RGB8, 3, 24, 4, 0, 0, CTX_FORMAT_RGBA8,
-    ctx_RGB8_to_RGBA8, ctx_RGBA8_to_RGB8, ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_RGB8_to_RGBA8, ctx_RGBA8_to_RGB8, ctx_composite_convert, ctx_setup_RGB332,
   },
 #endif
 #if CTX_ENABLE_GRAY1
@@ -4844,7 +4851,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAY1_to_GRAYA8, ctx_GRAYA8_to_GRAY1, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
     CTX_FORMAT_GRAY1, 1, 1, 4, 1, 1, CTX_FORMAT_RGBA8,
-    ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_composite_convert, ctx_setup_RGB332,
 #endif
   },
 #endif
@@ -4855,7 +4862,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAY2_to_GRAYA8, ctx_GRAYA8_to_GRAY2, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
     CTX_FORMAT_GRAY2, 1, 2, 4, 4, 4, CTX_FORMAT_RGBA8,
-    ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_composite_convert, ctx_setup_RGB332,
 #endif
   },
 #endif
@@ -4866,7 +4873,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAY4_to_GRAYA8, ctx_GRAYA8_to_GRAY4, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
     CTX_FORMAT_GRAY4, 1, 4, 4, 16, 16, CTX_FORMAT_GRAYA8,
-    ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_composite_convert, ctx_setup_RGB332,
 #endif
   },
 #endif
@@ -4877,7 +4884,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAY8_to_GRAYA8, ctx_GRAYA8_to_GRAY8, ctx_composite_convert, ctx_setup_GRAYA8,
 #else
     CTX_FORMAT_GRAY8, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
-    ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGB332,
 #endif
   },
 #endif
@@ -4888,7 +4895,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, NULL, ctx_setup_GRAYA8,
 #else
     CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0, CTX_FORMAT_RGBA8,
-    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGBA8,
+    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGB332,
 #endif
   },
 #endif
@@ -4896,7 +4903,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
     CTX_FORMAT_RGB332, 3, 8, 4, 10, 12, CTX_FORMAT_RGBA8,
     ctx_RGB332_to_RGBA8, ctx_RGBA8_to_RGB332,
-    ctx_composite_convert, ctx_setup_RGB565,
+    ctx_composite_convert, ctx_setup_RGB332,
   },
 #endif
 #if CTX_ENABLE_RGB565
@@ -4935,7 +4942,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_YUV420
   {
     CTX_FORMAT_YUV420, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
-    NULL, NULL, ctx_composite_convert, ctx_setup_RGBA8,
+    NULL, NULL, ctx_composite_convert, ctx_setup_RGB332,
   },
 #endif
   {
