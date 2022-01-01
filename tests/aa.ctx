@@ -228,7 +228,8 @@ moveTo 90.5  40
 lineTo 100.5 40
 stroke
 
-lineWidth 1
+lineWidth 2
 moveTo 40.5 4
 lineTo 40.5 100
 stroke
+
