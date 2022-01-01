@@ -118,8 +118,6 @@ Ctx *ctx_new_termimg (int width, int height)
                                            width * 3, CTX_FORMAT_RGB8);
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_backend (ctx, termimg);
-  ctx_set_size (ctx, width, height);
-  ctx_font_size (ctx, 14.0f);
 
   backend->ctx = ctx;
   backend->backend = "termimg";
@@ -128,6 +126,8 @@ Ctx *ctx_new_termimg (int width, int height)
   backend->free  = (void(*)(void*))ctx_termimg_free;
   backend->consume_events = ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
+  ctx_set_size (ctx, width, height);
+  ctx_font_size (ctx, 14.0f);
 #endif
 
   return ctx;

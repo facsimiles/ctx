@@ -946,14 +946,14 @@ Ctx *ctx_new_term (int width, int height)
 #endif
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_backend (ctx, term);
-  ctx_set_size (ctx, width, height);
-  ctx_font_size (ctx, ctx_term_ch); 
   backend->backend = "term";
   backend->process = ctx_term_process;
   backend->flush   = ctx_term_flush;
   backend->free    = (void(*)(void*))ctx_term_free;
   backend->consume_events = ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
+  ctx_set_size (ctx, width, height);
+  ctx_font_size (ctx, ctx_term_ch); 
 #endif
 
 

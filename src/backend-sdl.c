@@ -598,8 +598,6 @@ Ctx *ctx_new_sdl (int width, int height)
   tiled->pixels = (uint8_t*)malloc (width * height * 4);
   tiled->show_frame = (void*)ctx_sdl_show_frame;
 
-  ctx_set_size (backend->ctx,    width, height);
-  ctx_set_size (tiled->ctx_copy, width, height);
 
   backend->set_windowtitle = (void*)ctx_sdl_set_title;
   backend->flush = ctx_tiled_flush;
@@ -610,6 +608,9 @@ Ctx *ctx_new_sdl (int width, int height)
 
   backend->set_clipboard = ctx_sdl_set_clipboard;
   backend->get_clipboard = ctx_sdl_get_clipboard;
+
+  ctx_set_size (backend->ctx,    width, height);
+  ctx_set_size (tiled->ctx_copy, width, height);
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

@@ -542,8 +542,6 @@ Ctx *ctx_new_fb (int width, int height)
   ctx_set_backend (tiled->ctx_copy, fb);
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
-  ctx_set_size (backend->ctx, width, height);
-  ctx_set_size (tiled->ctx_copy, width, height);
 
   backend->flush = ctx_tiled_flush;
   backend->reset = ctx_fb_reset;
@@ -554,6 +552,9 @@ Ctx *ctx_new_fb (int width, int height)
   backend->consume_events = ctx_fb_consume_events;
   backend->get_event_fds = ctx_fb_get_event_fds;
   backend->backend = "fb";
+
+  ctx_set_size (backend->ctx, width, height);
+  ctx_set_size (tiled->ctx_copy, width, height);
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {
