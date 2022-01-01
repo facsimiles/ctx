@@ -427,16 +427,6 @@ typedef struct Mice
 Mice *_mrg_evsrc_coord = NULL;
 static int _ctx_mice_fd = 0;
 
-void _mmm_get_coords (Ctx *ctx, double *x, double *y)
-{
-  if (!_mrg_evsrc_coord)
-    return;
-  if (x)
-    *x = _mrg_evsrc_coord->x;
-  if (y)
-    *y = _mrg_evsrc_coord->y;
-}
-
 static Mice  mice;
 static Mice* mrg_mice_this = &mice;
 

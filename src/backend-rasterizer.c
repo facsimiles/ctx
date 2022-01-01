@@ -308,7 +308,8 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
   rasterizer->col_max = ctx_maxi (tx, rasterizer->col_max);
 }
 
-static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
+static inline void
+ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x;
   float ty = y;
@@ -327,6 +328,9 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
   
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * CTX_FULL_AA);//rasterizer->aa);
 
+  rasterizer->has_shape = 1;
+  rasterizer->y         = y;
+  rasterizer->x         = x;
   if (CTX_UNLIKELY(rasterizer->has_prev<=0))
     {
 #if 0
@@ -346,9 +350,6 @@ static inline void ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, f
       entry->code = CTX_NEW_EDGE;
       rasterizer->has_prev = 1;
     }
-  rasterizer->has_shape = 1;
-  rasterizer->y         = y;
-  rasterizer->x         = x;
 }
 
 
