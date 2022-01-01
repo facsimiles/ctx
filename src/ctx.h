@@ -1604,7 +1604,6 @@ void ctx_windowtitle (Ctx *ctx, const char *text);
 struct _CtxBackend
 {
   Ctx                       *ctx;
-  const char                *backend;
   void  (*process)         (Ctx *ctx, CtxCommand *entry);
   void  (*reset)           (Ctx *ctx);
   void  (*flush)           (Ctx *ctx);

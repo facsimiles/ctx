@@ -585,7 +585,6 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_GL_SetSwapInterval (1);
 
   backend->ctx      = ctx_new ();
-  backend->backend = "sdl";
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;
   tiled->height   = height;

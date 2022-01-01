@@ -3033,7 +3033,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       float prev_x = 0.0f;
       float prev_y = 0.0f;
       float half_width_x = line_width/2;
-      float half_width_y = line_width/2;
+      float half_width_y = half_width_x;
+
       if (CTX_UNLIKELY(line_width <= 0.0f))
         { // makes 0 width be hairline
           half_width_x = .5f;
@@ -3049,7 +3050,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
             {
               CtxSegment *entry = &temp[i];
               float x, y;
-              if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
+              if (entry->code == CTX_NEW_EDGE)
                 {
                   if (CTX_LIKELY(started))
                     {
@@ -3066,7 +3067,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
               float dx = x - prev_x;
               float dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
-              if (CTX_LIKELY(length>0.001f))
+              if (length>0.001f)
                 {
                   float recip_length = 1.0/length;
                   dx = dx * recip_length * half_width_x;
@@ -3083,7 +3084,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
                   // XXX possible miter line-to
                   //ctx_rasterizer_line_to (rasterizer, prev_x-dy+4, prev_y+dx+10);
                   //ctx_rasterizer_line_to (rasterizer, prev_x-dy+8, prev_y+dx+0);
-
 
                   ctx_rasterizer_line_to (rasterizer, x-dy, y+dx);
                 }

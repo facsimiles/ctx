@@ -544,14 +544,14 @@ Ctx *ctx_new_fb (int width, int height)
 
 
   backend->flush = ctx_tiled_flush;
-  backend->reset = ctx_fb_reset;
   backend->process = (void*)ctx_drawlist_process;
+
+  backend->reset = ctx_fb_reset;
   backend->free  = (void*)ctx_fb_free;
   backend->set_clipboard = ctx_fb_set_clipboard;
   backend->get_clipboard = ctx_fb_get_clipboard;
   backend->consume_events = ctx_fb_consume_events;
   backend->get_event_fds = ctx_fb_get_event_fds;
-  backend->backend = "fb";
 
   ctx_set_size (backend->ctx, width, height);
   ctx_set_size (tiled->ctx_copy, width, height);

@@ -193,7 +193,6 @@ Ctx *ctx_new_headless (int width, int height)
  // perhaps rec2020 or similar?
 
   backend->ctx    = ctx_new ();
-  backend->backend = "headless";
   backend->flush = ctx_tiled_flush;
   backend->process = (void*)ctx_drawlist_process;
   backend->reset = ctx_headless_reset;

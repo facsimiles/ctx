@@ -516,7 +516,6 @@ Ctx *ctx_new_kms (int width, int height)
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 
   backend->ctx      = ctx_new ();
-  backend->backend = "kms";
 
   tiled->ctx_copy = ctx_new ();
   tiled->width    = width;

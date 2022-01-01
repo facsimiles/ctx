@@ -120,7 +120,6 @@ Ctx *ctx_new_termimg (int width, int height)
   ctx_set_backend (ctx, termimg);
 
   backend->ctx = ctx;
-  backend->backend = "termimg";
   backend->process = ctx_termimg_process;
   backend->flush = ctx_termimg_flush;
   backend->free  = (void(*)(void*))ctx_termimg_free;

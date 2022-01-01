@@ -946,7 +946,6 @@ Ctx *ctx_new_term (int width, int height)
 #endif
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_backend (ctx, term);
-  backend->backend = "term";
   backend->process = ctx_term_process;
   backend->flush   = ctx_term_flush;
   backend->free    = (void(*)(void*))ctx_term_free;

@@ -515,7 +515,6 @@ Ctx *ctx_new_ctx (int width, int height)
   backend->free  = (void(*)(void *))ctx_ctx_free;
   backend->process = (void*)ctx_drawlist_process;
   backend->consume_events = ctx_ctx_consume_events;
-  backend->backend = "ctx";
   ctx_set_backend (ctx, ctxctx);
   ctx_set_size (ctx, width, height);
   return ctx;
