@@ -726,6 +726,11 @@ inline static void ctx_term_process (Ctx *ctx,
 {
   CtxTerm *term = (void*)ctx->backend;
 
+#if CTX_CURRENT_PATH
+  ctx_update_current_path (ctx, &command->entry);
+#endif
+
+
 #if CTX_BRAILLE_TEXT
   if (command->code == CTX_FILL)
   {

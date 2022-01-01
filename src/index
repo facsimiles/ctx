@@ -34,6 +34,7 @@ terminal.c
 events.c
 parser.c
 ctx-string.c
+backend-drawlist.c
 backend-rasterizer.c
 backend-hasher.c
 backend-cairo.c

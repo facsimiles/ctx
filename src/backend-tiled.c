@@ -143,6 +143,7 @@ static void ctx_tiled_flush (Ctx *ctx)
     fprintf (stderr, "{drip}");
   }
   mtx_unlock (&tiled->mtx);
+  ctx_drawlist_clear (ctx);
 }
 
 static

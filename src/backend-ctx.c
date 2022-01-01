@@ -513,6 +513,7 @@ Ctx *ctx_new_ctx (int width, int height)
     _ctx_mouse (ctx, NC_MOUSE_DRAG);
   backend->flush = ctx_ctx_flush;
   backend->free  = (void(*)(void *))ctx_ctx_free;
+  backend->process = (void*)ctx_drawlist_process;
   backend->consume_events = ctx_ctx_consume_events;
   backend->backend = "ctx";
   ctx_set_backend (ctx, ctxctx);

@@ -195,6 +195,7 @@ Ctx *ctx_new_headless (int width, int height)
   backend->ctx    = ctx_new ();
   backend->backend = "headless";
   backend->flush = ctx_tiled_flush;
+  backend->process = (void*)ctx_drawlist_process;
   backend->reset = ctx_headless_reset;
   backend->free  = (void*)ctx_headless_free;
   backend->set_clipboard = ctx_fb_set_clipboard;

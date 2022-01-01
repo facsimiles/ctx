@@ -533,6 +533,7 @@ Ctx *ctx_new_kms (int width, int height)
   backend->flush = ctx_tiled_flush;
   backend->reset = ctx_kms_reset;
   backend->free  = (void*)ctx_kms_free;
+  backend->process = (void*)ctx_drawlist_process;
   backend->consume_events = ctx_kms_consume_events;
   backend->get_event_fds = (void*) ctx_fb_get_event_fds;
   backend->set_clipboard = ctx_fb_set_clipboard;

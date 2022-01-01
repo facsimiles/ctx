@@ -22,6 +22,11 @@ ctx_cairo_process (Ctx *ctx, CtxCommand *c)
 {
   CtxCairo *ctx_cairo = (void*)ctx->backend;
   CtxEntry *entry = (CtxEntry *) &c->entry;
+
+#if CTX_CURRENT_PATH
+  ctx_update_current_path (ctx, entry);
+#endif
+
   cairo_t *cr = ctx_cairo->cr;
   switch (entry->code)
     {

@@ -89,7 +89,7 @@ typedef struct _CtxGlyph       CtxGlyph;
  *
  * Create a new drawing context, this context has no pixels but
  * accumulates commands and can be played back on other ctx
- * render contexts.
+ * render contexts, this is a ctx context using the drawlist backend.
  */
 Ctx *ctx_new (void);
 

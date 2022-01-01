@@ -665,12 +665,6 @@ void ctx_stroke (Ctx *ctx)
 }
 
 
-void ctx_drawlist_clear (Ctx *ctx)
-{
-  ctx->drawlist.count = 0;
-  ctx->drawlist.bitpack_pos = 0;
-}
-
 static void ctx_empty (Ctx *ctx)
 {
 #if CTX_RASTERIZER
@@ -712,6 +706,7 @@ static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2);
 
 void ctx_reset (Ctx *ctx)
 {
+  ctx_drawlist_clear (ctx);
         /* we do the callback reset first - maybe we need two cbs,
          * one for before and one after default impl?
          *
@@ -723,7 +718,6 @@ void ctx_reset (Ctx *ctx)
   //CTX_PROCESS_VOID (CTX_RESET);
   //if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
   //  { return; }
-  ctx_empty (ctx);
   ctx_state_init (&ctx->state);
 #if CTX_EVENTS
   ctx_list_free (&ctx->events.items);
@@ -1847,6 +1841,7 @@ void *ctx_get_backend (Ctx *ctx)
   return ctx->backend;
 }
 
+
 Ctx *
 ctx_new (void)
 {
@@ -1858,6 +1853,8 @@ ctx_new (void)
 #endif
   ctx_memset (ctx, 0, sizeof (Ctx) );
   _ctx_init (ctx);
+
+  ctx_set_backend (ctx, ctx_drawlist_backend_new ());
   return ctx;
 }
 
@@ -2492,63 +2489,8 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   return CTX_BACKEND_NONE;
 }
 
-static void
-ctx_drawlist_process (Ctx *ctx, CtxEntry *entry)
-{
-  /* these functions might alter the code and coordinates of
-     command that in the end gets added to the drawlist
-   */
-  ctx_interpret_style (&ctx->state, entry, ctx);
-  ctx_interpret_transforms (&ctx->state, entry, ctx);
-  ctx_interpret_pos (&ctx->state, entry, ctx);
-  ctx_drawlist_add_entry (&ctx->drawlist, entry);
-}
-
-static void
+static inline void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
-#if CTX_CURRENT_PATH
-  switch (entry->code)
-    {
-      case CTX_TEXT:
-      case CTX_STROKE_TEXT:
-      case CTX_BEGIN_PATH:
-        ctx->current_path.count = 0;
-        break;
-      case CTX_CLIP:
-      case CTX_FILL:
-      case CTX_STROKE:
-              // XXX unless preserve
-        ctx->current_path.count = 0;
-        break;
-      case CTX_CLOSE_PATH:
-      case CTX_LINE_TO:
-      case CTX_MOVE_TO:
-      case CTX_QUAD_TO:
-      case CTX_SMOOTH_TO:
-      case CTX_SMOOTHQ_TO:
-      case CTX_REL_QUAD_TO:
-      case CTX_REL_SMOOTH_TO:
-      case CTX_REL_SMOOTHQ_TO:
-      case CTX_CURVE_TO:
-      case CTX_REL_CURVE_TO:
-      case CTX_ARC:
-      case CTX_ARC_TO:
-      case CTX_REL_ARC_TO:
-      case CTX_RECTANGLE:
-      case CTX_ROUND_RECTANGLE:
-        ctx_drawlist_add_entry (&ctx->current_path, entry);
-        break;
-      default:
-        break;
-    }
-#endif
-  if (CTX_LIKELY(ctx->backend && ctx->backend->process))
-    {
-      ctx->backend->process (ctx, (CtxCommand *) entry);
-    }
-  else
-    {
-      ctx_drawlist_process (ctx, entry);
-    }
+  ctx->backend->process (ctx, (CtxCommand *) entry);
 }

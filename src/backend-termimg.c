@@ -26,6 +26,10 @@ inline static void ctx_termimg_process (Ctx        *ctx,
                                         CtxCommand *command)
 {
   CtxTermImg *termimg = (void*)ctx->backend;
+#if CTX_CURRENT_PATH
+  ctx_update_current_path (ctx, &command->entry);
+#endif
+
   /* directly forward */
   ctx_process (termimg->host, &command->entry);
 }

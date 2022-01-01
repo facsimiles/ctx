@@ -603,6 +603,7 @@ Ctx *ctx_new_sdl (int width, int height)
 
   backend->set_windowtitle = (void*)ctx_sdl_set_title;
   backend->flush = ctx_tiled_flush;
+  backend->process = (void*)ctx_drawlist_process;
   backend->reset = ctx_sdl_reset;
   backend->free  = (void*)ctx_sdl_free;
   backend->consume_events = ctx_sdl_consume_events;
