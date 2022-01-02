@@ -1078,7 +1078,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int *edges          = rasterizer->edges;
   int scanline        = rasterizer->scanline;
-  const int bpp       = rasterizer->format->bpp/8;
+  const int bpp       = rasterizer->format->bpp;
   int active_edges    = rasterizer->active_edges;
   int parity          = 0;
   const uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
@@ -1129,7 +1129,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             }
             else
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
+              uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)/8]);
               switch (comp)
               {
                 case CTX_COV_PATH_RGBA8_COPY:
@@ -1151,7 +1151,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             {
               case CTX_COV_PATH_RGBA8_COPY:
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
+              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
               *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, graystart);
 
               dst_pix++;
@@ -1169,7 +1169,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 #if 1
             case CTX_COV_PATH_RGB565_COPY:
     {
-            uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)]);
+            uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
             uint8_t  startcov = graystart;
             ctx_rasterizer_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
             uint16_t* dst_i = (uint16_t*)dsts;
@@ -1186,7 +1186,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 
               case CTX_COV_PATH_RGBA8_OVER:
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
+              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
               *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, graystart);
               dst_pix++;
               for (int i = first + 1; i < last; i++)
@@ -1201,17 +1201,17 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               float u0 = 0; float v0 = 0;
               float ud = 0; float vd = 0;
               uint8_t gs = graystart;
-              ctx_RGBA8_source_copy_normal_fragment (rasterizer, &dst[(first * bpp)], NULL, first, &gs, 1);
+              ctx_RGBA8_source_copy_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
               ctx_init_uv (rasterizer, first+1, last-first-1, &u0, &v0, &ud, &vd);
-              rasterizer->fragment (rasterizer, u0, v0, &dst[(first+1)*bpp], last-first-1, ud, vd);
+              rasterizer->fragment (rasterizer, u0, v0, &dst[((first+1)*bpp)/8], last-first-1, ud, vd);
             }
             break;
               case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
             {
               uint8_t gs = graystart;
-              ctx_RGBA8_source_over_normal_fragment (rasterizer, &dst[(first * bpp)], NULL, first, &gs, 1);
+              ctx_RGBA8_source_over_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
               ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
-                                                     &dst[((first+1)*bpp)], NULL, first + 1, NULL, last-first-1);
+                                                     &dst[((first+1)*bpp)/8], NULL, first + 1, NULL, last-first-1);
             }
             break;
               default:
@@ -1220,7 +1220,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               memset (opaque, 255, sizeof (opaque));
               opaque[0] = graystart;
               ctx_rasterizer_apply_coverage (rasterizer,
-                                             &dst[(first * bpp)], first, opaque, last-first);
+                                             &dst[(first * bpp)/8], first, opaque, last-first);
             }
             }
             accumulated = grayend;
@@ -1235,7 +1235,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 
    if (accumulated)
    {
-     uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)]);
+     uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)/8]);
      switch (comp)
      {
        case CTX_COV_PATH_RGBA8_COPY:
@@ -2515,7 +2515,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                       composite[x] = val;
                     }
                     ctx_rasterizer_apply_coverage (rasterizer,
-                                                 ( (uint8_t *) rasterizer->buf) + (y-blit_y) * blit_stride + (int) (x0) * bpp/8,
+                                                 ( (uint8_t *) rasterizer->buf) + (y-blit_y) * blit_stride + ((int) (x0) * bpp)/8,
                                                  x0, // is 0
                                                  composite,
                                                  ewidth );
@@ -2529,7 +2529,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
               if (CTX_LIKELY((y >= clip_y_min) && (y <= clip_y_max) ))
                 {
                     ctx_rasterizer_apply_coverage (rasterizer,
-                                                 ( (uint8_t *) rasterizer->buf) + (y-blit_y) * blit_stride + (int) (x0) * bpp/8,
+                                                 ( (uint8_t *) rasterizer->buf) + (y-blit_y) * blit_stride + (int) ((x0) * bpp)/8,
                                                  x0,
                                                  &shape->data[shape->width * (int) (y-ymin) + xo],
                                                  ewidth );
