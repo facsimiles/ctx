@@ -1841,33 +1841,17 @@ ctx_init_uv (CtxRasterizer *rasterizer,
              int x0, int count,
              float *u0, float *v0, float *ud, float *vd)
 {
-#if 0
   CtxGState *gstate = &rasterizer->state->gstate;
   CtxMatrix *transform = &gstate->source_fill.transform;
   *u0 = x0;
-  *v0 = rasterizer->scanline / 15;//rasterizer->aa;
+  *v0 = rasterizer->scanline / 15;
   float u1 = x0 + count;
   float v1 = *v0;
-
   _ctx_matrix_apply_transform (transform, u0, v0);
   _ctx_matrix_apply_transform (transform, &u1, &v1);
 
-  *ud = (u1-*u0) / (count);
-  *vd = (v1-*v0) / (count);
-#else
-  CtxGState *gstate = &rasterizer->state->gstate;
-  CtxMatrix *transform = &gstate->source_fill.transform;
-  *u0 = x0;
-  *v0 = rasterizer->scanline / 15;//rasterizer->aa;
-  float u1 = x0 + count;
-  //float v1 = *v0;
-
-  _ctx_matrix_apply_transform (transform, u0, v0);
-  _ctx_matrix_apply_transform_only_x (transform, &u1, *v0);
-
-  *ud = (u1-*u0) / (count);
-  *vd = 0;
-#endif
+  *ud = (u1-*u0) / count;
+  *vd = (v1-*v0) / count;
 }
 
 static void
@@ -2097,15 +2081,22 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
 }
 
 static inline void
-ctx_RGBA8_source_over_normal_full_cov_fragment (CTX_COMPOSITE_ARGUMENTS)
+ctx_RGBA8_source_over_normal_full_cov_fragment (CTX_COMPOSITE_ARGUMENTS, int scanlines)
 {
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
   ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
-  uint8_t _tsrc[4 * (count)];
-  rasterizer->fragment (rasterizer, u0, v0, &_tsrc[0], count, ud, vd);
-  ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
-                       dst, src, x0, coverage, count, &_tsrc[0]);
+
+  for (int y = 0; y < scanlines; y++)
+  {
+    uint8_t _tsrc[4 * (count)];
+    rasterizer->fragment (rasterizer, u0, v0, &_tsrc[0], count, ud, vd);
+    ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
+                          dst, src, x0, coverage, count, &_tsrc[0]);
+    dst += rasterizer->blit_stride;
+    u0 += vd;
+    v0 += ud;
+  }
 }
 
 static void

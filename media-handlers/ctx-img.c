@@ -103,7 +103,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       //ctx_begin_path (ctx);
       if (image_smoothing == 0)
         ctx_image_smoothing (ctx, 0);
-      //ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
+      ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
 
 #if 1
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
