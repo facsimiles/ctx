@@ -285,6 +285,17 @@ static const char *get_suffix (const char *path)
 int ctx_path_is_dir (const char *path);
 
 #include <libgen.h>
+extern int ctx_media_matched_content;
+int file_main (int argc, char **argv)
+{
+  for (int i = 1; argv[i]; i++)
+  {
+     fprintf (stdout, "%s:\t", argv[i]);
+     fprintf (stdout, "%s",  ctx_path_get_media_type (realpath(argv[i], NULL)));
+     fprintf (stdout, " %s\n", ctx_media_matched_content?"*":"");
+  }
+  return 0;
+}
 
 int main (int argc, char **argv)
 {
@@ -321,6 +332,8 @@ int main (int argc, char **argv)
   if (output_path)
     return convert_main (argc, argv);
 
+  if (argv[1] && !strcmp (argv[1], "file"))
+    return file_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "thumb"))
     return thumb_main (argc-1, argv+1);
   if (argv[1] && !strcmp (argv[1], "launch"))

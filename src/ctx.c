@@ -2196,8 +2196,14 @@ typedef struct CtxMagicEntry {
 static CtxMagicEntry ctx_magics[]={
   {"image/bmp",  ".bmp", 0, {0}},
   {"image/png",  ".png", 8, {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}},
-  {"image/jpeg", ".jpg", 8, {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
+  {"image/jpeg", ".jpg", 8,  {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
+  {"image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xe0}},
+  {"image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xee}},
+  {"image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xe1}},
   {"image/jpeg", ".jpeg", 8, {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
+
+  {"image/psd", ".psd", 4,  {0x38, 0x42, 0x50, 0x53}},
+
   {"image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x37, 0x61}},
   {"image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x39, 0x61}},
   {"image/exr",  ".exr", 4, {0x76, 0x2f, 0x31, 0x01}},
@@ -2205,10 +2211,19 @@ static CtxMagicEntry ctx_magics[]={
   {"application/blender", ".blend", 8, {0x42, 0x4c,0x45,0x4e,0x44,0x45,0x52}},
   {"image/xcf",  ".xcf", 8, {0x67, 0x69,0x6d,0x70,0x20,0x78,0x63,0x66}},
   {"application/bzip2", ".bz2", 3, {0x42, 0x5a, 0x68}},
-  {"application/gzip", ".gz", 0, {0x0}},
+  {"application/gzip", ".gz", 2, {0x1f, 0x8b}},
+  {"application/zip", ".zip", 4, {0x50, 0x4b, 0x03, 0x04}},
+  {"application/zip", ".zip", 4, {0x50, 0x4b, 0x05, 0x06}},
+  {"application/rar", ".rar", 6, {0x52, 0x61, 0x72, 0x1a, 0x07, 0x00}},
+  {"application/rar", ".rar", 7, {0x52, 0x61, 0x72, 0x1a, 0x07, 0x01, 0x00}},
   {"text/x-csrc", ".c", 0, {0,}},
   {"text/x-chdr", ".h", 0, {0,}},
   {"text/css", ".css", 0, {0x0}},
+
+  {"application/gzip", ".z", 2, {0x1f, 0x9d}},
+
+  {"application/dos-mz", ".exe", 2, {0x4d, 0x5a}},
+
   {"text/csv", ".csv", 0, {0x0}},
   {"text/html", ".htm", 0, {0x0}},
   {"text/html", ".html", 0, {0x0}},
@@ -2219,18 +2234,23 @@ static CtxMagicEntry ctx_magics[]={
   {"application/json", ".json", 0, {0x0}},
   {"application/octet-stream", ".bin", 0, {0x0}},
   {"application/x-object", ".o", 0, {0x0}},
+  {"text/utf-8", ".txt", 0, {0xef, 0xbb, 0xbf}}, // utf8 bom
   {"text/x-sh", ".sh", 0, {0x0}},
   {"text/x-python", ".py", 0, {0x0}},
   {"text/x-perl", ".pl", 0, {0x0}},
   {"text/x-perl", ".pm", 0, {0x0}},
+  {"application/x-shellscript", ".sh", 2, {0x23, 0x21}}, // #!
   {"application/pdf", ".pdf", 0, {0x0}},
   {"application/ctx", ".ctx", 0, {0x0}},
+  {"application/wasm", ".wasm", 0, {0x00, 0x61, 0x73, 0x6d}},
   {"text/xml", ".xml",     0, {0x0}},
-  {"video/mp4", ".mp4",    0, {0x0}},
+  {"video/mp4", ".mp4",    7, {0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f}},
+  {"video/matroska", ".mkv", 4, {0x1a, 0x45, 0xdf, 0xa3}},
   {"video/ogg", ".ogv",    0, {0x0}},
-  {"audio/sp-midi", ".mid",  0, {0x0}},
-  {"audio/x-wav", ".wav",  0, {0x0}},
-  {"audio/ogg", ".ogg",    0, {0x0}},
+  {"audio/flac", ".flac",  0, {0x66, 0x4c, 0x61, 0x43}},
+  {"audio/sp-midi", ".mid",  4, {0x4d, 0x54, 0x68, 0x64}},
+  {"audio/x-wav", ".wav",  4, {0x52, 0x49, 0x46, 0x46}},
+  {"audio/ogg", ".ogg",    4, {0x4f, 0x67, 0x67, 0x53}},
   {"audio/ogg", ".opus",   0, {0x0}},
   {"audio/ogg", ".oga",    0, {0x0}},
   {"audio/mpeg", ".mp1",   0, {0x0}},
@@ -2241,7 +2261,7 @@ static CtxMagicEntry ctx_magics[]={
   {"audio/mpeg", ".mpga",  0, {0x0}},
   {"audio/mpeg", ".mpega", 0, {0x0}},
   {"font/otf", ".otf", 0,{0x0}},
-  {"font/ttf", ".ttf", 0,{0x0}},
+  {"font/ttf", ".ttf", 5,{0x0, 0x01, 0x00, 0x00, 0x00}},
   // inode-directory
 };
 
@@ -2261,9 +2281,11 @@ static int ctx_path_is_exec (const char *path)
   return stat_buf.st_mode & 0x1;
 }
 
+int ctx_media_matched_content = 0;
 const char *ctx_guess_media_type (const char *path, const char *content, int len)
 {
   const char *extension_match = NULL;
+  ctx_media_matched_content = 0;
   if (path && strrchr (path, '.'))
   {
     char *pathdup = strdup (strrchr(path, '.'));
@@ -2285,6 +2307,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
        if (ctx_magics[i].len) // skip extension only matches
        if (!memcmp (content, ctx_magics[i].magic, ctx_magics[i].len))
        {
+         ctx_media_matched_content = 1;
          return ctx_magics[i].mime_type;
        }
     }
@@ -2305,6 +2328,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
   {
     int p = content[i];
     if (p > 127) non_ascii = 1;
+    if (p < ' ' && (p!='\n')) non_ascii = 1;
     if (p == 0) non_ascii = 1;
   }
   if (non_ascii)
@@ -2325,6 +2349,7 @@ const char *ctx_path_get_media_type (const char *path)
     if (path[0]=='/')path++;
   }
 
+#if 0
   /* XXX : code duplication, factor out in separate fun */
   if (path && strrchr (path, '.'))
   {
@@ -2340,10 +2365,11 @@ const char *ctx_path_get_media_type (const char *path)
     }
     free (pathdup);
   }
+#endif
   if (ctx_path_is_dir (path))
     return "inode/directory";
 
-  ctx_get_contents2 (path, (uint8_t**)&content, &length, 32);
+  ctx_get_contents2 (path, (uint8_t**)&content, &length, 128);
   if (content)
   {
   const char *guess = ctx_guess_media_type (path, content, length);
