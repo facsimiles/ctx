@@ -11,6 +11,13 @@ _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
   *y = ( (y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
 }
 
+static inline void
+_ctx_matrix_apply_transform_only_x (const CtxMatrix *m, float *x, float y_in)
+{
+  float x_in = *x;
+  *x = ( (x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
+}
+
 void
 ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 {

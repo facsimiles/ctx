@@ -1841,11 +1841,12 @@ ctx_init_uv (CtxRasterizer *rasterizer,
              int x0, int count,
              float *u0, float *v0, float *ud, float *vd)
 {
+#if 0
   CtxGState *gstate = &rasterizer->state->gstate;
   CtxMatrix *transform = &gstate->source_fill.transform;
   *u0 = x0;
   *v0 = rasterizer->scanline / 15;//rasterizer->aa;
-  float u1 = *u0 + count;
+  float u1 = x0 + count;
   float v1 = *v0;
 
   _ctx_matrix_apply_transform (transform, u0, v0);
@@ -1853,6 +1854,20 @@ ctx_init_uv (CtxRasterizer *rasterizer,
 
   *ud = (u1-*u0) / (count);
   *vd = (v1-*v0) / (count);
+#else
+  CtxGState *gstate = &rasterizer->state->gstate;
+  CtxMatrix *transform = &gstate->source_fill.transform;
+  *u0 = x0;
+  *v0 = rasterizer->scanline / 15;//rasterizer->aa;
+  float u1 = x0 + count;
+  //float v1 = *v0;
+
+  _ctx_matrix_apply_transform (transform, u0, v0);
+  _ctx_matrix_apply_transform_only_x (transform, &u1, *v0);
+
+  *ud = (u1-*u0) / (count);
+  *vd = 0;
+#endif
 }
 
 static void
