@@ -1202,7 +1202,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               float ud = 0; float vd = 0;
               uint8_t gs = graystart;
               ctx_RGBA8_source_copy_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
-              ctx_init_uv (rasterizer, first+1, last-first-1, &u0, &v0, &ud, &vd);
+              ctx_init_uv (rasterizer, first+1, &u0, &v0, &ud, &vd);
               rasterizer->fragment (rasterizer, u0, v0, &dst[((first+1)*bpp)/8], last-first-1, ud, vd);
             }
             break;
@@ -1604,7 +1604,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               {
                 float u0 = 0; float v0 = 0;
                 float ud = 0; float vd = 0;
-                ctx_init_uv (rasterizer, first+pre, width, &u0, &v0, &ud, &vd);
+                ctx_init_uv (rasterizer, first+pre, &u0, &v0, &ud, &vd);
                 rasterizer->fragment (rasterizer, u0, v0, &dst[(first+pre)*bpp],                                      width, ud, vd);
               }
             }
@@ -2139,7 +2139,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     {
       float u0 = 0; float v0 = 0;
       float ud = 0; float vd = 0;
-      ctx_init_uv (rasterizer, x0, width, &u0, &v0, &ud, &vd);
+      ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
       for (int y = y0; y <= y1; y++)
       {
         rasterizer->fragment (rasterizer, u0, v0, &dst[0], width, ud, vd);

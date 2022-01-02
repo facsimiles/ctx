@@ -1838,20 +1838,18 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 
 static inline void
 ctx_init_uv (CtxRasterizer *rasterizer,
-             int x0, int count,
+             int x0,
              float *u0, float *v0, float *ud, float *vd)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   CtxMatrix *transform = &gstate->source_fill.transform;
+  float u1 = x0 + 1;
+  float v1 = *v0 = rasterizer->scanline / 15;
   *u0 = x0;
-  *v0 = rasterizer->scanline / 15;
-  float u1 = x0 + count;
-  float v1 = *v0;
   _ctx_matrix_apply_transform (transform, u0, v0);
   _ctx_matrix_apply_transform (transform, &u1, &v1);
-
-  *ud = (u1-*u0) / count;
-  *vd = (v1-*v0) / count;
+  *ud = u1 - *u0;
+  *vd = v1 - *v0;
 }
 
 static void
@@ -1861,7 +1859,7 @@ ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
     {
       float u0 = 0; float v0 = 0;
       float ud = 0; float vd = 0;
-      ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+      ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
       while (count--)
       {
         uint8_t cov = *coverage;
@@ -2073,7 +2071,7 @@ ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
 {
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+  ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
   uint8_t _tsrc[4 * (count)];
   rasterizer->fragment (rasterizer, u0, v0, &_tsrc[0], count, ud, vd);
   ctx_RGBA8_source_over_normal_buf (rasterizer,
@@ -2085,7 +2083,7 @@ ctx_RGBA8_source_over_normal_full_cov_fragment (CTX_COMPOSITE_ARGUMENTS, int sca
 {
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+  ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
 
   for (int y = 0; y < scanlines; y++)
   {
@@ -2104,7 +2102,7 @@ ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
 {
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+  ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
   uint8_t _tsrc[4 * (count)];
   rasterizer->fragment (rasterizer, u0, v0, &_tsrc[0], count, ud, vd);
   ctx_RGBA8_source_copy_normal_buf (rasterizer,
@@ -2510,7 +2508,7 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
     float ud = 0; float vd = 0;
     src = &tsrc[0];
 
-    ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+    ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
     fragment (rasterizer, u0, v0, src, count, ud, vd);
     if (blend != CTX_BLEND_NORMAL)
       ctx_u8_blend (components, blend, dst, src, src, count);
@@ -2771,7 +2769,7 @@ ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
 
-  ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+  ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
 
   while (count--)
   {
@@ -3126,7 +3124,7 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
     float u0 = 0; float v0 = 0;
     float ud = 0; float vd = 0;
 
-    ctx_init_uv (rasterizer, x0, count, &u0, &v0, &ud, &vd);
+    ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
 
     while (count--)
     {
