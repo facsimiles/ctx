@@ -5,6 +5,7 @@
 #define CTX_LIMIT_FORMATS   1
 #define CTX_FRAGMENT_SPECIALIZE 0
 #define CTX_ENABLE_RGBA8    1
+#define CTX_FAST_FILL_RECT  0
 #define CTX_ENABLE_RGB565_BS  0
 #define CTX_ENABLE_CMYK     0
 #define CTX_ENABLE_CM       0

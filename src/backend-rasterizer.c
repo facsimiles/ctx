@@ -2007,10 +2007,8 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
-#define CTX_RECT_FILL 1 /* currently disabled, vertical stroked single line segments get confused and mishandled
-                           we lose a tiny bit of performance, but compiled size is reduced which is a win */
 
-#if CTX_RECT_FILL
+#if CTX_FAST_FILL_RECT
 
 /* TODO: refactor this to have x1 and y1 be included in fill */
 
@@ -2279,7 +2277,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     rasterizer->state->min_y = ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / CTX_FULL_AA);
     rasterizer->state->max_y = ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / CTX_FULL_AA);
 
-#if CTX_RECT_FILL
+#if CTX_FAST_FILL_RECT
   if (rasterizer->edge_list.count == 5)
     {
       CtxSegment *entry0 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[0];
@@ -2554,7 +2552,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                                    );
     }
   }
-#if CTX_RECT_FILL
+#if CTX_FAST_FILL_RECT
 done:
 #endif
   if (CTX_UNLIKELY(rasterizer->preserve))
@@ -2941,7 +2939,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 
-#if CTX_RECT_FILL
+#if CTX_FAST_FILL_RECT
   if (rasterizer->edge_list.count == 5)
     {
       CtxSegment *entry0 = &((CtxSegment*)rasterizer->edge_list.entries)[0];
@@ -3231,7 +3229,7 @@ foo:
       gstate->transform = transform_backup;
     }
   }
-#if CTX_RECT_FILL
+#if CTX_FAST_FILL_RECT
 done:
 #endif
   if (preserved)

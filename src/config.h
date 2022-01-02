@@ -96,6 +96,13 @@
 #endif
 #endif
 
+
+#ifndef CTX_FAST_FILL_RECT
+#define CTX_FAST_FILL_RECT 1    /*  matters most for tiny rectangles where it shaves overhead, for larger rectangles
+                                    a ~15-20% performance win can be seen. */
+#endif
+
+
 #ifndef CTX_COMPOSITING_GROUPS
 #define CTX_COMPOSITING_GROUPS   1
 #endif
