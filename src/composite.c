@@ -1174,35 +1174,30 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   }
   else
   {
-
-  for (; i < count; i ++)
-  {
-    if (CTX_UNLIKELY(u >= bwidth-1))
+    for (; (i < count) && (u< bwidth); i ++)
     {
-      break;
+      if (loaded + 1 == u)
+      {
+        s0_ga = s1_ga;
+        s0_rb = s1_rb;
+        ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
+        src0 ++;
+        src1 ++;
+      }
+      else if (loaded != u)
+      {
+        src0 = data + u;
+        src1 = ndata + u;
+        ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s0_ga, &s0_rb);
+        ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
+      }
+      loaded = u;
+      ((uint32_t*)(&rgba[0]))[0] = 
+        ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, ((xi>>8)&0xff));
+      xi += xi_delta;
+      rgba += 4;
+      u = xi >> 16;
     }
-    else if (CTX_LIKELY(loaded + 1 == u))
-    {
-      s0_ga = s1_ga;
-      s0_rb = s1_rb;
-      ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
-      src0 ++;
-      src1 ++;
-    }
-    else if (loaded != u)
-    {
-      src0 = data + u;
-      src1 = ndata + u;
-      ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s0_ga, &s0_rb);
-      ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
-    }
-    loaded = u;
-    ((uint32_t*)(&rgba[0]))[0] = 
-      ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, ((xi>>8)&0xff));
-    xi += xi_delta;
-    rgba += 4;
-    u = xi >> 16;
-  }
   }
 
   }
