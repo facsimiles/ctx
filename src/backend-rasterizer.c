@@ -2055,15 +2055,6 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
 
   if (cov == 255)
   {
-#if 0
-      CtxFragment fragment = rasterizer->fragment;
-      //void (*comp_op)(CTX_COMPOSITE_ARGUMENTS) = rasterizer->comp_op;
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest)
-      {
-
-        return;
-      }
-#endif
 
     if (comp == CTX_COV_PATH_RGBA8_COPY)
     {
@@ -2137,15 +2128,25 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     }
     else if (comp == CTX_COV_PATH_RGBA8_COPY_FRAGMENT)
     {
+      CtxFragment fragment = rasterizer->fragment;
+#if 0
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi)
+      {
+        // TODO short circuit this with custom bilinear
+      }
+      else
+#endif
+      {
       float u0 = 0; float v0 = 0;
       float ud = 0; float vd = 0;
       ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
       for (int y = y0; y <= y1; y++)
       {
-        rasterizer->fragment (rasterizer, u0, v0, &dst[0], width, ud, vd);
+        fragment (rasterizer, u0, v0, &dst[0], width, ud, vd);
         u0 += vd;
         v0 += ud;
         dst += blit_stride;
+      }
       }
       return;
     }
@@ -2219,6 +2220,7 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     memset (coverage, cov, sizeof (coverage) );
     for (int y = y0; y <= y1; y++)
     {
+      /* TODO: reuse u,v,ud,vd between scanlines */
       ctx_rasterizer_apply_coverage (rasterizer, &dst[0], x0, coverage, width);
       rasterizer->scanline += CTX_FULL_AA;
       dst += blit_stride;
@@ -2301,29 +2303,25 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
          )
        {
-         if(((entry1->data.s16[2] % (CTX_SUBDIV))  == 0) &
+         float x0 = entry3->data.s16[2] * (1.0f / CTX_SUBDIV);
+         float y0 = entry3->data.s16[3] * (1.0f / CTX_FULL_AA);
+         float x1 = entry1->data.s16[2] * (1.0f / CTX_SUBDIV);
+         float y1 = entry1->data.s16[3] * (1.0f / CTX_FULL_AA);
+
+         if((((entry1->data.s16[2] % (CTX_SUBDIV))  == 0) &
             ((entry1->data.s16[3] % (CTX_FULL_AA)) == 0) &
             ((entry3->data.s16[2] % (CTX_SUBDIV))  == 0) &
-            ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0))
+            ((entry3->data.s16[3] % (CTX_FULL_AA)) == 0)) && 
+            x1 > x0 && y1 > y0)
          {
            /* best-case axis aligned rectangle */
-           int x0 = entry3->data.s16[2] / CTX_SUBDIV;
-           int y0 = entry3->data.s16[3] / CTX_FULL_AA;
-           int x1 = entry1->data.s16[2] / CTX_SUBDIV;
-           int y1 = entry1->data.s16[3] / CTX_FULL_AA;
-
            ctx_rasterizer_fill_rect (rasterizer, x0, y0, x1-1, y1-1, 255);
            ctx_rasterizer_reset (rasterizer);
            goto done;
          }
-#if 0
-        else 
+#if 1
+        else if (x1 > x0 && y1 > y0)
          {
-           float x0 = entry3->data.s16[2] * (1.0f / CTX_SUBDIV);
-           float y0 = entry3->data.s16[3] * (1.0f / CTX_FULL_AA);
-           float x1 = entry1->data.s16[2] * (1.0f / CTX_SUBDIV);
-           float y1 = entry1->data.s16[3] * (1.0f / CTX_FULL_AA);
-
            x0 = ctx_maxf (x0, blit_x);
            y0 = ctx_maxf (y0, blit_y);
            x1 = ctx_minf (x1, blit_x + blit_width );
