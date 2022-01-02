@@ -3992,9 +3992,10 @@ ctx_GRAY1_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
   const uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      rgba[0] = 255 * (*pixel & (1<< (x&7) ) );
+      int bitno = x&7;
+      rgba[0] = 255 * ((*pixel) & (1<<bitno));
       rgba[1] = 255;
-      pixel+= ( (x&7) ==7);
+      pixel+= (bitno ==7);
       x++;
       rgba +=2;
     }
@@ -4004,25 +4005,15 @@ inline static void
 ctx_GRAYA8_to_GRAY1 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
 {
   uint8_t *pixel = (uint8_t *) buf;
-  *pixel = 0;
   while (count--)
     {
       int gray = rgba[0];
-      //gray += ctx_dither_mask_a (x, rasterizer->scanline/aa, 0, 127);
-      if (gray >= 127)
-        {
-          *pixel = *pixel | ((1<< (x&7) ) * (gray >= 127));
-        }
-#if 0
+      int bitno = x&7;
+      if (gray >= 128)
+        *pixel |= (1<<bitno);
       else
-      {
-          *pixel = *pixel & (~ (1<< (x&7) ) );
-      }
-#endif
-      if ( (x&7) ==7)
-        { pixel+=1;
-          if(count>0)*pixel = 0;
-        }
+        *pixel &= (~ (1<<bitno));
+      pixel+= (bitno==7);
       x++;
       rgba +=2;
     }
@@ -4036,8 +4027,9 @@ ctx_GRAY1_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *
   const uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      *((uint32_t*)(rgba))=0xff000000 + 0x00ffffff * ((*pixel & (1<< (x&7) ) )!=0);
-      pixel+= ( (x&7) ==7);
+      int bitno = x&7;
+      *((uint32_t*)(rgba))=0xff000000 + 0x00ffffff * ((*pixel & (1<< bitno ) )!=0);
+      pixel += (bitno ==7);
       x++;
       rgba +=4;
     }
@@ -4047,23 +4039,16 @@ inline static void
 ctx_RGBA8_to_GRAY1 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
 {
   uint8_t *pixel = (uint8_t *) buf;
-  *pixel = 0;
   while (count--)
     {
       int gray = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba);
+      int bitno = x&7;
       //gray += ctx_dither_mask_a (x, rasterizer->scanline/aa, 0, 127);
-      if (gray <= 127)
-        {
-          //*pixel = *pixel & (~ (1<< (x&7) ) );
-        }
+      if (gray >= 128)
+        *pixel |= (1<< bitno);
       else
-        {
-          *pixel = *pixel | (1<< (x&7) );
-        }
-      if ( (x&7) ==7)
-        { pixel+=1;
-          if(count>0)*pixel = 0;
-        }
+        *pixel &= (~ (1<< bitno));
+      pixel+= (bitno ==7);
       x++;
       rgba +=4;
     }
