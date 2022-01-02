@@ -2048,7 +2048,6 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
   y0 = ctx_maxi (y0, blit_y);
   y1 = ctx_mini (y1, blit_y + blit_height - 1);
   rasterizer->scanline = y0 * CTX_FULL_AA;
-  _ctx_setup_compositor (rasterizer);
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
 
   dst += (y0 - blit_y) * blit_stride;
@@ -2810,115 +2809,6 @@ ctx_rasterizer_rel_quad_to (CtxRasterizer *rasterizer,
                           x  + rasterizer->x, y  + rasterizer->y);
 }
 
-#define LENGTH_OVERSAMPLE 1
-#if 0
-static void
-ctx_rasterizer_pset (CtxRasterizer *rasterizer, int x, int y, uint8_t cov)
-{
-  // XXX - we avoid rendering here x==0 - to keep with
-  //  an off-by one elsewhere
-  //
-  //  XXX onlt works in rgba8 formats
-  if (x <= 0 || y < 0 || x >= rasterizer->blit_width ||
-      y >= rasterizer->blit_height)
-    { return; }
-  uint8_t fg_color[4];
-  ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, fg_color);
-  uint8_t pixel[4];
-  uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  dst += y * rasterizer->blit_stride;
-  dst += x * rasterizer->format->bpp / 8;
-  if (!rasterizer->format->to_comp ||
-      !rasterizer->format->from_comp)
-    { return; }
-  if (cov == 255)
-    {
-      for (int c = 0; c < 4; c++)
-        {
-          pixel[c] = fg_color[c];
-        }
-    }
-  else
-    {
-      rasterizer->format->to_comp (rasterizer, x, dst, &pixel[0], 1);
-      for (int c = 0; c < 4; c++)
-        {
-          pixel[c] = ctx_lerp_u8 (pixel[c], fg_color[c], cov);
-        }
-    }
-  rasterizer->format->from_comp (rasterizer, x, &pixel[0], dst, 1);
-}
-#endif
-
-#if 0
-static void
-ctx_rasterizer_stroke_1px (CtxRasterizer *rasterizer)
-{
-  int count = rasterizer->edge_list.count;
-  CtxSegment *temp = (CtxSegment*)rasterizer->edge_list.entries;
-  float prev_x = 0.0f;
-  float prev_y = 0.0f;
-  int aa = 15;//rasterizer->aa;
-  int start = 0;
-  int end = 0;
-#if 0
-  float factor = ctx_matrix_get_scale (&state->gstate.transform);
-#endif
-
-  while (start < count)
-    {
-      int started = 0;
-      int i;
-      for (i = start; i < count; i++)
-        {
-          CtxSegment *entry = &temp[i];
-          float x, y;
-          if (entry->code == CTX_NEW_EDGE)
-            {
-              if (started)
-                {
-                  end = i - 1;
-                  goto foo;
-                }
-              prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-              prev_y = entry->data.s16[1] * 1.0f / aa;
-              started = 1;
-              start = i;
-            }
-          x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-          y = entry->data.s16[3] * 1.0f / aa;
-          int dx = x - prev_x;
-          int dy = y - prev_y;
-          int length = ctx_maxf (abs (dx), abs (dy) );
-          if (length)
-            {
-              length *= LENGTH_OVERSAMPLE;
-              int len = length;
-              int tx = prev_x * 256;
-              int ty = prev_y * 256;
-              dx *= 256;
-              dy *= 256;
-              dx /= length;
-              dy /= length;
-              for (int i = 0; i < len; i++)
-                {
-                  ctx_rasterizer_pset (rasterizer, tx/256, ty/256, 255);
-                  tx += dx;
-                  ty += dy;
-                  ctx_rasterizer_pset (rasterizer, tx/256, ty/256, 255);
-                }
-            }
-          prev_x = x;
-          prev_y = y;
-        }
-      end = i-1;
-foo:
-      start = end+1;
-    }
-  ctx_rasterizer_reset (rasterizer);
-}
-#endif
-
 static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
@@ -2935,6 +2825,9 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&gstate->transform);
   float line_width = gstate->line_width * factor;
+
+  rasterizer->comp_op = NULL;
+  _ctx_setup_compositor (rasterizer);
 
   CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
@@ -3009,14 +2902,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
     {
 
   int aa = CTX_FULL_AA;
-#if 0
-  if (CTX_UNLIKELY(gstate->line_width * factor <= 0.0f &&
-      gstate->line_width * factor > -10.0f))
-    {
-      ctx_rasterizer_stroke_1px (rasterizer);
-    }
-  else
-#endif
     {
       if (line_width < 5.0f)
       {

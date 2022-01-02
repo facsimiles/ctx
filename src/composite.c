@@ -1841,24 +1841,24 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
   return ctx_fragment_color_RGBA8;
 }
 
-static void
+static inline void
 ctx_init_uv (CtxRasterizer *rasterizer,
              int x0, int count,
              float *u0, float *v0, float *ud, float *vd)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
+  CtxMatrix *transform = &gstate->source_fill.transform;
   *u0 = x0;
   *v0 = rasterizer->scanline / 15;//rasterizer->aa;
   float u1 = *u0 + count;
   float v1 = *v0;
 
-  _ctx_matrix_apply_transform (&gstate->source_fill.transform, u0, v0);
-  _ctx_matrix_apply_transform (&gstate->source_fill.transform, &u1, &v1);
+  _ctx_matrix_apply_transform (transform, u0, v0);
+  _ctx_matrix_apply_transform (transform, &u1, &v1);
 
   *ud = (u1-*u0) / (count);
   *vd = (v1-*v0) / (count);
 }
-
 
 static void
 ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
@@ -2751,7 +2751,6 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
-
 
 static void
 ctx_composite_convert (CTX_COMPOSITE_ARGUMENTS)
