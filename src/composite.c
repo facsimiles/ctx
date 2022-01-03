@@ -818,12 +818,45 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
       }
     }
   }
+  else if (dy == 0.0f)
+  {
+    int u = x;
+    int v = y;
+    int i;
+    for (i = 0; i < count && (u >= bwidth || u < 0); i++)
+    {
+      u = x;
+      *((uint32_t*)(rgba))= 0;
+      x += dx;
+      rgba += 4;
+    }
+    u = x;
+    int ro = v * stride;
+    if (v >= 0 && v < bheight)
+    for (; i < count && u < bwidth; i++)
+    {
+      int o = ro + u * 3;
+      rgba[0] = src[o];
+      rgba[1] = src[o+1];
+      rgba[2] = src[o+2]; 
+      rgba[3] = global_alpha_u8;
+  
+      rgba += 4;
+      x += dx;
+      u = x;
+    }
+    for (; i < count; i++)
+    {
+      *((uint32_t*)(rgba))= 0;
+      rgba += 4;
+    }
+  }
   else
   {
     int u = x;
     int v = y;
     int i;
-    for (i = 0; i < count && u < bwidth && u <0; i++)
+    for (i = 0; i < count && (u >= bwidth || u < 0); i++)
     {
       u = x;
       v = y;;
@@ -832,10 +865,10 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
       y += dy;
       rgba += 4;
     }
+    u = x;
+    v = y;
     for (; i < count && u < bwidth; i++)
     {
-      u = x;
-      v = y;
     if (CTX_UNLIKELY(v < 0 || v >= bheight))
       {
         *((uint32_t*)(rgba))= 0;
@@ -852,12 +885,14 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
       rgba += 4;
       x += dx;
       y += dy;
+      u = x;
+      v = y;
     }
-      for (; i < count; i++)
-      {
-        *((uint32_t*)(rgba))= 0;
-        rgba += 4;
-      }
+    for (; i < count; i++)
+    {
+      *((uint32_t*)(rgba))= 0;
+      rgba += 4;
+    }
   }
 #if CTX_DITHER
   //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -1005,7 +1040,6 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
 #endif
 }
 
-
 static void
 ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
                                         float x,
@@ -1080,25 +1114,35 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
     {
       if ((x < 0.0f || y < 0.0f || x >= bwidth || y >= bheight))
       {
-        *dst = 0;
-        dst++;
+        *dst++ = 0;
         x += dx;
         y += dy;
       }
       else break;
     }
 
-
     uint32_t ix = x * 65536;
     uint32_t iy = y * 65536;
-
-    for (; i < count; i ++)
+    if (ideltay == 0)
     {
-      *dst = src[(iy>>16) * bwidth + (ix>>16)];
-      ix += ideltax;
-      iy += ideltay;
-      dst++;
+      int o = (iy>>16)*bwidth;
+      for (; i < count; i ++)
+      {
+        *dst++ = src[o + (ix>>16)];
+        ix += ideltax;
+      }
     }
+    else
+    {
+      for (; i < count; i ++)
+      {
+        *dst++ = src[(iy>>16) * bwidth + (ix>>16)];
+        ix += ideltax;
+        iy += ideltay;
+      }
+    }
+
+
   }
   ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
