@@ -2434,7 +2434,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       CtxSegment *entry1 = &((CtxSegment*)rasterizer->edge_list.entries)[1];
       CtxSegment *entry2 = &((CtxSegment*)rasterizer->edge_list.entries)[2];
       CtxSegment *entry3 = &((CtxSegment*)rasterizer->edge_list.entries)[3];
-      //fprintf (stderr, "{%i %.2f %.2f}", lw, lwmod, line_width);
 
       if (!rasterizer->state->gstate.clipped &&
           (entry0->data.s16[2] == entry1->data.s16[2]) &&
@@ -2491,7 +2490,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         /* left */
         ctx_composite_fill_rect_aligned (rasterizer,
                                          x0-bwb, y0+1,
-                                         x0+bw-1, y1-bw-1, 255);
+                                         x0+bw-1, y1-bwb, 255);
         /* right */
         ctx_composite_fill_rect_aligned (rasterizer,
                                          x1-bwb, y0+1,
