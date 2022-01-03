@@ -583,52 +583,63 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
   int width = buffer->width;
   int height = buffer->height;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  int dim = (1.0 / factor) / 3;
 
-  for (int i = 0; i < count; i++)
+  int i = 0;
+
+  for (; i < count && (x - dim< 0 || y - dim < 0 || x + dim >= height || y + dim >= height); i++)
+  {
+    *((uint32_t*)(rgba))=0;
+    rgba += 4;
+    x += dx;
+    y += dy;
+  }
+
+  for (; i < count && !(
+       x - dim < 0 || y - dim < 0 ||
+       x + dim >= width ||
+       y + dim >= height); i++)
   {
 
   int u = x;
   int v = y;
-  if ( u < 0 || v < 0 ||
-       u >= width ||
-       v >= height)
-    {
-      *((uint32_t*)(rgba))= 0;
-    }
-  else
     {
       int bpp = 3;
-      rgba[3]=global_alpha_u8;
-      float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-          int dim = (1.0 / factor) / 2;
+      rgba[3]=global_alpha_u8; // gets lost
           uint64_t sum[4]={0,0,0,0};
           int count = 0;
-          for (int ou = - dim; ou < dim; ou++)
-          for (int ov = - dim; ov < dim; ov++)
+
           {
-            uint8_t *src = (uint8_t *) buffer->data;
-
-            if (v+ov >= 0 && u+ou >=0 && u + ou < width && v + ov < height)
+            for (int ov = - dim; ov <= dim; ov++)
             {
-              int o = (v+ov) * width + (u + ou);
-              src += o * bpp;
+              uint8_t *src = (uint8_t *) buffer->data + bpp * ((v+ov) * width + (u - dim));
+              for (int ou = - dim; ou <= dim; ou++)
+              {
+                for (int c = 0; c < bpp; c++)
+                  sum[c] += src[c];
+                count ++;
+                src += bpp;
+              }
 
-              for (int c = 0; c < bpp; c++)
-                sum[c] += src[c];
-              count ++;
             }
           }
-          if (count)
-          {
-            int recip = 65536/count;
-            for (int c = 0; c < bpp; c++)
-              rgba[c] = sum[c] * recip >> 16;
-          }
+
+          int recip = 65536/count;
+          for (int c = 0; c < bpp; c++)
+            rgba[c] = sum[c] * recip >> 16;
           ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     rgba += 4;
     x += dx;
     y += dy;
+  }
+
+
+  for (; i < count; i++)
+  {
+    *((uint32_t*)(rgba))= 0;
+    rgba += 4;
   }
 #if CTX_DITHER
 //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -927,54 +938,66 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed;
+  int width = buffer->width;
+  int height = buffer->height;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  int dim = (1.0 / factor) / 3;
 
-  for (int i = 0; i < count; i ++)
+  int i = 0;
+
+  for (; i < count && (x - dim< 0 || y - dim < 0 || x + dim >= height || y + dim >= height); i++)
+  {
+    *((uint32_t*)(rgba))=0;
+    rgba += 4;
+    x += dx;
+    y += dy;
+  }
+
+  for (; i < count && !(
+       x - dim < 0 || y - dim < 0 ||
+       x + dim >= width ||
+       y + dim >= height); i++)
   {
 
   int u = x;
   int v = y;
-  if ( u < 0 || v < 0 ||
-       u >= buffer->width ||
-       v >= buffer->height)
-    {
-      *((uint32_t*)(rgba))= 0;
-    }
-  else
     {
       int bpp = 4;
-      float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-          int dim = (1.0 / factor) / 2;
           uint64_t sum[4]={0,0,0,0};
           int count = 0;
-          int width = buffer->width;
-          int height = buffer->height;
-          for (int ou = - dim; ou < dim; ou++)
-          for (int ov = - dim; ov < dim; ov++)
+
           {
-
-            if (v+ov >= 0 && u+ou >=0 && u + ou < width && v + ov < height)
+            for (int ov = - dim; ov <= dim; ov++)
             {
-              int o = (v+ov) * width + (u + ou);
-              uint8_t *src = (uint8_t *) buffer->data + o * bpp;
+              uint8_t *src = (uint8_t *) buffer->data + bpp * ((v+ov) * width + (u - dim));
+              for (int ou = - dim; ou <= dim; ou++)
+              {
+                for (int c = 0; c < bpp; c++)
+                  sum[c] += src[c];
+                count ++;
+                src += bpp;
+              }
 
-              for (int c = 0; c < bpp; c++)
-                sum[c] += src[c];
-              count ++;
             }
           }
-          if (count)
-          {
-            int recip = 65536/count;
-            for (int c = 0; c < bpp; c++)
-              rgba[c] = sum[c]*recip>>16;
-          }
-          rgba[3] = (rgba[3] * global_alpha_u8)/255;
+
+          int recip = 65536/count;
+          for (int c = 0; c < bpp; c++)
+            rgba[c] = sum[c] * recip >> 16;
+          rgba[3]=rgba[3]*global_alpha_u8/255; // gets lost
           ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     }
     rgba += 4;
     x += dx;
     y += dy;
+  }
+
+
+  for (; i < count; i++)
+  {
+    *((uint32_t*)(rgba))= 0;
+    rgba += 4;
   }
 #if CTX_DITHER
 //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
@@ -4872,6 +4895,7 @@ ctx_composite_apply_coverage (CtxRasterizer *rasterizer,
 }
 
 #if CTX_FAST_FILL_RECT
+
 static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
     float u0 = 0; float v0 = 0;
