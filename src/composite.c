@@ -1391,6 +1391,31 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
     int ideltax = dx * 65536;
     int ideltay = dy * 65536;
 
+    if (ideltay == 0)
+    {
+      int u = ix >> 16;
+      int v = iy >> 16;
+
+      uint32_t y  = v * bwidth;
+      uint32_t uv = (v / 2) * bwidth_div_2;
+
+      if (v >= 0 && v < bheight)
+      while (i < count && u >= 0 && u+1 < bwidth)
+      {
+        *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y+u],
+                        src[u_offset+uv+u/2], src[v_offset+uv+u/2]);
+#if CTX_DITHER
+       ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
+                           rasterizer->format->dither_green);
+#endif
+
+        ix += ideltax;
+        rgba += 4;
+        u = ix >> 16;
+        i++;
+      }
+    }
+    else
     {
       int u = ix >> 16;
       int v = iy >> 16;
