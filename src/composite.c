@@ -1797,8 +1797,8 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #if CTX_FRAGMENT_SPECIALIZE
         switch (buffer->format->bpp)
           {
-            case 1:  return ctx_fragment_image_gray1_RGBA8;
-#if 0
+            case 1: return ctx_fragment_image_gray1_RGBA8;
+#if 1
             case 24: 
               {
                 if (gstate->image_smoothing)
