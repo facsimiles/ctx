@@ -38,7 +38,6 @@ _ctx_setup_compositor (CtxRasterizer *rasterizer)
   }
 }
 
-#define CTX_FULL_AA 15
 inline static void
 ctx_rasterizer_apply_coverage (CtxRasterizer *rasterizer,
                                uint8_t * dst,
@@ -2012,6 +2011,9 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
 
 /* TODO: refactor this to have x1 and y1 be included in fill */
 
+
+
+
 static void
 ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
                           int            x0,
@@ -2129,30 +2131,36 @@ ctx_rasterizer_fill_rect (CtxRasterizer *rasterizer,
     else if (comp == CTX_COV_PATH_RGBA8_COPY_FRAGMENT)
     {
       CtxFragment fragment = rasterizer->fragment;
-#if 0
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi)
+      CtxGState *gstate = &rasterizer->state->gstate;
+       CtxMatrix *transform = &gstate->source_fill.transform;
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi &&
+          ctx_matrix_no_skew_or_rotate (transform))
       {
-        // TODO short circuit this with custom bilinear
+        ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1, y1, 1);
+        return;
       }
-      else
-#endif
+
       {
-      float u0 = 0; float v0 = 0;
-      float ud = 0; float vd = 0;
-      ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
-      for (int y = y0; y <= y1; y++)
-      {
-        fragment (rasterizer, u0, v0, &dst[0], width, ud, vd);
-        u0 += vd;
-        v0 += ud;
-        dst += blit_stride;
-      }
+        float u0 = 0; float v0 = 0;
+        float ud = 0; float vd = 0;
+        ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
+        for (int y = y0; y <= y1; y++)
+        {
+          fragment (rasterizer, u0, v0, &dst[0], width, ud, vd);
+          u0 += vd;
+          v0 += ud;
+          dst += blit_stride;
+        }
       }
       return;
     }
     else if (comp == CTX_COV_PATH_RGBA8_OVER_FRAGMENT)
     {
-      ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
+      CtxFragment fragment = rasterizer->fragment;
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi)
+        ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1, y1, 0);
+      else
+        ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
                                 &dst[0], NULL, x0, NULL, width, y1-y0+1);
       return;
     }
