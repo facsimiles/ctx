@@ -5285,7 +5285,6 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     memset (coverage, cov, sizeof (coverage) );
     for (int y = y0; y <= y1; y++)
     {
-      /* TODO: reuse u,v,ud,vd between scanlines */
       ctx_composite_apply_coverage (rasterizer, &dst[0], x0, coverage, width);
       rasterizer->scanline += CTX_FULL_AA;
       dst += blit_stride;
@@ -5301,16 +5300,15 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
                           float          y1,
                           uint8_t        cov)
 {
-  if(ctx_fmod1f (x0) == 0.0f &&
-     ctx_fmod1f (y0) == 0.0f &&
-     ctx_fmod1f (x1) == 0.0f &&
-     ctx_fmod1f (y1) == 0.0f)
+  if((ctx_fmod1f (x0) < 0.01f || ctx_fmod1f(x0) > 0.99f) &&
+     (ctx_fmod1f (y0) < 0.01f || ctx_fmod1f(y0) > 0.99f) &&
+     (ctx_fmod1f (x1) < 0.01f || ctx_fmod1f(x1) > 0.99f) &&
+     (ctx_fmod1f (y1) < 0.01f || ctx_fmod1f(y1) > 0.99f))
   {
     /* best-case scenario axis aligned rectangle */
     ctx_composite_fill_rect_aligned (rasterizer, x0, y0, x1-1, y1-1, 255);
     return;
   }
-
 
   int blit_x = rasterizer->blit_x;
   int blit_y = rasterizer->blit_y;
@@ -5364,7 +5362,8 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
         dst += blit_stride;
       }
 
-  if (y1-y0-has_top-has_bottom > 0){
+  if (y1-y0-has_top-has_bottom > 0)
+  {
     if (has_left)
       ctx_composite_fill_rect_aligned (rasterizer, x0, y0 + has_top,
                                             x0, y1 - has_bottom, left);
@@ -5390,7 +5389,6 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
       ctx_composite_apply_coverage (rasterizer,dst, x0, coverage, width);
     }
   }
-  
 }
 
 #endif

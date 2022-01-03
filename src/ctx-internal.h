@@ -933,7 +933,6 @@ ctx_set_cmyk_space (Ctx *ctx, int device_space);
 CtxRasterizer *
 ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, CtxState *state, void *data, int x, int y, int width, int height, int stride, CtxPixelFormat pixel_format, CtxAntialias antialias);
 
-
 CTX_INLINE static uint8_t ctx_lerp_u8 (uint8_t v0, uint8_t v1, uint8_t dx)
 {
 #if 0
@@ -1004,8 +1003,6 @@ CTX_INLINE static uint32_t ctx_lerp_RGBA8_2 (const uint32_t v0, uint32_t si_ga, 
      (((di_rb + ((0xff00ff + d_rb * cov)>>8)) & 0x00ff00ff)) |
      (((di_ga + (0xff00ff + d_ga * cov))      & 0xff00ff00));
 }
-
-
 
 CTX_INLINE static float
 ctx_lerpf (float v0, float v1, float dx)
