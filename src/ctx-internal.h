@@ -712,12 +712,15 @@ struct _CtxRasterizer
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
 
-#if CTX_SHAPE_CACHE
-  CtxShapeCache shape_cache;
-#endif
 #if CTX_BRAILLE_TEXT
   int        term_glyphs:1; // store appropriate glyphs for redisplay
   CtxList   *glyphs;
+#endif
+
+
+#if CTX_SHAPE_CACHE
+  CtxShapeCache shape_cache; /* needs to be at end of struct, it
+                                is excluded from clearing */
 #endif
 };
 

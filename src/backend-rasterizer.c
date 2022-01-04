@@ -116,9 +116,11 @@ static inline CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, ui
   {
     static int i = 0;
     i++;
-    if (i>1000)
+    if (i>256)
       {
-        ctx_shape_cache_rate = ctx_shape_cache_hits * 100.0  / (ctx_shape_cache_hits+ctx_shape_cache_misses);
+        ctx_shape_cache_rate = 
+                0.9 * ctx_shape_cache_rate +
+                0.1 * (ctx_shape_cache_hits * 100.0  / (ctx_shape_cache_hits+ctx_shape_cache_misses));
         i = 0;
         ctx_shape_cache_hits = 0;
         ctx_shape_cache_misses = 0;
@@ -135,7 +137,7 @@ static inline CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, ui
   if (rasterizer->shape_cache.entries[i])
     {
       CtxShapeEntry *entry = rasterizer->shape_cache.entries[i];
-      int old_size = sizeof (CtxShapeEntry) + width + height + 1;
+      int old_size = sizeof (CtxShapeEntry) + entry->width + entry->height + 1;
       if (entry->hash == hash &&
           entry->width == width &&
           entry->height == height)
@@ -3971,7 +3973,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   if (rasterizer->edge_list.size)
     ctx_drawlist_deinit (&rasterizer->edge_list);
 
-  memset (rasterizer, 0, sizeof (CtxRasterizer) );
+  memset (rasterizer, 0, sizeof (CtxRasterizer) - sizeof (CtxShapeCache));
   CtxBackend *backend = (CtxBackend*)rasterizer;
   backend->process = ctx_rasterizer_process;
   backend->free    = (CtxDestroyNotify)ctx_rasterizer_deinit;

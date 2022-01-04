@@ -28,14 +28,14 @@ void ctx_tiled_free (CtxTiled *tiled)
   if (tiled->pixels)
   {
     free (tiled->pixels);
-  tiled->pixels = NULL;
-  for (int i = 0 ; i < _ctx_max_threads; i++)
-  {
-    ctx_free (tiled->host[i]);
-    tiled->host[i]=NULL;
-  }
-
-  ctx_free (tiled->ctx_copy);
+    tiled->pixels = NULL;
+    for (int i = 0 ; i < _ctx_max_threads; i++)
+    {
+      if (tiled->host[i])
+        ctx_free (tiled->host[i]);
+      tiled->host[i]=NULL;
+    }
+    ctx_free (tiled->ctx_copy);
   }
   // leak?
 }

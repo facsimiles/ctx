@@ -203,6 +203,8 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     fps_avg = (fps_avg * 0.9f + fps2 *  0.1f);
 
     sprintf (tmp_title, "FPS: %.1f %.1f %.1f", (fps2*0.75+fps_avg*0.25), fps2, fps);
+    
+    sprintf (&tmp_title[strlen(tmp_title)], " shape hit rate: %.2f", ctx_shape_cache_rate);
 
     SDL_SetWindowTitle (sdl->window, tmp_title);
   }
@@ -513,16 +515,18 @@ inline static void ctx_sdl_reset (Ctx *ctx)
 
 void ctx_sdl_free (CtxSDL *sdl)
 {
-
   if (sdl->texture)
     SDL_DestroyTexture (sdl->texture);
   if (sdl->backend)
     SDL_DestroyRenderer (sdl->backend);
   if (sdl->window)
+  {
     SDL_DestroyWindow (sdl->window);
+    ctx_babl_exit ();
+  }
+  sdl->texture = NULL;sdl->backend = NULL;sdl->window = NULL;
 
   ctx_tiled_free ((CtxTiled*)sdl);
-  ctx_babl_exit ();
 }
 
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
