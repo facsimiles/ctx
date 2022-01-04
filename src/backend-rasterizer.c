@@ -2498,6 +2498,57 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         ctx_rasterizer_reset (rasterizer);
         goto done;
       }
+      else
+      {
+
+        float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
+        float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
+        float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
+        float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
+
+        float hw = line_width/2;
+
+
+        /* top */
+        ctx_composite_fill_rect (rasterizer,
+                                 x0+hw, y0-hw,
+                                 x1-hw, y0+hw, 255);
+        /* bottom */
+        ctx_composite_fill_rect (rasterizer,
+                                 x0+hw, y1-hw,
+                                 x1-hw, y1+hw, 255);
+
+        /* left */
+        ctx_composite_fill_rect (rasterizer,
+                                 x0-hw, y0+hw,
+                                 x0+hw, y1-hw, 255);
+        /* right */
+
+        ctx_composite_fill_rect (rasterizer,
+                                 x1-hw, y0+hw,
+                                 x1+hw, y1-hw, 255);
+
+        /* corners */
+
+        ctx_composite_fill_rect (rasterizer,
+                                 x0-hw, y0-hw,
+                                 x0+hw, y0+hw, 255);
+        ctx_composite_fill_rect (rasterizer,
+                                 x1-hw, y1-hw,
+                                 x1+hw, y1+hw, 255);
+        ctx_composite_fill_rect (rasterizer,
+                                 x1-hw, y0-hw,
+                                 x1+hw, y0+hw, 255);
+        ctx_composite_fill_rect (rasterizer,
+                                 x0-hw, y1-hw,
+                                 x0+hw, y1+hw, 255);
+
+        ctx_rasterizer_reset (rasterizer);
+
+        goto done;
+      }
+
+
        }
     }
 #endif
