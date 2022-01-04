@@ -1944,6 +1944,9 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   int blit_y = rasterizer->blit_y;
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
+#if CTX_SHAPE_CACHE
+  int blit_stride = rasterizer->blit_stride;
+#endif
 
   CtxSegment temp[preserved_count]; /* copy of already built up path's poly line
                                        XXX - by building a large enough path
