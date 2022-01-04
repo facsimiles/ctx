@@ -2023,4 +2023,19 @@ void ctx_handle_events (Ctx *ctx)
   while (ctx_get_event (ctx)){}
 }
 
+
+static void ctx_events_deinit (Ctx *ctx)
+{
+  ctx_list_free (&ctx->events.items);
+  ctx->events.last_item = NULL;
+
+  while (ctx->events.idles)
+  {
+    CtxIdleCb *item = ctx->events.idles->data;
+    ctx_list_remove (&ctx->events.idles, item);
+    if (item->destroy_notify)
+      item->destroy_notify (item->destroy_data);
+  }
+}
+
 #endif

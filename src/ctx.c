@@ -1871,8 +1871,14 @@ ctx_drawlist_deinit (CtxDrawlist *drawlist)
   drawlist->size = 0;
 }
 
+
 static void ctx_deinit (Ctx *ctx)
 {
+#if CTX_EVENTS
+  ctx_events_deinit (ctx);
+#endif
+
+
   if (ctx->backend)
     {
       if (ctx->backend->free)
