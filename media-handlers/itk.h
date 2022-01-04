@@ -408,6 +408,8 @@ float itk_em (ITK *itk)
 
 void itk_free (ITK *itk)
 {
+  if (itk->menu_path)
+    free (itk->menu_path);
   free (itk);
 }
 
