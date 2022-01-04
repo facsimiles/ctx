@@ -1899,7 +1899,6 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     return ctx_fragment_image_rgba8_RGBA8_nearest;
                   }
 #endif
-
                   else
                   {
                     if (rasterizer->swap_red_green)
@@ -1934,10 +1933,10 @@ ctx_init_uv (CtxRasterizer *rasterizer,
              int x0,
              float *u0, float *v0, float *ud, float *vd)
 {
-  CtxGState *gstate = &rasterizer->state->gstate;
-  CtxMatrix *transform = &gstate->source_fill.transform;
+  CtxMatrix *transform = &rasterizer->state->gstate.source_fill.transform;
   float u1 = x0 + 1;
-  float v1 = *v0 = rasterizer->scanline / CTX_FULL_AA;
+  float v1 = rasterizer->scanline / CTX_FULL_AA;
+  *v0 = v1;
   *u0 = x0;
   _ctx_matrix_apply_transform (transform, u0, v0);
   _ctx_matrix_apply_transform (transform, &u1, &v1);
@@ -5160,8 +5159,6 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
   }
 }
 
-
-
 /* TODO: refactor this to have x1 and y1 be included in fill */
 
 static void
@@ -5422,16 +5419,16 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
   x0 = ctx_floorf (x0);
   y0 = ctx_floorf (y0);
   x1 = ctx_floorf (x1+7/8.0);
-  y1 = ctx_floorf (y1+14/15.0);
+  y1 = ctx_floorf (y1+15/15.0);
 
   int has_top    = (top < 255);
   int has_bottom = (bottom <255);
   int has_right  = (right >0);
   int has_left   = (left >0);
 
-  int width = x1 - x0 ;
+  int width = x1 - x0;
 
-  if (CTX_LIKELY(width >=0))
+  if ((width >0))
   {
      uint8_t *dst = ( (uint8_t *) rasterizer->buf);
      uint8_t coverage[width+2];
@@ -5443,32 +5440,31 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
        int i = 0;
        if (has_left)
        {
-         coverage[i++] = top * left / 255;
+         coverage[i++] = (top * left) / 255;
        }
-       for (int x = x0 + has_left; x <= x1 - has_right; x++)
+       for (int x = x0 + has_left; x < x1 - has_right; x++)
          coverage[i++] = top;
-       coverage[i++]= top * right / 255;
+       if (has_right)
+         coverage[i++]= top * right / 255;
 
-         ctx_composite_apply_coverage (rasterizer,dst,
-                                        x0,
-                                        coverage, width);
-        dst += blit_stride;
-      }
+       ctx_composite_apply_coverage (rasterizer, dst, x0, coverage, width);
+       dst += blit_stride;
+     }
 
   if (y1-y0-has_top-has_bottom > 0)
   {
     if (has_left)
       ctx_composite_fill_rect_aligned (rasterizer, x0, y0 + has_top,
-                                            x0, y1 - has_bottom, left);
+                                                   x0, y1 - has_bottom-1, left);
     if (has_right)
       ctx_composite_fill_rect_aligned (rasterizer, x1-1, y0 + has_top,
-                                            x1-1, y1 - has_bottom, right);
+                                                   x1-1, y1 - has_bottom-1, right);
 
     if (width - has_left - has_right > 0)
       ctx_composite_fill_rect_aligned (rasterizer, x0+has_left,y0+has_top,
-                                          x1-has_right-1,y1-has_bottom,255);
+                                          x1-has_right-1,y1-has_bottom-1,255);
 
-    dst += blit_stride * ((((int)y1)-has_bottom) - (((int)y0)+has_top));
+    dst += blit_stride * ((((int)y1)-has_bottom) - (((int)y0)+has_top) );
   }
     if (has_bottom)
     {
