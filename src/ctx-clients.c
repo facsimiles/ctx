@@ -43,8 +43,6 @@ extern Ctx *ctx;
 #define CTX_maximize     CTX_STRH('m','a','x','i','m','i','z','e',0,0,0,0,0,0)
 #define CTX_unmaximize   CTX_STRH('u','n','m','a','x','i','m','i','z','e',0,0,0,0)
 //#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
-//#define CTX_title        CTX_STRH('t','i','t','l','e',0,0,0,0,0,0,0,0,0)
-#define CTX_title        15643372
 #define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
 //#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
@@ -54,6 +52,25 @@ int  ctx_sdl_get_fullscreen   (Ctx *ctx);
 static int ctx_fetched_bytes = 1;
 
 CtxClient *vt_get_client (VT *vt);
+
+void ctx_client_set_title        (Ctx *ctx, int id, const char *title)
+{
+   CtxClient *client = ctx_client_by_id (ctx, id);
+   if (!client)
+     return;
+   if (client->title)
+     free (client->title);
+   client->title = NULL;
+   if (title)
+     client->title = strdup (title);
+}
+const char *ctx_client_get_title (Ctx *ctx, int id)
+{
+   CtxClient *client = ctx_client_by_id (ctx, id);
+   if (!client)
+     return NULL;
+   return client->title;
+}
 
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 {
@@ -65,11 +82,11 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
        CtxClient *client = vt_get_client (vt);
        if (client)
        {
-         if (client->title) free (client->title);
-         client->title = strdup (val);
+         ctx_client_set_title (vt->root_ctx, client->id, val);
+         //if (client->title) free (client->title);
+         //client->title = strdup (val);
        }
      }
-
      break;
   }
 #else

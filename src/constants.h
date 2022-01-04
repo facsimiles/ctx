@@ -247,6 +247,7 @@
 #define CTX_aqua TOKENHASH(109634)
 #define CTX_transparent TOKENHASH(3143361910)
 #define CTX_currentColor TOKENHASH(2944012414)
+#define CTX_title TOKENHASH(11313768)
 
 #endif
 

@@ -408,7 +408,6 @@ uint32_t ctx_strhash (const char *utf8);
 static void vt_set_title (VT *vt, const char *new_title)
 {
   if (vt->inert) return;
-
   if (vt->title)
     { free (vt->title); }
   vt->title = strdup (new_title);

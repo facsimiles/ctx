@@ -138,5 +138,8 @@ void ctx_client_move             (Ctx *ctx, int id, int x, int y);
 int  ctx_client_resize           (Ctx *ctx, int id, int width, int height);
 void ctx_client_set_opacity      (Ctx *ctx, int id, float opacity);
 float ctx_client_get_opacity     (Ctx *ctx, int id);
+void ctx_client_set_title        (Ctx *ctx, int id, const char *title);
+const char *ctx_client_get_title (Ctx *ctx, int id);
+
 
 #endif

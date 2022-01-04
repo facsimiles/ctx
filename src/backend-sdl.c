@@ -31,6 +31,18 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
 {
 #if CTX_SCREENSHOT
   CtxTiled *tiled = (CtxTiled*)ctx->backend;
+
+   if (ctx_backend_type (ctx) == CTX_BACKEND_RASTERIZER)
+   {
+      CtxRasterizer *rasterizer = (CtxRasterizer*)ctx->backend;
+      // XXX  only valid for RGBA8
+      if (rasterizer->format->pixel_format == CTX_FORMAT_RGBA8)
+      {
+        stbi_write_png (output_path, rasterizer->blit_width, rasterizer->blit_height, 4, rasterizer->buf, rasterizer->blit_stride);
+        return;
+      }
+   }
+
   if (!ctx_backend_is_tiled (ctx))
     return;
 
@@ -60,7 +72,8 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
 int ctx_show_fps = 1;
 void ctx_sdl_set_title (void *self, const char *new_title)
 {
-   CtxSDL *sdl = self;
+   Ctx *ctx = (Ctx*)self;
+   CtxSDL *sdl = (CtxSDL*)ctx->backend;
    if (!ctx_show_fps)
    SDL_SetWindowTitle (sdl->window, new_title);
 }
