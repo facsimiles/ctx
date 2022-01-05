@@ -401,7 +401,7 @@ void ctx_define_texture (Ctx *ctx,
   {
     CtxEntry *commands;
     int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
-    if (ctx->backend && ctx->backend->process)
+    if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
     {
        commands = (CtxEntry*)calloc (sizeof (CtxEntry), command_size);
     }
@@ -447,7 +447,7 @@ void ctx_define_texture (Ctx *ctx,
     }
     ((char *) &commands[pos+1].data.u8[0])[data_len]=0;
 
-    if (ctx->backend && ctx->backend->process)
+    if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
     {
       ctx_process (ctx, commands);
       free (commands);
