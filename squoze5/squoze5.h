@@ -594,13 +594,13 @@ static void squoze_decode_utf5_bytes (int is_utf5,
                         const unsigned char *input, int inlen,
                         char *output, int *r_outlen)
 {
-  CashUtf5DecDefaultData append_data = {(unsigned char*)output, };
+  CashUtf5DecDefaultData append_data = {(unsigned char*)output, 0};
   CashUtf5Dec dec = {is_utf5,
                      squoze_new_offset('a'),
                      &append_data,
                      0,
                      squoze_decode_utf5_append_unichar_as_utf8,
-                     0
+                     0, 0
                     };
   for (int i = 0; i < inlen; i++)
     squoze_decode_utf5 (&dec, input[i]);
