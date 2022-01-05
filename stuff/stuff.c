@@ -5764,7 +5764,7 @@ static int card_files (ITK *itk_, void *data)
 
 int stuff_main (int argc, char **argv)
 {
-  setenv ("CTX_SHAPE_CACHE", "0", 1);
+  //setenv ("CTX_SHAPE_CACHE", "0", 1);
 
   const char *path = NULL;
   
