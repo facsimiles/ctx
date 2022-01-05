@@ -54,12 +54,10 @@ ctx_invsqrtf (float x)
     float f;
     uint32_t i;
   } u = { x };
-  float xhalf = 0.5f * x;
   u.i = 0x5f3759df - (u.i >> 1);
-  x = u.f;
-  x *= (1.5f - xhalf * x * x);
-  x *= (1.5f - xhalf * x * x); //repeating Newton-Raphson step for higher precision
-  return x;
+  u.f *= (1.5f - 0.5f * x * u.f * u.f);
+  u.f *= (1.5f - 0.5f * x * u.f * u.f); //repeating Newton-Raphson step for higher precision
+  return u.f;
 }
 
 static CTX_INLINE float
@@ -70,13 +68,8 @@ ctx_invsqrtf_fast (float x)
     float f;
     uint32_t i;
   } u = { x };
-
-//float xhalf = 0.5f * x;
-  int i=u.i;
-  i = 0x5f3759df - (i >> 1);
-  x = u.f;
-//x *= (1.5f - xhalf * x * x);
-  return x;
+  u.i = 0x5f3759df - (u.i >> 1);
+  return u.f;
 }
 
 CTX_INLINE static float ctx_sqrtf (float a)
