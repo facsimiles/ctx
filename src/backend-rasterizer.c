@@ -425,7 +425,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   //tolerance *= tolerance;
   tolerance = 1.0/(tolerance);
 
-  tolerance *= 2.0;
+  tolerance *= 1.2;
   tolerance = tolerance * tolerance;
   ox = rasterizer->state->x;
   oy = rasterizer->state->y;
