@@ -2456,7 +2456,7 @@ ctx_current_point (Ctx *ctx, float *x, float *y)
       if (y) { *y = 0.0f; }
     }
 #if CTX_RASTERIZER
-  if (ctx->backend)
+  if (ctx->backend && ctx->backend->process == ctx_rasterizer_process)
     {
       if (x) { *x = ( (CtxRasterizer *) (ctx->backend) )->x; }
       if (y) { *y = ( (CtxRasterizer *) (ctx->backend) )->y; }
