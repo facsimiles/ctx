@@ -1098,23 +1098,21 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             }
             break;
 
-#if 1
             case CTX_COV_PATH_RGB565_COPY:
-    {
-            uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-            uint8_t  startcov = graystart;
-            ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
-            uint16_t* dst_i = (uint16_t*)dsts;
-            uint16_t color = rasterizer->color_u16;
-            dst_i++;
-            for (int i = first + 1; i < last; i++)
             {
-              dst_i[0] = color;
+              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
+              uint8_t  startcov = graystart;
+              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
+              uint16_t* dst_i = (uint16_t*)dsts;
+              uint16_t color = rasterizer->color_u16;
               dst_i++;
-            }
-      }
-    break;
-#endif
+              for (int i = first + 1; i < last; i++)
+              {
+                dst_i[0] = color;
+                dst_i++;
+              }
+           }
+           break;
 
               case CTX_COV_PATH_RGBA8_OVER:
             {
@@ -4035,6 +4033,10 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                                           ctx, NULL, &ctx->state, data, 0, 0, width, height,
                                           stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
   ctx_set_backend (ctx, r);
+  if (pixel_format == CTX_FORMAT_GRAY1)
+  {
+    ctx_set_antialias (ctx, CTX_ANTIALIAS_NONE);
+  }
   return ctx;
 }
 

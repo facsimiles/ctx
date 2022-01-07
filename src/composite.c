@@ -3386,7 +3386,7 @@ ctx_RGBAF_clear_normal (CTX_COMPOSITE_ARGUMENTS)
   ctx_float_clear_normal (4, rasterizer, dst, src, x0, coverage, count);
 }
 
-#if 0
+#if 1
 static void
 ctx_RGBAF_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
@@ -4611,6 +4611,23 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
     }
 #endif
 }
+
+static void
+ctx_setup_GRAY1 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_GRAYA8 (rasterizer);
+  if (rasterizer->comp_op == ctx_GRAYA8_source_copy_normal_color)
+    rasterizer->comp = CTX_COV_PATH_GRAY1_COPY;
+}
+
+static void
+ctx_setup_GRAY8 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_GRAYA8 (rasterizer);
+  if (rasterizer->comp_op == ctx_GRAYA8_source_copy_normal_color)
+    rasterizer->comp = CTX_COV_PATH_GRAY8_COPY;
+}
+
 #endif
 
 #endif
@@ -5524,7 +5541,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
 #if CTX_NATIVE_GRAYA8
     CTX_FORMAT_GRAY1, 1, 1, 2, 1, 1, CTX_FORMAT_GRAYA8,
-    ctx_GRAY1_to_GRAYA8, ctx_GRAYA8_to_GRAY1, ctx_composite_convert, ctx_setup_GRAYA8,
+    ctx_GRAY1_to_GRAYA8, ctx_GRAYA8_to_GRAY1, ctx_composite_convert, ctx_setup_GRAY1,
 #else
     CTX_FORMAT_GRAY1, 1, 1, 4, 1, 1, CTX_FORMAT_RGBA8,
     ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_composite_convert, ctx_setup_RGB332,
@@ -5557,7 +5574,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
 #if CTX_NATIVE_GRAYA8
     CTX_FORMAT_GRAY8, 1, 8, 2, 0, 0, CTX_FORMAT_GRAYA8,
-    ctx_GRAY8_to_GRAYA8, ctx_GRAYA8_to_GRAY8, ctx_composite_convert, ctx_setup_GRAYA8,
+    ctx_GRAY8_to_GRAYA8, ctx_GRAYA8_to_GRAY8, ctx_composite_convert, ctx_setup_GRAY8,
 #else
     CTX_FORMAT_GRAY8, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
     ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGB332,
