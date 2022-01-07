@@ -5298,6 +5298,20 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       }
       return;
     }
+    else if (comp == CTX_COV_PATH_GRAY8_COPY)
+    {
+      uint8_t color = ((uint8_t*)rasterizer->color)[0];
+      for (int y = y0; y <= y1; y++)
+      {
+        uint8_t *dst_i = (uint8_t*)&dst[0];
+        for (int x = 0; x < width; x++)
+        {
+          dst_i[x] = color;
+        }
+        dst += blit_stride;
+      }
+      return;
+    }
     else if (comp == CTX_COV_PATH_RGBA8_OVER)
     {
       uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];

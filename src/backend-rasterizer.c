@@ -1129,6 +1129,22 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               }
             }
             break;
+            case CTX_COV_PATH_GRAY8_COPY:
+            {
+              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
+              uint8_t  startcov = graystart;
+              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
+              uint8_t* dst_i = (uint8_t*)dsts;
+              uint8_t color = ((uint8_t*)rasterizer->color)[0];
+              dst_i++;
+              // XXX replace with memset
+              for (int i = first + 1; i < last; i++)
+              {
+                dst_i[0] = color;
+                dst_i++;
+              }
+            }
+            break;
 #endif
 
             case CTX_COV_PATH_RGBA8_OVER:
@@ -1533,6 +1549,20 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               uint16_t* dst_i = (uint16_t*)dsts;
               uint16_t color = ((uint16_t*)rasterizer->color)[0];
               dst_i+=pre;
+              for (int i = first + pre; i <= last - post; i++)
+              {
+                dst_i[0] = color;
+                dst_i++;
+              }
+            }
+            break;
+            case CTX_COV_PATH_GRAY8_COPY:
+            {
+              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
+              uint8_t* dst_i = (uint8_t*)dsts;
+              uint8_t color = ((uint8_t*)rasterizer->color)[0];
+              dst_i+=pre;
+              // XXX: replace with memset
               for (int i = first + pre; i <= last - post; i++)
               {
                 dst_i[0] = color;
