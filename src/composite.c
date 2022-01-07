@@ -2926,8 +2926,8 @@ ctx_float_source_over_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
     uint8_t cov = *coverage;
     float fcov = ctx_u8_to_float (cov);
     float ralpha = 1.0f - fcov * srcf[components-1];
-    for (int c = 0; c < components-1; c++)
-      dstf[c] = (srcf[c]*fcov + dstf[c] * ralpha);
+    for (int c = 0; c < components; c++)
+      dstf[c] = srcf[c]*fcov + dstf[c] * ralpha;
     coverage ++;
     dstf+= components;
   }
@@ -2944,7 +2944,7 @@ ctx_float_source_copy_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
     uint8_t cov = *coverage;
     float fcov = ctx_u8_to_float (cov);
     float ralpha = 1.0f - fcov;
-    for (int c = 0; c < components-1; c++)
+    for (int c = 0; c < components; c++)
       dstf[c] = (srcf[c]*fcov + dstf[c] * ralpha);
     coverage ++;
     dstf+= components;
@@ -3436,14 +3436,11 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         switch (gstate->source_fill.type)
         {
           case CTX_SOURCE_COLOR:
-                  // XXX TODO verify that GEGL result is right with this
-#if 1
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
               rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
             }
             else
-#endif
             {
               rasterizer->comp_op = ctx_RGBAF_porter_duff_color_normal;
             }
