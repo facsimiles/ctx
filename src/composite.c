@@ -3436,11 +3436,14 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         switch (gstate->source_fill.type)
         {
           case CTX_SOURCE_COLOR:
-            //if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-            //{
-            //  rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
-           // }
-           // else
+                  // XXX TODO verify that GEGL result is right with this
+#if 1
+            if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+            {
+              rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
+            }
+            else
+#endif
             {
               rasterizer->comp_op = ctx_RGBAF_porter_duff_color_normal;
             }
@@ -4591,7 +4594,10 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
               if (rasterizer->color[components-1] == 0)
                 rasterizer->comp_op = ctx_RGBA8_nop;
               else if (rasterizer->color[components-1] == 255)
+              {
                 rasterizer->comp_op = ctx_GRAYA8_source_copy_normal_color;
+                rasterizer->comp = CTX_COV_PATH_GRAYA8_COPY;
+              }
               else
                 rasterizer->comp_op = ctx_GRAYA8_source_over_normal_color;
             }
@@ -4613,11 +4619,27 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
 }
 
 static void
+ctx_setup_GRAY4 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_GRAYA8 (rasterizer);
+  rasterizer->comp = CTX_COV_PATH_FALLBACK;
+}
+
+static void
+ctx_setup_GRAY2 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_GRAYA8 (rasterizer);
+  rasterizer->comp = CTX_COV_PATH_FALLBACK;
+}
+
+static void
 ctx_setup_GRAY1 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
   if (rasterizer->comp_op == ctx_GRAYA8_source_copy_normal_color)
     rasterizer->comp = CTX_COV_PATH_GRAY1_COPY;
+  else
+    rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
 static void
@@ -4626,6 +4648,8 @@ ctx_setup_GRAY8 (CtxRasterizer *rasterizer)
   ctx_setup_GRAYA8 (rasterizer);
   if (rasterizer->comp_op == ctx_GRAYA8_source_copy_normal_color)
     rasterizer->comp = CTX_COV_PATH_GRAY8_COPY;
+  else
+    rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
 #endif
@@ -5246,7 +5270,6 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         return;
       }
     }
-#if 1
     else if (comp == CTX_COV_PATH_RGB565_COPY)
     {
       uint16_t color = rasterizer->color_u16;
@@ -5261,7 +5284,20 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       }
       return;
     }
-#endif
+    else if (comp == CTX_COV_PATH_GRAYA8_COPY)
+    {
+      uint16_t color = ((uint16_t*)rasterizer->color)[0];
+      for (int y = y0; y <= y1; y++)
+      {
+        uint16_t *dst_i = (uint16_t*)&dst[0];
+        for (int x = 0; x < width; x++)
+        {
+          dst_i[x] = color;
+        }
+        dst += blit_stride;
+      }
+      return;
+    }
     else if (comp == CTX_COV_PATH_RGBA8_OVER)
     {
       uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];
@@ -5552,7 +5588,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
 #if CTX_NATIVE_GRAYA8
     CTX_FORMAT_GRAY2, 1, 2, 2, 4, 4, CTX_FORMAT_GRAYA8,
-    ctx_GRAY2_to_GRAYA8, ctx_GRAYA8_to_GRAY2, ctx_composite_convert, ctx_setup_GRAYA8,
+    ctx_GRAY2_to_GRAYA8, ctx_GRAYA8_to_GRAY2, ctx_composite_convert, ctx_setup_GRAY2,
 #else
     CTX_FORMAT_GRAY2, 1, 2, 4, 4, 4, CTX_FORMAT_RGBA8,
     ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_composite_convert, ctx_setup_RGB332,
@@ -5563,7 +5599,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
   {
 #if CTX_NATIVE_GRAYA8
     CTX_FORMAT_GRAY4, 1, 4, 2, 16, 16, CTX_FORMAT_GRAYA8,
-    ctx_GRAY4_to_GRAYA8, ctx_GRAYA8_to_GRAY4, ctx_composite_convert, ctx_setup_GRAYA8,
+    ctx_GRAY4_to_GRAYA8, ctx_GRAYA8_to_GRAY4, ctx_composite_convert, ctx_setup_GRAY4,
 #else
     CTX_FORMAT_GRAY4, 1, 4, 4, 16, 16, CTX_FORMAT_GRAYA8,
     ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_composite_convert, ctx_setup_RGB332,

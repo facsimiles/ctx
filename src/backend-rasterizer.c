@@ -1111,10 +1111,27 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 dst_i[0] = color;
                 dst_i++;
               }
-           }
-           break;
+            }
+            break;
+#if 1
+            case CTX_COV_PATH_GRAYA8_COPY:
+            {
+              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
+              uint8_t  startcov = graystart;
+              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
+              uint16_t* dst_i = (uint16_t*)dsts;
+              uint16_t color = ((uint16_t*)rasterizer->color)[0];
+              dst_i++;
+              for (int i = first + 1; i < last; i++)
+              {
+                dst_i[0] = color;
+                dst_i++;
+              }
+            }
+            break;
+#endif
 
-              case CTX_COV_PATH_RGBA8_OVER:
+            case CTX_COV_PATH_RGBA8_OVER:
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
               *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, graystart);
@@ -1126,7 +1143,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               }
             }
             break;
-              case CTX_COV_PATH_RGBA8_COPY_FRAGMENT:
+            case CTX_COV_PATH_RGBA8_COPY_FRAGMENT:
             {
               float u0 = 0; float v0 = 0;
               float ud = 0; float vd = 0;
@@ -1340,7 +1357,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int *edges          = rasterizer->edges;
   int  scanline       = rasterizer->scanline;
-  const int  bpp      = rasterizer->format->bpp/8;
+  const int  bpp      = rasterizer->format->bpp;
   int  active_edges   = rasterizer->active_edges;
   int  parity         = 0;
 
@@ -1434,7 +1451,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
              {
                 case CTX_COV_PATH_RGBA8_OVER:
                 {
-                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
                   for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
                     {
                       *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
@@ -1444,7 +1461,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 break;
                 case CTX_COV_PATH_RGBA8_COPY:
                 {
-                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
                   for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
                   {
                     *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
@@ -1454,7 +1471,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                   break;
                 default:
                 ctx_composite_apply_coverage (rasterizer,
-                          &dst[((accumulated_x0) * bpp)],
+                          &dst[((accumulated_x0) * bpp)/8],
                           accumulated_x0,
                           &coverage[accumulated_x0],
                           accumulated_x1-accumulated_x0+1);
@@ -1498,7 +1515,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           {
             case CTX_COV_PATH_RGB565_COPY:
             {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)]);
+              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
               uint16_t* dst_i = (uint16_t*)dsts;
               uint16_t color = rasterizer->color_u16;
               dst_i+=pre;
@@ -1509,16 +1526,31 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               }
             }
             break;
+#if 1
+            case CTX_COV_PATH_GRAYA8_COPY:
+            {
+              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
+              uint16_t* dst_i = (uint16_t*)dsts;
+              uint16_t color = ((uint16_t*)rasterizer->color)[0];
+              dst_i+=pre;
+              for (int i = first + pre; i <= last - post; i++)
+              {
+                dst_i[0] = color;
+                dst_i++;
+              }
+            }
+            break;
+#endif
             case CTX_COV_PATH_RGBA8_COPY:
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
+              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
               dst_pix+=pre;
               ctx_span_set_color (dst_pix, src_pix, last-first-pre-post + 1);
             }
             break;
             case CTX_COV_PATH_RGBA8_OVER:
             {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)]);
+              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
               dst_pix+=pre;
               for (int i = first + pre; i <= last - post; i++)
               {
@@ -1535,7 +1567,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 float u0 = 0; float v0 = 0;
                 float ud = 0; float vd = 0;
                 ctx_init_uv (rasterizer, first+pre, &u0, &v0, &ud, &vd);
-                rasterizer->fragment (rasterizer, u0, v0, &dst[(first+pre)*bpp],                                      width, ud, vd);
+                rasterizer->fragment (rasterizer, u0, v0, &dst[(first+pre)*bpp/8],
+                                      width, ud, vd);
               }
             }
             break;
@@ -1544,7 +1577,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 int width = last-first-pre-post+1;
                 if (width>0)
                 ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
-                               &dst[((first+pre)*bpp)],
+                               &dst[((first+pre)*bpp)/8],
                                NULL,
                                first + pre,
                                NULL,
@@ -1559,7 +1592,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 uint8_t opaque[width];
                 memset (opaque, 255, sizeof (opaque));
                 ctx_composite_apply_coverage (rasterizer,
-                            &dst[((first + pre) * bpp)],
+                            &dst[((first + pre) * bpp)/8],
                             first + pre,
                             opaque,
                             width);
@@ -1583,7 +1616,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
              {
                 case CTX_COV_PATH_RGBA8_OVER:
                 {
-                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
                   for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
                     {
                       *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
@@ -1593,7 +1626,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 break;
                 case CTX_COV_PATH_RGBA8_COPY:
                 {
-                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)];
+                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
                   for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
                   {
                     *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
@@ -1603,7 +1636,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                   break;
                 default:
                 ctx_composite_apply_coverage (rasterizer,
-                          &dst[((accumulated_x0) * bpp)],
+                          &dst[((accumulated_x0) * bpp)/8],
                           accumulated_x0,
                           &coverage[accumulated_x0],
                           accumulated_x1-accumulated_x0+1);
