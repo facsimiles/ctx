@@ -2820,10 +2820,26 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 }
 
 static void
-ctx_setup_RGB332 (CtxRasterizer *rasterizer)
+ctx_setup_RGB (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
+}
+
+static void
+ctx_setup_RGB332 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_RGBA8 (rasterizer);
+  if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
+  {
+    rasterizer->comp = CTX_COV_PATH_RGB332_COPY;
+    rasterizer->format->from_comp (rasterizer, 0,
+      &rasterizer->color[0],
+      &rasterizer->color_u16,
+      1);
+  }
+  else
+    rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
 static void
@@ -2835,8 +2851,7 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
     rasterizer->comp = CTX_COV_PATH_RGB565_COPY;
     rasterizer->format->from_comp (rasterizer, 0,
       &rasterizer->color[0],
-      &rasterizer->color_u16,  // XXX : also used for 332,
-                               // which is not a problem
+      &rasterizer->color_u16,
       1);
   }
   else
@@ -4694,6 +4709,26 @@ ctx_332_pack (uint8_t red,
   return c;
 }
 
+static inline uint8_t
+ctx_888_to_332 (uint32_t in, int byteswap)
+{
+  uint8_t *rgb=(uint8_t*)(&in);
+  return ctx_332_pack (rgb[0],rgb[1],rgb[2]);
+}
+
+static inline uint32_t
+ctx_332_to_888 (uint8_t in)
+{
+  uint32_t ret = 0;
+  uint8_t *rgba=(uint8_t*)&ret;
+  ctx_332_unpack (in,
+                  &rgba[0],
+                  &rgba[1],
+                  &rgba[2]);
+  rgba[3] = 255;
+  return ret;
+}
+
 static inline void
 ctx_RGB332_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
@@ -4805,6 +4840,7 @@ ctx_565_to_888 (uint16_t in, int byteswap)
                   &rgba[1],
                   &rgba[2],
                   byteswap);
+  rgba[3]=255;
   return ret;
 }
 
@@ -4818,6 +4854,7 @@ ctx_RGB565_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
   const uint16_t *pixel = (uint16_t *) buf;
   while (count--)
     {
+      // XXX : checking the raw value for alpha before unpack will be faster
       ((uint32_t*)(rgba))[0] = ctx_565_unpack_32 (*pixel, 0);
 #if CTX_RGB565_ALPHA
       if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
@@ -5374,6 +5411,20 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       }
       return;
     }
+    else if (comp == CTX_COV_PATH_RGB565_COPY)
+    {
+      uint8_t color = ((uint8_t*)&rasterizer->color_u16)[0];
+      for (int y = y0; y <= y1; y++)
+      {
+        uint8_t *dst_i = (uint8_t*)&dst[0];
+        for (int x = 0; x < width; x++)
+        {
+          dst_i[x] = color;
+        }
+        dst += blit_stride;
+      }
+      return;
+    }
     else if (comp == CTX_COV_PATH_GRAYA8_COPY)
     {
       uint16_t color = ((uint16_t*)rasterizer->color)[0];
@@ -5691,7 +5742,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAY1_to_GRAYA8, ctx_GRAYA8_to_GRAY1, ctx_composite_convert, ctx_setup_GRAY1,
 #else
     CTX_FORMAT_GRAY1, 1, 1, 4, 1, 1, CTX_FORMAT_RGBA8,
-    ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_composite_convert, ctx_setup_RGB332,
+    ctx_GRAY1_to_RGBA8, ctx_RGBA8_to_GRAY1, ctx_composite_convert, ctx_setup_RGB,
 #endif
   },
 #endif
@@ -5702,7 +5753,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAY2_to_GRAYA8, ctx_GRAYA8_to_GRAY2, ctx_composite_convert, ctx_setup_GRAY2,
 #else
     CTX_FORMAT_GRAY2, 1, 2, 4, 4, 4, CTX_FORMAT_RGBA8,
-    ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_composite_convert, ctx_setup_RGB332,
+    ctx_GRAY2_to_RGBA8, ctx_RGBA8_to_GRAY2, ctx_composite_convert, ctx_setup_RGB,
 #endif
   },
 #endif
@@ -5713,7 +5764,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAY4_to_GRAYA8, ctx_GRAYA8_to_GRAY4, ctx_composite_convert, ctx_setup_GRAY4,
 #else
     CTX_FORMAT_GRAY4, 1, 4, 4, 16, 16, CTX_FORMAT_GRAYA8,
-    ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_composite_convert, ctx_setup_RGB332,
+    ctx_GRAY4_to_RGBA8, ctx_RGBA8_to_GRAY4, ctx_composite_convert, ctx_setup_RGB,
 #endif
   },
 #endif
@@ -5724,7 +5775,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAY8_to_GRAYA8, ctx_GRAYA8_to_GRAY8, ctx_composite_convert, ctx_setup_GRAY8,
 #else
     CTX_FORMAT_GRAY8, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
-    ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGB332,
+    ctx_GRAY8_to_RGBA8, ctx_RGBA8_to_GRAY8, ctx_composite_convert, ctx_setup_RGB,
 #endif
   },
 #endif
@@ -5735,7 +5786,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
     ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, NULL, ctx_setup_GRAYA8,
 #else
     CTX_FORMAT_GRAYA8, 2, 16, 4, 0, 0, CTX_FORMAT_RGBA8,
-    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGB332,
+    ctx_GRAYA8_to_RGBA8, ctx_RGBA8_to_GRAYA8, ctx_composite_convert, ctx_setup_RGB,
 #endif
   },
 #endif
@@ -5782,7 +5833,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_YUV420
   {
     CTX_FORMAT_YUV420, 1, 8, 4, 0, 0, CTX_FORMAT_RGBA8,
-    NULL, NULL, ctx_composite_convert, ctx_setup_RGB332,
+    NULL, NULL, ctx_composite_convert, ctx_setup_RGB,
   },
 #endif
   {
