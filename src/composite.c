@@ -2829,6 +2829,9 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
        rasterizer->comp = CTX_COV_PATH_RGBA8_COPY_FRAGMENT;
     }
   }
+  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
+                               rasterizer->format->apply_coverage :
+                               rasterizer->comp_op;
 }
 
 
@@ -3531,6 +3534,9 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         break;
     }
 #endif
+  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
+                               rasterizer->format->apply_coverage :
+                               rasterizer->comp_op;
 }
 
 #endif
@@ -3737,6 +3743,9 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
         break;
     }
 #endif
+  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
+                               rasterizer->format->apply_coverage :
+                               rasterizer->comp_op;
 }
 
 #endif
@@ -3986,6 +3995,9 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
     }
 #endif
 #endif
+  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
+                               rasterizer->format->apply_coverage :
+                               rasterizer->comp_op;
 }
 
 static void
@@ -4692,6 +4704,9 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
         break;
     }
 #endif
+  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
+                               rasterizer->format->apply_coverage :
+                               rasterizer->comp_op;
 }
 
 static void
@@ -5209,22 +5224,6 @@ static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int 
   }
 }
 
-inline static void
-ctx_composite_apply_coverage (CtxRasterizer *rasterizer,
-                               uint8_t * dst,
-                               int       x,
-                               uint8_t * coverage,
-                               int       count)
-{
-  if (rasterizer->format->apply_coverage)
-    rasterizer->format->apply_coverage(rasterizer, dst, rasterizer->color, x, coverage, count);
-  else
-    /* it is faster to dispatch in this condition, than using a shared
-     * direct trampoline
-     */
-    rasterizer->comp_op (rasterizer, dst, rasterizer->color, x, coverage, count);
-}
-
 #if CTX_FAST_FILL_RECT
 
 static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
@@ -5701,7 +5700,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     memset (coverage, cov, sizeof (coverage) );
     for (int y = y0; y <= y1; y++)
     {
-      ctx_composite_apply_coverage (rasterizer, &dst[0], x0, coverage, width);
+      rasterizer->apply_coverage (rasterizer, &dst[0], rasterizer->color, x0, coverage, width);
       rasterizer->scanline += CTX_FULL_AA;
       dst += blit_stride;
     }
@@ -5773,7 +5772,7 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
        if (has_right)
          coverage[i++]= top * right / 255;
 
-       ctx_composite_apply_coverage (rasterizer, dst, x0, coverage, width);
+       rasterizer->apply_coverage (rasterizer, dst, rasterizer->color, x0, coverage, width);
        dst += blit_stride;
      }
 
@@ -5801,7 +5800,7 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
         coverage[i++] = bottom;
       coverage[i++]= bottom * right / 255;
 
-      ctx_composite_apply_coverage (rasterizer,dst, x0, coverage, width);
+      rasterizer->apply_coverage (rasterizer,dst, rasterizer->color, x0, coverage, width);
     }
   }
 }

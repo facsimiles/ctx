@@ -651,6 +651,7 @@ struct _CtxRasterizer
   void      *buf;
   int fast_aa;
   CtxCovPath  comp;
+  void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, int count);
   float      x;  // < redundant? use state instead?
   float      y;
 

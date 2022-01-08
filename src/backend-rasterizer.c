@@ -1072,7 +1072,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                   *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
                   break;
                 default:
-                  ctx_composite_apply_coverage (rasterizer, (uint8_t*)dst_pix, accumulator_x, &accumulated, 1);
+                  rasterizer->apply_coverage (rasterizer, (uint8_t*)dst_pix, rasterizer->color, accumulator_x, &accumulated, 1);
               }
             }
             accumulated = 0;
@@ -1102,7 +1102,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             {
               uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
               uint8_t  startcov = graystart;
-              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
+              rasterizer->apply_coverage (rasterizer, (uint8_t*)dsts, rasterizer->color, first, &startcov, 1);
               uint8_t* dst_i = (uint8_t*)dsts;
               uint8_t *color = ((uint8_t*)&rasterizer->color_native);
               int bytes = rasterizer->format->bpp/8;
@@ -1181,7 +1181,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
                 uint8_t *srcp = (uint8_t*)src_pixp;
                 uint8_t  startcov = graystart;
-                ctx_composite_apply_coverage (rasterizer, (uint8_t*)dstp, first, &startcov, 1);
+                rasterizer->apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer->color, first, &startcov, 1);
                 dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
                 int count = last - first - 1;
                 if (srcp[0]>=127)
@@ -1275,8 +1275,9 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               uint8_t opaque[last-first];
               memset (opaque, 255, sizeof (opaque));
               opaque[0] = graystart;
-              ctx_composite_apply_coverage (rasterizer,
-                                             &dst[(first * bpp)/8], first, opaque, last-first);
+              rasterizer->apply_coverage (rasterizer,
+                                             &dst[(first * bpp)/8],
+                                             rasterizer->color, first, opaque, last-first);
             }
             }
             accumulated = grayend;
@@ -1301,7 +1302,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
          *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
          break;
        default:
-         ctx_composite_apply_coverage (rasterizer, (uint8_t*)dst_pix, accumulator_x, &accumulated, 1);
+         rasterizer->apply_coverage (rasterizer, (uint8_t*)dst_pix, rasterizer->color, accumulator_x, &accumulated, 1);
      }
    }
 }
@@ -1593,8 +1594,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 }
                   break;
                 default:
-                ctx_composite_apply_coverage (rasterizer,
+                rasterizer->apply_coverage (rasterizer,
                           &dst[((accumulated_x0) * bpp)/8],
+                          rasterizer->color,
                           accumulated_x0,
                           &coverage[accumulated_x0],
                           accumulated_x1-accumulated_x0+1);
@@ -1770,8 +1772,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 {
                 uint8_t opaque[width];
                 memset (opaque, 255, sizeof (opaque));
-                ctx_composite_apply_coverage (rasterizer,
+                rasterizer->apply_coverage (rasterizer,
                             &dst[((first + pre) * bpp)/8],
+                            rasterizer->color,
                             first + pre,
                             opaque,
                             width);
@@ -1814,8 +1817,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 }
                   break;
                 default:
-                ctx_composite_apply_coverage (rasterizer,
+                rasterizer->apply_coverage (rasterizer,
                           &dst[((accumulated_x0) * bpp)/8],
+                          rasterizer->color,
                           accumulated_x0,
                           &coverage[accumulated_x0],
                           accumulated_x1-accumulated_x0+1);
@@ -2044,8 +2048,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   if (shape == NULL)
 #endif
   {
-    ctx_composite_apply_coverage (rasterizer,
+    rasterizer->apply_coverage (rasterizer,
                          &dst[(minx * rasterizer->format->bpp) /8],
+                         rasterizer->color,
                          minx,
                          coverage,
                          maxx-minx+ 1);
@@ -2081,8 +2086,9 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
      dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (gscan_start / CTX_FULL_AA);
      for (rasterizer->scanline = gscan_start; rasterizer->scanline < scan_start;)
      {
-       ctx_composite_apply_coverage (rasterizer,
-                                      &dst[ (startx * rasterizer->format->bpp) /8],
+       rasterizer->apply_coverage (rasterizer,
+                                   &dst[ (startx * rasterizer->format->bpp) /8],
+                                   rasterizer->color,
                                       0,
                                       nocoverage, clipw);
        rasterizer->scanline += CTX_FULL_AA;
@@ -2093,10 +2099,11 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
      dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_start / CTX_FULL_AA);
      for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
      {
-       ctx_composite_apply_coverage (rasterizer,
-                                      &dst[ (startx * rasterizer->format->bpp) /8],
-                                      0,
-                                      nocoverage, minx-startx);
+       rasterizer->apply_coverage (rasterizer,
+                                   &dst[ (startx * rasterizer->format->bpp) /8],
+                                   rasterizer->color,
+                                   0,
+                                   nocoverage, minx-startx);
        dst += blit_stride;
      }
      }
@@ -2106,10 +2113,11 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
      dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_start / CTX_FULL_AA);
      for (rasterizer->scanline = scan_start; rasterizer->scanline < scan_end;)
      {
-       ctx_composite_apply_coverage (rasterizer,
-                                      &dst[ (maxx * rasterizer->format->bpp) /8],
-                                      0,
-                                      nocoverage, endx-maxx);
+       rasterizer->apply_coverage (rasterizer,
+                                   &dst[ (maxx * rasterizer->format->bpp) /8],
+                                   rasterizer->color,
+                                   0,
+                                   nocoverage, endx-maxx);
 
        rasterizer->scanline += CTX_FULL_AA;
        dst += rasterizer->blit_stride;
@@ -2120,10 +2128,11 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
      // XXX valgrind/asan this
      if(0)for (rasterizer->scanline = scan_end; rasterizer->scanline/CTX_FULL_AA < gscan_end-1;)
      {
-       ctx_composite_apply_coverage (rasterizer,
-                                      &dst[ (startx * rasterizer->format->bpp) /8],
-                                      0,
-                                      nocoverage, clipw-1);
+       rasterizer->apply_coverage (rasterizer,
+                                   &dst[ (startx * rasterizer->format->bpp) /8],
+                                   rasterizer->color,
+                                   0,
+                                   nocoverage, clipw-1);
 
        rasterizer->scanline += CTX_FULL_AA;
        dst += blit_stride;
@@ -2324,8 +2333,9 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                               ((y-blit_y) * blit_width) + x0 + x])/255;
                       composite[x] = val;
                     }
-                    ctx_composite_apply_coverage (rasterizer,
+                    rasterizer->apply_coverage (rasterizer,
                                                  ( (uint8_t *) rasterizer->buf) + (y-blit_y) * blit_stride + ((int) (x0) * bpp)/8,
+                                                 rasterizer->color,
                                                  x0, // is 0
                                                  composite,
                                                  ewidth );
@@ -2338,8 +2348,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
             {
               if (CTX_LIKELY((y >= clip_y_min) && (y <= clip_y_max) ))
                 {
-                    ctx_composite_apply_coverage (rasterizer,
-                                                 ( (uint8_t *) rasterizer->buf) + (y-blit_y) * blit_stride + (int) ((x0) * bpp)/8,
+                    rasterizer->apply_coverage (rasterizer,
+                                                 ( (uint8_t *) rasterizer->buf) + (y-blit_y) * blit_stride + (int) ((x0) * bpp)/8, rasterizer->color,
                                                  x0,
                                                  &shape->data[shape->width * (int) (y-ymin) + xo],
                                                  ewidth );
