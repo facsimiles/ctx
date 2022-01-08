@@ -2822,15 +2822,20 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 }
 
 static void
-ctx_setup_RGB (CtxRasterizer *rasterizer)
+ctx_setup_native_color (CtxRasterizer *rasterizer)
 {
-  ctx_setup_RGBA8 (rasterizer);
-
-  if (rasterizer->format->from_comp && rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
     rasterizer->format->from_comp (rasterizer, 0,
       &rasterizer->color[0],
       &rasterizer->color_native,
       1);
+}
+
+static void
+ctx_setup_RGB (CtxRasterizer *rasterizer)
+{
+  ctx_setup_RGBA8 (rasterizer);
+  ctx_setup_native_color (rasterizer);
 
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
@@ -2840,11 +2845,7 @@ ctx_setup_RGB332 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
 
-  if (rasterizer->format->from_comp && rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
-    rasterizer->format->from_comp (rasterizer, 0,
-      &rasterizer->color[0],
-      &rasterizer->color_native,
-      1);
+  ctx_setup_native_color (rasterizer);
 
   if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
     rasterizer->comp = CTX_COV_PATH_RGB332_COPY;
@@ -2857,20 +2858,10 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
 
-  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
-    rasterizer->format->from_comp (rasterizer, 0,
-      &rasterizer->color[0],
-      &rasterizer->color_native,
-      1);
+  ctx_setup_native_color (rasterizer);
 
   if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
-  {
     rasterizer->comp = CTX_COV_PATH_RGB565_COPY;
-    rasterizer->format->from_comp (rasterizer, 0,
-      &rasterizer->color[0],
-      &rasterizer->color_native,
-      1);
-  }
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
@@ -2879,12 +2870,7 @@ static void
 ctx_setup_RGB8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
-
-  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
-    rasterizer->format->from_comp (rasterizer, 0,
-      &rasterizer->color[0],
-      &rasterizer->color_native,
-      1);
+  ctx_setup_native_color (rasterizer);
 
   if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
     rasterizer->comp = CTX_COV_PATH_RGB8_COPY;
