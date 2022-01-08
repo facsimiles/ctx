@@ -4200,8 +4200,8 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                                           ctx, NULL, &ctx->state, data, 0, 0, width, height,
                                           stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
   ctx_set_backend (ctx, r);
-  if (pixel_format == CTX_FORMAT_GRAY1)
-  {
+  if (pixel_format == CTX_FORMAT_GRAY1) // XXX we get some bugs without it..
+  {                                     //     something is going amiss with offsets
     ctx_set_antialias (ctx, CTX_ANTIALIAS_NONE);
   }
   return ctx;

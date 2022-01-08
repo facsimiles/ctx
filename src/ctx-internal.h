@@ -624,6 +624,7 @@ typedef enum {
    CTX_COV_PATH_GRAYA8_COPY,
    CTX_COV_PATH_RGBAF_COPY,
    CTX_COV_PATH_RGB8_COPY,
+   CTX_COV_PATH_CMYK8_COPY
 } CtxCovPath;
 
 struct _CtxRasterizer
@@ -798,15 +799,14 @@ extern float ctx_u8_float[256];
 //
 //
 
-
-static uint8_t ctx_float_to_u8 (float val_f)
+static inline uint8_t ctx_float_to_u8 (float val_f)
 {
+#if 1 
+  union { float f; uint32_t i; } u;
+  u.f = 32768.0f + val_f * (255.0f / 256.0f);
+  return (uint8_t)u.i;
+#else
   return val_f < 0.0f ? 0 : val_f > 1.0f ? 0xff : 0xff * val_f +  0.5f;
-#if 0
-  int val_i = val_f * 255.999f;
-  if (val_i < 0) { return 0; }
-  else if (val_i > 255) { return 255; }
-  return val_i;
 #endif
 }
 
