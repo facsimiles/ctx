@@ -1,7 +1,7 @@
 #include "ctx-split.h"
 
 
-CTX_STATIC CTX_INLINE int
+static inline int
 ctx_conts_for_entry (CtxEntry *entry)
 {
     switch (entry->code)
@@ -91,7 +91,7 @@ int ctx_iterator_pos (CtxIterator *iterator)
   return iterator->pos;
 }
 
-CTX_STATIC CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
+static inline CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
 {
   int ret = iterator->pos;
   CtxEntry *entry = &iterator->drawlist->entries[ret];
@@ -737,27 +737,6 @@ ctx_u8 (CtxCode code,
   command.data.u8[7] = h;
   return command;
 }
-
-#define CTX_PROCESS_VOID(cmd) do {\
-  CtxEntry commands[4] = {{cmd}};\
-  ctx_process (ctx, &commands[0]);}while(0) \
-
-#define CTX_PROCESS_F(cmd,x,y) do {\
-  CtxEntry commands[4] = {ctx_f(cmd,x,y),};\
-  ctx_process (ctx, &commands[0]);}while(0) \
-
-#define CTX_PROCESS_F1(cmd,x) do {\
-  CtxEntry commands[4] = {ctx_f(cmd,x,0),};\
-  ctx_process (ctx, &commands[0]);}while(0) \
-
-#define CTX_PROCESS_U32(cmd, x, y) do {\
-  CtxEntry commands[4] = {ctx_u32(cmd, x, y)};\
-  ctx_process (ctx, &commands[0]);}while(0)
-
-#define CTX_PROCESS_U8(cmd, x) do {\
-  CtxEntry commands[4] = {ctx_u8(cmd, x,0,0,0,0,0,0,0)};\
-  ctx_process (ctx, &commands[0]);}while(0)
-
 
 CTX_STATIC void
 ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1, int len)
