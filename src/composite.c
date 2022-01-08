@@ -2780,42 +2780,44 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       ((uint32_t*)rasterizer->color)[3] = si_ga_full;
       ((uint32_t*)rasterizer->color)[4] = si_rb_full;
 
-      if (blend_mode == CTX_BLEND_NORMAL &&
-           compositing_mode == CTX_COMPOSITE_COPY)
+      if (blend_mode == CTX_BLEND_NORMAL)
       {
-        rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
-        rasterizer->comp = CTX_COV_PATH_RGBA8_COPY;
+        if(compositing_mode == CTX_COMPOSITE_COPY)
+        {
+          rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
+          rasterizer->comp = CTX_COV_PATH_RGBA8_COPY;
+        }
+        else if (compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+        {
+          if (rasterizer->color[components-1] == 255)
+          {
+            rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
+            rasterizer->comp = CTX_COV_PATH_RGBA8_COPY;
+          }
+          else
+          {
+            rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
+            rasterizer->comp = CTX_COV_PATH_RGBA8_OVER;
+          }
+        }
       }
-      else if (blend_mode == CTX_BLEND_NORMAL &&
-          compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
-     {
-       if (rasterizer->color[components-1] == 255)
-       {
-        rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
-        rasterizer->comp = CTX_COV_PATH_RGBA8_COPY;
-       }
-       else
-       {
-        rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
-        rasterizer->comp = CTX_COV_PATH_RGBA8_OVER;
-       }
-     }
-     else if (compositing_mode == CTX_COMPOSITE_CLEAR)
-     {
-       rasterizer->comp_op = ctx_RGBA8_clear_normal;
-     }
+      else if (compositing_mode == CTX_COMPOSITE_CLEAR)
+      {
+        rasterizer->comp_op = ctx_RGBA8_clear_normal;
+      }
   }
-  else if (blend_mode == CTX_BLEND_NORMAL &&
-           compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+  else if (blend_mode == CTX_BLEND_NORMAL)
   {
-     rasterizer->comp_op = ctx_RGBA8_source_over_normal_fragment;
-     rasterizer->comp = CTX_COV_PATH_RGBA8_OVER_FRAGMENT;
-  }
-  else if (blend_mode == CTX_BLEND_NORMAL &&
-           compositing_mode == CTX_COMPOSITE_COPY)
-  {
-     rasterizer->comp_op = ctx_RGBA8_source_copy_normal_fragment;
-     rasterizer->comp = CTX_COV_PATH_RGBA8_COPY_FRAGMENT;
+    if(compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
+    {
+       rasterizer->comp_op = ctx_RGBA8_source_over_normal_fragment;
+       rasterizer->comp = CTX_COV_PATH_RGBA8_OVER_FRAGMENT;
+    }
+    else if (compositing_mode == CTX_COMPOSITE_COPY)
+    {
+       rasterizer->comp_op = ctx_RGBA8_source_copy_normal_fragment;
+       rasterizer->comp = CTX_COV_PATH_RGBA8_COPY_FRAGMENT;
+    }
   }
 }
 
@@ -2845,9 +2847,7 @@ ctx_setup_RGB332 (CtxRasterizer *rasterizer)
       1);
 
   if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
-  {
     rasterizer->comp = CTX_COV_PATH_RGB332_COPY;
-  }
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
@@ -2857,7 +2857,7 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
 
-  if (rasterizer->format->from_comp && rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
     rasterizer->format->from_comp (rasterizer, 0,
       &rasterizer->color[0],
       &rasterizer->color_native,
@@ -2880,7 +2880,7 @@ ctx_setup_RGB8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
 
-  if (rasterizer->format->from_comp && rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
     rasterizer->format->from_comp (rasterizer, 0,
       &rasterizer->color[0],
       &rasterizer->color_native,
