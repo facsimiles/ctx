@@ -1112,10 +1112,27 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 uint8_t  startcov = graystart;
                 ctx_composite_apply_coverage (rasterizer, (uint8_t*)dstp, first, &startcov, 1);
                 dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
+                int count = last - first - 1;
                 if (srcp[0]>=127)
                 {
                   int x = first + 1;
-                  for (int i = 0; i < last - first - 1; i++)
+                  for (int i = 0; i < count && x & 7; count--)
+                  {
+                     int bitno = x & 7;
+                     *dstp |= (1<<bitno);
+                     if (bitno == 7)
+                       dstp++;
+                     x++;
+                  }
+
+                  for (int i = 0; i < count && count>8; count-=8)
+                  {
+                     *dstp = 255;
+                     dstp++;
+                     x+=8;
+                  }
+
+                  for (int i = 0; i < count; i++)
                   {
                      int bitno = x & 7;
                      *dstp |= (1<<bitno);
@@ -1127,7 +1144,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 else
                 {
                   int x = first + 1;
-                  for (int i = 0; i < last - first - 1; i++)
+                  for (int i = 0; i < count && x & 7; count--)
                   {
                      int bitno = x & 7;
                      *dstp &= ~(1<<bitno);
@@ -1135,6 +1152,23 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                        dstp++;
                      x++;
                   }
+
+                  for (int i = 0; i < count && count>8; count-=8)
+                  {
+                     *dstp = 0;
+                     dstp++;
+                     x+=8;
+                  }
+
+                  for (int i = 0; i < count; i++)
+                  {
+                     int bitno = x & 7;
+                     *dstp &= ~(1<<bitno);
+                     if (bitno == 7)
+                       dstp++;
+                     x++;
+                  }
+
                 }
               }
               break;
