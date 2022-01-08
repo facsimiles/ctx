@@ -1105,6 +1105,39 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 }
               }
               break;
+              case CTX_COV_PATH_GRAY1_COPY:
+              {
+                uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
+                uint8_t *srcp = (uint8_t*)src_pixp;
+                uint8_t  startcov = graystart;
+                ctx_composite_apply_coverage (rasterizer, (uint8_t*)dstp, first, &startcov, 1);
+                dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
+                if (srcp[0]>=127)
+                {
+                  int x = first + 1;
+                  for (int i = 0; i < last - first - 1; i++)
+                  {
+                     int bitno = x & 7;
+                     *dstp |= (1<<bitno);
+                     if (bitno == 7)
+                       dstp++;
+                     x++;
+                  }
+                }
+                else
+                {
+                  int x = first + 1;
+                  for (int i = 0; i < last - first - 1; i++)
+                  {
+                     int bitno = x & 7;
+                     *dstp &= ~(1<<bitno);
+                     if (bitno == 7)
+                       dstp++;
+                     x++;
+                  }
+                }
+              }
+              break;
               case CTX_COV_PATH_RGBAF_COPY:
               {
                 uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
