@@ -4739,12 +4739,19 @@ ctx_332_unpack (uint8_t pixel,
                 uint8_t *green,
                 uint8_t *blue)
 {
-  *blue   = (pixel & 3) <<6;
-  *green = ( (pixel >> 2) & 7) <<5;
-  *red   = ( (pixel >> 5) & 7) <<5;
-  if (*blue > 223)  { *blue  = 255; }
-  if (*green > 223) { *green = 255; }
-  if (*red > 223)   { *red   = 255; }
+  uint32_t b = (pixel & 3) <<6;
+  uint32_t g = ( (pixel >> 2) & 7) <<5;
+  uint32_t r = ( (pixel >> 5) & 7) <<5;
+
+#if 1
+  *blue  = (b > 224) * 255 + (b <= 224) * b;
+  *green = (g > 224) * 255 + (g <= 224) * g;
+  *red   = (r > 224) * 255 + (r <= 224) * r;
+#else
+  *blue  =  b;
+  *green =  g;
+  *red   =  r;
+#endif
 }
 
 static inline uint8_t
@@ -4774,7 +4781,7 @@ ctx_332_to_888 (uint8_t in)
                   &rgba[0],
                   &rgba[1],
                   &rgba[2]);
-  rgba[3] = 255;
+  //rgba[3] = 255;
   return ret;
 }
 
@@ -4853,7 +4860,6 @@ ctx_composite_RGB332 (CTX_COMPOSITE_ARGUMENTS)
     }
     return;
   }
-
   uint8_t pixels[count * 4];
   ctx_RGB332_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
   rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
@@ -4875,13 +4881,18 @@ ctx_565_unpack (const uint16_t pixel,
     { byteswapped = (pixel>>8) | (pixel<<8); }
   else
     { byteswapped  = pixel; }
-  *blue   =  (byteswapped & 31) <<3;
-  *green = ( (byteswapped>>5) & 63) <<2;
-  *red   = ( (byteswapped>>11) & 31) <<3;
+  uint8_t b  =  (byteswapped & 31) <<3;
+  uint8_t g  = ( (byteswapped>>5) & 63) <<2;
+  uint8_t r  = ( (byteswapped>>11) & 31) <<3;
+
 #if 0
-  if (*blue > 248) { *blue = 255; }
-  if (*green > 248) { *green = 255; }
-  if (*red > 248) { *red = 255; }
+  *blue  = (b > 248) * 255 + (b <= 248) * b;
+  *green = (g > 248) * 255 + (g <= 248) * g;
+  *red   = (r > 248) * 255 + (r <= 248) * r;
+#else
+  *blue = b;
+  *green = g;
+  *red = r;
 #endif
 }
 
@@ -4894,15 +4905,16 @@ ctx_565_unpack_32 (const uint16_t pixel,
     { byteswapped = (pixel>>8) | (pixel<<8); }
   else
     { byteswapped  = pixel; }
-  uint8_t blue   = (byteswapped & 31) <<3;
-  uint8_t green = ( (byteswapped>>5) & 63) <<2;
-  uint8_t red   = ( (byteswapped>>11) & 31) <<3;
+  uint32_t b   = (byteswapped & 31) <<3;
+  uint32_t g = ( (byteswapped>>5) & 63) <<2;
+  uint32_t r   = ( (byteswapped>>11) & 31) <<3;
 #if 0
-  if (*blue > 248) { *blue = 255; }
-  if (*green > 248) { *green = 255; }
-  if (*red > 248) { *red = 255; }
+  b = (b > 248) * 255 + (b <= 248) * b;
+  g = (g > 248) * 255 + (g <= 248) * g;
+  r = (r > 248) * 255 + (r <= 248) * r;
 #endif
-  return red +  (green << 8) + (blue << 16) + (0xff << 24);
+
+  return r +  (g << 8) + (b << 16) + (0xff << 24);
 }
 
 static inline uint16_t
@@ -4936,7 +4948,7 @@ ctx_565_to_888 (uint16_t in, int byteswap)
                   &rgba[1],
                   &rgba[2],
                   byteswap);
-  rgba[3]=255;
+  //rgba[3]=255;
   return ret;
 }
 
