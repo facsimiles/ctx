@@ -1013,7 +1013,8 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
   const int bpp       = rasterizer->format->bpp;
   int active_edges    = rasterizer->active_edges;
   int parity          = 0;
-  const uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
+  uint32_t *src_pixp   = ((uint32_t*)rasterizer->color);
+  const uint32_t src_pix    = src_pixp[0];
   const uint32_t si_ga = ((uint32_t*)rasterizer->color)[1];
   const uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
   const uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];
@@ -1082,21 +1083,23 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             switch (comp)
             {
               case CTX_COV_PATH_RGBA8_COPY:
-            {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
-              *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, graystart);
-
-              dst_pix++;
-              ctx_span_set_color (dst_pix, src_pix, last - first - 1);
-#if 0
-              for (int i = first + 1; i < last; i++)
               {
-                *dst_pix = src_pix;
+                uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
+                *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, graystart);
+
                 dst_pix++;
+                ctx_span_set_color (dst_pix, src_pix, last - first - 1);
               }
-#endif
-            }
-            break;
+              break;
+              case CTX_COV_PATH_RGBAF_COPY:
+              {
+                uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
+                uint8_t  startcov = graystart;
+                ctx_composite_apply_coverage (rasterizer, (uint8_t*)dst_pix, first, &startcov, 1);
+                dst_pix+=4;
+                ctx_span_set_color_x4 (dst_pix, src_pixp, last - first - 1);
+              }
+              break;
 
             case CTX_COV_PATH_RGB565_COPY:
             {
@@ -1377,7 +1380,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
   int  active_edges   = rasterizer->active_edges;
   int  parity         = 0;
 
-  const uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
+  uint32_t *src_pixp   = ((uint32_t*)rasterizer->color);
+  const uint32_t src_pix    = src_pixp[0];
   const uint32_t si_ga      = ((uint32_t*)rasterizer->color)[1];
   const uint32_t si_rb      = ((uint32_t*)rasterizer->color)[2];
   const uint32_t si_ga_full = ((uint32_t*)rasterizer->color)[3];
@@ -1576,6 +1580,13 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
               dst_pix+=pre;
               ctx_span_set_color (dst_pix, src_pix, last-first-pre-post + 1);
+            }
+            break;
+            case CTX_COV_PATH_RGBAF_COPY:
+            {
+              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
+              dst_pix+=pre;
+              ctx_span_set_color_x4 (dst_pix, src_pixp, last-first-pre-post + 1);
             }
             break;
             case CTX_COV_PATH_RGBA8_OVER:

@@ -3427,6 +3427,9 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
         {
           rasterizer->comp_op = ctx_RGBAF_copy_normal;
+          if (gstate->source_fill.type == CTX_SOURCE_COLOR)
+            rasterizer->comp = CTX_COV_PATH_RGBAF_COPY;
+
         }
         else if (gstate->global_alpha_u8 == 0)
         {
@@ -3439,6 +3442,8 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
               rasterizer->comp_op = ctx_RGBAF_source_over_normal_color;
+              if ( ((float*)rasterizer->color)[3] >= 0.999f)
+                rasterizer->comp = CTX_COV_PATH_RGBAF_COPY;
             }
             else
             {
@@ -4984,6 +4989,18 @@ static inline void ctx_span_set_color (uint32_t *dst_pix, uint32_t val, int coun
     *dst_pix++=val;
 }
 
+static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int count)
+{
+  if (count>0)
+  while(count--)
+  {
+    *dst_pix++=val[0];
+    *dst_pix++=val[1];
+    *dst_pix++=val[2];
+    *dst_pix++=val[3];
+  }
+}
+
 inline static void
 ctx_composite_apply_coverage (CtxRasterizer *rasterizer,
                                uint8_t * dst,
@@ -5267,6 +5284,19 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         return;
       }
     }
+    else if (comp == CTX_COV_PATH_RGBAF_COPY)
+    {
+
+      uint32_t *color = ((uint32_t*)rasterizer->color);
+      {
+        for (int y = y0; y <= y1; y++)
+        {
+          ctx_span_set_color_x4 ((uint32_t*)&dst[0], color, width);
+          dst += blit_stride;
+        }
+        return;
+      }
+    }
     else if (comp == CTX_COV_PATH_RGB565_COPY)
     {
       uint16_t color = rasterizer->color_u16;
@@ -5381,17 +5411,6 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   if (comp == CTX_COV_PATH_RGBA8_COPY)
     {
       uint32_t color = *((uint32_t*)rasterizer->color);
-      if (width == 1)
-      {
-        for (int y = y0; y <= y1; y++)
-        {
-          uint32_t *dst_i = (uint32_t*)&dst[0];
-          *dst_i = ctx_lerp_RGBA8 (*dst_i, color, cov);
-          dst += blit_stride;
-        }
-        return;
-      }
-      else
       {
         for (int y = y0; y <= y1; y++)
         {
@@ -5399,6 +5418,24 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           for (int i = 0; i < width; i++)
           {
             dst_i[i] = ctx_lerp_RGBA8 (dst_i[i], color, cov);
+          }
+          dst += blit_stride;
+        }
+        return;
+      }
+    }
+    else if (comp == CTX_COV_PATH_RGBAF_COPY)
+    {
+      float *color = ((float*)rasterizer->color);
+      float covf = cov / 255.0f;
+      {
+        for (int y = y0; y <= y1; y++)
+        {
+          float *dst_f = (float*)&dst[0];
+          for (int i = 0; i < width; i++)
+          {
+            for (int c = 0; c < 4; c++)
+              dst_f[i*4+c] = ctx_lerpf (dst_f[i*4+c], color[c], covf);
           }
           dst += blit_stride;
         }
