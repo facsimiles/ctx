@@ -4902,7 +4902,7 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 
     while (count--)
     {
-      if (*coverage == 255)
+      if (CTX_LIKELY(*coverage == 255))
       {
         uint32_t rcov  = 255-*coverage++;
         uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 0);
@@ -4989,7 +4989,7 @@ ctx_composite_RGB565_BS (CTX_COMPOSITE_ARGUMENTS)
 
     while (count--)
     {
-      if (*coverage == 255)
+      if (CTX_LIKELY(*coverage == 255))
       {
         uint32_t rcov  = 255-*coverage++;
         uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 1);
