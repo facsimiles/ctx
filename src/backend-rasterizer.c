@@ -1091,22 +1091,91 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 ctx_span_set_color (dst_pix, src_pix, last - first - 1);
               }
               break;
-              case CTX_COV_PATH_RGB8_COPY:
+            case CTX_COV_PATH_RGB8_COPY:
+            case CTX_COV_PATH_RGBAF_COPY:
+            case CTX_COV_PATH_RGB565_COPY:
+            case CTX_COV_PATH_RGB332_COPY:
+            case CTX_COV_PATH_GRAYA8_COPY:
+            case CTX_COV_PATH_GRAY8_COPY:
+            case CTX_COV_PATH_CMYKA8_COPY:
+            case CTX_COV_PATH_CMYK8_COPY:
+            {
+              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
+              uint8_t  startcov = graystart;
+              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
+              uint8_t* dst_i = (uint8_t*)dsts;
+              uint8_t *color = ((uint8_t*)rasterizer->color);
+              int bytes = rasterizer->format->bpp/8;
+              dst_i+=bytes;
+
+              int count = last-(first+1);//  (last - post) - (first+pre) + 1;
+
+              //for (int i = first + pre; i <= last - post; i++)
+              if (CTX_LIKELY(count>0))
+              switch (bytes)
               {
-                uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
-                uint8_t *srcp = (uint8_t*)src_pixp;
-                uint8_t  startcov = graystart;
-                ctx_composite_apply_coverage (rasterizer, (uint8_t*)dstp, first, &startcov, 1);
-                dstp+=3;
-                int count = last - first - 1;
-                for (int i = 0; i < count; i++)
-                {
-                  *dstp++ = srcp[0];
-                  *dstp++ = srcp[1];
-                  *dstp++ = srcp[2];
-                }
-              }
+                case 1:
+#if 1
+                  memset (dst_i, color[0], count);
+#else
+                  while (count--)
+                  {
+                    dst_i[0] = color[0];
+                    dst_i++;
+                  }
+#endif
+                  break;
+                case 2:
+                  {
+                    uint16_t val = ((uint16_t*)color)[0];
+                    while (count--)
+                    {
+                      ((uint16_t*)dst_i)[0] = val;
+                      dst_i+=2;
+                    }
+                  }
+                  break;
+                case 4:
+                  {
+                    uint32_t val = ((uint32_t*)color)[0];
+                    while (count--)
+                    {
+                      ((uint32_t*)dst_i)[0] = val;
+                      dst_i+=4;
+                    }
+                  }
+                  break;
+                case 16:
+                  ctx_span_set_color_x4 ((uint32_t*)dst, (uint32_t*)color, count);
+                  break;
+                case 3:
+                 while (count--)
+                 {
+                   for (int b = 0; b < 3; b++)
+                     dst_i[b] = color[b];
+                   dst_i+=3;
+                 }
+                 break;
+                case 5:
+                 while (count--)
+                 {
+                   for (int b = 0; b < 5; b++)
+                     dst_i[b] = color[b];
+                   dst_i+=5;
+                 }
+                 break;
+                default:
+                 while (count--)
+                 {
+                   for (int b = 0; b < bytes; b++)
+                     dst_i[b] = color[b];
+                   dst_i+=bytes;
+                 }
+                  break;
+               }
+            }
               break;
+
               case CTX_COV_PATH_GRAY1_COPY:
               {
                 uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
@@ -1122,8 +1191,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                   {
                      int bitno = x & 7;
                      *dstp |= (1<<bitno);
-                     if (bitno == 7)
-                       dstp++;
+                     dstp += (bitno == 7);
                      x++;
                   }
 
@@ -1138,8 +1206,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                   {
                      int bitno = x & 7;
                      *dstp |= (1<<bitno);
-                     if (bitno == 7)
-                       dstp++;
+                     dstp += (bitno == 7);
                      x++;
                   }
                 }
@@ -1150,8 +1217,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                   {
                      int bitno = x & 7;
                      *dstp &= ~(1<<bitno);
-                     if (bitno == 7)
-                       dstp++;
+                     dstp += (bitno == 7);
                      x++;
                   }
 
@@ -1166,87 +1232,13 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                   {
                      int bitno = x & 7;
                      *dstp &= ~(1<<bitno);
-                     if (bitno == 7)
-                       dstp++;
+                     dstp += (bitno == 7);
                      x++;
                   }
 
                 }
               }
               break;
-              case CTX_COV_PATH_RGBAF_COPY:
-              {
-                uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
-                uint8_t  startcov = graystart;
-                ctx_composite_apply_coverage (rasterizer, (uint8_t*)dst_pix, first, &startcov, 1);
-                dst_pix+=4;
-                ctx_span_set_color_x4 (dst_pix, src_pixp, last - first - 1);
-              }
-              break;
-
-            case CTX_COV_PATH_RGB565_COPY:
-            {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-              uint8_t  startcov = graystart;
-              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
-              uint16_t* dst_i = (uint16_t*)dsts;
-              uint16_t color = rasterizer->color_u16;
-              dst_i++;
-              for (int i = first + 1; i < last; i++)
-              {
-                dst_i[0] = color;
-                dst_i++;
-              }
-            }
-            break;
-            case CTX_COV_PATH_RGB332_COPY:
-            {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-              uint8_t  startcov = graystart;
-              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
-              uint8_t* dst_i = (uint8_t*)dsts;
-              uint8_t color = ((uint8_t*)&rasterizer->color_u16)[0];
-              dst_i++;
-              for (int i = first + 1; i < last; i++)
-              {
-                dst_i[0] = color;
-                dst_i++;
-              }
-            }
-            break;
-#if 1
-            case CTX_COV_PATH_GRAYA8_COPY:
-            {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-              uint8_t  startcov = graystart;
-              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
-              uint16_t* dst_i = (uint16_t*)dsts;
-              uint16_t color = ((uint16_t*)rasterizer->color)[0];
-              dst_i++;
-              for (int i = first + 1; i < last; i++)
-              {
-                dst_i[0] = color;
-                dst_i++;
-              }
-            }
-            break;
-            case CTX_COV_PATH_GRAY8_COPY:
-            {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-              uint8_t  startcov = graystart;
-              ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
-              uint8_t* dst_i = (uint8_t*)dsts;
-              uint8_t color = ((uint8_t*)rasterizer->color)[0];
-              dst_i++;
-              // XXX replace with memset
-              for (int i = first + 1; i < last; i++)
-              {
-                dst_i[0] = color;
-                dst_i++;
-              }
-            }
-            break;
-#endif
 
             case CTX_COV_PATH_RGBA8_OVER:
             {
@@ -1577,6 +1569,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                     }
                 }
                 break;
+
                 case CTX_COV_PATH_RGBA8_COPY:
                 {
                   uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
@@ -1643,61 +1636,88 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           }
           switch (comp)
           {
-            case CTX_COV_PATH_RGB565_COPY:
-            {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-              uint16_t* dst_i = (uint16_t*)dsts;
-              uint16_t color = rasterizer->color_u16;
-              dst_i+=pre;
-              for (int i = first + pre; i <= last - post; i++)
-              {
-                dst_i[0] = color;
-                dst_i++;
-              }
-            }
-            break;
-            case CTX_COV_PATH_RGB332_COPY:
-            {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-              uint8_t* dst_i = (uint8_t*)dsts;
-              uint8_t color = ((uint8_t*)&rasterizer->color_u16)[0];
-              dst_i+=pre;
-              for (int i = first + pre; i <= last - post; i++)
-              {
-                dst_i[0] = color;
-                dst_i++;
-              }
-            }
-            break;
-#if 1
-            case CTX_COV_PATH_GRAYA8_COPY:
-            {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-              uint16_t* dst_i = (uint16_t*)dsts;
-              uint16_t color = ((uint16_t*)rasterizer->color)[0];
-              dst_i+=pre;
-              for (int i = first + pre; i <= last - post; i++)
-              {
-                dst_i[0] = color;
-                dst_i++;
-              }
-            }
-            break;
+            case CTX_COV_PATH_RGBAF_COPY:
             case CTX_COV_PATH_GRAY8_COPY:
+            case CTX_COV_PATH_GRAYA8_COPY:
+            case CTX_COV_PATH_RGB565_COPY:
+            case CTX_COV_PATH_RGB332_COPY:
+            case CTX_COV_PATH_CMYK8_COPY:
+            case CTX_COV_PATH_CMYKA8_COPY:
             {
               uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
               uint8_t* dst_i = (uint8_t*)dsts;
-              uint8_t color = ((uint8_t*)rasterizer->color)[0];
-              dst_i+=pre;
-              // XXX: replace with memset
-              for (int i = first + pre; i <= last - post; i++)
+              uint8_t* color = ((uint8_t*)rasterizer->color);
+              int bytes = rasterizer->format->bpp/8;
+              dst_i+=pre*bytes;
+
+              int count = (last - post) - (first+pre) + 1;
+
+              //for (int i = first + pre; i <= last - post; i++)
+              if (CTX_LIKELY(count>0))
+              switch (bytes)
               {
-                dst_i[0] = color;
-                dst_i++;
-              }
-            }
-            break;
+                case 1:
+#if 1
+                  memset (dst_i, color[0], count);
+#else
+                  while (count--)
+                  {
+                    dst_i[0] = color[0];
+                    dst_i++;
+                  }
 #endif
+                  break;
+                case 2:
+                  {
+                    uint16_t val = ((uint16_t*)color)[0];
+                    while (count--)
+                    {
+                      ((uint16_t*)dst_i)[0] = val;
+                      dst_i+=2;
+                    }
+                  }
+                  break;
+                case 4:
+                  {
+                    uint32_t val = ((uint32_t*)color)[0];
+                    while (count--)
+                    {
+                      ((uint32_t*)dst_i)[0] = val;
+                      dst_i+=4;
+                    }
+                  }
+                  break;
+                case 16:
+                  ctx_span_set_color_x4 ((uint32_t*)dst, (uint32_t*)color, count);
+                  break;
+                case 3:
+                 while (count--)
+                 {
+                   for (int b = 0; b < 3; b++)
+                     dst_i[b] = color[b];
+                   dst_i+=bytes;
+                 }
+                 break;
+                case 5:
+                 while (count--)
+                 {
+                   for (int b = 0; b < 5; b++)
+                     dst_i[b] = color[b];
+                   dst_i+=5;
+                 }
+                 break;
+                default:
+                 while (count--)
+                 {
+                   for (int b = 0; b < bytes; b++)
+                     dst_i[b] = color[b];
+                   dst_i+=bytes;
+                 }
+                  break;
+               }
+             }
+             break;
+
             case CTX_COV_PATH_RGBA8_COPY:
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
@@ -1705,13 +1725,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               ctx_span_set_color (dst_pix, src_pix, last-first-pre-post + 1);
             }
             break;
-            case CTX_COV_PATH_RGBAF_COPY:
-            {
-              uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
-              dst_pix+=pre;
-              ctx_span_set_color_x4 (dst_pix, src_pixp, last-first-pre-post + 1);
-            }
-            break;
+
+
             case CTX_COV_PATH_RGBA8_OVER:
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);

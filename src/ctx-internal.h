@@ -618,14 +618,19 @@ typedef enum {
    CTX_COV_PATH_RGBA8_COPY,
    CTX_COV_PATH_RGBA8_COPY_FRAGMENT,
    CTX_COV_PATH_RGBA8_OVER_FRAGMENT,
+   CTX_COV_PATH_GRAYA8_COPY,
+   CTX_COV_PATH_GRAY1_COPY,
+
+
    CTX_COV_PATH_RGB565_COPY,
    CTX_COV_PATH_RGB332_COPY,
-   CTX_COV_PATH_GRAY1_COPY,
    CTX_COV_PATH_GRAY8_COPY,
-   CTX_COV_PATH_GRAYA8_COPY,
    CTX_COV_PATH_RGBAF_COPY,
    CTX_COV_PATH_RGB8_COPY,
-   CTX_COV_PATH_CMYK8_COPY
+   CTX_COV_PATH_CMYK8_COPY,
+   CTX_COV_PATH_CMYKA8_COPY
+
+
 } CtxCovPath;
 
 struct _CtxRasterizer
@@ -701,8 +706,9 @@ struct _CtxRasterizer
   int shadow_y;
 
   int swap_red_green;
-  uint8_t    color[4*5];
-  uint16_t   color_u16;
+  uint8_t    color[4*5];   // in compositing format
+  uint16_t   color_native;  //
+  uint16_t   color_nativeB[4];
 
   int clip_rectangle;
 

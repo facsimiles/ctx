@@ -2823,6 +2823,13 @@ static void
 ctx_setup_RGB (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
+
+  if (rasterizer->format->from_comp && rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+    rasterizer->format->from_comp (rasterizer, 0,
+      &rasterizer->color[0],
+      &rasterizer->color_native,
+      1);
+
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
@@ -2830,13 +2837,16 @@ static void
 ctx_setup_RGB332 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
+
+  if (rasterizer->format->from_comp && rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+    rasterizer->format->from_comp (rasterizer, 0,
+      &rasterizer->color[0],
+      &rasterizer->color_native,
+      1);
+
   if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
   {
     rasterizer->comp = CTX_COV_PATH_RGB332_COPY;
-    rasterizer->format->from_comp (rasterizer, 0,
-      &rasterizer->color[0],
-      &rasterizer->color_u16,
-      1);
   }
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
@@ -2846,12 +2856,19 @@ static void
 ctx_setup_RGB565 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
+
+  if (rasterizer->format->from_comp && rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+    rasterizer->format->from_comp (rasterizer, 0,
+      &rasterizer->color[0],
+      &rasterizer->color_native,
+      1);
+
   if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
   {
     rasterizer->comp = CTX_COV_PATH_RGB565_COPY;
     rasterizer->format->from_comp (rasterizer, 0,
       &rasterizer->color[0],
-      &rasterizer->color_u16,
+      &rasterizer->color_native,
       1);
   }
   else
@@ -2862,6 +2879,13 @@ static void
 ctx_setup_RGB8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
+
+  if (rasterizer->format->from_comp && rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+    rasterizer->format->from_comp (rasterizer, 0,
+      &rasterizer->color[0],
+      &rasterizer->color_native,
+      1);
+
   if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
     rasterizer->comp = CTX_COV_PATH_RGB8_COPY;
   else
@@ -3435,6 +3459,12 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
           ((float*)rasterizer->color)[c] *= gstate->global_alpha_f;
+
+      if (rasterizer->format->from_comp)
+        rasterizer->format->from_comp (rasterizer, 0,
+          &rasterizer->color[0],
+          &rasterizer->color_native,
+          1);
     }
   else
 #endif
@@ -3656,6 +3686,12 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
           ((float*)rasterizer->color)[c] *= gstate->global_alpha_f;
+
+      if (rasterizer->format->from_comp)
+        rasterizer->format->from_comp (rasterizer, 0,
+          &rasterizer->color[0],
+          &rasterizer->color_native,
+          1);
     }
   else
   {
@@ -3897,6 +3933,12 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
       ctx_color_get_cmyka (rasterizer->state, &gstate->source_fill.color, (float*)rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         ((float*)rasterizer->color)[components-1] *= gstate->global_alpha_f;
+
+      if (rasterizer->format->from_comp)
+        rasterizer->format->from_comp (rasterizer, 0,
+          &rasterizer->color[0],
+          &rasterizer->color_native,
+          1);
     }
   else
   {
@@ -3926,11 +3968,11 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
               if (((float*)rasterizer->color)[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_RGBA8_nop;
 #if 1
-              else //if (((float*)rasterizer->color)[components-1] == 1.0f)
+              else if (((float*)rasterizer->color)[components-1] == 1.0f)
                 rasterizer->comp_op = ctx_CMYKAF_source_copy_normal_color;
-   //           else
-   //             rasterizer->comp_op = ctx_CMYKAF_porter_duff_color_normal;
-              rasterizer->fragment = NULL;
+              else
+                rasterizer->comp_op = ctx_CMYKAF_porter_duff_color_normal;
+              //rasterizer->fragment = NULL;
 #endif
             }
             else
@@ -3959,6 +4001,22 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
     }
 #endif
 #endif
+}
+
+static void
+ctx_setup_CMYKA8 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_CMYKAF (rasterizer);
+  if (rasterizer->comp_op == ctx_CMYKAF_source_copy_normal_color)
+    rasterizer->comp = CTX_COV_PATH_CMYKA8_COPY;
+}
+
+static void
+ctx_setup_CMYK8 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_CMYKAF (rasterizer);
+  if (rasterizer->comp_op == ctx_CMYKAF_source_copy_normal_color)
+    rasterizer->comp = CTX_COV_PATH_CMYK8_COPY;
 }
 
 #endif
@@ -4597,6 +4655,12 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
           rasterizer->color[c] = (rasterizer->color[c] * gstate->global_alpha_u8)/255;
+
+      if (rasterizer->format->from_comp)
+        rasterizer->format->from_comp (rasterizer, 0,
+          &rasterizer->color[0],
+          &rasterizer->color_native,
+          1);
     }
 
 #if CTX_INLINED_NORMAL
@@ -5359,10 +5423,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
 
   if (cov == 255)
   {
-
     if (comp == CTX_COV_PATH_RGBA8_COPY)
     {
-
       uint32_t color = *((uint32_t*)rasterizer->color);
       if (width == 1)
       {
@@ -5384,74 +5446,79 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         return;
       }
     }
-    else if (comp == CTX_COV_PATH_RGBAF_COPY)
+    else if (comp == CTX_COV_PATH_RGBAF_COPY ||
+             comp == CTX_COV_PATH_GRAY8_COPY ||
+             comp == CTX_COV_PATH_GRAYA8_COPY ||
+             comp == CTX_COV_PATH_RGB565_COPY ||
+             comp == CTX_COV_PATH_RGB332_COPY ||
+             comp == CTX_COV_PATH_CMYK8_COPY ||
+             comp == CTX_COV_PATH_CMYKA8_COPY)
     {
+      uint8_t *color = (uint8_t*)&rasterizer->color_native;
+      int bytes = rasterizer->format->bpp/8;
 
-      uint32_t *color = ((uint32_t*)rasterizer->color);
+      switch (bytes)
       {
-        for (int y = y0; y <= y1; y++)
-        {
-          ctx_span_set_color_x4 ((uint32_t*)&dst[0], color, width);
-          dst += blit_stride;
-        }
-        return;
-      }
-    }
-    else if (comp == CTX_COV_PATH_RGB565_COPY)
-    {
-      uint16_t color = rasterizer->color_u16;
-      for (int y = y0; y <= y1; y++)
-      {
-        uint16_t *dst_i = (uint16_t*)&dst[0];
-        for (int x = 0; x < width; x++)
-        {
-          dst_i[x] = color;
-        }
-        dst += blit_stride;
-      }
-      return;
-    }
-    else if (comp == CTX_COV_PATH_RGB565_COPY)
-    {
-      uint8_t color = ((uint8_t*)&rasterizer->color_u16)[0];
-      for (int y = y0; y <= y1; y++)
-      {
-        uint8_t *dst_i = (uint8_t*)&dst[0];
-        for (int x = 0; x < width; x++)
-        {
-          dst_i[x] = color;
-        }
-        dst += blit_stride;
-      }
-      return;
-    }
-    else if (comp == CTX_COV_PATH_GRAYA8_COPY)
-    {
-      uint16_t color = ((uint16_t*)rasterizer->color)[0];
-      for (int y = y0; y <= y1; y++)
-      {
-        uint16_t *dst_i = (uint16_t*)&dst[0];
-        for (int x = 0; x < width; x++)
-        {
-          dst_i[x] = color;
-        }
-        dst += blit_stride;
-      }
-      return;
-    }
-    else if (comp == CTX_COV_PATH_GRAY8_COPY)
-    {
-      uint8_t color = ((uint8_t*)rasterizer->color)[0];
-      for (int y = y0; y <= y1; y++)
-      {
-        uint8_t *dst_i = (uint8_t*)&dst[0];
-        for (int x = 0; x < width; x++)
-        {
-          dst_i[x] = color;
-        }
-        dst += blit_stride;
+        case 1:
+          for (int y = y0; y <= y1; y++)
+          {
+            uint8_t *dst_i = (uint8_t*)&dst[0];
+            for (int x = 0; x < width; x++)for (int b = 0; b < 1; b++) *dst_i++ = color[b];
+            dst += blit_stride;
+          }
+          break;
+        case 2:
+          for (int y = y0; y <= y1; y++)
+          {
+            uint8_t *dst_i = (uint8_t*)&dst[0];
+            for (int x = 0; x < width; x++)for (int b = 0; b < 2; b++) *dst_i++ = color[b];
+            dst += blit_stride;
+          }
+          break;
+        case 3:
+          for (int y = y0; y <= y1; y++)
+          {
+            uint8_t *dst_i = (uint8_t*)&dst[0];
+            for (int x = 0; x < width; x++)for (int b = 0; b < 3; b++) *dst_i++ = color[b];
+            dst += blit_stride;
+          }
+          break;
+        case 4:
+          for (int y = y0; y <= y1; y++)
+          {
+            uint8_t *dst_i = (uint8_t*)&dst[0];
+            for (int x = 0; x < width; x++)for (int b = 0; b < 4; b++) *dst_i++ = color[b];
+            dst += blit_stride;
+          }
+          break;
+        case 5:
+          for (int y = y0; y <= y1; y++)
+          {
+            uint8_t *dst_i = (uint8_t*)&dst[0];
+            for (int x = 0; x < width; x++)for (int b = 0; b < 5; b++) *dst_i++ = color[b];
+            dst += blit_stride;
+          }
+          break;
+        case 16:
+          for (int y = y0; y <= y1; y++)
+          {
+            uint8_t *dst_i = (uint8_t*)&dst[0];
+            for (int x = 0; x < width; x++)for (int b = 0; b < 16; b++) *dst_i++ = color[b];
+            dst += blit_stride;
+          }
+          break;
+        default:
+          for (int y = y0; y <= y1; y++)
+          {
+            uint8_t *dst_i = (uint8_t*)&dst[0];
+            for (int x = 0; x < width; x++)
+              for (int b = 0; b < bytes; b++)
+                *dst_i++ = color[b];
+            dst += blit_stride;
+          }
       }
       return;
+
     }
     else if (comp == CTX_COV_PATH_RGBA8_OVER)
     {
@@ -5556,7 +5623,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         return;
       }
     }
-    if (comp == CTX_COV_PATH_RGBA8_OVER)
+    else if (comp == CTX_COV_PATH_RGBA8_OVER)
     {
       uint32_t color = *((uint32_t*)rasterizer->color);
       if (width == 1)
@@ -5821,13 +5888,13 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_CMYKA8
   {
     CTX_FORMAT_CMYKA8, 5, 40, 4 * 5, 0, 0, CTX_FORMAT_CMYKAF,
-    NULL, NULL, ctx_composite_CMYKA8, ctx_setup_CMYKAF,
+    NULL, NULL, ctx_composite_CMYKA8, ctx_setup_CMYKA8,
   },
 #endif
 #if CTX_ENABLE_CMYK8
   {
     CTX_FORMAT_CMYK8, 5, 32, 4 * 5, 0, 0, CTX_FORMAT_CMYKAF,
-    NULL, NULL, ctx_composite_CMYK8, ctx_setup_CMYKAF,
+    NULL, NULL, ctx_composite_CMYK8, ctx_setup_CMYK8,
   },
 #endif
 #if CTX_ENABLE_YUV420
