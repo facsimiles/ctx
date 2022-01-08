@@ -623,6 +623,7 @@ typedef enum {
    CTX_COV_PATH_GRAY8_COPY,
    CTX_COV_PATH_GRAYA8_COPY,
    CTX_COV_PATH_RGBAF_COPY,
+   CTX_COV_PATH_RGB8_COPY,
 } CtxCovPath;
 
 struct _CtxRasterizer

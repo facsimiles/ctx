@@ -2844,6 +2844,16 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
 }
 
 static void
+ctx_setup_RGB8 (CtxRasterizer *rasterizer)
+{
+  ctx_setup_RGBA8 (rasterizer);
+  if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
+    rasterizer->comp = CTX_COV_PATH_RGB8_COPY;
+  else
+    rasterizer->comp = CTX_COV_PATH_FALLBACK;
+}
+
+static void
 ctx_composite_convert (CTX_COMPOSITE_ARGUMENTS)
 {
   uint8_t pixels[count * rasterizer->format->ebpp];
@@ -5618,7 +5628,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 #if CTX_ENABLE_RGB8
   {
     CTX_FORMAT_RGB8, 3, 24, 4, 0, 0, CTX_FORMAT_RGBA8,
-    ctx_RGB8_to_RGBA8, ctx_RGBA8_to_RGB8, ctx_composite_convert, ctx_setup_RGB332,
+    ctx_RGB8_to_RGBA8, ctx_RGBA8_to_RGB8, ctx_composite_convert, ctx_setup_RGB8,
   },
 #endif
 #if CTX_ENABLE_GRAY1
