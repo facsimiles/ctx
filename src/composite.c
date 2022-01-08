@@ -4853,33 +4853,46 @@ ctx_RGBA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS);
 static void
 ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 {
-#if 0
+#if 1
   if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color))
   {
-     int byteswap = 0;
-     uint32_t si    = *((uint32_t*)(src));
-     uint16_t si_16 = ctx_888_to_565 (si, byteswap);
-     uint32_t sval  = (si_16 & ( (31 << 11 ) | 31));
-     uint32_t sg = (si_16 & (63 << 5)) >> 5;
-     uint32_t si_a = si >> (24 + 3);
-     while (count--)
-     {
-        uint32_t di_16 = *((uint16_t*)(dst));
-        uint32_t cov = (*coverage) >> 3;
-        uint32_t racov = (32-((31+si_a*cov)>>5));
-        uint32_t dval = (di_16 & ( (31 << 11 ) | 31));
-        uint32_t dg = (di_16 >> 5) & 63; // faster outside than
-                                         // remerged as part of dval
-        *((uint16_t*)(dst)) =
-                ((               
-                  (((sval * cov) + (dval * racov)) >> 5)
-                 ) & ((31 << 11 )|31)) |
-                  ((((sg * cov) + (dg * racov)) & 63) );
+    uint32_t si_ga = ((uint32_t*)rasterizer->color)[1];
+    uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
+    uint32_t si_a  = si_ga >> 16;
 
-     }
-     return;
+    uint32_t si_gaf = (((uint32_t*)rasterizer->color)[1] << 8) + 255;
+    uint32_t si_rbf = (((uint32_t*)rasterizer->color)[2] << 8) + 255;
+
+    while (count--)
+    {
+      if (*coverage == 255)
+      {
+        uint32_t rcov  = 255-*coverage++;
+        uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 0);
+        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
+        uint32_t di_rb = (di & 0x00ff00ff);
+        *((uint16_t*)(dst)) =
+        ctx_888_to_565((((si_rbf + di_rb * rcov) & 0xff00ff00) >> 8)  |
+         (((si_gaf) + di_ga * rcov) & 0xff00ff00), 0);
+         dst+=2;
+      }
+      else
+      {
+        uint32_t cov   = *coverage++;
+        uint32_t rcov  = (((255+si_a * cov)>>8))^255;
+        uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 0);
+        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
+        uint32_t di_rb = (di & 0x00ff00ff);
+        *((uint16_t*)(dst)) =
+        ctx_888_to_565((((si_rb * cov + 0xff00ff + di_rb * rcov) & 0xff00ff00) >> 8)  |
+         ((si_ga * cov + 0xff00ff + di_ga * rcov) & 0xff00ff00), 0);
+         dst+=2;
+      }
+    }
+    return;
   }
 #endif
+
   uint8_t pixels[count * 4];
   ctx_RGB565_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
   rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
@@ -4927,6 +4940,46 @@ ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, v
 static void
 ctx_composite_RGB565_BS (CTX_COMPOSITE_ARGUMENTS)
 {
+#if 1
+  if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color))
+  {
+    uint32_t si_ga = ((uint32_t*)rasterizer->color)[1];
+    uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
+    uint32_t si_a  = si_ga >> 16;
+
+    uint32_t si_gaf = (((uint32_t*)rasterizer->color)[1] << 8) + 255;
+    uint32_t si_rbf = (((uint32_t*)rasterizer->color)[2] << 8) + 255;
+
+    while (count--)
+    {
+      if (*coverage == 255)
+      {
+        uint32_t rcov  = 255-*coverage++;
+        uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 1);
+        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
+        uint32_t di_rb = (di & 0x00ff00ff);
+        *((uint16_t*)(dst)) =
+        ctx_888_to_565((((si_rbf + di_rb * rcov) & 0xff00ff00) >> 8)  |
+         (((si_gaf) + di_ga * rcov) & 0xff00ff00), 1);
+         dst+=2;
+      }
+      else
+      {
+        uint32_t cov   = *coverage++;
+        uint32_t rcov  = (((255+si_a * cov)>>8))^255;
+        uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 1);
+        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
+        uint32_t di_rb = (di & 0x00ff00ff);
+        *((uint16_t*)(dst)) =
+        ctx_888_to_565((((si_rb * cov + 0xff00ff + di_rb * rcov) & 0xff00ff00) >> 8)  |
+         ((si_ga * cov + 0xff00ff + di_ga * rcov) & 0xff00ff00), 1);
+         dst+=2;
+      }
+    }
+    return;
+  }
+#endif
+
   uint8_t pixels[count * 4];
   ctx_RGB565_BS_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
   rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
