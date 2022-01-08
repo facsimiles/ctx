@@ -372,7 +372,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   return ctx_glyph_drawlist (font, ctx, &drawlist, unichar, stroke);
 }
 
-#if 0
+#if 1
 uint32_t ctx_glyph_no (Ctx *ctx, int no)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];

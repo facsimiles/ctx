@@ -4481,7 +4481,7 @@ ctx_fragment_color_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, void *ou
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   uint16_t *dst = (uint16_t*)out;
   uint16_t pix;
-  ctx_color_get_graya_u8 (rasterizer->state, &g->color, (void*)&pix);
+  ctx_color_get_graya_u8 (rasterizer->state, &g->color, (uint8_t*)&pix);
   for (int i = 0; i <count; i++)
   {
     dst[i]=pix;
