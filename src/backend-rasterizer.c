@@ -1829,18 +1829,18 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 static inline void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 {
-  rasterizer->pending_edges   = 0;
-  rasterizer->active_edges    = 0;
-  rasterizer->has_shape       = 0;
-  rasterizer->has_prev        = 0;
-  rasterizer->edge_list.count = 0; // ready for new edges
-  rasterizer->edge_pos        = 0;
+  rasterizer->pending_edges   =   
+  rasterizer->active_edges    =   
+  rasterizer->has_shape       =   
+  rasterizer->has_prev        =   
+  rasterizer->edge_list.count =    // ready for new edges
+  rasterizer->edge_pos        =   
   rasterizer->scanline        = 0;
   if (CTX_LIKELY(!rasterizer->preserve))
   {
-    rasterizer->scan_min      = 5000;
-    rasterizer->scan_max      = -5000;
+    rasterizer->scan_min      =
     rasterizer->col_min       = 5000;
+    rasterizer->scan_max      =
     rasterizer->col_max       = -5000;
   }
   //rasterizer->comp_op       = NULL; // keep comp_op cached 
