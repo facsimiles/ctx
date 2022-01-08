@@ -1806,8 +1806,14 @@ void _ctx_set_transformation (Ctx *ctx, int transformation)
 static void
 _ctx_init (Ctx *ctx)
 {
+#if CTX_U8_TO_FLOAT_LUT
+  static int lut_inited = 0;
+  if (!lut_inited){
   for (int i = 0; i <256;i++)
     ctx_u8_float[i] = i/255.0f;
+  lut_inited = 1;
+  }
+#endif
 
   ctx_state_init (&ctx->state);
 

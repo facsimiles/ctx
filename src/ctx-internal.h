@@ -793,11 +793,13 @@ Ctx *ctx_new_term (int width, int height);
 Ctx *ctx_new_termimg (int width, int height);
 
 int ctx_resolve_font (const char *name);
+
+#if CTX_U8_TO_FLOAT_LUT
 extern float ctx_u8_float[256];
 #define ctx_u8_to_float(val_u8) ctx_u8_float[((uint8_t)(val_u8))]
-//#define ctx_u8_to_float(val_u8) (val_u8/255.0f)
-//
-//
+#else
+#define ctx_u8_to_float(val_u8) (val_u8/255.0f)
+#endif
 
 static inline uint8_t ctx_float_to_u8 (float val_f)
 {

@@ -12,6 +12,7 @@
 #define CTX_NATIVE_GRAYA8   0
 #define CTX_PARSER          0
 #define CTX_MAX_TEXTURES    1
+#define CTX_U8_TO_FLOAT_LUT 0
 #define CTX_EVENTS          0
 #define CTX_RENDER_CTX      0
 #define CTX_DITHER          0 

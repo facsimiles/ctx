@@ -257,6 +257,10 @@
 #define CTX_INLINED_NORMAL      1
 #endif
 
+#ifndef CTX_U8_TO_FLOAT_LUT
+#define CTX_U8_TO_FLOAT_LUT 1
+#endif
+
 #ifndef CTX_INLINED_GRADIENTS
 #define CTX_INLINED_GRADIENTS   1
 #endif

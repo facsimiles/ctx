@@ -34,13 +34,7 @@ int ctx_color_model_get_components (CtxColorModel model)
   return 0;
 }
 
-#if 0
-inline static float ctx_u8_to_float (uint8_t val_u8)
-{
-  float val_f = val_u8 / 255.0;
-  return val_f;
-}
-#else
+#if CTX_U8_TO_FLOAT_LUT
 float ctx_u8_float[256];
 #endif
 
