@@ -1104,7 +1104,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               uint8_t  startcov = graystart;
               ctx_composite_apply_coverage (rasterizer, (uint8_t*)dsts, first, &startcov, 1);
               uint8_t* dst_i = (uint8_t*)dsts;
-              uint8_t *color = ((uint8_t*)rasterizer->color);
+              uint8_t *color = ((uint8_t*)&rasterizer->color_native);
               int bytes = rasterizer->format->bpp/8;
               dst_i+=bytes;
 
@@ -1646,7 +1646,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             {
               uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
               uint8_t* dst_i = (uint8_t*)dsts;
-              uint8_t* color = ((uint8_t*)rasterizer->color);
+              uint8_t* color = ((uint8_t*)&rasterizer->color_native);
               int bytes = rasterizer->format->bpp/8;
               dst_i+=pre*bytes;
 
