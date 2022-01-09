@@ -900,12 +900,12 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          if (first < minx)
+          if (CTX_UNLIKELY (first < minx))
           { 
             first = minx;
             graystart=0;
           }
-          if (last > maxx)
+          if (CTX_UNLIKELY (last > maxx))
           {
             last = maxx;
             grayend=255;
@@ -955,12 +955,12 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          if (first < minx)
+          if (CTX_UNLIKELY (first < minx))
           { 
             first = minx;
             graystart=0;
           }
-          if (last > maxx)
+          if (CTX_UNLIKELY (last > maxx))
           {
             last = maxx;
             grayend=255;
@@ -1023,24 +1023,25 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
           CtxSegment   *next_segment = &entries[edges[t+1]];
           const int x0        = segment->val;
           const int x1        = next_segment->val;
+
           int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
-          int first     = graystart >> 8;
-          int last      = grayend   >> 8;
+          int first = graystart >> 8;
+          int grayend = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int last = grayend >> 8;
 
-          if (first < minx)
+          if (CTX_UNLIKELY(first < minx))
           { 
+            graystart = 0;
             first = minx;
-            graystart=0;
           }
-          if (last > maxx)
-          {
-            last = maxx;
-            grayend=255;
-          }
-
           graystart = 255 - (graystart&0xff);
-          grayend   = (grayend & 0xff);
+          if (CTX_UNLIKELY(last > maxx))
+          {
+             last = maxx;
+             grayend=255;
+          }
+          grayend = (grayend & 0xff);
+
 
           if (accumulated)
           {
