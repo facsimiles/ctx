@@ -1140,25 +1140,26 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 case 3:
                  while (count--)
                  {
-                   for (int b = 0; b < 3; b++)
-                     dst_i[b] = color[b];
-                   dst_i+=3;
+                   *dst_i ++ = color[0];
+                   *dst_i ++ = color[1];
+                   *dst_i ++ = color[2];
                  }
                  break;
                 case 5:
                  while (count--)
                  {
-                   for (int b = 0; b < 5; b++)
-                     dst_i[b] = color[b];
-                   dst_i+=5;
+                   *dst_i ++ = color[0];
+                   *dst_i ++ = color[1];
+                   *dst_i ++ = color[2];
+                   *dst_i ++ = color[3];
+                   *dst_i ++ = color[4];
                  }
                  break;
                 default:
                  while (count--)
                  {
                    for (int b = 0; b < bytes; b++)
-                     dst_i[b] = color[b];
-                   dst_i+=bytes;
+                     *dst_i++ = color[b];
                  }
                   break;
                }
@@ -1629,6 +1630,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           {
             case CTX_COV_PATH_RGBAF_COPY:
             case CTX_COV_PATH_GRAY8_COPY:
+            case CTX_COV_PATH_RGB8_COPY:
             case CTX_COV_PATH_GRAYA8_COPY:
             case CTX_COV_PATH_RGB565_COPY:
             case CTX_COV_PATH_RGB332_COPY:
@@ -1684,25 +1686,26 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 case 3:
                  while (count--)
                  {
-                   for (int b = 0; b < 3; b++)
-                     dst_i[b] = color[b];
-                   dst_i+=bytes;
+                   *dst_i++ = color[0];
+                   *dst_i++ = color[1];
+                   *dst_i++ = color[2];
                  }
                  break;
                 case 5:
                  while (count--)
                  {
-                   for (int b = 0; b < 5; b++)
-                     dst_i[b] = color[b];
-                   dst_i+=5;
+                   *dst_i++ = color[0];
+                   *dst_i++ = color[1];
+                   *dst_i++ = color[2];
+                   *dst_i++ = color[3];
+                   *dst_i++ = color[4];
                  }
                  break;
                 default:
                  while (count--)
                  {
                    for (int b = 0; b < bytes; b++)
-                     dst_i[b] = color[b];
-                   dst_i+=bytes;
+                     *dst_i++ = color[b];
                  }
                   break;
                }
