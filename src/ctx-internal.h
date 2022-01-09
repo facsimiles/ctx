@@ -292,13 +292,21 @@ struct _CtxState
 {
   int           has_moved:1;
   int           has_clipped:1;
+  int16_t       gstate_no;
+  int8_t        source; // used for the single-shifting to stroking
+                // 0  = fill
+                // 1  = start_stroke
+                // 2  = in_stroke
+                //
+                //   if we're at in_stroke at start of a source definition
+                //   we do filling
+
   float         x;
   float         y;
   int           min_x;
   int           min_y;
   int           max_x;
   int           max_y;
-  int16_t       gstate_no;
   CtxGState     gstate;
   CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 #if CTX_GRADIENTS
@@ -312,13 +320,6 @@ struct _CtxState
 #endif
   CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
   char          stringpool[CTX_STRINGPOOL_SIZE];
-  int8_t        source; // used for the single-shifting to stroking
-                // 0  = fill
-                // 1  = start_stroke
-                // 2  = in_stroke
-                //
-                //   if we're at in_stroke at start of a source definition
-                //   we do filling
 };
 
 
@@ -652,10 +653,9 @@ struct _CtxRasterizer
   int fast_aa;
   CtxCovPath  comp;
   void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, int count);
-  float      x;  // < redundant? use state instead?
-  float      y;
 
   unsigned int aa;          // level of vertical aa
+  int        uses_transforms;
   int prev_active_edges;
   int active_edges;
   int pending_edges;
@@ -666,22 +666,20 @@ struct _CtxRasterizer
   unsigned int needs_aa15; // count of how many edges implies antialiasing
   int        horizontal_edges;
 
-  int scanline;
+  int        scanline;
   int        scan_min;
   int        scan_max;
   int        col_min;
   int        col_max;
 
-
   int        inner_x;
   int        inner_y;
 
+  float      x;
+  float      y;
+
   float      first_x;
   float      first_y;
-  int        uses_transforms;
-  int        has_shape:2;
-  int        has_prev:2;
-  int        preserve:1;
 
   int16_t    blit_x;
   int16_t    blit_y;
@@ -689,34 +687,38 @@ struct _CtxRasterizer
   int16_t    blit_height;
   int16_t    blit_stride;
 
+  unsigned int  clip_rectangle:1;
+  unsigned int  has_shape:2;
+  unsigned int  has_prev:2;
+  unsigned int  preserve:1;
+#if CTX_ENABLE_SHADOW_BLUR
+  unsigned int  in_shadow:1;
+#endif
+  unsigned int  in_text:1;
+  unsigned int  swap_red_green:1;
+
+#if CTX_BRAILLE_TEXT
+  unsigned int  term_glyphs:1; // store appropriate glyphs for redisplay
+#endif
+  int shadow_x;
+#if CTX_BRAILLE_TEXT
+  CtxList   *glyphs;
+#endif
   CtxPixelFormatInfo *format;
   Ctx       *texture_source; /* normally same as ctx */
+
+  int shadow_y;
+
+  uint8_t    color[4*5];   // in compositing format
+  uint16_t   color_native;  //
+  uint16_t   color_nativeB[5];
 
   int edges[CTX_MAX_EDGES]; // integer position in edge array
   CtxDrawlist edge_list;
 
-
-
-
-
-#if CTX_ENABLE_SHADOW_BLUR
-  int in_shadow;
-#endif
-  int in_text;
-  int shadow_x;
-  int shadow_y;
-
-  int swap_red_green;
-  uint8_t    color[4*5];   // in compositing format
-  uint16_t   color_native;  //
-  uint16_t   color_nativeB[4];
-
-  int clip_rectangle;
-
 #if CTX_ENABLE_CLIP
   CtxBuffer *clip_buffer;
 #endif
-
 
 #if CTX_COMPOSITING_GROUPS
   void      *saved_buf; // when group redirected
@@ -726,10 +728,6 @@ struct _CtxRasterizer
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
 
-#if CTX_BRAILLE_TEXT
-  int        term_glyphs:1; // store appropriate glyphs for redisplay
-  CtxList   *glyphs;
-#endif
 
 
 #if CTX_SHAPE_CACHE
