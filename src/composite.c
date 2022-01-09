@@ -5450,28 +5450,19 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
   }
 }
 
-/* TODO: refactor this to have x1 and y1 be included in fill */
-
 static void
 ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
-                          int            xa,
-                          int            ya,
-                          int            xb,
-                          int            yb,
-                          uint8_t        cov)
+                                 int            x0,
+                                 int            y0,
+                                 int            x1,
+                                 int            y1,
+                                 uint8_t        cov)
 {
   int blit_x = rasterizer->blit_x;
   int blit_y = rasterizer->blit_y;
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
   int blit_stride = rasterizer->blit_stride;
-
-  int x0, x1, y0, y1;
-
-  x0 = xa;
-  x1 = xb;
-  y0 = ya;
-  y1 = yb;
 
   x0 = ctx_maxi (x0, blit_x);
   x1 = ctx_mini (x1, blit_x + blit_width - 1);
@@ -5490,7 +5481,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
 
   dst += (y0 - blit_y) * blit_stride;
-  dst += (x0) * rasterizer->format->bpp/8;
+  dst += (x0 * rasterizer->format->bpp)/8;
 
   if (cov == 255)
   {
@@ -5536,6 +5527,13 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         case 1:
           {
           uint8_t col = *color;
+          if (width == 1)
+          for (int y = y0; y <= y1; y++)
+          {
+            *dst = col;
+            dst += blit_stride;
+          }
+          else
           for (int y = y0; y <= y1; y++)
           {
 #if 0
@@ -5570,6 +5568,14 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         case 4:
           {
             uint32_t val = ((uint32_t*)color)[0];
+            if (width == 1)
+            for (int y = y0; y <= y1; y++)
+            {
+              uint32_t *dst_i = (uint32_t*)&dst[0];
+              *dst_i = val;
+              dst += blit_stride;
+            }
+            else
             for (int y = y0; y <= y1; y++)
             {
               uint32_t *dst_i = (uint32_t*)&dst[0];

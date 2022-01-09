@@ -1482,8 +1482,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          first = ctx_maxi (first, minx);
-          last = ctx_mini (last, maxx);
+          first     = ctx_maxi (first, minx);
+          last      = ctx_mini (last, maxx);
           graystart = 255 - (graystart&0xff);
           grayend   = (grayend & 0xff);
 
