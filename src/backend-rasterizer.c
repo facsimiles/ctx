@@ -296,6 +296,10 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
 static inline void
 ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
+  rasterizer->has_shape = 1;
+  rasterizer->y         = y;
+  rasterizer->x         = x;
+
   float tx = x;
   float ty = y;
   //float ox = rasterizer->x;
@@ -313,9 +317,6 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
   
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * CTX_FULL_AA);//rasterizer->aa);
 
-  rasterizer->has_shape = 1;
-  rasterizer->y         = y;
-  rasterizer->x         = x;
   if (CTX_UNLIKELY(rasterizer->has_prev<=0))
     {
       CtxSegment *entry = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
