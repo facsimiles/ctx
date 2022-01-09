@@ -864,7 +864,7 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
 
 #define UPDATE_PARITY \
         { \
-          if (scanline!=CTX_EDGE_YMIN)\
+          if (CTX_LIKELY(scanline!=CTX_EDGE_YMIN))\
             parity = (is_winding)? \
              parity + -1+2*(segment->code == CTX_EDGE_FLIPPED) : \
                         1 - parity;\
