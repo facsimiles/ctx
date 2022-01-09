@@ -366,13 +366,11 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
         /* bailing - because for the mid-point straight line difference is
            tiny */
         { return; }
-#if 0
       dx = sx - ex;
-      dy = ey - ey;
+      dy = sy - ey;
       if (CTX_UNLIKELY( (dx*dx+dy*dy) < tolerance))
         /* bailing on tiny segments */
         { return; }
-#endif
     }
   if (iteration < 5)
   {
