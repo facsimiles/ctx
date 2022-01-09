@@ -489,20 +489,20 @@ ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 static inline int
 ctx_edgelist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
-  int max_size = CTX_MAX_EDGE_LIST_SIZE;
   int ret = drawlist->count;
-  if (CTX_UNLIKELY(ret + 64 >= drawlist->size - 40))
-    {
-      int new_ = CTX_MAX (drawlist->size * 2, ret + 1024);
-      ctx_edgelist_resize (drawlist, new_);
-    }
 
-  if (CTX_UNLIKELY(drawlist->count >= max_size - 20))
+  if (CTX_UNLIKELY(ret >= CTX_MAX_EDGE_LIST_SIZE- 20))
     {
       return 0;
     }
-  ((CtxSegment*)(drawlist->entries))[drawlist->count] = *(CtxSegment*)entry;
-  ret = drawlist->count;
+  if (CTX_UNLIKELY(ret + 2 >= drawlist->size))
+    {
+      int new_ = ctx_maxi (drawlist->size * 2, ret + 1024);
+      new_ = ctx_mini (CTX_MAX_EDGE_LIST_SIZE, new_);
+      ctx_edgelist_resize (drawlist, new_);
+    }
+
+  ((CtxSegment*)(drawlist->entries))[ret] = *(CtxSegment*)entry;
   drawlist->count++;
   return ret;
 }
