@@ -5425,10 +5425,10 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
 
 static void
 ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
-                          int            x0,
-                          int            y0,
-                          int            x1,
-                          int            y1,
+                          int            xa,
+                          int            ya,
+                          int            xb,
+                          int            yb,
                           uint8_t        cov)
 {
   int blit_x = rasterizer->blit_x;
@@ -5437,21 +5437,20 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   int blit_height = rasterizer->blit_height;
   int blit_stride = rasterizer->blit_stride;
 
-  if (x0 > x1)
-  {
-    int tmp = x0; x0 = x1; x1 = tmp;
-  }
-  if (y0 > y1)
-  {
-    int tmp = y0; y0 = y1; y1 = tmp;
-  }
+  int x0, x1, y0, y1;
+
+  x0 = xa;
+  x1 = xb;
+  y0 = ya;
+  y1 = yb;
 
   x0 = ctx_maxi (x0, blit_x);
   x1 = ctx_mini (x1, blit_x + blit_width - 1);
 
   int width = x1 - x0 + 1;
+  int height= y1 - y0 + 1;
 
-  if (CTX_UNLIKELY(width <=0))
+  if (CTX_UNLIKELY(width <=0 || height <= 0))
     return;
 
   CtxCovPath comp = rasterizer->comp;
@@ -5643,6 +5642,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
                                 &dst[0], NULL, x0, NULL, width, y1-y0+1);
       return;
     }
+    break;
     }
   }
   else
@@ -5710,6 +5710,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         return;
       }
     }
+    break;
     }
   }
 
@@ -5785,12 +5786,12 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
        int i = 0;
        if (has_left)
        {
-         coverage[i++] = (top * left) / 255;
+         coverage[i++] = (top * left + 255) >> 8;
        }
        for (int x = x0 + has_left; x < x1 - has_right; x++)
          coverage[i++] = top;
        if (has_right)
-         coverage[i++]= top * right / 255;
+         coverage[i++]= (top * right + 255) >> 8;
 
        rasterizer->apply_coverage (rasterizer, dst, rasterizer->color, x0, coverage, width);
        dst += blit_stride;
@@ -5815,10 +5816,10 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
     {
       int i = 0;
       if (has_left)
-        coverage[i++] = bottom * left / 255;
+        coverage[i++] = (bottom * left + 255) >> 8;
       for (int x = x0 + has_left; x < x1 - has_right; x++)
         coverage[i++] = bottom;
-      coverage[i++]= bottom * right / 255;
+      coverage[i++]= (bottom * right + 255) >> 8;
 
       rasterizer->apply_coverage (rasterizer,dst, rasterizer->color, x0, coverage, width);
     }
