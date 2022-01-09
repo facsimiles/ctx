@@ -1349,8 +1349,18 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          first = ctx_maxi (first, minx);
-          last  = ctx_mini (last, maxx);
+          if (CTX_UNLIKELY (first < minx))
+          { 
+            first = minx;
+            graystart=0;
+          }
+          if (CTX_UNLIKELY (last > maxx))
+          {
+            last = maxx;
+            grayend=255;
+          }
+          graystart = 255 - (graystart&0xff);
+          grayend   = (grayend & 0xff);
 
           if (first < last)
           {
@@ -1359,7 +1369,6 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
 
             if (abs(delta0) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
             {
-              graystart = 255 - (graystart&0xff);
               coverage[first] += graystart;
             }
             else
@@ -1388,7 +1397,6 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
   
             if (abs(delta1) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
             {
-               grayend   = (grayend & 0xff);
                coverage[last] += grayend;
             }
             else
@@ -1416,8 +1424,6 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
           }
           else if (first == last)
           {
-            graystart = 255 - (graystart&0xff);
-            grayend   = (grayend & 0xff);
             coverage[last]+=(graystart-(255-grayend));
           }
         }
@@ -1482,8 +1488,16 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           int first     = graystart >> 8;
           int last      = grayend   >> 8;
 
-          first     = ctx_maxi (first, minx);
-          last      = ctx_mini (last, maxx);
+          if (CTX_UNLIKELY (first < minx))
+          { 
+            first = minx;
+            graystart=0;
+          }
+          if (CTX_UNLIKELY (last > maxx))
+          {
+            last = maxx;
+            grayend=255;
+          }
           graystart = 255 - (graystart&0xff);
           grayend   = (grayend & 0xff);
 
