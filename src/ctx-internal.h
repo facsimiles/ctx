@@ -148,6 +148,7 @@ struct _CtxSource
   int type;
   CtxMatrix  set_transform;
   CtxMatrix  transform;
+  int pad; // to align next properly
   union
   {
     CtxColor color;
@@ -192,7 +193,6 @@ struct _CtxGState
   CtxSource     source_stroke;
   CtxSource     source_fill;
   float         global_alpha_f;
-  uint8_t       global_alpha_u8;
 
   float         line_width;
   float         line_dash_offset;
@@ -203,12 +203,23 @@ struct _CtxGState
   float         shadow_offset_x;
   float         shadow_offset_y;
 #endif
-  int           clipped:1;
+  unsigned int        clipped:1;
+  CtxColorModel    color_model:8;
+  /* bitfield-pack small state-parts */
+  CtxLineCap          line_cap:2;
+  CtxLineJoin        line_join:2;
+  CtxFillRule        fill_rule:1;
+  unsigned int image_smoothing:1;
+  unsigned int            font:6;
+  unsigned int            bold:1;
+  unsigned int          italic:1;
 
+  uint8_t       global_alpha_u8;
   int16_t       clip_min_x;
   int16_t       clip_min_y;
   int16_t       clip_max_x;
   int16_t       clip_max_y;
+  int           n_dashes;
 
 #if CTX_ENABLE_CM
 #if CTX_BABL
@@ -235,17 +246,7 @@ struct _CtxGState
   CtxBlend                  blend_mode; // non-vectorization
 
   float dashes[CTX_PARSER_MAX_ARGS];
-  int n_dashes;
 
-  CtxColorModel    color_model;
-  /* bitfield-pack small state-parts */
-  CtxLineCap          line_cap:2;
-  CtxLineJoin        line_join:2;
-  CtxFillRule        fill_rule:1;
-  unsigned int image_smoothing:1;
-  unsigned int            font:6;
-  unsigned int            bold:1;
-  unsigned int          italic:1;
 };
 
 typedef enum
@@ -539,8 +540,8 @@ struct _CtxInternalFsEntry
 
 struct _CtxPixelFormatInfo
 {
-  CtxPixelFormat pixel_format;
-  uint8_t        components:4; /* number of components */
+  CtxPixelFormat pixel_format:8;
+  uint8_t        components; /* number of components */
   uint8_t        bpp; /* bits  per pixel - for doing offset computations
                          along with rowstride found elsewhere, if 0 it indicates
                          1/8  */
@@ -549,7 +550,7 @@ struct _CtxPixelFormatInfo
                          ebpp of the working space applied */
   uint8_t        dither_red_blue;
   uint8_t        dither_green;
-  CtxPixelFormat composite_format;
+  CtxPixelFormat composite_format:8;
 
   void         (*to_comp) (CtxRasterizer *r,
                            int x, const void * __restrict__ src, uint8_t * __restrict__ comp, int count);
@@ -689,7 +690,7 @@ struct _CtxRasterizer
 
   unsigned int  clip_rectangle:1;
   unsigned int  has_shape:2;
-  unsigned int  has_prev:2;
+  int  has_prev:2;
   unsigned int  preserve:1;
 #if CTX_ENABLE_SHADOW_BLUR
   unsigned int  in_shadow:1;
@@ -700,14 +701,13 @@ struct _CtxRasterizer
 #if CTX_BRAILLE_TEXT
   unsigned int  term_glyphs:1; // store appropriate glyphs for redisplay
 #endif
-  int shadow_x;
+  int        shadow_x;
 #if CTX_BRAILLE_TEXT
   CtxList   *glyphs;
 #endif
   CtxPixelFormatInfo *format;
   Ctx       *texture_source; /* normally same as ctx */
-
-  int shadow_y;
+  int        shadow_y;
 
   uint8_t    color[4*5];   // in compositing format
   uint16_t   color_native;  //
