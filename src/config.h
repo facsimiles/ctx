@@ -518,6 +518,10 @@
 #define CTX_HASH_COLS            8
 #endif
 
+#ifndef CTX_INLINE_FILL_RULE
+#define CTX_INLINE_FILL_RULE 1
+#endif
+
 #ifndef CTX_MAX_THREADS
 #define CTX_MAX_THREADS          8 // runtime is max of cores/2 and this
 #endif

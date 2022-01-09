@@ -863,12 +863,14 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
 #define CTX_EDGE_YMIN     (segment->data.s16[1]-1)
 
 #define UPDATE_PARITY \
+        if (CTX_LIKELY(scanline!=CTX_EDGE_YMIN))\
         { \
-          if (CTX_LIKELY(scanline!=CTX_EDGE_YMIN))\
-            parity = (is_winding)? \
-             parity + -1+2*(segment->code == CTX_EDGE_FLIPPED) : \
-                        1 - parity;\
+          if (is_winding)\
+             parity = parity + -1+2*(segment->code == CTX_EDGE_FLIPPED);\
+          else\
+             parity = 1-parity; \
         }
+
 
 inline static void
 ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
@@ -1845,7 +1847,7 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 }
 
 static void
-ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule 
+ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule 
 #if CTX_SHAPE_CACHE
                                 ,CtxShapeEntry *shape
 #endif
@@ -2122,6 +2124,37 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   }
   ctx_rasterizer_reset (rasterizer);
 }
+
+
+#if CTX_INLINE_FILL_RULE
+
+static void
+ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule 
+#if CTX_SHAPE_CACHE
+                                ,CtxShapeEntry *shape
+#endif
+                               )
+{
+  if (fill_rule)
+  {
+    ctx_rasterizer_rasterize_edges2 (rasterizer, 1
+#if CTX_SHAPE_CACHE
+                    ,shape
+#endif
+                    );
+  }
+  else
+  {
+    ctx_rasterizer_rasterize_edges2 (rasterizer, 0
+#if CTX_SHAPE_CACHE
+                    ,shape
+#endif
+                    );
+  }
+}
+#else
+#define ctx_rasterizer_rasterize_edges ctx_rasterizer_rasterize_edges2
+#endif
 
 inline static int
 ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
