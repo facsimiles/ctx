@@ -74,15 +74,7 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
   entry.data.s16[2]=x1;
   entry.data.s16[3]=y1;
 
-  ctx_rasterizer_update_inner_point (x1, y1);
-#if 0
-  if (entry.data.s16[3] < entry.data.s16[1])
-  {
-    entry = ctx_segment_s16 (CTX_EDGE_FLIPPED,
-                            entry.data.s16[2], entry.data.s16[3],
-                            entry.data.s16[0], entry.data.s16[1]);
-  }
-#endif
+  ctx_rasterizer_update_inner_point (rasterizer, x1, y1);
 
   return ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 }
@@ -290,7 +282,7 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
   ty = ty * CTX_FULL_AA;
 
-  ctx_rasterizer_update_inner_point (x1, y1);
+  ctx_rasterizer_update_inner_point (rasterizer, tx, ty);
 }
 
 static inline void
@@ -1852,17 +1844,17 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
   uint8_t real_fraction = 255/real_aa;
 
   rasterizer->prev_active_edges = -1;
-  if (
+  if (CTX_UNLIKELY (
 #if CTX_SHAPE_CACHE
     !shape &&
 #endif
-    maxx > blit_max_x - 1)
+    maxx > blit_max_x - 1))
     { maxx = blit_max_x - 1; }
 
   minx = ctx_maxi (rasterizer->state->gstate.clip_min_x, minx);
   maxx = ctx_mini (rasterizer->state->gstate.clip_max_x, maxx);
   minx = ctx_maxi (0, minx); // redundant?
-  if (minx >= maxx)
+  if (CTX_UNLIKELY (minx >= maxx))
     {
       ctx_rasterizer_reset (rasterizer);
       return;
