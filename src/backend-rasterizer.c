@@ -9,7 +9,7 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer);
 static inline void
 _ctx_setup_compositor (CtxRasterizer *rasterizer)
 {
-  if (CTX_UNLIKELY (rasterizer->comp_op==0))
+  if (CTX_UNLIKELY (rasterizer->comp_op==NULL))
   {
     rasterizer->format->setup (rasterizer);
 #if CTX_GRADIENTS
@@ -1830,7 +1830,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
 #endif
                                )
 {
-  int       is_winding = fill_rule == CTX_FILL_RULE_WINDING;
+  int       is_winding  = fill_rule == CTX_FILL_RULE_WINDING;
   const CtxCovPath comp = rasterizer->comp;
   const int real_aa     = rasterizer->aa;
   uint8_t  *dst         = ((uint8_t *) rasterizer->buf);
@@ -1838,10 +1838,11 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
   int       scan_end    = scan_start + (rasterizer->blit_height - 1) * CTX_FULL_AA;
   const int blit_width  = rasterizer->blit_width;
   const int blit_max_x  = rasterizer->blit_x + blit_width;
-  int minx = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
-  int maxx = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV - rasterizer->blit_x;
+  int       minx        = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
+  int       maxx        = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
+                          rasterizer->blit_x;
   const int blit_stride = rasterizer->blit_stride;
-  uint8_t real_fraction = 255/real_aa;
+  uint8_t   real_fraction = 255/real_aa;
 
   rasterizer->prev_active_edges = -1;
   if (CTX_UNLIKELY (
@@ -1905,9 +1906,10 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
   }
 
   rasterizer->horizontal_edges =
-  rasterizer->needs_aa3  =
-  rasterizer->needs_aa5  =
-  rasterizer->needs_aa15 = 0;
+    rasterizer->needs_aa3  =
+    rasterizer->needs_aa5  =
+    rasterizer->needs_aa15 = 0;
+
   ctx_rasterizer_sort_edges (rasterizer);
   rasterizer->scanline = scan_start;
   ctx_rasterizer_feed_edges (rasterizer, 0); 
@@ -3716,11 +3718,12 @@ ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, int count, float *dashes)
 static void
 ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
 {
-  CtxEntry *entry = &command->entry;
+  CtxEntry      *entry      = &command->entry;
   CtxRasterizer *rasterizer = (CtxRasterizer *) ctx->backend;
-  CtxState *state = rasterizer->state;
-  CtxCommand *c = (CtxCommand *) entry;
-  int clear_clip = 0;
+  CtxState      *state      = rasterizer->state;
+  CtxCommand    *c          = (CtxCommand *) entry;
+  int            clear_clip = 0;
+
   ctx_interpret_style (state, entry, NULL);
   switch (c->code)
     {
