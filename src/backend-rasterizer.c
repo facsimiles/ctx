@@ -273,7 +273,6 @@ static inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x; float ty = y;
-  int aa = 15;//rasterizer->aa;
   rasterizer->x        = x;
   rasterizer->y        = y;
   rasterizer->first_x  = x;
@@ -285,7 +284,7 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
     }
 
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
-  ty = ty * aa;
+  ty = ty * CTX_FULL_AA;
 
   rasterizer->inner_x = tx;
   rasterizer->inner_y = ty;
@@ -2760,8 +2759,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
   
     {
-
-  int aa = CTX_FULL_AA;
     {
       if (line_width < 5.0f)
       {
@@ -2802,12 +2799,12 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
                       goto foo;
                     }
                   prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-                  prev_y = entry->data.s16[1] * 1.0f / aa;
+                  prev_y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
                   started = 1;
                   start = i;
                 }
               x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-              y = entry->data.s16[3] * 1.0f / aa;
+              y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
               float dx = x - prev_x;
               float dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
@@ -2841,7 +2838,7 @@ foo:
               CtxSegment *entry = &temp[i];
               float x, y, dx, dy;
               x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-              y = entry->data.s16[3] * 1.0f / aa;
+              y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
               dx = x - prev_x;
               dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
@@ -2860,7 +2857,7 @@ foo:
               if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                 {
                   x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-                  y = entry->data.s16[1] * 1.0f / aa;
+                  y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
                   dx = x - prev_x;
                   dy = y - prev_y;
                   length = ctx_fast_hypotf (dx, dy);
@@ -2901,12 +2898,12 @@ foo:
                           ctx_rasterizer_finish_shape (rasterizer);
                         }
                       x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-                      y = entry->data.s16[1] * 1.0f / aa;
+                      y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
                       ctx_rasterizer_rectangle (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
                       ctx_rasterizer_finish_shape (rasterizer);
                     }
                   x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-                  y = entry->data.s16[3] * 1.0f / aa;
+                  y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
                   has_prev = 1;
                 }
               ctx_rasterizer_rectangle (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
@@ -2930,12 +2927,12 @@ foo:
                           ctx_rasterizer_finish_shape (rasterizer);
                         }
                       x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-                      y = entry->data.s16[1] * 1.0f / aa;
+                      y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
                       ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*3, 0, 1);
                       ctx_rasterizer_finish_shape (rasterizer);
                     }
                   x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-                  y = entry->data.s16[3] * 1.0f / aa;
+                  y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
                   has_prev = 1;
                 }
               ctx_rasterizer_move_to (rasterizer, x, y);
@@ -2956,7 +2953,7 @@ foo:
                 {
                   CtxSegment *entry = &temp[i];
                   x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-                  y = entry->data.s16[3] * 1.0f / aa;
+                  y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
                   if (CTX_UNLIKELY(entry[1].code == CTX_EDGE))
                     {
                       ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*2, 0, 1);
@@ -3024,7 +3021,6 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
 
-  int aa = 15;//rasterizer->aa;
   float coords[6][2];
 
   for (int i = 0; i < count; i++)
@@ -3034,14 +3030,14 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
       if (entry->code == CTX_NEW_EDGE)
         {
           prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-          prev_y = entry->data.s16[1] * 1.0f / aa;
+          prev_y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
           if (prev_x < minx) { minx = prev_x; }
           if (prev_y < miny) { miny = prev_y; }
           if (prev_x > maxx) { maxx = prev_x; }
           if (prev_y > maxy) { maxy = prev_y; }
         }
       x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-      y = entry->data.s16[3] * 1.0f / aa;
+      y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
       if (x < minx) { minx = x; }
       if (y < miny) { miny = y; }
       if (x > maxx) { maxx = x; }
@@ -3167,11 +3163,11 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
       if (entry->code == CTX_NEW_EDGE)
         {
           prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-          prev_y = entry->data.s16[1] * 1.0f / aa;
+          prev_y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
           ctx_move_to (ctx, prev_x, prev_y);
         }
       x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-      y = entry->data.s16[3] * 1.0f / aa;
+      y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
       ctx_line_to (ctx, x, y);
     }
     ctx_gray (ctx, 1.0f);
@@ -3932,7 +3928,6 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
           float *dashes = state->gstate.dashes;
           float factor = ctx_matrix_get_scale (&state->gstate.transform);
 
-          int aa = 15;//rasterizer->aa;
           CtxSegment temp[count]; /* copy of already built up path's poly line  */
           memcpy (temp, rasterizer->edge_list.entries, sizeof (temp));
           int start = 0;
@@ -3959,7 +3954,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
             {
               CtxSegment *entry = &temp[0];
               prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-              prev_y = entry->data.s16[1] * 1.0f / aa;
+              prev_y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
               ctx_rasterizer_move_to (rasterizer, prev_x, prev_y);
               is_down = 1;
             }
@@ -3978,7 +3973,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
                       goto foo;
                     }
                   prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
-                  prev_y = entry->data.s16[1] * 1.0f / aa;
+                  prev_y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
                   started = 1;
                   start = i;
                   is_down = 1;
@@ -3988,7 +3983,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
 again:
 
               x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
-              y = entry->data.s16[3] * 1.0f / aa;
+              y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
               float dx = x - prev_x;
               float dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
