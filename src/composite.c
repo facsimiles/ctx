@@ -221,7 +221,16 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer)
     {
        length = ctx_maxf (source->radial_gradient.r1, source->radial_gradient.r0);
     }
-    length *= 1.2; // what is sufficient here to avoid aliasing?
+  //  length = CTX_GRADIENT_CACHE_ELEMENTS;
+  {
+     float u = length; float v = length;
+     const CtxMatrix *m = &rasterizer->state->gstate.transform;
+     //CtxMatrix *transform = &source->transform;
+     //
+     //  combine with above source transform?
+     _ctx_matrix_apply_transform (m, &u, &v);
+     length = ctx_maxf (u, v);
+  }
   
     ctx_gradient_cache_elements = ctx_mini (length, CTX_GRADIENT_CACHE_ELEMENTS);
   }
