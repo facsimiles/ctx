@@ -83,20 +83,20 @@ CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t isrc00, uint32_t isrc01, uint3
 #if CTX_GRADIENT_CACHE
 static uint8_t ctx_gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
 extern int ctx_gradient_cache_valid;
-
+static int ctx_gradient_cache_elements = CTX_GRADIENT_CACHE_ELEMENTS;
 
 inline static int ctx_grad_index (float v)
 {
-  int ret = v * (CTX_GRADIENT_CACHE_ELEMENTS - 1) + 0.5f;
+  int ret = v * (ctx_gradient_cache_elements - 1) + 0.5f;
   ret = ctx_maxi (0, ret);
-  ret = ctx_mini (CTX_GRADIENT_CACHE_ELEMENTS-1, ret);
+  ret = ctx_mini (ctx_gradient_cache_elements-1, ret);
   return ret;
 }
 
 inline static int ctx_grad_index_i (int v)
 {
   v = v >> 8;
-  return ctx_maxi (0, ctx_mini (CTX_GRADIENT_CACHE_ELEMENTS-1, v));
+  return ctx_maxi (0, ctx_mini (ctx_gradient_cache_elements-1, v));
 }
 
 
@@ -202,11 +202,33 @@ ctx_u8_associate_alpha (int components, uint8_t *u8)
 static void
 ctx_gradient_cache_prime (CtxRasterizer *rasterizer)
 {
+  // XXX : todo  make the number of element dynamic depending on length of gradient
+  // in device coordinates.
+
   if (ctx_gradient_cache_valid)
     return;
-  for (int u = 0; u < CTX_GRADIENT_CACHE_ELEMENTS; u++)
+  
+
   {
-    float v = u / (CTX_GRADIENT_CACHE_ELEMENTS - 1.0f);
+    CtxSource *source = &rasterizer->state->gstate.source_fill;
+    float length = 100;
+    if (source->type == CTX_SOURCE_LINEAR_GRADIENT)
+    {
+       length = source->linear_gradient.length;
+    }
+    else
+    if (source->type == CTX_SOURCE_RADIAL_GRADIENT)
+    {
+       length = ctx_maxf (source->radial_gradient.r1, source->radial_gradient.r0);
+    }
+    length *= 1.2; // what is sufficient here to avoid aliasing?
+  
+    ctx_gradient_cache_elements = ctx_mini (length, CTX_GRADIENT_CACHE_ELEMENTS);
+  }
+
+  for (int u = 0; u < ctx_gradient_cache_elements; u++)
+  {
+    float v = u / (ctx_gradient_cache_elements - 1.0f);
     _ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0f, &ctx_gradient_cache_u8[u][0]);
     //*((uint32_t*)(&ctx_gradient_cache_u8_a[u][0]))= *((uint32_t*)(&ctx_gradient_cache_u8[u][0]));
     //memcpy(&ctx_gradient_cache_u8_a[u][0], &ctx_gradient_cache_u8[u][0], 4);
@@ -1695,8 +1717,8 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   vd *= linear_gradient_dy;
 
 #if CTX_GRADIENT_CACHE
-  int vv = ((u0 + v0) - linear_gradient_start) * (CTX_GRADIENT_CACHE_ELEMENTS-1) * 256;
-  int ud_plus_vd = (ud + vd) * (CTX_GRADIENT_CACHE_ELEMENTS-1) * 256;
+  int vv = ((u0 + v0) - linear_gradient_start) * (ctx_gradient_cache_elements-1) * 256;
+  int ud_plus_vd = (ud + vd) * (ctx_gradient_cache_elements-1) * 256;
 #else
   float vv = ((u0 + v0) - linear_gradient_start);
   float ud_plus_vd = (ud + vd);
@@ -2748,7 +2770,7 @@ ctx_RGBA8_nop (CTX_COMPOSITE_ARGUMENTS)
 }
 
 
-static void
+static inline void
 ctx_setup_native_color (CtxRasterizer *rasterizer)
 {
   if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
@@ -2756,6 +2778,14 @@ ctx_setup_native_color (CtxRasterizer *rasterizer)
       &rasterizer->color[0],
       &rasterizer->color_native,
       1);
+}
+
+static inline void
+ctx_setup_apply_coverage (CtxRasterizer *rasterizer)
+{
+  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
+                               rasterizer->format->apply_coverage :
+                               rasterizer->comp_op;
 }
 
 static void
@@ -2829,9 +2859,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
        rasterizer->comp = CTX_COV_PATH_RGBA8_COPY_FRAGMENT;
     }
   }
-  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
-                               rasterizer->format->apply_coverage :
-                               rasterizer->comp_op;
+  ctx_setup_apply_coverage (rasterizer);
 }
 
 
@@ -3534,9 +3562,7 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         break;
     }
 #endif
-  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
-                               rasterizer->format->apply_coverage :
-                               rasterizer->comp_op;
+  ctx_setup_apply_coverage (rasterizer);
 }
 
 #endif
@@ -3743,9 +3769,7 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
         break;
     }
 #endif
-  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
-                               rasterizer->format->apply_coverage :
-                               rasterizer->comp_op;
+  ctx_setup_apply_coverage (rasterizer);
 }
 
 #endif
@@ -3995,9 +4019,7 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
     }
 #endif
 #endif
-  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
-                               rasterizer->format->apply_coverage :
-                               rasterizer->comp_op;
+  ctx_setup_apply_coverage (rasterizer);
 }
 
 static void
@@ -4704,9 +4726,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
         break;
     }
 #endif
-  rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
-                               rasterizer->format->apply_coverage :
-                               rasterizer->comp_op;
+  ctx_setup_apply_coverage (rasterizer);
 }
 
 static void
@@ -5495,6 +5515,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     case CTX_COV_PATH_GRAYA8_COPY:
     case CTX_COV_PATH_RGB565_COPY:
     case CTX_COV_PATH_RGB332_COPY:
+    case CTX_COV_PATH_RGB8_COPY:
     case CTX_COV_PATH_CMYK8_COPY:
     case CTX_COV_PATH_CMYKA8_COPY:
     {
@@ -5643,6 +5664,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       return;
     }
     break;
+    default:
+    break;
     }
   }
   else
@@ -5710,6 +5733,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         return;
       }
     }
+    break;
+    default:
     break;
     }
   }
