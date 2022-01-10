@@ -500,7 +500,7 @@ static int _nc_raw (void)
     return -1;
   if (!atexit_registered)
     {
-      atexit (nc_at_exit);
+      //atexit (nc_at_exit);
       atexit_registered = 1;
     }
   if (tcgetattr (STDIN_FILENO, &orig_attr) == -1)

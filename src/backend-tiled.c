@@ -677,7 +677,7 @@ static void evsource_kb_destroy (int sign)
 static int evsource_kb_init ()
 {
 //  ioctl(STDIN_FILENO, KDSKBMODE, K_RAW);
-  atexit ((void*) real_evsource_kb_destroy);
+  //atexit ((void*) real_evsource_kb_destroy);
   signal (SIGSEGV, (void*) real_evsource_kb_destroy);
   signal (SIGABRT, (void*) real_evsource_kb_destroy);
   signal (SIGBUS,  (void*) real_evsource_kb_destroy);

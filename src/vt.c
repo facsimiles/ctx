@@ -5545,7 +5545,7 @@ void vt_paste (VT *vt, const char *str)
     }
 }
 
-const char *vt_find_shell_command (void)
+const char *ctx_find_shell_command (void)
 {
   if (access ("/.flatpak-info", F_OK) != -1)
   {

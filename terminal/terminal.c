@@ -55,7 +55,7 @@ static float start_font_size = 22.0;
 float add_x = 10;
 float add_y = 100;
 
-const char *vt_find_shell_command (void);
+const char *ctx_find_shell_command (void);
 /*****************/
 
 #define flag_is_set(a, f) (((a) & (f))!=0)
@@ -190,13 +190,13 @@ int add_settings_tab (const char *commandline, int can_launch)
 static void add_tab_cb (CtxEvent *event, void *data, void *data2)
 {
   event->stop_propagate = 1;
-  add_tab (event->ctx, vt_find_shell_command(), 1);
+  add_tab (event->ctx, ctx_find_shell_command(), 1);
 }
 
 static void add_settings_tab_cb (CtxEvent *event, void *data, void *data2)
 {
   event->stop_propagate = 1;
-  add_settings_tab (vt_find_shell_command(), 1);
+  add_settings_tab (ctx_find_shell_command(), 1);
 }
 
 int ctx_clients_tab_to_id (Ctx *ctx, int tab_no);
@@ -276,7 +276,7 @@ static void handle_event (Ctx        *ctx,
             backend_type == CTX_BACKEND_KMS)
            &&   !strcmp (event, "control-t") ))
   {
-    add_tab (ctx, vt_find_shell_command(), 1);
+    add_tab (ctx, ctx_find_shell_command(), 1);
   }
   else if (!strcmp (event, "shift-control-n") )
     {
@@ -632,7 +632,7 @@ int terminal_main (int argc, char **argv)
   else
   {
     if (!commandline)
-      commandline = vt_find_shell_command();
+      commandline = ctx_find_shell_command();
     ctx_client_maximize (ctx, add_tab (ctx, commandline, 1));
   }
 

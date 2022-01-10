@@ -794,7 +794,7 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
 #if 0
       if (itk_button (itk, "add tab"))
       {
-        add_tab (vt_find_shell_command(), 1);
+        add_tab (ctx_find_shell_command(), 1);
       }
 #endif
       //itk_sameline (itk);
@@ -967,7 +967,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
            ((ctx_backend_is_fb (ctx) || ctx_backend_is_term (ctx) || ctx_backend_is_kms (ctx))
            &&   !strcmp (event, "control-t") ))
   {
-    //XXX add_tab (vt_find_shell_command(), 1);
+    //XXX add_tab (ctx_find_shell_command(), 1);
   }
   else if (!strcmp (event, "shift-control-n") )
     {
