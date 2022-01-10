@@ -10,23 +10,6 @@
 
 
 #if CTX_KMS || CTX_FB
-static char *ctx_fb_clipboard = NULL;
-static void ctx_fb_set_clipboard (Ctx *ctx, const char *text)
-{
-  if (ctx_fb_clipboard)
-    free (ctx_fb_clipboard);
-  ctx_fb_clipboard = NULL;
-  if (text)
-  {
-    ctx_fb_clipboard = strdup (text);
-  }
-}
-
-static char *ctx_fb_get_clipboard (Ctx *ctx)
-{
-  if (ctx_fb_clipboard) return strdup (ctx_fb_clipboard);
-  return strdup ("");
-}
 
 static int ctx_fb_get_mice_fd (Ctx *ctx)
 {
@@ -548,8 +531,8 @@ Ctx *ctx_new_fb (int width, int height)
 
   backend->reset = ctx_fb_reset;
   backend->free  = (void*)ctx_fb_free;
-  backend->set_clipboard = ctx_fb_set_clipboard;
-  backend->get_clipboard = ctx_fb_get_clipboard;
+  backend->set_clipboard = ctx_headless_set_clipboard;
+  backend->get_clipboard = ctx_headless_get_clipboard;
   backend->consume_events = ctx_fb_consume_events;
   backend->get_event_fds = ctx_fb_get_event_fds;
 

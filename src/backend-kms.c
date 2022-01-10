@@ -535,8 +535,8 @@ Ctx *ctx_new_kms (int width, int height)
   backend->process = (void*)ctx_drawlist_process;
   backend->consume_events = ctx_kms_consume_events;
   backend->get_event_fds = (void*) ctx_fb_get_event_fds;
-  backend->set_clipboard = ctx_fb_set_clipboard;
-  backend->get_clipboard = ctx_fb_get_clipboard;
+  backend->set_clipboard = ctx_headless_set_clipboard;
+  backend->get_clipboard = ctx_headless_get_clipboard;
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {
