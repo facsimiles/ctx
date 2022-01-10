@@ -72,14 +72,14 @@ struct _CtxColor
 #endif
 
 #if CTX_ENABLE_CM
+  float   red;
+  float   green;
+  float   blue;
 #if CTX_BABL
   const Babl *space; // gets copied from state when color is declared
 #else
   void   *space; // gets copied from state when color is declared, 
 #endif
-  float   red;
-  float   green;
-  float   blue;
 #endif
 };
 
@@ -87,8 +87,8 @@ typedef struct _CtxGradientStop CtxGradientStop;
 
 struct _CtxGradientStop
 {
-  float   pos;
   CtxColor color;
+  float   pos;
 };
 
 
@@ -455,24 +455,24 @@ struct _CtxEvents
   CtxList         *idles;
   CtxList         *idles_to_remove;
   CtxList         *idles_to_add;
-  int              in_idle_dispatch;
   CtxList         *events; // for ctx_get_event
-  int              ctx_get_event_enabled;
-  int              idle_id;
   CtxBinding       bindings[CTX_MAX_KEYBINDINGS]; /*< better as list, uses no mem if unused */
   int              n_bindings;
+  int              in_idle_dispatch;
+  int              ctx_get_event_enabled;
+  int              idle_id;
   CtxList         *items;
   CtxItem         *last_item;
   CtxModifierState modifier_state;
-  int              tap_delay_min;
-  int              tap_delay_max;
-  int              tap_delay_hold;
   double           tap_hysteresis;
 #if CTX_VT
   CtxList         *clients;
   CtxClient *active;
   CtxClient *active_tab;
 #endif
+  int              tap_delay_min;
+  int              tap_delay_max;
+  int              tap_delay_hold;
 };
 
 
@@ -749,9 +749,9 @@ struct _CtxHasher
   int           cols;
   int           rows;
   uint8_t      *hashes;
-  int           source_level;
   CtxSHA1       sha1_fill[CTX_MAX_STATES]; 
   CtxSHA1       sha1_stroke[CTX_MAX_STATES];
+  int           source_level;
 };
 
 #if CTX_RASTERIZER

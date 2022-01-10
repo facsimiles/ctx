@@ -38,14 +38,13 @@ struct _VtLine
   /* line extends string, permitting string ops to operate on it  */
 
   uint64_t *style;
-  int       style_size;
 
   void     *ctx; // each line can have an attached ctx context;
   char     *prev;
+  int       style_size;
   int       prev_length;
   CtxString *frame;
 
-  int       wrapped;
 
   void     *ctx_copy; // each line can have an attached ctx context;
   // clearing should be brutal enough to unset the context of the current
@@ -58,6 +57,7 @@ struct _VtLine
   float     yscale;
   float     y_offset;
   int       in_scrolling_region;
+  int       wrapped;
 
   /*  XXX:  needs refactoring to a CtxList of links/images */
   void     *images[4];
