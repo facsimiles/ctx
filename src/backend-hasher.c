@@ -75,9 +75,9 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
            CtxIntRectangle shape_rect;
 
            float tx = rasterizer->x;
-           float ty = rasterizer->y;
+           float ty = rasterizer->y - height * 1.2;
            float tw = width;
-           float th = height * (ctx_str_count_lines (str));
+           float th = height * (ctx_str_count_lines (str) + 1.5);
 
            _ctx_user_to_device (rasterizer->state, &tx, &ty);
            _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
