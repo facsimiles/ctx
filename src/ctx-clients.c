@@ -550,6 +550,22 @@ void ctx_client_shade_toggle (Ctx *ctx, int id)
     ctx_client_unshade (ctx, id);
 }
 
+
+void ctx_client_paste (Ctx *ctx, int id, const char *str)
+{
+   CtxClient *client = ctx_client_by_id (ctx, id);
+   if (client && client->vt)
+     vt_paste (client->vt, str);
+}
+
+char  *ctx_client_get_selection (Ctx *ctx, int id)
+{
+   CtxClient *client = ctx_client_by_id (ctx, id);
+   if (client && client->vt)
+     return vt_get_selection (client->vt);
+   return strdup ("");
+}
+
 void ctx_client_move (Ctx *ctx, int id, int x, int y)
 {
    CtxClient *client = ctx_client_by_id (ctx, id);
@@ -1488,3 +1504,13 @@ long ctx_client_rev (CtxClient *client)
 {
   return client?client->rev:0;
 }
+
+void
+ctx_client_feed_keystring (CtxClient *client, CtxEvent *event, const char *str)
+{
+#if CTX_VT
+  if (!client || !client->vt) return;
+  vt_feed_keystring (client->vt, event, str);
+#endif
+}
+

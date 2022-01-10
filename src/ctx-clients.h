@@ -102,6 +102,8 @@ void  ctx_client_move         (Ctx *ctx, int id, int x, int y);
 void  ctx_client_shade_toggle (Ctx *ctx, int id);
 float ctx_client_min_y_pos    (Ctx *ctx);
 float ctx_client_max_y_pos    (Ctx *ctx);
+void ctx_client_paste (Ctx *ctx, int id, const char *str);
+char  *ctx_client_get_selection        (Ctx *ctx, int id);
 
 void  ctx_client_rev_inc      (CtxClient *client);
 long  ctx_client_rev          (CtxClient *client);
@@ -112,6 +114,7 @@ CtxClient *ctx_client_by_id (Ctx *ctx, int id);
 
 int ctx_clients_draw (Ctx *ctx, int layer2);
 
+void ctx_client_feed_keystring (CtxClient *client, CtxEvent *event, const char *str);
 // need not be public?
 void ctx_client_register_events (CtxClient *client, Ctx *ctx, double x0, double y0);
 

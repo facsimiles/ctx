@@ -2025,8 +2025,7 @@ int viewer_load_next (Ctx *ctx, void *data1)
      //fprintf (stderr, "{%s}\n", viewer_media_type);
   if (viewer && viewer_media_type && viewer_media_type[0]=='v')
   {
-     VT *vt = viewer->vt;
-     vt_feed_keystring (vt, NULL, "space");
+     ctx_client_feed_keystring (viewer, NULL, "space");
   }
 
   focused_no++;
@@ -2046,17 +2045,14 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
     CtxClient *client = find_client ("stdout");
     if (!client)
       return;
-    VT *vt = client->vt;
     ctx_client_lock (client);
-    if (vt)
-      vt_feed_keystring (vt, ctx_event, event);
+    ctx_client_feed_keystring (client, ctx_event, event);
     ctx_client_unlock (client);
     return;
   }
 
   if (!viewer)
     return;
-  VT *vt = viewer->vt;
   CtxClient *client = viewer;
   ctx_client_lock (client);
   int media_class = ctx_media_type_class (viewer_media_type);
@@ -2075,8 +2071,7 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   {
     ctx_client_unlock (client);
     viewer_slideshow = !viewer_slideshow;
-    if (vt)
-      vt_feed_keystring (vt, ctx_event, event);
+    ctx_client_feed_keystring (client, ctx_event, event);
     ctx_event->stop_propagate=1;
     return;
   }
@@ -2112,8 +2107,7 @@ static void dir_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
   }
   else
   {
-    if (vt)
-      vt_feed_keystring (vt, ctx_event, event);
+    ctx_client_feed_keystring (client, ctx_event, event);
   }
   ctx_client_unlock (client);
 }
@@ -4617,8 +4611,7 @@ int viewer_pre_next (Ctx *ctx, void *data1)
 
 static int viewer_space (Ctx *ctx, void *a)
 {
-  if (viewer && viewer->vt)
-    vt_feed_keystring (viewer->vt, NULL, "space");
+  ctx_client_feed_keystring (viewer, NULL, "space");
   return 0;
 }
 
@@ -4665,7 +4658,7 @@ void viewer_load_path (const char *path, const char *name)
         ctx_client_set_font_size (ctx, viewer->id, itk->font_size);
         ctx_client_move (ctx, viewer->id, 0, 0);
         ctx_client_resize (ctx, viewer->id, ctx_width (ctx), ctx_height (ctx));
-        vt_feed_keystring (viewer->vt, NULL, "space");
+        ctx_client_feed_keystring (viewer, NULL, "space");
       }
       else
       {
@@ -4901,12 +4894,6 @@ static void dir_location_extend_sel_left (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
   ctx_queue_draw (e->ctx);
 }
-int vt_get_line_count (VT *vt);
-
-int vt_get_scrollback_lines (VT *vt);
-int vt_get_cursor_x (VT *vt);
-int vt_get_cursor_y (VT *vt);
-
 
 static void dir_any (CtxEvent *e, void *d1, void *d2)
 {

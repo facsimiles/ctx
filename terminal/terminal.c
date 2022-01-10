@@ -249,21 +249,20 @@ static void handle_event (Ctx        *ctx,
   }
   else if (!strcmp (event, "shift-return"))
   {
-    vt_feed_keystring (vt, ctx_event, "return");
+    ctx_client_feed_keystring (active, ctx_event, "return");
   }
   else if (!strcmp (event, "shift-control-v") )
     {
       char *text = ctx_get_clipboard (ctx);
       if (text)
         {
-          if (vt)
-            vt_paste (vt, text);
+          ctx_client_paste (ctx, active_id, text);
           free (text);
         }
     }
   else if (!strcmp (event, "shift-control-c") && vt)
     {
-      char *text = vt_get_selection (vt);
+      char *text = ctx_client_get_selection (ctx, active_id);
       if (text)
         {
           ctx_set_clipboard (ctx, text);
@@ -313,18 +312,17 @@ static void handle_event (Ctx        *ctx,
     {
       if (vt)
       {
-        char *sel = vt_get_selection (vt);
+        char *sel = ctx_client_get_selection (ctx, active->id);
         if (sel)
         {
-          vt_feed_keystring (vt, ctx_event, sel);
+          ctx_client_feed_keystring (active, ctx_event, sel);
           free (sel);
         }
       }
     }
   else
     {
-      if (vt)
-        vt_feed_keystring (vt, ctx_event, event);
+      ctx_client_feed_keystring (active, ctx_event, event);
     }
   ctx_client_unlock (client);
 }

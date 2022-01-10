@@ -515,4 +515,13 @@ int ctx_pcm_get_sample_rate (Ctx *ctx)
   return client_freq;
 }
 
+#else
+
+void ctx_pcm_set_format (Ctx *ctx, CtxPCM format) { }
+void ctx_pcm_set_sample_rate (Ctx *ctx, int sample_rate) { }
+int ctx_pcm_get_sample_rate (Ctx *ctx) { return 48000; }
+CtxPCM ctx_pcm_get_format (Ctx *ctx) { return 0; }
+int ctx_pcm_queue (Ctx *ctx, const int8_t *data, int frames) { return frames; }
+float ctx_pcm_get_queued_length (Ctx *ctx) { return 0.0; }
+
 #endif

@@ -5532,6 +5532,7 @@ done:
     }
 }
 
+
 void vt_paste (VT *vt, const char *str)
 {
   if (vt->bracket_paste)
