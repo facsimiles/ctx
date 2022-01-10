@@ -5249,12 +5249,9 @@ static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int 
 
 static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
-    float u0 = 0; float v0 = 0;
-    float ud = 0; float vd = 0;
-    ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
-
-  float ox = (u0-(int)(u0));
-  float oy = (v0-(int)(v0));
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
 
   rasterizer->scanline = y0 * CTX_FULL_AA;
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
@@ -5668,6 +5665,11 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1, y1, 1);
         return;
       }
+      else if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest)
+      {
+        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1, y1, 1);
+        return;
+      }
 
       {
         float u0 = 0; float v0 = 0;
@@ -5688,6 +5690,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       CtxFragment fragment = rasterizer->fragment;
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi)
         ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1, y1, 0);
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest)
+        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1, y1, 0);
       else
         ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
                                 &dst[0], NULL, x0, NULL, width, y1-y0+1);
