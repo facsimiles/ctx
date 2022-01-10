@@ -46,6 +46,7 @@ backend-headless.c
 backend-sdl.c
 backend-term.c
 backend-termimg.c
+backend-tft-espi.c
 text.c
 formatter.c
 ctx.c

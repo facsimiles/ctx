@@ -1829,6 +1829,8 @@ void ctx_set_backend (Ctx  *ctx,
   if (ctx->backend && ctx->backend->free)
     ctx->backend->free (ctx->backend);
   ctx->backend = (CtxBackend*)backend;
+  if (ctx->backend->process == NULL)
+    ctx->backend->process = (void(*)(Ctx*,CtxCommand*))ctx_drawlist_process;
 }
 
 void *ctx_get_backend (Ctx *ctx)
@@ -2515,4 +2517,5 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 #endif
   return CTX_BACKEND_NONE;
 }
+
 

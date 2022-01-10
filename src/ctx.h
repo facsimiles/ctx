@@ -383,6 +383,14 @@ int ctx_utf8_strlen (const char *s);
 #endif
 #endif
 
+#ifndef CTX_TFT_ESPI
+#ifdef _TFT_eSPIH_
+#define CTX_TFT_ESPI 1
+#else
+#define CTX_TFT_ESPI 0
+#endif
+#endif
+
 #ifndef CTX_SDL
 #ifdef SDL_h_
 #define CTX_SDL 1
@@ -414,6 +422,32 @@ int ctx_utf8_strlen (const char *s);
 #define ctx_lock_mutex(a)   
 #define ctx_unlock_mutex(a)  
 #endif
+
+
+#if CTX_TFT_ESPI
+
+typedef enum CtxTftFlags {
+  CTX_TFT_DEFAULTS   = 0,
+  CTX_TFT_GRAY       = 1 << 0,
+  CTX_TFT_HASH_CACHE = 1 << 1,
+  CTX_TFT_332        = 1 << 2, // might do a 332 render
+                               // that is tear-free but slower
+                               // before queueing slotted redraws
+                               // of higher quality tiles
+                               // this is a pre-amble to eink modes
+                               //
+  CTX_TFT_CYCLE_BUF  = 1 << 4, // if set then we free buffers after each
+                               // use, higher risk of memory fragmentation
+                               // but making each frame blit a memory use peak
+
+  CTX_TFT_SHOW_FPS   = 1 << 5,
+  CTX_TFT_AUTO_332   = 1 << 6,
+} CtxTFtFlags;
+
+Ctx *ctx_new_tft (TFT_eSPI tft, int flags);
+
+#endif
+
 
 #if CTX_CAIRO
 #ifndef CAIRO_H
@@ -1603,7 +1637,7 @@ typedef struct _CtxBackend CtxBackend;
 void ctx_windowtitle (Ctx *ctx, const char *text);
 struct _CtxBackend
 {
-  Ctx                       *ctx;
+  Ctx                      *ctx;
   void  (*process)         (Ctx *ctx, CtxCommand *entry);
   void  (*reset)           (Ctx *ctx);
   void  (*flush)           (Ctx *ctx);
@@ -1618,6 +1652,7 @@ struct _CtxBackend
   void                     (*get_event_fds)  (Ctx *ctx, int *fd, int *count);
   void (*free)             (void *backend); /* the free pointers are abused as the differentiatior
                                                between different backends   */
+  void                     *user_data; // not used by ctx core
 };
 
 CtxCommand *ctx_iterator_next (CtxIterator *iterator);
