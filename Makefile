@@ -5,7 +5,7 @@ PREFIX  ?= /usr/local
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
-all: build.conf ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
+all: build.conf ctx.pc libctx.so ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
 include build.conf
 
 CFLAGS_warnings= -Wall \
@@ -15,7 +15,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
 
-CFLAGS+= -g $(CFLAGS_warnings) -fPIC
+CFLAGS+= $(CFLAGS_warnings) -fPIC
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 #  -ffast-math   gets rejected by duktape
@@ -97,23 +97,44 @@ distclean: clean
 clean:
 	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
 	rm -f libctx.a libctx.so
+	rm -f ctx.pc
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(MEDIA_HANDLERS_OBJS)
 	rm -f $(SRC_OBJS)
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
-install: ctx
-	install -D -m755 -t $(DESTIDR)$(PREFIX)/bin ctx
-	install -D -m755 -t $(DESTIDR)$(PREFIX)/bin tools/ctx-audioplayer
-	install -D -m644 -t $(DESTIR)$(PREFIX)/share/appdata meta/graphics.ctx.terminal.appdata.xml
-	install -D -m644 -t $(DESTIR)$(PREFIX)/share/applications meta/graphics.ctx.terminal.desktop
-	install -D -m644 -t $(DESTIR)$(PREFIX)/share/icons/hicolor/scalable/apps meta/graphics.ctx.terminal.svg
+ctx.pc: Makefile
+	echo "prefix=$(PREFIX)" > $@
+	echo 'exec_prefix=$${prefix}' >> $@
+	echo 'libdir=$${prefix}/lib' >> $@
+	echo 'includedir=$${prefix}/include' >> $@
+	echo 'apiversion=0.0' >> $@
+	echo '' >> $@
+	echo 'Name: ctx' >> $@
+	echo 'Description: ctx vector graphics' >> $@
+	echo 'Version: 0.0.0' >> $@
+	echo 'Libs: -L$${libdir} -lctx' >> $@
+	echo 'Cflags: -I$${includedir}' >> $@
+
+install: ctx libctx.so ctx.h
+	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin ctx
+	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx.pc
+	install -D -m644 -t $(DESTDIR)$(PREFIX)/include ctx.h
+	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib libctx.so
+	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin tools/ctx-audioplayer
+	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/appdata meta/graphics.ctx.terminal.appdata.xml
+	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/applications meta/graphics.ctx.terminal.desktop
+	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps meta/graphics.ctx.terminal.svg
+	ldconfig || true
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/ctx
-	rm -f $(DESTIR)$(PREFIX)/share/appdata/graphics.ctx.terminal.appdata.xml
-	rm -f $(DESTIR)$(PREFIX)/share/applications/graphics.ctx.terminal.desktop
-	rm -f $(DESTIR)$(PREFIX)/share/icons/hicolor/scalable/apps/graphics.ctx.terminal.svg
+	rm -rf $(DESTDIR)$(PREFIX)/lib/libctx.so
+	rm -rf $(DESTDIR)$(PREFIX)/lib/pkgconfig/ctx.pc
+	rm -rf $(DESTDIR)$(PREFIX)/include/ctx.h
+	rm -f $(DESTDIR)$(PREFIX)/share/appdata/graphics.ctx.terminal.appdata.xml
+	rm -f $(DESTDIR)$(PREFIX)/share/applications/graphics.ctx.terminal.desktop
+	rm -f $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/graphics.ctx.terminal.svg
 
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DNO_LIBCURL
@@ -140,8 +161,8 @@ stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o deps.o build.conf Makefile
 	$(AR) rcs $@ $?
-libctx.so: ctx.o deps.o
-	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
+libctx.so: ctx.o
+	$(LD) -shared $(LIBS) ctx.o $(PKG_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a

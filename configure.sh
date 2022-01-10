@@ -16,7 +16,7 @@ pkg-config alsa && HAVE_ALSA=1
 ENABLE_KMS=1
 ENABLE_FB=0
 
-CFLAGS='-O2'
+CFLAGS='-O2 -g '
 
 CFLAGS_BACKEND=''
 
@@ -24,7 +24,8 @@ while test $# -gt 0
 do
     case "$1" in
      "--without-sdl") HAVE_SDL=0    ;;
-     "--debug") CFLAGS=''    ;;
+     "--debug") CFLAGS=' -g '    ;;
+     "--optimized") CFLAGS=" -O3 -march=native -mtune=native";LIBS=' '  ;;
      "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan'  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan'  ;;
      "--enable-kms") ENABLE_KMS=1 ;;
@@ -37,7 +38,28 @@ do
      "--without-alsa") HAVE_ALSA=0 ;;
      "--without-libcurl") HAVE_LIBCURL=0 ;;
      *|"--help") 
-       echo "usage: ./configure [--without-sdl] [--without-babl] [--without-libcurl] [--without-alsa] [--debug|--asan|--ubsan] [--without-kms] [--enable-fb] [--without-cairo] [--without-harfbuzz]"
+       echo "usage: ./configure [options]"
+       echo "Where recognized options are: "
+       echo "  --enable-cairo"
+       echo "  --without-cairo"
+       echo "  --enable-harfbuzz"
+       echo "  --without-harfbuzz"
+       echo "  --enable-fb"
+       echo "  --without-fb"
+       echo "  --enable-kms"
+       echo "  --without-kms"
+       echo "  --enable-sdl"
+       echo "  --without-sdl"
+       echo "  --enable-alsa"
+       echo "  --without-alsa"
+       echo "  --enable-babl"
+       echo "  --without-babl"
+       echo "  --enable-libcurl"
+       echo "  --without-libcurl"
+       echo "  --asan"
+       echo "  --ubsan"
+       echo "  --optimized"
+       echo "  --debug"
        exit 0
        ;;
     esac
@@ -57,7 +79,7 @@ if [ $HAVE_BABL  = 1 ];then
   echo "PKG_CFLAGS+= `pkg-config babl  --cflags`" >> build.conf
   echo "PKG_LIBS+= `pkg-config babl  --libs` " >> build.conf
 else
-  echo "PKG_CFLAGS+= -DNO_CAIRO" >> build.conf
+  echo "PKG_CFLAGS+= -DNO_BABL" >> build.conf
 fi
 
 if [ $HAVE_HARFBUZZ = 1 ];then
@@ -131,5 +153,5 @@ if [ $ENABLE_KMS = 1 ];  then echo "     kms yes";
 if [ $ENABLE_FB = 1 ];   then echo "      fb yes";
                          else echo "      fb no";fi
 echo
+echo CFLAGS=$CFLAGS
 echo
-
