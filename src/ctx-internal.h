@@ -461,8 +461,6 @@ struct _CtxEvents
   int              idle_id;
   CtxBinding       bindings[CTX_MAX_KEYBINDINGS]; /*< better as list, uses no mem if unused */
   int              n_bindings;
-  int              width;
-  int              height;
   CtxList         *items;
   CtxItem         *last_item;
   CtxModifierState modifier_state;
@@ -498,6 +496,8 @@ struct _Ctx
   CtxList          *eid_db;
   CtxState          state;        /**/
   int               frame; /* used for texture lifetime */
+  int               width;
+  int               height;
 #if CTX_EVENTS 
   CtxCursor         cursor;
   int               quit;

@@ -393,8 +393,8 @@ static const char *mouse_get_event_int (Ctx *n, int *x, int *y)
 
   if (n->mouse_x < 1) n->mouse_x = 1;
   if (n->mouse_y < 1) n->mouse_y = 1;
-  if (n->mouse_x >= n->events.width)  n->mouse_x = n->events.width;
-  if (n->mouse_y >= n->events.height) n->mouse_y = n->events.height;
+  if (n->mouse_x >= n->width)  n->mouse_x = n->width;
+  if (n->mouse_y >= n->height) n->mouse_y = n->height;
 
   if (x) *x = n->mouse_x;
   if (y) *y = n->mouse_y;
@@ -750,8 +750,8 @@ void ctx_nct_consume_events (Ctx *ctx)
     float x, y;
     event = ctx_nct_get_event (ctx, 50, &ix, &iy);
 
-    x = (ix - 1.0 + 0.5) / ctxctx->cols * ctx->events.width;
-    y = (iy - 1.0)       / ctxctx->rows * ctx->events.height;
+    x = (ix - 1.0 + 0.5) / ctxctx->cols * ctx->width;
+    y = (iy - 1.0)       / ctxctx->rows * ctx->height;
 
     if (!strcmp (event, "pp"))
     {

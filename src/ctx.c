@@ -2,25 +2,14 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#if CTX_EVENTS
 int ctx_width (Ctx *ctx)
 {
-  return ctx->events.width;
+  return ctx->width;
 }
 int ctx_height (Ctx *ctx)
 {
-  return ctx->events.height;
+  return ctx->height;
 }
-#else
-int ctx_width (Ctx *ctx)
-{
-  return 512;
-}
-int ctx_height (Ctx *ctx)
-{
-  return 384;
-}
-#endif
 
 CtxState *ctx_get_state (Ctx *ctx)
 {
@@ -737,7 +726,7 @@ void ctx_reset (Ctx *ctx)
                      CTX_KEY_DOWN, ctx_collect_events, ctx, ctx,
                      NULL, NULL);
 
-    ctx_listen_full (ctx, 0, 0, ctx->events.width, ctx->events.height,
+    ctx_listen_full (ctx, 0, 0, ctx->width, ctx->height,
                      (CtxEventType)(CTX_PRESS|CTX_RELEASE|CTX_MOTION),
                      ctx_collect_events, ctx, ctx,
                      NULL, NULL);

@@ -276,14 +276,14 @@ void _ctx_resized (Ctx *ctx, int width, int height, long time);
 
 void ctx_set_size (Ctx *ctx, int width, int height)
 {
-#if CTX_EVENTS
-  if (ctx->events.width != width || ctx->events.height != height)
+  if (ctx->width != width || ctx->height != height)
   {
-    ctx->events.width = width;
-    ctx->events.height = height;
+    ctx->width = width;
+    ctx->height = height;
+#if CTX_EVENTS
     _ctx_resized (ctx, width, height, 0);
-  }
 #endif
+  }
 }
 
 #if CTX_EVENTS
@@ -757,8 +757,8 @@ void ctx_listen_full (Ctx     *ctx,
       float th = height;
       _ctx_user_to_device (&ctx->state, &tx, &ty);
       _ctx_user_to_device_distance (&ctx->state, &tw, &th);
-      if (ty > ctx->events.height * 2 ||
-          tx > ctx->events.width * 2 ||
+      if (ty > ctx->height * 2 ||
+          tx > ctx->width * 2 ||
           tx + tw < 0 ||
           ty + th < 0)
       {
@@ -1872,11 +1872,11 @@ void ctx_events_clear_items (Ctx *ctx)
 }
 int ctx_events_width (Ctx *ctx)
 {
-  return ctx->events.width;
+  return ctx->width;
 }
 int ctx_events_height (Ctx *ctx)
 {
-  return ctx->events.height;
+  return ctx->height;
 }
 
 float ctx_pointer_x (Ctx *ctx)
