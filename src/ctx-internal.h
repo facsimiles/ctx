@@ -465,7 +465,7 @@ struct _CtxEvents
   CtxItem         *last_item;
   CtxModifierState modifier_state;
   double           tap_hysteresis;
-#if CTX_VT
+#if CTX_CLIENTS
   CtxList         *clients;
   CtxClient *active;
   CtxClient *active_tab;

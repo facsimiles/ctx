@@ -32,12 +32,16 @@
 #include "stb_image.h"
 #endif
 
-#define CTX_HEADLESS             1
-#define CTX_DITHER               1 //
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl backends
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
+#define CTX_CLIENTS              1
+#define CTX_FONTS_FROM_FILE      1
+
+
+#define CTX_HEADLESS             1
+#define CTX_DITHER               1 //
 #define CTX_BRAILLE_TEXT         1
 #define CTX_NATIVE_GRAYA8        1
 #define CTX_FRAGMENT_SPECIALIZE  1
@@ -47,9 +51,7 @@
 #define CTX_ENABLE_CM            1
 #define CTX_RASTERIZER_AA       15
 #define CTX_AUDIO                1
-#define CTX_FONTS_FROM_FILE      1
 #define CTX_ALSA_AUDIO           1
-#define CTX_VT                   1
 #define CTX_MAX_TEXTURES         256
 #define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
                                        // variable size for each save|restore

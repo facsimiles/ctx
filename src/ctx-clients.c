@@ -4,7 +4,7 @@ float ctx_target_fps = 100.0; /* this might end up being the resolution of our
                                  idle callback firing
                                */
 
-#if CTX_VT
+#if CTX_CLIENTS
 
 
 #ifndef _DEFAULT_SOURCE
@@ -1404,12 +1404,12 @@ CtxList *ctx_clients (Ctx *ctx)
   return ctx?ctx->events.clients:NULL;
 }
 
-#endif /* CTX_VT */
+#endif /* CTX_CLIENTS */
 
 int ctx_clients_handle_events (Ctx *ctx)
 {
   //int n_clients = ctx_list_length (clients);
-#if CTX_VT
+#if CTX_CLIENTS
   int pending_data = 0;
   long time_start = ctx_ticks ();
   int sleep_time = 1000000/ctx_target_fps;
@@ -1508,7 +1508,7 @@ long ctx_client_rev (CtxClient *client)
 void
 ctx_client_feed_keystring (CtxClient *client, CtxEvent *event, const char *str)
 {
-#if CTX_VT
+#if CTX_CLIENTS
   if (!client || !client->vt) return;
   vt_feed_keystring (client->vt, event, str);
 #endif
