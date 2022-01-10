@@ -3709,6 +3709,7 @@ void vt_gfx (VT *vt, const char *command)
           vt->gfx.data_size = actual_uncompressed_size;
           vt->gfx.compression = 0;
         }
+#ifdef STBI_INCLUDE_STB_IMAGE_H
       if (vt->gfx.format == 100)
         {
           int channels;
@@ -3724,6 +3725,7 @@ void vt_gfx (VT *vt, const char *command)
           vt->gfx.data = new_data;
           vt->gfx.data_size= vt->gfx.buf_width * vt->gfx.buf_height * 4;
         }
+#endif
       Image *image = NULL;
       switch (vt->gfx.action)
         {
@@ -4545,6 +4547,7 @@ static void vt_state_osc (VT *vt, int byte)
 #if 0
     {"]1337;key=value:base64data\b\",  0, vtcmd_erase_in_line, VT100}, /* args:keyvalue id: iterm2 graphics */ "
 #endif
+#ifdef STBI_INCLUDE_STB_IMAGE_H
           case 1337:
             if (!strncmp (&vt->argument_buf[6], "File=", 5) )
               {
@@ -4718,6 +4721,7 @@ static void vt_state_osc (VT *vt, int byte)
                 }
               }
             break;
+#endif
           case 104:
             break;
           case 8:
