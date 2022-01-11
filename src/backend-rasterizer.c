@@ -606,7 +606,7 @@ static CTX_INLINE void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline;
-  int next_scanline = rasterizer->scanline + CTX_FULL_AA;
+  int next_scanline = scanline + CTX_FULL_AA;
   int limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA;
   CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
   int *edges = rasterizer->edges;

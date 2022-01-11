@@ -21,10 +21,12 @@ static int image_smoothing = 1;
 static float ox0 = 0;
 static float oy0 = 0;
 static float scale = 1.0;
+static float angle = 0.2;
 static int dirty = 1;
 
 static int auto_size = 1;
 
+static int rotating = 0;
 
 /****************************/
 static char *path = NULL;
@@ -108,8 +110,15 @@ void ctx_handle_img (Ctx *ctx, const char *path)
 #if 1
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
       ctx_save (ctx);
+
+
       ctx_scale (ctx, scale, scale);
       ctx_translate (ctx, ox0, oy0);
+
+      if (angle != 0.0f)
+        ctx_rotate (ctx, angle);
+
+
       if (eid[0])
         ctx_texture (ctx, eid, 0.0f, 0.0f);
       else
@@ -117,6 +126,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
                             stb_pixels, eid);
       ctx_fill (ctx);
       ctx_restore (ctx);
+
 #else
       if (!eid[0])
       {
@@ -135,6 +145,11 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       ctx_restore (ctx);
       ctx_flush (ctx);
       dirty = 0;
+      if (rotating)
+      {
+        angle += 0.01;
+        dirty = 1;//ctx_queue_draw (ctx);
+      }
     }
    
     while ((event = ctx_get_event (ctx)))
@@ -235,6 +250,10 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             ox0 +=  (ctx_width (ctx) / 2) / scale;
             oy0 +=  (ctx_height (ctx) / 2) / scale;
             auto_size = 0;
+          }
+          else if (!strcmp (event->string, "r"))
+          {
+            rotating = !rotating;
           }
           dirty ++;
           break;
