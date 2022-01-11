@@ -4199,8 +4199,11 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
 #endif
   if (rasterizer->edge_list.size)
     ctx_drawlist_deinit (&rasterizer->edge_list);
-
+#if CTX_SHAPE_CACHE
   memset (rasterizer, 0, sizeof (CtxRasterizer) - sizeof (CtxShapeCache));
+#else
+  memset (rasterizer, 0, sizeof (CtxRasterizer));
+#endif
   CtxBackend *backend = (CtxBackend*)rasterizer;
   backend->process = ctx_rasterizer_process;
   backend->free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
