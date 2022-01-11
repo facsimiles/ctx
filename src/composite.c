@@ -5247,6 +5247,7 @@ static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int 
 
 #if CTX_FAST_FILL_RECT
 
+#if 0
 static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
   float u0 = 0; float v0 = 0;
@@ -5286,7 +5287,176 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
         dst += blit_stride;
       }
   }
+
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed;
+
+  int bwidth = buffer->width;
+  int bheight = buffer->height;
+
+  //uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  uint32_t *data = ((uint32_t*)buffer->data);
+
+  uint32_t row_u = u0 * 65536;
+  uint32_t row_v = v0 * 65536;
+  int   ui_delta = ud * 65536;
+  int   vi_delta = vd * 65536;
+
+  if (copy)
+  for (int y = 0; y < height; y++)
+  {
+     {
+        uint32_t ui = row_u;
+        uint32_t vi = row_v;
+
+        int v = (vi >> 16) + 1;
+        {
+          if (v >= 0 && v < bheight)
+            for (int x = 0; x < width; x++)
+            {
+              int u = ui >> 16;
+              if (CTX_UNLIKELY (u >= 0 && u < bwidth))
+              {
+                ((uint32_t*)dst)[x] = 0;
+              }
+              else
+              {
+                if (u >= 0 && u < bwidth)
+                  ((uint32_t*)dst)[x] = data[u + bwidth * v];
+                else
+                  ((uint32_t*)dst)[x] = 0;
+              }
+              ui += ui_delta;
+            }
+        }
+     }
+     row_u += vi_delta;
+     row_v += ui_delta;
+     rasterizer->scanline += CTX_FULL_AA;
+     dst += blit_stride;
+  }
+  else
+  for (int y = 0; y < height; y++)
+  {
+     uint8_t tsrc[width*4];
+     {
+        uint32_t ui = row_u;
+        uint32_t vi = row_v;
+
+        int v = (vi >> 16) + 1;
+        {
+          if (v >= 0 && v < bheight)
+            for (int x = 0; x < width; x++)
+            {
+              int u = ui >> 16;
+              uint32_t  blank = 0;
+              uint32_t *src0 = &blank;
+              if (u >= 0 && u + 1 < bwidth)
+              {
+                src0 = data + u + bwidth * (v);
+              }
+              else
+              {
+                if (u >= 0 && u < bwidth)
+                  src0 = data + u + bwidth * (v);
+              }
+              ((uint32_t*)tsrc)[x] = *src0;
+              ui += ui_delta;
+            }
+        }
+
+     }
+     ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
+        dst, NULL, x0, NULL, width, &tsrc[0]);
+     row_u += vi_delta;
+     row_v += ui_delta;
+     rasterizer->scanline += CTX_FULL_AA;
+     dst += blit_stride;
+  }
 }
+#endif
+
+static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
+{
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
+
+  rasterizer->scanline = y0 * CTX_FULL_AA;
+  uint8_t *dst = ( (uint8_t *) rasterizer->buf);
+  int blit_stride = rasterizer->blit_stride;
+
+#if 0
+  x0 = ctx_maxi (x0, rasterizer->blit_x);
+  y0 = ctx_maxi (y0, rasterizer->blit_y);
+  x1 = ctx_mini (x1, rasterizer->blit_x + rasterizer->blit_width - 1);
+  y1 = ctx_mini (y1, rasterizer->blit_y + rasterizer->blit_height - 1);
+#endif
+
+  dst += (y0 - rasterizer->blit_y) * blit_stride;
+  dst += (x0) * rasterizer->format->bpp/8;
+
+  int width = x1-x0+1;
+  int height = y1-y0+1;
+
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed;
+  int bwidth = buffer->width;
+  int bheight = buffer->height;
+  if (copy)
+  {
+      if (vd == 0.0 && ud == 1.0f && u0 >= 0 && v0 >=0 && u0 + ud * (width - 1)< bwidth && v0 + (height - 1)< bheight)
+      {
+  uint32_t *data = ((uint32_t*)buffer->data);
+
+  data += ((int)(v0)) * bwidth + (int)u0; 
+
+        for (int y = 0; y < height; y++)
+        {
+          memcpy (dst, data, width * 4);
+          dst += blit_stride;
+          data += bwidth;
+        }
+      }
+      else
+      for (int y = 0; y < height; y++)
+      {
+        ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, u0, v0, &dst[0], width, ud, vd);
+        u0 += vd;
+        v0 += ud;
+        dst += blit_stride;
+      }
+  }
+  else
+  {
+      if (vd == 0.0 && ud == 1.0f && u0 >= 0 && v0 >=0 && u0 + ud * (width-1) < bwidth && v0 + height -1 < bheight)
+      {
+        uint32_t *data = ((uint32_t*)buffer->data);
+        data += ((int)(v0)) * bwidth + (int)u0; 
+        for (int y = 0; y < height; y++)
+        {
+          ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
+           dst, NULL, x0, NULL, width, (uint8_t*)&data[0]);
+          u0 += vd;
+          v0 += ud;
+          dst += blit_stride;
+          data += bwidth;
+        }
+      }
+      else
+      for (int y = 0; y < height; y++)
+      {
+        uint8_t tsrc[width*4];
+        ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, u0, v0, &tsrc[0], width, ud, vd);
+        ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
+           dst, NULL, x0, NULL, width, &tsrc[0]);
+        u0 += vd;
+        v0 += ud;
+        dst += blit_stride;
+      }
+  }
+}
+
 
 static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
