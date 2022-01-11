@@ -64,7 +64,7 @@ ctx_u8 (CtxCode code,
 
 
 #if CTX_BITPACK_PACKER
-CTX_STATIC int
+CTX_STATIC unsigned int
 ctx_last_history (CtxDrawlist *drawlist);
 #endif
 
@@ -73,7 +73,7 @@ CTX_STATIC void
 ctx_drawlist_remove_tiny_curves (CtxDrawlist *drawlist, int start_pos);
 
 CTX_STATIC void
-ctx_drawlist_bitpack (CtxDrawlist *drawlist, int start_pos);
+ctx_drawlist_bitpack (CtxDrawlist *drawlist, unsigned int start_pos);
 #endif
 
 CTX_STATIC void

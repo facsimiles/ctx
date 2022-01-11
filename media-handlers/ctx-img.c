@@ -21,7 +21,7 @@ static int image_smoothing = 1;
 static float ox0 = 0;
 static float oy0 = 0;
 static float scale = 1.0;
-static float angle = 0.2;
+static float angle = 0.0;
 static int dirty = 1;
 
 static int auto_size = 1;

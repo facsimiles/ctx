@@ -769,11 +769,11 @@ ctx_process_cmd_str_float (Ctx *ctx, CtxCode code, const char *string, float arg
 }
 
 #if CTX_BITPACK_PACKER
-CTX_STATIC int
+CTX_STATIC unsigned int
 ctx_last_history (CtxDrawlist *drawlist)
 {
-  int last_history = 0;
-  int i = 0;
+  unsigned int last_history = 0;
+  unsigned int i = 0;
   while (i < drawlist->count)
     {
       CtxEntry *entry = &drawlist->entries[i];
@@ -853,10 +853,10 @@ ctx_drawlist_remove_tiny_curves (CtxDrawlist *drawlist, int start_pos)
 
 #if CTX_BITPACK_PACKER
 CTX_STATIC void
-ctx_drawlist_bitpack (CtxDrawlist *drawlist, int start_pos)
+ctx_drawlist_bitpack (CtxDrawlist *drawlist, unsigned int start_pos)
 {
 #if CTX_BITPACK
-  int i = 0;
+  unsigned int i = 0;
   if ( (drawlist->flags & CTX_TRANSFORMATION_BITPACK) == 0)
     { return; }
   ctx_drawlist_remove_tiny_curves (drawlist, drawlist->bitpack_pos);
@@ -1055,8 +1055,9 @@ ctx_drawlist_bitpack (CtxDrawlist *drawlist, int start_pos)
 #endif
       i += (ctx_conts_for_entry (entry) + 1);
     }
-  int source = drawlist->bitpack_pos;
-  int target = drawlist->bitpack_pos;
+
+  unsigned int source = drawlist->bitpack_pos;
+  unsigned int target = drawlist->bitpack_pos;
   int removed = 0;
   /* remove nops that have been inserted as part of shortenings
    */
@@ -1086,7 +1087,7 @@ CTX_STATIC inline void
 ctx_drawlist_compact (CtxDrawlist *drawlist)
 {
 #if CTX_BITPACK_PACKER
-  int last_history;
+  unsigned int last_history;
   last_history = ctx_last_history (drawlist);
 #else
   if (drawlist) {};
