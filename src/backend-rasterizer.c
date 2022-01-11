@@ -1784,7 +1784,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 case CTX_COV_PATH_RGBA8_OVER:
                 {
                   uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
-                  for (unsigned int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
                     {
                       *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
                       dst_i++;
@@ -1794,7 +1794,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 case CTX_COV_PATH_RGBA8_COPY:
                 {
                   uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
-                  for (unsigned int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
                   {
                     *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
                     dst_i++;
