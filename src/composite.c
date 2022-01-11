@@ -3298,6 +3298,7 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
     float tsrc[components];
     float u0 = 0; float v0 = 0;
     float ud = 0; float vd = 0;
+    for (int c = 0; c < components; c++) tsrc[c] = 0.0f;
 
     ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
 
@@ -5233,6 +5234,12 @@ static inline void ctx_span_set_color (uint32_t *dst_pix, uint32_t val, int coun
     *dst_pix++=val;
 }
 
+static inline void ctx_span_set_colorb (uint32_t *dst_pix, uint32_t val, int count)
+{
+  while(count--)
+    *dst_pix++=val;
+}
+
 static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int count)
 {
   if (count>0)
@@ -5365,8 +5372,8 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
 
   //uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   uint32_t *data = ((uint32_t*)buffer->data);
-  uint32_t rb_row[2][width];
-  uint32_t ga_row[2][width];
+  uint32_t rb_row[2][width*2];
+  //uint32_t ga_row[2][width];
 
   uint32_t row_u = u0 * 65536;
   uint32_t row_v = v0 * 65536;
@@ -5381,7 +5388,8 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
     uint32_t ui  = row_u;
     uint32_t vi  = row_v;
     int v = vi >> 16;
-  for (int x = 0; x < width; x++)
+    int xa=0;
+  for (int x = 0; x < width; x++, xa+=2)
   {
     int du = (ui >> 8) & 0xff;
     int u = ui >> 16;
@@ -5397,7 +5405,7 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
       src1 = data + (u+1) + bwidth * v;
     }
 
-    ctx_lerp_RGBA8_split (*src0, *src1, du, &ga_row[!top][x], &rb_row[!top][x]);
+    ctx_lerp_RGBA8_split (*src0, *src1, du, &rb_row[!top][xa], &rb_row[!top][xa+1]);
 
     ui += ui_delta;
   }
@@ -5419,8 +5427,9 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
         {
           loaded_v = v;
 
+          int xa=0;
           if (v >= 0 && v < bheight)
-            for (int x = 0; x < width; x++)
+            for (int x = 0; x < width; x++, xa+=2)
             {
               int du = ((ui) >> 8) & 0xff;
               int u = ui >> 16;
@@ -5439,14 +5448,17 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
                 if (u + 1>= 0 && u + 1 < bwidth)
                   src1 = data + (u+1) + bwidth * (v);
               }
-              ctx_lerp_RGBA8_split (*src0, *src1, du, &ga_row[top][x], &rb_row[top][x]);
+              ctx_lerp_RGBA8_split (*src0, *src1, du, &rb_row[top][xa], &rb_row[top][xa+1]);
               ui += ui_delta;
             }
           else
-            for (int x = 0; x < width; x++)
+          {
+            int xa = 0;
+            for (int x = 0; x < width; x++, xa+=2)
             {
-              ga_row[top][x] = rb_row[top][x] = 0;
+              rb_row[top][xa] = rb_row[top][xa+1] = 0;
             }
+          }
 
           iter++;
           top    = iter % 2;
@@ -5463,11 +5475,12 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
           if (copy)
           {
             int ntop = !top;
-            for (int x = 0; x < width; x++)
+            int xa = 0;
+            for (int x = 0; x < width; x++, xa+=2)
             {
               ((uint32_t*)dst)[x] = 
-               ctx_lerp_RGBA8_merge (ga_row[top][x], rb_row[top][x], 
-                                     ga_row[ntop][x], rb_row[ntop][x],
+               ctx_lerp_RGBA8_merge (rb_row[top][xa], rb_row[top][xa+1], 
+                                     rb_row[ntop][xa], rb_row[ntop][xa+1],
                                      dv);
             }
           }
@@ -5475,11 +5488,12 @@ static void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer,
           {
             uint8_t tsrc[width*4];
             int ntop = !top;
-            for (int x = 0; x < width; x++)
+            int xa = 0;
+            for (int x = 0; x < width; x++, xa+=2)
             {
               ((uint32_t*)(&tsrc[0]))[x] = 
-               ctx_lerp_RGBA8_merge (ga_row[top][x], rb_row[top][x], 
-                                     ga_row[ntop][x], rb_row[ntop][x],
+               ctx_lerp_RGBA8_merge (rb_row[top][xa], rb_row[top][xa+1], 
+                                     rb_row[ntop][xa], rb_row[ntop][xa+1],
                                      dv);
             }
             ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
@@ -5560,17 +5574,23 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           *dst_i = color;
           dst += blit_stride;
         }
-        return;
       }
       else
       {
         for (int y = y0; y <= y1; y++)
         {
-          ctx_span_set_color ((uint32_t*)&dst[0], color, width);
+#if 0
+          uint32_t *dst_pix = (uint32_t*)&dst[0];
+          int count = width;
+          while(count--)
+            *dst_pix++=color;
+#else
+          ctx_span_set_colorb ((uint32_t*)&dst[0], color, width);
+#endif
           dst += blit_stride;
         }
-        return;
       }
+      return;
     }
     case CTX_COV_PATH_RGBAF_COPY:
     case CTX_COV_PATH_GRAY8_COPY:
@@ -5641,8 +5661,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
             else
             for (int y = y0; y <= y1; y++)
             {
-              uint32_t *dst_i = (uint32_t*)&dst[0];
-              for (int x = 0; x < width; x++) *dst_i++ = val;
+              //uint32_t *dst_i = (uint32_t*)&dst[0];
+              ctx_span_set_colorb ((uint32_t*)&dst[0], val, width);
               dst += blit_stride;
             }
           }
@@ -5690,7 +5710,6 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
              ((uint32_t*)(dst))[0], si_ga_full, si_rb_full, si_a);
           dst += blit_stride;
         }
-        return;
       }
       else
       {
@@ -5703,28 +5722,29 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           }
           dst += blit_stride;
         }
-        return;
       }
+      return;
     }
     case CTX_COV_PATH_RGBA8_COPY_FRAGMENT:
     {
       CtxFragment fragment = rasterizer->fragment;
       CtxGState *gstate = &rasterizer->state->gstate;
-       CtxMatrix *transform = &gstate->source_fill.transform;
+      CtxMatrix *transform = &gstate->source_fill.transform;
+      int no_skew_or_rotate = ctx_matrix_no_skew_or_rotate (transform);
+
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi &&
-          ctx_matrix_no_skew_or_rotate (transform))
+          no_skew_or_rotate)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1, y1, 1);
-        return;
       }
-      else if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest)
+      else if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest &&
+               no_skew_or_rotate)
       {
         ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1, y1, 1);
-        return;
       }
-
-      INIT_ENV;
+      else
       {
+        INIT_ENV;
         float u0 = 0; float v0 = 0;
         float ud = 0; float vd = 0;
         ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
@@ -5743,7 +5763,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       CtxFragment fragment = rasterizer->fragment;
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi)
         ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1, y1, 0);
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest)
+      else if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest)
         ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1, y1, 0);
       else
       {

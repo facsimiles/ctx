@@ -1054,7 +1054,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, graystart);
 
                 dst_pix++;
-                ctx_span_set_color (dst_pix, src_pix, last - first - 1);
+                ctx_span_set_colorb (dst_pix, src_pix, last - first - 1);
               }
               break;
             case CTX_COV_PATH_RGB8_COPY:
@@ -1104,11 +1104,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 case 4:
                   {
                     uint32_t val = ((uint32_t*)color)[0];
-                    while (count--)
-                    {
-                      ((uint32_t*)dst_i)[0] = val;
-                      dst_i+=4;
-                    }
+                    ctx_span_set_colorb ((uint32_t*)dst, val, count);
                   }
                   break;
                 case 16:
