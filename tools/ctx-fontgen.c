@@ -30,12 +30,12 @@ static int usage(){
 
 CtxDrawlist output_font={NULL,};
 uint32_t glyphs[65536];
-int n_glyphs = 0;
+unsigned int n_glyphs = 0;
 
 void
 add_glyph (Ctx *ctx, uint32_t glyph)
 {
-  for (int i = 0; i < n_glyphs; i++)
+  for (unsigned int i = 0; i < n_glyphs; i++)
   {
     if (glyphs[i] == glyph)
       return;
@@ -54,7 +54,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
   uint32_t args[2] = {glyph, ctx_glyph_width (ctx, glyph) * 256};
   ctx_drawlist_add_u32 (&output_font, CTX_DEFINE_GLYPH, args);
 
-  for (int i = 3; i < ctx->drawlist.count - 1; i++)
+  for (unsigned int i = 3; i < ctx->drawlist.count - 1; i++)
   {
     CtxEntry *entry = &ctx->drawlist.entries[i];
     args[0] = entry->data.u32[0];
@@ -65,7 +65,7 @@ add_glyph (Ctx *ctx, uint32_t glyph)
 
 static int find_glyph (CtxDrawlist *drawlist, uint32_t unichar)
 {
-  for (int i = 0; i < drawlist->count; i++)
+  for (unsigned int i = 0; i < drawlist->count; i++)
   {
     if (drawlist->entries[i].code == CTX_DEFINE_GLYPH &&
         drawlist->entries[i].data.u32[0] == unichar)
@@ -162,14 +162,14 @@ char* string =
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }
 
-  for (int i = 0; i < n_glyphs; i++)
-    for (int j = 0; j < n_glyphs; j++)
+  for (unsigned int i = 0; i < n_glyphs; i++)
+    for (unsigned int j = 0; j < n_glyphs; j++)
     {
       float kerning = ctx_glyph_kern (ctx, glyphs[i], glyphs[j]);
       if (kerning > 0.2)
       {
         CtxCommand command;
-        int pos = find_glyph (&output_font, glyphs[i]);
+        unsigned int pos = find_glyph (&output_font, glyphs[i]);
         pos ++;
         while (pos < output_font.count &&
                output_font.entries[pos].code != CTX_DEFINE_GLYPH)
@@ -193,7 +193,7 @@ char* string =
 
   printf ("/* glyphs covered: \n\n");
   int col = 0;
-  for (int i = 0; i < output_font.count; i++)
+  for (unsigned int i = 0; i < output_font.count; i++)
   {
     CtxEntry *entry = &output_font.entries[i];
     if (entry->code == '@')
@@ -221,7 +221,7 @@ char* string =
 
   printf ("static const struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}\nctx_font_%s[]={\n", name);
 
-  for (int i = 0; i < output_font.count; i++)
+  for (unsigned int i = 0; i < output_font.count; i++)
   {
     CtxEntry *entry = &output_font.entries[i];
     if (entry->code > 32 && entry->code < 127)
@@ -260,7 +260,7 @@ char* string =
   }
   else
   {
-  for (int i = 0; i < output_font.count; i++)
+  for (unsigned int i = 0; i < output_font.count; i++)
   {
     CtxEntry *entry = &output_font.entries[i];
     for (int c = 0; c <  (int)sizeof (CtxEntry); c++)
