@@ -24,8 +24,6 @@ struct _CtxSDL
    int           fullscreen;
 };
 
-#include "stb_image_write.h"
-
 
 void ctx_screenshot (Ctx *ctx, const char *output_path)
 {
@@ -38,7 +36,9 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
       // XXX  only valid for RGBA8
       if (rasterizer->format->pixel_format == CTX_FORMAT_RGBA8)
       {
+#ifdef INCLUDE_STB_IMAGE_WRITE_H
         stbi_write_png (output_path, rasterizer->blit_width, rasterizer->blit_height, 4, rasterizer->buf, rasterizer->blit_stride);
+#endif
         return;
       }
    }

@@ -188,7 +188,7 @@ static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
   hash = ox;//(ox % CTX_SUBDIV);
   hash *= CTX_SHAPE_CACHE_PRIME1;
   hash += oy; //(oy % CTX_RASTERIZER_AA);
-  for (int i = 0; i < rasterizer->edge_list.count; i++)
+  for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
     {
       CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[i];
       x = entry->data.s16[2];
@@ -211,7 +211,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   int x = 0;
   int y = 0;
 #endif
-  int count = rasterizer->edge_list.count;
+  unsigned int count = rasterizer->edge_list.count;
   if (CTX_UNLIKELY (count == 0))
      return 0;
   CtxSegment *entry = (CtxSegment*)&rasterizer->edge_list.entries[0];
@@ -226,7 +226,7 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
   hash += (oy & CTX_SUBDIV);
 #endif
   //CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[0];
-  for (int i = 0; i < count; i++)
+  for (unsigned int i = 0; i < count; i++)
     {
 #if CTX_SHAPE_CACHE
       x = entry->data.s16[2];
@@ -610,7 +610,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
   int limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA;
   CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
   int *edges = rasterizer->edges;
-  for (int i = 0; i < rasterizer->active_edges; i++)
+  for (unsigned int i = 0; i < rasterizer->active_edges; i++)
     {
       CtxSegment *segment = segments + edges[i];
       int edge_end = segment->data.s16[3]-1;
@@ -643,12 +643,12 @@ inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, in
 {
   rasterizer->scanline += count;
   CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
-  for (int i = 0; i < rasterizer->active_edges; i++)
+  for (unsigned int i = 0; i < rasterizer->active_edges; i++)
     {
       CtxSegment *segment = segments + rasterizer->edges[i];
       segment->val += segment->delta * count;
     }
-  for (int i = 0; i < rasterizer->pending_edges; i++)
+  for (unsigned int i = 0; i < rasterizer->pending_edges; i++)
     {
       CtxSegment *segment = segments + rasterizer->edges[CTX_MAX_EDGES-1-i];
       segment->val += segment->delta * count;
@@ -663,9 +663,9 @@ inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, in
    again feed_edges until middle of scanline if doing non-AA
    or directly render when doing AA
 */
-CTX_INLINE static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries, int count)
+CTX_INLINE static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries, unsigned int count)
 {
-  for(int i=1; i<count; i++)
+  for(unsigned int i=1; i<count; i++)
    {
      int temp = entries[i];
      int j = i-1;
@@ -687,9 +687,9 @@ CTX_INLINE static int ctx_edge2_compare2 (CtxSegment *segments, int a, int b)
   return minval_a - minval_b;
 }
 
-CTX_INLINE static void ctx_edge2_insertion_sort2 (CtxSegment *segments, int *entries, int count)
+CTX_INLINE static void ctx_edge2_insertion_sort2 (CtxSegment *segments, int *entries, unsigned int count)
 {
-  for(int i=1; i<count; i++)
+  for(unsigned int i=1; i<count; i++)
    {
      int temp = entries[i];
      int j = i-1;
@@ -702,18 +702,18 @@ CTX_INLINE static void ctx_edge2_insertion_sort2 (CtxSegment *segments, int *ent
    }
 }
 
-inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int apply2_sort)
+CTX_INLINE static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int apply2_sort)
 {
   int miny;
   CtxSegment *entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   rasterizer->horizontal_edges = 0;
   rasterizer->ending_edges = 0;
-  for (int i = 0; i < rasterizer->pending_edges; i++)
+  for (unsigned int i = 0; i < rasterizer->pending_edges; i++)
     {
       if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i]].data.s16[1] - 1 <= rasterizer->scanline &&
           rasterizer->active_edges < CTX_MAX_EDGES-2)
         {
-          int no = rasterizer->active_edges;
+          unsigned int no = rasterizer->active_edges;
           rasterizer->active_edges++;
           rasterizer->edges[no] = rasterizer->edges[CTX_MAX_EDGES-1-i];
           rasterizer->edges[CTX_MAX_EDGES-1-i] =
@@ -725,8 +725,8 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
   int limit3 = CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA;
   int scanline = rasterizer->scanline;
   int next_scanline = scanline + CTX_FULL_AA;
-  int edge_pos = rasterizer->edge_pos;
-  int edge_count = rasterizer->edge_list.count;
+  unsigned int edge_pos = rasterizer->edge_pos;
+  unsigned int edge_count = rasterizer->edge_list.count;
   int *edges = rasterizer->edges;
   while ((edge_pos < edge_count &&
          (miny=entries[edge_pos].data.s16[1]-1)  <= next_scanline))
@@ -738,9 +738,9 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
           if (dy)
             {
               int yd = scanline - miny;
-              int no = rasterizer->active_edges;
+              unsigned int no = rasterizer->active_edges;
               rasterizer->active_edges++;
-              int index = edges[no] = edge_pos;
+              unsigned int index = edges[no] = edge_pos;
               int x0 = entries[index].data.s16[0];
               int x1 = entries[index].data.s16[2];
               int dx_dy = CTX_RASTERIZER_EDGE_MULTIPLIER * (x1 - x0) / dy;
@@ -1071,10 +1071,10 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               rasterizer->apply_coverage (rasterizer, (uint8_t*)dsts, rasterizer->color, first, &startcov, 1);
               uint8_t* dst_i = (uint8_t*)dsts;
               uint8_t *color = ((uint8_t*)&rasterizer->color_native);
-              int bytes = rasterizer->format->bpp/8;
+              unsigned int bytes = rasterizer->format->bpp/8;
               dst_i+=bytes;
 
-              int count = last-(first+1);//  (last - post) - (first+pre) + 1;
+              unsigned int count = last-(first+1);//  (last - post) - (first+pre) + 1;
 
               //for (int i = first + pre; i <= last - post; i++)
               if (CTX_LIKELY(count>0))
@@ -1131,7 +1131,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 default:
                  while (count--)
                  {
-                   for (int b = 0; b < bytes; b++)
+                   for (unsigned int b = 0; b < bytes; b++)
                      *dst_i++ = color[b];
                  }
                   break;
@@ -1146,11 +1146,11 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 uint8_t  startcov = graystart;
                 rasterizer->apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer->color, first, &startcov, 1);
                 dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
-                int count = last - first - 1;
+                unsigned int count = last - first - 1;
                 if (srcp[0]>=127)
                 {
                   int x = first + 1;
-                  for (int i = 0; i < count && x & 7; count--)
+                  for (unsigned int i = 0; i < count && x & 7; count--)
                   {
                      int bitno = x & 7;
                      *dstp |= (1<<bitno);
@@ -1158,14 +1158,14 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                      x++;
                   }
 
-                  for (int i = 0; i < count && count>8; count-=8)
+                  for (unsigned int i = 0; i < count && count>8; count-=8)
                   {
                      *dstp = 255;
                      dstp++;
                      x+=8;
                   }
 
-                  for (int i = 0; i < count; i++)
+                  for (unsigned int i = 0; i < count; i++)
                   {
                      int bitno = x & 7;
                      *dstp |= (1<<bitno);
@@ -1175,8 +1175,8 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 }
                 else
                 {
-                  int x = first + 1;
-                  for (int i = 0; i < count && x & 7; count--)
+                  unsigned int x = first + 1;
+                  for (unsigned int i = 0; i < count && x & 7; count--)
                   {
                      int bitno = x & 7;
                      *dstp &= ~(1<<bitno);
@@ -1184,14 +1184,14 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                      x++;
                   }
 
-                  for (int i = 0; i < count && count>8; count-=8)
+                  for (unsigned int i = 0; i < count && count>8; count-=8)
                   {
                      *dstp = 0;
                      dstp++;
                      x+=8;
                   }
 
-                  for (int i = 0; i < count; i++)
+                  for (unsigned int i = 0; i < count; i++)
                   {
                      int bitno = x & 7;
                      *dstp &= ~(1<<bitno);
@@ -1208,7 +1208,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
               *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, graystart);
               dst_pix++;
-              for (int i = first + 1; i < last; i++)
+              for (unsigned int i = first + 1; i < (unsigned)last; i++)
               {
                 *dst_pix = ctx_over_RGBA8_full_2(*dst_pix, si_ga_full, si_rb_full, si_a);
                 dst_pix++;
@@ -1627,13 +1627,14 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
               uint8_t* dst_i = (uint8_t*)dsts;
               uint8_t* color = ((uint8_t*)&rasterizer->color_native);
-              int bytes = rasterizer->format->bpp/8;
+              unsigned int bytes = rasterizer->format->bpp/8;
               dst_i+=pre*bytes;
 
-              int count = (last - post) - (first+pre) + 1;
+              int scount = (last - post) - (first+pre) + 1;
+              unsigned int count = scount;
 
               //for (int i = first + pre; i <= last - post; i++)
-              if (CTX_LIKELY(count>0))
+              if (CTX_LIKELY(scount>0))
               switch (bytes)
               {
                 case 1:
@@ -1691,7 +1692,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 default:
                  while (count--)
                  {
-                   for (int b = 0; b < bytes; b++)
+                   for (unsigned int b = 0; b < bytes; b++)
                      *dst_i++ = color[b];
                  }
                   break;
@@ -1712,10 +1713,15 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
               dst_pix+=pre;
-              for (int i = first + pre; i <= last - post; i++)
+              int scount = (last - post) - (first + pre) + 1;
+              if (scount > 0)
               {
-                *dst_pix = ctx_over_RGBA8_full_2(*dst_pix, si_ga_full, si_rb_full, si_a);
-                dst_pix++;
+                unsigned int count = scount;
+                while (count--)
+                {
+                  *dst_pix = ctx_over_RGBA8_full_2(*dst_pix, si_ga_full, si_rb_full, si_a);
+                  dst_pix++;
+                }
               }
             }
             break;
@@ -1778,7 +1784,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 case CTX_COV_PATH_RGBA8_OVER:
                 {
                   uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
-                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+                  for (unsigned int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
                     {
                       *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
                       dst_i++;
@@ -1788,7 +1794,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 case CTX_COV_PATH_RGBA8_COPY:
                 {
                   uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
-                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
+                  for (unsigned int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
                   {
                     *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
                     dst_i++;
@@ -2166,7 +2172,7 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
 static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
-  int preserved_count = rasterizer->preserve?rasterizer->edge_list.count:1;
+  unsigned int preserved_count = rasterizer->preserve?rasterizer->edge_list.count:1;
   int blit_x = rasterizer->blit_x;
   int blit_y = rasterizer->blit_y;
   int blit_width = rasterizer->blit_width;
@@ -2185,7 +2191,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
-  for (int i = 0; i < rasterizer->edge_list.count; i++)
+  for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
     {
       CtxSegment *entry = &((CtxSegment*)rasterizer->edge_list.entries)[i];
       entry->data.s16[2] += rasterizer->shadow_x * CTX_SUBDIV;
@@ -2641,7 +2647,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   CtxGState *gstate = &rasterizer->state->gstate;
   CtxSource source_backup;
   int count = rasterizer->edge_list.count;
-  if (count <= 0)
+  if (count == 0)
     return;
   if (gstate->source_stroke.type != CTX_SOURCE_INHERIT_FILL)
   {
@@ -3036,7 +3042,7 @@ static void
 ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
                            CtxSegment    *edges)
 {
-  int count = edges[0].data.u32[0];
+  unsigned int count = edges[0].data.u32[0];
 
   int minx = 5000;
   int miny = 5000;
@@ -3049,7 +3055,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
   float coords[6][2];
 
-  for (int i = 0; i < count; i++)
+  for (unsigned int i = 0; i < count; i++)
     {
       CtxSegment *entry = &edges[i+1];
       float x, y;
@@ -3182,7 +3188,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
        blit_width,
        CTX_CLIP_FORMAT);
 
-  for (int i = 0; i < count; i++)
+  for (unsigned int i = 0; i < count; i++)
     {
       CtxSegment *entry = &edges[i+1];
       float x, y;
@@ -3206,8 +3212,8 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
   if (CTX_CLIP_FORMAT == CTX_FORMAT_GRAY1)
   {
-    int count = blit_width * blit_height / 8;
-    for (int i = 0; i < count; i++)
+    unsigned int count = blit_width * blit_height / 8;
+    for (unsigned int i = 0; i < count; i++)
     {
       ((uint8_t*)rasterizer->clip_buffer->data)[i] =
       (((uint8_t*)rasterizer->clip_buffer->data)[i] &
@@ -3705,7 +3711,7 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
 #endif
 
 static void
-ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, int count, float *dashes)
+ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, unsigned int count, float *dashes)
 {
   if (!dashes)
   {
@@ -3715,7 +3721,7 @@ ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, int count, float *dashes)
   count = CTX_MIN(count, CTX_PARSER_MAX_ARGS-1);
   rasterizer->state->gstate.n_dashes = count;
   memcpy(&rasterizer->state->gstate.dashes[0], dashes, count * sizeof(float));
-  for (int i = 0; i < count; i ++)
+  for (unsigned int i = 0; i < count; i ++)
   {
     if (rasterizer->state->gstate.dashes[i] < 0.0001f)
       rasterizer->state->gstate.dashes[i] = 0.0001f; // hang protection

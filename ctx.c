@@ -27,9 +27,12 @@
 //#include "0xA000-Mono.h"
 //#include "unscii-16.h"
 
-#if !__COSMOPOLITAN__
-#include "stb_truetype.h"
-#include "stb_image.h"
+
+// optional dependencies
+#if 0 
+  #include "stb_truetype.h"
+  #include "stb_image.h"
+  #include "stb_image_write.h"
 #endif
 
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl backends

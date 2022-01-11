@@ -3800,13 +3800,13 @@ ctx_composite_GRAYF (CTX_COMPOSITE_ARGUMENTS)
   float *dstf = (float*)dst;
 
   float temp[count*2];
-  for (int i = 0; i < count; i++)
+  for (unsigned int i = 0; i < count; i++)
   {
     temp[i*2] = dstf[i];
     temp[i*2+1] = 1.0f;
   }
   rasterizer->comp_op (rasterizer, (uint8_t*)temp, rasterizer->color, x0, coverage, count);
-  for (int i = 0; i < count; i++)
+  for (unsigned int i = 0; i < count; i++)
   {
     dstf[i] = temp[i*2];
   }

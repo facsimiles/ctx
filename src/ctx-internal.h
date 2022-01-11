@@ -268,8 +268,8 @@ typedef enum
 struct _CtxDrawlist
 {
   CtxEntry *entries;
-  int       count;
-  int       size;
+  unsigned int count;
+  int size;
   uint32_t  flags;
   int       bitpack_pos;  // stream is bitpacked up to this offset
 };
@@ -557,7 +557,7 @@ struct _CtxPixelFormatInfo
   void         (*from_comp) (CtxRasterizer *r,
                              int x, const uint8_t * __restrict__ comp, void *__restrict__ dst, int count);
   void         (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage,
-                          int count);
+                          unsigned int count);
   void         (*setup) (CtxRasterizer *r);
 };
 
@@ -645,7 +645,7 @@ struct _CtxRasterizer
    */
 
 
-#define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, int count
+#define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, unsigned int count
   void (*comp_op)(CTX_COMPOSITE_ARGUMENTS);
   CtxFragment fragment;
   //Ctx       *ctx;
@@ -653,19 +653,19 @@ struct _CtxRasterizer
   void      *buf;
   int fast_aa;
   CtxCovPath  comp;
-  void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, int count);
+  void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, unsigned int count);
 
   unsigned int aa;          // level of vertical aa
   int        uses_transforms;
-  int prev_active_edges;
-  int active_edges;
-  int pending_edges;
-  int ending_edges;
-  int edge_pos;         // where we're at in iterating all edges
+  unsigned int prev_active_edges;
+  unsigned int active_edges;
+  unsigned int pending_edges;
+  unsigned int ending_edges;
+  unsigned int edge_pos;         // where we're at in iterating all edges
   unsigned int needs_aa3; // count of how many edges implies antialiasing
   unsigned int needs_aa5; // count of how many edges implies antialiasing
   unsigned int needs_aa15; // count of how many edges implies antialiasing
-  int        horizontal_edges;
+  unsigned int horizontal_edges;
 
   int        scanline;
   int        scan_min;
@@ -682,11 +682,11 @@ struct _CtxRasterizer
   float      first_x;
   float      first_y;
 
-  int16_t    blit_x;
-  int16_t    blit_y;
-  int16_t    blit_width;
-  int16_t    blit_height;
-  int16_t    blit_stride;
+  uint16_t    blit_x;
+  uint16_t    blit_y;
+  uint16_t    blit_width;
+  uint16_t    blit_height;
+  uint16_t    blit_stride;
 
   unsigned int  clip_rectangle:1;
   unsigned int  has_shape:2;

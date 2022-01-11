@@ -455,7 +455,7 @@ ctx_edgelist_resize (CtxDrawlist *drawlist, int desired_size)
 CTX_STATIC inline int
 ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
-  int max_size = CTX_MAX_JOURNAL_SIZE;
+  unsigned int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = drawlist->count;
   int flags = drawlist->flags;
   if (CTX_LIKELY((flags & CTX_DRAWLIST_EDGE_LIST ||
@@ -635,9 +635,9 @@ int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
   if (length <= 0) { length = strlen ( (char *) data) + 1; }
   length_in_blocks = length / sizeof (CtxEntry);
   length_in_blocks += (length % sizeof (CtxEntry) ) ?1:0;
-  if (drawlist->count + length_in_blocks + 4 > drawlist->size)
+  if ((signed)drawlist->count + length_in_blocks + 4 > drawlist->size)
     { ctx_drawlist_resize (drawlist, drawlist->count * 1.2 + length_in_blocks + 32); }
-  if (CTX_UNLIKELY(drawlist->count >= drawlist->size))
+  if (CTX_UNLIKELY((signed)drawlist->count >= drawlist->size))
     { return -1; }
   drawlist->count += length_in_blocks;
   drawlist->entries[ret].data.u32[0] = length;
