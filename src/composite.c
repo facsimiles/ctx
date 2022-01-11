@@ -1077,8 +1077,9 @@ static void
 ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
                                         float x,
                                         float y,
-                                        void *out, int count, float dx, float dy)
+                                        void *out, int scount, float dx, float dy)
 {
+  unsigned int count = scount;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer;
   if (buffer->color_managed)
@@ -1097,7 +1098,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 #if 1
   if (CTX_UNLIKELY(ideltay == 0 && ideltax == 65536))
   {
-    int i = 0;
+    unsigned int i = 0;
     int u = x;
     int v = y;
     if (!(v >= 0 && v < bheight))
@@ -1121,14 +1122,18 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
       dst += limit;
       i = limit;
     }
+#if 1
+    memset (dst, 0, count - i);
+#else
     for (;i < count; i++)
       *dst++ = 0;
+#endif
     return;
   }
 #endif
 
   {
-    int i = 0;
+    unsigned int i = 0;
     int32_t ix = x * 65536;
     int32_t iy = y * 65536;
 
@@ -2178,7 +2183,7 @@ ctx_RGBA8_source_over_normal_full_cov_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsr
      uint32_t si_ga = ((*((uint32_t*)tsrc)) & 0xff00ff00) >> 8;
      uint32_t si_rb = (*((uint32_t*)tsrc)) & 0x00ff00ff;
      uint32_t si_a  = si_ga >> 16;
-     uint32_t racov = (255-si_a);
+     uint32_t racov = si_a^255;
      *((uint32_t*)(dst)) =
      (((si_rb*255+0xff00ff+(((*((uint32_t*)(dst)))&0x00ff00ff)*racov))>>8)&0x00ff00ff)|
      ((si_ga*255+0xff00ff+((((*((uint32_t*)(dst)))&0xff00ff00)>>8)*racov))&0xff00ff00);
@@ -5285,7 +5290,7 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
   CtxBuffer *buffer = g->texture.buffer->color_managed;
   int bwidth = buffer->width;
   int bheight = buffer->height;
-  if (copy || 1)
+  if (copy)
   {
       if (vd == 0.0 && ud == 1.0f && u0 >= 0 && v0 >=0 && u0 + ud * (width - 1)< bwidth && v0 + (height - 1) < bheight)
       {

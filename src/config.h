@@ -384,7 +384,7 @@
 #endif
 
 #ifndef CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
-#define CTX_ALWAYS_USE_NEAREST_FOR_SCALE1 1
+#define CTX_ALWAYS_USE_NEAREST_FOR_SCALE1 0
 #endif
 
 /* force add format if we have shape cache */
