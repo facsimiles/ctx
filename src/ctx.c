@@ -2519,3 +2519,19 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 }
 
 
+void ctx_set_fullscreen (Ctx *ctx, int val)
+{
+#if CTX_SDL
+    if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
+      ctx_sdl_set_fullscreen (ctx, val);
+#endif
+}
+
+int ctx_get_fullscreen (Ctx *ctx)
+{
+#if CTX_SDL
+    if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
+      return ctx_sdl_get_fullscreen (ctx);
+#endif
+    return 0;
+}

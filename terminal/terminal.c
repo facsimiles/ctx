@@ -208,8 +208,6 @@ void switch_to_tab (Ctx *ctx, int tab_no)
     ctx_client_maximize (ctx, id);
 }
 
-void ctx_sdl_set_fullscreen (Ctx *ctx, int val);
-int ctx_sdl_get_fullscreen (Ctx *ctx);
 CtxClient *ctx_client_by_id (Ctx *ctx, int id);
 
 CtxEvent *ctx_event_copy (CtxEvent *event);
@@ -240,12 +238,7 @@ static void handle_event (Ctx        *ctx,
 
   if (!strcmp (event, "F11"))
   {
-#if CTX_SDL
-    if (backend_type == CTX_BACKEND_SDL)
-    {
-      ctx_sdl_set_fullscreen (ctx, !ctx_sdl_get_fullscreen (ctx));
-    }
-#endif
+    ctx_set_fullscreen (ctx, !ctx_get_fullscreen (ctx));
   }
   else if (!strcmp (event, "shift-return"))
   {

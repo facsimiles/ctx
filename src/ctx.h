@@ -1888,6 +1888,9 @@ int ctx_clients_handle_events (Ctx *ctx);
 typedef struct _CtxList CtxList;
 CtxList *ctx_clients (Ctx *ctx);
 
+void ctx_set_fullscreen (Ctx *ctx, int val);
+int ctx_get_fullscreen (Ctx *ctx);
+
 typedef struct _CtxBuffer CtxBuffer;
 CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
                                     int stride,

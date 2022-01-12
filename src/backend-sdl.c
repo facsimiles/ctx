@@ -542,6 +542,8 @@ void ctx_sdl_free (CtxSDL *sdl)
   ctx_tiled_free ((CtxTiled*)sdl);
 }
 
+
+
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
 {
   CtxSDL *sdl = (void*)ctx->backend;
