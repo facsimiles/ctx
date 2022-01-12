@@ -1944,7 +1944,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
           || (rasterizer->active_edges + rasterizer->pending_edges == rasterizer->ending_edges)
           );
 
-#if 0
     if (rasterizer->active_edges == 0 && rasterizer->pending_edges == 0)
     {
       ctx_rasterizer_feed_edges (rasterizer, 0);
@@ -1954,7 +1953,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
       continue;
     }
     else
-#endif
     if (needs_full_aa)
     {
         int increment = CTX_FULL_AA/real_aa;
