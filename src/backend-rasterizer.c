@@ -1362,13 +1362,9 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
             }
             else
             {
-              int u0 = ctx_mini (x0_start, x0_end);
-              int u1 = ctx_maxi (x0_start, x0_end);
-              u0 = ctx_maxi (u0, minx_);
-              u1 = ctx_mini (u1, maxx_);
-              u1 = ctx_maxi (u1, minx_);
-              u0 = ctx_mini (u0, maxx_);
-  
+              unsigned int u0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x0_start, x0_end)));
+              unsigned int u1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x0_start, x0_end)));
+
               int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
               int count = 0;
 
@@ -1376,7 +1372,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
                          (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255);
               int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV)/255);
 
-              for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
                 coverage[us + count] = (u - u0 + mod) / sum;
                 count++;
@@ -1390,18 +1386,15 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
             }
             else
             {
-              int u0 = ctx_mini (x1_start, x1_end);
-              int u1 = ctx_maxi (x1_start, x1_end);
-              u0 = ctx_maxi (u0, minx_);
-              u1 = ctx_mini (u1, maxx_);
-              u1 = ctx_maxi (u1, minx_);
-              u0 = ctx_mini (u0, maxx_);
+              unsigned int u0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x1_start, x1_end)));
+              unsigned int u1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x1_start, x1_end)));
+
               int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
               int count = 0;
               int mod = ((255-(u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)+64) *
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255));
               int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 1.25)/255);
-              for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
                 coverage[us + count] = 255-((u - u0 + mod)/ sum);
                 count++;
@@ -1504,12 +1497,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           }
           else
           {
-            int u0 = ctx_mini (x0_start, x0_end);
-            int u1 = ctx_maxi (x0_start, x0_end);
-            u0 = ctx_maxi (u0, minx_);
-            u1 = ctx_mini (u1, maxx_);
-            u1 = ctx_maxi (u1, minx_);
-            u0 = ctx_mini (u0, maxx_);
+            unsigned int u0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x0_start, x0_end)));
+            unsigned int u1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x0_start, x0_end)));
 
             int mod = (255-(u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)) *
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255);
@@ -1517,7 +1506,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
             int count = 0;
-            for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+            for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
               coverage[us + count] = (u - u0 + mod) / sum;
               count++;
@@ -1585,12 +1574,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           }
           else
           {
-            int u0 = ctx_mini (x1_start, x1_end);
-            int u1 = ctx_maxi (x1_start, x1_end);
-            u0 = ctx_maxi (u0, minx_);
-            u1 = ctx_mini (u1, maxx_);
-            u1 = ctx_maxi (u1, minx_);
-            u0 = ctx_mini (u0, maxx_);
+            unsigned int u0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x1_start, x1_end)));
+            unsigned int u1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x1_start, x1_end)));
+
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
             int count = 0;
 
@@ -1598,7 +1584,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255));
             int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 1.25)/255);
 
-            for (int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+            for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
               coverage[us + count] = 255-((u - u0 + mod)/ sum);
               count++;
