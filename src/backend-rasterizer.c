@@ -1799,8 +1799,6 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 static inline void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 {
-  rasterizer->pending_edges   =   
-  rasterizer->active_edges    =   
   rasterizer->has_shape       =   
   rasterizer->has_prev        =   
   rasterizer->edge_list.count =    // ready for new edges
@@ -1825,6 +1823,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
 #endif
                                )
 {
+  rasterizer->pending_edges   =   
+  rasterizer->active_edges    =   
+  rasterizer->scanline        = 0;
   int       is_winding  = fill_rule == CTX_FILL_RULE_WINDING;
   const CtxCovPath comp = rasterizer->comp;
   const int real_aa     = rasterizer->aa;
@@ -1852,7 +1853,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
   minx = ctx_maxi (0, minx); // redundant?
   if (CTX_UNLIKELY (minx >= maxx))
     {
-      ctx_rasterizer_reset (rasterizer);
       return;
     }
 #if CTX_SHAPE_CACHE
@@ -1896,7 +1896,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
       (scan_end < (rasterizer->blit_y) * CTX_FULL_AA)))
   { 
     /* not affecting this rasterizers scanlines */
-    ctx_rasterizer_reset (rasterizer);
     return;
   }
 
@@ -2106,7 +2105,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
      }
 #endif
   }
-  ctx_rasterizer_reset (rasterizer);
 }
 
 
@@ -2199,7 +2197,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
       rasterizer->col_min > CTX_SUBDIV * (blit_x + blit_width) ||
       rasterizer->col_max < CTX_SUBDIV * blit_x))
     {
-      ctx_rasterizer_reset (rasterizer);
     }
   else
   {
@@ -2238,7 +2235,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
          if (x1 > x0 && y1 > y0)
          {
            ctx_composite_fill_rect (rasterizer, x0, y0, x1, y1, 255);
-           ctx_rasterizer_reset (rasterizer);
            goto done;
          }
        }
@@ -2355,10 +2351,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                rasterizer->scanline += CTX_FULL_AA;
             }
         }
-        if (shape->uses != 0)
-          {
-            ctx_rasterizer_reset (rasterizer);
-          }
         }
       }
     else
@@ -2721,7 +2713,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         ctx_composite_fill_rect_aligned (rasterizer,
                                          x1-bwb, y0+1,
                                          x1+bw-1, y1+bw-1, 255);
-        ctx_rasterizer_reset (rasterizer);
         goto done;
       }
       else
@@ -2768,9 +2759,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         ctx_composite_fill_rect (rasterizer,
                                  x0-hw, y1-hw,
                                  x0+hw, y1+hw, 255);
-
-        ctx_rasterizer_reset (rasterizer);
-
         goto done;
       }
 
@@ -4052,6 +4040,7 @@ foo:
         }
         ctx_rasterizer_stroke (rasterizer);
         }
+        ctx_rasterizer_reset (rasterizer);
 
         break;
       case CTX_FONT:
@@ -4081,6 +4070,7 @@ foo:
           ctx_rasterizer_shadow_fill (rasterizer);
 #endif
         ctx_rasterizer_fill (rasterizer);
+        ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_RESET:
       case CTX_BEGIN_PATH:
