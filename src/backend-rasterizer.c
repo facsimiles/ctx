@@ -4223,7 +4223,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
 Ctx *
 ctx_new_for_buffer (CtxBuffer *buffer)
 {
-  Ctx *ctx = ctx_new ();
+  Ctx *ctx = _ctx_new_drawlist (buffer->width, buffer->height);
   ctx_set_backend (ctx,
                     ctx_rasterizer_init ( (CtxRasterizer *) malloc (sizeof (CtxRasterizer) ),
                                           ctx, NULL, &ctx->state,
@@ -4238,7 +4238,7 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                          int stride,
                          CtxPixelFormat pixel_format)
 {
-  Ctx *ctx = ctx_new ();
+  Ctx *ctx = _ctx_new_drawlist (width, height);
   CtxRasterizer *r = ctx_rasterizer_init ( (CtxRasterizer *) ctx_calloc (sizeof (CtxRasterizer), 1),
                                           ctx, NULL, &ctx->state, data, 0, 0, width, height,
                                           stride, pixel_format, CTX_ANTIALIAS_DEFAULT);

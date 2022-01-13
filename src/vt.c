@@ -349,7 +349,7 @@ static int vt_col_to_pos (VT *vt, int col)
   int pos = col;
   if (vt->current_line->contains_proportional)
     {
-      Ctx *ctx = ctx_new ();
+      Ctx *ctx = _ctx_new_drawlist (vt->width, vt->height);
       ctx_font (ctx, "regular");
       ctx_font_size (ctx, vt->font_size);
       int x = 0;
@@ -2454,8 +2454,8 @@ qagain:
               {
                 if (!vt->current_line->ctx)
                   {
-                    vt->current_line->ctx = ctx_new ();
-                    vt->current_line->ctx_copy = ctx_new ();
+                    vt->current_line->ctx = ctx_new (vt->width, vt->height, "drawlist");
+                    vt->current_line->ctx_copy = ctx_new (vt->width, vt->height, "drawlist");
                     ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
                     _ctx_set_transformation (vt->current_line->ctx, 0);
                     _ctx_set_transformation (vt->current_line->ctx_copy, 0);

@@ -125,7 +125,7 @@ static uint32_t ctx_ms (Ctx *ctx)
 }
 
 static int is_in_ctx (void);
-Ctx *ctx_new_ui (int width, int height, const char *backend)
+static Ctx *ctx_new_ui (int width, int height, const char *backend)
 {
 #if CTX_TILED
   if (getenv ("CTX_DAMAGE_CONTROL"))

@@ -353,7 +353,7 @@ ctx_render_cairo (Ctx *ctx, cairo_t *cr)
 Ctx *
 ctx_new_for_cairo (cairo_t *cr)
 {
-  Ctx *ctx = ctx_new ();
+  Ctx *ctx = _ctx_new_drawlist (640, 480);
   CtxCairo *ctx_cairo = calloc(sizeof(CtxCairo),1);
   CtxBackend *backend  = (CtxBackend*)ctx_cairo;
   backend->free    = (void*)ctx_cairo_free;

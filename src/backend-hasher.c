@@ -490,7 +490,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
 
 Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
 {
-  Ctx *ctx           = ctx_new ();
+  Ctx *ctx           = _ctx_new_drawlist (width, height);
   CtxState    *state = &ctx->state;
   CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (sizeof (CtxHasher), 1);
   ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows);

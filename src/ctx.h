@@ -86,12 +86,19 @@ typedef struct _CtxGlyph       CtxGlyph;
 
 /**
  * ctx_new:
+ * width: with in device units
+ * height: height in device units
+ * backend: backend to use
+ *
+ *   valid values are:
+ *     NULL/"auto", "drawlist", "sdl", "term", "ctx" the strings are
+ *     the same as are valid for the CTX_BACKEND environment variable.
  *
  * Create a new drawing context, this context has no pixels but
  * accumulates commands and can be played back on other ctx
  * render contexts, this is a ctx context using the drawlist backend.
  */
-Ctx *ctx_new (void);
+Ctx *ctx_new (int width, int height, const char *backend);
 
 /**
  * ctx_new_for_framebuffer:
@@ -104,23 +111,22 @@ Ctx *ctx_new_for_framebuffer (void *data,
                               int   height,
                               int   stride,
                               CtxPixelFormat pixel_format);
+
 /**
- * ctx_new_ui:
+ * ctx_new_drawlist:
  *
- * Create a new interactive ctx context, might depend on additional
- * integration.
- *
- * The values for backend are as for the environment variable,
- * NULL for auto.
+ * Create a new drawing context that can record drawing commands,
+ * this is also the basis for creating more complex contexts with
+ * the backend swapped out.
  */
-Ctx *ctx_new_ui (int width, int height, const char *backend);
+Ctx * ctx_new_drawlist (int width, int height);
 
 /**
  * ctx_new_for_drawlist:
  *
  * Create a new drawing context for a pre-existing drawlist.
  */
-Ctx *ctx_new_for_drawlist (void *data, size_t length);
+Ctx *ctx_new_for_drawlist (int width, int height, void *data, size_t length);
 
 
 /**
@@ -1910,6 +1916,7 @@ typedef enum CtxBackendType {
   CTX_BACKEND_TERMIMG,
   CTX_BACKEND_CAIRO,
   CTX_BACKEND_SDL,
+  CTX_BACKEND_DRAWLIST,
 } CtxBackendType;
 
 CtxBackendType ctx_backend_type (Ctx *ctx);

@@ -122,7 +122,7 @@ app_t * app_create(const char *filename, int texture_mode) {
 	);
 
 
-        self->ctx = ctx_new_ui (-1, -1, NULL);
+        self->ctx = ctx_new (-1, -1, NULL);
 	
 	plm_set_video_decode_callback(self->plm, app_on_video, self);
 	plm_set_audio_decode_callback(self->plm, app_on_audio, self);

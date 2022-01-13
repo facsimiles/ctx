@@ -104,7 +104,7 @@ int ctx_hexview_main(int argc, char *argv[])
 
   if (!contents) return 1;
 
-  ctx = ctx_new_ui (-1, -1, NULL);
+  ctx = ctx_new (-1, -1, NULL);
 
   //char eid[65]="";
 

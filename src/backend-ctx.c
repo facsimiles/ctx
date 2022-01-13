@@ -484,7 +484,7 @@ void ctx_ctx_consume_events (Ctx *ctx)
 Ctx *ctx_new_ctx (int width, int height)
 {
   float font_size = 12.0;
-  Ctx    *ctx    = ctx_new ();
+  Ctx *ctx = _ctx_new_drawlist (width, height);
   CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
   CtxBackend *backend = (CtxBackend*)ctxctx;
   fprintf (stdout, "\e[?1049h");

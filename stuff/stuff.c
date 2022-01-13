@@ -5836,7 +5836,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    int height = 512;
    float font_size = height * 0.075;
    float live_font_factor = 1.0;
-   Ctx *ctx = ctx_new_ui (width, height, "headless");
+   Ctx *ctx = ctx_new (width, height, "headless");
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
    collection_set_path (collection, dir, dir);

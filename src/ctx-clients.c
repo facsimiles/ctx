@@ -219,7 +219,7 @@ static void *launch_client_thread (void *data)
 {
   CtxClient *client = data;
 
-  client->sub_ctx = ctx_new_ui (client->width, client->height,
+  client->sub_ctx = ctx_new (client->width, client->height,
                                 "headless");
 
   client->start_routine (client->sub_ctx, client->user_data);
@@ -840,7 +840,7 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
       if (client->drawn_rev != rev)
       {
         if (!client->recording)
-          client->recording = ctx_new ();
+          client->recording = _ctx_new_drawlist (client->width, client->height);
         else
           ctx_reset (client->recording);
         vt_draw (client->vt, client->recording, 0.0, 0.0);
@@ -886,7 +886,7 @@ static void ctx_client_use_images (Ctx *ctx, CtxClient *client)
       if (client->drawn_rev != rev)
       {
         if (!client->recording)
-          client->recording = ctx_new ();
+          client->recording = _ctx_new_drawlist (client->width, client->height);
         else
           ctx_reset (client->recording);
         vt_draw (client->vt, client->recording, 0.0, 0.0);

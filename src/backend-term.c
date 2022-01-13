@@ -886,7 +886,7 @@ float ctx_term_get_cell_height (Ctx *ctx)
 
 Ctx *ctx_new_term (int width, int height)
 {
-  Ctx *ctx = ctx_new ();
+  Ctx *ctx = _ctx_new_drawlist (width, height);
 #if CTX_RASTERIZER
   CtxTerm *term = (CtxTerm*)calloc (sizeof (CtxTerm), 1);
   CtxBackend *backend = (void*)term;

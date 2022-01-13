@@ -88,7 +88,7 @@ void ctx_termimg_free (CtxTermImg *termimg)
 
 Ctx *ctx_new_termimg (int width, int height)
 {
-  Ctx *ctx = ctx_new ();
+  Ctx *ctx = _ctx_new_drawlist (width, height);
 #if CTX_RASTERIZER
   fprintf (stdout, "\e[?1049h");
   fprintf (stdout, "\e[?25l"); // cursor off

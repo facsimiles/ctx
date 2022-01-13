@@ -2342,7 +2342,7 @@ int _itk_key_bindings_active = 1;
 
 ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
 {
-  Ctx *ctx = ctx_new_ui (-1, -1, NULL);
+  Ctx *ctx = ctx_new (-1, -1, NULL);
   ITK  *itk = itk_new (ctx);
   int   ret_val = 0;
 

@@ -209,7 +209,7 @@ Ctx *ctx_new_headless (int width, int height)
  // not to be done for headless, we want sRGB thumbs - at least not device specific
  // perhaps rec2020 or similar?
 
-  backend->ctx    = ctx_new ();
+  backend->ctx = _ctx_new_drawlist (width, height);
   backend->flush = ctx_tiled_flush;
   backend->process = (void*)ctx_drawlist_process;
   backend->reset = ctx_headless_reset;
@@ -218,17 +218,13 @@ Ctx *ctx_new_headless (int width, int height)
   backend->get_clipboard = ctx_headless_get_clipboard;
   backend->consume_events = ctx_headless_consume_events;
 
-  tiled->ctx_copy = ctx_new ();
+  tiled->ctx_copy = ctx_new (width, height, "drawlist");
   tiled->width    = width;
   tiled->height   = height;
 
   ctx_set_backend (backend->ctx, fb);
   ctx_set_backend (tiled->ctx_copy, fb);
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
-
-  ctx_set_size (backend->ctx, width, height);
-  ctx_set_size (tiled->ctx_copy, width, height);
-
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

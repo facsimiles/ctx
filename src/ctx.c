@@ -1839,8 +1839,8 @@ void *ctx_get_backend (Ctx *ctx)
 }
 
 
-Ctx *
-ctx_new (void)
+static Ctx *
+_ctx_new_drawlist (int width, int height)
 {
   ctx_setup ();
 #if CTX_DRAWLIST_STATIC
@@ -1852,7 +1852,29 @@ ctx_new (void)
   _ctx_init (ctx);
 
   ctx_set_backend (ctx, ctx_drawlist_backend_new ());
+  ctx_set_size (ctx, width, height);
   return ctx;
+}
+
+Ctx *
+ctx_new_drawlist (int width, int height)
+{
+  return _ctx_new_drawlist (width, height);
+}
+
+Ctx *
+ctx_new (int width, int height, const char *backend)
+{
+#if CTX_EVENTS
+  if (backend && !strcmp (backend, "drawlist"))
+#endif
+  {
+    return _ctx_new_drawlist (width, height);
+  }
+#if CTX_EVENTS
+  else
+    return ctx_new_ui (width, height, backend);
+#endif
 }
 
 static inline void
@@ -1907,14 +1929,17 @@ void ctx_free (Ctx *ctx)
 #endif
 }
 
-Ctx *ctx_new_for_drawlist (void *data, size_t length)
+
+Ctx *
+ctx_new_for_drawlist (int width, int height, void *data, size_t length)
 {
-  Ctx *ctx = ctx_new ();
+  Ctx *ctx = _ctx_new_drawlist (width, height);
   ctx->drawlist.flags   |= CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
   ctx->drawlist.entries  = (CtxEntry *) data;
   ctx->drawlist.count    = length / sizeof (CtxEntry);
   return ctx;
 }
+
 
 static void ctx_setup (void)
 {

@@ -101,7 +101,7 @@ int main (int argc, char **argv)
      binary=1;
   }
   ctx_load_font_ttf_file ("import", argv[1]);
-  ctx = ctx_new ();
+  ctx = ctx_new (1000, 1000, "drawlist");
   _ctx_set_transformation (ctx, CTX_TRANSFORMATION_RELATIVE);
   ctx_font (ctx, "import");
 

@@ -260,14 +260,13 @@ ctx_tft_flush (Ctx *ctx)
 
 Ctx *ctx_new_tft (TFT_eSPI *tft, int flags)
 {
-  Ctx *ctx = ctx_new ();
+  Ctx *ctx = ctx_new_drawlist (tft->width(), tft->height());
   CtxBackend *backend = (CtxBackend*)calloc (sizeof (CtxTftBackend), 1);
   CtxTftBackend *tft_backend = (CtxTftBackend*)backend;
   tft_backend->tft = tft;
   tft_backend->flags = flags;
   backend->flush = ctx_tft_flush;
   ctx_set_backend (ctx, backend);
-  ctx_set_size (ctx, 320, 240);//tft->width(), tft->height());
   return ctx;
 }
 

@@ -603,8 +603,8 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_EnableScreenSaver ();
   SDL_GL_SetSwapInterval (1);
 
-  backend->ctx      = ctx_new ();
-  tiled->ctx_copy = ctx_new ();
+  backend->ctx      = _ctx_new_drawlist (width, height);
+  tiled->ctx_copy = _ctx_new_drawlist (width, height);
   tiled->width    = width;
   tiled->height   = height;
   tiled->cols     = 80;
@@ -626,9 +626,6 @@ Ctx *ctx_new_sdl (int width, int height)
 
   backend->set_clipboard = ctx_sdl_set_clipboard;
   backend->get_clipboard = ctx_sdl_get_clipboard;
-
-  ctx_set_size (backend->ctx,    width, height);
-  ctx_set_size (tiled->ctx_copy, width, height);
 
   for (int i = 0; i < _ctx_max_threads; i++)
   {

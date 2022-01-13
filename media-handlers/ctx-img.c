@@ -276,7 +276,7 @@ int ctx_img_main(int argc, char *argv[])
     if (path[1] == '/') path++;
   }
 
-  ctx = ctx_new_ui (-1, -1, NULL);
+  ctx = ctx_new (-1, -1, NULL);
   ctx_handle_img (ctx, path);
   ctx_free (ctx);
   return 0;

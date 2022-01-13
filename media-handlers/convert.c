@@ -696,7 +696,7 @@ int convert_main (int argc, char **argv)
 #endif
   Ctx *ctx;
 again:
-  ctx = ctx_new ();
+  ctx = ctx_new_drawlist (width, height);
   _ctx_set_transformation (ctx, 0);
 #if CTX_SVG
   if (!strcmp (get_suffix (source_path), ".html") ||
@@ -737,7 +737,7 @@ again:
     static Ctx *ui = NULL;
     if (!ui)
     {
-      ui = ctx_new_ui (width, height, NULL);
+      ui = ctx_new (width, height, NULL);
       ctx_get_event (ui); // forces enabling of get event
     }
     dirty=1;
