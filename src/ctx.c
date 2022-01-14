@@ -190,6 +190,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 #endif
    else if (format == CTX_FORMAT_RGBA8 && ctx_backend_is_tiled (ctx))
    {
+     /* synchronize */
      CtxTiled *tiled = (CtxTiled*)ctx->backend;
      {
        if (dst_stride <= 0) dst_stride = ctx_pixel_format_get_stride (format, sw);
@@ -207,6 +208,15 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
        return;
      }
    }
+#if CTX_RASTERIZER
+   else
+   {
+     Ctx *rasterizer = ctx_new_for_framebuffer (dst_data, sw, sh, dst_stride, format);
+     ctx_translate (rasterizer, sx, sy);
+     ctx_render_ctx (ctx, rasterizer);
+     ctx_free (rasterizer);
+   }
+#endif
 }
 
 void
