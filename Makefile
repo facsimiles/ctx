@@ -181,6 +181,7 @@ docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile build.conf
 
 foo: ctx
 updateweb: all ctx.static test docs/ctx.h.html docs/ctx-font-regular.h.html 
+	git repack
 	(cd docs ; stagit .. )
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
