@@ -16,7 +16,7 @@ pkg-config alsa && HAVE_ALSA=1
 ENABLE_KMS=1
 ENABLE_FB=0
 
-CFLAGS='-O2 -g '
+CFLAGS='-O3 -g -march=native '
 
 CFLAGS_BACKEND=''
 
@@ -25,7 +25,6 @@ do
     case "$1" in
      "--without-sdl") HAVE_SDL=0    ;;
      "--debug") CFLAGS=' -g '    ;;
-     "--optimized") CFLAGS=" -O2 -ftree-vectorize -march=native -mtune=native";LIBS=' '  ;;
      "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan'  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan'  ;;
      "--enable-kms") ENABLE_KMS=1 ;;
@@ -58,7 +57,6 @@ do
        echo "  --without-libcurl"
        echo "  --asan"
        echo "  --ubsan"
-       echo "  --optimized"
        echo "  --debug"
        exit 0
        ;;
