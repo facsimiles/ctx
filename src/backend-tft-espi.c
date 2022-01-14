@@ -222,13 +222,13 @@ ctx_tft_flush (Ctx *ctx)
          int x1 = (tft_backend->max_col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
          int y0 = tft_backend->min_row * (ctx_height (ctx)/CTX_HASH_ROWS);
          int y1 = (tft_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
-#if 1
+#if 0
          ctx_rectangle (ctx, x0, y0, x1-x0+1, y1-y0+1);
          ctx_rgba (ctx, 1,0,0,0.5);
          ctx_line_width (ctx, 4.0);
          ctx_stroke (ctx);
 
-         ctx_move_to (ctx, (x0+x1)/2, (y0+y1)/2);
+         //ctx_move_to (ctx, (x0+x1)/2, (y0+y1)/2);
          //char buf[44];
          //sprintf (buf, "%ix%i", ctx_width(ctx), ctx_height(ctx));
          //ctx_text (ctx, buf);
