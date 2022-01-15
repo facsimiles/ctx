@@ -88,7 +88,7 @@ int ctx_a85dec (const char *src, char *dst, int count)
       {
          for (int j = 0; j < 4; j++)
          {
-           dst[out_len++] = (val & (0xff << 24)) >> 24;
+           dst[out_len++] = (val & ((unsigned)0xff << 24)) >> 24;
            val <<= 8;
          }
          val = 0;
@@ -113,7 +113,7 @@ int ctx_a85dec (const char *src, char *dst, int count)
 
     for (int j = 0; j < k-1; j++)
     {
-      dst[out_len++] = (val & (0xff << 24)) >> 24;
+      dst[out_len++] = (val & ((unsigned)0xff << 24)) >> 24;
       val <<= 8;
     }
     val = 0;
