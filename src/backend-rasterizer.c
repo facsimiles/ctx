@@ -1824,8 +1824,8 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
                                )
 {
   rasterizer->pending_edges   =   
-  rasterizer->active_edges    =   
-  rasterizer->scanline        = 0;
+  rasterizer->active_edges    =   0;
+  //rasterizer->scanline        = 0;
   int       is_winding  = fill_rule == CTX_FILL_RULE_WINDING;
   const CtxCovPath comp = rasterizer->comp;
   const int real_aa     = rasterizer->aa;
@@ -1928,6 +1928,13 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
       ctx_rasterizer_feed_edges (rasterizer, 0);
       ctx_rasterizer_increment_edges (rasterizer, CTX_FULL_AA);
       dst += blit_stride;
+#if CTX_SHAPE_CACHE
+      if (shape)
+      {
+        memset (coverage, 0, coverage_size);
+        coverage += shape->width;
+      }
+#endif
       rasterizer->prev_active_edges = rasterizer->active_edges;
       continue;
     }
@@ -2286,6 +2293,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
           dont_cache = 1;
         if (dont_cache || !_ctx_shape_cache_enabled)
         {
+          rasterizer->scanline = scan_min;
           ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule
 #if CTX_SHAPE_CACHE
                                         , NULL
@@ -2333,11 +2341,12 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                                                  x0, // is 0
                                                  composite,
                                                  ewidth );
+                 }
                rasterizer->scanline += CTX_FULL_AA;
             }
           }
-          }
           else
+          {
           for (int y = y0; y < y1; y++)
             {
               if (CTX_LIKELY((y >= clip_y_min) && (y <= clip_y_max) ))
@@ -2350,7 +2359,8 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
                 }
                rasterizer->scanline += CTX_FULL_AA;
             }
-        }
+          }
+         }
         }
       }
     else

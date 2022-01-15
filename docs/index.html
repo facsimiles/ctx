@@ -55,11 +55,12 @@
       grayscale is handled.</p>
 
       <p>The ctx renderer is written in portable C, without
-      inline assembly or SIMD intrinsics - but is still fast.
+      inline assembly or SIMD intrinsics - but is still fast (and can make good
+      use of SIMD instructions known by the C compiler.
       The single threaded rendering performance for 8bit RGBA
       is comparable with and for most cases quite a bit
       <a href='performance/'>faster than the rendering engines in Qt/cairo</a>
-      that are using SIMD like SSE2/AVX/Neon for compositing. 
+      that are using explicit SIMD like SSE2/AVX/Neon for compositing. 
       </p>
 
       <p>Programs using the <a href='sdk/'>ctx SDK</a> are
