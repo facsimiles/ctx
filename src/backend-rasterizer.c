@@ -2166,7 +2166,9 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
 static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
-  unsigned int preserved_count = rasterizer->preserve?rasterizer->edge_list.count:1;
+  unsigned int preserved_count =
+          (rasterizer->preserve&&rasterizer->edge_list.count)?
+             rasterizer->edge_list.count:1;
   int blit_x = rasterizer->blit_x;
   int blit_y = rasterizer->blit_y;
   int blit_width = rasterizer->blit_width;
