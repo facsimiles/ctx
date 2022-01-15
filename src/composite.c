@@ -5535,7 +5535,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     {
     case CTX_COV_PATH_RGBA8_COPY:
     {
-      uint32_t color = *((uint32_t*)rasterizer->color);
+      uint32_t color;
+      memcpy (&color, (uint32_t*)rasterizer->color, sizeof (color));
       INIT_ENV;
       if (width == 1)
       {
@@ -5760,7 +5761,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     {
     case CTX_COV_PATH_RGBA8_COPY:
     {
-      uint32_t color = *((uint32_t*)rasterizer->color);
+      uint32_t color;
+      memcpy (&color, (uint32_t*)rasterizer->color, sizeof (color));
       INIT_ENV;
       {
         for (int y = y0; y <= y1; y++)
@@ -5796,7 +5798,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     }
     case CTX_COV_PATH_RGBA8_OVER:
     {
-      uint32_t color = *((uint32_t*)rasterizer->color);
+      uint32_t color;
+      memcpy (&color, (uint32_t*)rasterizer->color, sizeof (color));
       INIT_ENV;
       if (width == 1)
       {
