@@ -238,13 +238,13 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
             (shape == CTX_CURSOR_RESIZE_NE))
         {
           theta = -theta;
-          cos_theta = cos (theta);
-          sin_theta = sin (theta);
+          cos_theta = ctx_cosf (theta);
+          sin_theta = ctx_sinf (theta);
         }
         else
         {
-          cos_theta = cos (theta);
-          sin_theta = sin (theta);
+          cos_theta = ctx_cosf (theta);
+          sin_theta = ctx_sinf (theta);
         }
         int rot_x = x * cos_theta - y * sin_theta;
         int rot_y = y * cos_theta + x * sin_theta;
