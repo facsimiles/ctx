@@ -1918,6 +1918,9 @@ static void ctx_deinit (Ctx *ctx)
 #if CTX_CURRENT_PATH
   ctx_drawlist_deinit (&ctx->current_path);
 #endif
+
+  for (int no = 0; no < CTX_MAX_TEXTURES; no++)
+    ctx_buffer_deinit (&ctx->texture[no]);
 }
 
 void ctx_free (Ctx *ctx)

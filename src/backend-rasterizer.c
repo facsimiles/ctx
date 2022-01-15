@@ -3512,10 +3512,10 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
     rasterizer->buf = rasterizer->group[no-1]->data;
   }
   // XXX use texture_source ?
-   ctx_texture_init (ctx, ".ctx-group", // XXX ? count groups..
-                  rasterizer->blit_width,  // or have group based on thread-id?
-                  rasterizer->blit_height, // .. this would mean threadsafe
-                                           // allocation
+   ctx_texture_init (ctx, ".ctx-group", 
+                  rasterizer->blit_width, 
+                  rasterizer->blit_height,
+                                         
                   rasterizer->blit_width * rasterizer->format->bpp/8,
                   rasterizer->format->pixel_format,
                   NULL, // space
@@ -3527,7 +3527,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
 
      CtxEntry commands[4] =
       {
-       ctx_f  (CTX_TEXTURE, rasterizer->blit_x, rasterizer->blit_y), 
+       ctx_f   (CTX_TEXTURE, rasterizer->blit_x, rasterizer->blit_y), 
        ctx_u32 (CTX_DATA, eid_len, eid_len/9+1),
        ctx_u32 (CTX_CONT, 0,0),
        ctx_u32 (CTX_CONT, 0,0)
@@ -3546,7 +3546,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
     ctx_rasterizer_process (ctx, (CtxCommand*)commands);
   }
   {
-    CtxEntry commands[1]= { ctx_void (CTX_FILL) };
+    CtxEntry commands[1] = { ctx_void (CTX_FILL) };
     ctx_rasterizer_process (ctx, (CtxCommand*)commands);
   }
   //ctx_texture_release (rasterizer->backend.ctx, ".ctx-group");
@@ -4119,6 +4119,8 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
     }
 
 #endif
+
+
   free (rasterizer);
 }
 
