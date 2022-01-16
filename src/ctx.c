@@ -2573,3 +2573,9 @@ int ctx_get_fullscreen (Ctx *ctx)
 #endif
     return 0;
 }
+
+
+CtxPixelFormatInfo *ctx_pixel_format_info_generic (CtxPixelFormat format);
+
+CtxPixelFormatInfo *(*ctx_pixel_format_info) (CtxPixelFormat format) = ctx_pixel_format_info_generic;
+

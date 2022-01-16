@@ -572,8 +572,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data);
 static inline void
 ctx_drawlist_deinit (CtxDrawlist *drawlist);
 
-CtxPixelFormatInfo *
-ctx_pixel_format_info (CtxPixelFormat format);
+extern CtxPixelFormatInfo *(*ctx_pixel_format_info) (CtxPixelFormat format);
 
 
 int ctx_utf8_len (const unsigned char first_byte);

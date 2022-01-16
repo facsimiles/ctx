@@ -625,4 +625,7 @@
 #define thrd_t pthread_t
 #endif
 
+#ifndef CTX_SIMD_SUFFIX
+#define CTX_SIMD_SUFFIX(symbol) symbol##_generic
+#endif
 

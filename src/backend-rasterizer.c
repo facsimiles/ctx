@@ -4277,16 +4277,8 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
 }
 #endif
 
-CtxPixelFormatInfo *
-ctx_pixel_format_info (CtxPixelFormat format);
-
 #else
 
-CtxPixelFormatInfo *
-ctx_pixel_format_info (CtxPixelFormat format)
-{
-  return NULL;
-}
 #endif
 
 

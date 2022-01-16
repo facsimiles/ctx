@@ -5348,7 +5348,6 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
   }
 }
 
-
 static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
   float u0 = 0; float v0 = 0;
@@ -6093,7 +6092,7 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 
 
 CtxPixelFormatInfo *
-ctx_pixel_format_info (CtxPixelFormat format)
+CTX_SIMD_SUFFIX(ctx_pixel_format_info) (CtxPixelFormat format)
 {
   for (unsigned int i = 0; ctx_pixel_formats[i].pixel_format; i++)
     {
@@ -6102,6 +6101,13 @@ ctx_pixel_format_info (CtxPixelFormat format)
           return &ctx_pixel_formats[i];
         }
     }
+  return NULL;
+}
+
+#else
+CtxPixelFormatInfo *
+CTX_SIMD_SUFFIX(ctx_pixel_format_info) (CtxPixelFormat format)
+{
   return NULL;
 }
 
