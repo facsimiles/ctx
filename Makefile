@@ -140,7 +140,12 @@ tools/%: tools/%.c ctx-nofont.h
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DNO_LIBCURL
 
 ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) $< -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)
+
+ctx-x86-64-v2.o: ctx-x86-64-v2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+	$(CCC) $< -c -o $@ $(CFLAGS) -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(PKG_CFLAGS) $(OFLAGS_LIGHT)
+ctx-x86-64-v3.o: ctx-x86-64-v3.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+	$(CCC) $< -c -o $@ $(CFLAGS) -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(PKG_CFLAGS) $(OFLAGS_LIGHT)
 
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
@@ -148,7 +153,7 @@ deps.o: deps.c build.conf Makefile
 ctx-split.o: $(SRC_OBJS)
 
 ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts build.conf
-	$(CCC) ctx.c -c -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DCTX_SDL=0  -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -DNO_ALSA=1 
+	$(CCC) -c $< -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DCTX_SDL=0  -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -DNO_ALSA=1 
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
@@ -159,7 +164,7 @@ media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/m
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-libctx.a: ctx.o deps.o build.conf Makefile
+libctx.a: ctx.o deps.o ctx-x86-64-v2.o build.conf Makefile
 	$(AR) rcs $@ $?
 libctx.so: ctx.o
 	$(LD) -shared $(LIBS) ctx.o $(PKG_LIBS) -o $@

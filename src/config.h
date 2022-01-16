@@ -627,5 +627,8 @@
 
 #ifndef CTX_SIMD_SUFFIX
 #define CTX_SIMD_SUFFIX(symbol) symbol##_generic
+#define CTX_SIMD_BUILD 0
+#else
+#define CTX_SIMD_BUILD 1
 #endif
 

@@ -1770,7 +1770,7 @@ ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
 {
   uint8_t *rgba_out = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  _ctx_color_get_rgba8 (rasterizer->state, &g->color, rgba_out);
+  ctx_color_get_rgba8 (rasterizer->state, &g->color, rgba_out);
   ctx_RGBA8_associate_alpha (rgba_out);
   if (rasterizer->swap_red_green)
   {
@@ -6112,3 +6112,7 @@ CTX_SIMD_SUFFIX(ctx_pixel_format_info) (CtxPixelFormat format)
 }
 
 #endif
+
+#endif
+
+#if CTX_IMPLEMENTATION

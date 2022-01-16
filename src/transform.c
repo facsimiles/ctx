@@ -2,14 +2,6 @@
 #define __CTX_TRANSFORM
 #include "ctx-split.h"
 
-static inline void
-_ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
-{
-  float x_in = *x;
-  float y_in = *y;
-  *x = ( (x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
-  *y = ( (y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
-}
 
 static inline void
 _ctx_matrix_apply_transform_only_x (const CtxMatrix *m, float *x, float y_in)
@@ -127,7 +119,7 @@ ctx_matrix_scale (CtxMatrix *matrix, float x, float y)
 
 
 /* for multiples of 90 degree rotations, we return no rotation */
-static int
+int
 ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix)
 {
   if (matrix->m[0][1] != 0.0f) return 0;

@@ -1167,6 +1167,14 @@ static Ctx *_ctx_new_drawlist (int width, int height);
  */
 static Ctx *ctx_new_ui (int width, int height, const char *backend);
 
+static inline void
+_ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
+{
+  float x_in = *x;
+  float y_in = *y;
+  *x = ( (x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
+  *y = ( (y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
+}
 
 
 #ifdef CTX_X86_64
@@ -1174,6 +1182,7 @@ static int ctx_x86_64_level (void);
 #endif
 
 
+int ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix);
 
 #endif
 
