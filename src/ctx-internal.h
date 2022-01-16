@@ -1168,5 +1168,13 @@ static Ctx *_ctx_new_drawlist (int width, int height);
  */
 static Ctx *ctx_new_ui (int width, int height, const char *backend);
 
+
+
+#ifdef CTX_X86_64
+static int ctx_x86_64_level (void);
+#endif
+
+
+
 #endif
 

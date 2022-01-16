@@ -166,7 +166,7 @@ libctx.so: ctx.o
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) -lpthread $(OFLAGS_LIGHT)
+	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(PKG_LIBS)
 
 ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) ctx-static.o deps.o terminal/*.[ch] 
 	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx-static.o deps.o $(LIBS) -DNO_BABL=1 -DCTX_SDL=0 -DCTX_FB=1 -DNO_LIBCURL=1 -static 

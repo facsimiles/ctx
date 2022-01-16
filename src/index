@@ -16,6 +16,7 @@ audio.h
 ctx-clients.h
 start-implementation
 sha1.c
+x86_64_level.c
 audio.c
 a85.c
 squoze5.h

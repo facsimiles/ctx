@@ -122,6 +122,8 @@ else
   echo "PKG_CFLAGS+= -DCTX_FB=0 " >> build.conf
 fi
 
+if [ x`uname -m` = "xx86_64" ]; then echo "PKG_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
+
 echo "CFLAGS=$CFLAGS" >> build.conf
 echo "LIBS=$LIBS" >> build.conf
 
