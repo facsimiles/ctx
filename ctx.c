@@ -88,9 +88,9 @@
 #include "itk.h"   // for completeness, itk wants to be built in the ctx
                    // compilation unit to be influenced by the ctx config
 
-extern CtxPixelFormatInfo *ctx_pixel_formats;
-extern CtxPixelFormatInfo ctx_pixel_formats_x86_64_v2[];
-extern CtxPixelFormatInfo ctx_pixel_formats_x86_64_v3[];
+
+void ctx_simd_setup_x86_64_v2 (void);
+void ctx_simd_setup_x86_64_v3 (void);
 
 void ctx_simd_setup (void)
 {
@@ -101,7 +101,7 @@ void ctx_simd_setup (void)
     default:
     case 0:
     case 1: break;
-    case 2: ctx_pixel_formats = ctx_pixel_formats_x86_64_v2; break;
-    case 3: ctx_pixel_formats = ctx_pixel_formats_x86_64_v3; break;
+    case 2: ctx_simd_setup_x86_64_v2 ();break;
+    case 3: ctx_simd_setup_x86_64_v3 ();break;
   }
 }

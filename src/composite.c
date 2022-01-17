@@ -5850,8 +5850,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   }
 }
 
-static void
-ctx_composite_fill_rect (CtxRasterizer *rasterizer,
+void
+CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                           float          x0,
                           float          y0,
                           float          x1,
@@ -5948,8 +5948,8 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
   }
 }
 
-static void
-ctx_composite_stroke_rect (CtxRasterizer *rasterizer,
+void
+CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
                            float          x0,
                            float          y0,
                            float          x1,
@@ -6192,6 +6192,16 @@ CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
     CTX_FORMAT_NONE
   }
 };
+
+
+extern CtxPixelFormatInfo *ctx_pixel_formats;
+void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
+{
+  ctx_pixel_formats         = CTX_SIMD_SUFFIX(ctx_pixel_formats);
+  ctx_composite_fill_rect   = CTX_SIMD_SUFFIX(ctx_composite_fill_rect);
+  ctx_composite_stroke_rect = CTX_SIMD_SUFFIX(ctx_composite_stroke_rect);
+}
+
 
 
 #endif // CTX_COMPOSITE

@@ -576,6 +576,22 @@ ctx_drawlist_deinit (CtxDrawlist *drawlist);
 CtxPixelFormatInfo *ctx_pixel_format_info (CtxPixelFormat format);
 
 
+
+extern void (*ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
+                           float          x0,
+                           float          y0,
+                           float          x1,
+                           float          y1,
+                           float          line_width);
+
+extern void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
+                           float        x0,
+                           float        y0,
+                           float        x1,
+                           float        y1,
+                           uint8_t      cov);
+
+
 int ctx_utf8_len (const unsigned char first_byte);
 const char *ctx_utf8_skip (const char *s, int utf8_length);
 int ctx_utf8_strlen (const char *s);
