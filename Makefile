@@ -55,7 +55,7 @@ SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 CCC=$(CCACHE) $(CC)
 build.conf:
-	@echo "You have not run configure, running it ./configure for you"
+	@echo "You have not run configure, running ./configure.sh without arguments for you"
 	@echo "you will have to run make again after this.";echo
 	./configure.sh
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";

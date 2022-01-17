@@ -111,9 +111,9 @@ struct _CtxBuffer
   int                 width;
   int                 height;
   int                 stride;
-  char               *eid;        // might be NULL, when not - should be unique for pixel contents
   int                 frame;      // last frame used in, everything > 3 can be removed,
                                   // as clients wont rely on it.
+  char               *eid;        // might be NULL, when not - should be unique for pixel contents
   CtxPixelFormatInfo *format;
   void (*free_func) (void *pixels, void *user_data);
   void               *user_data;

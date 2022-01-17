@@ -1651,14 +1651,14 @@ struct _CtxBackend
   void  (*reset)           (Ctx *ctx);
   void  (*flush)           (Ctx *ctx);
 
-  char *(*get_clipboard)   (Ctx *ctx);
-  void  (*set_clipboard)   (Ctx *ctx, const char *text);
   void  (*set_windowtitle) (Ctx *ctx, const char *text);
 
   char *(*get_event)       (Ctx *ctx, int timout_ms);
 
   void                     (*consume_events) (Ctx *ctx);
   void                     (*get_event_fds)  (Ctx *ctx, int *fd, int *count);
+  char *(*get_clipboard)   (Ctx *ctx);
+  void  (*set_clipboard)   (Ctx *ctx, const char *text);
   void (*free)             (void *backend); /* the free pointers are abused as the differentiatior
                                                between different backends   */
   void                     *user_data; // not used by ctx core
