@@ -80,7 +80,7 @@
 #define CTX_IMPLEMENTATION 1
 #define CTX_RASTERIZER     1
 
-#define CTX_HAVE_SIMD      1
+#define CTX_HAVE_SIMD      1 // this causes ctx_simd_setup to be called
 
 #include "ctx.h"
 

@@ -152,8 +152,8 @@ deps.o: deps.c build.conf Makefile
 
 ctx-split.o: $(SRC_OBJS)
 
-ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts build.conf
-	$(CCC) -c $< -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DCTX_SDL=0  -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -DNO_ALSA=1 
+ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts 
+	$(CCC) -c $< -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DCTX_SDL=0  -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -DNO_ALSA=1 -DCTX_X86_64=1
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
@@ -173,8 +173,8 @@ libctx.so: ctx.o ctx-x86-64-v2.o ctx-x86-64-v3.o
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
 	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(PKG_LIBS)
 
-ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) ctx-static.o deps.o terminal/*.[ch] 
-	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx-static.o deps.o $(LIBS) -DNO_BABL=1 -DCTX_SDL=0 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
+ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) ctx-x86-64-v2.o ctx-x86-64-v3.o ctx-static.o deps.o terminal/*.[ch] 
+	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx-static.o ctx-x86-64-v2.o ctx-x86-64-v3.o deps.o $(LIBS) -DNO_BABL=1 -DCTX_SDL=0 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile build.conf
