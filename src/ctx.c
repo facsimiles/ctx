@@ -2626,6 +2626,7 @@ void (*ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fil
 
 void (*ctx_composite_setup) (CtxRasterizer *rasterizer) =
       ctx_composite_setup_generic;
+#if CTX_FAST_FILL_RECT
 void (*ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
                            float          x0,
                            float          y0,
@@ -2641,6 +2642,7 @@ void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                            float        y1,
                            uint8_t      cov) =
       ctx_composite_fill_rect_generic;
+#endif
 
 #endif
 

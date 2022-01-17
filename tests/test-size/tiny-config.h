@@ -1,6 +1,7 @@
 #define CTX_MAX_STATES      4 // lowered from 10, saving quite a few kb, 2 is also possible
                               // but then there is no save/restore for the user, with 4 there is two
 
+#define CTX_RASTERIZER          1
 #define CTX_MATH            1
 #define CTX_LIMIT_FORMATS   1
 #define CTX_FRAGMENT_SPECIALIZE 0
@@ -40,6 +41,5 @@
 #define CTX_MIN_EDGE_LIST_SIZE  196 // is also MIN_RENDERSTREAM_SIZE with RENDERSTREAM_STATIC
 #define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */
-#define CTX_RASTERIZER          1
 #define CTX_AUDIO               0
 

@@ -1607,10 +1607,12 @@ extern CtxPixelFormatInfo *ctx_pixel_formats;
 void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
 {
   ctx_pixel_formats         = CTX_SIMD_SUFFIX(ctx_pixel_formats);
-  ctx_composite_fill_rect   = CTX_SIMD_SUFFIX(ctx_composite_fill_rect);
   ctx_composite_setup       = CTX_SIMD_SUFFIX(ctx_composite_setup);
-  ctx_composite_stroke_rect = CTX_SIMD_SUFFIX(ctx_composite_stroke_rect);
   ctx_rasterizer_rasterize_edges = CTX_SIMD_SUFFIX(ctx_rasterizer_rasterize_edges);
+#if CTX_FAST_FILL_RECT
+  ctx_composite_fill_rect   = CTX_SIMD_SUFFIX(ctx_composite_fill_rect);
+  ctx_composite_stroke_rect = CTX_SIMD_SUFFIX(ctx_composite_stroke_rect);
+#endif
 }
 
 
