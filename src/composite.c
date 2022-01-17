@@ -99,7 +99,6 @@ inline static int ctx_grad_index_i (int v)
   return ctx_maxi (0, ctx_mini (ctx_gradient_cache_elements-1, v));
 }
 
-
 //static void
 //ctx_gradient_cache_reset (void)
 //{
@@ -357,9 +356,6 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed;
-  ctx_assert (rasterizer);
-  ctx_assert (g);
-  ctx_assert (buffer);
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
 
   for (int i = 0; i < count; i ++)
@@ -1621,9 +1617,6 @@ ctx_fragment_image_gray1_RGBA8 (CtxRasterizer *rasterizer, float x, float y, voi
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer;
-  ctx_assert (rasterizer);
-  ctx_assert (g);
-  ctx_assert (buffer);
   for (int i = 0; i < count; i ++)
   {
   int u = x;
@@ -2802,7 +2795,7 @@ ctx_setup_native_color (CtxRasterizer *rasterizer)
       1);
 }
 
-static inline void
+static void
 ctx_setup_apply_coverage (CtxRasterizer *rasterizer)
 {
   rasterizer->apply_coverage = rasterizer->format->apply_coverage ?
@@ -3866,6 +3859,17 @@ ctx_composite_BGRA8 (CTX_COMPOSITE_ARGUMENTS)
 
 
 #endif
+static void
+ctx_composite_direct (CTX_COMPOSITE_ARGUMENTS)
+{
+  // for better performance, this could be done without a pre/post conversion,
+  // by swapping R and B of source instead... as long as it is a color instead
+  // of gradient or image
+  //
+  //
+  rasterizer->comp_op (rasterizer, dst, rasterizer->color, x0, coverage, count);
+}
+
 #if CTX_ENABLE_CMYKAF
 
 static void
@@ -5946,7 +5950,7 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
 
 #endif
 
-static CtxPixelFormatInfo ctx_pixel_formats[]=
+CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
 {
 #if CTX_ENABLE_RGBA8
   {
@@ -6091,28 +6095,8 @@ static CtxPixelFormatInfo ctx_pixel_formats[]=
 };
 
 
-CtxPixelFormatInfo *
-CTX_SIMD_SUFFIX(ctx_pixel_format_info) (CtxPixelFormat format)
-{
-  for (unsigned int i = 0; ctx_pixel_formats[i].pixel_format; i++)
-    {
-      if (ctx_pixel_formats[i].pixel_format == format)
-        {
-          return &ctx_pixel_formats[i];
-        }
-    }
-  return NULL;
-}
+#endif // CTX_COMPOSITE
 
-#else
-CtxPixelFormatInfo *
-CTX_SIMD_SUFFIX(ctx_pixel_format_info) (CtxPixelFormat format)
-{
-  return NULL;
-}
-
-#endif
-
-#endif
+#endif // CTX_IMPLEMENTATION
 
 #if CTX_IMPLEMENTATION

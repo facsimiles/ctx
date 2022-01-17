@@ -629,6 +629,17 @@
 #define CTX_SIMD_SUFFIX(symbol) symbol##_generic
 #define CTX_SIMD_BUILD 0
 #else
+
+
 #define CTX_SIMD_BUILD 1
+#ifdef CTX_COMPOSITE
+#undef CTX_COMPOSITE
+#define CTX_COMPOSITE 1
 #endif
 
+#endif
+
+
+#ifndef CTX_COMPOSITE
+#define CTX_COMPOSITE 0
+#endif

@@ -25,8 +25,8 @@ do
     case "$1" in
      "--without-sdl") HAVE_SDL=0    ;;
      "--debug") CFLAGS=' -g '    ;;
-     "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan'  ;;
-     "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan'  ;;
+     "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan -g '  ;;
+     "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan -g '  ;;
      "--enable-kms") ENABLE_KMS=1 ;;
      "--without-kms") ENABLE_KMS=0 ;;
      "--enable-fb") ENABLE_FB=1 ;;

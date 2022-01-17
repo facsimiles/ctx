@@ -80,8 +80,28 @@
 #define CTX_IMPLEMENTATION 1
 #define CTX_RASTERIZER     1
 
+#define CTX_HAVE_SIMD      1
+
 #include "ctx.h"
 
 #define ITK_IMPLEMENTATION 1
 #include "itk.h"   // for completeness, itk wants to be built in the ctx
                    // compilation unit to be influenced by the ctx config
+
+extern CtxPixelFormatInfo *ctx_pixel_formats;
+extern CtxPixelFormatInfo ctx_pixel_formats_x86_64_v2[];
+extern CtxPixelFormatInfo ctx_pixel_formats_x86_64_v3[];
+
+void ctx_simd_setup (void)
+{
+  fprintf (stderr, "x86-64-level: %i\n", ctx_x86_64_level());
+
+  switch (ctx_x86_64_level())
+  {
+    default:
+    case 0:
+    case 1: break;
+    case 2: ctx_pixel_formats = ctx_pixel_formats_x86_64_v2; break;
+    case 3: ctx_pixel_formats = ctx_pixel_formats_x86_64_v3; break;
+  }
+}

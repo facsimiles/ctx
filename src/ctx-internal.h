@@ -572,7 +572,8 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data);
 static inline void
 ctx_drawlist_deinit (CtxDrawlist *drawlist);
 
-extern CtxPixelFormatInfo *(*ctx_pixel_format_info) (CtxPixelFormat format);
+//extern CtxPixelFormatInfo *(*ctx_pixel_format_info) (CtxPixelFormat format);
+CtxPixelFormatInfo *ctx_pixel_format_info (CtxPixelFormat format);
 
 
 int ctx_utf8_len (const unsigned char first_byte);
@@ -1177,9 +1178,6 @@ _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 }
 
 
-#ifdef CTX_X86_64
-static int ctx_x86_64_level (void);
-#endif
 
 
 int ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix);

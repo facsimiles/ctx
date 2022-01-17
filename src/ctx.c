@@ -1802,9 +1802,22 @@ void _ctx_set_transformation (Ctx *ctx, int transformation)
   ctx->transformation = transformation;
 }
 
+#ifdef CTX_HAVE_SIMD
+void ctx_simd_setup (void);
+#endif
 static void
 _ctx_init (Ctx *ctx)
 {
+#ifdef CTX_HAVE_SIMD
+   {
+     static int simd_inited = 0;
+     if (!simd_inited)
+     {
+       simd_inited = 1;
+       ctx_simd_setup ();
+     }
+   }
+#endif
 #if CTX_U8_TO_FLOAT_LUT
   static int lut_inited = 0;
   if (!lut_inited){
@@ -2574,8 +2587,34 @@ int ctx_get_fullscreen (Ctx *ctx)
     return 0;
 }
 
+CtxPixelFormatInfo *ctx_pixel_formats =
+#if CTX_COMPOSITE
+ctx_pixel_formats_generic;
+#else
+NULL;
+#endif
 
-CtxPixelFormatInfo *ctx_pixel_format_info_generic (CtxPixelFormat format);
+CtxPixelFormatInfo *
+ctx_pixel_format_info (CtxPixelFormat format)
+{
+  if (!ctx_pixel_formats)
+  {
+    assert (0);
+    return NULL;
+  }
+  for (unsigned int i = 0; ctx_pixel_formats[i].pixel_format; i++)
+    {
+      if (ctx_pixel_formats[i].pixel_format == format)
+        {
+          return &ctx_pixel_formats[i];
+        }
+    }
+  assert (0);
+  return NULL;
+}
 
-CtxPixelFormatInfo *(*ctx_pixel_format_info) (CtxPixelFormat format) = ctx_pixel_format_info_generic;
+
+//CtxPixelFormatInfo *ctx_pixel_format_info_generic (CtxPixelFormat format);
+
+//CtxPixelFormatInfo *(*ctx_pixel_format_info) (CtxPixelFormat format) = ctx_pixel_format_info_generic;
 

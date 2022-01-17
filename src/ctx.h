@@ -688,6 +688,9 @@ float ctx_glyph_width   (Ctx *ctx, int unichar);
 
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
+#ifdef CTX_X86_64
+int ctx_x86_64_level (void);
+#endif
 
 void ctx_drawlist_clear (Ctx *ctx);
 
