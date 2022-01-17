@@ -91,11 +91,8 @@
 
 void ctx_simd_setup_x86_64_v2 (void);
 void ctx_simd_setup_x86_64_v3 (void);
-
 void ctx_simd_setup (void)
 {
-  fprintf (stderr, "x86-64-level: %i\n", ctx_x86_64_level());
-
   switch (ctx_x86_64_level())
   {
     default:

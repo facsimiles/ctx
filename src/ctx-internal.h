@@ -585,6 +585,15 @@ extern void (*ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
                            float          line_width);
 
 extern void (*ctx_composite_setup) (CtxRasterizer *rasterizer);
+
+extern void (*ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule
+#if CTX_SHAPE_CACHE
+                ,CtxShapeEntry *shape
+#endif
+                );
+
+
+
 extern void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                            float        x0,
                            float        y0,

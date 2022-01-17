@@ -2616,6 +2616,14 @@ ctx_pixel_format_info (CtxPixelFormat format)
 
 #if CTX_RASTERIZER
 
+
+void (*ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule
+#if CTX_SHAPE_CACHE
+                ,CtxShapeEntry *shape
+#endif
+                ) =
+      ctx_rasterizer_rasterize_edges_generic;
+
 void (*ctx_composite_setup) (CtxRasterizer *rasterizer) =
       ctx_composite_setup_generic;
 void (*ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,

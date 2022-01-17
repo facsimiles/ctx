@@ -15,8 +15,8 @@ ctx-decls.h
 audio.h
 ctx-clients.h
 start-implementation
-composite.c
 drawlist.h
+composite.c
 backend-rasterizer.c
 base64.h
 squoze5.h

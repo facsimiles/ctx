@@ -167,7 +167,7 @@ stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 libctx.a: ctx.o deps.o ctx-x86-64-v2.o ctx-x86-64-v3.o build.conf Makefile
 	$(AR) rcs $@ ctx.o deps.o ctx-x86-64-v2.o ctx-x86-64-v3.o
 libctx.so: ctx.o ctx-x86-64-v2.o ctx-x86-64-v3.o
-	$(LD) -shared $(LIBS) $? $(PKG_LIBS) -o $@
+	$(LD) -shared $(LIBS) ctx.o ctx-x86-64-v2.o ctx-x86-64-v3.o $(PKG_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a

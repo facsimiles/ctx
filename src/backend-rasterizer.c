@@ -1,5 +1,7 @@
+#if CTX_IMPLEMENTATION || CTX_SIMD_BUILD
+#if CTX_COMPOSITE 
+
 #include "ctx-split.h"
-#if CTX_RASTERIZER
 #define CTX_AA_HALFSTEP2   (CTX_FULL_AA/2)
 #define CTX_AA_HALFSTEP    ((CTX_FULL_AA/2)+1)
 
@@ -40,7 +42,7 @@ static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
     { ctx_edge_qsort (entries, p, high); }
 }
 
-static CTX_INLINE void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
+static inline void ctx_rasterizer_sort_edges (CtxRasterizer *rasterizer)
 {
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
 }
@@ -105,7 +107,7 @@ inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, in
    again feed_edges until middle of scanline if doing non-AA
    or directly render when doing AA
 */
-CTX_INLINE static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries, unsigned int count)
+inline static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries, unsigned int count)
 {
   for(unsigned int i=1; i<count; i++)
    {
@@ -120,7 +122,7 @@ CTX_INLINE static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entr
    }
 }
 
-CTX_INLINE static int ctx_edge2_compare2 (CtxSegment *segments, int a, int b)
+inline static int ctx_edge2_compare2 (CtxSegment *segments, int a, int b)
 {
   CtxSegment *seg_a = &segments[a];
   CtxSegment *seg_b = &segments[b];
@@ -129,7 +131,7 @@ CTX_INLINE static int ctx_edge2_compare2 (CtxSegment *segments, int a, int b)
   return minval_a - minval_b;
 }
 
-CTX_INLINE static void ctx_edge2_insertion_sort2 (CtxSegment *segments, int *entries, unsigned int count)
+inline static void ctx_edge2_insertion_sort2 (CtxSegment *segments, int *entries, unsigned int count)
 {
   for(unsigned int i=1; i<count; i++)
    {
@@ -144,7 +146,7 @@ CTX_INLINE static void ctx_edge2_insertion_sort2 (CtxSegment *segments, int *ent
    }
 }
 
-CTX_INLINE static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int apply2_sort)
+inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int apply2_sort)
 {
   int miny;
   CtxSegment *entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
@@ -1557,8 +1559,8 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
 
 #if CTX_INLINE_FILL_RULE
 
-static void
-ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule 
+void
+CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule 
 #if CTX_SHAPE_CACHE
                                 ,CtxShapeEntry *shape
 #endif
@@ -1582,10 +1584,40 @@ ctx_rasterizer_rasterize_edges (CtxRasterizer *rasterizer, const int fill_rule
   }
 }
 #else
-#define ctx_rasterizer_rasterize_edges ctx_rasterizer_rasterize_edges2
+
+void
+CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule 
+#if CTX_SHAPE_CACHE
+                                ,CtxShapeEntry *shape
+#endif
+                               )
+{
+    ctx_rasterizer_rasterize_edges2 (rasterizer, fill_rule
+#if CTX_SHAPE_CACHE
+                    ,shape
+#endif
+                    );
+}
+
 #endif
 
 
+
+extern CtxPixelFormatInfo *ctx_pixel_formats;
+void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
+{
+  ctx_pixel_formats         = CTX_SIMD_SUFFIX(ctx_pixel_formats);
+  ctx_composite_fill_rect   = CTX_SIMD_SUFFIX(ctx_composite_fill_rect);
+  ctx_composite_setup       = CTX_SIMD_SUFFIX(ctx_composite_setup);
+  ctx_composite_stroke_rect = CTX_SIMD_SUFFIX(ctx_composite_stroke_rect);
+  ctx_rasterizer_rasterize_edges = CTX_SIMD_SUFFIX(ctx_rasterizer_rasterize_edges);
+}
+
+
+#endif
+#endif
+#if CTX_IMPLEMENTATION
+#if CTX_RASTERIZER
 
 
 inline static float ctx_fast_hypotf (float x, float y)
