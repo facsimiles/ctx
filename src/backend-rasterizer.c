@@ -3,9 +3,6 @@
 #define CTX_AA_HALFSTEP2   (CTX_FULL_AA/2)
 #define CTX_AA_HALFSTEP    ((CTX_FULL_AA/2)+1)
 
-static void
-ctx_gradient_cache_prime (CtxRasterizer *rasterizer);
-
 CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxSegment *a = (const CtxSegment *) ap;
@@ -1601,37 +1598,6 @@ inline static float ctx_fast_hypotf (float x, float y)
     { return 0.96f * x + 0.4f * y; }
 }
 
-static inline void
-_ctx_setup_compositor (CtxRasterizer *rasterizer)
-{
-  if (CTX_UNLIKELY (rasterizer->comp_op==NULL))
-  {
-    rasterizer->format->setup (rasterizer);
-#if CTX_GRADIENTS
-#if CTX_GRADIENT_CACHE
-  switch (rasterizer->state->gstate.source_fill.type)
-  {
-    case CTX_SOURCE_LINEAR_GRADIENT:
-    case CTX_SOURCE_RADIAL_GRADIENT:
-      ctx_gradient_cache_prime (rasterizer);
-      break;
-    case CTX_SOURCE_TEXTURE:
-
-      _ctx_matrix_multiply (&rasterizer->state->gstate.source_fill.transform,
-                            &rasterizer->state->gstate.source_fill.set_transform,
-                            &rasterizer->state->gstate.transform);
-
-      ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
-
-      if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
-        _ctx_texture_prepare_color_management (rasterizer,
-        rasterizer->state->gstate.source_fill.texture.buffer);
-      break;
-  }
-#endif
-#endif
-  }
-}
 
 
 static void
@@ -2221,7 +2187,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     }
   else
   {
-    _ctx_setup_compositor (rasterizer);
+    ctx_composite_setup (rasterizer);
 
     rasterizer->state->min_x = ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
     rasterizer->state->max_x = ctx_maxi (rasterizer->state->min_x, rasterizer->col_max / CTX_SUBDIV);
@@ -2664,7 +2630,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   float line_width = gstate->line_width * factor;
 
   rasterizer->comp_op = NULL;
-  _ctx_setup_compositor (rasterizer);
+  ctx_composite_setup (rasterizer);
 
   CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
@@ -3811,7 +3777,6 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
       case CTX_COMPOSITING_MODE:
       case CTX_BLEND_MODE:
         rasterizer->comp_op = NULL;
-        //_ctx_setup_compositor (rasterizer);
         break;
 #if CTX_COMPOSITING_GROUPS
       case CTX_START_GROUP:

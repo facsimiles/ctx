@@ -584,6 +584,7 @@ extern void (*ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
                            float          y1,
                            float          line_width);
 
+extern void (*ctx_composite_setup) (CtxRasterizer *rasterizer);
 extern void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                            float        x0,
                            float        y0,
@@ -1165,7 +1166,7 @@ static inline Ctx *ctx_backend_get_ctx (void *backend)
   return NULL;
 }
 
-static void
+void
 _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
                                       CtxBuffer     *buffer);
 

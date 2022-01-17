@@ -6049,6 +6049,39 @@ CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
 
 #endif
 
+static void
+CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
+{
+  if (CTX_UNLIKELY (rasterizer->comp_op==NULL))
+  {
+    rasterizer->format->setup (rasterizer);
+#if CTX_GRADIENTS
+#if CTX_GRADIENT_CACHE
+  switch (rasterizer->state->gstate.source_fill.type)
+  {
+    case CTX_SOURCE_LINEAR_GRADIENT:
+    case CTX_SOURCE_RADIAL_GRADIENT:
+      ctx_gradient_cache_prime (rasterizer);
+      break;
+    case CTX_SOURCE_TEXTURE:
+
+      _ctx_matrix_multiply (&rasterizer->state->gstate.source_fill.transform,
+                            &rasterizer->state->gstate.source_fill.set_transform,
+                            &rasterizer->state->gstate.transform);
+
+      ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
+
+      if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
+        _ctx_texture_prepare_color_management (rasterizer,
+        rasterizer->state->gstate.source_fill.texture.buffer);
+      break;
+  }
+#endif
+#endif
+  }
+}
+
+
 CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
 {
 #if CTX_ENABLE_RGBA8
@@ -6199,9 +6232,9 @@ void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
 {
   ctx_pixel_formats         = CTX_SIMD_SUFFIX(ctx_pixel_formats);
   ctx_composite_fill_rect   = CTX_SIMD_SUFFIX(ctx_composite_fill_rect);
+  ctx_composite_setup       = CTX_SIMD_SUFFIX(ctx_composite_setup);
   ctx_composite_stroke_rect = CTX_SIMD_SUFFIX(ctx_composite_stroke_rect);
 }
-
 
 
 #endif // CTX_COMPOSITE

@@ -2616,6 +2616,8 @@ ctx_pixel_format_info (CtxPixelFormat format)
 
 #if CTX_RASTERIZER
 
+void (*ctx_composite_setup) (CtxRasterizer *rasterizer) =
+      ctx_composite_setup_generic;
 void (*ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
                            float          x0,
                            float          y0,
