@@ -1,15 +1,6 @@
 #ifndef __CTX_UTIL_H
 #define __CTX_UTIL_H
 
-inline static float ctx_fast_hypotf (float x, float y)
-{
-  if (x < 0) { x = -x; }
-  if (y < 0) { y = -y; }
-  if (x < y)
-    { return 0.96f * y + 0.4f * x; }
-  else
-    { return 0.96f * x + 0.4f * y; }
-}
 
 static int ctx_str_is_number (const char *str)
 {

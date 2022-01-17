@@ -1193,8 +1193,36 @@ _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
   *y = ( (y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
 }
 
+static inline void
+_ctx_matrix_multiply (CtxMatrix       *result,
+                      const CtxMatrix *t,
+                      const CtxMatrix *s)
+{
+  CtxMatrix r;
+  r.m[0][0] = t->m[0][0] * s->m[0][0] + t->m[0][1] * s->m[1][0];
+  r.m[0][1] = t->m[0][0] * s->m[0][1] + t->m[0][1] * s->m[1][1];
+  r.m[1][0] = t->m[1][0] * s->m[0][0] + t->m[1][1] * s->m[1][0];
+  r.m[1][1] = t->m[1][0] * s->m[0][1] + t->m[1][1] * s->m[1][1];
+  r.m[2][0] = t->m[2][0] * s->m[0][0] + t->m[2][1] * s->m[1][0] + s->m[2][0];
+  r.m[2][1] = t->m[2][0] * s->m[0][1] + t->m[2][1] * s->m[1][1] + s->m[2][1];
+  *result = r;
+}
+
+static inline void
+_ctx_matrix_identity (CtxMatrix *matrix)
+{
+  matrix->m[0][0] = 1.0f;
+  matrix->m[0][1] = 0.0f;
+  matrix->m[1][0] = 0.0f;
+  matrix->m[1][1] = 1.0f;
+  matrix->m[2][0] = 0.0f;
+  matrix->m[2][1] = 0.0f;
+}
 
 
+CTX_STATIC int ctx_float_to_string_index (float val);
+
+static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len);
 
 int ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix);
 

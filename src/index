@@ -17,8 +17,10 @@ ctx-clients.h
 start-implementation
 composite.c
 drawlist.h
+backend-rasterizer.c
 base64.h
 squoze5.h
+drawlist.c
 transform.c
 audio.c
 a85.c
@@ -26,9 +28,8 @@ sha1.c
 x86-64-level.c
 ctx-yenc.c
 util.h
-drawlist.c
-color.c
 keyvaldb.c
+color.c
 texture.c
 utf8.c
 terminal.c
@@ -36,7 +37,6 @@ events.c
 parser.c
 ctx-string.c
 backend-drawlist.c
-backend-rasterizer.c
 backend-hasher.c
 backend-cairo.c
 backend-ctx.c

@@ -51,36 +51,11 @@ ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, 
   matrix->m[2][1] = f;
 }
 
-static inline void
-_ctx_matrix_identity (CtxMatrix *matrix)
-{
-  matrix->m[0][0] = 1.0f;
-  matrix->m[0][1] = 0.0f;
-  matrix->m[1][0] = 0.0f;
-  matrix->m[1][1] = 1.0f;
-  matrix->m[2][0] = 0.0f;
-  matrix->m[2][1] = 0.0f;
-}
 
 void
 ctx_matrix_identity (CtxMatrix *matrix)
 {
   _ctx_matrix_identity (matrix);
-}
-
-static void
-_ctx_matrix_multiply (CtxMatrix       *result,
-                      const CtxMatrix *t,
-                      const CtxMatrix *s)
-{
-  CtxMatrix r;
-  r.m[0][0] = t->m[0][0] * s->m[0][0] + t->m[0][1] * s->m[1][0];
-  r.m[0][1] = t->m[0][0] * s->m[0][1] + t->m[0][1] * s->m[1][1];
-  r.m[1][0] = t->m[1][0] * s->m[0][0] + t->m[1][1] * s->m[1][0];
-  r.m[1][1] = t->m[1][0] * s->m[0][1] + t->m[1][1] * s->m[1][1];
-  r.m[2][0] = t->m[2][0] * s->m[0][0] + t->m[2][1] * s->m[1][0] + s->m[2][0];
-  r.m[2][1] = t->m[2][0] * s->m[0][1] + t->m[2][1] * s->m[1][1] + s->m[2][1];
-  *result = r;
 }
 
 void
