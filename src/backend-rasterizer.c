@@ -2675,104 +2675,15 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
          )
        {
-      float lwmod = ctx_fmod1f (line_width);
-      int lw = ctx_floorf (line_width + 0.5f);
-      int is_compat_even = (lw % 2 == 0) && (lwmod < 0.1); // only even linewidths implemented properly
-      int is_compat_odd = (lw % 2 == 1) && (lwmod < 0.1); // only even linewidths implemented properly
-
-      int off_x = 0;
-      int off_y = 0;
-
-
-      if (is_compat_odd)
-      {
-        off_x = CTX_SUBDIV/2;
-        off_y = CTX_FULL_AA/2;
-      }
-
-      if((is_compat_odd || is_compat_even) &&
-         (((entry1->data.s16[2]-off_x) % (CTX_SUBDIV))  == 0)  &&
-         (((entry1->data.s16[3]-off_y) % (CTX_FULL_AA)) == 0) &&
-         (((entry3->data.s16[2]-off_x) % (CTX_SUBDIV))  == 0)  &&
-         (((entry3->data.s16[3]-off_y) % (CTX_FULL_AA)) == 0))
-      {
-        float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
-        float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
-        float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
-        float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
-
-        int bw = lw/2+1;
-        int bwb = lw/2;
-
-        if (is_compat_even)
-        {
-          bw = lw/2;
-        }
-        /* top */
-        ctx_composite_fill_rect_aligned (rasterizer,
-                                         x0-bwb, y0-bwb,
-                                         x1+bw-1, y0+bw-1, 255);
-        /* bottom */
-        ctx_composite_fill_rect_aligned (rasterizer,
-                                         x0-bwb, y1-bwb,
-                                         x1-bwb-1, y1+bw-1, 255);
-
-        /* left */
-        ctx_composite_fill_rect_aligned (rasterizer,
-                                         x0-bwb, y0+1,
-                                         x0+bw-1, y1-bwb, 255);
-        /* right */
-        ctx_composite_fill_rect_aligned (rasterizer,
-                                         x1-bwb, y0+1,
-                                         x1+bw-1, y1+bw-1, 255);
-        goto done;
-      }
-      else
-      {
 
         float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
         float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
         float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
         float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
 
-        float hw = line_width/2;
+        ctx_composite_stroke_rect (rasterizer, x0, y0, x1, y1, line_width);
 
-
-        /* top */
-        ctx_composite_fill_rect (rasterizer,
-                                 x0+hw, y0-hw,
-                                 x1-hw, y0+hw, 255);
-        /* bottom */
-        ctx_composite_fill_rect (rasterizer,
-                                 x0+hw, y1-hw,
-                                 x1-hw, y1+hw, 255);
-
-        /* left */
-        ctx_composite_fill_rect (rasterizer,
-                                 x0-hw, y0+hw,
-                                 x0+hw, y1-hw, 255);
-        /* right */
-
-        ctx_composite_fill_rect (rasterizer,
-                                 x1-hw, y0+hw,
-                                 x1+hw, y1-hw, 255);
-
-        /* corners */
-
-        ctx_composite_fill_rect (rasterizer,
-                                 x0-hw, y0-hw,
-                                 x0+hw, y0+hw, 255);
-        ctx_composite_fill_rect (rasterizer,
-                                 x1-hw, y1-hw,
-                                 x1+hw, y1+hw, 255);
-        ctx_composite_fill_rect (rasterizer,
-                                 x1-hw, y0-hw,
-                                 x1+hw, y0+hw, 255);
-        ctx_composite_fill_rect (rasterizer,
-                                 x0-hw, y1-hw,
-                                 x0+hw, y1+hw, 255);
         goto done;
-      }
 
 
        }

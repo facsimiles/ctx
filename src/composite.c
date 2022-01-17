@@ -5948,6 +5948,105 @@ ctx_composite_fill_rect (CtxRasterizer *rasterizer,
   }
 }
 
+static void
+ctx_composite_stroke_rect (CtxRasterizer *rasterizer,
+                           float          x0,
+                           float          y0,
+                           float          x1,
+                           float          y1,
+                           float          line_width)
+{
+      float lwmod = ctx_fmod1f (line_width);
+      int lw = ctx_floorf (line_width + 0.5f);
+      int is_compat_even = (lw % 2 == 0) && (lwmod < 0.1); // only even linewidths implemented properly
+      int is_compat_odd = (lw % 2 == 1) && (lwmod < 0.1); // only even linewidths implemented properly
+
+      float off_x = 0;
+      float off_y = 0;
+
+
+      if (is_compat_odd)
+      {
+        off_x = 0.5f;//CTX_SUBDIV/2;
+        off_y = 0.5f;//CTX_FULL_AA/2;
+      }
+
+      if((is_compat_odd || is_compat_even) &&
+
+     ((ctx_fmod1f (x0-off_x) < 0.01f || ctx_fmod1f(x0-off_x) > 0.99f) &&
+     (ctx_fmod1f (y0-off_y) < 0.01f || ctx_fmod1f(y0-off_y) > 0.99f) &&
+     (ctx_fmod1f (x1-off_x) < 0.01f || ctx_fmod1f(x1-off_x) > 0.99f) &&
+     (ctx_fmod1f (y1-off_y) < 0.01f || ctx_fmod1f(y1-off_y) > 0.99f)))
+
+
+      {
+        int bw = lw/2+1;
+        int bwb = lw/2;
+
+        if (is_compat_even)
+        {
+          bw = lw/2;
+        }
+        /* top */
+        ctx_composite_fill_rect_aligned (rasterizer,
+                                         x0-bwb, y0-bwb,
+                                         x1+bw-1, y0+bw-1, 255);
+        /* bottom */
+        ctx_composite_fill_rect_aligned (rasterizer,
+                                         x0-bwb, y1-bwb,
+                                         x1-bwb-1, y1+bw-1, 255);
+
+        /* left */
+        ctx_composite_fill_rect_aligned (rasterizer,
+                                         x0-bwb, y0+1,
+                                         x0+bw-1, y1-bwb, 255);
+        /* right */
+        ctx_composite_fill_rect_aligned (rasterizer,
+                                         x1-bwb, y0+1,
+                                         x1+bw-1, y1+bw-1, 255);
+      }
+      else
+      {
+        float hw = line_width/2;
+
+
+        /* top */
+        ctx_composite_fill_rect (rasterizer,
+                                 x0+hw, y0-hw,
+                                 x1-hw, y0+hw, 255);
+        /* bottom */
+        ctx_composite_fill_rect (rasterizer,
+                                 x0+hw, y1-hw,
+                                 x1-hw, y1+hw, 255);
+
+        /* left */
+        ctx_composite_fill_rect (rasterizer,
+                                 x0-hw, y0+hw,
+                                 x0+hw, y1-hw, 255);
+        /* right */
+
+        ctx_composite_fill_rect (rasterizer,
+                                 x1-hw, y0+hw,
+                                 x1+hw, y1-hw, 255);
+
+        /* corners */
+
+        ctx_composite_fill_rect (rasterizer,
+                                 x0-hw, y0-hw,
+                                 x0+hw, y0+hw, 255);
+        ctx_composite_fill_rect (rasterizer,
+                                 x1-hw, y1-hw,
+                                 x1+hw, y1+hw, 255);
+        ctx_composite_fill_rect (rasterizer,
+                                 x1-hw, y0-hw,
+                                 x1+hw, y0+hw, 255);
+        ctx_composite_fill_rect (rasterizer,
+                                 x0-hw, y1-hw,
+                                 x0+hw, y1+hw, 255);
+      }
+}
+
+
 #endif
 
 CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
