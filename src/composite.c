@@ -850,7 +850,9 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
     u = x;
     int ro = v * stride;
     if (v >= 0 && v < bheight)
-    for (; i < count && u < bwidth; i++)
+    {
+       int lcount = ctx_mini (count - i, bwidth - u);
+    for (; lcount--; i++)
     {
       int o = ro + u * 3;
       rgba[0] = src[o];
@@ -861,6 +863,7 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
       rgba += 4;
       x += dx;
       u = x;
+    }
     }
     for (; i < count; i++)
     {
