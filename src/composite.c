@@ -2341,7 +2341,7 @@ static inline uint8_t ctx_sadd8(uint8_t a, uint8_t b)
 #if CTX_BLENDING_AND_COMPOSITING
 
 #define ctx_u8_blend_define(name, CODE) \
-static void \
+static inline void \
 ctx_u8_blend_##name (int components, uint8_t * __restrict__ dst, uint8_t *src, uint8_t *blended, int count)\
 {\
   for (int j = 0; j < count; j++) { \
@@ -3162,7 +3162,7 @@ static void ctx_float_set_sat (int components, float *c, float sat)
 }
 
 #define ctx_float_blend_define(name, CODE) \
-static void \
+static inline void \
 ctx_float_blend_##name (int components, float * __restrict__ dst, float *src, float *blended)\
 {\
   float *s = src; float b[components];\
@@ -5063,8 +5063,8 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 
     while (count--)
     {
-      if (CTX_LIKELY(*coverage == 255))
-      {
+      if (CTX_LIKELY(*coverage == 255)) // not vectorizable but we probably
+      {                                 // want to keep it like this
         uint32_t rcov  = 255-*coverage++;
         uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 0);
         uint32_t di_ga = ((di & 0xff00ff00) >> 8);

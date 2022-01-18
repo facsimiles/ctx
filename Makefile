@@ -15,20 +15,13 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
 
-CFLAGS+= $(CFLAGS_warnings) -fPIC
+CFLAGS+= $(CFLAGS_warnings) -fPIC 
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 #  -ffast-math   gets rejected by duktape
 
 CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers
 LIBS  += -lz -lm -lpthread
-
-#CFLAGS+= -fsanitize=address
-#LIBS+= -lasan
-
-#OFLAGS_HARD =-O3
-#OFLAGS_LIGHT =-O2
-
 
 #TERMINAL_CFILES = $(wildcard terminal/*.c)
 #TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
