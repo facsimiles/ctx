@@ -93,7 +93,6 @@ void ctx_simd_setup_x86_64_v2 (void);
 void ctx_simd_setup_x86_64_v3 (void);
 void ctx_simd_setup (void)
 {
-        return;
   switch (ctx_x86_64_level())
   {
     default:

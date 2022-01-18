@@ -67,62 +67,62 @@ done
 
 echo > build.conf
 if [ $HAVE_SDL = 1 ];then
-  echo "PKG_CFLAGS+= `pkg-config sdl2 --cflags` -DCTX_SDL=1 " >> build.conf
-  echo "PKG_LIBS+= `pkg-config sdl2 --libs`" >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config sdl2 --cflags` -DCTX_SDL=1 " >> build.conf
+  echo "CTX_LIBS+= `pkg-config sdl2 --libs`" >> build.conf
 else
-  echo "PKG_CFLAGS+= -DCTX_SDL=0 " >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_SDL=0 " >> build.conf
 fi
 
 if [ $HAVE_BABL  = 1 ];then
-  echo "PKG_CFLAGS+= `pkg-config babl  --cflags`" >> build.conf
-  echo "PKG_LIBS+= `pkg-config babl  --libs` " >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config babl  --cflags`" >> build.conf
+  echo "CTX_LIBS+= `pkg-config babl  --libs` " >> build.conf
 else
-  echo "PKG_CFLAGS+= -DNO_BABL" >> build.conf
+  echo "CTX_CFLAGS+= -DNO_BABL" >> build.conf
 fi
 
 if [ $HAVE_HARFBUZZ = 1 ];then
-  echo "PKG_CFLAGS+= `pkg-config harfbuzz --cflags`" >> build.conf
-  echo "PKG_LIBS+= `pkg-config harfbuzz --libs` " >> build.conf
-  echo "PKG_CFLAGS+= -DCTX_HARFBUZZ=1" >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config harfbuzz --cflags`" >> build.conf
+  echo "CTX_LIBS+= `pkg-config harfbuzz --libs` " >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=1" >> build.conf
 else
-  echo "PKG_CFLAGS+= -DCTX_HARFBUZZ=0" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=0" >> build.conf
 fi
 
 if [ $HAVE_CAIRO = 1 ];then
-  echo "PKG_CFLAGS+= `pkg-config cairo --cflags`" >> build.conf
-  echo "PKG_LIBS+= `pkg-config cairo --libs` " >> build.conf
-  echo "PKG_CFLAGS+= -DCTX_CAIRO=1" >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config cairo --cflags`" >> build.conf
+  echo "CTX_LIBS+= `pkg-config cairo --libs` " >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_CAIRO=1" >> build.conf
 else
-  echo "PKG_CFLAGS+= -DCTX_CAIRO=0" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_CAIRO=0" >> build.conf
 fi
 
 if [ $HAVE_LIBCURL = 1 ];then
-  echo "PKG_CFLAGS+= `pkg-config libcurl --cflags`" >> build.conf
-  echo "PKG_LIBS+= `pkg-config libcurl --libs` " >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config libcurl --cflags`" >> build.conf
+  echo "CTX_LIBS+= `pkg-config libcurl --libs` " >> build.conf
 else
-  echo "PKG_CFLAGS+= -DNO_LIBCURL" >> build.conf
+  echo "CTX_CFLAGS+= -DNO_LIBCURL" >> build.conf
 fi
 
 if [ $HAVE_ALSA = 1 ];then
-  echo "PKG_CFLAGS+= `pkg-config alsa --cflags`" >> build.conf
-  echo "PKG_LIBS+= `pkg-config alsa --libs` " >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config alsa --cflags`" >> build.conf
+  echo "CTX_LIBS+= `pkg-config alsa --libs` " >> build.conf
 else
-  echo "PKG_CFLAGS+= -DNO_ALSA" >> build.conf
+  echo "CTX_CFLAGS+= -DNO_ALSA" >> build.conf
 fi
 
 if [ $ENABLE_KMS = 1 ];then
-  echo "PKG_CFLAGS+= -DCTX_KMS=1 " >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_KMS=1 " >> build.conf
 else
-  echo "PKG_CFLAGS+= -DCTX_KMS=0 " >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_KMS=0 " >> build.conf
 fi
 
 if [ $ENABLE_FB = 1 ];then
-  echo "PKG_CFLAGS+= -DCTX_FB=1 " >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_FB=1 " >> build.conf
 else
-  echo "PKG_CFLAGS+= -DCTX_FB=0 " >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_FB=0 " >> build.conf
 fi
 
-if [ x`uname -m` = "xx86_64" ]; then echo "PKG_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
+if [ x`uname -m` = "xx86_64" ]; then echo "CTX_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
 
 echo "CFLAGS=$CFLAGS" >> build.conf
 echo "LIBS=$LIBS" >> build.conf

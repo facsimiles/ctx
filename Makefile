@@ -63,7 +63,7 @@ build.conf:
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
 demos/c/%: demos/c/%.c build.conf Makefile build.conf ctx.o media-handlers/itk.h libctx.a
-	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS) $(PKG_LIBS) $(OFLAGS_LIGHT)
+	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
@@ -140,12 +140,12 @@ tools/%: tools/%.c ctx-nofont.h
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DNO_LIBCURL
 
 ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) $< -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 ctx-x86-64-v2.o: ctx-x86-64-v2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) $< -c -o $@ $(CFLAGS) -O3 -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(PKG_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) $< -c -o $@ $(CFLAGS) -O3 -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 ctx-x86-64-v3.o: ctx-x86-64-v3.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) $< -c -o $@ $(CFLAGS) -O3 -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(PKG_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) $< -c -o $@ $(CFLAGS) -O3 -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
@@ -156,22 +156,22 @@ ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts
 	$(CCC) -c $< -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DCTX_SDL=0  -DNO_BABL=1 -DCTX_FB=1 -DNO_LIBCURL=1 -DNO_ALSA=1 -DCTX_X86_64=1
 
 src/%.o: src/%.c split/*.h
-	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
+	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h
-	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
+	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c
-	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
+	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
-	$(CCC) -c $< -o $@ $(PKG_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
+	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: ctx.o deps.o ctx-x86-64-v2.o ctx-x86-64-v3.o build.conf Makefile
 	$(AR) rcs $@ ctx.o deps.o ctx-x86-64-v2.o ctx-x86-64-v3.o
 libctx.so: ctx.o ctx-x86-64-v2.o ctx-x86-64-v3.o
-	$(LD) -shared $(LIBS) ctx.o ctx-x86-64-v2.o ctx-x86-64-v3.o $(PKG_LIBS) -o $@
-	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(PKG_LIBS)  -o $@
+	$(LD) -shared $(LIBS) ctx.o ctx-x86-64-v2.o ctx-x86-64-v3.o $(CTX_LIBS) -o $@
+	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(PKG_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(PKG_LIBS)
+	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS)
 
 ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) ctx-x86-64-v2.o ctx-x86-64-v3.o ctx-static.o deps.o terminal/*.[ch] 
 	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx-static.o ctx-x86-64-v2.o ctx-x86-64-v3.o deps.o $(LIBS) -DNO_BABL=1 -DCTX_SDL=0 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
