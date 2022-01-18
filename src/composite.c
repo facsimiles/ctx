@@ -1833,15 +1833,19 @@ static void
 ctx_fragment_color_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy)
 {
   float *rgba = (float *) out;
-  for (int i = 0; i < count; i++)
+  float  in[4];
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  ctx_color_get_rgba (rasterizer->state, &g->color, in);
+  for (int c = 0; c < 3; c++)
+    in[c] *= in[3];
+  while (count--)
   {
-    CtxSource *g = &rasterizer->state->gstate.source_fill;
-    ctx_color_get_rgba (rasterizer->state, &g->color, rgba);
-    for (int c = 0; c < 3; c++)
-      rgba[c] *= rgba[3];
+    for (int c = 0; c < 4; c++)
+      rgba[c] = in[c];
     rgba += 4;
   }
 }
+
 
 static void ctx_fragment_image_RGBAF (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy)
 {

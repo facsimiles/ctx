@@ -258,7 +258,7 @@
 #endif
 
 #ifndef CTX_U8_TO_FLOAT_LUT
-#define CTX_U8_TO_FLOAT_LUT 1
+#define CTX_U8_TO_FLOAT_LUT  0
 #endif
 
 #ifndef CTX_INLINED_GRADIENTS
