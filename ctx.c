@@ -69,7 +69,7 @@
 //#define CTX_HASH_COLS  1
 //#define CTX_HASH_ROWS  1
 
-#define CTX_SHAPE_CACHE          0   // causes some glitching - needs revisiting
+#define CTX_SHAPE_CACHE          1   // causes some glitching - needs revisiting
 #define CTX_SHAPE_CACHE_MAX_DIM  256 // max dimension on one axis
 #define CTX_SHAPE_CACHE_DIM      (64*64) // size in pixels
 #define CTX_SHAPE_CACHE_ENTRIES  (1024)  // which gives a max-allocated size of 4mb per thread
@@ -93,6 +93,7 @@ void ctx_simd_setup_x86_64_v2 (void);
 void ctx_simd_setup_x86_64_v3 (void);
 void ctx_simd_setup (void)
 {
+        return;
   switch (ctx_x86_64_level())
   {
     default:

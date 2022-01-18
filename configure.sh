@@ -16,7 +16,7 @@ pkg-config alsa && HAVE_ALSA=1
 ENABLE_KMS=1
 ENABLE_FB=0
 
-CFLAGS='-O3 -g '
+CFLAGS='-O2 -g '
 
 CFLAGS_BACKEND=''
 

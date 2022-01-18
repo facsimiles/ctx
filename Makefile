@@ -143,9 +143,9 @@ ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-m
 	$(CCC) $< -c -o $@ $(CFLAGS) $(PKG_CFLAGS) $(OFLAGS_LIGHT)
 
 ctx-x86-64-v2.o: ctx-x86-64-v2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) $< -c -o $@ $(CFLAGS) -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(PKG_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) $< -c -o $@ $(CFLAGS) -O3 -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(PKG_CFLAGS) $(OFLAGS_LIGHT)
 ctx-x86-64-v3.o: ctx-x86-64-v3.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) $< -c -o $@ $(CFLAGS) -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(PKG_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) $< -c -o $@ $(CFLAGS) -O3 -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(PKG_CFLAGS) $(OFLAGS_LIGHT)
 
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)

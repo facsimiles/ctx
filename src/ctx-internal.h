@@ -586,6 +586,19 @@ extern void (*ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
 
 extern void (*ctx_composite_setup) (CtxRasterizer *rasterizer);
 
+
+struct _CtxShapeEntry
+{
+  uint32_t hash;
+  uint16_t width;
+  uint16_t height;
+  int      last_frame; // xxx
+  uint32_t uses;  // instrumented for longer keep-alive
+  uint8_t  data[];
+};
+
+typedef struct _CtxShapeEntry CtxShapeEntry;
+
 extern void (*ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule
 #if CTX_SHAPE_CACHE
                 ,CtxShapeEntry *shape
@@ -619,17 +632,6 @@ typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *
 
 #define CTX_MAX_GAUSSIAN_KERNEL_DIM    512
 
-struct _CtxShapeEntry
-{
-  uint32_t hash;
-  uint16_t width;
-  uint16_t height;
-  int      last_frame; // xxx
-  uint32_t uses;  // instrumented for longer keep-alive
-  uint8_t  data[];
-};
-
-typedef struct _CtxShapeEntry CtxShapeEntry;
 
 
 struct _CtxShapeCache
