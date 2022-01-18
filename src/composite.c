@@ -5964,11 +5964,10 @@ CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
       float off_x = 0;
       float off_y = 0;
 
-
       if (is_compat_odd)
       {
-        off_x = 0.5f;//CTX_SUBDIV/2;
-        off_y = 0.5f;//CTX_FULL_AA/2;
+        off_x = 0.5f;
+        off_y = (CTX_FULL_AA/2)*1.0 / (CTX_FULL_AA);
       }
 
       if((is_compat_odd || is_compat_even) &&
