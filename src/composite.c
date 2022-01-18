@@ -499,6 +499,7 @@ ctx_dither_graya_u8 (uint8_t *rgba, int x, int y, int dither_red_blue, int dithe
 }
 #endif
 
+#if 0
 CTX_INLINE static void
 ctx_RGBA8_deassociate_alpha (const uint8_t *in, uint8_t *out)
 {
@@ -521,6 +522,7 @@ ctx_RGBA8_deassociate_alpha (const uint8_t *in, uint8_t *out)
       *((uint32_t*)(out)) = 0;
     }
 }
+#endif
 
 CTX_INLINE static void
 ctx_u8_deassociate_alpha (int components, const uint8_t *in, uint8_t *out)
@@ -1426,6 +1428,21 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   {
     int i = 0;
 
+    float  u1 = x + dx * (count-1);
+    float  v1 = y + dy * (count-1);
+    uint32_t *edst = ((uint32_t*)out)+count - 1;
+    for (; i < count; )
+    {
+      if (u1 <0 || v1 < 0 || u1 >= bwidth || v1 >= bheight)
+      {
+        *edst-- = 0;
+        count --;
+        u1 -= dx;
+        v1 -= dy;
+      }
+      else break;
+    }
+
     for (; i < count; i ++)
     {
       int u = x;
@@ -1468,7 +1485,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       uint32_t uv = (v / 2) * bwidth_div_2;
 
       if (v >= 0 && v < bheight)
-      while (i < count && u >= 0 && u+1 < bwidth)
+      while (i < count)// && u >= 0 && u+1 < bwidth)
       {
         *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y+u],
                         src[u_offset+uv+u/2], src[v_offset+uv+u/2]);
@@ -1490,7 +1507,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       int u = ix >> 16;
       int v = iy >> 16;
 
-      while (i < count && u >= 0 && v >= 0 && u < bwidth && v < bheight)
+      while (i < count)// && u >= 0 && v >= 0 && u < bwidth && v < bheight)
       {
         uint32_t y  = v * bwidth + u;
         uint32_t uv = (v / 2) * bwidth_div_2 + (u / 2);
