@@ -40,15 +40,12 @@ ctx_RGBA8_associate_alpha (uint8_t *u8)
 CTX_INLINE static void
 ctx_RGBA8_associate_alpha_probably_opaque (uint8_t *u8)
 {
-  uint32_t val = *((uint32_t*)(u8));
-  uint32_t a = val>>24;//u8[3];
-  //if (CTX_UNLIKELY(a==0))
-  //   *((uint32_t*)(u8)) = 0;
+  uint32_t a = u8[3];//val>>24;//u8[3];
   if (CTX_UNLIKELY(a!=255))
   {
-     uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
-     uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
-     *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+    u8[0] = (u8[0] * a + 255) >> 8;
+    u8[1] = (u8[1] * a + 255) >> 8;
+    u8[2] = (u8[2] * a + 255) >> 8;
   }
 }
 
@@ -690,7 +687,7 @@ ctx_RGBA8_apply_global_alpha_and_associate (CtxRasterizer *rasterizer,
     for (int i = 0; i < count; i++)
     {
       rgba[3] = (rgba[3] * global_alpha_u8) / 255;
-      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+      ctx_RGBA8_associate_alpha (rgba);
       rgba += 4;
     }
   }
