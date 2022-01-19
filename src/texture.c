@@ -206,7 +206,6 @@ _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
 {
    switch (buffer->format->pixel_format)
    {
-#ifndef NO_BABL
 #if CTX_BABL
      case CTX_FORMAT_RGBA8:
        if (buffer->space == rasterizer->state->gstate.device_space)
@@ -242,7 +241,6 @@ _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
           );
        }
        break;
-#endif
 #endif
      default:
        buffer->color_managed = buffer;

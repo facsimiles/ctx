@@ -86,10 +86,10 @@ else
 fi
 
 if [ $HAVE_BABL  = 1 ];then
-  echo "CTX_CFLAGS+= `pkg-config babl  --cflags`" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_BABL=1 `pkg-config babl  --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config babl  --libs` " >> build.conf
 else
-  echo "CTX_CFLAGS+= -DNO_BABL" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_BABL=0" >> build.conf
 fi
 
 if [ $HAVE_HARFBUZZ = 1 ];then

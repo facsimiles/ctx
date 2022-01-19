@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #endif
-#ifndef NO_BABL
+#if CTX_BABL
 #include <babl/babl.h>
 #endif
 
