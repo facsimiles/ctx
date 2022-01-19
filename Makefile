@@ -153,7 +153,7 @@ deps.o: deps.c build.conf Makefile
 ctx-split.o: $(SRC_OBJS)
 
 ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts 
-	$(CCC) -c $< -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DCTX_SDL=0  -DCTX_BABL=0 -DCTX_FB=1 -DCTX_CURL=0 -DNO_ALSA=1 -DCTX_X86_64=1
+	$(CCC) -c $< -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DCTX_SDL=0  -DCTX_BABL=0 -DCTX_FB=1 -DCTX_CURL=0 -DCTX_ALSA=0 -DCTX_X86_64=1
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)

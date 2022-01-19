@@ -46,7 +46,6 @@
 #define CTX_BRAILLE_TEXT         1
 #define CTX_ENABLE_CMYK          1
 #define CTX_AUDIO                1
-#define CTX_ALSA_AUDIO           1
 #define CTX_MAX_TEXTURES         1024
 #define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
                                        // variable size for each save|restore

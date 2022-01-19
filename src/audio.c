@@ -7,7 +7,7 @@
 #if !__COSMOPOLITAN__
 
 #include <pthread.h>
-#if CTX_ALSA_AUDIO
+#if CTX_ALSA
 #include <alsa/asoundlib.h>
 #endif
 
@@ -65,7 +65,7 @@ ctx_pcm_channels (CtxPCM format)
  * and do better internal resampling for others?
  */
 
-#if CTX_ALSA_AUDIO
+#if CTX_ALSA
 static snd_pcm_t *alsa_open (char *dev, int rate, int channels)
 {
    snd_pcm_hw_params_t *hwp;
@@ -347,7 +347,7 @@ int ctx_pcm_init (Ctx *ctx)
   }
   else
   {
-#if CTX_ALSA_AUDIO
+#if CTX_ALSA
      pthread_t tid;
      h = alsa_open("default", ctx_host_freq, ctx_pcm_channels (ctx_host_format));
   if (!h) {

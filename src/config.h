@@ -588,17 +588,19 @@
 #define CTX_SCREENSHOT 0
 #endif
 
-#ifndef CTX_ALSA_AUDIO
-#define CTX_ALSA_AUDIO 0
-#endif
-
-#if NO_ALSA
-#undef CTX_ALSA_AUDIO
-#define CTX_ALSA_AUDIO 0
+#ifndef CTX_ALSA
+#define CTX_ALSA 0
 #endif
 
 #ifndef CTX_AUDIO
 #define CTX_AUDIO 0
+#endif
+
+#if CTX_AUDIO==0
+#if CTX_ALSA
+#undef CTX_ALSA
+#define CTX_ALSA 0
+#endif
 #endif
 
 #ifndef CTX_CURL

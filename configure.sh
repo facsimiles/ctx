@@ -118,10 +118,11 @@ else
 fi
 
 if [ $HAVE_ALSA = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_ALSA=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config alsa --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config alsa --libs` " >> build.conf
 else
-  echo "CTX_CFLAGS+= -DNO_ALSA" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_ALSA=0" >> build.conf
 fi
 
 if [ $HAVE_KMS = 1 ];then
