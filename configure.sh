@@ -136,21 +136,19 @@ echo "LIBS=$LIBS" >> build.conf
 
 echo "configuration summary:"
 if [ $HAVE_SDL = 1 ];    then echo "    SDL2 yes";
-                         else echo "    SDL2 no";fi
+                         else echo "    SDL2 no    (libsdl2-dev)";fi
 if [ $HAVE_BABL = 1 ];   then echo "    babl yes";
-                         else echo "    babl no";fi
+                         else echo "    babl no    (libbabl-dev)";fi
 if [ $HAVE_CAIRO = 1 ];  then echo "   cairo yes";
-                         else echo "   cairo no";fi
-
+                         else echo "   cairo no    (libcairo2-dev)";fi
 if [ $HAVE_HARFBUZZ = 1 ];then echo "harfbuzz yes";
-                         else echo "harfbuzz no";fi
-
+                         else echo "harfbuzz no    (libharfbuzz-dev)";fi
 if [ $HAVE_ALSA = 1 ];   then echo "    alsa yes";
-                         else echo "    alsa no";fi
+                         else echo "    alsa no    (libasound-dev)";fi
 if [ $HAVE_LIBCURL = 1 ];then echo " libcurl yes";
-                         else echo " libcurl no";fi
+                         else echo " libcurl no    (libcurl4-openssl-dev)";fi
 if [ $HAVE_KMS = 1 ];    then echo "     kms yes";
-                         else echo "     kms no";fi
+                         else echo "     kms no    (libdrm-dev)";fi
 if [ $ENABLE_FB = 1 ];   then echo "      fb yes";
                          else echo "      fb no";fi
 echo

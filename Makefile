@@ -45,6 +45,9 @@ MEDIA_HANDLERS_OBJS = \
 SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
+CTX_OBJS = ctx.o
+CTX_SIMD_OBJS = ctx-x86-64-v2.o ctx-x86-64-v3.o
+CTX_OBJS += $(CTX_SIMD_OBJS)
 
 CCC=$(CCACHE) $(CC)
 build.conf:
@@ -55,7 +58,7 @@ build.conf:
 	@echo "!! now run Make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
-demos/c/%: demos/c/%.c build.conf Makefile build.conf ctx.o media-handlers/itk.h libctx.a
+demos/c/%: demos/c/%.c build.conf Makefile build.conf media-handlers/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
@@ -159,17 +162,17 @@ media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/m
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-libctx.a: ctx.o deps.o ctx-x86-64-v2.o ctx-x86-64-v3.o build.conf Makefile
-	$(AR) rcs $@ ctx.o deps.o ctx-x86-64-v2.o ctx-x86-64-v3.o
-libctx.so: ctx.o ctx-x86-64-v2.o ctx-x86-64-v3.o
-	$(LD) -shared $(LIBS) ctx.o ctx-x86-64-v2.o ctx-x86-64-v3.o $(CTX_LIBS) -o $@
+libctx.a: deps.o $(CTX_OBJS) build.conf Makefile
+	$(AR) rcs $@ $(CTX_OBJS) deps.o 
+libctx.so: $(CTX_OBJS)
+	$(LD) -shared $(LIBS) $(CTX_OBJS) $(CTX_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
 	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS)
 
-ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) ctx-x86-64-v2.o ctx-x86-64-v3.o ctx-static.o deps.o terminal/*.[ch] 
-	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx-static.o ctx-x86-64-v2.o ctx-x86-64-v3.o deps.o $(LIBS) -DNO_BABL=1 -DCTX_SDL=0 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
+ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_OBJS) ctx-static.o deps.o terminal/*.[ch] 
+	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx-static.o $(CTX_SIMD_OBJS) deps.o $(LIBS) -DNO_BABL=1 -DCTX_SDL=0 -DCTX_FB=1 -DNO_LIBCURL=1 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile build.conf
