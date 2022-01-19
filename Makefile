@@ -142,10 +142,10 @@ ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-m
 
 ctx-x86-64-v2.o: ctx-x86-64-v2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	rm -f vec.missed
-	$(CCC) $< -c -o $@ $(CFLAGS) -O3 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-missed=vec.missed
+	$(CCC) $< -c -o $@ $(CFLAGS) -ffast-math -O3 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-missed=vec.missed
 ctx-x86-64-v3.o: ctx-x86-64-v3.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	rm -f vec.optimized
-	$(CCC) $< -c -o $@ $(CFLAGS) -O3 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-optimized=vec.optimized
+	$(CCC) $< -c -o $@ $(CFLAGS) -ffast-math -O3 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-optimized=vec.optimized
 
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
