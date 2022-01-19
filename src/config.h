@@ -67,17 +67,17 @@
 /* size (in pixels, w*h) that we cache rasterization for
  */
 #ifndef CTX_SHAPE_CACHE_DIM
-#define CTX_SHAPE_CACHE_DIM      (16*8)
+#define CTX_SHAPE_CACHE_DIM      (64*64)
 #endif
 
 #ifndef CTX_SHAPE_CACHE_MAX_DIM
-#define CTX_SHAPE_CACHE_MAX_DIM  20
+#define CTX_SHAPE_CACHE_MAX_DIM  256
 #endif
 
 /* maximum number of entries in shape cache
  */
 #ifndef CTX_SHAPE_CACHE_ENTRIES
-#define CTX_SHAPE_CACHE_ENTRIES  160
+#define CTX_SHAPE_CACHE_ENTRIES  1024
 #endif
 
 
@@ -292,6 +292,7 @@
 #ifndef CTX_EVENTS
 #define CTX_EVENTS              1
 #endif
+
 
 #ifndef CTX_LIMIT_FORMATS
 #define CTX_LIMIT_FORMATS       0
@@ -558,15 +559,19 @@
 #endif
 #endif
 
-#if CTX_RASTERIZER
-#ifndef CTX_COMPOSITE
-#define CTX_COMPOSITE 1
+#if CTX_SDL || CTX_FB || CTX_HEADLESS
+#if CTX_EVENTS
+#undef CTX_EVENTS
 #endif
-#else
-#ifndef CTX_COMPOSITE
-#define CTX_COMPOSITE 0
+#define CTX_EVENTS 1
+#endif
+
+#if CTX_EVENTS
+#ifndef CTX_HEADLESS
+#define CTX_HEADLESS 1
 #endif
 #endif
+
 
 #ifndef CTX_GRADIENT_CACHE_ELEMENTS
 #define CTX_GRADIENT_CACHE_ELEMENTS 256
@@ -600,7 +605,12 @@
 #else
 #define CTX_TILED 0
 #endif
+#if !CTX_RASTERIZER
+#undef CTX_RASTERIZER
+#define CTX_RASTERIZER 1
 #endif
+#endif
+
 
 #ifndef CTX_THREADS
 #if CTX_TILED
@@ -639,6 +649,16 @@
 
 #endif
 
+
+#if CTX_RASTERIZER
+#ifndef CTX_COMPOSITE
+#define CTX_COMPOSITE 1
+#endif
+#else
+#ifndef CTX_COMPOSITE
+#define CTX_COMPOSITE 0
+#endif
+#endif
 
 #ifndef CTX_COMPOSITE
 #define CTX_COMPOSITE 0

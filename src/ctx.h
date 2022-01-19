@@ -405,10 +405,6 @@ int ctx_utf8_strlen (const char *s);
 #endif
 #endif
 
-#ifndef CTX_HEADLESS
-#define CTX_HEADLESS 0
-#endif
-
 #ifndef CTX_FB
 #define CTX_FB 0
 #endif
