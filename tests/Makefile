@@ -90,13 +90,13 @@ clean:
 	make -C .. ctx
 
 gray1/%: %.ctx ../ctx Makefile
-	../ctx $< --width 160 --height 80 --rows 6 --cols 23 -o GRAY1 > $@
+	../ctx $< --width 158 --height 80 --rows 6 --cols 23 -o GRAY1 > $@
 png/%.png: %.ctx ../ctx Makefile
 	../ctx $< -o $@ --width 160 --height 80 --cols 31 --rows 8
 png/%.png: %.svg ../ctx Makefile
 	../ctx $< -o $@ --width 160 --height 80 --cols 31 --rows 8
 gray1/%: %.svg ../ctx Makefile
-	../ctx $< --width 160 --height 80 -o GRAY1 --cols 19 --rows 8 > $@
+	../ctx $< --width 158 --height 80 -o GRAY1 --cols 19 --rows 8 > $@
 png-80x160/%.png: %.ctx ../ctx  Makefile
 	../ctx $< -o $@ --width 80 --height 160 --rows 15 --cols 15
 png-80x160/%.png: %.svg ../ctx  Makefile
@@ -116,6 +116,6 @@ png-480x480/%.png: %.ctx ../ctx  Makefile
 png-480x480/%.png: %.svg ../ctx Makefile
 	../ctx $< -o $@ --width 480 --height 480 --rows 40 --cols 81
 gray8/%: %.ctx ../ctx Makefile
-	../ctx $< -o GRAY8 --width 80 --height 24 --rows 4 --cols 12 > $@
+	../ctx $< -o GRAY8 --width 79 --height 24 --rows 4 --cols 12 > $@
 gray8/%: %.svg ../ctx Makefile
-	../ctx $< -o GRAY8 --width 80 --height 24 --rows 4 --cols 12 > $@
+	../ctx $< -o GRAY8 --width 79 --height 24 --rows 4 --cols 12 > $@
