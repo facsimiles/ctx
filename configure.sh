@@ -86,33 +86,35 @@ else
 fi
 
 if [ $HAVE_BABL  = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_BABL=1 `pkg-config babl  --cflags`" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_BABL=1" >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config babl  --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config babl  --libs` " >> build.conf
 else
   echo "CTX_CFLAGS+= -DCTX_BABL=0" >> build.conf
 fi
 
 if [ $HAVE_HARFBUZZ = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config harfbuzz --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config harfbuzz --libs` " >> build.conf
-  echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=1" >> build.conf
 else
   echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=0" >> build.conf
 fi
 
 if [ $HAVE_CAIRO = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_CAIRO=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config cairo --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config cairo --libs` " >> build.conf
-  echo "CTX_CFLAGS+= -DCTX_CAIRO=1" >> build.conf
 else
   echo "CTX_CFLAGS+= -DCTX_CAIRO=0" >> build.conf
 fi
 
 if [ $HAVE_LIBCURL = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_CURL=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config libcurl --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config libcurl --libs` " >> build.conf
 else
-  echo "CTX_CFLAGS+= -DNO_LIBCURL" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_CURL=0" >> build.conf
 fi
 
 if [ $HAVE_ALSA = 1 ];then

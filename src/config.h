@@ -378,10 +378,12 @@
 #define CTX_FONT_ENGINE_STB        0
 #endif
 
+#ifndef CTX_BABL
 #ifdef _BABL_H
 #define CTX_BABL 1
 #else
 #define CTX_BABL 0
+#endif
 #endif
 
 #ifndef CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
@@ -597,6 +599,10 @@
 
 #ifndef CTX_AUDIO
 #define CTX_AUDIO 0
+#endif
+
+#ifndef CTX_CURL
+#define CTX_CURL 0
 #endif
 
 #ifndef CTX_TILED

@@ -375,10 +375,12 @@ uint8_t *ctx_hasher_get_hash (Ctx *ctx, int col, int row);
 
 int ctx_utf8_strlen (const char *s);
 
+#ifndef CTX_BABL
 #ifdef _BABL_H
 #define CTX_BABL 1
 #else
 #define CTX_BABL 0
+#endif
 #endif
 
 /* If cairo.h is included before ctx.h add cairo integration code

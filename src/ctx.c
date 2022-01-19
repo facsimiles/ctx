@@ -2138,7 +2138,7 @@ void ctx_set_transform (Ctx *ctx, float a, float b, float c, float d, float e, f
 
 #if CTX_GET_CONTENTS
 
-#ifndef NO_LIBCURL
+#if CTX_CURL
 #include <curl/curl.h>
 static size_t
 ctx_string_append_callback (void *contents, size_t size, size_t nmemb, void *userp)
@@ -2192,7 +2192,7 @@ ctx_get_contents2 (const char     *uri,
     success = ___ctx_file_get_contents (uri + 7, contents, length, max_len);
   else
   {
-#ifndef NO_LIBCURL
+#if CTX_CURL
   CURL *curl = curl_easy_init ();
   CURLcode res;
 

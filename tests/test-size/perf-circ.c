@@ -18,7 +18,7 @@
 #define CTX_RENDERSTREAM_STATIC   0
 #define CTX_FONTS_FROM_FILE       1 /* leaves out code */
 #define CTX_IMPLEMENTATION
-#define NO_LIBCURL
+#define CTX_CURL                  0
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../deps/stb_image.h"
 
