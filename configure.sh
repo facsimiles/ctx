@@ -12,9 +12,10 @@ HAVE_LIBCURL=0
 pkg-config libcurl && HAVE_LIBCURL=1
 HAVE_ALSA=0
 pkg-config alsa && HAVE_ALSA=1
+HAVE_KMS=0
+pkg-config libdrm && HAVE_KMS=1
 
-ENABLE_KMS=1
-ENABLE_FB=0
+ENABLE_FB=1
 
 CFLAGS='-O2 -g '
 
@@ -27,8 +28,8 @@ do
      "--debug") CFLAGS=' -g '    ;;
      "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan -g '  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan -g '  ;;
-     "--enable-kms") ENABLE_KMS=1 ;;
-     "--without-kms") ENABLE_KMS=0 ;;
+     "--enable-kms") HAVE_KMS=1 ;;
+     "--without-kms") HAVE_KMS=0 ;;
      "--enable-fb") ENABLE_FB=1 ;;
      "--without-fb") ENABLE_FB=0 ;;
      "--without-babl") HAVE_BABL=0 ;;
@@ -110,8 +111,8 @@ else
   echo "CTX_CFLAGS+= -DNO_ALSA" >> build.conf
 fi
 
-if [ $ENABLE_KMS = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_KMS=1 " >> build.conf
+if [ $HAVE_KMS = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_KMS=1 `pkg-config libdrm --cflags`" >> build.conf
 else
   echo "CTX_CFLAGS+= -DCTX_KMS=0 " >> build.conf
 fi
@@ -148,7 +149,7 @@ if [ $HAVE_ALSA = 1 ];   then echo "    alsa yes";
                          else echo "    alsa no";fi
 if [ $HAVE_LIBCURL = 1 ];then echo " libcurl yes";
                          else echo " libcurl no";fi
-if [ $ENABLE_KMS = 1 ];  then echo "     kms yes";
+if [ $HAVE_KMS = 1 ];    then echo "     kms yes";
                          else echo "     kms no";fi
 if [ $ENABLE_FB = 1 ];   then echo "      fb yes";
                          else echo "      fb no";fi
