@@ -491,13 +491,13 @@ struct _Ctx
   CtxBackend       *backend;
   CtxDrawlist       drawlist;
   int               transformation;
-  CtxBuffer         texture[CTX_MAX_TEXTURES];
+  int               width;
+  int               height;
   Ctx              *texture_cache;
   CtxList          *eid_db;
   CtxState          state;        /**/
   int               frame; /* used for texture lifetime */
-  int               width;
-  int               height;
+  CtxBuffer         texture[CTX_MAX_TEXTURES];
 #if CTX_EVENTS 
   CtxCursor         cursor;
   int               quit;

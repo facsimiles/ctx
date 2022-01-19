@@ -45,10 +45,16 @@ SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 CTX_OBJS = ctx.o
+
+
 ifeq ($(CTX_SIMD), 1)
+ifeq ($(CTX_ARCH), x86_64)
 CTX_SIMD_OBJS = ctx-x86-64-v2.o ctx-x86-64-v3.o
+else ifeq ($(CTX_ARCH), armv7l)
+CTX_SIMD_OBJS = ctx-armv7-neon.o ctx-armv7-neon-vfpv4.o
 endif
 CTX_OBJS += $(CTX_SIMD_OBJS)
+endif
 
 CCC=$(CCACHE) $(CC)
 build.conf:

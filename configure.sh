@@ -164,6 +164,7 @@ else
   echo "CTX_CFLAGS+= -DCTX_SIMD=0 " >> build.conf
   echo "CTX_SIMD=0" >>  build.conf
 fi
+echo "CTX_ARCH=$ARCH" >>  build.conf
 
 
 echo >> build.conf
