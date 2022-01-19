@@ -2,10 +2,6 @@
 #include <cairo.h>
 
 #define CTX_LIMIT_FORMATS   0
-#ifdef CTX_AVX2
-#undef CTX_AVX2
-#endif
-#define CTX_AVX2                  1
 #define CTX_EVENTS                1
 #define CTX_ENABLE_CM             0
 #define CTX_PARSER                0
@@ -23,7 +19,6 @@
 #define CTX_FONTS_FROM_FILE       1 /* leaves out code */
 #define CTX_IMPLEMENTATION
 #define NO_LIBCURL
-#include <immintrin.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../deps/stb_image.h"
 
