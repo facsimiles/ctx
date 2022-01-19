@@ -70,6 +70,7 @@
                    // compilation unit to be influenced by the ctx config
 
 #if CTX_SIMD
+#if CTX_X86_64
 void ctx_simd_setup_x86_64_v2 (void);
 void ctx_simd_setup_x86_64_v3 (void);
 void ctx_simd_setup (void)
@@ -83,4 +84,14 @@ void ctx_simd_setup (void)
     case 3: ctx_simd_setup_x86_64_v3 ();break;
   }
 }
+#else // must be arm
+void ctx_simd_setup_armv7l_neon (void);
+int ctx_armv7_fpu_level (void);
+void ctx_simd_setup (void)
+{
+  int level = 1;
+  if (getenv ("CTX_SIMD")) level = atoi (getenv ("CTX_SIMD"));
+  if (level)ctx_simd_setup_armv7l_neon ();
+}
+#endif
 #endif

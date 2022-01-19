@@ -51,7 +51,7 @@ ifeq ($(CTX_SIMD), 1)
 ifeq ($(CTX_ARCH), x86_64)
 CTX_SIMD_OBJS = ctx-x86-64-v2.o ctx-x86-64-v3.o
 else ifeq ($(CTX_ARCH), armv7l)
-CTX_SIMD_OBJS = ctx-armv7-neon.o ctx-armv7-neon-vfpv4.o
+CTX_SIMD_OBJS = ctx-arm-neon.o 
 endif
 CTX_OBJS += $(CTX_SIMD_OBJS)
 endif
@@ -151,6 +151,10 @@ ctx-x86-64-v2.o: ctx-x86-64-v2.c ctx.h build.conf Makefile fonts/ctx-font-regula
 ctx-x86-64-v3.o: ctx-x86-64-v3.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	rm -f vec.optimized
 	$(CCC) $< -c -o $@ $(CFLAGS) -mmovbe -momit-leaf-frame-pointer -mmovbe -ftree-vectorize -ffast-math -O2 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-optimized=vec.optimized
+
+ctx-arm-neon.o: ctx-arm-neon.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+	$(CCC) $< -c -o $@ $(CFLAGS) -ftree-vectorize -ffast-math -O3 -march=armv7 -mfpu=neon $(CTX_CFLAGS) $(OFLAGS_LIGHT)
+
 
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)

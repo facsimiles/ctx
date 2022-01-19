@@ -17,11 +17,11 @@ pkg-config libdrm && HAVE_KMS=1
 
 ARCH=`uname -m`
 
-if [ x$ARCH = "xx86_64" ]; then
-  HAVE_SIMD=1
-else
-  HAVE_SIMD=0
-fi
+case "$ARCH" in
+   "x86_64")  HAVE_SIMD=1 ;;
+   "armv7l")  HAVE_SIMD=1 ;;
+   *)         HAVE_SIMD=0 ;; 
+esac
 
 ENABLE_FB=1
 
@@ -155,6 +155,16 @@ fi
 echo >> build.conf
 
 if [ x$ARCH = "xx86_64" ]; then echo "CTX_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
+
+case "$ARCH" in
+   "x86_64")  
+      echo "CTX_CFLAGS+= -DCTX_X86_64 " >>  build.conf
+      ;;
+   "armv7l")
+      echo "CTX_CFLAGS+= -DCTX_ARMV7L -march=armv7" >>  build.conf
+      ;;
+   *)         ;;
+esac
 
 echo >> build.conf
 if [ $HAVE_SIMD = 1 ];then

@@ -26,6 +26,7 @@ audio.c
 a85.c
 sha1.c
 x86-64-level.c
+arm-neon.c
 ctx-yenc.c
 util.h
 keyvaldb.c
