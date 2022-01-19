@@ -1802,13 +1802,13 @@ void _ctx_set_transformation (Ctx *ctx, int transformation)
   ctx->transformation = transformation;
 }
 
-#ifdef CTX_HAVE_SIMD
+#if CTX_SIMD
 void ctx_simd_setup (void);
 #endif
 static void
 _ctx_init (Ctx *ctx)
 {
-#ifdef CTX_HAVE_SIMD
+#if CTX_SIMD
    {
      static int simd_inited = 0;
      if (!simd_inited)

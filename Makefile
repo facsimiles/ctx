@@ -46,7 +46,9 @@ SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
 
 CTX_OBJS = ctx.o
+ifeq ($(CTX_SIMD), 1)
 CTX_SIMD_OBJS = ctx-x86-64-v2.o ctx-x86-64-v3.o
+endif
 CTX_OBJS += $(CTX_SIMD_OBJS)
 
 CCC=$(CCACHE) $(CC)

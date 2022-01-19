@@ -80,15 +80,13 @@
 #define CTX_IMPLEMENTATION 1
 #define CTX_RASTERIZER     1
 
-#define CTX_HAVE_SIMD      1 // this causes ctx_simd_setup to be called
-
 #include "ctx.h"
 
 #define ITK_IMPLEMENTATION 1
 #include "itk.h"   // for completeness, itk wants to be built in the ctx
                    // compilation unit to be influenced by the ctx config
 
-
+#if CTX_SIMD
 void ctx_simd_setup_x86_64_v2 (void);
 void ctx_simd_setup_x86_64_v3 (void);
 void ctx_simd_setup (void)
@@ -102,3 +100,4 @@ void ctx_simd_setup (void)
     case 3: ctx_simd_setup_x86_64_v3 ();break;
   }
 }
+#endif

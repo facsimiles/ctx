@@ -15,6 +15,15 @@ pkg-config alsa && HAVE_ALSA=1
 HAVE_KMS=0
 pkg-config libdrm && HAVE_KMS=1
 
+ARCH=`uname -m`
+
+if [ x$ARCH = "xx86_64" ]; then
+  HAVE_SIMD=1
+else
+  HAVE_SIMD=0
+fi
+
+
 ENABLE_FB=1
 
 CFLAGS='-O2 -g '
@@ -31,6 +40,8 @@ do
      "--enable-kms") HAVE_KMS=1 ;;
      "--without-kms") HAVE_KMS=0 ;;
      "--enable-fb") ENABLE_FB=1 ;;
+     "--enable-simd") HAVE_SIMD=1 ;;
+     "--without-simd") HAVE_SIMD=0 ;;
      "--without-fb") ENABLE_FB=0 ;;
      "--without-babl") HAVE_BABL=0 ;;
      "--without-cairo") HAVE_CAIRO=0 ;;
@@ -123,7 +134,17 @@ else
   echo "CTX_CFLAGS+= -DCTX_FB=0 " >> build.conf
 fi
 
-if [ x`uname -m` = "xx86_64" ]; then echo "CTX_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
+if [ x$ARCH = "xx86_64" ]; then echo "CTX_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
+
+
+if [ $HAVE_SIMD = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_SIMD=1 " >> build.conf
+  echo "CTX_SIMD=1" >>  build.conf
+else
+  echo "CTX_CFLAGS+= -DCTX_SIMD=0 " >> build.conf
+  echo "CTX_SIMD=0" >>  build.conf
+fi
+
 
 echo "CFLAGS=$CFLAGS" >> build.conf
 echo "LIBS=$LIBS" >> build.conf
@@ -151,6 +172,8 @@ if [ $HAVE_KMS = 1 ];    then echo "     kms yes";
                          else echo "     kms no    (libdrm-dev)";fi
 if [ $ENABLE_FB = 1 ];   then echo "      fb yes";
                          else echo "      fb no";fi
+if [ $HAVE_SIMD = 1 ];   then echo "    SIMD yes   (arch = $ARCH)";
+                         else echo "    SIMD no";fi
 echo
 echo CFLAGS=$CFLAGS
 echo
