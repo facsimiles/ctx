@@ -6564,7 +6564,7 @@ static MrgEntity entities[]={
 };
 
 void
-ctx_set (Ctx *ctx, uint64_t key_hash, const char *string, int len);
+ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 
 static void
 mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)

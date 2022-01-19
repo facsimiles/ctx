@@ -23,7 +23,6 @@ else
   HAVE_SIMD=0
 fi
 
-
 ENABLE_FB=1
 
 CFLAGS='-O2 -g '
@@ -33,58 +32,68 @@ CFLAGS_BACKEND=''
 while test $# -gt 0
 do
     case "$1" in
-     "--without-sdl") HAVE_SDL=0    ;;
+     "--disable-sdl") HAVE_SDL=0    ;;
      "--debug") CFLAGS=' -g '    ;;
      "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan -g '  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan -g '  ;;
      "--enable-kms") HAVE_KMS=1 ;;
-     "--without-kms") HAVE_KMS=0 ;;
+     "--enable-sdl") HAVE_SDL=1 ;;
+     "--enable-cairo") HAVE_CAIRO=1 ;;
+     "--enable-babl") HAVE_BABL=1 ;;
+     "--enable-alsa") HAVE_ALSA=1 ;;
+     "--enable-libcurl") HAVE_LIBCURL=1 ;;
+     "--enable-harfbuzz") HAVE_HARFBUZZ=1 ;;
+     "--disable-kms") HAVE_KMS=0 ;;
      "--enable-fb") ENABLE_FB=1 ;;
      "--enable-simd") HAVE_SIMD=1 ;;
-     "--without-simd") HAVE_SIMD=0 ;;
-     "--without-fb") ENABLE_FB=0 ;;
-     "--without-babl") HAVE_BABL=0 ;;
-     "--without-cairo") HAVE_CAIRO=0 ;;
-     "--without-harfbuzz") HAVE_HARFBUZZ=0 ;;
-     "--without-alsa") HAVE_ALSA=0 ;;
-     "--without-libcurl") HAVE_LIBCURL=0 ;;
+     "--disable-simd") HAVE_SIMD=0 ;;
+     "--disable-fb") ENABLE_FB=0 ;;
+     "--disable-babl") HAVE_BABL=0 ;;
+     "--disable-cairo") HAVE_CAIRO=0 ;;
+     "--disable-harfbuzz") HAVE_HARFBUZZ=0 ;;
+     "--disable-alsa") HAVE_ALSA=0 ;;
+     "--disable-libcurl") HAVE_LIBCURL=0 ;;
+     "--disable-all")
+        HAVE_LIBCURL=0
+        HAVE_KMS=0
+        HAVE_SIMD=0 
+        ENABLE_FB=0 
+        HAVE_BABL=0 
+        HAVE_SDL=0 
+        HAVE_CAIRO=0 
+        HAVE_HARFBUZZ=0 
+        HAVE_ALSA=0 
+        HAVE_LIBCURL=0 
+        HAVE_LIBCURL=0
+             ;;
      *|"--help") 
+       if [ "x$1" != "x--help" ]; then echo unrecognized option $1 ; fi
        echo "usage: ./configure [options]"
        echo "Where recognized options are: "
-       echo "  --enable-cairo"
-       echo "  --without-cairo"
-       echo "  --enable-harfbuzz"
-       echo "  --without-harfbuzz"
-       echo "  --enable-fb"
-       echo "  --without-fb"
-       echo "  --enable-kms"
-       echo "  --without-kms"
-       echo "  --enable-sdl"
-       echo "  --without-sdl"
-       echo "  --enable-alsa"
-       echo "  --without-alsa"
-       echo "  --enable-babl"
-       echo "  --without-babl"
-       echo "  --enable-libcurl"
-       echo "  --without-libcurl"
-       echo "  --asan"
-       echo "  --ubsan"
-       echo "  --debug"
+       echo "  --enable-FEATURE   where FEATURE is one of cairo, harfbuzz"
+       echo "  --disable-FEATURE  fb, kms, sdl, alsa, babl, libcurl and simd"
+       echo ""
+       echo "  --disable-all      disable all features, to be used before enabling"
+       echo "                     features individually"
+       echo "  --asan             do an asan build"
+       echo "  --ubsan            do an ubsan build"
+       echo "  --debug            do a debug build (faster)"
        exit 0
        ;;
     esac
     shift
 done
 
-
 echo > build.conf
 if [ $HAVE_SDL = 1 ];then
-  echo "CTX_CFLAGS+= `pkg-config sdl2 --cflags` -DCTX_SDL=1 " >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_SDL=1 " >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config sdl2 --cflags` " >> build.conf
   echo "CTX_LIBS+= `pkg-config sdl2 --libs`" >> build.conf
 else
   echo "CTX_CFLAGS+= -DCTX_SDL=0 " >> build.conf
 fi
 
+echo >> build.conf
 if [ $HAVE_BABL  = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_BABL=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config babl  --cflags`" >> build.conf
@@ -93,6 +102,7 @@ else
   echo "CTX_CFLAGS+= -DCTX_BABL=0" >> build.conf
 fi
 
+echo >> build.conf
 if [ $HAVE_HARFBUZZ = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config harfbuzz --cflags`" >> build.conf
@@ -101,6 +111,7 @@ else
   echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=0" >> build.conf
 fi
 
+echo >> build.conf
 if [ $HAVE_CAIRO = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_CAIRO=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config cairo --cflags`" >> build.conf
@@ -109,6 +120,7 @@ else
   echo "CTX_CFLAGS+= -DCTX_CAIRO=0" >> build.conf
 fi
 
+echo >> build.conf
 if [ $HAVE_LIBCURL = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_CURL=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config libcurl --cflags`" >> build.conf
@@ -117,6 +129,7 @@ else
   echo "CTX_CFLAGS+= -DCTX_CURL=0" >> build.conf
 fi
 
+echo >> build.conf
 if [ $HAVE_ALSA = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_ALSA=1" >> build.conf
   echo "CTX_CFLAGS+= `pkg-config alsa --cflags`" >> build.conf
@@ -125,12 +138,15 @@ else
   echo "CTX_CFLAGS+= -DCTX_ALSA=0" >> build.conf
 fi
 
+echo >> build.conf
 if [ $HAVE_KMS = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_KMS=1 `pkg-config libdrm --cflags`" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_KMS=1" >> build.conf
+  echo "CTX_CFLAGS+= `pkg-config libdrm --cflags`" >> build.conf
 else
   echo "CTX_CFLAGS+= -DCTX_KMS=0 " >> build.conf
 fi
 
+echo >> build.conf
 if [ $ENABLE_FB = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_FB=1 " >> build.conf
 else
@@ -140,7 +156,7 @@ echo >> build.conf
 
 if [ x$ARCH = "xx86_64" ]; then echo "CTX_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
 
-
+echo >> build.conf
 if [ $HAVE_SIMD = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_SIMD=1 " >> build.conf
   echo "CTX_SIMD=1" >>  build.conf
@@ -150,6 +166,7 @@ else
 fi
 
 
+echo >> build.conf
 echo "CFLAGS=$CFLAGS" >> build.conf
 echo "LIBS=$LIBS" >> build.conf
 
