@@ -18,7 +18,6 @@ CFLAGS_warnings= -Wall \
 CFLAGS+= $(CFLAGS_warnings) -fPIC 
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
-#  -ffast-math   gets rejected by duktape
 
 CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers
 LIBS  += -lz -lm -lpthread
@@ -142,10 +141,10 @@ ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-m
 
 ctx-x86-64-v2.o: ctx-x86-64-v2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	rm -f vec.missed
-	$(CCC) $< -c -o $@ $(CFLAGS) -ffast-math -O3 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-missed=vec.missed
+	$(CCC) $< -c -o $@ $(CFLAGS) -momit-leaf-frame-pointer -ftree-vectorize -ffast-math -O2 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-missed=vec.missed
 ctx-x86-64-v3.o: ctx-x86-64-v3.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	rm -f vec.optimized
-	$(CCC) $< -c -o $@ $(CFLAGS) -ffast-math -O3 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-optimized=vec.optimized
+	$(CCC) $< -c -o $@ $(CFLAGS) -momit-leaf-frame-pointer -ftree-vectorize -ffast-math -O2 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-optimized=vec.optimized
 
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)

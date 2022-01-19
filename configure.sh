@@ -136,6 +136,7 @@ if [ $ENABLE_FB = 1 ];then
 else
   echo "CTX_CFLAGS+= -DCTX_FB=0 " >> build.conf
 fi
+echo >> build.conf
 
 if [ x$ARCH = "xx86_64" ]; then echo "CTX_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
 
