@@ -251,10 +251,11 @@
 #endif
 
 /* create one-off inlined inner loop for normal blend mode (for floating point,
- * for RGBA8 manual loops overrrides
+ * and grayscale for RGBA8 manual loops overrrides. Disabling this should speed
+ * up compiles at penalty for the given formats.
  */
 #ifndef CTX_INLINED_NORMAL     
-#define CTX_INLINED_NORMAL      1
+#define CTX_INLINED_NORMAL      0
 #endif
 
 #ifndef CTX_U8_TO_FLOAT_LUT
@@ -273,7 +274,7 @@
  * faster.
  */
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       1
+#define CTX_NATIVE_GRAYA8       0
 #endif
 
 /* enable CMYK rasterization targets
