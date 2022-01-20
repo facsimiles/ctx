@@ -84,14 +84,13 @@ void ctx_simd_setup (void)
     case 3: ctx_simd_setup_x86_64_v3 ();break;
   }
 }
-#else // must be arm
+#else // must be arm if we have SIMD enabled and are not x86_64
 void ctx_simd_setup_armv7l_neon (void);
-int ctx_armv7_fpu_level (void);
+int ctx_arm_has_neon (int *armv);
 void ctx_simd_setup (void)
 {
-  int level = 1;
-  if (getenv ("CTX_SIMD")) level = atoi (getenv ("CTX_SIMD"));
-  if (level)ctx_simd_setup_armv7l_neon ();
+  if (ctx_arm_has_neon (NULL))
+    ctx_simd_setup_armv7l_neon ();
 }
 #endif
 #endif
