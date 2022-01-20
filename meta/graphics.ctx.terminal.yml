@@ -22,7 +22,8 @@ modules:
           buildsystem: simple
           build-commands:
                 - ./configure.sh
-                - make
+                - make ctx.h
+                - make -j4 ctx
                 - strip ctx
                 - PREFIX=/app/ make install
           sources:

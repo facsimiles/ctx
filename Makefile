@@ -120,7 +120,7 @@ ctx.pc: Makefile
 	echo 'Libs: -L$${libdir} -lctx' >> $@
 	echo 'Cflags: -I$${includedir}' >> $@
 
-install: ctx libctx.so ctx.h
+install: ctx libctx.so ctx.h ctx.pc
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin ctx
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx.pc
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/include ctx.h
