@@ -70,9 +70,9 @@ demos/c/%: demos/c/%.c build.conf Makefile build.conf media-handlers/itk.h libct
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen
 	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
-fonts/ctx-font-ascii-spacing.h: fonts/ctx-font-ascii.h
+fonts/ctx-font-ascii-spacing.h: fonts/ctx-font-ascii.h tools/ctx-fontgen
 	grep -v "},$$" $< > $@
-fonts/ctx-font-regular-spacing.h: fonts/ctx-font-regular.h
+fonts/ctx-font-regular-spacing.h: fonts/ctx-font-regular.h tools/ctx-fontgen
 	grep -v "},$$" $< > $@
 
 fonts/ctxf/ascii.ctxf: tools/ctx-fontgen
@@ -227,7 +227,7 @@ flatpak:
 flatpak-install:
 	rm -rf build-dir;flatpak-builder --install --user build-dir meta/graphics.ctx.terminal.yml
 
-ctx.h: src/*.[ch] src/index fonts/ctx-font-ascii.h
+ctx.h: src/*.[ch] src/index fonts/ctx-font-ascii.h tools/ctx-fontgen
 	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@)
 
 ctx-nofont.h: src/*
