@@ -499,6 +499,8 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             case CTX_COV_PATH_RGB565_COPY:
             case CTX_COV_PATH_RGB332_COPY:
             case CTX_COV_PATH_GRAYA8_COPY:
+            case CTX_COV_PATH_GRAYAF_COPY:
+            case CTX_COV_PATH_CMYKAF_COPY:
             case CTX_COV_PATH_GRAY8_COPY:
             case CTX_COV_PATH_CMYKA8_COPY:
             case CTX_COV_PATH_CMYK8_COPY:
@@ -1046,6 +1048,8 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             case CTX_COV_PATH_GRAY8_COPY:
             case CTX_COV_PATH_RGB8_COPY:
             case CTX_COV_PATH_GRAYA8_COPY:
+            case CTX_COV_PATH_GRAYAF_COPY:
+            case CTX_COV_PATH_CMYKAF_COPY:
             case CTX_COV_PATH_RGB565_COPY:
             case CTX_COV_PATH_RGB332_COPY:
             case CTX_COV_PATH_CMYK8_COPY:

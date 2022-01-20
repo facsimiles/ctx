@@ -255,7 +255,7 @@
  * up compiles at penalty for the given formats.
  */
 #ifndef CTX_INLINED_NORMAL     
-#define CTX_INLINED_NORMAL      0
+#define CTX_INLINED_NORMAL      1
 #endif
 
 #ifndef CTX_U8_TO_FLOAT_LUT
@@ -274,7 +274,7 @@
  * faster.
  */
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       0
+#define CTX_NATIVE_GRAYA8       1
 #endif
 
 /* enable CMYK rasterization targets

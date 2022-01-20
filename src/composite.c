@@ -3579,7 +3579,6 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
         {
           case CTX_SOURCE_COLOR:
             rasterizer->comp_op = ctx_RGBAF_porter_duff_color;
-            //rasterizer->fragment = NULL;
             break;
 #if CTX_GRADIENTS
           case CTX_SOURCE_LINEAR_GRADIENT:
@@ -3735,7 +3734,6 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_GRAYAF_porter_duff_color;
-  //  rasterizer->fragment = NULL;
       ctx_color_get_rgba (rasterizer->state, &gstate->source_fill.color, (float*)rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         for (int c = 0; c < components; c ++)
@@ -3779,12 +3777,10 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
 #endif
               //else
           //      rasterizer->comp_op = ctx_GRAYAF_porter_duff_color_normal;
-//            rasterizer->fragment = NULL;
             }
             else
             {
               rasterizer->comp_op = ctx_GRAYAF_porter_duff_color_normal;
-//            rasterizer->fragment = NULL;
             }
             break;
           default:
@@ -3797,7 +3793,6 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
         {
           case CTX_SOURCE_COLOR:
             rasterizer->comp_op = ctx_GRAYAF_porter_duff_color;
-//          rasterizer->fragment = NULL;
             break;
           default:
             rasterizer->comp_op = ctx_GRAYAF_porter_duff_generic;
@@ -3995,7 +3990,6 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
     {
       rasterizer->comp_op = ctx_CMYKAF_porter_duff_color;
       rasterizer->comp_op = ctx_CMYKAF_porter_duff_generic;
- //     rasterizer->fragment = NULL;
       ctx_color_get_cmyka (rasterizer->state, &gstate->source_fill.color, (float*)rasterizer->color);
       if (gstate->global_alpha_u8 != 255)
         ((float*)rasterizer->color)[components-1] *= gstate->global_alpha_f;
@@ -4014,7 +4008,6 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
 #if CTX_INLINED_NORMAL
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
     rasterizer->comp_op = ctx_CMYKAF_clear_normal;
-#if 1
   else
     switch (gstate->blend_mode)
     {
@@ -4033,18 +4026,17 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
             {
               if (((float*)rasterizer->color)[components-1] == 0.0f)
                 rasterizer->comp_op = ctx_RGBA8_nop;
-#if 1
               else if (((float*)rasterizer->color)[components-1] == 1.0f)
+              {
                 rasterizer->comp_op = ctx_CMYKAF_source_copy_normal_color;
+                rasterizer->comp = CTX_COV_PATH_CMYKAF_COPY;
+              }
               else
                 rasterizer->comp_op = ctx_CMYKAF_porter_duff_color_normal;
-              //rasterizer->fragment = NULL;
-#endif
             }
             else
             {
               rasterizer->comp_op = ctx_CMYKAF_porter_duff_color_normal;
-   //         rasterizer->fragment = NULL;
             }
             break;
           default:
@@ -4057,7 +4049,6 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
         {
           case CTX_SOURCE_COLOR:
             rasterizer->comp_op = ctx_CMYKAF_porter_duff_color;
-    //      rasterizer->fragment = NULL;
             break;
           default:
             rasterizer->comp_op = ctx_CMYKAF_porter_duff_generic;
@@ -4065,7 +4056,21 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
         }
         break;
     }
-#endif
+#else
+
+    if (gstate->blend_mode == CTX_BLEND_NORMAL &&
+        gstate->source_fill.type == CTX_SOURCE_COLOR)
+    {
+        if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
+        {
+          rasterizer->comp = CTX_COV_PATH_CMYKAF_COPY;
+        }
+        else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
+                 rasterizer->color[components-1] == 255)
+        {
+          rasterizer->comp = CTX_COV_PATH_CMYKAF_COPY;
+        }
+    }
 #endif
   ctx_setup_apply_coverage (rasterizer);
 }
@@ -4075,20 +4080,16 @@ ctx_setup_CMYKA8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_CMYKAF (rasterizer);
 
-#if CTX_INLINED_NORMAL
-  if (rasterizer->comp_op == ctx_CMYKAF_source_copy_normal_color)
+  if (rasterizer->comp == CTX_COV_PATH_CMYKAF_COPY)
     rasterizer->comp = CTX_COV_PATH_CMYKA8_COPY;
-#endif
 }
 
 static void
 ctx_setup_CMYK8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_CMYKAF (rasterizer);
-#if CTX_INLINED_NORMAL
-  if (rasterizer->comp_op == ctx_CMYKAF_source_copy_normal_color)
+  if (rasterizer->comp == CTX_COV_PATH_CMYKAF_COPY)
     rasterizer->comp = CTX_COV_PATH_CMYK8_COPY;
-#endif
 }
 
 #endif
@@ -4657,11 +4658,9 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYA8 (CtxRasterizer *rasterizer
   return ctx_fragment_color_GRAYA8;
 }
 
-//ctx_u8_porter_duff(GRAYA8, 2,color,   rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 ctx_u8_porter_duff(GRAYA8, 2,generic, rasterizer->fragment, rasterizer->state->gstate.blend_mode)
 
 #if CTX_INLINED_NORMAL
-//ctx_u8_porter_duff(GRAYA8, 2,color_normal,   rasterizer->fragment, CTX_BLEND_NORMAL)
 ctx_u8_porter_duff(GRAYA8, 2,generic_normal, rasterizer->fragment, CTX_BLEND_NORMAL)
 
 static void
@@ -4736,6 +4735,7 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
         if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
         {
           rasterizer->comp_op = ctx_GRAYA8_copy_normal;
+          rasterizer->comp = CTX_COV_PATH_GRAYA8_COPY;
         }
         else if (gstate->global_alpha_u8 == 0)
           rasterizer->comp_op = ctx_RGBA8_nop;
@@ -4769,6 +4769,20 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
         rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic;
         break;
     }
+#else
+    if (gstate->blend_mode == CTX_BLEND_NORMAL &&
+        gstate->source_fill.type == CTX_SOURCE_COLOR)
+    {
+        if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
+        {
+          rasterizer->comp = CTX_COV_PATH_GRAYA8_COPY;
+        }
+        else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
+                 rasterizer->color[components-1] == 255)
+        {
+          rasterizer->comp = CTX_COV_PATH_GRAYA8_COPY;
+        }
+    }
 #endif
   ctx_setup_apply_coverage (rasterizer);
 }
@@ -4791,11 +4805,9 @@ static void
 ctx_setup_GRAY1 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
-#if CTX_INLINED_NORMAL
-  if (rasterizer->comp_op == ctx_GRAYA8_source_copy_normal_color)
+  if (rasterizer->comp == CTX_COV_PATH_GRAYA8_COPY)
     rasterizer->comp = CTX_COV_PATH_GRAY1_COPY;
   else
-#endif
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
@@ -4803,11 +4815,9 @@ static void
 ctx_setup_GRAY8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
-#if CTX_INLINED_NORMAL
-  if (rasterizer->comp_op == ctx_GRAYA8_source_copy_normal_color)
+  if (rasterizer->comp == CTX_COV_PATH_GRAYA8_COPY)
     rasterizer->comp = CTX_COV_PATH_GRAY8_COPY;
   else
-#endif
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
@@ -5600,6 +5610,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     case CTX_COV_PATH_RGBAF_COPY:
     case CTX_COV_PATH_GRAY8_COPY:
     case CTX_COV_PATH_GRAYA8_COPY:
+    case CTX_COV_PATH_GRAYAF_COPY:
+    case CTX_COV_PATH_CMYKAF_COPY:
     case CTX_COV_PATH_RGB565_COPY:
     case CTX_COV_PATH_RGB332_COPY:
     case CTX_COV_PATH_RGB8_COPY:
