@@ -4074,16 +4074,21 @@ static void
 ctx_setup_CMYKA8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_CMYKAF (rasterizer);
+
+#if CTX_INLINED_NORMAL
   if (rasterizer->comp_op == ctx_CMYKAF_source_copy_normal_color)
     rasterizer->comp = CTX_COV_PATH_CMYKA8_COPY;
+#endif
 }
 
 static void
 ctx_setup_CMYK8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_CMYKAF (rasterizer);
+#if CTX_INLINED_NORMAL
   if (rasterizer->comp_op == ctx_CMYKAF_source_copy_normal_color)
     rasterizer->comp = CTX_COV_PATH_CMYK8_COPY;
+#endif
 }
 
 #endif
@@ -4786,9 +4791,11 @@ static void
 ctx_setup_GRAY1 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
+#if CTX_INLINED_NORMAL
   if (rasterizer->comp_op == ctx_GRAYA8_source_copy_normal_color)
     rasterizer->comp = CTX_COV_PATH_GRAY1_COPY;
   else
+#endif
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
@@ -4796,9 +4803,11 @@ static void
 ctx_setup_GRAY8 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
+#if CTX_INLINED_NORMAL
   if (rasterizer->comp_op == ctx_GRAYA8_source_copy_normal_color)
     rasterizer->comp = CTX_COV_PATH_GRAY8_COPY;
   else
+#endif
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
