@@ -147,22 +147,19 @@ ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-m
 
 ctx-x86-64-v2.o: ctx-x86-64-v2.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	rm -f vec.missed
-	$(CCC) $< -c -o $@ $(CFLAGS) -momit-leaf-frame-pointer -ftree-vectorize -ffast-math -O2 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-missed=vec.missed
+	$(CCC) $< -c -o $@ $(CFLAGS) -momit-leaf-frame-pointer -ftree-vectorize -ffast-math -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-missed=vec.missed
 ctx-x86-64-v3.o: ctx-x86-64-v3.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
 	rm -f vec.optimized
-	$(CCC) $< -c -o $@ $(CFLAGS) -mmovbe -momit-leaf-frame-pointer -mmovbe -ftree-vectorize -ffast-math -O2 -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-optimized=vec.optimized
+	$(CCC) $< -c -o $@ $(CFLAGS) -mmovbe -momit-leaf-frame-pointer -mmovbe -ftree-vectorize -ffast-math -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma $(CTX_CFLAGS) $(OFLAGS_LIGHT) -fopt-info-vec-optimized=vec.optimized
 
 ctx-arm-neon.o: ctx-arm-neon.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) $< -c -o $@ $(CFLAGS) -ftree-vectorize -ffast-math -O3 -march=armv7 -mfpu=neon $(CTX_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) $< -c -o $@ $(CFLAGS) -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 ctx-split.o: $(SRC_OBJS)
-
-ctx-static.o: ctx.c ctx.h build.conf Makefile used_fonts 
-	$(CCC) -c $< -o $@ $(CFLAGS) $(OFLAGS_LIGHT) -DCTX_SDL=0  -DCTX_BABL=0 -DCTX_FB=1 -DCTX_CURL=0 -DCTX_ALSA=0 -DCTX_X86_64=1
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
@@ -182,8 +179,8 @@ libctx.so: $(CTX_OBJS)
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
 	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS)
 
-ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_OBJS) ctx-static.o deps.o terminal/*.[ch] 
-	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx-static.o $(CTX_SIMD_OBJS) deps.o $(LIBS) -DCTX_BABL=0 -DCTX_SDL=0 -DCTX_FB=1 -DCTX_CURL=0 -static 
+ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_OBJS) ctx.o deps.o terminal/*.[ch] 
+	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) ctx.o $(CTX_SIMD_OBJS) deps.o $(LIBS) -DCTX_BABL=0 -DCTX_SDL=0 -DCTX_FB=1 -DCTX_CURL=0 -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile build.conf
