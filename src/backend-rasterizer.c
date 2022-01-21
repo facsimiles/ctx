@@ -405,7 +405,7 @@ inline static void
 ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                         int            minx,
                                         int            maxx,
-                                        uint8_t       *coverage,
+                                        uint8_t* __restrict__ coverage,
                                         int            is_winding,
                                         CtxCovPath     comp)
 {
