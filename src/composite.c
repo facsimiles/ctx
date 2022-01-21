@@ -2187,7 +2187,7 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 }
 
 static inline void
-ctx_RGBA8_source_over_normal_full_cov_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
+ctx_RGBA8_source_over_normal_full_cov_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *__restrict__ tsrc)
 {
   while (count--)
   {
@@ -2203,8 +2203,8 @@ ctx_RGBA8_source_over_normal_full_cov_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsr
   }
 }
 
-static void
-ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
+static inline void
+ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *__restrict__ tsrc)
 {
   while (count--)
   {
@@ -2216,7 +2216,7 @@ ctx_RGBA8_source_copy_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
   }
 }
 
-static void
+static inline void
 ctx_RGBA8_source_over_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
 {
   float u0 = 0; float v0 = 0;
@@ -2247,7 +2247,7 @@ ctx_RGBA8_source_over_normal_full_cov_fragment (CTX_COMPOSITE_ARGUMENTS, int sca
   }
 }
 
-static void
+static inline void
 ctx_RGBA8_source_copy_normal_fragment (CTX_COMPOSITE_ARGUMENTS)
 {
   float u0 = 0; float v0 = 0;
@@ -5383,7 +5383,13 @@ static inline void ctx_span_set_color (uint32_t *dst_pix, uint32_t val, int coun
     *dst_pix++=val;
 }
 
-static inline void ctx_span_set_colorb (uint32_t *dst_pix, uint32_t val, int count)
+static inline void ctx_span_set_colorb  (uint32_t *dst_pix, uint32_t val, int count)
+{
+  while(count--)
+    *dst_pix++=val;
+}
+
+static inline void ctx_span_set_colorbu (uint32_t *dst_pix, uint32_t val, unsigned int count)
 {
   while(count--)
     *dst_pix++=val;
@@ -5415,23 +5421,22 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
   uint8_t *dst = ( (uint8_t *) rasterizer->buf);
   int blit_stride = rasterizer->blit_stride;
 
-#if 1
+#if 0
   x0 = ctx_maxi (x0, rasterizer->blit_x);
   y0 = ctx_maxi (y0, rasterizer->blit_y);
   x1 = ctx_mini (x1, rasterizer->blit_x + rasterizer->blit_width - 1);
   y1 = ctx_mini (y1, rasterizer->blit_y + rasterizer->blit_height - 1);
 #endif
 
-  dst += (y0 - rasterizer->blit_y) * blit_stride;
-  dst += (x0) * rasterizer->format->bpp/8;
+  dst += (y0 - rasterizer->blit_y) * blit_stride + (x0) * rasterizer->format->bpp/8;
 
-  int width = x1-x0+1;
-  int height = y1-y0+1;
+  unsigned int width = x1-x0+1;
+  unsigned int height = y1-y0+1;
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed;
-  int bwidth = buffer->width;
-  int bheight = buffer->height;
+  unsigned int bwidth = buffer->width;
+  unsigned int bheight = buffer->height;
   if (copy)
   {
       if (vd == 0.0 && ud == 1.0f && u0 >= 0 && v0 >=0 && u0 + ud * (width - 1)< bwidth && v0 + (height - 1) < bheight)
@@ -5439,7 +5444,7 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
         uint32_t *data = ((uint32_t*)buffer->data);
         data += ((int)(v0)) * bwidth + (int)u0; 
 
-        for (int y = 0; y < height; y++)
+        for (unsigned int y = 0; y < height; y++)
         {
           memcpy (dst, data, width * 4);
           dst += blit_stride;
@@ -5447,7 +5452,7 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
         }
       }
       else
-      for (int y = 0; y < height; y++)
+      for (unsigned int y = 0; y < height; y++)
       {
         ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, u0, v0, &dst[0], width, ud, vd);
         u0 -= vd;
@@ -5461,7 +5466,7 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
       {
         uint32_t *data = ((uint32_t*)buffer->data);
         data += ((int)(v0)) * bwidth + (int)u0; 
-        for (int y = 0; y < height; y++)
+        for (unsigned int y = 0; y < height; y++)
         {
           ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
            dst, NULL, x0, NULL, width, (uint8_t*)&data[0]);
@@ -5472,7 +5477,7 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
         }
       }
       else
-      for (int y = 0; y < height; y++)
+      for (unsigned int y = 0; y < height; y++)
       {
         uint8_t tsrc[width*4];
         ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, u0, v0, &tsrc[0], width, ud, vd);
@@ -5693,7 +5698,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           while(count--)
             *dst_pix++=color;
 #else
-          ctx_span_set_colorb ((uint32_t*)&dst[0], color, width);
+          ctx_span_set_colorbu ((uint32_t*)&dst[0], color, width);
 #endif
           dst += blit_stride;
         }
@@ -5766,15 +5771,14 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
             if (width == 1)
             for (int y = y0; y <= y1; y++)
             {
-              uint32_t *dst_i = (uint32_t*)&dst[0];
-              *dst_i = val;
+              *((uint32_t*)&dst[0]) = val;
               dst += blit_stride;
             }
             else
             for (int y = y0; y <= y1; y++)
             {
               //uint32_t *dst_i = (uint32_t*)&dst[0];
-              ctx_span_set_colorb ((uint32_t*)&dst[0], val, width);
+              ctx_span_set_colorbu ((uint32_t*)&dst[0], val, width);
               dst += blit_stride;
             }
           }
