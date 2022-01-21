@@ -12,6 +12,7 @@
 #define CTX_ENABLE_CM       0
 #define CTX_NATIVE_GRAYA8   0
 #define CTX_PARSER          0
+#define CTX_RASTERIZER_SWITCH_DISPATCH 0
 #define CTX_MAX_TEXTURES    1
 #define CTX_U8_TO_FLOAT_LUT 0
 #define CTX_EVENTS          0
