@@ -6,14 +6,14 @@
                 <a href='../protocol/'>protocol</a>
                 <a href='../sdk/'>sdk</a>
                 <a href='../rasterizer/'>rasterizer</a>
+                <a href='../compositing/'>compositing</a>
+                <a href='../performance/'>performance</a>
+
                 <br/>
                 <a href='https://ctx.graphics/.git/'>git</a>
-
-                <a href='../#roadmap'>roadmap</a>
                 <a href='../#license'>license</a>
                 <br/>
                 <a href='../mcu/'>mcu</a>
-                <a href='../eink/'>eink</a>
                 <a href='../tests/'>tests</a>
                 <a href='../glitch/'>glitch</a>
         </div>

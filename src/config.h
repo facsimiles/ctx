@@ -255,8 +255,16 @@
  * up compiles at penalty for the given formats.
  */
 #ifndef CTX_INLINED_NORMAL     
-#define CTX_INLINED_NORMAL      1
+#define CTX_INLINED_NORMAL      0
 #endif
+
+/*
+ *  do not use manual RGBA8 code but rely on ctx inline templating
+ */
+#ifndef CTX_INLINED_NORMAL     
+#define CTX_INLINED_NORMAL_RGBA8  0
+#endif
+
 
 #ifndef CTX_U8_TO_FLOAT_LUT
 #define CTX_U8_TO_FLOAT_LUT  0
