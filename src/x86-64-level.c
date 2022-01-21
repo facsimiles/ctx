@@ -56,6 +56,7 @@ ctx_x86_64_level (void)
 
   if ((ecx & ARCH_X86_INTEL_FEATURE_AVX)==0)     return level;
   if ((ecx & ARCH_X86_INTEL_FEATURE_OSXSAVE)==0) return level;
+  if ((ecx & ARCH_X86_INTEL_FEATURE_XSAVE)==0)   return level;
   if ((ecx & ARCH_X86_INTEL_FEATURE_FMA)==0)     return level;
   if ((ecx & ARCH_X86_INTEL_FEATURE_F16C)==0)    return level;
   if ((ecx & ARCH_X86_INTEL_FEATURE_MOVBE)==0)   return level;
