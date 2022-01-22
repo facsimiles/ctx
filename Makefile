@@ -155,7 +155,7 @@ ctx-x86-64-v3.o: ctx-x86-64-v3.c ctx.h build.conf Makefile fonts/ctx-font-regula
 	#-fopt-info-vec-optimized=vec.optimized
 
 ctx-arm-neon.o: ctx-arm-neon.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
-	$(CCC) $< -c -o $@ $(CFLAGS) -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon $(CTX_CFLAGS) $(OFLAGS_LIGHT)
+	$(CCC) $< -c -o $@ $(CFLAGS) -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 
 deps.o: deps.c build.conf Makefile 
