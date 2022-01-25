@@ -521,13 +521,9 @@ int ctx_set_drawlist (Ctx *ctx, void *data, int length)
   return length;
 }
 
-int ctx_get_drawlist_count (Ctx *ctx)
+const CtxEntry *ctx_get_drawlist (Ctx *ctx, int *count)
 {
-  return ctx->drawlist.count;
-}
-
-const CtxEntry *ctx_get_drawlist (Ctx *ctx)
-{
+  if (count) *count = ctx->drawlist.count;
   return ctx->drawlist.entries;
 }
 

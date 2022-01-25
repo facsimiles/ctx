@@ -1242,5 +1242,6 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
 
 int ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix);
 
+
 #endif
 

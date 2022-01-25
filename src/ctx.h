@@ -78,6 +78,8 @@ Ctx *ctx_new (int width, int height, const char *backend);
  */
 Ctx * ctx_new_drawlist (int width, int height);
 
+void  ctx_drawlist_clear (Ctx *ctx);
+
 /**
  * ctx_new_for_drawlist:
  *
@@ -87,21 +89,10 @@ Ctx *ctx_new_for_drawlist   (int    width,
                              int    height,
                              void  *data,
                              size_t length);
-
 int  ctx_set_drawlist       (Ctx *ctx, void *data, int length);
-int  ctx_get_drawlist_count (Ctx *ctx);
-
 typedef struct _CtxEntry CtxEntry;
-const CtxEntry *ctx_get_drawlist (Ctx *ctx);
-
-int  ctx_append_drawlist  (Ctx *ctx, void *data, int length);
-
-/**
- * ctx_dirty_rect:
- *
- * Query the dirtied bounding box of drawing commands thus far.
- */
-void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
+int  ctx_append_drawlist    (Ctx *ctx, void *data, int length);
+const CtxEntry *ctx_get_drawlist (Ctx *ctx, int *count);
 
 /**
  * ctx_free:
@@ -687,11 +678,19 @@ float ctx_glyph_width   (Ctx *ctx, int unichar);
 
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 
+
+/**
+ * ctx_dirty_rect:
+ *
+ * Query the dirtied bounding box of drawing commands thus far.
+ */
+void  ctx_dirty_rect      (Ctx *ctx, int *x, int *y, int *width, int *height);
+
+
 #ifdef CTX_X86_64
 int ctx_x86_64_level (void);
 #endif
 
-void ctx_drawlist_clear (Ctx *ctx);
 
 enum _CtxModifierState
 {
