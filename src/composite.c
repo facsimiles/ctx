@@ -352,7 +352,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
 
   for (int i = 0; i < count; i ++)
@@ -605,7 +605,7 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   int width = buffer->width;
   int height = buffer->height;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
@@ -713,7 +713,7 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
   uint8_t *rgba = (uint8_t *) out;
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   int width = buffer->width;
   int height = buffer->height;
 
@@ -780,9 +780,7 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
                                        void *out, int count, float dx, float dy)
 {
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer;
-  if (buffer->color_managed)
-   buffer = buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   uint8_t *rgba = (uint8_t *) out;
   uint8_t *src = (uint8_t *) buffer->data;
@@ -994,7 +992,7 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
 {
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   int width = buffer->width;
   int height = buffer->height;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
@@ -1070,9 +1068,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 {
   unsigned int count = scount;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer;
-  if (buffer->color_managed)
-    buffer = buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   int ideltax = dx * 65536;
   int ideltay = dy * 65536;
   uint32_t *src = (uint32_t *) buffer->data;
@@ -1187,7 +1183,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   float oy = (y-(int)(y));
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   const int bwidth = buffer->width;
   const int bheight = buffer->height;
   int i = 0;
@@ -1851,8 +1847,8 @@ static void ctx_fragment_image_RGBAF (CtxRasterizer *rasterizer, float x, float 
 {
   float *outf = (float *) out;
   uint8_t rgba[4];
-  CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source_fill.texture.buffer;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   switch (buffer->format->bpp)
     {
 #if CTX_FRAGMENT_SPECIALIZE
@@ -1884,7 +1880,8 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBAF (CtxRasterizer *rasterizer)
 static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source_fill.texture.buffer;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   switch (gstate->source_fill.type)
     {
       case CTX_SOURCE_TEXTURE:
@@ -3757,8 +3754,8 @@ static void ctx_fragment_image_GRAYAF (CtxRasterizer *rasterizer, float x, float
 {
   uint8_t rgba[4];
   float rgbaf[4];
-  CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source_fill.texture.buffer;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   switch (buffer->format->bpp)
     {
 #if CTX_FRAGMENT_SPECIALIZE
@@ -4721,8 +4718,8 @@ ctx_fragment_color_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, void *ou
 static void ctx_fragment_image_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy)
 {
   uint8_t rgba[4*count];
-  CtxGState *gstate = &rasterizer->state->gstate;
-  CtxBuffer *buffer = gstate->source_fill.texture.buffer;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   switch (buffer->format->bpp)
     {
 #if CTX_FRAGMENT_SPECIALIZE
@@ -5434,7 +5431,7 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
   unsigned int height = y1-y0+1;
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   unsigned int bwidth = buffer->width;
   unsigned int bheight = buffer->height;
   if (copy)
@@ -5514,7 +5511,7 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rast
   unsigned int height = y1-y0+1;
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
 
   int bwidth = buffer->width;
   int bheight = buffer->height;
