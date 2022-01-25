@@ -75,11 +75,11 @@ typedef struct {
 	double   last_time;
 	int      wants_to_quit;
 	int      texture_mode;
-	uint8_t *rgb_data;
+	uint8_t *rgba_data;
         Ctx     *ctx;
 } app_t;
 
-int yuv420 = 1; 
+int yuv420 = 0; 
 int smoothing = 0;
 int verbose = 0;
 int report_duration = 0;
@@ -146,7 +146,9 @@ app_t * app_create(const char *filename, int texture_mode) {
 	}
         {
 		int num_pixels = plm_get_width(self->plm) * plm_get_height(self->plm);
-		self->rgb_data = (uint8_t*)malloc(num_pixels * 3);
+		self->rgba_data = (uint8_t*)malloc(num_pixels * 4);
+                for (int i = 0; i < num_pixels * 4; i+=4)
+                    self->rgba_data[i+3]=255;
 	}
 	
 	return self;
@@ -156,7 +158,7 @@ void app_destroy(app_t *self) {
 	plm_destroy(self->plm);
 	
 	if (self->texture_mode == APP_TEXTURE_MODE_RGB) {
-		free(self->rgb_data);
+		free(self->rgba_data);
 	}
         ctx_free (self->ctx);
 	
@@ -280,14 +282,15 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
     free (data);
   }
   else {
-    plm_frame_to_rgb(frame, self->rgb_data, frame->width * 3);
+    plm_frame_to_rgba(frame, self->rgba_data, frame->width * 4);
+
     ctx_define_texture (self->ctx,
                         eid, // by passing in a unique eid
                              // we avoid having to hash
                         frame->width, frame->height,
-                        frame->width * 3,
-                        CTX_FORMAT_RGB8,
-                        self->rgb_data,
+                        frame->width * 4,
+                        CTX_FORMAT_RGBA8,
+                        self->rgba_data,
                         NULL);
   }
   ctx_image_smoothing (self->ctx, smoothing);
@@ -310,7 +313,7 @@ int ctx_mpg_main(int argc, char *argv[]) {
 		SDL_Log("Usage: ctx mpg [options] <file.mpg>\n"
                                 "where options are --seek-to <seconds>\n"
                                 " --paused to start off in a paused state\n"
-                                " --rgb  used RGB rather than yuv for transport\n"
+                                " --yuv  used YUV rather than RGB\n"
                                 " --smoothing  to turn on bilinear interpolation\n"
                                 " --report-duration print duration in seconds and exit\n"
                                 " --framedrop <1..32> \n"
@@ -325,10 +328,10 @@ int ctx_mpg_main(int argc, char *argv[]) {
         {
           if (argv[i][0] == '-')
           {
-            if (argv[i][1] == 'r' ||
-                !strcmp(argv[i], "--rgb"))
+            if (argv[i][1] == 'y' ||
+                !strcmp(argv[i], "--yuv"))
             {
-              yuv420 = 0;
+              yuv420 = 1;
             }
             else if (!strcmp(argv[i], "--report-duration"))
             {
