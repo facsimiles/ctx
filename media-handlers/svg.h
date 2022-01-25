@@ -1527,13 +1527,13 @@ static float _mrg_dynamic_edge_left (Mrg *mrg)
 int  mrg_width (Mrg *mrg)
 {
   if (!mrg) return 640;
-  return ctx_events_width (mrg->ctx) / mrg->ddpx;
+  return ctx_width (mrg->ctx) / mrg->ddpx;
 }
 
 int  mrg_height (Mrg *mrg)
 {
   if (!mrg) return 480;
-  return ctx_events_height (mrg->ctx) / mrg->ddpx;
+  return ctx_height (mrg->ctx) / mrg->ddpx;
 }
 
 static float _mrg_dynamic_edge_right (Mrg *mrg)

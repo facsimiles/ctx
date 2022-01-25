@@ -1870,14 +1870,6 @@ void ctx_events_clear_items (Ctx *ctx)
 {
   ctx_list_free (&ctx->events.items);
 }
-int ctx_events_width (Ctx *ctx)
-{
-  return ctx->width;
-}
-int ctx_events_height (Ctx *ctx)
-{
-  return ctx->height;
-}
 
 float ctx_pointer_x (Ctx *ctx)
 {

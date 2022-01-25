@@ -44,45 +44,14 @@
 extern "C" {
 #endif
 
-#if !__COSMOPOLITAN__
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #if CTX_EVENTS
-#include <sys/select.h> // XXX if events?
-#endif
+#include <sys/select.h>
 #endif
 
 typedef struct _Ctx            Ctx;
-
-/* The pixel formats supported as render targets
- */
-enum _CtxPixelFormat
-{
-  CTX_FORMAT_NONE=0,
-  CTX_FORMAT_GRAY8,  // 1  - these enum values are not coincidence
-  CTX_FORMAT_GRAYA8, // 2  -
-  CTX_FORMAT_RGB8,   // 3  -
-  CTX_FORMAT_RGBA8,  // 4  -
-  CTX_FORMAT_BGRA8,  // 5
-  CTX_FORMAT_RGB565, // 6
-  CTX_FORMAT_RGB565_BYTESWAPPED, // 7
-  CTX_FORMAT_RGB332, // 8
-  CTX_FORMAT_RGBAF,  // 9
-  CTX_FORMAT_GRAYF,  // 10
-  CTX_FORMAT_GRAYAF, // 11
-  CTX_FORMAT_GRAY1,  //12 MONO
-  CTX_FORMAT_GRAY2,  //13 DUO
-  CTX_FORMAT_GRAY4,  //14
-  CTX_FORMAT_CMYK8,  //15
-  CTX_FORMAT_CMYKA8, //16 
-  CTX_FORMAT_CMYKAF, //17
-  CTX_FORMAT_YUV420, //18
-  CTX_FORMAT_RGBA8_SEPARATE_ALPHA, // 19
-};
-typedef enum   _CtxPixelFormat CtxPixelFormat;
-
-typedef struct _CtxGlyph       CtxGlyph;
 
 /**
  * ctx_new:
@@ -101,18 +70,6 @@ typedef struct _CtxGlyph       CtxGlyph;
 Ctx *ctx_new (int width, int height, const char *backend);
 
 /**
- * ctx_new_for_framebuffer:
- *
- * Create a new drawing context for a framebuffer, rendering happens
- * immediately.
- */
-Ctx *ctx_new_for_framebuffer (void *data,
-                              int   width,
-                              int   height,
-                              int   stride,
-                              CtxPixelFormat pixel_format);
-
-/**
  * ctx_new_drawlist:
  *
  * Create a new drawing context that can record drawing commands,
@@ -124,10 +81,20 @@ Ctx * ctx_new_drawlist (int width, int height);
 /**
  * ctx_new_for_drawlist:
  *
- * Create a new drawing context for a pre-existing drawlist.
+ * Create a new drawing context for a pre-existing raw drawlist.
  */
-Ctx *ctx_new_for_drawlist (int width, int height, void *data, size_t length);
+Ctx *ctx_new_for_drawlist   (int    width,
+                             int    height,
+                             void  *data,
+                             size_t length);
 
+int  ctx_set_drawlist       (Ctx *ctx, void *data, int length);
+int  ctx_get_drawlist_count (Ctx *ctx);
+
+typedef struct _CtxEntry CtxEntry;
+const CtxEntry *ctx_get_drawlist (Ctx *ctx);
+
+int  ctx_append_drawlist  (Ctx *ctx, void *data, int length);
 
 /**
  * ctx_dirty_rect:
@@ -221,11 +188,19 @@ void  ctx_get_transform   (Ctx *ctx, float *a, float *b,
                            float *c, float *d,
                            float *e, float *f);
 
+
+typedef struct _CtxGlyph       CtxGlyph;
 CtxGlyph *ctx_glyph_allocate (int n_glyphs);
-
 void gtx_glyph_free       (CtxGlyph *glyphs);
-
 int  ctx_glyph            (Ctx *ctx, uint32_t unichar, int stroke);
+void  ctx_glyphs        (Ctx        *ctx,
+                         CtxGlyph   *glyphs,
+                         int         n_glyphs);
+
+void  ctx_glyphs_stroke (Ctx       *ctx,
+                         CtxGlyph   *glyphs,
+                         int         n_glyphs);
+
 
 void ctx_preserve         (Ctx *ctx);
 void ctx_fill             (Ctx *ctx);
@@ -315,6 +290,46 @@ ctx_source_transform (Ctx *ctx, float a, float b,  // hscale, hskew
 typedef struct _CtxMatrix     CtxMatrix;
 void
 ctx_source_transform_matrix (Ctx *ctx, CtxMatrix *matrix);
+
+
+/* The pixel formats supported as render targets
+ */
+enum _CtxPixelFormat
+{
+  CTX_FORMAT_NONE=0,
+  CTX_FORMAT_GRAY8,  // 1  - these enum values are not coincidence
+  CTX_FORMAT_GRAYA8, // 2  -
+  CTX_FORMAT_RGB8,   // 3  -
+  CTX_FORMAT_RGBA8,  // 4  -
+  CTX_FORMAT_BGRA8,  // 5
+  CTX_FORMAT_RGB565, // 6
+  CTX_FORMAT_RGB565_BYTESWAPPED, // 7
+  CTX_FORMAT_RGB332, // 8
+  CTX_FORMAT_RGBAF,  // 9
+  CTX_FORMAT_GRAYF,  // 10
+  CTX_FORMAT_GRAYAF, // 11
+  CTX_FORMAT_GRAY1,  //12 MONO
+  CTX_FORMAT_GRAY2,  //13 DUO
+  CTX_FORMAT_GRAY4,  //14
+  CTX_FORMAT_CMYK8,  //15
+  CTX_FORMAT_CMYKA8, //16 
+  CTX_FORMAT_CMYKAF, //17
+  CTX_FORMAT_YUV420, //18
+  CTX_FORMAT_RGBA8_SEPARATE_ALPHA, // 19
+};
+typedef enum   _CtxPixelFormat CtxPixelFormat;
+
+/**
+ * ctx_new_for_framebuffer:
+ *
+ * Create a new drawing context for a framebuffer, rendering happens
+ * immediately.
+ */
+Ctx *ctx_new_for_framebuffer (void *data,
+                              int   width,
+                              int   height,
+                              int   stride,
+                              CtxPixelFormat pixel_format);
 
 void
 ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
@@ -621,8 +636,6 @@ void ctx_fill_rule            (Ctx *ctx, CtxFillRule       fill_rule);
 void ctx_line_cap             (Ctx *ctx, CtxLineCap        cap);
 void ctx_line_join            (Ctx *ctx, CtxLineJoin       join);
 void ctx_compositing_mode     (Ctx *ctx, CtxCompositingMode mode);
-int  ctx_set_drawlist     (Ctx *ctx, void *data, int length);
-typedef struct _CtxEntry CtxEntry;
 /* we only care about the tight packing for this specific
  * struct as we do indexing across members in arrays of it,
  * to make sure its size becomes 9bytes -
@@ -649,19 +662,7 @@ struct
   // aglinment and cacheline behavior.
 };
 #pragma pack(pop)
-const CtxEntry *ctx_get_drawlist (Ctx *ctx);
-int  ctx_append_drawlist  (Ctx *ctx, void *data, int length);
 
-/* these are only needed for clients rendering text, as all text gets
- * converted to paths.
- */
-void  ctx_glyphs        (Ctx        *ctx,
-                         CtxGlyph   *glyphs,
-                         int         n_glyphs);
-
-void  ctx_glyphs_stroke (Ctx       *ctx,
-                         CtxGlyph   *glyphs,
-                         int         n_glyphs);
 
 void  ctx_text          (Ctx        *ctx,
                          const char *string);
@@ -715,8 +716,7 @@ typedef enum _CtxScrollDirection CtxScrollDirection;
 
 typedef struct _CtxEvent CtxEvent;
 
-void ctx_set_backend (Ctx *ctx,
-                      void *backend);
+void ctx_set_backend (Ctx *ctx, void *backend);
 void *ctx_get_backend (Ctx *ctx);
 
 /* the following API is only available when CTX_EVENTS is defined to 1
@@ -916,8 +916,6 @@ void  ctx_freeze (Ctx *ctx);
 void  ctx_thaw   (Ctx *ctx);
 int   ctx_events_frozen (Ctx *ctx);
 void  ctx_events_clear_items (Ctx *ctx);
-int   ctx_events_width (Ctx *ctx);
-int   ctx_events_height (Ctx *ctx);
 
 /* The following functions drive the event delivery, registered callbacks
  * are called in response to these being called.
@@ -1096,7 +1094,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 #define ctx_assert(a)
 #endif
 
-int ctx_get_drawlist_count (Ctx *ctx);
 
 struct
   _CtxCommand
@@ -1653,8 +1650,8 @@ struct _CtxBackend
 
   char *(*get_event)       (Ctx *ctx, int timout_ms);
 
-  void                     (*consume_events) (Ctx *ctx);
-  void                     (*get_event_fds)  (Ctx *ctx, int *fd, int *count);
+  void  (*consume_events)  (Ctx *ctx);
+  void  (*get_event_fds)   (Ctx *ctx, int *fd, int *count);
   char *(*get_clipboard)   (Ctx *ctx);
   void  (*set_clipboard)   (Ctx *ctx, const char *text);
   void (*free)             (void *backend); /* the free pointers are abused as the differentiatior
@@ -1786,6 +1783,7 @@ enum _CtxColorSpace
 };
 typedef enum _CtxColorSpace CtxColorSpace;
 
+
 /* sets the color space for a slot, the space is either a string of
  * "sRGB" "rec2020" .. etc or an icc profile.
  *
@@ -1799,6 +1797,12 @@ void ctx_colorspace (Ctx           *ctx,
                      CtxColorSpace  space_slot,
                      unsigned char *data,
                      int            data_length);
+
+
+
+
+
+
 
 void
 ctx_parser_set_size (CtxParser *parser,
