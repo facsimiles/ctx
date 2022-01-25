@@ -1881,10 +1881,13 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   switch (gstate->source_fill.type)
     {
       case CTX_SOURCE_TEXTURE:
+      {
+        CtxBuffer *buffer = g->texture.buffer;
+        if (buffer)
+          buffer = buffer->color_managed?buffer->color_managed:buffer;
         if (!buffer || !buffer->format)
           return ctx_fragment_color_RGBA8;
 
@@ -1973,6 +1976,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #else
           return ctx_fragment_image_RGBA8;
 #endif
+      }
 
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_RGBA8;
 #if CTX_GRADIENTS

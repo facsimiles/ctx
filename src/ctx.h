@@ -112,16 +112,13 @@ void ctx_identity       (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
 
 void ctx_image_smoothing     (Ctx *ctx, int enabled);
-int  ctx_get_image_smoothing (Ctx *ctx);
 
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
 #define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
 void ctx_miter_limit (Ctx *ctx, float limit);
-float ctx_get_miter_limit (Ctx *ctx);
 void ctx_line_width       (Ctx *ctx, float x);
 void ctx_line_dash_offset (Ctx *ctx, float line_dash);
-float ctx_get_line_dash_offset (Ctx *ctx);
 void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
                                      float c,  float d,  // vskew,  vscale
                                      float e,  float f); // htran,  vtran
@@ -167,26 +164,15 @@ void  ctx_rel_quad_to     (Ctx *ctx,
                            float cx, float cy,
                            float x, float y);
 void  ctx_close_path      (Ctx *ctx);
-float ctx_get_font_size   (Ctx *ctx);
-const char *ctx_get_font  (Ctx *ctx);
-float ctx_get_line_width  (Ctx *ctx);
-int   ctx_width           (Ctx *ctx);
-int   ctx_height          (Ctx *ctx);
-float ctx_x               (Ctx *ctx);
-float ctx_y               (Ctx *ctx);
-void  ctx_current_point   (Ctx *ctx, float *x, float *y);
-void  ctx_get_transform   (Ctx *ctx, float *a, float *b,
-                           float *c, float *d,
-                           float *e, float *f);
 
 
-typedef struct _CtxGlyph       CtxGlyph;
+typedef struct _CtxGlyph CtxGlyph;
 CtxGlyph *ctx_glyph_allocate (int n_glyphs);
-void gtx_glyph_free       (CtxGlyph *glyphs);
-int  ctx_glyph            (Ctx *ctx, uint32_t unichar, int stroke);
-void  ctx_glyphs        (Ctx        *ctx,
-                         CtxGlyph   *glyphs,
-                         int         n_glyphs);
+void gtx_glyph_free          (CtxGlyph *glyphs);
+int  ctx_glyph               (Ctx *ctx, uint32_t unichar, int stroke);
+void  ctx_glyphs             (Ctx        *ctx,
+                              CtxGlyph   *glyphs,
+                              int         n_glyphs);
 
 void  ctx_glyphs_stroke (Ctx       *ctx,
                          CtxGlyph   *glyphs,
@@ -210,9 +196,8 @@ void
 ctx_set_pixel_u8          (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 void  ctx_global_alpha     (Ctx *ctx, float global_alpha);
-float ctx_get_global_alpha (Ctx *ctx);
 
-void ctx_named_source (Ctx *ctx, const char *name);
+void ctx_named_source   (Ctx *ctx, const char *name);
 // followed by a color, gradient or pattern definition
 
 void ctx_stroke_source  (Ctx *ctx); // next source definition is for stroking
@@ -227,8 +212,6 @@ void ctx_cmyka_stroke  (Ctx *ctx, float c, float m, float y, float k, float a);
 void ctx_cmyk_stroke   (Ctx *ctx, float c, float m, float y, float k);
 void ctx_dcmyka_stroke (Ctx *ctx, float c, float m, float y, float k, float a);
 void ctx_dcmyk_stroke  (Ctx *ctx, float c, float m, float y, float k);
-
-
 
 void ctx_rgba   (Ctx *ctx, float r, float g, float b, float a);
 void ctx_rgb    (Ctx *ctx, float r, float g, float b);
@@ -261,7 +244,6 @@ void ctx_gradient_add_stop (Ctx *ctx, float pos, float r, float g, float b, floa
 
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-
 /*
  *
  */
@@ -281,6 +263,22 @@ ctx_source_transform (Ctx *ctx, float a, float b,  // hscale, hskew
 typedef struct _CtxMatrix     CtxMatrix;
 void
 ctx_source_transform_matrix (Ctx *ctx, CtxMatrix *matrix);
+
+int   ctx_width                (Ctx *ctx);
+int   ctx_height               (Ctx *ctx);
+float ctx_x                    (Ctx *ctx);
+float ctx_y                    (Ctx *ctx);
+float ctx_get_global_alpha     (Ctx *ctx);
+float ctx_get_font_size        (Ctx *ctx);
+float ctx_get_miter_limit      (Ctx *ctx);
+int  ctx_get_image_smoothing   (Ctx *ctx);
+float ctx_get_line_dash_offset (Ctx *ctx);
+const char *ctx_get_font       (Ctx *ctx);
+float ctx_get_line_width       (Ctx *ctx);
+void  ctx_current_point        (Ctx *ctx, float *x, float *y);
+void  ctx_get_transform        (Ctx *ctx, float *a, float *b,
+                                float *c, float *d,
+                                float *e, float *f);
 
 
 /* The pixel formats supported as render targets
