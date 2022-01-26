@@ -202,8 +202,9 @@ const char* ctx_texture_init (Ctx           *ctx,
 
 void
 _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
-                                      CtxBuffer     *buffer)
+                                       CtxBuffer     *buffer)
 {
+   _ctx_texture_lock ();
    switch (buffer->format->pixel_format)
    {
 #if CTX_BABL
@@ -247,6 +248,7 @@ _ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
      default:
        buffer->color_managed = buffer;
    }
+  _ctx_texture_unlock ();
 }
 
 

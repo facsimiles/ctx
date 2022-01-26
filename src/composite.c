@@ -6214,8 +6214,10 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
       ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
 
       if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
+      {
         _ctx_texture_prepare_color_management (rasterizer,
         rasterizer->state->gstate.source_fill.texture.buffer);
+      }
       break;
   }
 #endif
