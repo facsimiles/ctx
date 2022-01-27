@@ -336,7 +336,7 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
               coverage[last] += grayend;
           }
           else if (first == last)
-            coverage[first] += (graystart-(fraction-grayend));
+            coverage[first] += (graystart-fraction+grayend);
         }
    }
 }
@@ -383,19 +383,10 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           graystart = (graystart&0xff) ^ 255;
           grayend   = (grayend & 0xff);
 
-          if (first < last)
-          {
-              coverage[first] += graystart;
-#if 0
-              for (int x = first + 1; x < last; x++)
-                coverage[x] = 255;
-#else
+          coverage[first] += graystart;
+          coverage[last]  += grayend;
+          if (first + 1< last)
               memset(&coverage[first+1], 255, last-(first+1));
-#endif
-              coverage[last]  += grayend;
-          }
-          else if (first == last)
-            coverage[first] += (graystart-(grayend^255));
         }
    }
 }
