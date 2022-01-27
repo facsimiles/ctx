@@ -111,7 +111,7 @@ void ctx_clip           (Ctx *ctx);
 void ctx_identity       (Ctx *ctx);
 void ctx_rotate         (Ctx *ctx, float x);
 
-void ctx_image_smoothing     (Ctx *ctx, int enabled);
+void ctx_image_smoothing  (Ctx *ctx, int enabled);
 
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0

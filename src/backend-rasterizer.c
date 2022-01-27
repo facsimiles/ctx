@@ -2211,6 +2211,11 @@ ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                      */
 
   ctx_rasterizer_set_texture (rasterizer, eid, 0.0, 0.0);
+  if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
+  {
+    _ctx_texture_prepare_color_management (rasterizer->state,
+    rasterizer->state->gstate.source_fill.texture.buffer);
+  }
   _ctx_texture_unlock ();
 }
 

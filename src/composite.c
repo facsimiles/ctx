@@ -1068,10 +1068,11 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 {
   unsigned int count = scount;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
+  CtxBuffer *buffer = NULL;
+  uint32_t *src = NULL;
+  buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   int ideltax = dx * 65536;
   int ideltay = dy * 65536;
-  uint32_t *src = (uint32_t *) buffer->data;
   uint32_t *dst = (uint32_t*)out;
   int bwidth  = buffer->width;
   int bheight = buffer->height;
@@ -1079,6 +1080,9 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   int bbwidth  = bwidth << 16;
   x += 0.5f;
   y += 0.5f;
+
+  src = buffer->data;
+  //if (!src){ fprintf (stderr, "eeek bailing in nearest fragment\n"); return;};
 
 #if 1
   if (CTX_UNLIKELY(ideltay == 0 && ideltax == 65536))
@@ -1423,6 +1427,9 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   int bheight_div_2  = bheight/2;
   x += 0.5f;
   y += 0.5f;
+
+  if (!src)
+          return;
 
   {
     int i = 0;
@@ -6213,11 +6220,13 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
 
       ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
 
+#if 0
       if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
       {
-        _ctx_texture_prepare_color_management (rasterizer,
+        _ctx_texture_prepare_color_management (rasterizer->state,
         rasterizer->state->gstate.source_fill.texture.buffer);
       }
+#endif
       break;
   }
 #endif

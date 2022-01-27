@@ -1182,8 +1182,8 @@ static inline Ctx *ctx_backend_get_ctx (void *backend)
 }
 
 void
-_ctx_texture_prepare_color_management (CtxRasterizer *rasterizer,
-                                      CtxBuffer     *buffer);
+_ctx_texture_prepare_color_management (CtxState  *state,
+                                       CtxBuffer *buffer);
 
 int ctx_is_set (Ctx *ctx, uint32_t hash);
 
