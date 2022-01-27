@@ -2032,8 +2032,9 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
   tolerance = 1.0/(tolerance);
+  tolerance *= 0.5;
 
-  tolerance *= 1.2;
+  //tolerance *= 1.0;
   tolerance = tolerance * tolerance;
 #if 0 // skipping this to preserve shape-cache hash integrity
   if (tolerance == 1.0f || 1)
