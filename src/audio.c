@@ -148,7 +148,7 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
       int i;
       for (i = 0; i < c && ctx_pcm_cur_left; i ++)
       {
-        if (ctx_pcm_cur_left)  //  XXX  this line can be removed
+        if (ctx_pcm_list && ctx_pcm_cur_left)  //  XXX  this line can be removed
         {
           uint32_t *packet_sizep = (ctx_pcm_list->data);
           uint32_t packet_size = *packet_sizep;
@@ -181,7 +181,7 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
           if (ctx_pcm_cur_left == 0)
           {
             void *old = ctx_pcm_list->data;
-            ctx_list_remove (&ctx_pcm_list, ctx_pcm_list->data);
+            ctx_list_remove (&ctx_pcm_list, old);
             free (old);
             ctx_pcm_cur_left = 0;
             if (ctx_pcm_list)
@@ -266,12 +266,12 @@ void ctx_ctx_pcm (Ctx *ctx)
 
     c = 2000;
 
-    if (c > 0)
+    if (c > 0 && ctx_pcm_list)
     {
       int i;
       for (i = 0; i < c && ctx_pcm_cur_left; i ++)
       {
-        if (ctx_pcm_cur_left)  //  XXX  this line can be removed
+        if (ctx_pcm_list && ctx_pcm_cur_left)
         {
           uint32_t *packet_sizep = (ctx_pcm_list->data);
           uint32_t packet_size = *packet_sizep;
@@ -303,7 +303,7 @@ void ctx_ctx_pcm (Ctx *ctx)
           if (ctx_pcm_cur_left == 0)
           {
             void *old = ctx_pcm_list->data;
-            ctx_list_remove (&ctx_pcm_list, ctx_pcm_list->data);
+            ctx_list_remove (&ctx_pcm_list, old);
             free (old);
             ctx_pcm_cur_left = 0;
             if (ctx_pcm_list)
