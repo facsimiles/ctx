@@ -226,24 +226,24 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer, int app
 }
 #undef CTX_CMPSWP
 
-static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int minx, int maxx, uint8_t *coverage, int *first_col, int *last_col)
+static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, unsigned int minx, unsigned int maxx, uint8_t *coverage, int *first_col, int *last_col)
 {
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
     float radius = rasterizer->state->gstate.shadow_blur;
-    int dim = 2 * radius + 1;
+    unsigned int dim = 2 * radius + 1;
     if (CTX_UNLIKELY (dim > CTX_MAX_GAUSSIAN_KERNEL_DIM))
       dim = CTX_MAX_GAUSSIAN_KERNEL_DIM;
     {
       uint16_t temp[maxx-minx+1];
       memset (temp, 0, sizeof (temp));
-      for (int x = dim/2; x < maxx-minx + 1 - dim/2; x ++)
-        for (int u = 0; u < dim; u ++)
+      for (unsigned int x = dim/2; x < maxx-minx + 1 - dim/2; x ++)
+        for (unsigned int u = 0; u < dim; u ++)
         {
           temp[x] += coverage[minx+x+u-dim/2] * rasterizer->kernel[u] * 256;
         }
-      for (int x = 0; x < maxx-minx + 1; x ++)
+      for (unsigned int x = 0; x < maxx-minx + 1; x ++)
         coverage[minx+x] = temp[x] >> 8;
     }
   }
@@ -259,7 +259,7 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, int min
     int y = scanline / CTX_FULL_AA;//rasterizer->aa;
     uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
     // XXX SIMD candidate
-    for (int x = minx; x <= maxx; x ++)
+    for (unsigned int x = minx; x <= maxx; x ++)
     {
 #if CTX_1BIT_CLIP
        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x&8)))?255:0))/255;
