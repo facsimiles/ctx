@@ -1968,12 +1968,11 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 CTX_INLINE static float
 ctx_bezier_sample_1d (float x0, float x1, float x2, float x3, float dt)
 {
-  float ab   = ctx_lerpf (x0, x1, dt);
-  float bc   = ctx_lerpf (x1, x2, dt);
-  float cd   = ctx_lerpf (x2, x3, dt);
-  float abbc = ctx_lerpf (ab, bc, dt);
-  float bccd = ctx_lerpf (bc, cd, dt);
-  return ctx_lerpf (abbc, bccd, dt);
+  return ctx_lerpf (
+      ctx_lerpf (ctx_lerpf (x0, x1, dt),
+                 ctx_lerpf (x1, x2, dt), dt),
+      ctx_lerpf (ctx_lerpf (x1, x2, dt),
+                 ctx_lerpf (x2, x3, dt), dt), dt);
 }
 
 CTX_INLINE static void
@@ -2001,25 +2000,14 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
                               float tolerance)
 {
   float t = (s + e) * 0.5f;
-  float x, y, lx, ly, dx, dy;
+  float x, y;
+  float lx, ly, dx, dy;
   ctx_bezier_sample (ox, oy, x0, y0, x1, y1, x2, y2, t, &x, &y);
-  if (iteration)
-    {
-      lx = ctx_lerpf (sx, ex, t);
-      ly = ctx_lerpf (sy, ey, t);
-      dx = lx - x;
-      dy = ly - y;
-      if (CTX_UNLIKELY( (dx*dx+dy*dy) < tolerance))
-        /* bailing - because for the mid-point straight line difference is
-           tiny */
-        { return; }
-      dx = sx - ex;
-      dy = sy - ey;
-      if (CTX_UNLIKELY( (dx*dx+dy*dy) < tolerance))
-        /* bailing on tiny segments */
-        { return; }
-    }
-  if (iteration < 5)
+  lx = ctx_lerpf (sx, ex, t);
+  ly = ctx_lerpf (sy, ey, t);
+  dx = lx - x;
+  dy = ly - y;
+  if ((dx*dx+dy*dy) > tolerance && iteration <5)
   {
     ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
                                   sx, sy, x, y, s, t, iteration + 1,
@@ -2041,16 +2029,13 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   //  1.0f*(ctx_pow2 (rasterizer->state->gstate.transform.m[0][0]) +
   //  ctx_pow2 (rasterizer->state->gstate.transform.m[1][1]));
   float tolerance = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-  float ox = rasterizer->x;
-  float oy = rasterizer->y;
-  //tolerance *= tolerance;
+  float ox = rasterizer->state->x;
+  float oy = rasterizer->state->y;
   tolerance = 1.0/(tolerance);
 
   tolerance *= 1.2;
   tolerance = tolerance * tolerance;
-  ox = rasterizer->state->x;
-  oy = rasterizer->state->y;
-#if 0 // skipping this to preserve hash integrity
+#if 0 // skipping this to preserve shape-cache hash integrity
   if (tolerance == 1.0f || 1)
   {
   float maxx = ctx_maxf (x1,x2);
@@ -2068,7 +2053,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   
   _ctx_user_to_device (rasterizer->state, &minx, &miny);
   _ctx_user_to_device (rasterizer->state, &maxx, &maxy);
-#if 1
+#if 0
     if(
         (minx > rasterizer->blit_x + rasterizer->blit_width) ||
         (miny > rasterizer->blit_y + rasterizer->blit_height) ||

@@ -1826,6 +1826,16 @@ _ctx_init (Ctx *ctx)
   lut_inited = 1;
   }
 #endif
+#if CTX_SHAPE_CACHE
+  if (getenv ("CTX_SHAPE_CACHE"))
+  {
+    const char * val = getenv ("CTX_SHAPE_CACHE");
+    if (!strcmp (val, "0"))
+      _ctx_shape_cache_enabled = 0;
+    if (!strcmp (val, "off"))
+      _ctx_shape_cache_enabled = 0;
+  }
+#endif
 
   ctx_state_init (&ctx->state);
 
