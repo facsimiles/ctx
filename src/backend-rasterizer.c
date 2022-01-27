@@ -419,7 +419,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
     si_rb      = ((uint32_t*)rasterizer->color)[2];
     si_ga_full = ((uint32_t*)rasterizer->color)[3];
     si_rb_full = ((uint32_t*)rasterizer->color)[4];
-    si_a  = src_pix >> 24;
+    si_a       = src_pix >> 24;
   }
   else
   {
@@ -428,7 +428,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
     si_rb      =
     si_ga_full =
     si_rb_full =
-    si_a  = 0;
+    si_a       = 0;
     src_pixp = &src_pix;
   }
 #endif
@@ -458,12 +458,12 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             graystart = 0;
             first = minx;
           }
-          graystart = (graystart&0xff) ^ 255;
           if (CTX_UNLIKELY(last > maxx))
           {
              last = maxx;
              grayend=255;
           }
+          graystart = (graystart&0xff) ^ 255;
           grayend = (grayend & 0xff);
 
 
