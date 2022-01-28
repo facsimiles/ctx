@@ -6048,6 +6048,10 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   {
      uint8_t *dst = ( (uint8_t *) rasterizer->buf);
      uint8_t coverage[width+2];
+     uint32_t x0i = x0+has_left;
+     uint32_t x1i = x1-has_right;
+     uint32_t y0i = y0+has_top;
+     uint32_t y1i = y1-has_bottom;
      dst += (((int)y0) - blit_y) * blit_stride;
      dst += ((int)x0) * rasterizer->format->bpp/8;
 
@@ -6058,7 +6062,7 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
        {
          coverage[i++] = (top * left + 255) >> 8;
        }
-       for (int x = x0 + has_left; x < x1 - has_right; x++)
+       for (unsigned int x = x0i; x < x1i; x++)
          coverage[i++] = top;
        if (has_right)
          coverage[i++]= (top * right + 255) >> 8;
@@ -6070,24 +6074,24 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   if (y1-y0-has_top-has_bottom > 0)
   {
     if (has_left)
-      ctx_composite_fill_rect_aligned (rasterizer, x0, y0 + has_top,
-                                                   x0, y1 - has_bottom-1, left);
+      ctx_composite_fill_rect_aligned (rasterizer, x0, y0i,
+                                                   x0, y1i-1, left);
     if (has_right)
-      ctx_composite_fill_rect_aligned (rasterizer, x1-1, y0 + has_top,
-                                                   x1-1, y1 - has_bottom-1, right);
+      ctx_composite_fill_rect_aligned (rasterizer, x1-1, y0i,
+                                                   x1-1, y1i-1, right);
 
     if (width - has_left - has_right > 0)
-      ctx_composite_fill_rect_aligned (rasterizer, x0+has_left,y0+has_top,
-                                          x1-has_right-1,y1-has_bottom-1,255);
+      ctx_composite_fill_rect_aligned (rasterizer, x0i,y0i,
+                                          x1i-1,y1i-1,255);
 
-    dst += blit_stride * ((((int)y1)-has_bottom) - (((int)y0)+has_top) );
+    dst += blit_stride * (y1i-y0i);
   }
     if (has_bottom)
     {
       int i = 0;
       if (has_left)
         coverage[i++] = (bottom * left + 255) >> 8;
-      for (int x = x0 + has_left; x < x1 - has_right; x++)
+      for (unsigned int x = x0i; x < x1i; x++)
         coverage[i++] = bottom;
       coverage[i++]= (bottom * right + 255) >> 8;
 
