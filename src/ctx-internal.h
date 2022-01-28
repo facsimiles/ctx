@@ -1146,7 +1146,8 @@ struct _CtxTiled
    CtxAntialias  antialias;
    int           quit;
 #if CTX_TILED
-   _Atomic int   thread_quit;
+   //_Atomic 
+           int   thread_quit;
 #endif
    int           shown_frame;
    int           render_frame;

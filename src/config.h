@@ -61,7 +61,7 @@
  * glitches (and potential hangs with multi threading).
  */
 #ifndef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE        0
+#define CTX_SHAPE_CACHE        1
 #endif
 
 /* size (in pixels, w*h) that we cache rasterization for
