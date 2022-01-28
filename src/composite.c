@@ -5663,11 +5663,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   int width = x1 - x0 + 1;
   int height= y1 - y0 + 1;
 
-  if (CTX_UNLIKELY(width <=0 || height <= 0))
-    return;
-
   CtxCovPath comp = rasterizer->comp;
-
   uint8_t *dst;
 
   // this could be done here, but is not used
@@ -5678,6 +5674,8 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   dst += (y0 - blit_y) * blit_stride; \
   dst += (x0 * rasterizer->format->bpp)/8;}while(0);
 
+  if (CTX_UNLIKELY(width <=0 || height <= 0))
+    return;
   if (cov == 255)
   {
     switch (comp)
@@ -5689,7 +5687,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       INIT_ENV;
       if (width == 1)
       {
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           *dst_i = color;
@@ -5698,7 +5696,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       }
       else
       {
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
 #if 0
           uint32_t *dst_pix = (uint32_t*)&dst[0];
@@ -5734,13 +5732,13 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           {
           uint8_t col = *color;
           if (width == 1)
-          for (int y = y0; y <= y1; y++)
+          for (unsigned int y = y0; y <= (unsigned)y1; y++)
           {
             *dst = col;
             dst += blit_stride;
           }
           else
-          for (int y = y0; y <= y1; y++)
+          for (unsigned int y = y0; y <= (unsigned)y1; y++)
           {
 #if 0
             uint8_t *dst_i = (uint8_t*)&dst[0];
@@ -5755,7 +5753,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         case 2:
           {
             uint16_t val = ((uint16_t*)color)[0];
-            for (int y = y0; y <= y1; y++)
+            for (unsigned int y = y0; y <= (unsigned)y1; y++)
             {
               uint16_t *dst_i = (uint16_t*)&dst[0];
               for (unsigned int x = 0; x < (unsigned)width; x++)
@@ -5765,7 +5763,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           }
           break;
         case 3:
-          for (int y = y0; y <= y1; y++)
+          for (unsigned int y = y0; y <= (unsigned)y1; y++)
           {
             uint8_t *dst_i = (uint8_t*)&dst[0];
             for (unsigned int x = 0; x < (unsigned)width; x++)
@@ -5777,13 +5775,13 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           {
             uint32_t val = ((uint32_t*)color)[0];
             if (width == 1)
-            for (int y = y0; y <= y1; y++)
+            for (unsigned int y = y0; y <= (unsigned)y1; y++)
             {
               *((uint32_t*)&dst[0]) = val;
               dst += blit_stride;
             }
             else
-            for (int y = y0; y <= y1; y++)
+            for (unsigned int y = y0; y <= (unsigned)y1; y++)
             {
               //uint32_t *dst_i = (uint32_t*)&dst[0];
               ctx_span_set_colorbu ((uint32_t*)&dst[0], val, width);
@@ -5792,7 +5790,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           }
           break;
         case 5:
-          for (int y = y0; y <= y1; y++)
+          for (unsigned int y = y0; y <= (unsigned)y1; y++)
           {
             uint8_t *dst_i = (uint8_t*)&dst[0];
             for (unsigned int x = 0; x < (unsigned)width; x++)
@@ -5801,7 +5799,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           }
           break;
         case 16:
-          for (int y = y0; y <= y1; y++)
+          for (unsigned int y = y0; y <= (unsigned)y1; y++)
           {
             uint8_t *dst_i = (uint8_t*)&dst[0];
             for (int x = 0; x < width; x++)for (int b = 0; b < 16; b++) *dst_i++ = color[b];
@@ -5809,7 +5807,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
           }
           break;
         default:
-          for (int y = y0; y <= y1; y++)
+          for (unsigned int y = y0; y <= (unsigned)y1; y++)
           {
             uint8_t *dst_i = (uint8_t*)&dst[0];
             for (unsigned int x = 0; x < (unsigned)width; x++)
@@ -5829,7 +5827,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
 
       if (width == 1)
       {
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           ((uint32_t*)(dst))[0] = ctx_over_RGBA8_full_2 (
              ((uint32_t*)(dst))[0], si_ga_full, si_rb_full, si_a);
@@ -5838,7 +5836,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       }
       else
       {
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (unsigned int i = 0; i < (unsigned)width; i++)
@@ -5874,7 +5872,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         float u0 = 0; float v0 = 0;
         float ud = 0; float vd = 0;
         ctx_init_uv (rasterizer, x0, &u0, &v0, &ud, &vd);
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           fragment (rasterizer, u0, v0, &dst[0], width, ud, vd);
           u0 -= vd;
@@ -5918,7 +5916,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       memcpy (&color, (uint32_t*)rasterizer->color, sizeof (color));
       INIT_ENV;
       {
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (unsigned int i = 0; i < (unsigned)width; i++)
@@ -5936,7 +5934,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       float covf = cov / 255.0f;
       INIT_ENV;
       {
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           float *dst_f = (float*)&dst[0];
           for (unsigned int i = 0; i < (unsigned)width; i++)
@@ -5956,7 +5954,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       INIT_ENV;
       if (width == 1)
       {
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           *dst_i = ctx_over_RGBA8 (*dst_i, color, cov);
@@ -5965,7 +5963,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       }
       else
       {
-        for (int y = y0; y <= y1; y++)
+        for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (unsigned int i = 0; i < (unsigned)width; i++)
@@ -5991,7 +5989,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   {
     uint8_t coverage[width];
     memset (coverage, cov, sizeof (coverage) );
-    for (int y = y0; y <= y1; y++)
+    for (unsigned int y = y0; y <= (unsigned)y1; y++)
     {
       rasterizer->apply_coverage (rasterizer, &dst[0], rasterizer->color, x0, coverage, width);
       rasterizer->scanline += CTX_FULL_AA;
