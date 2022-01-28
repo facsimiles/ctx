@@ -525,9 +525,11 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_REL_CURVE_TO:
       case CTX_ARC:
       case CTX_RADIAL_GRADIENT:
+        ctx_print_entry (formatter, entry, 6);
+        break;
       case CTX_APPLY_TRANSFORM:
       case CTX_SOURCE_TRANSFORM:
-        ctx_print_entry (formatter, entry, 6);
+        ctx_print_entry (formatter, entry, 9);
         break;
       case CTX_QUAD_TO:
       case CTX_RECTANGLE:

@@ -119,10 +119,10 @@ void ctx_image_smoothing  (Ctx *ctx, int enabled);
 void ctx_miter_limit (Ctx *ctx, float limit);
 void ctx_line_width       (Ctx *ctx, float x);
 void ctx_line_dash_offset (Ctx *ctx, float line_dash);
-void ctx_apply_transform  (Ctx *ctx, float a,  float b,  // hscale, hskew
-                                     float c,  float d,  // vskew,  vscale
-                                     float e,  float f); // htran,  vtran
-void ctx_set_transform    (Ctx *ctx, float a, float b, float c, float d, float e, float f);
+void ctx_apply_transform (Ctx *ctx, float a, float b,
+                     float c, float d, 
+                     float e, float f, float g, float h, float i);
+void ctx_set_transform    (Ctx *ctx, float a, float b, float c, float d, float e, float f, float g, float h, float i);
 void  ctx_line_dash       (Ctx *ctx, float *dashes, int count);
 void  ctx_font_size       (Ctx *ctx, float x);
 void  ctx_font            (Ctx *ctx, const char *font);
@@ -257,9 +257,9 @@ void ctx_define_texture (Ctx *ctx,
                          char       *ret_eid);
 
 void
-ctx_source_transform (Ctx *ctx, float a, float b,  // hscale, hskew
-                      float c, float d,  // vskew,  vscale
-                      float e, float f);  // htran,  vtran
+ctx_source_transform (Ctx *ctx, float a, float b,  float c,
+                      float d, float e, float f, 
+                      float g, float h, float i); 
 typedef struct _CtxMatrix     CtxMatrix;
 void
 ctx_source_transform_matrix (Ctx *ctx, CtxMatrix *matrix);
@@ -276,9 +276,12 @@ float ctx_get_line_dash_offset (Ctx *ctx);
 const char *ctx_get_font       (Ctx *ctx);
 float ctx_get_line_width       (Ctx *ctx);
 void  ctx_current_point        (Ctx *ctx, float *x, float *y);
-void  ctx_get_transform        (Ctx *ctx, float *a, float *b,
-                                float *c, float *d,
-                                float *e, float *f);
+void
+ctx_get_transform  (Ctx *ctx, float *a, float *b,
+                    float *c, float *d,
+                    float *e, float *f,
+                    float *g, float *h,
+                    float *i);
 
 
 /* The pixel formats supported as render targets
@@ -1836,7 +1839,7 @@ ctx_base642bin (const char    *ascii,
 struct
   _CtxMatrix
 {
-  float m[3][2];
+  float m[3][3];
 };
 
 void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix);

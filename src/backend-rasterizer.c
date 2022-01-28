@@ -3773,7 +3773,9 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
         ctx_matrix_set (&state->gstate.source_fill.set_transform,
                         ctx_arg_float (0), ctx_arg_float (1),
                         ctx_arg_float (2), ctx_arg_float (3),
-                        ctx_arg_float (4), ctx_arg_float (5));
+                        ctx_arg_float (4), ctx_arg_float (5),
+                        ctx_arg_float (6), ctx_arg_float (7),
+                        ctx_arg_float (8));
         rasterizer->comp_op = NULL;
         break;
 #if 0
@@ -3833,6 +3835,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
         /* FALLTHROUGH */
       case CTX_ROTATE:
       case CTX_SCALE:
+      case CTX_APPLY_TRANSFORM:
       case CTX_TRANSLATE:
       case CTX_IDENTITY:
         rasterizer->uses_transforms = 1;

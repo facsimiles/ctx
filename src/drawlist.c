@@ -8,27 +8,26 @@ ctx_conts_for_entry (CtxEntry *entry)
     {
       case CTX_DATA:
         return entry->data.u32[1];
-      case CTX_LINEAR_GRADIENT:
-      //case CTX_DEFINE_TEXTURE:
-        return 1;
       case CTX_RADIAL_GRADIENT:
       case CTX_ARC:
       case CTX_ARC_TO:
       case CTX_REL_ARC_TO:
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
-      case CTX_APPLY_TRANSFORM:
-      case CTX_SOURCE_TRANSFORM:
       case CTX_COLOR:
       case CTX_ROUND_RECTANGLE:
       case CTX_SHADOW_COLOR:
         return 2;
+      case CTX_APPLY_TRANSFORM:
+      case CTX_SOURCE_TRANSFORM:
+        return 4;
       case CTX_FILL_RECT:
       case CTX_STROKE_RECT:
       case CTX_RECTANGLE:
       case CTX_VIEW_BOX:
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
+      case CTX_LINEAR_GRADIENT:
         return 1;
 
       case CTX_TEXT:

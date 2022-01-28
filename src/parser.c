@@ -226,10 +226,11 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_ARC:
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
-      case CTX_APPLY_TRANSFORM:
-      case CTX_SOURCE_TRANSFORM:
       case CTX_RADIAL_GRADIENT:
         return 6;
+      case CTX_APPLY_TRANSFORM:
+      case CTX_SOURCE_TRANSFORM:
+        return 9;
       case CTX_STROKE_TEXT:
       case CTX_TEXT:
       case CTX_COLOR_SPACE:
@@ -962,10 +963,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_arc (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
         break;
       case CTX_APPLY_TRANSFORM:
-        ctx_apply_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
+        ctx_apply_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) , arg(6), arg(7), arg(8));
         break;
       case CTX_SOURCE_TRANSFORM:
-        ctx_source_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
+        ctx_source_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5), arg(6), arg(7), arg(8));
         break;
       case CTX_CURVE_TO:
         ctx_curve_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );

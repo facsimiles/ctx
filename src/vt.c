@@ -8189,6 +8189,10 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   ctx_begin_path (ctx);
   ctx_save (ctx);
   ctx_translate (ctx, x0, y0);
+  if (getenv ("CTX_STAR_WARS"))
+  ctx_apply_transform (ctx, 0.3120, -0.666, 700.,
+                            0.0000, 0.015,  200.0,
+                            0.00, -0.0007, 1.0);
   x0 = 0;
   y0 = 0;
   ctx_font (ctx, "mono");
@@ -8499,6 +8503,10 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       ctx_fill (ctx);
     }
 
+  if (getenv ("CTX_STAR_WARS"))
+  ctx_apply_transform (ctx, 0.3120, -0.666, 700.,
+                            0.0000, 0.015,  200.0,
+                            0.00, -0.0007, 1.0);
     ctx_rectangle (ctx, 0, 0, vt->cols * vt->cw, vt->rows * vt->ch);
     ctx_listen (ctx, CTX_DRAG,   vt_mouse_event, vt, NULL);
     ctx_listen (ctx, CTX_MOTION, vt_mouse_event, vt, NULL);

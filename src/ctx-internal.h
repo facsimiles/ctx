@@ -885,8 +885,11 @@ CTX_STATIC void ctx_color_set_graya (CtxState *state, CtxColor *color, float gra
 int ctx_color_model_get_components (CtxColorModel model);
 
 static void ctx_state_set (CtxState *state, uint32_t key, float value);
+
 CTX_STATIC void
-ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f);
+ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f, float g, float h, float i);
+
+
 CTX_STATIC void ctx_font_setup ();
 static float ctx_state_get (CtxState *state, uint32_t hash);
 
@@ -1206,8 +1209,10 @@ _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 {
   float x_in = *x;
   float y_in = *y;
-  *x = ( (x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
-  *y = ( (y_in * m->m[1][1]) + (x_in * m->m[0][1]) + m->m[2][1]);
+
+  float w =   (x_in * m->m[2][0]) + (y_in * m->m[2][1]) + m->m[2][2];
+       *x = ( (x_in * m->m[0][0]) + (y_in * m->m[0][1]) + m->m[0][2]) / w;
+       *y = ( (x_in * m->m[1][0]) + (y_in * m->m[1][1]) + m->m[1][2]) / w;
 }
 
 static inline void
@@ -1216,12 +1221,19 @@ _ctx_matrix_multiply (CtxMatrix       *result,
                       const CtxMatrix *s)
 {
   CtxMatrix r;
-  r.m[0][0] = t->m[0][0] * s->m[0][0] + t->m[0][1] * s->m[1][0];
-  r.m[0][1] = t->m[0][0] * s->m[0][1] + t->m[0][1] * s->m[1][1];
-  r.m[1][0] = t->m[1][0] * s->m[0][0] + t->m[1][1] * s->m[1][0];
-  r.m[1][1] = t->m[1][0] * s->m[0][1] + t->m[1][1] * s->m[1][1];
-  r.m[2][0] = t->m[2][0] * s->m[0][0] + t->m[2][1] * s->m[1][0] + s->m[2][0];
-  r.m[2][1] = t->m[2][0] * s->m[0][1] + t->m[2][1] * s->m[1][1] + s->m[2][1];
+
+  for (unsigned int i = 0; i < 3; i++)
+  {
+    r.m[i][0] = t->m[i][0] * s->m[0][0]
+              + t->m[i][1] * s->m[1][0]
+              + t->m[i][2] * s->m[2][0];
+    r.m[i][1] = t->m[i][0] * s->m[0][1]
+              + t->m[i][1] * s->m[1][1]
+              + t->m[i][2] * s->m[2][1];
+    r.m[i][2] = t->m[i][0] * s->m[0][2]
+              + t->m[i][1] * s->m[1][2]
+              + t->m[i][2] * s->m[2][2];
+  }
   *result = r;
 }
 
@@ -1230,10 +1242,13 @@ _ctx_matrix_identity (CtxMatrix *matrix)
 {
   matrix->m[0][0] = 1.0f;
   matrix->m[0][1] = 0.0f;
+  matrix->m[0][2] = 0.0f;
   matrix->m[1][0] = 0.0f;
   matrix->m[1][1] = 1.0f;
+  matrix->m[1][2] = 0.0f;
   matrix->m[2][0] = 0.0f;
   matrix->m[2][1] = 0.0f;
+  matrix->m[2][2] = 1.0f;
 }
 
 

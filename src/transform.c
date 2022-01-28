@@ -6,8 +6,10 @@
 static inline void
 _ctx_matrix_apply_transform_only_x (const CtxMatrix *m, float *x, float y_in)
 {
-  float x_in = *x;
-  *x = ( (x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
+  //float x_in = *x;
+  //*x = ( (x_in * m->m[0][0]) + (y_in * m->m[1][0]) + m->m[2][0]);
+  float y_res;
+  _ctx_matrix_apply_transform (m, x, &y_res);
 }
 
 void
@@ -41,14 +43,17 @@ void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y)
 }
 
 CTX_STATIC void
-ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f)
+ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f, float g, float h, float i)
 {
   matrix->m[0][0] = a;
   matrix->m[0][1] = b;
-  matrix->m[1][0] = c;
-  matrix->m[1][1] = d;
-  matrix->m[2][0] = e;
-  matrix->m[2][1] = f;
+  matrix->m[0][2] = c;
+  matrix->m[1][0] = d;
+  matrix->m[1][1] = e;
+  matrix->m[1][2] = f;
+  matrix->m[2][0] = g;
+  matrix->m[2][1] = h;
+  matrix->m[2][2] = i;
 }
 
 
@@ -72,11 +77,14 @@ ctx_matrix_translate (CtxMatrix *matrix, float x, float y)
   CtxMatrix transform;
   transform.m[0][0] = 1.0f;
   transform.m[0][1] = 0.0f;
+  transform.m[0][2] = x;
   transform.m[1][0] = 0.0f;
   transform.m[1][1] = 1.0f;
-  transform.m[2][0] = x;
-  transform.m[2][1] = y;
-  _ctx_matrix_multiply (matrix, &transform, matrix);
+  transform.m[1][2] = y;
+  transform.m[2][0] = 0.0f;
+  transform.m[2][1] = 0.0f;
+  transform.m[2][2] = 1.0f;
+  _ctx_matrix_multiply (matrix, matrix, &transform);
 }
 
 void
@@ -85,11 +93,14 @@ ctx_matrix_scale (CtxMatrix *matrix, float x, float y)
   CtxMatrix transform;
   transform.m[0][0] = x;
   transform.m[0][1] = 0.0f;
+  transform.m[0][2] = 0.0f;
   transform.m[1][0] = 0.0f;
   transform.m[1][1] = y;
+  transform.m[1][2] = 0.0f;
   transform.m[2][0] = 0.0f;
   transform.m[2][1] = 0.0f;
-  _ctx_matrix_multiply (matrix, &transform, matrix);
+  transform.m[2][2] = 1.0;
+  _ctx_matrix_multiply (matrix, matrix, &transform);
 }
 
 
@@ -106,15 +117,18 @@ void
 ctx_matrix_rotate (CtxMatrix *matrix, float angle)
 {
   CtxMatrix transform;
-  float val_sin = ctx_sinf (angle);
-  float val_cos = ctx_cosf (angle);
-  transform.m[0][0] =  val_cos;
+  float val_sin = ctx_sinf (-angle);
+  float val_cos = ctx_cosf (-angle);
+  transform.m[0][0] = val_cos;
   transform.m[0][1] = val_sin;
+  transform.m[0][2] = 0;
   transform.m[1][0] = -val_sin;
   transform.m[1][1] = val_cos;
-  transform.m[2][0] =     0.0f;
+  transform.m[1][2] = 0;
+  transform.m[2][0] = 0.0f;
   transform.m[2][1] = 0.0f;
-  _ctx_matrix_multiply (matrix, &transform, matrix);
+  transform.m[2][2] = 1.0f;
+  _ctx_matrix_multiply (matrix, matrix, &transform);
 }
 
 #if 0
@@ -157,15 +171,17 @@ ctx_identity (Ctx *ctx)
 
 
 void
-ctx_apply_transform (Ctx *ctx, float a, float b,  // hscale, hskew
-                     float c, float d,  // vskew,  vscale
-                     float e, float f)  // htran,  vtran
+ctx_apply_transform (Ctx *ctx, float a, float b,
+                     float c, float d, 
+                     float e, float f, float g, float h, float i)
 {
-  CtxEntry command[3]=
+  CtxEntry command[5]=
   {
     ctx_f (CTX_APPLY_TRANSFORM, a, b),
     ctx_f (CTX_CONT,            c, d),
-    ctx_f (CTX_CONT,            e, f)
+    ctx_f (CTX_CONT,            e, f),
+    ctx_f (CTX_CONT,            g, h),
+    ctx_f (CTX_CONT,            i, 0)
   };
   ctx_process (ctx, command);
 }
@@ -173,26 +189,35 @@ ctx_apply_transform (Ctx *ctx, float a, float b,  // hscale, hskew
 void
 ctx_get_transform  (Ctx *ctx, float *a, float *b,
                     float *c, float *d,
-                    float *e, float *f)
+                    float *e, float *f,
+                    float *g, float *h,
+                    float *i)
 {
   if (a) { *a = ctx->state.gstate.transform.m[0][0]; }
   if (b) { *b = ctx->state.gstate.transform.m[0][1]; }
-  if (c) { *c = ctx->state.gstate.transform.m[1][0]; }
-  if (d) { *d = ctx->state.gstate.transform.m[1][1]; }
-  if (e) { *e = ctx->state.gstate.transform.m[2][0]; }
-  if (f) { *f = ctx->state.gstate.transform.m[2][1]; }
+  if (c) { *c = ctx->state.gstate.transform.m[0][2]; }
+  if (d) { *d = ctx->state.gstate.transform.m[1][0]; }
+  if (e) { *e = ctx->state.gstate.transform.m[1][1]; }
+  if (f) { *f = ctx->state.gstate.transform.m[1][2]; }
+  if (g) { *g = ctx->state.gstate.transform.m[2][0]; }
+  if (h) { *h = ctx->state.gstate.transform.m[2][1]; }
+  if (i) { *i = ctx->state.gstate.transform.m[2][2]; }
 }
 
 void
 ctx_source_transform (Ctx *ctx, float a, float b,  // hscale, hskew
                       float c, float d,  // vskew,  vscale
-                      float e, float f)  // htran,  vtran
+                      float e, float f,
+                      float g, float h,
+                      float i)  // htran,  vtran
 {
-  CtxEntry command[3]=
+  CtxEntry command[5]=
   {
     ctx_f (CTX_SOURCE_TRANSFORM, a, b),
     ctx_f (CTX_CONT,             c, d),
-    ctx_f (CTX_CONT,             e, f)
+    ctx_f (CTX_CONT,             e, f),
+    ctx_f (CTX_CONT,             g, h),
+    ctx_f (CTX_CONT,             i, 0)
   };
   ctx_process (ctx, command);
 }
@@ -201,17 +226,19 @@ void
 ctx_source_transform_matrix (Ctx *ctx, CtxMatrix *matrix)
 {
   ctx_source_transform (ctx,
-    matrix->m[0][0], matrix->m[0][1],
-    matrix->m[1][0], matrix->m[1][1],
-    matrix->m[2][0], matrix->m[2][1]);
+    matrix->m[0][0], matrix->m[0][1], matrix->m[0][2],
+    matrix->m[1][0], matrix->m[1][1], matrix->m[1][2],
+    matrix->m[2][0], matrix->m[2][1], matrix->m[2][2]
+    
+    );
 }
 
 void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix)
 {
   ctx_apply_transform (ctx,
-                       matrix->m[0][0], matrix->m[0][1],
-                       matrix->m[1][0], matrix->m[1][1],
-                       matrix->m[2][0], matrix->m[2][1]);
+    matrix->m[0][0], matrix->m[0][1], matrix->m[0][2],
+    matrix->m[1][0], matrix->m[1][1], matrix->m[1][2],
+    matrix->m[2][0], matrix->m[2][1], matrix->m[2][2]);
 }
 
 void ctx_get_matrix (Ctx *ctx, CtxMatrix *matrix)
@@ -252,26 +279,44 @@ void ctx_translate (Ctx *ctx, float x, float y)
     { ctx->drawlist.count--; }
 }
 
+static inline float
+ctx_matrix_determinant (const CtxMatrix *m)
+{
+  float det = m->m[0][0] * (m->m[1][1] * m->m[2][2] -
+                            m->m[1][2] * m->m[2][1])
+              - m->m[0][1] * (m->m[1][0] * m->m[2][2] -
+                              m->m [1][2] * m->m [2][0])
+              + m->m[0][2] * (m->m[1][0] * m->m[2][1] -
+                              m->m[1][1] * m->m[2][0]);
+  return det;
+}
+
 void
 ctx_matrix_invert (CtxMatrix *m)
 {
   CtxMatrix t = *m;
-  float invdet, det = m->m[0][0] * m->m[1][1] -
-                      m->m[1][0] * m->m[0][1];
-  if (det > -0.0000001f && det < 0.0000001f)
-    {
-      m->m[0][0] = m->m[0][1] =
-                     m->m[1][0] = m->m[1][1] =
-                                    m->m[2][0] = m->m[2][1] = 0.0;
-      return;
-    }
-  invdet = 1.0f / det;
-  m->m[0][0] = t.m[1][1] * invdet;
-  m->m[1][0] = -t.m[1][0] * invdet;
-  m->m[2][0] = (t.m[1][0] * t.m[2][1] - t.m[1][1] * t.m[2][0]) * invdet;
-  m->m[0][1] = -t.m[0][1] * invdet;
-  m->m[1][1] = t.m[0][0] * invdet;
-  m->m[2][1] = (t.m[0][1] * t.m[2][0] - t.m[0][0] * t.m[2][1]) * invdet ;
+  float c = 1.0f / ctx_matrix_determinant (m);
+
+  m->m [0][0] = (t.m [1][1] * t.m [2][2] -
+                   t.m [1][2] * t.m [2][1]) * c;
+  m->m [1][0] = (t.m [1][2] * t.m [2][0] -
+                   t.m [1][0] * t.m [2][2]) * c;
+  m->m [2][0] = (t.m [1][0] * t.m [2][1] -
+                   t.m [1][1] * t.m [2][0]) * c;
+
+  m->m [0][1] = (t.m [0][2] * t.m [2][1] -
+                   t.m [0][1] * t.m [2][2]) * c;
+  m->m [1][1] = (t.m [0][0] * t.m [2][2] -
+                   t.m [0][2] * t.m [2][0]) * c;
+  m->m [2][1] = (t.m [0][1] * t.m [2][0] -
+                   t.m [0][0] * t.m [2][1]) * c;
+
+  m->m [0][2] = (t.m [0][1] * t.m [1][2] -
+                   t.m [0][2] * t.m [1][1]) * c;
+  m->m [1][2] = (t.m [0][2] * t.m [1][0] -
+                   t.m [0][0] * t.m [1][2]) * c;
+  m->m [2][2] = (t.m [0][0] * t.m [1][1] -
+                   t.m [0][1] * t.m [1][0]) * c;
 }
 
 

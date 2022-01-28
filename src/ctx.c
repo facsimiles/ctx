@@ -1511,7 +1511,9 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
           ctx_matrix_set (&m,
                           ctx_arg_float (0), ctx_arg_float (1),
                           ctx_arg_float (2), ctx_arg_float (3),
-                          ctx_arg_float (4), ctx_arg_float (5) );
+                          ctx_arg_float (4), ctx_arg_float (5),
+                          ctx_arg_float (6), ctx_arg_float (7),
+                          ctx_arg_float (8));
           _ctx_matrix_multiply (&state->gstate.transform,
                                 &state->gstate.transform, &m); // XXX verify order
         }
@@ -2138,10 +2140,10 @@ void ctx_set_texture_cache (Ctx *ctx, Ctx *texture_cache)
   ctx->texture_cache = texture_cache;
 }
 
-void ctx_set_transform (Ctx *ctx, float a, float b, float c, float d, float e, float f)
+void ctx_set_transform (Ctx *ctx, float a, float b, float c, float d, float e, float f, float g, float h, float i)
 {
   ctx_identity (ctx);
-  ctx_apply_transform (ctx, a, b, c, d, e, f);
+  ctx_apply_transform (ctx, a, b, c, d, e, f, g, h, i);
 }
 
 #endif
