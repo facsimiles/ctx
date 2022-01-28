@@ -87,14 +87,17 @@ inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, in
 {
   rasterizer->scanline += count;
   CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
-  for (unsigned int i = 0; i < rasterizer->active_edges; i++)
+  unsigned int active_edges = rasterizer->active_edges;
+  unsigned int pending_edges = rasterizer->pending_edges;
+  unsigned int pending_base = CTX_MAX_EDGES-pending_edges;
+  for (unsigned int i = 0; i < active_edges; i++)
     {
       CtxSegment *segment = segments + rasterizer->edges[i];
       segment->val += segment->delta * count;
     }
-  for (unsigned int i = 0; i < rasterizer->pending_edges; i++)
+  for (unsigned int i = 0; i < pending_edges; i++)
     {
-      CtxSegment *segment = segments + rasterizer->edges[CTX_MAX_EDGES-1-i];
+      CtxSegment *segment = segments + rasterizer->edges[pending_base+i];
       segment->val += segment->delta * count;
     }
 }
