@@ -365,10 +365,11 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
 static int
 ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
-  CtxDrawlist drawlist = { (CtxEntry *) font->ctx.data,
-                           font->ctx.length,
-                           font->ctx.length, 0, 0
-                         };
+  CtxDrawlist drawlist;
+  drawlist.entries = font->ctx.data;
+  drawlist.count = font->ctx.length;
+  drawlist.size  = font->ctx.length;
+  drawlist.flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
   return ctx_glyph_drawlist (font, ctx, &drawlist, unichar, stroke);
 }
 

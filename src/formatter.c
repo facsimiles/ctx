@@ -574,7 +574,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         break;
 #endif
       case CTX_COLOR:
-        if (formatter->longform ||  1)
+        if (1)//formatter->longform)
           {
             _ctx_indent (formatter);
             int model = (int) c->set_color.model;

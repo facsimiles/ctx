@@ -545,7 +545,8 @@ ctx_add_data (Ctx *ctx, void *data, int length)
 
 int ctx_drawlist_add_u32 (CtxDrawlist *drawlist, CtxCode code, uint32_t u32[2])
 {
-  CtxEntry entry[3] = {{code, {{0},}},};
+  CtxEntry entry[3];
+  entry[0].code = code;
   entry[0].data.u32[0] = u32[0];
   entry[0].data.u32[1] = u32[1];
   return ctx_drawlist_add_single (drawlist, &entry[0]);
