@@ -48,7 +48,7 @@ backend-kms.c
 backend-sdl.c
 backend-term.c
 backend-termimg.c
-backend-tft-espi.c
+backend-cb.c
 text.c
 formatter.c
 ctx.c

@@ -1067,29 +1067,35 @@ void ctx_fill_rule (Ctx *ctx, CtxFillRule fill_rule)
   if (ctx->state.gstate.fill_rule != fill_rule)
     CTX_PROCESS_U8 (CTX_FILL_RULE, fill_rule);
 }
+
 void ctx_line_join (Ctx *ctx, CtxLineJoin join)
 {
   if (ctx->state.gstate.line_join != join)
     CTX_PROCESS_U8 (CTX_LINE_JOIN, join);
 }
+
 void ctx_blend_mode (Ctx *ctx, CtxBlend mode)
 {
   if (ctx->state.gstate.blend_mode != mode)
     CTX_PROCESS_U32 (CTX_BLEND_MODE, mode, 0);
 }
+
 void ctx_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
 {
   if (ctx->state.gstate.compositing_mode != mode)
     CTX_PROCESS_U32 (CTX_COMPOSITING_MODE, mode, 0);
 }
+
 void ctx_text_align (Ctx *ctx, CtxTextAlign text_align)
 {
   CTX_PROCESS_U8 (CTX_TEXT_ALIGN, text_align);
 }
+
 void ctx_text_baseline (Ctx *ctx, CtxTextBaseline text_baseline)
 {
   CTX_PROCESS_U8 (CTX_TEXT_BASELINE, text_baseline);
 }
+
 void ctx_text_direction (Ctx *ctx, CtxTextDirection text_direction)
 {
   CTX_PROCESS_U8 (CTX_TEXT_DIRECTION, text_direction);

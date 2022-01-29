@@ -6579,7 +6579,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     if (!s)
       return;
     s++;
-    for (; *s; s++)
+    for (; *s &&  numbers < 11; s++)
     {
       switch (*s)
       {
@@ -6589,12 +6589,23 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
         numbers++;
       }
     }
+#if 0
     matrix->m[0][0] = number[0];
     matrix->m[0][1] = number[1];
     matrix->m[1][0] = number[2];
     matrix->m[1][1] = number[3];
     matrix->m[2][0] = number[4];
     matrix->m[2][1] = number[5];
+#else
+#if 0
+    matrix->m[0][0] = number[0];
+    matrix->m[1][0] = number[1];
+    matrix->m[0][1] = number[2];
+    matrix->m[1][1] = number[3];
+    matrix->m[0][2] = number[4];
+    matrix->m[1][2] = number[5];
+#endif
+#endif
   }
   else if (!strncmp (str, "scale", 5))
   {

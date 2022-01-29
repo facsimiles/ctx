@@ -435,27 +435,35 @@ int ctx_utf8_strlen (const char *s);
 #endif
 
 
-#if CTX_TFT_ESPI
-
-typedef enum CtxTftFlags {
-  CTX_TFT_DEFAULTS   = 0,
-  CTX_TFT_GRAY       = 1 << 0,
-  CTX_TFT_HASH_CACHE = 1 << 1,
-  CTX_TFT_332        = 1 << 2, // might do a 332 render
+typedef enum CtxCbFlags {
+  CTX_CB_DEFAULTS   = 0,
+  CTX_CB_GRAY       = 1 << 0,
+  CTX_CB_HASH_CACHE = 1 << 1,
+  CTX_CB_332        = 1 << 2, // might do a 332 render
                                // that is tear-free but slower
                                // before queueing slotted redraws
                                // of higher quality tiles
                                // this is a pre-amble to eink modes
                                //
-  CTX_TFT_CYCLE_BUF  = 1 << 4, // if set then we free buffers after each
+  CTX_CB_CYCLE_BUF  = 1 << 4, // if set then we free buffers after each
                                // use, higher risk of memory fragmentation
                                // but making each frame blit a memory use peak
 
-  CTX_TFT_SHOW_FPS   = 1 << 5,
-  CTX_TFT_AUTO_332   = 1 << 6,
-} CtxTFtFlags;
+  CTX_CB_SHOW_FPS   = 1 << 5,
+  CTX_CB_AUTO_332   = 1 << 6,
+} CtxCbFlags;
 
-Ctx *ctx_new_tft (TFT_eSPI tft, int flags);
+
+Ctx *ctx_new_cb (int width, int height,
+                 void (*set_pixels) (Ctx *ctx, void *user_data, 
+                                     int x, int y, int w, int h, void *buf),
+                 void *user_data,
+                 int   memory_budget,
+                 void *scratch_fb,
+                 int flags);
+
+#if CTX_TFT_ESPI
+Ctx *ctx_new_tft (TFT_eSPI *tft, int memory_budget, void *scratch_fb, int flags);
 
 #endif
 
