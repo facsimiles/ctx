@@ -1335,11 +1335,11 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
   uint8_t   real_fraction = 255/real_aa;
 
   rasterizer->prev_active_edges = -1;
-  if (CTX_UNLIKELY (
+  if (
 #if CTX_SHAPE_CACHE
     !shape &&
 #endif
-    maxx > blit_max_x - 1))
+    maxx > blit_max_x - 1)
     { maxx = blit_max_x - 1; }
 
   minx = ctx_maxi (rasterizer->state->gstate.clip_min_x, minx);
