@@ -11,7 +11,6 @@
 #include <math.h>
 #endif
 
-#define CTX_BRANCH_HINTS  1
 
 #if CTX_BRANCH_HINTS
 #define CTX_LIKELY(x)      __builtin_expect(!!(x), 1)

@@ -688,3 +688,10 @@
 #ifndef CTX_COMPOSITE
 #define CTX_COMPOSITE 0
 #endif
+
+
+#ifndef CTX_BRANCH_HINTS
+#define CTX_BRANCH_HINTS  1
+#endif
+
+
