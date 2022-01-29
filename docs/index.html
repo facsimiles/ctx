@@ -31,31 +31,31 @@
 
       <div id='page'>
 
-      <h1>vector graphics terminal</h1>
+      <h1>vector graphics rasterizer and multi process user land</h1>
 
-      <p>ctx is an interactive 2D vector graphics, audio, text- canvas and <a
-        href='terminal/'>terminal</a>, with escape sequences
-      that enable a 2D vector drawing API
-      using a <a href='protocol/'>vector
-      graphics protocol</a>.
-      </p>
+      <p>ctx is an R&amp;D effort into interactive 2D vector graphics rendering
+      and user interfaces and a related software and protocol stack.</p>
+
+      <p> The <a href='rasterizer/'>ctx rasterizer</a> is
+      high quality and fast, With color managed compositing
+      directly to RGBA8, GRAYA8, GRAYAF, RGBAF and CMYKAF
+      pixel formats.
+      For <a href='mcu/'>microcontrollers</a> rendering to lower bitdepth
+      RGB332, RGB565 variants as well as 1,2 and 4 bit per pixel grayscale is
+      handled. Combined with floating point pixel encoding support and color
+      management ctx scales to meet <a href='https://gegl.org/'>GEGL</a> and <a
+      href='https://www.gimp.org.'>GIMP</a>s needs.</p>
+
+      <p>Applications can be directly written using ctx as a library handling
+      events and multithreaded rendering/display of the pixels. The same API
+      can also be used for writing applications that run inside the
+      <a href='terminal/'>ctx terminal</a>, which provides escape sequences
+      that enable drawing 2D vector graphics both inline, and for full-window
+      applications taking over the terminal using the <a href='protocol/'>ctx
+      protocol</a>.</p>
 
       <img style='max-width:100%' alt='constant-z rescuing the sixels far far away, tolerance breaking down near framebuffer.' src='perspective.png'/>
 
-      <p> The <a href='rasterizer/'>ctx rasterizer</a> is
-      fast and provides higher fidelity AA than cairo's 17x15
-      super sampling. With color managed compositing
-      directly to RGBA8, GRAYA8, GRAYAF, RGBAF and CMYKAF
-      pixel formats, the 8bit formats are presumed to be for
-      display and currently only does compositing using the
-      gamma encoded values,
-      the
-      floating point code yields accurate math with natrual
-      expression of the compositing math.  For <a
-      href='mcu/'>microcontrollers</a>
-      rendering to lower bitdepth RGB332, RGB565
-      variants as well as 1,2 and 4 bit per pixel
-      grayscale is handled.</p>
 
       <p>The ctx renderer is written in portable C, without
       inline assembly or SIMD intrinsics - but is still fast (and can make good
