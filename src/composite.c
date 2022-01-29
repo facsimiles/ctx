@@ -1081,7 +1081,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   x += 0.5f;
   y += 0.5f;
 
-  src = buffer->data;
+  src = (uint32_t*)buffer->data;
   //if (!src){ fprintf (stderr, "eeek bailing in nearest fragment\n"); return;};
 
 #if 1

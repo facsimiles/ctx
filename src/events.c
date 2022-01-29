@@ -1107,9 +1107,7 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
 
 #if CTX_EVENTS
 
-#if !__COSMOPOLITAN__
-#include <stdatomic.h>
-#endif
+//#include <stdatomic.h>
 
 void ctx_consume_events (Ctx *ctx)
 {
@@ -1470,7 +1468,7 @@ int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t tim
 
   if (events->pointer_down[device_no] == 0)
   {
-    fprintf (stderr, "device %i already up\n", device_no);
+    //fprintf (stderr, "device %i already up\n", device_no);
   }
   events->pointer_down[device_no] = 0;
 
