@@ -454,7 +454,7 @@ typedef enum CtxCbFlags {
 } CtxCbFlags;
 
 
-Ctx *ctx_new_cb (int width, int height,
+Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  void (*set_pixels) (Ctx *ctx, void *user_data, 
                                      int x, int y, int w, int h, void *buf),
                  void *user_data,

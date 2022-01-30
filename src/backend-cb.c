@@ -1,12 +1,11 @@
 
 
-
-
 typedef struct CtxCbBackend
 {
-  CtxBackend   backend;
-  int          flags;
-  uint16_t    *fb;
+  CtxBackend     backend;
+  CtxPixelFormat format;
+  int            flags;
+  uint16_t      *fb;
   void (*set_pixels) (Ctx *ctx, void *user_data, 
                       int x, int y, int w, int h, void *buf);
 
@@ -30,6 +29,8 @@ static void ctx_render_cb (Ctx *ctx,
   int width                  = x1 - x0 + 1;
   int height                 = y1 - y0 + 1;
   uint16_t *fb;
+  CtxPixelFormat             format = backend_cb->format;
+  int bpp                    = ctx_pixel_format_bits_per_pixel (format)/ 8;
 
   int chunk_size = 16; /* wanting chunks of 16 scanlines at a
                           time to go out seems to give good
@@ -127,17 +128,17 @@ static void ctx_render_cb (Ctx *ctx,
   else
   {
     int render_height = height;
-    if (width * render_height > memory_budget / 2)
+    if (width * render_height > memory_budget / bpp)
     {
-       render_height = memory_budget / width / 2;
+       render_height = memory_budget / width / bpp;
     }
 
     do
     {
       render_height = ctx_mini (render_height, y1-y0);
-      memset (fb, 0, width * 2 * render_height);
-      Ctx *renderer = ctx_new_for_framebuffer (fb, width, render_height, width * 2,
-            CTX_FORMAT_RGB565_BYTESWAPPED);
+      memset (fb, 0, width * bpp * render_height);
+      Ctx *renderer = ctx_new_for_framebuffer (fb, width, render_height, width * bpp,
+            format);
       ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
       ctx_render_ctx (ctx, renderer);
       backend_cb->set_pixels (ctx, backend_cb->user_data, 
@@ -260,7 +261,7 @@ ctx_cb_flush (Ctx *ctx)
   }
 }
 
-Ctx *ctx_new_cb (int width, int height,
+Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  void (*set_pixels) (Ctx *ctx, void *user_data, 
                                      int x, int y, int w, int h, void *buf),
                  void *user_data,
@@ -272,6 +273,7 @@ Ctx *ctx_new_cb (int width, int height,
   CtxBackend    *backend     = (CtxBackend*)calloc (sizeof (CtxCbBackend), 1);
   CtxCbBackend  *cb_backend  = (CtxCbBackend*)backend;
   backend->flush             = ctx_cb_flush;
+  cb_backend->format         = format;
   cb_backend->fb             = (uint16_t*)scratch_fb;
   cb_backend->flags          = flags;
   cb_backend->set_pixels     = set_pixels;
