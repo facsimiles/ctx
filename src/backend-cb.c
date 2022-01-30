@@ -8,6 +8,7 @@ typedef struct CtxCbBackend
   uint16_t      *fb;
   void (*set_pixels) (Ctx *ctx, void *user_data, 
                       int x, int y, int w, int h, void *buf);
+  void (*update_fb) (Ctx *ctx, void *user_data);
 
   int     min_col; // hasher cols and rows
   int     min_row; // hasher cols and rows
@@ -155,6 +156,29 @@ static void ctx_render_cb (Ctx *ctx,
   }
 }
 
+int ctx_cb_x0 (Ctx *ctx)
+{
+  CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
+  return cb_backend->min_col * (ctx_width (ctx)/CTX_HASH_COLS);
+}
+
+int ctx_cb_x1 (Ctx *ctx)
+{
+  CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
+  return (cb_backend->max_col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
+}
+
+int ctx_cb_y0 (Ctx *ctx)
+{
+  CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
+  return cb_backend->min_row * (ctx_height (ctx)/CTX_HASH_ROWS);
+}
+
+int ctx_cb_y1 (Ctx *ctx)
+{
+  CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
+  return (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
+}
 
 static void
 ctx_cb_flush (Ctx *ctx)
@@ -259,11 +283,14 @@ ctx_cb_flush (Ctx *ctx)
   {
     ctx_render_cb (ctx, 0, 0, ctx_width(ctx)-1, ctx_height(ctx)-1);
   }
+  if (cb_backend->update_fb)
+    cb_backend->update_fb (ctx, cb_backend->user_data);
 }
 
 Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  void (*set_pixels) (Ctx *ctx, void *user_data, 
                                      int x, int y, int w, int h, void *buf),
+                 void (*update_fb) (Ctx *ctx, void *user_data),
                  void *user_data,
                  int   memory_budget,
                  void *scratch_fb,
@@ -277,6 +304,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   cb_backend->fb             = (uint16_t*)scratch_fb;
   cb_backend->flags          = flags;
   cb_backend->set_pixels     = set_pixels;
+  cb_backend->update_fb      = update_fb;
   cb_backend->user_data      = user_data;
   cb_backend->memory_budget  = memory_budget;
   ctx_set_backend (ctx, backend);
