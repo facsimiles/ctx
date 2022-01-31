@@ -450,7 +450,7 @@ void itk_reset (ITK *itk)
   if (itk_style)
     free (itk_style);
   unsigned char *style = NULL;
-#if CTX_MAX_THREADS
+#if CTX_FONTS_FROM_FILE
   ctx_get_contents ("/tmp/itk-style", &style, NULL);
 #endif
   if (style)
@@ -2340,6 +2340,7 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 
 int _itk_key_bindings_active = 1;
 
+
 ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
 {
   Ctx *ctx = ctx_new (-1, -1, NULL);
@@ -2359,6 +2360,7 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
       itk_done (itk);
       ctx_flush (ctx);
     }
+
     ctx_handle_events (ctx);
   }
 
