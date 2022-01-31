@@ -102,12 +102,12 @@ void ctx_simd_setup (void)
   }
 }
 #else // must be arm if we have SIMD enabled and are not x86_64
-void ctx_simd_setup_armv7l_neon (void);
+void ctx_simd_setup_arm_neon (void);
 int ctx_arm_has_neon (int *armv);
 void ctx_simd_setup (void)
 {
   if (ctx_arm_has_neon (NULL))
-    ctx_simd_setup_armv7l_neon ();
+    ctx_simd_setup_arm_neon ();
 }
 #endif
 #endif
