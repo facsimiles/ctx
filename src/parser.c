@@ -1849,7 +1849,8 @@ void ctx_parser_feed_bytes (CtxParser *parser, const char *data, int count)
     ctx_parser_feed_byte (parser, data[i]);
 }
 
-void ctx_parse (Ctx *ctx, const char *string)
+CTX_EXPORT void
+ctx_parse (Ctx *ctx, const char *string)
 {
   if (!string)
     return;

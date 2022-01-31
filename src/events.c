@@ -4,6 +4,9 @@
 #include <sys/time.h>
 #endif
 
+#ifdef EMSCRIPTEN
+#include "emscripten.h"
+#endif
 
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
@@ -28,7 +31,7 @@ _ctx_ticks (void)
   return usecs (measure_time) - usecs (start_time);
 }
 
-unsigned long
+CTX_EXPORT unsigned long
 ctx_ticks (void)
 {
   _ctx_init_ticks ();
@@ -125,6 +128,18 @@ static uint32_t ctx_ms (Ctx *ctx)
 }
 
 static int is_in_ctx (void);
+
+#if EMSCRIPTEN
+
+CTX_EXPORT Ctx *
+get_context (void);
+
+static Ctx *ctx_new_ui (int width, int height, const char *backend)
+{
+   return get_context ();
+}
+#else
+
 static Ctx *ctx_new_ui (int width, int height, const char *backend)
 {
 #if CTX_TILED
@@ -253,6 +268,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   return ret;
 }
 #endif
+#endif
 #else
 void _ctx_texture_unlock (void)
 {
@@ -361,8 +377,13 @@ void _ctx_idle_iteration (Ctx *ctx)
   prev_ticks = ticks;
 
 
-  if (!ctx->events.idles)
+  if (!ctx->events.idles && !ctx->events.idles_to_add)
   {
+#ifdef EMSCRIPTEN
+#ifdef ASYNCIFY
+    emscripten_sleep (10);
+#endif
+#endif
     return;
   }
 
@@ -438,6 +459,11 @@ void _ctx_idle_iteration (Ctx *ctx)
       item->destroy_notify (item->destroy_data);
   }
   ctx->events.in_idle_dispatch=0;
+#if EMSCRIPTEN
+#ifdef ASYNCIFY
+   emscripten_sleep(1);
+#endif
+#endif
 }
 
 
@@ -703,6 +729,13 @@ void _ctx_item_unref (CtxItem *item)
 }
 
 
+void _ctx_item_unref2 (void *data, void *data2)
+{
+  CtxItem *item = (CtxItem*)data;
+  _ctx_item_unref (item);
+}
+
+
 static int
 path_equal (void *path,
             void *path2)
@@ -803,7 +836,8 @@ void ctx_listen_full (Ctx     *ctx,
     }
     item->ref_count       = 1;
     ctx->events.last_item = item;
-    ctx_list_prepend_full (&ctx->events.items, item, (void*)_ctx_item_unref, NULL);
+    ctx_list_prepend_full (&ctx->events.items, item, _ctx_item_unref2, NULL);
+      return;
   }
 }
 
@@ -1141,11 +1175,13 @@ CtxEvent *ctx_get_event (Ctx *ctx)
     }
 
   _ctx_idle_iteration (ctx);
-  if (!ctx->events.ctx_get_event_enabled)
+#if 1
+  if (ctx->events.ctx_get_event_enabled==0)
   {
     ctx->events.ctx_get_event_enabled = 1;
     ctx_queue_draw (ctx);
   }
+#endif
 
   ctx_consume_events (ctx);
 
@@ -1269,8 +1305,9 @@ static int tap_and_hold_fire (Ctx *ctx, void *data)
   return ret;
 }
 
-int ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
-                      char *string)
+CTX_EXPORT int
+ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
+                  char *string)
 {
   CtxList *l;
   CtxList *hitlist = NULL;
@@ -1321,7 +1358,8 @@ int ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
   return 0;
 }
 
-int ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
+CTX_EXPORT int
+ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
   CtxEvents *events = &ctx->events;
   CtxList *hitlist = NULL;
@@ -1429,7 +1467,8 @@ void _ctx_resized (Ctx *ctx, int width, int height, long time)
 
 }
 
-int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time)
+CTX_EXPORT int
+ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
   CtxEvents *events = &ctx->events;
   if (time == 0)
@@ -1530,7 +1569,8 @@ int ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t tim
  *  a device id. even during drag-grabs events propagate; to stop that stop
  *  propagation.
  */
-int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time)
+CTX_EXPORT int
+ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
   CtxList *hitlist = NULL;
   CtxList *grablist = NULL, *g;
@@ -1634,7 +1674,8 @@ int ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time
   return 0;
 }
 
-void ctx_incoming_message (Ctx *ctx, const char *message, long time)
+CTX_EXPORT void
+ctx_incoming_message (Ctx *ctx, const char *message, long time)
 {
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_MESSAGE);
   CtxEvent event = {0, };
@@ -1665,7 +1706,8 @@ void ctx_incoming_message (Ctx *ctx, const char *message, long time)
   }
 }
 
-int ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time)
+CTX_EXPORT int
+ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time)
 {
   CtxList *hitlist = NULL;
   CtxList *l;
@@ -1716,11 +1758,68 @@ static int ctx_str_has_prefix (const char *string, const char *prefix)
   return 0;
 }
 
-int ctx_key_press (Ctx *ctx, unsigned int keyval,
-                   const char *string, uint32_t time)
+
+static const char *ctx_keycode_to_keyname (int keycode)
+{
+   static char temp[6]=" ";
+   const char *str = &temp[0];
+   if (keycode >= 65 && keycode <= 90)
+   {
+     temp[0]=keycode-65+'a';
+   }
+   else if (keycode >= 48 && keycode <=66)
+   {
+     temp[0]=keycode-48+'0';
+   }
+   else if (keycode >= 112 && keycode <= 123)
+   {
+     sprintf (temp, "F%i", keycode-111);
+   }
+   else
+   switch (keycode)
+   {
+     case 8: str="backspace"; break;
+     case 9: str="tab"; break;
+     case 13: str="return"; break;
+     case 16: str="shift"; break;
+     case 17: str="control"; break;
+     case 18: str="alt"; break;
+     case 27: str="escape"; break;
+     case 32: str="space"; break;
+     case 35: str="end"; break;
+     case 36: str="home"; break;
+     case 37: str="left"; break;
+     case 38: str="up"; break;
+     case 39: str="right"; break;
+     case 40: str="down"; break;
+     case 45: str="insert"; break;
+     case 46: str="delete"; break;
+     case 186: str=";"; break;
+     case 187: str="="; break;
+     case 188: str=","; break;
+     case 189: str="-"; break;
+     case 190: str="."; break;
+     case 191: str="/"; break;
+     case 192: str="`"; break;
+     case 219: str="["; break;
+     case 221: str="]"; break;
+     case 220: str="\\"; break;
+     case 222: str="'"; break;
+     default:
+        str="?";
+        break;
+   }
+   return str;
+}
+
+CTX_EXPORT int
+ctx_key_press (Ctx *ctx, unsigned int keyval,
+               const char *string, uint32_t time)
 {
   char event_type[128]="";
   float x, y; int b;
+  if (!string)
+    string = ctx_keycode_to_keyname (keyval);
   sscanf (string, "%s %f %f %i", event_type, &x, &y, &b);
   if (!strcmp (event_type, "pm") ||
       !strcmp (event_type, "pd"))
@@ -1745,7 +1844,10 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
     event.ctx = ctx;
     event.type = CTX_KEY_PRESS;
     event.unicode = keyval; 
+    if (string)
     event.string = strdup(string);
+    else
+    event.string = "--";
     event.stop_propagate = 0;
     event.time = time;
 
@@ -1767,11 +1869,14 @@ int ctx_key_press (Ctx *ctx, unsigned int keyval,
   return 0;
 }
 
-int ctx_key_down (Ctx *ctx, unsigned int keyval,
-                  const char *string, uint32_t time)
+CTX_EXPORT int
+ctx_key_down (Ctx *ctx, unsigned int keyval,
+              const char *string, uint32_t time)
 {
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_DOWN);
   CtxEvent event = {0,};
+  if (!string)
+    string = ctx_keycode_to_keyname (keyval);
 
   if (time == 0)
     time = ctx_ms (ctx);
@@ -1803,12 +1908,14 @@ int ctx_key_down (Ctx *ctx, unsigned int keyval,
   return 0;
 }
 
-int ctx_key_up (Ctx *ctx, unsigned int keyval,
-                const char *string, uint32_t time)
+CTX_EXPORT int
+ctx_key_up (Ctx *ctx, unsigned int keyval,
+            const char *string, uint32_t time)
 {
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_UP);
   CtxEvent event = {0,};
-
+  if (!string)
+    string = ctx_keycode_to_keyname (keyval);
   if (time == 0)
     time = ctx_ms (ctx);
   if (item)
@@ -1836,8 +1943,6 @@ int ctx_key_up (Ctx *ctx, unsigned int keyval,
     }
     free ((void*)event.string);
   }
-  return 0;
-
   return 0;
 }
 
@@ -1964,6 +2069,9 @@ void _ctx_remove_listen_fd (int fd)
     }
   }
 }
+#ifdef EMSCRIPTEN
+extern int em_in_len;
+#endif
 
 int ctx_input_pending (Ctx *ctx, int timeout)
 {
@@ -1991,9 +2099,11 @@ int ctx_input_pending (Ctx *ctx, int timeout)
     perror ("select");
     return 0;
   }
+#ifdef EMSCRIPTEN
+  retval += em_in_len;
+#endif
   return retval;
 }
-
 
 void ctx_handle_events (Ctx *ctx)
 {

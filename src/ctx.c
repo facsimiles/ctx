@@ -2,11 +2,13 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-int ctx_width (Ctx *ctx)
+CTX_EXPORT int
+ctx_width (Ctx *ctx)
 {
   return ctx->width;
 }
-int ctx_height (Ctx *ctx)
+CTX_EXPORT int
+ctx_height (Ctx *ctx)
 {
   return ctx->height;
 }
@@ -158,7 +160,7 @@ ctx_close_path (Ctx *ctx)
 }
 
 
-void
+CTX_EXPORT void
 ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
                     CtxPixelFormat format, int dst_stride,
                     uint8_t *dst_data)
@@ -703,7 +705,8 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
 static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2);
 #endif
 
-void ctx_reset (Ctx *ctx)
+CTX_EXPORT void
+ctx_reset (Ctx *ctx)
 {
   ctx_drawlist_clear (ctx);
         /* we do the callback reset first - maybe we need two cbs,
@@ -1274,7 +1277,7 @@ ctx_exit (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_EXIT);
 }
 
-void
+CTX_EXPORT void
 ctx_flush (Ctx *ctx)
 {
   if (ctx->backend && ctx->backend->flush)
@@ -1903,7 +1906,7 @@ ctx_new_drawlist (int width, int height)
   return _ctx_new_drawlist (width, height);
 }
 
-Ctx *
+CTX_EXPORT Ctx *
 ctx_new (int width, int height, const char *backend)
 {
 #if CTX_EVENTS
@@ -1954,7 +1957,8 @@ static void ctx_deinit (Ctx *ctx)
     ctx_buffer_deinit (&ctx->texture[no]);
 }
 
-void ctx_free (Ctx *ctx)
+CTX_EXPORT void
+ctx_free (Ctx *ctx)
 {
   if (!ctx)
     { return; }
@@ -2664,4 +2668,67 @@ void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
 
 #endif
 
+
+CTX_EXPORT void
+ctx_logo (Ctx *ctx, int frame)
+{
+     float width = ctx_width (ctx);
+     float height = ctx_height (ctx);
+     ctx_save (ctx);
+     ctx_translate (ctx, width/2, height/2);
+
+     if (width < height) height = width;
+     
+     ctx_scale (ctx, (height/10.0)*100/(100-frame), (height/10.0)*100/(100-frame));
+     ctx_translate (ctx, -0.5, -0.5);
+     ctx_begin_path (ctx);
+     ctx_rgba(ctx,1,1,1,0.4);
+     ctx_move_to(ctx,0.43956786,0.90788066);
+     ctx_rel_curve_to(ctx,0.0195929,0.0102943,0.0716181,0.0218038,0.10361884,-0.0167646);
+     ctx_line_to (ctx,0.93768705,0.37887837);
+     ctx_rel_curve_to (ctx,  0.019925 ,-0.0342044,-0.00963,-0.0544608,-0.0308834,-0.0508084);
+     ctx_rel_curve_to (ctx,-0.17965502,0.0285588,-0.35466092,-0.055125,-0.45096394,-0.21253089);
+     ctx_rel_curve_to (ctx, -0.0176003 ,-0.02988716, -0.0594422,-0.01560777,-0.0594422,0.0139473);
+     ctx_rel_curve_to (ctx, 0, 0.0591101,0.003321,0.49845135,0.001991, 0.70699722);
+     ctx_rel_curve_to (ctx, 0.00039042, 0.0283487,0.0157362 ,0.0529866,0.0408456,0.070733);
+     ctx_fill (ctx);
+
+     ctx_move_to (ctx, 0.39772584,0.91850721);
+     ctx_rel_line_to (ctx, -0.0664159, 0);
+     ctx_rel_curve_to (ctx, -0.15408489,0, -0.27894675,-0.12486192, -0.27894675,-0.2789468);
+     ctx_rel_curve_to (ctx, 0,-0.15408489, 0.12486186,-0.27861466, 0.27894675,-0.27894675);
+     ctx_rel_line_to (ctx, 0.18585599,0.0000662);
+     ctx_rel_curve_to (ctx, 0.0111839,0.00017138, 0.0158287,0.001542, 0.0263337,0.0134822);
+     ctx_rel_curve_to (ctx, 0.11733258,0.14373102, 0.3018009,0.36870115, 0.3942639,0.49195316);
+     ctx_rel_curve_to (ctx, 0.0185394,0.0332794, -0.0106225,0.0505515, -0.0228143,0.0505207);
+
+     ctx_linear_gradient (ctx, 0.0525, 0, 0.9905, 0);
+     ctx_gradient_add_stop (ctx, 0.0, 1.0, 1.0, 0.66, 1.0);
+     ctx_gradient_add_stop (ctx, 0.2, 1.0, 0.66, 0.0, 1.0);
+     ctx_gradient_add_stop (ctx, 0.5, 1.0, 0.0, 0.0, 1.0);
+     ctx_gradient_add_stop (ctx, 1.0, 0.4, 0.0, 0.53, 1.0);
+     ctx_fill (ctx);
+     
+
+
+     ctx_linear_gradient(ctx, 0.697, 0.17, 0.4318, 0.884);
+     ctx_gradient_add_stop (ctx, 0, 0.26, 0.26, 1, 1.0);
+     ctx_gradient_add_stop (ctx, 0.3, 0, 1, 1, 0.4);
+     ctx_gradient_add_stop (ctx, 1.0, 0, 1, 0.26,1.0);
+     
+     ctx_move_to(ctx,0.43956786,0.90788066);
+     ctx_rel_curve_to(ctx,0.0195929,0.0102943,0.0716181,0.0218038,0.10361884,-0.0167646);
+     ctx_line_to (ctx,0.93768705,0.37887837);
+     ctx_rel_curve_to (ctx,  0.019925 ,-0.0342044,-0.00963,-0.0544608,-0.0308834,-0.0508084);
+     ctx_rel_curve_to (ctx,-0.17965502,0.0285588,-0.35466092,-0.055125,-0.45096394,-0.21253089);
+     ctx_rel_curve_to (ctx, -0.0176003 ,-0.02988716, -0.0594422,-0.01560777,-0.0594422,0.0139473);
+     ctx_rel_curve_to (ctx, 0, 0.0591101,0.003321,0.49845135,0.001991, 0.70699722);
+     ctx_rel_curve_to (ctx, 0.00039042, 0.0283487,0.0157362 ,0.0529866,0.0408456,0.070733);
+     ctx_fill (ctx);
+     
+     ctx_restore (ctx);
+
+  //ctx_parse (ctx, "rgb 1 0 0 rectangle 0 0 1000 1000 fill rgb 0 1 0 rectangle 40 40 40 40 fill ");
+//  ctx_free (ctx);
+}
 

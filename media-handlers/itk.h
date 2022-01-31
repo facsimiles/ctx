@@ -181,13 +181,15 @@ struct _UiChoice
 
 struct _ITK{
   Ctx *ctx;
+  int (*ui_fun)(ITK *itk, void *data);
+  void *ui_data;
   float x0;
   float y0;
   float x;
   float y;
 
-  /// ITK ancestors.. for css
 
+  /// ITK ancestors.. for css
   float stored_x; // for sameline()
 
   float font_size;
@@ -2340,29 +2342,57 @@ void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 
 int _itk_key_bindings_active = 1;
 
-
-ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
+static int
+itk_iteration (double time, void *data)
 {
-  Ctx *ctx = ctx_new (-1, -1, NULL);
-  ITK  *itk = itk_new (ctx);
+  ITK *itk = (ITK*)data;
+  Ctx *ctx = itk->ctx;
   int   ret_val = 0;
 
-  while (!ctx_has_quit (ctx) && (ret_val == 0))
-  {
     if (ctx_need_redraw (ctx))
     {
       itk_reset (itk);
       if (_itk_key_bindings_active)
         itk_key_bindings (itk);
       ctx_add_key_binding (itk->ctx, "control-q", NULL, "Quit", itk_key_quit, NULL);
-      ret_val = ui_fun (itk, ui_data);
+      ret_val = itk->ui_fun (itk, itk->ui_data);
 
       itk_done (itk);
       ctx_flush (ctx);
     }
 
     ctx_handle_events (ctx);
+    return ret_val == 0;
+}
+
+#ifdef EMSCRIPTEN
+#include <emscripten/html5.h>
+#endif
+
+ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
+{
+  Ctx *ctx = ctx_new (-1, -1, NULL);
+  ITK  *itk = itk_new (ctx);
+  itk->ui_fun = ui_fun;
+  itk->ui_data = ui_data;
+  int   ret_val = 0;
+
+#ifdef EMSCRIPTEN
+#ifdef ASYNCIFY
+  while (!ctx_has_quit (ctx) && (ret_val == 0))
+  {
+    ret_val = itk_iteration (0.0, itk);
   }
+#else
+  emscripten_request_animation_frame_loop (itk_iteration, itk);
+  return NULL;
+#endif
+#else
+  while (!ctx_has_quit (ctx) && (ret_val == 0))
+  {
+    ret_val = itk_iteration (0.0, itk);
+  }
+#endif
 
   itk_free (itk);
   ctx_free (ctx);

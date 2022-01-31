@@ -5,7 +5,7 @@ PREFIX  ?= /usr/local
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
-all: build.conf ctx.pc libctx.so ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
+all: build.conf ctx-wasm.pc ctx.pc libctx.so ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
 include build.conf
 
 CFLAGS_warnings= -Wall \
@@ -100,7 +100,7 @@ distclean: clean
 clean:
 	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
 	rm -f libctx.a libctx.so
-	rm -f ctx.pc
+	rm -f ctx.pc ctx-wasm.pc
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(MEDIA_HANDLERS_OBJS)
@@ -108,21 +108,35 @@ clean:
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
 ctx.pc: Makefile
-	echo "prefix=$(PREFIX)" > $@
-	echo 'exec_prefix=$${prefix}' >> $@
-	echo 'libdir=$${prefix}/lib' >> $@
-	echo 'includedir=$${prefix}/include' >> $@
-	echo 'apiversion=0.0' >> $@
-	echo '' >> $@
-	echo 'Name: ctx' >> $@
-	echo 'Description: ctx vector graphics' >> $@
-	echo 'Version: 0.0.0' >> $@
-	echo 'Libs: -L$${libdir} -lctx' >> $@
-	echo 'Cflags: -I$${includedir}' >> $@
+	@echo "prefix=$(PREFIX)" > $@
+	@echo 'exec_prefix=$${prefix}' >> $@
+	@echo 'libdir=$${prefix}/lib' >> $@
+	@echo 'includedir=$${prefix}/include' >> $@
+	@echo 'apiversion=0.0' >> $@
+	@echo '' >> $@
+	@echo 'Name: ctx' >> $@
+	@echo 'Description: ctx vector graphics' >> $@
+	@echo 'Version: 0.0.0' >> $@
+	@echo 'Libs: -L$${libdir} -lctx' >> $@
+	@echo 'Cflags: -I$${includedir}' >> $@
 
-install: ctx libctx.so ctx.h ctx.pc
+ctx-wasm.pc: Makefile
+	@echo "prefix=$(PREFIX)" > $@
+	@echo 'exec_prefix=$${prefix}' >> $@
+	@echo 'libdir=$${prefix}/lib' >> $@
+	@echo 'includedir=$${prefix}/include' >> $@
+	@echo 'apiversion=0.0' >> $@
+	@echo '' >> $@
+	@echo 'Name: ctx' >> $@
+	@echo 'Description: ctx vector graphics' >> $@
+	@echo 'Version: 0.0.0' >> $@
+	@echo 'Libs: -Wl,--lto-O3 ' >> $@
+	@echo 'Cflags: -I$${includedir} -DCTX_IMPLEMENTATION -flto -O3 -msimd128 -ftree-vectorize -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc' -s ASYNCIFY >> $@
+
+install: ctx libctx.so ctx.h ctx.pc ctx-wasm.pc
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin ctx
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx.pc
+	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx-wasm.pc
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/include ctx.h
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib libctx.so
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin tools/ctx-audioplayer
@@ -134,6 +148,7 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/bin/ctx
 	rm -rf $(DESTDIR)$(PREFIX)/lib/libctx.so
 	rm -rf $(DESTDIR)$(PREFIX)/lib/pkgconfig/ctx.pc
+	rm -rf $(DESTDIR)$(PREFIX)/lib/pkgconfig/ctx-wasm.pc
 	rm -rf $(DESTDIR)$(PREFIX)/include/ctx.h
 	rm -f $(DESTDIR)$(PREFIX)/share/appdata/graphics.ctx.terminal.appdata.xml
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/graphics.ctx.terminal.desktop

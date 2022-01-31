@@ -49,6 +49,7 @@ backend-sdl.c
 backend-term.c
 backend-termimg.c
 backend-cb.c
+backend-wasm.c
 text.c
 formatter.c
 ctx.c

@@ -694,4 +694,28 @@
 #define CTX_BRANCH_HINTS  1
 #endif
 
+#ifdef EMSCRIPTEN
+#define CTX_WASM 1
+#else
+#define CTX_WASM 0
+#endif
+
+
+#if CTX_WASM
+#undef CTX_THREADS
+#define CTX_THREADS 0
+#undef CTX_HEADLESS
+#define CTX_HEADLESS 0
+#undef CTX_TILED
+#define CTX_TILED 0
+#undef CTX_EVENTS
+#define CTX_EVENTS 1
+#undef CTX_PARSER
+#define CTX_PARSER 1
+#undef CTX_RASTERIZER
+#define CTX_RASTERIZER 1
+#undef CTX_SHAPE_CACHE
+#define CTX_SHAPE_CACHE 0
+#endif
+
 

@@ -215,6 +215,7 @@ CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, 
   return client;
 }
 
+#ifndef EMSCRIPTEN
 static void *launch_client_thread (void *data)
 {
   CtxClient *client = data;
@@ -247,6 +248,7 @@ CtxClient *ctx_client_new_thread (Ctx *ctx, void (*start_routine)(Ctx *ctx, void
     client->vt->client = client;
   return client;
 }
+#endif
 
 extern float ctx_shape_cache_rate;
 extern int _ctx_max_threads;
@@ -798,9 +800,9 @@ float _ctx_green = 0.5;
 
 static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
 {
+#if 0
     if (client->tid)
     {
-#if 0
       ctx_save (ctx);
       ctx_translate (ctx, x, y);
       int width = client->width;
@@ -823,9 +825,9 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
       itk_done (itk);
       //itk_key_bindings (itk);
       ctx_restore (ctx);
-#endif
     }
     else
+#endif
     {
        ctx_client_lock (client);
 

@@ -46,7 +46,11 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+
+
+#ifndef EMSCRIPTEN
 #include <zlib.h>
+#endif
 
 #include "ctx.h"
 
@@ -747,8 +751,97 @@ ctx_child_prepare_env (int was_pidone, const char *term)
 void _ctx_add_listen_fd (int fd);
 void _ctx_remove_listen_fd (int fd);
 
+#ifdef EMSCRIPTEN
+
+#define EM_BUFSIZE 81920
+
+char em_inbuf[EM_BUFSIZE]="";
+char em_outbuf[EM_BUFSIZE]="";
+int em_in_len = 0;
+int em_in_pos = 0;
+int em_in_read_pos = 0;
+EMSCRIPTEN_KEEPALIVE int em_out_len = 0;
+int em_out_pos = 0;
+
+ssize_t em_write (void *s, const void *buf, size_t count)
+{
+  const char *src = (const char*)buf;
+  int i;
+  for (i = 0; i < count && em_out_len < EM_BUFSIZE; i ++)
+  {
+    em_outbuf[em_out_pos++] = src[i];
+    em_out_len++;
+    if (em_out_pos >= EM_BUFSIZE)em_out_pos = 0;
+  }
+  if (em_out_len >= EM_BUFSIZE)
+    printf ("em_outbuf overflow\n");
+  else
+  EM_ASM({
+    console.log('a a ' + UTF8ToString($1));
+    ws.send(new Blob([UTF8ToString($0)]));
+    }, src
+       );
+
+  return i;
+}
+
+EMSCRIPTEN_KEEPALIVE
+ssize_t em_buffer (void *s, const void *buf, size_t count)
+{
+  const char *src = (const char*)buf;
+  int i;
+  for (i = 0; i < count && em_in_len < EM_BUFSIZE; i ++)
+  {
+    em_inbuf[em_in_pos++] = src[i];
+    em_in_len++;
+    if (em_in_pos >= EM_BUFSIZE)em_in_pos = 0;
+    if (src[i]=='\n')
+    {
+      em_inbuf[em_in_pos++] = '\r';
+      em_in_len++;
+      if (em_in_pos >= EM_BUFSIZE)em_in_pos = 0;
+    }
+  }
+  if (em_in_len >= EM_BUFSIZE)
+    printf ("em_inbuf overflow\n");
+  return i;
+}
+
+ssize_t em_read    (void *serial_obj, void *buf, size_t count)
+{
+  char *dst = (char*)buf;
+  if (em_in_len)
+  {
+    *dst = em_inbuf[em_in_read_pos++];
+    --em_in_len;
+    if (em_in_read_pos>=EM_BUFSIZE)em_in_read_pos = 0;
+    return 1;
+  }
+  return 0;
+}
+  int     em_waitdata (void *serial_obj, int timeout)
+{
+  return em_in_len;
+}
+
+  void    em_resize  (void *serial_obj, int cols, int rows, int px_width, int px_height)
+{
+}
+
+
+#endif
+
+
 static void vt_run_argv (VT *vt, char **argv, const char *term)
 {
+#ifdef EMSCRIPTEN
+        vt->read = em_read;
+        vt->write = em_write;
+        vt->waitdata = em_waitdata;
+        vt->resize = em_resize;
+
+        printf ("aaa?\n");
+#else
   struct winsize ws;
   //signal (SIGCHLD,signal_child);
 #if 0
@@ -777,6 +870,7 @@ static void vt_run_argv (VT *vt, char **argv, const char *term)
     }
   fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
   _ctx_add_listen_fd (vt->vtpty.pty);
+#endif
 }
 
 
@@ -3688,6 +3782,7 @@ void vt_gfx (VT *vt, const char *command)
           vt->gfx.buf_size = vt->gfx.buf_width * vt->gfx.buf_height *
                              (vt->gfx.format == 24 ? 3 : 4);
         }
+#ifndef EMSCRIPTEN
       if (vt->gfx.compression == 'z')
         {
           //vt->gfx.buf_size)
@@ -3709,6 +3804,7 @@ void vt_gfx (VT *vt, const char *command)
           vt->gfx.data_size = actual_uncompressed_size;
           vt->gfx.compression = 0;
         }
+#endif
 #ifdef STBI_INCLUDE_STB_IMAGE_H
       if (vt->gfx.format == 100)
         {
@@ -5548,6 +5644,9 @@ void vt_paste (VT *vt, const char *str)
 
 const char *ctx_find_shell_command (void)
 {
+#ifdef EMSCRIPTEN
+  return NULL;  
+#else
   if (access ("/.flatpak-info", F_OK) != -1)
   {
     static char ret[512];
@@ -5588,6 +5687,7 @@ const char *ctx_find_shell_command (void)
         { command = alts[i][1]; }
     }
   return command;
+#endif
 }
 
 
@@ -5595,6 +5695,9 @@ const char *ctx_find_shell_command (void)
 
 static void vt_run_command (VT *vt, const char *command, const char *term)
 {
+#ifdef EMSCRIPTEN
+        printf ("run command %s\n", command);
+#else
   struct winsize ws;
   //signal (SIGCHLD,signal_child);
 #if 0
@@ -5621,6 +5724,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
     }
   fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
   _ctx_add_listen_fd (vt->vtpty.pty);
+#endif
 }
 
 

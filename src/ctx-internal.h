@@ -1171,9 +1171,11 @@ struct _CtxTiled
    EvSource    *evsource[4];
    int          evsource_count;
    uint8_t      *fb;
+#if CTX_THREADS
 #if CTX_TILED
    cnd_t  cond;
    mtx_t  mtx;
+#endif
 #endif
 };
 
@@ -1257,6 +1259,14 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
 
 int ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix);
 
+#if EMSCRIPTEN
+#define CTX_EXPORT EMSCRIPTEN_KEEPALIVE
+#else
+#define CTX_EXPORT
+#endif
 
 #endif
 
+#if CTX_EVENTS
+#include <sys/select.h>
+#endif

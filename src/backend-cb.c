@@ -157,25 +157,29 @@ static void ctx_render_cb (Ctx *ctx,
   }
 }
 
-int ctx_cb_x0 (Ctx *ctx)
+CTX_EXPORT int
+ctx_cb_x0 (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return cb_backend->min_col * (ctx_width (ctx)/CTX_HASH_COLS);
 }
 
-int ctx_cb_x1 (Ctx *ctx)
+CTX_EXPORT int
+ctx_cb_x1 (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return (cb_backend->max_col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
 }
 
-int ctx_cb_y0 (Ctx *ctx)
+CTX_EXPORT int
+ctx_cb_y0 (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return cb_backend->min_row * (ctx_height (ctx)/CTX_HASH_ROWS);
 }
 
-int ctx_cb_y1 (Ctx *ctx)
+CTX_EXPORT int
+ctx_cb_y1 (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
