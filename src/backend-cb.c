@@ -6,6 +6,7 @@ typedef struct CtxCbBackend
   CtxPixelFormat format;
   int            flags;
   uint16_t      *fb;
+
   void (*set_pixels) (Ctx *ctx, void *user_data, 
                       int x, int y, int w, int h, void *buf);
   void (*update_fb) (Ctx *ctx, void *user_data);
@@ -325,7 +326,10 @@ Ctx *ctx_new_tft (TFT_eSPI *tft,
                   int flags)
 {
   return ctx_new_cb (tft->width(), tft->height(), 
-                     ctx_tft_set_pixels, tft,
+                     CTX_FORMAT_RGB565_BYTESWAPPED,
+                     ctx_tft_set_pixels,
+                     NULL,
+                     tft,
                      memory_budget,
                      scratch_fb,
                      flags);
