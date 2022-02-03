@@ -1759,17 +1759,17 @@ static int ctx_str_has_prefix (const char *string, const char *prefix)
 }
 
 
-static const char *ctx_keycode_to_keyname (int keycode)
+static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,
+                                           int keycode)
 {
    static char temp[6]=" ";
    const char *str = &temp[0];
    if (keycode >= 65 && keycode <= 90)
    {
-     temp[0]=keycode-65+'a';
-   }
-   else if (keycode >= 48 && keycode <=66)
-   {
-     temp[0]=keycode-48+'0';
+     if (modifier_state & CTX_MODIFIER_STATE_SHIFT)
+       temp[0]=keycode-65+'A';
+     else
+       temp[0]=keycode-65+'a';
    }
    else if (keycode >= 112 && keycode <= 123)
    {
@@ -1786,6 +1786,8 @@ static const char *ctx_keycode_to_keyname (int keycode)
      case 18: str="alt"; break;
      case 27: str="escape"; break;
      case 32: str="space"; break;
+     case 33: str="page-up"; break;
+     case 34: str="page-down"; break;
      case 35: str="end"; break;
      case 36: str="home"; break;
      case 37: str="left"; break;
@@ -1794,20 +1796,68 @@ static const char *ctx_keycode_to_keyname (int keycode)
      case 40: str="down"; break;
      case 45: str="insert"; break;
      case 46: str="delete"; break;
-     case 186: str=";"; break;
-     case 187: str="="; break;
-     case 188: str=","; break;
-     case 189: str="-"; break;
-     case 190: str="."; break;
-     case 191: str="/"; break;
-     case 192: str="`"; break;
-     case 219: str="["; break;
-     case 221: str="]"; break;
-     case 220: str="\\"; break;
-     case 222: str="'"; break;
      default:
-        str="?";
-        break;
+       if (modifier_state & CTX_MODIFIER_STATE_SHIFT)
+       switch (keycode)
+       {
+         case 173: str="_"; break;
+         case 186: str=":"; break;
+         case 187: str="+"; break;
+         case 188: str="<"; break;
+         case 189: str="_"; break;
+         case 190: str=">"; break;
+         case 191: str="?"; break;
+         case 192: str="~"; break;
+         case 219: str="{"; break;
+         case 221: str="}"; break;
+         case 220: str="|"; break;
+         case 222: str="\""; break;
+         case 48: str=")"; break;
+         case 49: str="!"; break;
+         case 50: str="@"; break;
+         case 51: str="#"; break;
+         case 52: str="$"; break;
+         case 53: str="%"; break;
+         case 54: str="^"; break;
+         case 55: str="&"; break;
+         case 56: str="*"; break;
+         case 57: str="("; break;
+         case 59: str=":"; break;
+         case 61: str="+"; break;
+         default:
+           fprintf (stderr, "unhandled skeycode %i\n", keycode);
+           str="?";
+           break;
+       }
+       else
+       switch (keycode)
+       {
+         case 61: str="="; break;
+         case 59: str=";"; break;
+         case 173: str="-"; break;
+         case 186: str=";"; break;
+         case 187: str="="; break;
+         case 188: str=","; break;
+         case 189: str="-"; break;
+         case 190: str="."; break;
+         case 191: str="/"; break;
+         case 192: str="`"; break;
+         case 219: str="["; break;
+         case 221: str="]"; break;
+         case 220: str="\\"; break;
+         case 222: str="'"; break;
+         default:
+           if (keycode >= 48 && keycode <=66)
+           {
+             temp[0]=keycode-48+'0';
+           }
+           else
+           {
+             fprintf (stderr, "unhandled keycode %i\n", keycode);
+             str="?";
+           }
+           break;
+       }
    }
    return str;
 }
@@ -1816,10 +1866,41 @@ CTX_EXPORT int
 ctx_key_press (Ctx *ctx, unsigned int keyval,
                const char *string, uint32_t time)
 {
+  char temp_key[128]="";
   char event_type[128]="";
   float x, y; int b;
   if (!string)
-    string = ctx_keycode_to_keyname (keyval);
+  {
+    string = ctx_keycode_to_keyname (ctx->events.modifier_state, keyval);
+
+    if (!strcmp (string, "shift") ||
+        !strcmp (string, "control") ||
+        !strcmp (string, "alt"))
+      return 0;
+
+    if (ctx->events.modifier_state)
+    {
+       if (ctx->events.modifier_state & CTX_MODIFIER_STATE_SHIFT &&
+           (ctx->events.modifier_state & CTX_MODIFIER_STATE_ALT||
+            ctx->events.modifier_state & CTX_MODIFIER_STATE_CONTROL))
+       {
+         string = ctx_keycode_to_keyname (0, keyval);
+         sprintf (&temp_key[strlen(temp_key)], "shift-");
+       }
+
+       if (ctx->events.modifier_state & CTX_MODIFIER_STATE_ALT)
+       {
+         sprintf (&temp_key[strlen(temp_key)], "alt-");
+       }
+       if (ctx->events.modifier_state & CTX_MODIFIER_STATE_CONTROL)
+       {
+         sprintf (&temp_key[strlen(temp_key)], "control-");
+       }
+       sprintf (&temp_key[strlen(temp_key)], "%s", string);
+       string = temp_key;
+    }
+  }
+
   sscanf (string, "%s %f %f %i", event_type, &x, &y, &b);
   if (!strcmp (event_type, "pm") ||
       !strcmp (event_type, "pd"))
@@ -1876,7 +1957,20 @@ ctx_key_down (Ctx *ctx, unsigned int keyval,
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_DOWN);
   CtxEvent event = {0,};
   if (!string)
-    string = ctx_keycode_to_keyname (keyval);
+    string = ctx_keycode_to_keyname (0, keyval);
+
+  if (!strcmp (string, "shift"))
+  {
+    ctx->events.modifier_state |= CTX_MODIFIER_STATE_SHIFT;
+  }
+  else if (!strcmp (string, "control"))
+  {
+    ctx->events.modifier_state |= CTX_MODIFIER_STATE_CONTROL;
+  }
+  else if (!strcmp (string, "alt"))
+  {
+    ctx->events.modifier_state |= CTX_MODIFIER_STATE_ALT;
+  }
 
   if (time == 0)
     time = ctx_ms (ctx);
@@ -1915,7 +2009,21 @@ ctx_key_up (Ctx *ctx, unsigned int keyval,
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_UP);
   CtxEvent event = {0,};
   if (!string)
-    string = ctx_keycode_to_keyname (keyval);
+    string = ctx_keycode_to_keyname (0, keyval);
+
+  if (!strcmp (string, "shift"))
+  {
+    ctx->events.modifier_state &= ~(CTX_MODIFIER_STATE_SHIFT);
+  }
+  else if (!strcmp (string, "control"))
+  {
+    ctx->events.modifier_state &= ~(CTX_MODIFIER_STATE_CONTROL);
+  }
+  else if (!strcmp (string, "alt"))
+  {
+    ctx->events.modifier_state &= ~(CTX_MODIFIER_STATE_ALT);
+  }
+
   if (time == 0)
     time = ctx_ms (ctx);
   if (item)
