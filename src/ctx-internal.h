@@ -497,10 +497,10 @@ struct _Ctx
   CtxState          state;        /**/
   int               frame; /* used for texture lifetime */
   CtxBuffer         texture[CTX_MAX_TEXTURES];
+  int               dirty;
 #if CTX_EVENTS 
   CtxCursor         cursor;
   int               quit;
-  int               dirty;
   CtxEvents         events;
   int               mouse_fd;
   int               mouse_x;

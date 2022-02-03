@@ -2142,10 +2142,6 @@ int ctx_need_redraw (Ctx *ctx)
     ;
 }
 
-void ctx_queue_draw (Ctx *ctx)
-{
-  ctx->dirty ++;
-}
 
 /*
  * centralized global API for managing file descriptors that
@@ -2917,3 +2913,9 @@ static int event_check_pending (CtxTiled *tiled)
 }
 
 #endif
+
+
+void ctx_queue_draw (Ctx *ctx)
+{
+  ctx->dirty ++;
+}
