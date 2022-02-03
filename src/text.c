@@ -81,7 +81,7 @@ ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
   int glyph = ctx_glyph_stb_find (font, unichar);
 
 #if CTX_EVENTS
-  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && (3.02 - font_size) < 0.03)
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0 - font_size) < 0.03)
     return 2;
 #endif
 
@@ -222,7 +222,7 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
   if (first_kern < 0) return 0.0;
 
 #if CTX_EVENTS
-  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && (3.02 - font_size) < 0.03)
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0f - font_size) < 0.03)
     return 0.0f;
 #endif
 
@@ -263,7 +263,9 @@ ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
     { return 0.0; }  // XXX : fallback
 
 #if CTX_EVENTS
-  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && (3.02 - font_size) < 0.03)
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && 
+                  ctx_fabsf(3.0 - font_size) < 0.03 
+                  )
     return 2.0f;
 #endif
 
