@@ -7,6 +7,7 @@
       table { margin-top: .5em; }
       th { font-weight: normal; }
     </style>
+    <script src="./wasm/demo.js"></script>
   </head>
 
   <body lang='en'>
@@ -54,7 +55,9 @@
       applications taking over the terminal using the <a href='protocol/'>ctx
       protocol</a>.</p>
 
-      <img style='max-width:100%' alt='constant-z rescuing the sixels far far away, tolerance breaking down near framebuffer.' src='perspective.png'/>
+      <!--<img style='max-width:100%' alt='constant-z rescuing the sixels far far away, tolerance breaking down near framebuffer.' src='perspective.png'/>
+      -->
+
 
 
       <p>The ctx renderer is written in portable C, without
@@ -74,6 +77,13 @@
               href='caching-and-threading/'>caching and
               threading</a> that helps boost performance.
       </p>
+
+      <p>Below is a ctx running in WASM, using WASM simd, with rendering
+      happening in the main thread. Directly proxying to the actual canvas
+      or even webgl would be possible, while preserving platform
+      independent calling in C code.</p>
+      <canvas style='max-width:100%' width='640' height='480' id='c'>
+      </canvas>
 
       <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
 
