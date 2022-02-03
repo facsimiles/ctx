@@ -1887,6 +1887,7 @@ float ctx_term_get_cell_width (Ctx *ctx);
 float ctx_term_get_cell_height (Ctx *ctx);
 
 
+void ctx_logo (Ctx *ctx, float x, float y, float dim);
 
 
 

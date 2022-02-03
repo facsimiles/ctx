@@ -2670,16 +2670,17 @@ void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
 
 
 CTX_EXPORT void
-ctx_logo (Ctx *ctx, int frame)
+ctx_logo (Ctx *ctx, float x, float y, float dim)
 {
-     float width = ctx_width (ctx);
-     float height = ctx_height (ctx);
+     //float width = ctx_width (ctx);
+     //float height = ctx_height (ctx);
      ctx_save (ctx);
-     ctx_translate (ctx, width/2, height/2);
+     ctx_translate (ctx, x, y);//
+                               //width/2, height/2);
 
-     if (width < height) height = width;
+     //if (width < height) height = width;
      
-     ctx_scale (ctx, (height/10.0)*100/(100-frame), (height/10.0)*100/(100-frame));
+     ctx_scale (ctx, dim, dim);
      ctx_translate (ctx, -0.5, -0.5);
      ctx_begin_path (ctx);
      ctx_rgba(ctx,1,1,1,0.4);
