@@ -3799,10 +3799,12 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
         break;
       case CTX_LINEAR_GRADIENT:
         ctx_state_gradient_clear_stops (state);
+        rasterizer->gradient_cache_valid = 0;
         rasterizer->comp_op = NULL;
         break;
       case CTX_RADIAL_GRADIENT:
         ctx_state_gradient_clear_stops (state);
+        rasterizer->gradient_cache_valid = 0;
         rasterizer->comp_op = NULL;
         break;
 #endif
@@ -4156,6 +4158,13 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
 
   rasterizer->format = ctx_pixel_format_info (pixel_format);
 
+#if CTX_GRADIENTS
+#if CTX_GRADIENT_CACHE
+  rasterizer->gradient_cache_elements = CTX_GRADIENT_CACHE_ELEMENTS;
+  rasterizer->gradient_cache_valid = 0;
+#endif
+#endif
+
   return rasterizer;
 }
 
@@ -4207,15 +4216,9 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
 #endif
 
 
-int ctx_gradient_cache_valid = 0;
-
 void
 ctx_state_gradient_clear_stops (CtxState *state)
 {
-//#if CTX_GRADIENT_CACHE
-//  ctx_gradient_cache_reset ();
-//#endif
-  ctx_gradient_cache_valid = 0;
   state->gradient.n_stops = 0;
 }
 

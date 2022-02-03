@@ -747,6 +747,14 @@ struct _CtxRasterizer
   int edges[CTX_MAX_EDGES]; // integer position in edge array
   CtxDrawlist edge_list;
 
+#if CTX_GRADIENTS
+#if CTX_GRADIENT_CACHE
+  int gradient_cache_valid;
+  uint8_t gradient_cache_u8[CTX_GRADIENT_CACHE_ELEMENTS][4];
+  int gradient_cache_elements;
+#endif
+#endif
+
 #if CTX_ENABLE_CLIP
   CtxBuffer *clip_buffer;
 #endif
