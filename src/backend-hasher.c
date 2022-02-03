@@ -212,8 +212,8 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         CtxIntRectangle shape_rect = {
           (int)(rasterizer->col_min / CTX_SUBDIV - 2),
           (int)(rasterizer->scan_min / aa - 2),
-          (int)(3+(rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV),
-          (int)(3+(rasterizer->scan_max - rasterizer->scan_min + 1) / aa)
+          (int)(3+(rasterizer->col_max - rasterizer->col_min + CTX_SUBDIV-1) / CTX_SUBDIV),
+          (int)(3+(rasterizer->scan_max - rasterizer->scan_min + aa-1) / aa)
         };
 
         hash ^= (rasterizer->state->gstate.fill_rule * 23);
