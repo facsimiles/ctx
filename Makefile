@@ -128,10 +128,10 @@ ctx-wasm.pc: Makefile
 	@echo 'apiversion=0.0' >> $@
 	@echo '' >> $@
 	@echo 'Name: ctx' >> $@
-	@echo 'Description: ctx vector graphics' >> $@
+	@echo 'Description: ctx vector graphics - wasm target' >> $@
 	@echo 'Version: 0.0.0' >> $@
 	@echo 'Libs: -Wl,--lto-O3 ' >> $@
-	@echo 'Cflags: -I$${includedir} -DCTX_IMPLEMENTATION -flto -O3 -msimd128 -ftree-vectorize -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc' -s ASYNCIFY >> $@
+	@echo 'Cflags: -I$${includedir} -DCTX_IMPLEMENTATION -flto -O3 -msimd128 -ftree-vectorize -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc' >> $@
 
 install: ctx libctx.so ctx.h ctx.pc ctx-wasm.pc
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin ctx

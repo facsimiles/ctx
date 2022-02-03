@@ -2362,7 +2362,7 @@ itk_iteration (double time, void *data)
     }
 
     ctx_handle_events (ctx);
-    return ret_val == 0;
+    return ret_val;
 }
 
 #ifdef EMSCRIPTEN
@@ -2375,11 +2375,11 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
   ITK  *itk = itk_new (ctx);
   itk->ui_fun = ui_fun;
   itk->ui_data = ui_data;
-  int   ret_val = 0;
+  int   ret_val = 1;
 
 #ifdef EMSCRIPTEN
 #ifdef ASYNCIFY
-  while (!ctx_has_quit (ctx) && (ret_val == 0))
+  while (!ctx_has_quit (ctx) && (ret_val == 1))
   {
     ret_val = itk_iteration (0.0, itk);
   }
@@ -2388,7 +2388,7 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
   return NULL;
 #endif
 #else
-  while (!ctx_has_quit (ctx) && (ret_val == 0))
+  while (!ctx_has_quit (ctx) && (ret_val == 1))
   {
     ret_val = itk_iteration (0.0, itk);
   }
