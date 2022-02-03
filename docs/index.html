@@ -47,18 +47,22 @@
       management ctx scales to meet <a href='https://gegl.org/'>GEGL</a> and <a
       href='https://www.gimp.org.'>GIMP</a>s needs.</p>
 
-      <p>Applications can be directly written using ctx as a library handling
-      events and multithreaded rendering/display of the pixels. The same API
-      can also be used for writing applications that run inside the
-      <a href='terminal/'>ctx terminal</a>, which provides escape sequences
-      that enable drawing 2D vector graphics both inline, and for full-window
-      applications taking over the terminal using the <a href='protocol/'>ctx
-      protocol</a>.</p>
+      <p>Applications can be written using only the rasterzier or also using
+      higher level abastracitons handling framebuffer creation, event handling
+      and multithreaded rendering.
+      The same API can also be used for writing applications that run inside
+      the <a href='terminal/'>ctx terminal</a>, which provides escape sequences
+              that enable drawing 2D vector graphics both inline, and for
+              full-window applications taking over the terminal using the <a
+                      href='protocol/'>ctx protocol</a>, or even on webpages
+      using webassembly, for now single threaded - and without the potential
+      acceleration through reuse of the rasterizer of the HTML5 Canvas.</p>
 
       <!--<img style='max-width:100%' alt='constant-z rescuing the sixels far far away, tolerance breaking down near framebuffer.' src='perspective.png'/>
       -->
 
 
+      <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
 
       <p>The ctx renderer is written in portable C, without
       inline assembly or SIMD intrinsics - but is still fast (and can make good
@@ -69,23 +73,10 @@
       that are using explicit SIMD like SSE2/AVX/Neon for compositing. 
       </p>
 
-      <p>Programs using the <a href='sdk/'>ctx SDK</a> are
-      able to run as clients of the ctx terminal/other ctx
-      applications or can run directly on top of SDL2, NetBSD framebuffer,
-      linux framebuffer, KMS (tested with linux and OpenBSD) and alsa. When
-              using these backends there is additional <a
-              href='caching-and-threading/'>caching and
-              threading</a> that helps boost performance.
-      </p>
 
-      <p>Below is a ctx running in WASM, using WASM simd, with rendering
-      happening in the main thread. Directly proxying to the actual canvas
-      or even webgl would be possible, while preserving platform
-      independent calling in C code.</p>
       <canvas style='max-width:100%' width='640' height='480' id='c'>
       </canvas>
 
-      <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
 
       <!--
 good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
