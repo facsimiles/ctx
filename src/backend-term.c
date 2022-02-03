@@ -782,6 +782,13 @@ inline static void ctx_term_process (Ctx *ctx,
   }
 #endif
 
+  /* we need to interpret state related things ourself to be able to respond to
+   * queries.
+   */
+  ctx_interpret_style (&ctx->state, &command->entry, ctx);
+  ctx_interpret_transforms (&ctx->state, &command->entry, ctx);
+  ctx_interpret_pos (&ctx->state, &command->entry, ctx);
+
   /* directly forward */
   ctx_process (term->host, &command->entry);
 }
@@ -953,8 +960,8 @@ Ctx *ctx_new_term (int width, int height)
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
   ctx_set_size (ctx, width, height);
   ctx_font_size (ctx, ctx_term_ch); 
+  ctx_font_size (term->host, ctx_term_ch); 
 #endif
-
 
   return ctx;
 }
