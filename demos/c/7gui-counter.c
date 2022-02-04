@@ -12,7 +12,7 @@ static int counter_ui (ITK  *itk, void *data)
     value++;
 
   itk_panel_end (itk);
-  return 0;
+  return 1;
 }
 
 int main (int argc, char **argv)

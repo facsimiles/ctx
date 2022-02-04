@@ -24,7 +24,7 @@ static int booker_ui (ITK *itk, void *data)
   }
 
   itk_panel_end (itk);
-  return 0;
+  return 1;
 }
 
 int main (int argc, char **argv)

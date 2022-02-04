@@ -2347,7 +2347,7 @@ itk_iteration (double time, void *data)
 {
   ITK *itk = (ITK*)data;
   Ctx *ctx = itk->ctx;
-  int   ret_val = 0;
+  int   ret_val = 1;
 
     if (ctx_need_redraw (ctx))
     {

@@ -35,7 +35,7 @@ static int temperature_ui (ITK *itk, void *data)
   itk_entry (itk, "celcius", "C", celcius_val, 20-1, commit_celcius, NULL);
   itk_entry (itk, "fahrenheit", "F", fahrenheit_val, 20-1, commit_fahrenheit, NULL);
   itk_panel_end (itk);
-  return 0;
+  return 1;
 }
 
 int main (int argc, char **argv)

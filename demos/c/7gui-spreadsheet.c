@@ -788,7 +788,7 @@ static int spreadsheet_ui (ITK  *itk, void *data)
   itk->y  = saved_y;
 
   itk_panel_end (itk);
-  return 0;
+  return 1;
 }
 
 int main (int argc, char **argv)

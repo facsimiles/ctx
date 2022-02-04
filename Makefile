@@ -5,7 +5,7 @@ PREFIX  ?= /usr/local
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
-all: build.conf ctx-wasm.pc ctx.pc libctx.so ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
+all: build.conf ctx-wasm.pc ctx-wasm-simd.pc ctx.pc libctx.so ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
 include build.conf
 
 CFLAGS_warnings= -Wall \
@@ -131,12 +131,26 @@ ctx-wasm.pc: Makefile
 	@echo 'Description: ctx vector graphics - wasm target' >> $@
 	@echo 'Version: 0.0.0' >> $@
 	@echo 'Libs: -Wl,--lto-O3 ' >> $@
-	@echo 'Cflags: -I$${includedir} -DCTX_IMPLEMENTATION -flto -O3 -msimd128 -ftree-vectorize -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc' >> $@
+	@echo 'Cflags: -I$${includedir} -DCTX_IMPLEMENTATION -flto -O3 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc' >> $@
 
-install: ctx libctx.so ctx.h ctx.pc ctx-wasm.pc
+ctx-wasm-simd.pc: Makefile
+	@echo "prefix=$(PREFIX)" > $@
+	@echo 'exec_prefix=$${prefix}' >> $@
+	@echo 'libdir=$${prefix}/lib' >> $@
+	@echo 'includedir=$${prefix}/include' >> $@
+	@echo 'apiversion=0.0' >> $@
+	@echo '' >> $@
+	@echo 'Name: ctx' >> $@
+	@echo 'Description: ctx vector graphics - wasm target' >> $@
+	@echo 'Version: 0.0.0' >> $@
+	@echo 'Libs: -Wl,--lto-O3 ' >> $@
+	@echo 'Cflags: -msimd128 -ftree-vectorize -I$${includedir} -DCTX_IMPLEMENTATION -flto -O3 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc' >> $@
+
+install: ctx libctx.so ctx.h ctx.pc ctx-wasm.pc ctx-wasm-simd.pc
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin ctx
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx.pc
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx-wasm.pc
+	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx-wasm-simd.pc
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/include ctx.h
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib libctx.so
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin tools/ctx-audioplayer
@@ -149,6 +163,7 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/lib/libctx.so
 	rm -rf $(DESTDIR)$(PREFIX)/lib/pkgconfig/ctx.pc
 	rm -rf $(DESTDIR)$(PREFIX)/lib/pkgconfig/ctx-wasm.pc
+	rm -rf $(DESTDIR)$(PREFIX)/lib/pkgconfig/ctx-wasm-simd.pc
 	rm -rf $(DESTDIR)$(PREFIX)/include/ctx.h
 	rm -f $(DESTDIR)$(PREFIX)/share/appdata/graphics.ctx.terminal.appdata.xml
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/graphics.ctx.terminal.desktop
@@ -157,7 +172,7 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings)
 
-ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf media-handlers/itk.h
 	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf

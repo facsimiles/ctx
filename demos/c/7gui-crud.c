@@ -115,7 +115,7 @@ static int crud_ui (ITK *itk, int frame_no)
 
   itk->width*=2;
   itk_panel_end (itk);
-  return 0;
+  return 1;
 }
 
 int main (int argc, char **argv)

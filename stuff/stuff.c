@@ -5746,7 +5746,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_restore (ctx);
   }
 
-  return 0;
+  return 1;
 }
 
 int stuff_main (int argc, char **argv)
