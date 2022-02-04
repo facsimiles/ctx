@@ -1189,7 +1189,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   const int bheight = buffer->height;
   int i = 0;
 
-  if (dy == 0.0f && dx > 0.0f)
+  if (dy == 0.0f && dx > 0.0f) /* scale only */
   {
     if (!(y >= 0 && y < bheight))
     {
@@ -1227,7 +1227,6 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
         break;
     }
 
-  int loaded = -4;
   uint32_t s0_ga = 0, s0_rb = 0, s1_ga = 0, s1_rb = 0;
  
   int v = yi >> 16;
@@ -1268,24 +1267,13 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   }
   else
   {
+    // can be made faster by ensuring loop always is valid
     for (; (i < count) && (u< bwidth); i ++)
     {
-      if (loaded + 1 == u)
-      {
-        s0_ga = s1_ga;
-        s0_rb = s1_rb;
-        ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
-        src0 ++;
-        src1 ++;
-      }
-      else if (loaded != u)
-      {
-        src0 = data + u;
-        src1 = ndata + u;
-        ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s0_ga, &s0_rb);
-        ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
-      }
-      loaded = u;
+      src0 = data + u;
+      src1 = ndata + u;
+      ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s0_ga, &s0_rb);
+      ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
       ((uint32_t*)(&rgba[0]))[0] = 
         ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, ((xi>>8)&0xff));
       xi += xi_delta;
