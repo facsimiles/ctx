@@ -517,8 +517,8 @@ static int spreadsheet_ui (ITK  *itk, void *data)
   }
 
   itk_panel_start (itk, "7gui - Cells",
-                  ctx_width(ctx)*0.2, 0,
-                  ctx_width (ctx) * 0.8, ctx_height (ctx));
+                  0, 0,
+                  ctx_width (ctx), ctx_height (ctx));
 
   float saved_x = itk->x;
   float saved_x0 = itk->x0;
