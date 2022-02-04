@@ -1210,8 +1210,8 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     x+=1; // XXX off by one somewhere? ,, needed for alignment with nearest
 
     uint32_t *data = ((uint32_t*)buffer->data);
-    uint32_t yi = y * 65536;
-    uint32_t xi = x * 65536;
+    int32_t yi = y * 65536;
+    int32_t xi = x * 65536;
     int xi_delta = dx * 65536;
 
     for (i= 0; i < count; i ++)
@@ -1293,18 +1293,46 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       u = xi >> 16;
     }
   }
+  for (; i < count; i ++)
+  {
+    *((uint32_t*)(rgba))= 0;
+    rgba += 4;
+  }
 
   }
   else // //
   {
     uint32_t *data = ((uint32_t*)buffer->data);
+
+    i = 0;
+  int yi_delta = dy * 65536;
+  int xi_delta = dx * 65536;
+  int32_t yi = y * 65536;
+  int32_t xi = x * 65536;
+    {
+    int32_t u1 = xi + xi_delta* (count-1);
+    int32_t v1 = yi + yi_delta* (count-1);
+    uint32_t *edst = ((uint32_t*)out)+(count-1);
+    for (; i < count; )
+    {
+      if (u1 <0 || v1 < 0 || u1 +65536 >= (bwidth<<16) || v1 +65536 >= (bheight<<16))
+      {
+        *edst-- = 0;
+        count --;
+        u1 -= xi_delta;
+        v1 -= yi_delta;
+      }
+      else break;
+    }
+    }
+
     for (i= 0; i < count; i ++)
     {
       int u = x;
       int v = y;
       int ut = x + 1.5;
       int vt = y + 1.5;
-      if ( ut  <= 0 || vt  <= 0 || u >= buffer->width || v >= buffer->height)
+      if ( ut  <= 0 || vt  <= 0 || u+1 >= bwidth-1 || v+1 >= bheight-1)
       {
         *((uint32_t*)(rgba))= 0;
       }
@@ -1312,14 +1340,11 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
         break;
       x += dx;
       y += dy;
+      xi += xi_delta;
+      yi += yi_delta;
       rgba += 4;
     }
 
-  uint32_t yi = y * 65536;
-  uint32_t xi = x * 65536;
-
-  int yi_delta = dy * 65536;
-  int xi_delta = dx * 65536;
 
   int loaded = -4;
   uint32_t *src00=data;
@@ -1331,13 +1356,8 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   int v = yi >> 16;
   int offset = bwidth * v + u;
 
-  while (i < count &&
-         !(u >= buffer->width ||
-          v  <= -65536 ||
-          u  <= -65536 ||
-          v >= buffer->height))
+  while (i < count)
   {
-#if 1
   if (CTX_UNLIKELY(u < 0 || v < 0)) // default to next sample down and to right
   {
       int got_prev_pix = (u >= 0);
@@ -1347,16 +1367,14 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       src01 = src11 - bwidth * got_prev_row;
       src00 = src10 - bwidth * got_prev_row;
   }
-#endif
-#if 1
   else if (loaded + 1 == offset)
   {
       src00++;
       src01++;
       src10++;
       src11++;
+      loaded = offset;
   }
-#endif
   else if (loaded != offset)
   {
       int next_row = ( v + 1 < bheight) * bwidth;
@@ -1365,9 +1383,10 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       src01 = src00 + next_pix;
       src10 = src00 + next_row;
       src11 = src01 + next_row;
+      loaded = offset;
   }
-    loaded = offset;
     ((uint32_t*)(&rgba[0]))[0] = ctx_bi_RGBA8 (*src00,*src01,*src10,*src11, (xi>>8),(yi>>8)); // the argument type does the & 0xff
+                                                                                              //
     xi += xi_delta;
     yi += yi_delta;
     rgba += 4;
@@ -1379,11 +1398,6 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   }
   }
 
-  for (; i < count; i ++)
-  {
-    *((uint32_t*)(rgba))= 0;
-    rgba += 4;
-  }
 
   ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
