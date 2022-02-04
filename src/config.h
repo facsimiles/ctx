@@ -206,7 +206,7 @@
 #endif
 
 #ifndef CTX_MIN_EDGE_LIST_SIZE
-#define CTX_MIN_EDGE_LIST_SIZE   2048
+#define CTX_MIN_EDGE_LIST_SIZE   2048*2
 #endif
 
 #ifndef CTX_RASTERIZER_AA

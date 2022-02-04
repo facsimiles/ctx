@@ -459,6 +459,8 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  int   memory_budget,
                  void *scratch_fb,
                  int flags);
+void ctx_cb_set_flags (Ctx *ctx, int flags);
+int ctx_cb_get_flags  (Ctx *ctx);
 
 #if CTX_TFT_ESPI
 Ctx *ctx_new_tft (TFT_eSPI *tft, int memory_budget, void *scratch_fb, int flags);

@@ -21,6 +21,18 @@ typedef struct CtxCbBackend
   void   *user_data;
 } CtxCbBackend;
 
+void ctx_cb_set_flags (Ctx *ctx, int flags)
+{
+  CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
+  backend_cb->flags = flags;
+}
+
+int ctx_cb_get_flags (Ctx *ctx)
+{
+  CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
+  return backend_cb->flags;
+}
+
 static void ctx_render_cb (Ctx *ctx, 
                             int x0, int y0,
                             int x1, int y1)
