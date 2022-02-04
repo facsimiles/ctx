@@ -1287,15 +1287,15 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   }
 
   }
-  else // //
+  else // contains rotation
   {
     uint32_t *data = ((uint32_t*)buffer->data);
 
     i = 0;
-  int yi_delta = dy * 65536;
-  int xi_delta = dx * 65536;
-  int32_t yi = y * 65536;
-  int32_t xi = x * 65536;
+    int yi_delta = dy * 65536;
+    int xi_delta = dx * 65536;
+    int32_t yi = y * 65536;
+    int32_t xi = x * 65536;
     {
     int32_t u1 = xi + xi_delta* (count-1);
     int32_t v1 = yi + yi_delta* (count-1);
@@ -1353,7 +1353,9 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       src10 = src11 - got_prev_pix;
       src01 = src11 - bwidth * got_prev_row;
       src00 = src10 - bwidth * got_prev_row;
+      loaded = -4;
   }
+#if 1
   else if (loaded + 1 == offset)
   {
       src00++;
@@ -1362,6 +1364,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       src11++;
       loaded = offset;
   }
+#endif
   else if (loaded != offset)
   {
       int next_row = ( v + 1 < bheight) * bwidth;
