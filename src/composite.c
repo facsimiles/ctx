@@ -1177,8 +1177,9 @@ static void
 ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
                                    float x,
                                    float y,
-                                   void *out, int count, float dx, float dy)
+                                   void *out, int icount, float dx, float dy)
 {
+  unsigned int count = icount;
   uint8_t *rgba = (uint8_t *) out;
   float ox = (x-(int)(x));
   float oy = (y-(int)(y));
@@ -1187,7 +1188,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   const int bwidth = buffer->width;
   const int bheight = buffer->height;
-  int i = 0;
+  unsigned int i = 0;
 
   if (dy == 0.0f && dx > 0.0f) /* scale only */
   {
@@ -1199,8 +1200,8 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
       return;
     }
 
-    if ((dx > 0.99f && dx < 1.01f && 
-         ox < 0.01 && oy < 0.01))
+    if (ctx_fabsf(dx-1.0f) < 0.01f &&
+        ox < 0.01f && oy < 0.01f)
     {
       /* TODO: this could have been rigged up in composite_setup */
       ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer,
@@ -1240,7 +1241,6 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 
   uint32_t *src0 = data, *src1 = ndata;
 
-
   if (xi_delta == 65536 && u < bwidth -1)
   {
     int du = (xi >> 8) & 0xff;
@@ -1249,7 +1249,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
     src1 = ndata + u;
     ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s1_ga, &s1_rb);
 
-    int limit = bwidth-u;
+    unsigned int limit = bwidth-u;
     limit = ctx_mini(count,limit);
 
     for (; i < limit; i ++)
@@ -1267,7 +1267,6 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   }
   else
   {
-    // can be made faster by ensuring loop always is valid
     for (; (i < count) && (u< bwidth); i ++)
     {
       src0 = data + u;
