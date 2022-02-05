@@ -5561,8 +5561,7 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rast
   float ox = (u0-(int)(u0));
   float oy = (v0-(int)(v0));
 
-  if ((ud > 0.99f && ud < 1.01f &&
-         ox < 0.01 && oy < 0.01))
+  if (ctx_fabsf (1.0f-ud) < 0.1f && ox < 0.01 && oy < 0.01)
   {
     ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1, y1, copy);
     return;
@@ -5664,7 +5663,7 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rast
              if (u >= 0 && u < bwidth)
                src0 = data + u + bwidth * (v);
              if (u + 1>= 0 && u + 1 < bwidth)
-               src1 = data + (u+1) + bwidth * (v);
+               src1 = src0 + 1;
            }
          }
          ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[top][xa], &rb_row[top][xa+1]);
