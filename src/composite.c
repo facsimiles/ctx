@@ -1273,7 +1273,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
 
   uint32_t *src0 = data, *src1 = ndata;
 
-  if (xi_delta == 65536 && u < bwidth -1)
+  if (xi_delta == 65536)
   {
     uint32_t s1_ga = 0, s1_rb = 0;
     int du = (xi >> 8) & 0xff;
@@ -1281,9 +1281,6 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
     src0 = data + u;
     src1 = ndata + u;
     ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s1_ga, &s1_rb);
-
-    //unsigned int limit = bwidth-u;
-    //limit = ctx_mini(count,limit);
 
     for (; i < count; i ++)
     {
@@ -1301,18 +1298,32 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
   }
   else
   {
+    uint32_t s0_ga = 0, s1_ga = 0, s0_rb = 0, s1_rb = 0;
+    int prev_u = -1000;
     for (; (i < count); i++)
     {
-      uint32_t s0_ga, s1_ga, s0_rb, s1_rb;
       src0 = data + u;
       src1 = ndata + u;
-      ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s0_ga, &s0_rb);
-      ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
+      if (prev_u == u-1)
+      {
+        s0_ga = s1_ga;
+        s0_rb = s1_rb;
+        ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
+      }
+      else if (prev_u == u)
+      {
+      }
+      else
+      {
+        ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s0_ga, &s0_rb);
+        ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
+      }
       ((uint32_t*)(&rgba[0]))[0] = 
         ctx_RGBA8_associate_global_alpha_u32 (
                 ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, ((xi>>8)&0xff)), global_alpha_u8);
       xi += xi_delta;
       rgba += 4;
+      prev_u = u;
       u = xi >> 16;
     }
   }
@@ -1423,7 +1434,7 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
 {
   unsigned int count = icount;
 
-  if (dy == 0.0f && dx > 0.0f)
+  if (dy == 0.0f && dx > 0.0f) // add && 0 and check if generic wins more..
   {
     ctx_fragment_image_rgba8_RGBA8_bi_scale (rasterizer, x, y, out, count, dx, dy);
   }
