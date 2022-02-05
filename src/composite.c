@@ -37,6 +37,25 @@ ctx_RGBA8_associate_alpha (uint8_t *u8)
 #endif
 }
 
+inline static void
+ctx_RGBA8_associate_global_alpha (uint8_t *u8, uint8_t global_alpha)
+{
+  uint32_t val = *((uint32_t*)(u8));
+  uint32_t a = (u8[3] * global_alpha + 255) >> 8;
+  uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+  uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+  *((uint32_t*)(u8)) = g|rb|(a << CTX_RGBA8_A_SHIFT);
+}
+
+inline static uint32_t
+ctx_RGBA8_associate_global_alpha_u32 (uint32_t val, uint8_t global_alpha)
+{
+  uint32_t a = ((val>>24) * global_alpha + 255) >> 8;
+  uint32_t g = (((val & CTX_RGBA8_G_MASK) * a) >> 8) & CTX_RGBA8_G_MASK;
+  uint32_t rb =(((val & CTX_RGBA8_RB_MASK) * a) >> 8) & CTX_RGBA8_RB_MASK;
+  return  g|rb|(a << CTX_RGBA8_A_SHIFT);
+}
+
 CTX_INLINE static void
 ctx_RGBA8_associate_alpha_probably_opaque (uint8_t *u8)
 {
@@ -105,6 +124,7 @@ CTX_INLINE static void
 _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, uint8_t *rgba)
 {
   float v = x;
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   CtxGradient *g = &rasterizer->state->gradient;
   if (v < 0) { v = 0; }
   if (v > 1) { v = 1; }
@@ -150,6 +170,7 @@ _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, ui
       for (int c = 0; c < 4; c++)
         { rgba[c] = ctx_lerp_u8 (stop_rgba[c], next_rgba[c], dx); }
 #endif
+      rgba[3]=(rgba[3]*global_alpha_u8+255)>>8;
       ctx_RGBA8_associate_alpha (rgba);
       return;
     }
@@ -164,6 +185,7 @@ _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, ui
     rgba[0] = rgba[2];
     rgba[2] = tmp;
   }
+  rgba[3]=(rgba[3]*global_alpha_u8+255)>>8;
   ctx_RGBA8_associate_alpha (rgba);
 }
 
@@ -295,6 +317,7 @@ ctx_fragment_gradient_1d_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, ui
 CTX_INLINE static void
 ctx_fragment_gradient_1d_RGBAF (CtxRasterizer *rasterizer, float v, float y, float *rgba)
 {
+  float global_alpha = rasterizer->state->gstate.global_alpha_f;
   CtxGradient *g = &rasterizer->state->gradient;
   if (v < 0) { v = 0; }
   if (v > 1) { v = 1; }
@@ -334,6 +357,7 @@ ctx_fragment_gradient_1d_RGBAF (CtxRasterizer *rasterizer, float v, float y, flo
       int dx = (v - stop->pos) / (next_stop->pos - stop->pos);
       for (int c = 0; c < 4; c++)
         { rgba[c] = ctx_lerpf (stop_rgba[c], next_rgba[c], dx); }
+      rgba[3] *= global_alpha;
       return;
     }
   else
@@ -341,6 +365,7 @@ ctx_fragment_gradient_1d_RGBAF (CtxRasterizer *rasterizer, float v, float y, flo
       color = & (g->stops[g->n_stops-1].color);
     }
   ctx_color_get_rgba (rasterizer->state, color, rgba);
+  rgba[3] *= global_alpha;
 }
 #endif
 
@@ -685,8 +710,7 @@ ctx_RGBA8_apply_global_alpha_and_associate (CtxRasterizer *rasterizer,
   {
     for (int i = 0; i < count; i++)
     {
-      rgba[3] = (rgba[3] * global_alpha_u8) / 255;
-      ctx_RGBA8_associate_alpha (rgba);
+      ctx_RGBA8_associate_global_alpha (rgba, global_alpha_u8);
       rgba += 4;
     }
   }
@@ -1180,6 +1204,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
                                          float y,
                                          void *out, unsigned int count, float dx, float dy)
 {
+    uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
     uint8_t *rgba = (uint8_t *) out;
     float ox = (x-(int)(x));
     float oy = (y-(int)(y));
@@ -1211,6 +1236,18 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
     int32_t xi = x * 65536;
     int xi_delta = dx * 65536;
 
+    int32_t u1 = xi + xi_delta* (count-1);
+    uint32_t *edst = ((uint32_t*)out)+(count-1);
+    for (; i < count; )
+    {
+      if (u1 <0 || u1 +65536 >= (bwidth<<16))
+    {
+      *edst-- = 0;
+      count --;
+      u1 -= xi_delta;
+    }
+    else break;
+  }
     for (i= 0; i < count; i ++)
     {
       int u = xi >> 16;
@@ -1245,16 +1282,17 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
     src1 = ndata + u;
     ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s1_ga, &s1_rb);
 
-    unsigned int limit = bwidth-u;
-    limit = ctx_mini(count,limit);
+    //unsigned int limit = bwidth-u;
+    //limit = ctx_mini(count,limit);
 
-    for (; i < limit; i ++)
+    for (; i < count; i ++)
     {
       uint32_t s0_ga = s1_ga;
       uint32_t s0_rb = s1_rb;
       ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
       ((uint32_t*)(&rgba[0]))[0] = 
-      ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, du);
+        ctx_RGBA8_associate_global_alpha_u32 (
+                ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, du), global_alpha_u8);
       rgba += 4;
       u++;
       src0 ++;
@@ -1263,7 +1301,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
   }
   else
   {
-    for (; (i < count) && (u< bwidth); i ++)
+    for (; (i < count); i++)
     {
       uint32_t s0_ga, s1_ga, s0_rb, s1_rb;
       src0 = data + u;
@@ -1271,18 +1309,13 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
       ctx_lerp_RGBA8_split (src0[0],src1[0], dv, &s0_ga, &s0_rb);
       ctx_lerp_RGBA8_split (src0[1],src1[1], dv, &s1_ga, &s1_rb);
       ((uint32_t*)(&rgba[0]))[0] = 
-        ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, ((xi>>8)&0xff));
+        ctx_RGBA8_associate_global_alpha_u32 (
+                ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, ((xi>>8)&0xff)), global_alpha_u8);
       xi += xi_delta;
       rgba += 4;
       u = xi >> 16;
     }
   }
-  for (; i < count; i ++)
-  {
-    *((uint32_t*)(rgba))= 0;
-    rgba += 4;
-  }
-  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
 
 static inline void
@@ -1291,6 +1324,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
                                            float y,
                                            void *out, unsigned int count, float dx, float dy)
 {
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   uint8_t *rgba = (uint8_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
@@ -1378,8 +1412,9 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
       src11 = src01 + next_row;
       loaded = offset;
     }
-    ((uint32_t*)(&rgba[0]))[0] = ctx_bi_RGBA8 (*src00,*src01,*src10,*src11, (xi>>8),(yi>>8)); // the argument type does the & 0xff
-                                                                                            //
+    ((uint32_t*)(&rgba[0]))[0] =
+        ctx_RGBA8_associate_global_alpha_u32 (
+            ctx_bi_RGBA8 (*src00,*src01,*src10,*src11, (xi>>8),(yi>>8)), global_alpha_u8);
     xi += xi_delta;
     yi += yi_delta;
     rgba += 4;
@@ -1389,7 +1424,6 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
     offset = bwidth * v + u;
     i++;
   }
-  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
 
 static void
@@ -1403,10 +1437,11 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
   {
     ctx_fragment_image_rgba8_RGBA8_bi_scale (rasterizer, x, y, out, count, dx, dy);
   }
-  else // contains rotation
+  else
   {
     ctx_fragment_image_rgba8_RGBA8_bi_generic (rasterizer, x, y, out, count, dx, dy);
   }
+  // extend with affine vs generic (that should be perspective)
 }
 #endif
 
