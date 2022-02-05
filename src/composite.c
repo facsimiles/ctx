@@ -482,7 +482,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, void *out
         rgba[2] = tmp;
       }
     }
-    ctx_RGBA8_associate_alpha_probably_opaque (rgba); // XXX: really?
+    ctx_RGBA8_associate_alpha_probably_opaque (rgba);
     rgba += 4;
     x += dx;
     y += dy;
@@ -1370,7 +1370,6 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
     rgba += 4;
   }
 
-  int loaded = -4;
   uint32_t *src00=data;
   uint32_t *src01=data;
   uint32_t *src10=data;
@@ -1380,37 +1379,28 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
   int v = yi >> 16;
   int offset = bwidth * v + u;
 
+  const int32_t redge = bwidth-1;
+  const int32_t bedge = bheight-1;
+
   while (i < count)
   {
-   if (CTX_UNLIKELY(u < 0 || v < 0)) // default to next sample down and to right
-   {
+    if (CTX_UNLIKELY(u < 0 || v < 0)) // default to next sample down and to right
+    {
       int got_prev_pix = (u >= 0);
       int got_prev_row = (v>=0);
       src11 = data  + offset + bwidth + 1;
       src10 = src11 - got_prev_pix;
       src01 = src11 - bwidth * got_prev_row;
       src00 = src10 - bwidth * got_prev_row;
-      loaded = -4;
-   }
-#if 1
-   else if (loaded + 1 == offset)
-   {
-      src00++;
-      src01++;
-      src10++;
-      src11++;
-      loaded = offset;
-   }
-#endif
-   else if (loaded != offset)
-   {
-      int next_row = ( v + 1 < bheight) * bwidth;
-      int next_pix = (u + 1 < bwidth);
+    }
+    else 
+    {
+      int next_row = (v < bedge) * bwidth;
+      int next_pix = (u < redge);
       src00 = data  + offset;
       src01 = src00 + next_pix;
       src10 = src00 + next_row;
       src11 = src01 + next_row;
-      loaded = offset;
     }
     ((uint32_t*)(&rgba[0]))[0] =
         ctx_RGBA8_associate_global_alpha_u32 (
