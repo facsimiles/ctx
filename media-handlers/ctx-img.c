@@ -134,6 +134,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       //ctx_rectangle (ctx, 0,0, stb_w, stb_h);
       //ctx_rgba (ctx, 1,0,0,0.25);
       //ctx_stroke (ctx);
+      ctx_logo (ctx, stb_w * 0.5, stb_h * 0.5, stb_h * 0.4);
       ctx_restore (ctx);
 
 #else

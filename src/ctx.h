@@ -52,9 +52,9 @@ typedef struct _Ctx            Ctx;
 
 /**
  * ctx_new:
- * width: with in device units
- * height: height in device units
- * backend: backend to use
+ * @width: with in device units
+ * @height: height in device units
+ * @backend: backend to use
  *
  *   valid values are:
  *     NULL/"auto", "drawlist", "sdl", "term", "ctx" the strings are
@@ -66,6 +66,7 @@ typedef struct _Ctx            Ctx;
  */
 Ctx *ctx_new (int width, int height, const char *backend);
 
+
 /**
  * ctx_new_drawlist:
  *
@@ -75,7 +76,17 @@ Ctx *ctx_new (int width, int height, const char *backend);
  */
 Ctx * ctx_new_drawlist (int width, int height);
 
-void  ctx_drawlist_clear (Ctx *ctx);
+typedef struct _CtxEntry CtxEntry;
+
+
+/**
+ * ctx_get_drawlist:
+ * @ctx: a ctx context.
+ * @count: return location for length of drawlist
+ *
+ * Returns a read only pointer to the first entry of the contexts drawlist.
+ */
+const CtxEntry *ctx_get_drawlist (Ctx *ctx, int *count);
 
 /**
  * ctx_new_for_drawlist:
@@ -86,10 +97,30 @@ Ctx *ctx_new_for_drawlist   (int    width,
                              int    height,
                              void  *data,
                              size_t length);
+
+/**
+ * ctx_set_drawlist:
+ *
+ * Replaces the drawlist of a ctx context with a new one.  the length of the
+ * data is expected to be length * 9;
+ */
 int  ctx_set_drawlist       (Ctx *ctx, void *data, int length);
-typedef struct _CtxEntry CtxEntry;
+
+/**
+ * ctx_append_drawlist:
+ *
+ * Appends the commands in a binary drawlist, the length of the data is expected to
+ * be length * 9;
+ */
 int  ctx_append_drawlist    (Ctx *ctx, void *data, int length);
-const CtxEntry *ctx_get_drawlist (Ctx *ctx, int *count);
+
+/**
+ * ctx_drawlist_clear:
+ *
+ * Clears the drawlist associated with the context.
+ */
+void  ctx_drawlist_clear (Ctx *ctx);
+
 
 /**
  * ctx_free:
@@ -97,106 +128,337 @@ const CtxEntry *ctx_get_drawlist (Ctx *ctx, int *count);
  */
 void ctx_free (Ctx *ctx);
 
-/* clears and resets a context */
+/**
+ * ctx_reset:
+ *
+ * Prepare for rendering a new frame, this clears the drawlist and initializes
+ * the state.
+ *
+ */
 void ctx_reset          (Ctx *ctx);
-void ctx_begin_path     (Ctx *ctx);
-void ctx_save           (Ctx *ctx);
-void ctx_restore        (Ctx *ctx);
-void ctx_start_group    (Ctx *ctx);
-void ctx_end_group      (Ctx *ctx);
-void ctx_clip           (Ctx *ctx);
-void ctx_identity       (Ctx *ctx);
-void ctx_rotate         (Ctx *ctx, float x);
 
+/**
+ * ctx_flush:
+ *
+ * We're done rendering a frame, this does nothing on a context created for a framebuffer, there
+ * the drawing commands are immediate.
+ */
+void ctx_flush          (Ctx *ctx);
+
+
+/**
+ * ctx_begin_path:
+ *
+ * Clears the current path if any.
+ */
+void ctx_begin_path     (Ctx *ctx);
+
+/**
+ * ctx_save:
+ *
+ * Stores the transform, clipping state, fill and stroke sources, font size,
+ * stroking and dashing options.
+ */
+void ctx_save           (Ctx *ctx);
+
+/**
+ * ctx_restore:
+ *
+ * Restores the state previously saved with ctx_save, calls to
+ * ctx_save/ctx_restore should be balanced.
+ */
+void ctx_restore        (Ctx *ctx);
+
+/**
+ * ctx_start_group:
+ *
+ * Start a compositing group.
+ *
+ */
+void ctx_start_group    (Ctx *ctx);
+
+/**
+ * ctx_end_group:
+ *
+ * End a compositing group, the global alpha, compositing mode and blend mode
+ * set before this call is used to apply the group.
+ */
+void ctx_end_group      (Ctx *ctx);
+
+/**
+ * ctx_clip:
+ *
+ * Use the current path as a clipping mask, subsequent draw calls are limited
+ * by the path. The only way to increase the visible area is to first call
+ * ctx_save and then later ctx_restore to undo the clip.
+ */
+void ctx_clip           (Ctx *ctx);
+
+
+/**
+ * ctx_image_smoothing:
+ *
+ * Set or unset bilinear / box filtering for textures, turning it off uses the
+ * faster nearest neighbor for all cases.
+ */
 void ctx_image_smoothing  (Ctx *ctx, int enabled);
 
 #define CTX_LINE_WIDTH_HAIRLINE -1000.0
 #define CTX_LINE_WIDTH_ALIASED  -1.0
 #define CTX_LINE_WIDTH_FAST     -1.0  /* aliased 1px wide line */
-void ctx_miter_limit (Ctx *ctx, float limit);
-void ctx_line_width       (Ctx *ctx, float x);
-void ctx_line_dash_offset (Ctx *ctx, float line_dash);
-void ctx_apply_transform (Ctx *ctx, float a, float b,
-                     float c, float d, 
-                     float e, float f, float g, float h, float i);
-void ctx_set_transform    (Ctx *ctx, float a, float b, float c, float d, float e, float f, float g, float h, float i);
-void  ctx_line_dash       (Ctx *ctx, float *dashes, int count);
-void  ctx_font_size       (Ctx *ctx, float x);
-void  ctx_font            (Ctx *ctx, const char *font);
-void  ctx_font_family     (Ctx *ctx, const char *font_family);
-void  ctx_scale           (Ctx *ctx, float x, float y);
-void  ctx_translate       (Ctx *ctx, float x, float y);
+
+
+
+/**
+ * ctx_line_to:
+ */
 void  ctx_line_to         (Ctx *ctx, float x, float y);
+/**
+ * ctx_move_to:
+ */
 void  ctx_move_to         (Ctx *ctx, float x, float y);
+/**
+ * ctx_curve_to:
+ */
 void  ctx_curve_to        (Ctx *ctx, float cx0, float cy0,
                            float cx1, float cy1,
                            float x, float y);
+/**
+ * ctx_quad_to:
+ */
 void  ctx_quad_to         (Ctx *ctx, float cx, float cy,
                            float x, float y);
+/**
+ * ctx_arc:
+ */
 void  ctx_arc             (Ctx  *ctx,
                            float x, float y,
                            float radius,
                            float angle1, float angle2,
                            int   direction);
+/**
+ * ctx_arc_to:
+ */
 void  ctx_arc_to          (Ctx *ctx, float x1, float y1,
                            float x2, float y2, float radius);
+/**
+ * ctx_rel_arc_to:
+ */
 void  ctx_rel_arc_to      (Ctx *ctx, float x1, float y1,
                            float x2, float y2, float radius);
+/**
+ * ctx_rectangle:
+ */
 void  ctx_rectangle       (Ctx *ctx,
                            float x0, float y0,
                            float w, float h);
+/**
+ * ctx_round_rectangle:
+ */
 void  ctx_round_rectangle (Ctx *ctx,
                            float x0, float y0,
                            float w, float h,
                            float radius);
+/**
+ * ctx_rel_line_to:
+ */
 void  ctx_rel_line_to     (Ctx *ctx,
                            float x, float y);
+/**
+ * ctx_rel_move_to:
+ */
 void  ctx_rel_move_to     (Ctx *ctx,
                            float x, float y);
+/**
+ * ctx_rel_curve_to:
+ */
 void  ctx_rel_curve_to    (Ctx *ctx,
                            float x0, float y0,
                            float x1, float y1,
                            float x2, float y2);
+/**
+ * ctx_rel_quad_to:
+ */
 void  ctx_rel_quad_to     (Ctx *ctx,
                            float cx, float cy,
                            float x, float y);
+/**
+ * ctx_close_path:
+ */
 void  ctx_close_path      (Ctx *ctx);
 
 
-typedef struct _CtxGlyph CtxGlyph;
-CtxGlyph *ctx_glyph_allocate (int n_glyphs);
-void gtx_glyph_free          (CtxGlyph *glyphs);
-int  ctx_glyph               (Ctx *ctx, uint32_t unichar, int stroke);
-void  ctx_glyphs             (Ctx        *ctx,
-                              CtxGlyph   *glyphs,
-                              int         n_glyphs);
-
-void  ctx_glyphs_stroke (Ctx       *ctx,
-                         CtxGlyph   *glyphs,
-                         int         n_glyphs);
-
-
-void ctx_preserve         (Ctx *ctx);
+/**
+ * ctx_fill:
+ */
 void ctx_fill             (Ctx *ctx);
+
+/**
+ * ctx_stroke:
+ */
 void ctx_stroke           (Ctx *ctx);
 
+/**
+ * ctx_preserve:
+ */
+void ctx_preserve         (Ctx *ctx);
+
+/**
+ * ctx_identity:
+ *
+ * Restore context to identity transform, NOTE: a bug makes this call currently
+ * breaks mult-threaded rendering when used; since the rendering threads are
+ * expecting an initial transform on top of the base identity.
+ */
+void ctx_identity       (Ctx *ctx);
+
+
+/**
+ * ctx_scale:
+ *
+ * Scales the user to device transform.
+ */
+void  ctx_scale           (Ctx *ctx, float x, float y);
+
+/**
+ * ctx_translate:
+ *
+ * Adds translation to the user to device transform.
+ */
+void  ctx_translate       (Ctx *ctx, float x, float y);
+
+/**
+ * ctx_rotate:
+ *
+ * Add rotatation to the user to device space transform.
+ */
+void ctx_rotate         (Ctx *ctx, float x);
+
+/**
+ * ctx_apply_transform:
+ *
+ * Adds a 3x3 matrix on top of the existing user to device space transform.
+ */
+void ctx_apply_transform (Ctx *ctx,
+                     float a, float b, float c,
+                     float d, float e, float f,
+                     float g, float h, float i);
+
+/**
+ * ctx_set_transform:
+ *
+ * Redundant with identity+apply?
+ */
+void ctx_set_transform    (Ctx *ctx, float a, float b, float c,
+                                     float d, float e, float f,
+                                     float g, float h, float i);
+
+/**
+ * ctx_miter_limit:
+ *
+ * Specify the miter limit used when stroking.
+ */
+void ctx_miter_limit      (Ctx *ctx, float limit);
+
+/**
+ * ctx_line_width:
+ *
+ * Set the line width used when stroking.
+ */
+void ctx_line_width       (Ctx *ctx, float x);
+
+/**
+ * ctx_line_dash_offset:
+ *
+ * Specify phase offset for line dash pattern.
+ */
+void ctx_line_dash_offset (Ctx *ctx, float line_dash);
+
+/**
+ * ctx_line_dash:
+ *
+ * Specify the line dash pattern.
+ */
+void  ctx_line_dash       (Ctx *ctx, float *dashes, int count);
+
+/**
+ * ctx_font_size:
+ */
+void  ctx_font_size       (Ctx *ctx, float x);
+
+/**
+ * ctx_font:
+ */
+void  ctx_font            (Ctx *ctx, const char *font);
+
+/**
+ * ctx_font_family:
+ */
+void  ctx_font_family     (Ctx *ctx, const char *font_family);
+
+/**
+ * ctx_parse:
+ *
+ * Parses a string containg text ctx protocol data.
+ */
 void ctx_parse            (Ctx *ctx, const char *string);
 
+/**
+ * low level glyph drawing calls, unless you are integrating harfbuzz
+ * you probably want to use ctx_text instead.
+ */
+typedef struct _CtxGlyph CtxGlyph;
+CtxGlyph *ctx_glyph_allocate     (int n_glyphs);
+void      gtx_glyph_free         (CtxGlyph   *glyphs);
+int       ctx_glyph              (Ctx        *ctx, uint32_t unichar, int stroke);
+void      ctx_glyphs             (Ctx        *ctx,
+                                  CtxGlyph   *glyphs,
+                                  int         n_glyphs);
+void  ctx_glyphs_stroke          (Ctx        *ctx,
+                                  CtxGlyph   *glyphs,
+                                  int         n_glyphs);
+
+
+
+#if 0
 void ctx_shadow_rgba      (Ctx *ctx, float r, float g, float b, float a);
 void ctx_shadow_blur      (Ctx *ctx, float x);
 void ctx_shadow_offset_x  (Ctx *ctx, float x);
 void ctx_shadow_offset_y  (Ctx *ctx, float y);
+#endif
+
+/**
+ * ctx_view_box:
+ *
+ * Specify the view box for the current page.
+ */
 void ctx_view_box         (Ctx *ctx,
                            float x0, float y0,
                            float w, float h);
+
+/**
+ * ctx_set_pixel_u8:
+ *
+ * Set a single pixel to the nearest possible the specified r,g,b,a value. Fast
+ * for individual few pixels, slow for doing textures.
+ */
 void
 ctx_set_pixel_u8          (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
+/**
+ * ctx_global_alpha:
+ *
+ * Set a global alpha value that the colors, textures and gradients are modulated by.
+ */
 void  ctx_global_alpha     (Ctx *ctx, float global_alpha);
 
-void ctx_named_source   (Ctx *ctx, const char *name);
-// followed by a color, gradient or pattern definition
 
+/**
+ * ctx_stroke_source:
+ *
+ * The next source definition applies to stroking rather than filling, when a stroke source is
+ * not explicitly set the value of filling is inherited.
+ */
 void ctx_stroke_source  (Ctx *ctx); // next source definition is for stroking
 
 void ctx_rgba_stroke   (Ctx *ctx, float r, float g, float b, float a);
@@ -233,16 +495,35 @@ void ctx_get_dcmyka (Ctx *ctx, float *dcmyka);
 int  ctx_in_fill    (Ctx *ctx, float x, float y);
 int  ctx_in_stroke  (Ctx *ctx, float x, float y);
 
+/**
+ * ctx_linear_gradient:
+ * Change the source to a linear gradient from x0,y0 to x1 y1, by default an empty gradient
+ * from black to white exist, add stops with ctx_gradient_add_stop to specify a custom gradient.
+ */
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
+
+/**
+ * ctx_radial_gradient:
+ * Change the source to a radial gradient from a circle x0,y0 with radius r0 to an outher circle x1, y1 with radius r1. (NOTE: currently ctx is only using the second circles origin, both radiuses are in use.)
+ */
 void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
                           float x1, float y1, float r1);
-/* XXX should be ctx_gradient_add_stop_rgba */
+
+/* ctx_graident_add_stop:
+ *
+ * Add an RGBA gradient stop to the current gradient at position pos.
+ *
+ * XXX should be ctx_gradient_add_stop_rgba */
 void ctx_gradient_add_stop (Ctx *ctx, float pos, float r, float g, float b, float a);
 
+/* ctx_graident_add_stop:
+ *
+ * Add an RGBA gradient stop to the current gradient at position pos.
+ *
+ * XXX should be ctx_gradient_add_stop_u8 */
 void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
-/*
- *
+/* ctx_define_texture:
  */
 void ctx_define_texture (Ctx *ctx,
                          const char *eid,
@@ -253,13 +534,20 @@ void ctx_define_texture (Ctx *ctx,
                          void       *data,
                          char       *ret_eid);
 
+/* ctx_source_transform:
+ */
 void
 ctx_source_transform (Ctx *ctx, float a, float b,  float c,
                       float d, float e, float f, 
                       float g, float h, float i); 
 typedef struct _CtxMatrix     CtxMatrix;
+
+/* ctx_source_transform_matrix:
+ */
 void
 ctx_source_transform_matrix (Ctx *ctx, CtxMatrix *matrix);
+
+
 
 int   ctx_width                (Ctx *ctx);
 int   ctx_height               (Ctx *ctx);
@@ -268,17 +556,16 @@ float ctx_y                    (Ctx *ctx);
 float ctx_get_global_alpha     (Ctx *ctx);
 float ctx_get_font_size        (Ctx *ctx);
 float ctx_get_miter_limit      (Ctx *ctx);
-int  ctx_get_image_smoothing   (Ctx *ctx);
+int   ctx_get_image_smoothing   (Ctx *ctx);
 float ctx_get_line_dash_offset (Ctx *ctx);
 const char *ctx_get_font       (Ctx *ctx);
 float ctx_get_line_width       (Ctx *ctx);
 void  ctx_current_point        (Ctx *ctx, float *x, float *y);
-void
-ctx_get_transform  (Ctx *ctx, float *a, float *b,
-                    float *c, float *d,
-                    float *e, float *f,
-                    float *g, float *h,
-                    float *i);
+void  ctx_get_transform        (Ctx *ctx, float *a, float *b,
+                                float *c, float *d,
+                                float *e, float *f,
+                                float *g, float *h,
+                                float *i);
 
 
 /* The pixel formats supported as render targets
@@ -1086,14 +1373,8 @@ typedef enum
 
 #pragma pack(push,1)
 
+
 typedef struct _CtxCommand CtxCommand;
-typedef struct _CtxIterator CtxIterator;
-
-CtxIterator *
-ctx_current_path (Ctx *ctx);
-void
-ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
-
 #define CTX_ASSERT               0
 
 #if CTX_ASSERT==1
@@ -1667,7 +1948,19 @@ struct _CtxBackend
   void                     *user_data; // not used by ctx core
 };
 
+typedef struct _CtxIterator CtxIterator;
+
+CtxIterator *
+ctx_current_path (Ctx *ctx);
+void
+ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2);
 CtxCommand *ctx_iterator_next (CtxIterator *iterator);
+void
+ctx_iterator_init (CtxIterator  *iterator,
+                   CtxDrawlist  *drawlist,  // replace with Ctx*  ?
+                   int           start_pos,
+                   int           flags);    // need exposing for font bits
+int ctx_iterator_pos (CtxIterator *iterator);
 
 void ctx_handle_events (Ctx *ctx);
 #define ctx_arg_string()  ((char*)&entry[2].data.u8[0])

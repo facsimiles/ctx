@@ -69,7 +69,7 @@ ctx_conts_for_entry (CtxEntry *entry)
  */
 
 
-CTX_STATIC void
+void
 ctx_iterator_init (CtxIterator      *iterator,
                    CtxDrawlist  *drawlist,
                    int               start_pos,
