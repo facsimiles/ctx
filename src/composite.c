@@ -1131,7 +1131,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
     memset (dst, 0, count - i);
   }
 
-  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
+//ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
 
 static void
@@ -1190,16 +1190,6 @@ ctx_fragment_image_rgba8_RGBA8_nearest_affine (CtxRasterizer *rasterizer,
       else break;
     }
 
-    if (ideltay == 0)
-    {
-      int o = (iy>>16)*bwidth;
-      for (; i < count; i ++)
-      {
-        *dst++ = src[o + (ix>>16)];
-        ix += ideltax;
-      }
-    }
-    else
     {
       for (; i < count; i ++)
       {
@@ -1209,7 +1199,70 @@ ctx_fragment_image_rgba8_RGBA8_nearest_affine (CtxRasterizer *rasterizer,
       }
     }
   }
-  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
+//  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
+}
+
+
+static void
+ctx_fragment_image_rgba8_RGBA8_nearest_scale (CtxRasterizer *rasterizer,
+                                              float x, float y, float z,
+                                              void *out, int scount, float dx, float dy, float dz)
+{
+  unsigned int count = scount;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = NULL;
+  uint32_t *src = NULL;
+  buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
+  int ideltax = dx * 65536;
+  uint32_t *dst = (uint32_t*)out;
+  int bwidth  = buffer->width;
+  int bheight = buffer->height;
+  int bbheight = bheight << 16;
+  int bbwidth  = bwidth << 16;
+  x += 0.5f;
+  y += 0.5f;
+
+  src = (uint32_t*)buffer->data;
+  //if (!src){ fprintf (stderr, "eeek bailing in nearest fragment\n"); return;};
+
+  {
+    unsigned int i = 0;
+    int32_t ix = x * 65536;
+    int32_t iy = y * 65536;
+
+    int32_t u1 = ix + ideltax * (count-1);
+    int32_t v1 = iy;
+    uint32_t *edst = ((uint32_t*)out)+count - 1;
+    for (; i < count; )
+    {
+      if (u1 <0 || v1 < 0 || u1 >= bbwidth || v1 >= bbheight)
+      {
+        *edst-- = 0;
+        count --;
+        u1 -= ideltax;
+      }
+      else break;
+    }
+
+    for (i = 0; i < count; i ++)
+    {
+      if (ix < 0 || iy < 0 || ix >= bbwidth  || iy >= bbheight)
+      {
+        *dst++ = 0;
+        x += dx;
+        ix += ideltax;
+      }
+      else break;
+    }
+
+      int o = (iy>>16)*bwidth;
+      for (; i < count; i ++)
+      {
+        *dst++ = src[o + (ix>>16)];
+        ix += ideltax;
+      }
+  }
+//  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
 
 static void
@@ -1278,8 +1331,9 @@ ctx_fragment_image_rgba8_RGBA8_nearest_generic (CtxRasterizer *rasterizer,
     float z_recip = (zi!=0) * (1.0/zi);
     int u = xi * z_recip;
     int v = yi * z_recip;
-    ((uint32_t*)(&rgba[0]))[0] =
-      ctx_RGBA8_associate_global_alpha_u32 (data[bwidth *v +u], global_alpha_u8);
+    //((uint32_t*)(&rgba[0]))[0] =
+    //  ctx_RGBA8_associate_global_alpha_u32 (data[bwidth *v +u], global_alpha_u8);
+    ((uint32_t*)(&rgba[0]))[0] = data[bwidth *v +u];
     xi += xi_delta;
     yi += yi_delta;
     zi += zi_delta;
@@ -2152,6 +2206,26 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBAF (CtxRasterizer *rasterizer)
 }
 #endif
 
+
+static inline int
+ctx_matrix_no_perspective (CtxMatrix *matrix)
+{
+  if (fabsf(matrix->m[2][0]) >0.001f) return 0;
+  if (fabsf(matrix->m[2][1]) >0.001f) return 0;
+  if (fabsf(matrix->m[2][2] - 1.0f)>0.001f) return 0;
+  return 1;
+}
+
+/* for multiples of 90 degree rotations, we return no rotation */
+static inline int
+ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix)
+{
+  if (fabsf(matrix->m[0][1]) >0.001f) return 0;
+  if (fabsf(matrix->m[1][0]) >0.001f) return 0;
+  return ctx_matrix_no_perspective (matrix);
+}
+
+
 static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
@@ -2214,6 +2288,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #endif
             case 32:
               {
+                CtxMatrix *transform = &gstate->source_fill.transform;
                 if (gstate->image_smoothing)
                 {
                   float factor = ctx_matrix_get_scale (&gstate->transform);
@@ -2236,13 +2311,42 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                   {
                     if (rasterizer->swap_red_green)
                       return ctx_fragment_image_rgba8_RGBA8_bi_swap_red_green;
-                    return ctx_fragment_image_rgba8_RGBA8_bi;
+                    //return ctx_fragment_image_rgba8_RGBA8_bi;
+                    
+                  if (ctx_matrix_no_perspective (transform))
+                  {
+                    if (ctx_matrix_no_skew_or_rotate (transform))
+                    {
+                        if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
+                            ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f &&
+                            ctx_fabsf (transform->m[0][2]) < 0.001f &&
+                            ctx_fabsf (transform->m[1][2]) < 0.001f)
+                        return ctx_fragment_image_rgba8_RGBA8_bi_scale;
+                      return ctx_fragment_image_rgba8_RGBA8_bi_scale;
+                    }
+                    return ctx_fragment_image_rgba8_RGBA8_bi_affine;
+                  }
+                  return ctx_fragment_image_rgba8_RGBA8_bi_generic;
                   }
                 }
                 else
                 {
                   if (rasterizer->swap_red_green)
                     return ctx_fragment_image_rgba8_RGBA8_nearest_swap_red_green;
+                  if (ctx_matrix_no_perspective (transform))
+                  {
+                    if (ctx_matrix_no_skew_or_rotate (transform))
+                    {
+                      if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
+                          ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f)
+                         return ctx_fragment_image_rgba8_RGBA8_nearest_copy;
+                      return ctx_fragment_image_rgba8_RGBA8_nearest_scale;
+                    }
+                    return ctx_fragment_image_rgba8_RGBA8_nearest_affine;
+                  }
+                  return ctx_fragment_image_rgba8_RGBA8_nearest_generic;
+
+
                   return ctx_fragment_image_rgba8_RGBA8_nearest;
                 }
               }
@@ -2270,14 +2374,14 @@ ctx_init_uv (CtxRasterizer *rasterizer,
              //float *u0, float *v0, float *w0, float *ud, float *vd, float *wd)
 {
   CtxMatrix *transform = &rasterizer->state->gstate.source_fill.transform;
-  *u0 = transform->m[0][0] * (x0 + 0.5f) +
-        transform->m[0][1] * (y0 + 0.5f) +
+  *u0 = transform->m[0][0] * (x0 + 0.0f) +
+        transform->m[0][1] * (y0 + 0.0f) +
         transform->m[0][2];
-  *v0 = transform->m[1][0] * (x0 + 0.5f) +
-        transform->m[1][1] * (y0 + 0.5f) +
+  *v0 = transform->m[1][0] * (x0 + 0.0f) +
+        transform->m[1][1] * (y0 + 0.0f) +
         transform->m[1][2];
-  *w0 = transform->m[2][0] * (x0 + 0.5f) +
-        transform->m[2][1] * (y0 + 0.5f) +
+  *w0 = transform->m[2][0] * (x0 + 0.0f) +
+        transform->m[2][1] * (y0 + 0.0f) +
         transform->m[2][2];
   *ud = transform->m[0][0];
   *vd = transform->m[1][0];
@@ -5778,7 +5882,7 @@ static void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (CtxRasterizer *raster
       for (unsigned int y = 0; y < height; y++)
       {
         uint8_t tsrc[width*4];
-        ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, u0, v0, w0, &tsrc[0], width, ud, vd, wd);
+        ctx_fragment_image_rgba8_RGBA8_nearest_scale (rasterizer, u0, v0, w0, &tsrc[0], width, ud, vd, wd);
         ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
            dst, NULL, x0, NULL, width, &tsrc[0]);
         u0 -= vd;
@@ -6001,24 +6105,6 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (CtxRasterizer *rast
   }
 }
 
-static inline int
-ctx_matrix_no_perspective (CtxMatrix *matrix)
-{
-  if (fabsf(matrix->m[2][0]) >0.001f) return 0;
-  if (fabsf(matrix->m[2][1]) >0.001f) return 0;
-  if (fabsf(matrix->m[2][2] - 1.0f)>0.001f) return 0;
-  return 1;
-}
-
-/* for multiples of 90 degree rotations, we return no rotation */
-static inline int
-ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix)
-{
-  if (fabsf(matrix->m[0][1]) >0.001f) return 0;
-  if (fabsf(matrix->m[1][0]) >0.001f) return 0;
-  return ctx_matrix_no_perspective (matrix);
-}
-
 
 static void
 ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
@@ -6230,53 +6316,56 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     case CTX_COV_PATH_RGBA8_COPY_FRAGMENT:
     {
       CtxFragment fragment = rasterizer->fragment;
-      CtxGState *gstate = &rasterizer->state->gstate;
-      CtxMatrix *transform = &gstate->source_fill.transform;
-      int no_skew_or_rotate = ctx_matrix_no_skew_or_rotate (transform);
-      int no_perspective    = ctx_matrix_no_perspective    (transform);
+      INIT_ENV;
 
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi &&
-          no_skew_or_rotate)
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine||
+          fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
-        ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1, y1, 1);
+        ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1,
+y1, 1);
+        return;
       }
-      else if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest
-                      && no_perspective)
+
+      int scan = rasterizer->scanline/CTX_FULL_AA;
+      for (unsigned int y = y0; y <= (unsigned)y1; y++)
       {
-        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1, y1, 1);
-      }
-      else
-      {
-        INIT_ENV;
-        int scan = rasterizer->scanline/CTX_FULL_AA;
-        for (unsigned int y = y0; y <= (unsigned)y1; y++)
-        {
-          float u0, v0, ud, vd, w0, wd;
-          ctx_init_uv (rasterizer, x0, scan + y-y0, &u0, &v0, &w0, &ud, &vd, &wd);
-          fragment (rasterizer, u0, v0, w0, &dst[0], width, ud, vd, wd);
-          dst += blit_stride;
-        }
+        float u0, v0, ud, vd, w0, wd;
+        ctx_init_uv (rasterizer, x0, scan + y-y0, &u0, &v0, &w0, &ud, &vd, &wd);
+        fragment (rasterizer, u0, v0, w0, &dst[0], width, ud, vd, wd);
+        dst += blit_stride;
       }
       return;
     }
     case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
     {
       CtxFragment fragment = rasterizer->fragment;
-      CtxGState *gstate = &rasterizer->state->gstate;
-      CtxMatrix *transform = &gstate->source_fill.transform;
-      int no_skew_or_rotate = ctx_matrix_no_skew_or_rotate (transform);
-      int no_perspective    = ctx_matrix_no_perspective    (transform);
-
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi && no_skew_or_rotate)
-        ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1, y1, 0);
-      else if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest && no_perspective)
-        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1, y1, 0);
-      else
+#if 0
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
-        INIT_ENV;
-        ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
-                                &dst[0], NULL, x0, NULL, width, y1-y0+1);
+        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1,
+y1, 0);
+                        return;
+      }else 
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_affine||
+          fragment == ctx_fragment_image_rgba8_RGBA8_nearest_scale ||
+          fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
+      {
+        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect (rasterizer, x0, y0, x1,
+y1, 0);
+        return;
       }
+#endif
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine||
+          fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
+      {
+        ctx_RGBA8_image_rgba8_RGBA8_bi_fill_rect (rasterizer, x0, y0, x1,
+y1, 0);
+        return;
+      }
+
+      INIT_ENV;
+      ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
+                         &dst[0], NULL, x0, NULL, width, y1-y0+1);
       return;
     }
     break;
