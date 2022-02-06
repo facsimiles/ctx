@@ -147,6 +147,7 @@ struct _CtxSource
   int type;
   CtxMatrix  set_transform;
   CtxMatrix  transform;
+  CtxMatrix  transform_inv;
   int pad; // to align next properly
   union
   {
@@ -627,7 +628,7 @@ ctx_utf8_to_unichar (const char *input);
 
 typedef struct _CtxHasher CtxHasher;
 
-typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, void *out, int count, float dx, float dy);
+typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz);
 
 #define CTX_MAX_GAUSSIAN_KERNEL_DIM    512
 
@@ -1264,8 +1265,6 @@ _ctx_matrix_identity (CtxMatrix *matrix)
 CTX_STATIC int ctx_float_to_string_index (float val);
 
 static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len);
-
-int ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix);
 
 #if EMSCRIPTEN
 #define CTX_EXPORT EMSCRIPTEN_KEEPALIVE

@@ -126,7 +126,7 @@
 
 
 #ifndef CTX_ENABLE_SHADOW_BLUR
-#define CTX_ENABLE_SHADOW_BLUR    1
+#define CTX_ENABLE_SHADOW_BLUR    0
 #endif
 
 #ifndef CTX_GRADIENTS

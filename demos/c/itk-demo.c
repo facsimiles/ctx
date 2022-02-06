@@ -36,6 +36,8 @@ int main (int argc, char **argv)
 
   ITK *itk = itk_new (ctx);
 
+  if (argv[1]) test_no = atoi(argv[1]);
+
   uint8_t abc = 11;
   int   baz = 1;
   int chosen = 1;

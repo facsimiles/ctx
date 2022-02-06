@@ -111,12 +111,18 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
       ctx_save (ctx);
 
+      if (angle != 0.0f)
+      {
+          ctx_rotate (ctx, 0.08);
+           ctx_apply_transform (ctx, 1, 0, 0.0,
+                               0, 1, 0,
+                               0.0, 0.001, 1.2);
+
+      }
 
       ctx_scale (ctx, scale, scale);
       ctx_translate (ctx, ox0, oy0);
 
-      if (angle != 0.0f)
-        ctx_rotate (ctx, angle);
 
 
       if (eid[0])
@@ -125,6 +131,9 @@ void ctx_handle_img (Ctx *ctx, const char *path)
         ctx_define_texture (ctx, NULL, stb_w, stb_h, stb_w * 4, CTX_FORMAT_RGBA8,
                             stb_pixels, eid);
       ctx_fill (ctx);
+      //ctx_rectangle (ctx, 0,0, stb_w, stb_h);
+      //ctx_rgba (ctx, 1,0,0,0.25);
+      //ctx_stroke (ctx);
       ctx_restore (ctx);
 
 #else
@@ -147,8 +156,9 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       dirty = 0;
       if (rotating)
       {
-        angle += 0.01;
-        dirty = 1;//ctx_queue_draw (ctx);
+        angle += 0.001;
+        dirty = 1;ctx_queue_draw (ctx);
+        if (angle > 1.0) angle = 0.0;
       }
     }
    

@@ -104,15 +104,6 @@ ctx_matrix_scale (CtxMatrix *matrix, float x, float y)
 }
 
 
-/* for multiples of 90 degree rotations, we return no rotation */
-int
-ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix)
-{
-  if (matrix->m[0][1] != 0.0f) return 0;
-  if (matrix->m[1][0] != 0.0f) return 0;
-  return 1;
-}
-
 void
 ctx_matrix_rotate (CtxMatrix *matrix, float angle)
 {

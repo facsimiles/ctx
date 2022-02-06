@@ -676,10 +676,11 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             {
               float u0 = 0; float v0 = 0;
               float ud = 0; float vd = 0;
+              float w0 = 1; float wd = 0;
               uint8_t gs = graystart;
               ctx_RGBA8_source_copy_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
-              ctx_init_uv (rasterizer, first+1, &u0, &v0, &ud, &vd);
-              rasterizer->fragment (rasterizer, u0, v0, &dst[((first+1)*bpp)/8], last-first-1, ud, vd);
+              ctx_init_uv (rasterizer, first+1, rasterizer->scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
+              rasterizer->fragment (rasterizer, u0, v0, w0, &dst[((first+1)*bpp)/8], last-first-1, ud, vd, wd);
             }
             break;
               case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
@@ -1206,9 +1207,10 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               {
                 float u0 = 0; float v0 = 0;
                 float ud = 0; float vd = 0;
-                ctx_init_uv (rasterizer, first+pre, &u0, &v0, &ud, &vd);
-                rasterizer->fragment (rasterizer, u0, v0, &dst[(first+pre)*bpp/8],
-                                      width, ud, vd);
+                float w0 = 1; float wd = 0;
+                ctx_init_uv (rasterizer, first+pre, rasterizer->scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
+                rasterizer->fragment (rasterizer, u0, v0, w0, &dst[(first+pre)*bpp/8],
+                                      width, ud, vd, wd);
               }
             }
             break;
