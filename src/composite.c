@@ -6346,7 +6346,29 @@ y1, 1);
     {
       CtxFragment fragment = rasterizer->fragment;
 
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
+      {
+      INIT_ENV;
+#if 0
+      ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
+                         &dst[0], NULL, x0, NULL, width, y1-y0+1);
+#endif
+  int scan = rasterizer->scanline /CTX_FULL_AA;
+    float u0, v0, ud, vd, w0, wd;
+    ctx_init_uv (rasterizer, x0, scan, &u0, &v0, &w0, &ud, &vd, &wd);
+    for (int y = y0; y < y1; y++)
+    {
+      uint8_t _tsrc[4 * width];
+      ctx_fragment_image_rgba8_RGBA8_nearest_copy (rasterizer, u0, v0, w0, &_tsrc[0], width, ud, vd, wd);
+      ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
+                          dst, NULL, x0, NULL, width, &_tsrc[0]);
+      u0 -= vd;
+      v0 += ud;
+      dst += rasterizer->blit_stride;
+    }
+  return;
+      }
+      else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
 y1, 0);

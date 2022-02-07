@@ -420,12 +420,10 @@ void  ctx_glyphs_stroke          (Ctx        *ctx,
 
 
 
-#if 0
 void ctx_shadow_rgba      (Ctx *ctx, float r, float g, float b, float a);
 void ctx_shadow_blur      (Ctx *ctx, float x);
 void ctx_shadow_offset_x  (Ctx *ctx, float x);
 void ctx_shadow_offset_y  (Ctx *ctx, float y);
-#endif
 
 /**
  * ctx_view_box:
