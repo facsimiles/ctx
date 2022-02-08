@@ -694,14 +694,17 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
   }
 }
 
-static void
-ctx_fragment_image_rgb8_RGBA8_box_swap_red_green (CtxRasterizer *rasterizer,
-                                  float x, float y, float z,
-                                  void *out, int count, float dx, float dy, float dz)
-{
-  ctx_fragment_image_rgb8_RGBA8_box (rasterizer, x, y, z, out, count, dx, dy, dz);
-  ctx_fragment_swap_red_green_u8 (out, count);
+#define CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(frag) \
+static void \
+frag##_swap_red_green (CtxRasterizer *rasterizer,\
+                       float x, float y, float z,\
+                       void *out, int count, float dx, float dy, float dz)\
+{\
+  frag (rasterizer, x, y, z, out, count, dx, dy, dz);\
+  ctx_fragment_swap_red_green_u8 (out, count);\
 }
+
+
 
 static inline void
 ctx_RGBA8_apply_global_alpha_and_associate (CtxRasterizer *rasterizer,
@@ -788,16 +791,6 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
   }
 }
 
-static void
-ctx_fragment_image_rgb8_RGBA8_bi_swap_red_green (CtxRasterizer *rasterizer,
-                                  float x,
-                                  float y,
-                                  float z,
-                                  void *out, int count, float dx, float dy, float dz)
-{
-  ctx_fragment_image_rgb8_RGBA8_bi (rasterizer, x, y, z, out, count, dx, dy, dz);
-  ctx_fragment_swap_red_green_u8 (out, count);
-}
 
 static CTX_INLINE void
 ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
@@ -945,17 +938,10 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
 #endif
 }
 
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgb8_RGBA8_box)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgb8_RGBA8_bi)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgb8_RGBA8_nearest)
 
-static CTX_INLINE void
-ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green (CtxRasterizer *rasterizer,
-                                                      float x,
-                                                      float y,
-                                                      float z,
-                                                      void *out, int count, float dx, float dy, float dz)
-{
-  ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, z, out, count, dx, dy, dz);
-  ctx_fragment_swap_red_green_u8 (out, count);
-}
 
 static void
 ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
@@ -1139,6 +1125,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
 
 //ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
+
 
 static void
 ctx_fragment_image_rgba8_RGBA8_nearest_affine (CtxRasterizer *rasterizer,
@@ -1874,32 +1861,18 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
 
 #if CTX_FRAGMENT_SPECIALIZE
 
-static void
-ctx_fragment_image_rgba8_RGBA8_box_swap_red_green (CtxRasterizer *rasterizer,
-                                    float x, float y, float z,
-                                    void *out, int count, float dx, float dy, float dz)
-{
-  ctx_fragment_image_rgba8_RGBA8_box (rasterizer, x, y, z, out, count, dx, dy, dz);
-  ctx_fragment_swap_red_green_u8 (out, count);
-}
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_box)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_bi)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_nearest)
 
-static void
-ctx_fragment_image_rgba8_RGBA8_bi_swap_red_green (CtxRasterizer *rasterizer,
-                                    float x, float y, float z,
-                                    void *out, int count, float dx, float dy, float dz)
-{
-  ctx_fragment_image_rgba8_RGBA8_bi (rasterizer, x, y, z, out, count, dx, dy, dz);
-  ctx_fragment_swap_red_green_u8 (out, count);
-}
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_nearest_copy)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_nearest_scale)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_nearest_affine)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_nearest_generic)
 
-static void
-ctx_fragment_image_rgba8_RGBA8_nearest_swap_red_green (CtxRasterizer *rasterizer,
-                                    float x, float y, float z,
-                                    void *out, int count, float dx, float dy, float dz)
-{
-  ctx_fragment_image_rgba8_RGBA8_nearest (rasterizer, x, y, z, out, count, dx, dy, dz);
-  ctx_fragment_swap_red_green_u8 (out, count);
-}
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_bi_scale)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_bi_affine)
+CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_bi_generic)
 
 static void
 ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
@@ -2302,15 +2275,32 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                   else if (factor > 0.99f && factor < 1.01f)
                   {
                     if (rasterizer->swap_red_green)
-                      return ctx_fragment_image_rgba8_RGBA8_nearest_swap_red_green;
-                    return ctx_fragment_image_rgba8_RGBA8_nearest;
+                      return ctx_fragment_image_rgba8_RGBA8_nearest_copy_swap_red_green;
+                    return ctx_fragment_image_rgba8_RGBA8_nearest_copy;
                   }
 #endif
                   else
                   {
                     if (rasterizer->swap_red_green)
-                      return ctx_fragment_image_rgba8_RGBA8_bi_swap_red_green;
-                    
+                    {
+                      if (ctx_matrix_no_perspective (transform))
+                      {
+                        if (ctx_matrix_no_skew_or_rotate (transform))
+                        {
+                          if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
+                              ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f &&
+                              ctx_fmod1f (transform->m[0][2]) < 0.001f &&
+                              ctx_fmod1f (transform->m[1][2]) < 0.001f)
+                          {
+                            return ctx_fragment_image_rgba8_RGBA8_nearest_copy_swap_red_green;
+                          }
+                          return ctx_fragment_image_rgba8_RGBA8_bi_scale_swap_red_green;
+                        }
+                        return ctx_fragment_image_rgba8_RGBA8_bi_affine_swap_red_green;
+                      }
+                      return ctx_fragment_image_rgba8_RGBA8_bi_generic_swap_red_green;
+                    }
+
                     if (ctx_matrix_no_perspective (transform))
                     {
                       if (ctx_matrix_no_skew_or_rotate (transform))
@@ -2332,7 +2322,22 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                 else
                 {
                   if (rasterizer->swap_red_green)
-                    return ctx_fragment_image_rgba8_RGBA8_nearest_swap_red_green;
+                  {
+                    if (ctx_matrix_no_perspective (transform))
+                    {
+                      if (ctx_matrix_no_skew_or_rotate (transform))
+                      {
+                        if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
+                            ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f)
+                        {
+                           return ctx_fragment_image_rgba8_RGBA8_nearest_copy_swap_red_green;
+                        }
+                        return ctx_fragment_image_rgba8_RGBA8_nearest_scale_swap_red_green;
+                      }
+                      return ctx_fragment_image_rgba8_RGBA8_nearest_affine_swap_red_green;
+                    }
+                    return ctx_fragment_image_rgba8_RGBA8_nearest_generic_swap_red_green;
+                  }
                   if (ctx_matrix_no_perspective (transform))
                   {
                     if (ctx_matrix_no_skew_or_rotate (transform))
@@ -2347,8 +2352,6 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     return ctx_fragment_image_rgba8_RGBA8_nearest_affine;
                   }
                   return ctx_fragment_image_rgba8_RGBA8_nearest_generic;
-
-                  return ctx_fragment_image_rgba8_RGBA8_nearest;
                 }
               }
             default: return ctx_fragment_image_RGBA8;
