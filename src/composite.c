@@ -928,50 +928,49 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
                                float z,
                                void *out, int count, float dx, float dy, float dz)
 {
-  if (rasterizer->state->gstate.image_smoothing)
+  if (rasterizer->swap_red_green)
   {
-    float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-    if (factor <= 0.50f)
+    if (rasterizer->state->gstate.image_smoothing)
     {
-      if (rasterizer->swap_red_green)
-        ctx_fragment_image_rgb8_RGBA8_box_swap_red_green (rasterizer, x, y, z, out, count, dx, dy, dz);
+      float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+      if (factor <= 0.50f)
+        ctx_fragment_image_rgb8_RGBA8_box_swap_red_green (rasterizer,x,y,z,out,count,dx,dy,dz);
+  #if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
+      else if (factor > 0.99f && factor < 1.01f)
+        ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green (rasterizer,x,y,z,
+                                                            out,count,dx,dy,dz);
+  #endif
       else
-        ctx_fragment_image_rgb8_RGBA8_box (rasterizer, x, y, z, out, count, dx, dy, dz);
+        ctx_fragment_image_rgb8_RGBA8_bi_swap_red_green (rasterizer,x,y,z,
+                                                         out,count, dx, dy, dz);
     }
-#if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
-    else if (factor > 0.99f && factor < 1.01f)
-    {
-      // XXX missing translate test
-      if (rasterizer->swap_red_green)
-        ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green (rasterizer, x, y, z, out, count, dx, dy, dz);
-      else
-        ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, z, out, count, dx, dy, dz);
-    }
-#endif
     else
     {
-      if (rasterizer->swap_red_green)
-        ctx_fragment_image_rgb8_RGBA8_bi_swap_red_green (rasterizer, x, y, z, out, count, dx, dy, dz);
-      else
-        ctx_fragment_image_rgb8_RGBA8_bi (rasterizer, x, y, z, out, count, dx, dy, dz);
+      ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green (rasterizer,x,y,z,
+                                                            out,count,dx,dy,dz);
     }
   }
   else
   {
-    if (rasterizer->swap_red_green)
-      ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green (rasterizer, x, y, z, out, count, dx, dy, dz);
+    if (rasterizer->state->gstate.image_smoothing)
+    {
+      float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+      if (factor <= 0.50f)
+        ctx_fragment_image_rgb8_RGBA8_box (rasterizer,x,y,z,out,
+                                           count,dx,dy,dz);
+  #if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
+      else if (factor > 0.99f && factor < 1.01f)
+        ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, z, out, count, dx, dy, dz);
+  #endif
+      else
+        ctx_fragment_image_rgb8_RGBA8_bi (rasterizer,x,y,z,out,count,dx,dy,dz);
+    }
     else
-      ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, z, out, count, dx, dy, dz);
+    {
+        ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer,x,y,z,out,
+                                               count,dx,dy, dz);
+    }
   }
-#if 0
-#if CTX_DITHER
-  {
-  uint8_t *rgba = (uint8_t*)out;
-  ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
-                      rasterizer->format->dither_green);
-  }
-#endif
-#endif
 }
 
 
