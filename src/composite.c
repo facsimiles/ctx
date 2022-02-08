@@ -6092,6 +6092,78 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (CtxRasterize
   }
 }
 
+static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
+{
+  float u0 = 0; float v0 = 0;
+  float ud = 0; float vd = 0;
+  float w0 = 1; float wd = 0;
+  ctx_init_uv (rasterizer, x0, rasterizer->scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
+
+  uint32_t *dst = ( (uint32_t *) rasterizer->buf);
+  int blit_stride = rasterizer->blit_stride/4;
+  dst += (y0 - rasterizer->blit_y) * blit_stride;
+  dst += (x0);
+
+  unsigned int width = x1-x0+1;
+  unsigned int height = y1-y0+1;
+
+  //CtxSource *g = &rasterizer->state->gstate.source_fill;
+  //CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
+
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = 
+     g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
+  int bwidth  = buffer->width;
+  int bheight = buffer->height;
+  int u = x0;// + 0.5f;
+  int v = y0;// + 0.5f;
+
+  uint32_t *src = ((uint32_t*)buffer->data) + bwidth * v + u;
+
+  int pre = ctx_mini(ctx_maxi(-u,0), width);
+
+  width-=pre;
+  u+=pre;
+
+  int core = ctx_mini (width, bwidth - u);
+
+  if (copy)
+  {
+    if (core>0)
+    {
+      uint32_t *t_dst = dst;
+      for (unsigned int y = 0; y < height; y++)
+      {
+         if (CTX_LIKELY((v >= 0 && v < bheight)))
+         {
+           memcpy (t_dst, src + pre, core * 4);
+         }
+         v++;
+         src += bwidth;
+         t_dst += blit_stride;
+      }
+    }
+  }
+  else
+  {
+    if (core>0)
+    {
+      uint32_t *t_dst = dst;
+      for (unsigned int y = 0; y < height; y++)
+      {
+         if (CTX_LIKELY((v >= 0 && v < bheight)))
+         {
+           ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
+               (uint8_t*)t_dst, NULL, x0+pre, NULL, core, (uint8_t*)src);
+         }
+         v++;
+         src += bwidth;
+         t_dst += blit_stride;
+      }
+    }
+  }
+}
+
 
 static void
 ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
@@ -6309,7 +6381,12 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       CtxMatrix *transform = &rasterizer->state->gstate.source_fill.transform;
       INIT_ENV;
 
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
+      {
+        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 1);
+        return;
+      }
+      else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
 y1, 1);
@@ -6354,7 +6431,9 @@ y1, 1);
 
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
-        //ctx_RGBA8_image_rgba8_RGBA8_nearest_scaled_fill_rect (rasterizer, x0, y0, x1, y1, 0);
+        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 0);
+        return;
+#if 0
       INIT_ENV;
 #if 0
       ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
@@ -6374,6 +6453,7 @@ y1, 1);
       dst += rasterizer->blit_stride;
     }
   return;
+#endif
       }
       else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
