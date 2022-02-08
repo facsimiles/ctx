@@ -6110,7 +6110,10 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   y1 = ctx_mini (y1, blit_y + blit_height - 1);
 
   int width = x1 - x0 + 1;
-  //unsigned int height= y1 - y0 + 1;
+  unsigned int height= y1 - y0 + 1;
+  //
+  if (CTX_UNLIKELY (width <=0 || height <= 0))
+    return;
 
   CtxCovPath comp = rasterizer->comp;
   uint8_t *dst;
@@ -6348,6 +6351,7 @@ y1, 1);
 
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
+        //ctx_RGBA8_image_rgba8_RGBA8_nearest_scaled_fill_rect (rasterizer, x0, y0, x1, y1, 0);
       INIT_ENV;
 #if 0
       ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
