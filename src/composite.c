@@ -793,6 +793,8 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
     rgba += 4;
   }
 
+  int stride = buffer->stride;
+  uint8_t *data = (uint8_t*)buffer->data;
   while (i < count)
   {
     float zr = (zi!=0)*(1.0/zi) * 256;
@@ -801,8 +803,7 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
     int dv = yi * zr;
     int v = dv >> 8;
       int bpp = 3;
-      uint8_t *src00 = (uint8_t *) buffer->data;
-      int stride = buffer->stride;
+      uint8_t *src00 = data;
       src00 += v * stride + u * bpp;
       uint8_t *src01 = src00;
       if ( u + 1 < bwidth)
@@ -834,151 +835,86 @@ ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
   }
 }
 
-static CTX_INLINE void
+static void
 ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
-                                       float x,
-                                       float y,
-                                       float z,
-                                       void *out, int count, float dx, float dy, float dz)
+                                       float x, float y, float z,
+                                       void *out, int scount,
+                                       float dx, float dy, float dz)
 {
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
+  unsigned int count = scount;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   uint8_t *rgba = (uint8_t *) out;
-  uint8_t *src = (uint8_t *) buffer->data;
-  int bwidth = buffer->width;
-  int bheight = buffer->height;
-  int stride = buffer->stride;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
+  const int bwidth = buffer->width;
+  const int bheight = buffer->height;
+  unsigned int i = 0;
+  uint8_t *data = ((uint8_t*)buffer->data);
 
-  x += 0.5f;
-  y += 0.5f;
-
-  if (CTX_UNLIKELY (dy == 0.0f && dx > 0.999f && dx < 1.001f))
+  int yi_delta = dy * 65536;
+  int xi_delta = dx * 65536;
+  int zi_delta = dz * 65536;
+  int32_t yi = y * 65536;
+  int32_t xi = x * 65536;
+  int32_t zi = z * 65536;
   {
-    int v = y;
-    int u = x;
-  
-    if (v < buffer->height && v > 0)
+    int32_t u1 = xi + xi_delta* (count-1);
+    int32_t v1 = yi + yi_delta* (count-1);
+    int32_t z1 = zi + zi_delta* (count-1);
+    uint32_t *edst = ((uint32_t*)out)+(count-1);
+    for (; i < count; )
     {
-      int o = v * stride + u * 3;
-      int i;
-      for (i = 0; i < count && u < bwidth && u <0; i++)
+      float z_recip = (z1!=0) * (1.0/z1);
+      if ((u1*z_recip) <0 ||
+          (v1*z_recip) <0 ||
+          (u1*z_recip) >= (bwidth) - 1 ||
+          (v1*z_recip) >= (bheight) - 1)
       {
-        *((uint32_t*)(rgba))= 0;
-        rgba += 4;
-        o += 3;
-        u+=1;
+        *edst-- = 0;
+        count --;
+        u1 -= xi_delta;
+        v1 -= yi_delta;
+        z1 -= zi_delta;
       }
+      else break;
+    }
+  }
 
-      for (; i < count && u < bwidth; i++)
-      {
-        rgba[0] = src[o];
-        rgba[1] = src[o+1];
-        rgba[2] = src[o+2]; 
-        rgba[3]=global_alpha_u8;
-        rgba += 4;
-        o += 3;
-        u+=1;
-      }
-      for (; i < count; i++)
-      {
-        *((uint32_t*)(rgba))= 0;
-        rgba += 4;
-      }
+  for (i= 0; i < count; i ++)
+  {
+    float z_recip = (zi!=0) * (1.0/zi);
+    int u = xi * z_recip;
+    int v = yi * z_recip;
+    if ( u  <= 0 || v  <= 0 || u+1 >= bwidth-1 || v+1 >= bheight-1)
+    {
+      *((uint32_t*)(rgba))= 0;
     }
     else
-    {
-      for (int i = 0; i < count; i++)
-      {
-        *((uint32_t*)(rgba))= 0;
-        rgba+=4;
-      }
-    }
+      break;
+    xi += xi_delta;
+    yi += yi_delta;
+    zi += zi_delta;
+    rgba += 4;
   }
-  else if (dy == 0.0f)
+
+  while (i < count)
   {
-    int u = x;
-    int v = y;
-    int i;
-    for (i = 0; i < count && (u >= bwidth || u < 0); i++)
-    {
-      u = x;
-      *((uint32_t*)(rgba))= 0;
-      x += dx;
-      rgba += 4;
-    }
-    u = x;
-    int ro = v * stride;
-    if (v >= 0 && v < bheight)
-    {
-       int lcount = ctx_mini (count - i, bwidth - u);
-    for (; lcount--; i++)
-    {
-      int o = ro + u * 3;
-      rgba[0] = src[o];
-      rgba[1] = src[o+1];
-      rgba[2] = src[o+2]; 
-      rgba[3] = global_alpha_u8;
-  
-      rgba += 4;
-      x += dx;
-      u = x;
-    }
-    }
-    for (; i < count; i++)
-    {
-      *((uint32_t*)(rgba))= 0;
-      rgba += 4;
-    }
+    float z_recip = (zi!=0) * (1.0/zi);
+    int u = xi * z_recip;
+    int v = yi * z_recip;
+    for (unsigned int c = 0; c < 3; c++)
+      rgba[c] = data[(bwidth *v +u)*3+c];
+    rgba[3] = global_alpha_u8;
+    ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+    xi += xi_delta;
+    yi += yi_delta;
+    zi += zi_delta;
+    rgba += 4;
+    i++;
   }
-  else
-  {
-    int u = x;
-    int v = y;
-    int i;
-    for (i = 0; i < count && (u >= bwidth || u < 0); i++)
-    {
-      u = x;
-      v = y;;
-      *((uint32_t*)(rgba))= 0;
-      x += dx;
-      y += dy;
-      rgba += 4;
-    }
-    u = x;
-    v = y;
-    for (; i < count && u < bwidth; i++)
-    {
-    if (CTX_UNLIKELY(v < 0 || v >= bheight))
-      {
-        *((uint32_t*)(rgba))= 0;
-      }
-    else
-      {
-        int o = v * stride + u * 3;
-        rgba[0] = src[o];
-        rgba[1] = src[o+1];
-        rgba[2] = src[o+2]; 
-        rgba[3] = global_alpha_u8;
-      }
-  
-      rgba += 4;
-      x += dx;
-      y += dy;
-      u = x;
-      v = y;
-    }
-    for (; i < count; i++)
-    {
-      *((uint32_t*)(rgba))= 0;
-      rgba += 4;
-    }
-  }
-#if CTX_DITHER
-  //ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
-  //                    rasterizer->format->dither_green);
-#endif
 }
+
+
 
 CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgb8_RGBA8_box)
 CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgb8_RGBA8_bi)
