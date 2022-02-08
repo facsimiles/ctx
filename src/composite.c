@@ -21,8 +21,7 @@
 
 static inline float ctx_fmod1f (float val)
 {
-  int vali = val;
-  return val - vali;
+  return ctx_fabsf (val - (int)(val));
 }
 
 
@@ -2320,7 +2319,9 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                             ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f &&
                             ctx_fmod1f (transform->m[0][2]) < 0.001f &&
                             ctx_fmod1f (transform->m[1][2]) < 0.001f)
+                        {
                           return ctx_fragment_image_rgba8_RGBA8_nearest_copy;
+                        }
                         return ctx_fragment_image_rgba8_RGBA8_bi_scale;
                       }
                       return ctx_fragment_image_rgba8_RGBA8_bi_affine;
@@ -2338,7 +2339,9 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     {
                       if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
                           ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f)
+                      {
                          return ctx_fragment_image_rgba8_RGBA8_nearest_copy;
+                      }
                       return ctx_fragment_image_rgba8_RGBA8_nearest_scale;
                     }
                     return ctx_fragment_image_rgba8_RGBA8_nearest_affine;
