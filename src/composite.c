@@ -2348,7 +2348,6 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                   }
                   return ctx_fragment_image_rgba8_RGBA8_nearest_generic;
 
-
                   return ctx_fragment_image_rgba8_RGBA8_nearest;
                 }
               }

@@ -469,8 +469,8 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
              grayend=255;
           }
           graystart = (graystart&0xff) ^ 255;
-          grayend = (grayend & 0xff);
 
+          grayend     = (grayend & 0xff);
 
           if (accumulated)
           {
@@ -673,17 +673,31 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             }
             break;
             case CTX_COV_PATH_RGBA8_COPY_FRAGMENT:
+            if (rasterizer->fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
+            {
+              uint8_t gs = graystart;
+              ctx_RGBA8_source_copy_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
+              ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, first+1, scanline/CTX_FULL_AA, last, scanline/CTX_FULL_AA, 1);
+            }
+            else
             {
               float u0 = 0; float v0 = 0;
               float ud = 0; float vd = 0;
               float w0 = 1; float wd = 0;
               uint8_t gs = graystart;
               ctx_RGBA8_source_copy_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
-              ctx_init_uv (rasterizer, first+1, rasterizer->scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
+              ctx_init_uv (rasterizer, first+1, scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
               rasterizer->fragment (rasterizer, u0, v0, w0, &dst[((first+1)*bpp)/8], last-first-1, ud, vd, wd);
             }
             break;
               case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
+            if (rasterizer->fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
+            {
+              uint8_t gs = graystart;
+              ctx_RGBA8_source_over_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
+              ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, first+1, scanline, last, scanline, 0);
+            }
+            else
             {
               uint8_t gs = graystart;
               ctx_RGBA8_source_over_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
@@ -698,8 +712,8 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               memset (opaque, 255, sizeof (opaque));
               opaque[0] = graystart;
               rasterizer->apply_coverage (rasterizer,
-                                             &dst[(first * bpp)/8],
-                                             rasterizer->color, first, opaque, last-first);
+                                          &dst[(first * bpp)/8],
+                                          rasterizer->color, first, opaque, last-first);
             }
             }
             accumulated = grayend;
