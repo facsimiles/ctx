@@ -694,12 +694,20 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 #endif
               default:
             {
+#if CTX_STATIC_OPAQUE
+              uint8_t *opaque = &rasterizer->opaque[0];
+#else
               uint8_t opaque[last-first];
               memset (opaque, 255, sizeof (opaque));
+#endif
               opaque[0] = graystart;
               rasterizer->apply_coverage (rasterizer,
                                           &dst[(first * bpp)/8],
                                           rasterizer->color, first, opaque, last-first);
+
+#if CTX_STATIC_OPAQUE
+              opaque[0] = 255;
+#endif
             }
             }
             accumulated = grayend;
@@ -1232,8 +1240,12 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 int width = last-first-pre-post+1;
                 if (width > 0)
                 {
+#if CTX_STATIC_OPAQUE
+                uint8_t *opaque = &rasterizer->opaque[0];
+#else
                 uint8_t opaque[width];
                 memset (opaque, 255, sizeof (opaque));
+#endif
                 rasterizer->apply_coverage (rasterizer,
                             &dst[((first + pre) * bpp)/8],
                             rasterizer->color,
@@ -4167,6 +4179,10 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->gradient_cache_elements = CTX_GRADIENT_CACHE_ELEMENTS;
   rasterizer->gradient_cache_valid = 0;
 #endif
+#endif
+
+#if CTX_STATIC_OPAQUE
+  memset (rasterizer->opaque, 255, sizeof (rasterizer->opaque));
 #endif
 
   return rasterizer;

@@ -1819,34 +1819,29 @@ void ctx_simd_setup (void);
 static void
 _ctx_init (Ctx *ctx)
 {
+  static int done_first_run = 0;
+
+  if (!done_first_run)
+  {
+    done_first_run = 1;
 #if CTX_SIMD
-   {
-     static int simd_inited = 0;
-     if (!simd_inited)
-     {
-       simd_inited = 1;
-       ctx_simd_setup ();
-     }
-   }
+    ctx_simd_setup ();
 #endif
 #if CTX_U8_TO_FLOAT_LUT
-  static int lut_inited = 0;
-  if (!lut_inited){
-  for (int i = 0; i <256;i++)
-    ctx_u8_float[i] = i/255.0f;
-  lut_inited = 1;
-  }
+    for (int i = 0; i <256;i++)
+      ctx_u8_float[i] = i/255.0f;
 #endif
 #if CTX_SHAPE_CACHE
-  if (getenv ("CTX_SHAPE_CACHE"))
-  {
-    const char * val = getenv ("CTX_SHAPE_CACHE");
-    if (!strcmp (val, "0"))
-      _ctx_shape_cache_enabled = 0;
-    if (!strcmp (val, "off"))
-      _ctx_shape_cache_enabled = 0;
-  }
+    if (getenv ("CTX_SHAPE_CACHE"))
+    {
+      const char * val = getenv ("CTX_SHAPE_CACHE");
+      if (!strcmp (val, "0"))
+        _ctx_shape_cache_enabled = 0;
+      if (!strcmp (val, "off"))
+        _ctx_shape_cache_enabled = 0;
+    }
 #endif
+  }
 
   ctx_state_init (&ctx->state);
 
@@ -2732,4 +2727,5 @@ ctx_logo (Ctx *ctx, float x, float y, float dim)
   //ctx_parse (ctx, "rgb 1 0 0 rectangle 0 0 1000 1000 fill rgb 0 1 0 rectangle 40 40 40 40 fill ");
 //  ctx_free (ctx);
 }
+
 

@@ -768,7 +768,9 @@ struct _CtxRasterizer
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
 
-
+#if CTX_STATIC_OPAQUE
+  uint8_t opaque[4096];
+#endif
 
 #if CTX_SHAPE_CACHE
   CtxShapeCache shape_cache; /* needs to be at end of struct, it

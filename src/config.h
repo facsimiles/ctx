@@ -563,6 +563,10 @@
 #endif
 
 
+#ifndef CTX_STATIC_OPAQUE
+#define CTX_STATIC_OPAQUE 1
+#endif
+
 #ifndef CTX_SYNC_FRAMES
 #define CTX_SYNC_FRAMES  1
 #endif
