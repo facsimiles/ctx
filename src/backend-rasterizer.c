@@ -673,13 +673,6 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             }
             break;
             case CTX_COV_PATH_RGBA8_COPY_FRAGMENT:
-            if (rasterizer->fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
-            {
-              uint8_t gs = graystart;
-              ctx_RGBA8_source_copy_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
-              ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, first+1, scanline/CTX_FULL_AA, last, scanline/CTX_FULL_AA, 1);
-            }
-            else
             {
               float u0 = 0; float v0 = 0;
               float ud = 0; float vd = 0;
@@ -691,13 +684,6 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             }
             break;
               case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
-            if (rasterizer->fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
-            {
-              uint8_t gs = graystart;
-              ctx_RGBA8_source_over_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
-              ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, first+1, scanline, last, scanline, 0);
-            }
-            else
             {
               uint8_t gs = graystart;
               ctx_RGBA8_source_over_normal_fragment (rasterizer, &dst[(first * bpp)/8], NULL, first, &gs, 1);
