@@ -3794,13 +3794,75 @@ ctx_float_porter_duff (CtxRasterizer         *rasterizer,
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   float   global_alpha_f = rasterizer->state->gstate.global_alpha_f;
   
+  if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+  {
+    float tsrc[components];
+
+    while (count--)
+    {
+      uint8_t cov = *coverage;
+#if 1
+      if (
+        CTX_UNLIKELY((compositing_mode == CTX_COMPOSITE_DESTINATION_OVER && dst[components-1] == 1.0f)||
+        (cov == 0 && (compositing_mode == CTX_COMPOSITE_SOURCE_OVER ||
+        compositing_mode == CTX_COMPOSITE_XOR               ||
+        compositing_mode == CTX_COMPOSITE_DESTINATION_OUT   ||
+        compositing_mode == CTX_COMPOSITE_SOURCE_ATOP      
+        ))))
+      {
+        coverage ++;
+        dstf+=components;
+        continue;
+      }
+#endif
+      memcpy (tsrc, rasterizer->color, sizeof(tsrc));
+
+      if (blend != CTX_BLEND_NORMAL)
+        ctx_float_blend (components, blend, dstf, tsrc, tsrc);
+      float covf = ctx_u8_to_float (cov);
+
+      if (global_alpha_u8 != 255)
+        covf = covf * global_alpha_f;
+
+      if (covf != 1.0f)
+      {
+        for (int c = 0; c < components; c++)
+          tsrc[c] *= covf;
+      }
+
+      for (int c = 0; c < components; c++)
+      {
+        float res;
+        /* these switches and this whole function is written to be
+         * inlined when compiled when the enum values passed in are
+         * constants.
+         */
+        switch (f_s)
+        {
+          case CTX_PORTER_DUFF_0: res = 0.0f; break;
+          case CTX_PORTER_DUFF_1:             res = (tsrc[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         res = (tsrc[c] *       dstf[components-1]); break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: res = (tsrc[c] * (1.0f-dstf[components-1])); break;
+        }
+        switch (f_d)
+        {
+          case CTX_PORTER_DUFF_0: dstf[c] = res; break;
+          case CTX_PORTER_DUFF_1:             dstf[c] = res + (dstf[c]); break;
+          case CTX_PORTER_DUFF_ALPHA:         dstf[c] = res + (dstf[c] *       tsrc[components-1]); break;
+          case CTX_PORTER_DUFF_1_MINUS_ALPHA: dstf[c] = res + (dstf[c] * (1.0f-tsrc[components-1])); break;
+        }
+      }
+      coverage ++;
+      dstf     +=components;
+    }
+  }
+  else
   {
     float tsrc[components];
     float u0 = 0; float v0 = 0;
     float ud = 0; float vd = 0;
     float w0 = 1; float wd = 0;
     for (int c = 0; c < components; c++) tsrc[c] = 0.0f;
-
     ctx_init_uv (rasterizer, x0, rasterizer->scanline/CTX_FULL_AA, &u0, &v0, &w0, &ud, &vd, &wd);
 
     while (count--)
