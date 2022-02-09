@@ -3034,9 +3034,8 @@ __ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
 
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
   {
-    src = &tsrc[0]; // XXX : todo - we can reuse the setup color, instead
-                    // of fragment per span
-    fragment (rasterizer, 0, 0, 1, src, 1, 0, 0, 0);
+    src = &tsrc[0];
+    memcpy (src, rasterizer->color, 4);
     if (blend != CTX_BLEND_NORMAL)
       ctx_u8_blend (components, blend, dst, src, src, 1);
   }
@@ -3126,51 +3125,51 @@ _ctx_u8_porter_duff (CtxRasterizer         *rasterizer,
    switch (rasterizer->state->gstate.compositing_mode) \
    { \
      case CTX_COMPOSITE_SOURCE_ATOP: \
-      _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count, \
+      __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count, \
         CTX_COMPOSITE_SOURCE_ATOP, fragment, blend);\
       break;\
      case CTX_COMPOSITE_DESTINATION_ATOP:\
-      _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+      __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_DESTINATION_ATOP, fragment, blend);\
       break;\
      case CTX_COMPOSITE_DESTINATION_IN:\
-      _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+      __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_DESTINATION_IN, fragment, blend);\
       break;\
      case CTX_COMPOSITE_DESTINATION:\
-      _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+      __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_DESTINATION, fragment, blend);\
        break;\
      case CTX_COMPOSITE_SOURCE_OVER:\
-      _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+      __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_SOURCE_OVER, fragment, blend);\
        break;\
      case CTX_COMPOSITE_DESTINATION_OVER:\
-      _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+      __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_DESTINATION_OVER, fragment, blend);\
        break;\
      case CTX_COMPOSITE_XOR:\
-      _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+      __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_XOR, fragment, blend);\
        break;\
      case CTX_COMPOSITE_DESTINATION_OUT:\
-       _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+       __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_DESTINATION_OUT, fragment, blend);\
        break;\
      case CTX_COMPOSITE_SOURCE_OUT:\
-       _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+       __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_SOURCE_OUT, fragment, blend);\
        break;\
      case CTX_COMPOSITE_SOURCE_IN:\
-       _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+       __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_SOURCE_IN, fragment, blend);\
        break;\
      case CTX_COMPOSITE_COPY:\
-       _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+       __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_COPY, fragment, blend);\
        break;\
      case CTX_COMPOSITE_CLEAR:\
-       _ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
+       __ctx_u8_porter_duff (rasterizer, components, dst, src, x0, coverage, count,\
         CTX_COMPOSITE_CLEAR, fragment, blend);\
        break;\
    }

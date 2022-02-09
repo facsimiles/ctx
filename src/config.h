@@ -266,7 +266,8 @@
 #endif
 
 #ifndef CTX_RASTERIZER_SWITCH_DISPATCH
-#define CTX_RASTERIZER_SWITCH_DISPATCH  1
+#define CTX_RASTERIZER_SWITCH_DISPATCH  1 // marginal improvement for some
+                                          // modes, maybe get rid of this?
 #endif
 
 #ifndef CTX_U8_TO_FLOAT_LUT

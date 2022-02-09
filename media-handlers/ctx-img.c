@@ -131,10 +131,12 @@ void ctx_handle_img (Ctx *ctx, const char *path)
         ctx_define_texture (ctx, NULL, stb_w, stb_h, stb_w * 4, CTX_FORMAT_RGBA8,
                             stb_pixels, eid);
       ctx_fill (ctx);
-      //ctx_rectangle (ctx, 0,0, stb_w, stb_h);
-      //ctx_rgba (ctx, 1,0,0,0.25);
-      //ctx_stroke (ctx);
+#if 0
+      ctx_rectangle (ctx, 0,0, stb_w, stb_h);
+      ctx_rgba (ctx, 1,0,0,0.25);
+      ctx_stroke (ctx);
       ctx_logo (ctx, stb_w * 0.5, stb_h * 0.5, stb_h * 0.4);
+#endif
       ctx_restore (ctx);
 
 #else
