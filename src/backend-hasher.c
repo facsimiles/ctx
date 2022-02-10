@@ -224,6 +224,10 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           int is = rasterizer->state->gstate.image_smoothing;
           ctx_sha1_process(&sha1, (uint8_t*)&is, sizeof(int));
         }
+        {
+          int e = rasterizer->state->gstate.extend;
+          ctx_sha1_process(&sha1, (uint8_t*)&e, sizeof(int));
+        }
 
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
