@@ -6959,7 +6959,6 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
 {
   if (CTX_UNLIKELY (rasterizer->comp_op==NULL))
   {
-    rasterizer->format->setup (rasterizer);
 #if CTX_GRADIENTS
 #if CTX_GRADIENT_CACHE
   switch (rasterizer->state->gstate.source_fill.type)
@@ -6990,6 +6989,8 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
 #endif
 #endif
   }
+    rasterizer->format->setup (rasterizer);
+
 }
 
 
