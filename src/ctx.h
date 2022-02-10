@@ -870,6 +870,16 @@ typedef enum
 
 typedef enum
 {
+  CTX_EXTEND_NONE    = 0,
+  CTX_EXTEND_REPEAT  = 1,
+  CTX_EXTEND_REFLECT = 2,
+  CTX_EXTEND_PAD     = 3
+} CtxExtend;
+
+void ctx_extend (Ctx *ctx, CtxExtend extend);
+
+typedef enum
+{
   CTX_TEXT_BASELINE_ALPHABETIC = 0,
   CTX_TEXT_BASELINE_TOP,
   CTX_TEXT_BASELINE_HANGING,
@@ -911,6 +921,7 @@ CtxLineCap         ctx_get_line_cap (Ctx *ctx);
 CtxLineJoin        ctx_get_line_join (Ctx *ctx);
 CtxCompositingMode ctx_get_compositing_mode (Ctx *ctx);
 CtxBlend           ctx_get_blend_mode (Ctx *ctx);
+CtxExtend          ctx_get_extend     (Ctx *ctx);
 
 void ctx_gradient_add_stop_string (Ctx *ctx, float pos, const char *color);
 
@@ -1338,7 +1349,7 @@ typedef enum
 
 
   CTX_FILL_RULE        = 128, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
-  CTX_BLEND_MODE       = 129, // kB mode - u8 , default=0
+  CTX_BLEND_MODE       = 129, // kB mode - u32 , default=0
 
   CTX_MITER_LIMIT      = 130, // km limit - float, default = 0.0
 
@@ -1346,7 +1357,7 @@ typedef enum
   CTX_LINE_CAP         = 132, // kc cap - u8, default = 0
   CTX_LINE_WIDTH       = 133, // kw width, default = 2.0
   CTX_GLOBAL_ALPHA     = 134, // ka alpha - default=1.0
-  CTX_COMPOSITING_MODE = 135, // kc mode - u8 , default=0
+  CTX_COMPOSITING_MODE = 135, // kc mode - u32 , default=0
 
   CTX_FONT_SIZE        = 136, // kf size - float, default=?
   CTX_TEXT_ALIGN       = 137, // kt align - u8, default = CTX_TEXT_ALIGN_START
@@ -1360,6 +1371,7 @@ typedef enum
   CTX_IMAGE_SMOOTHING  = 144, // kS
   CTX_LINE_DASH_OFFSET = 145, // kD lineDashOffset
 
+  CTX_EXTEND           = 146, // ke u32 extend mode, default=0
   // items marked with % are currently only for the parser
   // for instance for svg compatibility or simulated/converted color spaces
   // not the serialization/internal render stream

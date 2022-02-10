@@ -144,6 +144,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_REL_VER_LINE_TO:      return "relVerLineTo"; break;
           case CTX_COMPOSITING_MODE:     return "compositingMode"; break;
           case CTX_BLEND_MODE:           return "blendMode"; break;
+          case CTX_EXTEND:               return "extend"; break;
           case CTX_TEXT_ALIGN:           return "textAlign"; break;
           case CTX_TEXT_BASELINE:        return "textBaseline"; break;
           case CTX_TEXT_DIRECTION:       return "textDirection"; break;
@@ -191,6 +192,7 @@ static void _ctx_print_name (CtxFormatter *formatter, int code)
         case CTX_GLOBAL_ALPHA:      name[1]='a'; break;
         case CTX_COMPOSITING_MODE:  name[1]='m'; break;
         case CTX_BLEND_MODE:        name[1]='B'; break;
+        case CTX_EXTEND:            name[1]='e'; break;
         case CTX_TEXT_ALIGN:        name[1]='t'; break;
         case CTX_TEXT_BASELINE:     name[1]='b'; break;
         case CTX_TEXT_DIRECTION:    name[1]='d'; break;
@@ -278,6 +280,15 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
                   {
                     case CTX_FILL_RULE_WINDING:  str = "winding"; break;
                     case CTX_FILL_RULE_EVEN_ODD: str = "evenodd"; break;
+                  }
+                break;
+              case CTX_EXTEND:
+                switch (val)
+                  {
+                    case CTX_EXTEND_NONE:    str = "none"; break;
+                    case CTX_EXTEND_PAD:     str = "pad"; break;
+                    case CTX_EXTEND_REPEAT:  str = "repeat"; break;
+                    case CTX_EXTEND_REFLECT: str = "reflect"; break;
                   }
                 break;
               case CTX_BLEND_MODE:
@@ -751,6 +762,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_LINE_JOIN:
       case CTX_COMPOSITING_MODE:
       case CTX_BLEND_MODE:
+      case CTX_EXTEND:
       case CTX_IMAGE_SMOOTHING:
         ctx_print_entry_enum (formatter, entry, 1);
         break;

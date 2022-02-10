@@ -244,6 +244,7 @@ struct _CtxGState
 #endif
   CtxCompositingMode  compositing_mode; // bitfield refs lead to
   CtxBlend                  blend_mode; // non-vectorization
+  CtxExtend                 extend;
 
   float dashes[CTX_PARSER_MAX_ARGS];
 

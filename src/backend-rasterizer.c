@@ -3431,19 +3431,22 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
 
   CtxCompositingMode comp = rasterizer->state->gstate.compositing_mode;
   CtxBlend blend = rasterizer->state->gstate.blend_mode;
+  CtxExtend extend = rasterizer->state->gstate.extend;
   float global_alpha = rasterizer->state->gstate.global_alpha_f;
   // fetch compositing, blending, global alpha
   ctx_rasterizer_process (ctx, (CtxCommand*)&restore_command);
   ctx_rasterizer_process (ctx, (CtxCommand*)&save_command);
-  CtxEntry set_state[3]=
+  CtxEntry set_state[4]=
   {
     ctx_u32 (CTX_COMPOSITING_MODE, comp,  0),
     ctx_u32 (CTX_BLEND_MODE,       blend, 0),
+    ctx_u32 (CTX_EXTEND,          extend, 0),
     ctx_f  (CTX_GLOBAL_ALPHA,     global_alpha, 0.0)
   };
   ctx_rasterizer_process (ctx, (CtxCommand*)&set_state[0]);
   ctx_rasterizer_process (ctx, (CtxCommand*)&set_state[1]);
   ctx_rasterizer_process (ctx, (CtxCommand*)&set_state[2]);
+  ctx_rasterizer_process (ctx, (CtxCommand*)&set_state[3]);
   if (no == 0)
   {
     rasterizer->buf = rasterizer->saved_buf;
@@ -3830,6 +3833,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
       case CTX_COLOR:
       case CTX_COMPOSITING_MODE:
       case CTX_BLEND_MODE:
+      case CTX_EXTEND:
         rasterizer->comp_op = NULL;
         break;
 #if CTX_COMPOSITING_GROUPS

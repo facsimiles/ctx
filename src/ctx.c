@@ -1039,6 +1039,11 @@ CtxBlend ctx_get_blend_mode (Ctx *ctx)
   return ctx->state.gstate.blend_mode;
 }
 
+CtxExtend ctx_get_extend (Ctx *ctx)
+{
+  return ctx->state.gstate.extend;
+}
+
 CtxTextAlign ctx_get_text_align  (Ctx *ctx)
 {
   return (CtxTextAlign)ctx_state_get (&ctx->state, CTX_text_align);
@@ -1081,6 +1086,12 @@ void ctx_blend_mode (Ctx *ctx, CtxBlend mode)
 {
   if (ctx->state.gstate.blend_mode != mode)
     CTX_PROCESS_U32 (CTX_BLEND_MODE, mode, 0);
+}
+
+void ctx_extend (Ctx *ctx, CtxExtend extend)
+{
+  if (ctx->state.gstate.extend != extend)
+    CTX_PROCESS_U32 (CTX_EXTEND, extend, 0);
 }
 
 void ctx_compositing_mode (Ctx *ctx, CtxCompositingMode mode)
@@ -1328,6 +1339,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         break;
       case CTX_BLEND_MODE:
         state->gstate.blend_mode = (CtxBlend) ctx_arg_u32 (0);
+        break;
+      case CTX_EXTEND:
+        state->gstate.extend = (CtxExtend) ctx_arg_u32 (0);
         break;
       case CTX_TEXT_ALIGN:
         ctx_state_set (state, CTX_text_align, ctx_arg_u8 (0) );

@@ -63,6 +63,7 @@
 #define CTX_even_odd TOKENHASH(2587574889)
 #define CTX_evenOdd TOKENHASH(4065502508)
 #define CTX_exit TOKENHASH(1330698)
+#define CTX_extend TOKENHASH(298165770)
 #define CTX_fill TOKENHASH(811596)
 #define CTX_fill_rule TOKENHASH(3026141741)
 #define CTX_fillRule TOKENHASH(2727819936)

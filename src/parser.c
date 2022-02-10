@@ -178,6 +178,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_GLOBAL_ALPHA:
       case CTX_COMPOSITING_MODE:
       case CTX_BLEND_MODE:
+      case CTX_EXTEND:
       case CTX_FONT_SIZE:
       case CTX_LINE_JOIN:
       case CTX_LINE_CAP:
@@ -305,6 +306,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
     {
       case 'm': return ctx_parser_set_command (parser, CTX_COMPOSITING_MODE);
       case 'B': return ctx_parser_set_command (parser, CTX_BLEND_MODE);
+      case 'e': return ctx_parser_set_command (parser, CTX_EXTEND);
       case 'l': return ctx_parser_set_command (parser, CTX_MITER_LIMIT);
       case 't': return ctx_parser_set_command (parser, CTX_TEXT_ALIGN);
       case 'b': return ctx_parser_set_command (parser, CTX_TEXT_BASELINE);
@@ -443,6 +445,9 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
             return ctx_parser_set_command (parser, CTX_FONT_SIZE);
           case CTX_compositingMode:
             return ctx_parser_set_command (parser, CTX_COMPOSITING_MODE);
+
+          case CTX_extend:
+            return ctx_parser_set_command (parser, CTX_EXTEND);
 
           case CTX_blend:
           case CTX_blending:
@@ -1114,6 +1119,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           if (blend_mode == CTX_COLOR) blend_mode = CTX_BLEND_COLOR;
           ctx_blend_mode (ctx, (CtxBlend)blend_mode);
         }
+        break;
+      case CTX_EXTEND:
+        ctx_extend (ctx, (CtxExtend)arg(0));
         break;
       case CTX_FILL_RULE:
         ctx_fill_rule (ctx, (CtxFillRule) arg(0) );
