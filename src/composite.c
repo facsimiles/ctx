@@ -1131,6 +1131,40 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy_repeat (CtxRasterizer *rasterizer,
   }
 }
 
+static inline int
+_ctx_coords_restrict (CtxExtend extend,
+                      int *v, int *u,
+                      int bwidth, int bheight)
+{
+  switch (extend)
+  {
+    case CTX_EXTEND_REPEAT:
+      *u  %= bwidth;
+      *v  %= bheight;
+      return 1;
+    case CTX_EXTEND_REFLECT:
+      *u  %= (bwidth*2);
+      *v  %= (bheight*2);
+
+      *u = (*u>=bwidth) * (bwidth - *u) +
+           (*u<bwidth) * *u;
+      *v = (*v>=bwidth) * (bheight - *v) +
+           (*v<bwidth) * *v;
+      return 1;
+    case CTX_EXTEND_PAD:
+      *u = ctx_mini (ctx_maxi (*u, 0), bwidth-1);
+      *v = ctx_mini (ctx_maxi (*v, 0), bheight-1);
+      return 1;
+    case CTX_EXTEND_NONE:
+      *u  %= bwidth;
+      *v  %= bheight;
+      if (*u < 0 || *u >= bwidth) return 0;
+      if (*v < 0 || *v >= bheight) return 0;
+      return 1;
+  }
+  return 0;
+}
+
 static void
 ctx_fragment_image_rgba8_RGBA8_nearest_affine (CtxRasterizer *rasterizer,
                                                float x, float y, float z,
@@ -1202,13 +1236,12 @@ ctx_fragment_image_rgba8_RGBA8_nearest_affine (CtxRasterizer *rasterizer,
   }
                   }
   break;
-  case CTX_EXTEND_REPEAT:
+          default:
     while (i < count)
     {
       int u = xi >> 16;
       int v = yi >> 16;
-      u %= bwidth;
-      v %= bheight;
+      _ctx_coords_restrict (extend, &u, &v, bwidth, bheight);
       //((uint32_t*)(&rgba[0]))[0] =
       //  ctx_RGBA8_associate_global_alpha_u32 (data[bwidth *v +u], global_alpha_u8);
       ((uint32_t*)(&rgba[0]))[0] = data[bwidth *v +u];
@@ -1365,14 +1398,13 @@ ctx_fragment_image_rgba8_RGBA8_nearest_generic (CtxRasterizer *rasterizer,
   }
                   }
   break;
-  case CTX_EXTEND_REPEAT:
+  default:
     while (i < count)
     {
       float z_recip = (zi!=0) * (1.0/zi);
       int u = xi * z_recip;
       int v = yi * z_recip;
-      u %= bwidth;
-      v %= bheight;
+      _ctx_coords_restrict (extend, &u, &v, bwidth, bheight);
       //((uint32_t*)(&rgba[0]))[0] =
       //  ctx_RGBA8_associate_global_alpha_u32 (data[bwidth *v +u], global_alpha_u8);
       ((uint32_t*)(&rgba[0]))[0] = data[bwidth *v +u];
@@ -1527,6 +1559,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
   }
 }
 
+
 static inline void
 ctx_fragment_image_rgba8_RGBA8_bi_affine (CtxRasterizer *rasterizer,
                                           float x, float y, float z,
@@ -1548,6 +1581,8 @@ ctx_fragment_image_rgba8_RGBA8_bi_affine (CtxRasterizer *rasterizer,
   int xi_delta = dx * 65536;
   int32_t yi = y * 65536;
   int32_t xi = x * 65536;
+
+  if (extend == CTX_EXTEND_NONE)
   {
     int32_t u1 = xi + xi_delta* (count-1);
     int32_t v1 = yi + yi_delta* (count-1);
@@ -1566,7 +1601,6 @@ ctx_fragment_image_rgba8_RGBA8_bi_affine (CtxRasterizer *rasterizer,
       }
       else break;
     }
-  }
 
   for (i= 0; i < count; i ++)
   {
@@ -1581,6 +1615,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_affine (CtxRasterizer *rasterizer,
     xi += xi_delta;
     yi += yi_delta;
     rgba += 4;
+  }
   }
 
   uint32_t *src00=data;
@@ -1599,22 +1634,9 @@ ctx_fragment_image_rgba8_RGBA8_bi_affine (CtxRasterizer *rasterizer,
       int u1 = u + 1;
       int v1 = v + 1;
 
-      switch (extend)
-      {
-        default:
-        case CTX_EXTEND_REPEAT:
-          u  %= bwidth;
-          u1 %= bwidth;
-          v  %= bheight;
-          v1 %= bheight;
-          break;
-        case CTX_EXTEND_PAD:
-          u = ctx_mini (ctx_maxi (u, 0), bwidth-1);
-          v = ctx_mini (ctx_maxi (v, 0), bheight-1);
-          u1 = ctx_mini (ctx_maxi (u1, 0), bwidth-1);
-          v1 = ctx_mini (ctx_maxi (v1, 0), bheight-1);
-          break;
-      }
+      _ctx_coords_restrict (extend, &u, &v, bwidth, bheight);
+      _ctx_coords_restrict (extend, &u1, &v1, bwidth, bheight);
+
       src00 = data  + bwidth * v + u;
       src01 = data  + bwidth * v + u1;
       src10 = data  + bwidth * v1 + u;
@@ -1640,116 +1662,6 @@ ctx_fragment_image_rgba8_RGBA8_bi_affine (CtxRasterizer *rasterizer,
 
 
 static inline void
-old_ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
-                                           float x, float y, float z,
-                                           void *out, int scount,
-                                           float dx, float dy, float dz)
-{
-  uint32_t count = scount;
-  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
-  uint8_t *rgba = (uint8_t *) out;
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
-  const int bwidth = buffer->width;
-  const int bheight = buffer->height;
-  unsigned int i = 0;
-  uint32_t *data = ((uint32_t*)buffer->data);
-
-  int yi_delta = dy * 65536;
-  int xi_delta = dx * 65536;
-  int zi_delta = dz * 65536;
-  int32_t yi = y * 65536;
-  int32_t xi = x * 65536;
-  int32_t zi = z * 65536;
-  {
-    int32_t u1 = xi + xi_delta* (count-1);
-    int32_t v1 = yi + yi_delta* (count-1);
-    int32_t z1 = zi + zi_delta* (count-1);
-    uint32_t *edst = ((uint32_t*)out)+(count-1);
-    for (; i < count; )
-    {
-      float z_recip = (z1!=0) * (1.0/z1);
-      if ((u1*z_recip) <0 ||
-          (v1*z_recip) <0 ||
-          (u1*z_recip) >= (bwidth) - 1 ||
-          (v1*z_recip) >= (bheight) - 1)
-      {
-        *edst-- = 0;
-        count --;
-        u1 -= xi_delta;
-        v1 -= yi_delta;
-        z1 -= zi_delta;
-      }
-      else break;
-    }
-  }
-
-  for (i= 0; i < count; i ++)
-  {
-    float z_recip = (zi!=0) * (1.0/zi);
-    int u = xi * z_recip;
-    int v = yi * z_recip;
-    if ( u  <= 0 || v  <= 0 || u+1 >= bwidth-1 || v+1 >= bheight-1)
-    {
-      *((uint32_t*)(rgba))= 0;
-    }
-    else
-      break;
-    xi += xi_delta;
-    yi += yi_delta;
-    zi += zi_delta;
-    rgba += 4;
-  }
-
-  uint32_t *src00=data;
-  uint32_t *src01=data;
-  uint32_t *src10=data;
-  uint32_t *src11=data;
-
-  const int32_t redge = bwidth-1;
-  const int32_t bedge = bheight-1;
-
-  while (i < count)
-  {
-    float zr = (zi!=0)*(1.0/zi) * 256;
-    int du = xi * zr;
-    int u = du >> 8;
-    int dv = yi * zr;
-    int v = dv >> 8;
-    int offset = bwidth * v + u;
-    if (CTX_UNLIKELY(u < 0 || v < 0 || u+1 >= bwidth || v+1 >=bheight)) // default to next sample down and to right
-    {
-      int got_prev_pix = (u >= 0);
-      int got_prev_row = (v>=0);
-      src11 = data  + offset + bwidth + 1;
-      src10 = src11 - got_prev_pix;
-      src01 = src11 - bwidth * got_prev_row;
-      src00 = src10 - bwidth * got_prev_row;
-    }
-    else 
-    {
-      int next_row = (v < bedge) * bwidth;
-      int next_pix = (u < redge);
-      src00 = data  + offset;
-      src01 = src00 + next_pix;
-      src10 = src00 + next_row;
-      src11 = src01 + next_row;
-    }
-    ((uint32_t*)(&rgba[0]))[0] =
-        ctx_RGBA8_associate_global_alpha_u32 (
-            ctx_bi_RGBA8 (*src00,*src01,*src10,*src11, du,dv), global_alpha_u8);
-    xi += xi_delta;
-    yi += yi_delta;
-    zi += zi_delta;
-    rgba += 4;
-
-
-    offset = bwidth * v + u;
-    i++;
-  }
-}
-
-static inline void
 ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
                                            float x, float y, float z,
                                            void *out, int scount,
@@ -1772,7 +1684,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
   int32_t yi = y * 65536;
   int32_t xi = x * 65536;
   int32_t zi = z * 65536;
-  {
+  if (extend == CTX_EXTEND_NONE) {
     int32_t u1 = xi + xi_delta* (count-1);
     int32_t v1 = yi + yi_delta* (count-1);
     int32_t z1 = zi + zi_delta* (count-1);
@@ -1793,7 +1705,6 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
       }
       else break;
     }
-  }
 
   for (i= 0; i < count; i ++)
   {
@@ -1810,6 +1721,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
     yi += yi_delta;
     zi += zi_delta;
     rgba += 4;
+  }
   }
 
   uint32_t *src00=data;
@@ -1829,22 +1741,9 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
       int u1 = u + 1;
       int v1 = v + 1;
 
-      switch (extend)
-      {
-        default:
-        case CTX_EXTEND_REPEAT:
-          u  %= bwidth;
-          u1 %= bwidth;
-          v  %= bheight;
-          v1 %= bheight;
-          break;
-        case CTX_EXTEND_PAD:
-          u = ctx_mini (ctx_maxi (u, 0), bwidth-1);
-          v = ctx_mini (ctx_maxi (v, 0), bheight-1);
-          u1 = ctx_mini (ctx_maxi (u1, 0), bwidth-1);
-          v1 = ctx_mini (ctx_maxi (v1, 0), bheight-1);
-          break;
-      }
+      _ctx_coords_restrict (extend, &u, &v, bwidth, bheight);
+      _ctx_coords_restrict (extend, &u1, &v1, bwidth, bheight);
+
       src00 = data  + bwidth * v + u;
       src01 = data  + bwidth * v + u1;
       src10 = data  + bwidth * v1 + u;
