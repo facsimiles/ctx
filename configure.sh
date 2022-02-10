@@ -34,8 +34,8 @@ do
     case "$1" in
      "--disable-sdl") HAVE_SDL=0    ;;
      "--debug") CFLAGS=' -g '    ;;
-     "--asan") CFLAGS=" -fsanitize=address";LIBS=' -lasan -g '  ;;
-     "--ubsan") CFLAGS=" -fsanitize=undefined";LIBS=' -lasan -g '  ;;
+     "--asan") CFLAGS=" -fsanitize=address -g";LIBS=' -lasan -g '  ;;
+     "--ubsan") CFLAGS=" -fsanitize=undefined -g";LIBS=' -lasan -g '  ;;
      "--enable-kms") HAVE_KMS=1 ;;
      "--enable-sdl") HAVE_SDL=1 ;;
      "--enable-cairo") HAVE_CAIRO=1 ;;

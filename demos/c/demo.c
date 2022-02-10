@@ -34,9 +34,10 @@ static void scene_spirals (ITK *itk, int frame_no, float time_delta)
   Ctx *ctx = itk->ctx;
   clear (ctx);
 
+  float alpha = 0.0;
   if (scene_elapsed_time > 2.0)
   {
-     float alpha = 1.0-(4.0 - scene_elapsed_time)/2.0;
+     alpha = 1.0-(4.0 - scene_elapsed_time)/2.0;
      if (alpha > 1.0) alpha = 1.0;
 
      float width = ctx_width (ctx);
@@ -50,7 +51,7 @@ static void scene_spirals (ITK *itk, int frame_no, float time_delta)
      ctx_translate (ctx, -width * 0.5, 0);
   }
 
-  ctx_rgba (ctx, 1, 1, 1, 0.5);
+  ctx_rgba (ctx, 1, 1, 1, 0.5 + alpha/2);
   for (int i = 0; i < dot_count; i ++)
   {
     float x = ctx_width (ctx)/ 2;
@@ -214,11 +215,15 @@ static void scene_text (ITK *itk, int frame_no, float time_delta, float font_sca
   else alpha = alpha / 2;
 
   float font_size = height * font_scale;
+  float line_height = 1.2;
 
-  if (font_size <= 3) font_size = 3.0;
+  if (font_size <= 3){
+          font_size = 3.0;
+          line_height = 1.0;
+  }
 
-  float y0 = font_size * 1.2;
-  float x0 = font_size * 0.5;
+  float y0 = font_size * line_height;
+  float x0 = font_size;
   float y = y0;
   float x = x0;
 
@@ -248,7 +253,7 @@ static void scene_text (ITK *itk, int frame_no, float time_delta, float font_sca
     if (x + word_width  >= width - font_size * 0.5)
     {
       x = x0;
-      y += font_size * 1.2;
+      y += font_size * line_height;
       y = (int) y;
       lines++;
     }
@@ -259,7 +264,7 @@ static void scene_text (ITK *itk, int frame_no, float time_delta, float font_sca
     }
     if (random()%33==0)
     {ctx_text (ctx, ".");
-     y += font_size * 1.2;
+     y += font_size * line_height;
       y = (int) y;
      x = x0; word_width = space_width;
     }

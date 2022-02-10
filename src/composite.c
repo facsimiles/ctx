@@ -1116,6 +1116,8 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy_repeat (CtxRasterizer *rasterizer,
   int bheight = buffer->height;
   int u = x;
   int v = y;
+  if (v < 0) v += bheight * 8192;
+  if (u < 0) u += bwidth * 8192;
   v %= bheight;
   u %= bwidth;
 
@@ -1133,23 +1135,33 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy_repeat (CtxRasterizer *rasterizer,
 
 static inline int
 _ctx_coords_restrict (CtxExtend extend,
-                      int *v, int *u,
+                      int *u, int *v,
                       int bwidth, int bheight)
 {
   switch (extend)
   {
     case CTX_EXTEND_REPEAT:
+      while (*u < 0) *u += bwidth * 4096;   // XXX need better way to do this
+      while (*v < 0) *v += bheight * 4096;
       *u  %= bwidth;
       *v  %= bheight;
+      if (*v<0)
+      {
+        *v  %= bheight;
+      }
       return 1;
     case CTX_EXTEND_REFLECT:
+      while (*u < 0) *u += bwidth * 4096;   // XXX need better way to do this
+      while (*v < 0) *v += bheight * 4096;
       *u  %= (bwidth*2);
       *v  %= (bheight*2);
 
-      *u = (*u>=bwidth) * (bwidth - *u) +
+      *u = (*u>=bwidth) * (bwidth*2 - *u) +
            (*u<bwidth) * *u;
-      *v = (*v>=bwidth) * (bheight - *v) +
-           (*v<bwidth) * *v;
+
+      *v = (*v>=bheight) * (bheight*2 - *v) +
+           (*v<bheight) * *v;
+
       return 1;
     case CTX_EXTEND_PAD:
       *u = ctx_mini (ctx_maxi (*u, 0), bwidth-1);

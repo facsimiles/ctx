@@ -27,6 +27,7 @@ static int dirty = 1;
 static int auto_size = 1;
 
 static int rotating = 0;
+static int repeat = 0;
 
 /****************************/
 static char *path = NULL;
@@ -105,6 +106,8 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       //ctx_begin_path (ctx);
       if (image_smoothing == 0)
         ctx_image_smoothing (ctx, 0);
+      if (repeat)
+        ctx_extend (ctx, CTX_EXTEND_REPEAT);
       ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
 
 #if 1
@@ -264,9 +267,15 @@ void ctx_handle_img (Ctx *ctx, const char *path)
             oy0 +=  (ctx_height (ctx) / 2) / scale;
             auto_size = 0;
           }
-          else if (!strcmp (event->string, "r"))
+          else if (!strcmp (event->string, "p"))
           {
             rotating = !rotating;
+            ctx_queue_draw (event->ctx);
+          }
+          else if (!strcmp (event->string, "r"))
+          {
+            repeat = !repeat;
+            ctx_queue_draw (event->ctx);
           }
           dirty ++;
           break;

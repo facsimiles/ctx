@@ -74,6 +74,11 @@
       </p>
 
 
+      <p>Below is ctx compiled to WASM with emscripten (without SIMD support).
+      The same demo runs at 60fps at 2560x1440 resolution for all bits apart
+      from the scrolling of small text - where all text is rasterized from
+      scratch from curves for every frame, the currently disabled generic shape
+      cache improves this - but currently causes slight pixel shifts).</p>
       <canvas style='max-width:100%' width='640' height='480' id='c'>
       </canvas>
 
@@ -225,10 +230,10 @@ financially supporting me, <a href='https://pippin.gimp.org'>Øyvind Kolås</a> 
                to relicense the rasterizer and protocol parts of ctx
           under the <a
 href='https://opensource.org/licenses/ISC'>ISC license</a>. If you'd rather
-have this R&amp;D applied to cairo; because it helps your corporation, I am
+have this R&amp;D applied to cairo; because it furthers interests, I am
 willing to offer a 2 month stint for 25000 USD; that would result in patches
-significantly improving the performance of cairo's rasterizer, maybe also
-improving the gradient rendering</p>
+significantly improving the performance of cairo's rasterizer or maybe adding a
+ctx based alternative image surface inside cairo.</p>
 
 <!--
         <h3 id='example'>example code</h3>
