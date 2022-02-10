@@ -1264,6 +1264,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_scale (CtxRasterizer *rasterizer,
   unsigned int count = scount;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = NULL;
+  CtxExtend  extend = rasterizer->state->gstate.extend;
   uint32_t *src = NULL;
   buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   int ideltax = dx * 65536;
@@ -1283,6 +1284,8 @@ ctx_fragment_image_rgba8_RGBA8_nearest_scale (CtxRasterizer *rasterizer,
     int32_t ix = x * 65536;
     int32_t iy = y * 65536;
 
+    if (extend == CTX_EXTEND_NONE)
+    {
     int32_t u1 = ix + ideltax * (count-1);
     int32_t v1 = iy;
     uint32_t *edst = ((uint32_t*)out)+count - 1;
@@ -1308,12 +1311,31 @@ ctx_fragment_image_rgba8_RGBA8_nearest_scale (CtxRasterizer *rasterizer,
       else break;
     }
 
-      int o = (iy>>16)*bwidth;
+      int v = iy >> 16;
+      int u = ix >> 16;
+      int o = (v)*bwidth;
       for (; i < count; i ++)
       {
-        *dst++ = src[o + (ix>>16)];
+        u = ix >> 16;
+        *dst++ = src[o + (u)];
         ix += ideltax;
       }
+    }
+    else
+    {
+
+      int v = iy >> 16;
+      int u = ix >> 16;
+      int o = (v)*bwidth;
+      _ctx_coords_restrict (extend, &u, &v, bwidth, bheight);
+      for (; i < count; i ++)
+      {
+        u = ix >> 16;
+        _ctx_coords_restrict (extend, &u, &v, bwidth, bheight);
+        *dst++ = src[o + (u)];
+        ix += ideltax;
+      }
+    }
   }
 //  ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, count);
 }
