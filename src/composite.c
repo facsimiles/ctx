@@ -1062,6 +1062,11 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
   CtxBuffer *buffer = 
      g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   uint32_t *dst = (uint32_t*)out;
+#if 0
+  for (int i = 0; i < scount; i++)
+          dst[i] = (255<<24)+128;
+  return;
+#endif
   int bwidth  = buffer->width;
   int bheight = buffer->height;
   int u = x;// + 0.5f;
@@ -1338,8 +1343,8 @@ ctx_fragment_image_rgba8_RGBA8_nearest_scale (CtxRasterizer *rasterizer,
 
       int v = iy >> 16;
       int u = ix >> 16;
-      int o = (v)*bwidth;
       _ctx_coords_restrict (extend, &u, &v, bwidth, bheight);
+      int o = (v)*bwidth;
       for (; i < count; i ++)
       {
         u = ix >> 16;
@@ -6295,6 +6300,7 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (CtxRasterize
   }
 }
 
+#if 0
 static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
   float u0 = 0; float v0 = 0;
@@ -6366,6 +6372,7 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRaster
     }
   }
 }
+#endif
 
 
 static void
@@ -6584,12 +6591,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       CtxMatrix *transform = &rasterizer->state->gstate.source_fill.transform;
       INIT_ENV;
 
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
-      {
-        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 1);
-        return;
-      }
-      else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
 y1, 1);
@@ -6631,13 +6633,15 @@ y1, 1);
     case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
     {
       CtxFragment fragment = rasterizer->fragment;
-
+#if 0
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
         ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 0);
         return;
       }
-      else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
+      else
+#endif
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
 y1, 0);
