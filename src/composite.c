@@ -1146,16 +1146,15 @@ _ctx_coords_restrict (CtxExtend extend,
   switch (extend)
   {
     case CTX_EXTEND_REPEAT:
-      if(u)while (*u < 0) *u += bwidth * 4096;   // XXX need better way to do this
-      if(u)*u  %= bwidth;
+      if(u)
+      {
+         while (*u < 0) *u += bwidth * 4096;   // XXX need better way to do this
+         *u  %= bwidth;
+      }
       if(v)
       {
         while (*v < 0) *v += bheight * 4096;
         *v  %= bheight;
-      if (*v<0)
-      {
-        *v  %= bheight;
-      }
       }
       return 1;
     case CTX_EXTEND_REFLECT:
@@ -1184,12 +1183,12 @@ _ctx_coords_restrict (CtxExtend extend,
     case CTX_EXTEND_NONE:
       if (u)
       {
-      *u  %= bwidth;
+      //*u  %= bwidth;
       if (*u < 0 || *u >= bwidth) return 0;
       }
       if (v)
       {
-      *v  %= bheight;
+      //*v  %= bheight;
       if (*v < 0 || *v >= bheight) return 0;
       }
       return 1;
@@ -1571,7 +1570,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
   uint32_t *data = ((uint32_t*)buffer->data) + bwidth * v;
   uint32_t *ndata = ((uint32_t*)buffer->data) + bwidth * v1;
 
-  if (!extend && v < bheight-1) ndata = data;
+  if (!extend && v1 > bheight-1) ndata = data;
 
   if (extend)
   {
@@ -6115,6 +6114,7 @@ static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int 
 
 static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
+  CtxExtend extend = rasterizer->state->gstate.extend;
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
   float w0 = 1; float wd = 0;
@@ -6142,8 +6142,8 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (CtxRasterize
   uint32_t rb_row[2][width*2];
   //uint32_t ga_row[2][width];
 
-  uint32_t row_u = u0 * 65536;
-  uint32_t row_v = v0 * 65536;
+  int32_t row_u = u0 * 65536;
+  int32_t row_v = v0 * 65536;
   int   ui_delta = ud * 65536;
   int   vi_delta = vd * 65536;
 
@@ -6154,31 +6154,25 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (CtxRasterize
 
 
   { // preload previous row for first row
-    uint32_t ui  = row_u;
-    uint32_t vi  = row_v;
+    int32_t ui  = row_u;
+    int32_t vi  = row_v;
     unsigned int xa=0;
       for (unsigned int x = 0; x < width; x++, xa+=2)
       {
         int u = ui >> 16;
         int v = vi >> 16;
+        int u1 = u + 1;
         uint32_t  blank = 0;
         uint32_t *src0 = &blank;
         uint32_t *src1 = src0;
     
-        if (CTX_LIKELY (v >= 0 && v < bheight))
+        if (CTX_LIKELY(_ctx_coords_restrict (extend, &u, &v, bwidth, bheight)))
         {
-          if (CTX_LIKELY (u >= 0 && u + 1 < bwidth))
-          {
-            src0 = data + u + bwidth * (v);
-            src1 = src0 + 1;
-          }
-          else
-          {
-            if (u >= 0 && u < bwidth)
-              src0 = data + u + bwidth * (v);
-            if (u + 1>= 0 && u + 1 < bwidth)
-              src1 = data + (u+1) + bwidth * (v);
-          }
+          src0 = data + u + bwidth * (v);
+        }
+        if (CTX_LIKELY(_ctx_coords_restrict (extend, &u1, &v, bwidth, bheight)))
+        {
+          src1 = data + u1 + bwidth * (v);
         }
     
         ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[!top][xa], &rb_row[!top][xa+1]);
@@ -6191,8 +6185,8 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (CtxRasterize
     for (unsigned int y = 0; y < height; y++)
     {
        int top     = iter % 2;
-       uint32_t ui = row_u;
-       uint32_t vi = row_v;
+       int32_t ui = row_u;
+       int32_t vi = row_v;
        int v =  (vi >> 16) + 1;
        uint8_t dv = ((row_v)>> 8);
   
@@ -6201,37 +6195,27 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (CtxRasterize
          loaded_v = v;
          unsigned int xa=0;
 
-         if (CTX_LIKELY (v >= 0 && v < bheight))
-         {
            for (unsigned int x = 0; x < width; x++, xa+=2)
            {
              int u = ui >> 16;
+             int u1 = u+1;
              uint32_t  blank = 0;
              uint32_t *src0 = &blank;
              uint32_t *src1 = src0;
-             if (CTX_LIKELY(u >= 0 && u + 1 < bwidth))
-             {
-               src0 = data + u + bwidth * (v);
-               src1 = src0 + 1;
-             }
-             else
-             {
-               if (u >= 0 && u < bwidth)
-                 src0 = data + u + bwidth * (v);
-               if (u + 1>= 0 && u + 1 < bwidth)
-                 src1 = src0 + 1;
-             }
+
+
+        if (CTX_LIKELY(_ctx_coords_restrict (extend, &u, &v, bwidth, bheight)))
+        {
+          src0 = data + u + bwidth * (v);
+        }
+        if (CTX_LIKELY(_ctx_coords_restrict (extend, &u1, &v, bwidth, bheight)))
+        {
+          src1 = data + u1 + bwidth * (v);
+        }
+
              ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[top][xa], &rb_row[top][xa+1]);
              ui += ui_delta;
            }
-         }
-         else
-         {
-           for (unsigned int x = 0; x < width; x++, xa+=2)
-           {
-             rb_row[top][xa]= rb_row[top][xa+1] = 0;
-           }
-         }
          iter++;
          top    = iter % 2;
        }
@@ -6686,7 +6670,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       CtxExtend extend = rasterizer->state->gstate.extend;
       INIT_ENV;
 
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale && extend == CTX_EXTEND_NONE)
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
 y1, 1);
@@ -6737,13 +6721,13 @@ y1, 1);
       }
       else
 #endif
-      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale && extend == CTX_EXTEND_NONE)
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
 y1, 0);
         return;
       }
-      else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine)
+      else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine && extend == CTX_EXTEND_NONE)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (rasterizer, x0, y0, x1,
 y1, 0);
