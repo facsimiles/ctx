@@ -198,6 +198,8 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
          }
         break;
 
+      case CTX_CLIP:
+        /*FALLTHROUGH*/
       case CTX_FILL:
         {
           CtxSHA1 sha1;
@@ -208,7 +210,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
            * since it is also used in the small shapes rasterization
            * cache
            */
-        uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer); // + hasher->salt;
+        //uint64_t hash = ctx_rasterizer_poly_to_hash2 (rasterizer); // + hasher->salt;
         CtxIntRectangle shape_rect = {
           (int)(rasterizer->col_min / CTX_SUBDIV - 2),
           (int)(rasterizer->scan_min / aa - 2),
@@ -216,10 +218,12 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           (int)(3+(rasterizer->scan_max - rasterizer->scan_min + aa-1) / aa)
         };
 
-        hash ^= (rasterizer->state->gstate.fill_rule * 23);
+        ctx_sha1_process(&sha1,  (uint8_t*)rasterizer->edge_list.entries, sizeof(CtxSegment) * rasterizer->edge_list.count);
 
-        ctx_sha1_process(&sha1, (unsigned char*)&hash, 8);
-
+        {
+          int is = rasterizer->state->gstate.fill_rule;
+          ctx_sha1_process(&sha1, (uint8_t*)&is, sizeof(int));
+        }
         {
           int is = rasterizer->state->gstate.image_smoothing;
           ctx_sha1_process(&sha1, (uint8_t*)&is, sizeof(int));
@@ -232,9 +236,13 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           ctx_sha1_done(&sha1, (unsigned char*)ctx_sha1_hash);
           _ctx_add_hash (hasher, &shape_rect, ctx_sha1_hash);
 
+        if (c->code == CTX_CLIP)
+          ctx_rasterizer_clip (rasterizer);
+
         if (!rasterizer->preserve)
           ctx_rasterizer_reset (rasterizer);
         rasterizer->preserve = 0;
+
         }
         break;
       case CTX_STROKE:
@@ -370,11 +378,6 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         break;
       case CTX_BEGIN_PATH:
         ctx_rasterizer_reset (rasterizer);
-        break;
-      case CTX_CLIP:
-        // should perhaps modify a global state to include
-        // in hash?
-        ctx_rasterizer_clip (rasterizer);
         break;
       case CTX_CLOSE_PATH:
         ctx_rasterizer_finish_shape (rasterizer);
