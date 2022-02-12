@@ -1885,11 +1885,15 @@ ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time,
   float resolved_val = -100000;
   float scene_duration = 5.0;
 
-  int i = 0;
+  int i;
+
+again:
+  i = 0;
 
   // XXX : this doesn't work when there are [ 's in the text
 
   int scene_pos = 0;
+  int last_scene = 0;
   {
   int in_scene_marker = 0;
   float duration = -1;
@@ -1901,7 +1905,8 @@ ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time,
        if (p == ']')
        {
           in_scene_marker = 0;
-          printf ("time: %f scene %i: %f\n", time, scene_pos, duration);
+       //   printf ("scene: %i time: %f scene %i: %f\n", scene_no, time, scene_pos, duration);
+          last_scene = scene_pos;
           if (scene_pos == scene_no)
           {
             scene_duration = duration;
@@ -1930,7 +1935,13 @@ ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time,
     }
   }
   }
-  if (scene_pos == 0)i=0;
+
+  if (scene_no > last_scene)
+  {
+     scene_no = 0;
+     (*scene_no_p) = 0;
+     goto again;
+  }
 
 
   for (; string[i]; i++)
@@ -1963,7 +1974,7 @@ ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time,
       else if (p>='0' && p<='9')
       {
         const char *sp = &string[i];
-        const char *ep = sp;
+        char *ep = (char*)sp;
         float key      = strtof (sp, &ep);
         char *eq       = strchr (sp, '=');
         float val      = 0.0;
