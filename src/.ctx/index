@@ -1,0 +1,134 @@
+asdfasdfasdf
+sadfasdfasdf asdfsadf asdfasdf
+squoze5.h
+ type=ctx/file
+Makefile
+ type=ctx/file
+vt.h
+ type=ctx/file
+vt.c
+ type=ctx/file
+vt-utf8.h
+ type=ctx/file
+vt-line.h
+ type=ctx/file
+vt-line.c
+ type=ctx/file
+vt-audio.h
+ type=ctx/file
+util.h
+ type=ctx/file
+utf8.c
+ type=ctx/file
+transform.c
+ type=ctx/file
+texture.c
+ type=ctx/file
+text.c
+ type=ctx/file
+terminal.c
+ type=ctx/file
+start-implementation
+ type=ctx/file
+sha1.c
+ type=ctx/file
+rasterizer.c
+ type=ctx/file
+pre-font
+ type=ctx/file
+post-font
+ type=ctx/file
+parser.c
+ type=ctx/file
+libc.c
+ type=ctx/file
+keyvaldb.c
+ type=ctx/file
+index
+ type=ctx/file
+hasher.c
+ type=ctx/file
+guard
+ type=ctx/file
+formatter.c
+ type=ctx/file
+events.c
+ type=ctx/file
+endguard
+ type=ctx/file
+end-implementation
+ type=ctx/file
+drawlist.h
+ type=ctx/file
+drawlist.c
+ type=ctx/file
+ctx.h
+ type=ctx/file
+ctx.c
+ type=ctx/file
+ctx-yenc.c
+ type=ctx/file
+ctx-string.h
+ type=ctx/file
+ctx-string.c
+ type=ctx/file
+ctx-split.h
+ type=ctx/file
+ctx-list.h
+ type=ctx/file
+ctx-internal.h
+ type=ctx/file
+ctx-extra.h
+ type=ctx/file
+ctx-decls.h
+ type=ctx/file
+ctx-clients.h
+ type=ctx/file
+ctx-clients.c
+ type=ctx/file
+constants.h
+ type=ctx/file
+config.h
+ type=ctx/file
+composite.c
+ type=ctx/file
+color.c
+ type=ctx/file
+base64.h
+ type=ctx/file
+backend-tiled.c
+ type=ctx/file
+backend-termimg.c
+ type=ctx/file
+backend-term.c
+ type=ctx/file
+backend-sdl.c
+ type=ctx/file
+backend-kms.c
+ type=ctx/file
+backend-headless.c
+ type=ctx/file
+backend-fb.c
+ type=ctx/file
+backend-ctx.c
+ type=ctx/file
+backend-cairo.c
+ type=ctx/file
+backend
+ type=ctx/file
+audio.h
+ type=ctx/file
+audio.c
+ type=ctx/file
+a85.h
+ type=ctx/file
+a85.c
+ type=ctx/file
+nvram
+ type=ctx/file
+cfg
+ type=ctx/file
+cd
+ type=ctx/file
+a85test
+ type=ctx/file

@@ -723,4 +723,7 @@
 #define CTX_SHAPE_CACHE 0
 #endif
 
-
+#define uncompress tinf_uncompress
+#define Z_OK TINF_OK
+#define Z_BUF_ERROR TINF_BUF_ERROR
+#define Z_DATA_ERROR TINF_DATA_ERROR

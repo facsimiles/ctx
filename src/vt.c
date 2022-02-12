@@ -47,11 +47,6 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
-
-#ifndef EMSCRIPTEN
-#include <zlib.h>
-#endif
-
 #include "ctx.h"
 
 
@@ -3782,14 +3777,13 @@ void vt_gfx (VT *vt, const char *command)
           vt->gfx.buf_size = vt->gfx.buf_width * vt->gfx.buf_height *
                              (vt->gfx.format == 24 ? 3 : 4);
         }
-#ifndef EMSCRIPTEN
       if (vt->gfx.compression == 'z')
         {
           //vt->gfx.buf_size)
           unsigned char *data2 = malloc (vt->gfx.buf_size + 1);
           /* if a buf size is set (rather compression, but
            * this works first..) then */
-          unsigned long actual_uncompressed_size = vt->gfx.buf_size;
+          unsigned int actual_uncompressed_size = vt->gfx.buf_size;
           int z_result = uncompress (data2, &actual_uncompressed_size,
                                      vt->gfx.data,
                                      vt->gfx.data_size);
@@ -3804,7 +3798,6 @@ void vt_gfx (VT *vt, const char *command)
           vt->gfx.data_size = actual_uncompressed_size;
           vt->gfx.compression = 0;
         }
-#endif
 #ifdef STBI_INCLUDE_STB_IMAGE_H
       if (vt->gfx.format == 100)
         {
