@@ -365,6 +365,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
       case CTX_ROTATE:
       case CTX_SCALE:
       case CTX_TRANSLATE:
+      case CTX_APPLY_TRANSFORM:
 
 
 

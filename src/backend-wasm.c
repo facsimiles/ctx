@@ -9,18 +9,23 @@ int width = 512;
 int height = 384;
 
 static uint8_t *fb = NULL;
+static Ctx *em_ctx = NULL;
 
 CTX_EXPORT unsigned char *
 get_fb(int w, int h) {
+  if (fb)
+  {
+    if (width == w && height == h) return fb;
+    free (fb);
+    fb = NULL;
+  }
   width  = w;
   height = h;
-  if (!fb)
-  {
-    fb = malloc (w *h * 4);
-  }
+  fb = calloc (w *h, 4);
+  if (em_ctx) free (em_ctx);
+  em_ctx = NULL;
   return fb;
 }
-
 
 void  update_fb (Ctx *ctx, void *user_data)
 {
@@ -134,7 +139,6 @@ static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
 
 Ctx *get_context (void)
 {
-   static Ctx *ctx = NULL;
 
 EM_ASM(
     {var canvas = document.getElementById('c');
@@ -143,13 +147,13 @@ EM_ASM(
      }
 );
 
-   if (!ctx){ctx = ctx_new_cb (width, height, CTX_FORMAT_RGBA8, set_pixels, 
+   if (!em_ctx){em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGBA8, set_pixels, 
                                update_fb,
                                fb,
                                width * height * 4, NULL, 
                                CTX_CB_DEFAULTS|CTX_CB_HASH_CACHE);
    }
-   return ctx;
+   return em_ctx;
 }
 
 #endif

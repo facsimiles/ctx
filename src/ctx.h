@@ -1294,7 +1294,7 @@ typedef enum
   CTX_SMOOTHQ_TO       = 'T', // x y
   CTX_RESET            = 'U', //
   CTX_VER_LINE_TO      = 'V', // y
-  CTX_APPLY_TRANSFORM  = 'W', // a b c d e f - for set_transform combine with identity
+  CTX_APPLY_TRANSFORM  = 'W', // a b c d e f g h i j - for set_transform combine with identity
   CTX_EXIT             = 'X', //
   CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
 

@@ -1872,4 +1872,126 @@ ctx_parse (Ctx *ctx, const char *string)
   ctx_parser_free (parser);
 }
 
+CTX_EXPORT void
+ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time, 
+                int *scene_no_p)
+{
+  float time = *scene_elapsed_time;
+  int scene_no = *scene_no_p;
+  CtxString *str = ctx_string_new ("");
+  int in_var = 0;
+  float prev_key = -100000.0f;
+  float prev_val = 0.0f;
+  float resolved_val = -100000;
+  float scene_duration = 5.0;
+
+  int i = 0;
+
+  // XXX : this doesn't work when there are [ 's in the text
+
+  int scene_pos = 0;
+  {
+  int in_scene_marker = 0;
+  float duration = -1;
+  for (; string[i]; i++)
+  {
+    char p = string[i];
+    if (in_scene_marker)
+    {
+       if (p == ']')
+       {
+          in_scene_marker = 0;
+          printf ("time: %f scene %i: %f\n", time, scene_pos, duration);
+          if (scene_pos == scene_no)
+          {
+            scene_duration = duration;
+            if (scene_duration < time)
+            {
+              scene_no ++;
+              (*scene_no_p)++;
+              *scene_elapsed_time = time = 0;
+            }
+            else break;
+          }
+          scene_pos++;
+       }
+       else if (p>='0' && p<='9' && duration < 0)
+       {
+          duration = atof (&string[i]);
+       }
+    }
+    else
+    {
+       if (p == '[')
+       {
+          in_scene_marker = 1;
+          duration = -1;
+       }
+    }
+  }
+  }
+  if (scene_pos == 0)i=0;
+
+
+  for (; string[i]; i++)
+  {
+    char p = string[i];
+    if (in_var == 0)
+    {
+      if (p == '[')
+        break;
+      else if (p == '(')
+      {
+        in_var = 1;
+        prev_key = -1000000.0f;
+        prev_val = 0.0f;
+        resolved_val = -100000.0;
+      }
+      else
+      {
+        ctx_string_append_byte (str, p);
+      }
+    }
+    else
+    {
+      if (p == ')')
+      {
+        if (resolved_val <= -100000.0f) resolved_val = prev_val;
+        ctx_string_append_printf (str, "%f", resolved_val);
+        in_var = 0;
+      }
+      else if (p>='0' && p<='9')
+      {
+        const char *sp = &string[i];
+        const char *ep = sp;
+        float key      = strtof (sp, &ep);
+        char *eq       = strchr (sp, '=');
+        float val      = 0.0;
+
+        if (eq)
+           val = strtof (eq+1, &ep);
+
+        //printf ("%f=%f\n", key, val);
+        if (key>=time && resolved_val <=-10000.0f)
+        {
+           resolved_val = ctx_lerpf (prev_val, val, 
+                           (time-prev_key)/(key-prev_key));
+        }
+
+        prev_key = key;
+        prev_val = val;
+
+        i+=(ep-sp)-1;
+      }
+      else
+      {
+        //swallow
+      }
+    }
+  }
+
+  ctx_parse (ctx, str->str);
+  ctx_string_free (str, 1);
+}
+
 #endif

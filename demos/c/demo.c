@@ -1,3 +1,11 @@
+#ifdef EMSCRIPTEN
+#include "emscripten.h"
+#endif
+#include <stdint.h>
+#define _CTX_INTERNAL_FONT_
+#include "ctx-font-regular.h"
+
+#define CTX_HASH_CACHE 0
 //#define CTX_IMPLEMENTATION 1
 //#define ITK_IMPLEMENTATION 1
 #include "itk.h"
@@ -6,7 +14,7 @@ float render_time = 0.0;
 float render_fps  = 0.0;
 
 int        scene_frames = 0;
-double     scene_elapsed_time = 0.0;
+float      scene_elapsed_time = 0.0;
 static uint64_t prev_ticks = 0;
   static int   dot_count = 200;
   static float twist = 2.9645;
@@ -319,6 +327,14 @@ Scene scenes[]=
   {"text",    scene_text_50, 20.0},
 
 };
+
+#ifdef EMSCRIPTEN
+EMSCRIPTEN_KEEPALIVE
+#endif
+char ctx_input[8192] = "demo";
+
+void ctx_parse2 (Ctx *ctx, const char *str, float *scene_time, int *scene_no);
+
 int n_scenes = sizeof (scenes)/sizeof(scenes[0]);
 static int ui_scenes (ITK *itk, void *data)
 {
@@ -331,10 +347,21 @@ static int ui_scenes (ITK *itk, void *data)
   prev_ticks = ticks;
 
   ctx_save (ctx);
-  scenes[scene_no].fun (itk, scene_frames, render_time);
-  ctx_restore (ctx);
+#ifdef EMSCRIPTEN
+  EM_ASM(
+   var val = document.getElementById('input').value;
+   stringToUTF8(val, _ctx_input, 8191);
+  );
+
+#endif
+
   scene_elapsed_time += render_time;
   scene_frames ++;
+  if (!strcmp (ctx_input, "demo"))
+  {
+
+  scenes[scene_no].fun (itk, scene_frames, render_time);
+  ctx_restore (ctx);
 
   if (scenes[scene_no].duration < scene_elapsed_time)
   {
@@ -344,8 +371,14 @@ static int ui_scenes (ITK *itk, void *data)
     scene_frames = 0;
     scene_elapsed_time = 0;
   }
+  }
+  else
+  {
+    ctx_parse2 (itk->ctx, ctx_input, &scene_elapsed_time, &scene_no);
+    if (scene_elapsed_time > 30) scene_elapsed_time = 0;
+  }
+    ctx_queue_draw (itk->ctx);
 
-  ctx_queue_draw (itk->ctx);
   return 1;
 }
 
@@ -353,6 +386,7 @@ ITK *itk = NULL;
 
 int main (int argc, char **argv)
 {
+  if (argv[1]) strncpy (ctx_input, argv[1], sizeof(ctx_input));
   ctx_init (&argc, &argv);
   /* we use itk only for its main loop */
   itk_main (ui_scenes, NULL);

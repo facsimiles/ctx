@@ -8,7 +8,7 @@ all: $(HTML_FILES) index.html $(JS_FILES)
 	emcc -I../.. -I../../media-handlers  `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -DITK_IMPLEMENTATION   -o $@ -s ASYNCIFY
 
 demo.js: demo.c Makefile  ../../ctx.h
-	emcc -I../.. -I../../media-handlers  `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -DITK_IMPLEMENTATION   -o $@ 
+	emcc -I../.. -I../../media-handlers  `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -DITK_IMPLEMENTATION   -o $@ -I../../fonts
 
 terminal.js: terminal.c Makefile  /usr/local/include/ctx.h
 	emcc `pkg-config ctx-wasm --cflags --libs` $< -DITK_IMPLEMENTATION -I ../../media-handlers  -o $@ 
