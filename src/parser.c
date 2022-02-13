@@ -1916,7 +1916,10 @@ again:
               (*scene_no_p)++;
               *scene_elapsed_time = time = 0;
             }
-            else break;
+            else
+            {
+              break;
+            }
           }
           scene_pos++;
        }
@@ -1943,7 +1946,7 @@ again:
      goto again;
   }
   
-  if (scene_no == 0 && last_scene==0)
+  if (scene_no == 0 && last_scene==0 && string[i]==0)
     i=0;
 
 
@@ -1990,6 +1993,11 @@ again:
         {
            resolved_val = ctx_lerpf (prev_val, val, 
                            (time-prev_key)/(key-prev_key));
+           // refactor to first collect all key/value pairs
+           // and then find right for linear or catmulrom
+           // interpolation
+           //
+           // allow toggling linear or catmull rom in file
         }
 
         prev_key = key;
