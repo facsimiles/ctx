@@ -136,7 +136,7 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
 
   if (audio->compression == 'z')
   {
-    uLongf len = compressBound(bytes);
+    unsigned long len = bytes * 1.2;//compressBound(bytes);
     data = malloc (len);
     int z_result = compress (data, &len, samples, len);
     if (z_result != Z_OK)
