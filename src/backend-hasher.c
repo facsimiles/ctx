@@ -250,7 +250,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           CtxSHA1 sha1;
           memcpy (&sha1, &hasher->sha1_stroke[hasher->source_level], sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
-        uint64_t hash = ctx_rasterizer_poly_to_hash (rasterizer);
+        ctx_sha1_process(&sha1,  (uint8_t*)rasterizer->edge_list.entries, sizeof(CtxSegment) * rasterizer->edge_list.count);
         CtxIntRectangle shape_rect = {
           (int)(rasterizer->col_min / CTX_SUBDIV - rasterizer->state->gstate.line_width),
           (int)(rasterizer->scan_min / aa - rasterizer->state->gstate.line_width),
@@ -263,11 +263,18 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         shape_rect.x -= rasterizer->state->gstate.line_width;
         shape_rect.y -= rasterizer->state->gstate.line_width;
 
-        hash ^= (int)(rasterizer->state->gstate.line_width * 110);
-        hash ^= (rasterizer->state->gstate.line_cap * 23);
-        hash ^= (rasterizer->state->gstate.source_stroke.type * 117);
-
-        ctx_sha1_process(&sha1, (unsigned char*)&hash, 8);
+        {
+          float f;
+          int i;
+          f = rasterizer->state->gstate.line_width;
+          ctx_sha1_process(&sha1, (uint8_t*)&f, sizeof(float));
+          i = rasterizer->state->gstate.line_cap;
+          ctx_sha1_process(&sha1, (uint8_t*)&i, sizeof(int));
+          i = rasterizer->state->gstate.line_join;
+          ctx_sha1_process(&sha1, (uint8_t*)&i, sizeof(int));
+          i = rasterizer->state->gstate.source_stroke.type;
+          ctx_sha1_process(&sha1, (uint8_t*)&i, sizeof(int));
+        }
 
         uint32_t color;
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_stroke.color, (uint8_t*)(&color));
