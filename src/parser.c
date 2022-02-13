@@ -1942,6 +1942,9 @@ again:
      (*scene_no_p) = 0;
      goto again;
   }
+  
+  if (scene_no == 0 && last_scene==0)
+    i=0;
 
 
   for (; string[i]; i++)
