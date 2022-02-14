@@ -2058,11 +2058,41 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float oy = rasterizer->state->y;
 
   tolerance = tolerance * tolerance;
+
+  {
+#define CTX_AVOID_CLIPPED_SUBDIVISION 1
+#if CTX_AVOID_CLIPPED_SUBDIVISION
+  float maxx = ctx_maxf (x1,x2);
+  maxx = ctx_maxf (maxx, ox);
+  maxx = ctx_maxf (maxx, x0);
+  float maxy = ctx_maxf (y1,y2);
+  maxy = ctx_maxf (maxy, oy);
+  maxy = ctx_maxf (maxy, y0);
+  float minx = ctx_minf (x1,x2);
+  minx = ctx_minf (minx, ox);
+  minx = ctx_minf (minx, x0);
+  float miny = ctx_minf (y1,y2);
+  miny = ctx_minf (miny, oy);
+  miny = ctx_minf (miny, y0);
+  
+  _ctx_user_to_device (rasterizer->state, &minx, &miny);
+  _ctx_user_to_device (rasterizer->state, &maxx, &maxy);
+
+    if(
+        (minx > rasterizer->blit_x + rasterizer->blit_width) ||
+        (miny > rasterizer->blit_y + rasterizer->blit_height) ||
+        (maxx < rasterizer->blit_x) ||
+        (maxy < rasterizer->blit_y) )
+    {
+    }
+    else
+#endif
   ctx_rasterizer_bezier_divide (rasterizer,
                                 ox, oy, x0, y0,
                                 x1, y1, x2, y2,
                                 ox, oy, x2, y2,
                                 0.0f, 1.0f, 0, tolerance);
+  }
   ctx_rasterizer_line_to (rasterizer, x2, y2);
 }
 
