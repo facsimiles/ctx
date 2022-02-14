@@ -86,9 +86,17 @@ ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32
 #pragma pack(push,1)
 typedef struct 
 CtxSegment {
+#if CTX_32BIT_SEGMENTS
+  uint32_t code;
+#else
   uint16_t code;
+#endif
   union {
-   int16_t s16[4];
+#if CTX_32BIT_SEGMENTS
+   int32_t s16[4];
+#else
+   int16_t s16[4]; 
+#endif
    uint32_t u32[2];
   } data;
   int32_t val;

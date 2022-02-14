@@ -1932,6 +1932,11 @@ static inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
     }
 }
 
+//#define MIN_Y -100
+//#define MAX_Y 3800
+//#define MIN_X -100
+//#define MAX_X 3600*10
+
 static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
   float tx = x; float ty = y;
@@ -1948,6 +1953,10 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
   ty = ty * CTX_FULL_AA;
 
+  //ty = ctx_maxf (MIN_Y, ty);
+  //ty = ctx_minf (MAX_Y, ty);
+  //tx = ctx_maxf (MIN_X, tx);
+  //tx = ctx_minf (MAX_X, tx);
   ctx_rasterizer_update_inner_point (rasterizer, tx, ty);
 }
 
@@ -1967,11 +1976,11 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }
   tx -= rasterizer->blit_x;
-#define MIN_Y -1000
-#define MAX_Y 1400
 
-  ty = ctx_maxf (MIN_Y, ty);
-  ty = ctx_minf (MAX_Y, ty);
+  //ty = ctx_maxf (MIN_Y, ty);
+  //ty = ctx_minf (MAX_Y, ty);
+  //tx = ctx_maxf (MIN_X, tx);
+  //tx = ctx_minf (MAX_X, tx);
   
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * CTX_FULL_AA);//rasterizer->aa);
 

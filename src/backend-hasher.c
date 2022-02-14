@@ -47,13 +47,21 @@ ctx_str_count_lines (const char *str)
   return count;
 }
 
+/*
+ * the hasher should store a list of
+ * times when the activeness of each tile changes
+ *
+ * on replay path and text/glyph commands as well
+ * as stroke/fill can be ignored  clips outside
+ * should mean no more drawing until restore
+ */
 static void
 ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 {
-  CtxEntry *entry = &command->entry;
+  CtxEntry      *entry      = &command->entry;
   CtxRasterizer *rasterizer = (CtxRasterizer *) ctx->backend;
-  CtxHasher *hasher = (CtxHasher*) ctx->backend;
-  CtxState *state = rasterizer->state;
+  CtxHasher     *hasher     = (CtxHasher*) ctx->backend;
+  CtxState      *state      = rasterizer->state;
   CtxCommand *c = (CtxCommand *) entry;
   int aa = 15;//rasterizer->aa;
 

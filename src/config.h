@@ -229,6 +229,13 @@
 #define CTX_STRINGPOOL_SIZE     1000 //
 #endif
 
+#ifndef CTX_32BIT_SEGMENTS
+#define CTX_32BIT_SEGMENTS 1  // without this clipping problems might
+                              // occur when drawing far outside the viewport
+                              // on micro controllers you most often will
+                              // want this set to 0
+#endif
+
 /* whether we dither or not for gradients
  */
 #ifndef CTX_DITHER

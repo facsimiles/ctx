@@ -408,17 +408,26 @@ void ctx_parse            (Ctx *ctx, const char *string);
  * you probably want to use ctx_text instead.
  */
 typedef struct _CtxGlyph CtxGlyph;
+
+/**
+ */
 CtxGlyph *ctx_glyph_allocate     (int n_glyphs);
+/**
+ */
 void      gtx_glyph_free         (CtxGlyph   *glyphs);
+/**
+ */
 int       ctx_glyph              (Ctx        *ctx, uint32_t unichar, int stroke);
+/**
+ */
 void      ctx_glyphs             (Ctx        *ctx,
                                   CtxGlyph   *glyphs,
                                   int         n_glyphs);
+/**
+ */
 void  ctx_glyphs_stroke          (Ctx        *ctx,
                                   CtxGlyph   *glyphs,
                                   int         n_glyphs);
-
-
 
 void ctx_shadow_rgba      (Ctx *ctx, float r, float g, float b, float a);
 void ctx_shadow_blur      (Ctx *ctx, float x);
