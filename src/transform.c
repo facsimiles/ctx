@@ -42,6 +42,40 @@ void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y)
   _ctx_user_to_device_distance (&ctx->state, x, y);
 }
 
+
+
+CTX_STATIC inline void
+_ctx_device_to_user (CtxState *state, float *x, float *y)
+{
+  CtxMatrix m = state->gstate.transform;
+  ctx_matrix_invert (&m);
+  _ctx_matrix_apply_transform (&m, x, y);
+}
+
+CTX_STATIC void
+_ctx_device_to_user_distance (CtxState *state, float *x, float *y)
+{
+  CtxMatrix m = state->gstate.transform;
+  ctx_matrix_invert (&m);
+  _ctx_matrix_apply_transform (&m, x, y);
+  *x -= m.m[2][0];
+  *y -= m.m[2][1];
+}
+
+void ctx_device_to_user          (Ctx *ctx, float *x, float *y)
+{
+  _ctx_device_to_user (&ctx->state, x, y);
+}
+void ctx_device_to_user_distance (Ctx *ctx, float *x, float *y)
+{
+  _ctx_device_to_user_distance (&ctx->state, x, y);
+}
+
+
+
+
+
+
 CTX_STATIC void
 ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f, float g, float h, float i)
 {

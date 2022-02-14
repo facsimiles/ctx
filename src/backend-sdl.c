@@ -158,7 +158,7 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     {
       usleep (500);
       count ++;
-      if (count > 300)
+      if (count > 900)
       {
         tiled->shown_frame = tiled->render_frame;
         fprintf (stderr, "[drop]");

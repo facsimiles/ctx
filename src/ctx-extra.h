@@ -262,6 +262,11 @@ int ctx_utf8_len (const unsigned char first_byte);
 
 void ctx_user_to_device          (Ctx *ctx, float *x, float *y);
 void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y);
+
+
+void ctx_device_to_user          (Ctx *ctx, float *x, float *y);
+void ctx_device_to_user_distance (Ctx *ctx, float *x, float *y);
+
 const char *ctx_utf8_skip (const char *s, int utf8_length);
 int ctx_is_set_now (Ctx *ctx, uint32_t hash);
 void ctx_set_size (Ctx *ctx, int width, int height);

@@ -2239,10 +2239,10 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   {
     ctx_composite_setup (rasterizer);
 
-    rasterizer->state->min_x = ctx_mini (rasterizer->state->min_x, rasterizer->col_min / CTX_SUBDIV);
-    rasterizer->state->max_x = ctx_maxi (rasterizer->state->min_x, rasterizer->col_max / CTX_SUBDIV);
-    rasterizer->state->min_y = ctx_mini (rasterizer->state->min_y, rasterizer->scan_min / CTX_FULL_AA);
-    rasterizer->state->max_y = ctx_maxi (rasterizer->state->max_y, rasterizer->scan_max / CTX_FULL_AA);
+    rasterizer->state->ink_min_x = ctx_mini (rasterizer->state->ink_min_x, rasterizer->col_min / CTX_SUBDIV);
+    rasterizer->state->ink_max_x = ctx_maxi (rasterizer->state->ink_min_x, rasterizer->col_max / CTX_SUBDIV);
+    rasterizer->state->ink_min_y = ctx_mini (rasterizer->state->ink_min_y, rasterizer->scan_min / CTX_FULL_AA);
+    rasterizer->state->ink_max_y = ctx_maxi (rasterizer->state->ink_max_y, rasterizer->scan_max / CTX_FULL_AA);
 
 #if CTX_FAST_FILL_RECT
   if (rasterizer->edge_list.count == 5)

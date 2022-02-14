@@ -305,10 +305,10 @@ struct _CtxState
 
   float         x;
   float         y;
-  int           min_x;
-  int           min_y;
-  int           max_x;
-  int           max_y;
+  int           ink_min_x;
+  int           ink_min_y;
+  int           ink_max_x;
+  int           ink_max_y;
   CtxGState     gstate;
   CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 #if CTX_GRADIENTS

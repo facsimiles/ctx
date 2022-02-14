@@ -20,8 +20,8 @@ CtxState *ctx_get_state (Ctx *ctx)
 
 void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
 {
-  if ( (ctx->state.min_x > ctx->state.max_x) ||
-       (ctx->state.min_y > ctx->state.max_y) )
+  if ( (ctx->state.ink_min_x > ctx->state.ink_max_x) ||
+       (ctx->state.ink_min_y > ctx->state.ink_max_y) )
     {
       if (x) { *x = 0; }
       if (y) { *y = 0; }
@@ -29,14 +29,14 @@ void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
       if (height) { *height = 0; }
       return;
     }
-  if (ctx->state.min_x < 0)
-    { ctx->state.min_x = 0; }
-  if (ctx->state.min_y < 0)
-    { ctx->state.min_y = 0; }
-  if (x) { *x = ctx->state.min_x; }
-  if (y) { *y = ctx->state.min_y; }
-  if (width) { *width = ctx->state.max_x - ctx->state.min_x; }
-  if (height) { *height = ctx->state.max_y - ctx->state.min_y; }
+  if (ctx->state.ink_min_x < 0)
+    { ctx->state.ink_min_x = 0; }
+  if (ctx->state.ink_min_y < 0)
+    { ctx->state.ink_min_y = 0; }
+  if (x) { *x = ctx->state.ink_min_x; }
+  if (y) { *y = ctx->state.ink_min_y; }
+  if (width) { *width = ctx->state.ink_max_x - ctx->state.ink_min_x + 1; }
+  if (height) { *height = ctx->state.ink_max_y - ctx->state.ink_min_y + 1; }
 }
 
 #if CTX_CURRENT_PATH
@@ -1737,6 +1737,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
     {
       case CTX_RESET:
         ctx_state_init (state);
+        state->has_moved = 0;
         break;
       case CTX_CLIP:
       case CTX_BEGIN_PATH:
@@ -1763,6 +1764,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
       case CTX_ARC:
         state->x = ctx_arg_float (0) + ctx_cosf (ctx_arg_float (4) ) * ctx_arg_float (2);
         state->y = ctx_arg_float (1) + ctx_sinf (ctx_arg_float (4) ) * ctx_arg_float (2);
+        state->has_moved = 1;
         break;
       case CTX_REL_MOVE_TO:
       case CTX_REL_LINE_TO:
@@ -1810,10 +1812,10 @@ ctx_state_init (CtxState *state)
   state->gstate.source_stroke.type = CTX_SOURCE_INHERIT_FILL;
   ctx_color_set_graya (state, &state->gstate.source_fill.color, 1.0f, 1.0f);
   ctx_state_set (state, CTX_line_spacing, 1.0f);
-  state->min_x                  = 8192;
-  state->min_y                  = 8192;
-  state->max_x                  = -8192;
-  state->max_y                  = -8192;
+  state->ink_min_x              = 8192;
+  state->ink_min_y              = 8192;
+  state->ink_max_x              = -8192;
+  state->ink_max_y              = -8192;
   _ctx_matrix_identity (&state->gstate.transform);
 #if CTX_CM
 #if CTX_BABL
