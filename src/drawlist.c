@@ -306,7 +306,6 @@ again:
         case CTX_CONT: // shouldnt happen
         default:
           iterator->bitpack_length = 0;
-          return (CtxCommand *) ret;
 #if 0
         default: // XXX remove - and get better warnings
           iterator->bitpack_command[0] = ret[0];

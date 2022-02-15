@@ -33,6 +33,32 @@ static inline void ctx_formatter_addstrf (CtxFormatter *formatter, const char *f
    free (buffer);
 }
 
+static void
+ctx_print_float (CtxFormatter *formatter, float val)
+{
+  char temp[128];
+  sprintf (temp, "%0.3f", val);
+  int j;
+  for (j = 0; temp[j]; j++)
+    if (j == ',') { temp[j] = '.'; }
+  j--;
+  if (j>0)
+    while (temp[j] == '0')
+      {
+        temp[j]=0;
+        j--;
+      }
+  if (temp[j]=='.')
+    { temp[j]='\0'; }
+  ctx_formatter_addstr (formatter, temp, -1);
+}
+
+static void
+ctx_print_int (CtxFormatter *formatter, int val)
+{
+  ctx_formatter_addstrf (formatter, "%i", val);
+}
+
 static void _ctx_stream_addstr (CtxFormatter *formatter, const char *str, int len)
 {
   if (!str || len == 0)
@@ -339,13 +365,13 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
             }
           else
             {
-              ctx_formatter_addstrf (formatter, "%i", val);
+              ctx_print_int (formatter, val);
             }
         }
       else
 #endif
         {
-          ctx_formatter_addstrf (formatter, "%i", val);
+          ctx_print_int (formatter, val);
         }
     }
   _ctx_print_endcmd (formatter);
@@ -398,31 +424,6 @@ ctx_print_escaped_string (CtxFormatter *formatter, const char *string)
     }
 }
 
-static void
-ctx_print_float (CtxFormatter *formatter, float val)
-{
-  char temp[128];
-  sprintf (temp, "%0.3f", val);
-  int j;
-  for (j = 0; temp[j]; j++)
-    if (j == ',') { temp[j] = '.'; }
-  j--;
-  if (j>0)
-    while (temp[j] == '0')
-      {
-        temp[j]=0;
-        j--;
-      }
-  if (temp[j]=='.')
-    { temp[j]='\0'; }
-  ctx_formatter_addstr (formatter, temp, -1);
-}
-
-static void
-ctx_print_int (CtxFormatter *formatter, int val)
-{
-  ctx_formatter_addstrf (formatter, "%i", val);
-}
 
 static void
 ctx_print_entry (CtxFormatter *formatter, CtxEntry *entry, int args)
@@ -452,7 +453,7 @@ static void
 ctx_print_glyph (CtxFormatter *formatter, CtxEntry *entry, int args)
 {
   _ctx_print_name (formatter, entry->code);
-  ctx_formatter_addstrf (formatter, "%i", entry->data.u32[0]);
+  ctx_print_int (formatter, entry->data.u32[0]);
   _ctx_print_endcmd (formatter);
 }
 
@@ -484,24 +485,24 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         break;
       case CTX_TEXTURE:
         _ctx_print_name (formatter, entry->code);
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstr (formatter, "\"", -1);
         ctx_print_escaped_string (formatter, c->texture.eid);
-        ctx_formatter_addstrf (formatter, "\", ");
+        ctx_formatter_addstr (formatter, "\", ", 2);
         ctx_print_float (formatter, c->texture.x);
-        ctx_formatter_addstrf (formatter, ", ");
+        ctx_formatter_addstr (formatter, ", ", 2);
         ctx_print_float (formatter, c->texture.y);
-        ctx_formatter_addstrf (formatter, " ");
+        ctx_formatter_addstr (formatter, " ", 1);
         _ctx_print_endcmd (formatter);
         break;
 
       case CTX_DEFINE_TEXTURE:
         {
         _ctx_print_name (formatter, entry->code);
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstr (formatter, "\"", 1);
         ctx_print_escaped_string (formatter, c->define_texture.eid);
-        ctx_formatter_addstrf (formatter, "\", ");
+        ctx_formatter_addstr (formatter, "\", ", 2);
         ctx_print_int (formatter, c->define_texture.width);
-        ctx_formatter_addstrf (formatter, ", ");
+        ctx_formatter_addstr (formatter, ", ", 2);
         ctx_print_int (formatter, c->define_texture.height);
         ctx_formatter_addstrf (formatter, ",%i, ", c->define_texture.format);
 
@@ -517,7 +518,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         //ctx_print_a85 (formatter, pixel_data, c->define_texture.height * stride);
         ctx_print_yenc (formatter, pixel_data, data_len);
 #else
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstrf (formatter, "\"", 1);
         ctx_print_escaped_string (formatter, pixel_data);
         ctx_formatter_addstrf (formatter, "\" ");
 
@@ -578,9 +579,9 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
            default:
              ctx_formatter_addstrf (formatter, " %d ", c->set.key_hash);
         }
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstrf (formatter, "\"", 1);
         ctx_print_escaped_string (formatter, (char*)c->set.utf8);
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstrf (formatter, "\"", 1);
         _ctx_print_endcmd (formatter);
         break;
 #endif
@@ -604,7 +605,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                 case CTX_GRAYA:
                   ctx_formatter_addstrf (formatter, "graya%s ", suffix);
                   ctx_print_float (formatter, c->graya.g);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->graya.a);
                   break;
                 case CTX_RGBA:
@@ -612,11 +613,11 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   {
                     ctx_formatter_addstrf (formatter, "rgba%s ", suffix);
                     ctx_print_float (formatter, c->rgba.r);
-                    ctx_formatter_addstrf (formatter, " ");
+                    ctx_formatter_addstr (formatter, " ", 1);
                     ctx_print_float (formatter, c->rgba.g);
-                    ctx_formatter_addstrf (formatter, " ");
+                    ctx_formatter_addstr (formatter, " ", 1);
                     ctx_print_float (formatter, c->rgba.b);
-                    ctx_formatter_addstrf (formatter, " ");
+                    ctx_formatter_addstr (formatter, " ", 1);
                     ctx_print_float (formatter, c->rgba.a);
                     break;
                   }
@@ -626,76 +627,76 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   {
                     ctx_formatter_addstrf (formatter, "gray%s ", suffix);
                     ctx_print_float (formatter, c->rgba.r);
-                    ctx_formatter_addstrf (formatter, " ");
+                    ctx_formatter_addstr (formatter, " ", 1);
                     break;
                   }
                   ctx_formatter_addstrf (formatter, "rgb%s ", suffix);
                   ctx_print_float (formatter, c->rgba.r);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->rgba.g);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->rgba.b);
                   break;
                 case CTX_DRGB:
                   ctx_formatter_addstrf (formatter, "drgb%s ", suffix);
                   ctx_print_float (formatter, c->rgba.r);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->rgba.g);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->rgba.b);
                   break;
                 case CTX_DRGBA:
                   ctx_formatter_addstrf (formatter, "drgba%s ", suffix);
                   ctx_print_float (formatter, c->rgba.r);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->rgba.g);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->rgba.b);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->rgba.a);
                   break;
                 case CTX_CMYK:
                   ctx_formatter_addstrf (formatter, "cmyk%s ", suffix);
                   ctx_print_float (formatter, c->cmyka.c);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.m);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.y);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.k);
                   break;
                 case CTX_CMYKA:
                   ctx_formatter_addstrf (formatter, "cmyka%s ", suffix);
                   ctx_print_float (formatter, c->cmyka.c);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.m);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.y);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.k);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.a);
                   break;
                 case CTX_DCMYK:
                   ctx_formatter_addstrf (formatter, "dcmyk%s ", suffix);
                   ctx_print_float (formatter, c->cmyka.c);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.m);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.y);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.k);
                   break;
                 case CTX_DCMYKA:
                   ctx_formatter_addstrf (formatter, "dcmyka%s ", suffix);
                   ctx_print_float (formatter, c->cmyka.c);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.m);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.y);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.k);
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
                   ctx_print_float (formatter, c->cmyka.a);
                   break;
               }
@@ -709,20 +710,20 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         if (formatter->longform)
           {
             _ctx_indent (formatter);
-            ctx_formatter_addstrf (formatter, "rgba (");
+            ctx_formatter_addstr (formatter, "rgba (", -1);
           }
         else
           {
-            ctx_formatter_addstrf (formatter, "rgba (");
+            ctx_formatter_addstr (formatter, "rgba (", -1);
           }
         for (int c = 0; c < 4; c++)
           {
             if (c)
               {
                 if (formatter->longform)
-                  ctx_formatter_addstrf (formatter, ", ");
+                  ctx_formatter_addstr (formatter, ", ", 2);
                 else
-                  ctx_formatter_addstrf (formatter, " ");
+                  ctx_formatter_addstr (formatter, " ", 1);
               }
             ctx_print_float (formatter, ctx_u8_to_float (ctx_arg_u8 (c) ) );
           }
@@ -771,7 +772,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         for (int c = 0; c < 4; c++)
           {
             if (c)
-              ctx_formatter_addstrf (formatter, " ");
+              ctx_formatter_addstr (formatter, " ", 1);
             ctx_print_float (formatter, ctx_u8_to_float (ctx_arg_u8 (4+c) ) );
           }
         _ctx_print_endcmd (formatter);
@@ -780,9 +781,9 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_STROKE_TEXT:
       case CTX_FONT:
         _ctx_print_name (formatter, entry->code);
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstr (formatter, "\"", 1);
         ctx_print_escaped_string (formatter, ctx_arg_string() );
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstr (formatter, "\"", 1);
         _ctx_print_endcmd (formatter);
         break;
       case CTX_CONT:
@@ -793,15 +794,15 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         break;
       case CTX_KERNING_PAIR:
         _ctx_print_name (formatter, entry->code);
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstr (formatter, "\"", 1);
         {
            uint8_t utf8[16];
            utf8[ctx_unichar_to_utf8 (c->kern.glyph_before, utf8)]=0;
            ctx_print_escaped_string (formatter, (char*)utf8);
-           ctx_formatter_addstrf (formatter, "\", \"");
+           ctx_formatter_addstr (formatter, "\", \"", -1);
            utf8[ctx_unichar_to_utf8 (c->kern.glyph_after, utf8)]=0;
            ctx_print_escaped_string (formatter, (char*)utf8);
-           ctx_formatter_addstrf (formatter, "\"");
+           ctx_formatter_addstr (formatter, "\"", 1);
            sprintf ((char*)utf8, ", %f", c->kern.amount / 256.0);
            ctx_print_escaped_string (formatter, (char*)utf8);
         }
@@ -810,12 +811,12 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
 
       case CTX_DEFINE_GLYPH:
         _ctx_print_name (formatter, entry->code);
-        ctx_formatter_addstrf (formatter, "\"");
+        ctx_formatter_addstr (formatter, "\"", 1);
         {
            uint8_t utf8[16];
            utf8[ctx_unichar_to_utf8 (entry->data.u32[0], utf8)]=0;
            ctx_print_escaped_string (formatter, (char*)utf8);
-           ctx_formatter_addstrf (formatter, "\"");
+           ctx_formatter_addstr (formatter, "\"", 1);
            sprintf ((char*)utf8, ", %f", entry->data.u32[1]/256.0);
            ctx_print_escaped_string (formatter, (char*)utf8);
         }

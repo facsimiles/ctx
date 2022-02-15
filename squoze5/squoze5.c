@@ -48,8 +48,8 @@ int usage (const char *base)
 "  --encode -e    force encoding, the default is autodetect\n"
 "  --base64 -b    use base64 as encoding for UTF-5/UTF-V\n"
 "\n"
-"Multiple short options can be set together -e6 forces encoding in SQUOZE-6\n"
-"Without parameters it is as if --squoze10 has been passed as arguments.\n"
+"Multiple short options can be set together -e32 forces encoding in SQUOZE32\n"
+"Without options it is as if --squoze32 has been passed as arguments.\n"
 "\n");
   return 0;
 }
