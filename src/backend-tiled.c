@@ -37,6 +37,14 @@ void ctx_tiled_free (CtxTiled *tiled)
     }
     ctx_free (tiled->ctx_copy);
   }
+
+  if (tiled->active_info)
+  {
+    free (tiled->active_info);
+    tiled->active_info = 0;
+    tiled->active_info_count = 0;
+  }
+
   // leak?
 }
 static unsigned char *sdl_icc = NULL;
@@ -60,10 +68,10 @@ static void ctx_tiled_flush (Ctx *ctx)
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++)
         {
-          uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
-          if (new_hash && memcmp (new_hash, &tiled->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
+          uint32_t new_hash = ctx_hasher_get_hash (hasher, col, row);
+          if (new_hash && new_hash != tiled->hashes[(row * CTX_HASH_COLS + col)])
           {
-            memcpy (&tiled->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
+            tiled->hashes[(row * CTX_HASH_COLS +  col)] = new_hash;
             tiled->tile_affinity[row * CTX_HASH_COLS + col] = 1;
             dirty_tiles++;
           }
@@ -72,6 +80,14 @@ static void ctx_tiled_flush (Ctx *ctx)
             tiled->tile_affinity[row * CTX_HASH_COLS + col] = -1;
           }
         }
+      if (tiled->active_info)
+      {
+        free (tiled->active_info);
+        tiled->active_info = 0;
+        tiled->active_info_count = 0;
+      }
+
+      tiled->active_info = ctx_hasher_get_active_info (hasher, &tiled->active_info_count);
       free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_free (hasher);
     }
@@ -174,6 +190,9 @@ void ctx_tiled_render_fun (void **data)
             int height = tiled->height / CTX_HASH_ROWS;
 
             CtxRasterizer *rasterizer = (CtxRasterizer*)host->backend;
+
+            int active_mask = 1 << hno;
+
 #if 1 // merge horizontally adjecant tiles of same affinity into one job
             while (col + 1 < CTX_HASH_COLS &&
                    tiled->tile_affinity[hno+1] == no)
@@ -181,6 +200,7 @@ void ctx_tiled_render_fun (void **data)
               width += tiled->width / CTX_HASH_COLS;
               col++;
               hno++;
+              active_mask |= 1 << hno;
             }
 #endif
             int swap_red_green = ((CtxRasterizer*)(host->backend))->swap_red_green;
@@ -195,7 +215,7 @@ void ctx_tiled_render_fun (void **data)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
 
             ctx_translate (host, -x0, -y0);
-            ctx_render_ctx (tiled->ctx_copy, host);
+            ctx_render_ctx_masked (tiled->ctx_copy, host, tiled->active_info, tiled->active_info_count, active_mask);
           }
         }
       tiled->rendered_frame[no] = tiled->render_frame;

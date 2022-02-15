@@ -3763,42 +3763,54 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
         ctx_rasterizer_line_dash (rasterizer, 0, NULL);
         break;
 
+
       case CTX_LINE_TO:
+        if (ctx->bail) break;
         ctx_rasterizer_line_to (rasterizer, c->c.x0, c->c.y0);
         break;
       case CTX_REL_LINE_TO:
+        if (ctx->bail) break;
         ctx_rasterizer_rel_line_to (rasterizer, c->c.x0, c->c.y0);
         break;
       case CTX_MOVE_TO:
+        if (ctx->bail) break;
         ctx_rasterizer_move_to (rasterizer, c->c.x0, c->c.y0);
         break;
       case CTX_REL_MOVE_TO:
+        if (ctx->bail) break;
         ctx_rasterizer_rel_move_to (rasterizer, c->c.x0, c->c.y0);
         break;
       case CTX_CURVE_TO:
+        if (ctx->bail) break;
         ctx_rasterizer_curve_to (rasterizer, c->c.x0, c->c.y0,
                                  c->c.x1, c->c.y1,
                                  c->c.x2, c->c.y2);
         break;
       case CTX_REL_CURVE_TO:
+        if (ctx->bail) break;
         ctx_rasterizer_rel_curve_to (rasterizer, c->c.x0, c->c.y0,
                                      c->c.x1, c->c.y1,
                                      c->c.x2, c->c.y2);
         break;
       case CTX_QUAD_TO:
+        if (ctx->bail) break;
         ctx_rasterizer_quad_to (rasterizer, c->c.x0, c->c.y0, c->c.x1, c->c.y1);
         break;
       case CTX_REL_QUAD_TO:
+        if (ctx->bail) break;
         ctx_rasterizer_rel_quad_to (rasterizer, c->c.x0, c->c.y0, c->c.x1, c->c.y1);
         break;
       case CTX_ARC:
+        if (ctx->bail) break;
         ctx_rasterizer_arc (rasterizer, c->arc.x, c->arc.y, c->arc.radius, c->arc.angle1, c->arc.angle2, c->arc.direction);
         break;
       case CTX_RECTANGLE:
+        if (ctx->bail) break;
         ctx_rasterizer_rectangle (rasterizer, c->rectangle.x, c->rectangle.y,
                                   c->rectangle.width, c->rectangle.height);
         break;
       case CTX_ROUND_RECTANGLE:
+        if (ctx->bail) break;
         ctx_rasterizer_round_rectangle (rasterizer, c->rectangle.x, c->rectangle.y,
                                         c->rectangle.width, c->rectangle.height,
                                         c->rectangle.radius);
@@ -3923,6 +3935,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
         }
         break;
       case CTX_STROKE:
+          if (rasterizer->edge_list.count == 0)break;
 #if CTX_ENABLE_SHADOW_BLUR
         if (state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)
@@ -4062,6 +4075,7 @@ foo:
         ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
         break;
       case CTX_FILL:
+          if (rasterizer->edge_list.count == 0)break;
 #if CTX_ENABLE_SHADOW_BLUR
         if (state->gstate.shadow_blur > 0.0 &&
             !rasterizer->in_text)

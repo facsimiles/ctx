@@ -17,7 +17,7 @@ typedef struct CtxTftBackend
   int     min_row; // hasher cols and rows
   int     max_col; // hasher cols and rows
   int     max_row; // hasher cols and rows
-  uint8_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS * 20];
+  uint8_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS * 4];
   uint8_t state[CTX_HASH_ROWS * CTX_HASH_COLS];
 } CtxTftBackend;
 
@@ -201,9 +201,9 @@ ctx_tft_flush (Ctx *ctx)
         for (int col = 0; col < CTX_HASH_COLS; col++)
         {
           uint8_t *new_hash = ctx_hasher_get_hash (hasher, col, row);
-          if (new_hash && memcmp (new_hash, &tft_backend->hashes[(row * CTX_HASH_COLS + col) *  20], 20))
+          if (new_hash && memcmp (new_hash, &tft_backend->hashes[(row * CTX_HASH_COLS + col) *  4], 4))
           {
-            memcpy (&tft_backend->hashes[(row * CTX_HASH_COLS +  col)*20], new_hash, 20);
+            memcpy (&tft_backend->hashes[(row * CTX_HASH_COLS +  col)*4], new_hash, 4);
             dirty_tiles++;
 
             tft_backend->max_col = ctx_maxi (tft_backend->max_col, col);

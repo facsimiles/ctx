@@ -355,7 +355,7 @@ static void fb_vt_switch_cb (int sig)
       for (int row = 0; row < CTX_HASH_ROWS; row++)
       for (int col = 0; col < CTX_HASH_COLS; col++)
       {
-        tiled->hashes[(row * CTX_HASH_COLS + col) *  20] += 1;
+        tiled->hashes[(row * CTX_HASH_COLS + col)] += 1;
       }
     }
   }

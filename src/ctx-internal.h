@@ -512,6 +512,8 @@ struct _Ctx
   CtxDrawlist       current_path; // possibly transformed coordinates !
   CtxIterator       current_path_iterator;
 #endif
+
+  uint32_t          bail;
 };
 
 static inline void
@@ -784,17 +786,33 @@ struct _CtxSHA1 {
     uint32_t state[5], curlen;
     unsigned char buf[64];
 };
+typedef struct _CtxMurmur CtxMurmur;
+struct _CtxMurmur {
+    uint32_t state[2];
+};
 
+
+typedef struct CtxCommandState
+{
+  uint32_t pos;
+  uint32_t active;
+} CtxCommandState;
 
 struct _CtxHasher
 {
   CtxRasterizer rasterizer;
   int           cols;
   int           rows;
-  uint8_t      *hashes;
-  CtxSHA1       sha1_fill[CTX_MAX_STATES]; 
-  CtxSHA1       sha1_stroke[CTX_MAX_STATES];
+  uint32_t     *hashes;
+  CtxMurmur     murmur_fill[CTX_MAX_STATES]; 
+  CtxMurmur     murmur_stroke[CTX_MAX_STATES];
   int           source_level;
+  int           pos; 
+  //CtxList *active_info;
+
+  CtxCommandState *active_info;
+  int              active_info_size;
+  int              active_info_count;
 };
 
 #if CTX_RASTERIZER
@@ -1171,7 +1189,11 @@ struct _CtxTiled
    int       min_row;
    int       max_col;
    int       max_row;
-   uint8_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS *  20];
+  // CtxList  *active_info;
+   CtxCommandState *active_info;
+  // int              active_info_size;
+   int              active_info_count;
+   uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
                                                            //
@@ -1266,6 +1288,9 @@ _ctx_matrix_identity (CtxMatrix *matrix)
 
 
 CTX_STATIC int ctx_float_to_string_index (float val);
+
+void
+ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, CtxCommandState *active_list, int count, uint32_t mask);
 
 static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len);
 

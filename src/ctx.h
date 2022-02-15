@@ -669,7 +669,7 @@ void _ctx_set_store_clear (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
 
 Ctx *ctx_hasher_new (int width, int height, int cols, int rows);
-uint8_t *ctx_hasher_get_hash (Ctx *ctx, int col, int row);
+uint32_t ctx_hasher_get_hash (Ctx *ctx, int col, int row);
 
 int ctx_utf8_strlen (const char *s);
 
