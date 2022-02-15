@@ -3783,7 +3783,12 @@ void vt_gfx (VT *vt, const char *command)
           unsigned char *data2 = malloc (vt->gfx.buf_size + 1);
           /* if a buf size is set (rather compression, but
            * this works first..) then */
-          unsigned int actual_uncompressed_size = vt->gfx.buf_size;
+#ifndef EMSCRIPTEN
+      unsigned long
+#else
+      unsigned int
+#endif
+          actual_uncompressed_size = vt->gfx.buf_size;
           int z_result = uncompress (data2, &actual_uncompressed_size,
                                      vt->gfx.data,
                                      vt->gfx.data_size);

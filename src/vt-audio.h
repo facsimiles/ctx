@@ -16,6 +16,11 @@
  */
 
 
+#ifndef EMSCRIPTEN
+#undef uncompress
+#include <zlib.h>
+#endif
+
 #if CTX_SDL
 #include <SDL.h>
 
@@ -1387,7 +1392,12 @@ void vt_audio (VT *vt, const char *command)
     {
       case 'z':
     {
-      unsigned int actual_uncompressed_size = audio->frames * audio->bits/8 * audio->channels + 512;
+#ifndef EMSCRIPTEN
+      unsigned long
+#else
+      unsigned int
+#endif
+              actual_uncompressed_size = audio->frames * audio->bits/8 * audio->channels + 512;
       unsigned char *data2 = malloc (actual_uncompressed_size);
       /* if a buf size is set (rather compression, but
        * this works first..) then */
