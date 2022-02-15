@@ -454,6 +454,7 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
   if (x1 <= x && x <= x2 &&
       y1 <= y && y <= y2)
   {
+#if CTX_CURRENT_PATH
      uint32_t pixel = 0;
      CtxMatrix transform;
      ctx_get_matrix (ctx, &transform);
@@ -472,6 +473,9 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
      ctx_fill (ctx);
      ctx_free (tester);
      if (pixel == 0xffffff) return 1;
+#else
+     return 1;
+#endif
   }
   return 0;
 }

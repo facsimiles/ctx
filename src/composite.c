@@ -5626,7 +5626,6 @@ ctx_setup_GRAY8 (CtxRasterizer *rasterizer)
 #endif
 
 #endif
-#if CTX_ENABLE_RGB332
 
 inline static void
 ctx_332_unpack (uint8_t pixel,
@@ -5659,6 +5658,7 @@ ctx_332_pack (uint8_t red,
   c |= (blue >> 6);
   return c;
 }
+#if CTX_ENABLE_RGB332
 
 static inline uint8_t
 ctx_888_to_332 (uint32_t in)
@@ -5762,6 +5762,19 @@ ctx_composite_RGB332 (CTX_COMPOSITE_ARGUMENTS)
 }
 
 #endif
+static inline uint16_t
+ctx_565_pack (const uint8_t  red,
+              const uint8_t  green,
+              const uint8_t  blue,
+              const int      byteswap)
+{
+  uint32_t c = (red >> 3) << 11;
+  c |= (green >> 2) << 5;
+  c |= blue >> 3;
+  if (byteswap)
+    { return (c>>8) | (c<<8); } /* swap bytes */
+  return c;
+}
 #if CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED
 
 static inline void
@@ -5812,19 +5825,6 @@ ctx_565_unpack_32 (const uint16_t pixel,
   return r +  (g << 8) + (b << 16) + (0xff << 24);
 }
 
-static inline uint16_t
-ctx_565_pack (const uint8_t  red,
-              const uint8_t  green,
-              const uint8_t  blue,
-              const int      byteswap)
-{
-  uint32_t c = (red >> 3) << 11;
-  c |= (green >> 2) << 5;
-  c |= blue >> 3;
-  if (byteswap)
-    { return (c>>8) | (c<<8); } /* swap bytes */
-  return c;
-}
 
 static inline uint16_t
 ctx_888_to_565 (uint32_t in, int byteswap)
