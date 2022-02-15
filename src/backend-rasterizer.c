@@ -2078,7 +2078,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   _ctx_user_to_device (rasterizer->state, &minx, &miny);
   _ctx_user_to_device (rasterizer->state, &maxx, &maxy);
 
-    if(
+    if( (maxx-minx) + (maxy-miny) < 0.66f ||
         (minx > rasterizer->blit_x + rasterizer->blit_width) ||
         (miny > rasterizer->blit_y + rasterizer->blit_height) ||
         (maxx < rasterizer->blit_x) ||
