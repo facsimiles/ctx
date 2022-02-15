@@ -226,7 +226,8 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           (int)(3+(rasterizer->scan_max - rasterizer->scan_min + aa-1) / aa)
         };
 
-        ctx_sha1_process(&sha1,  (uint8_t*)rasterizer->edge_list.entries, sizeof(CtxSegment) * rasterizer->edge_list.count);
+        if (rasterizer->edge_list.count)
+          ctx_sha1_process(&sha1,  (uint8_t*)rasterizer->edge_list.entries, sizeof(CtxSegment) * rasterizer->edge_list.count);
 
         {
           int is = rasterizer->state->gstate.fill_rule;
@@ -258,6 +259,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           CtxSHA1 sha1;
           memcpy (&sha1, &hasher->sha1_stroke[hasher->source_level], sizeof (CtxSHA1));
           char ctx_sha1_hash[20];
+        if (rasterizer->edge_list.count)
         ctx_sha1_process(&sha1,  (uint8_t*)rasterizer->edge_list.entries, sizeof(CtxSegment) * rasterizer->edge_list.count);
         CtxIntRectangle shape_rect = {
           (int)(rasterizer->col_min / CTX_SUBDIV - rasterizer->state->gstate.line_width),
