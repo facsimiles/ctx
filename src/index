@@ -66,6 +66,7 @@ vt.h
 vt-audio.h
 vt.c
 ctx-clients.c
+tinyvg.c
 
 end-implementation
 

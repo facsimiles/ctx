@@ -246,6 +246,27 @@ void  ctx_arc_to          (Ctx *ctx, float x1, float y1,
  */
 void  ctx_rel_arc_to      (Ctx *ctx, float x1, float y1,
                            float x2, float y2, float radius);
+
+enum {
+  CTX_TVG_FLAG_NONE       = 0,
+  CTX_TVG_FLAG_LOAD_PAL   = 1<<0,
+  CTX_TVG_FLAG_BBOX_CHECK = 1<<1,
+  CTX_TVG_FLAG_DEFAULTS   = CTX_TVG_FLAG_LOAD_PAL
+};
+
+int ctx_tinyvg_fd_draw (Ctx *ctx, int fd,
+                         float x, float y,
+                         float width, float height,
+                         int flags);
+int ctx_tinyvg_draw (Ctx     *ctx,
+                     uint8_t *data, int length,
+                     float    x,
+                     float    y,
+                     float    width,
+                     float    height,
+                     int      flags);
+
+
 /**
  * ctx_rectangle:
  */

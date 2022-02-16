@@ -18,6 +18,7 @@
 #define CTX_CLIENTS              1
 #define CTX_FONTS_FROM_FILE      1
 
+#define CTX_TINYVG               1
 #define CTX_DITHER               0 //
 #define CTX_BRAILLE_TEXT         1
 #define CTX_ENABLE_CMYK          1
@@ -116,6 +117,7 @@ void ctx_simd_setup (void)
 #if CTX_BABL
 #include <babl/babl.h>
 #endif
+
 
 #define CTX_BRAILLE_TEXT         1
 #define CTX_ENABLE_CMYK          1
