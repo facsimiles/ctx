@@ -259,5 +259,5 @@ flatpak-install:
 ctx.h: src/*.[ch] src/index fonts/ctx-font-ascii.h tools/ctx-fontgen
 	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@)
 
-ctx-nofont.h: src/*
+ctx-nofont.h: src/*.c src/*.h src/index
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
