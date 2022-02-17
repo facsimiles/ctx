@@ -1880,9 +1880,6 @@ ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time,
   int scene_no = *scene_no_p;
   CtxString *str = ctx_string_new ("");
   int in_var = 0;
-  float prev_key = -100000.0f;
-  float prev_val = 0.0f;
-  float resolved_val = -100000;
   float scene_duration = 5.0;
 
   int i;
@@ -1949,6 +1946,11 @@ again:
   if (scene_no == 0 && last_scene==0 && string[i]==0)
     i=0;
 
+#define MAX_KEY_FRAMES 64
+  float keys[MAX_KEY_FRAMES];
+  float values[MAX_KEY_FRAMES];
+  int n_keys = 0;
+  int smooth = 0;
 
   for (; string[i]; i++)
   {
@@ -1960,9 +1962,7 @@ again:
       else if (p == '(')
       {
         in_var = 1;
-        prev_key = -1000000.0f;
-        prev_val = 0.0f;
-        resolved_val = -100000.0;
+        n_keys = 0;
       }
       else
       {
@@ -1973,6 +1973,47 @@ again:
     {
       if (p == ')')
       {
+        float resolved_val = -100000.0;
+        float prev_val = 0;
+        for (int i = 0; i < n_keys; i++)
+        {
+          float key = keys[i];
+          float val = values[i];
+          //printf ("%f=%f\n", key, val);
+          if (key>=time && resolved_val <=-10000.0f)
+          {
+             if (i == 0)
+               resolved_val = val;
+             else if (n_keys<=2)
+             {
+               resolved_val = ctx_lerpf (values[i-1], val, 
+                               (time-keys[i-1])/(key-keys[i-1]));
+             } else
+             {
+                if (i <= 1)
+                {
+                  resolved_val = ctx_catmull_rom_left (values[i-1], values[i],
+                                  values[i+1],
+                                 (time-keys[i-1])/(key-keys[i-1]));
+                }
+                else if (i > 1 && i+1 < n_keys)
+                {
+                  resolved_val = ctx_catmull_rom (values[i-2], values[i-1],
+                                  val, values[i+1],
+                                 (time-keys[i-1])/(key-keys[i-1]));
+                }
+                else if (i >= 2 && i < n_keys)
+                {
+                  resolved_val = ctx_catmull_rom_right (values[i-2], values[i-1],
+                                  values[i],
+                                 (time-keys[i-1])/(key-keys[i-1]));
+                }
+             }
+
+
+          }
+          prev_val = val;
+        }
         if (resolved_val <= -100000.0f) resolved_val = prev_val;
         ctx_string_append_printf (str, "%f", resolved_val);
         in_var = 0;
@@ -1988,27 +2029,23 @@ again:
         if (eq)
            val = strtof (eq+1, &ep);
 
-        //printf ("%f=%f\n", key, val);
-        if (key>=time && resolved_val <=-10000.0f)
-        {
-           resolved_val = ctx_lerpf (prev_val, val, 
-                           (time-prev_key)/(key-prev_key));
-           // refactor to first collect all key/value pairs
-           // and then find right for linear or catmulrom
-           // interpolation
-           //
-           // allow toggling linear or catmull rom in file
-        }
-
-        prev_key = key;
-        prev_val = val;
+        keys[n_keys] = key;
+        values[n_keys++] = val;
 
         i+=(ep-sp)-1;
       }
+      else if (p=='s')
+      {
+        smooth = 1;
+      } else if (p=='l')
+      {
+        smooth = 0;
+      }
       else
       {
-        //swallow
+        /* ignore */
       }
+
     }
   }
 

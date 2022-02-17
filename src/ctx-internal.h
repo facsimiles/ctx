@@ -1090,6 +1090,44 @@ ctx_lerpf (float v0, float v1, float dx)
   return v0 + (v1-v0) * dx;
 }
 
+CTX_INLINE static float
+ctx_catmull_rom (float v0, float v1, float v2, float v3, float t)
+{
+   float ya = v0, yb = v1, yc = v2, yd = v3;
+   float a3 = 0.5f * (-ya + 3 * yb - 3 * yc + yd);
+   float a2 = 0.5f * (2 * ya - 5 * yb + 4 * yc - yd);
+   float a1 = 0.5f * (-ya + yc);
+   float a0 = yb;
+   return a3 * t * t * t +
+          a2 * t * t +
+          a1 * t +
+          a0;
+}
+
+CTX_INLINE static float
+ctx_catmull_rom_left (float v0, float v1, float v2, float t)
+{
+   float ya = v0, yb = v1, yc = v2;
+   float a2 = 0.5f * (ya - 2 * yb + yc);
+   float a1 = 0.5f * (-3 * ya + 4 * yb - yc);
+   float a0 = ya;
+   return a2 * t * t +
+          a1 * t +
+          a0;
+}
+
+CTX_INLINE static float
+ctx_catmull_rom_right (float v0, float v1, float v2, float t)
+{
+   float ya = v0, yb = v1, yc = v2;
+   float a2 = 0.5f * (ya - 2 * yb + yc);
+   float a1 = 0.5f * (-ya + yc);
+   float a0 = yb;
+   return a2 * t * t +
+          a1 * t +
+          a0;
+}
+
 
 #ifndef CTX_MIN
 #define CTX_MIN(a,b)  (((a)<(b))?(a):(b))
