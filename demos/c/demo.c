@@ -402,7 +402,7 @@ ITK *itk = NULL;
 
 int main (int argc, char **argv)
 {
-  if (argv[1]) strncpy (ctx_input, argv[1], sizeof(ctx_input));
+  if (argv[1]) strncpy (ctx_input, argv[1], sizeof(ctx_input)-1);
   ctx_init (&argc, &argv);
   /* we use itk only for its main loop */
   itk_main (ui_scenes, NULL);

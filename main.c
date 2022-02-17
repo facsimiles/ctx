@@ -28,6 +28,7 @@ static int usage_main (int argc, char **argv)
 int terminal_main (int argc, char **argv);
 int convert_main (int argc, char **argv);
 
+int ctx_tinyvg_main (int argc, char **argv);
 int ctx_img_main (int argc, char **argv);
 int ctx_gif_main (int argc, char **argv);
 int stuff_main (int argc, char **argv);
@@ -352,11 +353,18 @@ int main (int argc, char **argv)
 
     const char *media_type = ctx_path_get_media_type (input_path);
     CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
+    fprintf (stderr, "%s\n", media_type);
 
     if (!strcmp (media_type, "image/gif"))
     {
       return ctx_gif_main (argc, argv);
     }
+    if (!strcmp (media_type, "image/tinyvg"))
+    {
+            fprintf (stderr, "!!!!\n");
+      return ctx_tinyvg_main (argc, argv);
+    }
+
     if (!strcmp (media_type, "image/jpeg") ||
         !strcmp (media_type, "image/exr") ||
         !strcmp (media_type, "image/png"))

@@ -195,7 +195,6 @@ static inline int ctx_tvg_prime_cache (CtxTinyVG *tvg, uint32_t pos, int len)
 }
 #endif
 
-/* only valid up to CTX_TVG_CACHE_SIZE lengths */
 static inline void ctx_tvg_memcpy (CtxTinyVG *tvg, void *dst, int pos, int len)
 {
   if (ctx_tvg_prime_cache (tvg, pos, len))
@@ -216,6 +215,8 @@ CTX_TVG_DEFINE_ACCESOR(u8, uint8_t);
 CTX_TVG_DEFINE_ACCESOR(u16, uint16_t);
 CTX_TVG_DEFINE_ACCESOR(u32, uint32_t);
 CTX_TVG_DEFINE_ACCESOR(float, float);
+
+#undef CTX_TVG_DEFINE_ACCESSOR
 
 static inline uint8_t ctx_tvg_u6_u2 (CtxTinyVG *tvg, uint8_t *u2_ret)
 {
@@ -782,36 +783,11 @@ int ctx_tvg_read_header (CtxTinyVG *tvg)
    return 0;
 }
 
+
 static int
-ctx_tvg_draw (CtxTinyVG *tvg,
-              float x, float y,
-              float target_width,
-              float target_height)
+ctx_tvg_draw (CtxTinyVG *tvg)
 {
-   Ctx*ctx = tvg->ctx;
-   float scale_x = 1.0;
-   float scale_y = 1.0;
-   { /* handle aspect ratio, add translate ? */
-   if (target_width<=0 && target_height <= 0)
-   {
-     target_width  = tvg->width;
-     target_height = tvg->height;
-   }
-   else if (target_width<=0 && target_height > 0)
-   {
-     target_width = target_height / tvg->height * tvg->width;
-   }
-   else if (target_width<=0 && target_height > 0)
-   {
-     target_height = target_width / tvg->width * tvg->height;
-   }
-   scale_x = target_width / tvg->width;
-   scale_y = target_height / tvg->height;
-   if (scale_x > scale_y)
-     scale_x = scale_y;
-   else
-     scale_y = scale_x;
-   }
+   Ctx *ctx = tvg->ctx;
 
    tvg->color_count = ctx_tvg_var (tvg);
 
@@ -828,9 +804,8 @@ ctx_tvg_draw (CtxTinyVG *tvg,
      tvg->pal = &tvg->cache[tvg->pos];
      ctx_tvg_seek (tvg, tvg->pos + tvg->color_bytes * tvg->color_count);
    }
+
    ctx_save (ctx);
-   ctx_translate (ctx, x, y);
-   ctx_scale (ctx, scale_x, scale_y);
    ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
    ctx_line_cap  (ctx, CTX_CAP_ROUND);
 
@@ -869,6 +844,48 @@ ctx_tvg_draw (CtxTinyVG *tvg,
    return tvg->error;
 }
 
+#if 0
+static int
+ctx_tvg_draw2 (CtxTinyVG *tvg,
+               float x, float y,
+               float target_width,
+               float target_height)
+{
+   Ctx*ctx = tvg->ctx;
+   float scale_x = 1.0;
+   float scale_y = 1.0;
+   { /* handle aspect ratio, add translate ? */
+   if (target_width<=0 && target_height <= 0)
+   {
+     target_width  = tvg->width;
+     target_height = tvg->height;
+   }
+   else if (target_width<=0 && target_height > 0)
+   {
+     target_width = target_height / tvg->height * tvg->width;
+   }
+   else if (target_width<=0 && target_height > 0)
+   {
+     target_height = target_width / tvg->width * tvg->height;
+   }
+   scale_x = target_width / tvg->width;
+   scale_y = target_height / tvg->height;
+   if (scale_x > scale_y)
+     scale_x = scale_y;
+   else
+     scale_y = scale_x;
+   }
+
+   ctx_save (ctx);
+   ctx_translate (ctx, x, y);
+   ctx_scale (ctx, scale_x, scale_y);
+
+   ctx_tvg_draw (tvg);
+   ctx_restore (ctx);
+   return tvg->error;
+}
+#endif
+
 int
 ctx_tinyvg_get_size (uint8_t *data, int length, int *width, int *height)
 {
@@ -899,30 +916,23 @@ ctx_tinyvg_fd_get_size (int fd, int *width, int *height)
 
 int ctx_tinyvg_draw (Ctx     *ctx,
                      uint8_t *data, int length,
-                     float    x,
-                     float    y,
-                     float    width,
-                     float    height,
                      int      flags)
 {
    CtxTinyVG tvg;
    ctx_tvg_init_data (&tvg, ctx, data, length, flags);
    if (ctx_tvg_read_header (&tvg))
      return -1;
-   return ctx_tvg_draw (&tvg, x, y, width, height);
+   return ctx_tvg_draw (&tvg);
 }
 
-int ctx_tinyvg_fd_draw (Ctx *ctx, int fd,
-                        float x, float y,
-                        float width, float height,
-                        int flags)
+int ctx_tinyvg_fd_draw (Ctx *ctx, int fd, int flags)
 {
 #if CTX_TVG_STDIO
    CtxTinyVG tvg;
    ctx_tvg_init_fd (&tvg, ctx, fd, flags);
    if (ctx_tvg_read_header (&tvg))
      return -1;
-   return ctx_tvg_draw (&tvg, x, y, width, height);
+   return ctx_tvg_draw (&tvg);
 #else
    return -1;
 #endif
