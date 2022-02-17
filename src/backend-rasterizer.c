@@ -2605,8 +2605,9 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                     float          end_angle,
                     int            anticlockwise)
 {
+  float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   int full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS;
-  full_segments = radius * CTX_PI * 2 / 4.0;
+  full_segments = factor * radius * CTX_PI * 2 / 4.0;
   if (full_segments > CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS)
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
   if (full_segments < 24) full_segments = 24;

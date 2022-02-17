@@ -353,7 +353,6 @@ int main (int argc, char **argv)
 
     const char *media_type = ctx_path_get_media_type (input_path);
     CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
-    fprintf (stderr, "%s\n", media_type);
 
     if (!strcmp (media_type, "image/gif"))
     {
@@ -361,7 +360,6 @@ int main (int argc, char **argv)
     }
     if (!strcmp (media_type, "image/tinyvg"))
     {
-            fprintf (stderr, "!!!!\n");
       return ctx_tinyvg_main (argc, argv);
     }
 

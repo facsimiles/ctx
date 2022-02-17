@@ -289,7 +289,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
        if (has_line_width)
        {
           float new_line_width = ctx_tvg_unit (tvg);
-          printf ("with new line width! %f\n", new_line_width);
+          //printf ("with new line width! %f\n", new_line_width);
           ctx_line_width (ctx, new_line_width);
        }
        switch (kind)
@@ -380,7 +380,9 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
 
      if (has_line_width)
      {
-        printf ("with new line width! %f\n", ctx_tvg_unit (tvg));
+       float new_line_width = ctx_tvg_unit (tvg);
+       //printf ("with new line width! %f\n", new_line_width);
+       ctx_line_width (ctx, new_line_width);
      }
      switch (kind)
      {
@@ -469,13 +471,14 @@ static void ctx_tvg_style (CtxTinyVG *tvg, int type,
       style->y1   = ctx_tvg_unit (tvg);
       style->idx0 = ctx_tvg_var (tvg);
       style->idx1 = ctx_tvg_var (tvg);
-      printf ("style:%f %f-%f %f   %i %i\n", 
+      /*printf ("style:%f %f-%f %f   %i %i\n", 
       style->x0   ,
       style->y0   ,
       style->x1   ,
       style->y1   ,
       style->idx0 ,
       style->idx1 );
+      */
       if (style->idx0 >= tvg->color_count) style->idx0 = 0;
       if (style->idx1 >= tvg->color_count) style->idx1 = 0;
       break;

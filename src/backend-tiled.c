@@ -193,7 +193,7 @@ void ctx_tiled_render_fun (void **data)
 
             int active_mask = 1 << hno;
 
-#if 1 // merge horizontally adjecant tiles of same affinity into one job
+#if CTX_TILED_MERGE_HORIZONTAL_NEIGHBORS
             while (col + 1 < CTX_HASH_COLS &&
                    tiled->tile_affinity[hno+1] == no)
             {
