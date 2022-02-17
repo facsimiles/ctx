@@ -311,7 +311,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  void *user_data,
                  int   memory_budget,
                  void *scratch_fb,
-                 int flags)
+                 int   flags)
 {
   Ctx *ctx                   = ctx_new_drawlist (width, height);
   CtxBackend    *backend     = (CtxBackend*)calloc (sizeof (CtxCbBackend), 1);

@@ -1,5 +1,8 @@
 #ifdef EMSCRIPTEN
 #include "emscripten.h"
+
+//#define CTX_DITHER 1
+
 #endif
 #include <stdint.h>
 #define _CTX_INTERNAL_FONT_

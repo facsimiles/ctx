@@ -254,10 +254,8 @@ enum {
   CTX_TVG_FLAG_DEFAULTS   = CTX_TVG_FLAG_LOAD_PAL
 };
 
-int ctx_tinyvg_fd_draw (Ctx *ctx, int fd,
-                         float x, float y,
-                         float width, float height,
-                         int flags);
+int ctx_tinyvg_get_size (uint8_t *data, int length, int *width, int *height);
+
 int ctx_tinyvg_draw (Ctx     *ctx,
                      uint8_t *data, int length,
                      float    x,
@@ -266,6 +264,11 @@ int ctx_tinyvg_draw (Ctx     *ctx,
                      float    height,
                      int      flags);
 
+int ctx_tinyvg_fd_get_size (int fd, int *width, int *height);
+int ctx_tinyvg_fd_draw (Ctx *ctx, int fd,
+                        float x, float y,
+                        float width, float height,
+                        int flags);
 
 /**
  * ctx_rectangle:

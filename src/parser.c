@@ -1950,7 +1950,7 @@ again:
   float keys[MAX_KEY_FRAMES];
   float values[MAX_KEY_FRAMES];
   int n_keys = 0;
-  int smooth = 0;
+  int smooth = 1; // default to catmull rom
 
   for (; string[i]; i++)
   {
@@ -1982,35 +1982,43 @@ again:
           //printf ("%f=%f\n", key, val);
           if (key>=time && resolved_val <=-10000.0f)
           {
-             if (i == 0)
-               resolved_val = val;
-             else if (n_keys<=2)
-             {
-               resolved_val = ctx_lerpf (values[i-1], val, 
-                               (time-keys[i-1])/(key-keys[i-1]));
-             } else
-             {
-                if (i <= 1)
-                {
-                  resolved_val = ctx_catmull_rom_left (values[i-1], values[i],
-                                  values[i+1],
+            if (smooth == 0) // linear interpolation
+            {
+              if (i == 0)
+                resolved_val = val;
+              else
+                resolved_val = ctx_lerpf (values[i-1], val, 
+                                (time-keys[i-1])/(key-keys[i-1]));
+            }
+            else
+            {
+              if (i == 0)
+              {
+                resolved_val = val;
+              }
+              else if (n_keys<=2)
+              {
+                resolved_val = ctx_lerpf (values[i-1], val, 
                                  (time-keys[i-1])/(key-keys[i-1]));
-                }
-                else if (i > 1 && i+1 < n_keys)
-                {
-                  resolved_val = ctx_catmull_rom (values[i-2], values[i-1],
-                                  val, values[i+1],
+              } else if (i == 1)
+              {
+                resolved_val = ctx_catmull_rom_left (values[i-1], values[i],
+                                 values[i+1],
                                  (time-keys[i-1])/(key-keys[i-1]));
-                }
-                else if (i >= 2 && i < n_keys)
-                {
-                  resolved_val = ctx_catmull_rom_right (values[i-2], values[i-1],
-                                  values[i],
+              }
+              else if (i > 1 && i+1 < n_keys)
+              {
+                resolved_val = ctx_catmull_rom (values[i-2], values[i-1],
+                                 val, values[i+1],
                                  (time-keys[i-1])/(key-keys[i-1]));
-                }
-             }
-
-
+              }
+              else if (i >= 2 && i < n_keys)
+              {
+                resolved_val = ctx_catmull_rom_right (values[i-2], values[i-1],
+                                 values[i],
+                                 (time-keys[i-1])/(key-keys[i-1]));
+              }
+            }
           }
           prev_val = val;
         }

@@ -869,6 +869,34 @@ ctx_tvg_draw (CtxTinyVG *tvg,
    return tvg->error;
 }
 
+int
+ctx_tinyvg_get_size (uint8_t *data, int length, int *width, int *height)
+{
+   CtxTinyVG tvg;
+   ctx_tvg_init_data (&tvg, NULL, data, length, 0);
+   if (ctx_tvg_read_header (&tvg))
+     return -1;
+   if (width)*width = tvg.width;
+   if (height)*height = tvg.height;
+   return 0;
+}
+
+int
+ctx_tinyvg_fd_get_size (int fd, int *width, int *height)
+{
+#if CTX_TVG_STDIO
+   CtxTinyVG tvg;
+   ctx_tvg_init_fd (&tvg, NULL, fd, 0);
+   if (ctx_tvg_read_header (&tvg))
+     return -1;
+   if (width)*width = tvg.width;
+   if (height)*height = tvg.height;
+   return 0;
+#else
+   return -1;
+#endif
+}
+
 int ctx_tinyvg_draw (Ctx     *ctx,
                      uint8_t *data, int length,
                      float    x,
@@ -885,9 +913,9 @@ int ctx_tinyvg_draw (Ctx     *ctx,
 }
 
 int ctx_tinyvg_fd_draw (Ctx *ctx, int fd,
-                         float x, float y,
-                         float width, float height,
-                         int flags)
+                        float x, float y,
+                        float width, float height,
+                        int flags)
 {
 #if CTX_TVG_STDIO
    CtxTinyVG tvg;
