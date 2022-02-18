@@ -36,6 +36,62 @@
             {
               default:
               case 'demo': script='demo'; break;
+                                            case 'arcs':script=`
+
+
+rectangle 0 0 100% 100% fill
+
+gray 0
+
+M 20 50  L 50 50  A 40 40 0 0 0 150 50 L 200 50  stroke
+
+translate 0 20
+
+M 20 50  L 50 50  A 50 50 0 0 0 150 50 L 200 50  stroke
+               
+translate 0 20
+
+M 20 50  L 50 50  A 60 60 0 0 0 150 50 L 200 50  stroke
+
+
+
+translate 0 60
+M 20 50  L 50 50  A 40 40 0 0 1 150 50 L 200 50  stroke
+
+translate 0 20
+
+M 20 50  L 50 50  A 50 50 0 0 1 150 50 L 200 50  stroke
+               
+translate 0 20
+
+M 20 50  L 50 50  A 60 60 0 0 1 150 50 L 200 50  stroke
+
+
+translate 230 -140
+
+
+M 20 50  L 50 50  A 40 40 0 1 0 150 50 L 200 50  stroke
+
+translate 0 20
+
+M 20 50  L 50 50  A 50 50 0 1 0 150 50 L 200 50  stroke
+               
+translate 0 20
+
+M 20 50  L 50 50  A 60 60 0 1 0 150 50 L 200 50  stroke
+
+translate 0 60
+M 20 50  L 50 50  A 40 40 0 1 1 150 50 L 200 50  stroke
+
+translate 0 20
+
+M 20 50  L 50 50  A 50 50 0 1 1 150 50 L 200 50  stroke
+               
+translate 0 20
+
+M 20 50  L 50 50  A 60 60 0 1 1 150 50 L 200 50  stroke
+
+               `;break;
               case 'aa': script=`
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
@@ -632,6 +688,7 @@ r  4 4 24 24    100 100 4 4 80 80 2 2  fill`;break;
                     <option value='ctx logo'>ctx logo</a>
                     <option value='foo'>foo</a>
                     <option value='aa'>aa</a>
+                    <option value='arcs'>arcs</a>
                 </select>
                 <select id='dim' onchange='setDim(this.value);'>
                     <option value='160x80:sharp'>160x80</a>

@@ -13,6 +13,9 @@ static CTX_INLINE int   ctx_mini (int a, int b)     { return (a < b) * a + (a >=
 static CTX_INLINE float ctx_minf (float a, float b) { return (a < b) * a + (a >= b) * b; }
 static CTX_INLINE int   ctx_maxi (int a, int b)     { return (a > b) * a + (a <= b) * b; }
 static CTX_INLINE float ctx_maxf (float a, float b) { return (a > b) * a + (a <= b) * b; }
+static CTX_INLINE float ctx_clampf (float v, float min, float max) {
+       return CTX_CLAMP(v,min,max);
+}
 
 
 typedef enum CtxOutputmode

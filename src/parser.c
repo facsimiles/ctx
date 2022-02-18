@@ -1,3 +1,52 @@
+static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry, 
+                float xAxisRotation,  int large, int sweep,
+                float x1, float y1)
+{
+  float x0, y0;
+  ctx_current_point (ctx, &x0, &y0);
+  int left_side = (large && sweep) || (!sweep && !large);
+
+  float delta_x = (x1-x0) * 0.5f;
+  float delta_y = (y1-y0) * 0.5f;
+
+  float midpoint_x = x0 + delta_x;
+  float midpoint_y = y0 + delta_y;
+
+  float radius_vec_x;
+  float radius_vec_y;
+  float r = rx;
+
+  if (left_side)
+  {
+    radius_vec_x = -delta_y;
+    radius_vec_y = delta_x;
+  }
+  else
+  {
+    radius_vec_x = delta_y;
+    radius_vec_y = -delta_x;
+  }
+
+  float len_squared = ctx_pow2(radius_vec_x) + ctx_pow2(radius_vec_y);
+  if (len_squared - 0.03 > r * r || r < 0)
+  {
+    r = sqrtf (len_squared);
+  }
+
+  float center_x = midpoint_x +
+           radius_vec_x * ctx_sqrtf(ctx_maxf(0, r * r / len_squared-1));
+  float center_y = midpoint_y +
+           radius_vec_y * ctx_sqrtf(ctx_maxf(0, r * r / len_squared-1));
+
+  float arc = ctx_asinf(ctx_clampf(ctx_sqrtf(len_squared)/r, -1.0, 1.0))*2;
+  if (large) arc = CTX_PI*2-arc;
+
+  float start_angle = ctx_atan2f(y0 - center_y, x0 - center_x);
+  float end_angle = sweep?start_angle-arc:start_angle+arc;
+
+  ctx_arc (ctx, center_x, center_y, r, start_angle, end_angle, sweep);
+}
+
 #include "ctx-split.h"
 /* the parser comes in the end, nothing in ctx knows about the parser  */
 
@@ -220,8 +269,6 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_VIEW_BOX:
       case CTX_SMOOTH_TO:
         return 4;
-      case CTX_ARC_TO:
-      case CTX_REL_ARC_TO:
       case CTX_ROUND_RECTANGLE:
         return 5;
       case CTX_ARC:
@@ -229,6 +276,9 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_REL_CURVE_TO:
       case CTX_RADIAL_GRADIENT:
         return 6;
+      case CTX_ARC_TO:
+      case CTX_REL_ARC_TO:
+        return 7;
       case CTX_APPLY_TRANSFORM:
       case CTX_SOURCE_TRANSFORM:
         return 9;
@@ -901,10 +951,16 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         //append_dash_val (ctx, arg(0));
         break;
       case CTX_ARC_TO:
-        ctx_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4));
+        ctx_svg_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5), arg(6));
         break;
       case CTX_REL_ARC_TO:
-        ctx_rel_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4) );
+        //ctx_rel_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4) );
+        //
+        {
+          float x = ctx_x (ctx);
+          float y = ctx_y (ctx);
+          ctx_svg_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5)+x, arg(6)+y);
+        }
         break;
       case CTX_REL_SMOOTH_TO:
         {

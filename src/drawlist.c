@@ -10,14 +10,15 @@ ctx_conts_for_entry (CtxEntry *entry)
         return entry->data.u32[1];
       case CTX_RADIAL_GRADIENT:
       case CTX_ARC:
-      case CTX_ARC_TO:
-      case CTX_REL_ARC_TO:
       case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
       case CTX_COLOR:
       case CTX_ROUND_RECTANGLE:
       case CTX_SHADOW_COLOR:
         return 2;
+      case CTX_ARC_TO:
+      case CTX_REL_ARC_TO:
+        return 3;
       case CTX_APPLY_TRANSFORM:
       case CTX_SOURCE_TRANSFORM:
         return 4;

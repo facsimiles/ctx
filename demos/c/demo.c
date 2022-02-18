@@ -226,19 +226,14 @@ static void scene_text (ITK *itk, int frame_no, float time_delta, float font_sca
   else alpha = alpha / 2;
 
   float font_size = height * font_scale;
+
+  if (font_size <= 4.0)
+          font_size = 3.0;
+
+
   float line_height = 1.2;
 
-  if (font_size <= 3){
-          font_size = 3.0;
-          line_height = 1.0;
-  }
 
-  float y0 = font_size * line_height;
-  float x0 = font_size;
-  float y = y0;
-  float x = x0;
-
-  y = (int) y;
 
   if (font_scale <  0.03)
           frame_no += 300;
@@ -249,6 +244,19 @@ static void scene_text (ITK *itk, int frame_no, float time_delta, float font_sca
 
   float space_width = ctx_text_width (ctx, " ");
   int lines = 0;
+
+  if (font_size <= 3){
+          font_size = 3.0;
+          line_height = 1.0;
+          space_width = 2;
+  }
+
+  float y0 = font_size * line_height;
+  float x0 = space_width;
+  float y = y0;
+  float x = x0;
+
+  y = (int) y;
 
   ctx_save (ctx);
   //ctx_translate (ctx, 0.0, -scroll);
@@ -274,7 +282,9 @@ static void scene_text (ITK *itk, int frame_no, float time_delta, float font_sca
     ctx_text (ctx, word);
     }
     if (random()%33==0)
-    {ctx_text (ctx, ".");
+    {
+     ctx_move_to (ctx, x, (int)(y - iscroll));
+     ctx_text (ctx, ".");
      y += font_size * line_height;
       y = (int) y;
      x = x0; word_width = space_width;

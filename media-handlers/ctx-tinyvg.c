@@ -50,6 +50,7 @@ void ctx_handle_tvg (Ctx *ctx, const char *path)
 {
   static int quit = 0;
   if (!path) return;
+  path = realpath (path, NULL);
 
   uint8_t *data = NULL;
   long length = 0;

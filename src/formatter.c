@@ -558,6 +558,8 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
 
       case CTX_REL_ARC_TO:
       case CTX_ARC_TO:
+        ctx_print_entry (formatter, entry, 7);
+        break;
       case CTX_ROUND_RECTANGLE:
         ctx_print_entry (formatter, entry, 5);
         break;

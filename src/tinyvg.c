@@ -14,38 +14,6 @@
 #endif
 
 
-static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry, float xAxisRotation,
-                     int large, int sweep, float x, float y)
-{
-  /* XXX : this is incomplete, based on a response in
-   * https://stackoverflow.com/questions/6729056/mapping-svg-arcto-to-html-canvas-arcto
-   */
-  float x1, y1;
-  float x2 = x; float y2 =y;
-  ctx_current_point (ctx, &x1, &y1);
-  int clockwise = large;//ok tiger
-  float radius = rx;
-
-  float cBx = (x1 + x2) / 2; //get point between xy1 and xy2
-  float cBy = (y1 + y2) / 2;
-  float aB = ctx_atan2f(y1 - y2, x1 - x2);  //get angle to bulge point in radians
-  if (clockwise) { aB += (90 * (CTX_PI / 180)); }
-  else { aB -= (90 * (CTX_PI / 180)); }
-  float op_side = ctx_sqrtf(ctx_pow2(x1 - x2) + ctx_pow2(y1 - y2)) / 2;
-  float adj_side = ctx_sqrtf(ctx_pow2(radius) - ctx_pow2(op_side));
-
-  if (isnan(adj_side) && 0) {
-    adj_side = ctx_sqrtf (ctx_pow2(op_side) - ctx_pow2(radius));
-  }
-
-  float Cx = cBx + (adj_side * ctx_cosf(aB));
-  float Cy = cBy + (adj_side * ctx_sinf(aB));
-  float startA = ctx_atan2f(y1 - Cy, x1 - Cx); //get start/end angles in radians
-  float endA = ctx_atan2f(y2 - Cy, x2 - Cx);
-  ctx_arc (ctx, Cx, Cy, radius, startA, endA, clockwise);
-  ctx_line_to (ctx, x, y);
-}
-
 typedef struct CtxTinyVGStyle
 {
    uint8_t  type;

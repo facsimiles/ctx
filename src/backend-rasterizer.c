@@ -2647,12 +2647,14 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
   else
 #endif
     {
-      steps = (end_angle - start_angle) / (CTX_PI*2) * full_segments;
       if (anticlockwise)
-        { steps = full_segments - steps; };
+      steps = (start_angle - end_angle) / (CTX_PI*2) * full_segments;
+      else
+      steps = (end_angle - start_angle) / (CTX_PI*2) * full_segments;
    // if (steps > full_segments)
    //   steps = full_segments;
     }
+
   if (anticlockwise) { step = step * -1; }
   int first = 1;
   if (steps == 0 /* || steps==full_segments -1  || (anticlockwise && steps == full_segments) */)

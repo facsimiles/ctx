@@ -113,7 +113,6 @@ void ctx_simd_setup (void)
 #endif
 #endif
 
-
 #if CTX_BABL
 #include <babl/babl.h>
 #endif
