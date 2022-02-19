@@ -54,8 +54,8 @@ static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry,
                             float rotation,  int large, int sweep,
                             float x1, float y1)
 {
-  //ctx_svg_arc_circle_to (ctx, rx, large, sweep, x1, y1);
-
+  ctx_svg_arc_circle_to (ctx, rx, large, sweep, x1, y1);
+  return;
    // XXX the following fails, one reason is that
    // ctx_current_point returns the point in the previous user_space
    // not the current.
@@ -1025,15 +1025,17 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         }
         break;
       case CTX_SMOOTHQ_TO:
+        parser->pcx = 2 * ctx_x (ctx) - parser->pcx;
+        parser->pcy = 2 * ctx_y (ctx) - parser->pcy;
         ctx_quad_to (ctx, parser->pcx, parser->pcy, arg(0), arg(1) );
         break;
       case CTX_REL_SMOOTHQ_TO:
         {
-          float cx = parser->pcx;
-          float cy = parser->pcy;
+          float x = ctx_x (ctx);
+          float y = ctx_y (ctx);
           parser->pcx = 2 * ctx_x (ctx) - parser->pcx;
           parser->pcy = 2 * ctx_y (ctx) - parser->pcy;
-          ctx_quad_to (ctx, parser->pcx, parser->pcy, arg(0) +  cx, arg(1) + cy);
+          ctx_quad_to (ctx, parser->pcx, parser->pcy, arg(0) + x, arg(1) + y);
         }
         break;
       case CTX_VER_LINE_TO:
