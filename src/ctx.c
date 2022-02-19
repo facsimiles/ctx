@@ -2565,6 +2565,7 @@ CtxMediaTypeClass ctx_media_type_class (const char *media_type)
 void
 ctx_current_point (Ctx *ctx, float *x, float *y)
 {
+  float user_x = 0.0f, user_y = 0.0f;
   if (!ctx)
     { 
       if (x) { *x = 0.0f; }
@@ -2573,13 +2574,19 @@ ctx_current_point (Ctx *ctx, float *x, float *y)
 #if CTX_RASTERIZER
   if (ctx->backend && ctx->backend->process == ctx_rasterizer_process)
     {
-      if (x) { *x = ( (CtxRasterizer *) (ctx->backend) )->x; }
-      if (y) { *y = ( (CtxRasterizer *) (ctx->backend) )->y; }
-      return;
+      user_x = ((CtxRasterizer *) (ctx->backend) )->x;
+      user_y = ((CtxRasterizer *) (ctx->backend) )->y;
     }
+  else
 #endif
-  if (x) { *x = ctx->state.x; }
-  if (y) { *y = ctx->state.y; }
+    {
+      user_x = ctx->state.x;
+      user_y = ctx->state.y;
+    }
+
+
+  if (x) *x = user_x;
+  if (y) *y = user_y;
 }
 
 
