@@ -1,9 +1,12 @@
-static void ctx_svg_arc_circle_to (Ctx *ctx, float radius, int large, int sweep,
+static void ctx_svg_arc_circle_to (Ctx *ctx,
+                                   float radius,
+                                   int large,
+                                   int sweep,
                                    float x1, float y1)
 {
   float x0, y0;
   ctx_current_point (ctx, &x0, &y0);
-  int left_side = (large && sweep) || (!sweep && !large);
+  int left_side = (large && !sweep) || (sweep && !large);
 
   float delta_x = (x1-x0) * 0.5f;
   float delta_y = (y1-y0) * 0.5f;
@@ -41,12 +44,10 @@ static void ctx_svg_arc_circle_to (Ctx *ctx, float radius, int large, int sweep,
   if (large) arc = CTX_PI*2-arc;
 
   float start_angle = ctx_atan2f(y0 - center_y, x0 - center_x);
-  float end_angle = sweep?start_angle-arc:start_angle+arc;
+  float end_angle = sweep?start_angle+arc:start_angle-arc;
 
-  ctx_arc (ctx, center_x, center_y, r, start_angle, end_angle, sweep);
+  ctx_arc (ctx, center_x, center_y, r, start_angle, end_angle, !sweep);
 }
-                                  
-
 
 
 static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry, 

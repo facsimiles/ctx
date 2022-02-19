@@ -386,7 +386,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
            float   radius = ctx_tvg_unit (tvg);
                    x = ctx_tvg_unit (tvg);
                    y = ctx_tvg_unit (tvg);
-           ctx_svg_arc_to (ctx, radius, radius, 0.0, large, sweep, x, y);
+           ctx_svg_arc_to (ctx, radius, radius, 0.0, large, !sweep, x, y);
          }
          break;
        case CTX_TVG_ARC_ELLIPSE:
@@ -399,7 +399,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
            float rotation = ctx_tvg_unit (tvg);
                  x        = ctx_tvg_unit (tvg);
                  y        = ctx_tvg_unit (tvg);
-           ctx_svg_arc_to (ctx, rx, ry, rotation, large, sweep, x, y);
+           ctx_svg_arc_to (ctx, rx, ry, rotation, large, !sweep, x, y);
          }
          break;
        case CTX_TVG_CLOSE_PATH:
