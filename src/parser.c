@@ -54,8 +54,7 @@ static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry,
                             float rotation,  int large, int sweep,
                             float x1, float y1)
 {
-  ctx_svg_arc_circle_to (ctx, rx, large, sweep, x1, y1);
-  return;
+  //ctx_svg_arc_circle_to (ctx, rx, large, sweep, x1, y1);
 
    // XXX the following fails, one reason is that
    // ctx_current_point returns the point in the previous user_space
@@ -70,11 +69,18 @@ static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry,
     up_scale = radius_min / radius_lim;
   float ratio = rx / ry;
   ctx_save (ctx);
-  ctx_scale (ctx, up_scale, up_scale * ratio);
-  ctx_rotate (ctx, rotation);
+  ctx_scale (ctx, up_scale * ratio, up_scale);
+
+  //  the following is a hack, current_point should change instead,
+  //  but that can have performance impact on adding coordinates
+  ctx->state.x /= (up_scale * ratio);
+  ctx->state.y /= (up_scale);
+
+
+  //ctx_rotate (ctx, rotation);
   
-  x1 = x1 / up_scale;
-  y1 = y1 / (up_scale * ratio);
+  x1 = x1 / (up_scale * ratio);
+  y1 = y1 / (up_scale);
 
   ctx_svg_arc_circle_to (ctx, rx, large, sweep, x1, y1);
 

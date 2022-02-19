@@ -39,14 +39,30 @@
                                             case 'arcs':script=`
 
 
+
 rectangle 0 0 100% 100% fill
+
+rgb 1 0 0
+
+M 10,30
+       A 20,20 0,0,1 50,30
+       A 20,20 0,0,1 90,30
+       Q 90,60 50,90
+       Q 10,60 10,30  z
+stroke
+
+rgb 0 1 0
+M 10 50
+Q 25,25 40,50
+           t 30,0 30,0 30,0 30,0 30,0
+stroke
 
 gray 0.5
                M 10 315
            L 110 215
            A 36 60 0 0 1 150.71 170.29
            L 172.55 152.45
-           A 30 50 -45 0 1 215.1 109.9
+           A 30 50 0 0 1 215.1 109.9
            L 315 10 stroke
 
 gray 0
@@ -99,6 +115,21 @@ translate 0 20
 
 M 20 50  L 50 50  A 60 60 0 1 1 150 50 L 200 50  stroke
 
+translate 0 200
+
+rgb 1 0 0      M 6,10 A 6 4 10 1 0 14 10 stroke
+rgb 0 1 0      M 6,10 A 6 4 10 1 1 14,10 stroke
+rgb 1 0 1      M 6,10 A 6 4 10 0 1 14,10 stroke
+rgb 1 0.5 0.5  M 6,10 A 6 4 10 0 0 14,10 stroke
+
+
+translate 100 0
+
+rgb 1 0 0      M 6,10 A 6 4 0 1 0 14 10 stroke
+rgb 0 1 0      M 6,10 A 6 4 0 1 1 14,10 stroke
+rgb 1 0 1      M 6,10 A 6 4 0 0 1 14,10 stroke
+rgb 1 0.5 0.5  M 6,10 A 6 4 0 0 0 14,10 stroke
+               
                `;break;
               case 'aa': script=`
 rgb 1 1 1 rectangle 0 0 100% 100% fill

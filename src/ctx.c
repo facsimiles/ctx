@@ -2571,7 +2571,7 @@ ctx_current_point (Ctx *ctx, float *x, float *y)
       if (x) { *x = 0.0f; }
       if (y) { *y = 0.0f; }
     }
-#if CTX_RASTERIZER
+#if CTX_RASTERIZER_X
   if (ctx->backend && ctx->backend->process == ctx_rasterizer_process)
     {
       user_x = ((CtxRasterizer *) (ctx->backend) )->x;
