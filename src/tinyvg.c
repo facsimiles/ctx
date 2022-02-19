@@ -621,6 +621,7 @@ static int ctx_tvg_command (CtxTinyVG *tvg)
 {
   Ctx *ctx = tvg->ctx;
   uint8_t primary_style_type;
+  float factor = ctx_matrix_get_scale (&ctx->state.gstate.transform);
   int command = ctx_tvg_u6_u2(tvg, &primary_style_type);
   int item_count;
   float line_width = 0.0;
@@ -660,8 +661,8 @@ static int ctx_tvg_command (CtxTinyVG *tvg)
       ctx_tvg_style (tvg, primary_style_type, &tvg->stroke);
       line_width = ctx_tvg_unit (tvg);
 
-      // XXX incorporate ctx matrix!
-      if (line_width < 0.5) line_width = 0.5;
+      if (line_width * factor < 1.0) line_width = 1.0 / factor;
+
       if (command == CTX_TVG_DRAW_LINE_PATH)
         ctx_tvg_path (tvg, item_count);
       else if (command == CTX_TVG_DRAW_LINES)
@@ -683,10 +684,8 @@ static int ctx_tvg_command (CtxTinyVG *tvg)
       ctx_tvg_style (tvg, tvg->stroke.type, &tvg->stroke);
       line_width = ctx_tvg_unit (tvg);
 
-    //  printf ("%i lw:%f %i\n", item_count, line_width, tvg->stroke.type);
+      if (line_width * factor < 1.0) line_width = 1.0 / factor;
 
-      // XXX incorporate ctx matrix!
-      if (line_width < 0.5) line_width = 0.5;
       ctx_line_width (ctx, line_width);
       ctx_tvg_rectangles (tvg, item_count, 1, 1);
       break;
@@ -698,8 +697,8 @@ static int ctx_tvg_command (CtxTinyVG *tvg)
       ctx_tvg_style (tvg, tvg->stroke.type, &tvg->stroke);
       line_width = ctx_tvg_unit (tvg);
 
-      // XXX incorporate ctx matrix!
-      if (line_width < 0.5) line_width = 0.5;
+      if (line_width * factor < 1.0) line_width = 1.0 / factor;
+
       save_offset = tvg->pos;
       if (command == CTX_TVG_OUTLINE_FILL_POLYGON)
         ctx_tvg_poly (tvg, item_count);

@@ -1,6 +1,5 @@
-static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry, 
-                float xAxisRotation,  int large, int sweep,
-                float x1, float y1)
+static void ctx_svg_arc_circle_to (Ctx *ctx, float radius, int large, int sweep,
+                                   float x1, float y1)
 {
   float x0, y0;
   ctx_current_point (ctx, &x0, &y0);
@@ -14,7 +13,7 @@ static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry,
 
   float radius_vec_x;
   float radius_vec_y;
-  float r = rx;
+  float r = radius;
 
   if (left_side)
   {
@@ -45,6 +44,40 @@ static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry,
   float end_angle = sweep?start_angle-arc:start_angle+arc;
 
   ctx_arc (ctx, center_x, center_y, r, start_angle, end_angle, sweep);
+}
+                                  
+
+
+
+static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry, 
+                            float rotation,  int large, int sweep,
+                            float x1, float y1)
+{
+  ctx_svg_arc_circle_to (ctx, rx, large, sweep, x1, y1);
+  return;
+
+   // XXX the following fails, one reason is that
+   // ctx_current_point returns the point in the previous user_space
+   // not the current.
+
+  float x0, y0;
+  ctx_current_point (ctx, &x0, &y0);
+  float radius_min = ctx_hypotf (x1-x0,y1-y0)/2.0;
+  float radius_lim = ctx_hypotf (rx, ry);
+  float up_scale = 1.0;
+  if (radius_lim < radius_min)
+    up_scale = radius_min / radius_lim;
+  float ratio = rx / ry;
+  ctx_save (ctx);
+  ctx_scale (ctx, up_scale, up_scale * ratio);
+  ctx_rotate (ctx, rotation);
+  
+  x1 = x1 / up_scale;
+  y1 = y1 / (up_scale * ratio);
+
+  ctx_svg_arc_circle_to (ctx, rx, large, sweep, x1, y1);
+
+  ctx_restore (ctx);
 }
 
 #include "ctx-split.h"
