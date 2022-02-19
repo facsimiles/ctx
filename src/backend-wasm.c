@@ -137,14 +137,28 @@ static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
   }
 }
 
+int wasm_damage_control = 0;
+
+CTX_EXPORT
+void wasm_set_damage_control(int val)
+{
+  wasm_damage_control = val;
+}
+
+
 Ctx *get_context (void)
 {
 
 EM_ASM(
     {var canvas = document.getElementById('c');
      const offset = _get_fb(canvas.width, canvas.height);
-     
+
+     var dc = document.getElementById('damagecontrol');
+     if (dc)
+     {
+       _wasm_set_damage_control(dc.checked?1:0);
      }
+   }
 );
 
    if (!em_ctx){em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGBA8, set_pixels, 
@@ -152,6 +166,19 @@ EM_ASM(
                                fb,
                                width * height * 4, NULL, 
                                CTX_CB_DEFAULTS|CTX_CB_HASH_CACHE);
+   }
+
+   if (wasm_damage_control)
+   {
+     int flags = ctx_cb_get_flags (em_ctx);
+     flags |= CTX_CB_DAMAGE_CONTROL;
+     ctx_cb_set_flags (em_ctx, flags);
+   }
+   else
+   {
+     int flags = ctx_cb_get_flags (em_ctx);
+     flags &= ~CTX_CB_DAMAGE_CONTROL;
+     ctx_cb_set_flags (em_ctx, flags);
    }
    return em_ctx;
 }

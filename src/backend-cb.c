@@ -15,8 +15,8 @@ typedef struct CtxCbBackend
   int     min_row; // hasher cols and rows
   int     max_col; // hasher cols and rows
   int     max_row; // hasher cols and rows
-  uint8_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS * 4];
-  uint8_t state[CTX_HASH_ROWS * CTX_HASH_COLS];
+  uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+  //uint8_t state[CTX_HASH_ROWS * CTX_HASH_COLS];
   int     memory_budget;
   void   *user_data;
 } CtxCbBackend;
@@ -245,7 +245,9 @@ ctx_cb_flush (Ctx *ctx)
         for (int col = 0; col < CTX_HASH_COLS; col++)
         {
           uint32_t new_hash = ctx_hasher_get_hash (hasher, col, row);
-          if (new_hash && new_hash != cb_backend->hashes[(row * CTX_HASH_COLS + col)])
+          printf ("%u\n", cb_backend->hashes[(row*CTX_HASH_COLS + col)]);
+          if (new_hash &&
+              new_hash != cb_backend->hashes[(row * CTX_HASH_COLS + col)])
           {
             cb_backend->hashes[(row * CTX_HASH_COLS +  col)]= new_hash;
             dirty_tiles++;
@@ -259,19 +261,25 @@ ctx_cb_flush (Ctx *ctx)
       free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_free (hasher);
 
-
       if (dirty_tiles)
       {
          int x0 = cb_backend->min_col * (ctx_width (ctx)/CTX_HASH_COLS);
          int x1 = (cb_backend->max_col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
          int y0 = cb_backend->min_row * (ctx_height (ctx)/CTX_HASH_ROWS);
          int y1 = (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
-#if 0
+
+         if (cb_backend->flags & CTX_CB_DAMAGE_CONTROL)
+         {
+#if 1
+         ctx_save (ctx);
          ctx_rectangle (ctx, x0, y0, x1-x0+1, y1-y0+1);
          ctx_rgba (ctx, 1,0,0,0.5);
          ctx_line_width (ctx, 4.0);
          ctx_stroke (ctx);
-
+         ctx_restore (ctx);
+#endif
+         }
+#if 0
          //ctx_move_to (ctx, (x0+x1)/2, (y0+y1)/2);
          //char buf[44];
          //sprintf (buf, "%ix%i", ctx_width(ctx), ctx_height(ctx));

@@ -178,14 +178,21 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
   }
   else
   {
-#if 1
     int x = tiled->min_col * tiled->width/CTX_HASH_COLS;
     int y = tiled->min_row * tiled->height/CTX_HASH_ROWS;
     int x1 = (tiled->max_col+1) * tiled->width/CTX_HASH_COLS;
     int y1 = (tiled->max_row+1) * tiled->height/CTX_HASH_ROWS;
+
+    if (_ctx_damage_control)
+    {
+      x = 0;
+      y = 0;
+      x1 = tiled->width;
+      y1 = tiled->height;
+    }
+
     int width = x1 - x;
     int height = y1 - y;
-#endif
     tiled->min_row = 100;
     tiled->max_row = 0;
     tiled->min_col = 100;
@@ -193,9 +200,7 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
 
     SDL_Rect r = {x, y, width, height};
     SDL_UpdateTexture (sdl->texture, &r,
-                      //(void*)sdl->pixels,
                       (void*)(tiled->pixels + y * tiled->width * 4 + x * 4),
-                      
                       tiled->width * 4);
     SDL_RenderClear (sdl->backend);
     SDL_RenderCopy (sdl->backend, sdl->texture, NULL, NULL);

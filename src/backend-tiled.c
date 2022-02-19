@@ -66,6 +66,7 @@ static void ctx_tiled_flush (Ctx *ctx)
       ctx_render_ctx (tiled->ctx_copy, hasher);
 
       for (int row = 0; row < CTX_HASH_ROWS; row++)
+      {
         for (int col = 0; col < CTX_HASH_COLS; col++)
         {
           uint32_t new_hash = ctx_hasher_get_hash (hasher, col, row);
@@ -80,6 +81,7 @@ static void ctx_tiled_flush (Ctx *ctx)
             tiled->tile_affinity[row * CTX_HASH_COLS + col] = -1;
           }
         }
+      }
       if (tiled->active_info)
       {
         free (tiled->active_info);

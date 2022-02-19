@@ -2,13 +2,13 @@
 #include "emscripten.h"
 
 //#define CTX_DITHER 1
+#define CTX_HASH_CACHE 1
 
 #endif
 #include <stdint.h>
 #define _CTX_INTERNAL_FONT_
 #include "ctx-font-regular.h"
 
-#define CTX_HASH_CACHE 0
 //#define CTX_IMPLEMENTATION 1
 //#define ITK_IMPLEMENTATION 1
 #include "itk.h"
@@ -383,7 +383,7 @@ static int ui_scenes (ITK *itk, void *data)
 
   scene_elapsed_time += render_time;
   scene_frames ++;
-  if (!strcmp (ctx_input, "demo"))
+  if (!strncmp (ctx_input, "demo", 4))
   {
 
   scenes[scene_no].fun (itk, scene_frames, render_time);

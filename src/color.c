@@ -862,8 +862,6 @@ mrg_color_parse_hex (CtxState *ctxstate, CtxColor *color, const char *color_stri
   return 1;
 }
 
-//#define CTX_currentColor 	CTX_STRH('c','u','r','r','e','n','t','C','o','l','o','r',0,0)
-
 int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
 {
   int i;
