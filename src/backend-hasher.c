@@ -275,7 +275,23 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         break;
 
       case CTX_CLIP:
-        /*FALLTHROUGH*/
+        {
+        CtxMurmur murmur;
+        memcpy (&murmur, &hasher->murmur_fill[hasher->source_level], sizeof (CtxMurmur));
+        if (rasterizer->edge_list.count)
+          murmur3_32_process(&murmur,  (uint8_t*)rasterizer->edge_list.entries, sizeof(CtxSegment) * rasterizer->edge_list.count);
+
+        {
+          int is = rasterizer->state->gstate.fill_rule;
+          murmur3_32_process(&murmur, (uint8_t*)&is, sizeof(int));
+        }
+        CtxIntRectangle shape_rect = {0,0,
+                rasterizer->blit_width,
+                rasterizer->blit_height};
+        _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
+        }
+
+        break;
       case CTX_FILL:
         {
           CtxMurmur murmur;
