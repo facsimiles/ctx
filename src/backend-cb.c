@@ -16,7 +16,6 @@ typedef struct CtxCbBackend
   int     max_col; // hasher cols and rows
   int     max_row; // hasher cols and rows
   uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
-  //uint8_t state[CTX_HASH_ROWS * CTX_HASH_COLS];
   int     memory_budget;
   void   *user_data;
 } CtxCbBackend;
@@ -245,7 +244,6 @@ ctx_cb_flush (Ctx *ctx)
         for (int col = 0; col < CTX_HASH_COLS; col++)
         {
           uint32_t new_hash = ctx_hasher_get_hash (hasher, col, row);
-          printf ("%u\n", cb_backend->hashes[(row*CTX_HASH_COLS + col)]);
           if (new_hash &&
               new_hash != cb_backend->hashes[(row * CTX_HASH_COLS + col)])
           {
@@ -260,6 +258,7 @@ ctx_cb_flush (Ctx *ctx)
         }
       free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_free (hasher);
+
 
       if (dirty_tiles)
       {

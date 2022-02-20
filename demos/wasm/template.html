@@ -28,9 +28,23 @@
                             }, 100);
          }
 
+         function setSmoothing(smoothing)
+         {
+            var c = document.getElementById('c');
+            if (smoothing)
+              c.style = "width: 100%;";
+            else
+              c.style = "image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges; width: 100%;"
+         }
+
+
          function setDemo(demo)
          {
             var textarea = document.getElementById('input');
+            if (demo == 'demo')
+              textarea.style = 'display:none;';
+            else 
+              textarea.style = 'display:block;width:100%';
             var script = '';
             switch (demo)
             {
@@ -714,12 +728,13 @@ scale 2 2
 r  4 4 24 24    100 100 4 4 80 80 2 2  fill`;break;
               }
             textarea.value=script;
+            _reset_time();
          }
 
         </script>
         </head>
         <body>
-                <div style='float:left;width:50%;'>
+                <div>
                 <select id='demo' onchange='setDemo(this.value);'>
                     <option value='demo'>demo</a>
                     <option value='anim'>anim</a>
@@ -729,6 +744,7 @@ r  4 4 24 24    100 100 4 4 80 80 2 2  fill`;break;
                     <option value='aa'>aa</a>
                     <option value='arcs'>arcs</a>
                 </select>
+                <!--
                 <select id='dim' onchange='setDim(this.value);'>
                     <option value='160x80:sharp'>160x80</a>
                     <option value='128x128:sharp'>128x128</a>
@@ -741,7 +757,8 @@ r  4 4 24 24    100 100 4 4 80 80 2 2  fill`;break;
                     <option value='1920x1080:sharp'>1920x1080</a>
                     <option value='1920x1080'>1920x1080 smoothed</a>
                 </select>
-                <select id='scene'>
+                -->
+                <select id='scene' title='loop a single scene, or blank for all'>
                     <option value='-1' selected> </a>
                     <option value='0'>0</a> <option value='1'>1</a> <option value='2'>2</a>
                     <option value='3'>3</a> <option value='4'>4</a> <option value='5'>5</a>
@@ -754,17 +771,20 @@ r  4 4 24 24    100 100 4 4 80 80 2 2  fill`;break;
                     <option value='24'>24</a> <option value='25'>25</a> <option value='26'>26</a>
                     <option value='27'>27</a> <option value='28'>28</a> <option value='29'>29</a>
                 </select>
-
+                <input type='checkbox' title='visualize bounding rects of redrawn areas' id='damagecontrol'>damage control</input>
+                <input type='checkbox' title='whether the browser should show canvas pixels or a smoothing during resampling' id='smoothing'
+                onchange='setSmoothing(this.checked);'
+                >smoothing</input>
                 <br/>
-                <textarea id='input' name='script' rows='10' style='width:100%;'
->rgb 1 1 0 rectangle 40 40 40 40 fill 
+                <textarea style='display:none;' id='input' name='script' rows='10' 
+>demo
                 </textarea>
-                        <input type='checkbox' id='damagecontrol'>damage control</input>
+                <br/>
            </div>
-          <canvas style='image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges; width: 50%;'
-                  id='c'
-           width='640' height='480' tabindex='0'></canvas>
-                </p>
+          <canvas 
+              style="image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges; width: 100%;"
+                  id='c' width='640' height='480' tabindex='0'></canvas>
+          </p>
         </body>
 
 </html>

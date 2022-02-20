@@ -346,6 +346,18 @@ EMSCRIPTEN_KEEPALIVE
 #endif
 char ctx_input[8192] = "demo";
 
+
+#ifdef EMSCRIPTEN
+EMSCRIPTEN_KEEPALIVE
+#endif
+void reset_time(void)
+{
+  scene_no = 0;
+  scene_frames = 0;
+  scene_elapsed_time = 0;
+}
+
+
 #ifdef EMSCRIPTEN
 EMSCRIPTEN_KEEPALIVE
 #endif
@@ -375,9 +387,11 @@ static int ui_scenes (ITK *itk, void *data)
   ctx_save (ctx);
 #ifdef EMSCRIPTEN
   EM_ASM(
-   var val = document.getElementById('input').value;
-   stringToUTF8(val, _ctx_input, 8191);
-   _set_scene (parseInt(document.getElementById('scene').value));
+   var input = document.getElementById('input');
+   if (input)
+     stringToUTF8(input.value, _ctx_input, 8191);
+   if (document.getElementById('scene'))
+     _set_scene (parseInt(document.getElementById('scene').value));
   );
 #endif
 
@@ -385,6 +399,8 @@ static int ui_scenes (ITK *itk, void *data)
   scene_frames ++;
   if (!strncmp (ctx_input, "demo", 4))
   {
+    if (scene_no >= sizeof (scenes)/sizeof(scenes[0]))
+      scene_no = sizeof (scenes)/sizeof(scenes[0])-1;
 
   scenes[scene_no].fun (itk, scene_frames, render_time);
   ctx_restore (ctx);
