@@ -2720,6 +2720,13 @@ ctx_rasterizer_rel_quad_to (CtxRasterizer *rasterizer,
 }
 
 static void
+ctx_rasterizer_rectangle_reverse (CtxRasterizer *rasterizer,
+                                  float x,
+                                  float y,
+                                  float width,
+                                  float height);
+
+static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
@@ -2911,19 +2918,19 @@ foo:
                     {
                       if (has_prev)
                         {
-                          ctx_rasterizer_rectangle (rasterizer, x - half_width_x, y - half_width_y, half_width_x, half_width_y);
+                          ctx_rasterizer_rectangle_reverse (rasterizer, x - half_width_x, y - half_width_y, half_width_x, half_width_y);
                           ctx_rasterizer_finish_shape (rasterizer);
                         }
                       x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
                       y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
-                      ctx_rasterizer_rectangle (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
+                      ctx_rasterizer_rectangle_reverse (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
                       ctx_rasterizer_finish_shape (rasterizer);
                     }
                   x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
                   y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
                   has_prev = 1;
                 }
-              ctx_rasterizer_rectangle (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
+              ctx_rasterizer_rectangle_reverse (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
               ctx_rasterizer_finish_shape (rasterizer);
             }
             break;
@@ -2945,7 +2952,7 @@ foo:
                         }
                       x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
                       y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
-                      ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*3, 0, 1);
+                      ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*2, 0, 1);
                       ctx_rasterizer_finish_shape (rasterizer);
                     }
                   x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
@@ -2953,7 +2960,7 @@ foo:
                   has_prev = 1;
                 }
               ctx_rasterizer_move_to (rasterizer, x, y);
-              ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*3, 0, 1);
+              ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*2, 0, 1);
               ctx_rasterizer_finish_shape (rasterizer);
               break;
             }
@@ -3359,6 +3366,21 @@ ctx_rasterizer_load_image (CtxRasterizer *rasterizer,
 }
 #endif
 
+static void
+ctx_rasterizer_rectangle_reverse (CtxRasterizer *rasterizer,
+                                  float x,
+                                  float y,
+                                  float width,
+                                  float height)
+{
+  ctx_rasterizer_move_to (rasterizer, x, y);
+  ctx_rasterizer_rel_line_to (rasterizer, 0, height);
+  ctx_rasterizer_rel_line_to (rasterizer, width, 0);
+  ctx_rasterizer_rel_line_to (rasterizer, 0, -height);
+  ctx_rasterizer_rel_line_to (rasterizer, -width, 0);
+  //ctx_rasterizer_rel_line_to (rasterizer, width/2, 0);
+  ctx_rasterizer_finish_shape (rasterizer);
+}
 
 static void
 ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
