@@ -2075,8 +2075,23 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   miny = ctx_minf (miny, oy);
   miny = ctx_minf (miny, y0);
   
-  _ctx_user_to_device (rasterizer->state, &minx, &miny);
-  _ctx_user_to_device (rasterizer->state, &maxx, &maxy);
+  float coords[4][2]={{minx,miny},
+                      {maxx,miny},
+                      {maxx,maxy},
+                      {minx,maxy}};
+  for (int i = 0; i < 4; i++)
+  {
+    _ctx_user_to_device (rasterizer->state, &coords[i][0], &coords[i][1]);
+  }
+  minx = maxx = coords[4][0];
+  miny = maxy = coords[4][1];
+  for (int i = 1; i < 4; i++)
+  {
+    minx = ctx_minf (minx, coords[i][0]);
+    miny = ctx_minf (miny, coords[i][1]);
+    maxx = ctx_maxf (minx, coords[i][0]);
+    maxy = ctx_maxf (miny, coords[i][1]);
+  }
 
     if( (maxx-minx) + (maxy-miny) < 0.66f ||
         (minx > rasterizer->blit_x + rasterizer->blit_width) ||
