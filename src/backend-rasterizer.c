@@ -849,7 +849,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
               int recip = 65536/sum;
               for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
-                coverage[us + count] = ((u - u0 + mod) * recip)>>16;
+                coverage[us + count] += ((u - u0 + mod) * recip)>>16;
                 count++;
               }
               pre = (us+count-1)-first+1;
@@ -872,7 +872,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
               int recip = 65536 / sum;
               for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
-                coverage[us + count] = (((u - u0 + mod) * recip)>>16) ^ 255;
+                coverage[us + count] += (((u - u0 + mod) * recip)>>16) ^ 255;
                 count++;
               }
               post = last-us+1;
@@ -975,7 +975,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             last = maxx;
             grayend=255;
           }
-          graystart = (graystart&0xff) ^ 255;
+          graystart = 255-(graystart&0xff);
           grayend   = (grayend & 0xff);
 
           if (first < last)
@@ -1004,7 +1004,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             int recip = 65536/ sum;
             for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] = ((u - u0 + mod) * recip)>>16;
+              coverage[us + count] += ((u - u0 + mod) * recip)>>16;
               count++;
             }
             pre = (us+count-1)-first+1;
@@ -1258,7 +1258,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
           }
           else if (first == last)
           {
-            coverage[last]+=(graystart-(grayend^255));
+            coverage[last]+=(graystart-(255-grayend));
 
             accumulated_x1 = last;
             accumulated_x0 = ctx_mini (accumulated_x0, last);
@@ -2083,8 +2083,8 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   {
     _ctx_user_to_device (rasterizer->state, &coords[i][0], &coords[i][1]);
   }
-  minx = maxx = coords[4][0];
-  miny = maxy = coords[4][1];
+  minx = maxx = coords[0][0];
+  miny = maxy = coords[0][1];
   for (int i = 1; i < 4; i++)
   {
     minx = ctx_minf (minx, coords[i][0]);
