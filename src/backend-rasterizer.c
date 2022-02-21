@@ -2060,7 +2060,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   tolerance = tolerance * tolerance;
 
   {
-#define CTX_AVOID_CLIPPED_SUBDIVISION 1
+#define CTX_AVOID_CLIPPED_SUBDIVISION 0
 #if CTX_AVOID_CLIPPED_SUBDIVISION
   float maxx = ctx_maxf (x1,x2);
   maxx = ctx_maxf (maxx, ox);
