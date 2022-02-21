@@ -1629,7 +1629,24 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
 
 
 #if CTX_INLINE_FILL_RULE
+void
+CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule 
+#if CTX_SHAPE_CACHE
+                                ,CtxShapeEntry *shape
+#endif
+                               );
+#else
 
+void
+CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule 
+#if CTX_SHAPE_CACHE
+                                ,CtxShapeEntry *shape
+#endif
+                               );
+#endif
+
+
+#if CTX_INLINE_FILL_RULE
 void
 CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule 
 #if CTX_SHAPE_CACHE
@@ -1675,6 +1692,7 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
 
 
 extern CtxPixelFormatInfo *ctx_pixel_formats;
+void CTX_SIMD_SUFFIX(ctx_simd_setup)(void);
 void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
 {
   ctx_pixel_formats         = CTX_SIMD_SUFFIX(ctx_pixel_formats);

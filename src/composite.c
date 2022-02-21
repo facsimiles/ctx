@@ -6842,6 +6842,14 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                           float          y0,
                           float          x1,
                           float          y1,
+                          uint8_t        cov);
+
+void
+CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
+                          float          x0,
+                          float          y0,
+                          float          x1,
+                          float          y1,
                           uint8_t        cov)
 {
   if((ctx_fmod1f (x0) < 0.01f || ctx_fmod1f(x0) > 0.99f) &&
@@ -6937,6 +6945,14 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
     }
   }
 }
+
+void
+CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
+                           float          x0,
+                           float          y0,
+                           float          x1,
+                           float          y1,
+                           float          line_width);
 
 void
 CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,

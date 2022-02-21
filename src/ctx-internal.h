@@ -1330,6 +1330,8 @@ CTX_STATIC int ctx_float_to_string_index (float val);
 void
 ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, CtxCommandState *active_list, int count, uint32_t mask);
 
+CtxCommandState *ctx_hasher_get_active_info (Ctx *ctx, int *count);
+
 static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len);
 
 #if EMSCRIPTEN
