@@ -655,6 +655,11 @@ void ctx_preserve (Ctx *ctx)
   CTX_PROCESS_VOID (CTX_PRESERVE);
 }
 
+void ctx_paint (Ctx *ctx)
+{
+  CTX_PROCESS_VOID (CTX_PAINT);
+}
+
 void ctx_fill (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_FILL);

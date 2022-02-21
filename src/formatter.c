@@ -162,6 +162,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_REL_MOVE_TO:          return "relMoveTo"; break;
           case CTX_REL_LINE_TO:          return "relLineTo"; break;
           case CTX_FILL:                 return "fill"; break;
+          case CTX_PAINT:                return "paint"; break;
           case CTX_EXIT:                 return "exit"; break;
           case CTX_APPLY_TRANSFORM:      return "transform"; break;
           case CTX_SOURCE_TRANSFORM:     return "sourceTransform"; break;
@@ -799,6 +800,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
 #endif
         break;
       case CTX_FILL:
+      case CTX_PAINT:
       case CTX_RESET:
       case CTX_STROKE:
       case CTX_IDENTITY:

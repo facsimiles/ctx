@@ -4114,6 +4114,12 @@ foo:
       case CTX_GLYPH:
         ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
         break;
+      case CTX_PAINT:
+        // XXX simplify this with a special case
+        ctx_rasterizer_rectangle (rasterizer, -1000.0, -1000.0, 10000, 10000);
+        ctx_rasterizer_fill (rasterizer);
+        ctx_rasterizer_reset (rasterizer);
+        break;
       case CTX_FILL:
           if (rasterizer->edge_list.count == 0)break;
 #if CTX_ENABLE_SHADOW_BLUR

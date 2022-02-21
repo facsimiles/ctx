@@ -138,6 +138,7 @@
 #define CTX_nonzero TOKENHASH(2230085415)
 #define CTX_non_zero TOKENHASH(3127422280)
 #define CTX_normal TOKENHASH(808293340)
+#define CTX_paint TOKENHASH(42879072)
 #define CTX_quad_to TOKENHASH(3896875982)
 #define CTX_quadTo TOKENHASH(3916306495)
 #define CTX_radial_gradient TOKENHASH(4226017763)

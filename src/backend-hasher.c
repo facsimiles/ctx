@@ -275,6 +275,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         break;
 
       case CTX_CLIP:
+      case CTX_PAINT:
         {
         CtxMurmur murmur;
         memcpy (&murmur, &hasher->murmur_fill[hasher->source_level], sizeof (CtxMurmur));

@@ -254,6 +254,7 @@ again:
         case CTX_FONT:
         case CTX_LINE_DASH:
         case CTX_FILL:
+        case CTX_PAINT:
         case CTX_NOP:
         case CTX_MOVE_TO:
         case CTX_LINE_TO:

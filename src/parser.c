@@ -260,6 +260,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_RESTORE:
       case CTX_STROKE:
       case CTX_FILL:
+      case CTX_PAINT:
       case CTX_NEW_PAGE:
       case CTX_CLIP:
       case CTX_EXIT:
@@ -439,6 +440,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_restore:        ret = CTX_RESTORE; break;
           case CTX_stroke:         ret = CTX_STROKE; break;
           case CTX_fill:           ret = CTX_FILL; break;
+          case CTX_paint:          ret = CTX_PAINT; break;
           case CTX_flush:          ret = CTX_FLUSH; break;
           case CTX_horLineTo:      ret = CTX_HOR_LINE_TO; break;
           case CTX_rotate:         ret = CTX_ROTATE; break;
@@ -796,6 +798,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_FILL:
         ctx_fill (ctx);
+        break;
+      case CTX_PAINT:
+        ctx_paint (ctx);
         break;
       case CTX_SAVE:
         ctx_save (ctx);
@@ -1972,7 +1977,7 @@ ctx_parse (Ctx *ctx, const char *string)
 
 CTX_EXPORT void
 ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time, 
-                int *scene_no_p)
+            int *scene_no_p)
 {
   float time = *scene_elapsed_time;
   int scene_no = *scene_no_p;
@@ -2155,6 +2160,9 @@ again:
     }
   }
 
+  /* we've now built up the frame, and parse
+   * it with the regular parser
+   */
   ctx_parse (ctx, str->str);
   ctx_string_free (str, 1);
 }

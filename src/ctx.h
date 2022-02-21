@@ -314,6 +314,11 @@ void ctx_fill             (Ctx *ctx);
 void ctx_stroke           (Ctx *ctx);
 
 /**
+ * ctx_paint:
+ */
+void ctx_paint            (Ctx *ctx);
+
+/**
  * ctx_preserve:
  */
 void ctx_preserve         (Ctx *ctx);
@@ -1270,13 +1275,24 @@ typedef enum
 {
   CTX_CONT             = '\0', // - contains args from preceding entry
   CTX_NOP              = ' ', //
+                   //     !    UNUSED
+                   //     "    start/end string
+                   //     #    comment in parser
+                   //     $    UNUSED
+                   //     %    percent of viewport width or height
+  CTX_EDGE             = '&', // not occuring in commandstream
+                   //     '    start/end string
   CTX_DATA             = '(', // size size-in-entries - u32
   CTX_DATA_REV         = ')', // reverse traversal data marker
   CTX_SET_RGBA_U8      = '*', // r g b a - u8
   CTX_NEW_EDGE         = '+', // x0 y0 x1 y1 - s16
-  // set pixel might want a shorter ascii form? or keep it an embedded
-  // only option?
+                   //     ,    UNUSED/RESERVED
   CTX_SET_PIXEL        = '-', // 8bit "fast-path" r g b a x y - u8 for rgba, and u16 for x,y
+  // set pixel might want a shorter ascii form with hex-color? or keep it an embedded
+  // only option?
+                   //     .    decimal seperator
+                   //     /    UNUSED
+ 
   /* optimizations that reduce the number of entries used,
    * not visible outside the drawlist compression, thus
    * using entries that cannot be used directly as commands
@@ -1293,21 +1309,25 @@ typedef enum
   CTX_FILL_MOVE_TO              = '7', // x y
   CTX_REL_QUAD_TO_REL_QUAD_TO   = '8', // cx1 x1 cy1 y1 cx1 x2 cy1 y1 -- s8
   CTX_REL_QUAD_TO_S16           = '9', // cx1 cy1 x y                 - s16
-  // expand with: . : 
+                   //     :    UNUSED
   CTX_FLUSH            = ';',
+                   //     <    UNUSED
+                   //     =    UNUSED/RESERVED
+                   //     >    UNUSED
+                   //     ?    UNUSED
 
   CTX_DEFINE_GLYPH     = '@', // unichar width - u32
   CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction
   CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y
+  CTX_PAINT            = 'D', // 
   CTX_STROKE           = 'E', //
   CTX_FILL             = 'F', //
   CTX_RESTORE          = 'G', //
   CTX_HOR_LINE_TO      = 'H', // x
   CTX_DEFINE_TEXTURE   = 'I', // "eid" width height format "data"
   CTX_ROTATE           = 'J', // radians
-  CTX_COLOR            = 'K', // model, c1 c2 c3 ca - has a variable set of
-  // arguments.
+  CTX_COLOR            = 'K', // model, c1 c2 c3 ca - variable arg count
   CTX_LINE_TO          = 'L', // x y
   CTX_MOVE_TO          = 'M', // x y
   CTX_BEGIN_PATH       = 'N', //
@@ -1324,12 +1344,16 @@ typedef enum
   CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
 
   CTX_CLOSE_PATH2      = 'Z', //
-  CTX_STROKE_SOURCE    = '_', // next source definition applies to strokes
   CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
+                       // \   UNUSED
+                       // ^   PARSER - vh unit
   CTX_COLOR_SPACE      = ']', // IccSlot  data  data_len,
                          //    data can be a string with a name,
                          //    icc data or perhaps our own serialization
                          //    of profile data
+  CTX_EDGE_FLIPPED     = '^', // x0 y0 x1 y1 - s16  | also unit
+  CTX_STROKE_SOURCE    = '_', // next source definition applies to strokes
+  CTX_SOURCE_TRANSFORM = '`',
   CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius
   CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y
@@ -1339,12 +1363,12 @@ typedef enum
   CTX_SAVE             = 'g',
   CTX_REL_HOR_LINE_TO  = 'h', // x
   CTX_TEXTURE          = 'i',
-  CTX_PRESERVE         = 'j', // 
+  CTX_PRESERVE         = 'j', // XXX - fix!
   CTX_SET_KEY          = 'k', // - used together with another char to identify
                               //   a key to set
   CTX_REL_LINE_TO      = 'l', // x y
   CTX_REL_MOVE_TO      = 'm', // x y
-  CTX_FONT             = 'n', // as used by text parser
+  CTX_FONT             = 'n', // as used by text parser XXX: move to keyvals?
   CTX_RADIAL_GRADIENT  = 'o', // x1 y1 radius1 x2 y2 radius2
   CTX_GRADIENT_STOP    = 'p', // argument count depends on current color model
   CTX_REL_QUAD_TO      = 'q', // cx cy x y
@@ -1355,23 +1379,25 @@ typedef enum
   CTX_REL_VER_LINE_TO  = 'v', // y
   CTX_GLYPH            = 'w', // unichar fontsize
   CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
-  CTX_IDENTITY         = 'y', //
+  CTX_IDENTITY         = 'y', // XXX remove?
   CTX_CLOSE_PATH       = 'z', //
   CTX_START_GROUP      = '{',
+                       // |    UNUSED
   CTX_END_GROUP        = '}',
-  CTX_SOURCE_TRANSFORM = '`',
+                       // ~    UNUSED/textenc
 
-  CTX_EDGE             = '&',                        // will not occur in commandstream
-  CTX_EDGE_FLIPPED     = '^', // x0 y0 x1 y1 - s16   // thus these use reserved entries as code
 
   /* though expressed as two chars in serialization we have
    * dedicated byte commands for the setters to keep the dispatch
    * simpler. There is no need for these to be human readable thus we go >128
+   * they also should not be emitted when outputting, even compact mode ctx.
    *
-   * unused:        !&<=>?:.=/\`,
-   * reserved:      '"&   #  %^@
+   * rasterizer:    &^+
+   * font:          @[
+   *
+   * unused:        !&<=>?: =/\`,
+   * reserved:      '"&   #. %^@
    */
-
 
   CTX_FILL_RULE        = 128, // kr rule - u8, default = CTX_FILLE_RULE_EVEN_ODD
   CTX_BLEND_MODE       = 129, // kB mode - u32 , default=0
@@ -1397,10 +1423,7 @@ typedef enum
   CTX_LINE_DASH_OFFSET = 145, // kD lineDashOffset
 
   CTX_EXTEND           = 146, // ke u32 extend mode, default=0
-  // items marked with % are currently only for the parser
-  // for instance for svg compatibility or simulated/converted color spaces
-  // not the serialization/internal render stream
-  //
+                              //
   CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
   CTX_FILL_RECT        = 201, // fillRect   - only exist in long form
 } CtxCode;
