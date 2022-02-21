@@ -1757,9 +1757,10 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
 #define CTX_SHAPE_CACHE_PRIME4   661
 #endif
 
+
 float ctx_shape_cache_rate = 0.0;
 #if CTX_SHAPE_CACHE
-int   _ctx_shape_cache_enabled = 1;
+int   _ctx_shape_cache_enabled = CTX_SHAPE_CACHE_DEFAULT;
 
 //static CtxShapeCache ctx_cache = {{NULL,}, 0};
 

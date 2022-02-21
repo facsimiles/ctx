@@ -1857,10 +1857,11 @@ _ctx_init (Ctx *ctx)
     if (getenv ("CTX_SHAPE_CACHE"))
     {
       const char * val = getenv ("CTX_SHAPE_CACHE");
-      if (!strcmp (val, "0"))
+      if (!strcmp (val, "0") ||
+          !strcmp (val, "off"))
         _ctx_shape_cache_enabled = 0;
-      if (!strcmp (val, "off"))
-        _ctx_shape_cache_enabled = 0;
+      else
+        _ctx_shape_cache_enabled = 1;
     }
 #endif
   }

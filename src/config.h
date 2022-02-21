@@ -64,6 +64,12 @@
 #define CTX_SHAPE_CACHE        0
 #endif
 
+
+#ifndef CTX_SHAPE_CACHE_DEFAULT // the default set runtime value
+                                // when enabled
+#define CTX_SHAPE_CACHE_DEFAULT   0
+#endif
+
 /* size (in pixels, w*h) that we cache rasterization for
  */
 #ifndef CTX_SHAPE_CACHE_DIM

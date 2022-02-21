@@ -19,6 +19,9 @@
 #define CTX_FONTS_FROM_FILE      1
 
 #define CTX_TINYVG               1
+
+#define CTX_SHAPE_CACHE          1
+
 #define CTX_DITHER               0 //
 #define CTX_BRAILLE_TEXT         1
 #define CTX_ENABLE_CMYK          1
