@@ -182,16 +182,12 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
                    // XXX : doesn't take all text-alignments into account
           }
 
-#if 0
-          uint32_t color;
-          ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
-#endif
           murmur3_32_process(&murmur, (const unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
 #if 1
         murmur3_32_process(&murmur, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
     //      murmur3_32_process(&murmur, (unsigned char*)&color, 4);
 #endif
-          murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
+          //murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
