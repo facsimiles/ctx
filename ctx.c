@@ -38,9 +38,10 @@
 //#define CTX_HASH_COLS  1
 //#define CTX_HASH_ROWS  1
 
-#define CTX_SCREENSHOT           1  // it brings in stb_save_image dep so is not default,
+#define CTX_SCREENSHOT           1 
 #define CTX_RASTERIZER           1
 
+#include "stb_image_write.h"
 
 #ifdef CTX_SIMD_X86_64_V2
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v2

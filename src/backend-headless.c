@@ -177,6 +177,7 @@ static CtxHeadless *ctx_headless = NULL;
 
 Ctx *ctx_new_headless (int width, int height)
 {
+  ctx_babl_init ();
   if (width < 0 || height < 0)
   {
     width = 1920;
@@ -202,7 +203,6 @@ Ctx *ctx_new_headless (int width, int height)
   tiled->pixels = calloc (fb->fb_mapped_size, 1);
   tiled->show_frame = (void*)ctx_headless_show_frame;
 
-  ctx_babl_init ();
 
  // ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
  //

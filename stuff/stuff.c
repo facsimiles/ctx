@@ -2608,6 +2608,11 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
 
 void text_edit_right (CtxEvent *event, void *a, void *b)
 {
+  if (focused_no<0)
+  {
+    event->stop_propagate = 1;
+    return;
+  }
   char *name = metadata_get_name (collection, focused_no);
   int len = ctx_utf8_strlen (name);
   free (name);
@@ -2617,7 +2622,8 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
 
   if (text_edit>len)
   {
-    if (item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
+    if (focused_no + 1 < collection->count &&
+        item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
     {
       text_edit=0;
       layout_find_item = focused_no  + 1;
@@ -2658,7 +2664,8 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
       //itk->focus_no = -1;
       metadata_dirt();
     }
-    else if (item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
+    else if (focused_no>0 && 
+             item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
 
     {
       char *name = metadata_get_name (collection, focused_no-1);
@@ -5826,6 +5833,7 @@ int stuff_main (int argc, char **argv)
 
 #include <libgen.h>
 
+
 void ctx_screenshot (Ctx *ctx, const char *path);
 
 int stuff_make_thumb (const char *src_path, const char *dst_path)
@@ -5848,6 +5856,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
                   font_size * live_font_factor,
                   ITK_CLIENT_PRELOAD,
                   NULL, NULL);
+
    //usleep (1000 * 200);
    for (int i = 0; i < 15; i ++)
    {

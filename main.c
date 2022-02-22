@@ -234,6 +234,7 @@ char *ctx_thumb_path (const char *path)
 
 int thumb_main (int argc, char **argv)
 {
+  ctx_init (&argc, &argv);
   if (!argv[1])
   {
     fprintf (stderr, "usage: ctx thumb <path1> [path2 [path3 ..]]\n");
