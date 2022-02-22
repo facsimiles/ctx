@@ -72,6 +72,11 @@ ctx_print_int (CtxFormatter *formatter, int val)
 static void
 ctx_print_float (CtxFormatter *formatter, float val)
 {
+  if (val < 0.0)
+  {
+    ctx_formatter_addstr (formatter, "-", 1);
+    val = -val;
+  }
   // XXX : does truncation instead of rounding
   int remainder = ((int)(val*1000))%1000;
   ctx_print_int (formatter, val);
@@ -459,7 +464,7 @@ ctx_print_entry (CtxFormatter *formatter, CtxEntry *entry, int args)
   for (int i = 0; i <  args; i ++)
     {
       float val = ctx_arg_float (i);
-      if (i>0 && val >= 0.0f)
+      if (i>0 /* && val >= 0.0f */)
         {
           if (formatter->longform)
             {
@@ -467,8 +472,7 @@ ctx_print_entry (CtxFormatter *formatter, CtxEntry *entry, int args)
             }
           else
             {
-              if (val >= 0.0f)
-                ctx_formatter_addstr (formatter, " ", 1);
+              ctx_formatter_addstr (formatter, " ", 1);
             }
         }
       ctx_print_float (formatter, val);
@@ -830,10 +834,10 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         break;
       case CTX_GRADIENT_STOP:
         _ctx_print_name (formatter, entry->code);
+        ctx_print_float (formatter, ctx_arg_float (0));
         for (int c = 0; c < 4; c++)
           {
-            if (c)
-              ctx_formatter_addstr (formatter, " ", 1);
+            ctx_formatter_addstr (formatter, " ", 1);
             ctx_print_float (formatter, ctx_u8_to_float (ctx_arg_u8 (4+c) ) );
           }
         _ctx_print_endcmd (formatter);
