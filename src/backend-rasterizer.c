@@ -1317,9 +1317,9 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   if (CTX_LIKELY(!rasterizer->preserve))
   {
     rasterizer->scan_min      =
-    rasterizer->col_min       = 5000;
+    rasterizer->col_min       = 50000000;
     rasterizer->scan_max      =
-    rasterizer->col_max       = -5000;
+    rasterizer->col_max       = -50000000;
   }
   //rasterizer->comp_op       = NULL; // keep comp_op cached 
   //     between rasterizations where rendering attributes are
