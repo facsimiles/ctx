@@ -792,11 +792,13 @@ struct _CtxMurmur {
 };
 
 
+#pragma pack(push,1)
 typedef struct CtxCommandState
 {
-  uint32_t pos;
+  uint16_t pos;
   uint32_t active;
 } CtxCommandState;
+#pragma pack(pop)
 
 struct _CtxHasher
 {
@@ -808,11 +810,11 @@ struct _CtxHasher
   CtxMurmur     murmur_stroke[CTX_MAX_STATES];
   int           source_level;
   int           pos; 
-  //CtxList *active_info;
 
-  CtxCommandState *active_info;
-  int              active_info_size;
-  int              active_info_count;
+  int           prev_command;
+
+  CtxDrawlist  *drawlist;
+
 };
 
 #if CTX_RASTERIZER
@@ -1227,10 +1229,6 @@ struct _CtxTiled
    int       min_row;
    int       max_col;
    int       max_row;
-  // CtxList  *active_info;
-   CtxCommandState *active_info;
-  // int              active_info_size;
-   int              active_info_count;
    uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
    int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
                                                            // responsible for a tile
@@ -1328,9 +1326,7 @@ _ctx_matrix_identity (CtxMatrix *matrix)
 CTX_STATIC int ctx_float_to_string_index (float val);
 
 void
-ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, CtxCommandState *active_list, int count, uint32_t mask);
-
-CtxCommandState *ctx_hasher_get_active_info (Ctx *ctx, int *count);
+ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, uint32_t mask);
 
 static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len);
 

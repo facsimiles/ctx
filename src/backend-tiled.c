@@ -38,13 +38,6 @@ void ctx_tiled_free (CtxTiled *tiled)
     ctx_free (tiled->ctx_copy);
   }
 
-  if (tiled->active_info)
-  {
-    free (tiled->active_info);
-    tiled->active_info = 0;
-    tiled->active_info_count = 0;
-  }
-
   // leak?
 }
 static unsigned char *sdl_icc = NULL;
@@ -62,7 +55,7 @@ static void ctx_tiled_flush (Ctx *ctx)
     if (_ctx_enable_hash_cache)
     {
       Ctx *hasher = ctx_hasher_new (tiled->width, tiled->height,
-                        CTX_HASH_COLS, CTX_HASH_ROWS);
+                        CTX_HASH_COLS, CTX_HASH_ROWS, &tiled->ctx_copy->drawlist);
       ctx_render_ctx (tiled->ctx_copy, hasher);
 
       for (int row = 0; row < CTX_HASH_ROWS; row++)
@@ -82,14 +75,7 @@ static void ctx_tiled_flush (Ctx *ctx)
           }
         }
       }
-      if (tiled->active_info)
-      {
-        free (tiled->active_info);
-        tiled->active_info = 0;
-        tiled->active_info_count = 0;
-      }
 
-      tiled->active_info = ctx_hasher_get_active_info (hasher, &tiled->active_info_count);
       free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_free (hasher);
     }
@@ -217,7 +203,7 @@ void ctx_tiled_render_fun (void **data)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
 
             ctx_translate (host, -x0, -y0);
-            ctx_render_ctx_masked (tiled->ctx_copy, host, tiled->active_info, tiled->active_info_count, active_mask);
+            ctx_render_ctx_masked (tiled->ctx_copy, host, active_mask);
           }
         }
       tiled->rendered_frame[no] = tiled->render_frame;

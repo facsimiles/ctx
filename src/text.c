@@ -586,8 +586,10 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 #if CTX_BACKEND_TEXT
   CtxEntry commands[3]; // 3 to silence incorrect warning from static analysis
   ctx_memset (commands, 0, sizeof (commands) );
+  if (stroke)
+    unichar = unichar | (1<<31);
   commands[0] = ctx_u32 (CTX_GLYPH, unichar, 0);
-  commands[0].data.u8[4] = stroke;
+  //commands[1].data.u8[4] = stroke;
   ctx_process (ctx, commands);
   return 0; // XXX is return value used?
 #else

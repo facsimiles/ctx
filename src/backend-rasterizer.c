@@ -4131,7 +4131,12 @@ foo:
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_GLYPH:
-        ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], entry[0].data.u8[4]);
+        {
+        uint32_t unichar = entry[0].data.u32[0];
+        uint32_t stroke = unichar &  ((uint32_t)1<<31);
+        if (stroke) unichar -= stroke;
+        ctx_rasterizer_glyph (rasterizer, entry[0].data.u32[0], stroke);
+        }
         break;
       case CTX_PAINT:
         // XXX simplify this with a special case

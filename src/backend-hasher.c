@@ -34,14 +34,12 @@ _ctx_add_hash (CtxHasher *hasher, CtxIntRectangle *shape_rect, uint32_t hash)
       }
     }
 
-  if (hasher->active_info_count+1 >= hasher->active_info_size)
+  if (hasher->prev_command>=0)
   {
-    hasher->active_info_size = hasher->active_info_size * 2 + 1024;
-    hasher->active_info = realloc (hasher->active_info, hasher->active_info_size * sizeof (CtxCommandState));
+    hasher->drawlist->entries[hasher->prev_command].data.u32[1] = active;
   }
-  hasher->active_info[hasher->active_info_count].pos = hasher->pos;
-  hasher->active_info[hasher->active_info_count].active = active;
-  hasher->active_info_count++;
+
+  hasher->prev_command = hasher->pos;
 }
 
 static int
@@ -187,7 +185,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         murmur3_32_process(&murmur, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
     //      murmur3_32_process(&murmur, (unsigned char*)&color, 4);
 #endif
-          //murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
+          murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -552,11 +550,6 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 #if 0
   if (command->code == CTX_RESET)
   {
-    while (hasher->active_info)
-    {
-      free (hasher->active_info->data);
-      ctx_list_remove (&hasher->active_info, hasher->active_info->data);
-    }
   }
 #endif
 
@@ -575,7 +568,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 }
 
 static CtxRasterizer *
-ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width, int height, int cols, int rows)
+ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width, int height, int cols, int rows, CtxDrawlist *drawlist)
 {
   CtxHasher *hasher = (CtxHasher*)rasterizer;
   ctx_memset (rasterizer, 0, sizeof (CtxHasher) );
@@ -603,6 +596,9 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   hasher->cols = cols;
   hasher->pos  = 0;
 
+  hasher->drawlist = drawlist;
+  hasher->prev_command = -1;
+
   hasher->hashes = (uint32_t*)ctx_calloc (4, rows * cols);
   murmur3_32_init (&hasher->murmur_fill[hasher->source_level]);
   murmur3_32_init (&hasher->murmur_stroke[hasher->source_level]);
@@ -610,12 +606,12 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   return rasterizer;
 }
 
-Ctx *ctx_hasher_new (int width, int height, int cols, int rows)
+Ctx *ctx_hasher_new (int width, int height, int cols, int rows, CtxDrawlist *drawlist)
 {
   Ctx *ctx           = _ctx_new_drawlist (width, height);
   CtxState    *state = &ctx->state;
   CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (sizeof (CtxHasher), 1);
-  ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows);
+  ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows, drawlist);
   ctx_set_backend (ctx, (void*)rasterizer);
   return ctx;
 }
@@ -628,16 +624,9 @@ uint32_t ctx_hasher_get_hash (Ctx *ctx, int col, int row)
   if (row >= hasher->rows) row = hasher->rows-1;
   if (col >= hasher->cols) col = hasher->cols-1;
 
-  return hasher->hashes[(row*hasher->cols+col)];
-}
+  hasher->drawlist->entries[hasher->prev_command].data.u32[1] = 0xffffffff;
 
-CtxCommandState *ctx_hasher_get_active_info (Ctx *ctx, int *count)
-{
-  CtxHasher *hasher = (CtxHasher*)ctx->backend;
-  *count = hasher->active_info_count;
-  CtxCommandState *ret = hasher->active_info;
-  hasher->active_info = NULL;
-  return ret;
+  return hasher->hashes[(row*hasher->cols+col)];
 }
 
 #endif

@@ -34,7 +34,8 @@ int ctx_cb_get_flags (Ctx *ctx)
 
 static void ctx_render_cb (Ctx *ctx, 
                             int x0, int y0,
-                            int x1, int y1)
+                            int x1, int y1,
+                            uint32_t active_mask)
 {
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
   int flags                  = backend_cb->flags;
@@ -76,7 +77,10 @@ static void ctx_render_cb (Ctx *ctx,
        CTX_FORMAT_RGB332);
 
     ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
-    ctx_render_ctx (ctx, renderer);
+    if (active_mask)
+      ctx_render_ctx_masked (ctx, renderer, active_mask);
+    else
+      ctx_render_ctx (ctx, renderer);
     ctx_free (renderer);
 
     uint8_t *temp = ((uint8_t*)fb)+memory_budget;
@@ -231,7 +235,7 @@ ctx_cb_flush (Ctx *ctx)
   if (cb_backend->flags & CTX_CB_HASH_CACHE)
   {
     Ctx *hasher = ctx_hasher_new (ctx_width (ctx), ctx_height (ctx),
-                                  CTX_HASH_COLS, CTX_HASH_ROWS);
+                                  CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
     int dirty_tiles = 0;
     ctx_render_ctx (ctx, hasher);
 
@@ -240,6 +244,8 @@ ctx_cb_flush (Ctx *ctx)
     cb_backend->max_row = -100;
     cb_backend->min_row = 100;
 
+    uint32_t active_mask = 0;
+    int tile_no =0;
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++)
         {
@@ -255,6 +261,9 @@ ctx_cb_flush (Ctx *ctx)
             cb_backend->min_col = ctx_mini (cb_backend->min_col, col);
             cb_backend->min_row = ctx_mini (cb_backend->min_row, row);
           }
+
+          active_mask |= (1<<tile_no);
+          tile_no++;
         }
       free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_free (hasher);
@@ -294,18 +303,18 @@ ctx_cb_flush (Ctx *ctx)
               ((width) * height * 2 > cb_backend->memory_budget))
          {
            cb_backend->flags |= CTX_CB_332;
-           ctx_render_cb (ctx, x0, y0, x1, y1);
+           ctx_render_cb (ctx, x0, y0, x1, y1, active_mask);
            cb_backend->flags -= CTX_CB_332;
          }
          else
          {
-           ctx_render_cb (ctx, x0, y0, x1, y1);
+           ctx_render_cb (ctx, x0, y0, x1, y1, active_mask);
          }
       }
   }
   else
   {
-    ctx_render_cb (ctx, 0, 0, ctx_width(ctx)-1, ctx_height(ctx)-1);
+    ctx_render_cb (ctx, 0, 0, ctx_width(ctx)-1, ctx_height(ctx)-1, 0);
   }
   if (cb_backend->update_fb)
     cb_backend->update_fb (ctx, cb_backend->user_data);

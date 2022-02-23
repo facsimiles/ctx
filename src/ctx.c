@@ -2044,6 +2044,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 {
   CtxIterator iterator;
   CtxCommand *command;
+  ctx->bail = 0;
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
@@ -2054,16 +2055,13 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 
 
 void
-ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, CtxCommandState *active_list, int count, uint32_t mask)
+ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, uint32_t mask)
 {
   CtxIterator iterator;
   CtxCommand *command;
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
 
-  unsigned int pos = 0;
-
-  int l = 0;
   uint32_t active_mask = 0xffffffff;
 
   while ( (command = ctx_iterator_next (&iterator) ) )
@@ -2071,17 +2069,15 @@ ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, CtxCommandState *active_list, int c
        d_ctx->bail = ((active_mask & mask) == 0);
        ctx_process (d_ctx, &command->entry);
 
-       if (l < count)
-       do {
-         active_mask = active_list[l].active;
-         if (active_list[l].pos <= pos )
-         {
-           l++;
-         }
-         else break;
-       } while (l < count);
-
-       pos += ctx_conts_for_entry ((CtxEntry*)command)+1;
+       switch (command->code)
+       {
+         case CTX_FILL:
+         case CTX_STROKE:
+         case CTX_CLIP:
+         case CTX_TEXT:
+         case CTX_GLYPH:
+           active_mask = command->entry.data.u32[1];
+       }
     }
 }
 

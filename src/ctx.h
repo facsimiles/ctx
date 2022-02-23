@@ -688,7 +688,7 @@ int ctx_pixel_format_components (CtxPixelFormat format);
 void _ctx_set_store_clear (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
 
-Ctx *ctx_hasher_new (int width, int height, int cols, int rows);
+Ctx *ctx_hasher_new (int width, int height, int cols, int rows, CtxDrawlist *drawlist);
 uint32_t ctx_hasher_get_hash (Ctx *ctx, int col, int row);
 
 int ctx_utf8_strlen (const char *s);
@@ -1472,7 +1472,8 @@ struct
     struct
     {
       uint8_t code;
-      float pad;
+      uint32_t next_active_mask; // the tilehasher active flags for next
+                                 // drawing command
       float pad2;
       uint8_t code_data;
       uint32_t stringlen;
