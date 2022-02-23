@@ -1902,7 +1902,6 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
     float target_height = 
       (h - (layout_config.padding_top + layout_config.padding_bottom) * em );
   //ctx_begin_path (ctx);
-  //
 
   if ((target_width * dir_scale > 250 || target_height * dir_scale > 250))
   {
@@ -5857,8 +5856,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
                   ITK_CLIENT_PRELOAD,
                   NULL, NULL);
 
-   //usleep (1000 * 200);
-   for (int i = 0; i < 15; i ++)
+   for (int i = 0; i < 40; i ++)
    {
      //CtxEvent *event = NULL;
      ctx_reset (ctx);
@@ -5869,6 +5867,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
      ctx_flush (ctx);
      while(ctx_get_event (ctx));
      ctx_clients_handle_events (ctx);
+     usleep (1000 * 25);
    }
    ctx_screenshot (ctx, dst_path);
 //   fprintf (stderr, ".");

@@ -208,8 +208,8 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
          {
             uint8_t* src_buf = (uint8_t*)tiled->pixels;
             memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &src_buf[v * tiled->width * bytes_per_pix + u * bytes_per_pix], bytes_per_pix);
+            count++;
          }
-         count++;
        }
        if (format == CTX_FORMAT_RGBA8) // XXX does this vary between tiled
                                        // backends?
@@ -276,7 +276,6 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
   ctx = ctx->texture_cache;
   CtxList *to_remove = NULL;
   int ret = 0;
-  //fprintf (stderr, "{%i}\n", ctx->frame);
   for (CtxList *l = ctx->eid_db; l; l = l->next)
   {
     CtxEidInfo *eid_info = (CtxEidInfo*)l->data;
