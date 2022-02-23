@@ -732,107 +732,22 @@ ctx_RGBA8_apply_global_alpha_and_associate (CtxRasterizer *rasterizer,
 
 #if CTX_FRAGMENT_SPECIALIZE
 
+static void
+ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
+                                       float x, float y, float z,
+                                       void *out, int scount,
+                                       float dx, float dy, float dz);
 static inline void
 ctx_fragment_image_rgb8_RGBA8_bi (CtxRasterizer *rasterizer,
                                   float x, float y, float z,
                                   void *out, int scount,
                                   float dx, float dy, float dz)
 {
-  uint32_t count = scount;
-  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
-  uint8_t *rgba = (uint8_t *) out;
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
-  const int bwidth = buffer->width;
-  const int bheight = buffer->height;
-  unsigned int i = 0;
-
-  int yi_delta = dy * 65536;
-  int xi_delta = dx * 65536;
-  int zi_delta = dz * 65536;
-  int32_t yi = y * 65536;
-  int32_t xi = x * 65536;
-  int32_t zi = z * 65536;
-  {
-    int32_t u1 = xi + xi_delta* (count-1);
-    int32_t v1 = yi + yi_delta* (count-1);
-    int32_t z1 = zi + zi_delta* (count-1);
-    uint32_t *edst = ((uint32_t*)out)+(count-1);
-    for (; i < count; )
-    {
-      float z_recip = (z1!=0) * (1.0/z1);
-      if ((u1*z_recip) <0 ||
-          (v1*z_recip) <0 ||
-          (u1*z_recip) >= (bwidth) - 1 ||
-          (v1*z_recip) >= (bheight) - 1)
-      {
-        *edst-- = 0;
-        count --;
-        u1 -= xi_delta;
-        v1 -= yi_delta;
-        z1 -= zi_delta;
-      }
-      else break;
-    }
-  }
-
-  for (i= 0; i < count; i ++)
-  {
-    float z_recip = (zi!=0) * (1.0/zi);
-    int u = xi * z_recip;
-    int v = yi * z_recip;
-    if ( u  <= 0 || v  <= 0 || u+1 >= bwidth-1 || v+1 >= bheight-1)
-    {
-      *((uint32_t*)(rgba))= 0;
-    }
-    else
-      break;
-    xi += xi_delta;
-    yi += yi_delta;
-    zi += zi_delta;
-    rgba += 4;
-  }
-
-  int stride = buffer->stride;
-  uint8_t *data = (uint8_t*)buffer->data;
-  while (i < count)
-  {
-    float zr = (zi!=0)*(1.0/zi) * 256;
-    int du = xi * zr;
-    int u = du >> 8;
-    int dv = yi * zr;
-    int v = dv >> 8;
-      int bpp = 3;
-      uint8_t *src00 = data;
-      src00 += v * stride + u * bpp;
-      uint8_t *src01 = src00;
-      if ( u + 1 < bwidth)
-      {
-        src01 = src00 + bpp;
-      }
-      uint8_t *src11 = src01;
-      uint8_t *src10 = src00;
-      if ( v + 1 < bheight)
-      {
-        src10 = src00 + stride;
-        src11 = src01 + stride;
-      }
-      float dx = (x-(int)(x)) * 255.9f;
-      float dy = (y-(int)(y)) * 255.9f;
-      for (int c = 0; c < bpp; c++)
-      {
-        rgba[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
-                               ctx_lerp_u8 (src10[c], src11[c], dx), dy);
-      }
-      rgba[3] = global_alpha_u8;
-      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
-
-    xi += xi_delta;
-    yi += yi_delta;
-    zi += zi_delta;
-    rgba += 3;
-    i++;
-  }
+  ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer,
+                                         x, y, z,
+                                         out, scount,
+                                         dx, dy, dz);
+  return;
 }
 
 static void
