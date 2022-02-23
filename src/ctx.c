@@ -190,7 +190,9 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
      }
    }
 #endif
-   else if (format == CTX_FORMAT_RGBA8 && ctx_backend_is_tiled (ctx))
+   else if ((format == CTX_FORMAT_RGBA8 ||
+             format == CTX_FORMAT_BGRA8)
+                   && ctx_backend_is_tiled (ctx))
    {
      /* synchronize */
      CtxTiled *tiled = (CtxTiled*)ctx->backend;
@@ -198,6 +200,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
        if (dst_stride <= 0) dst_stride = ctx_pixel_format_get_stride (format, sw);
        int bytes_per_pix = 4;
        int y = 0;
+       int count = 0;
        for (int v = sy; v < sy + sh; v++, y++)
        {
          int x = 0;
@@ -205,6 +208,17 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
          {
             uint8_t* src_buf = (uint8_t*)tiled->pixels;
             memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &src_buf[v * tiled->width * bytes_per_pix + u * bytes_per_pix], bytes_per_pix);
+         }
+         count++;
+       }
+       if (format == CTX_FORMAT_RGBA8) // XXX does this vary between tiled
+                                       // backends?
+       {
+         for (int i = 0; i < count; i++)
+         {
+           uint32_t tmp = dst_data[i*4+0];
+           dst_data[i*4+0] = dst_data[i*4+2];
+           dst_data[i*4+2] = tmp;
          }
        }
        return;
@@ -218,6 +232,20 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
      ctx_render_ctx (ctx, rasterizer);
      ctx_free (rasterizer);
    }
+#endif
+}
+
+void ctx_screenshot (Ctx *ctx, const char *output_path)
+{
+#ifdef INCLUDE_STB_IMAGE_WRITE_H
+  uint32_t width = ctx_width (ctx);
+  uint32_t height = ctx_height (ctx);
+  uint8_t *buf = malloc (width * height * 4);
+  ctx_get_image_data (ctx, 0, 0, width, height,
+                      CTX_FORMAT_RGBA8, width *4,
+                      buf);
+  stbi_write_png (output_path, width, height, 4, buf, width * 4);
+  free (buf);
 #endif
 }
 

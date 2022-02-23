@@ -25,49 +25,6 @@ struct _CtxSDL
 };
 
 
-void ctx_screenshot (Ctx *ctx, const char *output_path)
-{
-#if CTX_SCREENSHOT
-  CtxTiled *tiled = (CtxTiled*)ctx->backend;
-
-   if (ctx_backend_type (ctx) == CTX_BACKEND_RASTERIZER)
-   {
-      CtxRasterizer *rasterizer = (CtxRasterizer*)ctx->backend;
-      // XXX  only valid for RGBA8
-      if (rasterizer->format->pixel_format == CTX_FORMAT_RGBA8)
-      {
-#ifdef INCLUDE_STB_IMAGE_WRITE_H
-        stbi_write_png (output_path, rasterizer->blit_width, rasterizer->blit_height, 4, rasterizer->buf, rasterizer->blit_stride);
-#endif
-        return;
-      }
-   }
-
-  if (!ctx_backend_is_tiled (ctx))
-    return;
-
-  // we rely on the same struxt layout XXX !
-  for (int i = 0; i < tiled->width * tiled->height; i++)
-  {
-    int tmp = tiled->pixels[i*4];
-    tiled->pixels[i*4] = tiled->pixels[i*4 + 2];
-    tiled->pixels[i*4 + 2] = tmp;
-  }
-
-#if 1
-  if (ctx_backend_type (ctx) != CTX_BACKEND_HEADLESS)
-  for (int i = 0; i < tiled->width * tiled->height; i++)
-  {
-    int tmp = tiled->pixels[i*4];
-    tiled->pixels[i*4] = tiled->pixels[i*4 + 2];
-    tiled->pixels[i*4 + 2] = tmp;
-  }
-#endif
-#ifdef INCLUDE_STB_IMAGE_WRITE_H
-  stbi_write_png (output_path, tiled->width, tiled->height, 4, tiled->pixels, tiled->width*4);
-#endif
-#endif
-}
 
 int ctx_show_fps = 1;
 void ctx_sdl_set_title (void *self, const char *new_title)
@@ -504,13 +461,6 @@ void ctx_sdl_consume_events (Ctx *ctx)
     }
   }
 }
-#else
-void ctx_screenshot (Ctx *ctx, const char *path)
-{
-}
-#endif
-
-#if CTX_SDL
 
 static void ctx_sdl_set_clipboard (Ctx *ctx, const char *text)
 {
