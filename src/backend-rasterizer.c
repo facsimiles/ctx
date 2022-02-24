@@ -4117,6 +4117,12 @@ foo:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
         break;
       case CTX_TEXT:
+        if (ctx->bail)
+        {
+          _ctx_text (rasterizer->backend.ctx, ctx_arg_string(), 0, 0);
+          break;
+        }
+
         rasterizer->in_text++;
 #if CTX_ENABLE_SHADOW_BLUR
         if (state->gstate.shadow_blur > 0.0)
@@ -4146,6 +4152,8 @@ foo:
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_FILL:
+        if (!ctx->bail)
+        {
           if (rasterizer->edge_list.count == 0)break;
 #if CTX_ENABLE_SHADOW_BLUR
         if (state->gstate.shadow_blur > 0.0 &&
@@ -4153,6 +4161,7 @@ foo:
           ctx_rasterizer_shadow_fill (rasterizer);
 #endif
         ctx_rasterizer_fill (rasterizer);
+        }
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_RESET:
