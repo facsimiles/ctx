@@ -155,12 +155,19 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 
            float tx = rasterizer->x;
            float ty = rasterizer->y - height * 1.2;
-           float tw = width;
-           float th = height * (ctx_str_count_lines (str) + 1.5);
+           float tx2 = tx+width;
+           float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5);
+           float tw, th;
 
            _ctx_user_to_device (rasterizer->state, &tx, &ty);
-           _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
+           _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
+
+           // XXX need a transform bounds function
+           //_ctx_user_to_device_distance (rasterizer->state, &tw, &th);
           
+           tw = tx2-tx;
+           th = ty2-ty;
+
            shape_rect.x=tx;
            shape_rect.y=ty;
            shape_rect.width = tw;
@@ -203,9 +210,15 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
            CtxIntRectangle shape_rect;
 
            float tx = rasterizer->x;
-           float ty = rasterizer->y;
-           float tw = width;
-           float th = height * (ctx_str_count_lines (str));
+           float ty = rasterizer->y - height * 1.2;
+           float tx2 = tx+width;
+           float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5);
+
+          _ctx_user_to_device (rasterizer->state, &tx, &ty);
+          _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
+
+          float tw = tx2 - tx;
+          float th = ty2 - ty;
 
            _ctx_user_to_device (rasterizer->state, &tx, &ty);
            _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
@@ -243,11 +256,15 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 
           float tx = rasterizer->x;
           float ty = rasterizer->y;
-          float tw = width;
-          float th = height * 2;
+          float tx2 = rasterizer->x + width;
+          float ty2 = rasterizer->y + height * 2;
 
           _ctx_user_to_device (rasterizer->state, &tx, &ty);
-          _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
+          _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
+
+          float tw = tx2 - tx;
+          float th = ty2 - ty;
+
           CtxIntRectangle shape_rect = {(int)tx,(int)(ty-th/2),(int)tw,(int)th};
 
 
