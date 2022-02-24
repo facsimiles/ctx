@@ -4131,6 +4131,7 @@ foo:
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_GLYPH:
+        if (ctx->bail) break;
         {
         uint32_t unichar = entry[0].data.u32[0];
         uint32_t stroke = unichar &  ((uint32_t)1<<31);
