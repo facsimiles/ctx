@@ -225,6 +225,11 @@
 #define CTX_MAX_EDGE_LIST_SIZE  CTX_MIN_EDGE_LIST_SIZE
 #endif
 
+#ifndef CTX_MAX_KEYDB
+#define CTX_MAX_KEYDB 64 // number of entries in keydb
+                         // entries are "copy-on-change" between states
+#endif
+
 #ifndef CTX_STRINGPOOL_SIZE
   // XXX should be possible to make zero and disappear when codepaths not in use
   //     to save size, for card10 this is defined as a low number (some text

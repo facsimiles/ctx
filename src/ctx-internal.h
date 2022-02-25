@@ -280,8 +280,6 @@ struct _CtxDrawlist
   int       bitpack_pos;  // stream is bitpacked up to this offset
 };
 
-#define CTX_MAX_KEYDB 64 // number of entries in keydb
-                         // entries are "copy-on-change" between states
 
 // the keydb consists of keys set to floating point values,
 // that might also be interpreted as integers for enums.
@@ -499,12 +497,13 @@ struct _Ctx
   int               transformation;
   int               width;
   int               height;
+  int               dirty;
   Ctx              *texture_cache;
   CtxList          *eid_db;
   CtxState          state;        /**/
   int               frame; /* used for texture lifetime */
+  uint32_t          bail;
   CtxBuffer         texture[CTX_MAX_TEXTURES];
-  int               dirty;
 #if CTX_EVENTS 
   CtxCursor         cursor;
   int               quit;
@@ -518,7 +517,6 @@ struct _Ctx
   CtxIterator       current_path_iterator;
 #endif
 
-  uint32_t          bail;
 };
 
 static inline void
