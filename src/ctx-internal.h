@@ -147,8 +147,7 @@ struct _CtxSource
   int type;
   CtxMatrix  set_transform;
   CtxMatrix  transform;
-  CtxMatrix  transform_inv;
-  int pad; // to align next properly
+  uint32_t   pad;
   union
   {
     CtxColor color;

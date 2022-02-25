@@ -6987,9 +6987,10 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
       _ctx_matrix_multiply (&rasterizer->state->gstate.source_fill.transform,
                             &rasterizer->state->gstate.source_fill.set_transform,
                             &rasterizer->state->gstate.transform);
-
+#if 0
       rasterizer->state->gstate.source_fill.transform_inv =
                            rasterizer->state->gstate.source_fill.transform;
+#endif
       ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
 
 #if 0

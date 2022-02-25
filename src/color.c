@@ -455,11 +455,11 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
       y1 <= y && y <= y2)
   {
 #if CTX_CURRENT_PATH
+#if 0
      uint32_t pixel = 0;
      CtxMatrix transform;
      ctx_get_matrix (ctx, &transform);
      Ctx *tester = ctx_new_for_framebuffer (&pixel, 1, 1, 4, CTX_FORMAT_RGBA8);
-#if 0
      CtxIterator *iterator = ctx_current_path (ctx);
      CtxCommand *command;
      ctx_set_matrix (tester, &transform);
@@ -474,8 +474,6 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
      ctx_fill (ctx);
      ctx_free (tester);
      if (pixel == 0xffffff) return 1;
-#else
-     fprintf (stderr,"in fill\n");
 #endif
      return 1;
 #endif
