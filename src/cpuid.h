@@ -115,11 +115,11 @@ arch_get_vendor (void)
 
   id[12] = '\0';
 
-  if (strcmp (id, "AuthenticAMD") == 0)
+  if (ctx_strcmp (id, "AuthenticAMD") == 0)
     return ARCH_X86_VENDOR_AMD;
-  else if (strcmp (id, "HygonGenuine") == 0)
+  else if (ctx_strcmp (id, "HygonGenuine") == 0)
     return ARCH_X86_VENDOR_HYGON;
-  else if (strcmp (id, "GenuineIntel") == 0)
+  else if (ctx_strcmp (id, "GenuineIntel") == 0)
     return ARCH_X86_VENDOR_INTEL;
 
   return ARCH_X86_VENDOR_UNKNOWN;

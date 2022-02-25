@@ -1004,13 +1004,13 @@ void ctx_rasterizer_colorspace_icc (CtxState      *state,
         for (i = 0; i < icc_length; i++)
           tmp[i]= (icc_data[i]>='A' && icc_data[i]<='Z')?icc_data[i]+('a'-'A'):icc_data[i];
         tmp[icc_length]=0;
-        if (!strcmp (tmp, "srgb"))            space = babl_space ("sRGB");
-        else if (!strcmp (tmp, "scrgb"))      space = babl_space ("scRGB");
-        else if (!strcmp (tmp, "acescg"))     space = babl_space ("ACEScg");
-        else if (!strcmp (tmp, "adobe"))      space = babl_space ("Adobe");
-        else if (!strcmp (tmp, "apple"))      space = babl_space ("Apple");
-        else if (!strcmp (tmp, "rec2020"))    space = babl_space ("Rec2020");
-        else if (!strcmp (tmp, "aces2065-1")) space = babl_space ("ACES2065-1");
+        if (!ctx_strcmp (tmp, "srgb"))            space = babl_space ("sRGB");
+        else if (!ctx_strcmp (tmp, "scrgb"))      space = babl_space ("scRGB");
+        else if (!ctx_strcmp (tmp, "acescg"))     space = babl_space ("ACEScg");
+        else if (!ctx_strcmp (tmp, "adobe"))      space = babl_space ("Adobe");
+        else if (!ctx_strcmp (tmp, "apple"))      space = babl_space ("Apple");
+        else if (!ctx_strcmp (tmp, "rec2020"))    space = babl_space ("Rec2020");
+        else if (!ctx_strcmp (tmp, "aces2065-1")) space = babl_space ("ACES2065-1");
       }
    }
 

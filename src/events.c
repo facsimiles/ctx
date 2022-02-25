@@ -75,7 +75,7 @@ ctx_init (int *argc, char ***argv)
 {
 #if 0
   const char *backend = getenv ("CTX_BACKEND");
-  if (!backend || strcmp (backend, "ctx"))
+  if (!backend || ctx_strcmp (backend, "ctx"))
   {
     int i;
     char *new_argv[*argc+5];
@@ -146,8 +146,8 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   if (getenv ("CTX_DAMAGE_CONTROL"))
   {
     const char * val = getenv ("CTX_DAMAGE_CONTROL");
-    if (!strcmp (val, "0") ||
-        !strcmp (val, "off"))
+    if (!ctx_strcmp (val, "0") ||
+        !ctx_strcmp (val, "off"))
       _ctx_damage_control = 0;
     else
       _ctx_damage_control = 1;
@@ -157,9 +157,9 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   if (getenv ("CTX_HASH_CACHE"))
   {
     const char * val = getenv ("CTX_HASH_CACHE");
-    if (!strcmp (val, "0"))
+    if (!ctx_strcmp (val, "0"))
       _ctx_enable_hash_cache = 0;
-    if (!strcmp (val, "off"))
+    if (!ctx_strcmp (val, "off"))
       _ctx_enable_hash_cache = 0;
   }
 
@@ -187,11 +187,11 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   if (!backend)
     backend = getenv ("CTX_BACKEND");
 
-  if (backend && !strcmp (backend, ""))
+  if (backend && !ctx_strcmp (backend, ""))
     backend = NULL;
-  if (backend && !strcmp (backend, "auto"))
+  if (backend && !ctx_strcmp (backend, "auto"))
     backend = NULL;
-  if (backend && !strcmp (backend, "list"))
+  if (backend && !ctx_strcmp (backend, "list"))
   {
     ctx_list_backends ();
     exit (-1);
@@ -202,10 +202,10 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   /* we do the query on auto but not on directly set ctx
    *
    */
-  if ((backend && !strcmp(backend, "ctx")) ||
+  if ((backend && !ctx_strcmp(backend, "ctx")) ||
       (backend == NULL && is_in_ctx ()))
   {
-    if (!backend || !strcmp (backend, "ctx"))
+    if (!backend || !ctx_strcmp (backend, "ctx"))
     {
       // full blown ctx protocol - in terminal or standalone
       ret = ctx_new_ctx (width, height);
@@ -215,7 +215,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_HEADLESS
   if (!ret)
     {
-      if (backend && !strcmp (backend, "headless"))
+      if (backend && !ctx_strcmp (backend, "headless"))
         ret = ctx_new_headless (width, height);
     }
 #endif
@@ -223,7 +223,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_SDL
   if (!ret && getenv ("DISPLAY"))
   {
-    if ((backend==NULL) || (!strcmp (backend, "SDL")))
+    if ((backend==NULL) || (!ctx_strcmp (backend, "SDL")))
       ret = ctx_new_sdl (width, height);
   }
 #endif
@@ -231,7 +231,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_KMS
   if (!ret && !getenv ("DISPLAY"))
   {
-    if ((backend==NULL) || (!strcmp (backend, "kms")))
+    if ((backend==NULL) || (!ctx_strcmp (backend, "kms")))
       ret = ctx_new_kms (width, height);
   }
 #endif
@@ -240,7 +240,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_FB
   if (!ret && !getenv ("DISPLAY"))
     {
-      if ((backend==NULL) || (!strcmp (backend, "fb")))
+      if ((backend==NULL) || (!ctx_strcmp (backend, "fb")))
         ret = ctx_new_fb (width, height);
     }
 #endif
@@ -249,12 +249,12 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   // braille in terminal
   if (!ret)
   {
-    if ((backend==NULL) || (!strcmp (backend, "term")))
+    if ((backend==NULL) || (!ctx_strcmp (backend, "term")))
     ret = ctx_new_term (width, height);
   }
   if (!ret)
   {
-    if ((backend==NULL) || (!strcmp (backend, "termimg")))
+    if ((backend==NULL) || (!ctx_strcmp (backend, "termimg")))
     ret = ctx_new_termimg (width, height);
   }
 #endif
@@ -534,7 +534,7 @@ static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2)
   int handled = 0;
 
   for (i = events->n_bindings-1; i>=0; i--)
-    if (!strcmp (events->bindings[i].nick, event->string))
+    if (!ctx_strcmp (events->bindings[i].nick, event->string))
     {
       if (events->bindings[i].cb)
       {
@@ -546,7 +546,7 @@ static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2)
     }
   if (!handled)
   for (i = events->n_bindings-1; i>=0; i--)
-    if (!strcmp (events->bindings[i].nick, "any"))
+    if (!ctx_strcmp (events->bindings[i].nick, "any"))
     {
       if (events->bindings[i].cb)
       {
@@ -1873,9 +1873,9 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
   {
     string = ctx_keycode_to_keyname (ctx->events.modifier_state, keyval);
 
-    if (!strcmp (string, "shift") ||
-        !strcmp (string, "control") ||
-        !strcmp (string, "alt"))
+    if (!ctx_strcmp (string, "shift") ||
+        !ctx_strcmp (string, "control") ||
+        !ctx_strcmp (string, "alt"))
       return 0;
 
     if (ctx->events.modifier_state)
@@ -1902,16 +1902,16 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
   }
 
   sscanf (string, "%s %f %f %i", event_type, &x, &y, &b);
-  if (!strcmp (event_type, "pm") ||
-      !strcmp (event_type, "pd"))
+  if (!ctx_strcmp (event_type, "pm") ||
+      !ctx_strcmp (event_type, "pd"))
     return ctx_pointer_motion (ctx, x, y, b, 0);
-  else if (!strcmp (event_type, "pp"))
+  else if (!ctx_strcmp (event_type, "pp"))
     return ctx_pointer_press (ctx, x, y, b, 0);
-  else if (!strcmp (event_type, "pr"))
+  else if (!ctx_strcmp (event_type, "pr"))
     return ctx_pointer_release (ctx, x, y, b, 0);
-  //else if (!strcmp (event_type, "keydown"))
+  //else if (!ctx_strcmp (event_type, "keydown"))
   //  return ctx_key_down (ctx, keyval, string + 8, time);
-  //else if (!strcmp (event_type, "keyup"))
+  //else if (!ctx_strcmp (event_type, "keyup"))
   //  return ctx_key_up (ctx, keyval, string + 6, time);
 
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_PRESS);
@@ -1959,15 +1959,15 @@ ctx_key_down (Ctx *ctx, unsigned int keyval,
   if (!string)
     string = ctx_keycode_to_keyname (0, keyval);
 
-  if (!strcmp (string, "shift"))
+  if (!ctx_strcmp (string, "shift"))
   {
     ctx->events.modifier_state |= CTX_MODIFIER_STATE_SHIFT;
   }
-  else if (!strcmp (string, "control"))
+  else if (!ctx_strcmp (string, "control"))
   {
     ctx->events.modifier_state |= CTX_MODIFIER_STATE_CONTROL;
   }
-  else if (!strcmp (string, "alt"))
+  else if (!ctx_strcmp (string, "alt"))
   {
     ctx->events.modifier_state |= CTX_MODIFIER_STATE_ALT;
   }
@@ -2011,15 +2011,15 @@ ctx_key_up (Ctx *ctx, unsigned int keyval,
   if (!string)
     string = ctx_keycode_to_keyname (0, keyval);
 
-  if (!strcmp (string, "shift"))
+  if (!ctx_strcmp (string, "shift"))
   {
     ctx->events.modifier_state &= ~(CTX_MODIFIER_STATE_SHIFT);
   }
-  else if (!strcmp (string, "control"))
+  else if (!ctx_strcmp (string, "control"))
   {
     ctx->events.modifier_state &= ~(CTX_MODIFIER_STATE_CONTROL);
   }
-  else if (!strcmp (string, "alt"))
+  else if (!ctx_strcmp (string, "alt"))
   {
     ctx->events.modifier_state &= ~(CTX_MODIFIER_STATE_ALT);
   }

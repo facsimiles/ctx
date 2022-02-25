@@ -96,7 +96,7 @@ ctx_texture_check_eid (Ctx *ctx, const char *eid, int *tw, int *th)
   {
     if (ctx->texture[i].data &&
         ctx->texture[i].eid  &&
-        !strcmp (ctx->texture[i].eid, eid))
+        !ctx_strcmp (ctx->texture[i].eid, eid))
     {
       if (tw) *tw = ctx->texture[i].width;
       if (th) *th = ctx->texture[i].height;
@@ -126,7 +126,7 @@ const char* ctx_texture_init (Ctx           *ctx,
     {
       if (ctx->texture[i].data &&
           ctx->texture[i].eid &&
-          !strcmp (ctx->texture[i].eid, eid))
+          !ctx_strcmp (ctx->texture[i].eid, eid))
       {
         ctx->texture[i].frame = ctx->texture_cache->frame;
         if (freefunc && user_data != (void*)23)

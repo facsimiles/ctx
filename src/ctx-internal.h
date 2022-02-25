@@ -250,8 +250,11 @@ struct _CtxGState
   CtxBlend                  blend_mode; // non-vectorization
   CtxExtend                 extend;
 
-  float dashes[CTX_PARSER_MAX_ARGS];
-
+  float dashes[CTX_PARSER_MAX_ARGS]; // XXX moving dashes 
+                                     //  to state storage,. will
+                                     //  allow it to be larger,
+                                     //  free up memory, and
+                                     //  make save/restore faster
 };
 
 typedef enum
@@ -278,7 +281,6 @@ struct _CtxDrawlist
   uint32_t  flags;
   int       bitpack_pos;  // stream is bitpacked up to this offset
 };
-
 
 // the keydb consists of keys set to floating point values,
 // that might also be interpreted as integers for enums.
@@ -374,7 +376,6 @@ struct _CtxFont
   };
 };
 
-
 enum _CtxIteratorFlag
 {
   CTX_ITERATOR_FLAT           = 0,
@@ -384,8 +385,7 @@ enum _CtxIteratorFlag
 typedef enum _CtxIteratorFlag CtxIteratorFlag;
 
 
-struct
-  _CtxIterator
+struct _CtxIterator
 {
   int              pos;
   int              first_run;
@@ -477,8 +477,6 @@ struct _CtxEvents
   int              tap_delay_max;
   int              tap_delay_hold;
 };
-
-
 #endif
 
 typedef struct _CtxEidInfo

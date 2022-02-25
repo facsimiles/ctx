@@ -844,7 +844,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
             parser->numbers[1] = ctx_utf8_to_unichar ((char*)parser->holding);
             break;
           case 2:
-            parser->numbers[2] = strtod ((char*)parser->holding, NULL);
+            parser->numbers[2] = _ctx_parse_float ((char*)parser->holding, NULL);
             {
               CtxEntry e = {CTX_KERNING_PAIR, };
               e.data.u16[0] = parser->numbers[0];
@@ -2133,12 +2133,12 @@ again:
       {
         const char *sp = &string[i];
         char *ep = (char*)sp;
-        float key      = strtof (sp, &ep);
+        float key      = _ctx_parse_float (sp, &ep);
         char *eq       = strchr (sp, '=');
         float val      = 0.0;
 
         if (eq)
-           val = strtof (eq+1, &ep);
+           val = _ctx_parse_float (eq+1, &ep);
 
         keys[n_keys] = key;
         values[n_keys++] = val;

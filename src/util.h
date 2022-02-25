@@ -46,7 +46,7 @@ ctx_register_contents (const char *path,
   for (CtxList *l = registered_contents; l; l = l->next)
   {
     CtxFileContent *c = (CtxFileContent*)l->data;
-    if (!strcmp (c->path, path))
+    if (!ctx_strcmp (c->path, path))
     {
        if (c->free_data)
        {

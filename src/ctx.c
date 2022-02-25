@@ -287,7 +287,7 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
     {
       ctx_list_prepend (&to_remove, eid_info);
     }
-    else if (!strcmp (eid_info->eid, eid) &&
+    else if (!ctx_strcmp (eid_info->eid, eid) &&
              ctx->frame - eid_info->frame < 2)
     {
     //fclose (f);
@@ -723,7 +723,7 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
 {
   Ctx *ctx = (Ctx*)data;
   CtxEvent *copy;
-  if (event->type == CTX_KEY_PRESS && !strcmp (event->string, "idle"))
+  if (event->type == CTX_KEY_PRESS && !ctx_strcmp (event->string, "idle"))
     return;
   copy = (CtxEvent*)malloc (sizeof (CtxEvent));
   *copy = *event;
@@ -1884,8 +1884,8 @@ _ctx_init (Ctx *ctx)
     if (getenv ("CTX_SHAPE_CACHE"))
     {
       const char * val = getenv ("CTX_SHAPE_CACHE");
-      if (!strcmp (val, "0") ||
-          !strcmp (val, "off"))
+      if (!ctx_strcmp (val, "0") ||
+          !ctx_strcmp (val, "off"))
         _ctx_shape_cache_enabled = 0;
       else
         _ctx_shape_cache_enabled = 1;
@@ -1955,7 +1955,7 @@ CTX_EXPORT Ctx *
 ctx_new (int width, int height, const char *backend)
 {
 #if CTX_EVENTS
-  if (backend && !strcmp (backend, "drawlist"))
+  if (backend && !ctx_strcmp (backend, "drawlist"))
 #endif
   {
     return _ctx_new_drawlist (width, height);
@@ -2268,7 +2268,7 @@ ctx_get_contents2 (const char     *uri,
   for (CtxList *l = registered_contents; l; l = l->next)
   {
     CtxFileContent *c = (CtxFileContent*)l->data;
-    if (!strcmp (c->path, uri))
+    if (!ctx_strcmp (c->path, uri))
     {
       contents = malloc (c->length+1);
       contents[c->length]=0;
@@ -2442,7 +2442,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
     for (int i = 0; pathdup[i]; i++) pathdup[i]=tolower(pathdup[i]);
     for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
     {
-      if (ctx_magics[i].ext1 && !strcmp (ctx_magics[i].ext1, pathdup))
+      if (ctx_magics[i].ext1 && !ctx_strcmp (ctx_magics[i].ext1, pathdup))
       {
         extension_match = ctx_magics[i].mime_type;
       }
@@ -2463,7 +2463,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
     }
   }
 
-  if (extension_match && !strcmp (extension_match, "application/ctx"))
+  if (extension_match && !ctx_strcmp (extension_match, "application/ctx"))
   {
           fprintf (stderr, "!!\n");
     //if (!ctx_path_is_exec (path))
@@ -2507,7 +2507,7 @@ const char *ctx_path_get_media_type (const char *path)
     for (int i = 0; pathdup[i]; i++) pathdup[i]=tolower(pathdup[i]);
     for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
     {
-      if (ctx_magics[i].ext1 && !strcmp (ctx_magics[i].ext1, pathdup))
+      if (ctx_magics[i].ext1 && !ctx_strcmp (ctx_magics[i].ext1, pathdup))
       {
         free (pathdup);
         return ctx_magics[i].mime_type;

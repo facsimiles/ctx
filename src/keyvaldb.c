@@ -113,7 +113,7 @@ CTX_STATIC void ctx_state_set_string (CtxState *state, uint32_t key, const char 
   if (old_idx >= 0)
   {
     const char *old_string = ctx_state_get_string (state, key);
-    if (old_string && !strcmp (old_string, string))
+    if (old_string && !ctx_strcmp (old_string, string))
       return;
   }
 

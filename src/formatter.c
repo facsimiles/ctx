@@ -77,8 +77,12 @@ ctx_print_float (CtxFormatter *formatter, float val)
     ctx_formatter_addstr (formatter, "-", 1);
     val = -val;
   }
-  // XXX : does truncation instead of rounding
-  int remainder = ((int)(val*1000))%1000;
+  int remainder = ((int)(val*10000))%10000;
+  if (remainder % 10 > 5)
+    remainder = remainder/10+1;
+  else
+    remainder /= 10;
+
   ctx_print_int (formatter, val);
   if (remainder)
   {
