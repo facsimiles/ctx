@@ -462,7 +462,7 @@ void itk_reset (ITK *itk)
   else
   {
     itk_style = strdup (
-"wallpaper: #355\n"
+"wallpaper: #111\n"
 //"wallpaper: #677\n"
 "\n"
 "itk-font-size: 32.0;\n"

@@ -30,6 +30,7 @@ _ctx_add_hash (CtxHasher *hasher, CtxIntRectangle *shape_rect, uint32_t hash)
       if (ctx_rect_intersect (shape_rect, &rect))
       {
         hasher->hashes[(row * hasher->cols + col)] ^= hash;
+        hasher->hashes[(row * hasher->cols + col)] += 11;
         active |= (1<<hno);
       }
     }
