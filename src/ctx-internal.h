@@ -186,8 +186,13 @@ struct _CtxSource
 
 struct _CtxGState
 {
-  int           keydb_pos;
-  int           stringpool_pos;
+#if CTX_32BIT_SEGMENTS
+  uint32_t      keydb_pos;
+  uint32_t      stringpool_pos;
+#else
+  uint16_t      keydb_pos;      // this limits these
+  uint16_t      stringpool_pos; // 
+#endif
 
   CtxMatrix     transform;
   CtxSource     source_stroke;
@@ -294,7 +299,6 @@ struct _CtxState
 {
   int           has_moved:1;
   int           has_clipped:1;
-  int16_t       gstate_no;
   int8_t        source; // used for the single-shifting to stroking
                 // 0  = fill
                 // 1  = start_stroke
@@ -302,6 +306,7 @@ struct _CtxState
                 //
                 //   if we're at in_stroke at start of a source definition
                 //   we do filling
+  int16_t       gstate_no;
 
   float         x;
   float         y;

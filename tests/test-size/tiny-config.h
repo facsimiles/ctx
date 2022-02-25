@@ -5,6 +5,7 @@
 #define CTX_MATH            1
 #define CTX_LIMIT_FORMATS   1
 #define CTX_FRAGMENT_SPECIALIZE 0
+#define CTX_32BIT_SEGMENTS  0
 #define CTX_ENABLE_RGBA8    1
 #define CTX_FAST_FILL_RECT  0
 #define CTX_ENABLE_RGB565_BS  0
@@ -43,4 +44,4 @@
 #define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */
 #define CTX_AUDIO               0
-
+#define CTX_CLIENTS             0
