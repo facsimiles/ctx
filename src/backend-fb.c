@@ -11,6 +11,10 @@
 
 #if CTX_KMS || CTX_FB
 
+static int ctx_fb_single_buffer = 0;  // used with the framebuffer this
+                               // causes flicker, but brings single
+                               // threaded memory use <2mb 
+
 static int ctx_fb_get_mice_fd (Ctx *ctx)
 {
   //CtxFb *fb = (void*)ctx->backend;
@@ -169,6 +173,7 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
     }
 #endif
      ctx_tiled_undraw_cursor (tiled);
+     if (!ctx_fb_single_buffer)
      switch (fb->fb_bits)
      {
        case 32:
@@ -320,6 +325,8 @@ void ctx_fb_free (CtxFb *fb)
   }
 #endif
   munmap (tiled->fb, fb->fb_mapped_size);
+  if (!ctx_fb_single_buffer)
+    free (tiled->pixels);
   close (fb->fb_fd);
   if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
@@ -366,6 +373,8 @@ static void fb_vt_switch_cb (int sig)
 Ctx *ctx_new_fb (int width, int height)
 {
 #if CTX_RASTERIZER
+  if (getenv ("CTX_FB_SINGLE_BUFFER"))
+    ctx_fb_single_buffer = atoi (getenv ("CTX_FB_SINGLE_BUFFER"));
   CtxFb *fb = calloc (sizeof (CtxFb), 1);
   CtxTiled *tiled = (void*)fb;
   CtxBackend *backend = (void*)fb;
@@ -509,7 +518,10 @@ Ctx *ctx_new_fb (int width, int height)
   }
   if (!tiled->fb)
     return NULL;
-  tiled->pixels = calloc (fb->fb_mapped_size, 1);
+  if (ctx_fb_single_buffer)
+    tiled->pixels = tiled->fb;
+  else
+    tiled->pixels = calloc (fb->fb_mapped_size, 1);
   tiled->show_frame = (void*)ctx_fb_show_frame;
 
   ctx_babl_init ();
