@@ -1,4 +1,4 @@
-SMALL_CFLAGS=-g -Os -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant -DCTX_SDL=0 -fno-stack-protector -fno-ident -Wl,--build-id=none -fno-semantic-interposition
+SMALL_CFLAGS=-s -Os -fomit-frame-pointer -ffunction-sections -fdata-sections -Wl,--gc-sections  -Wl,--hash-style=gnu -flto -fmerge-all-constants -fgcse-sm -fgcse-las -fwhole-program -fno-math-errno -ffast-math -fsingle-precision-constant -DCTX_SDL=0 -fno-stack-protector -fno-ident -Wl,--build-id=none -fno-semantic-interposition
 PERF_CFLAGS=-Ofast
 #CC=gcc
 
