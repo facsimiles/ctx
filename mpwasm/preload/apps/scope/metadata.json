@@ -1,0 +1,1 @@
+{"name":"Scope","description":"A very simple egg that reads the light sensor and displays its raw value and a scope. Will be extended to other ADC channels once we have the firmware ready.","category":"hardware","author":"koalo","revision":1}

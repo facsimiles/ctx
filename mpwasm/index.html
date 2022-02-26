@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="assets/codemirror.css">
+    <link rel="stylesheet" href="assets/codemirror-cobalt.css">
+    <script src="assets/codemirror.js"></script>
+    <script src="assets/codemirror-python.js"></script>
+    <style>
+       canvas#c { 
+                  position: fixed; right: 1em; top: 1.6em; z-index; 2000;
+                  border:1px solid gray;
+                  max-width: 60%;
+                  min-width: 45%;
+                  image-rendering: optimizeSpeed;
+                  image-rendering: pixelated;
+                  image-rendering: -moz-crisp-edges;
+         }
+       div#mp_js_stdout { white-space:pre;
+                          color:gray;
+                          height:40vh;
+                          overflow:scroll;
+                        }
+       textarea#script { border: 1px solid gray;
+       }
+       body{margin:0;padding: 0;background:black;}
+       button#run { }
+       div#toolbar { height: 1.4em; }
+       div.led { display: inline-block; width: .5em; height:.5em;border: 1px solid #333;}
+    </style>
+    <script src="build/micropython.js"></script>
+    <script src="build/fs.js"></script>
+  </head>
+  <body>
+    <div id='toolbar'>
+      <select id='file_list' onchange='editor_load(this.value)'></select>
+      <button id='run' title='ctrl+return' onclick='dorun()'>run</button>
+      <button id='save' title='ctrl+s' onclick='dosave()'>save</button>
+
+      <div class='led' id='led0'></div>
+      <div class='led' id='led1'></div>
+      <div class='led' id='led2'></div>
+      <div class='led' id='led3'></div>
+      <div class='led' id='led4'></div>
+      <div class='led' id='led5'></div>
+      <div class='led' id='led6'></div>
+      <div class='led' id='led7'></div>
+      <div class='led' id='led8'></div>
+      <div class='led' id='led9'></div>
+      <div class='led' id='led10'></div>
+      ..
+      <div class='led' id='led11'></div>
+      <div class='led' id='led12'></div>
+      <div class='led' id='led13'></div>
+      <div class='led' id='led14'></div>
+      ..
+      <div class='led' id='led15'></div>
+    </div>
+    <textarea id='script' cols='40'>
+    </textarea>
+    <div id='mp_js_stdout'></div>
+    <canvas id='c' width='160' height='80' tabindex='0'></canvas>
+  </body>
+</html>
