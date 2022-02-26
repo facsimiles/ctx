@@ -2195,7 +2195,11 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
   if (rasterizer->texture_source->texture[no].data == NULL)
     {
+#if CTX_32BIT_SEGMENTS
+      // not really, but we want to avoid building/linking fprintf
+      // for firmwares which are likely to not have this set
       fprintf (stderr, "ctx tex fail %p %s %i\n", rasterizer->texture_source, eid, no);
+#endif
       return;
     }
   else
@@ -3956,7 +3960,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
 #endif
 
       case CTX_RESTORE:
-        for (int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
+        for (unsigned int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
              i < state->gstate.keydb_pos; i++)
         {
           if (state->keydb[i].key == CTX_clip)
@@ -3978,7 +3982,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
         if (clear_clip)
         {
           ctx_rasterizer_clip_reset (rasterizer);
-        for (int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
+          for (unsigned int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
              i < state->gstate.keydb_pos; i++)
         {
           if (state->keydb[i].key == CTX_clip)
@@ -4199,13 +4203,9 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
       free (rasterizer->shape_cache.entries[i]);
       rasterizer->shape_cache.entries[i] = NULL;
     }
-
 #endif
-
-
   free (rasterizer);
 }
-
 
 CtxAntialias ctx_get_antialias (Ctx *ctx)
 {
