@@ -388,8 +388,8 @@ static const char *mouse_get_event_int (Ctx *n, int *x, int *y)
   relx = buf[1];
   rely = -buf[2];
 
-  n->mouse_x += relx * 0.1;
-  n->mouse_y += rely * 0.1;
+  n->mouse_x += relx * 0.1f;
+  n->mouse_y += rely * 0.1f;
 
   if (n->mouse_x < 1) n->mouse_x = 1;
   if (n->mouse_y < 1) n->mouse_y = 1;

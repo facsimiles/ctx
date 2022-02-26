@@ -30,7 +30,7 @@ static void ctx_svg_arc_circle_to (Ctx *ctx,
   }
 
   float len_squared = ctx_pow2(radius_vec_x) + ctx_pow2(radius_vec_y);
-  if (len_squared - 0.03 > r * r || r < 0)
+  if (len_squared - 0.03f > r * r || r < 0)
   {
     r = sqrtf (len_squared);
   }
@@ -62,9 +62,9 @@ static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry,
 
   float x0, y0;
   ctx_current_point (ctx, &x0, &y0);
-  float radius_min = ctx_hypotf (x1-x0,y1-y0)/2.0;
+  float radius_min = ctx_hypotf (x1-x0,y1-y0)/2.0f;
   float radius_lim = ctx_hypotf (rx, ry);
-  float up_scale = 1.0;
+  float up_scale = 1.0f;
   if (radius_lim < radius_min)
     up_scale = radius_min / radius_lim;
   float ratio = rx / ry;
@@ -732,7 +732,7 @@ static void ctx_parser_set_color_model (CtxParser *parser, CtxColorModel color_m
 static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red, float *green, float *blue, float *alpha)
 {
   /* XXX - this function is to be deprecated */
-  *alpha = 1.0;
+  *alpha = 1.0f;
   switch (parser->color_model)
     {
       case CTX_GRAYA:
@@ -759,12 +759,12 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
         /* FALLTHROUGH */
       case CTX_CMYK:
         /* should use profile instead  */
-        *red = (1.0-parser->numbers[offset + 0]) *
-               (1.0 - parser->numbers[offset + 3]);
-        *green = (1.0-parser->numbers[offset + 1]) *
-                 (1.0 - parser->numbers[offset + 3]);
-        *blue = (1.0-parser->numbers[offset + 2]) *
-                (1.0 - parser->numbers[offset + 3]);
+        *red = (1.0f-parser->numbers[offset + 0]) *
+               (1.0f - parser->numbers[offset + 3]);
+        *green = (1.0f-parser->numbers[offset + 1]) *
+                 (1.0f - parser->numbers[offset + 3]);
+        *blue = (1.0f-parser->numbers[offset + 2]) *
+                (1.0f - parser->numbers[offset + 3]);
         break;
     }
 }
@@ -1297,8 +1297,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         if (parser->translate_origin)
         {
           ctx_translate (ctx,
-                         (parser->cursor_x-1) * parser->cell_width * 1.0,
-                         (parser->cursor_y-1) * parser->cell_height * 1.0);
+                         (parser->cursor_x-1) * parser->cell_width * 1.0f,
+                         (parser->cursor_y-1) * parser->cell_height * 1.0f);
         }
         break;
     }
@@ -1738,7 +1738,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                 if (parser->decimal)
                   {
                     parser->decimal *= 10;
-                    parser->numbers[parser->n_numbers] += (byte - '0') / (1.0 * parser->decimal);
+                    parser->numbers[parser->n_numbers] += (byte - '0') / (1.0f * parser->decimal);
                   }
                 else
                   {
