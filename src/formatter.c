@@ -101,7 +101,7 @@ static void _ctx_stream_addstr (CtxFormatter *formatter, const char *str, int le
   {
     return;
   }
-  if (len < 0) len = strlen (str);
+  if (len < 0) len = ctx_strlen (str);
   fwrite (str, len, 1, (FILE*)formatter->target);
 }
 
@@ -111,7 +111,7 @@ void _ctx_string_addstr (CtxFormatter *formatter, const char *str, int len)
   {
     return;
   }
-  if (len < 0) len = strlen (str);
+  if (len < 0) len = ctx_strlen (str);
   ctx_string_append_data ((CtxString*)(formatter->target), str, len);
 }
 

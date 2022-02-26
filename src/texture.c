@@ -177,7 +177,7 @@ const char* ctx_texture_init (Ctx           *ctx,
   if (eid)
   {
     /* we got an eid, this is the fast path */
-    ctx->texture[id].eid = strdup (eid);
+    ctx->texture[id].eid = ctx_strdup (eid);
   }
   else
   {
@@ -195,7 +195,7 @@ const char* ctx_texture_init (Ctx           *ctx,
        ascii[i*2+1]=hex[hash[i]%16];
     }
     ascii[40]=0;
-    ctx->texture[id].eid = strdup (ascii);
+    ctx->texture[id].eid = ctx_strdup (ascii);
   }
   return ctx->texture[id].eid;
 }

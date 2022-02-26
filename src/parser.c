@@ -1970,7 +1970,7 @@ ctx_parse (Ctx *ctx, const char *string)
                                            ctx_get_font_size(ctx),
                                            ctx_get_font_size(ctx),
                                            0, 0, NULL, NULL, NULL, NULL, NULL);
-  ctx_parser_feed_bytes (parser, string, strlen (string));
+  ctx_parser_feed_bytes (parser, string, ctx_strlen (string));
   ctx_parser_feed_bytes (parser, " ", 1);
   ctx_parser_free (parser);
 }

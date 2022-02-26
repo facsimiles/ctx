@@ -561,7 +561,7 @@ int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
   int ret = ctx_drawlist_add_single (drawlist, &entry[0]);
   if (CTX_UNLIKELY(!data)) { return -1; }
   int length_in_blocks;
-  if (length <= 0) { length = strlen ( (char *) data) + 1; }
+  if (length <= 0) { length = ctx_strlen ( (char *) data) + 1; }
   length_in_blocks = length / sizeof (CtxEntry);
   length_in_blocks += (length % sizeof (CtxEntry) ) ?1:0;
   if ((signed)drawlist->count + length_in_blocks + 4 > drawlist->size)
@@ -673,7 +673,7 @@ ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32
 CTX_STATIC void
 ctx_process_cmd_str (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1)
 {
-  ctx_process_cmd_str_with_len (ctx, code, string, arg0, arg1, strlen (string));
+  ctx_process_cmd_str_with_len (ctx, code, string, arg0, arg1, ctx_strlen (string));
 }
 
 CTX_STATIC void
@@ -683,7 +683,7 @@ ctx_process_cmd_str_float (Ctx *ctx, CtxCode code, const char *string, float arg
   uint32_t iarg1;
   memcpy (&iarg0, &arg0, sizeof (iarg0));
   memcpy (&iarg1, &arg1, sizeof (iarg1));
-  ctx_process_cmd_str_with_len (ctx, code, string, iarg0, iarg1, strlen (string));
+  ctx_process_cmd_str_with_len (ctx, code, string, iarg0, iarg1, ctx_strlen (string));
 }
 
 #if CTX_BITPACK_PACKER

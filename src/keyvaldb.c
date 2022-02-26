@@ -129,7 +129,7 @@ CTX_STATIC void ctx_state_set_string (CtxState *state, uint32_t key, const char 
   //
   //     for clips the behavior is howevre ideal, since
   //     we can have more than one clip per save/restore level
-  ctx_state_set_blob (state, key, (uint8_t*)string, strlen(string));
+  ctx_state_set_blob (state, key, (uint8_t*)string, ctx_strlen(string));
 }
 
 static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)

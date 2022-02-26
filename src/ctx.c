@@ -313,7 +313,7 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
 
 void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
 {
-  int eid_len = strlen (eid);
+  int eid_len = ctx_strlen (eid);
   char ascii[41]="";
   //fprintf (stderr, "tx %s\n", eid);
   if (eid_len > 50)
@@ -398,7 +398,7 @@ void ctx_define_texture (Ctx *ctx,
     eid = ascii;
   }
 
-  int eid_len = strlen (eid);
+  int eid_len = ctx_strlen (eid);
 
   if (eid_len > 50)
   {
@@ -490,7 +490,7 @@ void ctx_define_texture (Ctx *ctx,
     eid_info->height     = height;
     eid_info->frame      = ctx->texture_cache->frame;
     //fprintf (stderr, "%i\n", eid_info->frame);
-    eid_info->eid        = strdup (eid);
+    eid_info->eid        = ctx_strdup (eid);
     ctx_list_prepend (&ctx->texture_cache->eid_db, eid_info);
   }
 
@@ -506,7 +506,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 {
   const char *eid = path;
   char ascii[41]="";
-  int eid_len = strlen (eid);
+  int eid_len = ctx_strlen (eid);
   if (eid_len > 50)
   {
     CtxSHA1 *sha1 = ctx_sha1_new ();
@@ -728,7 +728,7 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
   copy = (CtxEvent*)malloc (sizeof (CtxEvent));
   *copy = *event;
   if (copy->string)
-    copy->string = strdup (event->string);
+    copy->string = ctx_strdup (event->string);
   ctx_list_append_full (&ctx->events.events, copy, ctx_event_free, NULL);
 }
 #endif
@@ -931,7 +931,7 @@ _ctx_font (Ctx *ctx, const char *name)
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len)
 {
-  if (len <= 0) len = strlen (string);
+  if (len <= 0) len = ctx_strlen (string);
   ctx_process_cmd_str (ctx, CTX_SET, string, key_hash, len);
 }
 
@@ -2211,7 +2211,7 @@ char *ctx_get_clipboard (Ctx *ctx)
   {
     return ctx->backend->get_clipboard (ctx);
   }
-  return strdup ("");
+  return ctx_strdup ("");
 }
 
 void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source)
@@ -2257,7 +2257,7 @@ ctx_get_contents2 (const char     *uri,
 
   if (uri[0] == '/')
   {
-    temp_uri = (char*) malloc (strlen (uri) + 8);
+    temp_uri = (char*) malloc (ctx_strlen (uri) + 8);
     sprintf (temp_uri, "file://%s", uri);
     uri = temp_uri;
   }
@@ -2438,7 +2438,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
   ctx_media_matched_content = 0;
   if (path && strrchr (path, '.'))
   {
-    char *pathdup = strdup (strrchr(path, '.'));
+    char *pathdup = ctx_strdup (strrchr(path, '.'));
     for (int i = 0; pathdup[i]; i++) pathdup[i]=tolower(pathdup[i]);
     for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
     {
@@ -2503,7 +2503,7 @@ const char *ctx_path_get_media_type (const char *path)
   /* XXX : code duplication, factor out in separate fun */
   if (path && strrchr (path, '.'))
   {
-    char *pathdup = strdup (strrchr(path, '.'));
+    char *pathdup = ctx_strdup (strrchr(path, '.'));
     for (int i = 0; pathdup[i]; i++) pathdup[i]=tolower(pathdup[i]);
     for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
     {

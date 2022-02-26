@@ -482,13 +482,13 @@ void ctx_add_key_binding_full (Ctx *ctx,
     fprintf (stderr, "warning: binding overflow\n");
     return;
   }
-  events->bindings[events->n_bindings].nick = strdup (key);
+  events->bindings[events->n_bindings].nick = ctx_strdup (key);
   strcpy (events->bindings[events->n_bindings].nick, key);
 
   if (action)
-    events->bindings[events->n_bindings].command = action ? strdup (action) : NULL;
+    events->bindings[events->n_bindings].command = action ? ctx_strdup (action) : NULL;
   if (label)
-    events->bindings[events->n_bindings].label = label ? strdup (label) : NULL;
+    events->bindings[events->n_bindings].label = label ? ctx_strdup (label) : NULL;
   events->bindings[events->n_bindings].cb = cb;
   events->bindings[events->n_bindings].cb_data = cb_data;
   events->bindings[events->n_bindings].destroy_notify = destroy_notify;
@@ -923,7 +923,7 @@ static void ctx_report_hit_region (CtxEvent *event,
 
 void ctx_add_hit_region (Ctx *ctx, const char *id)
 {
-  char *id_copy = strdup (id);
+  char *id_copy = ctx_strdup (id);
   float x, y, width, height;
   /* generate bounding box of what to listen for - from current cairo path */
   {
@@ -1885,18 +1885,18 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
             ctx->events.modifier_state & CTX_MODIFIER_STATE_CONTROL))
        {
          string = ctx_keycode_to_keyname (0, keyval);
-         sprintf (&temp_key[strlen(temp_key)], "shift-");
+         sprintf (&temp_key[ctx_strlen(temp_key)], "shift-");
        }
 
        if (ctx->events.modifier_state & CTX_MODIFIER_STATE_ALT)
        {
-         sprintf (&temp_key[strlen(temp_key)], "alt-");
+         sprintf (&temp_key[ctx_strlen(temp_key)], "alt-");
        }
        if (ctx->events.modifier_state & CTX_MODIFIER_STATE_CONTROL)
        {
-         sprintf (&temp_key[strlen(temp_key)], "control-");
+         sprintf (&temp_key[ctx_strlen(temp_key)], "control-");
        }
-       sprintf (&temp_key[strlen(temp_key)], "%s", string);
+       sprintf (&temp_key[ctx_strlen(temp_key)], "%s", string);
        string = temp_key;
     }
   }
@@ -1926,7 +1926,7 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
     event.type = CTX_KEY_PRESS;
     event.unicode = keyval; 
     if (string)
-    event.string = strdup(string);
+    event.string = ctx_strdup(string);
     else
     event.string = "--";
     event.stop_propagate = 0;
@@ -1980,7 +1980,7 @@ ctx_key_down (Ctx *ctx, unsigned int keyval,
     event.ctx     = ctx;
     event.type    = CTX_KEY_DOWN;
     event.unicode = keyval; 
-    event.string  = strdup(string);
+    event.string  = ctx_strdup(string);
     event.stop_propagate = 0;
     event.time    = time;
 
@@ -2032,7 +2032,7 @@ ctx_key_up (Ctx *ctx, unsigned int keyval,
     event.ctx = ctx;
     event.type = CTX_KEY_UP;
     event.unicode = keyval; 
-    event.string = strdup(string);
+    event.string = ctx_strdup(string);
     event.stop_propagate = 0;
     event.time = time;
 
@@ -2323,7 +2323,7 @@ static char *mice_get_event ()
   CtxTiled *tiled = (void*)ctx_ev_src_mice.priv;
   n_read = read (mrg_mice_this->fd, buf, 3);
   if (n_read == 0)
-     return strdup ("");
+     return ctx_strdup ("");
   relx = buf[1];
   rely = -buf[2];
 
@@ -2751,7 +2751,7 @@ static int fb_keyboard_match_keycode (const char *buf, int length, const MmmKeyC
     if (!strncmp (buf, ufb_keycodes[i].sequence, length))
       {
         matches ++;
-        if ((int)strlen (ufb_keycodes[i].sequence) == length && ret)
+        if ((int)ctx_strlen (ufb_keycodes[i].sequence) == length && ret)
           {
             *ret = &ufb_keycodes[i];
             return 1;
@@ -2791,7 +2791,7 @@ static char *evsource_kb_get_event (void)
             tv.tv_sec = 0;
             tv.tv_usec = 1000 * 120;
             if (select (STDIN_FILENO+1, &rfds, NULL, NULL, &tv) == 0)
-              return strdup ("escape");
+              return ctx_strdup ("escape");
           }
 
         switch (fb_keyboard_match_keycode ((void*)buf, length + 1, &match))
@@ -2799,7 +2799,7 @@ static char *evsource_kb_get_event (void)
             case 1: /* unique match */
               if (!match)
                 return NULL;
-              return strdup (match->nick);
+              return ctx_strdup (match->nick);
               break;
             case 0: /* no matches, bail*/
              {
@@ -2815,13 +2815,13 @@ static char *evsource_kb_get_event (void)
                       buf[ctx_utf8_len(buf[0])]=0;
                       strcpy (ret, (void*)buf);
                     }
-                    return strdup(ret); //XXX: simplify
+                    return ctx_strdup(ret); //XXX: simplify
                   }
                 if (length == 0) /* ascii */
                   {
                     buf[1]=0;
                     strcpy (ret, (void*)buf);
-                    return strdup(ret);
+                    return ctx_strdup(ret);
                   }
                 sprintf (ret, "unhandled %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c' %i:'%c'",
                     length >=0 ? buf[0] : 0,
@@ -2839,7 +2839,7 @@ static char *evsource_kb_get_event (void)
                     length >=6 ? buf[6] : 0,
                     length >=6 ? buf[6]>31?buf[6]:'?' : ' '
                     );
-                return strdup(ret);
+                return ctx_strdup(ret);
             }
               return NULL;
             default: /* continue */
@@ -2847,8 +2847,8 @@ static char *evsource_kb_get_event (void)
           }
       }
     else
-      return strdup("key read eek");
-  return strdup("fail");
+      return ctx_strdup("key read eek");
+  return ctx_strdup("fail");
 }
 
 static int evsource_kb_get_fd (void)

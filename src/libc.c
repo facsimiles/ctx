@@ -85,4 +85,13 @@ static inline char *ctx_strstr (const char *h, const char *n)
   return NULL;
 }
 
+static inline char *ctx_strdup (const char *str)
+{
+  int len = ctx_strlen (str);
+  char *ret = (char*)malloc (len + 1);
+  memcpy (ret, str, len);
+  ret[len]=0;
+  return ret;
+}
+
 #endif

@@ -813,7 +813,7 @@ static int
 mrg_color_parse_hex (CtxState *ctxstate, CtxColor *color, const char *color_string)
 {
   float dcolor[4]={0,0,0,1};
-  int string_length = strlen (color_string);
+  int string_length = ctx_strlen (color_string);
   int i;
   dcolor[3] = 1.0;
 
@@ -1032,7 +1032,7 @@ void ctx_colorspace (Ctx           *ctx,
 {
   if (data)
   {
-    if (data_length <= 0) data_length = (int)strlen ((char*)data);
+    if (data_length <= 0) data_length = (int)ctx_strlen ((char*)data);
     ctx_process_cmd_str_with_len (ctx, CTX_COLOR_SPACE, (char*)data, space_slot, 0, data_length);
   }
   else

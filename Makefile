@@ -192,8 +192,6 @@ ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/c
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
-ctx-split.o: $(SRC_OBJS)
-
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 

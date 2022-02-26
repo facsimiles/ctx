@@ -90,7 +90,7 @@ int main (){
   char *input="this is a testæøåÅØ'''\"!:_asdac\n\r";
   char  encoded[256]="";
   char  decoded[256]="";
-  int   in_len = strlen (input);
+  int   in_len = ctx_strlen (input);
   int   out_len;
   int   dec_len;
 

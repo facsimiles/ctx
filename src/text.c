@@ -28,7 +28,7 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
   ctx_fonts[ctx_font_count].type = 1;
-  ctx_fonts[ctx_font_count].name = (char *) malloc (strlen (name) + 1);
+  ctx_fonts[ctx_font_count].name = (char *) malloc (ctx_strlen (name) + 1);
   ctx_strcpy ( (char *) ctx_fonts[ctx_font_count].name, name);
   if (!stbtt_InitFont (&ctx_fonts[ctx_font_count].stb.ttf_info, ttf_contents, 0) )
     {
@@ -561,8 +561,8 @@ ctx_load_font_ctx_fs (const char *name, const void *path, int length) // length 
 
   ctx_fonts[ctx_font_count].type = 42;
   ctx_fonts[ctx_font_count].name = name;
-  ctx_fonts[ctx_font_count].ctx_fs.path = strdup (path);
-  int path_len = strlen (path);
+  ctx_fonts[ctx_font_count].ctx_fs.path = ctx_strdup (path);
+  int path_len = ctx_strlen (path);
   if (ctx_fonts[ctx_font_count].ctx_fs.path[path_len-1] == '/')
    ctx_fonts[ctx_font_count].ctx_fs.path[path_len-1] = 0;
   ctx_fonts[ctx_font_count].engine = &ctx_font_engine_ctx_fs;

@@ -74,7 +74,7 @@ _ctx_file_set_contents (const char     *path,
   file = fopen (path, "wb");
   if (!file)
     { return; }
-  if (length < 0) length = strlen ((const char*)contents);
+  if (length < 0) length = ctx_strlen ((const char*)contents);
   fwrite (contents, 1, length, file);
   fclose (file);
 }

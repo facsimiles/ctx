@@ -188,7 +188,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
                    // XXX : doesn't take all text-alignments into account
           }
 
-          murmur3_32_process(&murmur, (const unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
+          murmur3_32_process(&murmur, (const unsigned char*)ctx_arg_string(), ctx_strlen  (ctx_arg_string()));
 #if 1
         murmur3_32_process(&murmur, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
     //      murmur3_32_process(&murmur, (unsigned char*)&color, 4);
@@ -233,7 +233,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_stroke.color, (uint8_t*)(&color));
 #endif
-          murmur3_32_process(&murmur, (unsigned char*)ctx_arg_string(), strlen  (ctx_arg_string()));
+          murmur3_32_process(&murmur, (unsigned char*)ctx_arg_string(), ctx_strlen  (ctx_arg_string()));
 #if 1
           murmur3_32_process(&murmur, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
     //    murmur3_32_process(&murmur, (unsigned char*)&color, 4);
@@ -273,7 +273,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           uint32_t color;
           ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
 #endif
-          murmur3_32_process(&murmur, string, strlen ((const char*)string));
+          murmur3_32_process(&murmur, string, ctx_strlen ((const char*)string));
           murmur3_32_process(&murmur, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
 #if 0
           murmur3_32_process(&murmur, (unsigned char*)&color, 4);
@@ -503,7 +503,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         {
         murmur3_32_init (&hasher->murmur_fill[hasher->source_level]);
         murmur3_32_process(&hasher->murmur_fill[hasher->source_level], &rasterizer->state->gstate.global_alpha_u8, 1);
-        murmur3_32_process (&hasher->murmur_fill[hasher->source_level], (uint8_t*)c->define_texture.eid, strlen (c->define_texture.eid));
+        murmur3_32_process (&hasher->murmur_fill[hasher->source_level], (uint8_t*)c->define_texture.eid, ctx_strlen (c->define_texture.eid));
         murmur3_32_process(&hasher->murmur_fill[hasher->source_level], (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
 
         rasterizer->comp_op = NULL; // why?
@@ -512,7 +512,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
       case CTX_TEXTURE:
         murmur3_32_init (&hasher->murmur_fill[hasher->source_level]);
         murmur3_32_process(&hasher->murmur_fill[hasher->source_level], &rasterizer->state->gstate.global_alpha_u8, 1);
-        murmur3_32_process (&hasher->murmur_fill[hasher->source_level], (uint8_t*)c->texture.eid, strlen (c->texture.eid));
+        murmur3_32_process (&hasher->murmur_fill[hasher->source_level], (uint8_t*)c->texture.eid, ctx_strlen (c->texture.eid));
         murmur3_32_process (&hasher->murmur_fill[hasher->source_level], (uint8_t*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
         rasterizer->comp_op = NULL; // why?
         break;
