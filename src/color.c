@@ -785,7 +785,7 @@ ctx_color_parse_rgb (CtxState *ctxstate, CtxColor *color, const char *color_stri
       if (p != prev)
       {
         if (n_floats < 3)
-          dcolor[n_floats++] = val/255.0;
+          dcolor[n_floats++] = val/255.0f;
         else
           dcolor[n_floats++] = val;
 

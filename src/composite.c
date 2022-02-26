@@ -414,8 +414,8 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
         src10 = src00 + buffer->stride;
         src11 = src01 + buffer->stride;
       }
-      float dx = (x-(int)(x)) * 255.9;
-      float dy = (y-(int)(y)) * 255.9;
+      float dx = (x-(int)(x)) * 255.9f;
+      float dy = (y-(int)(y)) * 255.9f;
 
       switch (bpp)
       {
@@ -583,7 +583,7 @@ CTX_INLINE static void
 ctx_float_deassociate_alpha (int components, float *rgba, float *dst)
 {
   float ralpha = rgba[components-1];
-  if (ralpha != 0.0) ralpha = 1.0/ralpha;
+  if (ralpha != 0.0f) ralpha = 1.0f/ralpha;
 
   for (int c = 0; c < components-1; c++)
     dst[c] = (rgba[c] * ralpha);
@@ -636,7 +636,7 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
   int height = buffer->height;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-  int dim = (1.0 / factor) / 3;
+  int dim = (1.0f / factor) / 3;
 
   int i = 0;
 
@@ -903,7 +903,7 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
   int height = buffer->height;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-  int dim = (1.0 / factor) / 3;
+  int dim = (1.0f / factor) / 3;
 
   int i = 0;
 
@@ -1395,7 +1395,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
   CtxExtend extend = rasterizer->state->gstate.extend;
   if (z == 1.0f && dz == 0.0f) // this also catches other constant z!
   {
-    if (dy == 0.0f && dx == 1.0 && extend == CTX_EXTEND_NONE)
+    if (dy == 0.0f && dx == 1.0f && extend == CTX_EXTEND_NONE)
       ctx_fragment_image_rgba8_RGBA8_nearest_copy (rasterizer, x, y, z, out, count, dx, dy, dz);
     else
       ctx_fragment_image_rgba8_RGBA8_nearest_affine (rasterizer, x, y, z, out, count, dx, dy, dz);
@@ -2967,7 +2967,7 @@ ctx_u8_blend_define_seperable(soft_light,
     if (b[c] <= 255/4)
       d = (((16 * b[c] - 12 * 255)/255 * b[c] + 4 * 255) * b[c])/255;
     else
-      d = ctx_sqrtf(b[c]/255.0) * 255.4;
+      d = ctx_sqrtf(b[c]/255.0f) * 255.4f;
     blended[c] = (b[c] + (2 * s[c] - 255) * (d - b[c]))/255;
   }
 )
@@ -3623,7 +3623,7 @@ ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
     uint8_t cov = *coverage;
     float covf = ctx_u8_to_float (cov);
     for (int c = 0; c < components; c++)
-      dstf[c] = dstf[c]*(1.0-covf) + srcf[c]*covf;
+      dstf[c] = dstf[c]*(1.0f-covf) + srcf[c]*covf;
     dstf += components;
     coverage ++;
   }
@@ -3660,7 +3660,7 @@ ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
     }
     else
     {
-      float ralpha = 1.0 - ctx_u8_to_float (cov);
+      float ralpha = 1.0f - ctx_u8_to_float (cov);
       for (int c = 0; c < components; c++)
         { dstf[c] = (dstf[c] * ralpha); }
     }
@@ -4896,10 +4896,10 @@ ctx_CMYKAF_to_CMYK8 (CtxRasterizer *rasterizer, float *src, uint8_t *dst, int co
           y *= recip;
           k *= recip;
         }
-      c = 1.0 - c;
-      m = 1.0 - m;
-      y = 1.0 - y;
-      k = 1.0 - k;
+      c = 1.0f - c;
+      m = 1.0f - m;
+      y = 1.0f - y;
+      k = 1.0f - k;
       dst[0] = ctx_float_to_u8 (c);
       dst[1] = ctx_float_to_u8 (m);
       dst[2] = ctx_float_to_u8 (y);
@@ -6795,8 +6795,8 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
 
   x0 = ctx_floorf (x0);
   y0 = ctx_floorf (y0);
-  x1 = ctx_floorf (x1+7/8.0);
-  y1 = ctx_floorf (y1+15/15.0);
+  x1 = ctx_floorf (x1+7/8.0f);
+  y1 = ctx_floorf (y1+15/15.0f);
 
   int has_top    = (top < 255);
   int has_bottom = (bottom <255);
@@ -6879,8 +6879,8 @@ CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
 {
       float lwmod = ctx_fmod1f (line_width);
       int lw = ctx_floorf (line_width + 0.5f);
-      int is_compat_even = (lw % 2 == 0) && (lwmod < 0.1); // only even linewidths implemented properly
-      int is_compat_odd = (lw % 2 == 1) && (lwmod < 0.1); // only even linewidths implemented properly
+      int is_compat_even = (lw % 2 == 0) && (lwmod < 0.1f); // only even linewidths implemented properly
+      int is_compat_odd = (lw % 2 == 1) && (lwmod < 0.1f); // only even linewidths implemented properly
 
       float off_x = 0;
       float off_y = 0;
@@ -6888,7 +6888,7 @@ CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
       if (is_compat_odd)
       {
         off_x = 0.5f;
-        off_y = (CTX_FULL_AA/2)*1.0 / (CTX_FULL_AA);
+        off_y = (CTX_FULL_AA/2)*1.0f / (CTX_FULL_AA);
       }
 
       if((is_compat_odd || is_compat_even) &&

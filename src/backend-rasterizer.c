@@ -2645,23 +2645,23 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
 {
   float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   int full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS;
-  full_segments = factor * radius * CTX_PI * 2 / 4.0;
+  full_segments = factor * radius * CTX_PI * 2 / 4.0f;
   if (full_segments > CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS)
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
   if (full_segments < 24) full_segments = 24;
-  float step = CTX_PI*2.0/full_segments;
+  float step = CTX_PI*2.0f/full_segments;
   int steps;
 
-  if (end_angle < -30.0)
-    end_angle = -30.0;
-  if (start_angle < -30.0)
-    start_angle = -30.0;
-  if (end_angle > 30.0)
-    end_angle = 30.0;
-  if (start_angle > 30.0)
-    start_angle = 30.0;
+  if (end_angle < -30.0f)
+    end_angle = -30.0f;
+  if (start_angle < -30.0f)
+    start_angle = -30.0f;
+  if (end_angle > 30.0f)
+    end_angle = 30.0f;
+  if (start_angle > 30.0f)
+    start_angle = 30.0f;
 
-  if (radius <= 0.0001)
+  if (radius <= 0.0001f)
           return;
 
   if (end_angle == start_angle)
@@ -2857,7 +2857,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
               float length = ctx_fast_hypotf (dx, dy);
               if (length>0.001f)
                 {
-                  float recip_length = 1.0/length;
+                  float recip_length = 1.0f/length;
                   dx = dx * recip_length * half_width_x;
                   dy = dy * recip_length * half_width_y;
                   if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))

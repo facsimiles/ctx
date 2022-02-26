@@ -40,7 +40,7 @@ static void ctx_state_set (CtxState *state, uint32_t key, float value)
 
 static int ctx_float_is_string (float val)
 {
-  return val >= CTX_KEYDB_STRING_START && val <= CTX_KEYDB_STRING_END;
+  return (int)(val) >= CTX_KEYDB_STRING_START && ((int)val) <= CTX_KEYDB_STRING_END;
 }
 
 CTX_STATIC int ctx_float_to_string_index (float val)
@@ -48,7 +48,7 @@ CTX_STATIC int ctx_float_to_string_index (float val)
   int idx = -1;
   if (ctx_float_is_string (val))
   {
-    idx = val - CTX_KEYDB_STRING_START;
+    idx = (int)(val) - CTX_KEYDB_STRING_START;
   }
   return idx;
 }

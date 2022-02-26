@@ -101,7 +101,7 @@ ctx_sinf (float x)
   if (x < -CTX_PI * 2)
     {
       x = -x;
-      long ix = x / (CTX_PI * 2);
+      long ix = (long)(x / (CTX_PI * 2));
       x = x - ix * CTX_PI * 2;
       x = -x;
     }
@@ -117,7 +117,7 @@ ctx_sinf (float x)
   }
   if (x > CTX_PI * 2)
     { 
-      long ix = x / (CTX_PI * 2);
+      long ix = (long)(x / (CTX_PI * 2));
       x = x - (ix * CTX_PI * 2);
     }
   while (x < -CTX_PI)

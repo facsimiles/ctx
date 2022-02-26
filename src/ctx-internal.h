@@ -22,7 +22,7 @@
 
 typedef struct _CtxRasterizer CtxRasterizer;
 typedef struct _CtxGState     CtxGState;
-typedef struct _CtxState      CtxState;
+//typedef struct _CtxState      CtxState;
 
 typedef struct _CtxSource CtxSource;
 
