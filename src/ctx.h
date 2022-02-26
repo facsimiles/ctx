@@ -763,6 +763,7 @@ typedef enum CtxCbFlags {
   CTX_CB_DAMAGE_CONTROL = 1 << 5,
   CTX_CB_SHOW_FPS   = 1 << 6,
   CTX_CB_AUTO_332   = 1 << 7,
+  CTX_CB_KEEP_DATA  = 1 << 8,
 } CtxCbFlags;
 
 

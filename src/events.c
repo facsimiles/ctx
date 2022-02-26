@@ -132,11 +132,11 @@ static int is_in_ctx (void);
 #if EMSCRIPTEN
 
 CTX_EXPORT Ctx *
-get_context (void);
+ctx_wasm_get_context (int flags);
 
 static Ctx *ctx_new_ui (int width, int height, const char *backend)
 {
-   return get_context ();
+   return ctx_wasm_get_context (CTX_CB_HASH_CACHE);
 }
 #else
 

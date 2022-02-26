@@ -71,7 +71,8 @@ static void ctx_render_cb (Ctx *ctx,
     {
 
     render_height = ctx_mini (render_height, y1-y0);
-    memset (fb, 0, width * render_height);
+    if ((flags & CTX_CB_KEEP_DATA) == 0)
+      memset (fb, 0, width * render_height);
     Ctx *renderer = ctx_new_for_framebuffer (fb,
        width, render_height, width,
        CTX_FORMAT_RGB332);
@@ -153,6 +154,7 @@ static void ctx_render_cb (Ctx *ctx,
     do
     {
       render_height = ctx_mini (render_height, y1-y0);
+      if ((flags & CTX_CB_KEEP_DATA) == 0)
       memset (fb, 0, width * bpp * render_height);
       Ctx *renderer = ctx_new_for_framebuffer (fb, width, render_height, width * bpp,
             format);

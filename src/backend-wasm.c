@@ -33,7 +33,9 @@ void  update_fb (Ctx *ctx, void *user_data)
     var canvas = document.getElementById('c');
     var context = canvas.getContext('2d');
     const offset = _get_fb(canvas.width, canvas.height);
-    var _ctx = _get_context();
+    var _ctx = _ctx_wasm_get_context(0); // we presume an earlier
+                                         // call to have passed
+                                         // construction flags
     const imgData = context.createImageData(canvas.width,canvas.height);
                   //console.log(offset);
     var x0 = _ctx_cb_x0 (_ctx);
@@ -146,7 +148,7 @@ void wasm_set_damage_control(int val)
 }
 
 
-Ctx *get_context (void)
+Ctx *ctx_wasm_get_context (int flags)
 {
 
 EM_ASM(
@@ -164,8 +166,8 @@ EM_ASM(
    if (!em_ctx){em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGBA8, set_pixels, 
                                update_fb,
                                fb,
-                               width * height * 4, NULL, 
-                               CTX_CB_DEFAULTS|CTX_CB_HASH_CACHE);
+                               width * height * 4, fb, 
+                               flags);
    }
 
    if (wasm_damage_control)
