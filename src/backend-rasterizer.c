@@ -2198,7 +2198,7 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
 #if CTX_32BIT_SEGMENTS
       // not really, but we want to avoid building/linking fprintf
       // for firmwares which are likely to not have this set
-      fprintf (stderr, "ctx tex fail %p %s %i\n", rasterizer->texture_source, eid, no);
+      //fprintf (stderr, "ctx tex fail %p %s %i\n", rasterizer->texture_source, eid, no);
 #endif
       return;
     }

@@ -1126,6 +1126,8 @@ typedef enum _CtxEventType CtxEventType;
 #define CTX_CLICK   CTX_PRESS   // SHOULD HAVE MORE LOGIC
 typedef struct _CtxClient CtxClient;
 
+
+
 struct _CtxEvent {
   CtxEventType  type;
   uint32_t time;
@@ -1271,6 +1273,169 @@ int ctx_pointer_release   (Ctx *ctx, float x, float y, int device_no, uint32_t t
 int ctx_pointer_press     (Ctx *ctx, float x, float y, int device_no, uint32_t time);
 int ctx_pointer_drop      (Ctx *ctx, float x, float y, int device_no, uint32_t time,
                            char *string);
+
+
+
+int   ctx_client_resize        (Ctx *ctx, int id, int width, int height);
+void  ctx_client_set_font_size (Ctx *ctx, int id, float font_size);
+float ctx_client_get_font_size (Ctx *ctx, int id);
+void  ctx_client_maximize      (Ctx *ctx, int id);
+
+
+#if 1 // CTX_VT
+
+typedef struct _VT VT;
+void vt_feed_keystring    (VT *vt, CtxEvent *event, const char *str);
+void vt_paste             (VT *vt, const char *str);
+char *vt_get_selection    (VT *vt);
+long vt_rev               (VT *vt);
+int  vt_has_blink         (VT *vt);
+int ctx_vt_had_alt_screen (VT *vt);
+
+int ctx_clients_handle_events (Ctx *ctx);
+
+typedef struct _CtxList CtxList;
+CtxList *ctx_clients (Ctx *ctx);
+
+void ctx_set_fullscreen (Ctx *ctx, int val);
+int ctx_get_fullscreen (Ctx *ctx);
+
+typedef struct _CtxBuffer CtxBuffer;
+CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
+                                    int stride,
+                                    CtxPixelFormat pixel_format,
+                                    void (*freefunc) (void *pixels, void *user_data),
+                                    void *user_data);
+
+typedef enum CtxBackendType {
+  CTX_BACKEND_NONE,
+  CTX_BACKEND_CTX,
+  CTX_BACKEND_RASTERIZER,
+  CTX_BACKEND_HASHER,
+  CTX_BACKEND_HEADLESS,
+  CTX_BACKEND_TERM,
+  CTX_BACKEND_FB,
+  CTX_BACKEND_KMS,
+  CTX_BACKEND_TERMIMG,
+  CTX_BACKEND_CAIRO,
+  CTX_BACKEND_SDL,
+  CTX_BACKEND_DRAWLIST,
+} CtxBackendType;
+
+CtxBackendType ctx_backend_type (Ctx *ctx);
+
+static inline int ctx_backend_is_tiled (Ctx *ctx)
+{
+  switch (ctx_backend_type (ctx))
+  {
+    case CTX_BACKEND_FB:
+    case CTX_BACKEND_SDL:
+    case CTX_BACKEND_KMS:
+    case CTX_BACKEND_HEADLESS:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+#endif
+
+typedef enum CtxClientFlags {
+  ITK_CLIENT_UI_RESIZABLE = 1<<0,
+  ITK_CLIENT_CAN_LAUNCH   = 1<<1,
+  ITK_CLIENT_MAXIMIZED    = 1<<2,
+  ITK_CLIENT_ICONIFIED    = 1<<3,
+  ITK_CLIENT_SHADED       = 1<<4,
+  ITK_CLIENT_TITLEBAR     = 1<<5,
+  ITK_CLIENT_LAYER2       = 1<<6,  // used for having a second set
+                                   // to draw - useful for splitting
+                                   // scrolled and HUD items
+                                   // with HUD being LAYER2
+                                  
+  ITK_CLIENT_KEEP_ALIVE   = 1<<7,  // do not automatically
+  ITK_CLIENT_FINISHED     = 1<<8,  // do not automatically
+                                   // remove after process quits
+  ITK_CLIENT_PRELOAD      = 1<<9
+} CtxClientFlags;
+typedef void (*CtxClientFinalize)(CtxClient *client, void *user_data);
+
+int ctx_client_id (CtxClient *client);
+int ctx_client_flags (CtxClient *client);
+VT *ctx_client_vt (CtxClient *client);
+void ctx_client_add_event (CtxClient *client, CtxEvent *event);
+const char *ctx_client_title (CtxClient *client);
+CtxClient *ctx_client_find (Ctx *ctx, const char *label); // XXX really unstable api?
+
+
+void *ctx_client_userdata (CtxClient *client);
+
+void ctx_client_quit (CtxClient *client);
+CtxClient *vt_get_client (VT *vt);
+CtxClient *ctx_client_new (Ctx *ctx,
+                           const char *commandline,
+                           int x, int y, int width, int height,
+                           float font_size,
+                           CtxClientFlags flags,
+                           void *user_data,
+                           CtxClientFinalize client_finalize);
+
+CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data,
+                CtxClientFinalize client_finalize);
+int ctx_clients_need_redraw (Ctx *ctx);
+
+CtxClient *ctx_client_new_thread (Ctx *ctx, void (*start_routine)(Ctx *ctx, void *user_data),
+                                  int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize);
+
+extern float ctx_shape_cache_rate;
+extern int _ctx_max_threads;
+
+CtxEvent *ctx_event_copy (CtxEvent *event);
+
+void  ctx_client_move         (Ctx *ctx, int id, int x, int y);
+void  ctx_client_shade_toggle (Ctx *ctx, int id);
+float ctx_client_min_y_pos    (Ctx *ctx);
+float ctx_client_max_y_pos    (Ctx *ctx);
+void ctx_client_paste (Ctx *ctx, int id, const char *str);
+char  *ctx_client_get_selection        (Ctx *ctx, int id);
+
+void  ctx_client_rev_inc      (CtxClient *client);
+long  ctx_client_rev          (CtxClient *client);
+
+int   ctx_clients_active      (Ctx *ctx);
+
+CtxClient *ctx_client_by_id (Ctx *ctx, int id);
+
+int ctx_clients_draw (Ctx *ctx, int layer2);
+
+void ctx_client_feed_keystring (CtxClient *client, CtxEvent *event, const char *str);
+// need not be public?
+void ctx_client_register_events (CtxClient *client, Ctx *ctx, double x0, double y0);
+
+void ctx_client_remove (Ctx *ctx, CtxClient *client);
+
+int  ctx_client_height           (Ctx *ctx, int id);
+int  ctx_client_x                (Ctx *ctx, int id);
+int  ctx_client_y                (Ctx *ctx, int id);
+void ctx_client_raise_top        (Ctx *ctx, int id);
+void ctx_client_lower_bottom     (Ctx *ctx, int id);
+void ctx_client_iconify          (Ctx *ctx, int id);
+int  ctx_client_is_iconified     (Ctx *ctx, int id);
+void ctx_client_uniconify        (Ctx *ctx, int id);
+void ctx_client_maximize         (Ctx *ctx, int id);
+int  ctx_client_is_maximized     (Ctx *ctx, int id);
+void ctx_client_unmaximize       (Ctx *ctx, int id);
+void ctx_client_maximized_toggle (Ctx *ctx, int id);
+void ctx_client_shade            (Ctx *ctx, int id);
+int  ctx_client_is_shaded        (Ctx *ctx, int id);
+void ctx_client_unshade          (Ctx *ctx, int id);
+void ctx_client_toggle_maximized (Ctx *ctx, int id);
+void ctx_client_shade_toggle     (Ctx *ctx, int id);
+void ctx_client_move             (Ctx *ctx, int id, int x, int y);
+int  ctx_client_resize           (Ctx *ctx, int id, int width, int height);
+void ctx_client_set_opacity      (Ctx *ctx, int id, float opacity);
+float ctx_client_get_opacity     (Ctx *ctx, int id);
+void ctx_client_set_title        (Ctx *ctx, int id, const char *title);
+const char *ctx_client_get_title (Ctx *ctx, int id);
 
 typedef enum
 {
@@ -2246,63 +2411,6 @@ void ctx_logo (Ctx *ctx, float x, float y, float dim);
 
 
 
-#if 1 // CTX_VT
-
-typedef struct _VT VT;
-void vt_feed_keystring    (VT *vt, CtxEvent *event, const char *str);
-void vt_paste             (VT *vt, const char *str);
-char *vt_get_selection    (VT *vt);
-long vt_rev               (VT *vt);
-int  vt_has_blink         (VT *vt);
-int ctx_vt_had_alt_screen (VT *vt);
-
-int ctx_clients_handle_events (Ctx *ctx);
-
-typedef struct _CtxList CtxList;
-CtxList *ctx_clients (Ctx *ctx);
-
-void ctx_set_fullscreen (Ctx *ctx, int val);
-int ctx_get_fullscreen (Ctx *ctx);
-
-typedef struct _CtxBuffer CtxBuffer;
-CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
-                                    int stride,
-                                    CtxPixelFormat pixel_format,
-                                    void (*freefunc) (void *pixels, void *user_data),
-                                    void *user_data);
-
-typedef enum CtxBackendType {
-  CTX_BACKEND_NONE,
-  CTX_BACKEND_CTX,
-  CTX_BACKEND_RASTERIZER,
-  CTX_BACKEND_HASHER,
-  CTX_BACKEND_HEADLESS,
-  CTX_BACKEND_TERM,
-  CTX_BACKEND_FB,
-  CTX_BACKEND_KMS,
-  CTX_BACKEND_TERMIMG,
-  CTX_BACKEND_CAIRO,
-  CTX_BACKEND_SDL,
-  CTX_BACKEND_DRAWLIST,
-} CtxBackendType;
-
-CtxBackendType ctx_backend_type (Ctx *ctx);
-
-static inline int ctx_backend_is_tiled (Ctx *ctx)
-{
-  switch (ctx_backend_type (ctx))
-  {
-    case CTX_BACKEND_FB:
-    case CTX_BACKEND_SDL:
-    case CTX_BACKEND_KMS:
-    case CTX_BACKEND_HEADLESS:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-#endif
 
 
 #ifndef CTX_CODEC_CHAR

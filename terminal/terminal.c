@@ -79,7 +79,7 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
 
   if (was_maximized)
   {
-    ctx_client_maximize (ctx, active->id);
+    ctx_client_maximize (ctx, ctx_client_id (active));
   }
 
   if (add_y + ctx_height(ctx)/2 > ctx_client_max_y_pos (ctx))
@@ -89,7 +89,7 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
   }
 //  ensure_layout (ctx);
   ctx_queue_draw (ctx);
-  return active->id;
+  return ctx_client_id (active);
 }
 
 int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
@@ -109,7 +109,7 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
 
   if (was_maximized)
   {
-    ctx_client_maximize (ctx, active->id);
+    ctx_client_maximize (ctx, ctx_client_id (active));
   }
 
   if (add_y + ctx_height(ctx)/2 > ctx_client_max_y_pos (ctx))
@@ -118,7 +118,7 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
     add_x -= ctx_height (ctx) / 40 * 4;
   }
   ctx_queue_draw (ctx);
-  return active->id;
+  return ctx_client_id (active);
 }
 
 
@@ -175,7 +175,7 @@ int add_settings_tab (const char *commandline, int can_launch)
 
   if (was_maximized)
   {
-    ctx_client_maximize (ctx, active->id);
+    ctx_client_maximize (ctx, ctx_client_id (active));
   }
 
   if (add_y + ctx_height(ctx)/2 > ctx_client_max_y_pos (ctx))
@@ -184,7 +184,7 @@ int add_settings_tab (const char *commandline, int can_launch)
     add_x -= ctx_height (ctx) / 40 * 4;
   }
   ctx_queue_draw (ctx);
-  return active->id;
+  return ctx_client_id (active);
 }
 
 static void add_tab_cb (CtxEvent *event, void *data, void *data2)
@@ -221,16 +221,15 @@ static void handle_event (Ctx        *ctx,
   CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
   if (!active)
     return;
-  if (active->internal)
-    return;
-  VT *vt = active->vt;
+  //if (active->internal)
+  //  return;
+  VT *vt = ctx_client_vt (active);
 
   CtxClient *client = active; //vt_get_client (vt);
 
   if (!vt)
   {
-     CtxEvent *copy = ctx_event_copy (ctx_event);
-     ctx_list_append (&active->ctx_events, copy);
+     ctx_client_add_event (active, ctx_event);
      return;
   }
 
@@ -299,13 +298,13 @@ static void handle_event (Ctx        *ctx,
     }
   else if (!strcmp (event, "shift-control-w") )
     {
-      active->do_quit = 1;
+      ctx_client_quit (active);
     }
   else if (!strcmp (event, "shift-control-s") )
     {
       if (vt)
       {
-        char *sel = ctx_client_get_selection (ctx, active->id);
+        char *sel = ctx_client_get_selection (ctx, ctx_client_id (active));
         if (sel)
         {
           ctx_client_feed_keystring (active, ctx_event, sel);
@@ -437,7 +436,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client->flags & ITK_CLIENT_MAXIMIZED)
+    if (ctx_client_flags (client) & ITK_CLIENT_MAXIMIZED)
     tabs ++;
   }
 
@@ -456,7 +455,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (client->flags & ITK_CLIENT_MAXIMIZED)
+    if (ctx_client_flags (client) & ITK_CLIENT_MAXIMIZED)
     {
       ctx_begin_path (ctx);
       ctx_client_titlebar_draw (ctx, client, x, titlebar_height,
@@ -653,7 +652,8 @@ int terminal_main (int argc, char **argv)
         ctx_font_size (ctx, itk->font_size);
         ctx_clients_draw (ctx, 0);
         if ((n_clients != 1) || (ctx_clients (ctx) &&
-                                 !flag_is_set((((CtxClient*)ctx_clients(ctx)->data))->flags, ITK_CLIENT_MAXIMIZED)))
+                                 !flag_is_set(
+                                         ctx_client_flags (((CtxClient*)ctx_clients(ctx)->data)), ITK_CLIENT_MAXIMIZED)))
           draw_panel (itk, ctx);
         else
           draw_mini_panel (ctx);
@@ -669,7 +669,7 @@ int terminal_main (int argc, char **argv)
      int active_id = ctx_clients_active (ctx);
      CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
      if (active)
-       terminal_update_title (active->title);
+       terminal_update_title (ctx_client_title (active));
      }
 
      ctx_handle_events (ctx);

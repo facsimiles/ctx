@@ -12,8 +12,8 @@ constants.h
 libc.c
 ctx-decls.h
 audio.h
-ctx-clients.h
 start-implementation
+ctx-clients.h
 ctx-internal.h
 drawlist.h
 composite.c

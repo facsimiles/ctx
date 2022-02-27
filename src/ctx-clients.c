@@ -1516,3 +1516,54 @@ ctx_client_feed_keystring (CtxClient *client, CtxEvent *event, const char *str)
 #endif
 }
 
+#if CTX_CLIENTS
+int ctx_client_id (CtxClient *client)
+{
+  return client?client->id:-1;
+}
+
+VT *ctx_client_vt (CtxClient *client)
+{
+  return client?client->vt:NULL;
+}
+
+void ctx_client_add_event (CtxClient *client, CtxEvent *event)
+{
+  ctx_list_append (&client->ctx_events, ctx_event_copy (event));
+}
+
+void ctx_client_quit (CtxClient *client)
+{
+   if (!client) return;
+  client->do_quit = 1;
+}
+
+int ctx_client_flags (CtxClient *client)
+{
+  return client?client->flags:0;
+}
+
+void *ctx_client_userdata (CtxClient *client)
+{
+  return client?client->user_data:NULL;
+}
+
+const char *ctx_client_title (CtxClient *client)
+{
+  return client?client->title:NULL;
+}
+
+CtxClient *ctx_client_find (Ctx *ctx, const char *label)
+{
+  for (CtxList *l = ctx_clients (ctx); l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (client->user_data && !strcmp (client->user_data, label))
+    {
+      return client;
+    }
+  }
+  return NULL;
+}
+
+#endif
