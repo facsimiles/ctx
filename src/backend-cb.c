@@ -203,7 +203,7 @@ ctx_cb_y1 (Ctx *ctx)
 }
 
 static void
-ctx_cb_flush (Ctx *ctx)
+ctx_cb_end_frame (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   static int64_t prev_time = 0;
@@ -334,7 +334,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   Ctx *ctx                   = ctx_new_drawlist (width, height);
   CtxBackend    *backend     = (CtxBackend*)calloc (sizeof (CtxCbBackend), 1);
   CtxCbBackend  *cb_backend  = (CtxCbBackend*)backend;
-  backend->flush             = ctx_cb_flush;
+  backend->end_frame         = ctx_cb_end_frame;
   cb_backend->format         = format;
   cb_backend->fb             = (uint16_t*)scratch_fb;
   cb_backend->flags          = flags;

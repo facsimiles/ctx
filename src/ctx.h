@@ -138,12 +138,11 @@ void ctx_free (Ctx *ctx);
 void ctx_start_frame    (Ctx *ctx);
 
 /**
- * ctx_flush:
+ * ctx_end_frame:
  *
- * We're done rendering a frame, this does nothing on a context created for a framebuffer, there
- * the drawing commands are immediate.
+ * We're done rendering a frame, this does nothing on a context created for a framebuffer, where drawing commands are immediate.
  */
-void ctx_flush          (Ctx *ctx);
+void ctx_end_frame      (Ctx *ctx);
 
 
 /**
@@ -1065,7 +1064,7 @@ float ctx_get_float (Ctx *ctx, uint32_t hash);
 void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
 
 unsigned long ctx_ticks (void);
-void ctx_flush (Ctx *ctx);
+void ctx_end_frame (Ctx *ctx);
 
 void ctx_set_clipboard (Ctx *ctx, const char *text);
 char *ctx_get_clipboard (Ctx *ctx);
@@ -1476,7 +1475,7 @@ typedef enum
   CTX_REL_QUAD_TO_REL_QUAD_TO   = '8', // cx1 x1 cy1 y1 cx1 x2 cy1 y1 -- s8
   CTX_REL_QUAD_TO_S16           = '9', // cx1 cy1 x y                 - s16
                    //     :    UNUSED
-  CTX_FLUSH            = ';',
+  CTX_END_FRAME        = ';',
                    //     <    UNUSED
                    //     =    UNUSED/RESERVED
                    //     >    UNUSED
@@ -2158,7 +2157,7 @@ struct _CtxBackend
   Ctx                      *ctx;
   void  (*process)         (Ctx *ctx, CtxCommand *entry);
   void  (*start_frame)     (Ctx *ctx);
-  void  (*flush)           (Ctx *ctx);
+  void  (*end_frame)       (Ctx *ctx);
 
   void  (*set_windowtitle) (Ctx *ctx, const char *text);
 

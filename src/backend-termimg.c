@@ -34,7 +34,7 @@ inline static void ctx_termimg_process (Ctx        *ctx,
   ctx_process (termimg->host, &command->entry);
 }
 
-inline static void ctx_termimg_flush (Ctx *ctx)
+inline static void ctx_termimg_end_frame (Ctx *ctx)
 {
   CtxTermImg *termimg = (CtxTermImg*)ctx->backend;
   int width =  termimg->width;
@@ -121,7 +121,7 @@ Ctx *ctx_new_termimg (int width, int height)
 
   backend->ctx = ctx;
   backend->process = ctx_termimg_process;
-  backend->flush = ctx_termimg_flush;
+  backend->end_frame = ctx_termimg_end_frame;
   backend->free  = (void(*)(void*))ctx_termimg_free;
   backend->consume_events = ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;

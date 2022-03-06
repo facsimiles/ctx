@@ -573,7 +573,7 @@ Ctx *ctx_new_sdl (int width, int height)
 
 
   backend->set_windowtitle = (void*)ctx_sdl_set_title;
-  backend->flush = ctx_tiled_flush;
+  backend->end_frame = ctx_tiled_end_frame;
   backend->process = (void*)ctx_drawlist_process;
   backend->start_frame = ctx_sdl_start_frame;
   backend->free  = (void*)ctx_sdl_free;

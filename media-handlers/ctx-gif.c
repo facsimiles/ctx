@@ -216,7 +216,7 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
   ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
   ctx_fill (ctx);
   ctx_restore (ctx);
-  ctx_flush (ctx);
+  ctx_end_frame (ctx);
 }
 
 static void liberate_resources (void)

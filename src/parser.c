@@ -256,7 +256,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_CLOSE_PATH:
       case CTX_BEGIN_PATH:
       case CTX_START_FRAME:
-      case CTX_FLUSH:
+      case CTX_END_FRAME:
       case CTX_RESTORE:
       case CTX_STROKE:
       case CTX_FILL:
@@ -441,7 +441,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_stroke:         ret = CTX_STROKE; break;
           case CTX_fill:           ret = CTX_FILL; break;
           case CTX_paint:          ret = CTX_PAINT; break;
-          case CTX_flush:          ret = CTX_FLUSH; break;
+          case CTX_end_frame:      ret = CTX_END_FRAME; break;
+          case CTX_endFrame:       ret = CTX_END_FRAME; break;
           case CTX_horLineTo:      ret = CTX_HOR_LINE_TO; break;
           case CTX_rotate:         ret = CTX_ROTATE; break;
           case CTX_color:          ret = CTX_COLOR; break;
@@ -478,6 +479,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_screen:         ret = CTX_BLEND_SCREEN;break;
           case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
           case CTX_start_frame:    ret = CTX_START_FRAME; break;
+          case CTX_startFrame:     ret = CTX_START_FRAME; break;
           case CTX_verLineTo:      ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
           case CTX_done:           ret = CTX_EXIT; break;
@@ -1289,7 +1291,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
             return;
           }
         break;
-      case CTX_FLUSH:
+      case CTX_END_FRAME:
         //ctx_flush (ctx); // XXX  XXX  flush only does things inside backends
         break;
       case CTX_START_FRAME: // XXX is it right to do things here?

@@ -5852,7 +5852,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
      ctx_gray (ctx, 0);
      ctx_fill (ctx);
      ctx_clients_draw (ctx, 0);
-     ctx_flush (ctx);
+     ctx_end_frame (ctx);
      while(ctx_get_event (ctx));
      ctx_clients_handle_events (ctx);
      usleep (1000 * 25);

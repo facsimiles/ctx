@@ -539,7 +539,7 @@ Ctx *ctx_new_fb (int width, int height)
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
 
-  backend->flush = ctx_tiled_flush;
+  backend->end_frame = ctx_tiled_end_frame;
   backend->process = (void*)ctx_drawlist_process;
 
   backend->start_frame = ctx_fb_start_frame;

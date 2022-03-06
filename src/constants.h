@@ -3,8 +3,10 @@
 
 #define TOKENHASH(a)    ((uint32_t)a)
 
-#define CTX_start_frame TOKENHASH(2847646795)
+#define CTX_start_frame TOKENHASH(2941171367)
 #define CTX_end_frame TOKENHASH(2292627705)
+#define CTX_startFrame TOKENHASH(4232434924)
+#define CTX_endFrame TOKENHASH(3482141353)
 #define CTX_strokeSource TOKENHASH(3387288669)
 #define CTX_add_stop TOKENHASH(3572486242)
 #define CTX_addStop TOKENHASH(3805374936)
@@ -69,7 +71,6 @@
 #define CTX_fill TOKENHASH(811596)
 #define CTX_fill_rule TOKENHASH(3026141741)
 #define CTX_fillRule TOKENHASH(2727819936)
-#define CTX_flush TOKENHASH(18066188)
 #define CTX_font TOKENHASH(1340364)
 #define CTX_font_size TOKENHASH(3138232552)
 #define CTX_setFontSize TOKENHASH(2794810212)
@@ -166,7 +167,6 @@
 #define CTX_relSmoothTo TOKENHASH(3458671695)
 #define CTX_rel_ver_line_to TOKENHASH(2484242991)
 #define CTX_restore TOKENHASH(2936409475)
-#define CTX_reset TOKENHASH(42309988)
 #define CTX_rgba TOKENHASH(70116)
 #define CTX_rgb TOKENHASH(4580)
 #define CTX_rgbaS TOKENHASH(933302756)

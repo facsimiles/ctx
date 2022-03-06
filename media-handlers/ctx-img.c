@@ -158,7 +158,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       }
 #endif
       ctx_restore (ctx);
-      ctx_flush (ctx);
+      ctx_end_frame (ctx);
       dirty = 0;
       if (rotating)
       {

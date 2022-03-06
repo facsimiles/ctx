@@ -1321,10 +1321,10 @@ ctx_exit (Ctx *ctx)
 }
 
 CTX_EXPORT void
-ctx_flush (Ctx *ctx)
+ctx_end_frame (Ctx *ctx)
 {
-  if (ctx->backend && ctx->backend->flush)
-    ctx->backend->flush (ctx);
+  if (ctx->backend && ctx->backend->end_frame)
+    ctx->backend->end_frame (ctx);
   ctx->frame++;
   if (ctx->texture_cache != ctx)
     ctx->texture_cache->frame++;

@@ -265,7 +265,7 @@ again:
         case CTX_HOR_LINE_TO:
         case CTX_REL_HOR_LINE_TO:
         case CTX_ROTATE:
-        case CTX_FLUSH:
+        case CTX_END_FRAME:
         case CTX_TEXT_ALIGN:
         case CTX_TEXT_BASELINE:
         case CTX_TEXT_DIRECTION:

@@ -756,7 +756,7 @@ again:
         ctx_rectangle (ui, 0, 0, width, height);
         ctx_listen (ui, CTX_DRAG_MOTION, ui_drag, NULL, NULL);
 #endif
-        ctx_flush (ui);
+        ctx_end_frame (ui);
         dirty = 0;
       }
 

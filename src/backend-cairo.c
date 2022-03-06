@@ -319,7 +319,7 @@ ctx_cairo_process (Ctx *ctx, CtxCommand *c)
       case CTX_EDGE:
       case CTX_DATA:
       case CTX_DATA_REV:
-      case CTX_FLUSH:
+      case CTX_END_FRAME:
         break;
     }
   ctx_process (ctx_cairo->backend.ctx, entry);

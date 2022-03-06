@@ -154,7 +154,7 @@ static void ctx_render_tft (Ctx *ctx,
 
 
 static void
-ctx_tft_flush (Ctx *ctx)
+ctx_tft_end_frame (Ctx *ctx)
 {
   CtxTftBackend *tft_backend = (CtxTftBackend*)ctx->backend;
   static int64_t prev_time = 0;
@@ -265,7 +265,7 @@ Ctx *ctx_new_tft (TFT_eSPI *tft, int flags)
   CtxTftBackend *tft_backend = (CtxTftBackend*)backend;
   tft_backend->tft = tft;
   tft_backend->flags = flags;
-  backend->flush = ctx_tft_flush;
+  backend->end_frame = ctx_tft_end_frame;
   ctx_set_backend (ctx, backend);
   return ctx;
 }

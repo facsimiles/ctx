@@ -164,8 +164,8 @@ MP_CTX_COMMON_FUN_0(begin_path);
 MP_CTX_COMMON_FUN_0(save);
 MP_CTX_COMMON_FUN_0(restore);
 
-MP_CTX_COMMON_FUN_0_idle(flush);
-MP_CTX_COMMON_FUN_0(reset);
+MP_CTX_COMMON_FUN_0(start_frame);
+MP_CTX_COMMON_FUN_0_idle(end_frame);
 
 MP_CTX_COMMON_FUN_0(start_group);
 MP_CTX_COMMON_FUN_0(end_group);
@@ -437,9 +437,9 @@ static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
 
         int res = 0;
         Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
-        ctx_reset (ctx);
+        ctx_start_frame (ctx);
         ctx_render_ctx (self->ctx, ctx);
-        ctx_flush (ctx);
+        ctx_end_frame (ctx);
 	/*
 	 * The drawlist still contains the draw commands which were just
 	 * executed.  Flush them now.
@@ -688,8 +688,8 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(color),
 	MP_CTX_METHOD(stroke_color),
 	MP_CTX_METHOD(update),
-	MP_CTX_METHOD(flush),
-	MP_CTX_METHOD(reset),
+	MP_CTX_METHOD(start_frame),
+	MP_CTX_METHOD(end_frame),
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
 };

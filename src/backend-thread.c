@@ -10,7 +10,7 @@ static void ctx_thread_start_frame (Ctx *ctx)
 {
 }
 
-static void ctx_thread_flush (Ctx *ctx)
+static void ctx_thread_end_frame (Ctx *ctx)
 {
   CtxThread *thread = (CtxThread*)ctx->backend;
   
@@ -147,7 +147,7 @@ Ctx *ctx_new_thread (int width, int height)
   backend->process = (void*)ctx_drawlist_process;
   backend->ctx = ctx;
   backend->start_frame = ctx_thread_start_frame;
-  backend->flush = ctx_thread_flush;
+  backend->end_frame = ctx_thread_end_frame;
   backend->free  = (void(*)(void *))ctx_thread_free;
   backend->consume_events = ctx_thread_consume_events;
   ctx_set_backend (ctx, thread);

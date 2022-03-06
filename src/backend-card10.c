@@ -10,7 +10,7 @@ static void ctx_card10_start_frame (Ctx *ctx)
 {
 }
 
-static void ctx_card10_flush (Ctx *ctx)
+static void ctx_card10_end_frame (Ctx *ctx)
 {
   CtxCard10 *card10 = (CtxCard10*)ctx->backend;
   
@@ -147,7 +147,7 @@ Ctx *ctx_new_card10 (int width, int height)
   backend->process = (void*)ctx_drawlist_process;
   backend->ctx = ctx;
   backend->start_frame = ctx_card10_start_frame;
-  backend->flush = ctx_card10_flush;
+  backend->end_frame  = ctx_card10_end_frame;
   backend->free  = (void(*)(void *))ctx_card10_free;
   backend->consume_events = ctx_card10_consume_events;
   ctx_set_backend (ctx, card10);

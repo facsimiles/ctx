@@ -302,7 +302,7 @@ void key_up_cb (CtxEvent *e, void *data1, void *data2)
 int epic_disp_open (void)
 {
   Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
-  ctx_reset (ctx);
+  ctx_start_frame (ctx);
   ctx_clear_bindings (ctx);
   ctx_listen (ctx, CTX_KEY_DOWN,
                    key_down_cb,
@@ -316,7 +316,7 @@ int epic_disp_open (void)
 int epic_disp_update (void)
 {
   Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
-  ctx_flush (ctx);
+  ctx_end_frame (ctx);
   return 0;
 }
 

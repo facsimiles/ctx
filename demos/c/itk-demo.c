@@ -166,7 +166,7 @@ int main (int argc, char **argv)
       ctx_add_key_binding (ctx, "control-q", NULL, "foo", itk_key_quit, NULL);
       ctx_add_key_binding (ctx, "q", NULL, "foo", itk_key_quit, NULL);
 
-      ctx_flush (ctx);
+      ctx_end_frame (ctx);
     }
     ctx_handle_events (ctx);
   }

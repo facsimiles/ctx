@@ -130,7 +130,7 @@ void ctx_handle_tvg (Ctx *ctx, const char *path)
       ctx_restore (ctx);
 
       ctx_restore (ctx);
-      ctx_flush (ctx);
+      ctx_end_frame (ctx);
       dirty = 0;
       if (rotating)
       {

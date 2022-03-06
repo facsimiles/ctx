@@ -793,7 +793,7 @@ inline static void ctx_term_process (Ctx *ctx,
   ctx_process (term->host, &command->entry);
 }
 
-inline static void ctx_term_flush (Ctx *ctx)
+inline static void ctx_term_end_frame (Ctx *ctx)
 {
   CtxTerm *term = (CtxTerm*)ctx->backend;
   int width =  term->width;
@@ -860,7 +860,7 @@ inline static void ctx_term_flush (Ctx *ctx)
   printf ("\e[0m");
   ctx_term_scanout (term);
   printf ("\e[0m");
-  fflush(NULL);
+  fflush (NULL);
   while (rasterizer->glyphs)
     ctx_list_remove (&rasterizer->glyphs, rasterizer->glyphs->data);
 #endif
@@ -954,7 +954,7 @@ Ctx *ctx_new_term (int width, int height)
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_backend (ctx, term);
   backend->process = ctx_term_process;
-  backend->flush   = ctx_term_flush;
+  backend->end_frame = ctx_term_end_frame;
   backend->free    = (void(*)(void*))ctx_term_free;
   backend->consume_events = ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;

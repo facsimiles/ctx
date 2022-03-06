@@ -297,7 +297,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
   ctx_compositing_mode (self->ctx, CTX_COMPOSITE_COPY);
   ctx_fill (self->ctx);
   ctx_restore (self->ctx);
-  ctx_flush (self->ctx);
+  ctx_end_frame (self->ctx);
 }
 
 void app_on_audio(plm_t *mpeg, plm_samples_t *samples, void *user) {

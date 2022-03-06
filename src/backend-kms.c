@@ -526,7 +526,7 @@ Ctx *ctx_new_kms (int width, int height)
   ctx_set_backend (tiled->ctx_copy, fb);
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
-  backend->flush = ctx_tiled_flush;
+  backend->end_frame = ctx_tiled_end_frame;
   backend->start_frame = ctx_kms_start_frame;
   backend->free  = (void*)ctx_kms_free;
   backend->process = (void*)ctx_drawlist_process;

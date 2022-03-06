@@ -43,7 +43,7 @@ void ctx_tiled_free (CtxTiled *tiled)
 static unsigned char *sdl_icc = NULL;
 static long sdl_icc_length = 0;
 
-static void ctx_tiled_flush (Ctx *ctx)
+static void ctx_tiled_end_frame (Ctx *ctx)
 {
   CtxTiled *tiled = (CtxTiled*)ctx->backend;
   mtx_lock (&tiled->mtx);

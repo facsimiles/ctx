@@ -200,7 +200,7 @@ int ctx_hexview_main(int argc, char *argv[])
       ctx_text (ctx, buf);
 
       ctx_restore (ctx);
-      ctx_flush (ctx);
+      ctx_end_frame (ctx);
 
       dirty = 0;
       if (1)

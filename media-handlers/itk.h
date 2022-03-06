@@ -2358,7 +2358,7 @@ itk_iteration (double time, void *data)
       ret_val = itk->ui_fun (itk, itk->ui_data);
 
       itk_done (itk);
-      ctx_flush (ctx);
+      ctx_end_frame (ctx);
     }
 
     ctx_handle_events (ctx);

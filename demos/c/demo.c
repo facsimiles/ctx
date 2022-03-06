@@ -399,7 +399,7 @@ static int ui_scenes (ITK *itk, void *data)
   scene_frames ++;
   if (!strncmp (ctx_input, "demo", 4))
   {
-    if (scene_no >= sizeof (scenes)/sizeof(scenes[0]))
+    if ((unsigned)scene_no >= sizeof (scenes)/sizeof(scenes[0]))
       scene_no = sizeof (scenes)/sizeof(scenes[0])-1;
 
   scenes[scene_no].fun (itk, scene_frames, render_time);

@@ -149,7 +149,7 @@ static void settings_thread (Ctx *ctx, void *user_data)
         ctx_font_size (ctx, ctx_height (ctx) * 0.1);
         ctx_text (ctx, buf);
 
-        ctx_flush (ctx);
+        ctx_end_frame (ctx);
      }
      if (frame > 100) ctx_quit (ctx);
      
@@ -662,7 +662,7 @@ int terminal_main (int argc, char **argv)
         ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
-        ctx_flush (ctx);
+        ctx_end_frame (ctx);
       }
 
      {
