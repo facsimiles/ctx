@@ -515,6 +515,19 @@ static mp_obj_t mp_ctx_make_new(
 	return MP_OBJ_FROM_PTR(o);
 }
 
+extern const mp_obj_type_t mp_ctx_type;
+
+static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
+{
+	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
+	o->base.type    = &mp_ctx_type;
+	o->ctx          = ctx_new_drawlist(mp_obj_get_float(width_in),
+                                           mp_obj_get_float(height_in));
+
+	return MP_OBJ_FROM_PTR(o);
+}
+MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_new_drawlist_obj, mp_ctx_new_drawlist);
+
 /* CTX class/type */
 #define MP_CTX_INT_CONSTANT(prefix, ident)                                     \
 	{                                                                      \
@@ -663,6 +676,8 @@ const mp_obj_type_t mp_ctx_type = {
 static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ctx_graphics) },
 	{ MP_ROM_QSTR(MP_QSTR_Ctx), MP_ROM_PTR(&mp_ctx_type) },
+//	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) }
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_module_globals, mp_ctx_module_globals_table);
 
