@@ -38,12 +38,27 @@ typedef struct _mp_ctx_obj_t {
 	Ctx *ctx;
 } mp_ctx_obj_t;
 
+#ifdef EMSCRIPTEN
+extern int _mp_quit;
+void mp_idle (int ms);
+#endif
+
 /* CTX API functions {{{ */
 #define MP_CTX_COMMON_FUN_0(name)                                              \
 	static mp_obj_t mp_ctx_##name(mp_obj_t self_in)                        \
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(self->ctx);                                         \
+		return MP_OBJ_FROM_PTR(self);                                  \
+	}                                                                      \
+	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
+
+#define MP_CTX_COMMON_FUN_0_idle(name)                                         \
+	static mp_obj_t mp_ctx_##name(mp_obj_t self_in)                        \
+	{                                                                      \
+		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
+		ctx_##name(self->ctx);                                         \
+		mp_idle (0);                                                   \
 		return MP_OBJ_FROM_PTR(self);                                  \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
@@ -148,6 +163,10 @@ typedef struct _mp_ctx_obj_t {
 MP_CTX_COMMON_FUN_0(begin_path);
 MP_CTX_COMMON_FUN_0(save);
 MP_CTX_COMMON_FUN_0(restore);
+
+MP_CTX_COMMON_FUN_0_idle(flush);
+MP_CTX_COMMON_FUN_0(reset);
+
 MP_CTX_COMMON_FUN_0(start_group);
 MP_CTX_COMMON_FUN_0(end_group);
 MP_CTX_COMMON_FUN_0(clip);
@@ -410,10 +429,6 @@ static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_add_stop_obj, 3, 4, mp_ctx_add_stop);
 
-#ifdef EMSCRIPTEN
-extern int _mp_quit;
-void mp_idle (int ms);
-#endif
 
 static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
 {
@@ -527,6 +542,19 @@ static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_new_drawlist_obj, mp_ctx_new_drawlist);
+
+
+static mp_obj_t mp_ctx_get_context (mp_obj_t name)
+{
+	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
+	o->base.type    = &mp_ctx_type;
+	o->ctx          = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+	return MP_OBJ_FROM_PTR(o);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);
+
+
+
 
 /* CTX class/type */
 #define MP_CTX_INT_CONSTANT(prefix, ident)                                     \
@@ -660,6 +688,8 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(color),
 	MP_CTX_METHOD(stroke_color),
 	MP_CTX_METHOD(update),
+	MP_CTX_METHOD(flush),
+	MP_CTX_METHOD(reset),
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
 };
@@ -677,7 +707,8 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ctx_graphics) },
 	{ MP_ROM_QSTR(MP_QSTR_Ctx), MP_ROM_PTR(&mp_ctx_type) },
 //	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) }
+	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) }
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_module_globals, mp_ctx_module_globals_table);
 
