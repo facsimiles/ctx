@@ -255,7 +255,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_IDENTITY:
       case CTX_CLOSE_PATH:
       case CTX_BEGIN_PATH:
-      case CTX_RESET:
+      case CTX_START_FRAME:
       case CTX_FLUSH:
       case CTX_RESTORE:
       case CTX_STROKE:
@@ -477,7 +477,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_normal:         ret = CTX_BLEND_NORMAL;break;
           case CTX_screen:         ret = CTX_BLEND_SCREEN;break;
           case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
-          case CTX_reset:          ret = CTX_RESET; break;
+          case CTX_start_frame:    ret = CTX_START_FRAME; break;
           case CTX_verLineTo:      ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
           case CTX_done:           ret = CTX_EXIT; break;
@@ -1292,8 +1292,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_FLUSH:
         //ctx_flush (ctx); // XXX  XXX  flush only does things inside backends
         break;
-      case CTX_RESET:
-        ctx_reset (ctx);
+      case CTX_START_FRAME: // XXX is it right to do things here?
+        ctx_start_frame (ctx);
         if (parser->translate_origin)
         {
           ctx_translate (ctx,

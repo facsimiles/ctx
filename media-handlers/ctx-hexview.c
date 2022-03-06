@@ -141,7 +141,7 @@ int ctx_hexview_main(int argc, char *argv[])
     if (dirty)
     {
       float height = ctx_height (ctx);
-      ctx_reset (ctx);
+      ctx_start_frame (ctx);
       ctx_save (ctx);
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
       ctx_listen (ctx, CTX_DRAG_MOTION|CTX_DRAG_RELEASE|CTX_DRAG_PRESS, image_drag, NULL, NULL);

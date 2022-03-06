@@ -306,8 +306,9 @@ void ctx_fb_consume_events (Ctx *ctx)
   event_check_pending (&fb->tiled);
 }
 
-inline static void ctx_fb_reset (Ctx *ctx)
+inline static void ctx_fb_start_frame (Ctx *ctx)
 {
+  // show pending frame if any
   ctx_fb_show_frame ((CtxFb*)ctx->backend, 1);
 }
 
@@ -541,7 +542,7 @@ Ctx *ctx_new_fb (int width, int height)
   backend->flush = ctx_tiled_flush;
   backend->process = (void*)ctx_drawlist_process;
 
-  backend->reset = ctx_fb_reset;
+  backend->start_frame = ctx_fb_start_frame;
   backend->free  = (void*)ctx_fb_free;
   backend->set_clipboard = ctx_headless_set_clipboard;
   backend->get_clipboard = ctx_headless_get_clipboard;

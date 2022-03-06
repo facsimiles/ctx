@@ -6,7 +6,7 @@
 #define CTX_END_STRING   "\nX"  // or "\ndone"
 #define CTX_END_STRING2  "\n"
 
-static void ctx_thread_reset (Ctx *ctx)
+static void ctx_thread_start_frame (Ctx *ctx)
 {
 }
 
@@ -146,7 +146,7 @@ Ctx *ctx_new_thread (int width, int height)
   }
   backend->process = (void*)ctx_drawlist_process;
   backend->ctx = ctx;
-  backend->reset = ctx_thread_reset;
+  backend->start_frame = ctx_thread_start_frame;
   backend->flush = ctx_thread_flush;
   backend->free  = (void(*)(void *))ctx_thread_free;
   backend->consume_events = ctx_thread_consume_events;

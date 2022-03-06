@@ -745,7 +745,7 @@ again:
     {
       if (dirty)
       {
-        ctx_reset (ui);
+        ctx_start_frame (ui);
         ctx_save (ui);
         ctx_translate (ui, offset_x, offset_y);
         ctx_scale (ui, scale, scale);

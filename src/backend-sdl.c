@@ -474,7 +474,7 @@ static char *ctx_sdl_get_clipboard (Ctx *ctx)
 }
 
 
-inline static void ctx_sdl_reset (Ctx *ctx)
+inline static void ctx_sdl_start_frame (Ctx *ctx)
 {
   CtxSDL  *sdl = (CtxSDL*)ctx->backend;
   ctx_sdl_show_frame (sdl, 1);
@@ -575,7 +575,7 @@ Ctx *ctx_new_sdl (int width, int height)
   backend->set_windowtitle = (void*)ctx_sdl_set_title;
   backend->flush = ctx_tiled_flush;
   backend->process = (void*)ctx_drawlist_process;
-  backend->reset = ctx_sdl_reset;
+  backend->start_frame = ctx_sdl_start_frame;
   backend->free  = (void*)ctx_sdl_free;
   backend->consume_events = ctx_sdl_consume_events;
 

@@ -844,7 +844,7 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
         if (!client->recording)
           client->recording = _ctx_new_drawlist (client->width, client->height);
         else
-          ctx_reset (client->recording);
+          ctx_start_frame (client->recording);
         vt_draw (client->vt, client->recording, 0.0, 0.0);
       }
 
@@ -890,7 +890,7 @@ static void ctx_client_use_images (Ctx *ctx, CtxClient *client)
         if (!client->recording)
           client->recording = _ctx_new_drawlist (client->width, client->height);
         else
-          ctx_reset (client->recording);
+          ctx_start_frame (client->recording);
         vt_draw (client->vt, client->recording, 0.0, 0.0);
       }
 

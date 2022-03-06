@@ -143,7 +143,7 @@ void ctx_headless_consume_events (Ctx *ctx)
   event_check_pending (&fb->tiled);
 }
 
-inline static void ctx_headless_reset (Ctx *ctx)
+inline static void ctx_headless_start_frame (Ctx *ctx)
 {
   ctx_headless_show_frame ((CtxHeadless*)ctx->backend, 1);
 }
@@ -212,7 +212,7 @@ Ctx *ctx_new_headless (int width, int height)
   backend->ctx = _ctx_new_drawlist (width, height);
   backend->flush = ctx_tiled_flush;
   backend->process = (void*)ctx_drawlist_process;
-  backend->reset = ctx_headless_reset;
+  backend->start_frame = ctx_headless_start_frame;
   backend->free  = (void*)ctx_headless_free;
   backend->set_clipboard = ctx_headless_set_clipboard;
   backend->get_clipboard = ctx_headless_get_clipboard;

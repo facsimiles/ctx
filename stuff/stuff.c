@@ -5847,7 +5847,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    for (int i = 0; i < 40; i ++)
    {
      //CtxEvent *event = NULL;
-     ctx_reset (ctx);
+     ctx_start_frame (ctx);
      ctx_rectangle (ctx, 0, 0, width, height);
      ctx_gray (ctx, 0);
      ctx_fill (ctx);

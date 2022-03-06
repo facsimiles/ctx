@@ -131,7 +131,7 @@ static void settings_thread (Ctx *ctx, void *user_data)
      if (ctx_need_redraw (ctx))
      {
         char buf[1024];
-        ctx_reset (ctx);
+        ctx_start_frame (ctx);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         ctx_rgb (ctx, 0.1, 0.2, 0.3);
         ctx_fill (ctx);

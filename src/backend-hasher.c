@@ -566,7 +566,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
     }
 
 #if 0
-  if (command->code == CTX_RESET)
+  if (command->code == CTX_START_FRAME)
   {
   }
 #endif

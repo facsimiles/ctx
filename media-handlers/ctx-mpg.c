@@ -252,7 +252,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
         char eid[16];
         sprintf (eid, "%i", frame_no);
         if (frame_no % frame_drop != 0) return;
-        ctx_reset (self->ctx);
+        ctx_start_frame (self->ctx);
         ctx_save (self->ctx);
         ctx_rectangle (self->ctx, 0, 0, ctx_width (self->ctx), ctx_height (self->ctx));
   float scale = ctx_width (self->ctx) * 1.0 / frame->width;

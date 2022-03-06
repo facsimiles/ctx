@@ -91,7 +91,7 @@ void ctx_handle_tvg (Ctx *ctx, const char *path)
          oy0 = (ctx_height(ctx)/scale-(stb_h)) / 2;
       }
 
-      ctx_reset (ctx);
+      ctx_start_frame (ctx);
       ctx_save (ctx);
       ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
       ctx_listen (ctx, CTX_DRAG_MOTION, image_drag, NULL, NULL);

@@ -4168,7 +4168,7 @@ foo:
         }
         ctx_rasterizer_reset (rasterizer);
         break;
-      case CTX_RESET:
+      case CTX_START_FRAME:
       case CTX_BEGIN_PATH:
         ctx_rasterizer_reset (rasterizer);
         break;

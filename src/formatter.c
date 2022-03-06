@@ -183,7 +183,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_CLOSE_PATH:           return "closePath"; break;
           case CTX_PRESERVE:             return "preserve"; break;
           case CTX_FLUSH:                return "flush"; break;
-          case CTX_RESET:                return "reset"; break;
+          case CTX_START_FRAME:          return "start_frame"; break;
           case CTX_FONT:                 return "font"; break;
           case CTX_STROKE:               return "stroke"; break;
           case CTX_CLIP:                 return "clip"; break;
@@ -809,7 +809,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         break;
       case CTX_FILL:
       case CTX_PAINT:
-      case CTX_RESET:
+      case CTX_START_FRAME:
       case CTX_STROKE:
       case CTX_IDENTITY:
       case CTX_CLIP:

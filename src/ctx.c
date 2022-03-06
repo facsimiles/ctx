@@ -738,7 +738,7 @@ static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2);
 #endif
 
 CTX_EXPORT void
-ctx_reset (Ctx *ctx)
+ctx_start_frame (Ctx *ctx)
 {
   ctx_drawlist_clear (ctx);
         /* we do the callback reset first - maybe we need two cbs,
@@ -746,10 +746,10 @@ ctx_reset (Ctx *ctx)
          *
          * tiled fb and sdl needs to sync
          */
-  if (ctx->backend && ctx->backend->reset)
-    ctx->backend->reset (ctx);
+  if (ctx->backend && ctx->backend->start_frame)
+    ctx->backend->start_frame (ctx);
 
-  //CTX_PROCESS_VOID (CTX_RESET);
+  //CTX_PROCESS_VOID (CTX_START_FRAME);
   //if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
   //  { return; }
   ctx_state_init (&ctx->state);
@@ -1767,7 +1767,7 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
 {
   switch (entry->code)
     {
-      case CTX_RESET:
+      case CTX_START_FRAME:
         ctx_state_init (state);
         state->has_moved = 0;
         break;

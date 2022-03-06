@@ -3,6 +3,8 @@
 
 #define TOKENHASH(a)    ((uint32_t)a)
 
+#define CTX_start_frame TOKENHASH(2847646795)
+#define CTX_end_frame TOKENHASH(2292627705)
 #define CTX_strokeSource TOKENHASH(3387288669)
 #define CTX_add_stop TOKENHASH(3572486242)
 #define CTX_addStop TOKENHASH(3805374936)

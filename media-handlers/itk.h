@@ -447,7 +447,7 @@ void control_finalize (void *control, void *foo, void *bar)
 void itk_reset (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
-  ctx_reset                 (ctx);
+  ctx_start_frame           (ctx);
 
   if (itk_style)
     free (itk_style);

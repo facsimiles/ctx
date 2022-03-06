@@ -129,13 +129,13 @@ void  ctx_drawlist_clear (Ctx *ctx);
 void ctx_free (Ctx *ctx);
 
 /**
- * ctx_reset:
+ * ctx_start_frame:
  *
- * Prepare for rendering a new frame, this clears the drawlist and initializes
+ * Prepare for rendering a new frame, clears internal drawlist and initializes
  * the state.
  *
  */
-void ctx_reset          (Ctx *ctx);
+void ctx_start_frame    (Ctx *ctx);
 
 /**
  * ctx_flush:
@@ -1503,7 +1503,7 @@ typedef enum
   CTX_VIEW_BOX         = 'R', // x y width height
   CTX_SMOOTH_TO        = 'S', // cx cy x y
   CTX_SMOOTHQ_TO       = 'T', // x y
-  CTX_RESET            = 'U', //
+  CTX_START_FRAME      = 'U', // XXX does this belong here?
   CTX_VER_LINE_TO      = 'V', // y
   CTX_APPLY_TRANSFORM  = 'W', // a b c d e f g h i j - for set_transform combine with identity
   CTX_EXIT             = 'X', //
@@ -2157,7 +2157,7 @@ struct _CtxBackend
 {
   Ctx                      *ctx;
   void  (*process)         (Ctx *ctx, CtxCommand *entry);
-  void  (*reset)           (Ctx *ctx);
+  void  (*start_frame)     (Ctx *ctx);
   void  (*flush)           (Ctx *ctx);
 
   void  (*set_windowtitle) (Ctx *ctx, const char *text);

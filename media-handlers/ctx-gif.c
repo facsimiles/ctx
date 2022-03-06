@@ -199,7 +199,7 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
 {
   if (!gifbuf)
     return;
-  ctx_reset (ctx);
+  ctx_start_frame (ctx);
   char eid[65];
 
   ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));

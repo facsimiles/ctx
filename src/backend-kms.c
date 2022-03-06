@@ -413,7 +413,7 @@ void ctx_kms_consume_events (Ctx *ctx)
   event_check_pending (&fb->tiled);
 }
 
-inline static void ctx_kms_reset (Ctx *ctx)
+inline static void ctx_kms_start_frame (Ctx *ctx)
 {
   ctx_kms_show_frame ((CtxKMS*)ctx->backend, 1);
 }
@@ -527,7 +527,7 @@ Ctx *ctx_new_kms (int width, int height)
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
   backend->flush = ctx_tiled_flush;
-  backend->reset = ctx_kms_reset;
+  backend->start_frame = ctx_kms_start_frame;
   backend->free  = (void*)ctx_kms_free;
   backend->process = (void*)ctx_drawlist_process;
   backend->consume_events = ctx_kms_consume_events;
