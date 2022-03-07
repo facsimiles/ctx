@@ -83,7 +83,7 @@
  * than the micropython target
  */
 #define CTX_IMPLEMENTATION
-#if 0
+#if 1
 #define CTX_EXTERNAL_MALLOC
 
 static inline void *ctx_malloc (size_t size)

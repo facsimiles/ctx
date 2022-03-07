@@ -1986,7 +1986,6 @@ static void ctx_deinit (Ctx *ctx)
   ctx_events_deinit (ctx);
 #endif
 
-
   if (ctx->backend)
     {
       if (ctx->backend->destroy)

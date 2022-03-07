@@ -63,7 +63,7 @@ void mp_idle (int ms) // 0 means do garbage collection
     }
     if (ms == 0)
     {
- //   gc_collect();
+   // gc_collect();
       emscripten_sleep (0);
     }
     if (epic_get_led (0))
