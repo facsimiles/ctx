@@ -483,20 +483,124 @@ MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_update_obj, mp_ctx_update);
 #include <unistd.h>
 #endif
 
+
+STATIC void generic_method_lookup(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
+    const mp_obj_type_t *type = mp_obj_get_type(obj);
+    if (type->locals_dict != NULL) {
+         // generic method lookup
+         // this is a lookup in the object (ie not class or type)
+         assert(type->locals_dict->base.type == &mp_type_dict); // MicroPython restriction, for now
+         mp_map_t *locals_map = &type->locals_dict->map;
+         mp_map_elem_t *elem = mp_map_lookup(locals_map, MP_OBJ_NEW_QSTR(attr), MP_MAP_LOOKUP);
+         if (elem != NULL) {
+             mp_convert_member_lookup(obj, type, elem->value, dest);
+         }
+    }
+}
+
+extern const mp_obj_type_t mp_ctx_event_type;
+typedef struct _mp_ctx_event_obj_t {
+	mp_obj_base_t base;
+	CtxEvent  event;
+} mp_ctx_event_obj_t;
+
+
+static mp_obj_t mp_ctx_event_new (void)
+{
+	mp_ctx_event_obj_t *o = m_new_obj(mp_ctx_event_obj_t);
+	o->base.type    = &mp_ctx_event_type;
+	return MP_OBJ_FROM_PTR(o);
+}
+
+/** CtxEvent **/
+
+STATIC mp_obj_t
+mp_ctx_event_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
+{
+  mp_ctx_event_obj_t *self = MP_OBJ_TO_PTR(self_in);       
+  if (set_val == MP_OBJ_NULL) {
+    switch (attr)
+    {
+      case MP_QSTR_x: return mp_obj_new_float(self->event.x);
+      case MP_QSTR_y: return mp_obj_new_float(self->event.y);
+    }
+  }
+  else
+  {
+     return set_val;
+  }
+  return self_in;
+}
+
+
+STATIC void mp_ctx_event_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
+
+    if(attr == MP_QSTR_x ||
+       attr == MP_QSTR_y)
+    {
+        if (dest[0] == MP_OBJ_NULL) {
+            // load attribute
+            mp_obj_t val = mp_ctx_event_attr_op(obj, attr, MP_OBJ_NULL);
+            dest[0] = val;
+        } else {
+            // delete/store attribute
+            if (mp_ctx_event_attr_op(obj, attr, dest[1]) != MP_OBJ_NULL)
+                dest[0] = MP_OBJ_NULL; // indicate success
+        }
+    }
+    else {
+        // A method call
+        generic_method_lookup(obj, attr, dest);
+    }
+}
+
+
+static const mp_rom_map_elem_t mp_ctx_event_locals_dict_table[] = {
+       // stop_propagate()
+        // Instance attributes
+       { MP_ROM_QSTR(MP_QSTR_x), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_y), MP_ROM_INT(0) },
+};
+static MP_DEFINE_CONST_DICT(mp_ctx_event_locals_dict, mp_ctx_event_locals_dict_table);
+
+
+static mp_obj_t mp_ctx_event_make_new(
+	const mp_obj_type_t *type,
+	size_t n_args,
+	size_t n_kw,
+	const mp_obj_t *args
+) {
+	mp_ctx_event_obj_t *o = m_new_obj(mp_ctx_event_obj_t);
+	o->base.type    = type;
+	return MP_OBJ_FROM_PTR(o);
+}
+
+
+const mp_obj_type_t mp_ctx_event_type = {
+	.base        = { &mp_type_type },
+	.name        = MP_QSTR_CtxEvent,
+	.make_new    = mp_ctx_event_make_new,
+	.locals_dict = (mp_obj_t)&mp_ctx_event_locals_dict,
+        .attr = mp_ctx_event_attr
+};
+
+
 static void mp_ctx_listen_cb_handler (CtxEvent *event, void *data1, void*data2)
 {
   //mp_obj_t x = mp_obj_new_float (event->x);
   //mp_obj_t y = mp_obj_new_float (event->y);
   //mp_obj_t tup_array[] = {x, y};
-  mp_obj_t tup = data2;
-  //mp_obj_tuple_t*t = MP_OBJ_TO_PTR(tup);
+  mp_obj_t event_in = data2;
+  mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
+  mp_ctx_event->event = *event;
   
   //t->items[0] = mp_obj_new_float (event->x);
   //t->items[1] = mp_obj_new_float (event->y);
-  //mp_sched_schedule (data1, MP_OBJ_FROM_PTR(event));
-  if (mp_obj_is_true (mp_call_function_1((data1), tup)))
-    event->stop_propagate = 1;
+  mp_sched_schedule (data1, MP_OBJ_FROM_PTR(event_in));
+  //if (mp_obj_is_true (mp_call_function_1((data1), event_in)))
+  //  event->stop_propagate = 1;
 }
+
 
 static mp_obj_t mp_ctx_listen (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t cb_in)
 {
@@ -508,10 +612,13 @@ static mp_obj_t mp_ctx_listen (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t c
   mp_obj_t y = mp_obj_new_float (42);
   mp_obj_t tup_array[] = {x, y};
   mp_obj_t tup = mp_obj_new_tuple (2, tup_array);
+
+  mp_obj_t event = mp_ctx_event_new ();
+
   ctx_listen (self->ctx,
               mp_obj_get_int(event_mask),
               mp_ctx_listen_cb_handler,
-              (cb_in), tup);
+              (cb_in), event);
 
   return MP_OBJ_FROM_PTR(self);
 }
@@ -586,21 +693,6 @@ static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);
 
-// *** Common functions
-
-STATIC void generic_method_lookup(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
-    const mp_obj_type_t *type = mp_obj_get_type(obj);
-    if (type->locals_dict != NULL) {
-         // generic method lookup
-         // this is a lookup in the object (ie not class or type)
-         assert(type->locals_dict->base.type == &mp_type_dict); // MicroPython restriction, for now
-         mp_map_t *locals_map = &type->locals_dict->map;
-         mp_map_elem_t *elem = mp_map_lookup(locals_map, MP_OBJ_NEW_QSTR(attr), MP_MAP_LOOKUP);
-         if (elem != NULL) {
-             mp_convert_member_lookup(obj, type, elem->value, dest);
-         }
-    }
-}
 
 STATIC mp_obj_t
 mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
@@ -819,10 +911,13 @@ const mp_obj_type_t mp_ctx_type = {
         .attr = mp_ctx_attr
 };
 
+
+
 /* The globals table for this module */
 static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ctx_graphics) },
 	{ MP_ROM_QSTR(MP_QSTR_Ctx), MP_ROM_PTR(&mp_ctx_type) },
+	{ MP_ROM_QSTR(MP_QSTR_CtxEvent), MP_ROM_PTR(&mp_ctx_event_type) },
 //	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) }
