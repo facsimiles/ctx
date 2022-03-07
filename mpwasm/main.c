@@ -70,7 +70,7 @@
 #define CTX_CURRENT_PATH        1
 #define CTX_BLOATY_FAST_PATHS        0
 #define CTX_BLENDING_AND_COMPOSITING 0
-#define CTX_STRINGPOOL_SIZE        512
+#define CTX_STRINGPOOL_SIZE        256
 #define CTX_MIN_EDGE_LIST_SIZE     2048
 
 #define CTX_AUDIO               0
@@ -83,7 +83,6 @@
  * than the micropython target
  */
 #define CTX_IMPLEMENTATION
-#if 1
 #define CTX_EXTERNAL_MALLOC
 
 static inline void *ctx_malloc (size_t size)
@@ -109,7 +108,6 @@ static inline void ctx_free (void *ptr)
 {
   return m_free(ptr);
 }
-#endif
 
 #include "ctx.h"
 extern char epic_exec_path[256];
@@ -135,9 +133,9 @@ void mp_js_init(int heap_size) {
     mp_pystack_init(pystack, &pystack[MP_ARRAY_SIZE(pystack)]);
     #endif
 
+    mp_init();
     ctx_wasm_reset();
     epic_set_ctx (ctx_wasm_get_context(CTX_CB_KEEP_DATA));
-    mp_init();
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_lib));
 }
 

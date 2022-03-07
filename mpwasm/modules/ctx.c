@@ -62,7 +62,7 @@ void gc_collect(void);
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(self->ctx);                                         \
-		gc_collect();                                                  \
+                mp_idle(0);                                                    \
 		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
@@ -486,6 +486,7 @@ static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
 		mp_raise_OSError(-res);
 	}
         mp_idle (0);
+        gc_collect ();
         return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_update_obj, mp_ctx_update);

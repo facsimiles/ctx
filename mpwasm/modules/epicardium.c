@@ -195,8 +195,8 @@ uint32_t epic_buttons = 0;
 void mp_idle (int ms); 
 uint8_t epic_buttons_read (uint8_t mask)
 {
-  //emscripten_sleep(0);
-  mp_idle (0); // 1 means no gc
+  emscripten_sleep(0);
+  //mp_idle (0); // 1 means no gc
   return epic_buttons & mask;
 }
 
