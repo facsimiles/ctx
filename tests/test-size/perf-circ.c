@@ -391,7 +391,7 @@ int main (int argc, char **argv)
    uint8_t *pixels = (uint8_t*)calloc (WIDTH,stride);
    Ctx *ctx = ctx_new_for_framebuffer (pixels, WIDTH, HEIGHT, stride, formats[f].format);
    run_tests (ctx);
-   ctx_free (ctx);
+   ctx_destroy (ctx);
    free (pixels);
   }
   return 0;

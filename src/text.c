@@ -513,7 +513,7 @@ ctx_glyph_width_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar)
         ret = e->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE;
     }
     free (data);
-    ctx_free (glyph_ctx);
+    ctx_destroy (glyph_ctx);
   }
   return ret;
 }
@@ -533,7 +533,7 @@ ctx_glyph_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
     int ret = ctx_glyph_drawlist (font, ctx, &(glyph_ctx->drawlist),
                                   unichar, stroke);
     free (data);
-    ctx_free (glyph_ctx);
+    ctx_destroy (glyph_ctx);
     return ret;
   }
   return -1;

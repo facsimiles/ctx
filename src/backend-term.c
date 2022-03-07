@@ -876,7 +876,7 @@ void ctx_term_free (CtxTerm *term)
   printf ("\e[?25h"); // cursor on
   nc_at_exit ();
   free (term->pixels);
-  ctx_free (term->host);
+  ctx_destroy (term->host);
   free (term);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }

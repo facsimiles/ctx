@@ -46,6 +46,6 @@ int main (int argc, char **argv)
     printf ("\n");
   }
 #endif
-  ctx_free (ctx);
+  ctx_destroy (ctx);
   return 0;
 }

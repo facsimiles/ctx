@@ -676,7 +676,7 @@ int terminal_main (int argc, char **argv)
     }
 
   itk_free (itk);
-  ctx_free (ctx);
+  ctx_destroy (ctx);
 
   if (getpid () == 1)
   {

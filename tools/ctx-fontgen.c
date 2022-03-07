@@ -183,7 +183,7 @@ char* string =
       }
     }
 
-  ctx_free (ctx);
+  ctx_destroy (ctx);
 
   if (!binary)
   {

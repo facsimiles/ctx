@@ -160,7 +160,7 @@ void app_destroy(app_t *self) {
 	if (self->texture_mode == APP_TEXTURE_MODE_RGB) {
 		free(self->rgba_data);
 	}
-        ctx_free (self->ctx);
+        ctx_destroy (self->ctx);
 	
 	free(self);
 }

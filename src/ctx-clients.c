@@ -226,7 +226,7 @@ static void *launch_client_thread (void *data)
   client->start_routine (client->sub_ctx, client->user_data);
 
   fprintf (stderr, "%s: cleanup\n", __FUNCTION__);
-  ctx_free (client->sub_ctx);
+  ctx_destroy (client->sub_ctx);
   return NULL;
 }
 
@@ -362,7 +362,7 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
 
 #if VT_RECORD
   if (client->recording)
-    ctx_free (client->recording);
+    ctx_destroy (client->recording);
 #endif
   if (client->finalize)
      client->finalize (client, client->user_data);

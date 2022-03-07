@@ -5861,7 +5861,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
 //   fprintf (stderr, ".");
    ctx_client_remove (ctx, client);
 // fprintf (stderr, "!");
-   ctx_free (ctx);
+   ctx_destroy (ctx);
 
    return 0;
 }

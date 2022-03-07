@@ -2054,7 +2054,7 @@ ctx_key_up (Ctx *ctx, unsigned int keyval,
   return 0;
 }
 
-void ctx_freeze           (Ctx *ctx)
+void ctx_destroyze           (Ctx *ctx)
 {
   ctx->events.frozen ++;
 }

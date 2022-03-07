@@ -32,10 +32,10 @@ void ctx_tiled_free (CtxTiled *tiled)
     for (int i = 0 ; i < _ctx_max_threads; i++)
     {
       if (tiled->host[i])
-        ctx_free (tiled->host[i]);
+        ctx_destroy (tiled->host[i]);
       tiled->host[i]=NULL;
     }
-    ctx_free (tiled->ctx_copy);
+    ctx_destroy (tiled->ctx_copy);
   }
 
   // leak?
@@ -77,7 +77,7 @@ static void ctx_tiled_end_frame (Ctx *ctx)
       }
 
       free (((CtxHasher*)(hasher->backend))->hashes);
-      ctx_free (hasher);
+      ctx_destroy (hasher);
     }
     else
     {

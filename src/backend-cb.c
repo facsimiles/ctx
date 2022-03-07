@@ -82,7 +82,7 @@ static void ctx_render_cb (Ctx *ctx,
       ctx_render_ctx_masked (ctx, renderer, active_mask);
     else
       ctx_render_ctx (ctx, renderer);
-    ctx_free (renderer);
+    ctx_destroy (renderer);
 
     uint8_t *temp = ((uint8_t*)fb)+memory_budget;
     uint8_t *src = (uint8_t*)fb;
@@ -123,7 +123,7 @@ static void ctx_render_cb (Ctx *ctx,
 
     ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
     ctx_render_ctx (ctx, renderer);
-    ctx_free (renderer);
+    ctx_destroy (renderer);
 
     uint8_t *temp = ((uint8_t*)fb)+memory_budget;
     uint8_t *src = (uint8_t*)fb;
@@ -162,7 +162,7 @@ static void ctx_render_cb (Ctx *ctx,
       ctx_render_ctx (ctx, renderer);
       backend_cb->set_pixels (ctx, backend_cb->user_data, 
                               x0, y0, width, render_height, (uint16_t*)fb);
-      ctx_free (renderer);    
+      ctx_destroy (renderer);    
 
       y0 += render_height;
     } while (y0 < y1);
@@ -268,7 +268,7 @@ ctx_cb_end_frame (Ctx *ctx)
           tile_no++;
         }
       free (((CtxHasher*)(hasher->backend))->hashes);
-      ctx_free (hasher);
+      ctx_destroy (hasher);
 
 
       if (dirty_tiles)

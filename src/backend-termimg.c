@@ -81,7 +81,7 @@ void ctx_termimg_free (CtxTermImg *termimg)
   printf ("\e[?25h"); // cursor on
   nc_at_exit ();
   free (termimg->pixels);
-  ctx_free (termimg->host);
+  ctx_destroy (termimg->host);
   free (termimg);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }

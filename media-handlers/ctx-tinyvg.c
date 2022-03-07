@@ -271,7 +271,7 @@ int ctx_tinyvg_main(int argc, char *argv[])
 
   ctx = ctx_new (-1, -1, NULL);
   ctx_handle_tvg (ctx, path);
-  ctx_free (ctx);
+  ctx_destroy (ctx);
   return 0;
 }
 

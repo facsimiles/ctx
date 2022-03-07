@@ -118,9 +118,9 @@ static inline void        vt_line_free           (VtLine *line, int freealloc)
     if (line->style)
       { free (line->style); }
     if (line->ctx)
-      { ctx_free (line->ctx); }
+      { ctx_destroy (line->ctx); }
     if (line->ctx_copy)
-      { ctx_free (line->ctx_copy); }
+      { ctx_destroy (line->ctx_copy); }
   }
 #endif
 

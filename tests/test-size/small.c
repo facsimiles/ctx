@@ -48,6 +48,6 @@ int main (int argc, char **argv)
   }
 #endif
   ctx_parse (ctx, "M 100 100");
-  ctx_free (ctx);
+  ctx_destroy (ctx);
   return 0;
 }

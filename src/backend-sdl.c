@@ -539,7 +539,7 @@ Ctx *ctx_new_sdl (int width, int height)
   sdl->backend = SDL_CreateRenderer (sdl->window, -1, 0);
   if (!sdl->backend)
   {
-     ctx_free (backend->ctx);
+     ctx_destroy (backend->ctx);
      free (sdl);
      return NULL;
   }

@@ -314,6 +314,6 @@ int ctx_gif_main (int argc, char *argv[])
     frame_start = ctx_ticks ();
   }
   liberate_resources (); /* to please valgrind */
-  ctx_free (ctx);
+  ctx_destroy (ctx);
   return 0;
 }

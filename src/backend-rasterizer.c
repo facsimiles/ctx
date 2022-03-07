@@ -3219,7 +3219,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     }
     ctx_gray (ctx, 1.0f);
     ctx_fill (ctx);
-    ctx_free (ctx);
+    ctx_destroy (ctx);
   }
 
   int maybe_rect = 1;

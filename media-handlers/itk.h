@@ -2395,7 +2395,7 @@ ITK  *itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
 #endif
 
   itk_free (itk);
-  ctx_free (ctx);
+  ctx_destroy (ctx);
   return NULL;
 }
 

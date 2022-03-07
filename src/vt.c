@@ -379,7 +379,7 @@ static int vt_col_to_pos (VT *vt, int col)
           pos ++;
         }
       pos --;
-      ctx_free (ctx);
+      ctx_destroy (ctx);
     }
   return pos;
 }
@@ -5742,7 +5742,7 @@ void vt_destroy (VT *vt)
   if (vt->ctxp)
     ctx_parser_free (vt->ctxp);
   //if (vt->ctx)
-  //  { ctx_free (vt->ctx); }
+  //  { ctx_destroy (vt->ctx); }
   free (vt->argument_buf);
   ctx_list_remove (&ctx_vts, vt);
   kill (vt->vtpty.pid, 9);

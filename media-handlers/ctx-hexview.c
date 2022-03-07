@@ -281,6 +281,6 @@ int ctx_hexview_main(int argc, char *argv[])
       }
     }
   }
-  ctx_free (ctx);
+  ctx_destroy (ctx);
   return 0;
 }

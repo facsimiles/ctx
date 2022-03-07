@@ -230,7 +230,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
      Ctx *rasterizer = ctx_new_for_framebuffer (dst_data, sw, sh, dst_stride, format);
      ctx_translate (rasterizer, sx, sy);
      ctx_render_ctx (ctx, rasterizer);
-     ctx_free (rasterizer);
+     ctx_destroy (rasterizer);
    }
 #endif
 }
@@ -2003,7 +2003,7 @@ static void ctx_deinit (Ctx *ctx)
 }
 
 CTX_EXPORT void
-ctx_free (Ctx *ctx)
+ctx_destroy (Ctx *ctx)
 {
   if (!ctx)
     { return; }
@@ -2640,7 +2640,7 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   if (backend == NULL)
     return CTX_BACKEND_NONE;
 #if CTX_EVENTS
-  else if (backend->free == (void*) ctx_ctx_free) return CTX_BACKEND_CTX;
+  else if (backend->free == (void*) ctx_ctx_destroy) return CTX_BACKEND_CTX;
 #endif
 #if CTX_TERM
   else if (backend->free == (void*) ctx_term_free) return CTX_BACKEND_TERM;
@@ -2811,7 +2811,7 @@ ctx_logo (Ctx *ctx, float x, float y, float dim)
      ctx_restore (ctx);
 
   //ctx_parse (ctx, "rgb 1 0 0 rectangle 0 0 1000 1000 fill rgb 0 1 0 rectangle 40 40 40 40 fill ");
-//  ctx_free (ctx);
+//  ctx_destroy (ctx);
 }
 
 

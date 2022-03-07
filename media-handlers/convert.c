@@ -801,7 +801,7 @@ again:
           {
              width = ctx_width (ui);
              height = ctx_height (ui);
-             ctx_free (ctx);
+             ctx_destroy (ctx);
              goto again;
           }
           else
@@ -842,7 +842,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf ( (uint8_t *) pixels,
                             CTX_FORMAT_RGBA8,
                             width, height, stride, reverse);
@@ -858,7 +858,7 @@ again:
       memset (pixels, 0, sizeof (pixels) );
       memset (pixels_565, 0, sizeof (pixels_565) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
 
       for (int i = 0; i < width * height; i++)
       {
@@ -896,7 +896,7 @@ again:
                                            CTX_FORMAT_GRAY1);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf (pixels,
                            CTX_FORMAT_GRAY1,
                            width, height, stride, reverse);
@@ -909,7 +909,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY2);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf (pixels,
                            CTX_FORMAT_GRAY2,
                            width, height, stride, reverse);
@@ -922,7 +922,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY4);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf (pixels,
                            CTX_FORMAT_GRAY4,
                            width, height, stride, reverse);
@@ -935,7 +935,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAY8);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf (pixels,
                            CTX_FORMAT_GRAY8,
                            width, height, stride, reverse);
@@ -962,7 +962,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_GRAYF);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       int no = 0;
       for (int y= 0; y < height; y++)
         {
@@ -987,7 +987,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_CMYKAF);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf ( (uint8_t *) pixels,
                             CTX_FORMAT_CMYKAF,
                             width, height, stride, reverse);
@@ -1000,7 +1000,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBAF);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf ( (uint8_t *) pixels,
                             CTX_FORMAT_RGBAF,
                             width, height, stride, reverse);
@@ -1013,7 +1013,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGB8);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf ( (uint8_t *) pixels,
                             CTX_FORMAT_RGB8,
                             width, height, stride, reverse);
@@ -1026,7 +1026,7 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_CMYK8);
       memset (pixels, 0, sizeof (pixels) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       ctx_utf8_output_buf ( (uint8_t *) pixels,
                             CTX_FORMAT_CMYK8,
                             width, height, stride, reverse);
@@ -1038,11 +1038,11 @@ again:
       Ctx *dctx = ctx_new_for_framebuffer (&pixels[0], width, height, stride, CTX_FORMAT_RGBA8);
       memset (pixels, 0, sizeof (stride*height) );
       ctx_render_ctx (ctx, dctx);
-      ctx_free (dctx);
+      ctx_destroy (dctx);
       if(!strstr(dest_path, "skip-save"))
         stbi_write_png (dest_path, width, height, 4, pixels, stride);
       free (pixels);
     }
-  ctx_free (ctx);
+  ctx_destroy (ctx);
   return 0;
 }

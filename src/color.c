@@ -472,7 +472,7 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
      }
      fprintf (stderr, "foo\n");
      ctx_fill (ctx);
-     ctx_free (tester);
+     ctx_destroy (tester);
      if (pixel == 0xffffff) return 1;
 #endif
      return 1;

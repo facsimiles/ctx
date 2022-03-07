@@ -123,10 +123,10 @@ void  ctx_drawlist_clear (Ctx *ctx);
 
 
 /**
- * ctx_free:
+ * ctx_destroy:
  * @ctx: a ctx context
  */
-void ctx_free (Ctx *ctx);
+void ctx_destroy (Ctx *ctx);
 
 /**
  * ctx_start_frame:
@@ -1248,7 +1248,7 @@ void      ctx_get_event_fds (Ctx *ctx, int *fd, int *count);
 int   ctx_pointer_is_down (Ctx *ctx, int no);
 float ctx_pointer_x (Ctx *ctx);
 float ctx_pointer_y (Ctx *ctx);
-void  ctx_freeze (Ctx *ctx);
+void  ctx_destroyze (Ctx *ctx);
 void  ctx_thaw   (Ctx *ctx);
 int   ctx_events_frozen (Ctx *ctx);
 void  ctx_events_clear_items (Ctx *ctx);
