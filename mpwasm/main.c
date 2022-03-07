@@ -71,7 +71,7 @@ void mp_js_init(int heap_size) {
 
 int do_path (const char *path)
 {
-  mp_js_init (64 * 1024);
+  mp_js_init (128 * 1024);
   mp_parse_input_kind_t input_kind = MP_PARSE_FILE_INPUT;
   int ret = 0;
   nlr_buf_t nlr;
@@ -110,7 +110,7 @@ int do_path (const char *path)
 int do_str(const char *src, mp_parse_input_kind_t input_kind)
 {
     int ret = 0;
-    mp_js_init (64 * 1024);
+    mp_js_init (128 * 1024);
     nlr_buf_t nlr;
     epic_exec_path[0] = 0;
     _mp_quit = 0;

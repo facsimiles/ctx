@@ -30,33 +30,16 @@ SRC_SHARED = $(addprefix shared/,\
 SRC_C = \
 	main.c \
 	mphalport.c \
-	modules/epicardium.c \
-	modules/ctx.c \
-	modules/image.c \
-	modules/fat_file.c \
-	modules/fat_reader_import.c \
-	modules/utime.c \
-	modules/buttons.c \
-	modules/sys_display.c \
-	modules/sys_config.c \
-	modules/sys_leds.c \
-	modules/personal_state.c \
-	modules/light_sensor.c \
-	modules/os.c \
-	modules/power.c \
-	modules/interrupt.c \
-	modules/bhi160-sys.c \
-	modules/gpio.c \
+	$(wildcard modules/*.c) \
 	$(TOP)/shared/timeutils/timeutils.c
 
+#$(BUILD)/modules/py/%.mpy: modules/py/%.py
+#	@mkdir -p $(BUILD)/modules/py || true
+#	mpy-cross $< -o $@
 
-$(BUILD)/modules/py/%.mpy: modules/py/%.py
-	@mkdir -p $(BUILD)/modules/py || true
-	mpy-cross $< -o $@
-
-$(BUILD)/modules/py/%.mpy.c: $(BUILD)/modules/py/%.mpy
-	cd $(BUILD)/modules/py;$(TOP)/tools/mpy-tool.py -f -q $(BUILD)/genhdr/qstrdefs.preprocessed.h -mlongint-impl=none `basename $<` > `basename $@`
-	wc $@
+#$(BUILD)/modules/py/%.mpy.c: $(BUILD)/modules/py/%.mpy
+#	cd $(BUILD)/modules/py;$(TOP)/tools/mpy-tool.py -f -q $(BUILD)/genhdr/qstrdefs.preprocessed.h -mlongint-impl=none `basename $<` > `basename $@`
+#	wc $@
 
 SRC_QSTR += $(SRC_C)
 

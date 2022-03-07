@@ -310,6 +310,8 @@ int epic_disp_open (void)
   ctx_listen (ctx, CTX_KEY_UP,
                    key_up_cb,
                    NULL, NULL);
+  ctx_rectangle (ctx, 0, 0, 180, 80);
+  ctx_begin_path (ctx);
   return 0;
 }
 

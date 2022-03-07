@@ -49,7 +49,7 @@ void mp_idle (int ms);
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(self->ctx);                                         \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
 
@@ -59,7 +59,7 @@ void mp_idle (int ms);
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(self->ctx);                                         \
 		mp_idle (0);                                                   \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
 
@@ -68,7 +68,7 @@ void mp_idle (int ms);
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(self->ctx, mp_obj_get_float(arg1));                 \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_##name##_obj, mp_ctx_##name);
 
@@ -77,7 +77,7 @@ void mp_idle (int ms);
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(self->ctx, mp_obj_get_int(arg1));                   \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_##name##_obj, mp_ctx_##name);
 
@@ -90,7 +90,7 @@ void mp_idle (int ms);
 			self->ctx,                                             \
 			mp_obj_get_float(arg1),                                \
 			mp_obj_get_float(arg2));                               \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_##name##_obj, mp_ctx_##name);
 
@@ -104,7 +104,7 @@ void mp_idle (int ms);
 			mp_obj_get_float(args[1]),                             \
 			mp_obj_get_float(args[2]),                             \
 			mp_obj_get_float(args[3]));                            \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return args[0];                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 4, 4, mp_ctx_##name);
@@ -120,7 +120,7 @@ void mp_idle (int ms);
 			mp_obj_get_float(args[2]),                             \
 			mp_obj_get_float(args[3]),                             \
 			mp_obj_get_float(args[4]));                            \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return args[0];                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 5, 5, mp_ctx_##name);
@@ -137,7 +137,7 @@ void mp_idle (int ms);
 			mp_obj_get_float(args[3]),                             \
 			mp_obj_get_float(args[4]),                             \
 			mp_obj_get_float(args[5]));                            \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return args[0];                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 6, 6, mp_ctx_##name);
@@ -155,7 +155,7 @@ void mp_idle (int ms);
 			mp_obj_get_float(args[4]),                             \
 			mp_obj_get_float(args[5]),                             \
 			mp_obj_get_float(args[6]));                            \
-		return MP_OBJ_FROM_PTR(self);                                  \
+		return self;                                                   \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 7, 7, mp_ctx_##name);
@@ -226,7 +226,7 @@ static mp_obj_t mp_ctx_line_dash(mp_obj_t self_in, mp_obj_t dashes_in)
 	ctx_line_dash(self->ctx, dashes, count);
 
 	m_free(dashes);
-	return MP_OBJ_FROM_PTR(self);
+        return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_line_dash_obj, mp_ctx_line_dash);
 
@@ -255,7 +255,7 @@ static mp_obj_t mp_ctx_texture (size_t n_args, const mp_obj_t *args)
 	ctx_define_texture (self->ctx,
                         ieid, width, height, stride, format,
                         buffer_info.buf, NULL);
-	return MP_OBJ_FROM_PTR(self);
+	return args[0];
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_texture_obj, 6, 6, mp_ctx_texture);
 
@@ -270,7 +270,7 @@ static mp_obj_t mp_ctx_arc(size_t n_args, const mp_obj_t *args)
 		mp_obj_get_float(args[4]),
 		mp_obj_get_float(args[5]),
 		mp_obj_get_int(args[6]));
-	return MP_OBJ_FROM_PTR(self);
+        return args[0];
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_arc_obj, 7, 7, mp_ctx_arc);
 
@@ -279,7 +279,7 @@ static mp_obj_t mp_ctx_font(mp_obj_t self_in, mp_obj_t font_in)
 	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	const char *font   = mp_obj_str_get_str(font_in);
 	ctx_font(self->ctx, font);
-	return MP_OBJ_FROM_PTR(self);
+        return self_in;                                                \
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_font_obj, mp_ctx_font);
 
@@ -293,7 +293,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_font_obj, mp_ctx_font);
 			mp_obj_str_get_str(args[1]),                           \
 			mp_obj_get_float(args[2]),                             \
 			mp_obj_get_float(args[3]));                            \
-		return MP_OBJ_FROM_PTR(self);                                  \
+                return args[0];                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 4, 4, mp_ctx_##name);
@@ -360,7 +360,7 @@ mp_ctx_color_common(size_t n_args, const mp_obj_t *args, bool stroke)
 		}
 	}
 
-	return MP_OBJ_FROM_PTR(self);
+        return args[0];
 }
 
 static mp_obj_t mp_ctx_color(size_t n_args, const mp_obj_t *args)
@@ -425,7 +425,7 @@ static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
 		);
 	}
 
-	return MP_OBJ_FROM_PTR(self);
+        return args[0];
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_add_stop_obj, 3, 4, mp_ctx_add_stop);
 
@@ -471,7 +471,7 @@ static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
 		mp_raise_OSError(-res);
 	}
         mp_idle (0);
-	return MP_OBJ_FROM_PTR(self);
+        return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_update_obj, mp_ctx_update);
 /* CTX API functions }}} */
@@ -483,9 +483,42 @@ MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_update_obj, mp_ctx_update);
 #include <unistd.h>
 #endif
 
+static void mp_ctx_listen_cb_handler (CtxEvent *event, void *data1, void*data2)
+{
+  //mp_obj_t x = mp_obj_new_float (event->x);
+  //mp_obj_t y = mp_obj_new_float (event->y);
+  //mp_obj_t tup_array[] = {x, y};
+  mp_obj_t tup = data2;
+  //mp_obj_tuple_t*t = MP_OBJ_TO_PTR(tup);
+  
+  //t->items[0] = mp_obj_new_float (event->x);
+  //t->items[1] = mp_obj_new_float (event->y);
+  //mp_sched_schedule (data1, MP_OBJ_FROM_PTR(event));
+  if (mp_obj_is_true (mp_call_function_1((data1), tup)))
+    event->stop_propagate = 1;
+}
+
+static mp_obj_t mp_ctx_listen (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t cb_in)
+{
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
+  if (cb_in != mp_const_none &&
+      !mp_obj_is_callable(cb_in))
+          mp_raise_ValueError(MP_ERROR_TEXT("invalid handler"));
+  mp_obj_t x = mp_obj_new_float (23);
+  mp_obj_t y = mp_obj_new_float (42);
+  mp_obj_t tup_array[] = {x, y};
+  mp_obj_t tup = mp_obj_new_tuple (2, tup_array);
+  ctx_listen (self->ctx,
+              mp_obj_get_int(event_mask),
+              mp_ctx_listen_cb_handler,
+              (cb_in), tup);
+
+  return MP_OBJ_FROM_PTR(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_listen_obj, mp_ctx_listen);
+
 static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t path_in)
 {
-	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
 #ifdef EMSCRIPTEN
 	const char *path = mp_obj_str_get_str(path_in);
         int width = 0; int height = 0;
@@ -498,7 +531,7 @@ static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t path_in)
         mp_obj_t tup[] = { mp_w, mp_h };
         return mp_obj_new_tuple(2, tup);
 #endif
-	return MP_OBJ_FROM_PTR(self);
+	return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_tinyvg_get_size_obj, mp_ctx_tinyvg_get_size);
 /* CTX API functions }}} */
@@ -512,7 +545,7 @@ static mp_obj_t mp_ctx_tinyvg_draw (mp_obj_t self_in, mp_obj_t path_in)
         ctx_tinyvg_fd_draw (self->ctx, fd, CTX_TVG_FLAG_DEFAULTS);
         close (fd);
 #endif
-	return MP_OBJ_FROM_PTR(self);
+	return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_tinyvg_draw_obj, mp_ctx_tinyvg_draw);
 /* CTX API functions }}} */
@@ -553,10 +586,68 @@ static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);
 
+// *** Common functions
+
+STATIC void generic_method_lookup(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
+    const mp_obj_type_t *type = mp_obj_get_type(obj);
+    if (type->locals_dict != NULL) {
+         // generic method lookup
+         // this is a lookup in the object (ie not class or type)
+         assert(type->locals_dict->base.type == &mp_type_dict); // MicroPython restriction, for now
+         mp_map_t *locals_map = &type->locals_dict->map;
+         mp_map_elem_t *elem = mp_map_lookup(locals_map, MP_OBJ_NEW_QSTR(attr), MP_MAP_LOOKUP);
+         if (elem != NULL) {
+             mp_convert_member_lookup(obj, type, elem->value, dest);
+         }
+    }
+}
+
+STATIC mp_obj_t
+mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
+{
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);       
+  if (set_val == MP_OBJ_NULL) {
+    switch (attr)
+    {
+       case MP_QSTR_width:  return mp_obj_new_int(ctx_width (self->ctx));
+       case MP_QSTR_height: return mp_obj_new_int(ctx_height (self->ctx));
+    }
+  }
+  else
+  {
+     return set_val;
+  }
+  return self_in;
+}
 
 
+STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
+
+    if(attr == MP_QSTR_width ||
+       attr == MP_QSTR_height)
+    {
+        if (dest[0] == MP_OBJ_NULL) {
+            // load attribute
+            mp_obj_t val = mp_ctx_attr_op(obj, attr, MP_OBJ_NULL);
+            dest[0] = val;
+        } else {
+            // delete/store attribute
+            if (mp_ctx_attr_op(obj, attr, dest[1]) != MP_OBJ_NULL)
+                dest[0] = MP_OBJ_NULL; // indicate success
+        }
+    }
+    else {
+        // A method call
+        generic_method_lookup(obj, attr, dest);
+    }
+}
 
 /* CTX class/type */
+
+#define MP_CTX_INT_CONSTANT_UNPREFIXED(ident)                         \
+        {                                                                      \
+		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##ident)     \
+	}
 #define MP_CTX_INT_CONSTANT(prefix, ident)                                     \
 	{                                                                      \
 		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##prefix##_##ident)     \
@@ -567,6 +658,25 @@ MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);
 	}
 
 static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
+
+	MP_CTX_INT_CONSTANT_UNPREFIXED(PRESS),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(MOTION),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(RELEASE),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(ENTER),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(LEAVE),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(TAP),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(TAP_AND_HOLD),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(DRAG_PRESS),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(DRAG_MOTION),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(DRAG_RELEASE),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(KEY_PRESS),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(KEY_DOWN),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(KEY_UP),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(SCROLL),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(MESSAGE),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(DROP),
+	MP_CTX_INT_CONSTANT_UNPREFIXED(SET_CURSOR),
+
 	MP_CTX_INT_CONSTANT(FILL_RULE,WINDING),
 	MP_CTX_INT_CONSTANT(FILL_RULE,EVEN_ODD),
 	MP_CTX_INT_CONSTANT(JOIN,BEVEL),
@@ -692,6 +802,12 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(end_frame),
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
+	MP_CTX_METHOD(listen),
+
+
+        // Instance attributes
+       { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_INT(0) },
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_locals_dict, mp_ctx_locals_dict_table);
 
@@ -700,6 +816,7 @@ const mp_obj_type_t mp_ctx_type = {
 	.name        = MP_QSTR_Ctx,
 	.make_new    = mp_ctx_make_new,
 	.locals_dict = (mp_obj_t)&mp_ctx_locals_dict,
+        .attr = mp_ctx_attr
 };
 
 /* The globals table for this module */
