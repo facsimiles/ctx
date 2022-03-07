@@ -720,7 +720,7 @@ again:
         {
           CtxParser *ctxp = ctx_parser_new (ctx, width, height, width/cols, height/rows, 1, 1, NULL, NULL, NULL, NULL, NULL);
           ctx_parser_feed_bytes (ctxp, (char*)contents, length);
-          ctx_parser_free (ctxp);
+          ctx_parser_destroy (ctxp);
           free (contents);
         }
     }

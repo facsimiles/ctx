@@ -76,13 +76,13 @@ static void ctx_buffer_deinit (CtxBuffer *buffer)
   {
     if (buffer->color_managed != buffer)
     {
-      ctx_buffer_free (buffer->color_managed);
+      ctx_buffer_destroy (buffer->color_managed);
     }
     buffer->color_managed = NULL;
   }
 }
 
-void ctx_buffer_free (CtxBuffer *buffer)
+void ctx_buffer_destroy (CtxBuffer *buffer)
 {
   ctx_buffer_deinit (buffer);
   ctx_free (buffer);

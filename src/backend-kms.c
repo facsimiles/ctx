@@ -418,7 +418,7 @@ inline static void ctx_kms_start_frame (Ctx *ctx)
   ctx_kms_show_frame ((CtxKMS*)ctx->backend, 1);
 }
 
-void ctx_kms_free (CtxKMS *fb)
+void ctx_kms_destroy (CtxKMS *fb)
 {
   if (fb->is_kms)
   {
@@ -428,7 +428,7 @@ void ctx_kms_free (CtxKMS *fb)
   ioctl (0, KDSETMODE, KD_TEXT);
 #endif
   if (system("stty sane")){};
-  ctx_tiled_free ((CtxTiled*)fb);
+  ctx_tiled_destroy ((CtxTiled*)fb);
   //ctx_free (fb);
   ctx_babl_exit ();
 }
@@ -528,7 +528,7 @@ Ctx *ctx_new_kms (int width, int height)
 
   backend->end_frame = ctx_tiled_end_frame;
   backend->start_frame = ctx_kms_start_frame;
-  backend->free  = (void*)ctx_kms_free;
+  backend->destroy = (void*)ctx_kms_destroy;
   backend->process = (void*)ctx_drawlist_process;
   backend->consume_events = ctx_kms_consume_events;
   backend->get_event_fds = (void*) ctx_fb_get_event_fds;

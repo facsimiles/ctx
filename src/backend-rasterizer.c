@@ -3043,7 +3043,7 @@ ctx_rasterizer_clip_reset (CtxRasterizer *rasterizer)
 {
 #if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
-   ctx_buffer_free (rasterizer->clip_buffer);
+   ctx_buffer_destroy (rasterizer->clip_buffer);
   rasterizer->clip_buffer = NULL;
 #endif
   rasterizer->state->gstate.clip_min_x = rasterizer->blit_x;
@@ -3336,7 +3336,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
        rasterizer->clip_rectangle = 1;
   }
   if (!we_made_it)
-   ctx_buffer_free (clip_buffer);
+   ctx_buffer_destroy (clip_buffer);
 #else
   if (coords[0][0]){};
 #endif
@@ -3596,7 +3596,7 @@ ctx_rasterizer_end_group (CtxRasterizer *rasterizer)
     ctx_rasterizer_process (ctx, (CtxCommand*)commands);
   }
   //ctx_texture_release (rasterizer->backend.ctx, ".ctx-group");
-  ctx_buffer_free (rasterizer->group[no]);
+  ctx_buffer_destroy (rasterizer->group[no]);
   rasterizer->group[no] = 0;
   ctx_rasterizer_process (ctx, (CtxCommand*)&restore_command);
 }
@@ -4192,7 +4192,7 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
   {
-    ctx_buffer_free (rasterizer->clip_buffer);
+    ctx_buffer_destroy (rasterizer->clip_buffer);
     rasterizer->clip_buffer = NULL;
   }
 #endif
@@ -4270,7 +4270,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
 {
 #if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
-    ctx_buffer_free (rasterizer->clip_buffer);
+    ctx_buffer_destroy (rasterizer->clip_buffer);
 #endif
   if (rasterizer->edge_list.size)
     ctx_drawlist_deinit (&rasterizer->edge_list);
@@ -4281,7 +4281,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
 #endif
   CtxBackend *backend = (CtxBackend*)rasterizer;
   backend->process = ctx_rasterizer_process;
-  backend->free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
+  backend->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
   backend->ctx     = ctx;
   rasterizer->edge_list.flags |= CTX_DRAWLIST_EDGE_LIST;
   rasterizer->state       = state;

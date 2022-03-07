@@ -15,7 +15,7 @@ ctx_tiled_threads_done (CtxTiled *tiled)
 
 int _ctx_damage_control = 0;
 
-void ctx_tiled_free (CtxTiled *tiled)
+void ctx_tiled_destroy (CtxTiled *tiled)
 {
   tiled->quit = 1;
   mtx_lock (&tiled->mtx);

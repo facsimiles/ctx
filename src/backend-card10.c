@@ -148,7 +148,7 @@ Ctx *ctx_new_card10 (int width, int height)
   backend->ctx = ctx;
   backend->start_frame = ctx_card10_start_frame;
   backend->end_frame  = ctx_card10_end_frame;
-  backend->free  = (void(*)(void *))ctx_card10_free;
+  backend->destroy = (void(*)(void *))ctx_card10_free;
   backend->consume_events = ctx_card10_consume_events;
   ctx_set_backend (ctx, card10);
   ctx_set_size (ctx, width, height);

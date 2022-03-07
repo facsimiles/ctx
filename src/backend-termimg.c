@@ -71,7 +71,7 @@ inline static void ctx_termimg_end_frame (Ctx *ctx)
   fflush (NULL);
 }
 
-void ctx_termimg_free (CtxTermImg *termimg)
+void ctx_termimg_destroy (CtxTermImg *termimg)
 {
   while (termimg->lines)
   {
@@ -122,7 +122,7 @@ Ctx *ctx_new_termimg (int width, int height)
   backend->ctx = ctx;
   backend->process = ctx_termimg_process;
   backend->end_frame = ctx_termimg_end_frame;
-  backend->free  = (void(*)(void*))ctx_termimg_free;
+  backend->destroy = (void(*)(void*))ctx_termimg_destroy;
   backend->consume_events = ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
   ctx_set_size (ctx, width, height);

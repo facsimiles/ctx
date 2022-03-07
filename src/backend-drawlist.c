@@ -5,7 +5,7 @@ void ctx_drawlist_clear (Ctx *ctx)
   ctx->drawlist.bitpack_pos = 0;
 }
 
-static void ctx_drawlist_backend_free (CtxBackend *backend)
+static void ctx_drawlist_backend_destroy (CtxBackend *backend)
 {
   ctx_free (backend);
 }
@@ -69,6 +69,6 @@ static CtxBackend *ctx_drawlist_backend_new (void)
 {
   CtxBackend *backend = (CtxBackend*)ctx_calloc (sizeof (CtxBackend), 1);
   backend->process = (void(*)(Ctx *a, CtxCommand *c))ctx_drawlist_process;
-  backend->free    = (void(*)(void *a))ctx_drawlist_backend_free;
+  backend->destroy = (void(*)(void *a))ctx_drawlist_backend_destroy;
   return backend;
 }

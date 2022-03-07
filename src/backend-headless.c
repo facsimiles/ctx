@@ -148,7 +148,7 @@ inline static void ctx_headless_start_frame (Ctx *ctx)
   ctx_headless_show_frame ((CtxHeadless*)ctx->backend, 1);
 }
 
-void ctx_headless_free (CtxHeadless *fb)
+void ctx_headless_destroy (CtxHeadless *fb)
 {
   CtxTiled *tiled=(CtxTiled*)fb;
 
@@ -165,7 +165,7 @@ void ctx_headless_free (CtxHeadless *fb)
   //munmap (tiled->fb, fb->fb_mapped_size);
   //close (fb->fb_fd);
   //if (system("stty sane")){};
-  ctx_tiled_free ((CtxTiled*)fb);
+  ctx_tiled_destroy ((CtxTiled*)fb);
   //ctx_free (fb);
 }
 
@@ -213,7 +213,7 @@ Ctx *ctx_new_headless (int width, int height)
   backend->end_frame = ctx_tiled_end_frame;
   backend->process = (void*)ctx_drawlist_process;
   backend->start_frame = ctx_headless_start_frame;
-  backend->free  = (void*)ctx_headless_free;
+  backend->destroy = (void*)ctx_headless_destroy;
   backend->set_clipboard = ctx_headless_set_clipboard;
   backend->get_clipboard = ctx_headless_get_clipboard;
   backend->consume_events = ctx_headless_consume_events;

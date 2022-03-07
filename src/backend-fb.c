@@ -312,7 +312,7 @@ inline static void ctx_fb_start_frame (Ctx *ctx)
   ctx_fb_show_frame ((CtxFb*)ctx->backend, 1);
 }
 
-void ctx_fb_free (CtxFb *fb)
+void ctx_fb_destroy (CtxFb *fb)
 {
   CtxTiled*tiled=(CtxTiled*)fb;
 
@@ -330,7 +330,7 @@ void ctx_fb_free (CtxFb *fb)
     ctx_free (tiled->pixels);
   close (fb->fb_fd);
   if (system("stty sane")){};
-  ctx_tiled_free ((CtxTiled*)fb);
+  ctx_tiled_destroy ((CtxTiled*)fb);
   //ctx_free (fb);
   ctx_babl_exit ();
 }
@@ -543,7 +543,7 @@ Ctx *ctx_new_fb (int width, int height)
   backend->process = (void*)ctx_drawlist_process;
 
   backend->start_frame = ctx_fb_start_frame;
-  backend->free  = (void*)ctx_fb_free;
+  backend->destroy = (void*)ctx_fb_destroy;
   backend->set_clipboard = ctx_headless_set_clipboard;
   backend->get_clipboard = ctx_headless_get_clipboard;
   backend->consume_events = ctx_fb_consume_events;

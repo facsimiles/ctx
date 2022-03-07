@@ -20,7 +20,7 @@ static void ctx_thread_end_frame (Ctx *ctx)
   //ctx_render_stream (thread->backend.ctx, stdout, 0);
 }
 
-void ctx_thread_free (CtxCtx *ctxthread)
+void ctx_thread_destroy (CtxCtx *ctxthread)
 {
   ctx_free (ctxthread);
 }
@@ -148,7 +148,7 @@ Ctx *ctx_new_thread (int width, int height)
   backend->ctx = ctx;
   backend->start_frame = ctx_thread_start_frame;
   backend->end_frame = ctx_thread_end_frame;
-  backend->free  = (void(*)(void *))ctx_thread_free;
+  backend->destroy = (void(*)(void *))ctx_thread_destroy;
   backend->consume_events = ctx_thread_consume_events;
   ctx_set_backend (ctx, thread);
   ctx_set_size (ctx, width, height);

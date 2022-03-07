@@ -481,7 +481,7 @@ inline static void ctx_sdl_start_frame (Ctx *ctx)
   ctx_sdl_start_time = ctx_ticks ();
 }
 
-void ctx_sdl_free (CtxSDL *sdl)
+void ctx_sdl_destroy (CtxSDL *sdl)
 {
   if (sdl->texture)
     SDL_DestroyTexture (sdl->texture);
@@ -494,7 +494,7 @@ void ctx_sdl_free (CtxSDL *sdl)
   }
   sdl->texture = NULL;sdl->backend = NULL;sdl->window = NULL;
 
-  ctx_tiled_free ((CtxTiled*)sdl);
+  ctx_tiled_destroy ((CtxTiled*)sdl);
 }
 
 
@@ -576,7 +576,7 @@ Ctx *ctx_new_sdl (int width, int height)
   backend->end_frame = ctx_tiled_end_frame;
   backend->process = (void*)ctx_drawlist_process;
   backend->start_frame = ctx_sdl_start_frame;
-  backend->free  = (void*)ctx_sdl_free;
+  backend->destroy = (void*)ctx_sdl_destroy;
   backend->consume_events = ctx_sdl_consume_events;
 
   backend->set_clipboard = ctx_sdl_set_clipboard;

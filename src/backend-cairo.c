@@ -325,7 +325,7 @@ ctx_cairo_process (Ctx *ctx, CtxCommand *c)
   ctx_process (ctx_cairo->backend.ctx, entry);
 }
 
-void ctx_cairo_free (CtxCairo *ctx_cairo)
+void ctx_cairo_destroy (CtxCairo *ctx_cairo)
 {
   if (ctx_cairo->pat)
     { cairo_pattern_destroy (ctx_cairo->pat); }
@@ -356,7 +356,7 @@ ctx_new_for_cairo (cairo_t *cr)
   Ctx *ctx = _ctx_new_drawlist (640, 480);
   CtxCairo *ctx_cairo = ctx_calloc(sizeof(CtxCairo),1);
   CtxBackend *backend  = (CtxBackend*)ctx_cairo;
-  backend->free    = (void*)ctx_cairo_free;
+  backend->destroy = (void*)ctx_cairo_destroy;
   backend->process = ctx_cairo_process;
   backend->ctx = ctx;
   ctx_cairo->cr = cr;

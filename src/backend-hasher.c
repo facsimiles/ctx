@@ -593,7 +593,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   CtxBackend *backend = (CtxBackend*)hasher;
   backend->ctx         = ctx;
   backend->process = ctx_hasher_process;
-  backend->free    = (CtxDestroyNotify)ctx_rasterizer_deinit;
+  backend->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
   // XXX need own destructor to not leak ->hashes
   rasterizer->edge_list.flags |= CTX_DRAWLIST_EDGE_LIST;
   rasterizer->state       = state;

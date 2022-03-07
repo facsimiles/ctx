@@ -1915,8 +1915,8 @@ static Ctx ctx_state;
 void ctx_set_backend (Ctx  *ctx,
                        void *backend)
 {
-  if (ctx->backend && ctx->backend->free)
-    ctx->backend->free (ctx->backend);
+  if (ctx->backend && ctx->backend->destroy)
+    ctx->backend->destroy (ctx->backend);
   ctx->backend = (CtxBackend*)backend;
   if (ctx->backend->process == NULL)
     ctx->backend->process = (void(*)(Ctx*,CtxCommand*))ctx_drawlist_process;
@@ -1989,8 +1989,8 @@ static void ctx_deinit (Ctx *ctx)
 
   if (ctx->backend)
     {
-      if (ctx->backend->free)
-        ctx->backend->free (ctx->backend);
+      if (ctx->backend->destroy)
+        ctx->backend->destroy (ctx->backend);
       ctx->backend    = NULL;
     }
   ctx_drawlist_deinit (&ctx->drawlist);
@@ -2640,34 +2640,34 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   if (backend == NULL)
     return CTX_BACKEND_NONE;
 #if CTX_EVENTS
-  else if (backend->free == (void*) ctx_ctx_destroy) return CTX_BACKEND_CTX;
+  else if (backend->destroy == (void*) ctx_ctx_destroy) return CTX_BACKEND_CTX;
 #endif
 #if CTX_TERM
-  else if (backend->free == (void*) ctx_term_free) return CTX_BACKEND_TERM;
+  else if (backend->destroy == (void*) ctx_term_destroy) return CTX_BACKEND_TERM;
 #endif
 #if CTX_HEADLESS
-  else if (backend->free == (void*) ctx_headless_free) return CTX_BACKEND_HEADLESS;
+  else if (backend->destroy == (void*) ctx_headless_destroy) return CTX_BACKEND_HEADLESS;
 #endif
 #if CTX_RASTERIZER
   else if (backend->process == (void*) ctx_hasher_process) return CTX_BACKEND_HASHER;
 #endif
 #if CTX_RASTERIZER
-  else if (backend->free == (void*) ctx_rasterizer_deinit) return CTX_BACKEND_RASTERIZER;
+  else if (backend->destroy == (void*) ctx_rasterizer_deinit) return CTX_BACKEND_RASTERIZER;
 #endif
 #if CTX_KMS
-  else if (backend->free == (void*) ctx_kms_free) return CTX_BACKEND_KMS;
+  else if (backend->destroy == (void*) ctx_kms_destroy) return CTX_BACKEND_KMS;
 #endif
 #if CTX_FB
-  else if (backend->free == (void*) ctx_fb_free) return CTX_BACKEND_FB;
+  else if (backend->destroy == (void*) ctx_fb_destroy) return CTX_BACKEND_FB;
 #endif
 #if CTX_SDL
-  else if (backend->free == (void*) ctx_sdl_free) return CTX_BACKEND_SDL;
+  else if (backend->destroy == (void*) ctx_sdl_destroy) return CTX_BACKEND_SDL;
 #endif
 #if CTX_CAIRO
-  else if (backend->free == (void*) ctx_cairo_free) return CTX_BACKEND_CAIRO;
+  else if (backend->destroy == (void*) ctx_cairo_destroy) return CTX_BACKEND_CAIRO;
 #endif
 #if CTX_TERMIMG
-  else if (backend->free == (void*) ctx_termimg_free) return CTX_BACKEND_TERMIMG;
+  else if (backend->destroy == (void*) ctx_termimg_destroy) return CTX_BACKEND_TERMIMG;
 #endif
   return CTX_BACKEND_NONE;
 }

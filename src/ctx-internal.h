@@ -524,7 +524,7 @@ ctx_process (Ctx *ctx, CtxEntry *entry)
 
 CtxBuffer *ctx_buffer_new (int width, int height,
                            CtxPixelFormat pixel_format);
-void ctx_buffer_free (CtxBuffer *buffer);
+void ctx_buffer_destroy (CtxBuffer *buffer);
 
 void
 ctx_state_gradient_clear_stops (CtxState *state);

@@ -1171,7 +1171,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   ctx_client_rev_inc (vt->client);
   VT_info ("resize %i %i", irows, icols);
   if (vt->ctxp)
-    ctx_parser_free (vt->ctxp);
+    ctx_parser_destroy (vt->ctxp);
   vt->ctxp = NULL;
 }
 
@@ -2331,7 +2331,7 @@ static void vt_ctx_exit (void *data)
     ((void**)vt->ctxp)[0]= vt->current_line->ctx;
 #endif
 
-  //ctx_parser_free (vt->ctxp);
+  //ctx_parser_destroy (vt->ctxp);
   //vt->ctxp = NULL;
 }
 #if 0
@@ -2556,7 +2556,7 @@ qagain:
 #endif
                   }
                 if (vt->ctxp)
-                  ctx_parser_free (vt->ctxp);
+                  ctx_parser_destroy (vt->ctxp);
 
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
@@ -5740,7 +5740,7 @@ void vt_destroy (VT *vt)
       ctx_list_remove (&vt->scrollback, vt->scrollback->data);
     }
   if (vt->ctxp)
-    ctx_parser_free (vt->ctxp);
+    ctx_parser_destroy (vt->ctxp);
   //if (vt->ctx)
   //  { ctx_destroy (vt->ctx); }
   free (vt->argument_buf);

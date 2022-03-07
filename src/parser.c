@@ -231,7 +231,7 @@ CtxParser *ctx_parser_new (
                            exit, exit_data);
 }
 
-void ctx_parser_free (CtxParser *parser)
+void ctx_parser_destroy (CtxParser *parser)
 {
 #if !CTX_PARSER_FIXED_TEMP
   if (parser->holding)
@@ -1974,7 +1974,7 @@ ctx_parse (Ctx *ctx, const char *string)
                                            0, 0, NULL, NULL, NULL, NULL, NULL);
   ctx_parser_feed_bytes (parser, string, ctx_strlen (string));
   ctx_parser_feed_bytes (parser, " ", 1);
-  ctx_parser_free (parser);
+  ctx_parser_destroy (parser);
 }
 
 CTX_EXPORT void

@@ -866,7 +866,7 @@ inline static void ctx_term_end_frame (Ctx *ctx)
 #endif
 }
 
-void ctx_term_free (CtxTerm *term)
+void ctx_term_destroy (CtxTerm *term)
 {
   while (term->lines)
   {
@@ -955,7 +955,7 @@ Ctx *ctx_new_term (int width, int height)
   ctx_set_backend (ctx, term);
   backend->process = ctx_term_process;
   backend->end_frame = ctx_term_end_frame;
-  backend->free    = (void(*)(void*))ctx_term_free;
+  backend->destroy = (void(*)(void*))ctx_term_destroy;
   backend->consume_events = ctx_nct_consume_events;
   backend->get_event_fds = (void*) ctx_stdin_get_event_fds;
   ctx_set_size (ctx, width, height);

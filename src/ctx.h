@@ -799,7 +799,6 @@ void  ctx_render_cairo  (Ctx *ctx, cairo_t *cr);
 Ctx * ctx_new_for_cairo (cairo_t *cr);
 #endif
 
-/* free with free() */
 char *ctx_render_string (Ctx *ctx, int longform, int *retlen);
 
 void ctx_render_stream  (Ctx *ctx, FILE *stream, int formatter);
@@ -2167,7 +2166,7 @@ struct _CtxBackend
   void  (*get_event_fds)   (Ctx *ctx, int *fd, int *count);
   char *(*get_clipboard)   (Ctx *ctx);
   void  (*set_clipboard)   (Ctx *ctx, const char *text);
-  void (*free)             (void *backend); /* the free pointers are abused as the differentiatior
+  void  (*destroy)         (void *backend); /* the free pointers are abused as the differentiatior
                                                between different backends   */
   void                     *user_data; // not used by ctx core
 };
@@ -2348,7 +2347,7 @@ ctx_get_contents2 (const char     *path,
                    long           *length,
                    long            max_len);
 
-void ctx_parser_free (CtxParser *parser);
+void ctx_parser_destroy (CtxParser *parser);
 typedef struct _CtxSHA1 CtxSHA1;
 
 void
