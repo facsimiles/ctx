@@ -166,6 +166,19 @@ window.dosave = function ()
   document.getElementById('file_list').value=target_path;
 }
 
+window.dounlink = function ()
+{
+  var target_path = window.current_path;
+  var response = prompt("really remove?", "no");
+
+  if (response == "yes")
+  {
+    FS.unlink(target_path);
+    document.getElementById('mp_js_stdout').innerText = 'removed file ' + target_path;
+    repopulate_file_picker();
+  }
+}
+
 
 window.windowToCanvas = function(canvas, x, y)
 {

@@ -16,6 +16,7 @@
                   image-rendering: -moz-crisp-edges;
          }
        div#mp_js_stdout { white-space:pre;
+                          font-family: monospace;
                           color:gray;
                           height:40vh;
                           overflow:scroll;
@@ -35,6 +36,7 @@
       <select id='file_list' onchange='editor_load(this.value)'></select>
       <button id='run' title='ctrl+return' onclick='dorun()'>run</button>
       <button id='save' title='ctrl+s' onclick='dosave()'>save</button>
+      <button id='save' title='ctrl+s' onclick='dounlink()'>remove file</button>
 
       <div class='led' id='led0'></div>
       <div class='led' id='led1'></div>

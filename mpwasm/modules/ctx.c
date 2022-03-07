@@ -521,8 +521,26 @@ mp_ctx_event_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
   if (set_val == MP_OBJ_NULL) {
     switch (attr)
     {
-      case MP_QSTR_x: return mp_obj_new_float(self->event.x);
-      case MP_QSTR_y: return mp_obj_new_float(self->event.y);
+      case MP_QSTR_x:         return mp_obj_new_float(self->event.x);
+      case MP_QSTR_y:         return mp_obj_new_float(self->event.y);
+      case MP_QSTR_device_x:  return mp_obj_new_float(self->event.device_x);
+      case MP_QSTR_device_y:  return mp_obj_new_float(self->event.device_y);
+      case MP_QSTR_start_x:   return mp_obj_new_float(self->event.start_x);
+      case MP_QSTR_start_y:   return mp_obj_new_float(self->event.start_y);
+      case MP_QSTR_prev_x:    return mp_obj_new_float(self->event.prev_x);
+      case MP_QSTR_prev_y:    return mp_obj_new_float(self->event.prev_y);
+      case MP_QSTR_delta_x:   return mp_obj_new_float(self->event.delta_x);
+      case MP_QSTR_delta_y:   return mp_obj_new_float(self->event.delta_y);
+      case MP_QSTR_device_no: return mp_obj_new_int(self->event.device_no);
+      case MP_QSTR_unicode:   return mp_obj_new_int(self->event.unicode);
+      case MP_QSTR_scroll_direction:  return mp_obj_new_int(self->event.scroll_direction);
+      case MP_QSTR_time:      return mp_obj_new_int(self->event.time);
+      case MP_QSTR_modifier_state:   return mp_obj_new_int(self->event.modifier_state);
+      case MP_QSTR_string:    if (self->event.string)
+                                 // gambling on validity
+                                 return mp_obj_new_string(self->event.string, strlen(self->event.string));
+                              else
+                                 return mp_obj_new_string("", 0);
     }
   }
   else
@@ -532,11 +550,25 @@ mp_ctx_event_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
   return self_in;
 }
 
-
 STATIC void mp_ctx_event_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
-    if(attr == MP_QSTR_x ||
-       attr == MP_QSTR_y)
+    if(attr == MP_QSTR_x
+     ||attr == MP_QSTR_y
+
+     ||attr == MP_QSTR_start_x
+     ||attr == MP_QSTR_start_y
+     ||attr == MP_QSTR_prev_x
+     ||attr == MP_QSTR_prev_y
+     ||attr == MP_QSTR_delta_x
+     ||attr == MP_QSTR_delta_y
+     ||attr == MP_QSTR_device_no
+     ||attr == MP_QSTR_unicode
+     ||attr == MP_QSTR_scroll_direction
+     ||attr == MP_QSTR_time
+     ||attr == MP_QSTR_modifier_state
+     ||attr == MP_QSTR_string
+     ||attr == MP_QSTR_device_x
+     ||attr == MP_QSTR_device_y)
     {
         if (dest[0] == MP_OBJ_NULL) {
             // load attribute
@@ -560,9 +592,22 @@ static const mp_rom_map_elem_t mp_ctx_event_locals_dict_table[] = {
         // Instance attributes
        { MP_ROM_QSTR(MP_QSTR_x), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_y), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_device_x), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_device_y), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_start_x), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_start_y), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_prev_x), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_prev_y), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_delta_x), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_delta_y), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_device_no), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_unicode), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_scroll_direction), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_time), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_modifier_state), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_string), MP_ROM_INT(0) },
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_event_locals_dict, mp_ctx_event_locals_dict_table);
-
 
 static mp_obj_t mp_ctx_event_make_new(
 	const mp_obj_type_t *type,
@@ -584,23 +629,24 @@ const mp_obj_type_t mp_ctx_event_type = {
         .attr = mp_ctx_event_attr
 };
 
-
 static void mp_ctx_listen_cb_handler (CtxEvent *event, void *data1, void*data2)
 {
-  //mp_obj_t x = mp_obj_new_float (event->x);
-  //mp_obj_t y = mp_obj_new_float (event->y);
-  //mp_obj_t tup_array[] = {x, y};
   mp_obj_t event_in = data2;
   mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
   mp_ctx_event->event = *event;
-  
-  //t->items[0] = mp_obj_new_float (event->x);
-  //t->items[1] = mp_obj_new_float (event->y);
   mp_sched_schedule (data1, MP_OBJ_FROM_PTR(event_in));
   //if (mp_obj_is_true (mp_call_function_1((data1), event_in)))
   //  event->stop_propagate = 1;
 }
 
+static void mp_ctx_listen_cb_handler_stop_propagate (CtxEvent *event, void *data1, void*data2)
+{
+  mp_obj_t event_in = data2;
+  mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
+  mp_ctx_event->event = *event;
+  mp_sched_schedule (data1, MP_OBJ_FROM_PTR(event_in));
+  event->stop_propagate = 1;
+}
 
 static mp_obj_t mp_ctx_listen (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t cb_in)
 {
@@ -608,21 +654,27 @@ static mp_obj_t mp_ctx_listen (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t c
   if (cb_in != mp_const_none &&
       !mp_obj_is_callable(cb_in))
           mp_raise_ValueError(MP_ERROR_TEXT("invalid handler"));
-  mp_obj_t x = mp_obj_new_float (23);
-  mp_obj_t y = mp_obj_new_float (42);
-  mp_obj_t tup_array[] = {x, y};
-  mp_obj_t tup = mp_obj_new_tuple (2, tup_array);
-
-  mp_obj_t event = mp_ctx_event_new ();
-
   ctx_listen (self->ctx,
               mp_obj_get_int(event_mask),
               mp_ctx_listen_cb_handler,
-              (cb_in), event);
-
+              (cb_in), mp_ctx_event_new ());
   return MP_OBJ_FROM_PTR(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_listen_obj, mp_ctx_listen);
+
+static mp_obj_t mp_ctx_listen_stop_propagate (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t cb_in)
+{
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
+  if (cb_in != mp_const_none &&
+      !mp_obj_is_callable(cb_in))
+          mp_raise_ValueError(MP_ERROR_TEXT("invalid handler"));
+  ctx_listen (self->ctx,
+              mp_obj_get_int(event_mask),
+              mp_ctx_listen_cb_handler_stop_propagate,
+              (cb_in), mp_ctx_event_new ());
+  return MP_OBJ_FROM_PTR(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_listen_stop_propagate_obj, mp_ctx_listen_stop_propagate);
 
 static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t path_in)
 {
@@ -895,7 +947,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
 	MP_CTX_METHOD(listen),
-
+	MP_CTX_METHOD(listen_stop_propagate),
 
         // Instance attributes
        { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_INT(0) },
@@ -910,8 +962,6 @@ const mp_obj_type_t mp_ctx_type = {
 	.locals_dict = (mp_obj_t)&mp_ctx_locals_dict,
         .attr = mp_ctx_attr
 };
-
-
 
 /* The globals table for this module */
 static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
