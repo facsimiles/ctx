@@ -211,6 +211,17 @@ MP_CTX_COMMON_FUN_1I(line_join);
 MP_CTX_COMMON_FUN_1I(compositing_mode);
 MP_CTX_COMMON_FUN_1I(image_smoothing);
 
+//MP_CTX_COMMON_FUN_3F(key_down);
+//MP_CTX_COMMON_FUN_3F(key_up);
+//MP_CTX_COMMON_FUN_3F(key_press);
+MP_CTX_COMMON_FUN_4F(scrolled);
+MP_CTX_COMMON_FUN_4F(pointer_motion);
+MP_CTX_COMMON_FUN_4F(pointer_release);
+MP_CTX_COMMON_FUN_4F(pointer_press);
+        // missing: incoming_message
+        //          pointer_drop
+
+
 static mp_obj_t mp_ctx_line_dash(mp_obj_t self_in, mp_obj_t dashes_in)
 {
 	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -535,12 +546,12 @@ mp_ctx_event_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
       case MP_QSTR_unicode:   return mp_obj_new_int(self->event.unicode);
       case MP_QSTR_scroll_direction:  return mp_obj_new_int(self->event.scroll_direction);
       case MP_QSTR_time:      return mp_obj_new_int(self->event.time);
-      case MP_QSTR_modifier_state:   return mp_obj_new_int(self->event.modifier_state);
+      case MP_QSTR_modifier_state:   return mp_obj_new_int(self->event.state);
       case MP_QSTR_string:    if (self->event.string)
                                  // gambling on validity
-                                 return mp_obj_new_string(self->event.string, strlen(self->event.string));
+                                 return mp_obj_new_str(self->event.string, strlen(self->event.string));
                               else
-                                 return mp_obj_new_string("", 0);
+                                 return mp_obj_new_str("", 0);
     }
   }
   else
@@ -948,6 +959,14 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(tinyvg_get_size),
 	MP_CTX_METHOD(listen),
 	MP_CTX_METHOD(listen_stop_propagate),
+
+        //MP_CTX_METHOD(key_down),
+        //MP_CTX_METHOD(key_up),
+        //MP_CTX_METHOD(key_press),
+        MP_CTX_METHOD(scrolled),
+        MP_CTX_METHOD(pointer_motion),
+        MP_CTX_METHOD(pointer_release),
+        MP_CTX_METHOD(pointer_press),
 
         // Instance attributes
        { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_INT(0) },
