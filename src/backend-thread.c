@@ -22,7 +22,7 @@ static void ctx_thread_end_frame (Ctx *ctx)
 
 void ctx_thread_free (CtxCtx *ctxthread)
 {
-  free (ctxthread);
+  ctx_free (ctxthread);
 }
 
 void ctx_thread_pcm (Ctx *ctx)
@@ -130,7 +130,7 @@ Ctx *ctx_new_thread (int width, int height)
 {
   float font_size = 12.0;
   Ctx    *ctx    = ctx_new ();
-  CtxThread  *thread = (CtxThread*)calloc (sizeof (CtxThread), 1);
+  CtxThread  *thread = (CtxThread*)ctx_calloc (sizeof (CtxThread), 1);
   CtxBackend *backend = (CtxBackend*)thread;
   if (width <= 0 || height <= 0)
   {

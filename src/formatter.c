@@ -25,13 +25,13 @@ static inline void ctx_formatter_addstrf (CtxFormatter *formatter, const char *f
    char *buffer;
    va_start (ap, format);
    needed = vsnprintf (NULL, 0, format, ap) + 1;
-   buffer = (char*) malloc (needed);
+   buffer = (char*) ctx_malloc (needed);
    va_end (ap);
    va_start (ap, format);
    vsnprintf (buffer, needed, format, ap);
    va_end (ap);
    ctx_formatter_addstr (formatter, buffer, -1);
-   free (buffer);
+   ctx_free (buffer);
 }
 #endif
 
@@ -417,24 +417,24 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
 static void
 ctx_print_a85 (CtxFormatter *formatter, uint8_t *data, int length)
 {
-  char *tmp = (char*)malloc (ctx_a85enc_len (length));
+  char *tmp = (char*)ctx_malloc (ctx_a85enc_len (length));
   ctx_a85enc (data, tmp, length);
   ctx_formatter_addstr (formatter, " ~", 2);
   ctx_formatter_addstr (formatter, tmp, -1);
   ctx_formatter_addstr (formatter, "~ ", 2);
-  free (tmp);
+  ctx_free (tmp);
 }
 
 static void
 ctx_print_yenc (CtxFormatter *formatter, uint8_t *data, int length)
 {
-  char *tmp = (char*)malloc (length * 2 + 2);// worst case scenario
+  char *tmp = (char*)ctx_malloc (length * 2 + 2);// worst case scenario
   int enclength = ctx_yenc ((char*)data, tmp, length);
   data[enclength]=0;
   ctx_formatter_addstr (formatter, " =", 2);
   ctx_formatter_addstr (formatter, tmp, enclength);
   ctx_formatter_addstr (formatter, "=y ", 2);
-  free (tmp);
+  ctx_free (tmp);
 }
 
 static void

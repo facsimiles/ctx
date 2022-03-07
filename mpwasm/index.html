@@ -34,6 +34,11 @@
   <body>
     <div id='toolbar'>
       <select id='file_list' onchange='editor_load(this.value)'></select>
+      <select id='heap' onchange='heap_set(this.value)'>
+              <option value='64' selected>64kb</option>
+              <option value='128' selected>128kb</option>
+              <option value='192' selected>192kb</option>
+      </select>
       <button id='run' title='ctrl+return' onclick='dorun()'>run</button>
       <button id='save' title='ctrl+s' onclick='dosave()'>save</button>
       <button id='save' title='ctrl+s' onclick='dounlink()'>remove file</button>

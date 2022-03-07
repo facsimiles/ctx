@@ -1840,13 +1840,13 @@ static inline CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, ui
         rasterizer->shape_cache.entries[entry_no] = NULL;
         rasterizer->shape_cache.size -= entry->width * entry->height;
         rasterizer->shape_cache.size -= sizeof (CtxShapeEntry);
-        free (entry);
+        ctx_free (entry);
         entry = NULL;
       }
     }
 
   if (!entry)
-    entry = rasterizer->shape_cache.entries[entry_no] = (CtxShapeEntry *) calloc (size, 1);
+    entry = rasterizer->shape_cache.entries[entry_no] = (CtxShapeEntry *) ctx_calloc (size, 1);
 
   rasterizer->shape_cache.size += size;
 
@@ -3646,7 +3646,7 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
 #endif
       }
   }
-  //free (kernel);
+  //ctx_free (kernel);
   ctx_rasterizer_process (ctx, (CtxCommand*)&restore_command);
 }
 
@@ -4200,11 +4200,11 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
   for (int i = 0; i < CTX_SHAPE_CACHE_ENTRIES; i ++)
     if (rasterizer->shape_cache.entries[i])
     {
-      free (rasterizer->shape_cache.entries[i]);
+      ctx_free (rasterizer->shape_cache.entries[i]);
       rasterizer->shape_cache.entries[i] = NULL;
     }
 #endif
-  free (rasterizer);
+  ctx_free (rasterizer);
 }
 
 CtxAntialias ctx_get_antialias (Ctx *ctx)
@@ -4330,7 +4330,7 @@ ctx_new_for_buffer (CtxBuffer *buffer)
 {
   Ctx *ctx = _ctx_new_drawlist (buffer->width, buffer->height);
   ctx_set_backend (ctx,
-                    ctx_rasterizer_init ( (CtxRasterizer *) malloc (sizeof (CtxRasterizer) ),
+                    ctx_rasterizer_init ( (CtxRasterizer *) ctx_malloc (sizeof (CtxRasterizer) ),
                                           ctx, NULL, &ctx->state,
                                           buffer->data, 0, 0, buffer->width, buffer->height,
                                           buffer->stride, buffer->format->pixel_format,
@@ -4361,8 +4361,8 @@ ctx_new_for_framebuffer (void *data, int width, int height,
 CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int height,
                                    int stride, CtxPixelFormat pixel_format)
 {
-  CtxState    *state    = (CtxState *) malloc (sizeof (CtxState) );
-  CtxRasterizer *rasterizer = (CtxRasterizer *) malloc (sizeof (CtxBackend) );
+  CtxState    *state    = (CtxState *) ctx_malloc (sizeof (CtxState) );
+  CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_malloc (sizeof (CtxBackend) );
   ctx_rasterizer_init (rasterizer, state, data, x, y, width, height,
                        stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
 }

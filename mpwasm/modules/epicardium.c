@@ -11,12 +11,15 @@
 #include <string.h>
 #include "emscripten.h"
 
-Ctx *ctx_wasm_get_context(int flags);
-
 #include "py/obj.h"
 #include "py/runtime.h"
 
-Ctx *ctx_wasm_get_context(int flags);
+static Ctx *wasm_ctx = NULL;
+
+void epic_set_ctx (Ctx *ctx)
+{
+  wasm_ctx = ctx;
+}
 
 static inline void
 rgb565_to_rgb888(uint16_t pixel, uint8_t *red, uint8_t *green, uint8_t *blue)
@@ -192,6 +195,7 @@ uint32_t epic_buttons = 0;
 void mp_idle (int ms); 
 uint8_t epic_buttons_read (uint8_t mask)
 {
+  //emscripten_sleep(0);
   mp_idle (0); // 1 means no gc
   return epic_buttons & mask;
 }
@@ -209,7 +213,7 @@ int epic_disp_print_adv(
         uint16_t fg,
         uint16_t bg
 ) {
-        Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+        Ctx *ctx = wasm_ctx;
         uint8_t r, g, b;
         //int cl = check_lock();
         //if (cl < 0) {
@@ -301,7 +305,7 @@ void key_up_cb (CtxEvent *e, void *data1, void *data2)
 
 int epic_disp_open (void)
 {
-  Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+  Ctx *ctx = wasm_ctx;
   ctx_start_frame (ctx);
   ctx_clear_bindings (ctx);
   ctx_listen (ctx, CTX_KEY_DOWN,
@@ -317,14 +321,14 @@ int epic_disp_open (void)
 
 int epic_disp_update (void)
 {
-  Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+  Ctx *ctx = wasm_ctx;
   ctx_end_frame (ctx);
   return 0;
 }
 
 int epic_disp_clear (uint16_t color)
 {
-  Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+  Ctx *ctx = wasm_ctx;
   uint8_t r, g, b;
   rgb565_to_rgb888(color, &r, &g, &b);
   ctx_rgba8 (ctx, r, g, b, 255);
@@ -334,7 +338,7 @@ int epic_disp_clear (uint16_t color)
 
 int epic_disp_circ (int16_t x, int16_t y, uint16_t rad, uint16_t color, enum disp_fillstyle fs, uint16_t ps)
 {
-   Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+   Ctx *ctx = wasm_ctx;
    uint8_t r, g, b;
    rgb565_to_rgb888(color, &r, &g, &b);
 
@@ -357,7 +361,7 @@ int epic_disp_circ (int16_t x, int16_t y, uint16_t rad, uint16_t color, enum dis
 
 int epic_disp_rect (int16_t xs, int16_t ys, int16_t xe, int16_t ye, uint16_t col, enum disp_fillstyle fillstyle, uint16_t ps)
 {
-   Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+   Ctx *ctx = wasm_ctx;
    uint8_t r, g, b;
    rgb565_to_rgb888(col, &r, &g, &b);
    ctx_rectangle (ctx, xs, ys, xe-xs+1, ye-ys+1);
@@ -376,7 +380,7 @@ int epic_disp_rect (int16_t xs, int16_t ys, int16_t xe, int16_t ye, uint16_t col
 
 int epic_disp_line (int16_t xs, int16_t ys, int16_t xe, int16_t ye, uint16_t col, enum disp_linestyle ls, uint16_t pixelsize)
 {
-   Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+   Ctx *ctx = wasm_ctx;
    uint8_t r, g, b;
    rgb565_to_rgb888(col, &r, &g, &b);
    ctx_rgba8 (ctx, r, g, b, 255);

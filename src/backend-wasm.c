@@ -4,7 +4,6 @@
 
 #include <unistd.h>
 
-
 int width = 512;
 int height = 384;
 
@@ -16,13 +15,14 @@ get_fb(int w, int h) {
   if (fb)
   {
     if (width == w && height == h) return fb;
-    free (fb);
+    free (fb); // this is not using the ctx allocator
+               // and will thus not be part of the micropython heap budget
     fb = NULL;
   }
   width  = w;
   height = h;
   fb = calloc (w *h, 4);
-  if (em_ctx) free (em_ctx);
+  if (em_ctx) ctx_destroy (em_ctx);
   em_ctx = NULL;
   return fb;
 }
@@ -66,11 +66,12 @@ void  update_fb (Ctx *ctx, void *user_data)
       }
     }
 
+    if(1)
     for (let i = 0; i < canvas.width * canvas.height;i++)
     {
       var a = linearMem[i*4+3];
       var r = 1.0;
-      // if (a!=0) r = 255.0/a;
+      if (a!=0) r = 255.0/a;
       imgData.data[i*4+0] = linearMem[i*4+0] * r;
       imgData.data[i*4+1] = linearMem[i*4+1] * r;
       imgData.data[i*4+2] = linearMem[i*4+2] * r;
@@ -79,37 +80,39 @@ void  update_fb (Ctx *ctx, void *user_data)
     context.putImageData(imgData,0,0);
 
 
-     if (!canvas.regevents)
+     //if (!canvas.regevents)
      {
 
-       canvas.addEventListener('mousedown', function (e){
+       canvas.onmousedown = function (e){
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
           _ctx_pointer_press (_ctx, loc.x, loc.y, 0, 0);
-                       }
-       );
-       canvas.addEventListener('mouseup', function (e){
+          e.stopPropagate=1;
+                       };
+       canvas.onmouseup = function (e){
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
           _ctx_pointer_release (_ctx, loc.x, loc.y, 0, 0);
-                       });
-       canvas.addEventListener('mousemove', function (e){
+          e.stopPropagate=1;
+                       };
+       canvas.onmousemove = function (e){
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
           _ctx_pointer_motion (_ctx, loc.x, loc.y, 0, 0);
-                       });
-       canvas.addEventListener('keydown', function (e){
+          e.stopPropagate=1;
+                       };
+       canvas.onkeydown = function (e){
                        _ctx_key_down(_ctx,e.keyCode,0,0);
                        _ctx_key_press(_ctx,e.keyCode,0,0);
                        // XXX : todo, pass some tings like ctrl+l and ctrl+r
                        //       through?
                        e.preventDefault();
                        e.stopPropagate = 1;
-                       });
+                       };
 
-       canvas.addEventListener('keyup', function (e){
+       canvas.onkeyup = function (e){
                        _ctx_key_up(_ctx,e.keyCode,0,0);
                        e.preventDefault();
                        e.stopPropagate = 1;
-                       });
-       canvas.regevents = true;
+                       };
+       //canvas.regevents = true;
      }
 
 
@@ -147,6 +150,12 @@ void wasm_set_damage_control(int val)
   wasm_damage_control = val;
 }
 
+
+Ctx *ctx_wasm_reset (void)
+{
+  if (fb) free (fb); fb = NULL;
+  em_ctx = NULL;
+}
 
 Ctx *ctx_wasm_get_context (int flags)
 {

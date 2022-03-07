@@ -327,11 +327,11 @@ void ctx_fb_free (CtxFb *fb)
 #endif
   munmap (tiled->fb, fb->fb_mapped_size);
   if (!ctx_fb_single_buffer)
-    free (tiled->pixels);
+    ctx_free (tiled->pixels);
   close (fb->fb_fd);
   if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
-  //free (fb);
+  //ctx_free (fb);
   ctx_babl_exit ();
 }
 
@@ -376,7 +376,7 @@ Ctx *ctx_new_fb (int width, int height)
 #if CTX_RASTERIZER
   if (getenv ("CTX_FB_SINGLE_BUFFER"))
     ctx_fb_single_buffer = atoi (getenv ("CTX_FB_SINGLE_BUFFER"));
-  CtxFb *fb = calloc (sizeof (CtxFb), 1);
+  CtxFb *fb = ctx_calloc (sizeof (CtxFb), 1);
   CtxTiled *tiled = (void*)fb;
   CtxBackend *backend = (void*)fb;
   ctx_fb = fb;
@@ -392,19 +392,19 @@ Ctx *ctx_new_fb (int width, int height)
 #endif
   fb->fb_fd = open (dev_path, O_RDWR);
   if (fb->fb_fd > 0)
-    fb->fb_path = strdup (dev_path);
+    fb->fb_path = ctx_strdup (dev_path);
   else
   {
 #ifdef __linux__
     fb->fb_fd = open ("/dev/graphics/fb0", O_RDWR);
     if (fb->fb_fd > 0)
     {
-      fb->fb_path = strdup ("/dev/graphics/fb0");
+      fb->fb_path = ctx_strdup ("/dev/graphics/fb0");
     }
     else
 #endif
     {
-      free (fb);
+      ctx_free (fb);
       return NULL;
     }
   }
@@ -414,8 +414,8 @@ Ctx *ctx_new_fb (int width, int height)
     {
       fprintf (stderr, "error getting fbinfo\n");
       close (fb->fb_fd);
-      free (fb->fb_path);
-      free (fb);
+      ctx_free (fb->fb_path);
+      ctx_free (fb);
       return NULL;
     }
 
@@ -423,8 +423,8 @@ Ctx *ctx_new_fb (int width, int height)
      {
        fprintf (stderr, "error getting fbinfo\n");
       close (fb->fb_fd);
-      free (fb->fb_path);
-      free (fb);
+      ctx_free (fb->fb_path);
+      ctx_free (fb);
       return NULL;
      }
   ioctl (0, KDSETMODE, KD_GRAPHICS);
@@ -522,7 +522,7 @@ Ctx *ctx_new_fb (int width, int height)
   if (ctx_fb_single_buffer)
     tiled->pixels = tiled->fb;
   else
-    tiled->pixels = calloc (fb->fb_mapped_size, 1);
+    tiled->pixels = ctx_calloc (fb->fb_mapped_size, 1);
   tiled->show_frame = (void*)ctx_fb_show_frame;
 
   ctx_babl_init ();

@@ -40,7 +40,7 @@ ctx_bin2base64 (const void *bin,
   /* this allocation is a hack to ensure we always produce the same result,
    * regardless of padding data accidentally taken into account.
    */
-  unsigned char *bin2 = (unsigned char*)calloc (bin_length + 4, 1);
+  unsigned char *bin2 = (unsigned char*)ctx_calloc (bin_length + 4, 1);
   unsigned const char *p = bin2;
   int i;
   memcpy (bin2, bin, bin_length);
@@ -49,7 +49,7 @@ ctx_bin2base64 (const void *bin,
      int remaining = bin_length - i*3;
      bin2base64_group (&p[i*3], remaining, &ascii[i*4]);
    }
-  free (bin2);
+  ctx_free (bin2);
   ascii[i*4]=0;
 }
 

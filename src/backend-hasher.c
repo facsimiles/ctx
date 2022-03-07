@@ -96,7 +96,7 @@ static inline void murmur3_32_init (CtxMurmur *murmur)
 }
 static inline void murmur3_32_free (CtxMurmur *murmur)
 {
-  free (murmur);
+  ctx_free (murmur);
 }
 static inline uint32_t murmur3_32_finalize (CtxMurmur *murmur)
 {

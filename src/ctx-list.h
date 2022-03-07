@@ -1,23 +1,34 @@
 #ifndef __CTX_LIST__
 #define __CTX_LIST__
 
-#if !__COSMOPOLITAN__
 #include <stdlib.h>
+
+#ifndef CTX_EXTERNAL_MALLOC
+static inline void *ctx_realloc (void *mem, size_t size)
+{
+  return (void*)realloc (mem, size);
+}
+
+static inline void *ctx_malloc (size_t size)
+{
+  return (void*)malloc (size);
+}
+
+static inline void ctx_free (void *mem)
+{
+  free (mem);
+}
+
+static inline void *ctx_calloc (size_t size, size_t count)
+{
+  return calloc (size, count);
+}
+
 #endif
 
 /* The whole ctx_list implementation is in the header and will be inlined
  * wherever it is used.
  */
-
-static inline void *ctx_calloc (size_t size, size_t count)
-{
-  size_t byte_size = size * count;
-  char *ret = (char*)malloc (byte_size);
-  for (size_t i = 0; i < byte_size; i++)
-     ret[i] = 0;
-  return ret;
-}
-
 struct _CtxList {
   void *data;
   CtxList *next;
@@ -126,7 +137,7 @@ static inline void ctx_list_remove (CtxList **list, void *data)
       if ((*list)->freefunc)
         (*list)->freefunc ((*list)->data, (*list)->freefunc_data);
       prev = (*list)->next;
-      free (*list);
+      ctx_free (*list);
       *list = prev;
       return;
     }
@@ -136,7 +147,7 @@ static inline void ctx_list_remove (CtxList **list, void *data)
         if (iter->freefunc)
           iter->freefunc (iter->data, iter->freefunc_data);
         prev->next = iter->next;
-        free (iter);
+        ctx_free (iter);
         break;
       }
     else

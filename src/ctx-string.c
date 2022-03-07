@@ -19,7 +19,7 @@ static void ctx_string_init (CtxString *string, int initial_size)
   string->allocated_length = initial_size;
   string->length = 0;
   string->utf8_length = 0;
-  string->str = (char*)malloc (string->allocated_length + 1);
+  string->str = (char*)ctx_malloc (string->allocated_length + 1);
   string->str[0]='\0';
 }
 
@@ -27,7 +27,7 @@ static void ctx_string_destroy (CtxString *string)
 {
   if (string->str)
     {
-      free (string->str);
+      ctx_free (string->str);
       string->str = NULL;
     }
 }
@@ -44,7 +44,7 @@ void ctx_string_pre_alloc (CtxString *string, int size)
 {
   char *old = string->str;
   string->allocated_length = CTX_MAX (size + 2, string->length + 2);
-  string->str = (char*)realloc (old, string->allocated_length);
+  string->str = (char*)ctx_realloc (old, string->allocated_length);
 }
 
 
@@ -56,7 +56,7 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
     {
       char *old = string->str;
       string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
-      string->str = (char*)realloc (old, string->allocated_length);
+      string->str = (char*)ctx_realloc (old, string->allocated_length);
     }
   string->str[string->length++] = val;
   string->str[string->length] = '\0';
@@ -164,14 +164,14 @@ ctx_string_free (CtxString *string, int freealloc)
   {
     VtLine *line = (VtLine*)string;
     if (line->style)
-      { free (line->style); }
+      { ctx_free (line->style); }
     if (line->ctx)
       { ctx_destroy (line->ctx); }
     if (line->ctx_copy)
       { ctx_destroy (line->ctx_copy); }
   }
 #endif
-  free (string);
+  ctx_free (string);
 }
 
 char       *ctx_string_dissolve       (CtxString *string)
@@ -226,7 +226,7 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
       strcpy (tmp, string->str);
       defer = string->str;
       string->str = tmp;
-      free (defer);
+      ctx_free (defer);
     }
   char *p = (char *) ctx_utf8_skip (string->str, pos);
   int prev_len = ctx_utf8_len (*p);
@@ -246,7 +246,7 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
   memcpy (p + new_len, rest, ctx_strlen (rest) + 1);
   string->length += new_len;
   string->length -= prev_len;
-  free (rest);
+  ctx_free (rest);
   //string->length = ctx_strlen (string->str);
   //string->utf8_length = ctx_utf8_strlen (string->str);
 }
@@ -297,7 +297,7 @@ void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
       strcpy (tmp, string->str);
       defer = string->str;
       string->str = tmp;
-      free (defer);
+      ctx_free (defer);
     }
   char *p = (char *) ctx_utf8_skip (string->str, pos);
   int prev_len = ctx_utf8_len (*p);
@@ -312,7 +312,7 @@ void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
     }
   memcpy (p, new_glyph, new_len);
   memcpy (p + new_len, rest, ctx_strlen (rest) + 1);
-  free (rest);
+  ctx_free (rest);
   string->length = ctx_strlen (string->str);
   string->utf8_length = ctx_utf8_strlen (string->str);
 }
@@ -353,7 +353,7 @@ void ctx_string_remove (CtxString *string, int pos)
     }
   strcpy (p, rest);
   string->str[string->length - prev_len] = 0;
-  free (rest);
+  ctx_free (rest);
   string->length = ctx_strlen (string->str);
   string->utf8_length = ctx_utf8_strlen (string->str);
 }
@@ -365,7 +365,7 @@ char *ctx_strdup_printf (const char *format, ...)
   char *buffer;
   va_start (ap, format);
   needed = vsnprintf (NULL, 0, format, ap) + 1;
-  buffer = (char*)malloc (needed);
+  buffer = (char*)ctx_malloc (needed);
   va_end (ap);
   va_start (ap, format);
   vsnprintf (buffer, needed, format, ap);
@@ -380,13 +380,13 @@ void ctx_string_append_printf (CtxString *string, const char *format, ...)
   char *buffer;
   va_start (ap, format);
   needed = vsnprintf (NULL, 0, format, ap) + 1;
-  buffer = (char*)malloc (needed);
+  buffer = (char*)ctx_malloc (needed);
   va_end (ap);
   va_start (ap, format);
   vsnprintf (buffer, needed, format, ap);
   va_end (ap);
   ctx_string_append_str (string, buffer);
-  free (buffer);
+  ctx_free (buffer);
 }
 
 CtxString *ctx_string_new_printf (const char *format, ...)
@@ -397,12 +397,12 @@ CtxString *ctx_string_new_printf (const char *format, ...)
   char *buffer;
   va_start (ap, format);
   needed = vsnprintf (NULL, 0, format, ap) + 1;
-  buffer = (char*)malloc (needed);
+  buffer = (char*)ctx_malloc (needed);
   va_end (ap);
   va_start (ap, format);
   vsnprintf (buffer, needed, format, ap);
   va_end (ap);
   ctx_string_append_str (string, buffer);
-  free (buffer);
+  ctx_free (buffer);
   return string;
 }

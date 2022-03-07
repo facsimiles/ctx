@@ -449,8 +449,8 @@ void ctx_sdl_consume_events (Ctx *ctx)
           SDL_DestroyTexture (sdl->texture);
           sdl->texture = SDL_CreateTexture (sdl->backend, SDL_PIXELFORMAT_ABGR8888,
                           SDL_TEXTUREACCESS_STREAMING, width, height);
-          free (tiled->pixels);
-          tiled->pixels = calloc (4, width * height);
+          ctx_free (tiled->pixels);
+          tiled->pixels = ctx_calloc (4, width * height);
 
           tiled->width  = width;
           tiled->height = height;
@@ -524,7 +524,7 @@ Ctx *ctx_new_sdl (int width, int height)
 {
 #if CTX_RASTERIZER
 
-  CtxSDL *sdl = (CtxSDL*)calloc (sizeof (CtxSDL), 1);
+  CtxSDL *sdl = (CtxSDL*)ctx_calloc (sizeof (CtxSDL), 1);
   CtxTiled *tiled = (void*)sdl;
   CtxBackend *backend = (CtxBackend*)sdl;
 
@@ -540,7 +540,7 @@ Ctx *ctx_new_sdl (int width, int height)
   if (!sdl->backend)
   {
      ctx_destroy (backend->ctx);
-     free (sdl);
+     ctx_free (sdl);
      return NULL;
   }
   ctx_babl_init ();
@@ -568,7 +568,7 @@ Ctx *ctx_new_sdl (int width, int height)
   ctx_set_backend (tiled->ctx_copy, sdl);
   ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
-  tiled->pixels = (uint8_t*)malloc (width * height * 4);
+  tiled->pixels = (uint8_t*)ctx_malloc (width * height * 4);
   tiled->show_frame = (void*)ctx_sdl_show_frame;
 
 

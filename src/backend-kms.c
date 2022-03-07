@@ -429,7 +429,7 @@ void ctx_kms_free (CtxKMS *fb)
 #endif
   if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
-  //free (fb);
+  //ctx_free (fb);
   ctx_babl_exit ();
 }
 
@@ -488,7 +488,7 @@ static int ctx_kms_get_mice_fd (Ctx *ctx)
 Ctx *ctx_new_kms (int width, int height)
 {
 #if CTX_RASTERIZER
-  CtxKMS *fb = calloc (sizeof (CtxKMS), 1);
+  CtxKMS *fb = ctx_calloc (sizeof (CtxKMS), 1);
   CtxBackend *backend = (CtxBackend*)fb;
 
   CtxTiled *tiled = (void*)fb;
@@ -509,7 +509,7 @@ Ctx *ctx_new_kms (int width, int height)
   }
   if (!tiled->fb)
     return NULL;
-  tiled->pixels = calloc (fb->fb_mapped_size, 1);
+  tiled->pixels = ctx_calloc (fb->fb_mapped_size, 1);
 
   ctx_babl_init ();
 

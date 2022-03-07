@@ -85,9 +85,7 @@ var mainProgram = function()
   FS.rmdir("/tmp")
 
   repopulate_file_picker()
-  console.log(paths)
 
-  //console.log(FS.readdir("/"))
   mp_js_init = Module.cwrap('mp_js_init', 'null', ['number']);
   mp_js_do_str = Module.cwrap('mp_js_do_str', 'number', ['string'], {async:true});
   mp_js_init_repl = Module.cwrap('mp_js_init_repl', 'null', ['null']);
@@ -134,6 +132,7 @@ var mainProgram = function()
   }
 
 window.running = 0;
+window.heap = 64;
 
 window.dorun = function ()
 {
@@ -146,7 +145,6 @@ window.dorun = function ()
   setTimeout(function(){
 
   document.getElementById('mp_js_stdout').innerText = '';
-  //mp_js_init(64 * 1024);
   mp_js_do_str(editor.getValue());
   }, 500);
 }

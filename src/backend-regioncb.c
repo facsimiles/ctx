@@ -41,7 +41,7 @@ static void ctx_render_tft (Ctx *ctx,
   }
  
   if (!backend_tft->fb)
-    backend_tft->fb = (uint16_t*)malloc (memory_budget);
+    backend_tft->fb = (uint16_t*)ctx_malloc (memory_budget);
   fb = backend_tft->fb;
 
   if (flags & CTX_TFT_332)
@@ -147,7 +147,7 @@ static void ctx_render_tft (Ctx *ctx,
   }
   if (flags & CTX_TFT_CYCLE_BUF)
   {
-    free (fb);
+    ctx_free (fb);
     backend_tft->fb = NULL;
   }
 }
@@ -212,7 +212,7 @@ ctx_tft_end_frame (Ctx *ctx)
             tft_backend->min_row = ctx_mini (tft_backend->min_row, row);
           }
         }
-      free (((CtxHasher*)(hasher->backend))->hashes);
+      ctx_free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_destroy (hasher);
 
 
@@ -261,7 +261,7 @@ ctx_tft_end_frame (Ctx *ctx)
 Ctx *ctx_new_tft (TFT_eSPI *tft, int flags)
 {
   Ctx *ctx = ctx_new_drawlist (tft->width(), tft->height());
-  CtxBackend *backend = (CtxBackend*)calloc (sizeof (CtxTftBackend), 1);
+  CtxBackend *backend = (CtxBackend*)ctx_calloc (sizeof (CtxTftBackend), 1);
   CtxTftBackend *tft_backend = (CtxTftBackend*)backend;
   tft_backend->tft = tft;
   tft_backend->flags = flags;

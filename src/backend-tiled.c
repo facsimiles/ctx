@@ -27,7 +27,7 @@ void ctx_tiled_free (CtxTiled *tiled)
 
   if (tiled->pixels)
   {
-    free (tiled->pixels);
+    ctx_free (tiled->pixels);
     tiled->pixels = NULL;
     for (int i = 0 ; i < _ctx_max_threads; i++)
     {
@@ -76,7 +76,7 @@ static void ctx_tiled_end_frame (Ctx *ctx)
         }
       }
 
-      free (((CtxHasher*)(hasher->backend))->hashes);
+      ctx_free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_destroy (hasher);
     }
     else

@@ -13,6 +13,7 @@
 # and down is select.
 
 import ctx
+import micropython
 
 maxframe = 100.0  # adjust this to change
                   # the number of frames for each demo loop
@@ -37,7 +38,6 @@ def draw_tvg(o, path, x, y, tdim):
   o.restore()
 
 def press_cb (e):
-  print(e)
   global pressed
   pressed = True
   
@@ -117,52 +117,52 @@ for frame in range(0,maxframe):
   zoom_text(o, "tinyvg")  
   o.end_frame()
 
+#for frame in range(0,maxframe):
+#  o.start_frame()
+#  o.color([0.0,0.0,0.0]).paint()
+#  draw_tvg(o, "tiger.tvg", o.width/2, o.height/2, linear(o.height/2,o.height))
+#  o.end_frame()
+
+#import image
+def test_texture(o):
+  w, h, img = image.load("world-s.png")
   
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0.0,0.0,0.0]).paint()
-  draw_tvg(o, "tiger.tvg", o.width/2, o.height/2, linear(o.height/2,o.height))
-  o.end_frame()
+  for frame in range(0,maxframe):
+    o.start_frame()
+    o.color([0.0,0.0,0.0]).paint()
+    o.save()
+    o.translate(o.width/2,o.height/2)
+    o.scale(linear(2.0, 1.2), linear(2.0, 1.2))
+    o.rotate(linear(-0.2,0.00))
+    o.translate(-w/2,-h/2)
   
-import image
-w, h, img = image.load("world.png")
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0.0,0.0,0.0]).paint()
-  o.save()
-  o.translate(o.width/2,o.height/2)
-  o.scale(linear(2.0, 1.2), linear(2.0, 1.2))
-  o.rotate(linear(-0.2,0.00))
-  o.translate(-w/2,-h/2)
-
-  o.texture(img, o.RGBA8, w, h, w*4).paint()
-  o.restore()
-  zoom_text(o, "stb_image")
-  o.end_frame()
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0.0,0.0,0.0]).paint()
-  o.logo(o.width/2,o.height/2, o.height*4)
-  o.save()
-  o.save()
-  o.rotate(linear(0.0,0.4))
-  o.rectangle(o.width * 0.2, o.height * 0.2,
-              o.width * 0.9, o.height * 0.8);
-  o.restore();
-  o.clip();
-  o.translate(o.width/2,o.height/2)
-  o.scale(linear(2.0, 1.2), linear(2.0, 1.2))
-  o.rotate(linear(-0.2,0.00))
-  o.translate(-w/2,-h/2)
-
-  o.texture(img, o.RGBA8, w, h, w*4).paint()
-  o.restore()
-  zoom_text(o, "clipping")
-  o.restore()
-  o.end_frame()
+    o.texture(img, o.RGBA8, w, h, w*4).paint()
+    o.restore()
+    zoom_text(o, "stb_image")
+    o.end_frame()
   
+  for frame in range(0,maxframe):
+    o.start_frame()
+    o.color([0.0,0.0,0.0]).paint()
+    o.logo(o.width/2,o.height/2, o.height*4)
+    o.save()
+    o.save()
+    o.rotate(linear(0.0,0.4))
+    o.rectangle(o.width * 0.2, o.height * 0.2,
+                o.width * 0.9, o.height * 0.8);
+    o.restore();
+    o.clip();
+    o.translate(o.width/2,o.height/2)
+    o.scale(linear(2.0, 1.2), linear(2.0, 1.2))
+    o.rotate(linear(-0.2,0.00))
+    o.translate(-w/2,-h/2)
+  
+    o.texture(img, o.RGBA8, w, h, w*4).paint()
+    o.restore()
+    zoom_text(o, "clipping")
+    o.restore()
+    o.end_frame()
+#test_texture(o)
   
 for frame in range(0,maxframe):
   o.start_frame()

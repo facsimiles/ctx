@@ -240,12 +240,12 @@ void ctx_screenshot (Ctx *ctx, const char *output_path)
 #ifdef INCLUDE_STB_IMAGE_WRITE_H
   uint32_t width = ctx_width (ctx);
   uint32_t height = ctx_height (ctx);
-  uint8_t *buf = malloc (width * height * 4);
+  uint8_t *buf = ctx_malloc (width * height * 4);
   ctx_get_image_data (ctx, 0, 0, width, height,
                       CTX_FORMAT_RGBA8, width *4,
                       buf);
   stbi_write_png (output_path, width, height, 4, buf, width * 4);
-  free (buf);
+  ctx_free (buf);
 #endif
 }
 
@@ -303,8 +303,8 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
     //FILE  *f  = fopen ("/tmp/l", "a");
     //fprintf (f, "%i client removing %s\n", getpid(), eid_info->eid);
     //fclose (f);
-    free (eid_info->eid);
-    free (eid_info);
+    ctx_free (eid_info->eid);
+    ctx_free (eid_info);
     ctx_list_remove (&ctx->eid_db, eid_info);
     ctx_list_remove (&to_remove, eid_info);
   }
@@ -431,7 +431,7 @@ void ctx_define_texture (Ctx *ctx,
     int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
     if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
     {
-       commands = (CtxEntry*)calloc (sizeof (CtxEntry), command_size);
+       commands = (CtxEntry*)ctx_calloc (sizeof (CtxEntry), command_size);
     }
     else
     {
@@ -478,14 +478,14 @@ void ctx_define_texture (Ctx *ctx,
     if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
     {
       ctx_process (ctx, commands);
-      free (commands);
+      ctx_free (commands);
     }
     else
     {
        ctx->drawlist.count += ctx_conts_for_entry (commands) + 1;
     }
 
-    CtxEidInfo *eid_info = (CtxEidInfo*)calloc (sizeof (CtxEidInfo), 1);
+    CtxEidInfo *eid_info = (CtxEidInfo*)ctx_calloc (sizeof (CtxEidInfo), 1);
     eid_info->width      = width;
     eid_info->height     = height;
     eid_info->frame      = ctx->texture_cache->frame;
@@ -550,7 +550,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     if (data)
     {
        pixels = stbi_load_from_memory (data, length, &w, &h, &components, 0);
-       free (data);
+       ctx_free (data);
     }
   }
 
@@ -566,7 +566,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     if (tw) *tw = w;
     if (th) *th = h;
     ctx_define_texture (ctx, eid, w, h, w * components, pixel_format, pixels, reid);
-    free (pixels);
+    ctx_free (pixels);
   }
   else
   {
@@ -715,7 +715,7 @@ void _ctx_set_store_clear (Ctx *ctx)
 static void
 ctx_event_free (void *event, void *user_data)
 {
-  free (event);
+  ctx_free (event);
 }
 
 static void
@@ -725,7 +725,7 @@ ctx_collect_events (CtxEvent *event, void *data, void *data2)
   CtxEvent *copy;
   if (event->type == CTX_KEY_PRESS && !ctx_strcmp (event->string, "idle"))
     return;
-  copy = (CtxEvent*)malloc (sizeof (CtxEvent));
+  copy = (CtxEvent*)ctx_malloc (sizeof (CtxEvent));
   *copy = *event;
   if (copy->string)
     copy->string = ctx_strdup (event->string);
@@ -1935,7 +1935,7 @@ _ctx_new_drawlist (int width, int height)
 #if CTX_DRAWLIST_STATIC
   Ctx *ctx = &ctx_state;
 #else
-  Ctx *ctx = (Ctx *) malloc (sizeof (Ctx) );
+  Ctx *ctx = (Ctx *) ctx_malloc (sizeof (Ctx) );
 #endif
   ctx_memset (ctx, 0, sizeof (Ctx) );
   _ctx_init (ctx);
@@ -1972,7 +1972,7 @@ ctx_drawlist_deinit (CtxDrawlist *drawlist)
 #if !CTX_DRAWLIST_STATIC
   if (drawlist->entries && ! (drawlist->flags & CTX_DRAWLIST_DOESNT_OWN_ENTRIES) )
     {
-      free (drawlist->entries); 
+      ctx_free (drawlist->entries); 
     }
 #endif
   drawlist->entries = NULL;
@@ -2018,7 +2018,7 @@ ctx_destroy (Ctx *ctx)
 #endif
   ctx_deinit (ctx);
 #if !CTX_DRAWLIST_STATIC
-  free (ctx);
+  ctx_free (ctx);
 #endif
 }
 
@@ -2257,7 +2257,7 @@ ctx_get_contents2 (const char     *uri,
 
   if (uri[0] == '/')
   {
-    temp_uri = (char*) malloc (ctx_strlen (uri) + 8);
+    temp_uri = (char*) ctx_malloc (ctx_strlen (uri) + 8);
     sprintf (temp_uri, "file://%s", uri);
     uri = temp_uri;
   }
@@ -2270,10 +2270,10 @@ ctx_get_contents2 (const char     *uri,
     CtxFileContent *c = (CtxFileContent*)l->data;
     if (!ctx_strcmp (c->path, uri))
     {
-      contents = malloc (c->length+1);
+      contents = ctx_malloc (c->length+1);
       contents[c->length]=0;
       if (length) *length = c->length;
-      free (temp_uri);
+      ctx_free (temp_uri);
       return 0;
     }
   }
@@ -2321,7 +2321,7 @@ ctx_get_contents2 (const char     *uri,
     success = ___ctx_file_get_contents (uri, contents, length, max_len);
 #endif
   }
-  free (temp_uri);
+  ctx_free (temp_uri);
   return success;
 }
 
@@ -2447,7 +2447,7 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
         extension_match = ctx_magics[i].mime_type;
       }
     }
-    free (pathdup);
+    ctx_free (pathdup);
   }
 
   if (len > 16)
@@ -2509,11 +2509,11 @@ const char *ctx_path_get_media_type (const char *path)
     {
       if (ctx_magics[i].ext1 && !ctx_strcmp (ctx_magics[i].ext1, pathdup))
       {
-        free (pathdup);
+        ctx_free (pathdup);
         return ctx_magics[i].mime_type;
       }
     }
-    free (pathdup);
+    ctx_free (pathdup);
   }
 #endif
   if (ctx_path_is_dir (path))
@@ -2523,7 +2523,7 @@ const char *ctx_path_get_media_type (const char *path)
   if (content)
   {
   const char *guess = ctx_guess_media_type (path, content, length);
-  free (content);
+  ctx_free (content);
   return guess;
   }
   return "application/none";

@@ -131,7 +131,7 @@ static inline int ctx_list_length (CtxList *list)
 
 static inline void ctx_list_prepend (CtxList **list, void *data)
 {
-  CtxList *new_=calloc (sizeof (CtxList), 1);
+  CtxList *new_=ctx_calloc (sizeof (CtxList), 1);
   new_->next = *list;
   new_->data = data;
   *list = new_;
@@ -150,7 +150,7 @@ static inline void *ctx_list_last (CtxList *list)
 
 static inline void ctx_list_append (CtxList **list, void *data)
 {
-  CtxList *new_= calloc (sizeof (CtxList), 1);
+  CtxList *new_= ctx_calloc (sizeof (CtxList), 1);
   new_->data=data;
   if (*list)
     {
@@ -169,7 +169,7 @@ static inline void ctx_list_remove (CtxList **list, void *data)
   if ( (*list)->data == data)
     {
       prev = (void *) (*list)->next;
-      free (*list);
+      ctx_free (*list);
       *list = prev;
       return;
     }
@@ -177,7 +177,7 @@ static inline void ctx_list_remove (CtxList **list, void *data)
     if (iter->data == data)
       {
         prev->next = iter->next;
-        free (iter);
+        ctx_free (iter);
         break;
       }
     else
@@ -203,7 +203,7 @@ ctx_list_insert_before (CtxList **list, CtxList *sibling,
         }
       if (prev)
         {
-          CtxList *new_=calloc (sizeof (CtxList), 1);
+          CtxList *new_=ctx_calloc (sizeof (CtxList), 1);
           new_->next = sibling;
           new_->data = data;
           prev->next=new_;
@@ -284,7 +284,7 @@ static Image *image_add (int width,
       image = &image_db[random() %MAX_IMAGES];
     }
   if (image->data)
-    { free (image->data); }
+    { ctx_free (image->data); }
   image->kitty_format = format;
   image->width  = width;
   image->height = height;
@@ -408,8 +408,8 @@ static void vt_set_title (VT *vt, const char *new_title)
 {
   if (vt->inert) return;
   if (vt->title)
-    { free (vt->title); }
-  vt->title = strdup (new_title);
+    { ctx_free (vt->title); }
+  vt->title = ctx_strdup (new_title);
   vt_set_prop (vt, ctx_strhash ("title"), (char*)new_title);
 }
 
@@ -647,7 +647,7 @@ static void vt_init (VT *vt, int width, int height, float font_size, float line_
   vt->scrollback_limit   = DEFAULT_SCROLLBACK;
   vt->argument_buf_len   = 0;
   vt->argument_buf_cap   = 64;
-  vt->argument_buf       = malloc (vt->argument_buf_cap);
+  vt->argument_buf       = ctx_malloc (vt->argument_buf_cap);
   vt->argument_buf[0]    = 0;
   vt->vtpty.done         = 0;
   vt->result             = -1;
@@ -871,7 +871,7 @@ static void vt_run_argv (VT *vt, char **argv, const char *term)
 
 VT *vt_new_argv (char **argv, int width, int height, float font_size, float line_spacing, int id, int can_launch)
 {
-  VT *vt                 = calloc (sizeof (VT), 1);
+  VT *vt                 = ctx_calloc (sizeof (VT), 1);
   vt_init (vt, width, height, font_size, line_spacing, id, can_launch);
   vt_set_font_size (vt, font_size);
   vt_set_line_spacing (vt, line_spacing);
@@ -951,7 +951,7 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
   char *cargv[32];
   int   cargc;
   char *rest, *copy;
-  copy = calloc (strlen (command)+2, 1);
+  copy = ctx_calloc (strlen (command)+2, 1);
   strcpy (copy, command);
   rest = copy;
   cargc = 0;
@@ -1204,7 +1204,7 @@ static inline void vt_argument_buf_add (VT *vt, int ch)
       vt->argument_buf_cap)
     {
       vt->argument_buf_cap = vt->argument_buf_cap * 2;
-      vt->argument_buf = realloc (vt->argument_buf, vt->argument_buf_cap);
+      vt->argument_buf = ctx_realloc (vt->argument_buf, vt->argument_buf_cap);
     }
   vt->argument_buf[vt->argument_buf_len] = ch;
   vt->argument_buf[++vt->argument_buf_len] = 0;
@@ -3540,7 +3540,7 @@ static int _vt_handle_control (VT *vt, int byte)
           const char *reply = getenv ("TERM_ENQ_REPLY");
           if (reply)
             {
-              char *copy = strdup (reply);
+              char *copy = ctx_strdup (reply);
               for (uint8_t *c = (uint8_t *) copy; *c; c++)
                 {
                   if (*c < ' ' || * c > 127) { *c = 0; }
@@ -3741,12 +3741,12 @@ void vt_gfx (VT *vt, const char *command)
     if (vt->gfx.data == NULL)
       {
         vt->gfx.data_size = chunk_size;
-        vt->gfx.data = malloc (vt->gfx.data_size + 1);
+        vt->gfx.data = ctx_malloc (vt->gfx.data_size + 1);
       }
     else
       {
         vt->gfx.data_size += chunk_size;
-        vt->gfx.data = realloc (vt->gfx.data, vt->gfx.data_size + 1);
+        vt->gfx.data = ctx_realloc (vt->gfx.data, vt->gfx.data_size + 1);
       }
     memcpy (vt->gfx.data + old_size, payload, chunk_size);
     vt->gfx.data[vt->gfx.data_size]=0;
@@ -3763,7 +3763,7 @@ void vt_gfx (VT *vt, const char *command)
         }
       {
         int bin_length = vt->gfx.data_size;
-        uint8_t *data2 = malloc (vt->gfx.data_size);
+        uint8_t *data2 = ctx_malloc (vt->gfx.data_size);
         bin_length = ctx_base642bin ( (char *) vt->gfx.data,
                                      &bin_length,
                                      data2);
@@ -3780,7 +3780,7 @@ void vt_gfx (VT *vt, const char *command)
       if (vt->gfx.compression == 'z')
         {
           //vt->gfx.buf_size)
-          unsigned char *data2 = malloc (vt->gfx.buf_size + 1);
+          unsigned char *data2 = ctx_malloc (vt->gfx.buf_size + 1);
           /* if a buf size is set (rather compression, but
            * this works first..) then */
 #ifndef EMSCRIPTEN
@@ -4131,7 +4131,7 @@ static void vt_sixels (VT *vt, const char *sixels)
     }
   x = 0;
   y = 0;
-  pixels = calloc (width * (height + 6), 4);
+  pixels = ctx_calloc (width * (height + 6), 4);
   image = image_add (width, height, 0,
                      32, width*height*4, pixels);
   uint8_t *dst = pixels;
@@ -4679,7 +4679,7 @@ static void vt_state_osc (VT *vt, int byte)
                             {
                               if (!strcmp (key, "name") )
                                 {
-                                  name = strdup (value);
+                                  name = ctx_strdup (value);
                                 }
                               else if (!strcmp (key, "width") )
                                 {
@@ -4734,7 +4734,7 @@ static void vt_state_osc (VT *vt, int byte)
                       // code-dup
                       if (!strcmp (key, "name") )
                         {
-                          name = strdup (value);
+                          name = ctx_strdup (value);
                         }
                       else if (!strcmp (key, "width") )
                         {
@@ -4782,7 +4782,7 @@ static void vt_state_osc (VT *vt, int byte)
                   Image *image = NULL;
                   {
                     int bin_length = vt->argument_buf_len;
-                    uint8_t *data2 = malloc (bin_length);
+                    uint8_t *data2 = ctx_malloc (bin_length);
                     bin_length = ctx_base642bin ( (char *) p,
                                                  &bin_length,
                                                  data2);
@@ -8703,9 +8703,9 @@ static int short_count = 0;
 
 void terminal_set_primary (const char *text)
 {
-  if (primary) free (primary);
+  if (primary) ctx_free (primary);
   primary = NULL;
-  if (text) primary = strdup (text);
+  if (text) primary = ctx_strdup (text);
 }
 
 void terminal_long_tap (Ctx *ctx, VT *vt);
@@ -8767,7 +8767,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
                  char *sel = vt_get_selection (vt);
                  if (sel[0] == ' ' || sel[0] == '\0')
                    hit_space = 1;
-                 free (sel);
+                 ctx_free (sel);
                }
                if (hit_space)
                  vt->select_start_col++;
@@ -8781,7 +8781,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
                  int len = strlen(sel);
                  if (sel[len-1]==' ')
                    hit_space = 1;
-                 free (sel);
+                 ctx_free (sel);
                }
                if (hit_space)
                  vt->select_end_col--;
@@ -8792,7 +8792,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
                  if (sel)
                  {
                     terminal_set_primary (sel);
-                    free (sel);
+                    ctx_free (sel);
                  }
                }
                }
@@ -8805,7 +8805,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
                  char *sel = vt_get_selection (vt);
                  if (sel){
                     terminal_set_primary (sel);
-                    free (sel);
+                    ctx_free (sel);
                  }
                }
                break;
@@ -8871,7 +8871,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
            if (selection)
            {
              terminal_set_primary (selection);
-             free (selection);
+             ctx_free (selection);
            }
          }
 

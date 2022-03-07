@@ -149,16 +149,16 @@ ctx_edgelist_resize (CtxDrawlist *drawlist, int desired_size)
   if (drawlist->entries)
     {
       //printf ("grow %p to %d from %d\n", drawlist, new_size, drawlist->size);
-      CtxEntry *ne =  (CtxEntry *) malloc (item_size * new_size);
+      CtxEntry *ne =  (CtxEntry *) ctx_malloc (item_size * new_size);
       memcpy (ne, drawlist->entries, drawlist->size * item_size );
-      free (drawlist->entries);
+      ctx_free (drawlist->entries);
       drawlist->entries = ne;
-      //drawlist->entries = (CtxEntry*)malloc (drawlist->entries, item_size * new_size);
+      //drawlist->entries = (CtxEntry*)ctx_malloc (drawlist->entries, item_size * new_size);
     }
   else
     {
       //fprintf (stderr, "allocating for %p %d\n", drawlist, new_size);
-      drawlist->entries = (CtxEntry *) malloc (item_size * new_size);
+      drawlist->entries = (CtxEntry *) ctx_malloc (item_size * new_size);
     }
   drawlist->size = new_size;
     }

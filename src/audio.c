@@ -182,7 +182,7 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
           {
             void *old = ctx_pcm_list->data;
             ctx_list_remove (&ctx_pcm_list, old);
-            free (old);
+            ctx_free (old);
             ctx_pcm_cur_left = 0;
             if (ctx_pcm_list)
             {
@@ -304,7 +304,7 @@ void ctx_ctx_pcm (Ctx *ctx)
           {
             void *old = ctx_pcm_list->data;
             ctx_list_remove (&ctx_pcm_list, old);
-            free (old);
+            ctx_free (old);
             ctx_pcm_cur_left = 0;
             if (ctx_pcm_list)
             {
@@ -382,7 +382,7 @@ int ctx_pcm_queue (Ctx *ctx, const int8_t *data, int frames)
     int   scaled_frames = frames / factor;
     int   bpf = ctx_pcm_bytes_per_frame (ctx_client_format);
 
-    uint8_t *packet = malloc (scaled_frames * ctx_pcm_bytes_per_frame (ctx_client_format) + 16);
+    uint8_t *packet = ctx_malloc (scaled_frames * ctx_pcm_bytes_per_frame (ctx_client_format) + 16);
     *((uint32_t *)packet) = scaled_frames;
 
     if (factor > 0.999 && factor < 1.0001)

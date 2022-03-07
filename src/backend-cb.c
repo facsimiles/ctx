@@ -55,7 +55,7 @@ static void ctx_render_cb (Ctx *ctx,
   }
  
   if (!backend_cb->fb)
-    backend_cb->fb = (uint16_t*)malloc (memory_budget);
+    backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);
   fb = backend_cb->fb;
 
   if (flags & CTX_CB_332)
@@ -169,7 +169,7 @@ static void ctx_render_cb (Ctx *ctx,
   }
   if (flags & CTX_CB_CYCLE_BUF)
   {
-    free (fb);
+    ctx_free (fb);
     backend_cb->fb = NULL;
   }
 }
@@ -267,7 +267,7 @@ ctx_cb_end_frame (Ctx *ctx)
           active_mask |= (1<<tile_no);
           tile_no++;
         }
-      free (((CtxHasher*)(hasher->backend))->hashes);
+      ctx_free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_destroy (hasher);
 
 
@@ -332,7 +332,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  int   flags)
 {
   Ctx *ctx                   = ctx_new_drawlist (width, height);
-  CtxBackend    *backend     = (CtxBackend*)calloc (sizeof (CtxCbBackend), 1);
+  CtxBackend    *backend     = (CtxBackend*)ctx_calloc (sizeof (CtxCbBackend), 1);
   CtxCbBackend  *cb_backend  = (CtxCbBackend*)backend;
   backend->end_frame         = ctx_cb_end_frame;
   cb_backend->format         = format;

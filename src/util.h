@@ -50,7 +50,7 @@ ctx_register_contents (const char *path,
     {
        if (c->free_data)
        {
-         free (c->contents);
+         ctx_free (c->contents);
        }
        c->free_data = free_data;
        c->contents = (unsigned char*)contents;
@@ -58,7 +58,7 @@ ctx_register_contents (const char *path,
        return;
     }
   }
-  CtxFileContent *c = (CtxFileContent*)calloc (sizeof (CtxFileContent), 1);
+  CtxFileContent *c = (CtxFileContent*)ctx_calloc (sizeof (CtxFileContent), 1);
   c->free_data = free_data;
   c->contents = (unsigned char*)contents;
   c->length    = length;
@@ -103,7 +103,7 @@ ___ctx_file_get_contents (const char     *path,
   if (length)
     { *length =size; }
   rewind (file);
-  buffer = (char*)malloc (size + 8);
+  buffer = (char*)ctx_malloc (size + 8);
   if (!buffer)
     {
       fclose (file);
@@ -113,7 +113,7 @@ ___ctx_file_get_contents (const char     *path,
   if (remaining)
     {
       fclose (file);
-      free (buffer);
+      ctx_free (buffer);
       return -1;
     }
   fclose (file);

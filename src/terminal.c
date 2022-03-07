@@ -782,12 +782,12 @@ void ctx_nct_consume_events (Ctx *ctx)
       nct_set_size (backend->term, width, height);
       width *= CPX;
       height *= CPX;
-      free (mrg->glyphs);
-      free (mrg->styles);
-      free (backend->nct_pixels);
-      backend->nct_pixels = calloc (width * height * 4, 1);
-      mrg->glyphs = calloc ((width/CPX) * (height/CPX) * 4, 1);
-      mrg->styles = calloc ((width/CPX) * (height/CPX) * 1, 1);
+      ctx_free (mrg->glyphs);
+      ctx_free (mrg->styles);
+      ctx_free (backend->nct_pixels);
+      backend->nct_pixels = ctx_calloc (width * height * 4, 1);
+      mrg->glyphs = ctx_calloc ((width/CPX) * (height/CPX) * 4, 1);
+      mrg->styles = ctx_calloc ((width/CPX) * (height/CPX) * 1, 1);
       mrg_set_size (mrg, width, height);
       mrg_queue_draw (mrg, NULL);
 #endif

@@ -765,7 +765,7 @@ ctx_tvg_draw (CtxTinyVG *tvg)
    if (tvg->flags & CTX_TVG_FLAG_LOAD_PAL)
    {
      int count = tvg->color_bytes * tvg->color_count;
-     tvg->pal = malloc (count);
+     tvg->pal = ctx_malloc (count);
      for (int i = 0; i < count; i++)
        tvg->pal[i] = ctx_tvg_u8 (tvg);
    }
@@ -810,7 +810,7 @@ ctx_tvg_draw (CtxTinyVG *tvg)
 
    ctx_restore (ctx);
    if (tvg->flags & CTX_TVG_FLAG_LOAD_PAL)
-     free (tvg->pal);
+     ctx_free (tvg->pal);
    return tvg->error;
 }
 

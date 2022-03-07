@@ -22,7 +22,7 @@ static void ctx_card10_end_frame (Ctx *ctx)
 
 void ctx_card10_free (CtxCtx *ctxcard10)
 {
-  free (ctxcard10);
+  ctx_free (ctxcard10);
 }
 
 void ctx_card10_pcm (Ctx *ctx)
@@ -53,7 +53,7 @@ void ctx_card10_consume_events (Ctx *ctx)
 
     //char *cmd = ctx_strdup_printf ("touch /tmp/ctx-%ix%i", ctxctx->width, ctxctx->height);
     //system (cmd);
-    //free (cmd);
+    //ctx_free (cmd);
 
     do {
       float x = 0, y = 0;
@@ -130,7 +130,7 @@ Ctx *ctx_new_card10 (int width, int height)
 {
   float font_size = 12.0;
   Ctx    *ctx    = ctx_new ();
-  CtxCard10  *card10 = (CtxCard10*)calloc (sizeof (CtxCard10), 1);
+  CtxCard10  *card10 = (CtxCard10*)ctx_calloc (sizeof (CtxCard10), 1);
   CtxBackend *backend = (CtxBackend*)card10;
   if (width <= 0 || height <= 0)
   {

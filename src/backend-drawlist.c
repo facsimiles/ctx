@@ -7,7 +7,7 @@ void ctx_drawlist_clear (Ctx *ctx)
 
 static void ctx_drawlist_backend_free (CtxBackend *backend)
 {
-  free (backend);
+  ctx_free (backend);
 }
 
 static void ctx_update_current_path (Ctx *ctx, CtxEntry *entry)
@@ -67,7 +67,7 @@ ctx_drawlist_process (Ctx *ctx, CtxEntry *entry)
 
 static CtxBackend *ctx_drawlist_backend_new (void)
 {
-  CtxBackend *backend = (CtxBackend*)calloc (sizeof (CtxBackend), 1);
+  CtxBackend *backend = (CtxBackend*)ctx_calloc (sizeof (CtxBackend), 1);
   backend->process = (void(*)(Ctx *a, CtxCommand *c))ctx_drawlist_process;
   backend->free    = (void(*)(void *a))ctx_drawlist_backend_free;
   return backend;

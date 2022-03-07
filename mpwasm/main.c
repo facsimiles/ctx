@@ -41,16 +41,87 @@
 
 #define CTX_TINYVG 1
 #define CTX_DITHER 1
+
+#define CTX_LIMIT_FORMATS       1
+#define CTX_32BIT_SEGMENTS      0
+#define CTX_ENABLE_RGB565             1
+#define CTX_ENABLE_RGB565_BYTESWAPPED 1
+#define CTX_BITPACK_PACKER      0
+#define CTX_COMPOSITING_GROUPS  0
+#define CTX_RENDERSTREAM_STATIC 0
+#define CTX_GRADIENT_CACHE      1
+#define CTX_ENABLE_CLIP         1
+#define CTX_BLOATY_FAST_PATHS   0
+#define CTX_1BIT_CLIP           1
+#define CTX_CM                  0
+#define CTX_SHAPE_CACHE         0
+#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 42
+#define CTX_ENABLE_SHADOW_BLUR  0
+#define CTX_FORMATTER           0
+#define CTX_PARSER              0
+#define CTX_FONTS_FROM_FILE     0
+#define CTX_MAX_KEYDB          10
+#define CTX_FRAGMENT_SPECIALIZE 1
+#define CTX_ENABLE_RGBA8        1
+#define CTX_FAST_FILL_RECT      1
+#define CTX_MAX_TEXTURES        1
+#define CTX_PARSER_MAXLEN       512
+#define CTX_PARSER_FIXED_TEMP   1
+#define CTX_CURRENT_PATH        1
+#define CTX_BLOATY_FAST_PATHS        0
+#define CTX_BLENDING_AND_COMPOSITING 0
+#define CTX_STRINGPOOL_SIZE        512
+#define CTX_MIN_EDGE_LIST_SIZE     2048
+
+#define CTX_AUDIO               0
+#define CTX_CLIENTS             0
+#define CTX_EVENTS              1
+
+
+
 /* we keep the ctx implementation here, this compilation taget changes less
  * than the micropython target
  */
 #define CTX_IMPLEMENTATION
+#if 0
+#define CTX_EXTERNAL_MALLOC
+
+static inline void *ctx_malloc (size_t size)
+{
+  return m_malloc (size);
+}
+
+static inline void *ctx_calloc (size_t nmemb, size_t size)
+{
+  size_t byte_size = nmemb * size;
+  char *ret        = (char *)m_malloc(byte_size);
+  for (size_t i = 0; i < byte_size; i++)
+    ret[i] = 0;
+  return ret;
+}
+
+static inline void *ctx_realloc (void *ptr, size_t size)
+{
+  return m_realloc(ptr, size);
+}
+
+static inline void ctx_free (void *ptr)
+{
+  return m_free(ptr);
+}
+#endif
+
 #include "ctx.h"
 extern char epic_exec_path[256];
 
 #if MICROPY_ENABLE_COMPILER
 
 extern int _mp_quit;
+
+Ctx *ctx_wasm_get_context(int flags);
+
+void epic_set_ctx (Ctx *ctx);
+Ctx *ctx_wasm_reset (void);
 
 void mp_js_init(int heap_size) {
     #if MICROPY_ENABLE_GC
@@ -64,6 +135,8 @@ void mp_js_init(int heap_size) {
     mp_pystack_init(pystack, &pystack[MP_ARRAY_SIZE(pystack)]);
     #endif
 
+    ctx_wasm_reset();
+    epic_set_ctx (ctx_wasm_get_context(CTX_CB_KEEP_DATA));
     mp_init();
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_lib));
 }
@@ -71,7 +144,7 @@ void mp_js_init(int heap_size) {
 
 int do_path (const char *path)
 {
-  mp_js_init (128 * 1024);
+  mp_js_init (192 * 1024);
   mp_parse_input_kind_t input_kind = MP_PARSE_FILE_INPUT;
   int ret = 0;
   nlr_buf_t nlr;
@@ -110,7 +183,7 @@ int do_path (const char *path)
 int do_str(const char *src, mp_parse_input_kind_t input_kind)
 {
     int ret = 0;
-    mp_js_init (128 * 1024);
+    mp_js_init (192 * 1024);
     nlr_buf_t nlr;
     epic_exec_path[0] = 0;
     _mp_quit = 0;

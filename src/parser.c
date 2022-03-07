@@ -235,9 +235,9 @@ void ctx_parser_free (CtxParser *parser)
 {
 #if !CTX_PARSER_FIXED_TEMP
   if (parser->holding)
-    free (parser->holding);
+    ctx_free (parser->holding);
 #endif
-  free (parser);
+  ctx_free (parser);
 }
 
 #define CTX_ARG_COLLECT_NUMBERS             50
@@ -1315,7 +1315,7 @@ static inline void ctx_parser_holding_append (CtxParser *parser, int byte)
   {
     int new_len = parser->hold_len * 2;
     if (new_len < 512) new_len = 512;
-    parser->holding = (uint8_t*)realloc (parser->holding, new_len);
+    parser->holding = (uint8_t*)ctx_realloc (parser->holding, new_len);
     parser->hold_len = new_len;
   }
 #endif

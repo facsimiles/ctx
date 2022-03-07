@@ -52,7 +52,7 @@ int ctx_color_is_transparent (CtxColor *color)
 
 void ctx_color_free (CtxColor *color)
 {
-  free (color);
+  ctx_free (color);
 }
 
 CTX_STATIC void ctx_color_set_RGBA8 (CtxState *state, CtxColor *color, uint8_t r, uint8_t g, uint8_t b, uint8_t a)

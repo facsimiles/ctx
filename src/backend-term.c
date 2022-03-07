@@ -62,14 +62,14 @@ void ctx_term_set (CtxTerm *term,
   if (col < 1 || row < 1 || col > term->cols  || row > term->rows) return;
   while (ctx_list_length (term->lines) < row)
   {
-    ctx_list_append (&term->lines, calloc (sizeof (CtxTermLine), 1));
+    ctx_list_append (&term->lines, ctx_calloc (sizeof (CtxTermLine), 1));
   }
   CtxTermLine *line = ctx_list_nth_data (term->lines, row-1);
   assert (line);
   if (line->size < col)
   {
      int new_size = ((col + 128)/128)*128;
-     line->cells = realloc (line->cells, sizeof (CtxTermCell) * new_size);
+     line->cells = ctx_realloc (line->cells, sizeof (CtxTermCell) * new_size);
      memset (&line->cells[line->size], 0, sizeof (CtxTermCell) * (new_size - line->size) );
      line->size = new_size;
   }
@@ -773,7 +773,7 @@ inline static void ctx_term_process (Ctx *ctx,
                (glyph->col == col+1))
            {
               ctx_list_remove (&rasterizer->glyphs, glyph);
-              free (glyph);
+              ctx_free (glyph);
               l = NULL;
            }
          }
@@ -853,7 +853,7 @@ inline static void ctx_term_end_frame (Ctx *ctx)
     utf8[ctx_unichar_to_utf8(glyph->unichar, (uint8_t*)utf8)]=0;
     ctx_term_set (term, glyph->col, glyph->row, 
                      utf8, glyph->rgba_fg, glyph->rgba_bg);
-    free (glyph);
+    ctx_free (glyph);
   }
 
   printf ("\e[H");
@@ -870,14 +870,14 @@ void ctx_term_free (CtxTerm *term)
 {
   while (term->lines)
   {
-    free (term->lines->data);
+    ctx_free (term->lines->data);
     ctx_list_remove (&term->lines, term->lines->data);
   }
   printf ("\e[?25h"); // cursor on
   nc_at_exit ();
-  free (term->pixels);
+  ctx_free (term->pixels);
   ctx_destroy (term->host);
-  free (term);
+  ctx_free (term);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
@@ -895,7 +895,7 @@ Ctx *ctx_new_term (int width, int height)
 {
   Ctx *ctx = _ctx_new_drawlist (width, height);
 #if CTX_RASTERIZER
-  CtxTerm *term = (CtxTerm*)calloc (sizeof (CtxTerm), 1);
+  CtxTerm *term = (CtxTerm*)ctx_calloc (sizeof (CtxTerm), 1);
   CtxBackend *backend = (void*)term;
  
   const char *mode = getenv ("CTX_TERM_MODE");
@@ -944,7 +944,7 @@ Ctx *ctx_new_term (int width, int height)
   term->cols = (width + 1) / ctx_term_cw;
   term->rows = (height + 2) / ctx_term_ch;
   term->lines = 0;
-  term->pixels = (uint8_t*)malloc (width * height * 4);
+  term->pixels = (uint8_t*)ctx_malloc (width * height * 4);
   term->host = ctx_new_for_framebuffer (term->pixels,
                                            width, height,
                                            width * 4, CTX_FORMAT_RGBA8);

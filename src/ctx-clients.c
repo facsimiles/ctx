@@ -59,10 +59,10 @@ void ctx_client_set_title        (Ctx *ctx, int id, const char *title)
    if (!client)
      return;
    if (client->title)
-     free (client->title);
+     ctx_free (client->title);
    client->title = NULL;
    if (title)
-     client->title = strdup (title);
+     client->title = ctx_strdup (title);
 }
 const char *ctx_client_get_title (Ctx *ctx, int id)
 {
@@ -83,8 +83,8 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
        if (client)
        {
          ctx_client_set_title (vt->root_ctx, client->id, val);
-         //if (client->title) free (client->title);
-         //client->title = strdup (val);
+         //if (client->title) ctx_free (client->title);
+         //client->title = ctx_strdup (val);
        }
      }
      break;
@@ -191,7 +191,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
                            void *user_data,
                            CtxClientFinalize finalize)
 {
-  CtxClient *client = calloc (sizeof (CtxClient), 1);
+  CtxClient *client = ctx_calloc (sizeof (CtxClient), 1);
   ctx_list_append (&ctx->events.clients, client);
   ctx_client_init (ctx, client, x, y, width, height, font_size, flags, user_data, finalize);
   float line_spacing = 2.0f;
@@ -204,7 +204,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
 CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {
 
-  CtxClient *client = calloc (sizeof (CtxClient), 1);
+  CtxClient *client = ctx_calloc (sizeof (CtxClient), 1);
   ctx_client_init (ctx, client, x, y, width, height, font_size, flags, user_data, finalize);
   ctx_list_append (&ctx->events.clients, client);
 
@@ -233,7 +233,7 @@ static void *launch_client_thread (void *data)
 CtxClient *ctx_client_new_thread (Ctx *ctx, void (*start_routine)(Ctx *ctx, void *user_data),
                                   int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {
-  CtxClient *client = calloc (sizeof (CtxClient), 1);
+  CtxClient *client = ctx_calloc (sizeof (CtxClient), 1);
   ctx_client_init (ctx, client, x, y, width, height, font_size, flags, user_data, finalize);
 
   ctx_list_append (&ctx->events.clients, client);
@@ -358,7 +358,7 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
   }
 
   if (client->title)
-    free (client->title);
+    ctx_free (client->title);
 
 #if VT_RECORD
   if (client->recording)
@@ -386,7 +386,7 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
   }
 
   ctx_client_unlock (client);
-  free (client);
+  ctx_free (client);
 }
 
 void ctx_client_remove_by_id (Ctx *ctx, int id)
@@ -565,7 +565,7 @@ char  *ctx_client_get_selection (Ctx *ctx, int id)
    CtxClient *client = ctx_client_by_id (ctx, id);
    if (client && client->vt)
      return vt_get_selection (client->vt);
-   return strdup ("");
+   return ctx_strdup ("");
 }
 
 void ctx_client_move (Ctx *ctx, int id, int x, int y)
@@ -928,10 +928,10 @@ void ctx_client_unlock (CtxClient *client)
 
 CtxEvent *ctx_event_copy (CtxEvent *event)
 {
-  CtxEvent *copy = calloc (1, sizeof (CtxEvent));
+  CtxEvent *copy = ctx_calloc (1, sizeof (CtxEvent));
   *copy = *event;
   if (copy->string) {
-    copy->string = strdup (copy->string);
+    copy->string = ctx_strdup (copy->string);
     copy->owns_string = 1;
   }
   return copy;
@@ -969,7 +969,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
         {
           if (vt)
             vt_paste (vt, text);
-          free (text);
+          ctx_free (text);
         }
     }
   else if (!strcmp (event, "shift-control-c") && vt)
@@ -978,7 +978,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
       if (text)
         {
           ctx_set_clipboard (ctx, text);
-          free (text);
+          ctx_free (text);
         }
     }
   else if (!strcmp (event, "shift-control-t") ||
@@ -1026,7 +1026,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
         if (sel)
         {
           vt_feed_keystring (vt, ctx_event, sel);
-          free (sel);
+          ctx_free (sel);
         }
       }
     }

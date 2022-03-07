@@ -33,9 +33,11 @@ void ctx_alloc_free(void *ptr)
 }
 /* CTX allocator wrappers }}} */
 
+typedef struct _mp_ctx_event_obj_t mp_ctx_event_obj_t;
 typedef struct _mp_ctx_obj_t {
 	mp_obj_base_t base;
 	Ctx *ctx;
+	mp_ctx_event_obj_t *ctx_event;
 } mp_ctx_obj_t;
 
 #ifdef EMSCRIPTEN
@@ -53,12 +55,14 @@ void mp_idle (int ms);
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
 
+void gc_collect(void);
+
 #define MP_CTX_COMMON_FUN_0_idle(name)                                         \
 	static mp_obj_t mp_ctx_##name(mp_obj_t self_in)                        \
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(self->ctx);                                         \
-		mp_idle (0);                                                   \
+		gc_collect();                                                  \
 		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
@@ -510,10 +514,11 @@ STATIC void generic_method_lookup(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 }
 
 extern const mp_obj_type_t mp_ctx_event_type;
-typedef struct _mp_ctx_event_obj_t {
+struct _mp_ctx_event_obj_t {
 	mp_obj_base_t base;
 	CtxEvent  event;
-} mp_ctx_event_obj_t;
+	mp_obj_t  mp_ev;
+};
 
 
 static mp_obj_t mp_ctx_event_new (void)
@@ -645,7 +650,8 @@ static void mp_ctx_listen_cb_handler (CtxEvent *event, void *data1, void*data2)
   mp_obj_t event_in = data2;
   mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
   mp_ctx_event->event = *event;
-  mp_sched_schedule (data1, MP_OBJ_FROM_PTR(event_in));
+  mp_sched_schedule (data1, event_in);//MP_OBJ_FROM_PTR(event_in));
+  //fprintf (stderr, "schedlued\n");
   //if (mp_obj_is_true (mp_call_function_1((data1), event_in)))
   //  event->stop_propagate = 1;
 }
@@ -655,7 +661,7 @@ static void mp_ctx_listen_cb_handler_stop_propagate (CtxEvent *event, void *data
   mp_obj_t event_in = data2;
   mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
   mp_ctx_event->event = *event;
-  mp_sched_schedule (data1, MP_OBJ_FROM_PTR(event_in));
+  mp_sched_schedule (data1, event_in);//MP_OBJ_FROM_PTR(event_in));
   event->stop_propagate = 1;
 }
 
@@ -668,7 +674,7 @@ static mp_obj_t mp_ctx_listen (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t c
   ctx_listen (self->ctx,
               mp_obj_get_int(event_mask),
               mp_ctx_listen_cb_handler,
-              (cb_in), mp_ctx_event_new ());
+              (cb_in), self->ctx_event);
   return MP_OBJ_FROM_PTR(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_listen_obj, mp_ctx_listen);
@@ -682,7 +688,7 @@ static mp_obj_t mp_ctx_listen_stop_propagate (mp_obj_t self_in, mp_obj_t event_m
   ctx_listen (self->ctx,
               mp_obj_get_int(event_mask),
               mp_ctx_listen_cb_handler_stop_propagate,
-              (cb_in), mp_ctx_event_new ());
+              (cb_in), self->ctx_event);
   return MP_OBJ_FROM_PTR(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_listen_stop_propagate_obj, mp_ctx_listen_stop_propagate);
@@ -729,6 +735,7 @@ static mp_obj_t mp_ctx_make_new(
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = type;
 	o->ctx          = ctx_new_drawlist(160,80);
+        o->ctx_event = mp_ctx_event_new ();
 
 	return MP_OBJ_FROM_PTR(o);
 }
@@ -742,6 +749,7 @@ static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 	o->ctx          = ctx_new_drawlist(mp_obj_get_float(width_in),
                                            mp_obj_get_float(height_in));
 
+        o->ctx_event = mp_ctx_event_new ();
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_new_drawlist_obj, mp_ctx_new_drawlist);
@@ -752,6 +760,8 @@ static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = &mp_ctx_type;
 	o->ctx          = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+        o->ctx_event = mp_ctx_event_new ();
+        //ctx_start_frame (o->ctx);
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);

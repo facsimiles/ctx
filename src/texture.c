@@ -40,7 +40,7 @@ CtxBuffer *ctx_buffer_new_for_data (void *data, int width, int height,
 
 void ctx_buffer_pixels_free (void *pixels, void *userdata)
 {
-  free (pixels);
+  ctx_free (pixels);
 }
 
 CtxBuffer *ctx_buffer_new (int width, int height,
@@ -66,7 +66,7 @@ static void ctx_buffer_deinit (CtxBuffer *buffer)
     buffer->free_func (buffer->data, buffer->user_data);
   if (buffer->eid)
   {
-    free (buffer->eid);
+    ctx_free (buffer->eid);
   }
   buffer->eid = NULL;
   buffer->data = NULL;
@@ -85,7 +85,7 @@ static void ctx_buffer_deinit (CtxBuffer *buffer)
 void ctx_buffer_free (CtxBuffer *buffer)
 {
   ctx_buffer_deinit (buffer);
-  free (buffer);
+  ctx_free (buffer);
 }
 
 #if 0
@@ -161,7 +161,7 @@ const char* ctx_texture_init (Ctx           *ctx,
 
   if (freefunc == ctx_buffer_pixels_free && user_data == (void*)23)
   {
-     uint8_t *tmp = (uint8_t*)malloc (data_len);
+     uint8_t *tmp = (uint8_t*)ctx_malloc (data_len);
      memcpy (tmp, pixels, data_len);
      pixels = tmp;
   }

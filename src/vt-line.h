@@ -95,7 +95,7 @@ static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
   if (pos >= string->style_size)
     {
       int new_size = pos + 16;
-      string->style = realloc (string->style, new_size * sizeof (uint64_t) );
+      string->style = ctx_realloc (string->style, new_size * sizeof (uint64_t) );
       memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (uint64_t) );
       string->style_size = new_size;
     }
@@ -116,7 +116,7 @@ static inline void        vt_line_free           (VtLine *line, int freealloc)
     if (line->frame)
       ctx_string_free (line->frame, 1);
     if (line->style)
-      { free (line->style); }
+      { ctx_free (line->style); }
     if (line->ctx)
       { ctx_destroy (line->ctx); }
     if (line->ctx_copy)
@@ -171,7 +171,7 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
     {
       char *old = string->str;
       string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
-      string->str = (char*)realloc (old, string->allocated_length);
+      string->str = (char*)ctx_realloc (old, string->allocated_length);
     }
   string->str[string->length++] = val;
   string->str[string->length] = '\0';

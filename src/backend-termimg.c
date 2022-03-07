@@ -40,7 +40,7 @@ inline static void ctx_termimg_end_frame (Ctx *ctx)
   int width =  termimg->width;
   int height = termimg->height;
   if (!termimg->pixels) return;
-  char *encoded = malloc (width * height * 3 * 3);
+  char *encoded = ctx_malloc (width * height * 3 * 3);
   ctx_bin2base64 (termimg->pixels, width * height * 3,
                   encoded);
   int encoded_len = strlen (encoded);
@@ -66,7 +66,7 @@ inline static void ctx_termimg_end_frame (Ctx *ctx)
      }
      printf ("\e\\");
   }
-  free (encoded);
+  ctx_free (encoded);
   
   fflush (NULL);
 }
@@ -75,14 +75,14 @@ void ctx_termimg_free (CtxTermImg *termimg)
 {
   while (termimg->lines)
   {
-    free (termimg->lines->data);
+    ctx_free (termimg->lines->data);
     ctx_list_remove (&termimg->lines, termimg->lines->data);
   }
   printf ("\e[?25h"); // cursor on
   nc_at_exit ();
-  free (termimg->pixels);
+  ctx_free (termimg->pixels);
   ctx_destroy (termimg->host);
-  free (termimg);
+  ctx_free (termimg);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
@@ -92,7 +92,7 @@ Ctx *ctx_new_termimg (int width, int height)
 #if CTX_RASTERIZER
   fprintf (stdout, "\e[?1049h");
   fprintf (stdout, "\e[?25l"); // cursor off
-  CtxTermImg *termimg = (CtxTermImg*)calloc (sizeof (CtxTermImg), 1);
+  CtxTermImg *termimg = (CtxTermImg*)ctx_calloc (sizeof (CtxTermImg), 1);
   CtxBackend *backend = (void*)termimg;
 
 
@@ -112,7 +112,7 @@ Ctx *ctx_new_termimg (int width, int height)
   termimg->width  = width;
   termimg->height = height;
   termimg->lines = 0;
-  termimg->pixels = (uint8_t*)malloc (width * height * 3);
+  termimg->pixels = (uint8_t*)ctx_malloc (width * height * 3);
   termimg->host = ctx_new_for_framebuffer (termimg->pixels,
                                            width, height,
                                            width * 3, CTX_FORMAT_RGB8);

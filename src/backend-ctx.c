@@ -76,7 +76,7 @@ static char *encode_in_terms_of_previous (
   int length = CHUNK_SIZE;
   for (start = 0; start < src_len; start += length)
   {
-    CtxSpan *span = calloc (sizeof (CtxSpan), 1);
+    CtxSpan *span = ctx_calloc (sizeof (CtxSpan), 1);
     span->start = start;
     if (start + length > src_len)
       span->length = src_len - start;
@@ -131,7 +131,7 @@ static char *encode_in_terms_of_previous (
 
             if (curr_pos)
             {
-              CtxSpan *prev = calloc (sizeof (CtxSpan), 1);
+              CtxSpan *prev = ctx_calloc (sizeof (CtxSpan), 1);
               prev->start = start;
               prev->length =  curr_pos;
             dassert (prev->start >= 0, prev_pos, prev_start, prev->start);
@@ -143,7 +143,7 @@ static char *encode_in_terms_of_previous (
 
             if (match_len + curr_pos < start + length)
             {
-              CtxSpan *next = calloc (sizeof (CtxSpan), 1);
+              CtxSpan *next = ctx_calloc (sizeof (CtxSpan), 1);
               next->start = start + curr_pos + match_len;
               next->length = (start + length) - next->start;
             dassert (next->start >= 0, prev_pos, prev_start, next->start);
@@ -157,7 +157,7 @@ static char *encode_in_terms_of_previous (
                   ctx_list_append (&encoded_list, next);
               }
               else
-                free (next);
+                ctx_free (next);
             }
 
             if (curr_pos) // step one item back for forloop
@@ -227,7 +227,7 @@ again:
         }
       }
     }
-    free (span);
+    ctx_free (span);
     ctx_list_remove (&encoded_list, span);
   }
 
@@ -322,13 +322,13 @@ static void ctx_ctx_end_frame (Ctx *ctx)
   {
     int cur_frame_len = 0;
     char *rest = ctx_render_string (ctxctx->ctx, 0, &cur_frame_len);
-    char *cur_frame_contents = malloc (cur_frame_len + strlen(CTX_START_STRING) + strlen (CTX_END_STRING) + 1);
+    char *cur_frame_contents = ctx_malloc (cur_frame_len + strlen(CTX_START_STRING) + strlen (CTX_END_STRING) + 1);
 
     cur_frame_contents[0]=0;
     strcat (cur_frame_contents, CTX_START_STRING);
     strcat (cur_frame_contents, rest);
     strcat (cur_frame_contents, CTX_END_STRING);
-    free (rest);
+    ctx_free (rest);
     cur_frame_len += strlen (CTX_START_STRING) + strlen (CTX_END_STRING);
 
     if (prev_frame_contents && 0)  // XXX : 
@@ -338,8 +338,8 @@ static void ctx_ctx_end_frame (Ctx *ctx)
       //uint64_t ticks_start = ctx_ticks ();
 
       encoded = encode_in_terms_of_previous (cur_frame_contents, cur_frame_len, prev_frame_contents, prev_frame_len, &encoded_len, 1000 * 10);
-//    encoded = strdup (cur_frame_contents);
-//    encoded_len = strlen (encoded);
+//    encoded = ctx_strdup (cur_frame_contents);
+//    encoded_len = ctx_strlen (encoded);
       //uint64_t ticks_end = ctx_ticks ();
 
       fwrite (encoded, encoded_len, 1, stdout);
@@ -351,7 +351,7 @@ static void ctx_ctx_end_frame (Ctx *ctx)
                       (ticks_end-ticks_start)/1000.0,
                       (int)strlen(encoded), encoded);
 #endif
-      free (encoded);
+      ctx_free (encoded);
     }
     else
     {
@@ -359,7 +359,7 @@ static void ctx_ctx_end_frame (Ctx *ctx)
     }
 
     if (prev_frame_contents)
-      free (prev_frame_contents);
+      ctx_free (prev_frame_contents);
     prev_frame_contents = cur_frame_contents;
     prev_frame_len = cur_frame_len;
   }
@@ -385,7 +385,7 @@ static void ctx_ctx_end_frame (Ctx *ctx)
 void ctx_ctx_destroy (CtxCtx *ctx)
 {
   nc_at_exit ();
-  free (ctx);
+  ctx_free (ctx);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
 
@@ -412,7 +412,7 @@ void ctx_ctx_consume_events (Ctx *ctx)
 #endif
     //char *cmd = ctx_strdup_printf ("touch /tmp/ctx-%ix%i", ctxctx->width, ctxctx->height);
     //system (cmd);
-    //free (cmd);
+    //ctx_free (cmd);
 
   if (ctx_native_events)
     do {
@@ -456,7 +456,7 @@ void ctx_ctx_consume_events (Ctx *ctx)
         ctx_set_size (ctx, ctx_terminal_width(), ctx_terminal_height());
 
         if (prev_frame_contents)
-          free (prev_frame_contents);
+          ctx_free (prev_frame_contents);
         prev_frame_contents = NULL;
         prev_frame_len = 0;
         ctx_queue_draw (ctx);
@@ -485,7 +485,7 @@ Ctx *ctx_new_ctx (int width, int height)
 {
   float font_size = 12.0;
   Ctx *ctx = _ctx_new_drawlist (width, height);
-  CtxCtx *ctxctx = (CtxCtx*)calloc (sizeof (CtxCtx), 1);
+  CtxCtx *ctxctx = (CtxCtx*)ctx_calloc (sizeof (CtxCtx), 1);
   CtxBackend *backend = (CtxBackend*)ctxctx;
   fprintf (stdout, "\e[?1049h");
   fflush (stdout);

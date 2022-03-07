@@ -514,11 +514,11 @@ void ctx_clear_bindings (Ctx *ctx)
   {
     if (events->bindings[i].destroy_notify)
       events->bindings[i].destroy_notify (events->bindings[i].destroy_data);
-    free (events->bindings[i].nick);
+    ctx_free (events->bindings[i].nick);
     if (events->bindings[i].command)
-      free (events->bindings[i].command);
+      ctx_free (events->bindings[i].command);
     if (events->bindings[i].label)
-      free (events->bindings[i].label);
+      ctx_free (events->bindings[i].label);
   }
   memset (&events->bindings, 0, sizeof (events->bindings));
   events->n_bindings = 0;
@@ -598,7 +598,7 @@ void ctx_remove_idle (Ctx *ctx, int handle)
 int ctx_add_timeout_full (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                           void (*destroy_notify)(void *destroy_data), void *destroy_data)
 {
-  CtxIdleCb *item = calloc (sizeof (CtxIdleCb), 1);
+  CtxIdleCb *item = ctx_calloc (sizeof (CtxIdleCb), 1);
   item->cb              = idle_cb;
   item->idle_data       = idle_data;
   item->id              = ++ctx->events.idle_id;
@@ -621,7 +621,7 @@ int ctx_add_timeout (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data)
 int ctx_add_idle_full (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                                  void (*destroy_notify)(void *destroy_data), void *destroy_data)
 {
-  CtxIdleCb *item = calloc (sizeof (CtxIdleCb), 1);
+  CtxIdleCb *item = ctx_calloc (sizeof (CtxIdleCb), 1);
   item->cb = idle_cb;
   item->idle_data = idle_data;
   item->id = ++ctx->events.idle_id;
@@ -724,7 +724,7 @@ void _ctx_item_unref (CtxItem *item)
     {
       //cairo_path_destroy (item->path);
     }
-    free (item);
+    ctx_free (item);
   }
 }
 
@@ -791,7 +791,7 @@ void ctx_listen_full (Ctx     *ctx,
       }
     }
 
-    item = calloc (sizeof (CtxItem), 1);
+    item = ctx_calloc (sizeof (CtxItem), 1);
     item->x0 = x;
     item->y0 = y;
     item->x1 = x + width;
@@ -827,7 +827,7 @@ void ctx_listen_full (Ctx     *ctx,
         {
           /* found an item, copy over cb data  */
           item2->cb[item2->cb_count] = item->cb[0];
-          free (item);
+          ctx_free (item);
           item2->cb_count++;
           item2->types |= types;
           return;
@@ -937,7 +937,7 @@ void ctx_add_hit_region (Ctx *ctx, const char *id)
   
   return ctx_listen_full (ctx, x, y, width, height,
                           CTX_POINTER, ctx_report_hit_region,
-                          id_copy, NULL, (void*)free, NULL);
+                          id_copy, NULL, (void*)ctx_free, NULL);
 }
 
 typedef struct _CtxGrab CtxGrab;
@@ -961,7 +961,7 @@ static void grab_free (Ctx *ctx, CtxGrab *grab)
     grab->timeout_id = 0;
   }
   _ctx_item_unref (grab->item);
-  free (grab);
+  ctx_free (grab);
 }
 
 static void device_remove_grab (Ctx *ctx, CtxGrab *grab)
@@ -972,7 +972,7 @@ static void device_remove_grab (Ctx *ctx, CtxGrab *grab)
 
 static CtxGrab *device_add_grab (Ctx *ctx, int device_no, CtxItem *item, CtxEventType type)
 {
-  CtxGrab *grab = calloc (1, sizeof (CtxGrab));
+  CtxGrab *grab = ctx_calloc (1, sizeof (CtxGrab));
   grab->item = item;
   grab->type = type;
   _ctx_item_ref (item);
@@ -1940,12 +1940,12 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
         item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
         if (event.stop_propagate)
         {
-          free ((void*)event.string);
+          ctx_free ((void*)event.string);
           return event.stop_propagate;
         }
       }
     }
-    free ((void*)event.string);
+    ctx_free ((void*)event.string);
   }
   return 0;
 }
@@ -1992,12 +1992,12 @@ ctx_key_down (Ctx *ctx, unsigned int keyval,
         item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
         if (event.stop_propagate)
         {
-          free ((void*)event.string);
+          ctx_free ((void*)event.string);
           return event.stop_propagate;
         }
       }
     }
-    free ((void*)event.string);
+    ctx_free ((void*)event.string);
   }
   return 0;
 }
@@ -2044,17 +2044,17 @@ ctx_key_up (Ctx *ctx, unsigned int keyval,
         item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
         if (event.stop_propagate)
         {
-          free ((void*)event.string);
+          ctx_free ((void*)event.string);
           return event.stop_propagate;
         }
       }
     }
-    free ((void*)event.string);
+    ctx_free ((void*)event.string);
   }
   return 0;
 }
 
-void ctx_destroyze           (Ctx *ctx)
+void ctx_freeze           (Ctx *ctx)
 {
   ctx->events.frozen ++;
 }
@@ -2433,7 +2433,7 @@ static char *mice_get_event ()
   mrg_mice_this->prev_state = buf[0];
 
   {
-    char *r = malloc (64);
+    char *r = ctx_malloc (64);
     sprintf (r, "%s %.0f %.0f %i", ret, mrg_mice_this->x, mrg_mice_this->y, button);
     return r;
   }
@@ -2905,7 +2905,7 @@ static int event_check_pending (CtxTiled *tiled)
           ctx_key_press (tiled->backend.ctx, 0, event, 0); // we deliver all events as key-press, the key_press handler disambiguates
           events++;
         }
-        free (event);
+        ctx_free (event);
       }
     }
   }

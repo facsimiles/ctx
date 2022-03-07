@@ -33,12 +33,12 @@ void ctx_string_init (CtxString *string, int initial_size);
 
 VtLine *vt_line_new_with_size (const char *initial, int initial_size)
 {
-  VtLine *line = calloc (sizeof (VtLine), 1);
+  VtLine *line = ctx_calloc (sizeof (VtLine), 1);
   CtxString *string = (CtxString*)line;
   ctx_string_init (string, initial_size);
   if (initial)
     { ctx_string_append_str (string, initial); }
-  line->style = calloc (sizeof (uint64_t), initial_size);
+  line->style = ctx_calloc (sizeof (uint64_t), initial_size);
   line->style_size = initial_size;
   string->is_line = 1;
   return line;

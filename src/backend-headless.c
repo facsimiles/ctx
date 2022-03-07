@@ -11,18 +11,18 @@ static char *ctx_fb_clipboard = NULL;
 static void ctx_headless_set_clipboard (Ctx *ctx, const char *text)
 {
   if (ctx_fb_clipboard)
-    free (ctx_fb_clipboard);
+    ctx_free (ctx_fb_clipboard);
   ctx_fb_clipboard = NULL;
   if (text)
   {
-    ctx_fb_clipboard = strdup (text);
+    ctx_fb_clipboard = ctx_strdup (text);
   }
 }
 
 static char *ctx_headless_get_clipboard (Ctx *ctx)
 {
-  if (ctx_fb_clipboard) return strdup (ctx_fb_clipboard);
-  return strdup ("");
+  if (ctx_fb_clipboard) return ctx_strdup (ctx_fb_clipboard);
+  return ctx_strdup ("");
 }
 
 static int ctx_headless_get_mice_fd (Ctx *ctx)
@@ -154,7 +154,7 @@ void ctx_headless_free (CtxHeadless *fb)
 
   if (tiled->fb)
   {
-  free (tiled->fb); // it is not the tiled renderers responsibilty,
+  ctx_free (tiled->fb); // it is not the tiled renderers responsibilty,
                     // since it might not be allocated this way
   tiled->fb = NULL;
   ctx_babl_exit (); // we do this together with the fb,
@@ -166,7 +166,7 @@ void ctx_headless_free (CtxHeadless *fb)
   //close (fb->fb_fd);
   //if (system("stty sane")){};
   ctx_tiled_free ((CtxTiled*)fb);
-  //free (fb);
+  //ctx_free (fb);
 }
 
 //static unsigned char *fb_icc = NULL;
@@ -184,7 +184,7 @@ Ctx *ctx_new_headless (int width, int height)
     height = 780;
   }
 #if CTX_RASTERIZER
-  CtxHeadless *fb = calloc (sizeof (CtxHeadless), 1);
+  CtxHeadless *fb = ctx_calloc (sizeof (CtxHeadless), 1);
   CtxBackend *backend = (CtxBackend*)fb;
   CtxTiled *tiled     = (CtxTiled*)fb;
   ctx_headless = fb;
@@ -197,10 +197,10 @@ Ctx *ctx_new_headless (int width, int height)
   fb->fb_mapped_size = width * height * 4;
 #endif
 
-  tiled->fb = calloc (fb->fb_mapped_size, 1);
+  tiled->fb = ctx_calloc (fb->fb_mapped_size, 1);
   if (!tiled->fb)
     return NULL;
-  tiled->pixels = calloc (fb->fb_mapped_size, 1);
+  tiled->pixels = ctx_calloc (fb->fb_mapped_size, 1);
   tiled->show_frame = (void*)ctx_headless_show_frame;
 
 

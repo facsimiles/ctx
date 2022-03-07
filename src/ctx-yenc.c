@@ -42,7 +42,7 @@ static int ctx_ydec (const char *tmp_src, char *dst, int count)
 #if 0
   if (tmp_src == dst)
   {
-    src = malloc (count);
+    src = ctx_malloc (count);
     memcpy (src, tmp_src, count);
   }
 #endif
@@ -59,7 +59,7 @@ static int ctx_ydec (const char *tmp_src, char *dst, int count)
         {
           dst[out_len]=0;
 #if 0
-          if (tmp_src == dst) free (src);
+          if (tmp_src == dst) ctx_free (src);
 #endif
           return out_len;
         }
@@ -79,7 +79,7 @@ static int ctx_ydec (const char *tmp_src, char *dst, int count)
   }
   dst[out_len]=0;
 #if 0
-  if (tmp_src == dst) free (src);
+  if (tmp_src == dst) ctx_free (src);
 #endif
   return out_len;
 }

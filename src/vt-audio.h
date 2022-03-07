@@ -142,7 +142,7 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
   if (audio->compression == 'z')
   {
     unsigned long len = bytes * 1.2;//compressBound(bytes);
-    data = malloc (len);
+    data = ctx_malloc (len);
     int z_result = compress (data, &len, samples, len);
     if (z_result != Z_OK)
     {
@@ -156,7 +156,7 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
     }
   }
 
-  char *encoded = malloc (bytes * 2);
+  char *encoded = ctx_malloc (bytes * 2);
   encoded[0]=0;
   if (audio->encoding == 'a')
   {
@@ -170,10 +170,10 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
   sprintf (buf, "\033[_Af=%i;", frames);
   vt_write (vt, buf, strlen (buf));
   vt_write (vt, encoded, strlen(encoded));
-  free (encoded);
+  ctx_free (encoded);
 
   if (data != samples)
-    free (data);
+    ctx_free (data);
 
   //vt_write (vt, samples, bytes);
   buf[0]='\033';
@@ -1338,12 +1338,12 @@ void vt_audio (VT *vt, const char *command)
      if (audio->data == NULL)
      {
        audio->data_size = chunk_size;
-       audio->data = malloc (audio->data_size + 1);
+       audio->data = ctx_malloc (audio->data_size + 1);
      }
      else
      {
        audio->data_size += chunk_size;
-       audio->data = realloc (audio->data, audio->data_size + 1);
+       audio->data = ctx_realloc (audio->data, audio->data_size + 1);
      }
      memcpy (audio->data + old_size, payload, chunk_size);
      audio->data[audio->data_size]=0;
@@ -1360,7 +1360,7 @@ void vt_audio (VT *vt, const char *command)
         int bin_length = audio->data_size;
         if (bin_length)
         {
-        uint8_t *data2 = malloc ((unsigned int)ctx_a85len ((char*)audio->data, audio->data_size) + 1);
+        uint8_t *data2 = ctx_malloc ((unsigned int)ctx_a85len ((char*)audio->data, audio->data_size) + 1);
         // a85len is inaccurate but gives an upper bound,
         // should be fixed.
         bin_length = ctx_a85dec ((char*)audio->data,
@@ -1376,13 +1376,13 @@ void vt_audio (VT *vt, const char *command)
       case 'b':
       {
         int bin_length = audio->data_size;
-        uint8_t *data2 = malloc (audio->data_size);
+        uint8_t *data2 = ctx_malloc (audio->data_size);
         bin_length = ctx_base642bin ((char*)audio->data,
                                      &bin_length,
                                      data2);
         memcpy (audio->data, data2, bin_length + 1);
         audio->data_size = bin_length;
-        free (data2);
+        ctx_free (data2);
       }
       break;
     }
@@ -1398,7 +1398,7 @@ void vt_audio (VT *vt, const char *command)
       unsigned int
 #endif
               actual_uncompressed_size = audio->frames * audio->bits/8 * audio->channels + 512;
-      unsigned char *data2 = malloc (actual_uncompressed_size);
+      unsigned char *data2 = ctx_malloc (actual_uncompressed_size);
       /* if a buf size is set (rather compression, but
        * this works first..) then */
       int z_result = uncompress (data2, &actual_uncompressed_size,
@@ -1422,7 +1422,7 @@ void vt_audio (VT *vt, const char *command)
         //goto cleanup;
       }
 #endif
-      free (audio->data);
+      ctx_free (audio->data);
       audio->data = data2;
       audio->data_size = actual_uncompressed_size;
     }
@@ -1456,7 +1456,7 @@ void vt_audio (VT *vt, const char *command)
         goto cleanup;
       }
       audio->format = 32;
-      free (audio->data);
+      ctx_free (audio->data);
       audio->data = new_data;
       audio->data_size = audio->buf_width * audio->buf_height * 4;
     }
@@ -1528,7 +1528,7 @@ void vt_audio (VT *vt, const char *command)
            }
          }
        }
-       free (audio->data);
+       ctx_free (audio->data);
        audio->data = NULL;
        audio->data_size=0;
        break;
@@ -1550,7 +1550,7 @@ void vt_audio (VT *vt, const char *command)
 
 //cleanup:
     if (audio->data)
-      free (audio->data);
+      ctx_free (audio->data);
     audio->data = NULL;
     audio->data_size=0;
 }

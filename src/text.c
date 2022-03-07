@@ -28,7 +28,7 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
   ctx_fonts[ctx_font_count].type = 1;
-  ctx_fonts[ctx_font_count].name = (char *) malloc (ctx_strlen (name) + 1);
+  ctx_fonts[ctx_font_count].name = (char *) ctx_malloc (ctx_strlen (name) + 1);
   ctx_strcpy ( (char *) ctx_fonts[ctx_font_count].name, name);
   if (!stbtt_InitFont (&ctx_fonts[ctx_font_count].stb.ttf_info, ttf_contents, 0) )
     {
@@ -401,7 +401,7 @@ static void ctx_font_init_ctx (CtxFont *font)
   // should probably be made a #define
   font->ctx.index = &idx[0];
 #else
-  font->ctx.index = (uint32_t *) malloc (sizeof (uint32_t) * 2 * glyph_count);
+  font->ctx.index = (uint32_t *) ctx_malloc (sizeof (uint32_t) * 2 * glyph_count);
 #endif
   int no = 0;
   for (int i = 0; i < font->ctx.length; i++)
@@ -512,7 +512,7 @@ ctx_glyph_width_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar)
       if (e->code == CTX_DEFINE_GLYPH)
         ret = e->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE;
     }
-    free (data);
+    ctx_free (data);
     ctx_destroy (glyph_ctx);
   }
   return ret;
@@ -532,7 +532,7 @@ ctx_glyph_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
     ctx_parse (glyph_ctx, data);
     int ret = ctx_glyph_drawlist (font, ctx, &(glyph_ctx->drawlist),
                                   unichar, stroke);
-    free (data);
+    ctx_free (data);
     ctx_destroy (glyph_ctx);
     return ret;
   }
@@ -723,12 +723,12 @@ _ctx_text (Ctx        *ctx,
 CtxGlyph *
 ctx_glyph_allocate (int n_glyphs)
 {
-  return (CtxGlyph *) malloc (sizeof (CtxGlyph) * n_glyphs);
+  return (CtxGlyph *) ctx_malloc (sizeof (CtxGlyph) * n_glyphs);
 }
 void
 gtx_glyph_free     (CtxGlyph *glyphs)
 {
-  free (glyphs);
+  ctx_free (glyphs);
 }
 
 void
