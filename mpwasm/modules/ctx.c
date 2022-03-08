@@ -264,6 +264,26 @@ static mp_obj_t mp_ctx_line_dash(mp_obj_t self_in, mp_obj_t dashes_in)
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_line_dash_obj, mp_ctx_line_dash);
 
 
+static mp_obj_t mp_ctx_in_fill(mp_obj_t self_in, mp_obj_t arg1, mp_obj_t arg2)
+{
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
+  return mp_obj_new_bool (ctx_in_fill (self->ctx,
+                                         mp_obj_get_float(arg1),
+                                         mp_obj_get_float(arg2)));
+}
+MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_in_fill_obj, mp_ctx_in_fill);
+
+#if 0
+static mp_obj_t mp_ctx_in_stroke(mp_obj_t self_in, mp_obj_t arg1, mp_obj_t arg2)
+{
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
+  return mp_obj_new_bool (ctx_in_stroke (self->ctx,
+                                           mp_obj_get_float(arg1),
+                                           mp_obj_get_float(arg2)));
+}
+MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_in_stroke_obj, mp_ctx_in_stroke);
+#endif
+
 static mp_obj_t mp_ctx_texture (size_t n_args, const mp_obj_t *args)
 {
         mp_buffer_info_t buffer_info;
@@ -956,6 +976,9 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(tinyvg_get_size),
 	MP_CTX_METHOD(listen),
 	MP_CTX_METHOD(listen_stop_propagate),
+
+        MP_CTX_METHOD(in_fill),
+        //MP_CTX_METHOD(in_stroke),
 
         //MP_CTX_METHOD(key_down),
         //MP_CTX_METHOD(key_up),
