@@ -7,32 +7,6 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 
-/* CTX allocator wrappers {{{ */
-void *ctx_alloc_malloc(size_t size)
-{
-	return m_malloc(size);
-}
-
-void *ctx_alloc_calloc(size_t nmemb, size_t size)
-{
-	size_t byte_size = nmemb * size;
-	char *ret        = (char *)m_malloc(byte_size);
-	for (size_t i = 0; i < byte_size; i++)
-		ret[i] = 0;
-	return ret;
-}
-
-void *ctx_alloc_realloc(void *ptr, size_t size)
-{
-	return m_realloc(ptr, size);
-}
-
-void ctx_alloc_free(void *ptr)
-{
-	return m_free(ptr);
-}
-/* CTX allocator wrappers }}} */
-
 typedef struct _mp_ctx_event_obj_t mp_ctx_event_obj_t;
 typedef struct _mp_ctx_obj_t {
 	mp_obj_base_t base;
@@ -369,6 +343,7 @@ MP_CTX_TEXT_FUNB(stroke_text);
 		mp_ctx_##name##_obj, 2, 2, mp_ctx_##name);
 
 MP_CTX_TEXT_FUN(text);
+MP_CTX_TEXT_FUN(parse);
 MP_CTX_TEXT_FUN(text_stroke);
 
 static mp_obj_t mp_ctx_text_width(mp_obj_t self_in, mp_obj_t string_in)
@@ -975,6 +950,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
 	MP_CTX_METHOD(listen),
+	MP_CTX_METHOD(parse),
 	MP_CTX_METHOD(listen_stop_propagate),
 
         MP_CTX_METHOD(in_fill),
