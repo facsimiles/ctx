@@ -47,7 +47,7 @@ def release_cb (e):
   
   
 def zoom_text(o, string):
-  o.font_size(linear(0,o.height/4))
+  o.font_size=linear(0,o.height/4)
   
   o.text_align(ctx.CENTER).text_baseline(ctx.MIDDLE)
   if pressed:
@@ -69,7 +69,7 @@ o=ctx.get_context("2d") # mirroring the web,
 for frame in range(0,maxframe):
   o.start_frame()
   o.color([0,0,0]).paint()
-  o.global_alpha(linear(0.0, 1.0))
+  o.global_alpha=linear(0.0, 1.0)
   o.logo(o.width/2,o.height/2, o.height)
   o.end_frame()
 
@@ -89,7 +89,7 @@ for frame in range(0,maxframe):
   o.color([0,0,0])
   o.rotate(3.1415/2)
   font_size = o.height * linear(0.09, 0.14)
-  o.font_size(font_size)
+  o.font_size=font_size
   o.move_to(font_size/2,-o.width*0.9)
   
   space_width = o.text_width(' ')

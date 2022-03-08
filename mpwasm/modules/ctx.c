@@ -164,6 +164,28 @@ void gc_collect(void);
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 7, 7, mp_ctx_##name);
 
+
+#define MP_CTX_COMMON_FUN_9F(name)                                             \
+	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
+	{                                                                      \
+		assert(n_args == 10);                                          \
+		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
+		ctx_##name(                                                    \
+			self->ctx,                                             \
+			mp_obj_get_float(args[1]),                             \
+			mp_obj_get_float(args[2]),                             \
+			mp_obj_get_float(args[3]),                             \
+			mp_obj_get_float(args[4]),                             \
+			mp_obj_get_float(args[5]),                             \
+			mp_obj_get_float(args[6]),                             \
+			mp_obj_get_float(args[7]),                             \
+			mp_obj_get_float(args[8]),                             \
+			mp_obj_get_float(args[9]));                            \
+		return self;                                                   \
+	}                                                                      \
+	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
+		mp_ctx_##name##_obj, 10, 10, mp_ctx_##name);
+
 MP_CTX_COMMON_FUN_0(begin_path);
 MP_CTX_COMMON_FUN_0(save);
 MP_CTX_COMMON_FUN_0(restore);
@@ -176,13 +198,9 @@ MP_CTX_COMMON_FUN_0(end_group);
 MP_CTX_COMMON_FUN_0(clip);
 MP_CTX_COMMON_FUN_0(identity);
 MP_CTX_COMMON_FUN_1F(rotate);
-MP_CTX_COMMON_FUN_1F(miter_limit);
-MP_CTX_COMMON_FUN_1F(line_width);
-MP_CTX_COMMON_FUN_1F(global_alpha);
-MP_CTX_COMMON_FUN_1F(line_dash_offset);
-MP_CTX_COMMON_FUN_1F(font_size);
 MP_CTX_COMMON_FUN_2F(scale);
 MP_CTX_COMMON_FUN_2F(translate);
+MP_CTX_COMMON_FUN_9F(apply_transform);
 MP_CTX_COMMON_FUN_2F(line_to);
 MP_CTX_COMMON_FUN_2F(move_to);
 MP_CTX_COMMON_FUN_6F(curve_to);
@@ -792,15 +810,42 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
   if (set_val == MP_OBJ_NULL) {
     switch (attr)
     {
-       case MP_QSTR_width:  return mp_obj_new_int(ctx_width (self->ctx));
-       case MP_QSTR_height: return mp_obj_new_int(ctx_height (self->ctx));
-       case MP_QSTR_x: return mp_obj_new_int(ctx_x (self->ctx));
-       case MP_QSTR_y: return mp_obj_new_int(ctx_y (self->ctx));
+       case MP_QSTR_font_size:
+            return mp_obj_new_float(ctx_get_font_size (self->ctx));
+       case MP_QSTR_line_width:
+            return mp_obj_new_float(ctx_get_line_width (self->ctx));
+       case MP_QSTR_line_dash_offset:
+            return mp_obj_new_float(ctx_get_line_dash_offset (self->ctx));
+       case MP_QSTR_miter_limit:
+            return mp_obj_new_float(ctx_get_miter_limit (self->ctx));
+       case MP_QSTR_global_alpha:
+            return mp_obj_new_float(ctx_get_global_alpha (self->ctx));
+       case MP_QSTR_width:
+            return mp_obj_new_int(ctx_width (self->ctx));
+       case MP_QSTR_height:
+            return mp_obj_new_int(ctx_height (self->ctx));
+       case MP_QSTR_x:
+            return mp_obj_new_int(ctx_x (self->ctx));
+       case MP_QSTR_y:
+            return mp_obj_new_int(ctx_y (self->ctx));
     }
   }
   else
   {
-     return set_val;
+    switch (attr)
+    {
+       case MP_QSTR_line_width:
+         ctx_line_width (self->ctx, mp_obj_get_float (set_val)); break;
+       case MP_QSTR_line_dash_offset:
+         ctx_line_dash_offset (self->ctx, mp_obj_get_float (set_val)); break;
+       case MP_QSTR_miter_limit:
+         ctx_miter_limit (self->ctx, mp_obj_get_float (set_val)); break;
+       case MP_QSTR_global_alpha:
+         ctx_global_alpha (self->ctx, mp_obj_get_float (set_val)); break;
+       case MP_QSTR_font_size:
+         ctx_font_size (self->ctx, mp_obj_get_float (set_val)); break;
+    }
+    return set_val;
   }
   return self_in;
 }
@@ -810,6 +855,11 @@ STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
     if(attr == MP_QSTR_width
      ||attr == MP_QSTR_height
+     ||attr == MP_QSTR_line_width
+     ||attr == MP_QSTR_line_dash_offset
+     ||attr == MP_QSTR_miter_limit
+     ||attr == MP_QSTR_global_alpha
+     ||attr == MP_QSTR_font_size
      ||attr == MP_QSTR_x
      ||attr == MP_QSTR_y)
     {
@@ -856,13 +906,9 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(clip),
 	MP_CTX_METHOD(identity),
 	MP_CTX_METHOD(rotate),
-	MP_CTX_METHOD(miter_limit),
-	MP_CTX_METHOD(line_width),
-	MP_CTX_METHOD(line_dash_offset),
-	MP_CTX_METHOD(global_alpha),
 	MP_CTX_METHOD(font),
-	MP_CTX_METHOD(font_size),
 	MP_CTX_METHOD(scale),
+	MP_CTX_METHOD(apply_transform),
 	MP_CTX_METHOD(translate),
 	MP_CTX_METHOD(line_to),
 	MP_CTX_METHOD(move_to),
@@ -924,6 +970,11 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
        { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_x), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_y), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_line_width), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_line_dash_offset), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_miter_limit), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_global_alpha), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_font_size), MP_ROM_INT(0) },
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_locals_dict, mp_ctx_locals_dict_table);
 
