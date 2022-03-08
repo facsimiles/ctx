@@ -768,6 +768,35 @@ static mp_obj_t mp_ctx_make_new(
 
 extern const mp_obj_type_t mp_ctx_type;
 
+
+static mp_obj_t mp_ctx_new_for_buffer (size_t n_args, const mp_obj_t *args)
+{
+        mp_obj_t buffer_in = args[0];
+        mp_obj_t width_in = args[1];
+        mp_obj_t height_in = args[2];
+        mp_obj_t stride_in = args[3];
+        mp_obj_t format_in = args[4];
+	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
+	o->base.type    = &mp_ctx_type;
+
+        mp_buffer_info_t buffer_info;
+
+        if (!mp_get_buffer(buffer_in, &buffer_info, MP_BUFFER_READ))
+        {
+           mp_raise_TypeError("not a buffer");
+        }
+        int format = mp_obj_get_int (format_in);
+        int width  = mp_obj_get_int (width_in);
+        int height = mp_obj_get_int (height_in);
+        int stride = mp_obj_get_int (stride_in);
+	o->ctx = ctx_new_for_framebuffer (buffer_info.buf,
+                        width, height, stride, format);
+        o->ctx_event = mp_ctx_event_new ();
+	return MP_OBJ_FROM_PTR(o);
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_new_for_buffer_obj, 5, 5, mp_ctx_new_for_buffer);
+
+
 static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 {
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
@@ -1035,8 +1064,9 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ctx_graphics) },
 	{ MP_ROM_QSTR(MP_QSTR_Ctx), MP_ROM_PTR(&mp_ctx_type) },
 	{ MP_ROM_QSTR(MP_QSTR_CtxEvent), MP_ROM_PTR(&mp_ctx_event_type) },
-//	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
+  	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) },
 
 	MP_CTX_INT_CONSTANT(FILL_RULE,WINDING),

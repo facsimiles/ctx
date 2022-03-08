@@ -42,8 +42,10 @@
 #define CTX_TINYVG 1
 #define CTX_DITHER 1
 
-#define CTX_LIMIT_FORMATS       1
+#define CTX_LIMIT_FORMATS       0
+#define CTX_ENABLE_FLOAT        0
 #define CTX_32BIT_SEGMENTS      0
+#define CTX_ENABLE_RGBA8              1
 #define CTX_ENABLE_RGB565             1
 #define CTX_ENABLE_RGB565_BYTESWAPPED 1
 #define CTX_BITPACK_PACKER      0
@@ -62,7 +64,6 @@
 #define CTX_FONTS_FROM_FILE     0
 #define CTX_MAX_KEYDB          10
 #define CTX_FRAGMENT_SPECIALIZE 1
-#define CTX_ENABLE_RGBA8        1
 #define CTX_FAST_FILL_RECT      1
 #define CTX_MAX_TEXTURES        1
 #define CTX_PARSER_MAXLEN       512
@@ -72,10 +73,9 @@
 #define CTX_BLENDING_AND_COMPOSITING 0
 #define CTX_STRINGPOOL_SIZE        256
 #define CTX_MIN_EDGE_LIST_SIZE     2048
-
-#define CTX_AUDIO               0
-#define CTX_CLIENTS             0
-#define CTX_EVENTS              1
+#define CTX_AUDIO                  0
+#define CTX_CLIENTS                0
+#define CTX_EVENTS                 1
 
 
 
