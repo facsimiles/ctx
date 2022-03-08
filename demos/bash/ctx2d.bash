@@ -95,7 +95,6 @@ function scale()           { echo "O $1 $2"; }
 function quadTo()          { echo "Q $1 $2 $3 $4"; }
 function smoothTo()        { echo "S $1 $2 $3 $4"; }
 function smoothQuadTo()    { echo "T $1 $2"; }
-function reset()           { echo "U"; }
 function verLineTo()       { echo "V $1"; }
 function ctxDone()         { echo "X"; }
 function roundRectangle()  { echo "Y $1 $2 $3 $4 $5"; }
@@ -104,7 +103,8 @@ function transform()       { echo "W $1 $2 $3 $4 $5 $6"; }
 function startGroup()      { echo "{ "; }
 function endGroup()        { echo "} "; }
 
-function startFrame()      { echo -e "\e[H\e[?200h reset " ; }
+#function startFrame()           { echo "U"; }
+function startFrame()      { echo -e "\e[H\e[?200h U " ; }
 function endFrame()        { echo -n "flush X "; }
 
 function update_event()
@@ -193,7 +193,7 @@ function next_event(){
 
 ctx_init $0 $@
 
-if [ `basename $0` == ctx.bash ];then
+if [ `basename $0` == ctx2d.bash ];then
    startFrame
    rgba 1 1 1 1
    fontSize 10%
