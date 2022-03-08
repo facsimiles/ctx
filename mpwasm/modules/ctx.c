@@ -335,7 +335,9 @@ MP_CTX_TEXT_FUNB(stroke_text);
 
 MP_CTX_TEXT_FUN(text);
 MP_CTX_TEXT_FUN(parse);
+#if 0
 MP_CTX_TEXT_FUN(text_stroke);
+#endif
 
 static mp_obj_t mp_ctx_text_width(mp_obj_t self_in, mp_obj_t string_in)
 {
@@ -964,8 +966,8 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(paint),
 	MP_CTX_METHOD(logo),
 	MP_CTX_METHOD(text),
-	MP_CTX_METHOD(text_stroke),
 #if 0
+	MP_CTX_METHOD(text_stroke),
 	MP_CTX_METHOD(fill_text),
 	MP_CTX_METHOD(stroke_text),
 #endif
