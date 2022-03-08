@@ -41,7 +41,7 @@
       </select>
       <button id='run' title='ctrl+return' onclick='dorun()'>run</button>
       <button id='save' title='ctrl+s' onclick='dosave()'>save</button>
-      <button id='save' title='ctrl+s' onclick='dounlink()'>remove file</button>
+      <button id='save' title='note, the file continues being open in the editor' onclick='dounlink()'>remove file</button>
 
       <div class='led' id='led0'></div>
       <div class='led' id='led1'></div>
@@ -64,7 +64,7 @@
     </div>
     <textarea id='script' cols='40'>
     </textarea>
-    <div id='mp_js_stdout'></div>
-    <canvas id='c' width='160' height='80' tabindex='0'></canvas>
+    <div id='mp_js_stdout' tabindex='2'></div>
+    <canvas id='c' width='160' height='80' tabindex='1'></canvas>
   </body>
 </html>

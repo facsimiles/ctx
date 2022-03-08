@@ -185,9 +185,72 @@ window.windowToCanvas = function(canvas, x, y)
            y: (y - bbox.top)  * (canvas.height / bbox.height)}
 }
 
+  window.in_escape    = false;
+  window.in_sbracket  = false;
+  window.rel_cur_pos = 0;
 
     document.getElementById('mp_js_stdout').addEventListener('print', function(e) {
-        document.getElementById('mp_js_stdout').innerText += e.data;
+     var stdout = document.getElementById('mp_js_stdout');
+        if (window.in_escape)
+        {
+          if (window.in_sbracket)
+          {
+            switch (e.data)
+            {
+              case 'K':
+                {
+                  var string = stdout.innerText;
+                stdout.innerText = string.substring(
+                        0, string.length-1);
+                }
+              break;
+              default:
+                stdout.innerText = stdout.innerText + '[CSI ' + e.data +']';
+            }
+            window.in_escape = false;
+          }
+          else
+          {
+            if (e.data == '[')
+            {
+              window.in_sbracket = true;
+            }
+            else
+            {
+              window.in_escape = false;
+            }
+          }
+        }
+        else
+        {
+          if (e.data.charCodeAt(0) == 8)
+          {
+//          window.rel_cur_pos -= 1;
+          }
+          else if (e.data.charCodeAt(0) == 27)
+          {
+            window.in_escape = true;
+            window.in_sbracket = false;
+          }
+          else
+          {
+            if (window.rel_cur_pos == 0)
+            {
+            stdout.innerText += e.data;
+            }
+            else
+            {
+              var string = stdout.innerText;
+              stdout.innerText =
+                 string.substring(0, string.length + window.rel_cur_pos) +
+                 e.data
+                 + string.substring(string.length + window.rel_cur_pos + 2, string.length - 1);
+              //window.rel_cur_pos ++;
+
+            }
+            stdout.scrollTo(0, 10000000);
+          }
+        }
     }, false);
     dorun();
 
@@ -224,7 +287,90 @@ window.editor_load = function (path)
               }
 
             }
+  document.getElementById('mp_js_stdout').onkeydown=function(e)
+  {
+     if (e.ctrlKey)
+     {
+        if (e.which >= 65 && e.which <= 75){
+          e.preventDefault();
+          mp_js_process_char (e.which - 64);
+                console.log('foo!')
+        }
+     }
+     else
+     {
+        e.preventDefault();
 
+     if (e.which == 32 || e.which == 13 || e.which == 8 || e.which == 9) {
+        mp_js_process_char (e.which);
+     }
+     else if (e.which >= 65 && e.which <= 90)
+     {
+        mp_js_process_char (e.shiftKey?e.which:e.which+32);
+     }
+     else if (e.which >=48 && e.which <= 57)
+     {
+        /* TODO : replace with a keymap  */
+        if (e.shiftKey)
+          switch (e.which)
+          {
+            case 48: mp_js_process_char (')'.charCodeAt(0)); break;
+            case 49: mp_js_process_char ('!'.charCodeAt(0)); break;
+            case 50: mp_js_process_char ('@'.charCodeAt(0)); break;
+            case 51: mp_js_process_char ('#'.charCodeAt(0)); break;
+            case 52: mp_js_process_char ('$'.charCodeAt(0)); break;
+            case 53: mp_js_process_char ('%'.charCodeAt(0)); break;
+            case 54: mp_js_process_char ('^'.charCodeAt(0)); break;
+            case 55: mp_js_process_char ('&'.charCodeAt(0)); break;
+            case 56: mp_js_process_char ('*'.charCodeAt(0)); break;
+            case 57: mp_js_process_char ('('.charCodeAt(0)); break;
+          }
+        else
+          mp_js_process_char (e.which);
+     }
+     else
+     {
+        switch (e.which)
+        {
+          
+/*
+          case 37://left
+            mp_js_process_char (27);
+            mp_js_process_char ('['.charCodeAt(0));
+            mp_js_process_char ('D'.charCodeAt(0));
+            break;
+          case 38://up
+            mp_js_process_char (27);
+            mp_js_process_char ('['.charCodeAt(0));
+            mp_js_process_char ('A'.charCodeAt(0));
+            break;
+          case 39://right
+            mp_js_process_char (27);
+            mp_js_process_char ('['.charCodeAt(0));
+            mp_js_process_char ('C'.charCodeAt(0));
+            break;
+          case 40://down
+            mp_js_process_char (27);
+            mp_js_process_char ('['.charCodeAt(0));
+            mp_js_process_char ('B'.charCodeAt(0));
+            break;*/
+          case 188: mp_js_process_char (e.shiftKey?60:44);break;
+          case 190: mp_js_process_char (e.shiftKey?62:46);break;
+          case 222: mp_js_process_char (e.shiftKey?34:39);break;
+          case 59:  mp_js_process_char (e.shiftKey?59:58);break;
+          case 191: mp_js_process_char (e.shiftKey?63:47);break;
+          case 219: mp_js_process_char (e.shiftKey?123:91);break;
+          case 221: mp_js_process_char (e.shiftKey?125:93);break;
+          case 220: mp_js_process_char (e.shiftKey?124:92);break;
+          case 173: mp_js_process_char (e.shiftKey?95:45);break;
+          case 61: mp_js_process_char (e.shiftKey?43:61);break;
+          case 192: mp_js_process_char (e.shiftKey?126:96);break;
+          default:
+           console.log('unhandled key' + e.which);
+        }
+     }
+     }
+  }
 
 }
 

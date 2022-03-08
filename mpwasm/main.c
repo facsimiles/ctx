@@ -139,6 +139,10 @@ void mp_js_init(int heap_size) {
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_lib));
 }
 
+void mp_js_init_repl() {
+    pyexec_event_repl_init();
+}
+
 
 int do_path (const char *path)
 {
@@ -175,6 +179,7 @@ int do_path (const char *path)
           ret = 1;
       }
   }
+  mp_js_init_repl();
   return ret;
 }
 
@@ -212,6 +217,8 @@ int do_str(const char *src, mp_parse_input_kind_t input_kind)
             ret = 1;
         }
     }
+
+    mp_js_init_repl();
     return ret;
 }
 #endif
@@ -223,10 +230,6 @@ int mp_js_process_char(int c) {
 
 int mp_js_do_str(const char *code) {
     return do_str(code, MP_PARSE_FILE_INPUT);
-}
-
-void mp_js_init_repl() {
-    pyexec_event_repl_init();
 }
 
 STATIC void gc_scan_func(void *begin, void *end) {
@@ -258,17 +261,23 @@ MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
 #endif
 
 void nlr_jump_fail(void *val) {
-        exit(0);
+    fprintf (stderr, "%s\n", __FUNCTION__);
+#if 1
+    exit(0);
     while (1) {
         ;
     }
+#endif
 }
 
 void NORETURN __fatal_error(const char *msg) {
-        exit(0);
+    fprintf (stderr, "%s\n", __FUNCTION__);
+#if 1
+    exit(0);
     while (1) {
         ;
     }
+#endif
 }
 
 #ifndef NDEBUG

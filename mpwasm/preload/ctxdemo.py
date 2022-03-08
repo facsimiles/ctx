@@ -15,7 +15,7 @@
 import ctx
 import micropython
 
-maxframe = 100.0  # adjust this to change
+maxframe = 2.0  # adjust this to change
                   # the number of frames for each demo loop
 disp = 0  #dummy
 
