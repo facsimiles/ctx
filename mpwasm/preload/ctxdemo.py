@@ -3,7 +3,7 @@
 # simulation firmware - and some card10
 # applications might work without modification
 #
-# ctrl+r runs the script currently in the editor
+# ctrl+return runs the script currently in the editor
 # ctrl+s saves you can also create new files and
 #        paths when saving, a reload of the
 #        page clears the filesystem.
@@ -15,10 +15,8 @@
 import ctx
 import micropython
 
-maxframe = 100.0  # adjust this to change
+maxframe = 80.0  # adjust this to change
                   # the number of frames for each demo loop
-disp = 0  #dummy
-
 def linear(start_val,end_val):
   return (frame/maxframe)*(end_val-start_val)+start_val
 
@@ -49,13 +47,18 @@ def release_cb (e):
 def zoom_text(o, string):
   o.font_size=linear(0,o.height/4)
   
-  o.text_align(ctx.CENTER).text_baseline(ctx.MIDDLE)
+  o.text_align=ctx.CENTER
+  o.text_baseline=ctx.MIDDLE
   if pressed:
-    o.color([0.0,0.0,0.5]).fill_text(string,o.width/2+0.5,o.height*0.8+0.5);
-    o.color([1.0,1.0,1.0]).fill_text(string,o.width/2+0.5,o.height*0.8+0.5);
+    o.move_to(o.width/2+0.5,o.height*0.8+0.5)
+    o.color([0.0,0.0,0.5]).text(string)
+    o.move_to(o.width/2+0.5,o.height*0.8+0.5)
+    o.color([1.0,1.0,1.0]).text(string)
   else:
-    o.color([0.0,0.0,0.5]).fill_text(string,o.width/2+0.5,o.height*0.8+0.5);
-    o.color([1.0,1.0,1.0]).fill_text(string,o.width/2,o.height*0.8);
+    o.move_to(o.width/2+0.5,o.height*0.8+0.5)
+    o.color([0.0,0.0,0.5]).text(string)
+    o.move_to(o.width/2,o.height*0.8)
+    o.color([1.0,1.0,1.0]).text(string)
   o.rectangle(0,0,o.width,o.height)
   o.listen(ctx.PRESS, press_cb) 
   o.listen(ctx.RELEASE, release_cb) 

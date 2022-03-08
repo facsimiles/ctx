@@ -166,7 +166,7 @@ MP_CTX_COMMON_FUN_0_idle(end_frame);
 MP_CTX_COMMON_FUN_0(start_group);
 MP_CTX_COMMON_FUN_0(end_group);
 MP_CTX_COMMON_FUN_0(clip);
-MP_CTX_COMMON_FUN_0(identity);
+//MP_CTX_COMMON_FUN_0(identity);
 MP_CTX_COMMON_FUN_1F(rotate);
 MP_CTX_COMMON_FUN_2F(scale);
 MP_CTX_COMMON_FUN_2F(translate);
@@ -193,16 +193,6 @@ MP_CTX_COMMON_FUN_0(fill);
 MP_CTX_COMMON_FUN_0(stroke);
 MP_CTX_COMMON_FUN_0(paint);
 MP_CTX_COMMON_FUN_3F(logo);
-
-
-MP_CTX_COMMON_FUN_1I(blend_mode);
-MP_CTX_COMMON_FUN_1I(text_align);
-MP_CTX_COMMON_FUN_1I(text_baseline);
-MP_CTX_COMMON_FUN_1I(fill_rule);
-MP_CTX_COMMON_FUN_1I(line_cap);
-MP_CTX_COMMON_FUN_1I(line_join);
-MP_CTX_COMMON_FUN_1I(compositing_mode);
-MP_CTX_COMMON_FUN_1I(image_smoothing);
 
 //MP_CTX_COMMON_FUN_3F(key_down);
 //MP_CTX_COMMON_FUN_3F(key_up);
@@ -322,8 +312,10 @@ MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_font_obj, mp_ctx_font);
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 4, 4, mp_ctx_##name);
 
+#if 0
 MP_CTX_TEXT_FUNB(fill_text);
 MP_CTX_TEXT_FUNB(stroke_text);
+#endif
 
 
 #define MP_CTX_TEXT_FUN(name)                                                  \
@@ -411,6 +403,7 @@ static mp_obj_t mp_ctx_color(size_t n_args, const mp_obj_t *args)
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_color_obj, 2, 3, mp_ctx_color);
 
+#if 0
 static mp_obj_t mp_ctx_stroke_color(size_t n_args, const mp_obj_t *args)
 {
 	return mp_ctx_color_common(n_args, args, true);
@@ -418,6 +411,7 @@ static mp_obj_t mp_ctx_stroke_color(size_t n_args, const mp_obj_t *args)
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(
 	mp_ctx_stroke_color_obj, 2, 3, mp_ctx_stroke_color
 );
+#endif
 
 static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
 {
@@ -799,6 +793,22 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
   if (set_val == MP_OBJ_NULL) {
     switch (attr)
     {
+       case MP_QSTR_image_smoothing:
+            return mp_obj_new_int(ctx_get_image_smoothing (self->ctx));
+       case MP_QSTR_fill_rule:
+            return mp_obj_new_int(ctx_get_fill_rule (self->ctx));
+       case MP_QSTR_blend_mode:
+            return mp_obj_new_int(ctx_get_blend_mode (self->ctx));
+       case MP_QSTR_compositing_mode:
+            return mp_obj_new_int(ctx_get_compositing_mode (self->ctx));
+       case MP_QSTR_line_cap:
+            return mp_obj_new_int(ctx_get_line_cap (self->ctx));
+       case MP_QSTR_line_join:
+            return mp_obj_new_int(ctx_get_line_join (self->ctx));
+       case MP_QSTR_text_align:
+            return mp_obj_new_int(ctx_get_text_align (self->ctx));
+       case MP_QSTR_text_baseline:
+            return mp_obj_new_int(ctx_get_text_baseline (self->ctx));
        case MP_QSTR_font_size:
             return mp_obj_new_float(ctx_get_font_size (self->ctx));
        case MP_QSTR_line_width:
@@ -823,6 +833,22 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
   {
     switch (attr)
     {
+       case MP_QSTR_image_smoothing:
+         ctx_image_smoothing (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_fill_rule:
+         ctx_fill_rule (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_compositing_mode:
+         ctx_compositing_mode (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_line_cap:
+         ctx_line_cap (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_line_join:
+         ctx_line_join (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_text_align:
+         ctx_text_align (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_blend_mode:
+         ctx_blend_mode (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_text_baseline:
+         ctx_text_baseline (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_line_width:
          ctx_line_width (self->ctx, mp_obj_get_float (set_val)); break;
        case MP_QSTR_line_dash_offset:
@@ -844,6 +870,14 @@ STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
     if(attr == MP_QSTR_width
      ||attr == MP_QSTR_height
+     ||attr == MP_QSTR_compositing_mode
+     ||attr == MP_QSTR_line_cap
+     ||attr == MP_QSTR_line_join
+     ||attr == MP_QSTR_text_align
+     ||attr == MP_QSTR_blend_mode
+     ||attr == MP_QSTR_fill_rule
+     ||attr == MP_QSTR_image_smoothing
+     ||attr == MP_QSTR_text_baseline
      ||attr == MP_QSTR_line_width
      ||attr == MP_QSTR_line_dash_offset
      ||attr == MP_QSTR_miter_limit
@@ -893,7 +927,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(start_group),
 	MP_CTX_METHOD(end_group),
 	MP_CTX_METHOD(clip),
-	MP_CTX_METHOD(identity),
+	//MP_CTX_METHOD(identity),
 	MP_CTX_METHOD(rotate),
 	MP_CTX_METHOD(font),
 	MP_CTX_METHOD(scale),
@@ -918,26 +952,22 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(stroke),
 	MP_CTX_METHOD(paint),
 	MP_CTX_METHOD(logo),
-	MP_CTX_METHOD(blend_mode),
-	MP_CTX_METHOD(text_align),
-	MP_CTX_METHOD(text_baseline),
-	MP_CTX_METHOD(fill_rule),
-	MP_CTX_METHOD(line_cap),
-	MP_CTX_METHOD(line_join),
-	MP_CTX_METHOD(compositing_mode),
 	MP_CTX_METHOD(text),
 	MP_CTX_METHOD(text_stroke),
+#if 0
 	MP_CTX_METHOD(fill_text),
 	MP_CTX_METHOD(stroke_text),
+#endif
 	MP_CTX_METHOD(text_width),
 	MP_CTX_METHOD(linear_gradient),
 	MP_CTX_METHOD(radial_gradient),
 	MP_CTX_METHOD(line_dash),
 	MP_CTX_METHOD(add_stop),
 	MP_CTX_METHOD(texture),
-	MP_CTX_METHOD(image_smoothing),
 	MP_CTX_METHOD(color),
+#if 0
 	MP_CTX_METHOD(stroke_color),
+#endif
 	MP_CTX_METHOD(update),
 	MP_CTX_METHOD(start_frame),
 	MP_CTX_METHOD(end_frame),
@@ -949,7 +979,6 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 
         MP_CTX_METHOD(in_fill),
         //MP_CTX_METHOD(in_stroke),
-
         //MP_CTX_METHOD(key_down),
         //MP_CTX_METHOD(key_up),
         //MP_CTX_METHOD(key_press),
@@ -963,6 +992,14 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
        { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_x), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_y), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_image_smoothing), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_compositing_mode), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_blend_mode), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_line_cap), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_line_join), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_text_align), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_fill_rule), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_text_baseline), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_line_width), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_line_dash_offset), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_miter_limit), MP_ROM_INT(0) },

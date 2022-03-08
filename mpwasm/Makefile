@@ -1,4 +1,4 @@
-include ../../micropython-1.18/py/mkenv.mk
+include ../../micropython/py/mkenv.mk
 
 CROSS = 0
 
@@ -32,14 +32,6 @@ SRC_C = \
 	mphalport.c \
 	$(wildcard modules/*.c) \
 	$(TOP)/shared/timeutils/timeutils.c
-
-#$(BUILD)/modules/py/%.mpy: modules/py/%.py
-#	@mkdir -p $(BUILD)/modules/py || true
-#	mpy-cross $< -o $@
-
-#$(BUILD)/modules/py/%.mpy.c: $(BUILD)/modules/py/%.mpy
-#	cd $(BUILD)/modules/py;$(TOP)/tools/mpy-tool.py -f -q $(BUILD)/genhdr/qstrdefs.preprocessed.h -mlongint-impl=none `basename $<` > `basename $@`
-#	wc $@
 
 SRC_QSTR += $(SRC_C)
 
