@@ -288,6 +288,7 @@ static mp_obj_t mp_ctx_arc(size_t n_args, const mp_obj_t *args)
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_arc_obj, 7, 7, mp_ctx_arc);
 
+#if 0
 static mp_obj_t mp_ctx_font(mp_obj_t self_in, mp_obj_t font_in)
 {
 	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -296,6 +297,7 @@ static mp_obj_t mp_ctx_font(mp_obj_t self_in, mp_obj_t font_in)
         return self_in;                                                \
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_font_obj, mp_ctx_font);
+#endif
 
 #define MP_CTX_TEXT_FUNB(name)                                                  \
 	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
@@ -793,6 +795,11 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
   if (set_val == MP_OBJ_NULL) {
     switch (attr)
     {
+       case MP_QSTR_font:
+            {
+              const char *font = ctx_get_font (self->ctx);
+              return mp_obj_new_str(font, strlen(font));
+            }
        case MP_QSTR_image_smoothing:
             return mp_obj_new_int(ctx_get_image_smoothing (self->ctx));
        case MP_QSTR_fill_rule:
@@ -833,6 +840,8 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
   {
     switch (attr)
     {
+       case MP_QSTR_font:
+         ctx_font (self->ctx, mp_obj_str_get_str (set_val)); break;
        case MP_QSTR_image_smoothing:
          ctx_image_smoothing (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_fill_rule:
@@ -870,6 +879,7 @@ STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
     if(attr == MP_QSTR_width
      ||attr == MP_QSTR_height
+     ||attr == MP_QSTR_font
      ||attr == MP_QSTR_compositing_mode
      ||attr == MP_QSTR_line_cap
      ||attr == MP_QSTR_line_join
@@ -883,6 +893,7 @@ STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
      ||attr == MP_QSTR_miter_limit
      ||attr == MP_QSTR_global_alpha
      ||attr == MP_QSTR_font_size
+     ||attr == MP_QSTR_font
      ||attr == MP_QSTR_x
      ||attr == MP_QSTR_y)
     {
@@ -929,7 +940,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(clip),
 	//MP_CTX_METHOD(identity),
 	MP_CTX_METHOD(rotate),
-	MP_CTX_METHOD(font),
+	//MP_CTX_METHOD(font),
 	MP_CTX_METHOD(scale),
 	MP_CTX_METHOD(apply_transform),
 	MP_CTX_METHOD(translate),
@@ -988,6 +999,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         //MP_CTX_METHOD(pointer_press),
 
         // Instance attributes
+       { MP_ROM_QSTR(MP_QSTR_font), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_x), MP_ROM_INT(0) },
