@@ -227,6 +227,9 @@ window.windowToCanvas = function(canvas, x, y)
           {
 //          window.rel_cur_pos -= 1;
           }
+          else if (e.data.charCodeAt(0) == 10)
+          {
+          }
           else if (e.data.charCodeAt(0) == 27)
           {
             window.in_escape = true;
