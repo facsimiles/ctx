@@ -15,7 +15,7 @@
 import ctx
 import micropython
 
-maxframe = 2.0  # adjust this to change
+maxframe = 100.0  # adjust this to change
                   # the number of frames for each demo loop
 disp = 0  #dummy
 
@@ -49,7 +49,7 @@ def release_cb (e):
 def zoom_text(o, string):
   o.font_size(linear(0,o.height/4))
   
-  o.text_align(o.CENTER).text_baseline(o.MIDDLE)
+  o.text_align(ctx.CENTER).text_baseline(ctx.MIDDLE)
   if pressed:
     o.color([0.0,0.0,0.5]).fill_text(string,o.width/2+0.5,o.height*0.8+0.5);
     o.color([1.0,1.0,1.0]).fill_text(string,o.width/2+0.5,o.height*0.8+0.5);
@@ -57,8 +57,8 @@ def zoom_text(o, string):
     o.color([0.0,0.0,0.5]).fill_text(string,o.width/2+0.5,o.height*0.8+0.5);
     o.color([1.0,1.0,1.0]).fill_text(string,o.width/2,o.height*0.8);
   o.rectangle(0,0,o.width,o.height)
-  o.listen(o.PRESS, press_cb) 
-  o.listen(o.RELEASE, release_cb) 
+  o.listen(ctx.PRESS, press_cb) 
+  o.listen(ctx.RELEASE, release_cb) 
 
   o.begin_path()
     
