@@ -1,9 +1,5 @@
 #include "ctx.h"
-/* ctx needs an allocator - make it use the one from MicroPython */
-//#include "ctx-alloc.h"
-
 #include "epicardium.h"
-
 #include "py/obj.h"
 #include "py/runtime.h"
 
@@ -198,6 +194,7 @@ MP_CTX_COMMON_FUN_0(stroke);
 MP_CTX_COMMON_FUN_0(paint);
 MP_CTX_COMMON_FUN_3F(logo);
 
+
 MP_CTX_COMMON_FUN_1I(blend_mode);
 MP_CTX_COMMON_FUN_1I(text_align);
 MP_CTX_COMMON_FUN_1I(text_baseline);
@@ -210,10 +207,10 @@ MP_CTX_COMMON_FUN_1I(image_smoothing);
 //MP_CTX_COMMON_FUN_3F(key_down);
 //MP_CTX_COMMON_FUN_3F(key_up);
 //MP_CTX_COMMON_FUN_3F(key_press);
-MP_CTX_COMMON_FUN_4F(scrolled);
-MP_CTX_COMMON_FUN_4F(pointer_motion);
-MP_CTX_COMMON_FUN_4F(pointer_release);
-MP_CTX_COMMON_FUN_4F(pointer_press);
+//MP_CTX_COMMON_FUN_4F(scrolled);
+//MP_CTX_COMMON_FUN_4F(pointer_motion);
+//MP_CTX_COMMON_FUN_4F(pointer_release);
+//MP_CTX_COMMON_FUN_4F(pointer_press);
         // missing: incoming_message
         //          pointer_drop
 
@@ -785,18 +782,15 @@ static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_new_drawlist_obj, mp_ctx_new_drawlist);
 
-
 static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 {
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = &mp_ctx_type;
 	o->ctx          = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
-        o->ctx_event = mp_ctx_event_new ();
-        //ctx_start_frame (o->ctx);
+        o->ctx_event    = mp_ctx_event_new ();
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);
-
 
 STATIC mp_obj_t
 mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
@@ -959,10 +953,10 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         //MP_CTX_METHOD(key_down),
         //MP_CTX_METHOD(key_up),
         //MP_CTX_METHOD(key_press),
-        MP_CTX_METHOD(scrolled),
-        MP_CTX_METHOD(pointer_motion),
-        MP_CTX_METHOD(pointer_release),
-        MP_CTX_METHOD(pointer_press),
+        //MP_CTX_METHOD(scrolled),
+        //MP_CTX_METHOD(pointer_motion),
+        //MP_CTX_METHOD(pointer_release),
+        //MP_CTX_METHOD(pointer_press),
 
         // Instance attributes
        { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_INT(0) },

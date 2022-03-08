@@ -4151,7 +4151,7 @@ foo:
         break;
       case CTX_PAINT:
         // XXX simplify this with a special case
-        ctx_rasterizer_rectangle (rasterizer, -1000.0, -1000.0, 10000, 10000);
+        ctx_rasterizer_rectangle (rasterizer, -1000.0, -1000.0, 11000, 11000);
         ctx_rasterizer_fill (rasterizer);
         ctx_rasterizer_reset (rasterizer);
         break;

@@ -29,6 +29,7 @@ get_fb(int w, int h) {
 
 void  update_fb (Ctx *ctx, void *user_data)
 {
+  int sync = 0;
   EM_ASM(
     var canvas = document.getElementById('c');
     var context = canvas.getContext('2d');
@@ -82,25 +83,28 @@ void  update_fb (Ctx *ctx, void *user_data)
 
      //if (!canvas.regevents)
      {
-
        canvas.onmousedown = function (e){
+          var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          _ctx_pointer_press (_ctx, loc.x, loc.y, 0, 0);
+          _ctx_pointer_press (_ctx, loc.x, loc.y, 0, 0, sync);
           e.stopPropagate=1;
                        };
        canvas.onmouseup = function (e){
+          var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          _ctx_pointer_release (_ctx, loc.x, loc.y, 0, 0);
+          _ctx_pointer_release (_ctx, loc.x, loc.y, 0, 0, sync);
           e.stopPropagate=1;
                        };
        canvas.onmousemove = function (e){
+          var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          _ctx_pointer_motion (_ctx, loc.x, loc.y, 0, 0);
+          _ctx_pointer_motion (_ctx, loc.x, loc.y, 0, 0, sync);
           e.stopPropagate=1;
                        };
        canvas.onkeydown = function (e){
-                       _ctx_key_down(_ctx,e.keyCode,0,0);
-                       _ctx_key_press(_ctx,e.keyCode,0,0);
+          var sync = 0;
+                       _ctx_key_down(_ctx,e.keyCode,0,0, sync);
+                       _ctx_key_press(_ctx,e.keyCode,0,0, sync);
                        // XXX : todo, pass some tings like ctrl+l and ctrl+r
                        //       through?
                        e.preventDefault();
@@ -108,7 +112,8 @@ void  update_fb (Ctx *ctx, void *user_data)
                        };
 
        canvas.onkeyup = function (e){
-                       _ctx_key_up(_ctx,e.keyCode,0,0);
+          var sync = 0;
+                       _ctx_key_up(_ctx,e.keyCode,0,0, sync);
                        e.preventDefault();
                        e.stopPropagate = 1;
                        };

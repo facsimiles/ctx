@@ -742,6 +742,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
 
 void ctx_nct_consume_events (Ctx *ctx)
 {
+  int sync = 1;
   int ix, iy;
   CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
   const char *event = NULL;
@@ -755,11 +756,11 @@ void ctx_nct_consume_events (Ctx *ctx)
 
     if (!strcmp (event, "pp"))
     {
-      ctx_pointer_press (ctx, x, y, 0, 0);
+      ctx_pointer_press (ctx, x, y, 0, 0, sync);
       ctxctx->was_down = 1;
     } else if (!strcmp (event, "pr"))
     {
-      ctx_pointer_release (ctx, x, y, 0, 0);
+      ctx_pointer_release (ctx, x, y, 0, 0, sync);
       ctxctx->was_down = 0;
     } else if (!strcmp (event, "pm"))
     {
@@ -767,13 +768,13 @@ void ctx_nct_consume_events (Ctx *ctx)
       //nct_flush (backend->term);
       if (ctxctx->was_down)
       {
-        ctx_pointer_release (ctx, x, y, 0, 0);
+        ctx_pointer_release (ctx, x, y, 0, 0, sync);
         ctxctx->was_down = 0;
       }
-      ctx_pointer_motion (ctx, x, y, 0, 0);
+      ctx_pointer_motion (ctx, x, y, 0, 0, sync);
     } else if (!strcmp (event, "pd"))
     {
-      ctx_pointer_motion (ctx, x, y, 0, 0);
+      ctx_pointer_motion (ctx, x, y, 0, 0, sync);
     } else if (!strcmp (event, "size-changed"))
     {
 #if 0
@@ -804,19 +805,19 @@ void ctx_nct_consume_events (Ctx *ctx)
     else
     {
       if (!strcmp (event, "esc"))
-        ctx_key_press (ctx, 0, "escape", 0);
+        ctx_key_press (ctx, 0, "escape", 0, sync);
       else if (!strcmp (event, "space"))
-        ctx_key_press (ctx, 0, "space", 0);
+        ctx_key_press (ctx, 0, "space", 0, sync);
       else if (!strcmp (event, "enter"))
-        ctx_key_press (ctx, 0, "\n", 0);
+        ctx_key_press (ctx, 0, "\n", 0, sync);
       else if (!strcmp (event, "return"))
-        ctx_key_press (ctx, 0, "return", 0);
+        ctx_key_press (ctx, 0, "return", 0, sync);
       else if (!strcmp (event, "idle"))
       {
         event = NULL;
       }
       else
-      ctx_key_press (ctx, 0, event, 0);
+      ctx_key_press (ctx, 0, event, 0, sync);
     }
   }  while (event);
 }

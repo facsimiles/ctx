@@ -392,6 +392,7 @@ void ctx_ctx_destroy (CtxCtx *ctx)
 void ctx_ctx_consume_events (Ctx *ctx)
 {
   //int ix, iy;
+  int sync = 1;
   CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
   const char *event = NULL;
 #if CTX_AUDIO
@@ -431,20 +432,20 @@ void ctx_ctx_consume_events (Ctx *ctx)
       }
       else if (!strcmp (event_type, "pp"))
       {
-        ctx_pointer_press (ctx, x, y, b, 0);
+        ctx_pointer_press (ctx, x, y, b, 0, sync);
       }
       else if (!strcmp (event_type, "pd")||
                !strcmp (event_type, "pm"))
       {
-        ctx_pointer_motion (ctx, x, y, b, 0);
+        ctx_pointer_motion (ctx, x, y, b, 0, sync);
       }
       else if (!strcmp (event_type, "pr"))
       {
-        ctx_pointer_release (ctx, x, y, b, 0);
+        ctx_pointer_release (ctx, x, y, b, 0, sync);
       }
       else if (!strcmp (event_type, "message"))
       {
-        ctx_incoming_message (ctx, event + strlen ("message"), 0);
+        ctx_incoming_message (ctx, event + strlen ("message"), 0, sync);
       } else if (!strcmp (event, "size-changed"))
       {
         fprintf (stdout, "\e[H\e[2J\e[?25l");
@@ -466,16 +467,16 @@ void ctx_ctx_consume_events (Ctx *ctx)
       else if (!strcmp (event_type, "keyup"))
       {
         char buf[4]={ x, 0 };
-        ctx_key_up (ctx, (int)x, buf, 0);
+        ctx_key_up (ctx, (int)x, buf, 0, sync);
       }
       else if (!strcmp (event_type, "keydown"))
       {
         char buf[4]={ x, 0 };
-        ctx_key_down (ctx, (int)x, buf, 0);
+        ctx_key_down (ctx, (int)x, buf, 0, sync);
       }
       else
       {
-        ctx_key_press (ctx, 0, event, 0);
+        ctx_key_press (ctx, 0, event, 0, sync);
       }
       }
     } while (event);
