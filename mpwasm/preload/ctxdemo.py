@@ -71,9 +71,38 @@ for frame in range(0,maxframe):
   o.color([0,0,0]).paint()
   o.global_alpha(linear(0.0, 1.0))
   o.logo(o.width/2,o.height/2, o.height)
+  o.end_frame()
+
+long_text="""ctx itself doesn't provide wordwrapping, but it provides facilities that
+make it possible to implement in micropython, measuring words as well as making use
+of the moving current point makes it possible.
+
+This example is text rotated 90 degrees, and wrapped to fit the size of the canvas.
+
+Reading rewrapping text is difficult.
+"""
+
+for frame in range(0,maxframe):
+  o.start_frame()
+  o.color([255,255,255]).paint()
+  o.save()
+  o.color([0,0,0])
+  o.rotate(3.1415/2)
+  font_size = o.height * linear(0.09, 0.14)
+  o.font_size(font_size)
+  o.move_to(font_size/2,-o.width*0.9)
+  
+  space_width = o.text_width(' ')
+  for i in long_text.split():
+    word_width = o.text_width(i)
+    if (o.x + word_width > o.height - font_size/2):
+      o.move_to(font_size/2,o.y + font_size)
+    o.text(i)
+    o.move_to(o.x + space_width, o.y)
   o.restore()
   o.end_frame()
-    
+  
+  
 for frame in range(0,maxframe):
   o.start_frame()
   o.color([0,0,0]).paint()
@@ -169,4 +198,5 @@ for frame in range(0,maxframe):
   o.color([0,0,0]).paint()  
   o.logo(o.width/2,o.height/2, linear(o.height*10,o.height))
   o.end_frame()
+
 

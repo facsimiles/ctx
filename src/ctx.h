@@ -994,11 +994,13 @@ void  ctx_text          (Ctx        *ctx,
 void  ctx_text_stroke   (Ctx        *ctx,
                          const char *string);
 
+// XXX do not use?
 void  ctx_fill_text     (Ctx        *ctx,
                          const char *string,
                          float       x,
                          float       y);
 
+// XXX do not use?
 void  ctx_stroke_text   (Ctx        *ctx,
                          const char *string,
                          float       x,

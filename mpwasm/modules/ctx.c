@@ -298,7 +298,7 @@ static mp_obj_t mp_ctx_font(mp_obj_t self_in, mp_obj_t font_in)
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_font_obj, mp_ctx_font);
 
-#define MP_CTX_TEXT_FUN(name)                                                  \
+#define MP_CTX_TEXT_FUNB(name)                                                  \
 	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
 	{                                                                      \
 		assert(n_args == 4);                                           \
@@ -313,8 +313,25 @@ MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_font_obj, mp_ctx_font);
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 4, 4, mp_ctx_##name);
 
-MP_CTX_TEXT_FUN(fill_text);
-MP_CTX_TEXT_FUN(stroke_text);
+MP_CTX_TEXT_FUNB(fill_text);
+MP_CTX_TEXT_FUNB(stroke_text);
+
+
+#define MP_CTX_TEXT_FUN(name)                                                  \
+	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
+	{                                                                      \
+		assert(n_args == 4);                                           \
+		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
+		ctx_##name(                                                    \
+			self->ctx,                                             \
+			mp_obj_str_get_str(args[1]));                          \
+                return args[0];                                                \
+	}                                                                      \
+	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
+		mp_ctx_##name##_obj, 2, 2, mp_ctx_##name);
+
+MP_CTX_TEXT_FUN(text);
+MP_CTX_TEXT_FUN(text_stroke);
 
 static mp_obj_t mp_ctx_text_width(mp_obj_t self_in, mp_obj_t string_in)
 {
@@ -777,6 +794,8 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
     {
        case MP_QSTR_width:  return mp_obj_new_int(ctx_width (self->ctx));
        case MP_QSTR_height: return mp_obj_new_int(ctx_height (self->ctx));
+       case MP_QSTR_x: return mp_obj_new_int(ctx_x (self->ctx));
+       case MP_QSTR_y: return mp_obj_new_int(ctx_y (self->ctx));
     }
   }
   else
@@ -789,8 +808,10 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
 
 STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
-    if(attr == MP_QSTR_width ||
-       attr == MP_QSTR_height)
+    if(attr == MP_QSTR_width
+     ||attr == MP_QSTR_height
+     ||attr == MP_QSTR_x
+     ||attr == MP_QSTR_y)
     {
         if (dest[0] == MP_OBJ_NULL) {
             // load attribute
@@ -952,6 +973,8 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(line_cap),
 	MP_CTX_METHOD(line_join),
 	MP_CTX_METHOD(compositing_mode),
+	MP_CTX_METHOD(text),
+	MP_CTX_METHOD(text_stroke),
 	MP_CTX_METHOD(fill_text),
 	MP_CTX_METHOD(stroke_text),
 	MP_CTX_METHOD(text_width),
@@ -982,6 +1005,8 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         // Instance attributes
        { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_INT(0) },
        { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_x), MP_ROM_INT(0) },
+       { MP_ROM_QSTR(MP_QSTR_y), MP_ROM_INT(0) },
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_locals_dict, mp_ctx_locals_dict_table);
 
