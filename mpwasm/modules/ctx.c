@@ -156,6 +156,58 @@ void gc_collect(void);
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
 		mp_ctx_##name##_obj, 10, 10, mp_ctx_##name);
 
+#define MP_CTX_TEXT_FUNB(name)                                                 \
+	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
+	{                                                                      \
+		assert(n_args == 4);                                           \
+		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
+		ctx_##name(                                                    \
+			self->ctx,                                             \
+			mp_obj_str_get_str(args[1]),                           \
+			mp_obj_get_float(args[2]),                             \
+			mp_obj_get_float(args[3]));                            \
+                return args[0];                                                \
+	}                                                                      \
+	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
+		mp_ctx_##name##_obj, 4, 4, mp_ctx_##name);
+
+#define MP_CTX_TEXT_FUN(name)                                                  \
+	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
+	{                                                                      \
+		assert(n_args == 4);                                           \
+		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
+		ctx_##name(                                                    \
+			self->ctx,                                             \
+			mp_obj_str_get_str(args[1]));                          \
+                return args[0];                                                \
+	}                                                                      \
+	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
+		mp_ctx_##name##_obj, 2, 2, mp_ctx_##name);
+
+#define MP_CTX_ATTR(name) \
+       { MP_ROM_QSTR(MP_QSTR_##name), MP_ROM_INT(0) }
+#define MP_CTX_INT_CONSTANT_UNPREFIXED(ident)                         \
+        {                                                                      \
+		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##ident)     \
+	}
+#define MP_CTX_INT_CONSTANT(prefix, ident)                                     \
+	{                                                                      \
+		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##prefix##_##ident)     \
+	}
+#define MP_CTX_METHOD(name)                                                    \
+	{                                                                      \
+		MP_ROM_QSTR(MP_QSTR_##name), MP_ROM_PTR(&mp_ctx_##name##_obj)  \
+	}
+
+
+MP_CTX_TEXT_FUN(text);
+MP_CTX_TEXT_FUN(parse);
+#if 0
+MP_CTX_TEXT_FUN(text_stroke);
+MP_CTX_TEXT_FUNB(fill_text);
+MP_CTX_TEXT_FUNB(stroke_text);
+#endif
+
 MP_CTX_COMMON_FUN_0(begin_path);
 MP_CTX_COMMON_FUN_0(save);
 MP_CTX_COMMON_FUN_0(restore);
@@ -166,7 +218,6 @@ MP_CTX_COMMON_FUN_0_idle(end_frame);
 MP_CTX_COMMON_FUN_0(start_group);
 MP_CTX_COMMON_FUN_0(end_group);
 MP_CTX_COMMON_FUN_0(clip);
-//MP_CTX_COMMON_FUN_0(identity);
 MP_CTX_COMMON_FUN_1F(rotate);
 MP_CTX_COMMON_FUN_2F(scale);
 MP_CTX_COMMON_FUN_2F(translate);
@@ -193,6 +244,8 @@ MP_CTX_COMMON_FUN_0(fill);
 MP_CTX_COMMON_FUN_0(stroke);
 MP_CTX_COMMON_FUN_0(paint);
 MP_CTX_COMMON_FUN_3F(logo);
+
+//MP_CTX_COMMON_FUN_0(identity);
 
 //MP_CTX_COMMON_FUN_3F(key_down);
 //MP_CTX_COMMON_FUN_3F(key_up);
@@ -299,45 +352,6 @@ static mp_obj_t mp_ctx_font(mp_obj_t self_in, mp_obj_t font_in)
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_font_obj, mp_ctx_font);
 #endif
 
-#define MP_CTX_TEXT_FUNB(name)                                                  \
-	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
-	{                                                                      \
-		assert(n_args == 4);                                           \
-		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
-		ctx_##name(                                                    \
-			self->ctx,                                             \
-			mp_obj_str_get_str(args[1]),                           \
-			mp_obj_get_float(args[2]),                             \
-			mp_obj_get_float(args[3]));                            \
-                return args[0];                                                \
-	}                                                                      \
-	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
-		mp_ctx_##name##_obj, 4, 4, mp_ctx_##name);
-
-#if 0
-MP_CTX_TEXT_FUNB(fill_text);
-MP_CTX_TEXT_FUNB(stroke_text);
-#endif
-
-
-#define MP_CTX_TEXT_FUN(name)                                                  \
-	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
-	{                                                                      \
-		assert(n_args == 4);                                           \
-		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
-		ctx_##name(                                                    \
-			self->ctx,                                             \
-			mp_obj_str_get_str(args[1]));                          \
-                return args[0];                                                \
-	}                                                                      \
-	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
-		mp_ctx_##name##_obj, 2, 2, mp_ctx_##name);
-
-MP_CTX_TEXT_FUN(text);
-MP_CTX_TEXT_FUN(parse);
-#if 0
-MP_CTX_TEXT_FUN(text_stroke);
-#endif
 
 static mp_obj_t mp_ctx_text_width(mp_obj_t self_in, mp_obj_t string_in)
 {
@@ -630,24 +644,22 @@ STATIC void mp_ctx_event_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
 
 static const mp_rom_map_elem_t mp_ctx_event_locals_dict_table[] = {
-       // stop_propagate()
-        // Instance attributes
-       { MP_ROM_QSTR(MP_QSTR_x), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_y), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_device_x), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_device_y), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_start_x), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_start_y), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_prev_x), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_prev_y), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_delta_x), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_delta_y), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_device_no), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_unicode), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_scroll_direction), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_time), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_modifier_state), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_string), MP_ROM_INT(0) },
+       MP_CTX_ATTR(x),
+       MP_CTX_ATTR(y),
+       MP_CTX_ATTR(device_x),
+       MP_CTX_ATTR(device_y),
+       MP_CTX_ATTR(start_x),
+       MP_CTX_ATTR(start_y),
+       MP_CTX_ATTR(prev_x),
+       MP_CTX_ATTR(prev_y),
+       MP_CTX_ATTR(delta_x),
+       MP_CTX_ATTR(delta_y),
+       MP_CTX_ATTR(device_no),
+       MP_CTX_ATTR(unicode),
+       MP_CTX_ATTR(scroll_direction),
+       MP_CTX_ATTR(time),
+       MP_CTX_ATTR(modifier_state),
+       MP_CTX_ATTR(string)
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_event_locals_dict, mp_ctx_event_locals_dict_table);
 
@@ -1007,53 +1019,39 @@ STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
 /* CTX class/type */
 
-#define MP_CTX_INT_CONSTANT_UNPREFIXED(ident)                         \
-        {                                                                      \
-		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##ident)     \
-	}
-#define MP_CTX_INT_CONSTANT(prefix, ident)                                     \
-	{                                                                      \
-		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##prefix##_##ident)     \
-	}
-#define MP_CTX_METHOD(name)                                                    \
-	{                                                                      \
-		MP_ROM_QSTR(MP_QSTR_##name), MP_ROM_PTR(&mp_ctx_##name##_obj)  \
-	}
 
 static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 
 
-
-	MP_CTX_METHOD(begin_path),
-	MP_CTX_METHOD(save),
-	MP_CTX_METHOD(restore),
-	MP_CTX_METHOD(start_group),
-	MP_CTX_METHOD(end_group),
-	MP_CTX_METHOD(clip),
-	//MP_CTX_METHOD(identity),
-	MP_CTX_METHOD(rotate),
-	//MP_CTX_METHOD(font),
-	MP_CTX_METHOD(scale),
-	MP_CTX_METHOD(apply_transform),
-	MP_CTX_METHOD(translate),
 	MP_CTX_METHOD(line_to),
 	MP_CTX_METHOD(move_to),
 	MP_CTX_METHOD(curve_to),
 	MP_CTX_METHOD(quad_to),
-	MP_CTX_METHOD(arc),
-	MP_CTX_METHOD(arc_to),
-	MP_CTX_METHOD(rel_arc_to),
-	MP_CTX_METHOD(rectangle),
-	MP_CTX_METHOD(round_rectangle),
 	MP_CTX_METHOD(rel_line_to),
 	MP_CTX_METHOD(rel_move_to),
 	MP_CTX_METHOD(rel_curve_to),
 	MP_CTX_METHOD(rel_quad_to),
-	MP_CTX_METHOD(close_path),
-	MP_CTX_METHOD(preserve),
+	MP_CTX_METHOD(begin_path),
+	MP_CTX_METHOD(save),
+	MP_CTX_METHOD(restore),
+	MP_CTX_METHOD(clip),
 	MP_CTX_METHOD(fill),
 	MP_CTX_METHOD(stroke),
 	MP_CTX_METHOD(paint),
+	MP_CTX_METHOD(rectangle),
+	MP_CTX_METHOD(start_group),
+	MP_CTX_METHOD(end_group),
+	//MP_CTX_METHOD(identity),
+	MP_CTX_METHOD(rotate),
+	MP_CTX_METHOD(scale),
+	MP_CTX_METHOD(translate),
+	MP_CTX_METHOD(apply_transform),
+	MP_CTX_METHOD(arc),
+	MP_CTX_METHOD(arc_to),
+	MP_CTX_METHOD(rel_arc_to),
+	MP_CTX_METHOD(round_rectangle),
+	MP_CTX_METHOD(close_path),
+	MP_CTX_METHOD(preserve),
 	MP_CTX_METHOD(logo),
 	MP_CTX_METHOD(text),
 #if 0
@@ -1091,24 +1089,24 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         //MP_CTX_METHOD(pointer_press),
 
         // Instance attributes
-       { MP_ROM_QSTR(MP_QSTR_font), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_x), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_y), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_image_smoothing), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_compositing_mode), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_blend_mode), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_line_cap), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_line_join), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_text_align), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_fill_rule), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_text_baseline), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_line_width), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_line_dash_offset), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_miter_limit), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_global_alpha), MP_ROM_INT(0) },
-       { MP_ROM_QSTR(MP_QSTR_font_size), MP_ROM_INT(0) },
+        MP_CTX_ATTR(font),
+        MP_CTX_ATTR(width),
+        MP_CTX_ATTR(height),
+        MP_CTX_ATTR(x),
+        MP_CTX_ATTR(y),
+        MP_CTX_ATTR(image_smoothing),
+        MP_CTX_ATTR(compositing_mode),
+        MP_CTX_ATTR(blend_mode),
+        MP_CTX_ATTR(line_cap),
+        MP_CTX_ATTR(line_join),
+        MP_CTX_ATTR(text_align),
+        MP_CTX_ATTR(fill_rule),
+        MP_CTX_ATTR(text_baseline),
+        MP_CTX_ATTR(line_width),
+        MP_CTX_ATTR(line_dash_offset),
+        MP_CTX_ATTR(miter_limit),
+        MP_CTX_ATTR(global_alpha),
+        MP_CTX_ATTR(font_size),
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_locals_dict, mp_ctx_locals_dict_table);
 
