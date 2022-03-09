@@ -1860,6 +1860,7 @@ static inline CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, ui
 
 #endif
 
+#if CTX_SHAPE_CACHE
 static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
 {
   int x = 0;
@@ -1889,6 +1890,7 @@ static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
     }
   return hash;
 }
+#endif
 
 static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {

@@ -38,7 +38,7 @@
 #define CTX_MIN_EDGE_LIST_SIZE     2048
 #define CTX_AUDIO                  0
 #define CTX_CLIENTS                0
-#define CTX_EVENTS                 1
+#define CTX_EVENTS                 0
 
 
 
@@ -74,7 +74,9 @@ static inline void ctx_free (void *ptr)
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
+#ifdef EMSCRIPTEN
 #include "epicardium.h"
+#endif
 
 typedef struct _mp_ctx_event_obj_t mp_ctx_event_obj_t;
 typedef struct _mp_ctx_obj_t {
@@ -106,7 +108,6 @@ void gc_collect(void);
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(self->ctx);                                         \
-                mp_idle(0);                                                    \
 		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
@@ -296,7 +297,7 @@ void gc_collect(void);
 /* CTX API functions {{{ */
 
 MP_CTX_TEXT_FUN(text);
-MP_CTX_TEXT_FUN(parse);
+//MP_CTX_TEXT_FUN(parse);
 #if 0
 MP_CTX_TEXT_FUN(text_stroke);
 MP_CTX_TEXT_FUNB(fill_text);
@@ -346,7 +347,7 @@ MP_CTX_COMMON_FUN_3F(logo);
 //MP_CTX_COMMON_FUN_4F(key_down);
 //MP_CTX_COMMON_FUN_4F(key_up);
 //MP_CTX_COMMON_FUN_4F(key_press);
-MP_CTX_COMMON_FUN_5F(scrolled);
+//MP_CTX_COMMON_FUN_5F(scrolled);
 MP_CTX_COMMON_FUN_5F(pointer_motion);
 MP_CTX_COMMON_FUN_5F(pointer_release);
 MP_CTX_COMMON_FUN_5F(pointer_press);
@@ -565,7 +566,7 @@ static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_add_stop_obj, 3, 4, mp_ctx_add_stop);
 
-
+#ifdef EPICARDIUM
 static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
 {
 #ifdef EMSCRIPTEN
@@ -612,6 +613,7 @@ static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_update_obj, mp_ctx_update);
 /* CTX API functions }}} */
+#endif
 
 #ifdef EMSCRIPTEN
 #include <sys/types.h>
@@ -763,6 +765,7 @@ const mp_obj_type_t mp_ctx_event_type = {
         .attr = mp_ctx_event_attr
 };
 
+#if 0
 static void mp_ctx_listen_cb_handler (CtxEvent *event, void *data1, void*data2)
 {
   mp_obj_t event_in = data2;
@@ -807,6 +810,7 @@ static mp_obj_t mp_ctx_listen_stop_propagate (mp_obj_t self_in, mp_obj_t event_m
   return MP_OBJ_FROM_PTR(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_listen_stop_propagate_obj, mp_ctx_listen_stop_propagate);
+#endif
 
 static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t path_in)
 {
@@ -957,6 +961,7 @@ static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_new_drawlist_obj, mp_ctx_new_drawlist);
 
+#ifdef EMSCRIPTEN
 static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 {
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
@@ -966,6 +971,7 @@ static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);
+#endif
 
 STATIC mp_obj_t
 mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
@@ -1137,13 +1143,15 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(restore),
 	MP_CTX_METHOD(start_frame),
 	MP_CTX_METHOD(end_frame),
-	MP_CTX_METHOD(listen),
-	MP_CTX_METHOD(listen_stop_propagate),
-	MP_CTX_METHOD(parse),
+	//MP_CTX_METHOD(listen),
+	//MP_CTX_METHOD(listen_stop_propagate),
+	//MP_CTX_METHOD(parse),
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
 	MP_CTX_METHOD(logo),
+#ifdef EPICARDIUM
 	MP_CTX_METHOD(update),
+#endif
 #if 0
 	MP_CTX_METHOD(identity),
 	MP_CTX_METHOD(text_stroke),
@@ -1155,7 +1163,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         //MP_CTX_METHOD(key_down),
         //MP_CTX_METHOD(key_up),
         //MP_CTX_METHOD(key_press),
-        MP_CTX_METHOD(scrolled),
+        //MP_CTX_METHOD(scrolled),
         MP_CTX_METHOD(pointer_motion),
         MP_CTX_METHOD(pointer_release),
         MP_CTX_METHOD(pointer_press),
@@ -1192,14 +1200,16 @@ const mp_obj_type_t mp_ctx_type = {
 
 /* The globals table for this module */
 static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
-	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ctx_graphics) },
+	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ctx_module) },
 	{ MP_ROM_QSTR(MP_QSTR_Ctx), MP_ROM_PTR(&mp_ctx_type) },
 	{ MP_ROM_QSTR(MP_QSTR_CtxEvent), MP_ROM_PTR(&mp_ctx_event_type) },
   	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
   	{ MP_ROM_QSTR(MP_QSTR_new_for_cb), MP_ROM_PTR(&mp_ctx_new_for_cb_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
+#ifdef EMSCRIPTEN
 	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) },
+#endif
 
 	MP_CTX_INT_CONSTANT(FILL_RULE,WINDING),
 	MP_CTX_INT_CONSTANT(FILL_RULE,EVEN_ODD),
@@ -1288,11 +1298,11 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_module_globals, mp_ctx_module_globals_table);
 
-const mp_obj_module_t mp_ctx_module = {
+const mp_obj_module_t mp_module_ctx = {
 	.base    = { &mp_type_module },
 	.globals = (mp_obj_dict_t *)&mp_ctx_module_globals,
 };
 
 /* This is a special macro that will make MicroPython aware of this module */
 /* clang-format off */
-MP_REGISTER_MODULE(MP_QSTR_ctx_graphics, mp_ctx_module, MODULE_CTX_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR_module_ctx, mp_module_ctx, MODULE_CTX_ENABLED);
