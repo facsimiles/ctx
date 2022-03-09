@@ -270,13 +270,13 @@ MP_CTX_COMMON_FUN_6F(radial_gradient);
 MP_CTX_COMMON_FUN_3F(logo);
 
 //MP_CTX_COMMON_FUN_0(identity);
-//MP_CTX_COMMON_FUN_3F(key_down);
-//MP_CTX_COMMON_FUN_3F(key_up);
-//MP_CTX_COMMON_FUN_3F(key_press);
-//MP_CTX_COMMON_FUN_4F(scrolled);
-//MP_CTX_COMMON_FUN_4F(pointer_motion);
-//MP_CTX_COMMON_FUN_4F(pointer_release);
-//MP_CTX_COMMON_FUN_4F(pointer_press);
+//MP_CTX_COMMON_FUN_4F(key_down);
+//MP_CTX_COMMON_FUN_4F(key_up);
+//MP_CTX_COMMON_FUN_4F(key_press);
+MP_CTX_COMMON_FUN_5F(scrolled);
+MP_CTX_COMMON_FUN_5F(pointer_motion);
+MP_CTX_COMMON_FUN_5F(pointer_release);
+MP_CTX_COMMON_FUN_5F(pointer_press);
         // missing: incoming_message
         //          pointer_drop
 
@@ -1082,10 +1082,10 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         //MP_CTX_METHOD(key_down),
         //MP_CTX_METHOD(key_up),
         //MP_CTX_METHOD(key_press),
-        //MP_CTX_METHOD(scrolled),
-        //MP_CTX_METHOD(pointer_motion),
-        //MP_CTX_METHOD(pointer_release),
-        //MP_CTX_METHOD(pointer_press),
+        MP_CTX_METHOD(scrolled),
+        MP_CTX_METHOD(pointer_motion),
+        MP_CTX_METHOD(pointer_release),
+        MP_CTX_METHOD(pointer_press),
 
         // Instance attributes
         MP_CTX_ATTR(x),
