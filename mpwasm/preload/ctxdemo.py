@@ -15,7 +15,7 @@
 import ctx
 import micropython
 
-maxframe = 80.0  # adjust this to change
+maxframe = 90.0  # adjust this to change
                   # the number of frames for each demo loop
 def linear(start_val,end_val):
   return (frame/maxframe)*(end_val-start_val)+start_val
@@ -68,21 +68,30 @@ o=ctx.get_context("2d") # mirroring the web,
                         # this gives us an
                         # interactive ctx context
 
+
+
+  
+    
 for frame in range(0,maxframe):
   o.start_frame()
   o.color([0,0,0]).paint()
   o.global_alpha=linear(0.0, 1.0)
   o.logo(o.width/2,o.height/2, o.height)
-  o.parse("r50 50 50 50rgb1 0 0fill")
   o.end_frame()
 
-long_text="""ctx itself doesn't provide wordwrapping, but it provides facilities that
-make it possible to implement in micropython, measuring words as well as making use
-of the moving current point makes it possible.
+long_text="""ctx itself doesn't provide wordwrapping, but it provides the ability
+to measure how wide words are.
 
 This example is text rotated 90 degrees, and wrapped to fit the size of the canvas.
 
 Reading rewrapping text is difficult.
+
+This test stresses the ability to layout quite a bit of text, and
+rely on ctx to do culling, it makes it easy to do quite advanced things
+but for completely generic text rendering of huge amounts dedicated windowing
+code is neccesary. It is nice that issuing a text drawcall per word does not
+explode out text rendering budget, we can layout huge amounts of text before
+memory starts bothering us.
 """
 
 for frame in range(0,maxframe):
@@ -90,15 +99,21 @@ for frame in range(0,maxframe):
   o.color([255,255,255]).paint()
   o.save()
   o.color([0,0,0])
-  o.rotate(3.1415/2)
-  font_size = o.height * linear(0.05, 0.10)
+  font_size = o.height * 0.3#linear(0.1, 0.20)
+  if frame > maxframe/6:
+    font_size /= 1.33
+
+  if frame > maxframe/3:
+    font_size /= 1.33
+  if frame > 2*maxframe/3:
+    font_size /= 1.33
   o.font_size=font_size
-  o.move_to(font_size/2,-o.width*0.9)
-  
+  o.move_to(font_size/2,font_size)
+  o.translate(0, -frame + o.height)  
   space_width = o.text_width(' ')
   for i in long_text.split():
     word_width = o.text_width(i)
-    if (o.x + word_width > o.height - font_size/2):
+    if (o.x + word_width > o.width - font_size/2):
       o.move_to(font_size/2,o.y + font_size)
     o.text(i)
     o.move_to(o.x + space_width, o.y)
@@ -124,7 +139,6 @@ for frame in range(0,maxframe):
   zoom_text(o, "ctx vector graphics")
   o.end_frame()
 
-  
 for frame in range(0,maxframe):
   o.start_frame()
   o.color([0,0,0]).paint()
@@ -193,9 +207,80 @@ def test_texture(o):
     o.restore()
     o.end_frame()
 #test_texture(o)
+
+n_stars=100
+#stars=[]
+_rand = 123456789
+star_speed = 4
+
+def rand():
+  global _rand
+  _rand = (1103515245 * _rand + 12345) & 0xFFFFFF
+  return _rand
+
+offset = 0
+for frame in range(0,maxframe):
+  o.start_frame()
+  o.color([0,0,0]).paint()
+  offset+=1
+  o.global_alpha=linear(0.0,0.7)
+  o.color([255,255,255])
+  _rand = 123456789
+  for i in range(0,n_stars):
+    z = (((rand()-offset * star_speed)%2001)/2000.0)*3+0.0001
+    x = (((rand()%2001)/2000.0)-0.5) * 2.0
+    y = (((rand()%2001)/2000.0)-0.5) * 2.0 
+    x = (x / z) * o.height + o.width * 0.5;
+    y = (y / z) * o.height + o.height * 0.5;
+    
+    dim = 1.0/z * o.height * 0.01
+    o.arc(x, y, dim, 0.0, 3.1415*2, 0)
+    o.fill()
+  o.end_frame()
+
   
+for frame in range(0,maxframe):
+  o.start_frame()
+  o.color([0,0,0]).paint()
+  o.global_alpha=0.7
+  offset+=1
+  o.color([255,255,255])
+  _rand = 123456789
+  for i in range(0,n_stars):
+    z = (((rand()-offset * star_speed)%2001)/2000.0)*3+0.0001
+    x = (((rand()%2001)/2000.0)-0.5) * 2.0
+    y = (((rand()%2001)/2000.0)-0.5) * 2.0 
+    x = (x / z) * o.height + o.width * 0.5;
+    y = (y / z) * o.height + o.height * 0.5;
+    dim = 1.0/z * o.height * linear(0.01,0.05)
+    o.arc(x, y, dim, 0.0, 3.1415*2, 0)
+    o.fill()
+  o.end_frame()
+
+for frame in range(0,maxframe):
+  o.start_frame()
+  o.color([0,0,0]).paint()
+  o.global_alpha=0.7
+  offset+=1
+  o.color([255,255,255])
+  _rand = 123456789
+  for i in range(0,n_stars):
+    z = (((rand()-offset * star_speed)%2001)/2000.0)*3+0.0001
+    x = (((rand()%2001)/2000.0)-0.5) * 2.0
+    y = (((rand()%2001)/2000.0)-0.5) * 2.0 
+    x = (x / z) * o.height + o.width * 0.5;
+    y = (y / z) * o.height + o.height * 0.5;
+    dim = 1.0/z * o.height * 0.05
+    o.color([x,y,z])
+    o.arc(x, y, dim, 0.0, 3.1415*2, 0)
+    o.fill()
+  o.end_frame()
+
+
+
 for frame in range(0,maxframe):
   o.start_frame()
   o.color([0,0,0]).paint()  
   o.logo(o.width/2,o.height/2, linear(o.height*10,o.height))
   o.end_frame()
+

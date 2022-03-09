@@ -8,21 +8,28 @@
     <style>
        canvas#c { 
                   position: fixed; right: 1em; top: 1.6em; z-index; 2000;
-                  border:1px solid gray;
-                  max-width: 60%;
-                  min-width: 45%;
+                  border:1px solid black;
+                  width: 48%;
                   image-rendering: optimizeSpeed;
                   image-rendering: pixelated;
                   image-rendering: -moz-crisp-edges;
          }
+       canvas#c:focus,
+       div#mp_js_stdout:focus {
+               border: 1px solid #aaa;
+       }
        div#mp_js_stdout { white-space:pre;
                           font-family: monospace;
+               border: 1px solid black;
                           color:gray;
                           height:40vh;
                           overflow:scroll;
+                          width:48%;
+                          position: fixed; right: 1em; top: 50%; z-index: 2000;
                         }
-       textarea#script { border: 1px solid gray;
+       .CodeMirror { height:100%;
        }
+       div#codewrapper { width:48%; height: 94vh; float: left;}
        body{margin:0;padding: 0;background:black;}
        button#run { }
        div#toolbar { height: 1.4em; }
@@ -62,10 +69,12 @@
       ..
       <div class='led' id='led15'></div>
     </div>
-    <textarea id='script' cols='40'>
+    <div id='codewrapper'>
+    <textarea id='script'>
     </textarea>
-    <div id='mp_js_stdout' tabindex='2'></div>
+    </div>
     <!--<canvas id='c' width='320' height='240' tabindex='1'></canvas>-->
     <canvas id='c' width='160' height='80' tabindex='1'></canvas>
+    <div id='mp_js_stdout' tabindex='2'></div>
   </body>
 </html>

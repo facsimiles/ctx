@@ -15,7 +15,10 @@ extern int _mp_quit;
 void mp_idle (int ms);
 #endif
 
-/* CTX API functions {{{ */
+void gc_collect(void);
+/* since a lot of the ctx API has similar function signatures, we use macros to
+ * avoid repeating the marshalling of arguments
+ */
 #define MP_CTX_COMMON_FUN_0(name)                                              \
 	static mp_obj_t mp_ctx_##name(mp_obj_t self_in)                        \
 	{                                                                      \
@@ -24,8 +27,6 @@ void mp_idle (int ms);
 		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
-
-void gc_collect(void);
 
 #define MP_CTX_COMMON_FUN_0_idle(name)                                         \
 	static mp_obj_t mp_ctx_##name(mp_obj_t self_in)                        \
@@ -186,19 +187,20 @@ void gc_collect(void);
 
 #define MP_CTX_ATTR(name) \
        { MP_ROM_QSTR(MP_QSTR_##name), MP_ROM_INT(0) }
-#define MP_CTX_INT_CONSTANT_UNPREFIXED(ident)                         \
+#define MP_CTX_INT_CONSTANT_UNPREFIXED(ident)                                  \
         {                                                                      \
 		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##ident)     \
 	}
 #define MP_CTX_INT_CONSTANT(prefix, ident)                                     \
 	{                                                                      \
-		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##prefix##_##ident)     \
+		MP_ROM_QSTR(MP_QSTR_##ident), MP_ROM_INT((int)CTX_##prefix##_##ident)\
 	}
 #define MP_CTX_METHOD(name)                                                    \
 	{                                                                      \
 		MP_ROM_QSTR(MP_QSTR_##name), MP_ROM_PTR(&mp_ctx_##name##_obj)  \
 	}
 
+/* CTX API functions {{{ */
 
 MP_CTX_TEXT_FUN(text);
 MP_CTX_TEXT_FUN(parse);
@@ -610,7 +612,6 @@ STATIC void mp_ctx_event_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
     if(attr == MP_QSTR_x
      ||attr == MP_QSTR_y
-
      ||attr == MP_QSTR_start_x
      ||attr == MP_QSTR_start_y
      ||attr == MP_QSTR_prev_x
@@ -641,7 +642,6 @@ STATIC void mp_ctx_event_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
         generic_method_lookup(obj, attr, dest);
     }
 }
-
 
 static const mp_rom_map_elem_t mp_ctx_event_locals_dict_table[] = {
        MP_CTX_ATTR(x),
@@ -688,10 +688,7 @@ static void mp_ctx_listen_cb_handler (CtxEvent *event, void *data1, void*data2)
   mp_obj_t event_in = data2;
   mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
   mp_ctx_event->event = *event;
-  mp_sched_schedule (data1, event_in);//MP_OBJ_FROM_PTR(event_in));
-  //fprintf (stderr, "schedlued\n");
-  //if (mp_obj_is_true (mp_call_function_1((data1), event_in)))
-  //  event->stop_propagate = 1;
+  mp_sched_schedule (data1, event_in);
 }
 
 static void mp_ctx_listen_cb_handler_stop_propagate (CtxEvent *event, void *data1, void*data2)
@@ -699,7 +696,7 @@ static void mp_ctx_listen_cb_handler_stop_propagate (CtxEvent *event, void *data
   mp_obj_t event_in = data2;
   mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
   mp_ctx_event->event = *event;
-  mp_sched_schedule (data1, event_in);//MP_OBJ_FROM_PTR(event_in));
+  mp_sched_schedule (data1, event_in);
   event->stop_propagate = 1;
 }
 
@@ -740,8 +737,8 @@ static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t path_in)
         ctx_tinyvg_fd_get_size (fd, &width, &height);
         close (fd);
 
-        mp_obj_t mp_w   = MP_OBJ_NEW_SMALL_INT(width);
-        mp_obj_t mp_h   = MP_OBJ_NEW_SMALL_INT(height);
+        mp_obj_t mp_w  = MP_OBJ_NEW_SMALL_INT(width);
+        mp_obj_t mp_h  = MP_OBJ_NEW_SMALL_INT(height);
         mp_obj_t tup[] = { mp_w, mp_h };
         return mp_obj_new_tuple(2, tup);
 #endif
@@ -1041,10 +1038,11 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(rectangle),
 	MP_CTX_METHOD(start_group),
 	MP_CTX_METHOD(end_group),
-	//MP_CTX_METHOD(identity),
 	MP_CTX_METHOD(rotate),
 	MP_CTX_METHOD(scale),
 	MP_CTX_METHOD(translate),
+	MP_CTX_METHOD(text),
+	MP_CTX_METHOD(text_width),
 	MP_CTX_METHOD(apply_transform),
 	MP_CTX_METHOD(arc),
 	MP_CTX_METHOD(arc_to),
@@ -1053,32 +1051,28 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(close_path),
 	MP_CTX_METHOD(preserve),
 	MP_CTX_METHOD(logo),
-	MP_CTX_METHOD(text),
-#if 0
-	MP_CTX_METHOD(text_stroke),
-	MP_CTX_METHOD(fill_text),
-	MP_CTX_METHOD(stroke_text),
-#endif
-	MP_CTX_METHOD(text_width),
 	MP_CTX_METHOD(linear_gradient),
 	MP_CTX_METHOD(radial_gradient),
 	MP_CTX_METHOD(line_dash),
 	MP_CTX_METHOD(add_stop),
 	MP_CTX_METHOD(texture),
 	MP_CTX_METHOD(color),
-#if 0
-	MP_CTX_METHOD(stroke_color),
-#endif
 	MP_CTX_METHOD(update),
 	MP_CTX_METHOD(start_frame),
 	MP_CTX_METHOD(end_frame),
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
 	MP_CTX_METHOD(listen),
-	MP_CTX_METHOD(parse),
 	MP_CTX_METHOD(listen_stop_propagate),
-
+	MP_CTX_METHOD(parse),
         MP_CTX_METHOD(in_fill),
+#if 0
+	MP_CTX_METHOD(identity),
+	MP_CTX_METHOD(text_stroke),
+	MP_CTX_METHOD(fill_text),
+	MP_CTX_METHOD(stroke_text),
+	MP_CTX_METHOD(stroke_color),
+#endif
         //MP_CTX_METHOD(in_stroke),
         //MP_CTX_METHOD(key_down),
         //MP_CTX_METHOD(key_up),
@@ -1089,11 +1083,11 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         //MP_CTX_METHOD(pointer_press),
 
         // Instance attributes
-        MP_CTX_ATTR(font),
-        MP_CTX_ATTR(width),
-        MP_CTX_ATTR(height),
         MP_CTX_ATTR(x),
         MP_CTX_ATTR(y),
+        MP_CTX_ATTR(width),
+        MP_CTX_ATTR(height),
+        MP_CTX_ATTR(font),
         MP_CTX_ATTR(image_smoothing),
         MP_CTX_ATTR(compositing_mode),
         MP_CTX_ATTR(blend_mode),

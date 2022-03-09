@@ -337,26 +337,27 @@ window.editor_load = function (path)
         {
           
 /*
-          case 37://left
-            mp_js_process_char (27);
-            mp_js_process_char ('['.charCodeAt(0));
-            mp_js_process_char ('D'.charCodeAt(0));
-            break;
           case 38://up
             mp_js_process_char (27);
             mp_js_process_char ('['.charCodeAt(0));
             mp_js_process_char ('A'.charCodeAt(0));
+            break;
+          case 40://down
+            mp_js_process_char (27);
+            mp_js_process_char ('['.charCodeAt(0));
+            mp_js_process_char ('B'.charCodeAt(0));
+            break;
+          case 37://left
+            mp_js_process_char (27);
+            mp_js_process_char ('['.charCodeAt(0));
+            mp_js_process_char ('D'.charCodeAt(0));
             break;
           case 39://right
             mp_js_process_char (27);
             mp_js_process_char ('['.charCodeAt(0));
             mp_js_process_char ('C'.charCodeAt(0));
             break;
-          case 40://down
-            mp_js_process_char (27);
-            mp_js_process_char ('['.charCodeAt(0));
-            mp_js_process_char ('B'.charCodeAt(0));
-            break;*/
+                        */
           case 188: mp_js_process_char (e.shiftKey?60:44);break;
           case 190: mp_js_process_char (e.shiftKey?62:46);break;
           case 222: mp_js_process_char (e.shiftKey?34:39);break;
