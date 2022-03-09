@@ -19,6 +19,7 @@ typedef struct CtxCbBackend
   int     max_row; // hasher cols and rows
   uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
   int     memory_budget;
+  Ctx    *renderer;
 } CtxCbBackend;
 
 void ctx_cb_set_flags (Ctx *ctx, int flags)

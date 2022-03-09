@@ -768,7 +768,7 @@ const mp_obj_type_t mp_ctx_event_type = {
         .attr = mp_ctx_event_attr
 };
 
-#if 0
+#if 1
 static void mp_ctx_listen_cb_handler (CtxEvent *event, void *data1, void*data2)
 {
   mp_obj_t event_in = data2;
@@ -922,10 +922,10 @@ static mp_obj_t mp_ctx_new_for_cb (size_t n_args, const mp_obj_t *args)
         mp_obj_t height_in = args[1];
         mp_obj_t format_in = args[2];
         mp_obj_t set_pixels_in = args[3];
-        mp_obj_t update_fb_in = args[3];
-        mp_obj_t memory_budget_in = args[4];
+        mp_obj_t update_fb_in = args[4];
+        mp_obj_t memory_budget_in = args[5];
         // scratch_fb
-        mp_obj_t flags_in = args[5];
+        mp_obj_t flags_in = args[6];
 
         int format = mp_obj_get_int (format_in);
         int width  = mp_obj_get_int (width_in);
@@ -950,7 +950,7 @@ static mp_obj_t mp_ctx_new_for_cb (size_t n_args, const mp_obj_t *args)
         o->ctx_event = mp_ctx_event_new ();
 	return MP_OBJ_FROM_PTR(o);
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_new_for_cb_obj, 5, 5, mp_ctx_new_for_cb);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_new_for_cb_obj, 7, 7, mp_ctx_new_for_cb);
 
 static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 {
@@ -1105,8 +1105,6 @@ STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
 
 
 static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
-
-
 	MP_CTX_METHOD(line_to),
 	MP_CTX_METHOD(move_to),
 	MP_CTX_METHOD(curve_to),
@@ -1146,8 +1144,8 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(restore),
 	MP_CTX_METHOD(start_frame),
 	MP_CTX_METHOD(end_frame),
-	//MP_CTX_METHOD(listen),
-	//MP_CTX_METHOD(listen_stop_propagate),
+	MP_CTX_METHOD(listen),
+	MP_CTX_METHOD(listen_stop_propagate),
 	//MP_CTX_METHOD(parse),
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
@@ -1167,6 +1165,9 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         //MP_CTX_METHOD(key_up),
         //MP_CTX_METHOD(key_press),
         //MP_CTX_METHOD(scrolled),
+        //
+        
+	//MP_CTX_METHOD(get_event),
         MP_CTX_METHOD(pointer_motion),
         MP_CTX_METHOD(pointer_release),
         MP_CTX_METHOD(pointer_press),
