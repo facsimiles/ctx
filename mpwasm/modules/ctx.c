@@ -796,6 +796,67 @@ static mp_obj_t mp_ctx_new_for_buffer (size_t n_args, const mp_obj_t *args)
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_new_for_buffer_obj, 5, 5, mp_ctx_new_for_buffer);
 
+static void mp_ctx_set_pixels (Ctx *ctx, void *user_data,
+                               int x_in, int y_in, int width_in, int height_in, void *buf_in,
+                               int buf_size)
+{
+
+  mp_obj_t tup_o = mp_obj_new_tuple (5, NULL);
+  mp_obj_tuple_t *tup = MP_OBJ_TO_PTR (tup_o);
+  tup->items[0] = mp_obj_new_int (x_in);
+  tup->items[1] = mp_obj_new_int (y_in);
+  tup->items[2] = mp_obj_new_int (width_in);
+  tup->items[3] = mp_obj_new_int (height_in);
+  tup->items[4] = mp_obj_new_bytes (buf_in, buf_size);
+
+  mp_call_function_1(user_data, tup_o);
+}
+
+static void mp_ctx_update_fb (Ctx *ctx, void *user_data)
+{
+  mp_call_function_0(user_data);
+}
+
+static mp_obj_t mp_ctx_new_for_cb (size_t n_args, const mp_obj_t *args)
+{
+	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
+	o->base.type    = &mp_ctx_type;
+
+        mp_obj_t width_in  = args[0];
+        mp_obj_t height_in = args[1];
+        mp_obj_t format_in = args[2];
+        mp_obj_t set_pixels_in = args[3];
+        mp_obj_t update_fb_in = args[3];
+        mp_obj_t memory_budget_in = args[4];
+        // scratch_fb
+        mp_obj_t flags_in = args[5];
+
+        int format = mp_obj_get_int (format_in);
+        int width  = mp_obj_get_int (width_in);
+        int height = mp_obj_get_int (height_in);
+        int memory_budget = mp_obj_get_int (memory_budget_in);
+        int flags  = mp_obj_get_int (flags_in);
+
+        if (update_fb_in != mp_const_none &&
+          !mp_obj_is_callable(update_fb_in))
+             mp_raise_ValueError(MP_ERROR_TEXT("invalid update_fb handler"));
+
+        if (set_pixels_in != mp_const_none &&
+          !mp_obj_is_callable(set_pixels_in))
+             mp_raise_ValueError(MP_ERROR_TEXT("invalid set_pixels handler"));
+
+	o->ctx = ctx_new_cb (width, height, format,
+                        mp_ctx_set_pixels, set_pixels_in,
+                        update_fb_in != mp_const_none ? mp_ctx_update_fb : NULL, update_fb_in,
+                        memory_budget,
+                        NULL,
+                        flags);
+        o->ctx_event = mp_ctx_event_new ();
+	return MP_OBJ_FROM_PTR(o);
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_new_for_cb_obj, 5, 5, mp_ctx_new_for_cb);
+
+
 
 static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 {
@@ -1065,6 +1126,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_Ctx), MP_ROM_PTR(&mp_ctx_type) },
 	{ MP_ROM_QSTR(MP_QSTR_CtxEvent), MP_ROM_PTR(&mp_ctx_event_type) },
   	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
+  	{ MP_ROM_QSTR(MP_QSTR_new_for_cb), MP_ROM_PTR(&mp_ctx_new_for_cb_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) },

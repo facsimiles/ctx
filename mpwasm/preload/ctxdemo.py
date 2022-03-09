@@ -43,7 +43,6 @@ def release_cb (e):
   global pressed
   pressed = False
   
-  
 def zoom_text(o, string):
   o.font_size=linear(0,o.height/4)
   
@@ -74,6 +73,7 @@ for frame in range(0,maxframe):
   o.color([0,0,0]).paint()
   o.global_alpha=linear(0.0, 1.0)
   o.logo(o.width/2,o.height/2, o.height)
+  o.parse("r50 50 50 50rgb1 0 0fill")
   o.end_frame()
 
 long_text="""ctx itself doesn't provide wordwrapping, but it provides facilities that
@@ -91,7 +91,7 @@ for frame in range(0,maxframe):
   o.save()
   o.color([0,0,0])
   o.rotate(3.1415/2)
-  font_size = o.height * linear(0.09, 0.14)
+  font_size = o.height * linear(0.05, 0.10)
   o.font_size=font_size
   o.move_to(font_size/2,-o.width*0.9)
   
@@ -138,8 +138,6 @@ for frame in range(0,maxframe):
   o.logo(o.width/2,o.height/2, o.height)
   zoom_text(o, "wasm")  
   o.end_frame()
-
-    
 
 for frame in range(0,maxframe):
   o.start_frame()
@@ -201,5 +199,3 @@ for frame in range(0,maxframe):
   o.color([0,0,0]).paint()  
   o.logo(o.width/2,o.height/2, linear(o.height*10,o.height))
   o.end_frame()
-
-
