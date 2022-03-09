@@ -2541,7 +2541,7 @@ ctx_init_uv (CtxRasterizer *rasterizer,
   *wd = transform->m[2][0];
 }
 
-static void
+static inline void
 ctx_u8_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   if (CTX_UNLIKELY(rasterizer->fragment))
@@ -2669,7 +2669,7 @@ ctx_porter_duff_factors(mode, foo, bar)\
   }\
 }
 
-static void
+static inline void
 ctx_u8_source_over_normal_color (int components,
                                  CtxRasterizer         *rasterizer,
                                  uint8_t * __restrict__ dst,

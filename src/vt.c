@@ -29,6 +29,8 @@
  *
  */
 
+#if CTX_TERMINAL_EVENTS
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -8949,3 +8951,5 @@ void vt_set_ctx (VT *vt, Ctx *ctx)
 {
   vt->root_ctx = ctx;
 }
+
+#endif

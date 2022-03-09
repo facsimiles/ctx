@@ -1,6 +1,6 @@
 #include "ctx-split.h"
 
-#if CTX_EVENTS
+#if CTX_TERMINAL_EVENTS
 #if CTX_HEADLESS
 
 #include <fcntl.h>

@@ -2638,14 +2638,14 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   CtxBackend *backend = ctx->backend;
   if (backend == NULL)
     return CTX_BACKEND_NONE;
-#if CTX_EVENTS
+#if CTX_TERMINAL_EVENTS
   else if (backend->destroy == (void*) ctx_ctx_destroy) return CTX_BACKEND_CTX;
+#if CTX_HEADLESS
+  else if (backend->destroy == (void*) ctx_headless_destroy) return CTX_BACKEND_HEADLESS;
+#endif
 #endif
 #if CTX_TERM
   else if (backend->destroy == (void*) ctx_term_destroy) return CTX_BACKEND_TERM;
-#endif
-#if CTX_HEADLESS
-  else if (backend->destroy == (void*) ctx_headless_destroy) return CTX_BACKEND_HEADLESS;
 #endif
 #if CTX_RASTERIZER
   else if (backend->process == (void*) ctx_hasher_process) return CTX_BACKEND_HASHER;

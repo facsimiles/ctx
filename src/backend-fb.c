@@ -1,6 +1,6 @@
 #include "ctx-split.h"
 
-#if CTX_EVENTS
+#if CTX_TERMINAL_EVENTS
 
 #if !__COSMOPOLITAN__
 #include <fcntl.h>

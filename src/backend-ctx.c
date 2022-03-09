@@ -1,6 +1,6 @@
 #include "ctx-split.h"
 
-#if CTX_EVENTS
+#if CTX_TERMINAL_EVENTS
 
 static int ctx_find_largest_matching_substring
  (const char *X, const char *Y, int m, int n, int *offsetY, int *offsetX) 

@@ -293,7 +293,7 @@ void ctx_set_size (Ctx *ctx, int width, int height)
 }
 
 #if CTX_EVENTS
-
+#if CTX_TERMINAL_EVENTS
 
 static int is_in_ctx (void)
 {
@@ -341,6 +341,7 @@ static int is_in_ctx (void)
   }
   return 0;
 }
+#endif
 
 typedef struct CtxIdleCb {
   int (*cb) (Ctx *ctx, void *idle_data);
@@ -2239,12 +2240,14 @@ static void ctx_events_deinit (Ctx *ctx)
   }
 }
 
-
 #define evsource_has_event(es)   (es)->has_event((es))
 #define evsource_get_event(es)   (es)->get_event((es))
 #define evsource_destroy(es)     do{if((es)->destroy)(es)->destroy((es));}while(0)
 #define evsource_set_coord(es,x,y) do{if((es)->set_coord)(es)->set_coord((es),(x),(y));}while(0)
 #define evsource_get_fd(es)      ((es)->get_fd?(es)->get_fd((es)):0)
+
+#if CTX_TERMINAL_EVENTS
+
 
 static int mice_has_event ();
 static char *mice_get_event ();
@@ -2872,6 +2875,7 @@ static EvSource *evsource_kb_new (void)
   }
   return NULL;
 }
+#endif
 
 #if CTX_BABL
 static int _ctx_babl_inits = 0;

@@ -324,6 +324,13 @@
 #define CTX_EVENTS              1
 #endif
 
+#ifndef CTX_TERMINAL_EVENTS
+#if CTX_EVENTS
+#define CTX_TERMINAL_EVENTS 1
+#else
+#define CTX_TERMINAL_EVENTS 0
+#endif
+#endif
 
 #ifndef CTX_LIMIT_FORMATS
 #define CTX_LIMIT_FORMATS       0
@@ -607,6 +614,9 @@
 #endif
 #define CTX_EVENTS 1
 #endif
+
+
+
 
 #if CTX_EVENTS
 #ifndef CTX_HEADLESS

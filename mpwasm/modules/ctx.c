@@ -38,8 +38,11 @@
 #define CTX_MIN_EDGE_LIST_SIZE     2048
 #define CTX_AUDIO                  0
 #define CTX_CLIENTS                0
-#define CTX_EVENTS                 0
-
+#define CTX_TERMINAL_EVENTS        0 // needed to get rid of some includes
+#define CTX_EVENTS                 1
+#define CTX_THREADS                0
+#define CTX_RASTERIZER             1
+#define CTX_TILED                  0
 
 
 /* we keep the ctx implementation here, this compilation taget changes less

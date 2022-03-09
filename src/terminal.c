@@ -1,4 +1,4 @@
-#if CTX_EVENTS
+#if CTX_TERMINAL_EVENTS
 
 #include "ctx-split.h"
 #if !__COSMOPOLITAN__
