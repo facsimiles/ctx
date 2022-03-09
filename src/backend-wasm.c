@@ -132,7 +132,7 @@ void  update_fb (Ctx *ctx, void *user_data)
 #endif
 }
 
-static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf)
+static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf, int buf_size)
 {
   //TFT_eSPI *tft = (TFT_eSPI*)user_data;
   //tft->pushRect (x, y, w, h, (uint16_t*)buf);
@@ -177,7 +177,9 @@ EM_ASM(
    }
 );
 
-   if (!em_ctx){em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGBA8, set_pixels, 
+   if (!em_ctx){em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGBA8,
+                               set_pixels, 
+                               fb,
                                update_fb,
                                fb,
                                width * height * 4, fb, 

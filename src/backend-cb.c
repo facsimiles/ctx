@@ -8,15 +8,16 @@ typedef struct CtxCbBackend
   uint16_t      *fb;
 
   void (*set_pixels) (Ctx *ctx, void *user_data, 
-                      int x, int y, int w, int h, void *buf);
+                      int x, int y, int w, int h, void *buf, int buf_size);
+  void   *set_pixels_user_data;
   void (*update_fb) (Ctx *ctx, void *user_data);
+  void   *update_fb_user_data;
 
   int     min_col; // hasher cols and rows
   int     min_row; // hasher cols and rows
   int     max_col; // hasher cols and rows
   int     max_row; // hasher cols and rows
   uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
-  void   *user_data;
   int     memory_budget;
 } CtxCbBackend;
 
@@ -38,13 +39,13 @@ static void ctx_render_cb (Ctx *ctx,
                             uint32_t active_mask)
 {
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
-  int flags                  = backend_cb->flags;
-  int memory_budget          = backend_cb->memory_budget;
-  int width                  = x1 - x0 + 1;
-  int height                 = y1 - y0 + 1;
+  int flags                = backend_cb->flags;
+  int memory_budget        = backend_cb->memory_budget;
+  int width                = x1 - x0 + 1;
+  int height               = y1 - y0 + 1;
   uint16_t *fb;
-  CtxPixelFormat             format = backend_cb->format;
-  int bpp                    = ctx_pixel_format_bits_per_pixel (format)/ 8;
+  CtxPixelFormat           format = backend_cb->format;
+  int bpp                  = ctx_pixel_format_bits_per_pixel (format)/ 8;
 
   int chunk_size = 16; /* wanting chunks of 16 scanlines at a
                           time to go out seems to give good
@@ -98,8 +99,9 @@ static void ctx_render_cb (Ctx *ctx,
         ctx_332_unpack (val, &r, &g, &b);
         *dst++ = ctx_565_pack (r, g, b, 1);
       }
-      backend_cb->set_pixels (ctx, backend_cb->user_data, 
-                              x0, y, width, h, (uint16_t*)temp);
+      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
+                              x0, y, width, h, (uint16_t*)temp,
+                              width * h * bpp);
     }
       y0 += render_height;
     } while (y0 < y1);
@@ -137,8 +139,9 @@ static void ctx_render_cb (Ctx *ctx,
         int val = *src++;
         *dst++ = ctx_565_pack (val, val, val, 1);
       }
-      backend_cb->set_pixels (ctx, backend_cb->user_data, 
-                              x0, y, width, h, (uint16_t*)temp);
+      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
+                              x0, y, width, h, (uint16_t*)temp,
+                              width * h * bpp);
     }
       y0 += render_height;
     } while (y0 < y1);
@@ -160,8 +163,9 @@ static void ctx_render_cb (Ctx *ctx,
             format);
       ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
       ctx_render_ctx (ctx, renderer);
-      backend_cb->set_pixels (ctx, backend_cb->user_data, 
-                              x0, y0, width, render_height, (uint16_t*)fb);
+      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
+                              x0, y0, width, render_height, (uint16_t*)fb,
+                              width * render_height * bpp);
       ctx_destroy (renderer);    
 
       y0 += render_height;
@@ -319,14 +323,16 @@ ctx_cb_end_frame (Ctx *ctx)
     ctx_render_cb (ctx, 0, 0, ctx_width(ctx)-1, ctx_height(ctx)-1, 0);
   }
   if (cb_backend->update_fb)
-    cb_backend->update_fb (ctx, cb_backend->user_data);
+    cb_backend->update_fb (ctx, cb_backend->update_fb_user_data);
 }
 
 Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  void (*set_pixels) (Ctx *ctx, void *user_data, 
-                                     int x, int y, int w, int h, void *buf),
+                                     int x, int y, int w, int h, void *buf,
+                                     int buf_size),
+                 void *set_pixels_user_data,
                  void (*update_fb) (Ctx *ctx, void *user_data),
-                 void *user_data,
+                 void *update_fb_user_data,
                  int   memory_budget,
                  void *scratch_fb,
                  int   flags)
@@ -340,7 +346,8 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   cb_backend->flags          = flags;
   cb_backend->set_pixels     = set_pixels;
   cb_backend->update_fb      = update_fb;
-  cb_backend->user_data      = user_data;
+  cb_backend->set_pixels_user_data = set_pixels_user_data;
+  cb_backend->update_fb_user_data   = update_fb_user_data;
   cb_backend->memory_budget  = memory_budget;
   ctx_set_backend (ctx, backend);
   return ctx;
@@ -348,7 +355,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
 
 #if CTX_TFT_ESPI
 
-static void ctx_tft_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
+static void ctx_tft_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf, int buf_size)
 {
   TFT_eSPI *tft = (TFT_eSPI*)user_data;
   tft->pushRect (x, y, w, h, (uint16_t*)buf);
@@ -362,11 +369,11 @@ Ctx *ctx_new_tft (TFT_eSPI *tft,
   return ctx_new_cb (tft->width(), tft->height(), 
                      CTX_FORMAT_RGB565_BYTESWAPPED,
                      ctx_tft_set_pixels,
-                     NULL,
                      tft,
+                     NULL,
+                     NULL,
                      memory_budget,
                      scratch_fb,
                      flags);
 }
-
 #endif
