@@ -136,6 +136,26 @@ void gc_collect(void);
 		mp_ctx_##name##_obj, 7, 7, mp_ctx_##name);
 
 
+#define MP_CTX_COMMON_FUN_7F(name)                                             \
+	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
+	{                                                                      \
+		assert(n_args == 8);                                           \
+		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
+		ctx_##name(                                                    \
+			self->ctx,                                             \
+			mp_obj_get_float(args[1]),                             \
+			mp_obj_get_float(args[2]),                             \
+			mp_obj_get_float(args[3]),                             \
+			mp_obj_get_float(args[4]),                             \
+			mp_obj_get_float(args[5]),                             \
+			mp_obj_get_float(args[6]),                             \
+			mp_obj_get_float(args[7]));                            \
+		return self;                                                   \
+	}                                                                      \
+	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
+		mp_ctx_##name##_obj, 8, 8, mp_ctx_##name);
+
+
 #define MP_CTX_COMMON_FUN_9F(name)                                             \
 	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
 	{                                                                      \
@@ -229,26 +249,27 @@ MP_CTX_COMMON_FUN_2F(move_to);
 MP_CTX_COMMON_FUN_6F(curve_to);
 MP_CTX_COMMON_FUN_4F(quad_to);
 MP_CTX_COMMON_FUN_5F(arc_to);
-MP_CTX_COMMON_FUN_5F(rel_arc_to);
-MP_CTX_COMMON_FUN_4F(rectangle);
-MP_CTX_COMMON_FUN_5F(round_rectangle);
 MP_CTX_COMMON_FUN_2F(rel_line_to);
 MP_CTX_COMMON_FUN_2F(rel_move_to);
 MP_CTX_COMMON_FUN_6F(rel_curve_to);
 MP_CTX_COMMON_FUN_4F(rel_quad_to);
+MP_CTX_COMMON_FUN_5F(rel_arc_to);
+MP_CTX_COMMON_FUN_4F(rectangle);
+MP_CTX_COMMON_FUN_5F(round_rectangle);
+MP_CTX_COMMON_FUN_6F(arc);
 MP_CTX_COMMON_FUN_0(close_path);
-
-MP_CTX_COMMON_FUN_4F(linear_gradient);
-MP_CTX_COMMON_FUN_6F(radial_gradient);
 
 MP_CTX_COMMON_FUN_0(preserve);
 MP_CTX_COMMON_FUN_0(fill);
 MP_CTX_COMMON_FUN_0(stroke);
 MP_CTX_COMMON_FUN_0(paint);
+
+MP_CTX_COMMON_FUN_4F(linear_gradient);
+MP_CTX_COMMON_FUN_6F(radial_gradient);
+
 MP_CTX_COMMON_FUN_3F(logo);
 
 //MP_CTX_COMMON_FUN_0(identity);
-
 //MP_CTX_COMMON_FUN_3F(key_down);
 //MP_CTX_COMMON_FUN_3F(key_up);
 //MP_CTX_COMMON_FUN_3F(key_press);
@@ -328,20 +349,6 @@ static mp_obj_t mp_ctx_texture (size_t n_args, const mp_obj_t *args)
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_texture_obj, 6, 6, mp_ctx_texture);
 
-static mp_obj_t mp_ctx_arc(size_t n_args, const mp_obj_t *args)
-{
-	assert(n_args == 7);
-	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
-	ctx_arc(self->ctx,
-		mp_obj_get_float(args[1]),
-		mp_obj_get_float(args[2]),
-		mp_obj_get_float(args[3]),
-		mp_obj_get_float(args[4]),
-		mp_obj_get_float(args[5]),
-		mp_obj_get_int(args[6]));
-        return args[0];
-}
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_arc_obj, 7, 7, mp_ctx_arc);
 
 #if 0
 static mp_obj_t mp_ctx_font(mp_obj_t self_in, mp_obj_t font_in)
@@ -865,8 +872,6 @@ static mp_obj_t mp_ctx_new_for_cb (size_t n_args, const mp_obj_t *args)
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_new_for_cb_obj, 5, 5, mp_ctx_new_for_cb);
 
-
-
 static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 {
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
@@ -1028,44 +1033,44 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(rel_move_to),
 	MP_CTX_METHOD(rel_curve_to),
 	MP_CTX_METHOD(rel_quad_to),
-	MP_CTX_METHOD(begin_path),
-	MP_CTX_METHOD(save),
-	MP_CTX_METHOD(restore),
-	MP_CTX_METHOD(clip),
-	MP_CTX_METHOD(fill),
-	MP_CTX_METHOD(stroke),
-	MP_CTX_METHOD(paint),
 	MP_CTX_METHOD(rectangle),
-	MP_CTX_METHOD(start_group),
-	MP_CTX_METHOD(end_group),
-	MP_CTX_METHOD(rotate),
-	MP_CTX_METHOD(scale),
-	MP_CTX_METHOD(translate),
-	MP_CTX_METHOD(text),
-	MP_CTX_METHOD(text_width),
-	MP_CTX_METHOD(apply_transform),
 	MP_CTX_METHOD(arc),
 	MP_CTX_METHOD(arc_to),
 	MP_CTX_METHOD(rel_arc_to),
 	MP_CTX_METHOD(round_rectangle),
+	MP_CTX_METHOD(begin_path),
 	MP_CTX_METHOD(close_path),
+        MP_CTX_METHOD(in_fill),
+	MP_CTX_METHOD(fill),
+	MP_CTX_METHOD(stroke),
+	MP_CTX_METHOD(paint),
+	MP_CTX_METHOD(clip),
+	MP_CTX_METHOD(text),
+	MP_CTX_METHOD(text_width),
+	MP_CTX_METHOD(rotate),
+	MP_CTX_METHOD(scale),
+	MP_CTX_METHOD(translate),
+	MP_CTX_METHOD(apply_transform),
+	MP_CTX_METHOD(start_group),
+	MP_CTX_METHOD(end_group),
 	MP_CTX_METHOD(preserve),
-	MP_CTX_METHOD(logo),
 	MP_CTX_METHOD(linear_gradient),
 	MP_CTX_METHOD(radial_gradient),
-	MP_CTX_METHOD(line_dash),
 	MP_CTX_METHOD(add_stop),
+	MP_CTX_METHOD(line_dash),
 	MP_CTX_METHOD(texture),
 	MP_CTX_METHOD(color),
-	MP_CTX_METHOD(update),
+	MP_CTX_METHOD(save),
+	MP_CTX_METHOD(restore),
 	MP_CTX_METHOD(start_frame),
 	MP_CTX_METHOD(end_frame),
-	MP_CTX_METHOD(tinyvg_draw),
-	MP_CTX_METHOD(tinyvg_get_size),
 	MP_CTX_METHOD(listen),
 	MP_CTX_METHOD(listen_stop_propagate),
 	MP_CTX_METHOD(parse),
-        MP_CTX_METHOD(in_fill),
+	MP_CTX_METHOD(tinyvg_draw),
+	MP_CTX_METHOD(tinyvg_get_size),
+	MP_CTX_METHOD(logo),
+	MP_CTX_METHOD(update),
 #if 0
 	MP_CTX_METHOD(identity),
 	MP_CTX_METHOD(text_stroke),
