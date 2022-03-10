@@ -88,9 +88,15 @@ typedef struct _mp_ctx_obj_t {
 	mp_ctx_event_obj_t *ctx_event;
 } mp_ctx_obj_t;
 
+void gc_collect(void);
 #ifdef EMSCRIPTEN
 extern int _mp_quit;
 void mp_idle (int ms);
+#else
+void mp_idle (int ms)
+{
+  if (ms == 0) gc_collect();
+}
 #endif
 
 void gc_collect(void);
@@ -110,7 +116,9 @@ void gc_collect(void);
 	static mp_obj_t mp_ctx_##name(mp_obj_t self_in)                        \
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
+                gc_collect();\
 		ctx_##name(self->ctx);                                         \
+                mp_idle(0);\
 		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
