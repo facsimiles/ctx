@@ -16,7 +16,6 @@
 #define CTX_RENDERSTREAM_STATIC 0
 #define CTX_GRADIENT_CACHE      1
 #define CTX_ENABLE_CLIP         1
-#define CTX_BLOATY_FAST_PATHS   0
 #define CTX_1BIT_CLIP           1
 #define CTX_CM                  0
 #define CTX_SHAPE_CACHE         0
@@ -32,17 +31,18 @@
 #define CTX_PARSER_MAXLEN       512
 #define CTX_PARSER_FIXED_TEMP   1
 #define CTX_CURRENT_PATH        1
-#define CTX_BLOATY_FAST_PATHS        0
 #define CTX_BLENDING_AND_COMPOSITING 0
 #define CTX_STRINGPOOL_SIZE        256
 #define CTX_MIN_EDGE_LIST_SIZE     2048
 #define CTX_AUDIO                  0
 #define CTX_CLIENTS                0
-#define CTX_TERMINAL_EVENTS        0 // needed to get rid of some includes
+#define CTX_TERMINAL_EVENTS        0 // gets rid of posix bits and bobs
 #define CTX_EVENTS                 1
+#define CTX_MAX_DEVICES            1
+#define CTX_MAX_KEYBINDINGS        8
 #define CTX_THREADS                0
-#define CTX_RASTERIZER             1
 #define CTX_TILED                  0
+#define CTX_RASTERIZER             1
 
 
 /* we keep the ctx implementation here, this compilation taget changes less
@@ -992,10 +992,12 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
             return mp_obj_new_int(ctx_get_image_smoothing (self->ctx));
        case MP_QSTR_fill_rule:
             return mp_obj_new_int(ctx_get_fill_rule (self->ctx));
+#if CTX_BLENDING_AND_COMPOSITING
        case MP_QSTR_blend_mode:
             return mp_obj_new_int(ctx_get_blend_mode (self->ctx));
        case MP_QSTR_compositing_mode:
             return mp_obj_new_int(ctx_get_compositing_mode (self->ctx));
+#endif
        case MP_QSTR_line_cap:
             return mp_obj_new_int(ctx_get_line_cap (self->ctx));
        case MP_QSTR_line_join:
@@ -1034,16 +1036,18 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
          ctx_image_smoothing (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_fill_rule:
          ctx_fill_rule (self->ctx, mp_obj_get_int (set_val)); break;
-       case MP_QSTR_compositing_mode:
-         ctx_compositing_mode (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_line_cap:
          ctx_line_cap (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_line_join:
          ctx_line_join (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_text_align:
          ctx_text_align (self->ctx, mp_obj_get_int (set_val)); break;
+#if CTX_BLENDING_AND_COMPOSITING
        case MP_QSTR_blend_mode:
          ctx_blend_mode (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_compositing_mode:
+         ctx_compositing_mode (self->ctx, mp_obj_get_int (set_val)); break;
+#endif
        case MP_QSTR_text_baseline:
          ctx_text_baseline (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_line_width:
@@ -1068,11 +1072,13 @@ STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
     if(attr == MP_QSTR_width
      ||attr == MP_QSTR_height
      ||attr == MP_QSTR_font
+#if CTX_BLENDING_AND_COMPOSITING
+     ||attr == MP_QSTR_blend_mode
      ||attr == MP_QSTR_compositing_mode
+#endif
      ||attr == MP_QSTR_line_cap
      ||attr == MP_QSTR_line_join
      ||attr == MP_QSTR_text_align
-     ||attr == MP_QSTR_blend_mode
      ||attr == MP_QSTR_fill_rule
      ||attr == MP_QSTR_image_smoothing
      ||attr == MP_QSTR_text_baseline
@@ -1179,8 +1185,10 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         MP_CTX_ATTR(height),
         MP_CTX_ATTR(font),
         MP_CTX_ATTR(image_smoothing),
+#if CTX_BLENDING_AND_COMPOSITING
         MP_CTX_ATTR(compositing_mode),
         MP_CTX_ATTR(blend_mode),
+#endif
         MP_CTX_ATTR(line_cap),
         MP_CTX_ATTR(line_join),
         MP_CTX_ATTR(text_align),
@@ -1223,6 +1231,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	MP_CTX_INT_CONSTANT(CAP,NONE),
 	MP_CTX_INT_CONSTANT(CAP,ROUND),
 	MP_CTX_INT_CONSTANT(CAP,SQUARE),
+#if CTX_BLENDING_AND_COMPOSITING
 	MP_CTX_INT_CONSTANT(COMPOSITE,SOURCE_OVER),
 	MP_CTX_INT_CONSTANT(COMPOSITE,COPY),
 	MP_CTX_INT_CONSTANT(COMPOSITE,SOURCE_IN),
@@ -1254,6 +1263,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	MP_CTX_INT_CONSTANT(BLEND,DIVIDE),
 	MP_CTX_INT_CONSTANT(BLEND,ADDITION),
 	MP_CTX_INT_CONSTANT(BLEND,SUBTRACT),
+#endif
 	MP_CTX_INT_CONSTANT(TEXT_BASELINE,ALPHABETIC),
 	MP_CTX_INT_CONSTANT(TEXT_BASELINE,TOP),
 	MP_CTX_INT_CONSTANT(TEXT_BASELINE,HANGING),

@@ -324,6 +324,15 @@
 #define CTX_EVENTS              1
 #endif
 
+
+#ifndef CTX_MAX_DEVICES
+#define CTX_MAX_DEVICES 16
+#endif
+
+#ifndef CTX_MAX_KEYBINDINGS
+#define CTX_MAX_KEYBINDINGS 256
+#endif
+
 #ifndef CTX_TERMINAL_EVENTS
 #if CTX_EVENTS
 #define CTX_TERMINAL_EVENTS 1

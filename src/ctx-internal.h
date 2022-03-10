@@ -398,8 +398,6 @@ struct _CtxIterator
   CtxEntry         bitpack_command[6]; // the command returned to the
   // user if unpacking is needed.
 };
-#define CTX_MAX_DEVICES 16
-#define CTX_MAX_KEYBINDINGS         256
 
 #if CTX_EVENTS 
 
