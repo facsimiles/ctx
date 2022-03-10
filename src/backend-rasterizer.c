@@ -2074,7 +2074,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x1, float y1,
                          float x2, float y2)
 {
-  float tolerance = 0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  float tolerance = 3*0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
 
@@ -4024,7 +4024,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
                                             a dashed path to stroke */
       float prev_x = 0.0f;
       float prev_y = 0.0f;
-      float pos = 0.0;
+      //float pos = 0.0;
 
       int   dash_no  = 0.0;
       float dash_lpos = state->gstate.line_dash_offset * factor;
@@ -4098,7 +4098,7 @@ again:
               }
               else
               {
-                pos += length;
+                //pos += length;
                 dash_lpos += length;
                 {
                   if (is_down)

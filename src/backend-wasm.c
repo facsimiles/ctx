@@ -29,7 +29,6 @@ get_fb(int w, int h) {
 
 void  update_fb (Ctx *ctx, void *user_data)
 {
-  int sync = 0;
   EM_ASM(
     var canvas = document.getElementById('c');
     var context = canvas.getContext('2d');
@@ -156,7 +155,7 @@ void wasm_set_damage_control(int val)
 }
 
 
-Ctx *ctx_wasm_reset (void)
+void ctx_wasm_reset (void)
 {
   if (fb) free (fb); fb = NULL;
   em_ctx = NULL;

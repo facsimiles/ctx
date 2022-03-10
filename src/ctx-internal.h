@@ -946,7 +946,9 @@ ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
 
 CTX_STATIC void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer);
+#if CTX_SHAPE_CACHE
 CTX_STATIC uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer);
+#endif
 CTX_STATIC void
 ctx_rasterizer_arc (CtxRasterizer *rasterizer,
                     float        x,

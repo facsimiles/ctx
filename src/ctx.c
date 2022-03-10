@@ -698,6 +698,7 @@ void ctx_stroke (Ctx *ctx)
 }
 
 
+#if 0
 static void ctx_empty (Ctx *ctx)
 {
 #if CTX_RASTERIZER
@@ -705,6 +706,7 @@ static void ctx_empty (Ctx *ctx)
 #endif
     ctx_drawlist_clear (ctx);
 }
+#endif
 
 void _ctx_set_store_clear (Ctx *ctx)
 {

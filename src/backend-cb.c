@@ -172,11 +172,13 @@ static void ctx_render_cb (Ctx *ctx,
       y0 += render_height;
     } while (y0 < y1);
   }
+#if 0
   if (flags & CTX_CB_CYCLE_BUF)
   {
     ctx_free (fb);
     backend_cb->fb = NULL;
   }
+#endif
 }
 
 CTX_EXPORT int
@@ -351,6 +353,8 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   cb_backend->update_fb_user_data   = update_fb_user_data;
   cb_backend->memory_budget  = memory_budget;
   ctx_set_backend (ctx, backend);
+  if (!scratch_fb)
+    cb_backend->fb = (uint16_t*)ctx_malloc (memory_budget);
   return ctx;
 }
 
