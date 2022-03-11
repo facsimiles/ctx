@@ -2233,14 +2233,6 @@ typedef enum
   // RGB  device and  RGB  ?
 } CtxColorModel;
 
-enum _CtxAntialias
-{
-  CTX_ANTIALIAS_DEFAULT, //
-  CTX_ANTIALIAS_NONE, // non-antialiased
-  CTX_ANTIALIAS_FAST, // aa 3    // deprected or is default equal to this now?
-  CTX_ANTIALIAS_GOOD, // aa 5    // this should perhaps still be 5?
-};
-typedef enum _CtxAntialias CtxAntialias;
 
 enum _CtxCursor
 {
@@ -2274,8 +2266,6 @@ void ctx_listen_set_cursor (Ctx      *ctx,
  */
 void         ctx_set_cursor (Ctx *ctx, CtxCursor cursor);
 CtxCursor    ctx_get_cursor (Ctx *ctx);
-void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
-CtxAntialias ctx_get_antialias (Ctx *ctx);
 void         ctx_set_render_threads   (Ctx *ctx, int n_threads);
 int          ctx_get_render_threads   (Ctx *ctx);
 

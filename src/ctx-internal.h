@@ -27,6 +27,17 @@ typedef struct _CtxGState     CtxGState;
 typedef struct _CtxSource CtxSource;
 
 
+enum _CtxAntialias
+{
+  CTX_ANTIALIAS_DEFAULT, //
+  CTX_ANTIALIAS_NONE, // non-antialiased
+  CTX_ANTIALIAS_FAST, // aa 3    // deprected or is default equal to this now?
+  CTX_ANTIALIAS_GOOD, // aa 5    // this should perhaps still be 5?
+};
+typedef enum _CtxAntialias CtxAntialias;
+void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
+CtxAntialias ctx_get_antialias (Ctx *ctx);
+
 #define CTX_VALID_RGBA_U8     (1<<0)
 #define CTX_VALID_RGBA_DEVICE (1<<1)
 #if CTX_ENABLE_CM
@@ -1352,11 +1363,14 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
 
 
 
+
 #if EMSCRIPTEN
 #define CTX_EXPORT EMSCRIPTEN_KEEPALIVE
 #else
 #define CTX_EXPORT
 #endif
+
+
 
 #endif
 

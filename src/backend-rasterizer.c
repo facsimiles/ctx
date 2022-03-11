@@ -2068,7 +2068,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x1, float y1,
                          float x2, float y2)
 {
-  float tolerance = 4*0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  float tolerance = 0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
 
