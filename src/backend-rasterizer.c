@@ -1966,10 +1966,7 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
   rasterizer->first_x  = x;
   rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
-  if (rasterizer->uses_transforms)
-    {
-      _ctx_user_to_device (rasterizer->state, &tx, &ty);
-    }
+  _ctx_user_to_device (rasterizer->state, &tx, &ty);
 
   tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
   ty = ty * CTX_FULL_AA;
@@ -1992,10 +1989,7 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
   float ty = y;
   //float ox = rasterizer->x;
   //float oy = rasterizer->y;
-  //if (rasterizer->uses_transforms)
-    {
-      _ctx_user_to_device (rasterizer->state, &tx, &ty);
-    }
+  _ctx_user_to_device (rasterizer->state, &tx, &ty);
   tx -= rasterizer->blit_x;
 
   //ty = ctx_maxf (MIN_Y, ty);
@@ -3976,7 +3970,6 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
       case CTX_APPLY_TRANSFORM:
       case CTX_TRANSLATE:
       case CTX_IDENTITY:
-        rasterizer->uses_transforms = 1;
         /* FALLTHROUGH */
       case CTX_SAVE:
         rasterizer->comp_op = NULL;

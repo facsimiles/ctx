@@ -690,7 +690,6 @@ struct _CtxRasterizer
   void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, unsigned int count);
 
   unsigned int aa;          // level of vertical aa
-  int        uses_transforms;
   unsigned int prev_active_edges;
   unsigned int active_edges;
   unsigned int pending_edges;

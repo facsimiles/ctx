@@ -483,12 +483,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
       case CTX_TRANSLATE:
       case CTX_APPLY_TRANSFORM:
 
-
-
-        rasterizer->uses_transforms = 1;
         ctx_interpret_transforms (rasterizer->state, entry, NULL);
-
-        
         break;
       case CTX_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
