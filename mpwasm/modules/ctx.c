@@ -1,5 +1,9 @@
+#pragma GCC optimize ("O2")
+
 #include <stdlib.h>
+#include "py/binary.h"
 #include "py/obj.h"
+#include "py/objarray.h"
 #include "py/runtime.h"
 
 #define CTX_TINYVG 1
@@ -85,7 +89,8 @@ typedef struct _mp_ctx_event_obj_t mp_ctx_event_obj_t;
 typedef struct _mp_ctx_obj_t {
 	mp_obj_base_t base;
 	Ctx *ctx;
-	mp_ctx_event_obj_t *ctx_event;
+	//mp_ctx_event_obj_t *ctx_event;
+	mp_obj_t            user_data;
 } mp_ctx_obj_t;
 
 void gc_collect(void);
@@ -652,6 +657,7 @@ extern const mp_obj_type_t mp_ctx_event_type;
 struct _mp_ctx_event_obj_t {
 	mp_obj_base_t base;
 	CtxEvent  event;
+        mp_obj_t  user_data;
 	mp_obj_t  mp_ev;
 };
 
@@ -684,6 +690,7 @@ mp_ctx_event_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
       case MP_QSTR_delta_y:   return mp_obj_new_float(self->event.delta_y);
       case MP_QSTR_device_no: return mp_obj_new_int(self->event.device_no);
       case MP_QSTR_unicode:   return mp_obj_new_int(self->event.unicode);
+      case MP_QSTR_user_data: return self->user_data;
       case MP_QSTR_scroll_direction:  return mp_obj_new_int(self->event.scroll_direction);
       case MP_QSTR_time:      return mp_obj_new_int(self->event.time);
       case MP_QSTR_modifier_state:   return mp_obj_new_int(self->event.state);
@@ -713,6 +720,7 @@ STATIC void mp_ctx_event_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
      ||attr == MP_QSTR_delta_y
      ||attr == MP_QSTR_device_no
      ||attr == MP_QSTR_unicode
+     ||attr == MP_QSTR_user_data
      ||attr == MP_QSTR_scroll_direction
      ||attr == MP_QSTR_time
      ||attr == MP_QSTR_modifier_state
@@ -749,6 +757,7 @@ static const mp_rom_map_elem_t mp_ctx_event_locals_dict_table[] = {
        MP_CTX_ATTR(delta_y),
        MP_CTX_ATTR(device_no),
        MP_CTX_ATTR(unicode),
+       MP_CTX_ATTR(user_data),
        MP_CTX_ATTR(scroll_direction),
        MP_CTX_ATTR(time),
        MP_CTX_ATTR(modifier_state),
@@ -794,33 +803,45 @@ static void mp_ctx_listen_cb_handler_stop_propagate (CtxEvent *event, void *data
   event->stop_propagate = 1;
 }
 
-static mp_obj_t mp_ctx_listen (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t cb_in)
+static mp_obj_t mp_ctx_listen (size_t n_args, const mp_obj_t *args)
 {
+  mp_obj_t self_in = args[0];
+  mp_obj_t event_mask = args[1];
+  mp_obj_t cb_in = args[2];
+  mp_obj_t user_data_in = args[3];
   mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
   if (cb_in != mp_const_none &&
       !mp_obj_is_callable(cb_in))
           mp_raise_ValueError(MP_ERROR_TEXT("invalid handler"));
+  mp_ctx_event_obj_t *ctx_event = mp_ctx_event_new ();
+  ctx_event->user_data = user_data_in;
   ctx_listen (self->ctx,
               mp_obj_get_int(event_mask),
               mp_ctx_listen_cb_handler,
-              (cb_in), self->ctx_event);
+              (cb_in), ctx_event);
   return MP_OBJ_FROM_PTR(self);
 }
-MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_listen_obj, mp_ctx_listen);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_listen_obj, 4, 4, mp_ctx_listen);
 
-static mp_obj_t mp_ctx_listen_stop_propagate (mp_obj_t self_in, mp_obj_t event_mask, mp_obj_t cb_in)
+static mp_obj_t mp_ctx_listen_stop_propagate (size_t n_args, const mp_obj_t *args)
 {
+  mp_obj_t self_in = args[0];
+  mp_obj_t event_mask = args[1];
+  mp_obj_t cb_in = args[2];
+  mp_obj_t user_data_in = args[3];
   mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
   if (cb_in != mp_const_none &&
       !mp_obj_is_callable(cb_in))
           mp_raise_ValueError(MP_ERROR_TEXT("invalid handler"));
+  mp_ctx_event_obj_t *ctx_event = mp_ctx_event_new ();
+  ctx_event->user_data = user_data_in;
   ctx_listen (self->ctx,
               mp_obj_get_int(event_mask),
               mp_ctx_listen_cb_handler_stop_propagate,
-              (cb_in), self->ctx_event);
+              (cb_in), ctx_event);
   return MP_OBJ_FROM_PTR(self);
 }
-MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_listen_stop_propagate_obj, mp_ctx_listen_stop_propagate);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_listen_stop_propagate_obj, 4, 4, mp_ctx_listen_stop_propagate);
 #endif
 
 static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t path_in)
@@ -865,7 +886,6 @@ static mp_obj_t mp_ctx_make_new(
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = type;
 	o->ctx          = ctx_new_drawlist(160,80);
-        o->ctx_event = mp_ctx_event_new ();
 
 	return MP_OBJ_FROM_PTR(o);
 }
@@ -895,7 +915,6 @@ static mp_obj_t mp_ctx_new_for_buffer (size_t n_args, const mp_obj_t *args)
         int stride = mp_obj_get_int (stride_in);
 	o->ctx = ctx_new_for_framebuffer (buffer_info.buf,
                         width, height, stride, format);
-        o->ctx_event = mp_ctx_event_new ();
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_new_for_buffer_obj, 5, 5, mp_ctx_new_for_buffer);
@@ -904,15 +923,14 @@ static void mp_ctx_set_pixels (Ctx *ctx, void *user_data,
                                int x_in, int y_in, int width_in, int height_in, void *buf_in,
                                int buf_size)
 {
-
   mp_obj_t tup_o = mp_obj_new_tuple (5, NULL);
   mp_obj_tuple_t *tup = MP_OBJ_TO_PTR (tup_o);
   tup->items[0] = mp_obj_new_int (x_in);
   tup->items[1] = mp_obj_new_int (y_in);
   tup->items[2] = mp_obj_new_int (width_in);
   tup->items[3] = mp_obj_new_int (height_in);
-  tup->items[4] = mp_obj_new_bytes (buf_in, buf_size);
-
+  tup->items[4] = mp_obj_new_memoryview(BYTEARRAY_TYPECODE,
+                    buf_size, buf_in);
   mp_call_function_1(user_data, tup_o);
 }
 
@@ -955,7 +973,6 @@ static mp_obj_t mp_ctx_new_for_cb (size_t n_args, const mp_obj_t *args)
                         memory_budget,
                         NULL,
                         flags);
-        o->ctx_event = mp_ctx_event_new ();
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_new_for_cb_obj, 7, 7, mp_ctx_new_for_cb);
@@ -967,7 +984,6 @@ static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 	o->ctx          = ctx_new_drawlist(mp_obj_get_float(width_in),
                                            mp_obj_get_float(height_in));
 
-        o->ctx_event = mp_ctx_event_new ();
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_new_drawlist_obj, mp_ctx_new_drawlist);
@@ -978,7 +994,6 @@ static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = &mp_ctx_type;
 	o->ctx          = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
-        o->ctx_event    = mp_ctx_event_new ();
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);

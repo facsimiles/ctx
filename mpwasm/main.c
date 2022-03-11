@@ -50,7 +50,7 @@ extern int _mp_quit;
 Ctx *ctx_wasm_get_context(int flags);
 
 void epic_set_ctx (Ctx *ctx);
-Ctx *ctx_wasm_reset (void);
+void ctx_wasm_reset (void);
 
 void mp_js_init(int heap_size) {
     #if MICROPY_ENABLE_GC

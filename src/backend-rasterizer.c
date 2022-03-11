@@ -2074,13 +2074,13 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x1, float y1,
                          float x2, float y2)
 {
-  float tolerance = 3*0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  float tolerance = 4*0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
 
   tolerance = tolerance * tolerance;
 
-  {
+  if(1){
 #define CTX_AVOID_CLIPPED_SUBDIVISION 0
 #if CTX_AVOID_CLIPPED_SUBDIVISION
   float maxx = ctx_maxf (x1,x2);
