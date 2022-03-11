@@ -18,10 +18,47 @@ ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
   _ctx_matrix_apply_transform (m, x, y);
 }
 
-CTX_STATIC inline void
+static inline int
+determine_transform_type (const CtxMatrix *m)
+{
+  
+  if (m->m[2][0] != 0.0f ||
+      m->m[2][1] != 0.0f ||
+      m->m[2][1] != 1.0f)
+    return 4;
+  if (m->m[0][1] != 0.0f ||
+      m->m[1][0] != 0.0f)
+    return 3;
+  if (m->m[0][2] != 0.0f ||
+      m->m[1][2] != 0.0f ||
+      m->m[0][0] != 1.0f ||
+      m->m[1][1] != 1.0f)
+    return 2;
+  return 1;
+}
+
+static inline void
 _ctx_user_to_device (CtxState *state, float *x, float *y)
 {
-  _ctx_matrix_apply_transform (&state->gstate.transform, x, y);
+  switch (state->gstate.transform_type)
+  {
+    case 0:
+      state->gstate.transform_type = 
+              determine_transform_type (&state->gstate.transform);
+      _ctx_user_to_device (state, x, y);
+      break;
+    case 1:  // identity
+      break;
+    case 2:  // scale/translate
+      _ctx_matrix_apply_transform_scale_translate (&state->gstate.transform, x, y);
+      break;
+    case 3:  // affine
+      _ctx_matrix_apply_transform_affine (&state->gstate.transform, x, y);
+      break;
+    case 4:  // perspective
+      _ctx_matrix_apply_transform (&state->gstate.transform, x, y);
+      break;
+  }
 }
 
 CTX_STATIC void

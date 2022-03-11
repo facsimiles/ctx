@@ -207,6 +207,7 @@ struct _CtxGState
   float         shadow_offset_x;
   float         shadow_offset_y;
 #endif
+  unsigned int  transform_type:3;
   unsigned int        clipped:1;
   CtxColorModel    color_model:8;
   /* bitfield-pack small state-parts */
@@ -1280,11 +1281,31 @@ _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 {
   float x_in = *x;
   float y_in = *y;
-
   float w =   (x_in * m->m[2][0]) + (y_in * m->m[2][1]) + m->m[2][2];
-       *x = ( (x_in * m->m[0][0]) + (y_in * m->m[0][1]) + m->m[0][2]) / w;
-       *y = ( (x_in * m->m[1][0]) + (y_in * m->m[1][1]) + m->m[1][2]) / w;
+  float w_recip = 1.0/w;
+       *x = ( (x_in * m->m[0][0]) + (y_in * m->m[0][1]) + m->m[0][2]) * w_recip;
+       *y = ( (x_in * m->m[1][0]) + (y_in * m->m[1][1]) + m->m[1][2]) * w_recip;
 }
+
+
+static inline void
+_ctx_matrix_apply_transform_affine (const CtxMatrix *m, float *x, float *y)
+{
+  float x_in = *x;
+  float y_in = *y;
+       *x = ( (x_in * m->m[0][0]) + (y_in * m->m[0][1]) + m->m[0][2]);
+       *y = ( (x_in * m->m[1][0]) + (y_in * m->m[1][1]) + m->m[1][2]);
+}
+
+static inline void
+_ctx_matrix_apply_transform_scale_translate (const CtxMatrix *m, float *x, float *y)
+{
+  float x_in = *x;
+  float y_in = *y;
+       *x = ((x_in * m->m[0][0]) + m->m[0][2]);
+       *y = ((y_in * m->m[1][1]) + m->m[1][2]);
+}
+
 
 static inline void
 _ctx_matrix_multiply (CtxMatrix       *result,

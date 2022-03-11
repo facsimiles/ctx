@@ -35,7 +35,7 @@
 #define CTX_PARSER_MAXLEN       512
 #define CTX_PARSER_FIXED_TEMP   1
 #define CTX_CURRENT_PATH        1
-#define CTX_BLENDING_AND_COMPOSITING 0
+#define CTX_BLENDING_AND_COMPOSITING 1
 #define CTX_STRINGPOOL_SIZE        256
 #define CTX_MIN_EDGE_LIST_SIZE     2048
 #define CTX_AUDIO                  0

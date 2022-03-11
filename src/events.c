@@ -246,7 +246,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   }
 
   Ctx *ret = NULL;
-
+#if CTX_TERMINAL_EVENTS
   /* we do the query on auto but not on directly set ctx
    *
    */
@@ -259,6 +259,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
       ret = ctx_new_ctx (width, height);
     }
   }
+#endif
 
 #if CTX_HEADLESS
   if (!ret)
@@ -1752,6 +1753,7 @@ ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, u
   return 0;
 }
 
+#if 0
 static int ctx_str_has_prefix (const char *string, const char *prefix)
 {
   for (int i = 0; prefix[i]; i++)
@@ -1761,6 +1763,7 @@ static int ctx_str_has_prefix (const char *string, const char *prefix)
   }
   return 0;
 }
+#endif
 
 
 static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,

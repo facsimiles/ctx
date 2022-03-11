@@ -1992,7 +1992,7 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
   float ty = y;
   //float ox = rasterizer->x;
   //float oy = rasterizer->y;
-  if (rasterizer->uses_transforms)
+  //if (rasterizer->uses_transforms)
     {
       _ctx_user_to_device (rasterizer->state, &tx, &ty);
     }

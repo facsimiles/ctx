@@ -172,7 +172,7 @@ static void ctx_render_cb (Ctx *ctx,
       y0 += render_height;
     } while (y0 < y1);
   }
-#if 0
+#if 1
   if (flags & CTX_CB_CYCLE_BUF)
   {
     ctx_free (fb);
@@ -276,7 +276,6 @@ ctx_cb_end_frame (Ctx *ctx)
         }
       ctx_free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_destroy (hasher);
-
 
       if (dirty_tiles)
       {
