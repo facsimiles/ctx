@@ -2876,7 +2876,7 @@ static EvSource *evsource_kb_new (void)
 #if CTX_BABL
 static int _ctx_babl_inits = 0;
 #endif
-static void ctx_babl_init (void)
+static inline void ctx_babl_init (void)
 {
 #if CTX_BABL
   _ctx_babl_inits ++;
@@ -2886,7 +2886,7 @@ static void ctx_babl_init (void)
   }
 #endif
 }
-static void ctx_babl_exit (void)
+static inline void ctx_babl_exit (void)
 {
 #if CTX_BABL
   _ctx_babl_inits --;
@@ -2897,7 +2897,7 @@ static void ctx_babl_exit (void)
 #endif
 }
 
-static int event_check_pending (CtxTiled *tiled)
+static inline int event_check_pending (CtxTiled *tiled)
 {
   int events = 0;
   for (int i = 0; i < tiled->evsource_count; i++)

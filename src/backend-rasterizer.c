@@ -1992,11 +1992,6 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
   _ctx_user_to_device (rasterizer->state, &tx, &ty);
   tx -= rasterizer->blit_x;
 
-  //ty = ctx_maxf (MIN_Y, ty);
-  //ty = ctx_minf (MAX_Y, ty);
-  //tx = ctx_maxf (MIN_X, tx);
-  //tx = ctx_minf (MAX_X, tx);
-  
   ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * CTX_FULL_AA);//rasterizer->aa);
 
   if (CTX_UNLIKELY(rasterizer->has_prev<=0))

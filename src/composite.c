@@ -2691,7 +2691,7 @@ ctx_u8_source_over_normal_color (int components,
   }
 }
 
-static void
+static inline void
 ctx_u8_source_copy_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   while (count--)
@@ -3373,7 +3373,7 @@ ctx_u8_porter_duff(RGBA8, 4,image,           ctx_fragment_image_RGBA8,          
 #endif
 
 
-static void
+static inline void
 ctx_RGBA8_nop (CTX_COMPOSITE_ARGUMENTS)
 {
 }
@@ -3607,7 +3607,7 @@ ctx_composite_convert (CTX_COMPOSITE_ARGUMENTS)
 }
 
 #if CTX_ENABLE_FLOAT
-static void
+static inline void
 ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   float *dstf = (float*)dst;
@@ -3629,7 +3629,7 @@ ctx_float_copy_normal (int components, CTX_COMPOSITE_ARGUMENTS)
   }
 }
 
-static void
+static inline void
 ctx_float_clear_normal (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   float *dstf = (float*)dst;
@@ -3688,7 +3688,7 @@ ctx_float_source_over_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
   }
 }
 
-static void
+static inline void
 ctx_float_source_copy_normal_color (int components, CTX_COMPOSITE_ARGUMENTS)
 {
   float *dstf = (float*)dst;
@@ -4592,7 +4592,7 @@ ctx_composite_BGRA8 (CTX_COMPOSITE_ARGUMENTS)
 
 
 #endif
-static void
+static inline void
 ctx_composite_direct (CTX_COMPOSITE_ARGUMENTS)
 {
   // for better performance, this could be done without a pre/post conversion,
