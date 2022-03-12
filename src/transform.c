@@ -79,8 +79,6 @@ void ctx_user_to_device_distance (Ctx *ctx, float *x, float *y)
   _ctx_user_to_device_distance (&ctx->state, x, y);
 }
 
-
-
 CTX_STATIC inline void
 _ctx_device_to_user (CtxState *state, float *x, float *y)
 {
@@ -103,14 +101,11 @@ void ctx_device_to_user          (Ctx *ctx, float *x, float *y)
 {
   _ctx_device_to_user (&ctx->state, x, y);
 }
+
 void ctx_device_to_user_distance (Ctx *ctx, float *x, float *y)
 {
   _ctx_device_to_user_distance (&ctx->state, x, y);
 }
-
-
-
-
 
 
 CTX_STATIC void
@@ -380,7 +375,5 @@ ctx_matrix_invert (CtxMatrix *m)
   m->m [2][2] = (t.m [0][0] * t.m [1][1] -
                    t.m [0][1] * t.m [1][0]) * c;
 }
-
-
 
 #endif

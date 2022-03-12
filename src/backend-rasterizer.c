@@ -2050,7 +2050,7 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
   ly = ctx_lerpf (sy, ey, t);
   dx = lx - x;
   dy = ly - y;
-  if (iteration < 5 && (dx*dx+dy*dy) > tolerance)
+  if (iteration < 6 && (dx*dx+dy*dy) > tolerance)
   {
     ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
                                   sx, sy, x, y, s, t, iteration + 1,
@@ -2075,7 +2075,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   tolerance = tolerance * tolerance;
 
   if(1){
-#define CTX_AVOID_CLIPPED_SUBDIVISION 0
+
 #if CTX_AVOID_CLIPPED_SUBDIVISION
   float maxx = ctx_maxf (x1,x2);
   maxx = ctx_maxf (maxx, ox);
@@ -2814,6 +2814,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
       CtxMatrix transform_backup = gstate->transform;
       _ctx_matrix_identity (&gstate->transform);
+      gstate->transform_type = 0;
       float prev_x = 0.0f;
       float prev_y = 0.0f;
       float half_width_x = line_width/2;
@@ -3012,6 +3013,7 @@ foo:
       ctx_rasterizer_fill (rasterizer);
       gstate->fill_rule = rule_backup;
       gstate->transform = transform_backup;
+      gstate->transform_type = 0;
     }
   }
 #if CTX_FAST_FILL_RECT
@@ -4013,6 +4015,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
           int end   = 0;
       CtxMatrix transform_backup = state->gstate.transform;
       _ctx_matrix_identity (&state->gstate.transform);
+      state->gstate.transform_type = 0;
       ctx_rasterizer_reset (rasterizer); /* for dashing we create
                                             a dashed path to stroke */
       float prev_x = 0.0f;
@@ -4106,6 +4109,7 @@ foo:
           start = end+1;
         }
         state->gstate.transform = transform_backup;
+        state->gstate.transform_type = 0;
         }
         ctx_rasterizer_stroke (rasterizer);
         }

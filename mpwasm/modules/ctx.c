@@ -21,6 +21,7 @@
 #define CTX_GRADIENT_CACHE      1
 #define CTX_ENABLE_CLIP         1
 #define CTX_1BIT_CLIP           1
+#define CTX_AVOID_CLIPPED_SUBDIVISION 1
 #define CTX_CM                  0
 #define CTX_SHAPE_CACHE         0
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 42
