@@ -191,7 +191,7 @@ void ctx_tiled_render_fun (void **data)
               active_mask |= 1 << hno;
             }
 #endif
-            int swap_red_green = ((CtxRasterizer*)(host->backend))->swap_red_green;
+            int swap_red_green = rasterizer->swap_red_green;
             ctx_rasterizer_init (rasterizer,
                                  host, tiled->backend.ctx, &host->state,
                                  &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],

@@ -1924,6 +1924,28 @@ static void ctx_setup (void);
 static Ctx ctx_state;
 #endif
 
+void ctx_push_backend (Ctx *ctx,
+                       void *backend)
+{
+  if (ctx->backend_pushed)
+    fprintf (stderr, "double push\n");
+  ctx->backend_pushed = ctx->backend;
+  ctx->backend = (CtxBackend*)backend;
+  if (ctx->backend->process == NULL)
+    ctx->backend->process = (void(*)(Ctx*,CtxCommand*))ctx_drawlist_process;
+}
+
+
+void ctx_pop_backend (Ctx *ctx)
+{
+  if (!ctx->backend_pushed)
+    fprintf (stderr, "backend pop without push\n");
+  if (ctx->backend && ctx->backend->destroy)
+    ctx->backend->destroy (ctx->backend);
+  ctx->backend = ctx->backend_pushed;
+  ctx->backend_pushed = NULL;
+}
+
 void ctx_set_backend (Ctx  *ctx,
                        void *backend)
 {

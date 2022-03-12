@@ -48,6 +48,9 @@
 #define CTX_THREADS                0
 #define CTX_TILED                  0
 #define CTX_RASTERIZER             1
+#define CTX_MAX_STATES             5
+#define CTX_MAX_EDGES            127
+#define CTX_MAX_PENDING           64
 
 
 /* we keep the ctx implementation here, this compilation taget changes less
@@ -935,9 +938,11 @@ static void mp_ctx_set_pixels (Ctx *ctx, void *user_data,
   mp_call_function_1(user_data, tup_o);
 }
 
-static void mp_ctx_update_fb (Ctx *ctx, void *user_data)
+static int mp_ctx_update_fb (Ctx *ctx, void *user_data)
 {
-  mp_call_function_0(user_data);
+  mp_obj_t ret = mp_call_function_0(user_data);
+  if (mp_obj_is_true (ret)) return 1;
+  return 0;
 }
 
 static mp_obj_t mp_ctx_new_for_cb (size_t n_args, const mp_obj_t *args)
@@ -1022,6 +1027,8 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
        case MP_QSTR_compositing_mode:
             return mp_obj_new_int(ctx_get_compositing_mode (self->ctx));
 #endif
+       case MP_QSTR_flags:
+            return mp_obj_new_int(ctx_cb_get_flags (self->ctx));
        case MP_QSTR_line_cap:
             return mp_obj_new_int(ctx_get_line_cap (self->ctx));
        case MP_QSTR_line_join:
@@ -1062,6 +1069,8 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
          ctx_fill_rule (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_line_cap:
          ctx_line_cap (self->ctx, mp_obj_get_int (set_val)); break;
+       case MP_QSTR_flags:
+         ctx_cb_set_flags (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_line_join:
          ctx_line_join (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_text_align:
@@ -1100,6 +1109,7 @@ STATIC void mp_ctx_attr(mp_obj_t obj, qstr attr, mp_obj_t *dest) {
      ||attr == MP_QSTR_blend_mode
      ||attr == MP_QSTR_compositing_mode
 #endif
+     ||attr == MP_QSTR_flags
      ||attr == MP_QSTR_line_cap
      ||attr == MP_QSTR_line_join
      ||attr == MP_QSTR_text_align
@@ -1213,6 +1223,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         MP_CTX_ATTR(compositing_mode),
         MP_CTX_ATTR(blend_mode),
 #endif
+        MP_CTX_ATTR(flags),
         MP_CTX_ATTR(line_cap),
         MP_CTX_ATTR(line_join),
         MP_CTX_ATTR(text_align),
@@ -1231,7 +1242,7 @@ const mp_obj_type_t mp_ctx_type = {
 	.name        = MP_QSTR_Ctx,
 	.make_new    = mp_ctx_make_new,
 	.locals_dict = (mp_obj_t)&mp_ctx_locals_dict,
-        .attr = mp_ctx_attr
+        .attr        = mp_ctx_attr
 };
 
 /* The globals table for this module */
@@ -1248,6 +1259,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 #endif
 
 
+        MP_CTX_INT_CONSTANT(FLAG,LOWRES),
         MP_CTX_INT_CONSTANT(FLAG,GRAY),
         MP_CTX_INT_CONSTANT(FLAG,HASH_CACHE),
         MP_CTX_INT_CONSTANT(FLAG,RGB332),

@@ -6,11 +6,12 @@ typedef struct CtxCbBackend
   CtxPixelFormat format;
   int            flags;
   uint16_t      *fb;
+  Ctx           *ctx;
 
   void (*set_pixels) (Ctx *ctx, void *user_data, 
                       int x, int y, int w, int h, void *buf, int buf_size);
   void   *set_pixels_user_data;
-  void (*update_fb) (Ctx *ctx, void *user_data);
+  int  (*update_fb) (Ctx *ctx, void *user_data);
   void   *update_fb_user_data;
 
   int     min_col; // hasher cols and rows
@@ -18,6 +19,8 @@ typedef struct CtxCbBackend
   int     max_col; // hasher cols and rows
   int     max_row; // hasher cols and rows
   uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+  uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS];
+
   int     memory_budget;
   Ctx    *renderer;
 } CtxCbBackend;
@@ -34,12 +37,13 @@ int ctx_cb_get_flags (Ctx *ctx)
   return backend_cb->flags;
 }
 
-static void ctx_render_cb (Ctx *ctx, 
-                            int x0, int y0,
-                            int x1, int y1,
-                            uint32_t active_mask)
+static int ctx_render_cb (CtxCbBackend *backend_cb, 
+                          int x0, int y0,
+                          int x1, int y1,
+                          uint32_t active_mask)
 {
-  CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
+  //CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
+  Ctx *ctx = backend_cb->ctx;
   int flags                = backend_cb->flags;
   int memory_budget        = backend_cb->memory_budget;
   int width                = x1 - x0 + 1;
@@ -47,6 +51,7 @@ static void ctx_render_cb (Ctx *ctx,
   uint16_t *fb;
   CtxPixelFormat           format = backend_cb->format;
   int bpp                  = ctx_pixel_format_bits_per_pixel (format)/ 8;
+  int abort = 0;
 
   int chunk_size = 8; /* wanting chunks of 16 scanlines at a
                          time to go out seems to give good
@@ -194,6 +199,61 @@ static void ctx_render_cb (Ctx *ctx,
       y0 += render_height;
     } while (y0 < y1);
   }
+  else if (flags & CTX_FLAG_LOWRES)
+  {
+    int scale_factor = 1;
+    int small_width = width / scale_factor;
+    int small_height = height / scale_factor;
+    int min_scanlines = 3;
+
+    while (memory_budget / bpp - small_height * small_width < width * min_scanlines)
+    {
+      scale_factor ++;
+      small_width = width / scale_factor;
+      small_height = height / scale_factor;
+      min_scanlines = scale_factor * 3;
+    }
+
+    int render_height =
+    render_height = (memory_budget / bpp - small_height * small_width) /
+        width;
+    uint16_t *scaled = &fb[small_height*small_width];
+
+    memset(fb, 0, small_width * bpp * small_height);
+
+    CtxRasterizer *r = ctx_rasterizer_init((CtxRasterizer*)ctx_calloc(sizeof (CtxRasterizer), 1),
+                         ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
+                         small_width * bpp, format, CTX_ANTIALIAS_DEFAULT);
+    ctx_push_backend (ctx, r);
+
+    ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
+    ctx_translate (ctx, -1.0 * x0, -1.0 * y0);
+    ctx_render_ctx (ctx, ctx);
+    ctx_pop_backend (ctx);
+
+    if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
+      backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
+    int yo = 0;
+    do
+    {
+      render_height = ctx_mini (render_height, y1-y0);
+      int off = 0;
+      for (int y = 0; y < render_height; y++)
+      {
+        for (int x = 0; x < width; x++, off++)
+           scaled[off]=fb[small_width * ((yo+y)/scale_factor) + (x/scale_factor)];
+      }
+      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
+                              x0, y0, width, render_height, (uint16_t*)scaled,
+                              width * render_height * bpp);
+      y0 += render_height;
+      yo += render_height;
+    } while (y0 < y1);
+
+    if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
+      backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
+
+  }
   else
   {
     int render_height = height;
@@ -201,31 +261,37 @@ static void ctx_render_cb (Ctx *ctx,
     {
        render_height = memory_budget / width / bpp;
     }
+    CtxRasterizer *r = ctx_rasterizer_init((CtxRasterizer*)ctx_calloc(sizeof (CtxRasterizer), 1),
+                         ctx, NULL, &ctx->state, fb, 0, 0, width, height,
+                         width * bpp, format, CTX_ANTIALIAS_DEFAULT);
+    ctx_push_backend (ctx, r);
 
     do
     {
       render_height = ctx_mini (render_height, y1-y0);
+      ctx_rasterizer_init(r,
+                         ctx, NULL, &ctx->state, fb, 0, 0, width, render_height,
+                         width * bpp, format, CTX_ANTIALIAS_DEFAULT);
       if ((flags & CTX_FLAG_KEEP_DATA) == 0)
       memset (fb, 0, width * bpp * render_height);
-      Ctx *renderer = ctx_new_for_framebuffer (fb, width, render_height, width * bpp,
-            format);
-      ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
-      ctx_render_ctx (ctx, renderer);
+
+      ctx_translate (ctx, -1.0 * x0, -1.0 * y0);
+      ctx_render_ctx (ctx, ctx);
 
       if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
-        backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
+        abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
 
       backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
                               x0, y0, width, render_height, (uint16_t*)fb,
                               width * render_height * bpp);
 
       if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
-        backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
+        abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
 
-      ctx_destroy (renderer);    
 
       y0 += render_height;
-    } while (y0 < y1);
+    } while (y0 < y1 && !abort);
+    ctx_pop_backend (ctx);    
   }
 #if 1
   if (flags & CTX_FLAG_CYCLE_BUF)
@@ -234,6 +300,7 @@ static void ctx_render_cb (Ctx *ctx,
     backend_cb->fb = NULL;
   }
 #endif
+  return abort;
 }
 
 CTX_EXPORT int
@@ -298,10 +365,16 @@ ctx_cb_end_frame (Ctx *ctx)
 
   if (cb_backend->flags & CTX_FLAG_HASH_CACHE)
   {
-    Ctx *hasher = ctx_hasher_new (ctx_width (ctx), ctx_height (ctx),
-                                  CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
+    //Ctx *hasher = ctx_hasher_new (ctx_width (ctx), ctx_height (ctx),
+    //                              CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
+    CtxState    *state = &ctx->state;
+    CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (sizeof (CtxHasher), 1);
+    ctx_hasher_init (rasterizer, ctx, state, ctx_width(ctx), ctx_height(ctx), CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
+
+    ctx_push_backend (ctx, rasterizer);
+
     int dirty_tiles = 0;
-    ctx_render_ctx (ctx, hasher);
+    ctx_render_ctx (ctx, ctx);
 
     cb_backend->max_col = -100;
     cb_backend->min_col = 100;
@@ -309,28 +382,61 @@ ctx_cb_end_frame (Ctx *ctx)
     cb_backend->min_row = 100;
 
     uint32_t active_mask = 0;
+    uint32_t *hashes = ((CtxHasher*)(ctx->backend))->hashes;
     int tile_no =0;
+    int low_res_tiles = 0;
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++)
         {
-          uint32_t new_hash = ctx_hasher_get_hash (hasher, col, row);
+          uint32_t new_hash = hashes[row*CTX_HASH_COLS+col];
           if (new_hash &&
               new_hash != cb_backend->hashes[(row * CTX_HASH_COLS + col)])
           {
             cb_backend->hashes[(row * CTX_HASH_COLS +  col)]= new_hash;
             dirty_tiles++;
-
             cb_backend->max_col = ctx_maxi (cb_backend->max_col, col);
             cb_backend->max_row = ctx_maxi (cb_backend->max_row, row);
             cb_backend->min_col = ctx_mini (cb_backend->min_col, col);
             cb_backend->min_row = ctx_mini (cb_backend->min_row, row);
+            cb_backend->res[(row * CTX_HASH_COLS + col)]=1;
+          }
+          else
+          {
+            low_res_tiles += cb_backend->res[(row * CTX_HASH_COLS + col)];
           }
 
           active_mask |= (1<<tile_no);
           tile_no++;
         }
-      ctx_free (((CtxHasher*)(hasher->backend))->hashes);
-      ctx_destroy (hasher);
+
+      int in_low_res = 0;
+      int old_flags = cb_backend->flags;
+      if (cb_backend->flags & CTX_FLAG_LOWRES)
+      {
+          in_low_res = 1;
+      if (dirty_tiles == 0 && low_res_tiles !=0)
+      {
+          cb_backend->max_col = -100;
+          cb_backend->min_col = 100;
+          cb_backend->max_row = -100;
+          cb_backend->min_row = 100;
+          for (int row = 0; row < CTX_HASH_ROWS; row++)
+            for (int col = 0; col < CTX_HASH_COLS; col++)
+              if (cb_backend->res[(row * CTX_HASH_COLS + col)])
+            {
+              cb_backend->max_col = ctx_maxi (cb_backend->max_col, col);
+              cb_backend->max_row = ctx_maxi (cb_backend->max_row, row);
+              cb_backend->min_col = ctx_mini (cb_backend->min_col, col);
+              cb_backend->min_row = ctx_mini (cb_backend->min_row, row);
+              cb_backend->res[(row * CTX_HASH_COLS + col)]=0;
+            }
+          cb_backend->flags &= ~CTX_FLAG_LOWRES;
+          dirty_tiles = 1;
+          in_low_res = 0;
+        }
+      }
+
+      ctx_pop_backend (ctx);
 
       if (dirty_tiles)
       {
@@ -362,6 +468,8 @@ ctx_cb_end_frame (Ctx *ctx)
 #endif
          int width = x1 - x0 + 1;
          int height = y1 - y0 + 1;
+         int abort = 0;
+#if 0
          if ( (cb_backend->flags & CTX_FLAG_AUTO_RGB332) &&
               ((width) * height * 2 > cb_backend->memory_budget))
          {
@@ -370,14 +478,24 @@ ctx_cb_end_frame (Ctx *ctx)
            cb_backend->flags -= CTX_FLAG_RGB332;
          }
          else
+#endif
          {
-           ctx_render_cb (ctx, x0, y0, x1, y1, active_mask);
+           abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
          }
+
+         if (abort && !in_low_res)
+      for (int row = cb_backend->min_row; row < cb_backend->max_row; row++)
+      for (int col = cb_backend->min_col; col < cb_backend->max_col; col++)
+        {
+          cb_backend->hashes[(row * CTX_HASH_COLS +  col)]= 123;
+        }
       }
+      ctx_free (hashes);
+      cb_backend->flags = old_flags;
   }
   else
   {
-    ctx_render_cb (ctx, 0, 0, ctx_width(ctx)-1, ctx_height(ctx)-1, 0);
+    ctx_render_cb (cb_backend, 0, 0, ctx_width(ctx)-1, ctx_height(ctx)-1, 0);
   }
   if (cb_backend->update_fb)
     cb_backend->update_fb (ctx, cb_backend->update_fb_user_data);
@@ -388,7 +506,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                                      int x, int y, int w, int h, void *buf,
                                      int buf_size),
                  void *set_pixels_user_data,
-                 void (*update_fb) (Ctx *ctx, void *user_data),
+                 int (*update_fb) (Ctx *ctx, void *user_data),
                  void *update_fb_user_data,
                  int   memory_budget,
                  void *scratch_fb,
@@ -407,6 +525,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   cb_backend->update_fb_user_data   = update_fb_user_data;
   cb_backend->memory_budget  = memory_budget;
   ctx_set_backend (ctx, backend);
+  cb_backend->ctx = ctx;
   if (!scratch_fb)
     cb_backend->fb = (uint16_t*)ctx_malloc (memory_budget);
   return ctx;

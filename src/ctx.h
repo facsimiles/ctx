@@ -769,6 +769,7 @@ typedef enum CtxFlags {
   CTX_FLAG_AUTO_RGB332  = 1 << 7,
   CTX_FLAG_KEEP_DATA  = 1 << 8,
   CTX_FLAG_INTRA_UPDATE = 1 << 9,
+  CTX_FLAG_LOWRES = 1 << 10,
 } CtxFlags;
 
 
@@ -777,7 +778,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                                      int x, int y, int w, int h, void *buf,
                                      int buf_size),
                  void *set_pixels_user_data,
-                 void (*update_fb) (Ctx *ctx, void *user_data),
+                 int (*update_fb) (Ctx *ctx, void *user_data),
                  void *update_fb_user_data,
                  int   memory_budget,
                  void *scratch_fb,

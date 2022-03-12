@@ -27,7 +27,7 @@ get_fb(int w, int h) {
   return fb;
 }
 
-void  update_fb (Ctx *ctx, void *user_data)
+int update_fb (Ctx *ctx, void *user_data)
 {
   EM_ASM(
     var canvas = document.getElementById('c');
@@ -129,6 +129,7 @@ void  update_fb (Ctx *ctx, void *user_data)
    emscripten_sleep(0);
 #endif
 #endif
+   return 0;
 }
 
 static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf, int buf_size)

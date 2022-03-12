@@ -511,6 +511,7 @@ struct _Ctx
   CtxState          state;        /**/
   int               frame; /* used for texture lifetime */
   uint32_t          bail;
+  CtxBackend       *backend_pushed;
   CtxBuffer         texture[CTX_MAX_TEXTURES];
 #if CTX_EVENTS 
   CtxCursor         cursor;
@@ -1349,6 +1350,10 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
 
 static inline void
 _ctx_transform_prime (CtxState *state);
+
+void ctx_push_backend (Ctx *ctx,
+                       void *backend);
+void ctx_pop_backend (Ctx *ctx);
 
 
 #if EMSCRIPTEN
