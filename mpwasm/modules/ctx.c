@@ -590,7 +590,7 @@ static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
 	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
         int res = 0;
-        Ctx *ctx = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+        Ctx *ctx = ctx_wasm_get_context(CTX_FLAG_KEEP_DATA);
         ctx_start_frame (ctx);
         ctx_render_ctx (self->ctx, ctx);
         ctx_end_frame (ctx);
@@ -994,7 +994,7 @@ static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 {
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = &mp_ctx_type;
-	o->ctx          = ctx_wasm_get_context(CTX_CB_KEEP_DATA);
+	o->ctx          = ctx_wasm_get_context(CTX_FLAG_KEEP_DATA);
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);
@@ -1246,6 +1246,17 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 #ifdef EMSCRIPTEN
 	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) },
 #endif
+
+
+        MP_CTX_INT_CONSTANT(FLAG,GRAY),
+        MP_CTX_INT_CONSTANT(FLAG,HASH_CACHE),
+        MP_CTX_INT_CONSTANT(FLAG,RGB332),
+        MP_CTX_INT_CONSTANT(FLAG,CYCLE_BUF),
+        MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
+        MP_CTX_INT_CONSTANT(FLAG,SHOW_FPS),
+        MP_CTX_INT_CONSTANT(FLAG,AUTO_RGB332),
+        MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
+        MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
 
 	MP_CTX_INT_CONSTANT(FILL_RULE,WINDING),
 	MP_CTX_INT_CONSTANT(FILL_RULE,EVEN_ODD),

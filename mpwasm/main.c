@@ -66,7 +66,7 @@ void mp_js_init(int heap_size) {
 
     mp_init();
     ctx_wasm_reset();
-    epic_set_ctx (ctx_wasm_get_context(CTX_CB_KEEP_DATA));
+    epic_set_ctx (ctx_wasm_get_context(CTX_FLAG_KEEP_DATA));
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_lib));
 }
 

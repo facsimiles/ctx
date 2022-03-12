@@ -60,7 +60,7 @@ static void ctx_render_cb (Ctx *ctx,
     backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);
   fb = backend_cb->fb;
 
-  if (flags & CTX_CB_332)
+  if (flags & CTX_FLAG_RGB332)
   {
     int render_height = height;
     memory_budget -= chunk_size * width * 2;
@@ -73,7 +73,7 @@ static void ctx_render_cb (Ctx *ctx,
     {
 
     render_height = ctx_mini (render_height, y1-y0);
-    if ((flags & CTX_CB_KEEP_DATA) == 0)
+    if ((flags & CTX_FLAG_KEEP_DATA) == 0)
       memset (fb, 0, width * render_height);
     Ctx *renderer = ctx_new_for_framebuffer (fb,
        width, render_height, width,
@@ -107,7 +107,7 @@ static void ctx_render_cb (Ctx *ctx,
       y0 += render_height;
     } while (y0 < y1);
   }
-  else if (flags & CTX_CB_GRAY)
+  else if (flags & CTX_FLAG_GRAY)
   {
      int render_height = height;
      memory_budget -= chunk_size * width * 2;
@@ -158,22 +158,30 @@ static void ctx_render_cb (Ctx *ctx,
     do
     {
       render_height = ctx_mini (render_height, y1-y0);
-      if ((flags & CTX_CB_KEEP_DATA) == 0)
+      if ((flags & CTX_FLAG_KEEP_DATA) == 0)
       memset (fb, 0, width * bpp * render_height);
       Ctx *renderer = ctx_new_for_framebuffer (fb, width, render_height, width * bpp,
             format);
       ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
       ctx_render_ctx (ctx, renderer);
+
+      if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
+        backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
+
       backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
                               x0, y0, width, render_height, (uint16_t*)fb,
                               width * render_height * bpp);
+
+      if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
+        backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
+
       ctx_destroy (renderer);    
 
       y0 += render_height;
     } while (y0 < y1);
   }
 #if 1
-  if (flags & CTX_CB_CYCLE_BUF)
+  if (flags & CTX_FLAG_CYCLE_BUF)
   {
     ctx_free (fb);
     backend_cb->fb = NULL;
@@ -216,7 +224,7 @@ ctx_cb_end_frame (Ctx *ctx)
   static int64_t prev_time = 0;
   int64_t cur_time = ctx_ticks () / 1000;
 
-  if (cb_backend->flags & CTX_CB_SHOW_FPS)
+  if (cb_backend->flags & CTX_FLAG_SHOW_FPS)
   {
    
   float em = ctx_height (ctx) * 0.08;
@@ -241,7 +249,7 @@ ctx_cb_end_frame (Ctx *ctx)
   }
 
 
-  if (cb_backend->flags & CTX_CB_HASH_CACHE)
+  if (cb_backend->flags & CTX_FLAG_HASH_CACHE)
   {
     Ctx *hasher = ctx_hasher_new (ctx_width (ctx), ctx_height (ctx),
                                   CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
@@ -284,7 +292,7 @@ ctx_cb_end_frame (Ctx *ctx)
          int y0 = cb_backend->min_row * (ctx_height (ctx)/CTX_HASH_ROWS);
          int y1 = (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
 
-         if (cb_backend->flags & CTX_CB_DAMAGE_CONTROL)
+         if (cb_backend->flags & CTX_FLAG_DAMAGE_CONTROL)
          {
 #if 1
          ctx_save (ctx);
@@ -307,12 +315,12 @@ ctx_cb_end_frame (Ctx *ctx)
 #endif
          int width = x1 - x0 + 1;
          int height = y1 - y0 + 1;
-         if ( (cb_backend->flags & CTX_CB_AUTO_332) &&
+         if ( (cb_backend->flags & CTX_FLAG_AUTO_RGB332) &&
               ((width) * height * 2 > cb_backend->memory_budget))
          {
-           cb_backend->flags |= CTX_CB_332;
+           cb_backend->flags |= CTX_FLAG_RGB332;
            ctx_render_cb (ctx, x0, y0, x1, y1, active_mask);
-           cb_backend->flags -= CTX_CB_332;
+           cb_backend->flags -= CTX_FLAG_RGB332;
          }
          else
          {

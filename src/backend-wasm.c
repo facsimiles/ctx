@@ -133,8 +133,6 @@ void  update_fb (Ctx *ctx, void *user_data)
 
 static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf, int buf_size)
 {
-  //TFT_eSPI *tft = (TFT_eSPI*)user_data;
-  //tft->pushRect (x, y, w, h, (uint16_t*)buf);
   int stride = ctx_width (ctx) * 4;
   uint8_t *src = (uint8_t*)buf;
   uint8_t *dst = fb + y0 * stride + x0 * 4;
@@ -188,13 +186,13 @@ EM_ASM(
    if (wasm_damage_control)
    {
      int flags = ctx_cb_get_flags (em_ctx);
-     flags |= CTX_CB_DAMAGE_CONTROL;
+     flags |= CTX_FLAG_DAMAGE_CONTROL;
      ctx_cb_set_flags (em_ctx, flags);
    }
    else
    {
      int flags = ctx_cb_get_flags (em_ctx);
-     flags &= ~CTX_CB_DAMAGE_CONTROL;
+     flags &= ~CTX_FLAG_DAMAGE_CONTROL;
      ctx_cb_set_flags (em_ctx, flags);
    }
    return em_ctx;

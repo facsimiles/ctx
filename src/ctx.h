@@ -745,25 +745,30 @@ int ctx_utf8_strlen (const char *s);
 #endif
 
 
-typedef enum CtxCbFlags {
-  CTX_CB_DEFAULTS   = 0,
-  CTX_CB_GRAY       = 1 << 0,
-  CTX_CB_HASH_CACHE = 1 << 1,
-  CTX_CB_332        = 1 << 2, // might do a 332 render
+/* these are configuration flags for a ctx renderer, not all
+ * flags are applicable for all rendereres, some flags can
+ * be toggled at runtime.
+ */
+typedef enum CtxFlags {
+  //CTX_FLAG_DEFAULTS   = 0,
+  CTX_FLAG_GRAY       = 1 << 0,
+  CTX_FLAG_HASH_CACHE = 1 << 1,
+  CTX_FLAG_RGB332     = 1 << 2, // might do a 332 render
                                // that is tear-free but slower
                                // before queueing slotted redraws
                                // of higher quality tiles
                                // this is a pre-amble to eink modes
                                //
-  CTX_CB_CYCLE_BUF  = 1 << 4, // if set then we free buffers after each
+  CTX_FLAG_CYCLE_BUF  = 1 << 4, // if set then we free buffers after each
                                // use, higher risk of memory fragmentation
                                // but making each frame blit a memory use peak
 
-  CTX_CB_DAMAGE_CONTROL = 1 << 5,
-  CTX_CB_SHOW_FPS   = 1 << 6,
-  CTX_CB_AUTO_332   = 1 << 7,
-  CTX_CB_KEEP_DATA  = 1 << 8,
-} CtxCbFlags;
+  CTX_FLAG_DAMAGE_CONTROL = 1 << 5,
+  CTX_FLAG_SHOW_FPS   = 1 << 6,
+  CTX_FLAG_AUTO_RGB332  = 1 << 7,
+  CTX_FLAG_KEEP_DATA  = 1 << 8,
+  CTX_FLAG_INTRA_UPDATE = 1 << 9,
+} CtxFlags;
 
 
 Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
@@ -2170,6 +2175,7 @@ struct _CtxBackend
   void  (*set_clipboard)   (Ctx *ctx, const char *text);
   void  (*destroy)         (void *backend); /* the free pointers are abused as the differentiatior
                                                between different backends   */
+  CtxFlags                  flags;
   void                     *user_data; // not used by ctx core
 };
 

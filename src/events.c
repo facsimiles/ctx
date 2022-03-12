@@ -40,12 +40,6 @@ ctx_ticks (void)
 
 
 
-enum _CtxFlags {
-   CTX_FLAG_DIRECT = (1<<0),
-};
-typedef enum _CtxFlags CtxFlags;
-
-
 int _ctx_max_threads = 1;
 int _ctx_enable_hash_cache = 1;
 #if CTX_SHAPE_CACHE
@@ -184,7 +178,7 @@ ctx_wasm_get_context (int flags);
 
 static Ctx *ctx_new_ui (int width, int height, const char *backend)
 {
-   return ctx_wasm_get_context (CTX_CB_HASH_CACHE);
+   return ctx_wasm_get_context (CTX_FLAG_HASH_CACHE);
 }
 #else
 
