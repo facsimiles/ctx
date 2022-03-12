@@ -205,6 +205,7 @@ struct _CtxGState
 #endif
 
   CtxMatrix     transform;
+  Ctx16f16Matrix  prepped_transform;
   CtxSource     source_stroke;
   CtxSource     source_fill;
   float         global_alpha_f;
@@ -1298,24 +1299,6 @@ _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 }
 
 
-static inline void
-_ctx_matrix_apply_transform_affine (const CtxMatrix *m, float *x, float *y)
-{
-  float x_in = *x;
-  float y_in = *y;
-       *x = ( (x_in * m->m[0][0]) + (y_in * m->m[0][1]) + m->m[0][2]);
-       *y = ( (x_in * m->m[1][0]) + (y_in * m->m[1][1]) + m->m[1][2]);
-}
-
-static inline void
-_ctx_matrix_apply_transform_scale_translate (const CtxMatrix *m, float *x, float *y)
-{
-  float x_in = *x;
-  float y_in = *y;
-       *x = ((x_in * m->m[0][0]) + m->m[0][2]);
-       *y = ((y_in * m->m[1][1]) + m->m[1][2]);
-}
-
 
 static inline void
 _ctx_matrix_multiply (CtxMatrix       *result,
@@ -1353,6 +1336,8 @@ _ctx_matrix_identity (CtxMatrix *matrix)
   matrix->m[2][2] = 1.0f;
 }
 
+static inline void
+_ctx_user_to_device_prepped (CtxState *state, float x, float y, int *out_x, int *out_y);
 
 CTX_STATIC int ctx_float_to_string_index (float val);
 
@@ -1362,6 +1347,8 @@ ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, uint32_t mask);
 static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, int len);
 
 
+static inline void
+_ctx_transform_prime (CtxState *state);
 
 
 #if EMSCRIPTEN

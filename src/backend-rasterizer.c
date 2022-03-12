@@ -1960,39 +1960,31 @@ static inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 
 static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
-  float tx = x; float ty = y;
+  int tx = 0, ty = 0;
+
   rasterizer->x        = x;
   rasterizer->y        = y;
   rasterizer->first_x  = x;
   rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
-  _ctx_user_to_device (rasterizer->state, &tx, &ty);
+  _ctx_user_to_device_prepped (rasterizer->state, x,y, &tx, &ty);
 
-  tx = (tx - rasterizer->blit_x) * CTX_SUBDIV;
-  ty = ty * CTX_FULL_AA;
-
-  //ty = ctx_maxf (MIN_Y, ty);
-  //ty = ctx_minf (MAX_Y, ty);
-  //tx = ctx_maxf (MIN_X, tx);
-  //tx = ctx_minf (MAX_X, tx);
+  tx -= rasterizer->blit_x * CTX_SUBDIV;
   ctx_rasterizer_update_inner_point (rasterizer, tx, ty);
 }
 
 static inline void
 ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
+  int tx = 0, ty = 0;
   rasterizer->has_shape = 1;
   rasterizer->y         = y;
   rasterizer->x         = x;
 
-  float tx = x;
-  float ty = y;
-  //float ox = rasterizer->x;
-  //float oy = rasterizer->y;
-  _ctx_user_to_device (rasterizer->state, &tx, &ty);
-  tx -= rasterizer->blit_x;
+  _ctx_user_to_device_prepped (rasterizer->state, x, y, &tx, &ty);
+  tx -= rasterizer->blit_x * CTX_SUBDIV;
 
-  ctx_rasterizer_add_point (rasterizer, tx * CTX_SUBDIV, ty * CTX_FULL_AA);//rasterizer->aa);
+  ctx_rasterizer_add_point (rasterizer, tx, ty);
 
   if (CTX_UNLIKELY(rasterizer->has_prev<=0))
     {
@@ -2001,7 +1993,6 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
       rasterizer->has_prev = 1;
     }
 }
-
 
 CTX_INLINE static float
 ctx_bezier_sample_1d (float x0, float x1, float x2, float x3, float dt)
@@ -2809,7 +2800,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
       CtxMatrix transform_backup = gstate->transform;
       _ctx_matrix_identity (&gstate->transform);
-      gstate->transform_type = 0;
+      //gstate->transform_type = 0;
+      _ctx_transform_prime (rasterizer->state);
       float prev_x = 0.0f;
       float prev_y = 0.0f;
       float half_width_x = line_width/2;
@@ -3008,7 +3000,8 @@ foo:
       ctx_rasterizer_fill (rasterizer);
       gstate->fill_rule = rule_backup;
       gstate->transform = transform_backup;
-      gstate->transform_type = 0;
+      //gstate->transform_type = 0;
+      _ctx_transform_prime (rasterizer->state);
     }
   }
 #if CTX_FAST_FILL_RECT
@@ -4010,7 +4003,8 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
           int end   = 0;
       CtxMatrix transform_backup = state->gstate.transform;
       _ctx_matrix_identity (&state->gstate.transform);
-      state->gstate.transform_type = 0;
+      //state->gstate.transform_type = 0;
+      _ctx_transform_prime (state);
       ctx_rasterizer_reset (rasterizer); /* for dashing we create
                                             a dashed path to stroke */
       float prev_x = 0.0f;
@@ -4104,7 +4098,8 @@ foo:
           start = end+1;
         }
         state->gstate.transform = transform_backup;
-        state->gstate.transform_type = 0;
+        //state->gstate.transform_type = 0;
+        _ctx_transform_prime (state);
         }
         ctx_rasterizer_stroke (rasterizer);
         }

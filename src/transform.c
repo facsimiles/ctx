@@ -21,11 +21,10 @@ ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 static inline int
 determine_transform_type (const CtxMatrix *m)
 {
-  
   if (m->m[2][0] != 0.0f ||
       m->m[2][1] != 0.0f ||
-      m->m[2][1] != 1.0f)
-    return 4;
+      m->m[2][2] != 1.0f)
+    return 3;
   if (m->m[0][1] != 0.0f ||
       m->m[1][0] != 0.0f)
     return 3;
@@ -37,14 +36,106 @@ determine_transform_type (const CtxMatrix *m)
   return 1;
 }
 
+#define TRANSFORM_SHIFT (10)
+#define TRANSFORM_SCALE (1<<TRANSFORM_SHIFT)
+
 static inline void
-_ctx_user_to_device (CtxState *state, float *x, float *y)
+_ctx_transform_prime (CtxState *state)
+{
+   state->gstate.transform_type = 
+     determine_transform_type (&state->gstate.transform);
+
+   for (int c = 0; c < 3; c++)
+   {
+     state->gstate.prepped_transform.m[0][c] =
+             state->gstate.transform.m[0][c] * TRANSFORM_SCALE;
+     state->gstate.prepped_transform.m[1][c] =
+             state->gstate.transform.m[1][c] * TRANSFORM_SCALE;
+     state->gstate.prepped_transform.m[2][c] =
+             state->gstate.transform.m[2][c] * TRANSFORM_SCALE;
+   }
+}
+
+static inline void
+_ctx_matrix_apply_transform_perspective (const Ctx16f16Matrix *m, float x_in_f, float y_in_f,
+                int *x_out, int *y_out)
+{
+  int x_in = x_in_f * TRANSFORM_SCALE;
+  int y_in = y_in_f * TRANSFORM_SCALE;
+
+  int w  = (((x_in * m->m[2][0] +
+               y_in * m->m[2][1])>>TRANSFORM_SHIFT) +
+                     (m->m[2][2]));
+  int w_recip = w?TRANSFORM_SCALE / w:0;
+
+
+  *x_out = ((((((x_in * m->m[0][0] +
+               y_in * m->m[0][1])>>TRANSFORM_SHIFT) +
+                     (m->m[0][2])) * w_recip)>>TRANSFORM_SHIFT) * CTX_SUBDIV) >> TRANSFORM_SHIFT;
+  *y_out = ((((((x_in * m->m[1][0] +
+               y_in * m->m[1][1])>>TRANSFORM_SHIFT) +
+                     (m->m[1][2])) * w_recip)>>TRANSFORM_SHIFT) * CTX_FULL_AA) >> TRANSFORM_SHIFT;
+
+}
+
+static inline void
+_ctx_matrix_apply_transform_affine (const Ctx16f16Matrix *m, float x_in_f, float y_in_f,
+                int *x_out, int *y_out)
+{
+  int x_in = x_in_f * TRANSFORM_SCALE;
+  int y_in = y_in_f * TRANSFORM_SCALE;
+  *x_out = ((((x_in * m->m[0][0] +
+               y_in * m->m[0][1])>>TRANSFORM_SHIFT) +
+                     (m->m[0][2])) * CTX_SUBDIV) >>TRANSFORM_SHIFT;
+  *y_out = ((((x_in * m->m[1][0] +
+               y_in * m->m[1][1])>>TRANSFORM_SHIFT) +
+                     (m->m[1][2])) * CTX_FULL_AA) >>TRANSFORM_SHIFT;
+}
+
+static inline void
+_ctx_matrix_apply_transform_scale_translate (const Ctx16f16Matrix *m, float x_in_f, float y_in_f, int *x_out, int *y_out)
+{
+  int x_in = x_in_f * TRANSFORM_SCALE;
+  int y_in = y_in_f * TRANSFORM_SCALE;
+  *x_out = ((((x_in * m->m[0][0])>>TRANSFORM_SHIFT) +
+                     (m->m[0][2])) * CTX_SUBDIV) >>TRANSFORM_SHIFT;
+  *y_out = ((((y_in * m->m[1][1])>>TRANSFORM_SHIFT) +
+                     (m->m[1][2])) * CTX_FULL_AA) >>TRANSFORM_SHIFT;
+}
+
+static inline void
+_ctx_user_to_device_prepped (CtxState *state, float x, float y, int *x_out, int *y_out)
 {
   switch (state->gstate.transform_type)
   {
     case 0:
-      state->gstate.transform_type = 
-              determine_transform_type (&state->gstate.transform);
+      _ctx_transform_prime (state);
+      _ctx_user_to_device_prepped (state, x, y, x_out, y_out);
+      break;
+    case 1:  // identity
+      *x_out = x * CTX_SUBDIV;
+      *y_out = y * CTX_FULL_AA;
+      break;
+    case 2:  // scale/translate
+      _ctx_matrix_apply_transform_scale_translate (&state->gstate.prepped_transform, x, y, x_out, y_out);
+      break;
+    case 3:  // affine
+      _ctx_matrix_apply_transform_affine (&state->gstate.prepped_transform, x, y, x_out, y_out);
+      break;
+    case 4:  // perspective
+      _ctx_matrix_apply_transform_perspective (&state->gstate.prepped_transform, x, y, x_out, y_out);
+      break;
+  }
+}
+
+static inline void
+_ctx_user_to_device (CtxState *state, float *x, float *y)
+{
+#if 0
+  switch (state->gstate.transform_type)
+  {
+    case 0:
+      _ctx_transform_prime (state);
       _ctx_user_to_device (state, x, y);
       break;
     case 1:  // identity
@@ -56,9 +147,12 @@ _ctx_user_to_device (CtxState *state, float *x, float *y)
       _ctx_matrix_apply_transform_affine (&state->gstate.transform, x, y);
       break;
     case 4:  // perspective
+ #endif
       _ctx_matrix_apply_transform (&state->gstate.transform, x, y);
+#if 0
       break;
   }
+#endif
 }
 
 CTX_STATIC void

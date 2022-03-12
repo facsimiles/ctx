@@ -48,9 +48,9 @@ static void ctx_render_cb (Ctx *ctx,
   CtxPixelFormat           format = backend_cb->format;
   int bpp                  = ctx_pixel_format_bits_per_pixel (format)/ 8;
 
-  int chunk_size = 16; /* wanting chunks of 16 scanlines at a
-                          time to go out seems to give good
-                          spi bandwidth use */
+  int chunk_size = 8; /* wanting chunks of 16 scanlines at a
+                         time to go out seems to give good
+                         spi bandwidth use */
   while (chunk_size * width * 2 > memory_budget/2)
   {
     chunk_size/=2;
@@ -62,6 +62,7 @@ static void ctx_render_cb (Ctx *ctx,
 
   if (flags & CTX_FLAG_RGB332)
   {
+#if 0
     int render_height = height;
     memory_budget -= chunk_size * width * 2;
 
@@ -97,15 +98,58 @@ static void ctx_render_cb (Ctx *ctx,
       {
         int val = *src++;
         uint8_t r, g, b;
-        ctx_332_unpack (val, &r, &g, &b);
+        //ctx_332_unpack (val, &r, &g, &b);
+        r=g=b=val;
         *dst++ = ctx_565_pack (r, g, b, 1);
       }
       backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
                               x0, y, width, h, (uint16_t*)temp,
-                              width * h * bpp);
+                              width * h * 2);
     }
       y0 += render_height;
     } while (y0 < y1);
+#else
+     int render_height = height;
+     memory_budget -= chunk_size * width * 2;
+     if (width * render_height > memory_budget)
+     {
+       render_height = memory_budget / width;
+     }
+    do
+    {
+
+    render_height = ctx_mini (render_height, y1-y0);
+    memset (fb, 0, width * render_height);
+    Ctx *renderer = ctx_new_for_framebuffer (fb,
+       width, render_height, width,
+       CTX_FORMAT_GRAY8);
+
+    ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
+    if (active_mask)
+      ctx_render_ctx_masked (ctx, renderer, active_mask);
+    else
+      ctx_render_ctx (ctx, renderer);
+    ctx_destroy (renderer);
+
+    uint8_t *temp = ((uint8_t*)fb)+memory_budget;
+    uint8_t *src = (uint8_t*)fb;
+
+    for (int y = y0; y < y0 + render_height; y+=chunk_size)
+    {
+      uint16_t *dst = (uint16_t*)temp;
+      float h = ctx_mini (chunk_size, y1-y);
+      for (int i = 0; i < width * h; i++)
+      {
+        int val = *src++;
+        *dst++ = ctx_565_pack (val, val, val, 1);
+      }
+      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
+                              x0, y, width, h, (uint16_t*)temp,
+                              width * h * 2);
+    }
+      y0 += render_height;
+    } while (y0 < y1);
+#endif
   }
   else if (flags & CTX_FLAG_GRAY)
   {
@@ -125,7 +169,10 @@ static void ctx_render_cb (Ctx *ctx,
        CTX_FORMAT_GRAY8);
 
     ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
-    ctx_render_ctx (ctx, renderer);
+    if (active_mask)
+      ctx_render_ctx_masked (ctx, renderer, active_mask);
+    else
+      ctx_render_ctx (ctx, renderer);
     ctx_destroy (renderer);
 
     uint8_t *temp = ((uint8_t*)fb)+memory_budget;
@@ -142,7 +189,7 @@ static void ctx_render_cb (Ctx *ctx,
       }
       backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
                               x0, y, width, h, (uint16_t*)temp,
-                              width * h * bpp);
+                              width * h * 2);
     }
       y0 += render_height;
     } while (y0 < y1);
