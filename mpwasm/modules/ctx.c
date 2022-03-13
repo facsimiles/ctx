@@ -795,7 +795,10 @@ static void mp_ctx_listen_cb_handler (CtxEvent *event, void *data1, void*data2)
   mp_obj_t event_in = data2;
   mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
   mp_ctx_event->event = *event;
+#if 1
   mp_sched_schedule (data1, event_in);
+#else
+#endif
 }
 
 static void mp_ctx_listen_cb_handler_stop_propagate (CtxEvent *event, void *data1, void*data2)
@@ -803,7 +806,10 @@ static void mp_ctx_listen_cb_handler_stop_propagate (CtxEvent *event, void *data
   mp_obj_t event_in = data2;
   mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
   mp_ctx_event->event = *event;
+#if 1
   mp_sched_schedule (data1, event_in);
+#else
+#endif
   event->stop_propagate = 1;
 }
 

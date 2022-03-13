@@ -204,14 +204,14 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     int scale_factor = 1;
     int small_width = width / scale_factor;
     int small_height = height / scale_factor;
-    int min_scanlines = 3;
+    int min_scanlines = 2;
 
     while (memory_budget / bpp - small_height * small_width < width * min_scanlines)
     {
       scale_factor ++;
       small_width = width / scale_factor;
       small_height = height / scale_factor;
-      min_scanlines = scale_factor * 3;
+      min_scanlines = scale_factor * 2;
     }
 
     int render_height =
