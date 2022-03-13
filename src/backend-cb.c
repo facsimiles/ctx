@@ -53,13 +53,13 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
   int bpp                  = ctx_pixel_format_bits_per_pixel (format)/ 8;
   int abort = 0;
 
-  int chunk_size = 8; /* wanting chunks of 16 scanlines at a
+  int chunk_size = 4; /* wanting chunks of 16 scanlines at a
                          time to go out seems to give good
                          spi bandwidth use */
-  while (chunk_size * width * 2 > memory_budget/2)
-  {
-    chunk_size/=2;
-  }
+  //while (chunk_size * width * 2 > memory_budget/2)
+  //{
+   // chunk_size/=2;
+  //}
  
   if (!backend_cb->fb)
     backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);
@@ -156,6 +156,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     } while (y0 < y1);
 #endif
   }
+#if 0
   else if (flags & CTX_FLAG_GRAY)
   {
      int render_height = height;
@@ -199,6 +200,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       y0 += render_height;
     } while (y0 < y1);
   }
+#endif
   else if (flags & CTX_FLAG_LOWRES)
   {
     int scale_factor = 1;
@@ -206,7 +208,15 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     int small_height = height / scale_factor;
     int min_scanlines = 2;
 
-    while (memory_budget / bpp - small_height * small_width < width * min_scanlines)
+    int tbpp = bpp;
+    int tformat = format;
+    if (flags & CTX_FLAG_GRAY)
+    {
+      tformat = CTX_FORMAT_GRAY8;
+      tbpp = 1;
+    }
+
+    while (memory_budget - (small_height * small_width * tbpp) < width * bpp * min_scanlines)
     {
       scale_factor ++;
       small_width = width / scale_factor;
@@ -215,15 +225,16 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     }
 
     int render_height =
-    render_height = (memory_budget / bpp - small_height * small_width) /
-        width;
-    uint16_t *scaled = &fb[small_height*small_width];
+    render_height = (memory_budget - (small_height * small_width*tbpp)) /
+        (width * bpp);
+    uint8_t *gray_fb = (uint8_t*)fb;
+    uint16_t *scaled = (uint16_t*)&gray_fb[tbpp*small_height*small_width];
 
-    memset(fb, 0, small_width * bpp * small_height);
+    memset(fb, 0, small_width * tbpp * small_height);
 
     CtxRasterizer *r = ctx_rasterizer_init((CtxRasterizer*)ctx_calloc(sizeof (CtxRasterizer), 1),
                          ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
-                         small_width * bpp, format, CTX_ANTIALIAS_DEFAULT);
+                         small_width * tbpp, tformat, CTX_ANTIALIAS_DEFAULT);
     ctx_push_backend (ctx, r);
 
     ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
@@ -238,10 +249,26 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     {
       render_height = ctx_mini (render_height, y1-y0);
       int off = 0;
-      for (int y = 0; y < render_height; y++)
+   
+      if (flags & CTX_FLAG_GRAY)
       {
-        for (int x = 0; x < width; x++, off++)
-           scaled[off]=fb[small_width * ((yo+y)/scale_factor) + (x/scale_factor)];
+        const uint8_t *gray_fb = (uint8_t*)fb;
+        for (int y = 0; y < render_height; y++)
+        {
+          for (int x = 0; x < width; x++, off++)
+          {
+             uint8_t g = gray_fb[small_width * ((yo+y)/scale_factor) + (x/scale_factor)];
+             scaled[off]= ctx_565_pack (g, g, g, 1);
+          }
+        }
+      }
+      else
+      {
+        for (int y = 0; y < render_height; y++)
+        {
+          for (int x = 0; x < width; x++, off++)
+             scaled[off]=fb[small_width * ((yo+y)/scale_factor) + (x/scale_factor)];
+        }
       }
       backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
                               x0, y0, width, render_height, (uint16_t*)scaled,
