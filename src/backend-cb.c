@@ -19,10 +19,9 @@ typedef struct CtxCbBackend
   int     max_col; // hasher cols and rows
   int     max_row; // hasher cols and rows
   uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
-  uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS];
+  uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS]; // when non-0 we have non-full res rendered
 
   int     memory_budget;
-  Ctx    *renderer;
   CtxRasterizer rasterizer;
 } CtxCbBackend;
 
@@ -43,34 +42,25 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                           int x1, int y1,
                           uint32_t active_mask)
 {
-  //CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
-  Ctx *ctx = backend_cb->ctx;
-  int flags                = backend_cb->flags;
-  int memory_budget        = backend_cb->memory_budget;
-  int width                = x1 - x0 + 1;
-  int height               = y1 - y0 + 1;
+  Ctx *ctx           = backend_cb->ctx;
+  int flags          = backend_cb->flags;
+  int memory_budget  = backend_cb->memory_budget;
+  int width          = x1 - x0 + 1;
+  int height         = y1 - y0 + 1;
   uint16_t *fb;
-  CtxPixelFormat           format = backend_cb->format;
-  int bpp                  = ctx_pixel_format_bits_per_pixel (format)/ 8;
-  int abort = 0;
+  CtxPixelFormat format = backend_cb->format;
+  int bpp            = ctx_pixel_format_bits_per_pixel (format) / 8;
+  int abort          = 0;
 
-  int chunk_size = 4; /* wanting chunks of 16 scanlines at a
-                         time to go out seems to give good
-                         spi bandwidth use */
-  //while (chunk_size * width * 2 > memory_budget/2)
-  //{
-   // chunk_size/=2;
-  //}
- 
   if (!backend_cb->fb)
     backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);
   fb = backend_cb->fb;
 
   if (flags & CTX_FLAG_LOWRES)
   {
-    int scale_factor = 2;
-    int small_width = width / scale_factor;
-    int small_height = height / scale_factor;
+    int scale_factor  = 2;
+    int small_width   = width / scale_factor;
+    int small_height  = height / scale_factor;
     int min_scanlines = 2;
 
     int tbpp = bpp * 8;
@@ -79,13 +69,13 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     {
       if (flags & CTX_FLAG_MONO)
       {
-        tformat = CTX_FORMAT_GRAY2;
-        tbpp = 2;
-      }
-      else if (flags & CTX_FLAG_MONO)
-      {
+#if 0
         tformat = CTX_FORMAT_GRAY1;
         tbpp = 1;
+#else
+        tformat = CTX_FORMAT_GRAY2;
+        tbpp = 2;
+#endif
       }
       else
       {
@@ -98,28 +88,30 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     while (memory_budget - (small_height * small_stride) < width * bpp * min_scanlines)
     {
       scale_factor ++;
-      small_width = width / scale_factor;
-      small_height = height / scale_factor;
+      small_width   = width / scale_factor;
+      small_height  = height / scale_factor;
       min_scanlines = scale_factor * 2;
-      small_stride = (small_width * tbpp + 7) / 8;
+      small_stride  = (small_width * tbpp + 7) / 8;
     }
 
-    int render_height =
-    render_height = (memory_budget - (small_height * small_stride)) /
-        (width * bpp);
+    int render_height = (memory_budget - (small_height * small_stride)) /
+                        (width * bpp);
     uint8_t *gray_fb = (uint8_t*)fb;
     uint16_t *scaled = (uint16_t*)&gray_fb[small_height*small_stride];
 
     memset(fb, 0, small_stride * small_height);
-    CtxRasterizer *r = ctx_rasterizer_init(&backend_cb->rasterizer,
-                         ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
-                         small_stride, tformat, CTX_ANTIALIAS_DEFAULT);
-    ((CtxBackend*)r)->destroy=ctx_rasterizer_deinit;
+    CtxRasterizer *r = ctx_rasterizer_init (&backend_cb->rasterizer,
+                ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
+                small_stride, tformat, CTX_ANTIALIAS_DEFAULT);
+    ((CtxBackend*)r)->destroy = ctx_rasterizer_deinit;
     ctx_push_backend (ctx, r);
 
     ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
     ctx_translate (ctx, -1.0 * x0, -1.0 * y0);
-    ctx_render_ctx (ctx, ctx);
+    if (active_mask)
+      ctx_render_ctx_masked (ctx, ctx, active_mask);
+    else
+      ctx_render_ctx (ctx, ctx);
     ctx_pop_backend (ctx);
 
     if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
@@ -141,10 +133,10 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             int sbase = (small_stride * ((yo+y)/scale_factor));
             for (int x = 0; x < width; x++, off++)
             {
-               int soff = sbase + ((x/scale_factor)/8);
+               int     soff = sbase + ((x/scale_factor)/8);
                uint8_t bits = gray_fb[soff];
-               uint16_t val = (bits & (1<<((x/scale_factor)&7)))?255*256+255:0;
-               scaled[off]= val;
+               uint16_t val = (bits & (1<<((x/scale_factor)&7)))?0xffff:0;
+               scaled[off]  = val;
             }
           }
         }
@@ -155,10 +147,11 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             int sbase = (small_stride * ((yo+y)/scale_factor));
             for (int x = 0; x < width; x++, off++)
             {
-               int soff = sbase + ((x/scale_factor)/4);
+               int     soff = sbase + ((x/scale_factor)/4);
                uint8_t bits = gray_fb[soff];
-               uint8_t g = 85 * ((bits >> (2*((x/scale_factor)&3)))&3);
-               scaled[off]= ctx_565_pack (g, g, g, 1);
+               uint8_t g    = 85 * ((bits >> (2*((x/scale_factor)&3)))&3);
+               uint16_t val = ctx_565_pack (g, g, g, 1);
+               scaled[off]  = val;
             }
           }
         }
@@ -169,8 +162,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             int sbase = (small_stride * ((yo+y)/scale_factor));
             for (int x = 0; x < width; x++, off++)
             {
-               uint8_t g = gray_fb[sbase + (x/scale_factor)];
-               scaled[off]= ctx_565_pack (g, g, g, 1);
+               uint8_t g   = gray_fb[sbase + (x/scale_factor)];
+               scaled[off] = ctx_565_pack (g, g, g, 1);
             }
           }
         }
@@ -191,8 +184,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     } while (y0 < y1);
 
     if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
-      backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
-
+      abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
   }
   else
   {
@@ -210,15 +202,18 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     do
     {
       render_height = ctx_mini (render_height, y1-y0+1);
-      ctx_rasterizer_init(r,
-                         ctx, NULL, &ctx->state, fb, 0, 0, width, render_height,
-                         width * bpp, format, CTX_ANTIALIAS_DEFAULT);
-      ((CtxBackend*)r)->destroy=ctx_rasterizer_deinit;
+      ctx_rasterizer_init (r, ctx, NULL, &ctx->state, fb, 0, 0, width,
+                   render_height, width * bpp, format, CTX_ANTIALIAS_DEFAULT);
+      ((CtxBackend*)r)->destroy = ctx_rasterizer_deinit;
+
       if ((flags & CTX_FLAG_KEEP_DATA) == 0)
-      memset (fb, 0, width * bpp * render_height);
+        memset (fb, 0, width * bpp * render_height);
 
       ctx_translate (ctx, -1.0 * x0, -1.0 * y0);
-      ctx_render_ctx (ctx, ctx);
+      if (active_mask)
+        ctx_render_ctx_masked (ctx, ctx, active_mask);
+      else
+        ctx_render_ctx (ctx, ctx);
 
       if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
         abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
