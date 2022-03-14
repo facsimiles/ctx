@@ -4193,6 +4193,12 @@ ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
       rasterizer->shape_cache.entries[i] = NULL;
     }
 #endif
+}
+
+void
+ctx_rasterizer_destroy (CtxRasterizer *rasterizer)
+{
+  ctx_rasterizer_deinit (rasterizer);
   ctx_free (rasterizer);
 }
 
@@ -4270,7 +4276,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
 #endif
   CtxBackend *backend = (CtxBackend*)rasterizer;
   backend->process = ctx_rasterizer_process;
-  backend->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
+  backend->destroy = (CtxDestroyNotify)ctx_rasterizer_destroy;
   backend->ctx     = ctx;
   rasterizer->edge_list.flags |= CTX_DRAWLIST_EDGE_LIST;
   rasterizer->state       = state;

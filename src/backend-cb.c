@@ -23,6 +23,7 @@ typedef struct CtxCbBackend
 
   int     memory_budget;
   Ctx    *renderer;
+  CtxRasterizer rasterizer;
 } CtxCbBackend;
 
 void ctx_cb_set_flags (Ctx *ctx, int flags)
@@ -65,145 +66,9 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);
   fb = backend_cb->fb;
 
-  if (flags & CTX_FLAG_RGB332)
+  if (flags & CTX_FLAG_LOWRES)
   {
-#if 0
-    int render_height = height;
-    memory_budget -= chunk_size * width * 2;
-
-    if (width * render_height > memory_budget)
-    {
-       render_height = memory_budget / width;
-    }
-    do
-    {
-
-    render_height = ctx_mini (render_height, y1-y0);
-    if ((flags & CTX_FLAG_KEEP_DATA) == 0)
-      memset (fb, 0, width * render_height);
-    Ctx *renderer = ctx_new_for_framebuffer (fb,
-       width, render_height, width,
-       CTX_FORMAT_RGB332);
-
-    ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
-    if (active_mask)
-      ctx_render_ctx_masked (ctx, renderer, active_mask);
-    else
-      ctx_render_ctx (ctx, renderer);
-    ctx_destroy (renderer);
-
-    uint8_t *temp = ((uint8_t*)fb)+memory_budget;
-    uint8_t *src = (uint8_t*)fb;
-
-    for (int y = y0; y < y0 + render_height; y+=chunk_size)
-    {
-      uint16_t *dst = (uint16_t*)temp;
-      float h = ctx_mini (chunk_size, y1-y);
-      for (int i = 0; i < width * h; i++)
-      {
-        int val = *src++;
-        uint8_t r, g, b;
-        //ctx_332_unpack (val, &r, &g, &b);
-        r=g=b=val;
-        *dst++ = ctx_565_pack (r, g, b, 1);
-      }
-      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
-                              x0, y, width, h, (uint16_t*)temp,
-                              width * h * 2);
-    }
-      y0 += render_height;
-    } while (y0 < y1);
-#else
-     int render_height = height;
-     memory_budget -= chunk_size * width * 2;
-     if (width * render_height > memory_budget)
-     {
-       render_height = memory_budget / width;
-     }
-    do
-    {
-
-    render_height = ctx_mini (render_height, y1-y0);
-    memset (fb, 0, width * render_height);
-    Ctx *renderer = ctx_new_for_framebuffer (fb,
-       width, render_height, width,
-       CTX_FORMAT_GRAY8);
-
-    ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
-    if (active_mask)
-      ctx_render_ctx_masked (ctx, renderer, active_mask);
-    else
-      ctx_render_ctx (ctx, renderer);
-    ctx_destroy (renderer);
-
-    uint8_t *temp = ((uint8_t*)fb)+memory_budget;
-    uint8_t *src = (uint8_t*)fb;
-
-    for (int y = y0; y < y0 + render_height; y+=chunk_size)
-    {
-      uint16_t *dst = (uint16_t*)temp;
-      float h = ctx_mini (chunk_size, y1-y);
-      for (int i = 0; i < width * h; i++)
-      {
-        int val = *src++;
-        *dst++ = ctx_565_pack (val, val, val, 1);
-      }
-      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
-                              x0, y, width, h, (uint16_t*)temp,
-                              width * h * 2);
-    }
-      y0 += render_height;
-    } while (y0 < y1);
-#endif
-  }
-#if 0
-  else if (flags & CTX_FLAG_GRAY)
-  {
-     int render_height = height;
-     memory_budget -= chunk_size * width * 2;
-     if (width * render_height > memory_budget)
-     {
-       render_height = memory_budget / width;
-     }
-    do
-    {
-
-    render_height = ctx_mini (render_height, y1-y0);
-    memset (fb, 0, width * render_height);
-    Ctx *renderer = ctx_new_for_framebuffer (fb,
-       width, render_height, width,
-       CTX_FORMAT_GRAY8);
-
-    ctx_translate (renderer, -1.0 * x0, -1.0 * y0);
-    if (active_mask)
-      ctx_render_ctx_masked (ctx, renderer, active_mask);
-    else
-      ctx_render_ctx (ctx, renderer);
-    ctx_destroy (renderer);
-
-    uint8_t *temp = ((uint8_t*)fb)+memory_budget;
-    uint8_t *src = (uint8_t*)fb;
-
-    for (int y = y0; y < y0 + render_height; y+=chunk_size)
-    {
-      uint16_t *dst = (uint16_t*)temp;
-      float h = ctx_mini (chunk_size, y1-y);
-      for (int i = 0; i < width * h; i++)
-      {
-        int val = *src++;
-        *dst++ = ctx_565_pack (val, val, val, 1);
-      }
-      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
-                              x0, y, width, h, (uint16_t*)temp,
-                              width * h * 2);
-    }
-      y0 += render_height;
-    } while (y0 < y1);
-  }
-#endif
-  else if (flags & CTX_FLAG_LOWRES)
-  {
-    int scale_factor = 1;
+    int scale_factor = 2;
     int small_width = width / scale_factor;
     int small_height = height / scale_factor;
     int min_scanlines = 2;
@@ -246,10 +111,10 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     uint16_t *scaled = (uint16_t*)&gray_fb[small_height*small_stride];
 
     memset(fb, 0, small_stride * small_height);
-
-    CtxRasterizer *r = ctx_rasterizer_init((CtxRasterizer*)ctx_calloc(sizeof (CtxRasterizer), 1),
+    CtxRasterizer *r = ctx_rasterizer_init(&backend_cb->rasterizer,
                          ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
                          small_stride, tformat, CTX_ANTIALIAS_DEFAULT);
+    ((CtxBackend*)r)->destroy=ctx_rasterizer_deinit;
     ctx_push_backend (ctx, r);
 
     ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
@@ -336,17 +201,19 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     {
        render_height = memory_budget / width / bpp;
     }
-    CtxRasterizer *r = ctx_rasterizer_init((CtxRasterizer*)ctx_calloc(sizeof (CtxRasterizer), 1),
+    CtxRasterizer *r = ctx_rasterizer_init(&backend_cb->rasterizer,
                          ctx, NULL, &ctx->state, fb, 0, 0, width, height,
                          width * bpp, format, CTX_ANTIALIAS_DEFAULT);
+    ((CtxBackend*)r)->destroy=ctx_rasterizer_deinit;
     ctx_push_backend (ctx, r);
 
     do
     {
-      render_height = ctx_mini (render_height, y1-y0);
+      render_height = ctx_mini (render_height, y1-y0+1);
       ctx_rasterizer_init(r,
                          ctx, NULL, &ctx->state, fb, 0, 0, width, render_height,
                          width * bpp, format, CTX_ANTIALIAS_DEFAULT);
+      ((CtxBackend*)r)->destroy=ctx_rasterizer_deinit;
       if ((flags & CTX_FLAG_KEEP_DATA) == 0)
       memset (fb, 0, width * bpp * render_height);
 
@@ -443,8 +310,9 @@ ctx_cb_end_frame (Ctx *ctx)
     //Ctx *hasher = ctx_hasher_new (ctx_width (ctx), ctx_height (ctx),
     //                              CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
     CtxState    *state = &ctx->state;
-    CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (sizeof (CtxHasher), 1);
+    CtxRasterizer *rasterizer = &cb_backend->rasterizer;
     ctx_hasher_init (rasterizer, ctx, state, ctx_width(ctx), ctx_height(ctx), CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
+    rasterizer->backend.destroy = ctx_rasterizer_deinit;
 
     ctx_push_backend (ctx, rasterizer);
 

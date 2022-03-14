@@ -2685,7 +2685,7 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   else if (backend->process == (void*) ctx_hasher_process) return CTX_BACKEND_HASHER;
 #endif
 #if CTX_RASTERIZER
-  else if (backend->destroy == (void*) ctx_rasterizer_deinit) return CTX_BACKEND_RASTERIZER;
+  else if (backend->destroy == (void*) ctx_rasterizer_destroy) return CTX_BACKEND_RASTERIZER;
 #endif
 #if CTX_KMS
   else if (backend->destroy == (void*) ctx_kms_destroy) return CTX_BACKEND_KMS;
