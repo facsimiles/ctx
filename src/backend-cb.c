@@ -214,6 +214,11 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     {
       if (flags & CTX_FLAG_MONO)
       {
+        tformat = CTX_FORMAT_GRAY2;
+        tbpp = 2;
+      }
+      else if (flags & CTX_FLAG_MONO)
+      {
         tformat = CTX_FORMAT_GRAY1;
         tbpp = 1;
       }
@@ -223,7 +228,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
         tbpp = 8;
       }
     }
-    int small_stride = (small_width * tbpp) / 8;
+    int small_stride = (small_width * tbpp + 7) / 8;
 
     while (memory_budget - (small_height * small_stride) < width * bpp * min_scanlines)
     {
@@ -231,7 +236,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       small_width = width / scale_factor;
       small_height = height / scale_factor;
       min_scanlines = scale_factor * 2;
-      small_stride = (small_width * tbpp) / 8;
+      small_stride = (small_width * tbpp + 7) / 8;
     }
 
     int render_height =
@@ -275,6 +280,20 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                uint8_t bits = gray_fb[soff];
                uint16_t val = (bits & (1<<((x/scale_factor)&7)))?255*256+255:0;
                scaled[off]= val;
+            }
+          }
+        }
+        else if (tbpp == 2)
+        {
+          for (int y = 0; y < render_height; y++)
+          {
+            int sbase = (small_stride * ((yo+y)/scale_factor));
+            for (int x = 0; x < width; x++, off++)
+            {
+               int soff = sbase + ((x/scale_factor)/4);
+               uint8_t bits = gray_fb[soff];
+               uint8_t g = 85 * ((bits >> (2*((x/scale_factor)&3)))&3);
+               scaled[off]= ctx_565_pack (g, g, g, 1);
             }
           }
         }
