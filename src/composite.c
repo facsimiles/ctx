@@ -4955,17 +4955,37 @@ ctx_RGBA8_to_RGB8 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *
 
 #if CTX_NATIVE_GRAYA8
 inline static void
-ctx_GRAY1_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
+ctx_GRAY1_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *graya, int count)
 {
   const uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
       int bitno = x&7;
-      rgba[0] = 255 * ((*pixel) & (1<<bitno));
-      rgba[1] = 255;
+      if (bitno == 0 && count >= 7)
+      {
+        if (*pixel == 0)
+        {
+          for (int i = 0; i < 8; i++)
+          {
+            *graya++ = 0; *graya++ = 255;
+          }
+          x+=8; count-=7; pixel++;
+          continue;
+        }
+        else if (*pixel == 0xff)
+        {
+          for (int i = 0; i < 8 * 2; i++)
+          {
+            *graya++ = 255;
+          }
+          x+=8; count-=7; pixel++;
+          continue;
+        }
+      }
+      *graya++ = 255 * ((*pixel) & (1<<bitno));
+      *graya++ = 255;
       pixel+= (bitno ==7);
       x++;
-      rgba +=2;
     }
 }
 
@@ -4993,13 +5013,83 @@ inline static void
 ctx_GRAY1_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (uint8_t *) buf;
+  uint32_t *dst = (uint32_t*)rgba;
   while (count--)
     {
       int bitno = x&7;
-      *((uint32_t*)(rgba))=0xff000000 + 0x00ffffff * ((*pixel & (1<< bitno ) )!=0);
+
+      if ((bitno) == 0 && count >=7)
+      {
+        /* special case some bit patterns when decoding */
+        if (*pixel == 0)
+        {
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          x+=8; count-=7; pixel++;
+          continue;
+        }
+        else if (*pixel == 0xff)
+        {
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          x+=8; count-=7; pixel++;
+          continue;
+        }
+        else if (*pixel == 0x0f)
+        {
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          x+=8; count-=7; pixel++;
+          continue;
+        }
+        else if (*pixel == 0xfc)
+        {
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          x+=8; count-=7; pixel++;
+          continue;
+        }
+        else if (*pixel == 0x3f)
+        {
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          x+=8; count-=7; pixel++;
+          continue;
+        }
+      }
+      *dst++=0xff000000 + 0x00ffffff * ((*pixel & (1<< bitno ) )!=0);
       pixel += (bitno ==7);
       x++;
-      rgba +=4;
     }
 }
 
@@ -5051,8 +5141,8 @@ ctx_GRAYA8_to_GRAY2 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
     {
       int val = rgba[0];
       val >>= 6;
-      *pixel = *pixel & (~ (3 << ( (x&3) <<1) ) );
-      *pixel = *pixel | ( (val << ( (x&3) <<1) ) );
+      *pixel = (*pixel & (~ (3 << ( (x&3) <<1) ) ))
+                      | ( (val << ( (x&3) <<1) ) );
       if ( (x&3) ==3)
         { pixel+=1; }
       x++;
@@ -5065,17 +5155,85 @@ inline static void
 ctx_GRAY2_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint8_t *pixel = (uint8_t *) buf;
+  uint32_t *dst = (uint32_t*)rgba;
   while (count--)
     {
-      uint8_t val = (((*pixel) >> ( (x&3) <<1)) & 3) * 85;
-      rgba[0] = val;
-      rgba[1] = val;
-      rgba[2] = val;
-      rgba[3] = 255;
-      if ( (x&3) ==3)
-        { pixel+=1; }
-      x++;
-      rgba +=4;
+      int bitno = x & 3;
+      if ((bitno) == 0 && count >=3)
+      {
+        /* special case some bit patterns when decoding */
+        if (*pixel == 0)
+        {
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          x+=4; count-=3; pixel++;
+          continue;
+        }
+        else if (*pixel == 0xff)
+        {
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          x+=4; count-=3; pixel++;
+          continue;
+        }
+        else if (*pixel == 0x55)
+        {
+          *dst++ = 0xff555555;
+          *dst++ = 0xff555555;
+          *dst++ = 0xff555555;
+          *dst++ = 0xff555555;
+          x+=4; count-=3; pixel++;
+          continue;
+        }
+        else if (*pixel == 0xaa)
+        {
+          *dst++ = 0xffaaaaaa;
+          *dst++ = 0xffaaaaaa;
+          *dst++ = 0xffaaaaaa;
+          *dst++ = 0xffaaaaaa;
+          x+=4; count-=3; pixel++;
+          continue;
+        }
+        else if (*pixel == 0x0f)
+        {
+          *dst++ = 0xff000000;
+          *dst++ = 0xff000000;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          x+=4; count-=3; pixel++;
+          continue;
+        }
+        else if (*pixel == 0xfc)
+        {
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xff000000;
+          x+=4; count-=3; pixel++;
+          continue;
+        }
+        else if (*pixel == 0x3f)
+        {
+          *dst++ = 0xff000000;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          *dst++ = 0xffffffff;
+          x+=4; count-=3; pixel++;
+          continue;
+        }
+      }
+      {
+        uint8_t val = (((*pixel) >> ( (bitno) <<1)) & 3) * 85;
+        *dst = val + val * 256 + val * 256 * 256 + 255 * 256 * 256 * 256;
+        if (bitno==3)
+          { pixel+=1; }
+        x++;
+        dst++;
+      }
     }
 }
 
@@ -5087,8 +5245,8 @@ ctx_RGBA8_to_GRAY2 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void 
     {
       int val = ctx_u8_color_rgb_to_gray (rasterizer->state, rgba);
       val >>= 6;
-      *pixel = *pixel & (~ (3 << ( (x&3) <<1) ) );
-      *pixel = *pixel | ( (val << ( (x&3) <<1) ) );
+      *pixel = (*pixel & (~ (3 << ((x&3) <<1) ) ))
+                      | ( (val << ((x&3) <<1) ) );
       if ( (x&3) ==3)
         { pixel+=1; }
       x++;
