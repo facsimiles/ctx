@@ -103,7 +103,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     CtxRasterizer *r = ctx_rasterizer_init (&backend_cb->rasterizer,
                 ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
                 small_stride, tformat, CTX_ANTIALIAS_DEFAULT);
-    ((CtxBackend*)r)->destroy = ctx_rasterizer_deinit;
+    ((CtxBackend*)r)->destroy = (void*)ctx_rasterizer_deinit;
     ctx_push_backend (ctx, r);
 
     ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
@@ -127,16 +127,16 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
         const uint8_t *gray_fb = (uint8_t*)fb;
         if (tbpp == 1)
         {
-          /* this can be sped up */
           for (int y = 0; y < render_height; y++)
           {
             int sbase = (small_stride * ((yo+y)/scale_factor));
-            for (int x = 0; x < width; x++, off++)
+            for (int x = 0; x < width/scale_factor; x++)
             {
-               int     soff = sbase + ((x/scale_factor)/8);
+               int     soff = sbase + ((x)/8);
                uint8_t bits = gray_fb[soff];
-               uint16_t val = (bits & (1<<((x/scale_factor)&7)))?0xffff:0;
-               scaled[off]  = val;
+               uint16_t val = (bits & (1<<((x)&7)))?0xffff:0;
+               for (int i = 0; i < scale_factor; i++)
+                 scaled[off]  = val;
             }
           }
         }
@@ -145,13 +145,14 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
           for (int y = 0; y < render_height; y++)
           {
             int sbase = (small_stride * ((yo+y)/scale_factor));
-            for (int x = 0; x < width; x++, off++)
+            for (int x = 0; x < width/scale_factor; x++)
             {
-               int     soff = sbase + ((x/scale_factor)/4);
+               int     soff = sbase + ((x)/4);
                uint8_t bits = gray_fb[soff];
-               uint8_t g    = 85 * ((bits >> (2*((x/scale_factor)&3)))&3);
+               uint8_t g    = 85 * ((bits >> (2*((x)&3)))&3);
                uint16_t val = ctx_565_pack (g, g, g, 1);
-               scaled[off]  = val;
+               for (int i = 0; i < scale_factor; i++)
+                 scaled[off++]  = val;
             }
           }
         }
@@ -160,10 +161,12 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
           for (int y = 0; y < render_height; y++)
           {
             int sbase = (small_stride * ((yo+y)/scale_factor));
-            for (int x = 0; x < width; x++, off++)
+            for (int x = 0; x < width/scale_factor; x++)
             {
-               uint8_t g   = gray_fb[sbase + (x/scale_factor)];
-               scaled[off] = ctx_565_pack (g, g, g, 1);
+               uint8_t g   = gray_fb[sbase + (x)];
+               uint16_t val = ctx_565_pack (g, g, g, 1);
+               for (int i = 0; i < scale_factor; i++)
+                 scaled[off++]  = val;
             }
           }
         }
@@ -172,8 +175,12 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       {
         for (int y = 0; y < render_height; y++)
         {
-          for (int x = 0; x < width; x++, off++)
-             scaled[off]=fb[small_width * ((yo+y)/scale_factor) + (x/scale_factor)];
+          for (int x = 0; x < width/scale_factor; x++)
+          {
+             uint16_t val = fb[small_width * ((yo+y)/scale_factor) + (x)];
+             for (int i = 0; i < scale_factor; i++)
+               scaled[off++]  = val;
+          }
         }
       }
       backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
@@ -196,7 +203,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     CtxRasterizer *r = ctx_rasterizer_init(&backend_cb->rasterizer,
                          ctx, NULL, &ctx->state, fb, 0, 0, width, height,
                          width * bpp, format, CTX_ANTIALIAS_DEFAULT);
-    ((CtxBackend*)r)->destroy=ctx_rasterizer_deinit;
+    ((CtxBackend*)r)->destroy  = (void*)ctx_rasterizer_deinit;
     ctx_push_backend (ctx, r);
 
     do
@@ -204,7 +211,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       render_height = ctx_mini (render_height, y1-y0+1);
       ctx_rasterizer_init (r, ctx, NULL, &ctx->state, fb, 0, 0, width,
                    render_height, width * bpp, format, CTX_ANTIALIAS_DEFAULT);
-      ((CtxBackend*)r)->destroy = ctx_rasterizer_deinit;
+      ((CtxBackend*)r)->destroy = (void*)ctx_rasterizer_deinit;
 
       if ((flags & CTX_FLAG_KEEP_DATA) == 0)
         memset (fb, 0, width * bpp * render_height);
@@ -307,7 +314,7 @@ ctx_cb_end_frame (Ctx *ctx)
     CtxState    *state = &ctx->state;
     CtxRasterizer *rasterizer = &cb_backend->rasterizer;
     ctx_hasher_init (rasterizer, ctx, state, ctx_width(ctx), ctx_height(ctx), CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
-    rasterizer->backend.destroy = ctx_rasterizer_deinit;
+    rasterizer->backend.destroy = (void*)ctx_rasterizer_deinit;
 
     ctx_push_backend (ctx, rasterizer);
 
