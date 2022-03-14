@@ -5033,8 +5033,7 @@ ctx_GRAY2_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
   const uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      int val = (*pixel & (3 << ( (x & 3) <<1) ) ) >> ( (x&3) <<1);
-      val <<= 6;
+      uint8_t val = (((*pixel) >> ( (x&3) <<1)) & 3) * 85;
       rgba[0] = val;
       rgba[1] = 255;
       if ( (x&3) ==3)
@@ -5068,8 +5067,7 @@ ctx_GRAY2_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *
   const uint8_t *pixel = (uint8_t *) buf;
   while (count--)
     {
-      int val = (*pixel & (3 << ( (x & 3) <<1) ) ) >> ( (x&3) <<1);
-      val <<= 6;
+      uint8_t val = (((*pixel) >> ( (x&3) <<1)) & 3) * 85;
       rgba[0] = val;
       rgba[1] = val;
       rgba[2] = val;
