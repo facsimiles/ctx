@@ -208,33 +208,43 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     int small_height = height / scale_factor;
     int min_scanlines = 2;
 
-    int tbpp = bpp;
+    int tbpp = bpp * 8;
     int tformat = format;
     if (flags & CTX_FLAG_GRAY)
     {
-      tformat = CTX_FORMAT_GRAY8;
-      tbpp = 1;
+      if (flags & CTX_FLAG_MONO)
+      {
+        tformat = CTX_FORMAT_GRAY1;
+        tbpp = 1;
+      }
+      else
+      {
+        tformat = CTX_FORMAT_GRAY8;
+        tbpp = 8;
+      }
     }
+    int small_stride = (small_width * tbpp) / 8;
 
-    while (memory_budget - (small_height * small_width * tbpp) < width * bpp * min_scanlines)
+    while (memory_budget - (small_height * small_stride) < width * bpp * min_scanlines)
     {
       scale_factor ++;
       small_width = width / scale_factor;
       small_height = height / scale_factor;
       min_scanlines = scale_factor * 2;
+      small_stride = (small_width * tbpp) / 8;
     }
 
     int render_height =
-    render_height = (memory_budget - (small_height * small_width*tbpp)) /
+    render_height = (memory_budget - (small_height * small_stride)) /
         (width * bpp);
     uint8_t *gray_fb = (uint8_t*)fb;
-    uint16_t *scaled = (uint16_t*)&gray_fb[tbpp*small_height*small_width];
+    uint16_t *scaled = (uint16_t*)&gray_fb[small_height*small_stride];
 
-    memset(fb, 0, small_width * tbpp * small_height);
+    memset(fb, 0, small_stride * small_height);
 
     CtxRasterizer *r = ctx_rasterizer_init((CtxRasterizer*)ctx_calloc(sizeof (CtxRasterizer), 1),
                          ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
-                         small_width * tbpp, tformat, CTX_ANTIALIAS_DEFAULT);
+                         small_stride, tformat, CTX_ANTIALIAS_DEFAULT);
     ctx_push_backend (ctx, r);
 
     ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
@@ -253,12 +263,31 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       if (flags & CTX_FLAG_GRAY)
       {
         const uint8_t *gray_fb = (uint8_t*)fb;
-        for (int y = 0; y < render_height; y++)
+        if (tbpp == 1)
         {
-          for (int x = 0; x < width; x++, off++)
+          /* this can be sped up */
+          for (int y = 0; y < render_height; y++)
           {
-             uint8_t g = gray_fb[small_width * ((yo+y)/scale_factor) + (x/scale_factor)];
-             scaled[off]= ctx_565_pack (g, g, g, 1);
+            int sbase = (small_stride * ((yo+y)/scale_factor));
+            for (int x = 0; x < width; x++, off++)
+            {
+               int soff = sbase + ((x/scale_factor)/8);
+               uint8_t bits = gray_fb[soff];
+               uint16_t val = (bits & (1<<((x/scale_factor)&7)))?255*256+255:0;
+               scaled[off]= val;
+            }
+          }
+        }
+        else
+        {
+          for (int y = 0; y < render_height; y++)
+          {
+            int sbase = (small_stride * ((yo+y)/scale_factor));
+            for (int x = 0; x < width; x++, off++)
+            {
+               uint8_t g = gray_fb[sbase + (x/scale_factor)];
+               scaled[off]= ctx_565_pack (g, g, g, 1);
+            }
           }
         }
       }

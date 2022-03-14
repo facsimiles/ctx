@@ -770,6 +770,7 @@ typedef enum CtxFlags {
   CTX_FLAG_KEEP_DATA  = 1 << 8,
   CTX_FLAG_INTRA_UPDATE = 1 << 9,
   CTX_FLAG_LOWRES = 1 << 10,
+  CTX_FLAG_MONO   = 1 << 11,
 } CtxFlags;
 
 

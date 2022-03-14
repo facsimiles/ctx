@@ -1269,6 +1269,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 
 
         MP_CTX_INT_CONSTANT(FLAG,LOWRES),
+        MP_CTX_INT_CONSTANT(FLAG,MONO),
         MP_CTX_INT_CONSTANT(FLAG,GRAY),
         MP_CTX_INT_CONSTANT(FLAG,HASH_CACHE),
         MP_CTX_INT_CONSTANT(FLAG,RGB332),
