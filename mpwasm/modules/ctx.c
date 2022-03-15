@@ -20,6 +20,7 @@
 #define CTX_RENDERSTREAM_STATIC 0
 #define CTX_GRADIENT_CACHE      1
 #define CTX_ENABLE_CLIP         1
+#define CTX_MIN_JOURNAL_SIZE    1024
 #define CTX_1BIT_CLIP           1
 #define CTX_AVOID_CLIPPED_SUBDIVISION 1
 #define CTX_CM                  0

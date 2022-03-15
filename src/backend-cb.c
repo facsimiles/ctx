@@ -309,8 +309,6 @@ ctx_cb_end_frame (Ctx *ctx)
 
   if (cb_backend->flags & CTX_FLAG_HASH_CACHE)
   {
-    //Ctx *hasher = ctx_hasher_new (ctx_width (ctx), ctx_height (ctx),
-    //                              CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
     CtxState    *state = &ctx->state;
     CtxRasterizer *rasterizer = &cb_backend->rasterizer;
     ctx_hasher_init (rasterizer, ctx, state, ctx_width(ctx), ctx_height(ctx), CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
@@ -382,57 +380,32 @@ ctx_cb_end_frame (Ctx *ctx)
       }
 
       ctx_pop_backend (ctx);
-
       if (dirty_tiles)
       {
          int x0 = cb_backend->min_col * (ctx_width (ctx)/CTX_HASH_COLS);
          int x1 = (cb_backend->max_col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
          int y0 = cb_backend->min_row * (ctx_height (ctx)/CTX_HASH_ROWS);
          int y1 = (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
-
          if (cb_backend->flags & CTX_FLAG_DAMAGE_CONTROL)
          {
-#if 1
-         ctx_save (ctx);
-         ctx_rectangle (ctx, x0, y0, x1-x0+1, y1-y0+1);
-         ctx_rgba (ctx, 1,0,0,0.5);
-         ctx_line_width (ctx, 4.0);
-         ctx_stroke (ctx);
-         ctx_restore (ctx);
-#endif
+           ctx_save (ctx);
+           ctx_rectangle (ctx, x0, y0, x1-x0+1, y1-y0+1);
+           ctx_rgba (ctx, 1,0,0,0.5);
+           ctx_line_width (ctx, 4.0);
+           ctx_stroke (ctx);
+           ctx_restore (ctx);
          }
-#if 0
-         //ctx_move_to (ctx, (x0+x1)/2, (y0+y1)/2);
-         //char buf[44];
-         //sprintf (buf, "%ix%i", ctx_width(ctx), ctx_height(ctx));
-         //ctx_text (ctx, buf);
-
-         //ctx_rgba (ctx, 0,1,0,0.5);
-         //ctx_rectangle (ctx, 0, 0, ctx_width(ctx)/2, ctx_height(ctx)/2);
-         //ctx_fill (ctx);
-#endif
          int width = x1 - x0 + 1;
          int height = y1 - y0 + 1;
          int abort = 0;
-#if 0
-         if ( (cb_backend->flags & CTX_FLAG_AUTO_RGB332) &&
-              ((width) * height * 2 > cb_backend->memory_budget))
-         {
-           cb_backend->flags |= CTX_FLAG_RGB332;
-           ctx_render_cb (ctx, x0, y0, x1, y1, active_mask);
-           cb_backend->flags -= CTX_FLAG_RGB332;
-         }
-         else
-#endif
-         {
-           abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
-         }
+         abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
 
          if (abort && !in_low_res)
       for (int row = cb_backend->min_row; row < cb_backend->max_row; row++)
       for (int col = cb_backend->min_col; col < cb_backend->max_col; col++)
         {
           cb_backend->hashes[(row * CTX_HASH_COLS +  col)]= 123;
+          cb_backend->res[(row * CTX_HASH_COLS + col)]=1;
         }
       }
       ctx_free (hashes);
