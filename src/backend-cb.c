@@ -69,13 +69,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     {
       if (flags & CTX_FLAG_MONO)
       {
-#if 0
-        tformat = CTX_FORMAT_GRAY1;
-        tbpp = 1;
-#else
         tformat = CTX_FORMAT_GRAY2;
         tbpp = 2;
-#endif
       }
       else
       {
@@ -119,7 +114,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     int yo = 0;
     do
     {
-      render_height = ctx_mini (render_height, y1-y0);
+      render_height = ctx_mini (render_height, y1-y0+1);
       int off = 0;
    
       if (flags & CTX_FLAG_GRAY)
@@ -191,7 +186,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     } while (y0 < y1);
 
     if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
-      abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
+      backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
+    // abort does not happen for low-res update
   }
   else
   {
@@ -222,16 +218,12 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       else
         ctx_render_ctx (ctx, ctx);
 
-      if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
-        abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
-
       backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
                               x0, y0, width, render_height, (uint16_t*)fb,
                               width * render_height * bpp);
 
       if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
         abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
-
 
       y0 += render_height;
     } while (y0 < y1 && !abort);
@@ -328,71 +320,71 @@ ctx_cb_end_frame (Ctx *ctx)
     uint32_t *hashes = ((CtxHasher*)(ctx->backend))->hashes;
     int tile_no =0;
     int low_res_tiles = 0;
+
       for (int row = 0; row < CTX_HASH_ROWS; row++)
-        for (int col = 0; col < CTX_HASH_COLS; col++)
+        for (int col = 0; col < CTX_HASH_COLS; col++, tile_no++)
         {
-          uint32_t new_hash = hashes[row*CTX_HASH_COLS+col];
+          uint32_t new_hash = hashes[tile_no];
           if (new_hash &&
-              new_hash != cb_backend->hashes[(row * CTX_HASH_COLS + col)])
+              new_hash != cb_backend->hashes[tile_no])
           {
-            cb_backend->hashes[(row * CTX_HASH_COLS +  col)]= new_hash;
             dirty_tiles++;
             cb_backend->max_col = ctx_maxi (cb_backend->max_col, col);
             cb_backend->max_row = ctx_maxi (cb_backend->max_row, row);
             cb_backend->min_col = ctx_mini (cb_backend->min_col, col);
             cb_backend->min_row = ctx_mini (cb_backend->min_row, row);
-            cb_backend->res[(row * CTX_HASH_COLS + col)]=1;
           }
           else
           {
-            low_res_tiles += cb_backend->res[(row * CTX_HASH_COLS + col)];
+            low_res_tiles += cb_backend->res[tile_no];
           }
-
           active_mask |= (1<<tile_no);
-          tile_no++;
         }
 
       int in_low_res = 0;
       int old_flags = cb_backend->flags;
       if (cb_backend->flags & CTX_FLAG_LOWRES)
       {
-          in_low_res = 1;
-      if (dirty_tiles == 0 && low_res_tiles !=0)
-      {
-          cb_backend->max_col = -100;
-          cb_backend->min_col = 100;
-          cb_backend->max_row = -100;
-          cb_backend->min_row = 100;
-          for (int row = 0; row < CTX_HASH_ROWS; row++)
-            for (int col = 0; col < CTX_HASH_COLS; col++)
-              if (cb_backend->res[(row * CTX_HASH_COLS + col)])
-            {
-              cb_backend->max_col = ctx_maxi (cb_backend->max_col, col);
-              cb_backend->max_row = ctx_maxi (cb_backend->max_row, row);
-              cb_backend->min_col = ctx_mini (cb_backend->min_col, col);
-              cb_backend->min_row = ctx_mini (cb_backend->min_row, row);
-              cb_backend->res[(row * CTX_HASH_COLS + col)]=0;
-            }
-          cb_backend->flags &= ~CTX_FLAG_LOWRES;
-          dirty_tiles = 1;
-          in_low_res = 0;
-        }
-        else if (dirty_tiles)
+        in_low_res = 1;
+        if (dirty_tiles == 0 && low_res_tiles !=0)
         {
-           CtxPixelFormat format = cb_backend->format;
-           int bpp            = ctx_pixel_format_bits_per_pixel (format) / 8;
-           int tile_dim = (ctx_width (ctx)/CTX_HASH_COLS) *
-                          (ctx_height (ctx)/CTX_HASH_ROWS) * bpp;
-           int memory = (cb_backend->max_col-cb_backend->min_col+1)*
-                        (cb_backend->max_row-cb_backend->min_row+1)*tile_dim;
-           if (memory < cb_backend->memory_budget)
-           {
-             in_low_res = 0;
-             cb_backend->flags &= ~CTX_FLAG_LOWRES;
-           }
-        }
+            cb_backend->max_col = -100;
+            cb_backend->min_col = 100;
+            cb_backend->max_row = -100;
+            cb_backend->min_row = 100;
+            tile_no = 0;
+            active_mask = 0;
+            for (int row = 0; row < CTX_HASH_ROWS; row++)
+              for (int col = 0; col < CTX_HASH_COLS; col++, tile_no++)
+              {
+                if (cb_backend->res[tile_no])
+              {
+                cb_backend->max_col = ctx_maxi (cb_backend->max_col, col);
+                cb_backend->max_row = ctx_maxi (cb_backend->max_row, row);
+                cb_backend->min_col = ctx_mini (cb_backend->min_col, col);
+                cb_backend->min_row = ctx_mini (cb_backend->min_row, row);
+                dirty_tiles++;
+                active_mask |= (1<<tile_no);
+              }
+              }
+            cb_backend->flags &= ~CTX_FLAG_LOWRES;
+            in_low_res = 0;
+          }
+          else if (dirty_tiles)
+          {
+             CtxPixelFormat format = cb_backend->format;
+             int bpp            = ctx_pixel_format_bits_per_pixel (format) / 8;
+             int tile_dim = (ctx_width (ctx)/CTX_HASH_COLS) *
+                            (ctx_height (ctx)/CTX_HASH_ROWS) * bpp;
+             int memory = (cb_backend->max_col-cb_backend->min_col+1)*
+                          (cb_backend->max_row-cb_backend->min_row+1)*tile_dim;
+             if (memory < cb_backend->memory_budget)
+             {
+               in_low_res = 0;
+               cb_backend->flags &= ~CTX_FLAG_LOWRES;
+             }
+          }
       }
-
       ctx_pop_backend (ctx);
       if (dirty_tiles)
       {
@@ -412,15 +404,64 @@ ctx_cb_end_frame (Ctx *ctx)
          int width = x1 - x0 + 1;
          int height = y1 - y0 + 1;
          int abort = 0;
-         abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
 
-         if (abort && !in_low_res)
-           for (int row = cb_backend->min_row; row < cb_backend->max_row; row++)
-             for (int col = cb_backend->min_col; col < cb_backend->max_col; col++)
-        {
-          cb_backend->hashes[(row * CTX_HASH_COLS +  col)]= 123;
-          cb_backend->res[(row * CTX_HASH_COLS + col)]=1;
-        }
+         if (in_low_res || dirty_tiles <= 3)
+         {
+           abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
+             for (int row = cb_backend->min_row; row <= cb_backend->max_row; row++)
+               for (int col = cb_backend->min_col; col <= cb_backend->max_col; col++)
+               {
+                 int tile_no = row * CTX_HASH_COLS + col;
+                 if (abort)
+                 {
+                   //cb_backend->res[tile_no]=0;
+                   //cb_backend->hashes[tile_no]= 23;
+                 }
+                 else
+                 {
+                   cb_backend->hashes[tile_no]= hashes[tile_no];
+                   cb_backend->res[tile_no]=in_low_res;
+                 }
+               }
+         }
+         else
+         {
+           tile_no = 0;
+           for (int row = 0; row < CTX_HASH_ROWS; row++)
+             for (int col = 0; col < CTX_HASH_COLS; col++, tile_no++)
+             {
+               uint32_t new_hash = hashes[tile_no];
+               if ((new_hash && new_hash != cb_backend->hashes[tile_no]) ||
+                   cb_backend->res[tile_no])
+               {
+                  if (!abort)
+                  {
+                    int x0 = col * (ctx_width (ctx)/CTX_HASH_COLS);
+                    int x1 = (col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
+                    int y0 = row * (ctx_height (ctx)/CTX_HASH_ROWS);
+                    int y1 = (row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
+
+                    abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, 1<<tile_no);
+
+                    //if (!abort)
+                    {
+                      cb_backend->res[tile_no]=0;
+                      cb_backend->hashes[tile_no] = new_hash;
+                    }
+                    //else
+                    //{
+                    //  cb_backend->res[tile_no]=1;
+                    //  cb_backend->hashes[tile_no] = 23;
+                    //}
+                  }
+                  else
+                  {
+                    //cb_backend->hashes[tile_no] = 23;
+                    //cb_backend->res[tile_no]=1;
+                  }
+               }
+             }
+         }
       }
       ctx_free (hashes);
       cb_backend->flags = old_flags;

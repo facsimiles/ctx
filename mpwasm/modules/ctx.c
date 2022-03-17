@@ -6,13 +6,15 @@
 #include "py/objarray.h"
 #include "py/runtime.h"
 
-#define CTX_TINYVG 1
+#define CTX_TINYVG 0
 #define CTX_DITHER 1
 
-#define CTX_LIMIT_FORMATS       0
+#define CTX_AVOID_CLIPPED_SUBDIVISION 0
+#define CTX_LIMIT_FORMATS       1
 #define CTX_ENABLE_FLOAT        0
 #define CTX_32BIT_SEGMENTS      0
 #define CTX_ENABLE_RGBA8              1
+#define CTX_ENABLE_GRAY2              1
 #define CTX_ENABLE_RGB565             1
 #define CTX_ENABLE_RGB565_BYTESWAPPED 1
 #define CTX_BITPACK_PACKER      0
@@ -20,13 +22,13 @@
 #define CTX_RENDERSTREAM_STATIC 0
 #define CTX_GRADIENT_CACHE      1
 #define CTX_ENABLE_CLIP         1
-#define CTX_MIN_JOURNAL_SIZE    1024
+#define CTX_MIN_JOURNAL_SIZE       1024
+#define CTX_MIN_EDGE_LIST_SIZE     1024
 #define CTX_1BIT_CLIP           1
-#define CTX_AVOID_CLIPPED_SUBDIVISION 1
 #define CTX_CM                  0
 #define CTX_SHAPE_CACHE         0
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 42
-#define CTX_NATIVE_GRAYA8       0
+#define CTX_NATIVE_GRAYA8       1
 #define CTX_ENABLE_SHADOW_BLUR  0
 #define CTX_FORMATTER           0
 #define CTX_PARSER              0
@@ -40,7 +42,6 @@
 #define CTX_CURRENT_PATH        1
 #define CTX_BLENDING_AND_COMPOSITING 1
 #define CTX_STRINGPOOL_SIZE        256
-#define CTX_MIN_EDGE_LIST_SIZE     2048
 #define CTX_AUDIO                  0
 #define CTX_CLIENTS                0
 #define CTX_TERMINAL_EVENTS        0 // gets rid of posix bits and bobs

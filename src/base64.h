@@ -43,6 +43,7 @@ ctx_bin2base64 (const void *bin,
   unsigned char *bin2 = (unsigned char*)ctx_calloc (bin_length + 4, 1);
   unsigned const char *p = bin2;
   int i;
+  if (bin_length > 4096 * 1024 * 1024) return;
   memcpy (bin2, bin, bin_length);
   for (i=0; i*3 < bin_length; i++)
    {
