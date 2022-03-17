@@ -2128,7 +2128,7 @@ again:
           prev_val = val;
         }
         if (resolved_val <= -100000.0f) resolved_val = prev_val;
-        ctx_string_append_printf (str, "%f", resolved_val);
+        ctx_string_append_printf (str, "%f", (double)resolved_val);
         in_var = 0;
       }
       else if (p>='0' && p<='9')

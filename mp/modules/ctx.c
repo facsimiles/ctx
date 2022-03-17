@@ -473,11 +473,11 @@ mp_ctx_color_common(size_t n_args, const mp_obj_t *args, bool stroke)
 	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
 	mp_obj_t color_in  = args[1];
 
-	float alpha_f = 1.0;
+	float alpha_f = 1.0f;
 	if (n_args == 3) {
 		alpha_f = mp_obj_get_float(args[2]);
 	}
-	if (alpha_f < 0.0 || alpha_f > 1.0) {
+	if (alpha_f < 0.0f || alpha_f > 1.0f) {
 		mp_raise_ValueError("alpha must be between 0.0 or 1.0");
 	}
 
@@ -510,7 +510,7 @@ mp_ctx_color_common(size_t n_args, const mp_obj_t *args, bool stroke)
 		green = mp_obj_get_int(green_in);
 		blue  = mp_obj_get_int(blue_in);
 
-		alpha = (int)(alpha_f * 255.0);
+		alpha = (int)(alpha_f * 255.0f);
 		if (stroke) {
 			ctx_rgba8_stroke(self->ctx, red, green, blue, alpha);
 		} else {
@@ -544,11 +544,11 @@ static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
 
 	float pos = mp_obj_get_float(args[1]);
 
-	float alpha_f = 1.0;
+	float alpha_f = 1.0f;
 	if (n_args == 4) {
 		alpha_f = mp_obj_get_float(args[3]);
 	}
-	if (alpha_f < 0.0 || alpha_f > 1.0) {
+	if (alpha_f < 0.0f || alpha_f > 1.0f) {
 		mp_raise_ValueError("alpha must be between 0.0 or 1.0");
 	}
 
@@ -579,7 +579,7 @@ static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
 		green = mp_obj_get_int(green_in);
 		blue  = mp_obj_get_int(blue_in);
 
-		alpha = (int)(alpha_f * 255.0);
+		alpha = (int)(alpha_f * 255.0f);
 		ctx_gradient_add_stop_u8(
 			self->ctx, pos, red, green, blue, alpha
 		);
@@ -859,6 +859,7 @@ static mp_obj_t mp_ctx_listen_stop_propagate (size_t n_args, const mp_obj_t *arg
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_listen_stop_propagate_obj, 4, 4, mp_ctx_listen_stop_propagate);
 #endif
 
+#if CTX_TINYVG
 static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t path_in)
 {
 #ifdef EMSCRIPTEN
@@ -890,6 +891,7 @@ static mp_obj_t mp_ctx_tinyvg_draw (mp_obj_t self_in, mp_obj_t path_in)
 	return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_tinyvg_draw_obj, mp_ctx_tinyvg_draw);
+#endif
 /* CTX API functions }}} */
 
 static mp_obj_t mp_ctx_make_new(
@@ -1198,8 +1200,10 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(listen),
 	MP_CTX_METHOD(listen_stop_propagate),
 	//MP_CTX_METHOD(parse),
+#if CTX_TINYVG
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
+#endif
 	MP_CTX_METHOD(logo),
 #ifdef EPICARDIUM
 	MP_CTX_METHOD(update),

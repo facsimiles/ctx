@@ -225,9 +225,9 @@ foo: ctx
 updateweb: all ctx.static test docs/ctx.h.html docs/ctx-font-regular.h.html 
 	git repack
 	(cd docs ; stagit .. )
-	cp mpwasm/index.html docs/mp/
-	cp mpwasm/build/* docs/mp/build || true
-	cp mpwasm/assets/* docs/mp/assets || true
+	cp mp/index.html docs/mp/
+	cp mp/build/* docs/mp/build || true
+	cp mp/assets/* docs/mp/assets || true
 	cat tests/index.html | sed 's/.*script.*//' > tmp
 	mv tmp tests/index.html
 	git update-server-info

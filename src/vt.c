@@ -1789,9 +1789,9 @@ static void vtcmd_screen_alignment_display (VT *vt, const char *sequence)
 #if 0
 static int find_idx (int r, int g, int b)
 {
-  r = r / 255.0 * 5;
-  g = g / 255.0 * 5;
-  b = b / 255.0 * 5;
+  r = r / 255.0f * 5;
+  g = g / 255.0f * 5;
+  b = b / 255.0f * 5;
   return 16 + r * 6 * 6 + g * 6 + b;
 }
 #endif

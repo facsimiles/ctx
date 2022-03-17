@@ -1295,7 +1295,7 @@ _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
   float x_in = *x;
   float y_in = *y;
   float w =   (x_in * m->m[2][0]) + (y_in * m->m[2][1]) + m->m[2][2];
-  float w_recip = 1.0/w;
+  float w_recip = 1.0f/w;
        *x = ( (x_in * m->m[0][0]) + (y_in * m->m[0][1]) + m->m[0][2]) * w_recip;
        *y = ( (x_in * m->m[1][0]) + (y_in * m->m[1][1]) + m->m[1][2]) * w_recip;
 }

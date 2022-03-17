@@ -140,7 +140,7 @@ ctx_gstate_push (CtxState *state)
     { return; }
   state->gstate_stack[state->gstate_no] = state->gstate;
   state->gstate_no++;
-  ctx_state_set (state, CTX_new_state, 0.0);
+  ctx_state_set (state, CTX_new_state, 0.0f);
   state->has_clipped=0;
 }
 
@@ -422,7 +422,7 @@ void ctx_define_texture (Ctx *ctx,
 
   if (ctx_eid_valid (ctx, eid, 0, 0))
   {
-    ctx_texture (ctx, eid, 0.0, 0.0);
+    ctx_texture (ctx, eid, 0.0f, 0.0f);
   }
   else
 
@@ -586,7 +586,7 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
   int tex_height = 0;
   if (ctx_eid_valid (ctx, eid , &tex_width, &tex_height))
   {
-    if (width > 0.0 && height > 0.0)
+    if (width > 0.0f && height > 0.0f)
     {
 #if 0
       if (clip_width > 0.0f)
@@ -1223,7 +1223,7 @@ ctx_point_seg_dist_sq (float x, float y,
                        float vx, float vy, float wx, float wy)
 {
   float l2 = ctx_pow2 (vx-wx) + ctx_pow2 (vy-wy);
-  if (l2 < 0.0001)
+  if (l2 < 0.0001f)
     { return ctx_pow2 (x-vx) + ctx_pow2 (y-vy); }
   float t = ( (x - vx) * (wx - vx) + (y - vy) * (wy - vy) ) / l2;
   t = ctx_maxf (0, ctx_minf (1, t) );
@@ -1264,8 +1264,8 @@ ctx_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
       // Handle degenerate cases.
       if (ctx_coords_equal (x0,y0, x1,y1, 0.5f) ||
           ctx_coords_equal (x1,y1, x2,y2, 0.5f) ||
-          ctx_point_seg_dist_sq (x1,y1, x0,y0, x2,y2) < 0.5 ||
-          radius < 0.5)
+          ctx_point_seg_dist_sq (x1,y1, x0,y0, x2,y2) < 0.5f ||
+          radius < 0.5f)
         {
           ctx_line_to (ctx, x1,y1);
           return;
@@ -1502,7 +1502,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           source->linear_gradient.dy = dy;
           source->linear_gradient.start = start;
           source->linear_gradient.end = end;
-          source->linear_gradient.rdelta = (end-start)!=0.0?1.0f/(end - start):1.0;
+          source->linear_gradient.rdelta = (end-start)!=0.0f?1.0f/(end - start):1.0f;
           source->type = CTX_SOURCE_LINEAR_GRADIENT;
           source->transform = state->gstate.transform;
           ctx_matrix_invert (&source->transform);
@@ -1528,7 +1528,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           source->radial_gradient.x1 = x1;
           source->radial_gradient.y1 = y1;
           source->radial_gradient.r1 = r1;
-          source->radial_gradient.rdelta = (r1 - r0) != 0.0 ? 1.0f/(r1-r0):0.0;
+          source->radial_gradient.rdelta = (r1 - r0) != 0.0f ? 1.0f/(r1-r0):0.0f;
           source->type      = CTX_SOURCE_RADIAL_GRADIENT;
           source->transform = state->gstate.transform;
           ctx_matrix_invert (&source->transform);

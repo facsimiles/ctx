@@ -342,7 +342,7 @@ int epic_disp_circ (int16_t x, int16_t y, uint16_t rad, uint16_t color, enum dis
    uint8_t r, g, b;
    rgb565_to_rgb888(color, &r, &g, &b);
 
-   ctx_arc(ctx, x, y, rad, 0.0f, CTX_PI * 1.95, 0);
+   ctx_arc(ctx, x, y, rad, 0.0f, CTX_PI * 1.95f, 0);
 
    switch (fs) {
   case FILLSTYLE_EMPTY:

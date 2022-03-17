@@ -15,8 +15,8 @@ INC += -I$(BUILD)
 
 INC += -Ilib/
 
-CFLAGS += -std=gnu99 -Wall #-Werror  
-#-Wdouble-promotion
+CFLAGS += -std=gnu99 -Wall -Wdouble-promotion
+#-Werror  
 CFLAGS += -O3 -DNDEBUG
 CFLAGS += $(INC)
 

@@ -1801,8 +1801,8 @@ static inline CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, ui
         if (ctx_shape_cache_hits+ctx_shape_cache_misses)
         {
           ctx_shape_cache_rate = 
-                0.5 * ctx_shape_cache_rate +
-                0.5 * (ctx_shape_cache_hits * 100.0  / (ctx_shape_cache_hits+ctx_shape_cache_misses));
+                0.5f * ctx_shape_cache_rate +
+                0.5f * (ctx_shape_cache_hits * 100.0f  / (ctx_shape_cache_hits+ctx_shape_cache_misses));
         }
         i = 0;
         ctx_shape_cache_hits = 0;
@@ -2222,7 +2222,7 @@ ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                      *  use
                      */
 
-  ctx_rasterizer_set_texture (rasterizer, eid, 0.0, 0.0);
+  ctx_rasterizer_set_texture (rasterizer, eid, 0.0f, 0.0f);
   if (!rasterizer->state->gstate.source_fill.texture.buffer->color_managed)
   {
     _ctx_texture_prepare_color_management (rasterizer->state,
@@ -2543,7 +2543,7 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
     _ctx_user_to_device_distance (rasterizer->state, &tx, &font_size);
   }
   if (rasterizer->term_glyphs && !stroke &&
-      fabs (font_size - ch) < 0.5)
+      fabs (font_size - ch) < 0.5f)
   {
     float tx = rasterizer->x;
     float ty = rasterizer->y;
@@ -2583,7 +2583,7 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
   int   cw = ctx_term_get_cell_width (rasterizer->backend.ctx);
 
   if (rasterizer->term_glyphs && !stroke &&
-      fabs (font_size - ch) < 0.5)
+      fabs (font_size - ch) < 0.5f)
   {
     float tx = rasterizer->x;
     float ty = rasterizer->y;
@@ -3435,7 +3435,7 @@ static inline float
 ctx_gaussian (float x, float mu, float sigma)
 {
   float a = ( x- mu) / sigma;
-  return ctx_expf (-0.5 * a * a);
+  return ctx_expf (-0.5f * a * a);
 }
 
 static inline void
@@ -3985,7 +3985,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
       case CTX_STROKE:
           if (rasterizer->edge_list.count == 0)break;
 #if CTX_ENABLE_SHADOW_BLUR
-        if (state->gstate.shadow_blur > 0.0 &&
+        if (state->gstate.shadow_blur > 0.0f &&
             !rasterizer->in_text)
           ctx_rasterizer_shadow_stroke (rasterizer);
 #endif
@@ -4149,7 +4149,7 @@ foo:
         {
           if (rasterizer->edge_list.count == 0)break;
 #if CTX_ENABLE_SHADOW_BLUR
-        if (state->gstate.shadow_blur > 0.0 &&
+        if (state->gstate.shadow_blur > 0.0f &&
             !rasterizer->in_text)
           ctx_rasterizer_shadow_fill (rasterizer);
 #endif

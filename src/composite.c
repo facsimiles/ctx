@@ -4332,7 +4332,7 @@ ctx_fragment_linear_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
   float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
                 g->linear_gradient.length) -
               g->linear_gradient.start) * (g->linear_gradient.rdelta);
-  ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0, rgba);
+  ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0f, rgba);
   ((float*)out)[0] = ctx_float_color_rgb_to_gray (rasterizer->state, rgba);
   ((float*)out)[1] = rgba[3];
      out = ((float*)(out)) + 2;
@@ -5440,7 +5440,7 @@ ctx_fragment_linear_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y
               g->linear_gradient.start) * (g->linear_gradient.rdelta);
   {
     uint8_t rgba[4];
-    ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 1.0, rgba);
+    ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 1.0f, rgba);
     ctx_rgba_to_graya_u8 (rasterizer->state, rgba, dst);
    
   }

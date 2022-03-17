@@ -280,8 +280,8 @@ ctx_cb_end_frame (Ctx *ctx)
   float em = ctx_height (ctx) * 0.08;
   float y = em;
   ctx_font_size (ctx, em);
-  ctx_rectangle (ctx, ctx_width(ctx)-(em*4), 0, em *4, em * 1.1);
-  ctx_rgba (ctx, 0, 0, 0, 0.7);
+  ctx_rectangle (ctx, ctx_width(ctx)-(em*4), 0, em *4, em * 1.1f);
+  ctx_rgba (ctx, 0, 0, 0, 0.7f);
   ctx_fill (ctx);
 
   ctx_rgba (ctx, 1, 1, 0, 1);
@@ -290,8 +290,8 @@ ctx_cb_end_frame (Ctx *ctx)
   {
     char buf[22];
     float fps = 1.0f/((cur_time-prev_time)/1000.0f);
-    ctx_move_to (ctx, ctx_width (ctx) - (em * 3.8), y);
-    sprintf (buf, "%2.1f fps", fps);
+    ctx_move_to (ctx, ctx_width (ctx) - (em * 3.8f), y);
+    sprintf (buf, "%2.1f fps", (double)fps);
     ctx_text (ctx, buf);
     ctx_begin_path (ctx);
   }

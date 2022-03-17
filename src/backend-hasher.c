@@ -128,6 +128,28 @@ static inline int murmur3_32_done (CtxMurmur *murmur, unsigned char *out)
  * as stroke/fill can be ignored  clips outside
  * should mean no more drawing until restore
  */
+
+static inline void
+ctx_device_corners_to_user_rect (CtxState *state,
+                                 float x0, float y0, float x1, float y1,
+                                 CtxIntRectangle *shape_rect)
+{
+  int itw, ith;
+  int itx, ity, itx2, ity2;
+  _ctx_user_to_device_prepped (state, x0, y0, &itx, &ity);
+  _ctx_user_to_device_prepped (state, x1, y1, &itx2, &ity2);
+  itx /= CTX_SUBDIV;
+  itx2 /= CTX_SUBDIV;
+  ity /= CTX_FULL_AA;
+  ity2 /= CTX_FULL_AA;
+  itw = itx2-itx;
+  ith = ity2-ity;
+  shape_rect->x=itx;
+  shape_rect->y=ity;
+  shape_rect->width = itw;
+  shape_rect->height = ith;
+}
+
 static void
 ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 {
@@ -155,24 +177,11 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
            CtxIntRectangle shape_rect;
 
            float tx = rasterizer->x;
-           float ty = rasterizer->y - height * 1.2;
+           float ty = rasterizer->y - height * 1.2f;
            float tx2 = tx+width;
-           float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5);
-           float tw, th;
+           float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5f);
 
-           _ctx_user_to_device (rasterizer->state, &tx, &ty);
-           _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
-
-           // XXX need a transform bounds function
-           //_ctx_user_to_device_distance (rasterizer->state, &tw, &th);
-          
-           tw = tx2-tx;
-           th = ty2-ty;
-
-           shape_rect.x=tx;
-           shape_rect.y=ty;
-           shape_rect.width = tw;
-           shape_rect.height = th;
+           ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
           switch ((int)ctx_state_get (rasterizer->state, CTX_text_align))
           {
           case CTX_TEXT_ALIGN_LEFT:
@@ -211,23 +220,11 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
            CtxIntRectangle shape_rect;
 
            float tx = rasterizer->x;
-           float ty = rasterizer->y - height * 1.2;
+           float ty = rasterizer->y - height * 1.2f;
            float tx2 = tx+width;
-           float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5);
+           float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5f);
+           ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
 
-          _ctx_user_to_device (rasterizer->state, &tx, &ty);
-          _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
-
-          float tw = tx2 - tx;
-          float th = ty2 - ty;
-
-           _ctx_user_to_device (rasterizer->state, &tx, &ty);
-           _ctx_user_to_device_distance (rasterizer->state, &tw, &th);
-          
-           shape_rect.x=tx;
-           shape_rect.y=ty;
-           shape_rect.width = tw;
-           shape_rect.height = th;
 
 #if 0
           uint32_t color;
@@ -259,14 +256,10 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           float ty = rasterizer->y;
           float tx2 = rasterizer->x + width;
           float ty2 = rasterizer->y + height * 2;
+          CtxIntRectangle shape_rect;
+          ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
 
-          _ctx_user_to_device (rasterizer->state, &tx, &ty);
-          _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
-
-          float tw = tx2 - tx;
-          float th = ty2 - ty;
-
-          CtxIntRectangle shape_rect = {(int)tx,(int)(ty-th/2),(int)tw,(int)th};
+          shape_rect.y-=shape_rect.height/2;
 
 
 #if 0
@@ -298,9 +291,9 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           int is = rasterizer->state->gstate.fill_rule;
           murmur3_32_process(&murmur, (uint8_t*)&is, sizeof(int));
         }
-        CtxIntRectangle shape_rect = {0,0,
-                rasterizer->blit_width,
-                rasterizer->blit_height};
+        CtxIntRectangle shape_rect = {-100,-100,
+                rasterizer->blit_width*10,
+                rasterizer->blit_height*10};
         _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
         }
 

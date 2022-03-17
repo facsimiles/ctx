@@ -81,7 +81,7 @@ ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
   int glyph = ctx_glyph_stb_find (font, unichar);
 
 #if CTX_EVENTS
-  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0 - font_size) < 0.03)
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0f - font_size) < 0.03f)
     return 2;
 #endif
 
@@ -222,7 +222,7 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
   if (first_kern < 0) return 0.0;
 
 #if CTX_EVENTS
-  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0f - font_size) < 0.03)
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0f - font_size) < 0.03f)
     return 0.0f;
 #endif
 
@@ -232,7 +232,7 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
       if (entry->code == CTX_KERNING_PAIR)
         {
           if (entry->data.u16[0] == unicharA && entry->data.u16[1] == unicharB)
-            { return entry->data.s32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE; }
+            { return entry->data.s32[1] / 255.0f * font_size / CTX_BAKE_FONT_SIZE; }
         }
       if (entry->code == CTX_DEFINE_GLYPH)
         return 0.0;
@@ -264,7 +264,7 @@ ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 
 #if CTX_EVENTS
   if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && 
-                  ctx_fabsf(3.0 - font_size) < 0.03 
+                  ctx_fabsf(3.0f - font_size) < 0.03f 
                   )
     return 2.0f;
 #endif
@@ -274,7 +274,7 @@ ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
       CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
       if (entry->code == CTX_DEFINE_GLYPH)
         if (entry->data.u32[0] == (unsigned) unichar)
-          { return (entry->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE); }
+          { return (entry->data.u32[1] / 255.0f * font_size / CTX_BAKE_FONT_SIZE); }
     }
   return 0.0;
 }
@@ -483,7 +483,7 @@ ctx_glyph_kern_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unic
       if (entry->code == CTX_KERNING_PAIR)
         {
           if (entry->data.u16[0] == unicharA && entry->data.u16[1] == unicharB)
-            { return entry->data.s32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE; }
+            { return entry->data.s32[1] / 255.0f * font_size / CTX_BAKE_FONT_SIZE; }
         }
       if (entry->code == CTX_DEFINE_GLYPH)
         return 0.0;
@@ -510,7 +510,7 @@ ctx_glyph_width_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar)
     {
       CtxEntry *e = &glyph_ctx->drawlist.entries[i];
       if (e->code == CTX_DEFINE_GLYPH)
-        ret = e->data.u32[1] / 255.0 * font_size / CTX_BAKE_FONT_SIZE;
+        ret = e->data.u32[1] / 255.0f * font_size / CTX_BAKE_FONT_SIZE;
     }
     ctx_free (data);
     ctx_destroy (glyph_ctx);
@@ -670,21 +670,21 @@ _ctx_text (Ctx        *ctx,
     {
       case CTX_TEXT_BASELINE_HANGING:
         /* XXX : crude */
-        baseline_offset = ctx->state.gstate.font_size  * 0.55;
+        baseline_offset = ctx->state.gstate.font_size  * 0.55f;
         break;
       case CTX_TEXT_BASELINE_TOP:
         /* XXX : crude */
-        baseline_offset = ctx->state.gstate.font_size  * 0.7;
+        baseline_offset = ctx->state.gstate.font_size  * 0.7f;
         break;
       case CTX_TEXT_BASELINE_BOTTOM:
-        baseline_offset = -ctx->state.gstate.font_size * 0.1;
+        baseline_offset = -ctx->state.gstate.font_size * 0.1f;
         break;
       case CTX_TEXT_BASELINE_ALPHABETIC:
       case CTX_TEXT_BASELINE_IDEOGRAPHIC:
         baseline_offset = 0.0f;
         break;
       case CTX_TEXT_BASELINE_MIDDLE:
-        baseline_offset = ctx->state.gstate.font_size * 0.25;
+        baseline_offset = ctx->state.gstate.font_size * 0.25f;
         break;
     }
   float x0 = x;
