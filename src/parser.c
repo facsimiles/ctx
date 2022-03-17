@@ -2133,8 +2133,8 @@ again:
       }
       else if (p>='0' && p<='9')
       {
-        const char *sp = &string[i];
-        char *ep = (char*)sp;
+        char *sp = (char*)&string[i];
+        char *ep = sp;
         float key      = _ctx_parse_float (sp, &ep);
         char *eq       = strchr (sp, '=');
         float val      = 0.0;

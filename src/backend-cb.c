@@ -64,7 +64,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     int min_scanlines = 2;
 
     int tbpp = bpp * 8;
-    int tformat = format;
+    CtxPixelFormat tformat = format;
     if (flags & CTX_FLAG_GRAY)
     {
       if (flags & CTX_FLAG_MONO)
@@ -98,7 +98,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     CtxRasterizer *r = ctx_rasterizer_init (&backend_cb->rasterizer,
                 ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
                 small_stride, tformat, CTX_ANTIALIAS_DEFAULT);
-    ((CtxBackend*)r)->destroy = (void*)ctx_rasterizer_deinit;
+    ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
     ctx_push_backend (ctx, r);
 
     ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
@@ -199,7 +199,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     CtxRasterizer *r = ctx_rasterizer_init(&backend_cb->rasterizer,
                          ctx, NULL, &ctx->state, fb, 0, 0, width, height,
                          width * bpp, format, CTX_ANTIALIAS_DEFAULT);
-    ((CtxBackend*)r)->destroy  = (void*)ctx_rasterizer_deinit;
+    ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
     ctx_push_backend (ctx, r);
 
     do
@@ -207,7 +207,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       render_height = ctx_mini (render_height, y1-y0+1);
       ctx_rasterizer_init (r, ctx, NULL, &ctx->state, fb, 0, 0, width,
                    render_height, width * bpp, format, CTX_ANTIALIAS_DEFAULT);
-      ((CtxBackend*)r)->destroy = (void*)ctx_rasterizer_deinit;
+    ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
 
       if ((flags & CTX_FLAG_KEEP_DATA) == 0)
         memset (fb, 0, width * bpp * render_height);
@@ -304,7 +304,7 @@ ctx_cb_end_frame (Ctx *ctx)
     CtxState    *state = &ctx->state;
     CtxRasterizer *rasterizer = &cb_backend->rasterizer;
     ctx_hasher_init (rasterizer, ctx, state, ctx_width(ctx), ctx_height(ctx), CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
-    rasterizer->backend.destroy = (void*)ctx_rasterizer_deinit;
+    ((CtxBackend*)rasterizer)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
 
     ctx_push_backend (ctx, rasterizer);
 
