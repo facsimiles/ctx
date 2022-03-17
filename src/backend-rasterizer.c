@@ -1974,6 +1974,31 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
 }
 
 static inline void
+ctx_rasterizer_line_to_fixed (CtxRasterizer *rasterizer, int x, int y)
+{
+  rasterizer->has_shape = 1;
+  //  XXX we avoid doing this for the cases where we initially have fixed point
+  //  need a separate call for doing this at end of beziers and arcs
+  //if (done)
+  //{
+  //     rasterizer->y         = y*1.0/CTX_FULL_AA;
+  //     rasterizer->x         = x*1.0/CTX_SUBDIV;
+  //}
+  int tx, ty;
+  _ctx_user_to_device_prepped_fixed (rasterizer->state, x, y, &tx, &ty);
+  tx -= rasterizer->blit_x * CTX_SUBDIV;
+
+  ctx_rasterizer_add_point (rasterizer, tx, ty);
+
+  if (CTX_UNLIKELY(rasterizer->has_prev<=0))
+    {
+      CtxSegment *entry = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
+      entry->code = CTX_NEW_EDGE;
+      rasterizer->has_prev = 1;
+    }
+}
+
+static inline void
 ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   int tx = 0, ty = 0;
@@ -2048,14 +2073,80 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
   }
 }
 
+#define CTX_FIX_SCALE 1024 
+#define CTX_FIX_SHIFT 10
+                      
+
+CTX_INLINE static int
+ctx_lerp_fixed (int v0, int v1, int dx)
+{
+  return v0 + (((v1-v0) * dx) >> CTX_FIX_SHIFT);
+}
+
+
+
+CTX_INLINE static int
+ctx_bezier_sample_1d_fixed (int x0, int x1, int x2, int x3, int dt)
+{
+  return ctx_lerp_fixed (
+      ctx_lerp_fixed (ctx_lerp_fixed (x0, x1, dt),
+                 ctx_lerp_fixed (x1, x2, dt), dt),
+      ctx_lerp_fixed (ctx_lerp_fixed (x1, x2, dt),
+                 ctx_lerp_fixed (x2, x3, dt), dt), dt);
+}
+
+CTX_INLINE static void
+ctx_bezier_sample_fixed (int x0, int y0,
+                         int x1, int y1,
+                         int x2, int y2,
+                         int x3, int y3,
+                         int dt, int *x, int *y)
+{
+  *x = ctx_bezier_sample_1d_fixed (x0, x1, x2, x3, dt);
+  *y = ctx_bezier_sample_1d_fixed (y0, y1, y2, y3, dt);
+}
+
+static inline void
+ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
+                              int ox, int oy,
+                              int x0, int y0,
+                              int x1, int y1,
+                              int x2, int y2,
+                              int sx, int sy,
+                              int ex, int ey,
+                              int s,
+                              int e,
+                              int iteration,
+                              int tolerance)
+{
+  int t = (s + e) / 2;
+  int x, y;
+  int lx, ly, dx, dy;
+  ctx_bezier_sample_fixed (ox, oy, x0, y0, x1, y1, x2, y2, t, &x, &y);
+  lx = ctx_lerp_fixed (sx, ex, t);
+  ly = ctx_lerp_fixed (sy, ey, t);
+  dx = lx - x;
+  dy = ly - y;
+  if (iteration < 6 && ((dx*dx+dy*dy))  > tolerance)
+  {
+    ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
+                                  sx, sy, x, y, s, t, iteration + 1,
+                                  tolerance);
+    ctx_rasterizer_line_to_fixed (rasterizer, x, y);
+    ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
+                                  x, y, ex, ey, t, e, iteration + 1,
+                                  tolerance);
+  }
+}
+
 static void
 ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x0, float y0,
                          float x1, float y1,
                          float x2, float y2)
 {
-  //float tolerance = 0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-  float tolerance = 0.2f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  float tolerance = 0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  //float tolerance = 0.2f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
 
@@ -2064,6 +2155,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   if(1){
 
 #if CTX_AVOID_CLIPPED_SUBDIVISION
+          // XXX need sporting to fixed point
   float maxx = ctx_maxf (x1,x2);
   maxx = ctx_maxf (maxx, ox);
   maxx = ctx_maxf (maxx, x0);
@@ -2104,11 +2196,21 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
     }
     else
 #endif
-  ctx_rasterizer_bezier_divide (rasterizer,
-                                ox, oy, x0, y0,
-                                x1, y1, x2, y2,
-                                ox, oy, x2, y2,
-                                0.0f, 1.0f, 0, tolerance);
+    {
+#if 1
+        ctx_rasterizer_bezier_divide_fixed (rasterizer,
+            ox * CTX_FIX_SCALE, oy * CTX_FIX_SCALE, x0 * CTX_FIX_SCALE, y0 * CTX_FIX_SCALE,
+            x1 * CTX_FIX_SCALE, y1 * CTX_FIX_SCALE, x2 * CTX_FIX_SCALE, y2 * CTX_FIX_SCALE,
+            ox * CTX_FIX_SCALE, oy * CTX_FIX_SCALE, x2 * CTX_FIX_SCALE, y2 * CTX_FIX_SCALE,
+            0, CTX_FIX_SCALE, 0, tolerance * CTX_FIX_SCALE * CTX_FIX_SCALE);
+#else
+        ctx_rasterizer_bezier_divide (rasterizer,
+                                      ox, oy, x0, y0,
+                                      x1, y1, x2, y2,
+                                      ox, oy, x2, y2,
+                                      0.0f, 1.0f, 0, tolerance);
+#endif
+    }
   }
   ctx_rasterizer_line_to (rasterizer, x2, y2);
 }

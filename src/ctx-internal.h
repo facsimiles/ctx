@@ -1340,6 +1340,8 @@ _ctx_matrix_identity (CtxMatrix *matrix)
 
 static inline void
 _ctx_user_to_device_prepped (CtxState *state, float x, float y, int *out_x, int *out_y);
+static inline void
+_ctx_user_to_device_prepped_fixed (CtxState *state, int x, int y, int *x_out, int *y_out);
 
 CTX_STATIC int ctx_float_to_string_index (float val);
 

@@ -58,7 +58,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
 
   if (flags & CTX_FLAG_LOWRES)
   {
-    int scale_factor  = 2;
+    int scale_factor  = 1;
     int small_width   = width / scale_factor;
     int small_height  = height / scale_factor;
     int min_scanlines = 2;
