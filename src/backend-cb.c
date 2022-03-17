@@ -457,7 +457,8 @@ ctx_cb_end_frame (Ctx *ctx)
 
 
                     int cont = 1;
-                    if(1)do {
+                    /* merge horizontal adjecant dirty tiles */
+                    if(0)do {
                       uint32_t next_new_hash = hashes[tile_no+used_tiles];
                       if ((next_new_hash && next_new_hash != cb_backend->hashes[tile_no+used_tiles]) ||
                         cb_backend->res[tile_no+used_tiles])
