@@ -5671,6 +5671,9 @@ static void
 ctx_setup_GRAY4 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
+  if (rasterizer->comp == CTX_COV_PATH_GRAYA8_COPY)
+    rasterizer->comp = CTX_COV_PATH_GRAY4_COPY;
+  else
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 #endif

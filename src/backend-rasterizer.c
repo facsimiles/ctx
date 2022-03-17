@@ -596,6 +596,46 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             }
               break;
 
+#if CTX_ENABLE_GRAY4
+              case CTX_COV_PATH_GRAY4_COPY:
+              {
+                uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
+                uint8_t *srcp = (uint8_t*)src_pixp;
+                uint8_t  startcov = graystart;
+                rasterizer->apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer->color, first, &startcov, 1);
+                dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
+                unsigned int count = last - first - 1;
+                int val = srcp[0]/17;
+
+                uint8_t val_x2 = val + (val << 4);
+                {
+                  int x = first + 1;
+                  for (unsigned int i = 0; i < count && x & 1; count--)
+                  {
+                     int bitno = x & 1;
+                     *dstp &= ~(15<<(bitno*4));
+                     *dstp |= (val<<(bitno*4));
+                     dstp += (bitno == 1);
+                     x++;
+                  }
+
+                  for (unsigned int i = 0; i < count && count>2; count-=2, x+=2, dstp++)
+                     *dstp = val_x2;
+
+                  for (unsigned int i = 0; i < count; count--)
+                  {
+                     int bitno = x & 1;
+                     *dstp &= ~(15<<(bitno*4));
+                     *dstp |= (val<<(bitno*4));
+                     dstp += (bitno == 1);
+                     x++;
+                  }
+                }
+              }
+              break;
+#endif
+
+#if CTX_ENABLE_GRAY2
               case CTX_COV_PATH_GRAY2_COPY:
               {
                 uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
@@ -605,8 +645,22 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
                 unsigned int count = last - first - 1;
                 int val = srcp[0]/85; 
+
+                uint8_t val_x4 = val + (val << 2) + (val << 4) + (val << 6);
                 {
                   int x = first + 1;
+                  for (unsigned int i = 0; i < count && x & 3; count--)
+                  {
+                     int bitno = x & 3;
+                     *dstp &= ~(3<<(bitno*2));
+                     *dstp |= (val<<(bitno*2));
+                     dstp += (bitno == 3);
+                     x++;
+                  }
+
+                  for (unsigned int i = 0; i < count && count>4; count-=4, x+=4, dstp++)
+                     *dstp = val_x4;
+
                   for (unsigned int i = 0; i < count; count--)
                   {
                      int bitno = x & 3;
@@ -618,7 +672,9 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 }
               }
               break;
+#endif
 
+#if CTX_ENABLE_GRAY1
               case CTX_COV_PATH_GRAY1_COPY:
               {
                 uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
@@ -682,6 +738,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 }
               }
               break;
+#endif
 
             case CTX_COV_PATH_RGBA8_OVER:
             {
