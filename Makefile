@@ -203,8 +203,8 @@ stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: deps.o $(CTX_OBJS) build.conf Makefile
 	$(AR) rcs $@ $(CTX_OBJS) deps.o 
-libctx.so: $(CTX_OBJS)
-	$(LD) -shared $(LIBS) $(CTX_OBJS) $(CTX_LIBS) -o $@
+libctx.so: $(CTX_OBJS) deps.o
+	$(LD) -shared $(LIBS) $(CTX_OBJS) deps.o $(CTX_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a

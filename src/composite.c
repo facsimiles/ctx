@@ -5680,7 +5680,10 @@ static void
 ctx_setup_GRAY2 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
-  rasterizer->comp = CTX_COV_PATH_FALLBACK;
+  if (rasterizer->comp == CTX_COV_PATH_GRAYA8_COPY)
+    rasterizer->comp = CTX_COV_PATH_GRAY2_COPY;
+  else
+    rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 #endif
 

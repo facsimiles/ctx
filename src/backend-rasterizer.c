@@ -596,6 +596,29 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             }
               break;
 
+              case CTX_COV_PATH_GRAY2_COPY:
+              {
+                uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
+                uint8_t *srcp = (uint8_t*)src_pixp;
+                uint8_t  startcov = graystart;
+                rasterizer->apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer->color, first, &startcov, 1);
+                dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
+                unsigned int count = last - first - 1;
+                int val = srcp[0]/85; 
+                {
+                  int x = first + 1;
+                  for (unsigned int i = 0; i < count; count--)
+                  {
+                     int bitno = x & 3;
+                     *dstp &= ~(3<<(bitno*2));
+                     *dstp |= (val<<(bitno*2));
+                     dstp += (bitno == 3);
+                     x++;
+                  }
+                }
+              }
+              break;
+
               case CTX_COV_PATH_GRAY1_COPY:
               {
                 uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
