@@ -57,12 +57,9 @@ _ctx_transform_prime (CtxState *state)
 }
 
 static inline void
-_ctx_matrix_apply_transform_perspective (const Ctx16f16Matrix *m, float x_in_f, float y_in_f,
+_ctx_matrix_apply_transform_perspective_fixed (const Ctx16f16Matrix *m, int x_in, int y_in,
                 int *x_out, int *y_out)
 {
-  int x_in = x_in_f * TRANSFORM_SCALE;
-  int y_in = y_in_f * TRANSFORM_SCALE;
-
   int w  = (((x_in * m->m[2][0] +
                y_in * m->m[2][1])>>TRANSFORM_SHIFT) +
                      (m->m[2][2]));
@@ -79,11 +76,9 @@ _ctx_matrix_apply_transform_perspective (const Ctx16f16Matrix *m, float x_in_f, 
 }
 
 static inline void
-_ctx_matrix_apply_transform_affine (const Ctx16f16Matrix *m, float x_in_f, float y_in_f,
+_ctx_matrix_apply_transform_affine_fixed (const Ctx16f16Matrix *m, int x_in, int y_in,
                 int *x_out, int *y_out)
 {
-  int x_in = x_in_f * TRANSFORM_SCALE;
-  int y_in = y_in_f * TRANSFORM_SCALE;
   *x_out = ((((x_in * m->m[0][0] +
                y_in * m->m[0][1])>>TRANSFORM_SHIFT) +
                      (m->m[0][2])) * CTX_SUBDIV) >>TRANSFORM_SHIFT;
@@ -93,10 +88,8 @@ _ctx_matrix_apply_transform_affine (const Ctx16f16Matrix *m, float x_in_f, float
 }
 
 static inline void
-_ctx_matrix_apply_transform_scale_translate (const Ctx16f16Matrix *m, float x_in_f, float y_in_f, int *x_out, int *y_out)
+_ctx_matrix_apply_transform_scale_translate_fixed (const Ctx16f16Matrix *m, int x_in, int y_in, int *x_out, int *y_out)
 {
-  int x_in = x_in_f * TRANSFORM_SCALE;
-  int y_in = y_in_f * TRANSFORM_SCALE;
   *x_out = ((((x_in * m->m[0][0])>>TRANSFORM_SHIFT) +
                      (m->m[0][2])) * CTX_SUBDIV) >>TRANSFORM_SHIFT;
   *y_out = ((((y_in * m->m[1][1])>>TRANSFORM_SHIFT) +
@@ -104,55 +97,42 @@ _ctx_matrix_apply_transform_scale_translate (const Ctx16f16Matrix *m, float x_in
 }
 
 static inline void
-_ctx_user_to_device_prepped (CtxState *state, float x, float y, int *x_out, int *y_out)
+_ctx_user_to_device_prepped_fixed (CtxState *state, int x, int y, int *x_out, int *y_out)
 {
   switch (state->gstate.transform_type)
   {
     case 0:
       _ctx_transform_prime (state);
-      _ctx_user_to_device_prepped (state, x, y, x_out, y_out);
+      _ctx_user_to_device_prepped_fixed (state, x, y, x_out, y_out);
       break;
     case 1:  // identity
-      *x_out = x * CTX_SUBDIV;
-      *y_out = y * CTX_FULL_AA;
+      *x_out = (x * CTX_SUBDIV) / TRANSFORM_SCALE;
+      *y_out = (y * CTX_FULL_AA) / TRANSFORM_SCALE;
       break;
     case 2:  // scale/translate
-      _ctx_matrix_apply_transform_scale_translate (&state->gstate.prepped_transform, x, y, x_out, y_out);
+      _ctx_matrix_apply_transform_scale_translate_fixed (&state->gstate.prepped_transform, x, y, x_out, y_out);
       break;
     case 3:  // affine
-      _ctx_matrix_apply_transform_affine (&state->gstate.prepped_transform, x, y, x_out, y_out);
+      _ctx_matrix_apply_transform_affine_fixed (&state->gstate.prepped_transform, x, y, x_out, y_out);
       break;
     case 4:  // perspective
-      _ctx_matrix_apply_transform_perspective (&state->gstate.prepped_transform, x, y, x_out, y_out);
+      _ctx_matrix_apply_transform_perspective_fixed (&state->gstate.prepped_transform, x, y, x_out, y_out);
       break;
   }
 }
 
 static inline void
+_ctx_user_to_device_prepped (CtxState *state, float x, float y, int *x_out, int *y_out)
+{
+  int x_in = x * TRANSFORM_SCALE;
+  int y_in = y * TRANSFORM_SCALE;
+  _ctx_user_to_device_prepped_fixed (state, x_in, y_in, x_out, y_out);
+}
+
+static inline void
 _ctx_user_to_device (CtxState *state, float *x, float *y)
 {
-#if 0
-  switch (state->gstate.transform_type)
-  {
-    case 0:
-      _ctx_transform_prime (state);
-      _ctx_user_to_device (state, x, y);
-      break;
-    case 1:  // identity
-      break;
-    case 2:  // scale/translate
-      _ctx_matrix_apply_transform_scale_translate (&state->gstate.transform, x, y);
-      break;
-    case 3:  // affine
-      _ctx_matrix_apply_transform_affine (&state->gstate.transform, x, y);
-      break;
-    case 4:  // perspective
- #endif
-      _ctx_matrix_apply_transform (&state->gstate.transform, x, y);
-#if 0
-      break;
-  }
-#endif
+  _ctx_matrix_apply_transform (&state->gstate.transform, x, y);
 }
 
 CTX_STATIC void
