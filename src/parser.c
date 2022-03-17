@@ -50,7 +50,7 @@ static void ctx_svg_arc_circle_to (Ctx *ctx,
 }
 
 
-static void ctx_svg_arc_to (Ctx *ctx, float rx, float ry, 
+static inline void ctx_svg_arc_to (Ctx *ctx, float rx, float ry, 
                             float rotation,  int large, int sweep,
                             float x1, float y1)
 {

@@ -3552,7 +3552,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 }
 
 
-static void
+static inline void
 ctx_setup_RGB (CtxRasterizer *rasterizer)
 {
   ctx_setup_RGBA8 (rasterizer);
@@ -3561,6 +3561,7 @@ ctx_setup_RGB (CtxRasterizer *rasterizer)
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
 
+#if CTX_ENABLE_RGB332
 static void
 ctx_setup_RGB332 (CtxRasterizer *rasterizer)
 {
@@ -3572,7 +3573,9 @@ ctx_setup_RGB332 (CtxRasterizer *rasterizer)
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
+#endif
 
+#if CTX_ENABLE_RGB565
 static void
 ctx_setup_RGB565 (CtxRasterizer *rasterizer)
 {
@@ -3584,7 +3587,9 @@ ctx_setup_RGB565 (CtxRasterizer *rasterizer)
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
+#endif
 
+#if CTX_ENABLE_RGB8
 static void
 ctx_setup_RGB8 (CtxRasterizer *rasterizer)
 {
@@ -3596,6 +3601,7 @@ ctx_setup_RGB8 (CtxRasterizer *rasterizer)
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
+#endif
 
 static void
 ctx_composite_convert (CTX_COMPOSITE_ARGUMENTS)
@@ -5660,20 +5666,25 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
   ctx_setup_apply_coverage (rasterizer);
 }
 
+#if CTX_ENABLE_GRAY4
 static void
 ctx_setup_GRAY4 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
+#endif
 
+#if CTX_ENABLE_GRAY2
 static void
 ctx_setup_GRAY2 (CtxRasterizer *rasterizer)
 {
   ctx_setup_GRAYA8 (rasterizer);
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
+#endif
 
+#if CTX_ENABLE_GRAY1
 static void
 ctx_setup_GRAY1 (CtxRasterizer *rasterizer)
 {
@@ -5683,6 +5694,7 @@ ctx_setup_GRAY1 (CtxRasterizer *rasterizer)
   else
     rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
+#endif
 
 static void
 ctx_setup_GRAY8 (CtxRasterizer *rasterizer)

@@ -1,4 +1,4 @@
-#pragma GCC optimize ("O2")
+#pragma GCC optimize ("O3")
 
 #include <stdlib.h>
 #include "py/binary.h"

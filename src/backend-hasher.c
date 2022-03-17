@@ -135,7 +135,7 @@ ctx_device_corners_to_user_rect (CtxState *state,
                                  CtxIntRectangle *shape_rect)
 {
   int itw, ith;
-  int itx, ity, itx2, ity2;
+  int itx = 0, ity = 0, itx2 = 0, ity2 = 0;
   _ctx_user_to_device_prepped (state, x0, y0, &itx, &ity);
   _ctx_user_to_device_prepped (state, x1, y1, &itx2, &ity2);
   itx /= CTX_SUBDIV;
