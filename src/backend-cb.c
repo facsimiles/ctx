@@ -44,6 +44,16 @@ static inline uint16_t ctx_rgb332_to_rgb565 (uint8_t rgb, int byteswap)
    return ctx_565_pack (red, green, blue, byteswap);
 }
 
+void
+ctx_cb_set_memory_budget (Ctx *ctx, int memory_budget)
+{
+  CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
+  backend_cb->memory_budget = memory_budget;
+  if (backend_cb->fb)
+    ctx_free (backend_cb->fb);
+  backend_cb->fb = NULL;
+}
+
 static int ctx_render_cb (CtxCbBackend *backend_cb, 
                           int x0, int y0,
                           int x1, int y1,
@@ -342,13 +352,6 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     } while (y0 < y1 && !abort);
     ctx_pop_backend (ctx);    
   }
-#if 1
-  if (flags & CTX_FLAG_CYCLE_BUF)
-  {
-    ctx_free (fb);
-    backend_cb->fb = NULL;
-  }
-#endif
   return abort;
 }
 

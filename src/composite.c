@@ -2684,8 +2684,7 @@ ctx_u8_source_over_normal_color (int components,
   while (count--)
   {
     for (int c = 0; c < components; c++)
-      //dst[c] =  ((tsrc[c] * *coverage)>>8) + (dst[c] * (((65536)-(tsrc[components-1] * *coverage)))>>16);
-      dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((255)-(((255+(tsrc[components-1] * *coverage))>>8))))))>>8);
+      dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((((255+(tsrc[components-1] * *coverage))>>8))^255 ))))>>8);
     coverage ++;
     dst+=components;
   }

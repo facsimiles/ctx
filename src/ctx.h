@@ -759,10 +759,9 @@ typedef enum CtxFlags {
   CTX_FLAG_GRAY2      = 1 << 4,
   CTX_FLAG_GRAY4      = 1 << 5,
   CTX_FLAG_DAMAGE_CONTROL = 1 << 6,
-  CTX_FLAG_CYCLE_BUF  = 1 << 7,
-  CTX_FLAG_SHOW_FPS   = 1 << 8,
-  CTX_FLAG_KEEP_DATA  = 1 << 9,
-  CTX_FLAG_INTRA_UPDATE = 1 << 10,
+  CTX_FLAG_SHOW_FPS   = 1 << 7,
+  CTX_FLAG_KEEP_DATA  = 1 << 8,
+  CTX_FLAG_INTRA_UPDATE = 1 << 9,
 } CtxFlags;
 
 
@@ -778,6 +777,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  int flags);
 void ctx_cb_set_flags (Ctx *ctx, int flags);
 int ctx_cb_get_flags  (Ctx *ctx);
+void ctx_cb_set_memory_budget (Ctx *ctx, int memory_budget);
 
 #if CTX_TFT_ESPI
 Ctx *ctx_new_tft (TFT_eSPI *tft, int memory_budget, void *scratch_fb, int flags);
