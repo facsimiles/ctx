@@ -607,18 +607,18 @@ enum _CtxPixelFormat
   CTX_FORMAT_BGRA8,  // 5
   CTX_FORMAT_RGB565, // 6
   CTX_FORMAT_RGB565_BYTESWAPPED, // 7
-  CTX_FORMAT_RGB332, // 8
+  CTX_FORMAT_RGB332, // 8 // matching flags
   CTX_FORMAT_RGBAF,  // 9
   CTX_FORMAT_GRAYF,  // 10
   CTX_FORMAT_GRAYAF, // 11
-  CTX_FORMAT_GRAY1,  //12 MONO
-  CTX_FORMAT_GRAY2,  //13 DUO
-  CTX_FORMAT_GRAY4,  //14
-  CTX_FORMAT_CMYK8,  //15
-  CTX_FORMAT_CMYKA8, //16 
-  CTX_FORMAT_CMYKAF, //17
-  CTX_FORMAT_YUV420, //18
-  CTX_FORMAT_RGBA8_SEPARATE_ALPHA, // 19
+  CTX_FORMAT_CMYKA8, //12 
+  CTX_FORMAT_CMYK8,  //13
+  CTX_FORMAT_CMYKAF, //13
+  CTX_FORMAT_GRAY1,  //15
+  CTX_FORMAT_GRAY2,  //16 // matching flags
+  CTX_FORMAT_YUV420, //17
+  CTX_FORMAT_RGBA8_SEPARATE_ALPHA, // 18
+  CTX_FORMAT_GRAY4=32, // to match flags
 };
 typedef enum   _CtxPixelFormat CtxPixelFormat;
 
@@ -752,25 +752,17 @@ int ctx_utf8_strlen (const char *s);
  */
 typedef enum CtxFlags {
   //CTX_FLAG_DEFAULTS   = 0,
-  CTX_FLAG_GRAY       = 1 << 0,
+  CTX_FLAG_GRAY8      = 1 << 0,
   CTX_FLAG_HASH_CACHE = 1 << 1,
-  CTX_FLAG_RGB332     = 1 << 2, // might do a 332 render
-                               // that is tear-free but slower
-                               // before queueing slotted redraws
-                               // of higher quality tiles
-                               // this is a pre-amble to eink modes
-                               //
-  CTX_FLAG_CYCLE_BUF  = 1 << 4, // if set then we free buffers after each
-                               // use, higher risk of memory fragmentation
-                               // but making each frame blit a memory use peak
-
-  CTX_FLAG_DAMAGE_CONTROL = 1 << 5,
-  CTX_FLAG_SHOW_FPS   = 1 << 6,
-  CTX_FLAG_AUTO_RGB332  = 1 << 7,
-  CTX_FLAG_KEEP_DATA  = 1 << 8,
-  CTX_FLAG_INTRA_UPDATE = 1 << 9,
-  CTX_FLAG_LOWRES = 1 << 10,
-  CTX_FLAG_MONO   = 1 << 11,
+  CTX_FLAG_LOWRES     = 1 << 2,
+  CTX_FLAG_RGB332     = 1 << 3,
+  CTX_FLAG_GRAY2      = 1 << 4,
+  CTX_FLAG_GRAY4      = 1 << 5,
+  CTX_FLAG_DAMAGE_CONTROL = 1 << 6,
+  CTX_FLAG_CYCLE_BUF  = 1 << 7,
+  CTX_FLAG_SHOW_FPS   = 1 << 8,
+  CTX_FLAG_KEEP_DATA  = 1 << 9,
+  CTX_FLAG_INTRA_UPDATE = 1 << 10,
 } CtxFlags;
 
 

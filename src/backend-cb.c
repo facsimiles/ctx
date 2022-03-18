@@ -37,6 +37,13 @@ int ctx_cb_get_flags (Ctx *ctx)
   return backend_cb->flags;
 }
 
+static inline uint16_t ctx_rgb332_to_rgb565 (uint8_t rgb, int byteswap)
+{
+   uint8_t red, green, blue;
+   ctx_332_unpack (rgb, &red, &green, &blue);
+   return ctx_565_pack (red, green, blue, byteswap);
+}
+
 static int ctx_render_cb (CtxCbBackend *backend_cb, 
                           int x0, int y0,
                           int x1, int y1,
@@ -61,21 +68,38 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     int scale_factor  = 1;
     int small_width   = width / scale_factor;
     int small_height  = height / scale_factor;
-    int min_scanlines = 2;
+    int min_scanlines = 3;
 
     int tbpp = bpp * 8;
     CtxPixelFormat tformat = format;
-    if (flags & CTX_FLAG_GRAY)
+    if (flags & (CTX_FLAG_GRAY2|CTX_FLAG_GRAY4|CTX_FLAG_GRAY8))
     {
-      if (flags & CTX_FLAG_MONO)
+      if   (flags & CTX_FLAG_GRAY2)
       {
         tformat = CTX_FORMAT_GRAY2;
         tbpp = 2;
       }
-      else
+      else if (flags & CTX_FLAG_GRAY4)
+      {
+        tformat = CTX_FORMAT_GRAY4;
+        tbpp = 4;
+      }
+      else if (flags & CTX_FLAG_GRAY8)
       {
         tformat = CTX_FORMAT_GRAY8;
         tbpp = 8;
+      }
+      else {
+        tformat = CTX_FORMAT_GRAY4;
+        tbpp = 4;
+      }
+    }
+    else
+    {
+      if (flags & (CTX_FLAG_RGB332))
+      {
+        tbpp = 8;
+        tformat = CTX_FORMAT_RGB332;
       }
     }
     int small_stride = (small_width * tbpp + 7) / 8;
@@ -117,7 +141,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       render_height = ctx_mini (render_height, y1-y0+1);
       int off = 0;
    
-      if (flags & CTX_FLAG_GRAY)
+      if (flags & (CTX_FLAG_GRAY2|CTX_FLAG_GRAY4|CTX_FLAG_GRAY8))
       {
         const uint8_t *gray_fb = (uint8_t*)fb;
         if (tbpp == 1)
@@ -129,10 +153,21 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             {
                int     soff = sbase + ((x)/8);
                uint8_t bits = gray_fb[soff];
-               uint16_t val = (bits & (1<<((x)&7)))?0xffff:0;
+               uint16_t val = (bits & (1<<(x&7)))?0xffff:0;
                for (int i = 0; i < scale_factor; i++)
-                 scaled[off]  = val;
+                 scaled[off++]  = val;
             }
+#if 1
+            for (int ty = 1; ty < scale_factor; ty++)
+            {
+               for (int x = 0; x < width; x++)
+               {
+                 scaled[off] = scaled[off - width];
+                 off++;
+               }
+               y++;
+            }
+#endif
           }
         }
         else if (tbpp == 2)
@@ -144,10 +179,44 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             {
                int     soff = sbase + ((x)/4);
                uint8_t bits = gray_fb[soff];
-               uint8_t g    = 85 * ((bits >> (2*((x)&3)))&3);
+               uint8_t g    = 85 * ((bits >> (2*(x&3)))&3);
                uint16_t val = ctx_565_pack (g, g, g, 1);
                for (int i = 0; i < scale_factor; i++)
                  scaled[off++]  = val;
+            }
+            for (int ty = 1; ty < scale_factor; ty++)
+            {
+               for (int x = 0; x < width; x++)
+               {
+                 scaled[off] = scaled[off - width];
+                 off++;
+               }
+               y++;
+            }
+          }
+        }
+        else if (tbpp == 4)
+        {
+          for (int y = 0; y < render_height; y++)
+          {
+            int sbase = (small_stride * ((yo+y)/scale_factor));
+            for (int x = 0; x < width/scale_factor; x++)
+            {
+               int     soff = sbase + ((x)/2);
+               uint8_t bits = gray_fb[soff];
+               uint8_t g    = 17 * ((bits >> (4*(x&1)))&15);
+               uint16_t val = ctx_565_pack (g, g, g, 1);
+               for (int i = 0; i < scale_factor; i++)
+                 scaled[off++]  = val;
+            }
+            for (int ty = 1; ty < scale_factor; ty++)
+            {
+               for (int x = 0; x < width; x++)
+               {
+                 scaled[off] = scaled[off - width];
+                 off++;
+               }
+               y++;
             }
           }
         }
@@ -163,18 +232,62 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                for (int i = 0; i < scale_factor; i++)
                  scaled[off++]  = val;
             }
+            for (int ty = 1; ty < scale_factor; ty++)
+            {
+               for (int x = 0; x < width; x++)
+               {
+                 scaled[off] = scaled[off - width];
+                 off++;
+               }
+               y++;
+            }
           }
         }
       }
       else
       {
-        for (int y = 0; y < render_height; y++)
+        if (tbpp == 8)
         {
-          for (int x = 0; x < width/scale_factor; x++)
+          uint8_t *fb_u8 = (uint8_t*)fb;
+          for (int y = 0; y < render_height; y++)
           {
-             uint16_t val = fb[small_width * ((yo+y)/scale_factor) + (x)];
-             for (int i = 0; i < scale_factor; i++)
-               scaled[off++]  = val;
+            for (int x = 0; x < width/scale_factor; x++)
+            {
+               uint16_t val = ctx_rgb332_to_rgb565 (
+                   fb_u8[small_width * ((yo+y)/scale_factor) + (x)], 1);
+               for (int i = 0; i < scale_factor; i++)
+                 scaled[off++]  = val;
+            }
+            for (int ty = 1; ty < scale_factor; ty++)
+            {
+               for (int x = 0; x < width; x++)
+               {
+                 scaled[off] = scaled[off - width];
+                 off++;
+               }
+               y++;
+            }
+          }
+        }
+        else
+        {
+          for (int y = 0; y < render_height; y++)
+          {
+            for (int x = 0; x < width/scale_factor; x++)
+            {
+               uint16_t val = fb[small_width * ((yo+y)/scale_factor) + (x)];
+               for (int i = 0; i < scale_factor; i++)
+                 scaled[off++]  = val;
+            }
+            for (int ty = 1; ty < scale_factor; ty++)
+            {
+               for (int x = 0; x < width; x++)
+               {
+                 scaled[off] = scaled[off - width];
+                 off++;
+               }
+               y++;
+            }
           }
         }
       }

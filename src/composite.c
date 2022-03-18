@@ -5722,7 +5722,7 @@ ctx_332_unpack (uint8_t pixel,
                 uint8_t *green,
                 uint8_t *blue)
 {
-  uint32_t b = (pixel & 3) <<6;
+  uint32_t b = (pixel & 3) * 85;
   uint32_t g = ( (pixel >> 2) & 7) <<5;
   uint32_t r = ( (pixel >> 5) & 7) <<5;
 
@@ -5744,7 +5744,7 @@ ctx_332_pack (uint8_t red,
 {
   uint8_t c  = (red >> 5) << 5;
   c |= (green >> 5) << 2;
-  c |= (blue >> 6);
+  c |= (blue / 85);
   return c;
 }
 #if CTX_ENABLE_RGB332
