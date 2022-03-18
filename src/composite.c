@@ -2683,9 +2683,9 @@ ctx_u8_source_over_normal_color (int components,
 
   while (count--)
   {
+    uint8_t cov = *coverage++;
     for (int c = 0; c < components; c++)
-      dst[c] =  ((((tsrc[c] * *coverage)) + (dst[c] * (((((255+(tsrc[components-1] * *coverage))>>8))^255 ))))>>8);
-    coverage ++;
+      dst[c] =  ((((tsrc[c] * cov)) + (dst[c] * (((((255+(tsrc[components-1] * cov))>>8))^255 ))))>>8);
     dst+=components;
   }
 }
@@ -5556,7 +5556,21 @@ ctx_GRAYA8_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_GRAYA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
+#if 0
   ctx_u8_source_over_normal_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
+#else
+  uint8_t tsrc[5];
+  *((uint32_t*)tsrc) = *((uint32_t*)src);
+
+  while (count--)
+  {
+    uint32_t cov = *coverage++;
+    uint32_t common =(((((255+(tsrc[1] * cov))>>8))^255 ));
+    dst[0] =  ((((tsrc[0] * cov)) + (dst[0] * common ))>>8);
+    dst[1] =  ((((tsrc[1] * cov)) + (dst[1] * common ))>>8);
+    dst+=2;
+  }
+#endif
 }
 
 static void

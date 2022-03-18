@@ -273,7 +273,7 @@
  * up compiles at penalty for the given formats.
  */
 #ifndef CTX_INLINED_NORMAL     
-#define CTX_INLINED_NORMAL      0
+#define CTX_INLINED_NORMAL      1
 #endif
 
 /*

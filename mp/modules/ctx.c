@@ -943,15 +943,13 @@ static void mp_ctx_set_pixels (Ctx *ctx, void *user_data,
                                int x_in, int y_in, int width_in, int height_in, void *buf_in,
                                int buf_size)
 {
-  mp_obj_t tup_o = mp_obj_new_tuple (5, NULL);
-  mp_obj_tuple_t *tup = MP_OBJ_TO_PTR (tup_o);
-  tup->items[0] = mp_obj_new_int (x_in);
-  tup->items[1] = mp_obj_new_int (y_in);
-  tup->items[2] = mp_obj_new_int (width_in);
-  tup->items[3] = mp_obj_new_int (height_in);
-  tup->items[4] = mp_obj_new_memoryview(BYTEARRAY_TYPECODE,
-                    buf_size, buf_in);
-  mp_call_function_1(user_data, tup_o);
+  mp_obj_t args[5] = {mp_obj_new_int (x_in),
+                      mp_obj_new_int (y_in),
+                      mp_obj_new_int (width_in),
+                      mp_obj_new_int (height_in),
+                  mp_obj_new_memoryview(BYTEARRAY_TYPECODE,
+                    buf_size, buf_in)};
+  mp_call_function_n_kw (user_data, 5, 0, args);
 }
 
 static int mp_ctx_update_fb (Ctx *ctx, void *user_data)
