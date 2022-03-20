@@ -2064,7 +2064,7 @@ ctx_rasterizer_line_to_fixed (CtxRasterizer *rasterizer, int x, int y)
   //     rasterizer->y         = y*1.0/CTX_FULL_AA;
   //     rasterizer->x         = x*1.0/CTX_SUBDIV;
   //}
-  int tx, ty;
+  int tx = 0, ty = 0;
   _ctx_user_to_device_prepped_fixed (rasterizer->state, x, y, &tx, &ty);
   tx -= rasterizer->blit_x * CTX_SUBDIV;
 

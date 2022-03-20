@@ -87,7 +87,8 @@ static inline void ctx_free (void *ptr)
 {
   return m_free(ptr);
 }
-
+#define _CTX_INTERNAL_FONT_
+#include "ctx-font-regular.h"
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
@@ -1285,6 +1286,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
         MP_CTX_INT_CONSTANT(FLAG,SHOW_FPS),
         MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
         MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
+        MP_CTX_INT_CONSTANT(FLAG,REDUCED),
 
 	MP_CTX_INT_CONSTANT(FILL_RULE,WINDING),
 	MP_CTX_INT_CONSTANT(FILL_RULE,EVEN_ODD),
@@ -1382,4 +1384,4 @@ const mp_obj_module_t mp_module_ctx = {
 
 /* This is a special macro that will make MicroPython aware of this module */
 /* clang-format off */
-MP_REGISTER_MODULE(MP_QSTR_module_ctx, mp_module_ctx, MODULE_CTX_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR_module_ctx, mp_module_ctx, 1);//MODULE_CTX_ENABLED);

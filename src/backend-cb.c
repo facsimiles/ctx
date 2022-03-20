@@ -78,7 +78,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     int scale_factor  = 1;
     int small_width   = width / scale_factor;
     int small_height  = height / scale_factor;
-    int min_scanlines = 3;
+    int min_scanlines = 4;
 
     int tbpp = bpp * 8;
     CtxPixelFormat tformat = format;
@@ -496,19 +496,21 @@ ctx_cb_end_frame (Ctx *ctx)
               int tile_no = 0;
               active_mask |= (1<<tile_no);
             }
-            cb_backend->flags &= ~CTX_FLAG_LOWRES;
+            if ((cb_backend->flags & CTX_FLAG_REDUCED) == 0)
+              cb_backend->flags &= ~CTX_FLAG_LOWRES;
             in_low_res = 0;
-          }
-          else if (dirty_tiles)
-          {
-             int memory = (cb_backend->max_col-cb_backend->min_col+1)*
+        }
+        else if (dirty_tiles)
+        {
+            int memory = (cb_backend->max_col-cb_backend->min_col+1)*
                           (cb_backend->max_row-cb_backend->min_row+1)*tile_dim;
-             if (memory < cb_backend->memory_budget)
-             {
-               in_low_res = 0;
-               cb_backend->flags &= ~CTX_FLAG_LOWRES;
-             }
-          }
+            if (memory < cb_backend->memory_budget && 0)
+            {
+              in_low_res = 0;
+              if ((cb_backend->flags & CTX_FLAG_REDUCED) == 0)
+                cb_backend->flags &= ~CTX_FLAG_LOWRES;
+            }
+        }
       }
       ctx_pop_backend (ctx);
       if (dirty_tiles)
@@ -530,7 +532,7 @@ ctx_cb_end_frame (Ctx *ctx)
          //int height = y1 - y0 + 1;
          int abort = 0;
 
-         if (in_low_res || dirty_tiles <= 3)
+         if (in_low_res)
          {
              abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
              for (int row = cb_backend->min_row; row <= cb_backend->max_row; row++)
@@ -572,9 +574,10 @@ ctx_cb_end_frame (Ctx *ctx)
                     int y1 = (row+1) * (ctx_height (ctx)/CTX_HASH_ROWS);
 
 
+#if 0
                     int cont = 1;
                     /* merge horizontal adjecant dirty tiles */
-                    if(0)do {
+                    if (used_tiles < max_tiles) do {
                       uint32_t next_new_hash = hashes[tile_no+used_tiles];
                       if ((next_new_hash && next_new_hash != cb_backend->hashes[tile_no+used_tiles]) ||
                         cb_backend->res[tile_no+used_tiles])
@@ -588,6 +591,7 @@ ctx_cb_end_frame (Ctx *ctx)
                         cont = 0;
                       }
                     } while (used_tiles < max_tiles && cont && col + used_tiles< CTX_HASH_COLS);
+#endif
 
 
                     abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
