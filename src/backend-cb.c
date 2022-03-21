@@ -22,7 +22,7 @@ typedef struct CtxCbBackend
   uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS]; // when non-0 we have non-full res rendered
 
   int     memory_budget;
-  CtxRasterizer rasterizer;
+  CtxHasher     rasterizer;
 } CtxCbBackend;
 
 void ctx_cb_set_flags (Ctx *ctx, int flags)
@@ -78,7 +78,6 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     int scale_factor  = 1;
     int small_width   = width / scale_factor;
     int small_height  = height / scale_factor;
-    int min_scanlines = 4;
 
     int tbpp = bpp * 8;
     CtxPixelFormat tformat = format;
@@ -113,13 +112,14 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       }
     }
     int small_stride = (small_width * tbpp + 7) / 8;
+    int min_scanlines = 4;
 
     while (memory_budget - (small_height * small_stride) < width * bpp * min_scanlines)
     {
       scale_factor ++;
       small_width   = width / scale_factor;
       small_height  = height / scale_factor;
-      min_scanlines = scale_factor * 2;
+      min_scanlines = scale_factor;
       small_stride  = (small_width * tbpp + 7) / 8;
     }
 
