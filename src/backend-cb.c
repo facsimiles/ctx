@@ -611,7 +611,6 @@ ctx_cb_end_frame (Ctx *ctx)
                }
            }
              }
-      ctx_free (hashes);
            }
       cb_backend->flags = old_flags;
   }

@@ -605,7 +605,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   hasher->drawlist = drawlist;
   hasher->prev_command = -1;
 
-  hasher->hashes = (uint32_t*)ctx_calloc (4, rows * cols);
+  memset(hasher->hashes,0, sizeof (hasher->hashes));
   murmur3_32_init (&hasher->murmur_fill[hasher->source_level]);
   murmur3_32_init (&hasher->murmur_stroke[hasher->source_level]);
 

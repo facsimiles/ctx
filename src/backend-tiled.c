@@ -76,7 +76,6 @@ static void ctx_tiled_end_frame (Ctx *ctx)
         }
       }
 
-      ctx_free (((CtxHasher*)(hasher->backend))->hashes);
       ctx_destroy (hasher);
     }
     else

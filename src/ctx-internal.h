@@ -816,7 +816,7 @@ struct _CtxHasher
   CtxRasterizer rasterizer;
   int           cols;
   int           rows;
-  uint32_t     *hashes;
+  uint32_t      hashes[CTX_HASH_COLS*CTX_HASH_ROWS];
   CtxMurmur     murmur_fill[CTX_MAX_STATES]; 
   CtxMurmur     murmur_stroke[CTX_MAX_STATES];
   int           source_level;
