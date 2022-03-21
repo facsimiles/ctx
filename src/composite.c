@@ -5823,6 +5823,7 @@ ctx_RGBA8_to_RGB332 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
 static void
 ctx_composite_RGB332 (CTX_COMPOSITE_ARGUMENTS)
 {
+#if 0
   if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color))
   {
     uint32_t si_ga = ((uint32_t*)rasterizer->color)[1];
@@ -5860,6 +5861,7 @@ ctx_composite_RGB332 (CTX_COMPOSITE_ARGUMENTS)
     }
     return;
   }
+#endif
   uint8_t pixels[count * 4];
   ctx_RGB332_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
   rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
