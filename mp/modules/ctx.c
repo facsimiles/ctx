@@ -89,6 +89,7 @@ static inline void ctx_free (void *ptr)
 }
 #define _CTX_INTERNAL_FONT_
 #include "ctx-font-regular.h"
+#include "ctx-font-mono.h"
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
@@ -1283,7 +1284,6 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
         MP_CTX_INT_CONSTANT(FLAG,RGB332),
         MP_CTX_INT_CONSTANT(FLAG,HASH_CACHE),
         MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
-        MP_CTX_INT_CONSTANT(FLAG,SHOW_FPS),
         MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
         MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
         MP_CTX_INT_CONSTANT(FLAG,REDUCED),

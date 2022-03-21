@@ -389,6 +389,8 @@ ctx_cb_end_frame (Ctx *ctx)
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   static int64_t prev_time = 0;
   int64_t cur_time = ctx_ticks () / 1000;
+  if (cb_backend->flags & (CTX_FLAG_GRAY2|CTX_FLAG_GRAY4|CTX_FLAG_GRAY8|CTX_FLAG_RGB332))
+      cb_backend->flags|=CTX_FLAG_LOWRES;
 
   if (cb_backend->flags & CTX_FLAG_SHOW_FPS)
   {
@@ -557,15 +559,17 @@ ctx_cb_end_frame (Ctx *ctx)
            int max_tiles = (cb_backend->memory_budget / tile_dim);
 
            for (int row = 0; row < CTX_HASH_ROWS; row++)
-             for (int col = 0; col < CTX_HASH_COLS; col++, tile_no++)
+           {
+             for (int col = 0; col < CTX_HASH_COLS; col++)
                if (!abort)
              {
+               tile_no = row * CTX_HASH_COLS + col;
                uint32_t new_hash = hashes[tile_no];
                int used_tiles = 1;
                active_mask = 0;
                active_mask = 1<<tile_no;
 
-               if ((new_hash && new_hash != cb_backend->hashes[tile_no]) ||
+               if ((new_hash != cb_backend->hashes[tile_no]) ||
                    cb_backend->res[tile_no])
                {
                     int x0 = col * (ctx_width (ctx)/CTX_HASH_COLS);
@@ -573,13 +577,12 @@ ctx_cb_end_frame (Ctx *ctx)
                     int y0 = row * (ctx_height (ctx)/CTX_HASH_ROWS);
                     int y1 = (row+1) * (ctx_height (ctx)/CTX_HASH_ROWS);
 
-
 #if 0
                     int cont = 1;
                     /* merge horizontal adjecant dirty tiles */
-                    if (used_tiles < max_tiles) do {
+                    if (used_tiles < max_tiles && col + 1 < CTX_HASH_COLS) do {
                       uint32_t next_new_hash = hashes[tile_no+used_tiles];
-                      if ((next_new_hash && next_new_hash != cb_backend->hashes[tile_no+used_tiles]) ||
+                      if ((next_new_hash != cb_backend->hashes[tile_no+used_tiles]) ||
                         cb_backend->res[tile_no+used_tiles])
                       {
                         active_mask |= (1 << (tile_no+used_tiles));
@@ -590,7 +593,7 @@ ctx_cb_end_frame (Ctx *ctx)
                       {
                         cont = 0;
                       }
-                    } while (used_tiles < max_tiles && cont && col + used_tiles< CTX_HASH_COLS);
+                    } while (used_tiles < max_tiles && cont && col + used_tiles < CTX_HASH_COLS);
 #endif
 
 
@@ -603,10 +606,10 @@ ctx_cb_end_frame (Ctx *ctx)
                         cb_backend->hashes[tile_no + i] = hashes[tile_no+i];
                       }
                     }
-                    tile_no += used_tiles-1;
                     col += used_tiles - 1;
                   }
                }
+           }
              }
       ctx_free (hashes);
            }

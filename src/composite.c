@@ -5145,7 +5145,7 @@ ctx_GRAYA8_to_GRAY2 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
   while (count--)
     {
       int val = rgba[0];
-      val >>= 6;
+      val = ctx_sadd8 (val, 40) >> 6;
       *pixel = (*pixel & (~ (3 << ( (x&3) <<1) ) ))
                       | ( (val << ( (x&3) <<1) ) );
       if ( (x&3) ==3)
@@ -5736,10 +5736,10 @@ ctx_332_unpack (uint8_t pixel,
                 uint8_t *blue)
 {
   uint32_t b = (pixel & 3) * 85;
-  uint32_t g = ( (pixel >> 2) & 7) <<5;
-  uint32_t r = ( (pixel >> 5) & 7) <<5;
+  uint32_t g = (((pixel >> 2) & 7)*255)/7;
+  uint32_t r = (((pixel >> 5) & 7)*255)/7;
 
-#if 1
+#if 0
   *blue  = (b > 224) * 255 + (b <= 224) * b;
   *green = (g > 224) * 255 + (g <= 224) * g;
   *red   = (r > 224) * 255 + (r <= 224) * r;
@@ -5755,6 +5755,9 @@ ctx_332_pack (uint8_t red,
               uint8_t green,
               uint8_t blue)
 {
+  red = ctx_sadd8 (red, 15);
+  green = ctx_sadd8 (green, 15);
+  blue = ctx_sadd8 (blue, 40);
   uint8_t c  = (red >> 5) << 5;
   c |= (green >> 5) << 2;
   c |= (blue / 85);
@@ -5865,11 +5868,20 @@ ctx_composite_RGB332 (CTX_COMPOSITE_ARGUMENTS)
 
 #endif
 static inline uint16_t
-ctx_565_pack (const uint8_t  red,
-              const uint8_t  green,
-              const uint8_t  blue,
+ctx_565_pack (uint8_t  red,
+              uint8_t  green,
+              uint8_t  blue,
               const int      byteswap)
 {
+#if 0
+  // is this extra precision warranted?
+  // for 332 it gives more pure white..
+  // it might be the case also for generic 565
+  red = ctx_sadd8 (red, 4);
+  green = ctx_sadd8 (green, 3);
+  blue = ctx_sadd8 (blue, 4);
+#endif
+
   uint32_t c = (red >> 3) << 11;
   c |= (green >> 2) << 5;
   c |= blue >> 3;
