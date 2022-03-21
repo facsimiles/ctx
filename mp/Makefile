@@ -9,7 +9,7 @@ include $(TOP)/py/py.mk
 CC = emcc
 LD = emcc
 
-INC += -I. -I..
+INC += -I. -I.. -I../fonts
 INC += -I$(TOP)
 INC += -I$(BUILD)
 

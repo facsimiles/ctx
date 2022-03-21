@@ -1253,29 +1253,6 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         MP_CTX_ATTR(miter_limit),
         MP_CTX_ATTR(global_alpha),
         MP_CTX_ATTR(font_size),
-};
-static MP_DEFINE_CONST_DICT(mp_ctx_locals_dict, mp_ctx_locals_dict_table);
-
-const mp_obj_type_t mp_ctx_type = {
-	.base        = { &mp_type_type },
-	.name        = MP_QSTR_Ctx,
-	.make_new    = mp_ctx_make_new,
-	.locals_dict = (mp_obj_t)&mp_ctx_locals_dict,
-        .attr        = mp_ctx_attr
-};
-
-/* The globals table for this module */
-static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
-	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ctx_module) },
-	{ MP_ROM_QSTR(MP_QSTR_Ctx), MP_ROM_PTR(&mp_ctx_type) },
-	{ MP_ROM_QSTR(MP_QSTR_CtxEvent), MP_ROM_PTR(&mp_ctx_event_type) },
-  	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
-  	{ MP_ROM_QSTR(MP_QSTR_new_for_cb), MP_ROM_PTR(&mp_ctx_new_for_cb_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
-#ifdef EMSCRIPTEN
-	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) },
-#endif
 
 
         MP_CTX_INT_CONSTANT(FLAG,LOWRES),
@@ -1375,6 +1352,58 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	MP_CTX_INT_CONSTANT_UNPREFIXED(MESSAGE),
 	MP_CTX_INT_CONSTANT_UNPREFIXED(DROP),
 	MP_CTX_INT_CONSTANT_UNPREFIXED(SET_CURSOR),
+
+};
+static MP_DEFINE_CONST_DICT(mp_ctx_locals_dict, mp_ctx_locals_dict_table);
+
+const mp_obj_type_t mp_ctx_type = {
+	.base        = { &mp_type_type },
+	.name        = MP_QSTR_Ctx,
+	.make_new    = mp_ctx_make_new,
+	.locals_dict = (mp_obj_t)&mp_ctx_locals_dict,
+        .attr        = mp_ctx_attr
+};
+
+/* The globals table for this module */
+static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
+	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ctx_module) },
+	{ MP_ROM_QSTR(MP_QSTR_Ctx), MP_ROM_PTR(&mp_ctx_type) },
+	{ MP_ROM_QSTR(MP_QSTR_CtxEvent), MP_ROM_PTR(&mp_ctx_event_type) },
+  	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
+  	{ MP_ROM_QSTR(MP_QSTR_new_for_cb), MP_ROM_PTR(&mp_ctx_new_for_cb_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
+#ifdef EMSCRIPTEN
+	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) },
+#endif
+
+	MP_CTX_INT_CONSTANT(FORMAT,GRAY8),
+	MP_CTX_INT_CONSTANT(FORMAT,GRAYA8),
+	MP_CTX_INT_CONSTANT(FORMAT,RGB8),
+	MP_CTX_INT_CONSTANT(FORMAT,RGBA8),
+	MP_CTX_INT_CONSTANT(FORMAT,BGRA8),
+	MP_CTX_INT_CONSTANT(FORMAT,RGB565),
+	MP_CTX_INT_CONSTANT(FORMAT,RGB565_BYTESWAPPED),
+	MP_CTX_INT_CONSTANT(FORMAT,RGB332),
+	//MP_CTX_INT_CONSTANT(FORMAT,RGBAF),
+	//MP_CTX_INT_CONSTANT(FORMAT,GRAYF),
+	//MP_CTX_INT_CONSTANT(FORMAT,GRAYAF),
+	MP_CTX_INT_CONSTANT(FORMAT,GRAY1),
+	MP_CTX_INT_CONSTANT(FORMAT,GRAY2),
+	MP_CTX_INT_CONSTANT(FORMAT,GRAY4),
+	MP_CTX_INT_CONSTANT(FORMAT,YUV420),
+        
+        MP_CTX_INT_CONSTANT(FLAG,LOWRES),
+        MP_CTX_INT_CONSTANT(FLAG,GRAY2),
+        MP_CTX_INT_CONSTANT(FLAG,GRAY4),
+        MP_CTX_INT_CONSTANT(FLAG,GRAY8),
+        MP_CTX_INT_CONSTANT(FLAG,RGB332),
+        MP_CTX_INT_CONSTANT(FLAG,HASH_CACHE),
+        MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
+        MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
+        MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
+        MP_CTX_INT_CONSTANT(FLAG,REDUCED),
+
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_module_globals, mp_ctx_module_globals_table);
 
