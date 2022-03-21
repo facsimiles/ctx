@@ -5842,7 +5842,7 @@ static void cmd_up (CtxEvent *event, void *data1, void *data2)
     {
       mrg->cursor_pos = 0;
       mrg_queue_draw (mrg, NULL);
-      ctx_key_press (event->ctx, 0, "up-nudge", 0);
+      ctx_key_press (event->ctx, 0, "up-nudge", 0, 0);
       return; // without stop propagate this should permit things registered earlier to fire
     }
   }
