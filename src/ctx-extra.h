@@ -222,6 +222,7 @@ ctx_expf (float x)
 #endif
 static inline float ctx_fabsf (float x)           { return fabsf (x); }
 static inline float ctx_floorf (float x)          { return floorf (x); }
+static inline float ctx_asinf (float x)            { return asinf (x); }
 static inline float ctx_sinf (float x)            { return sinf (x); }
 static inline float ctx_atan2f (float y, float x) { return atan2f (y, x); }
 static inline float ctx_hypotf (float a, float b) { return hypotf (a, b); }
@@ -230,6 +231,11 @@ static inline float ctx_cosf (float a)            { return cosf (a); }
 static inline float ctx_tanf (float a)            { return tanf (a); }
 static inline float ctx_expf (float p)            { return expf (p); }
 static inline float ctx_sqrtf (float a)           { return sqrtf (a); }
+
+static inline float ctx_hypotf_fast (float a, float b)
+{
+  return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
+}
 #endif
 
 static inline float _ctx_parse_float (const char *str, char **endptr)

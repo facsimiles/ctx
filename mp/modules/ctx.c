@@ -57,6 +57,7 @@
 #define CTX_MAX_STATES             5
 #define CTX_MAX_EDGES            127
 #define CTX_MAX_PENDING           64
+#define CTX_MATH 0
 
 
 /* we keep the ctx implementation here, this compilation taget changes less
