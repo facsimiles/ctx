@@ -5,6 +5,11 @@ typedef struct CtxCbBackend
   CtxBackend     backend;
   CtxPixelFormat format;
   int            flags;
+  int     memory_budget;
+  int     min_col; // hasher cols and rows
+  int     min_row; // hasher cols and rows
+  int     max_col; // hasher cols and rows
+  int     max_row; // hasher cols and rows
   uint16_t      *fb;
   Ctx           *ctx;
 
@@ -14,14 +19,9 @@ typedef struct CtxCbBackend
   int  (*update_fb) (Ctx *ctx, void *user_data);
   void   *update_fb_user_data;
 
-  int     min_col; // hasher cols and rows
-  int     min_row; // hasher cols and rows
-  int     max_col; // hasher cols and rows
-  int     max_row; // hasher cols and rows
   uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
   uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS]; // when non-0 we have non-full res rendered
 
-  int     memory_budget;
   CtxHasher     rasterizer;
 } CtxCbBackend;
 
