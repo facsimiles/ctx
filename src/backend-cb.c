@@ -520,7 +520,7 @@ ctx_cb_end_frame (Ctx *ctx)
          int x0 = cb_backend->min_col     * (ctx_width (ctx)/CTX_HASH_COLS);
          int y0 = cb_backend->min_row     * (ctx_height (ctx)/CTX_HASH_ROWS);
          int x1 = (cb_backend->max_col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
-         int y1 = (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS);
+         int y1 = (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
          if (cb_backend->flags & CTX_FLAG_DAMAGE_CONTROL)
          {
            ctx_save (ctx);
@@ -573,9 +573,9 @@ ctx_cb_end_frame (Ctx *ctx)
                    cb_backend->res[tile_no])
                {
                     int x0 = col * (ctx_width (ctx)/CTX_HASH_COLS);
-                    int x1 = (col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
                     int y0 = row * (ctx_height (ctx)/CTX_HASH_ROWS);
-                    int y1 = (row+1) * (ctx_height (ctx)/CTX_HASH_ROWS);
+                    int x1 = (col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
+                    int y1 = (row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
 
 #if 0
                     int cont = 1;
