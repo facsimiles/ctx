@@ -73,7 +73,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);
   fb = backend_cb->fb;
 
-  if (flags & CTX_FLAG_LOWRES)
+  if (flags & CTX_FLAG_LOWFI)
   {
     int scale_factor  = 1;
     int small_width   = width / scale_factor;
@@ -390,7 +390,7 @@ ctx_cb_end_frame (Ctx *ctx)
   static int64_t prev_time = 0;
   int64_t cur_time = ctx_ticks () / 1000;
   if (cb_backend->flags & (CTX_FLAG_GRAY2|CTX_FLAG_GRAY4|CTX_FLAG_GRAY8|CTX_FLAG_RGB332))
-      cb_backend->flags|=CTX_FLAG_LOWRES;
+      cb_backend->flags|=CTX_FLAG_LOWFI;
 
   if (cb_backend->flags & CTX_FLAG_SHOW_FPS)
   {
@@ -467,7 +467,7 @@ ctx_cb_end_frame (Ctx *ctx)
 
       int in_low_res = 0;
       int old_flags = cb_backend->flags;
-      if (cb_backend->flags & CTX_FLAG_LOWRES)
+      if (cb_backend->flags & CTX_FLAG_LOWFI)
       {
         in_low_res = 1; // default to assume we're in low res
         if (dirty_tiles == 0 && low_res_tiles !=0) // no dirty and got low_res_tiles
@@ -498,8 +498,8 @@ ctx_cb_end_frame (Ctx *ctx)
               int tile_no = 0;
               active_mask |= (1<<tile_no);
             }
-            if ((cb_backend->flags & CTX_FLAG_REDUCED) == 0)
-              cb_backend->flags &= ~CTX_FLAG_LOWRES;
+            if ((cb_backend->flags & CTX_FLAG_STAY_LOW) == 0)
+              cb_backend->flags &= ~CTX_FLAG_LOWFI;
             in_low_res = 0;
         }
         else if (dirty_tiles)
@@ -509,8 +509,8 @@ ctx_cb_end_frame (Ctx *ctx)
             if (memory < cb_backend->memory_budget && 0)
             {
               in_low_res = 0;
-              if ((cb_backend->flags & CTX_FLAG_REDUCED) == 0)
-                cb_backend->flags &= ~CTX_FLAG_LOWRES;
+              if ((cb_backend->flags & CTX_FLAG_STAY_LOW) == 0)
+                cb_backend->flags &= ~CTX_FLAG_LOWFI;
             }
         }
       }

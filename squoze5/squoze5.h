@@ -407,6 +407,8 @@ static int squoze_interned_find (uint64_t hash)
 #endif
 }
 
+#define strdup ctx_strdup
+
 static inline uint64_t squoze (int squoze_dim, const char *utf8)
 {
   uint64_t hash = _squoze (squoze_dim, utf8);

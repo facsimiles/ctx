@@ -38,9 +38,8 @@
       and user interfaces and a related software and protocol stack.</p>
 
       <p> The <a href='rasterizer/'>ctx rasterizer</a> is
-      high quality and fast, With color managed compositing
-      directly to RGBA8, GRAYA8, GRAYAF, RGBAF and CMYKAF
-      pixel formats.
+      fast, portable and compact. With compositing directly to RGBA8, GRAYA8,
+      GRAYAF, RGBAF and CMYKAF pixel formats.
       For <a href='mcu/'>microcontrollers</a> rendering to lower bitdepth
       RGB332, RGB565 variants as well as 1,2 and 4 bit per pixel grayscale is
       handled. Combined with floating point pixel encoding support and color
@@ -48,7 +47,7 @@
       href='https://www.gimp.org.'>GIMP</a>s needs.</p>
 
       <p>Applications can be written using only the rasterzier or also using
-      higher level abastracitons handling framebuffer creation, event handling
+      higher level abstractions handling framebuffer creation, event handling
       and multithreaded rendering.
       The same API can also be used for writing applications that run inside
       the <a href='terminal/'>ctx terminal</a>, which provides escape sequences
@@ -65,12 +64,11 @@
       <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
 
       <p>The ctx renderer is written in portable C, without
-      inline assembly or SIMD intrinsics - but is still fast (and can make good
-      use of SIMD instructions known by the C compiler.
-      The single threaded rendering performance for 8bit RGBA
-      is comparable with and for most cases quite a bit
-      <a href='performance/'>faster than the rendering engines in Qt/cairo</a>
-      that are using explicit SIMD like SSE2/AVX/Neon for compositing. 
+      inline assembly or SIMD intrinsics - but is still fast (and can
+      make good use of cpu capabilities known by the C compiler.  The single
+      threaded rendering performance
+      <a href='performance/'>rendering performance</a> is often better
+      than engines with more dedicated/manual SIMD handling.
       </p>
 
 

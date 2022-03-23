@@ -31,6 +31,10 @@
 #define CTX_STATIC_OPAQUE       1
 #define CTX_MAX_SCANLINE_LENGTH 512
 #define CTX_1BIT_CLIP           1
+
+#define CTX_MAX_DASHES          10
+#define CTX_MAX_GRADIENT_STOPS  10
+
 #define CTX_CM                  0
 #define CTX_SHAPE_CACHE         0
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 42
@@ -1260,7 +1264,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         MP_CTX_ATTR(font_size),
 
 
-        MP_CTX_INT_CONSTANT(FLAG,LOWRES),
+        MP_CTX_INT_CONSTANT(FLAG,LOWFI),
         MP_CTX_INT_CONSTANT(FLAG,GRAY2),
         MP_CTX_INT_CONSTANT(FLAG,GRAY4),
         MP_CTX_INT_CONSTANT(FLAG,GRAY8),
@@ -1269,7 +1273,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
         MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
         MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
-        MP_CTX_INT_CONSTANT(FLAG,REDUCED),
+        MP_CTX_INT_CONSTANT(FLAG,STAY_LOW),
 
 	MP_CTX_INT_CONSTANT(FILL_RULE,WINDING),
 	MP_CTX_INT_CONSTANT(FILL_RULE,EVEN_ODD),
@@ -1398,7 +1402,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	MP_CTX_INT_CONSTANT(FORMAT,GRAY4),
 	MP_CTX_INT_CONSTANT(FORMAT,YUV420),
         
-        MP_CTX_INT_CONSTANT(FLAG,LOWRES),
+        MP_CTX_INT_CONSTANT(FLAG,LOWFI),
         MP_CTX_INT_CONSTANT(FLAG,GRAY2),
         MP_CTX_INT_CONSTANT(FLAG,GRAY4),
         MP_CTX_INT_CONSTANT(FLAG,GRAY8),
@@ -1407,7 +1411,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
         MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
         MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
         MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
-        MP_CTX_INT_CONSTANT(FLAG,REDUCED),
+        MP_CTX_INT_CONSTANT(FLAG,STAY_LOW),
 
 };
 static MP_DEFINE_CONST_DICT(mp_ctx_module_globals, mp_ctx_module_globals_table);

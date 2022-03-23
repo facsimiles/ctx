@@ -754,7 +754,7 @@ typedef enum CtxFlags {
   //CTX_FLAG_DEFAULTS   = 0,
   CTX_FLAG_GRAY8      = 1 << 0,
   CTX_FLAG_HASH_CACHE = 1 << 1,
-  CTX_FLAG_LOWRES     = 1 << 2,
+  CTX_FLAG_LOWFI      = 1 << 2,
   CTX_FLAG_RGB332     = 1 << 3, // values match
   CTX_FLAG_GRAY2      = 1 << 4, // other RGB332,GRAY2 and GRAY4
   CTX_FLAG_GRAY4      = 1 << 5, // and gray4 defs
@@ -762,7 +762,7 @@ typedef enum CtxFlags {
   CTX_FLAG_SHOW_FPS   = 1 << 7,
   CTX_FLAG_KEEP_DATA  = 1 << 8,
   CTX_FLAG_INTRA_UPDATE = 1 << 9,
-  CTX_FLAG_REDUCED      = 1 << 10,
+  CTX_FLAG_STAY_LOW     = 1 << 10,
 } CtxFlags;
 
 
