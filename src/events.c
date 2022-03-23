@@ -111,8 +111,10 @@ void ctx_list_backends(void)
 #if CTX_FB
     fprintf (stderr, " fb");
 #endif
+#if CTX_TERMINAL_EVENTS
     fprintf (stderr, " term");
     fprintf (stderr, " termimg");
+#endif
     fprintf (stderr, "\n");
 }
 
@@ -205,6 +207,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
       _ctx_enable_hash_cache = 0;
   }
 
+#if CTX_THREADS
   if (getenv ("CTX_THREADS"))
   {
     int val = atoi (getenv ("CTX_THREADS"));
@@ -218,7 +221,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #endif
   }
   
-#if CTX_THREADS
   mtx_init (&_ctx_texture_mtx, mtx_plain);
 #endif
 
@@ -255,12 +257,14 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   }
 #endif
 
+#if CTX_TERMINAL_EVENTS
 #if CTX_HEADLESS
   if (!ret)
     {
       if (backend && !ctx_strcmp (backend, "headless"))
         ret = ctx_new_headless (width, height);
     }
+#endif
 #endif
 
 #if CTX_SDL
@@ -288,6 +292,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     }
 #endif
 
+#if CTX_TERMINAL_EVENTS
 #if CTX_RASTERIZER
   // braille in terminal
   if (!ret)
@@ -300,6 +305,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     if ((backend==NULL) || (!ctx_strcmp (backend, "termimg")))
     ret = ctx_new_termimg (width, height);
   }
+#endif
 #endif
   if (!ret)
   {

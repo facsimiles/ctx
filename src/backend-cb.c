@@ -129,7 +129,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     uint16_t *scaled = (uint16_t*)&gray_fb[small_height*small_stride];
 
     memset(fb, 0, small_stride * small_height);
-    CtxRasterizer *r = ctx_rasterizer_init (&backend_cb->rasterizer,
+    CtxRasterizer *r = ctx_rasterizer_init ((CtxRasterizer*)&backend_cb->rasterizer,
                 ctx, NULL, &ctx->state, fb, 0, 0, small_width, small_height,
                 small_stride, tformat, CTX_ANTIALIAS_DEFAULT);
     ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
@@ -319,7 +319,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     {
        render_height = memory_budget / width / bpp;
     }
-    CtxRasterizer *r = ctx_rasterizer_init(&backend_cb->rasterizer,
+    CtxRasterizer *r = ctx_rasterizer_init((CtxRasterizer*)&backend_cb->rasterizer,
                          ctx, NULL, &ctx->state, fb, 0, 0, width, height,
                          width * bpp, format, CTX_ANTIALIAS_DEFAULT);
     ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
@@ -426,7 +426,7 @@ ctx_cb_end_frame (Ctx *ctx)
     int tile_dim          = (ctx_width (ctx)/CTX_HASH_COLS) *
                             (ctx_height (ctx)/CTX_HASH_ROWS) * bpp;
 
-    CtxRasterizer *rasterizer = &cb_backend->rasterizer;
+    CtxRasterizer *rasterizer = (CtxRasterizer*)&cb_backend->rasterizer;
     ctx_hasher_init (rasterizer, ctx, state, ctx_width(ctx), ctx_height(ctx), CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
     ((CtxBackend*)rasterizer)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
 
@@ -556,7 +556,6 @@ ctx_cb_end_frame (Ctx *ctx)
          else // full res
          {
            tile_no = 0;
-           int max_tiles = (cb_backend->memory_budget / tile_dim);
 
            for (int row = 0; row < CTX_HASH_ROWS; row++)
            {
@@ -578,6 +577,7 @@ ctx_cb_end_frame (Ctx *ctx)
                     int y1 = (row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
 
 #if 0
+             int max_tiles = (cb_backend->memory_budget / tile_dim);
                     int cont = 1;
                     /* merge horizontal adjecant dirty tiles */
                     if (used_tiles < max_tiles && col + 1 < CTX_HASH_COLS) do {
