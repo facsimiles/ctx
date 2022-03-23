@@ -25,8 +25,9 @@
 #define CTX_RENDERSTREAM_STATIC 0
 #define CTX_GRADIENT_CACHE      1
 #define CTX_ENABLE_CLIP         1
-#define CTX_MIN_JOURNAL_SIZE       1024
-#define CTX_MIN_EDGE_LIST_SIZE     1024
+#define CTX_MIN_JOURNAL_SIZE       256
+#define CTX_MIN_EDGE_LIST_SIZE     512   // is also max and limits complexity
+                                         // of paths that can be filled
 #define CTX_1BIT_CLIP           1
 #define CTX_CM                  0
 #define CTX_SHAPE_CACHE         0
@@ -95,7 +96,9 @@ static inline void ctx_free (void *ptr)
 #include "ctx.h"
 
 #ifdef EMSCRIPTEN
+#ifdef EPICARDIUM
 #include "epicardium.h"
+#endif
 #endif
 
 typedef struct _mp_ctx_event_obj_t mp_ctx_event_obj_t;
@@ -1414,4 +1417,4 @@ const mp_obj_module_t mp_module_ctx = {
 
 /* This is a special macro that will make MicroPython aware of this module */
 /* clang-format off */
-MP_REGISTER_MODULE(MP_QSTR_module_ctx, mp_module_ctx, 1);//MODULE_CTX_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR_ctx, mp_module_ctx, 1);
