@@ -650,6 +650,9 @@
 #define CTX_PARSER_MAX_ARGS 20
 #endif
 
+#ifndef CTX_MAX_DASHES
+#define CTX_MAX_DASHES CTX_PARSER_MAX_ARGS
+#endif
 
 #ifndef CTX_SCREENSHOT
 #define CTX_SCREENSHOT 0
@@ -744,6 +747,9 @@
 #define CTX_COMPOSITE 0
 #endif
 
+#ifndef CTX_MAX_GRADIENT_STOPS
+#define CTX_MAX_GRADIENT_STOPS 16
+#endif
 
 #ifndef CTX_BRANCH_HINTS
 #define CTX_BRANCH_HINTS  1

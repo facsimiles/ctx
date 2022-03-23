@@ -20,9 +20,9 @@ typedef struct CtxCbBackend
   void   *update_fb_user_data;
 
   uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
-  uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS]; // when non-0 we have non-full res rendered
 
   CtxHasher     rasterizer;
+  uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS]; // when non-0 we have non-full res rendered
 } CtxCbBackend;
 
 void ctx_cb_set_flags (Ctx *ctx, int flags)

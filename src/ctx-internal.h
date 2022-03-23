@@ -146,10 +146,11 @@ struct _CtxBuffer
 //void _ctx_user_to_device          (CtxState *state, float *x, float *y);
 //void _ctx_user_to_device_distance (CtxState *state, float *x, float *y);
 
+
 typedef struct _CtxGradient CtxGradient;
 struct _CtxGradient
 {
-  CtxGradientStop stops[16];
+  CtxGradientStop stops[CTX_MAX_GRADIENT_STOPS];
   int n_stops;
 };
 
@@ -263,11 +264,11 @@ struct _CtxGState
   CtxBlend                  blend_mode; // non-vectorization
   CtxExtend                 extend;
 
-  float dashes[CTX_PARSER_MAX_ARGS]; // XXX moving dashes 
-                                     //  to state storage,. will
-                                     //  allow it to be larger,
-                                     //  free up memory, and
-                                     //  make save/restore faster
+  float dashes[CTX_MAX_DASHES]; // XXX moving dashes 
+                                //  to state storage,. will
+                                //  allow it to be larger,
+                                //  free up memory, and
+                                //  make save/restore faster
 };
 
 typedef enum
@@ -461,10 +462,6 @@ struct _CtxEvents
   CtxList        *grabs; /* could split the grabs per device in the same way,
                             to make dispatch overhead smaller,. probably
                             not much to win though. */
-  CtxItem         *prev[CTX_MAX_DEVICES];
-  float            pointer_x[CTX_MAX_DEVICES];
-  float            pointer_y[CTX_MAX_DEVICES];
-  unsigned char    pointer_down[CTX_MAX_DEVICES];
   CtxEvent         drag_event[CTX_MAX_DEVICES];
   CtxList         *idles;
   CtxList         *idles_to_remove;
@@ -472,12 +469,16 @@ struct _CtxEvents
   CtxList         *events; // for ctx_get_event
   CtxBinding       bindings[CTX_MAX_KEYBINDINGS]; /*< better as list, uses no mem if unused */
   int              n_bindings;
-  int              in_idle_dispatch;
-  int              ctx_get_event_enabled;
+  CtxItem         *prev[CTX_MAX_DEVICES];
+  float            pointer_x[CTX_MAX_DEVICES];
+  float            pointer_y[CTX_MAX_DEVICES];
+  unsigned char    pointer_down[CTX_MAX_DEVICES];
+  unsigned int     in_idle_dispatch:1;
+  unsigned int     ctx_get_event_enabled:1;
+  CtxModifierState modifier_state;
   int              idle_id;
   CtxList         *items;
   CtxItem         *last_item;
-  CtxModifierState modifier_state;
   double           tap_hysteresis;
 #if CTX_CLIENTS
   CtxList         *clients;

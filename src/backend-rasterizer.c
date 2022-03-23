@@ -1814,7 +1814,7 @@ ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *r
   CtxGradientStop *stop = &gradient->stops[gradient->n_stops];
   stop->pos = pos;
   ctx_color_set_rgba (rasterizer->state, & (stop->color), rgba[0], rgba[1], rgba[2], rgba[3]);
-  if (gradient->n_stops < 15) //we'll keep overwriting the last when out of stops
+  if (gradient->n_stops < CTX_MAX_GRADIENT_STOPS-1) //we'll keep overwriting the last when out of stops
     { gradient->n_stops++; }
 }
 
@@ -3920,7 +3920,7 @@ ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, unsigned int count, float *
     rasterizer->state->gstate.n_dashes = 0;
     return;
   }
-  count = CTX_MIN(count, CTX_PARSER_MAX_ARGS-1);
+  count = CTX_MIN(count, CTX_MAX_DASHES);
   rasterizer->state->gstate.n_dashes = count;
   memcpy(&rasterizer->state->gstate.dashes[0], dashes, count * sizeof(float));
   for (unsigned int i = 0; i < count; i ++)

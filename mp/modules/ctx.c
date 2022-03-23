@@ -28,6 +28,8 @@
 #define CTX_MIN_JOURNAL_SIZE       256
 #define CTX_MIN_EDGE_LIST_SIZE     512   // is also max and limits complexity
                                          // of paths that can be filled
+#define CTX_STATIC_OPAQUE       1
+#define CTX_MAX_SCANLINE_LENGTH 512
 #define CTX_1BIT_CLIP           1
 #define CTX_CM                  0
 #define CTX_SHAPE_CACHE         0
