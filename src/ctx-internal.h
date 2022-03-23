@@ -782,8 +782,9 @@ struct _CtxRasterizer
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
 
+
 #if CTX_STATIC_OPAQUE
-  uint8_t opaque[4096];
+  uint8_t opaque[CTX_MAX_SCANLINE_LENGTH];
 #endif
 
 #if CTX_SHAPE_CACHE
