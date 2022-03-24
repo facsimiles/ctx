@@ -388,21 +388,33 @@ MP_CTX_COMMON_FUN_3F(logo);
         // missing: incoming_message
 
 
-
 static mp_obj_t mp_ctx_key_down(size_t n_args, const mp_obj_t *args)
 {
-  ctx_key_down (MP_OBJ_TO_PTR(args[0]),
-                     mp_obj_get_int (args[1]), // keyval
-                     mp_obj_str_get_str(args[2]), // string
-                     mp_obj_get_int(args[3]), // time
-                     mp_obj_get_int(args[4]));// sync
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_key_down (self->ctx,
+                mp_obj_get_int (args[1]), // keyval
+                mp_obj_str_get_str(args[2]), // string
+                mp_obj_get_int(args[3]), // time
+                mp_obj_get_int(args[4]));// sync
 		return args[0];
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_key_down_obj, 5, 5, mp_ctx_key_down);
 
+static mp_obj_t mp_ctx_incoming_message (size_t n_args, const mp_obj_t *args)
+{
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_incoming_message (self->ctx,
+                mp_obj_str_get_str(args[1]), // string
+                mp_obj_get_int(args[2]), // time
+                mp_obj_get_int(args[3]));// sync
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_incoming_message_obj, 4, 4, mp_ctx_incoming_message);
+
 static mp_obj_t mp_ctx_key_up(size_t n_args, const mp_obj_t *args)
 {
-  ctx_key_up (MP_OBJ_TO_PTR(args[0]),
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_key_up (self->ctx,
                      mp_obj_get_int (args[1]), // keyval
                      mp_obj_str_get_str(args[2]), // string
                      mp_obj_get_int(args[3]), // time
@@ -413,7 +425,8 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_key_up_obj, 5, 5, mp_ctx_key_up);
 
 static mp_obj_t mp_ctx_key_press(size_t n_args, const mp_obj_t *args)
 {
-  ctx_key_press (MP_OBJ_TO_PTR(args[0]),
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_key_press (self->ctx,
                      mp_obj_get_int (args[1]), // keyval
                      mp_obj_str_get_str(args[2]), // string
                      mp_obj_get_int(args[3]), // time
@@ -425,7 +438,8 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_key_press_obj, 5, 5, mp_ctx_key_press
 #if 1
 static mp_obj_t mp_ctx_scrolled(size_t n_args, const mp_obj_t *args)
 {
-  ctx_scrolled (MP_OBJ_TO_PTR(args[0]),
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_scrolled (self->ctx,
                      mp_obj_get_float(args[1]), // x
                      mp_obj_get_float(args[2]), // y
                      mp_obj_get_int(args[3]), // scroll-direction
@@ -436,9 +450,11 @@ static mp_obj_t mp_ctx_scrolled(size_t n_args, const mp_obj_t *args)
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_scrolled_obj, 6, 6, mp_ctx_scrolled);
 #endif
 
+#if 1
 static mp_obj_t mp_ctx_pointer_press(size_t n_args, const mp_obj_t *args)
 {
-  ctx_pointer_press (MP_OBJ_TO_PTR(args[0]),
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_pointer_press (self->ctx,
                      mp_obj_get_float(args[1]), // x
                      mp_obj_get_float(args[2]),  // y
                      mp_obj_get_int(args[3]), // device-no
@@ -450,7 +466,8 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_pointer_press_obj, 6, 6, mp_ctx_point
 
 static mp_obj_t mp_ctx_pointer_motion(size_t n_args, const mp_obj_t *args)
 {
-  ctx_pointer_motion (MP_OBJ_TO_PTR(args[0]),
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_pointer_motion(self->ctx,
                      mp_obj_get_float(args[1]),
                      mp_obj_get_float(args[2]),
                      mp_obj_get_int(args[3]),
@@ -462,7 +479,8 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_pointer_motion_obj, 6, 6, mp_ctx_poin
 
 static mp_obj_t mp_ctx_pointer_release(size_t n_args, const mp_obj_t *args)
 {
-  ctx_pointer_release (MP_OBJ_TO_PTR(args[0]),
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_pointer_release(self->ctx,
                      mp_obj_get_float(args[1]),
                      mp_obj_get_float(args[2]),
                      mp_obj_get_int(args[3]),
@@ -471,11 +489,18 @@ static mp_obj_t mp_ctx_pointer_release(size_t n_args, const mp_obj_t *args)
 		return args[0];
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_pointer_release_obj, 6, 6, mp_ctx_pointer_release);
+#else
+MP_CTX_COMMON_FUN_5F(pointer_motion);
+MP_CTX_COMMON_FUN_5F(pointer_release);
+MP_CTX_COMMON_FUN_5F(pointer_press);
+
+#endif
 
 #if 0
 static mp_obj_t mp_ctx_pointer_drop(size_t n_args, const mp_obj_t *args)
 {
-  ctx_pointer_drop (MP_OBJ_TO_PTR(args[0]),
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+  ctx_pointer_drop (self->ctx,
                      mp_obj_get_float(args[1]),  // x
                      mp_obj_get_float(args[2]),  // y
                      mp_obj_get_int(args[3]),    // device_no
@@ -1330,9 +1355,10 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         MP_CTX_METHOD(pointer_release),
         MP_CTX_METHOD(pointer_press),
         MP_CTX_METHOD(scrolled),
-        //MP_CTX_METHOD(key_press),
+        MP_CTX_METHOD(key_press),
         MP_CTX_METHOD(key_up),
         MP_CTX_METHOD(key_down),
+        MP_CTX_METHOD(incoming_message),
 
 
         // Instance attributes

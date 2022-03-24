@@ -1908,8 +1908,24 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
        string = temp_key;
     }
   }
-
+#if 1
+  int i = 0;
+  for (i = 0; string[i] && string[i] != ' '; i++)
+  {
+    event_type[i] = string[i];
+  }
+  event_type[i]=0;
+  char *pos = &event_type[i];
+  pos++;
+  x = _ctx_parse_float (pos, &pos);
+  pos++;
+  y = _ctx_parse_float (pos, &pos);
+  pos++;
+  b = atoi(pos);
+#else
   sscanf (string, "%s %f %f %i", event_type, &x, &y, &b);
+#endif
+
   if (!ctx_strcmp (event_type, "pm") ||
       !ctx_strcmp (event_type, "pd"))
     return ctx_pointer_motion (ctx, x, y, b, 0, sync);
