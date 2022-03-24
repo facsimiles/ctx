@@ -1856,8 +1856,8 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
 #endif
 
 
-float ctx_shape_cache_rate = 0.0;
 #if CTX_SHAPE_CACHE
+float ctx_shape_cache_rate = 0.0;
 int   _ctx_shape_cache_enabled = CTX_SHAPE_CACHE_DEFAULT;
 
 //static CtxShapeCache ctx_cache = {{NULL,}, 0};
@@ -4421,7 +4421,7 @@ static int _ctx_antialias_to_aa (CtxAntialias antialias)
 void
 ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 {
-#if CTX_EVENTS
+#if CTX_TERMINAL_EVENTS
   if (ctx_backend_is_tiled (ctx))
   {
      CtxTiled *fb = (CtxTiled*)(ctx->backend);

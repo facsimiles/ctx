@@ -178,8 +178,9 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     fps_avg = (fps_avg * 0.9f + fps2 *  0.1f);
 
     sprintf (tmp_title, "FPS: %.1f %.1f %.1f", (fps2*0.75+fps_avg*0.25), fps2, fps);
-    
+#if CTX_SHAPE_CACHE 
     sprintf (&tmp_title[strlen(tmp_title)], " shape hit rate: %.2f", ctx_shape_cache_rate);
+#endif
 
     SDL_SetWindowTitle (sdl->window, tmp_title);
   }

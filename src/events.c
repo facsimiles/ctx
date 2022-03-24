@@ -40,7 +40,6 @@ ctx_ticks (void)
 
 
 
-int _ctx_max_threads = 1;
 int _ctx_enable_hash_cache = 1;
 #if CTX_SHAPE_CACHE
 extern int _ctx_shape_cache_enabled;
@@ -48,6 +47,7 @@ extern int _ctx_shape_cache_enabled;
 
 #if CTX_THREADS
 static mtx_t _ctx_texture_mtx;
+int _ctx_max_threads = 1;
 #endif
 
 void _ctx_texture_lock (void)
@@ -222,10 +222,10 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   }
   
   mtx_init (&_ctx_texture_mtx, mtx_plain);
-#endif
 
   if (_ctx_max_threads < 1) _ctx_max_threads = 1;
   if (_ctx_max_threads > CTX_MAX_THREADS) _ctx_max_threads = CTX_MAX_THREADS;
+#endif
 
   //fprintf (stderr, "ctx using %i threads\n", _ctx_max_threads);
   if (!backend)
@@ -2126,6 +2126,7 @@ void _ctx_debug_overlays (Ctx *ctx)
   ctx_restore (ctx);
 }
 
+#if CTX_THREADS
 void ctx_set_render_threads   (Ctx *ctx, int n_threads)
 {
   // XXX
@@ -2134,6 +2135,7 @@ int ctx_get_render_threads   (Ctx *ctx)
 {
   return _ctx_max_threads;
 }
+#endif
 void ctx_set_hash_cache (Ctx *ctx, int enable_hash_cache)
 {
   _ctx_enable_hash_cache = enable_hash_cache;
@@ -2158,7 +2160,6 @@ int ctx_need_redraw (Ctx *ctx)
  * wake us up, this to remove sleeping and polling
  */
 
-#define CTX_MAX_LISTEN_FDS 128 // becomes max clients..
 
 static int _ctx_listen_fd[CTX_MAX_LISTEN_FDS];
 static int _ctx_listen_fds    = 0;
@@ -2815,7 +2816,7 @@ static char *evsource_kb_get_event (void)
               break;
             case 0: /* no matches, bail*/
              {
-                static char ret[256]="";
+                char ret[256]="";
                 if (length == 0 && ctx_utf8_len (buf[0])>1) /* read a
                                                              * single unicode
                                                              * utf8 character

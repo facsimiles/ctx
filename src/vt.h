@@ -250,6 +250,7 @@ struct _VT
 };
 
 
+// add vt_new_cb - suitable for hooking up to generic stdout/stdin callbacks
 VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch);
 VT *vt_new_argv (char **argv, int width, int height, float font_size, float line_spacing, int id, int can_launch);
 VT *vt_new_thread (void (*start_routine)(void *userdata), void *userdata,

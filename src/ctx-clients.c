@@ -250,8 +250,12 @@ CtxClient *ctx_client_new_thread (Ctx *ctx, void (*start_routine)(Ctx *ctx, void
 }
 #endif
 
+#if CTX_SHAPE_CACHE
 extern float ctx_shape_cache_rate;
+#endif
+#if CTX_THREADS
 extern int _ctx_max_threads;
+#endif
 
 static int focus_follows_mouse = 0;
 

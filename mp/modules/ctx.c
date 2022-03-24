@@ -64,6 +64,7 @@
 #define CTX_MAX_STATES             5
 #define CTX_MAX_EDGES            127
 #define CTX_MAX_PENDING           64
+#define CTX_MAX_LISTEN_FDS        1
 #define CTX_MATH 0
 
 
@@ -95,6 +96,8 @@ static inline void ctx_free (void *ptr)
 {
   return m_free(ptr);
 }
+
+#define CTX_MAX_FONTS 2
 #define _CTX_INTERNAL_FONT_
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
@@ -382,16 +385,107 @@ MP_CTX_COMMON_FUN_6F(radial_gradient);
 MP_CTX_COMMON_FUN_3F(logo);
 
 //MP_CTX_COMMON_FUN_0(identity);
-//MP_CTX_COMMON_FUN_4F(key_down);
-//MP_CTX_COMMON_FUN_4F(key_up);
-//MP_CTX_COMMON_FUN_4F(key_press);
-//MP_CTX_COMMON_FUN_5F(scrolled);
-MP_CTX_COMMON_FUN_5F(pointer_motion);
-MP_CTX_COMMON_FUN_5F(pointer_release);
-MP_CTX_COMMON_FUN_5F(pointer_press);
         // missing: incoming_message
-        //          pointer_drop
 
+
+
+static mp_obj_t mp_ctx_key_down(size_t n_args, const mp_obj_t *args)
+{
+  ctx_key_down (MP_OBJ_TO_PTR(args[0]),
+                     mp_obj_get_int (args[1]), // keyval
+                     mp_obj_str_get_str(args[2]), // string
+                     mp_obj_get_int(args[3]), // time
+                     mp_obj_get_int(args[4]));// sync
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_key_down_obj, 5, 5, mp_ctx_key_down);
+
+static mp_obj_t mp_ctx_key_up(size_t n_args, const mp_obj_t *args)
+{
+  ctx_key_up (MP_OBJ_TO_PTR(args[0]),
+                     mp_obj_get_int (args[1]), // keyval
+                     mp_obj_str_get_str(args[2]), // string
+                     mp_obj_get_int(args[3]), // time
+                     mp_obj_get_int(args[4]));// sync
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_key_up_obj, 5, 5, mp_ctx_key_up);
+
+static mp_obj_t mp_ctx_key_press(size_t n_args, const mp_obj_t *args)
+{
+  ctx_key_press (MP_OBJ_TO_PTR(args[0]),
+                     mp_obj_get_int (args[1]), // keyval
+                     mp_obj_str_get_str(args[2]), // string
+                     mp_obj_get_int(args[3]), // time
+                     mp_obj_get_int(args[4]));// sync
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_key_press_obj, 5, 5, mp_ctx_key_press);
+
+#if 1
+static mp_obj_t mp_ctx_scrolled(size_t n_args, const mp_obj_t *args)
+{
+  ctx_scrolled (MP_OBJ_TO_PTR(args[0]),
+                     mp_obj_get_float(args[1]), // x
+                     mp_obj_get_float(args[2]), // y
+                     mp_obj_get_int(args[3]), // scroll-direction
+                     mp_obj_get_int(args[4]), // time
+                     mp_obj_get_int(args[5])); // sync
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_scrolled_obj, 6, 6, mp_ctx_scrolled);
+#endif
+
+static mp_obj_t mp_ctx_pointer_press(size_t n_args, const mp_obj_t *args)
+{
+  ctx_pointer_press (MP_OBJ_TO_PTR(args[0]),
+                     mp_obj_get_float(args[1]), // x
+                     mp_obj_get_float(args[2]),  // y
+                     mp_obj_get_int(args[3]), // device-no
+                     mp_obj_get_int(args[4]), // time
+                     mp_obj_get_int(args[5])); // sync
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_pointer_press_obj, 6, 6, mp_ctx_pointer_press);
+
+static mp_obj_t mp_ctx_pointer_motion(size_t n_args, const mp_obj_t *args)
+{
+  ctx_pointer_motion (MP_OBJ_TO_PTR(args[0]),
+                     mp_obj_get_float(args[1]),
+                     mp_obj_get_float(args[2]),
+                     mp_obj_get_int(args[3]),
+                     mp_obj_get_int(args[4]),
+                     mp_obj_get_int(args[5]));
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_pointer_motion_obj, 6, 6, mp_ctx_pointer_motion);
+
+static mp_obj_t mp_ctx_pointer_release(size_t n_args, const mp_obj_t *args)
+{
+  ctx_pointer_release (MP_OBJ_TO_PTR(args[0]),
+                     mp_obj_get_float(args[1]),
+                     mp_obj_get_float(args[2]),
+                     mp_obj_get_int(args[3]),
+                     mp_obj_get_int(args[4]),
+                     mp_obj_get_int(args[5]));
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_pointer_release_obj, 6, 6, mp_ctx_pointer_release);
+
+#if 0
+static mp_obj_t mp_ctx_pointer_drop(size_t n_args, const mp_obj_t *args)
+{
+  ctx_pointer_drop (MP_OBJ_TO_PTR(args[0]),
+                     mp_obj_get_float(args[1]),  // x
+                     mp_obj_get_float(args[2]),  // y
+                     mp_obj_get_int(args[3]),    // device_no
+                     mp_obj_get_int(args[4]),    // time
+                     (char*)mp_obj_str_get_str(args[5]), // string
+                     mp_obj_get_int(args[6]));
+		return args[0];
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_pointer_drop_obj, 7, 7, mp_ctx_pointer_drop);
+#endif
 
 static mp_obj_t mp_ctx_line_dash(mp_obj_t self_in, mp_obj_t dashes_in)
 {
@@ -1229,16 +1323,17 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(stroke_color),
 #endif
         //MP_CTX_METHOD(in_stroke),
-        //MP_CTX_METHOD(key_down),
-        //MP_CTX_METHOD(key_up),
-        //MP_CTX_METHOD(key_press),
-        //MP_CTX_METHOD(scrolled),
-        //
         
 	//MP_CTX_METHOD(get_event),
+
         MP_CTX_METHOD(pointer_motion),
         MP_CTX_METHOD(pointer_release),
         MP_CTX_METHOD(pointer_press),
+        MP_CTX_METHOD(scrolled),
+        //MP_CTX_METHOD(key_press),
+        MP_CTX_METHOD(key_up),
+        MP_CTX_METHOD(key_down),
+
 
         // Instance attributes
         MP_CTX_ATTR(x),
@@ -1380,8 +1475,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_CtxEvent), MP_ROM_PTR(&mp_ctx_event_type) },
   	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
   	{ MP_ROM_QSTR(MP_QSTR_new_for_cb), MP_ROM_PTR(&mp_ctx_new_for_cb_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_new_for_buffer), MP_ROM_PTR(&mp_ctx_new_for_buffer_obj) },
+	//{ MP_ROM_QSTR(MP_QSTR_new_drawlist), MP_ROM_PTR(&mp_ctx_new_drawlist_obj) },
 #ifdef EMSCRIPTEN
 	{ MP_ROM_QSTR(MP_QSTR_get_context), MP_ROM_PTR(&mp_ctx_get_context_obj) },
 #endif
@@ -1408,8 +1502,8 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
         MP_CTX_INT_CONSTANT(FLAG,GRAY8),
         MP_CTX_INT_CONSTANT(FLAG,RGB332),
         MP_CTX_INT_CONSTANT(FLAG,HASH_CACHE),
-        MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
-        MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
+//      MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
+//      MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
         MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
         MP_CTX_INT_CONSTANT(FLAG,STAY_LOW),
 

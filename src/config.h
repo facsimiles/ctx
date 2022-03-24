@@ -761,6 +761,9 @@
 #define CTX_WASM 0
 #endif
 
+#ifndef CTX_MAX_LISTEN_FDS
+#define CTX_MAX_LISTEN_FDS 128 // becomes max clients..
+#endif
 
 #if CTX_WASM
 #undef CTX_THREADS
