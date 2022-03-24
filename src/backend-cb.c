@@ -514,7 +514,8 @@ ctx_cb_end_frame (Ctx *ctx)
             }
         }
       }
-      ctx_pop_backend (ctx);
+
+      ctx_pop_backend (ctx); // done with hasher
       if (dirty_tiles)
       {
          int x0 = cb_backend->min_col     * (ctx_width (ctx)/CTX_HASH_COLS);
@@ -530,9 +531,17 @@ ctx_cb_end_frame (Ctx *ctx)
            ctx_stroke (ctx);
            ctx_restore (ctx);
          }
+
          //int width = x1 - x0 + 1;
          //int height = y1 - y0 + 1;
          int abort = 0;
+         int abortable = 1;
+
+         if (dirty_tiles <= 4)
+         {
+           in_low_res = 0;
+           abortable = 0;
+         }
 
          if (in_low_res)
          {
@@ -541,12 +550,12 @@ ctx_cb_end_frame (Ctx *ctx)
                for (int col = cb_backend->min_col; col <= cb_backend->max_col; col++)
                {
                  int tile_no = row * CTX_HASH_COLS + col;
-                 if (abort)
-                 {
+                 //if (abort)
+                 //{
                    //cb_backend->res[tile_no]=0;
                    //cb_backend->hashes[tile_no]= 23;
-                 }
-                 else
+                 //}
+                 //else
                  {
                    cb_backend->hashes[tile_no]= hashes[tile_no];
                    cb_backend->res[tile_no]=in_low_res;
@@ -598,7 +607,6 @@ ctx_cb_end_frame (Ctx *ctx)
 
 
                     abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
-                    if (!abort)
                     {
                       for (int i = 0; i < used_tiles; i ++)
                       {
@@ -606,6 +614,8 @@ ctx_cb_end_frame (Ctx *ctx)
                         cb_backend->hashes[tile_no + i] = hashes[tile_no+i];
                       }
                     }
+                    if (!abortable)
+                       abort = 0;
                     col += used_tiles - 1;
                   }
                }
