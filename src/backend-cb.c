@@ -389,6 +389,11 @@ ctx_cb_end_frame (Ctx *ctx)
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   static int64_t prev_time = 0;
   int64_t cur_time = ctx_ticks () / 1000;
+  int width = ctx_width (ctx);
+  int height = ctx_height (ctx);
+
+  int tile_width = width / CTX_HASH_COLS;
+  int tile_height = height / CTX_HASH_ROWS;
   if (cb_backend->flags & (CTX_FLAG_GRAY2|CTX_FLAG_GRAY4|CTX_FLAG_GRAY8|CTX_FLAG_RGB332))
       cb_backend->flags|=CTX_FLAG_LOWFI;
 
@@ -408,7 +413,7 @@ ctx_cb_end_frame (Ctx *ctx)
   {
     char buf[22];
     float fps = 1.0f/((cur_time-prev_time)/1000.0f);
-    ctx_move_to (ctx, ctx_width (ctx) - (em * 3.8f), y);
+    ctx_move_to (ctx, width - (em * 3.8f), y);
     sprintf (buf, "%2.1f fps", (double)fps);
     ctx_text (ctx, buf);
     ctx_begin_path (ctx);
@@ -423,11 +428,10 @@ ctx_cb_end_frame (Ctx *ctx)
 
     CtxPixelFormat format = cb_backend->format;
     int bpp               = ctx_pixel_format_bits_per_pixel (format) / 8;
-    int tile_dim          = (ctx_width (ctx)/CTX_HASH_COLS) *
-                            (ctx_height (ctx)/CTX_HASH_ROWS) * bpp;
+    int tile_dim          = tile_width * tile_height * bpp;
 
     CtxRasterizer *rasterizer = (CtxRasterizer*)&cb_backend->rasterizer;
-    ctx_hasher_init (rasterizer, ctx, state, ctx_width(ctx), ctx_height(ctx), CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
+    ctx_hasher_init (rasterizer, ctx, state, width, height, CTX_HASH_COLS, CTX_HASH_ROWS, &ctx->drawlist);
     ((CtxBackend*)rasterizer)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
 
     ctx_push_backend (ctx, rasterizer);
@@ -518,10 +522,10 @@ ctx_cb_end_frame (Ctx *ctx)
       ctx_pop_backend (ctx); // done with hasher
       if (dirty_tiles)
       {
-         int x0 = cb_backend->min_col     * (ctx_width (ctx)/CTX_HASH_COLS);
-         int y0 = cb_backend->min_row     * (ctx_height (ctx)/CTX_HASH_ROWS);
-         int x1 = (cb_backend->max_col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
-         int y1 = (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
+         int x0 = cb_backend->min_col     * tile_width;
+         int y0 = cb_backend->min_row     * tile_height;
+         int x1 = (cb_backend->max_col+1) * tile_width - 1;
+         int y1 = (cb_backend->max_row+1) * tile_height - 1;
          if (cb_backend->flags & CTX_FLAG_DAMAGE_CONTROL)
          {
            ctx_save (ctx);
@@ -574,17 +578,17 @@ ctx_cb_end_frame (Ctx *ctx)
                tile_no = row * CTX_HASH_COLS + col;
                uint32_t new_hash = hashes[tile_no];
                int used_tiles = 1;
-               active_mask = 0;
-               active_mask = 1<<tile_no;
 
                if ((new_hash != cb_backend->hashes[tile_no]) ||
                    cb_backend->res[tile_no])
                {
-                    int x0 = col * (ctx_width (ctx)/CTX_HASH_COLS);
-                    int y0 = row * (ctx_height (ctx)/CTX_HASH_ROWS);
-                    int x1 = (col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
-                    int y1 = (row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
+                    int x0 = col * tile_width;
+                    int y0 = row * tile_height;
+                    int x1 = x0 +  tile_width-1;
+                    int y1 = y0 +  tile_height-1;
 
+               active_mask = 0;
+               active_mask = 1<<tile_no;
 #if 0
              int max_tiles = (cb_backend->memory_budget / tile_dim);
                     int cont = 1;
