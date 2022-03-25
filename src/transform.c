@@ -36,7 +36,7 @@ determine_transform_type (const CtxMatrix *m)
   return 1;
 }
 
-#define TRANSFORM_SHIFT (10)
+#define TRANSFORM_SHIFT (8)
 #define TRANSFORM_SCALE (1<<TRANSFORM_SHIFT)
 
 static inline void
