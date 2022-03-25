@@ -759,6 +759,7 @@ ctx_text (Ctx        *ctx,
 #else
   _ctx_text (ctx, string, 0, 1);
 #endif
+  ctx_begin_path (ctx); // XXX : this should be handled internally
 }
 
 

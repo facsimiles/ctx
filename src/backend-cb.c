@@ -541,7 +541,7 @@ ctx_cb_end_frame (Ctx *ctx)
          int abort = 0;
          int abortable = 1;
 
-         if (dirty_tiles <= 4)
+         if (dirty_tiles <= 6 && low_res_tiles <= 8)
          {
            in_low_res = 0;
            abortable = 0;
@@ -576,6 +576,7 @@ ctx_cb_end_frame (Ctx *ctx)
                if (!abort)
              {
                tile_no = row * CTX_HASH_COLS + col;
+               active_mask = 1<<tile_no;
                uint32_t new_hash = hashes[tile_no];
                int used_tiles = 1;
 
@@ -587,8 +588,6 @@ ctx_cb_end_frame (Ctx *ctx)
                     int x1 = x0 +  tile_width-1;
                     int y1 = y0 +  tile_height-1;
 
-               active_mask = 0;
-               active_mask = 1<<tile_no;
 #if 0
              int max_tiles = (cb_backend->memory_budget / tile_dim);
                     int cont = 1;
