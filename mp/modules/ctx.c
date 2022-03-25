@@ -6,7 +6,7 @@
 #include "py/objarray.h"
 #include "py/runtime.h"
 
-#define CTX_TINYVG 0
+#define CTX_TINYVG 1
 #define CTX_DITHER 1
 
 #define CTX_AVOID_CLIPPED_SUBDIVISION 0
@@ -25,7 +25,7 @@
 #define CTX_RENDERSTREAM_STATIC 0
 #define CTX_GRADIENT_CACHE      1
 #define CTX_ENABLE_CLIP         1
-#define CTX_MIN_JOURNAL_SIZE       256
+#define CTX_MIN_JOURNAL_SIZE       512
 #define CTX_MIN_EDGE_LIST_SIZE     512   // is also max and limits complexity
                                          // of paths that can be filled
 #define CTX_STATIC_OPAQUE       1
@@ -994,35 +994,37 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_listen_stop_propagate_obj, 4, 4, mp_c
 #endif
 
 #if CTX_TINYVG
-static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t path_in)
+static mp_obj_t mp_ctx_tinyvg_get_size (mp_obj_t self_in, mp_obj_t buffer_in)
 {
-#ifdef EMSCRIPTEN
-	const char *path = mp_obj_str_get_str(path_in);
-        int width = 0; int height = 0;
-        int fd = open (path, O_RDONLY);
-        ctx_tinyvg_fd_get_size (fd, &width, &height);
-        close (fd);
-
-        mp_obj_t mp_w  = MP_OBJ_NEW_SMALL_INT(width);
-        mp_obj_t mp_h  = MP_OBJ_NEW_SMALL_INT(height);
-        mp_obj_t tup[] = { mp_w, mp_h };
-        return mp_obj_new_tuple(2, tup);
-#endif
-	return self_in;
+  mp_buffer_info_t buffer_info;
+  if (!mp_get_buffer(buffer_in, &buffer_info, MP_BUFFER_READ))
+  {
+     mp_raise_TypeError("not a buffer");
+  }
+  int width, height;
+  ctx_tinyvg_get_size (buffer_info.buf,
+                       buffer_info.len, &width, &height);
+  mp_obj_t mp_w  = MP_OBJ_NEW_SMALL_INT(width);
+  mp_obj_t mp_h  = MP_OBJ_NEW_SMALL_INT(height);
+  mp_obj_t tup[] = { mp_w, mp_h };
+  return mp_obj_new_tuple(2, tup);
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_tinyvg_get_size_obj, mp_ctx_tinyvg_get_size);
-/* CTX API functions }}} */
 
-static mp_obj_t mp_ctx_tinyvg_draw (mp_obj_t self_in, mp_obj_t path_in)
+static mp_obj_t mp_ctx_tinyvg_draw (mp_obj_t self_in, mp_obj_t buffer_in)
 {
-	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
-#ifdef EMSCRIPTEN
-	const char *path = mp_obj_str_get_str(path_in);
-        int fd = open (path, O_RDONLY);
-        ctx_tinyvg_fd_draw (self->ctx, fd, CTX_TVG_FLAG_DEFAULTS);
-        close (fd);
-#endif
-	return self_in;
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
+  mp_buffer_info_t buffer_info;
+
+  if (!mp_get_buffer(buffer_in, &buffer_info, MP_BUFFER_READ))
+  {
+     mp_raise_TypeError("not a buffer");
+  }
+  ctx_tinyvg_draw (self->ctx,
+                   buffer_info.buf,
+                   buffer_info.len,
+                   0);
+  return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_tinyvg_draw_obj, mp_ctx_tinyvg_draw);
 #endif
@@ -1332,9 +1334,11 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(listen),
 	MP_CTX_METHOD(listen_stop_propagate),
 	//MP_CTX_METHOD(parse),
+#if 1
 #if CTX_TINYVG
 	MP_CTX_METHOD(tinyvg_draw),
 	MP_CTX_METHOD(tinyvg_get_size),
+#endif
 #endif
 	MP_CTX_METHOD(logo),
 #ifdef EPICARDIUM
