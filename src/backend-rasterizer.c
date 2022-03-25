@@ -1940,38 +1940,6 @@ static inline CtxShapeEntry *ctx_shape_entry_find (CtxRasterizer *rasterizer, ui
 
 #endif
 
-#if CTX_SHAPE_CACHE
-static uint32_t ctx_rasterizer_poly_to_hash (CtxRasterizer *rasterizer)
-{
-  int x = 0;
-  int y = 0;
-
-  CtxSegment *entry = (CtxSegment*)&rasterizer->edge_list.entries[0];
-
-  int ox = entry->data.s16[2];
-  int oy = entry->data.s16[3];
-  uint32_t hash = rasterizer->edge_list.count;
-  hash = ox;//(ox % CTX_SUBDIV);
-  hash *= CTX_SHAPE_CACHE_PRIME1;
-  hash += oy; //(oy % CTX_RASTERIZER_AA);
-  for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
-    {
-      CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[i];
-      x = entry->data.s16[2];
-      y = entry->data.s16[3];
-      int dx = x-ox;
-      int dy = y-oy;
-      ox = x;
-      oy = y;
-      hash *= CTX_SHAPE_CACHE_PRIME3;
-      hash += dx;
-      hash *= CTX_SHAPE_CACHE_PRIME4;
-      hash += dy;
-    }
-  return hash;
-}
-#endif
-
 static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
 #if CTX_SHAPE_CACHE

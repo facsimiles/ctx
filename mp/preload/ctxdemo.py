@@ -59,8 +59,8 @@ def zoom_text(o, string):
     o.move_to(o.width/2,o.height*0.8)
     o.color([1.0,1.0,1.0]).text(string)
   o.rectangle(0,0,o.width,o.height)
-  o.listen(o.PRESS, press_cb) 
-  o.listen(o.RELEASE, release_cb) 
+  o.listen(o.PRESS, press_cb, 1) 
+  o.listen(o.RELEASE, release_cb, 1) 
 
   o.begin_path()
     
