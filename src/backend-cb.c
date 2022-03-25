@@ -541,7 +541,7 @@ ctx_cb_end_frame (Ctx *ctx)
          int abort = 0;
          int abortable = 1;
 
-         if (dirty_tiles <= 6 && low_res_tiles <= 8)
+         if (dirty_tiles <= 4 && low_res_tiles <= 4)
          {
            in_low_res = 0;
            abortable = 0;
