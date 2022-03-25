@@ -4296,7 +4296,6 @@ foo:
         if (ctx->bail)
         {
           _ctx_text (rasterizer->backend.ctx, ctx_arg_string(), 0, 0);
-          ctx_rasterizer_reset (rasterizer);
           break;
         }
 

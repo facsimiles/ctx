@@ -160,6 +160,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
   CtxCommand *c = (CtxCommand *) entry;
   int aa = 15;//rasterizer->aa;
 
+  ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
   ctx_interpret_style (rasterizer->state, entry, NULL);
 
   switch (c->code)
@@ -570,7 +571,6 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
                                   ctx_fabsf (state->gstate.transform.m[1][1]) ) );
       state->gstate.line_width = x;
     }
-  ctx_interpret_pos_bare (rasterizer->state, entry, NULL);
 }
 
 static CtxRasterizer *

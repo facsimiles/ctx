@@ -1785,7 +1785,6 @@ ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
         break;
       case CTX_CLIP:
       case CTX_BEGIN_PATH:
-      case CTX_TEXT:
       case CTX_FILL:
       case CTX_STROKE:
         state->has_moved = 0;
