@@ -231,10 +231,10 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
 
   if (tvg->flags & CTX_TVG_FLAG_BBOX_CHECK)
   {
-      float minx = 1000000.0;
-      float miny = 1000000.0;
-      float maxx = -1000000.0;
-      float maxy = -1000000.0;
+      float minx = 1000000.0f;
+      float miny = 1000000.0f;
+      float maxx = -1000000.0f;
+      float maxy = -1000000.0f;
       int start_pos = tvg->pos;
   
       float x = ctx_tvg_unit(tvg);
@@ -386,7 +386,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
            float   radius = ctx_tvg_unit (tvg);
                    x = ctx_tvg_unit (tvg);
                    y = ctx_tvg_unit (tvg);
-           ctx_svg_arc_to (ctx, radius, radius, 0.0, large, !sweep, x, y);
+           ctx_svg_arc_to (ctx, radius, radius, 0.0f, large, !sweep, x, y);
          }
          break;
        case CTX_TVG_ARC_ELLIPSE:
@@ -535,19 +535,19 @@ static void ctx_tvg_set_style (CtxTinyVG *tvg, CtxTinyVGStyle *style)
     case CTX_TVG_LGRAD:
       ctx_linear_gradient (ctx, x0, y0, x1, y1);
       ctx_tvg_get_color (tvg, idx0, &red, &green, &blue, &alpha);
-      ctx_gradient_add_stop (ctx, 0.0, red, green, blue, alpha);
+      ctx_gradient_add_stop (ctx, 0.0f, red, green, blue, alpha);
       ctx_tvg_get_color (tvg, idx1, &red, &green, &blue, &alpha);
-      ctx_gradient_add_stop (ctx, 1.0, red, green, blue, alpha);
+      ctx_gradient_add_stop (ctx, 1.0f, red, green, blue, alpha);
       break;
     case CTX_TVG_RGRAD:
       {
         float radius = ctx_sqrtf ((x1-x0)*(x1-x0)+(y1-y0)*(y1-y0));
-        ctx_radial_gradient (ctx, x0, y0, 0.0, x1, y1, radius);
+        ctx_radial_gradient (ctx, x0, y0, 0.0f, x1, y1, radius);
       }
       ctx_tvg_get_color (tvg, idx0, &red, &green, &blue, &alpha);
-      ctx_gradient_add_stop (ctx, 0.0, red, green, blue, alpha);
+      ctx_gradient_add_stop (ctx, 0.0f, red, green, blue, alpha);
       ctx_tvg_get_color (tvg, idx1, &red, &green, &blue, &alpha);
-      ctx_gradient_add_stop (ctx, 1.0, red, green, blue, alpha);
+      ctx_gradient_add_stop (ctx, 1.0f, red, green, blue, alpha);
       break;
   }
 }
@@ -624,7 +624,7 @@ static int ctx_tvg_command (CtxTinyVG *tvg)
   float factor = ctx_matrix_get_scale (&ctx->state.gstate.transform);
   int command = ctx_tvg_u6_u2(tvg, &primary_style_type);
   int item_count;
-  float line_width = 0.0;
+  float line_width = 0.0f;
 
   int save_offset = 0;
 
@@ -661,7 +661,7 @@ static int ctx_tvg_command (CtxTinyVG *tvg)
       ctx_tvg_style (tvg, primary_style_type, &tvg->stroke);
       line_width = ctx_tvg_unit (tvg);
 
-      if (line_width * factor < 1.0) line_width = 1.0 / factor;
+      if (line_width * factor < 1.0f) line_width = 1.0f / factor;
 
       if (command == CTX_TVG_DRAW_LINE_PATH)
         ctx_tvg_path (tvg, item_count);
@@ -684,7 +684,7 @@ static int ctx_tvg_command (CtxTinyVG *tvg)
       ctx_tvg_style (tvg, tvg->stroke.type, &tvg->stroke);
       line_width = ctx_tvg_unit (tvg);
 
-      if (line_width * factor < 1.0) line_width = 1.0 / factor;
+      if (line_width * factor < 1.0f) line_width = 1.0f / factor;
 
       ctx_line_width (ctx, line_width);
       ctx_tvg_rectangles (tvg, item_count, 1, 1);
@@ -697,7 +697,7 @@ static int ctx_tvg_command (CtxTinyVG *tvg)
       ctx_tvg_style (tvg, tvg->stroke.type, &tvg->stroke);
       line_width = ctx_tvg_unit (tvg);
 
-      if (line_width * factor < 1.0) line_width = 1.0 / factor;
+      if (line_width * factor < 1.0f) line_width = 1.0f / factor;
 
       save_offset = tvg->pos;
       if (command == CTX_TVG_OUTLINE_FILL_POLYGON)
@@ -781,10 +781,10 @@ ctx_tvg_draw (CtxTinyVG *tvg)
 
    if (tvg->flags & CTX_TVG_FLAG_BBOX_CHECK)
    {
-      float minx = 1000000.0;
-      float miny = 1000000.0;
-      float maxx = -1000000.0;
-      float maxy = -1000000.0;
+      float minx = 1000000.0f;
+      float miny = 1000000.0f;
+      float maxx = -1000000.0f;
+      float maxy = -1000000.0f;
       float x, y;
       x = 0; y =0;
       ctx_device_to_user (ctx, &x, &y);
@@ -822,8 +822,8 @@ ctx_tvg_draw2 (CtxTinyVG *tvg,
                float target_height)
 {
    Ctx*ctx = tvg->ctx;
-   float scale_x = 1.0;
-   float scale_y = 1.0;
+   float scale_x = 1.0f;
+   float scale_y = 1.0f;
    { /* handle aspect ratio, add translate ? */
    if (target_width<=0 && target_height <= 0)
    {
