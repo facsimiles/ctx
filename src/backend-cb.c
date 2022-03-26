@@ -662,6 +662,8 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   cb_backend->ctx = ctx;
   if (!scratch_fb)
     cb_backend->fb = (uint16_t*)ctx_malloc (memory_budget);
+
+  ctx_get_event (ctx);
   return ctx;
 }
 
