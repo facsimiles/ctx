@@ -58,7 +58,7 @@
 #define CTX_TERMINAL_EVENTS        0 // gets rid of posix bits and bobs
 #define CTX_EVENTS                 1
 #define CTX_MAX_DEVICES            1
-#define CTX_MAX_KEYBINDINGS        8
+#define CTX_MAX_KEYBINDINGS        16
 #define CTX_THREADS                0
 #define CTX_TILED                  0
 #define CTX_RASTERIZER             1
@@ -973,6 +973,42 @@ static mp_obj_t mp_ctx_listen (size_t n_args, const mp_obj_t *args)
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_listen_obj, 4, 4, mp_ctx_listen);
 
+
+static void mp_ctx_key_binding_cb_handler (CtxEvent *event, void *data1, void*data2)
+{
+  mp_ctx_event_obj_t *ctx_event = mp_ctx_event_new ();
+  //mp_ctx_event_obj_t *mp_ctx_event = MP_OBJ_TO_PTR(event_in);
+  ctx_event->event = *event;
+#if 0
+  mp_sched_schedule (data1, event_in);
+#else
+  mp_call_function_1(data1, ctx_event);
+#endif
+}
+
+static mp_obj_t mp_ctx_add_key_binding (size_t n_args, const mp_obj_t *args)
+{
+  mp_obj_t self_in    = args[0];
+  mp_obj_t key_in     = args[1];
+  mp_obj_t action_in  = args[2];
+  mp_obj_t label_in   = args[3];
+  mp_obj_t cb_in      = args[4];
+  //mp_obj_t user_data_in = args[5];
+  mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
+  if (cb_in != mp_const_none &&
+      !mp_obj_is_callable(cb_in))
+          mp_raise_ValueError(MP_ERROR_TEXT("invalid handler"));
+  ctx_add_key_binding (self->ctx,
+              mp_obj_str_get_str(key_in),
+              mp_obj_str_get_str(action_in),
+              mp_obj_str_get_str(label_in),
+              mp_ctx_key_binding_cb_handler,
+              (cb_in));//, ctx_event);
+  return MP_OBJ_FROM_PTR(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_add_key_binding_obj, 5, 5, mp_ctx_add_key_binding);
+
+
 static mp_obj_t mp_ctx_listen_stop_propagate (size_t n_args, const mp_obj_t *args)
 {
   mp_obj_t self_in = args[0];
@@ -1332,6 +1368,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
 	MP_CTX_METHOD(restore),
 	MP_CTX_METHOD(start_frame),
 	MP_CTX_METHOD(end_frame),
+	MP_CTX_METHOD(add_key_binding),
 	MP_CTX_METHOD(listen),
 	MP_CTX_METHOD(listen_stop_propagate),
 	//MP_CTX_METHOD(parse),
