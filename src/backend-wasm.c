@@ -27,6 +27,14 @@ get_fb(int w, int h) {
   return fb;
 }
 
+EMSCRIPTEN_KEEPALIVE
+float pointer_x = 0;
+EMSCRIPTEN_KEEPALIVE
+float pointer_y = 0;
+EMSCRIPTEN_KEEPALIVE
+int32_t pointer_down = 0;
+int32_t pointer_was_down = 0;
+
 int update_fb (Ctx *ctx, void *user_data)
 {
   EM_ASM(
@@ -39,19 +47,27 @@ int update_fb (Ctx *ctx, void *user_data)
        canvas.onmousedown = function (e){
           var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          _ctx_pointer_press (_ctx, loc.x, loc.y, 0, 0, sync);
+          //_ctx_pointer_press (_ctx, loc.x, loc.y, 0, 0, sync);
+          setValue(_pointer_x, loc.x, "float");
+          setValue(_pointer_y, loc.y, "float");
+          setValue(_pointer_down, 1, "i32");
           e.stopPropagate=1;
                        };
        canvas.onmouseup = function (e){
           var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          _ctx_pointer_release (_ctx, loc.x, loc.y, 0, 0, sync);
+          //_ctx_pointer_release (_ctx, loc.x, loc.y, 0, 0, sync);
+          setValue(_pointer_x, loc.x, "float");
+          setValue(_pointer_y, loc.y, "float");
+          setValue(_pointer_down, 0, "i32");
           e.stopPropagate=1;
                        };
        canvas.onmousemove = function (e){
           var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          _ctx_pointer_motion (_ctx, loc.x, loc.y, 0, 0, sync);
+          //_ctx_pointer_motion (_ctx, loc.x, loc.y, 0, 0, sync);
+          setValue(_pointer_x, loc.x, "float");
+          setValue(_pointer_y, loc.y, "float");
           e.stopPropagate=1;
                        };
        canvas.onkeydown = function (e){
@@ -76,13 +92,26 @@ int update_fb (Ctx *ctx, void *user_data)
 
   );
 
-   
-
 #ifdef EMSCRIPTEN
 #ifdef ASYNCIFY
    emscripten_sleep(0);
 #endif
 #endif
+
+   int sync = 0;
+   if (pointer_down && !pointer_was_down)
+   {
+      ctx_pointer_press (ctx, pointer_x, pointer_y, 0, 0, sync);
+   } else if (!pointer_down && pointer_was_down)
+   {
+      ctx_pointer_release (ctx, pointer_x, pointer_y, 0, 0, sync);
+   } else // if (pointer_down)
+   {
+      ctx_pointer_motion (ctx, pointer_x, pointer_y, 0, 0, sync);
+   }
+
+   pointer_was_down = pointer_down;
+
    return 0;
 }
 
