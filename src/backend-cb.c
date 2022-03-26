@@ -62,12 +62,26 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
   Ctx *ctx           = backend_cb->ctx;
   int flags          = backend_cb->flags;
   int memory_budget  = backend_cb->memory_budget;
-  int width          = x1 - x0 + 1;
-  int height         = y1 - y0 + 1;
   uint16_t *fb;
   CtxPixelFormat format = backend_cb->format;
   int bpp            = ctx_pixel_format_bits_per_pixel (format) / 8;
   int abort          = 0;
+
+  if (x0 < 0) x0 = 0;
+  if (y0 < 0) y0 = 0;
+  if (x1 >= ctx_width (ctx))
+  {
+     x1 = ctx_width (ctx) - 1;
+     fprintf (stderr, "preadjusting xbounds\n");
+  }
+  if (y1 >= ctx_height (ctx))
+  {
+     y1 = ctx_height (ctx) - 1;
+     fprintf (stderr, "preadjusting ybounds\n");
+  }
+
+  int width          = x1 - x0 + 1;
+  int height         = y1 - y0 + 1;
 
   if (!backend_cb->fb)
     backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);

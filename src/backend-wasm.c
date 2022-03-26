@@ -122,7 +122,6 @@ static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
     var _ctx = _ctx_wasm_get_context(0); // we presume an earlier
                                          // call to have passed
                                          // construction flags
-    if (1){
     const offset = _get_fb(canvas.width, canvas.height);
     const imgData = context.createImageData(w,h);
 
@@ -140,7 +139,6 @@ static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
       imgData.data[i*4+3] = 255;
     }
     context.putImageData(imgData,x0,y0);
-    }
   , x0,y0, w, h);
 
 }
@@ -176,7 +174,9 @@ EM_ASM(
 );
    static uint8_t *scratch = NULL;
 
-   if (!scratch) scratch = malloc(512*1024);
+   if (!scratch) scratch = malloc(512*1024); // XXX this should be unnneded,
+                                             // we should be able to just mp allocated
+                                             // memory instead
 
    if (!em_ctx){
       em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGB565_BYTESWAPPED,
@@ -184,7 +184,7 @@ EM_ASM(
                            NULL,
                            update_fb,
                            NULL,
-                           30*1024, scratch, 
+                           23*1024, scratch, 
                            flags);
    }
 
