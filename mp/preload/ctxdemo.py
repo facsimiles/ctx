@@ -1,286 +1,332 @@
-# you can paste a micropython script here,
-# the filesystem is preseeded with a card10
-# simulation firmware - and some card10
-# applications might work without modification
-#
-# ctrl+return runs the script currently in the editor
-# ctrl+s saves you can also create new files and
-#        paths when saving, a reload of the
-#        page clears the filesystem.
-#
-# Click in the display to get keyboard focus, 
-# the cursor keys are the buttons, up is escape
-# and down is select.
+import canvas
+o=canvas.ctx
 
-import ctx
-import micropython
+import sys
+import time
+import os
+import gc
+import io
 
-maxframe = 90.0  # adjust this to change
-                  # the number of frames for each demo loop
+o.flags = o.HASH_CACHE | o.GRAY4 | o.INTRA_UPDATE #| o.REDUCED # the UI is grayscale allow grayscale
+
+clientflags = o.HASH_CACHE | o.INTRA_UPDATE | o.LOWFI
+
+light_red=(255,80,80)
+white=(255,255,255)
+black=(0,0,0)
+dark_gray=(80,80,80)
+light_gray=(170,170,170)
+
+wallpaper_bg    = black
+document_bg     = white
+document_fg     = black
+toolbar_bg      = dark_gray
+toolbar_fg      = white
+button_bg       = dark_gray
+button_fg       = white
+dir_selected_bg = white
+dir_selected_fg = black
+dir_entry_fg    = white
+scrollbar_fg    = dark_gray
+
+button_height_vh = 0.33
+button_width_vh  = 0.3
+font_size_vh     = 0.08
+
+if o.width < o.height:
+  font_size_vh = 0.06
+  button_width_vh = 0.2
+
+
+cur = 0
+def set_cur(event, no):
+    global cur
+    cur=no
+    return 0
+
+maxframe=10
 def linear(start_val,end_val):
   return (frame/maxframe)*(end_val-start_val)+start_val
 
-pressed=False
+def mbutton(o, x, y, label, cb, user_data):
+   o.save()
+   o.font_size *= 0.75
+   o.translate(x, y)
+   o.begin_path().rectangle(0,0, o.height*button_width_vh * 0.95, o.height * button_height_vh * 0.95)
+   o.listen_stop_propagate(o.PRESS, lambda e:cb(e, e.user_data), user_data)
+   o.color(button_bg).fill()
+   o.color(button_fg).move_to(o.font_size/3, o.height * button_height_vh / 2).text(label)
+   o.restore()
 
-def draw_tvg(o, path, x, y, tdim):
-  o.save()
-  dim=o.tinyvg_get_size(path)
-  o.translate(x,y)
-  scale=tdim/dim[0];
-  scaley=tdim/dim[1];
-  if scale > scaley:
-    scale=scaley
-  o.scale(scale, scale)
-  o.translate(-dim[0]/2, -dim[1]/2)
-  o.tinyvg_draw(path)
-  o.restore()
+def mbutton_thin(o, x, y, label, cb, user_data):
+   o.save()
+   o.font_size *= 0.8
+   o.translate(x, y)
+   o.begin_path().rectangle(0,0, o.height*button_width_vh * 0.95, o.font_size * 3)
+   o.listen_stop_propagate(o.PRESS, lambda e:cb(e, e.user_data), user_data)
+   o.begin_path().rectangle(0,0, o.height*button_width_vh * 0.95, o.font_size)
 
-def press_cb (e):
-  global pressed
-  pressed = True
-  
-def release_cb (e):
-  global pressed
-  pressed = False
-  
-def zoom_text(o, string):
-  o.font_size=linear(0,o.height/4)
-  
-  o.text_align=o.CENTER
-  o.text_baseline=o.MIDDLE
-  if pressed:
-    o.move_to(o.width/2+0.5,o.height*0.8+0.5)
-    o.color([0.0,0.0,0.5]).text(string)
-    o.move_to(o.width/2+0.5,o.height*0.8+0.5)
-    o.color([1.0,1.0,1.0]).text(string)
-  else:
-    o.move_to(o.width/2+0.5,o.height*0.8+0.5)
-    o.color([0.0,0.0,0.5]).text(string)
-    o.move_to(o.width/2,o.height*0.8)
-    o.color([1.0,1.0,1.0]).text(string)
-  o.rectangle(0,0,o.width,o.height)
-  o.listen(o.PRESS, press_cb, 1) 
-  o.listen(o.RELEASE, release_cb, 1) 
+   o.color(button_bg).fill()
+   o.color(button_fg).move_to(o.font_size/3, o.font_size*0.8).text(label)
+   o.restore()
 
-  o.begin_path()
+response = False
+
+def respond(val):
+    global response
+    response = val
+
+more_actions=False
+def show_more_cb(event, userdata):
+    global more_actions
+    more_actions = True
+    #event.stop_propagate=1
+
+def hide_more_cb(userdata):
+    global more_actions
+    more_actions = False
+    #event.stop_propagate=1
+
+
+def remove_cb(event, path):
+    global more_actions
+    os.remove(path)
+    more_actions = False
+    #event.stop_propagate=1
+
+offset=0
+
+def drag_cb(event):
+    global offset
+    offset -=event.delta_y/(font_size_vh*o.height) #20.0
+
+view_file=False
+run_file=False
+frame_no = 0
+
+def run_cb(event, path):
+    global run_file
+    run_file = path
+
+def view_cb(event, path):
+    global view_file, offset
+    offset = 0
+    view_file = path
+    #event.stop_propagate=1
+
+def dir_view(o):
+   global cur,frame_no
+   frame_no += 1
+   #gc.collect()
+   o.start_frame()
+   o.font_size=o.height*font_size_vh#32
+
+   y = o.font_size - offset * o.font_size
+   no = 0 
+      
+   o.rectangle(0,0,o.width,o.height).color((0,0,0)).fill()
+   #o.listen(o.MOTION, drag_cb, False)
+   #o.begin_path()
+   
+   current_file = ""
+
+   for file in os.listdir('/'):        
+      o.rectangle(o.height * button_width_vh * 1.2,y-o.font_size*0.75,
+                  o.width - o.height * button_width_vh * 1.2, o.font_size)
+      if no == cur:
+        o.color(dir_selected_bg)
+        current_file = file
+        o.fill()
+        o.color(dir_selected_fg)
+        if False:
+          o.save()
+          o.text_align=o.RIGHT
+          o.move_to(o.width, y)
+          o.text(str(os.stat(current_file)[6]))
+          o.restore()
+      else:
+        o.listen(o.PRESS|o.MOTION, lambda e:set_cur(e, e.user_data), no)
+        # registering multiple times costs heap, refactor this or use uimui
+        o.begin_path()
+        o.color(dir_entry_fg)
+      o.move_to(o.height * button_width_vh * 1.2 + o.font_size * 0.1,y)
+      
+      o.text(file)
+      o.restore()
+      
+      
+      y += o.font_size
+      no += 1
+
+   if False:
+     o.save()
+     o.font_size *= 0.8
+     o.color((170,170,170))
+     o.move_to(o.height * button_height_vh * 1.1, o.height-o.font_size*0.2)   
+     fs_stat = os.statvfs('/')
+     fs_size = fs_stat[0] * fs_stat[2]
+     fs_free = fs_stat[0] * fs_stat[3]
+     o.text("{:,} free".format(fs_free))
+     o.restore()
+
+   mbutton(o, 0, 0,
+          "view", view_cb, current_file)
+   mbutton(o, 0, o.height * button_height_vh,
+          "run", run_cb, current_file)
+   mbutton(o, 0, o.height - o.height * button_height_vh * 1,
+          "...", show_more_cb, current_file)
+   if more_actions:
+     o.rectangle(60,0,o.width,o.height)
+     o.listen_stop_propagate(o.PRESS, hide_more_cb, False)
+     mbutton(o, o.width-o.height * button_width_vh, o.height - o.height * button_height_vh * 1, "remove", remove_cb, current_file)
+
+   if frame_no > 1000:
+     #o.color([255,0,0])
+     #o.rectangle(40,40,40,40).fill()
+     o.save()
+     global_alpha=((frame_no-32)/50.0)
+     if global_alpha > 1.0:
+         global_alpha = 1.0
+     elif global_alpha < 0:
+         global_alpha = 0.0
+     o.global_alpha = global_alpha
+     o.logo(o.width - 32,o.height-32,64)
+     o.restore()
+   o.end_frame()
+   #cur+=1
+   
+   #gc.collect()
+   
+def scrollbar_cb(event):
+    global offset
+    factor = (event.y - o.font_size * 1.5) / (o.height-o.font_size*2);
+    if factor < 0.0:
+        factor = 0.0
+    if factor > 1.0:
+        factor = 1.0
+    offset = factor * event.user_data
+
+def prev_page_cb(event):
+    global offset
+    offset -= ((o.height / o.font_size) - 2)
+
+def next_page_cb(event):
+    global offset
+    offset += ((o.height / o.font_size) - 2)
+
+
+def file_view(o):
+   global offset
+   gc.collect()
+   o.start_frame()
+   o.save()
+
+   o.font_size = o.height * font_size_vh
+
+   #offset += 0.25
+   #o.rectangle(0,0,o.width,o.height)
+   #o.listen(o.MOTION, drag_cb, False)
+   #o.begin_path()
+   o.color(document_bg).paint()
+#   o.color([255,255,255]).fill()
+   
+   o.color(document_fg)
+   o.translate(0,(int(offset)-offset) * o.font_size)
+   o.move_to(0, o.font_size*0.8 * 2)
+   line_no = 0
+   o.font="mono";
+   y = o.font_size * 0.8 * 2
+   with open(view_file,'r') as file:
+     for line in file:
+       if line_no > offset and y - o.font_size < o.height:
+          o.move_to (0, int(y))
+          for word in line.split():
+            o.move_to(int(o.x), int(o.y))
+            o.text(word + ' ')
+          y+=o.font_size
+            
+       line_no += 1
+   o.restore()
+
+   o.save()
+   o.color(toolbar_bg)
+   o.rectangle(0,0,o.width, o.font_size).clip()
+   o.paint()
+   o.text_align=o.RIGHT
+   o.color(toolbar_fg)
+   o.move_to(o.width, o.font_size*0.8)
+   o.text(view_file)
+   o.restore()
+   mbutton_thin(o, 0, o.height * button_height_vh * 0, "close", lambda e,d:view_cb(e,False), -3)
+
+   o.color(scrollbar_fg)
+   
+   o.move_to(o.width - o.font_size * 1.2, o.font_size + o.font_size)
+   
+   if True:#draw scrollbar
+    o.line_to(o.width - o.font_size * 1.2, o.height - o.font_size)
+    o.line_width=1
+    o.stroke()
+    o.arc(o.width - o.font_size * 1.2,
+          o.font_size + o.font_size + (offset / line_no) * (o.height - o.font_size * 2),
+          o.font_size*0.8, 0.0, 3.14152*2, 0).stroke()
+    o.rectangle(o.width - o.font_size * 2, 0, o.font_size * 2, o.height)
+    o.listen(o.PRESS|o.MOTION, scrollbar_cb, line_no)
+    o.begin_path()
     
-o=ctx.get_context("2d") # mirroring the web,
-                        # this gives us an
-                        # interactive ctx context
+   o.rectangle(0, o.font_size,
+               o.width, (o.height - o.font_size)/2-1)
+   o.listen(o.PRESS, prev_page_cb, False)
+   o.begin_path()
+   o.rectangle(0, o.font_size + (o.height - o.font_size)/2,
+               o.width, (o.height - o.font_size)/2-1)
+   o.listen(o.PRESS, next_page_cb, False)
+   o.begin_path()
+   o.end_frame()
+      
+while True:
+    if view_file:
+        file_view(o)
+    else:
+        dir_view(o)
+        if run_file != False:
+            backupflags = o.flags
+            # we remove any scratch format from flags
+            o.flags = backupflags - (o.flags&(o.GRAY2|o.GRAY4|o.RGB332))
+            # and add in low res
+            o.flags = clientflags
+
+            gc.collect()
+            o.start_frame()    
+            o.color(wallpaper_bg).paint()
+            o.end_frame()
+            o.start_frame()    
+            o.color(wallpaper_bg).paint()
+            o.font_size=o.height*font_size_vh#32
+            o.color(white).move_to(0,o.font_size).text(run_file)
+            o.end_frame()
+            gc.collect()
 
 
+            
+            try:
+              exec(open(run_file).read())
+            except Exception as e:
+              string_res=io.StringIO(256)
+              sys.print_exception(e, string_res)
+              for frame in range(0,2):
+               o.start_frame()
+               o.color(wallpaper_bg).paint()
+               o.font_size=o.height*font_size_vh#32
+               o.color(white).move_to(0,o.font_size).text(run_file)
+               #o.color([255,0,0]).move_to(0,o.font_size*2).text(str(e))
+               o.color(light_red).move_to(0,o.font_size*3).text(string_res.getvalue())
 
-  
-    
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()
-  o.global_alpha=linear(0.0, 1.0)
-  o.logo(o.width/2,o.height/2, o.height)
-  o.end_frame()
+               o.end_frame()
+              time.sleep(5)
+     
+            o.flags = backupflags
+            run_file = False
+            gc.collect()
 
-long_text="""ctx itself doesn't provide wordwrapping, but it provides the ability
-to measure how wide words are.
-
-This example is text rotated 90 degrees, and wrapped to fit the size of the canvas.
-
-Reading rewrapping text is difficult.
-
-This test stresses the ability to layout quite a bit of text, and
-rely on ctx to do culling, it makes it easy to do quite advanced things
-but for completely generic text rendering of huge amounts dedicated windowing
-code is neccesary. It is nice that issuing a text drawcall per word does not
-explode out text rendering budget, we can layout huge amounts of text before
-memory starts bothering us.
-"""
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([255,255,255]).paint()
-  o.save()
-  o.color([0,0,0])
-  font_size = o.height * 0.3#linear(0.1, 0.20)
-  if frame > maxframe/6:
-    font_size /= 1.33
-
-  if frame > maxframe/3:
-    font_size /= 1.33
-  if frame > 2*maxframe/3:
-    font_size /= 1.33
-  o.font_size=font_size
-  o.move_to(font_size/2,font_size)
-  o.translate(0, -frame + o.height)  
-  space_width = o.text_width(' ')
-  for i in long_text.split():
-    word_width = o.text_width(i)
-    if (o.x + word_width > o.width - font_size/2):
-      o.move_to(font_size/2,o.y + font_size)
-    o.text(i)
-    o.move_to(o.x + space_width, o.y)
-  o.restore()
-  o.end_frame()
-  
-  
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()
-  o.save()
-  o.translate(o.width/2,o.height/2)
-  o.rotate(linear(0, 3.1415*2))
-  o.translate(-o.width/2,-o.height/2)
-  o.logo(o.width/2,o.height/2, o.height)
-  o.restore()
-  o.end_frame()
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()
-  o.logo(o.width/2,o.height/2, o.height)
-  zoom_text(o, "ctx vector graphics")
-  o.end_frame()
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()
-  o.logo(o.width/2,o.height/2, o.height)
-  zoom_text(o, "micropython")
-  o.end_frame()
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()
-  o.logo(o.width/2,o.height/2, o.height)
-  zoom_text(o, "wasm")  
-  o.end_frame()
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0.0,0.0,0.0]).paint()
-  draw_tvg(o, "fairydust.tvg", o.height/4, o.height/2, linear(o.height/2, o.height))
-  draw_tvg(o, "chaos-knot.tvg", o.width/2, o.height/2, o.height/2)
-  zoom_text(o, "tinyvg")  
-  o.end_frame()
-
-#for frame in range(0,maxframe):
-#  o.start_frame()
-#  o.color([0.0,0.0,0.0]).paint()
-#  draw_tvg(o, "tiger.tvg", o.width/2, o.height/2, linear(o.height/2,o.height))
-#  o.end_frame()
-
-#import image
-def test_texture(o):
-  w, h, img = image.load("world-s.png")
-  
-  for frame in range(0,maxframe):
-    o.start_frame()
-    o.color([0.0,0.0,0.0]).paint()
-    o.save()
-    o.translate(o.width/2,o.height/2)
-    o.scale(linear(2.0, 1.2), linear(2.0, 1.2))
-    o.rotate(linear(-0.2,0.00))
-    o.translate(-w/2,-h/2)
-  
-    o.texture(img, o.RGBA8, w, h, w*4).paint()
-    o.restore()
-    zoom_text(o, "stb_image")
-    o.end_frame()
-  
-  for frame in range(0,maxframe):
-    o.start_frame()
-    o.color([0.0,0.0,0.0]).paint()
-    o.logo(o.width/2,o.height/2, o.height*4)
-    o.save()
-    o.save()
-    o.rotate(linear(0.0,0.4))
-    o.rectangle(o.width * 0.2, o.height * 0.2,
-                o.width * 0.9, o.height * 0.8);
-    o.restore();
-    o.clip();
-    o.translate(o.width/2,o.height/2)
-    o.scale(linear(2.0, 1.2), linear(2.0, 1.2))
-    o.rotate(linear(-0.2,0.00))
-    o.translate(-w/2,-h/2)
-  
-    o.texture(img, o.RGBA8, w, h, w*4).paint()
-    o.restore()
-    zoom_text(o, "clipping")
-    o.restore()
-    o.end_frame()
-#test_texture(o)
-
-n_stars=100
-#stars=[]
-_rand = 123456789
-star_speed = 4
-
-def rand():
-  global _rand
-  _rand = (1103515245 * _rand + 12345) & 0xFFFFFF
-  return _rand
-
-offset = 0
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()
-  offset+=1
-  o.global_alpha=linear(0.0,0.7)
-  o.color([255,255,255])
-  _rand = 123456789
-  for i in range(0,n_stars):
-    z = (((rand()-offset * star_speed)%2001)/2000.0)*3+0.0001
-    x = (((rand()%2001)/2000.0)-0.5) * 2.0
-    y = (((rand()%2001)/2000.0)-0.5) * 2.0 
-    x = (x / z) * o.height + o.width * 0.5;
-    y = (y / z) * o.height + o.height * 0.5;
-    
-    dim = 1.0/z * o.height * 0.01
-    o.arc(x, y, dim, 0.0, 3.1415*2, 0)
-    o.fill()
-  o.end_frame()
-
-  
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()
-  o.global_alpha=0.7
-  offset+=1
-  o.color([255,255,255])
-  _rand = 123456789
-  for i in range(0,n_stars):
-    z = (((rand()-offset * star_speed)%2001)/2000.0)*3+0.0001
-    x = (((rand()%2001)/2000.0)-0.5) * 2.0
-    y = (((rand()%2001)/2000.0)-0.5) * 2.0 
-    x = (x / z) * o.height + o.width * 0.5;
-    y = (y / z) * o.height + o.height * 0.5;
-    dim = 1.0/z * o.height * linear(0.01,0.05)
-    o.arc(x, y, dim, 0.0, 3.1415*2, 0)
-    o.fill()
-  o.end_frame()
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()
-  o.global_alpha=0.7
-  offset+=1
-  o.color([255,255,255])
-  _rand = 123456789
-  for i in range(0,n_stars):
-    z = (((rand()-offset * star_speed)%2001)/2000.0)*3+0.0001
-    x = (((rand()%2001)/2000.0)-0.5) * 2.0
-    y = (((rand()%2001)/2000.0)-0.5) * 2.0 
-    x = (x / z) * o.height + o.width * 0.5;
-    y = (y / z) * o.height + o.height * 0.5;
-    dim = 1.0/z * o.height * 0.05
-    o.color([x,y,z])
-    o.arc(x, y, dim, 0.0, 3.1415*2, 0)
-    o.fill()
-  o.end_frame()
-
-
-
-for frame in range(0,maxframe):
-  o.start_frame()
-  o.color([0,0,0]).paint()  
-  o.logo(o.width/2,o.height/2, linear(o.height*10,o.height))
-  o.end_frame()
 

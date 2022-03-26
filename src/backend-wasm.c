@@ -32,55 +32,9 @@ int update_fb (Ctx *ctx, void *user_data)
   EM_ASM(
     var canvas = document.getElementById('c');
     var context = canvas.getContext('2d');
-    const offset = _get_fb(canvas.width, canvas.height);
     var _ctx = _ctx_wasm_get_context(0); // we presume an earlier
-                                         // call to have passed
-                                         // construction flags
-    const imgData = context.createImageData(canvas.width,canvas.height);
-                  //console.log(offset);
-    var x0 = _ctx_cb_x0 (_ctx);
-    var y0 = _ctx_cb_y0 (_ctx);
-    var x1 = _ctx_cb_x1 (_ctx);
-    var y1 = _ctx_cb_y1 (_ctx);
 
-    var updatew = x1 - x0 + 1;
-    var updateh = y1 - y0 + 1;
-    const linearMem = new Uint8Array(wasmMemory.buffer, offset,
-                          canvas.width * canvas.height * 4);
-
-    for (let y = y0; y < y1; y++)
-    {
-      let dsto = y * canvas.width * 4 + x0;
-      let srco = y * updatew * 4;
-      for (let x = x0; x < x1; x++)
-      {
-        var a = linearMem[srco+3];
-        var r = 1.0;
-        if (a!=0) r = 255.0/a;
-        imgData.data[dsto+0] = linearMem[srco+0] * r;
-        imgData.data[dsto+1] = linearMem[srco+1] * r;
-        imgData.data[dsto+2] = linearMem[srco+2] * r;
-        imgData.data[dsto+3] = a;
-        srco+=4;
-        dsto+=4;
-      }
-    }
-
-    if(1)
-    for (let i = 0; i < canvas.width * canvas.height;i++)
-    {
-      var a = linearMem[i*4+3];
-      var r = 1.0;
-      if (a!=0) r = 255.0/a;
-      imgData.data[i*4+0] = linearMem[i*4+0] * r;
-      imgData.data[i*4+1] = linearMem[i*4+1] * r;
-      imgData.data[i*4+2] = linearMem[i*4+2] * r;
-      imgData.data[i*4+3] = 255;
-    }
-    context.putImageData(imgData,0,0);
-
-
-     //if (!canvas.regevents)
+     if (!canvas.regevents)
      {
        canvas.onmousedown = function (e){
           var sync = 0;
@@ -116,7 +70,7 @@ int update_fb (Ctx *ctx, void *user_data)
                        e.preventDefault();
                        e.stopPropagate = 1;
                        };
-       //canvas.regevents = true;
+       canvas.regevents = true;
      }
 
 
@@ -132,17 +86,63 @@ int update_fb (Ctx *ctx, void *user_data)
    return 0;
 }
 
+EMSCRIPTEN_KEEPALIVE
+uint8_t wasm_scratch[1024*1024*4];
+
+
 static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf, int buf_size)
 {
-  int stride = ctx_width (ctx) * 4;
   uint8_t *src = (uint8_t*)buf;
-  uint8_t *dst = fb + y0 * stride + x0 * 4;
-  for (int y = y0; y < y0 + h; y++)
+  int in_w = w;
+  if (x0 < 0) x0 = 0;
+  if (y0 < 0) y0 = 0;
+  if (x0 + w >= ctx_width (ctx))
   {
-    memcpy (dst, src, w * 4);
-    dst += stride;
-    src += w * 4;
+     w = ctx_width (ctx) - x0 - 1;
+  // fprintf (stderr, "adjusting xbounds\n");
   }
+  if (y0 + h >= ctx_height (ctx))
+  {
+     h = ctx_height (ctx) - y0 - 1;
+  // fprintf (stderr, "adjusting ybounds\n");
+  }
+  for (int i = 0; i < h; i++)
+  {
+    ctx_RGB565_BS_to_RGBA8 (NULL, x0, src + i * in_w * 2,
+                    wasm_scratch + i * w * 4, w);
+  }
+
+  EM_ASM(
+    var x0 = $0;
+    var y0 = $1;
+    var w = $2;
+    var h = $3;
+    var canvas = document.getElementById('c');
+    var context = canvas.getContext('2d');
+    var _ctx = _ctx_wasm_get_context(0); // we presume an earlier
+                                         // call to have passed
+                                         // construction flags
+    if (1){
+    const offset = _get_fb(canvas.width, canvas.height);
+    const imgData = context.createImageData(w,h);
+
+    const linearMem = new Uint8Array(wasmMemory.buffer, _wasm_scratch,
+                                     w*h*4);
+
+    for (let i = 0; i < w * h;i++)
+    {
+      //var a = linearMem[i*4+3];
+      //var r = 1.0;
+      //if (a!=0) r = 255.0/a;
+      imgData.data[i*4+0] = linearMem[i*4+0];// * r;
+      imgData.data[i*4+1] = linearMem[i*4+1];// * r;
+      imgData.data[i*4+2] = linearMem[i*4+2];// * r;
+      imgData.data[i*4+3] = 255;
+    }
+    context.putImageData(imgData,x0,y0);
+    }
+  , x0,y0, w, h);
+
 }
 
 int wasm_damage_control = 0;
@@ -174,14 +174,18 @@ EM_ASM(
      }
    }
 );
+   static uint8_t *scratch = NULL;
 
-   if (!em_ctx){em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGBA8,
-                               set_pixels, 
-                               fb,
-                               update_fb,
-                               fb,
-                               width * height * 4, fb, 
-                               flags);
+   if (!scratch) scratch = malloc(512*1024);
+
+   if (!em_ctx){
+      em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGB565_BYTESWAPPED,
+                           set_pixels, 
+                           NULL,
+                           update_fb,
+                           NULL,
+                           30*1024, scratch, 
+                           flags);
    }
 
    if (wasm_damage_control)

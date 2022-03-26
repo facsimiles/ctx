@@ -731,7 +731,7 @@ static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
 	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
         int res = 0;
-        Ctx *ctx = ctx_wasm_get_context(CTX_FLAG_KEEP_DATA);
+        Ctx *ctx = ctx_wasm_get_context(0);
         ctx_start_frame (ctx);
         ctx_render_ctx (self->ctx, ctx);
         ctx_end_frame (ctx);
@@ -1183,7 +1183,7 @@ static mp_obj_t mp_ctx_get_context (mp_obj_t name)
 {
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = &mp_ctx_type;
-	o->ctx          = ctx_wasm_get_context(CTX_FLAG_KEEP_DATA);
+	o->ctx          = ctx_wasm_get_context(0);
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);
