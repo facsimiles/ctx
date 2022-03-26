@@ -534,6 +534,7 @@ static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2)
   int i;
   int handled = 0;
 
+  printf ("! %s\n", event->string);
   for (i = events->n_bindings-1; i>=0; i--)
     if (!ctx_strcmp (events->bindings[i].nick, event->string))
     {
@@ -1648,7 +1649,7 @@ ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time,
          )
       {
         //fprintf (stderr, "-");
-        ctx_list_prepend (&remove_grabs, grab);
+        ctx_list2_prepend (&remove_grabs, grab);
       }
       else
       {
@@ -1667,7 +1668,7 @@ ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time,
   {
     for (g = remove_grabs; g; g = g->next)
       device_remove_grab (ctx, g->data);
-    ctx_list_free (&remove_grabs);
+    ctx_list2_free (&remove_grabs);
   }
   if (hitlist)
   {

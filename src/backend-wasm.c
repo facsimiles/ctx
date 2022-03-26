@@ -35,6 +35,35 @@ EMSCRIPTEN_KEEPALIVE
 int32_t pointer_down = 0;
 int32_t pointer_was_down = 0;
 
+
+static uint32_t key_queue[32];
+static int key_queue_head = 0; // read head
+static int key_queued = 0;
+
+EMSCRIPTEN_KEEPALIVE
+void ctx_wasm_queue_key_event (int type, int keycode)
+{
+  int pos = (key_queue_head + key_queued) % 32;
+  key_queue[pos * 2 + 0] = type;
+  key_queue[pos * 2 + 1] = keycode;
+  key_queued ++;
+}
+
+int ctx_wasm_get_key_event (int *type, int *keycode)
+{
+  if (!key_queued)
+    return -1;
+
+  *type = key_queue[key_queue_head * 2 + 0];
+  *keycode = key_queue[key_queue_head * 2 + 1];
+
+  key_queued--;
+  key_queue_head++;
+  key_queue_head = key_queue_head % 16;
+
+  return 0;
+}
+
 int update_fb (Ctx *ctx, void *user_data)
 {
   EM_ASM(
@@ -71,18 +100,24 @@ int update_fb (Ctx *ctx, void *user_data)
           e.stopPropagate=1;
                        };
        canvas.onkeydown = function (e){
+          _ctx_wasm_queue_key_event (1, e.keyCode);
+          /*
           var sync = 0;
                        _ctx_key_down(_ctx,e.keyCode,0,0, sync);
                        _ctx_key_press(_ctx,e.keyCode,0,0, sync);
                        // XXX : todo, pass some tings like ctrl+l and ctrl+r
                        //       through?
+                       */
                        e.preventDefault();
                        e.stopPropagate = 1;
                        };
 
        canvas.onkeyup = function (e){
+          _ctx_wasm_queue_key_event (2, e.keyCode);
+               /*
           var sync = 0;
                        _ctx_key_up(_ctx,e.keyCode,0,0, sync);
+                       */
                        e.preventDefault();
                        e.stopPropagate = 1;
                        };
@@ -99,20 +134,45 @@ int update_fb (Ctx *ctx, void *user_data)
 #endif
 
    int sync = 0;
+   int ret = 0;
+
+   if (key_queued)
+     while (key_queued)
+   {
+     int type = 0 , keycode = 0;
+
+     ctx_wasm_get_key_event (&type, &keycode);
+     switch (type)
+     {
+       case 1:
+         ctx_key_down(ctx,keycode,NULL,0, sync);
+         ctx_key_press(ctx,keycode,NULL,0, sync);
+         ret = 1;
+         break;
+       case 2:
+         ctx_key_up(ctx,keycode,NULL,0, sync);
+         ret = 1;
+         break;
+     }
+   }
+
    if (pointer_down && !pointer_was_down)
    {
       ctx_pointer_press (ctx, pointer_x, pointer_y, 0, 0, sync);
+      ret = 1;
    } else if (!pointer_down && pointer_was_down)
    {
       ctx_pointer_release (ctx, pointer_x, pointer_y, 0, 0, sync);
-   } else // if (pointer_down)
+      ret = 1;
+   } else if (pointer_down)
    {
       ctx_pointer_motion (ctx, pointer_x, pointer_y, 0, 0, sync);
+      ret = 1;
    }
 
    pointer_was_down = pointer_down;
 
-   return 0;
+   return ret;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -128,12 +188,12 @@ static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
   if (x0 + w >= ctx_width (ctx))
   {
      w = ctx_width (ctx) - x0 - 1;
-  // fprintf (stderr, "adjusting xbounds\n");
+     fprintf (stderr, "adjusting xbounds\n");
   }
   if (y0 + h >= ctx_height (ctx))
   {
      h = ctx_height (ctx) - y0 - 1;
-  // fprintf (stderr, "adjusting ybounds\n");
+     fprintf (stderr, "adjusting ybounds\n");
   }
   for (int i = 0; i < h; i++)
   {
