@@ -150,6 +150,7 @@ void gc_collect(void);
                 gc_collect();\
 		ctx_##name(self->ctx);                                         \
                 mp_idle(0);\
+                while(ctx_get_event(self->ctx)){};\
 		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_##name##_obj, mp_ctx_##name);
