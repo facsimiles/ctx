@@ -131,8 +131,6 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
 
     int tbpp = bpp * 8;
     CtxPixelFormat tformat = format;
-    if (flags & (CTX_FLAG_GRAY2|CTX_FLAG_GRAY4|CTX_FLAG_GRAY8))
-    {
       if   (flags & CTX_FLAG_GRAY2)
       {
         tformat = CTX_FORMAT_GRAY2;
@@ -148,19 +146,12 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
         tformat = CTX_FORMAT_GRAY8;
         tbpp = 8;
       }
-      else {
-        tformat = CTX_FORMAT_GRAY4;
-        tbpp = 4;
-      }
-    }
-    else
-    {
+      else
       if (flags & (CTX_FLAG_RGB332))
       {
         tbpp = 8;
         tformat = CTX_FORMAT_RGB332;
       }
-    }
     int small_stride = (small_width * tbpp + 7) / 8;
     int min_scanlines = 4;
 
@@ -200,11 +191,11 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     {
       render_height = ctx_mini (render_height, y1-y0+1);
       int off = 0;
+      const uint8_t *gray_fb = (uint8_t*)fb;
    
-      if (flags & (CTX_FLAG_GRAY2|CTX_FLAG_GRAY4|CTX_FLAG_GRAY8))
+      switch (tformat)
       {
-        const uint8_t *gray_fb = (uint8_t*)fb;
-        if (tbpp == 1)
+        case CTX_FORMAT_GRAY1:
         {
           for (int y = 0; y < render_height; y++)
           {
@@ -231,7 +222,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
 #endif
           }
         }
-        else if (tbpp == 2)
+        break;
+        case CTX_FORMAT_GRAY2:
         {
           for (int y = 0; y < render_height; y++)
           {
@@ -260,7 +252,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             }
           }
         }
-        else if (tbpp == 4)
+        break;
+        case CTX_FORMAT_GRAY4:
         {
           for (int y = 0; y < render_height; y++)
           {
@@ -286,7 +279,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             }
           }
         }
-        else
+        break;
+        case CTX_FORMAT_GRAY8:
         {
           for (int y = 0; y < render_height; y++)
           {
@@ -309,10 +303,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             }
           }
         }
-      }
-      else
-      {
-        if (tbpp == 8)
+        break;
+        case CTX_FORMAT_RGB332:
         {
           uint8_t *fb_u8 = (uint8_t*)fb;
           for (int y = 0; y < render_height; y++)
@@ -335,7 +327,9 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             }
           }
         }
-        else
+        break;
+        case CTX_FORMAT_RGB565:
+        case CTX_FORMAT_RGB565_BYTESWAPPED:
         {
           for (int y = 0; y < render_height; y++)
           {
@@ -356,6 +350,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
             }
           }
         }
+        break;
       }
       backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
                               x0, y0, width, render_height, (uint16_t*)scaled,

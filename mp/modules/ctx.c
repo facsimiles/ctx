@@ -1427,7 +1427,6 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         MP_CTX_ATTR(global_alpha),
         MP_CTX_ATTR(font_size),
 
-
         MP_CTX_INT_CONSTANT(FLAG,LOWFI),
         MP_CTX_INT_CONSTANT(FLAG,GRAY2),
         MP_CTX_INT_CONSTANT(FLAG,GRAY4),
@@ -1435,7 +1434,7 @@ static const mp_rom_map_elem_t mp_ctx_locals_dict_table[] = {
         MP_CTX_INT_CONSTANT(FLAG,RGB332),
         MP_CTX_INT_CONSTANT(FLAG,HASH_CACHE),
         //MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
-        //MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
+        MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
         MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
         MP_CTX_INT_CONSTANT(FLAG,STAY_LOW),
 
@@ -1572,7 +1571,7 @@ static const mp_rom_map_elem_t mp_ctx_module_globals_table[] = {
         MP_CTX_INT_CONSTANT(FLAG,RGB332),
         MP_CTX_INT_CONSTANT(FLAG,HASH_CACHE),
 //      MP_CTX_INT_CONSTANT(FLAG,DAMAGE_CONTROL),
-//      MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
+        MP_CTX_INT_CONSTANT(FLAG,KEEP_DATA),
         MP_CTX_INT_CONSTANT(FLAG,INTRA_UPDATE),
         MP_CTX_INT_CONSTANT(FLAG,STAY_LOW),
 
