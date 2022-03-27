@@ -47,7 +47,7 @@ extern char epic_exec_path[256];
 
 extern int _mp_quit;
 
-Ctx *ctx_wasm_get_context(int flags);
+Ctx *ctx_wasm_get_context(int memory_budget);
 
 void epic_set_ctx (Ctx *ctx);
 void ctx_wasm_reset (void);
@@ -66,9 +66,11 @@ void mp_js_init(int heap_size) {
 
     mp_init();
     ctx_wasm_reset();
-    epic_set_ctx (ctx_wasm_get_context(0)); // these are the flags that
+#if 0
+    epic_set_ctx (ctx_wasm_get_context(23*1024)); // these are the flags that
                                             // apply, first call to
                                             // create the singleton
+#endif
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_lib));
 }
 

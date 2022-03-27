@@ -1180,11 +1180,11 @@ static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_new_drawlist_obj, mp_ctx_new_drawlist);
 
 #ifdef EMSCRIPTEN
-static mp_obj_t mp_ctx_get_context (mp_obj_t name)
+static mp_obj_t mp_ctx_get_context (mp_obj_t memory_budget_in)
 {
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = &mp_ctx_type;
-	o->ctx          = ctx_wasm_get_context(0);
+	o->ctx          = ctx_wasm_get_context(mp_obj_get_int (memory_budget_in));
 	return MP_OBJ_FROM_PTR(o);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(mp_ctx_get_context_obj, mp_ctx_get_context);

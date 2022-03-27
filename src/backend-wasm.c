@@ -69,62 +69,42 @@ int update_fb (Ctx *ctx, void *user_data)
   EM_ASM(
     var canvas = document.getElementById('c');
     var context = canvas.getContext('2d');
-    var _ctx = _ctx_wasm_get_context(0); // we presume an earlier
 
      if (!canvas.regevents)
      {
        canvas.onmousedown = function (e){
-          var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          //_ctx_pointer_press (_ctx, loc.x, loc.y, 0, 0, sync);
           setValue(_pointer_x, loc.x, "float");
           setValue(_pointer_y, loc.y, "float");
           setValue(_pointer_down, 1, "i32");
           e.stopPropagate=1;
                        };
        canvas.onmouseup = function (e){
-          var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          //_ctx_pointer_release (_ctx, loc.x, loc.y, 0, 0, sync);
           setValue(_pointer_x, loc.x, "float");
           setValue(_pointer_y, loc.y, "float");
           setValue(_pointer_down, 0, "i32");
           e.stopPropagate=1;
                        };
        canvas.onmousemove = function (e){
-          var sync = 0;
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
-          //_ctx_pointer_motion (_ctx, loc.x, loc.y, 0, 0, sync);
           setValue(_pointer_x, loc.x, "float");
           setValue(_pointer_y, loc.y, "float");
           e.stopPropagate=1;
                        };
        canvas.onkeydown = function (e){
           _ctx_wasm_queue_key_event (1, e.keyCode);
-          /*
-          var sync = 0;
-                       _ctx_key_down(_ctx,e.keyCode,0,0, sync);
-                       _ctx_key_press(_ctx,e.keyCode,0,0, sync);
-                       // XXX : todo, pass some tings like ctrl+l and ctrl+r
-                       //       through?
-                       */
                        e.preventDefault();
                        e.stopPropagate = 1;
                        };
 
        canvas.onkeyup = function (e){
           _ctx_wasm_queue_key_event (2, e.keyCode);
-               /*
-          var sync = 0;
-                       _ctx_key_up(_ctx,e.keyCode,0,0, sync);
-                       */
                        e.preventDefault();
                        e.stopPropagate = 1;
                        };
        canvas.regevents = true;
      }
-
-
   );
 
 #ifdef EMSCRIPTEN
@@ -209,7 +189,7 @@ static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
     var context = canvas.getContext('2d');
     var _ctx = _ctx_wasm_get_context(0); // we presume an earlier
                                          // call to have passed
-                                         // construction flags
+                                         // the memory budget
     const offset = _get_fb(canvas.width, canvas.height);
     const imgData = context.createImageData(w,h);
 
@@ -247,7 +227,7 @@ void ctx_wasm_reset (void)
   em_ctx = NULL;
 }
 
-Ctx *ctx_wasm_get_context (int flags)
+Ctx *ctx_wasm_get_context (int memory_budget)
 {
 
 
@@ -262,14 +242,27 @@ EM_ASM(
      //}
    }
 );
+
+   if (em_ctx && memory_budget)
+   {
+      CtxCbBackend *cb_backend = (CtxCbBackend*)em_ctx->backend;
+      if (memory_budget != cb_backend->memory_budget)
+      {
+         ctx_cb_set_memory_budget (em_ctx, memory_budget);
+         ctx_cb_set_flags (em_ctx, 0);
+      }
+   }
+
+
+
    if (!em_ctx){
       em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGB565_BYTESWAPPED,
                            set_pixels, 
                            NULL,
                            update_fb,
                            NULL,
-                           24*1024, NULL, 
-                           flags);
+                           memory_budget, NULL, 
+                           0);
    }
 
 #if 0
