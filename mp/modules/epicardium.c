@@ -307,7 +307,7 @@ int epic_disp_open (void)
 {
   Ctx *ctx = wasm_ctx;
   ctx_start_frame (ctx);
-  ctx_clear_bindings (ctx);
+  //ctx_clear_bindings (ctx);
   ctx_listen (ctx, CTX_KEY_DOWN,
                    key_down_cb,
                    NULL, NULL);

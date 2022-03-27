@@ -178,21 +178,20 @@ int update_fb (Ctx *ctx, void *user_data)
 EMSCRIPTEN_KEEPALIVE
 uint8_t wasm_scratch[1024*1024*4];
 
-
 static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf, int buf_size)
 {
   uint8_t *src = (uint8_t*)buf;
   int in_w = w;
   if (x0 < 0) x0 = 0;
   if (y0 < 0) y0 = 0;
-  if (x0 + w >= ctx_width (ctx))
+  if (x0 + w > ctx_width (ctx))
   {
-     w = ctx_width (ctx) - x0 - 1;
-     fprintf (stderr, "adjusting xbounds\n");
+     fprintf (stderr, "adjusting xbounds from %i %i\n", x0, w);
+     w = ctx_width (ctx) - x0;
   }
-  if (y0 + h >= ctx_height (ctx))
+  if (y0 + h > ctx_height (ctx))
   {
-     h = ctx_height (ctx) - y0 - 1;
+     h = ctx_height (ctx) - y0;
      fprintf (stderr, "adjusting ybounds\n");
   }
   for (int i = 0; i < h; i++)
@@ -232,6 +231,7 @@ static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
 
 }
 
+#if 0
 int wasm_damage_control = 0;
 
 CTX_EXPORT
@@ -239,7 +239,7 @@ void wasm_set_damage_control(int val)
 {
   wasm_damage_control = val;
 }
-
+#endif
 
 void ctx_wasm_reset (void)
 {
@@ -250,33 +250,29 @@ void ctx_wasm_reset (void)
 Ctx *ctx_wasm_get_context (int flags)
 {
 
+
 EM_ASM(
     {var canvas = document.getElementById('c');
      const offset = _get_fb(canvas.width, canvas.height);
 
-     var dc = document.getElementById('damagecontrol');
-     if (dc)
-     {
-       _wasm_set_damage_control(dc.checked?1:0);
-     }
+     //var dc = document.getElementById('damagecontrol');
+     //if (dc)
+     //{
+     //  _wasm_set_damage_control(dc.checked?1:0);
+     //}
    }
 );
-   static uint8_t *scratch = NULL;
-
-   if (!scratch) scratch = malloc(512*1024); // XXX this should be unnneded,
-                                             // we should be able to just mp allocated
-                                             // memory instead
-
    if (!em_ctx){
       em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGB565_BYTESWAPPED,
                            set_pixels, 
                            NULL,
                            update_fb,
                            NULL,
-                           23*1024, scratch, 
+                           24*1024, NULL, 
                            flags);
    }
 
+#if 0
    if (wasm_damage_control)
    {
      int flags = ctx_cb_get_flags (em_ctx);
@@ -289,6 +285,7 @@ EM_ASM(
      flags &= ~CTX_FLAG_DAMAGE_CONTROL;
      ctx_cb_set_flags (em_ctx, flags);
    }
+#endif
    return em_ctx;
 }
 

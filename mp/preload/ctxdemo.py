@@ -1,15 +1,17 @@
 import canvas
 o=canvas.ctx
-
+ 
 import sys
 import time
 import os
 import gc
 import io
 
-o.flags = o.HASH_CACHE | o.GRAY4 | o.INTRA_UPDATE #| o.REDUCED # the UI is grayscale allow grayscale
+# immediate mode user interfaces on a microcontroller with ctx and micropython on rp2040
 
-clientflags = o.HASH_CACHE | o.INTRA_UPDATE | o.LOWFI
+o.flags = o.HASH_CACHE #| o.GRAY4 #| o.REDUCED # the UI is grayscale allow grayscale
+
+clientflags = 0#o.HASH_CACHE# | o.LOWFI
 
 light_red=(255,80,80)
 white=(255,255,255)
@@ -31,12 +33,11 @@ scrollbar_fg    = dark_gray
 
 button_height_vh = 0.33
 button_width_vh  = 0.3
-font_size_vh     = 0.08
+font_size_vh     = 0.11
 
 if o.width < o.height:
   font_size_vh = 0.06
   button_width_vh = 0.2
-
 
 cur = 0
 def set_cur(event, no):
@@ -114,17 +115,51 @@ def view_cb(event, path):
     view_file = path
     #event.stop_propagate=1
 
+def space_cb(event):
+    run_cb(None, current_file)
+    print(event.string)
+
+def up_cb(event):
+    global cur
+    cur -= 1
+    if cur <= 0:
+        cur = 0
+
+def down_cb(event):
+    global cur
+    cur += 1
+
+import micropython
+
 def dir_view(o):
-   global cur,frame_no
+   global cur,frame_no,current_file,offset
    frame_no += 1
+
+#   if cur > 4:
+       
+
    #gc.collect()
    o.start_frame()
+   #micropython.mem_info()
+   o.add_key_binding("space", "", "", space_cb)
+   o.add_key_binding("up", "", "", up_cb)
+   o.add_key_binding("down", "", "", down_cb)
+
    o.font_size=o.height*font_size_vh#32
+
+   if (offset ) < cur - (o.height/o.font_size) * 0.8:
+     offset = cur - (o.height/o.font_size)*0.2
+   if (offset ) > cur - (o.height/o.font_size) * 0.2:
+     offset = cur - (o.height/o.font_size)*0.8
+   if offset < 0:
+     offset = 0
+
+
 
    y = o.font_size - offset * o.font_size
    no = 0 
       
-   o.rectangle(0,0,o.width,o.height).color((0,0,0)).fill()
+   #o.rectangle(0,0,o.width,o.height)
    #o.listen(o.MOTION, drag_cb, False)
    #o.begin_path()
    
@@ -145,7 +180,7 @@ def dir_view(o):
           o.text(str(os.stat(current_file)[6]))
           o.restore()
       else:
-        o.listen(o.PRESS|o.MOTION, lambda e:set_cur(e, e.user_data), no)
+        o.listen(o.PRESS|o.DRAG_MOTION, lambda e:set_cur(e, e.user_data), no)
         # registering multiple times costs heap, refactor this or use uimui
         o.begin_path()
         o.color(dir_entry_fg)
@@ -157,17 +192,6 @@ def dir_view(o):
       
       y += o.font_size
       no += 1
-
-   if False:
-     o.save()
-     o.font_size *= 0.8
-     o.color((170,170,170))
-     o.move_to(o.height * button_height_vh * 1.1, o.height-o.font_size*0.2)   
-     fs_stat = os.statvfs('/')
-     fs_size = fs_stat[0] * fs_stat[2]
-     fs_free = fs_stat[0] * fs_stat[3]
-     o.text("{:,} free".format(fs_free))
-     o.restore()
 
    mbutton(o, 0, 0,
           "view", view_cb, current_file)
@@ -224,11 +248,9 @@ def file_view(o):
    o.font_size = o.height * font_size_vh
 
    #offset += 0.25
-   #o.rectangle(0,0,o.width,o.height)
+   o.rectangle(0,0,o.width,o.height)
    #o.listen(o.MOTION, drag_cb, False)
-   #o.begin_path()
-   o.color(document_bg).paint()
-#   o.color([255,255,255]).fill()
+   o.color(document_bg).fill()
    
    o.color(document_fg)
    o.translate(0,(int(offset)-offset) * o.font_size)
@@ -271,7 +293,7 @@ def file_view(o):
           o.font_size + o.font_size + (offset / line_no) * (o.height - o.font_size * 2),
           o.font_size*0.8, 0.0, 3.14152*2, 0).stroke()
     o.rectangle(o.width - o.font_size * 2, 0, o.font_size * 2, o.height)
-    o.listen(o.PRESS|o.MOTION, scrollbar_cb, line_no)
+    o.listen(o.PRESS|o.DRAG_MOTION, scrollbar_cb, line_no)
     o.begin_path()
     
    o.rectangle(0, o.font_size,
@@ -283,7 +305,9 @@ def file_view(o):
    o.listen(o.PRESS, next_page_cb, False)
    o.begin_path()
    o.end_frame()
-      
+
+
+
 while True:
     if view_file:
         file_view(o)

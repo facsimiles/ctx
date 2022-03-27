@@ -50,9 +50,52 @@ ctx_cb_set_memory_budget (Ctx *ctx, int memory_budget)
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
   backend_cb->memory_budget = memory_budget;
   if (backend_cb->fb)
+  {
     ctx_free (backend_cb->fb);
-  backend_cb->fb = NULL;
+    backend_cb->fb = NULL;
+  }
 }
+
+#define CTX_MEMDEBUG 0  // by setting this to 1 we get reports about
+                        // scratch buffer overflows into the 1kb buffer
+                        // area
+                        //
+#if CTX_MEMDEBUG
+#define CTX_SCRATCH_PAD  512
+
+static void
+ctx_memdebug (CtxCbBackend *cb_backend, int line_no)
+{
+  int started = 0;
+  int last = 0;
+  int first = 0;
+  if (!cb_backend->fb)
+    return;
+  for (int i = cb_backend->memory_budget/2; i < cb_backend->memory_budget/2 + CTX_SCRATCH_PAD/2;i++)
+  {
+    if (cb_backend->fb[i] != 42)
+    {
+      if (!started)
+      {
+        first = i;
+        started = 1;
+      }
+      last = i;
+      cb_backend->fb[i] = 42;
+    }
+  }
+  if (started)
+  fprintf (stderr, "%i scratch overreach - first wrong byte at buf + %i last: %i\n",
+                  line_no,
+                  first - cb_backend->memory_budget/2,
+                                                                          last - cb_backend->memory_budget/2);
+}
+                        
+#define CTX_VERIFY_MEM()  do{ctx_memdebug(backend_cb, __LINE__);}while(0)
+#else
+#define CTX_SCRATCH_PAD   1024
+#define CTX_VERIFY_MEM()  do{}while(0)
+#endif
 
 static int ctx_render_cb (CtxCbBackend *backend_cb, 
                           int x0, int y0,
@@ -67,24 +110,17 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
   int bpp            = ctx_pixel_format_bits_per_pixel (format) / 8;
   int abort          = 0;
 
-  if (x0 < 0) x0 = 0;
-  if (y0 < 0) y0 = 0;
-  if (x1 >= ctx_width (ctx))
-  {
-     x1 = ctx_width (ctx) - 1;
-     fprintf (stderr, "preadjusting xbounds\n");
-  }
-  if (y1 >= ctx_height (ctx))
-  {
-     y1 = ctx_height (ctx) - 1;
-     fprintf (stderr, "preadjusting ybounds\n");
-  }
-
   int width          = x1 - x0 + 1;
   int height         = y1 - y0 + 1;
 
   if (!backend_cb->fb)
-    backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);
+  {
+    backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget + CTX_SCRATCH_PAD);
+#if CTX_MEMDEBUG
+    for (int i = backend_cb->memory_budget/2; i < backend_cb->memory_budget/2 + CTX_SCRATCH_PAD/2;i++)
+      backend_cb->fb[i] = 42;
+#endif
+  }
   fb = backend_cb->fb;
 
   if (flags & CTX_FLAG_LOWFI)
@@ -182,7 +218,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                  scaled[off++]  = val;
             }
 #if 1
-            for (int ty = 1; ty < scale_factor; ty++)
+            for (int ty = 1; ty < scale_factor &&
+                              y + 1< render_height   ; ty++)
             {
                for (int x = 0; x < width; x++)
                {
@@ -205,10 +242,14 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                uint8_t bits = gray_fb[soff];
                uint8_t g    = 85 * ((bits >> (2*(x&3)))&3);
                uint16_t val = ctx_565_pack (g, g, g, 1);
-               for (int i = 0; i < scale_factor; i++)
+               for (int i = 0; i < scale_factor; i++) // XXX we go off into the margin
+                                                      // for render width that are not
+                                                      // divisible by scale factor
+                                                      //
                  scaled[off++]  = val;
             }
-            for (int ty = 1; ty < scale_factor; ty++)
+            for (int ty = 1; ty < scale_factor &&
+                              y + 1< render_height; ty++)
             {
                for (int x = 0; x < width; x++)
                {
@@ -233,7 +274,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                for (int i = 0; i < scale_factor; i++)
                  scaled[off++]  = val;
             }
-            for (int ty = 1; ty < scale_factor; ty++)
+            for (int ty = 1; ty < scale_factor &&
+                              y + 1< render_height; ty++)
             {
                for (int x = 0; x < width; x++)
                {
@@ -256,7 +298,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                for (int i = 0; i < scale_factor; i++)
                  scaled[off++]  = val;
             }
-            for (int ty = 1; ty < scale_factor; ty++)
+            for (int ty = 1; ty < scale_factor && y + 1< render_height; ty++)
             {
                for (int x = 0; x < width; x++)
                {
@@ -282,7 +324,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                for (int i = 0; i < scale_factor; i++)
                  scaled[off++]  = val;
             }
-            for (int ty = 1; ty < scale_factor; ty++)
+            for (int ty = 1; ty < scale_factor && y + 1< render_height; ty++)
             {
                for (int x = 0; x < width; x++)
                {
@@ -303,7 +345,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                for (int i = 0; i < scale_factor; i++)
                  scaled[off++]  = val;
             }
-            for (int ty = 1; ty < scale_factor; ty++)
+            for (int ty = 1; ty < scale_factor && y + 1< render_height; ty++)
             {
                for (int x = 0; x < width; x++)
                {
@@ -396,6 +438,9 @@ ctx_cb_y1 (Ctx *ctx)
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
 }
+
+
+
 
 static void
 ctx_cb_end_frame (Ctx *ctx)
@@ -540,6 +585,7 @@ ctx_cb_end_frame (Ctx *ctx)
          int y0 = cb_backend->min_row     * tile_height;
          int x1 = (cb_backend->max_col+1) * tile_width - 1;
          int y1 = (cb_backend->max_row+1) * tile_height - 1;
+#if 0
          if (cb_backend->flags & CTX_FLAG_DAMAGE_CONTROL)
          {
            ctx_save (ctx);
@@ -549,6 +595,7 @@ ctx_cb_end_frame (Ctx *ctx)
            ctx_stroke (ctx);
            ctx_restore (ctx);
          }
+#endif
 
          //int width = x1 - x0 + 1;
          //int height = y1 - y0 + 1;
@@ -675,7 +722,10 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   ctx_set_backend (ctx, backend);
   cb_backend->ctx = ctx;
   if (!scratch_fb)
-    cb_backend->fb = (uint16_t*)ctx_malloc (memory_budget);
+  {
+    cb_backend->memory_budget = 0;
+    ctx_cb_set_memory_budget (ctx, memory_budget);
+  }
 
   ctx_get_event (ctx);
   return ctx;

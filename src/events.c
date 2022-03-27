@@ -534,7 +534,6 @@ static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2)
   int i;
   int handled = 0;
 
-  printf ("! %s\n", event->string);
   for (i = events->n_bindings-1; i>=0; i--)
     if (!ctx_strcmp (events->bindings[i].nick, event->string))
     {
@@ -1950,10 +1949,17 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
     event.ctx = ctx;
     event.type = CTX_KEY_PRESS;
     event.unicode = keyval; 
+#ifdef EMSCRIPTEN
+    if (string)
+    event.string = strdup(string);
+    else
+    event.string = strdup("--");
+#else
     if (string)
     event.string = ctx_strdup(string);
     else
-    event.string = "--";
+    event.string = ctx_strdup("--");
+#endif
     event.stop_propagate = 0;
     event.time = time;
 
@@ -1965,12 +1971,20 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
         item->cb[i].cb (&event, item->cb[i].data1, item->cb[i].data2);
         if (event.stop_propagate)
         {
+#ifdef EMSCRIPTEN
+          free ((void*)event.string);
+#else
           ctx_free ((void*)event.string);
+#endif
           return event.stop_propagate;
         }
       }
     }
+#ifdef EMSCRIPTEN
+    free ((void*)event.string);
+#else
     ctx_free ((void*)event.string);
+#endif
   }
   return 0;
 }
