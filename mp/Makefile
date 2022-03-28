@@ -6,6 +6,8 @@ QSTR_DEFS = qstrdefsport.h
 
 include $(TOP)/py/py.mk
 
+LDFLAGS += -lidbfs.js
+
 CC = emcc
 LD = emcc
 
@@ -18,7 +20,7 @@ INC += -Ilib/
 CFLAGS += -std=gnu99 -Wall -Wdouble-promotion
 #-Werror  
 CFLAGS += -O3 -DNDEBUG
-CFLAGS += $(INC)
+CFLAGS += $(INC) -lidbfs.js
 
 SRC_SHARED = $(addprefix shared/,\
 	runtime/interrupt_char.c \
@@ -39,7 +41,7 @@ OBJ += $(PY_O)
 OBJ += $(addprefix $(BUILD)/, $(SRC_SHARED:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 
-JSFLAGS += -s ASYNCIFY -sFORCE_FILESYSTEM
+JSFLAGS += -s ASYNCIFY -sFORCE_FILESYSTEM 
 JSFLAGS += -s EXPORTED_FUNCTIONS="['_mp_js_init', '_mp_js_init_repl', '_mp_js_do_str', '_mp_js_process_char', '_mp_hal_get_interrupt_char', '_mp_sched_keyboard_interrupt', '_mp_js_set_heap_size']" -s EXPORTED_RUNTIME_METHODS="['ccall', 'cwrap']" -s --memory-init-file 0 --js-library library.js
 
 

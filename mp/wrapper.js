@@ -50,7 +50,7 @@ function add_paths (base)
   })
 
   FS.readdir(base).forEach(function(e){
-    if (e[0] != '.' && e!= 'dev' && e != 'proc')// && e != 'lib')
+    if (e[0] != '.' && e!= 'dev' && e != 'proc' && e != 'lib')
           {
     var fullpath = base + '/' + e;
     if (base == '/') fullpath = base + e;
@@ -82,9 +82,12 @@ var mainProgram = function()
 {
   FS.rmdir("/home/web_user")
   FS.rmdir("/home")
-  FS.rmdir("/tmp")
+  FS.mkdir("/sd");
+  FS.mount(IDBFS, {}, '/sd');
+  FS.syncfs(true, function (err) { });
 
   repopulate_file_picker()
+  setTimeout(repopulate_file_picker, 1000);
 
   mp_js_init = Module.cwrap('mp_js_init', 'null', ['number']);
   mp_js_do_str = Module.cwrap('mp_js_do_str', 'number', ['string'], {async:true});
@@ -158,6 +161,7 @@ window.dosave = function ()
   try{FS.rmdir(target_path)}catch{};
   FS.writeFile(target_path,
           editor.getValue())
+  FS.syncfs(false, function (err) { });
 
   document.getElementById('mp_js_stdout').innerText = 'saved ' + target_path;
   repopulate_file_picker();
