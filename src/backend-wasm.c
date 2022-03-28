@@ -43,6 +43,7 @@ static int key_queued = 0;
 EMSCRIPTEN_KEEPALIVE
 void ctx_wasm_queue_key_event (int type, int keycode)
 {
+  if (key_queued >= 31) return;
   int pos = (key_queue_head + key_queued) % 32;
   key_queue[pos * 2 + 0] = type;
   key_queue[pos * 2 + 1] = keycode;

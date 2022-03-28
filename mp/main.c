@@ -79,9 +79,16 @@ void mp_js_init_repl() {
 }
 
 
+int mp_js_heap_size = 192*1024;
+
+void mp_js_set_heap_size (int heap_size)
+{
+  mp_js_heap_size = heap_size;
+}
+
 int do_path (const char *path)
 {
-  mp_js_init (192 * 1024);
+  mp_js_init (mp_js_heap_size);
   mp_parse_input_kind_t input_kind = MP_PARSE_FILE_INPUT;
   int ret = 0;
   nlr_buf_t nlr;
@@ -121,7 +128,7 @@ int do_path (const char *path)
 int do_str(const char *src, mp_parse_input_kind_t input_kind)
 {
     int ret = 0;
-    mp_js_init (192 * 1024);
+    mp_js_init (mp_js_heap_size);
     nlr_buf_t nlr;
     epic_exec_path[0] = 0;
     _mp_quit = 0;

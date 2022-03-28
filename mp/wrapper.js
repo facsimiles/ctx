@@ -95,7 +95,7 @@ var mainProgram = function()
 
   if (typeof window === 'undefined' && require.main === module) {
       var fs = require('fs');
-      var stack_size = 128 * 1024;
+      var stack_size = window.heap;
       var contents = '';
       var repl = true;
 
@@ -132,7 +132,7 @@ var mainProgram = function()
   }
 
 window.running = 0;
-window.heap = 64;
+window.heap = 192;
 
 window.dorun = function ()
 {
@@ -265,6 +265,11 @@ window.windowToCanvas = function(canvas, x, y)
      });
 
 
+window.heap_set = function (newheap)
+{
+   window.heap = parseInt(newheap) * 1024;
+   _mp_js_set_heap_size (window.heap);
+}
 
 window.editor_load = function (path)
 {
