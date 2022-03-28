@@ -1,17 +1,14 @@
 import canvas
 o=canvas.ctx
  
-import sys
-import time
 import os
 import gc
-import io
 
 # immediate mode user interfaces on a microcontroller with ctx and micropython on rp2040
 
-o.flags = o.HASH_CACHE #| o.GRAY4 #| o.REDUCED # the UI is grayscale allow grayscale
+o.flags = o.HASH_CACHE | o.GRAY4 #| o.REDUCED # the UI is grayscale allow grayscale
 
-clientflags = 0#o.HASH_CACHE# | o.LOWFI
+clientflags = o.HASH_CACHE | o.RGB332
 
 light_red=(255,80,80)
 white=(255,255,255)
@@ -352,5 +349,6 @@ while True:
             o.flags = backupflags
             run_file = False
             gc.collect()
+
 
 
