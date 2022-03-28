@@ -94,6 +94,19 @@ static mp_obj_t mp_os_reset(void)
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(reset_obj, mp_os_reset);
 
+static mp_obj_t mp_os_sync(void)
+{
+	//epic_system_reset();
+        EM_ASM(
+          FS.syncfs(false, function (err) { });
+
+        );
+
+	/* unreachable */
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(sync_obj, mp_os_sync);
+
 static mp_obj_t mp_os_listdir(size_t n_args, const mp_obj_t *args)
 {
 	const char *path;
@@ -238,6 +251,7 @@ static const mp_rom_map_elem_t os_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_os) },
 	{ MP_ROM_QSTR(MP_QSTR_exit), MP_ROM_PTR(&exit_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&reset_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_sync), MP_ROM_PTR(&sync_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_exec), MP_ROM_PTR(&exec_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_listdir), MP_ROM_PTR(&listdir_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_unlink), MP_ROM_PTR(&unlink_obj) },
