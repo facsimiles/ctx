@@ -444,7 +444,6 @@ typedef struct CtxItemCb {
 } CtxItemCb;
 
 
-#define CTX_MAX_CBS              128
 
 typedef struct CtxItem {
   CtxMatrix inv_matrix;  /* for event coordinate transforms */

@@ -603,6 +603,11 @@
 #define CTX_MAX_SCANLINE_LENGTH 4096
 #endif
 
+
+#ifndef CTX_MAX_CBS
+#define CTX_MAX_CBS              128
+#endif
+
 #ifndef CTX_STATIC_OPAQUE // causes a CTX_MAX_SCANLINE_LENGTH
                           // buffer of 255 bytes to be part of
                           // rasterizer
