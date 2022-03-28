@@ -65,6 +65,7 @@
 #define CTX_MAX_STATES             5
 #define CTX_MAX_EDGES            127
 #define CTX_MAX_PENDING           64
+#define CTX_MAX_CBS               8
 #define CTX_MAX_LISTEN_FDS        1
 #define CTX_MATH 0
 
