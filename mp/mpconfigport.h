@@ -133,31 +133,16 @@ extern const struct _mp_obj_module_t os_module;
 //{ MP_ROM_QSTR(MP_QSTR_png), MP_ROM_PTR(&png_module) }, 
 extern const struct _mp_obj_module_t image_module;
 extern const struct _mp_obj_module_t interrupt_module;
-extern const struct _mp_obj_module_t buttons_module;
-extern const struct _mp_obj_module_t sys_display_module;
-extern const struct _mp_obj_module_t leds_module;
 extern const struct _mp_obj_module_t config_module;
 extern const struct _mp_obj_module_t gpio_module;
-extern const struct _mp_obj_module_t power_module;
-extern const struct _mp_obj_module_t light_sensor_module;
-extern const struct _mp_obj_module_t personal_state_module;
-extern const struct _mp_obj_module_t bhi160_module;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
     { MP_ROM_QSTR(MP_QSTR_ctx), MP_ROM_PTR(&mp_module_ctx) }, \
     { MP_ROM_QSTR(MP_QSTR_os), MP_ROM_PTR(&os_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_buttons), MP_ROM_PTR(&buttons_module) }, \
     { MP_ROM_QSTR(MP_QSTR_image), MP_ROM_PTR(&image_module) }, \
     { MP_ROM_QSTR(MP_QSTR_interrupt), MP_ROM_PTR(&interrupt_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_sys_display), MP_ROM_PTR(&sys_display_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_sys_leds), MP_ROM_PTR(&leds_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_sys_config), MP_ROM_PTR(&config_module) }, \
     { MP_ROM_QSTR(MP_QSTR_gpio), MP_ROM_PTR(&gpio_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_power), MP_ROM_PTR(&power_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_sys_bhi160), MP_ROM_PTR(&bhi160_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_light_sensor), MP_ROM_PTR(&light_sensor_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_personal_state), MP_ROM_PTR(&personal_state_module) }, \
 
 // #define MICROPY_EVENT_POLL_HOOK {ets_event_poll();}
 #if MICROPY_PY_THREAD

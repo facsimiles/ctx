@@ -75,6 +75,8 @@ function repopulate_file_picker()
     html+="<option value='"+e+"'>"+e+"</option>";
   })
   select.innerHTML=html;
+
+  document.getElementById('file_list').value=window.current_path;
 }
 
 
@@ -283,9 +285,10 @@ window.editor_load = function (path)
     text += String.fromCharCode(raw[i]);
   editor.setValue(text)
   window.current_path=path
+  document.getElementById('file_list').value=window.current_path;
 }
 
-  window.editor_load ("/ctxdemo.py");
+  window.editor_load ("/main.py");
 
             document.onkeydown = function(e)
             {
