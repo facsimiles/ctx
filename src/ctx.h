@@ -567,7 +567,6 @@ ctx_source_transform (Ctx *ctx, float a, float b,  float c,
                       float d, float e, float f, 
                       float g, float h, float i); 
 typedef struct _CtxMatrix     CtxMatrix;
-typedef struct _Ctx16f16Matrix     Ctx16f16Matrix;
 
 /* ctx_source_transform_matrix:
  */
@@ -2358,12 +2357,6 @@ struct
   _CtxMatrix
 {
   float m[3][3];
-};
-
-struct
-  _Ctx16f16Matrix
-{
-  int32_t m[3][3];
 };
 
 void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix);

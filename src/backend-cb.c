@@ -328,6 +328,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
           }
         }
         break;
+        default:
         case CTX_FORMAT_RGB565:
         case CTX_FORMAT_RGB565_BYTESWAPPED:
         {

@@ -195,6 +195,20 @@ struct _CtxSource
   };
 };
 
+
+typedef struct _Ctx16f16Matrix     Ctx16f16Matrix;
+struct
+  _Ctx16f16Matrix
+{
+#if CTX_32BIT_SEGMENTS
+  int64_t m[3][3];  // forcing higher precision easily, the extra
+                    // memory cost is minuscle
+#else
+  int32_t m[3][3];
+#endif
+};
+
+
 struct _CtxGState
 {
 #if CTX_32BIT_SEGMENTS
