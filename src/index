@@ -13,7 +13,6 @@ libc.c
 ctx-decls.h
 audio.h
 start-implementation
-ctx-list2.h
 ctx-clients.h
 ctx-internal.h
 drawlist.h

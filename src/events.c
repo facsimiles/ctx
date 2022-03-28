@@ -1021,7 +1021,7 @@ CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
       CtxItem *item = a->data;
       if (item->types & type)
       {
-        ctx_list2_prepend (&ret, item);
+        ctx_list_prepend (&ret, item);
         return ret;
       }
     }
@@ -1054,7 +1054,7 @@ CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
       }
       else
       {
-        ctx_list2_prepend (&ret, item);
+        ctx_list_prepend (&ret, item);
       }
     }
   }
@@ -1066,9 +1066,9 @@ CtxItem *_ctx_detect (Ctx *ctx, float x, float y, CtxEventType type)
   CtxList *l = _ctx_detect_list (ctx, x, y, type);
   if (l)
   {
-    ctx_list2_reverse (&l);
+    ctx_list_reverse (&l);
     CtxItem *ret = l->data;
-    ctx_list2_free (&l);
+    ctx_list_free (&l);
     return ret;
   }
   return NULL;
@@ -1221,13 +1221,13 @@ static CtxItem *_ctx_update_item (Ctx *ctx, int device_no, float x, float y, Ctx
   CtxList *l = _ctx_detect_list (ctx, x, y, type);
   if (l)
   {
-    ctx_list2_reverse (&l);
+    ctx_list_reverse (&l);
     current = l->data;
   }
   if (hitlist)
     *hitlist = l;
   else
-    ctx_list2_free (&l);
+    ctx_list_free (&l);
 
   if (ctx->events.prev[device_no] == NULL || current == NULL || (current->path_hash != ctx->events.prev[device_no]->path_hash))
   {
@@ -1349,13 +1349,13 @@ ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
 
     if (event->stop_propagate)
     {
-      ctx_list2_free (&hitlist);
+      ctx_list_free (&hitlist);
       return 0;
     }
   }
 
   //mrg_queue_draw (mrg, NULL); /* in case of style change, and more  */
-  ctx_list2_free (&hitlist);
+  ctx_list_free (&hitlist);
 
   return 0;
 }
@@ -1439,13 +1439,13 @@ ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time,
 
     if (event->stop_propagate)
     {
-      ctx_list2_free (&hitlist);
+      ctx_list_free (&hitlist);
       return 0;
     }
   }
 
   //events_queue_draw (mrg, NULL); /* in case of style change, and more  */
-  ctx_list2_free (&hitlist);
+  ctx_list_free (&hitlist);
   return 0;
 }
 
@@ -1563,9 +1563,9 @@ ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time,
   {
     if (!event->stop_propagate)
       _ctx_emit_cb (ctx, hitlist, event, CTX_RELEASE, x, y);
-    ctx_list2_free (&hitlist);
+    ctx_list_free (&hitlist);
   }
-  ctx_list2_free (&grablist);
+  ctx_list_free (&grablist);
   return 0;
 }
 
@@ -1648,7 +1648,7 @@ ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time,
          )
       {
         //fprintf (stderr, "-");
-        ctx_list2_prepend (&remove_grabs, grab);
+        ctx_list_prepend (&remove_grabs, grab);
       }
       else
       {
@@ -1667,15 +1667,15 @@ ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time,
   {
     for (g = remove_grabs; g; g = g->next)
       device_remove_grab (ctx, g->data);
-    ctx_list2_free (&remove_grabs);
+    ctx_list_free (&remove_grabs);
   }
   if (hitlist)
   {
     if (!event->stop_propagate)
       _ctx_emit_cb (ctx, hitlist, event, CTX_MOTION, x, y);
-    ctx_list2_free (&hitlist);
+    ctx_list_free (&hitlist);
   }
-  ctx_list2_free (&grablist);
+  ctx_list_free (&grablist);
   return 0;
 }
 
@@ -1749,7 +1749,7 @@ ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, u
   }
 
   //mrg_queue_draw (mrg, NULL); /* in case of style change, and more  */
-  ctx_list2_free (&hitlist);
+  ctx_list_free (&hitlist);
   return 0;
 }
 
