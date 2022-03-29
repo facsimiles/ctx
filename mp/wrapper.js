@@ -88,16 +88,23 @@ var mainProgram = function()
   FS.mount(IDBFS, {}, '/sd');
   FS.syncfs(true, function (err) { });
 
-  setTimeout(repopulate_file_picker, 500);
+  setTimeout(repopulate_file_picker, 550);
   setTimeout(function(){
 
           try { a=FS.stat("/sd/main.py");
           } catch (e){
             document.getElementById('mp_js_stdout').innerText = 'installing main';
             FS.writeFile('/sd/main.py', FS.readFile('/main.py'));
-            FS.writeFile('/sd/canvas.py', FS.readFile('/canvas.py'));
-            FS.syncfs(false, function (err) { });
           }
+          try { a=FS.stat("/sd/canvas.py");
+          } catch (e){
+            document.getElementById('mp_js_stdout').innerText = 'installing main';
+            FS.writeFile('/sd/canvas.py', FS.readFile('/canvas.py'));
+            FS.writeFile('/sd/README', FS.readFile('/README'));
+          }
+
+          FS.syncfs(false, function (err) { });
+          repopulate_file_picker();
           window.editor_load ("/main.py");
     dorun();
   }, 600);
@@ -200,11 +207,11 @@ window.dosaveas = function ()
 window.dounlink = function ()
 {
   var target_path = window.current_path;
-  var response = prompt("really remove?", "no");
-
-  if (response == "yes")
+  //var response = prompt("really remove?", "no");
+  //if (response == "yes")
   {
     FS.unlink(make_abs(target_path));
+    FS.syncfs(false, function (err) { });
     document.getElementById('mp_js_stdout').innerText = 'removed file ' + target_path;
     repopulate_file_picker();
   }
