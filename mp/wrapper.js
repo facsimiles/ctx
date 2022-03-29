@@ -69,7 +69,7 @@ function repopulate_file_picker()
   var select = document.getElementById('file_list');
 
   paths=[]
-  add_paths('/')
+  add_paths('/sd')
   html="";
   paths.forEach(function(e){
     html+="<option value='"+e+"'>"+e+"</option>";

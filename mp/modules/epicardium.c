@@ -21,6 +21,8 @@ void epic_set_ctx (Ctx *ctx)
   wasm_ctx = ctx;
 }
 
+
+
 static inline void
 rgb565_to_rgb888(uint16_t pixel, uint8_t *red, uint8_t *green, uint8_t *blue)
 {
@@ -29,8 +31,30 @@ rgb565_to_rgb888(uint16_t pixel, uint8_t *red, uint8_t *green, uint8_t *blue)
         *red   = ((pixel >> 11) & 31) << 3;
 }
 
+static char _temp_path[1024];
+static char _temp_pathB[1024];
+static const char *make_abs_path (const char *path)
+{
+  if (!strcmp (path, "/")) return "/sd";
+  if (path[0]=='/')
+    snprintf (&_temp_path[0], 1023, "/sd%s", path);
+  else
+    snprintf (&_temp_path[0], 1023, "/sd/%s", path);
+  return _temp_path;
+}
+static const char *make_abs_pathB (const char *path)
+{
+  if (!strcmp (path, "/")) return "/sd";
+  if (path[0]=='/')
+    snprintf (_temp_pathB, 1023, "/sd%s", path);
+  else
+    snprintf (_temp_pathB, 1023, "/sd/%s", path);
+  return _temp_pathB;
+}
+
 int epic_file_stat (const char* path, struct epic_stat* stat)
 {
+  path = make_abs_path (path);
   struct stat native_stat;
   int ret = lstat (path, &native_stat);
   stat->type = EPICSTAT_NONE;
@@ -73,8 +97,10 @@ int epic_file_read (int fd, void *buf, size_t nbytes)
 #define EPIC_MAX_OPENDIRS 32
 DIR *open_dirs[EPIC_MAX_OPENDIRS];
 
+
 int epic_file_opendir (const char *path)
 {
+  path = make_abs_path (path);
   for (int i = 0; i < EPIC_MAX_OPENDIRS; i++)
   {
     if (open_dirs[i] == NULL)
@@ -128,16 +154,20 @@ int epic_file_close (int fd)
 
 int epic_file_mkdir (const char *path)
 {
+  path = make_abs_path (path);
   return mkdir (path, 0777);
 }
 
 int epic_file_unlink(const char *path)
 {
+  path = make_abs_path (path);
   return unlink (path);
 }
 
 int epic_file_rename (const char *a, const char *b)
 {
+  a = make_abs_path (a);
+  b = make_abs_pathB (b);
   return rename (a, b);
 }
 
@@ -155,6 +185,7 @@ void epic_exit (int val)
 
 int epic_file_open (const char *path, const char *modeString)
 {
+  path = make_abs_path (path);
   int mode = O_RDONLY;
   if (strchr (modeString, 'r')) mode |= O_RDONLY;
 
@@ -185,6 +216,7 @@ char epic_exec_path[256]="";
 
 int epic_exec (char *path)
 {
+  path = make_abs_path (path);
   strncpy (epic_exec_path, path, sizeof(epic_exec_path)-1);
   mp_raise_type(&mp_type_SystemExit);
   return 0;
