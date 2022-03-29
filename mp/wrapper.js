@@ -42,10 +42,10 @@ function add_paths (base)
     if (base == '/') fullpath = base + e;
     if (FS.isDir(FS.stat(fullpath).mode))
     {
-   //   add_paths (fullpath);
+      add_paths (fullpath);
     }
     else
-      paths[paths.length]=fullpath;
+      paths[paths.length]=fullpath.substr(3);
           }
   })
 
@@ -88,8 +88,19 @@ var mainProgram = function()
   FS.mount(IDBFS, {}, '/sd');
   FS.syncfs(true, function (err) { });
 
-  repopulate_file_picker()
-  setTimeout(repopulate_file_picker, 1000);
+  setTimeout(repopulate_file_picker, 500);
+  setTimeout(function(){
+
+          try { a=FS.stat("/sd/main.py");
+          } catch (e){
+            document.getElementById('mp_js_stdout').innerText = 'installing main';
+            FS.writeFile('/sd/main.py', FS.readFile('/main.py'));
+            FS.writeFile('/sd/canvas.py', FS.readFile('/canvas.py'));
+            FS.syncfs(false, function (err) { });
+          }
+          window.editor_load ("/main.py");
+    dorun();
+  }, 600);
 
   mp_js_init = Module.cwrap('mp_js_init', 'null', ['number']);
   mp_js_do_str = Module.cwrap('mp_js_do_str', 'number', ['string'], {async:true});
@@ -157,11 +168,27 @@ window.dorun = function ()
 window.dosave = function ()
 {
   var target_path = window.current_path;
+  var abs_path = make_abs (target_path);
+  FS.mkdirTree(abs_path);
+  try{FS.rmdir(abs_path)}catch{};
+  FS.writeFile(abs_path,
+          editor.getValue())
+  FS.syncfs(false, function (err) { });
+
+  document.getElementById('mp_js_stdout').innerText = 'saved ' + target_path;
+  repopulate_file_picker();
+  document.getElementById('file_list').value=target_path;
+}
+
+window.dosaveas = function ()
+{
+  var target_path = window.current_path;
   target_path = prompt("Path to save", target_path);
 
-  FS.mkdirTree(target_path);
-  try{FS.rmdir(target_path)}catch{};
-  FS.writeFile(target_path,
+  var abs_path = make_abs (target_path);
+  FS.mkdirTree(abs_path);
+  try{FS.rmdir(abs_path)}catch{};
+  FS.writeFile(abs_path,
           editor.getValue())
   FS.syncfs(false, function (err) { });
 
@@ -177,7 +204,7 @@ window.dounlink = function ()
 
   if (response == "yes")
   {
-    FS.unlink(target_path);
+    FS.unlink(make_abs(target_path));
     document.getElementById('mp_js_stdout').innerText = 'removed file ' + target_path;
     repopulate_file_picker();
   }
@@ -261,7 +288,6 @@ window.windowToCanvas = function(canvas, x, y)
           }
         }
     }, false);
-    dorun();
 
 
         editor = CodeMirror.fromTextArea(document.getElementById('script'), {
@@ -277,10 +303,17 @@ window.heap_set = function (newheap)
    _mp_js_set_heap_size (window.heap);
 }
 
+function make_abs (path)
+{
+  if (path=='/') return '/sd';
+  if (path[0]=='/') return '/sd'+path;
+  return '/sd/'+path;
+}
+
 window.editor_load = function (path)
 {
   var text = '';
-  var raw = FS.readFile(path);
+  var raw = FS.readFile(make_abs(path));
   for (var i = 0; i < raw.length; i++)
     text += String.fromCharCode(raw[i]);
   editor.setValue(text)
@@ -288,12 +321,16 @@ window.editor_load = function (path)
   document.getElementById('file_list').value=window.current_path;
 }
 
-  window.editor_load ("/main.py");
 
             document.onkeydown = function(e)
             {
               if (e.ctrlKey && e.which == 13){ dorun();
                 e.preventDefault();
+              }
+              else if (e.shiftKey && e.ctrlKey && e.which == 83) 
+              {
+                e.preventDefault();
+                window.dosaveas();
               }
               else if (e.ctrlKey && e.which == 83) 
               {

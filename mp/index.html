@@ -43,33 +43,36 @@
   <body>
     <div id='toolbar'>
       <select id='file_list' onchange='editor_load(this.value)'></select>
-      <select title='requires a restart to take effect' id='heap' onchange='heap_set(this.value)'>
-              <option value='16'>16kb</option>
-              <option value='23'>23kb</option>
-              <option value='32'>32kb</option>
-              <option value='42'>42kb</option>
-              <option value='46'>46kb</option>
-              <option value='48'>48kb</option>
-              <option value='50'>50kb</option>
-              <option value='64'>64kb</option>
-              <option value='72'>72kb</option>
-              <option value='76'>76kb</option>
-              <option value='80'>80kb</option>
-              <option value='85'>85kb</option>
-              <option value='92'>92kb</option>
-              <option value='96'>96kb</option>
-              <option value='128'>128kb</option>
-              <option value='144'>144kb</option>
-              <option value='160'>160kb</option>
-              <option value='192' selected>192kb</option>
-              <option value='256'>256kb</option>
-              <option value='512'>512kb</option>
-              <option value='1024'>1mb</option>
-      </select>
       <button id='run' title='ctrl+return' onclick='dorun()'>run</button>
       <button id='save' title='ctrl+s' onclick='dosave()'>save</button>
-      <button id='save' title='note, the file continues being open in the editor' onclick='dounlink()'>remove file</button>
+      <button id='saveas' title='shift+ctrl+s' onclick='dosaveas()'>save as</button>
+      <button id='remove' title='note, the file continues being open in the editor' onclick='dounlink()'>remove file</button>
 
+      <select title='requires a restart to take effect' id='heap' onchange='heap_set(this.value)'>
+              <option value='16'>16kb heap</option>
+              <option value='23'>23kb heap</option>
+              <option value='32'>32kb heap</option>
+              <option value='42'>42kb heap</option>
+              <option value='46'>46kb heap</option>
+              <option value='48'>48kb heap</option>
+              <option value='50'>50kb heap</option>
+              <option value='64'>64kb heap</option>
+              <option value='72'>72kb heap</option>
+              <option value='76'>76kb heap</option>
+              <option value='80'>80kb heap</option>
+              <option value='85'>85kb heap</option>
+              <option value='92'>92kb heap</option>
+              <option value='96'>96kb heap</option>
+              <option value='128'>128kb heap</option>
+              <option value='144'>144kb heap</option>
+              <option value='160'>160kb heap</option>
+              <option value='192' selected>192kb heap</option>
+              <option value='256'>256kb heap</option>
+              <option value='512'>512kb heap</option>
+              <option value='1024'>1mb</option>
+      </select>
+
+      <div style='display:none;'>
       <div class='led' id='led0'></div>
       <div class='led' id='led1'></div>
       <div class='led' id='led2'></div>
@@ -88,6 +91,7 @@
       <div class='led' id='led14'></div>
       ..
       <div class='led' id='led15'></div>
+      </div>
     </div>
     <div id='codewrapper'>
     <textarea id='script'>
