@@ -2193,8 +2193,11 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x1, float y1,
                          float x2, float y2)
 {
+#if CTX_32BIT_SEGMENTS
   float tolerance = 0.125f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-  //float tolerance = 0.2f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+#else
+  float tolerance = 0.5f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+#endif
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
 
