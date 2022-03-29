@@ -39,7 +39,7 @@
 #define CTX_SHAPE_CACHE         0
 #define CTX_SHAPE_CACHE_DEFAULT 0
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 42
-#define CTX_NATIVE_GRAYA8       1
+#define CTX_NATIVE_GRAYA8       0
 #define CTX_ENABLE_SHADOW_BLUR  0
 #define CTX_FORMATTER           0
 #define CTX_PARSER              0
