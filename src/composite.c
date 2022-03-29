@@ -5823,41 +5823,24 @@ ctx_RGBA8_to_RGB332 (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void
 static void
 ctx_composite_RGB332 (CTX_COMPOSITE_ARGUMENTS)
 {
-#if 0
+#if 1
   if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color))
   {
     uint32_t si_ga = ((uint32_t*)rasterizer->color)[1];
     uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
     uint32_t si_a  = si_ga >> 16;
 
-    uint32_t si_gaf = (((uint32_t*)rasterizer->color)[1] << 8) + 255;
-    uint32_t si_rbf = (((uint32_t*)rasterizer->color)[2] << 8) + 255;
-
     while (count--)
     {
-      if (CTX_LIKELY(*coverage == 255))
-      {
-        uint32_t rcov  = 255-*coverage++;
-        uint32_t di    = ctx_332_to_888 (*((uint8_t*)dst));
-        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
-        uint32_t di_rb = (di & 0x00ff00ff);
-        *((uint16_t*)(dst)) =
-        ctx_888_to_332((((si_rbf + di_rb * rcov) & 0xff00ff00) >> 8)  |
-         (((si_gaf) + di_ga * rcov) & 0xff00ff00));
-         dst+=1;
-      }
-      else
-      {
-        uint32_t cov   = *coverage++;
-        uint32_t rcov  = (((255+si_a * cov)>>8))^255;
-        uint32_t di    = ctx_332_to_888 (*((uint8_t*)dst));
-        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
-        uint32_t di_rb = (di & 0x00ff00ff);
-        *((uint16_t*)(dst)) =
-        ctx_888_to_332((((si_rb * cov + 0xff00ff + di_rb * rcov) & 0xff00ff00) >> 8)  |
-         ((si_ga * cov + 0xff00ff + di_ga * rcov) & 0xff00ff00));
-         dst+=1;
-      }
+      uint32_t cov   = *coverage++;
+      uint32_t rcov  = (((255+si_a * cov)>>8))^255;
+      uint32_t di    = ctx_332_to_888 (*((uint8_t*)dst));
+      uint32_t di_ga = ((di & 0xff00ff00) >> 8);
+      uint32_t di_rb = (di & 0x00ff00ff);
+      *((uint8_t*)(dst)) =
+      ctx_888_to_332((((si_rb * cov + 0xff00ff + di_rb * rcov) & 0xff00ff00) >> 8)  |
+       ((si_ga * cov + 0xff00ff + di_ga * rcov) & 0xff00ff00));
+       dst+=1;
     }
     return;
   }
@@ -6016,24 +5999,8 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
     uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
     uint32_t si_a  = si_ga >> 16;
 
-    uint32_t si_gaf = (((uint32_t*)rasterizer->color)[1] << 8) + 255;
-    uint32_t si_rbf = (((uint32_t*)rasterizer->color)[2] << 8) + 255;
-
     while (count--)
     {
-      if (CTX_LIKELY(*coverage == 255)) // not vectorizable but we probably
-      {                                 // want to keep it like this
-        uint32_t rcov  = 255-*coverage++;
-        uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 0);
-        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
-        uint32_t di_rb = (di & 0x00ff00ff);
-        *((uint16_t*)(dst)) =
-        ctx_888_to_565((((si_rbf + di_rb * rcov) & 0xff00ff00) >> 8)  |
-         (((si_gaf) + di_ga * rcov) & 0xff00ff00), 0);
-         dst+=2;
-      }
-      else
-      {
         uint32_t cov   = *coverage++;
         uint32_t rcov  = (((255+si_a * cov)>>8))^255;
         uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 0);
@@ -6043,7 +6010,6 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
         ctx_888_to_565((((si_rb * cov + 0xff00ff + di_rb * rcov) & 0xff00ff00) >> 8)  |
          ((si_ga * cov + 0xff00ff + di_ga * rcov) & 0xff00ff00), 0);
          dst+=2;
-      }
     }
     return;
   }
@@ -6103,34 +6069,17 @@ ctx_composite_RGB565_BS (CTX_COMPOSITE_ARGUMENTS)
     uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
     uint32_t si_a  = si_ga >> 16;
 
-    uint32_t si_gaf = (((uint32_t*)rasterizer->color)[1] << 8) + 255;
-    uint32_t si_rbf = (((uint32_t*)rasterizer->color)[2] << 8) + 255;
-
     while (count--)
     {
-      if (CTX_LIKELY(*coverage == 255))
-      {
-        uint32_t rcov  = 255-*coverage++;
-        uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 1);
-        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
-        uint32_t di_rb = (di & 0x00ff00ff);
-        *((uint16_t*)(dst)) =
-        ctx_888_to_565((((si_rbf + di_rb * rcov) & 0xff00ff00) >> 8)  |
-         (((si_gaf) + di_ga * rcov) & 0xff00ff00), 1);
-         dst+=2;
-      }
-      else
-      {
-        uint32_t cov   = *coverage++;
-        uint32_t rcov  = (((255+si_a * cov)>>8))^255;
-        uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 1);
-        uint32_t di_ga = ((di & 0xff00ff00) >> 8);
-        uint32_t di_rb = (di & 0x00ff00ff);
-        *((uint16_t*)(dst)) =
-        ctx_888_to_565((((si_rb * cov + 0xff00ff + di_rb * rcov) & 0xff00ff00) >> 8)  |
-         ((si_ga * cov + 0xff00ff + di_ga * rcov) & 0xff00ff00), 1);
-         dst+=2;
-      }
+      uint32_t cov   = *coverage++;
+      uint32_t rcov  = (((255+si_a * cov)>>8))^255;
+      uint32_t di    = ctx_565_to_888 (*((uint16_t*)dst), 1);
+      uint32_t di_ga = ((di & 0xff00ff00) >> 8);
+      uint32_t di_rb = (di & 0x00ff00ff);
+      *((uint16_t*)(dst)) =
+      ctx_888_to_565((((si_rb * cov + 0xff00ff + di_rb * rcov) & 0xff00ff00) >> 8)  |
+       ((si_ga * cov + 0xff00ff + di_ga * rcov) & 0xff00ff00), 1);
+       dst+=2;
     }
     return;
   }
