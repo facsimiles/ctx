@@ -25,7 +25,7 @@ static char *ctx_headless_get_clipboard (Ctx *ctx)
   return ctx_strdup ("");
 }
 
-static int ctx_headless_get_mice_fd (Ctx *ctx)
+static inline int ctx_headless_get_mice_fd (Ctx *ctx)
 {
   //CtxHeadless *fb = (void*)ctx->backend;
   return _ctx_mice_fd;

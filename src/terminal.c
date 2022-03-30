@@ -388,8 +388,8 @@ static const char *mouse_get_event_int (Ctx *n, int *x, int *y)
   relx = buf[1];
   rely = -buf[2];
 
-  n->mouse_x += relx * 0.1f;
-  n->mouse_y += rely * 0.1f;
+  n->mouse_x += (int)(relx * 0.1f);
+  n->mouse_y += (int)(rely * 0.1f);
 
   if (n->mouse_x < 1) n->mouse_x = 1;
   if (n->mouse_y < 1) n->mouse_y = 1;
@@ -647,8 +647,8 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
               return match->nick;
               break;
             case 9001: /* mouse event */
-              if (x) *x = ((unsigned char)buf[4]-32)*1.0;
-              if (y) *y = ((unsigned char)buf[5]-32)*1.0;
+              if (x) *x = ((unsigned char)buf[4]-32);
+              if (y) *y = ((unsigned char)buf[5]-32);
               switch (buf[3])
                 {
                         /* XXX : todo reduce this to less string constants */
@@ -751,8 +751,8 @@ void ctx_nct_consume_events (Ctx *ctx)
     float x, y;
     event = ctx_nct_get_event (ctx, 50, &ix, &iy);
 
-    x = (ix - 1.0 + 0.5) / ctxctx->cols * ctx->width;
-    y = (iy - 1.0)       / ctxctx->rows * ctx->height;
+    x = (ix - 1.0f + 0.5f) / ctxctx->cols * ctx->width;
+    y = (iy - 1.0f)        / ctxctx->rows * ctx->height;
 
     if (!strcmp (event, "pp"))
     {

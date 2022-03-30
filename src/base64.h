@@ -34,7 +34,7 @@ static void bin2base64_group (const unsigned char *in, int remaining, char *out)
 
 void
 ctx_bin2base64 (const void *bin,
-                int         bin_length,
+                size_t      bin_length,
                 char       *ascii)
 {
   /* this allocation is a hack to ensure we always produce the same result,
@@ -42,9 +42,9 @@ ctx_bin2base64 (const void *bin,
    */
   unsigned char *bin2 = (unsigned char*)ctx_calloc (bin_length + 4, 1);
   unsigned const char *p = bin2;
-  int i;
+  unsigned int i;
   if (bin_length > 128 * 1024 * 1024) return;
-  memcpy (bin2, bin, bin_length);
+  memcpy (bin2, bin, (size_t)bin_length);
   for (i=0; i*3 < bin_length; i++)
    {
      int remaining = bin_length - i*3;

@@ -101,10 +101,10 @@ static void ctx_term_set_fg (int red, int green, int blue)
   }
   else
   {
-    int gray = (green /255.0) * 24 + 0.5;
-    int r    = (red/255.0)    * 6 + 0.5;
-    int g    = (green/255.0)  * 6 + 0.5;
-    int b    = (blue/255.0)   * 6 + 0.5;
+    int gray = (int)((green /255.0f) * 24 + 0.5f);
+    int r    = (int)((red/255.0f)    * 6 + 0.5f);
+    int g    = (int)((green/255.0f)  * 6 + 0.5f);
+    int b    = (int)((blue/255.0f)   * 6 + 0.5f);
     if (gray > 23) gray = 23;
 
     if (r > 5) r = 5;
@@ -132,10 +132,10 @@ static void ctx_term_set_bg(int red, int green, int blue)
   }
   else
   {
-    int gray = (green /255.0) * 24 + 0.5;
-    int r    = (red/255.0)    * 6 + 0.5;
-    int g    = (green/255.0)  * 6 + 0.5;
-    int b    = (blue/255.0)   * 6 + 0.5;
+    int gray = (int)((green /255.0f) * 24 + 0.5f);
+    int r    = (int)((red/255.0f)    * 6 + 0.5f);
+    int g    = (int)((green/255.0f)  * 6 + 0.5f);
+    int b    = (int)((blue/255.0f)   * 6 + 0.5f);
     if (gray > 23) gray = 23;
 
     if (r > 5) r = 5;
@@ -220,16 +220,16 @@ void ctx_term_scanout (CtxTerm *term)
 //
 
 static inline int _ctx_rgba8_manhattan_diff (const uint8_t *a, const uint8_t *b)
-{
+{ // wrongly named!
   int c;
   int diff = 0;
   for (c = 0; c<3;c++)
-    diff += ctx_pow2(a[c]-b[c]);
-  return ctx_sqrtf(diff);
+    diff += (int)ctx_pow2(a[c]-b[c]);
+  return (int)ctx_sqrtf(diff);
   return diff;
 }
 
-static void ctx_term_output_buf_half (uint8_t *pixels,
+static inline void ctx_term_output_buf_half (uint8_t *pixels,
                           int width,
                           int height,
                           CtxTerm *term)

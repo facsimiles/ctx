@@ -237,7 +237,7 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
     case CTX_CURSOR_RESIZE_SW:
     case CTX_CURSOR_RESIZE_NE:
       {
-        float theta = -45.0/180 * M_PI;
+        float theta = -45.0f/180 * (float)(M_PI);
         float cos_theta;
         float sin_theta;
 
@@ -253,8 +253,8 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
           cos_theta = ctx_cosf (theta);
           sin_theta = ctx_sinf (theta);
         }
-        int rot_x = x * cos_theta - y * sin_theta;
-        int rot_y = y * cos_theta + x * sin_theta;
+        int rot_x = (int)(x * cos_theta - y * sin_theta);
+        int rot_y = (int)(y * cos_theta + x * sin_theta);
         x = rot_x;
         y = rot_y;
       }
@@ -338,10 +338,10 @@ static void ctx_tiled_undraw_cursor (CtxTiled *tiled)
     }
 }
 
-static void ctx_tiled_draw_cursor (CtxTiled *tiled)
+static inline void ctx_tiled_draw_cursor (CtxTiled *tiled)
 {
-    int cursor_x    = ctx_pointer_x (tiled->backend.ctx);
-    int cursor_y    = ctx_pointer_y (tiled->backend.ctx);
+    int cursor_x = (int)ctx_pointer_x (tiled->backend.ctx);
+    int cursor_y = (int)ctx_pointer_y (tiled->backend.ctx);
     int cursor_size = ctx_height (tiled->backend.ctx) / 28;
     CtxCursor cursor_shape = tiled->backend.ctx->cursor;
     int no = 0;

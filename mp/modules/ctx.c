@@ -55,12 +55,20 @@
 #define CTX_STRINGPOOL_SIZE        256
 #define CTX_AUDIO                  0
 #define CTX_CLIENTS                0
+
+#ifdef MICROPY_UNIX_MACHINE_IDLE
+#include <threads.h>
+#define CTX_THREADS                1
+#define CTX_TERMINAL_EVENTS        1 // gets rid of posix bits and bobs
+#define CTX_TILED                  1
+#else
 #define CTX_TERMINAL_EVENTS        0 // gets rid of posix bits and bobs
+#define CTX_THREADS                0
+#define CTX_TILED                  0
+#endif
 #define CTX_EVENTS                 1
 #define CTX_MAX_DEVICES            1
 #define CTX_MAX_KEYBINDINGS        16
-#define CTX_THREADS                0
-#define CTX_TILED                  0
 #define CTX_RASTERIZER             1
 #define CTX_MAX_STATES             5
 #define CTX_MAX_EDGES            127

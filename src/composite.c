@@ -838,7 +838,7 @@ CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgb8_RGBA8_bi)
 CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgb8_RGBA8_nearest)
 
 
-static void
+static inline void
 ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
                                float x,
                                float y,
@@ -2012,7 +2012,7 @@ CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_bi_scale)
 CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_bi_affine)
 CTX_DECLARE_SWAP_RED_GREEN_FRAGMENT(ctx_fragment_image_rgba8_RGBA8_bi_generic)
 
-static void
+static inline void
 ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
                                 float x, float y, float z,
                                 void *out, int count, float dx, float dy, float dz)

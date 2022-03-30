@@ -2496,7 +2496,7 @@ static void mice_set_coord (EvSource *ev_source, double x, double y)
   mrg_mice_this->y = y;
 }
 
-static EvSource *evsource_mice_new (void)
+static inline EvSource *evsource_mice_new (void)
 {
   if (mmm_evsource_mice_init () == 0)
     {
@@ -2901,7 +2901,7 @@ static int evsource_kb_get_fd (void)
 }
 
 
-static EvSource *evsource_kb_new (void)
+static inline EvSource *evsource_kb_new (void)
 {
   if (evsource_kb_init() == 0)
   {

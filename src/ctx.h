@@ -2345,7 +2345,7 @@ typedef struct _CtxSHA1 CtxSHA1;
 
 void
 ctx_bin2base64 (const void *bin,
-                int         bin_length,
+                size_t      bin_length,
                 char       *ascii);
 int
 ctx_base642bin (const char    *ascii,

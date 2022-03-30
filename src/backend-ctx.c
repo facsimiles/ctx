@@ -2,6 +2,7 @@
 
 #if CTX_TERMINAL_EVENTS
 
+#if 0
 static int ctx_find_largest_matching_substring
  (const char *X, const char *Y, int m, int n, int *offsetY, int *offsetX) 
 { 
@@ -29,6 +30,7 @@ static int ctx_find_largest_matching_substring
   }
   return best_length;
 } 
+#endif
 
 typedef struct CtxSpan {
   int from_prev;
@@ -59,6 +61,7 @@ static void _dassert(int line, int condition, const char *str, int foo, int bar,
  * matching 3-4 characters in previous.. or even
  * a naive approach that expects rough alignment..
  */
+#if 0
 static char *encode_in_terms_of_previous (
                 const char *src,  int src_len,
                 const char *prev, int prev_len,
@@ -236,6 +239,7 @@ again:
   ctx_string_free (string, 0);
   return ret;
 }
+#endif
 
 #if 0 // for documentation/reference purposes
 static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int prev_len, int *out_len)
@@ -466,12 +470,12 @@ void ctx_ctx_consume_events (Ctx *ctx)
       }
       else if (!strcmp (event_type, "keyup"))
       {
-        char buf[4]={ x, 0 };
+        char buf[4]={ (int)x, 0 };
         ctx_key_up (ctx, (int)x, buf, 0, sync);
       }
       else if (!strcmp (event_type, "keydown"))
       {
-        char buf[4]={ x, 0 };
+        char buf[4]={ (int)x, 0 };
         ctx_key_down (ctx, (int)x, buf, 0, sync);
       }
       else
