@@ -1,8 +1,3 @@
-//#include "interrupt.h"
-#include "epicardium.h"
-
-//#include "mxc_delay.h"
-
 #include "py/mpconfig.h"
 #include "py/obj.h"
 #include "py/objint.h"
@@ -12,6 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <errno.h>
 
 // Needs to be after the stdint include ...
 #include "shared/timeutils/timeutils.h"
@@ -22,6 +18,8 @@
 /* Default time zone: CET */
 #define TZONE_OFFSET 3600UL
 
+uint64_t emscripten_ticks_us (void);
+
 static uint32_t time_get_timezone_offset(void)
 {
 	static uint32_t offset = INT32_MAX;
@@ -31,8 +29,8 @@ static uint32_t time_get_timezone_offset(void)
 	if (offset == INT32_MAX) {
 		offset = TZONE_OFFSET;
 
-		char buf[128];
-		int ret = epic_config_get_string("timezone", buf, sizeof(buf));
+		char buf[128]="+0100";
+		int ret = 0;//mp_vfs_config_get_string("timezone", buf, sizeof(buf));
 
 		/* Understands formats like +0100, 0100, 100, -0800 */
 		if (ret == 0 && strlen(buf) > 0) {
@@ -55,38 +53,38 @@ static uint32_t time_get_timezone_offset(void)
 
 static mp_obj_t time_set_time(mp_obj_t secs)
 {
-	uint64_t timestamp = mp_obj_get_int(secs) * 1000ULL +
-			     EPOCH_OFFSET * 1000ULL -
-			     time_get_timezone_offset() * 1000ULL;
-	epic_rtc_set_milliseconds(timestamp);
+	//uint64_t timestamp = mp_obj_get_int(secs) * 1000ULL +
+	//		     EPOCH_OFFSET * 1000ULL -
+	//		     time_get_timezone_offset() * 1000ULL;
+	// NYI
 	return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(time_set_time_obj, time_set_time);
 
 static mp_obj_t time_set_time_ms(mp_obj_t msecs_obj)
 {
-	uint64_t msecs = 0;
-	mp_obj_int_to_bytes_impl(msecs_obj, false, 8, (byte *)&msecs);
-	uint64_t timestamp = msecs + EPOCH_OFFSET * 1000ULL -
-			     time_get_timezone_offset() * 1000ULL;
-	epic_rtc_set_milliseconds(timestamp);
+	//uint64_t msecs = 0;
+	//mp_obj_int_to_bytes_impl(msecs_obj, false, 8, (byte *)&msecs);
+	//uint64_t timestamp = msecs + EPOCH_OFFSET * 1000ULL -
+	//		     time_get_timezone_offset() * 1000ULL;
+	// NYI
 	return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(time_set_time_ms_obj, time_set_time_ms);
 
 static mp_obj_t time_set_unix_time(mp_obj_t secs)
 {
-	uint64_t timestamp = mp_obj_get_int(secs) * 1000ULL;
-	epic_rtc_set_milliseconds(timestamp);
+	//uint64_t timestamp = mp_obj_get_int(secs) * 1000ULL;
+        // NYI
 	return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(time_set_unix_time_obj, time_set_unix_time);
 
 static mp_obj_t time_set_unix_time_ms(mp_obj_t msecs_obj)
 {
-	uint64_t timestamp = 0;
-	mp_obj_int_to_bytes_impl(msecs_obj, false, 8, (byte *)&timestamp);
-	epic_rtc_set_milliseconds(timestamp);
+	//uint64_t timestamp = 0;
+	//mp_obj_int_to_bytes_impl(msecs_obj, false, 8, (byte *)&timestamp);
+        // NYI
 	return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(
@@ -96,7 +94,9 @@ static MP_DEFINE_CONST_FUN_OBJ_1(
 static mp_obj_t time_time(void)
 {
 	mp_int_t seconds;
-	seconds = epic_rtc_get_seconds() - EPOCH_OFFSET +
+	seconds = 
+               (emscripten_ticks_us () / 1000 / 1000)
+                - EPOCH_OFFSET +
 		  time_get_timezone_offset();
 	return mp_obj_new_int(seconds);
 }
@@ -105,7 +105,8 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_time_obj, time_time);
 static mp_obj_t time_time_ms(void)
 {
 	uint64_t milliseconds;
-	milliseconds = epic_rtc_get_milliseconds() - EPOCH_OFFSET * 1000ULL +
+	milliseconds = (emscripten_ticks_us () / 1000)
+                - EPOCH_OFFSET * 1000ULL +
 		       time_get_timezone_offset() * 1000ULL;
 	return mp_obj_new_int_from_ull(milliseconds);
 }
@@ -113,14 +114,14 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_time_ms_obj, time_time_ms);
 
 static mp_obj_t time_unix_time(void)
 {
-	mp_int_t seconds = epic_rtc_get_seconds();
+	mp_int_t seconds = (emscripten_ticks_us () / 1000 / 1000);
 	return mp_obj_new_int(seconds);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(time_unix_time_obj, time_unix_time);
 
 static mp_obj_t time_unix_time_ms(void)
 {
-	uint64_t milliseconds = epic_rtc_get_milliseconds();
+	uint64_t milliseconds = (emscripten_ticks_us () / 1000);
 	return mp_obj_new_int_from_ull(milliseconds);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(time_unix_time_ms_obj, time_unix_time_ms);
@@ -128,7 +129,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_unix_time_ms_obj, time_unix_time_ms);
 static mp_obj_t time_monotonic(void)
 {
 	mp_int_t seconds;
-	seconds = epic_rtc_get_monotonic_seconds();
+        seconds = emscripten_ticks_us () / 1000 / 1000;
 	return mp_obj_new_int(seconds);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_obj, time_monotonic);
@@ -136,7 +137,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_obj, time_monotonic);
 static mp_obj_t time_monotonic_ms(void)
 {
 	uint64_t milliseconds;
-	milliseconds = epic_rtc_get_monotonic_milliseconds();
+	milliseconds = emscripten_ticks_us () / 1000;
 	return mp_obj_new_int_from_ull(milliseconds);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_ms_obj, time_monotonic_ms);
@@ -146,8 +147,8 @@ static mp_obj_t time_localtime(size_t n_args, const mp_obj_t *args)
 	mp_int_t seconds;
 
 	if (n_args == 0 || args[0] == mp_const_none) {
-		seconds = epic_rtc_get_seconds() - EPOCH_OFFSET +
-			  time_get_timezone_offset();
+	        seconds = (emscripten_ticks_us () / 1000 / 1000);
+		seconds += time_get_timezone_offset() - EPOCH_OFFSET;
 	} else {
 		seconds = mp_obj_get_int(args[0]);
 	}
@@ -205,12 +206,12 @@ static mp_obj_t time_alarm(size_t n_args, const mp_obj_t *args)
 	if (n_args == 2) {
 		/* If a callback was given, register it for the RTC Alarm */
 		mp_obj_t callback = args[1];
-		mp_obj_t irq_id   = MP_OBJ_NEW_SMALL_INT(EPIC_INT_RTC_ALARM);
+		mp_obj_t irq_id   = MP_OBJ_NEW_SMALL_INT(MP_VFS_INT_RTC_ALARM);
 		mp_interrupt_set_callback(irq_id, callback);
 		mp_interrupt_enable_callback(irq_id);
 	}
 
-	int res = epic_rtc_schedule_alarm(timestamp);
+	int res = mp_vfs_rtc_schedule_alarm(timestamp);
 	if (res < 0) {
 		mp_raise_OSError(-res);
 	}

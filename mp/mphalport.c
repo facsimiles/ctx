@@ -51,8 +51,6 @@ int mp_quit (void)
   return 0;
 }
 
-uint32_t epic_get_led (int led);
-
 void gc_collect(void);
 void mp_idle (int ms) // 0 means do garbage collection
 {
@@ -66,10 +64,6 @@ void mp_idle (int ms) // 0 means do garbage collection
       gc_collect();
     }
     emscripten_sleep (0);
-    if (epic_get_led (0))
-    {
-       mp_js_update_leds ();
-    }
 }
 
 void mp_hal_delay_ms(mp_uint_t ms) {

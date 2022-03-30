@@ -122,12 +122,6 @@ static inline void ctx_free (void *ptr)
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 
-#ifdef EMSCRIPTEN
-#ifdef EPICARDIUM
-#include "epicardium.h"
-#endif
-#endif
-
 typedef struct _mp_ctx_event_obj_t mp_ctx_event_obj_t;
 typedef struct _mp_ctx_obj_t {
 	mp_obj_base_t base;
@@ -745,55 +739,6 @@ static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
         return args[0];
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ctx_add_stop_obj, 3, 4, mp_ctx_add_stop);
-
-#ifdef EPICARDIUM
-static mp_obj_t mp_ctx_update(mp_obj_t self_in, mp_obj_t display_in)
-{
-#ifdef EMSCRIPTEN
-	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
-
-        int res = 0;
-        Ctx *ctx = ctx_wasm_get_context(0);
-        ctx_start_frame (ctx);
-        ctx_render_ctx (self->ctx, ctx);
-        ctx_end_frame (ctx);
-	/*
-	 * The drawlist still contains the draw commands which were just
-	 * executed.  Flush them now.
-	 */
-	ctx_drawlist_clear(self->ctx);
-
-	/* report errors from epic_disp_ctx() */
-	if (res < 0) {
-		mp_raise_OSError(-res);
-	}
-#else
-	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
-
-	/* TODO: Don't ignore the passed in display */
-	if (display_in == mp_const_none) {
-		mp_raise_ValueError("must pass in the display object");
-	}
-
-	int res = epic_disp_ctx(self->ctx);
-#endif
-	/*
-	 * The drawlist still contains the draw commands which were just
-	 * executed.  Flush them now.
-	 */
-	ctx_drawlist_clear(self->ctx);
-
-	/* report errors from epic_disp_ctx() */
-	if (res < 0) {
-		mp_raise_OSError(-res);
-	}
-        mp_idle (0);
-        gc_collect ();
-        return self_in;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_update_obj, mp_ctx_update);
-/* CTX API functions }}} */
-#endif
 
 #ifdef EMSCRIPTEN
 #include <sys/types.h>

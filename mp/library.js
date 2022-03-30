@@ -40,13 +40,6 @@ mergeInto(LibraryManager.library, {
             }
         }
     },
-    mp_js_update_leds: function() {
-            for (var i = 0; i < 16; i ++)
-            {
-              var val = _epic_get_led(i);
-              document.getElementById('led'+i).style='background:rgb(' + (val%255)+ ',' +((val/256)%255) + ',' + (val/256/256) +');';
-            }
-    },
 
     mp_js_ticks_ms: function() {
         return (new Date()).getTime() - MP_JS_EPOCH;

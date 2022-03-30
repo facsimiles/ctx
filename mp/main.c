@@ -41,8 +41,6 @@
 
 #include "ctx.h"
 
-extern char epic_exec_path[256];
-
 #if MICROPY_ENABLE_COMPILER
 
 extern int _mp_quit;
@@ -86,51 +84,11 @@ void mp_js_set_heap_size (int heap_size)
   mp_js_heap_size = heap_size;
 }
 
-int do_path (const char *path)
-{
-  mp_js_init (mp_js_heap_size);
-  mp_parse_input_kind_t input_kind = MP_PARSE_FILE_INPUT;
-  int ret = 0;
-  nlr_buf_t nlr;
-  _mp_quit = 0;
-
-  if (nlr_push(&nlr) == 0) {
-      mp_lexer_t *lex = mp_lexer_new_from_file (path);
-      epic_exec_path[0] = 0;
-      qstr source_name = lex->source_name;
-      mp_parse_tree_t parse_tree = mp_parse(lex, input_kind);
-      mp_obj_t module_fun = mp_compile(&parse_tree, source_name, false);
-      mp_call_function_0(module_fun);
-      nlr_pop();
-  } else {
-      // uncaught exception
-      if (mp_obj_is_subclass_fast(mp_obj_get_type((mp_obj_t)nlr.ret_val), &mp_type_SystemExit)) {
-          mp_obj_t exit_val = mp_obj_exception_get_value(MP_OBJ_FROM_PTR(nlr.ret_val));
-          if (exit_val != mp_const_none) {
-              mp_int_t int_val;
-              if (mp_obj_get_int_maybe(exit_val, &int_val)) {
-                  ret = int_val & 255;
-              } else {
-                  ret = 1;
-              }
-          }
-          if (epic_exec_path[0])
-            return do_path (epic_exec_path);
-      } else {
-          mp_obj_print_exception(&mp_plat_print, (mp_obj_t)nlr.ret_val);
-          ret = 1;
-      }
-  }
-  mp_js_init_repl();
-  return ret;
-}
-
 int do_str(const char *src, mp_parse_input_kind_t input_kind)
 {
     int ret = 0;
     mp_js_init (mp_js_heap_size);
     nlr_buf_t nlr;
-    epic_exec_path[0] = 0;
     _mp_quit = 0;
 
     if (nlr_push(&nlr) == 0) {
@@ -152,8 +110,6 @@ int do_str(const char *src, mp_parse_input_kind_t input_kind)
                     ret = 1;
                 }
             }
-            if (epic_exec_path[0])
-              return do_path (epic_exec_path);
         } else {
             mp_obj_print_exception(&mp_plat_print, (mp_obj_t)nlr.ret_val);
             ret = 1;
@@ -184,23 +140,6 @@ void gc_collect(void) {
     emscripten_scan_registers(gc_scan_func);
     gc_collect_end();
 }
-
-#if 0
-mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
-    mp_raise_OSError(MP_ENOENT);
-}
-
-mp_import_stat_t mp_import_stat(const char *path) {
-    return MP_IMPORT_STAT_NO_EXIST;
-}
-#endif
-
-#if 0
-mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
-#endif
 
 void nlr_jump_fail(void *val) {
     fprintf (stderr, "%s\n", __FUNCTION__);

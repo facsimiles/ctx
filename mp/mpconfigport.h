@@ -129,20 +129,14 @@
 extern const struct _mp_obj_module_t mp_module_utime;
 extern const struct _mp_obj_module_t mp_module_ctx;
 extern const struct _mp_obj_module_t os_module;
-//extern const struct _mp_obj_module_t png_module;
-//{ MP_ROM_QSTR(MP_QSTR_png), MP_ROM_PTR(&png_module) }, 
-extern const struct _mp_obj_module_t image_module;
-extern const struct _mp_obj_module_t interrupt_module;
+//extern const struct _mp_obj_module_t image_module;
 extern const struct _mp_obj_module_t config_module;
-extern const struct _mp_obj_module_t gpio_module;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
     { MP_ROM_QSTR(MP_QSTR_ctx), MP_ROM_PTR(&mp_module_ctx) }, \
     { MP_ROM_QSTR(MP_QSTR_os), MP_ROM_PTR(&os_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_image), MP_ROM_PTR(&image_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_interrupt), MP_ROM_PTR(&interrupt_module) }, \
-    { MP_ROM_QSTR(MP_QSTR_gpio), MP_ROM_PTR(&gpio_module) }, \
+    //{ MP_ROM_QSTR(MP_QSTR_image), MP_ROM_PTR(&image_module) }, \
 
 // #define MICROPY_EVENT_POLL_HOOK {ets_event_poll();}
 #if MICROPY_PY_THREAD

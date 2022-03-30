@@ -10,8 +10,7 @@
 #include "py/stream.h"
 #include "py/mperrno.h"
 
-#include "epicardium.h"
-#include "os.h"
+#include "vfs.h"
 
 extern const mp_obj_type_t mp_type_textio;
 #if MICROPY_PY_IO_FILEIO
@@ -39,7 +38,7 @@ STATIC mp_uint_t
 file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode)
 {
 	fat_py_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
-	int res                 = epic_file_read(self->fd, buf, size);
+	int res                 = mp_vfs_file_read(self->fd, buf, size);
 	if (res < 0) {
 		*errcode = -res;
 		return MP_STREAM_ERROR;
@@ -51,7 +50,7 @@ STATIC mp_uint_t
 file_obj_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode)
 {
 	fat_py_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
-	int res                 = epic_file_write(self->fd, buf, size);
+	int res                 = mp_vfs_file_write(self->fd, buf, size);
 	if (res < 0) {
 		*errcode = -res;
 		return MP_STREAM_ERROR;
@@ -79,7 +78,7 @@ file_obj_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, int *errcode)
                 fflush(NULL);
                 res = 0;
 #else
-		res = epic_file_flush(self->fd);
+		res = mp_vfs_file_flush(self->fd);
 #endif
 		if (res < 0) {
 			*errcode = -res;
@@ -87,7 +86,7 @@ file_obj_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, int *errcode)
 		}
 		return 0;
 	case MP_STREAM_CLOSE:
-		res = epic_file_close(self->fd);
+		res = mp_vfs_file_close(self->fd);
 		if (res < 0) {
 			*errcode = -res;
 			return MP_STREAM_ERROR;
@@ -96,17 +95,12 @@ file_obj_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, int *errcode)
 	case MP_STREAM_SEEK: {
 		struct mp_stream_seek_t *s =
 			(struct mp_stream_seek_t *)(uintptr_t)arg;
-//#ifdef EMSCRIPTEN
-//		s->offset = lseek (self->fd, s->offset, s->whence);
-//#else
-		//it "just so happens" that MP's whence values are 0,1,2 for SET,CUR,END, just like in epicardium
-		res = epic_file_seek(self->fd, s->offset, s->whence);
+		res = mp_vfs_file_seek(self->fd, s->offset, s->whence);
 		if (res < 0) {
 			*errcode = -res;
 			return MP_STREAM_ERROR;
 		}
-		s->offset = epic_file_tell(self->fd);
-//#endif
+		s->offset = mp_vfs_file_tell(self->fd);
 		return 0;
 	}
 	}
@@ -130,7 +124,7 @@ STATIC const mp_arg_t file_open_args[] = {
 
 STATIC mp_obj_t file_open(const mp_obj_type_t *type, mp_arg_val_t *args)
 {
-	bool potentially_critical_access = false;
+	//bool potentially_critical_access = false;
 	const char *modeString           = mp_obj_str_get_str(args[1].u_obj);
 	const char *mode_s               = modeString;
 	// modes r w x a + are handled on epicardium side, binary / text
@@ -149,7 +143,7 @@ STATIC mp_obj_t file_open(const mp_obj_type_t *type, mp_arg_val_t *args)
 		case 'x':
 		case 'a':
 		case '+':
-			potentially_critical_access = true;
+			//potentially_critical_access = true;
 			break;
 		}
 	}
@@ -159,18 +153,7 @@ STATIC mp_obj_t file_open(const mp_obj_type_t *type, mp_arg_val_t *args)
 
 	const char *fname = mp_obj_str_get_str(args[0].u_obj);
 
-	if (potentially_critical_access && pycrd_filename_restricted(fname)) {
-		mp_raise_OSError(-EACCES);
-	}
-//#ifdef EMSCRIPTEN
-//        // XXX incomplete mapping
-//        int mode = O_RDONLY;
-//        if (strchr (modeString, 'r')) mode |= O_RDONLY;
-//        if (strchr (modeString, 'w')) mode |= O_WRONLY;
-//	int res = open (fname, mode);
-//#else
-	int res = epic_file_open(fname, modeString);
-//#endif
+	int res = mp_vfs_file_open(fname, modeString);
 	if (res < 0) {
 		m_del_obj(fat_py_file_obj_t, o);
 		mp_raise_OSError(-res);

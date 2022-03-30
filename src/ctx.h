@@ -2400,10 +2400,6 @@ float ctx_term_get_cell_height (Ctx *ctx);
 
 void ctx_logo (Ctx *ctx, float x, float y, float dim);
 
-
-
-
-
 #ifndef CTX_CODEC_CHAR
 //#define CTX_CODEC_CHAR '\035'
 //#define CTX_CODEC_CHAR 'a'
