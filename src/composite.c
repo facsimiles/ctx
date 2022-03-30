@@ -5233,7 +5233,7 @@ ctx_GRAY2_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *
       }
       {
         uint8_t val = (((*pixel) >> ( (bitno) <<1)) & 3) * 85;
-        *dst = val + val * 256 + val * 256 * 256 + 255 * 256 * 256 * 256;
+        *dst = val + val * 256u + val * 256u * 256u + 255u * 256u * 256u * 256u;
         if (bitno==3)
           { pixel+=1; }
         x++;

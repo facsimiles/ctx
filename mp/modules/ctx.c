@@ -6,7 +6,7 @@
 #include "py/objarray.h"
 #include "py/runtime.h"
 
-#define CTX_TINYVG 1
+#define CTX_TINYVG 0
 #define CTX_DITHER 1
 
 #define CTX_AVOID_CLIPPED_SUBDIVISION 0
@@ -313,7 +313,7 @@ void gc_collect(void);
 #define MP_CTX_TEXT_FUN(name)                                                  \
 	static mp_obj_t mp_ctx_##name(size_t n_args, const mp_obj_t *args)     \
 	{                                                                      \
-		assert(n_args == 4);                                           \
+		assert(n_args == 2);                                           \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
 		ctx_##name(                                                    \
 			self->ctx,                                             \
