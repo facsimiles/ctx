@@ -355,10 +355,10 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           (int)((rasterizer->scan_max - rasterizer->scan_min + 1) / aa + rasterizer->state->gstate.line_width)
         };
 
-        shape_rect.width += rasterizer->state->gstate.line_width * 2;
-        shape_rect.height += rasterizer->state->gstate.line_width * 2;
-        shape_rect.x -= rasterizer->state->gstate.line_width;
-        shape_rect.y -= rasterizer->state->gstate.line_width;
+        shape_rect.width += (int)(rasterizer->state->gstate.line_width * 2);
+        shape_rect.height += (int)(rasterizer->state->gstate.line_width * 2);
+        shape_rect.x -= (int)(rasterizer->state->gstate.line_width);
+        shape_rect.y -= (int)(rasterizer->state->gstate.line_width);
 
         {
           float f;
@@ -423,7 +423,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         //ctx_rasterizer_rel_quad_to (rasterizer, c->c.x0, c->c.y0, c->c.x1, c->c.y1);
         break;
       case CTX_ARC:
-        ctx_rasterizer_arc (rasterizer, c->arc.x, c->arc.y, c->arc.radius, c->arc.angle1, c->arc.angle2, c->arc.direction);
+        ctx_rasterizer_arc (rasterizer, c->arc.x, c->arc.y, c->arc.radius, c->arc.angle1, c->arc.angle2, (int)c->arc.direction);
         break;
       case CTX_RECTANGLE:
         ctx_rasterizer_rectangle (rasterizer, c->rectangle.x, c->rectangle.y,

@@ -69,7 +69,7 @@ void ctx_term_set (CtxTerm *term,
   if (line->size < col)
   {
      int new_size = ((col + 128)/128)*128;
-     line->cells = ctx_realloc (line->cells, sizeof (CtxTermCell) * new_size);
+     line->cells = ctx_realloc (line->cells, line->size, sizeof (CtxTermCell) * new_size);
      memset (&line->cells[line->size], 0, sizeof (CtxTermCell) * (new_size - line->size) );
      line->size = new_size;
   }

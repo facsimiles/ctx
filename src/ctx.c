@@ -2795,50 +2795,50 @@ ctx_logo (Ctx *ctx, float x, float y, float dim)
      //if (width < height) height = width;
      
      ctx_scale (ctx, dim, dim);
-     ctx_translate (ctx, -0.5, -0.5);
+     ctx_translate (ctx, -0.5f, -0.5f);
      ctx_begin_path (ctx);
-     ctx_rgba(ctx,1,1,1,0.4);
-     ctx_move_to(ctx,0.43956786,0.90788066);
-     ctx_rel_curve_to(ctx,0.0195929,0.0102943,0.0716181,0.0218038,0.10361884,-0.0167646);
-     ctx_line_to (ctx,0.93768705,0.37887837);
-     ctx_rel_curve_to (ctx,  0.019925 ,-0.0342044,-0.00963,-0.0544608,-0.0308834,-0.0508084);
-     ctx_rel_curve_to (ctx,-0.17965502,0.0285588,-0.35466092,-0.055125,-0.45096394,-0.21253089);
-     ctx_rel_curve_to (ctx, -0.0176003 ,-0.02988716, -0.0594422,-0.01560777,-0.0594422,0.0139473);
-     ctx_rel_curve_to (ctx, 0, 0.0591101,0.003321,0.49845135,0.001991, 0.70699722);
-     ctx_rel_curve_to (ctx, 0.00039042, 0.0283487,0.0157362 ,0.0529866,0.0408456,0.070733);
+     ctx_rgba(ctx,1,1,1,0.4f);
+     ctx_move_to(ctx,0.43956786f,0.90788066f);
+     ctx_rel_curve_to(ctx,0.0195929f,0.0102943f,0.0716181f,0.0218038f,0.10361884f,-0.0167646f);
+     ctx_line_to (ctx,0.93768705f,0.37887837f);
+     ctx_rel_curve_to (ctx,  0.019925f,-0.0342044f,-0.00963f,-0.0544608f,-0.0308834f,-0.0508084f);
+     ctx_rel_curve_to (ctx,-0.17965502f,0.0285588f,-0.35466092f,-0.055125f,-0.45096394f,-0.21253089f);
+     ctx_rel_curve_to (ctx, -0.0176003f,-0.02988716f, -0.0594422f,-0.01560777f,-0.0594422f,0.0139473f);
+     ctx_rel_curve_to (ctx, 0, 0.0591101f,0.003321f,0.49845135f,0.001991f, 0.70699722f);
+     ctx_rel_curve_to (ctx, 0.00039042f, 0.0283487f,0.0157362f,0.0529866f,0.0408456f,0.070733f);
      ctx_fill (ctx);
 
-     ctx_move_to (ctx, 0.39772584,0.91850721);
-     ctx_rel_line_to (ctx, -0.0664159, 0);
-     ctx_rel_curve_to (ctx, -0.15408489,0, -0.27894675,-0.12486192, -0.27894675,-0.2789468);
-     ctx_rel_curve_to (ctx, 0,-0.15408489, 0.12486186,-0.27861466, 0.27894675,-0.27894675);
-     ctx_rel_line_to (ctx, 0.18585599,0.0000662);
-     ctx_rel_curve_to (ctx, 0.0111839,0.00017138, 0.0158287,0.001542, 0.0263337,0.0134822);
-     ctx_rel_curve_to (ctx, 0.11733258,0.14373102, 0.3018009,0.36870115, 0.3942639,0.49195316);
-     ctx_rel_curve_to (ctx, 0.0185394,0.0332794, -0.0106225,0.0505515, -0.0228143,0.0505207);
+     ctx_move_to (ctx, 0.39772584f,0.91850721f);
+     ctx_rel_line_to (ctx, -0.0664159f, 0);
+     ctx_rel_curve_to (ctx, -0.15408489f,0, -0.27894675f,-0.12486192f, -0.27894675f,-0.2789468f);
+     ctx_rel_curve_to (ctx, 0,-0.15408489f, 0.12486186f,-0.27861466f, 0.27894675f,-0.27894675f);
+     ctx_rel_line_to (ctx, 0.18585599f,0.0000662f);
+     ctx_rel_curve_to (ctx, 0.0111839f,0.00017138f, 0.0158287f,0.001542f, 0.0263337f,0.0134822f);
+     ctx_rel_curve_to (ctx, 0.11733258f,0.14373102f, 0.3018009f,0.36870115f, 0.3942639f,0.49195316f);
+     ctx_rel_curve_to (ctx, 0.0185394f,0.0332794f, -0.0106225f,0.0505515f, -0.0228143f,0.0505207f);
 
-     ctx_linear_gradient (ctx, 0.0525, 0, 0.9905, 0);
-     ctx_gradient_add_stop (ctx, 0.0, 1.0, 1.0, 0.66, 1.0);
-     ctx_gradient_add_stop (ctx, 0.2, 1.0, 0.66, 0.0, 1.0);
-     ctx_gradient_add_stop (ctx, 0.5, 1.0, 0.0, 0.0, 1.0);
-     ctx_gradient_add_stop (ctx, 1.0, 0.4, 0.0, 0.53, 1.0);
+     ctx_linear_gradient (ctx, 0.0525f, 0, 0.9905f, 0);
+     ctx_gradient_add_stop (ctx, 0.0f, 1.0f, 1.0f, 0.66f, 1.0f);
+     ctx_gradient_add_stop (ctx, 0.2f, 1.0f, 0.66f, 0.0f, 1.0f);
+     ctx_gradient_add_stop (ctx, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f);
+     ctx_gradient_add_stop (ctx, 1.0f, 0.4f, 0.0f, 0.53f, 1.0f);
      ctx_fill (ctx);
      
 
 
-     ctx_linear_gradient(ctx, 0.697, 0.17, 0.4318, 0.884);
-     ctx_gradient_add_stop (ctx, 0, 0.26, 0.26, 1, 1.0);
-     ctx_gradient_add_stop (ctx, 0.3, 0, 1, 1, 0.4);
-     ctx_gradient_add_stop (ctx, 1.0, 0, 1, 0.26,1.0);
+     ctx_linear_gradient(ctx, 0.697f, 0.17f, 0.4318f, 0.884f);
+     ctx_gradient_add_stop (ctx, 0, 0.26f, 0.26f, 1, 1.0f);
+     ctx_gradient_add_stop (ctx, 0.3f, 0, 1, 1, 0.4f);
+     ctx_gradient_add_stop (ctx, 1.0f, 0, 1, 0.26f,1.0f);
      
-     ctx_move_to(ctx,0.43956786,0.90788066);
-     ctx_rel_curve_to(ctx,0.0195929,0.0102943,0.0716181,0.0218038,0.10361884,-0.0167646);
-     ctx_line_to (ctx,0.93768705,0.37887837);
-     ctx_rel_curve_to (ctx,  0.019925 ,-0.0342044,-0.00963,-0.0544608,-0.0308834,-0.0508084);
-     ctx_rel_curve_to (ctx,-0.17965502,0.0285588,-0.35466092,-0.055125,-0.45096394,-0.21253089);
-     ctx_rel_curve_to (ctx, -0.0176003 ,-0.02988716, -0.0594422,-0.01560777,-0.0594422,0.0139473);
-     ctx_rel_curve_to (ctx, 0, 0.0591101,0.003321,0.49845135,0.001991, 0.70699722);
-     ctx_rel_curve_to (ctx, 0.00039042, 0.0283487,0.0157362 ,0.0529866,0.0408456,0.070733);
+     ctx_move_to(ctx,0.43956786f,0.90788066f);
+     ctx_rel_curve_to(ctx,0.0195929f,0.0102943f,0.0716181f,0.0218038f,0.10361884f,-0.0167646f);
+     ctx_line_to (ctx,0.93768705f,0.37887837f);
+     ctx_rel_curve_to (ctx,  0.019925f,-0.0342044f,-0.00963f,-0.0544608f,-0.0308834f,-0.0508084f);
+     ctx_rel_curve_to (ctx,-0.17965502f,0.0285588f,-0.35466092f,-0.055125f,-0.45096394f,-0.21253089f);
+     ctx_rel_curve_to (ctx, -0.0176003f,-0.02988716f, -0.0594422f,-0.01560777f,-0.0594422f,0.0139473f);
+     ctx_rel_curve_to (ctx, 0, 0.0591101f,0.003321f,0.49845135f,0.001991f, 0.70699722f);
+     ctx_rel_curve_to (ctx, 0.00039042f, 0.0283487f,0.0157362f,0.0529866f,0.0408456f,0.070733f);
      ctx_fill (ctx);
      
      ctx_restore (ctx);

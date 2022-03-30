@@ -4,9 +4,9 @@
 #include <stdlib.h>
 
 #ifndef CTX_EXTERNAL_MALLOC
-static inline void *ctx_realloc (void *mem, size_t size)
+static inline void *ctx_realloc (void *mem, size_t old_size, size_t new_size)
 {
-  return (void*)realloc (mem, size);
+  return (void*)realloc (mem, new_size);
 }
 
 static inline void *ctx_malloc (size_t size)

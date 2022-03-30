@@ -1206,7 +1206,7 @@ static inline void vt_argument_buf_add (VT *vt, int ch)
       vt->argument_buf_cap)
     {
       vt->argument_buf_cap = vt->argument_buf_cap * 2;
-      vt->argument_buf = ctx_realloc (vt->argument_buf, vt->argument_buf_cap);
+      vt->argument_buf = ctx_realloc (vt->argument_buf, vt->argument_buf_cap/2, vt->argument_buf_cap);
     }
   vt->argument_buf[vt->argument_buf_len] = ch;
   vt->argument_buf[++vt->argument_buf_len] = 0;
@@ -3748,7 +3748,7 @@ void vt_gfx (VT *vt, const char *command)
     else
       {
         vt->gfx.data_size += chunk_size;
-        vt->gfx.data = ctx_realloc (vt->gfx.data, vt->gfx.data_size + 1);
+        vt->gfx.data = ctx_realloc (vt->gfx.data, vt->gfx.data_size-chunk_size,vt->gfx.data_size + 1);
       }
     memcpy (vt->gfx.data + old_size, payload, chunk_size);
     vt->gfx.data[vt->gfx.data_size]=0;

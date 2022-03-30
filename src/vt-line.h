@@ -95,7 +95,7 @@ static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
   if (pos >= string->style_size)
     {
       int new_size = pos + 16;
-      string->style = ctx_realloc (string->style, new_size * sizeof (uint64_t) );
+      string->style = ctx_realloc (string->style, string->style_size, new_size * sizeof (uint64_t) );
       memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (uint64_t) );
       string->style_size = new_size;
     }

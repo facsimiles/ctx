@@ -1315,7 +1315,7 @@ static inline void ctx_parser_holding_append (CtxParser *parser, int byte)
   {
     int new_len = parser->hold_len * 2;
     if (new_len < 512) new_len = 512;
-    parser->holding = (uint8_t*)ctx_realloc (parser->holding, new_len);
+    parser->holding = (uint8_t*)ctx_realloc (parser->holding, parser->hold_len, new_len);
     parser->hold_len = new_len;
   }
 #endif

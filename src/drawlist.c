@@ -565,7 +565,7 @@ int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
   length_in_blocks = length / sizeof (CtxEntry);
   length_in_blocks += (length % sizeof (CtxEntry) ) ?1:0;
   if ((signed)drawlist->count + length_in_blocks + 4 > drawlist->size)
-    { ctx_drawlist_resize (drawlist, drawlist->count * 1.2 + length_in_blocks + 32); }
+    { ctx_drawlist_resize (drawlist, (int)(drawlist->count * 1.2 + length_in_blocks + 32)); }
   if (CTX_UNLIKELY((signed)drawlist->count >= drawlist->size))
     { return -1; }
   drawlist->count += length_in_blocks;

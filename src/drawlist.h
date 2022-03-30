@@ -43,7 +43,7 @@ ctx_u8 (CtxCode code,
         uint8_t e, uint8_t f, uint8_t g, uint8_t h);
 
 #define CTX_PROCESS_VOID(cmd) do {\
-  CtxEntry commands[4] = {{cmd}};\
+  CtxEntry commands[4] = {{cmd,{{0}}}};\
   ctx_process (ctx, &commands[0]);}while(0) \
 
 #define CTX_PROCESS_F(cmd,x,y) do {\

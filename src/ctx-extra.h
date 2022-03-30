@@ -240,7 +240,7 @@ static inline float ctx_hypotf_fast (float a, float b)
 
 static inline float _ctx_parse_float (const char *str, char **endptr)
 {
-  return strtod (str, endptr); /* XXX: , vs . problem in some locales */
+  return strtof (str, endptr); /* XXX: , vs . problem in some locales */
 }
 
 const char *ctx_get_string (Ctx *ctx, uint32_t hash);

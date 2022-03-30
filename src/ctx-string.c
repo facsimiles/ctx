@@ -43,8 +43,9 @@ void ctx_string_clear (CtxString *string)
 void ctx_string_pre_alloc (CtxString *string, int size)
 {
   char *old = string->str;
+  int old_len = string->allocated_length;
   string->allocated_length = CTX_MAX (size + 2, string->length + 2);
-  string->str = (char*)ctx_realloc (old, string->allocated_length);
+  string->str = (char*)ctx_realloc (old, old_len, string->allocated_length);
 }
 
 
@@ -55,8 +56,9 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
   if (CTX_UNLIKELY(string->length + 2 >= string->allocated_length))
     {
       char *old = string->str;
+      int old_len = string->allocated_length;
       string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
-      string->str = (char*)ctx_realloc (old, string->allocated_length);
+      string->str = (char*)ctx_realloc (old, old_len, string->allocated_length);
     }
   string->str[string->length++] = val;
   string->str[string->length] = '\0';

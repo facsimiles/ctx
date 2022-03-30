@@ -48,11 +48,11 @@ _ctx_transform_prime (CtxState *state)
    for (int c = 0; c < 3; c++)
    {
      state->gstate.prepped_transform.m[0][c] =
-             state->gstate.transform.m[0][c] * TRANSFORM_SCALE;
+             (int)(state->gstate.transform.m[0][c] * TRANSFORM_SCALE);
      state->gstate.prepped_transform.m[1][c] =
-             state->gstate.transform.m[1][c] * TRANSFORM_SCALE;
+             (int)(state->gstate.transform.m[1][c] * TRANSFORM_SCALE);
      state->gstate.prepped_transform.m[2][c] =
-             state->gstate.transform.m[2][c] * TRANSFORM_SCALE;
+             (int)(state->gstate.transform.m[2][c] * TRANSFORM_SCALE);
    }
 }
 
@@ -124,8 +124,8 @@ _ctx_user_to_device_prepped_fixed (CtxState *state, int x, int y, int *x_out, in
 static inline void
 _ctx_user_to_device_prepped (CtxState *state, float x, float y, int *x_out, int *y_out)
 {
-  int x_in = x * TRANSFORM_SCALE;
-  int y_in = y * TRANSFORM_SCALE;
+  int x_in = (int)(x * TRANSFORM_SCALE);
+  int y_in = (int)(y * TRANSFORM_SCALE);
   _ctx_user_to_device_prepped_fixed (state, x_in, y_in, x_out, y_out);
 }
 

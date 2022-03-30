@@ -177,7 +177,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     ctx_push_backend (ctx, r);
 
     ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
-    ctx_translate (ctx, -1.0 * x0, -1.0 * y0);
+    ctx_translate (ctx, -1.0f * x0, -1.0f * y0);
     if (active_mask)
       ctx_render_ctx_masked (ctx, ctx, active_mask);
     else
@@ -387,7 +387,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       if ((flags & CTX_FLAG_KEEP_DATA) == 0)
         memset (fb, 0, width * bpp * render_height);
 
-      ctx_translate (ctx, -1.0 * x0, -1.0 * y0);
+      ctx_translate (ctx, -1.0f * x0, -1.0f * y0);
       if (active_mask)
         ctx_render_ctx_masked (ctx, ctx, active_mask);
       else
@@ -455,7 +455,7 @@ ctx_cb_end_frame (Ctx *ctx)
   if (cb_backend->flags & CTX_FLAG_SHOW_FPS)
   {
    
-  float em = ctx_height (ctx) * 0.08;
+  float em = ctx_height (ctx) * 0.08f;
   float y = em;
   ctx_font_size (ctx, em);
   ctx_rectangle (ctx, ctx_width(ctx)-(em*4), 0, em *4, em * 1.1f);

@@ -89,14 +89,14 @@ static inline void *ctx_calloc (size_t nmemb, size_t size)
   return ret;
 }
 
-static inline void *ctx_realloc (void *ptr, size_t size)
+static inline void *ctx_realloc (void *ptr, size_t old_size, size_t new_size)
 {
-  return m_realloc(ptr, size);
+  return m_realloc(ptr, old_size, new_size);
 }
 
 static inline void ctx_free (void *ptr)
 {
-  return m_free(ptr);
+  return m_free(ptr, 0);
 }
 
 #define CTX_MAX_FONTS 2
@@ -160,7 +160,7 @@ void gc_collect(void);
 	static mp_obj_t mp_ctx_##name(mp_obj_t self_in, mp_obj_t arg1)         \
 	{                                                                      \
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
-		ctx_##name(self->ctx, mp_obj_get_float(arg1));                 \
+		ctx_##name(self->ctx, (float)mp_obj_get_float(arg1));          \
 		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_##name##_obj, mp_ctx_##name);
@@ -181,8 +181,8 @@ void gc_collect(void);
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);                   \
 		ctx_##name(                                                    \
 			self->ctx,                                             \
-			mp_obj_get_float(arg1),                                \
-			mp_obj_get_float(arg2));                               \
+			(float)mp_obj_get_float(arg1),                         \
+			(float)mp_obj_get_float(arg2));                        \
 		return self_in;                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_##name##_obj, mp_ctx_##name);
@@ -194,9 +194,9 @@ void gc_collect(void);
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
 		ctx_##name(                                                    \
 			self->ctx,                                             \
-			mp_obj_get_float(args[1]),                             \
-			mp_obj_get_float(args[2]),                             \
-			mp_obj_get_float(args[3]));                            \
+			(float)mp_obj_get_float(args[1]),                      \
+			(float)mp_obj_get_float(args[2]),                      \
+			(float)mp_obj_get_float(args[3]));                     \
 		return args[0];                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
@@ -209,10 +209,10 @@ void gc_collect(void);
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
 		ctx_##name(                                                    \
 			self->ctx,                                             \
-			mp_obj_get_float(args[1]),                             \
-			mp_obj_get_float(args[2]),                             \
-			mp_obj_get_float(args[3]),                             \
-			mp_obj_get_float(args[4]));                            \
+			(float)mp_obj_get_float(args[1]),                      \
+			(float)mp_obj_get_float(args[2]),                      \
+			(float)mp_obj_get_float(args[3]),                      \
+			(float)mp_obj_get_float(args[4]));                     \
 		return args[0];                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
@@ -225,11 +225,11 @@ void gc_collect(void);
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
 		ctx_##name(                                                    \
 			self->ctx,                                             \
-			mp_obj_get_float(args[1]),                             \
-			mp_obj_get_float(args[2]),                             \
-			mp_obj_get_float(args[3]),                             \
-			mp_obj_get_float(args[4]),                             \
-			mp_obj_get_float(args[5]));                            \
+			(float)mp_obj_get_float(args[1]),                      \
+			(float)mp_obj_get_float(args[2]),                      \
+			(float)mp_obj_get_float(args[3]),                      \
+			(float)mp_obj_get_float(args[4]),                      \
+			(float)mp_obj_get_float(args[5]));                     \
 		return args[0];                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
@@ -242,12 +242,12 @@ void gc_collect(void);
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
 		ctx_##name(                                                    \
 			self->ctx,                                             \
-			mp_obj_get_float(args[1]),                             \
-			mp_obj_get_float(args[2]),                             \
-			mp_obj_get_float(args[3]),                             \
-			mp_obj_get_float(args[4]),                             \
-			mp_obj_get_float(args[5]),                             \
-			mp_obj_get_float(args[6]));                            \
+			(float)mp_obj_get_float(args[1]),                      \
+			(float)mp_obj_get_float(args[2]),                      \
+			(float)mp_obj_get_float(args[3]),                      \
+			(float)mp_obj_get_float(args[4]),                      \
+			(float)mp_obj_get_float(args[5]),                      \
+			(int)mp_obj_get_float(args[6]));                     \
 		return self;                                                   \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
@@ -261,13 +261,13 @@ void gc_collect(void);
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
 		ctx_##name(                                                    \
 			self->ctx,                                             \
-			mp_obj_get_float(args[1]),                             \
-			mp_obj_get_float(args[2]),                             \
-			mp_obj_get_float(args[3]),                             \
-			mp_obj_get_float(args[4]),                             \
-			mp_obj_get_float(args[5]),                             \
-			mp_obj_get_float(args[6]),                             \
-			mp_obj_get_float(args[7]));                            \
+			(float)mp_obj_get_float(args[1]),                      \
+			(float)mp_obj_get_float(args[2]),                      \
+			(float)mp_obj_get_float(args[3]),                      \
+			(float)mp_obj_get_float(args[4]),                      \
+			(float)mp_obj_get_float(args[5]),                      \
+			(float)mp_obj_get_float(args[6]),                      \
+			(float)mp_obj_get_float(args[7]));                     \
 		return self;                                                   \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
@@ -281,15 +281,15 @@ void gc_collect(void);
 		mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);                   \
 		ctx_##name(                                                    \
 			self->ctx,                                             \
-			mp_obj_get_float(args[1]),                             \
-			mp_obj_get_float(args[2]),                             \
-			mp_obj_get_float(args[3]),                             \
-			mp_obj_get_float(args[4]),                             \
-			mp_obj_get_float(args[5]),                             \
-			mp_obj_get_float(args[6]),                             \
-			mp_obj_get_float(args[7]),                             \
-			mp_obj_get_float(args[8]),                             \
-			mp_obj_get_float(args[9]));                            \
+			(float)mp_obj_get_float(args[1]),                      \
+			(float)mp_obj_get_float(args[2]),                      \
+			(float)mp_obj_get_float(args[3]),                      \
+			(float)mp_obj_get_float(args[4]),                      \
+			(float)mp_obj_get_float(args[5]),                      \
+			(float)mp_obj_get_float(args[6]),                      \
+			(float)mp_obj_get_float(args[7]),                      \
+			(float)mp_obj_get_float(args[8]),                      \
+			(float)mp_obj_get_float(args[9]));                     \
 		return self;                                                   \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
@@ -303,8 +303,8 @@ void gc_collect(void);
 		ctx_##name(                                                    \
 			self->ctx,                                             \
 			mp_obj_str_get_str(args[1]),                           \
-			mp_obj_get_float(args[2]),                             \
-			mp_obj_get_float(args[3]));                            \
+			(float)mp_obj_get_float(args[2]),                      \
+			(float)mp_obj_get_float(args[3]));                     \
                 return args[0];                                                \
 	}                                                                      \
 	MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(                                   \
@@ -443,8 +443,8 @@ static mp_obj_t mp_ctx_scrolled(size_t n_args, const mp_obj_t *args)
 {
   mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
   ctx_scrolled (self->ctx,
-                     mp_obj_get_float(args[1]), // x
-                     mp_obj_get_float(args[2]), // y
+                     (float)mp_obj_get_float(args[1]), // x
+                     (float)mp_obj_get_float(args[2]), // y
                      mp_obj_get_int(args[3]), // scroll-direction
                      mp_obj_get_int(args[4]), // time
                      mp_obj_get_int(args[5])); // sync
@@ -458,8 +458,8 @@ static mp_obj_t mp_ctx_pointer_press(size_t n_args, const mp_obj_t *args)
 {
   mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
   ctx_pointer_press (self->ctx,
-                     mp_obj_get_float(args[1]), // x
-                     mp_obj_get_float(args[2]),  // y
+                     (float)mp_obj_get_float(args[1]), // x
+                     (float)mp_obj_get_float(args[2]),  // y
                      mp_obj_get_int(args[3]), // device-no
                      mp_obj_get_int(args[4]), // time
                      mp_obj_get_int(args[5])); // sync
@@ -471,8 +471,8 @@ static mp_obj_t mp_ctx_pointer_motion(size_t n_args, const mp_obj_t *args)
 {
   mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
   ctx_pointer_motion(self->ctx,
-                     mp_obj_get_float(args[1]),
-                     mp_obj_get_float(args[2]),
+                     (float)mp_obj_get_float(args[1]),
+                     (float)mp_obj_get_float(args[2]),
                      mp_obj_get_int(args[3]),
                      mp_obj_get_int(args[4]),
                      mp_obj_get_int(args[5]));
@@ -484,8 +484,8 @@ static mp_obj_t mp_ctx_pointer_release(size_t n_args, const mp_obj_t *args)
 {
   mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
   ctx_pointer_release(self->ctx,
-                     mp_obj_get_float(args[1]),
-                     mp_obj_get_float(args[2]),
+                     (float)mp_obj_get_float(args[1]),
+                     (float)mp_obj_get_float(args[2]),
                      mp_obj_get_int(args[3]),
                      mp_obj_get_int(args[4]),
                      mp_obj_get_int(args[5]));
@@ -522,14 +522,14 @@ static mp_obj_t mp_ctx_line_dash(mp_obj_t self_in, mp_obj_t dashes_in)
 	size_t count  = mp_obj_get_int(mp_obj_len(dashes_in));
 	float *dashes = m_malloc(sizeof(float) * count);
 	for (size_t i = 0; i < count; i++) {
-		dashes[i] = mp_obj_get_float(mp_obj_subscr(
+		dashes[i] = (float)mp_obj_get_float(mp_obj_subscr(
 			dashes_in, mp_obj_new_int(i), MP_OBJ_SENTINEL)
 		);
 	}
 
 	ctx_line_dash(self->ctx, dashes, count);
 
-	m_free(dashes);
+	m_free(dashes, sizeof(float)*count);
         return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_line_dash_obj, mp_ctx_line_dash);
@@ -539,8 +539,8 @@ static mp_obj_t mp_ctx_in_fill(mp_obj_t self_in, mp_obj_t arg1, mp_obj_t arg2)
 {
   mp_ctx_obj_t *self = MP_OBJ_TO_PTR(self_in);
   return mp_obj_new_bool (ctx_in_fill (self->ctx,
-                                         mp_obj_get_float(arg1),
-                                         mp_obj_get_float(arg2)));
+                                       (float)mp_obj_get_float(arg1),
+                                       (float)mp_obj_get_float(arg2)));
 }
 MP_DEFINE_CONST_FUN_OBJ_3(mp_ctx_in_fill_obj, mp_ctx_in_fill);
 
@@ -612,7 +612,7 @@ mp_ctx_color_common(size_t n_args, const mp_obj_t *args, bool stroke)
 
 	float alpha_f = 1.0f;
 	if (n_args == 3) {
-		alpha_f = mp_obj_get_float(args[2]);
+		alpha_f = (float)mp_obj_get_float(args[2]);
 	}
 	if (alpha_f < 0.0f || alpha_f > 1.0f) {
 		mp_raise_ValueError("alpha must be between 0.0 or 1.0");
@@ -632,9 +632,9 @@ mp_ctx_color_common(size_t n_args, const mp_obj_t *args, bool stroke)
 	 */
 	if (mp_obj_is_type(red_in, &mp_type_float)) {
 		float red, green, blue;
-		red   = mp_obj_get_float(red_in);
-		green = mp_obj_get_float(green_in);
-		blue  = mp_obj_get_float(blue_in);
+		red   = (float)mp_obj_get_float(red_in);
+		green = (float)mp_obj_get_float(green_in);
+		blue  = (float)mp_obj_get_float(blue_in);
 
 		if (stroke) {
 			ctx_rgba_stroke(self->ctx, red, green, blue, alpha_f);
@@ -679,11 +679,11 @@ static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
 	mp_ctx_obj_t *self = MP_OBJ_TO_PTR(args[0]);
 	mp_obj_t color_in  = args[2];
 
-	float pos = mp_obj_get_float(args[1]);
+	float pos = (float)mp_obj_get_float(args[1]);
 
 	float alpha_f = 1.0f;
 	if (n_args == 4) {
-		alpha_f = mp_obj_get_float(args[3]);
+		alpha_f = (float)mp_obj_get_float(args[3]);
 	}
 	if (alpha_f < 0.0f || alpha_f > 1.0f) {
 		mp_raise_ValueError("alpha must be between 0.0 or 1.0");
@@ -703,9 +703,9 @@ static mp_obj_t mp_ctx_add_stop(size_t n_args, const mp_obj_t *args)
 	 */
 	if (mp_obj_is_type(red_in, &mp_type_float)) {
 		float red, green, blue;
-		red   = mp_obj_get_float(red_in);
-		green = mp_obj_get_float(green_in);
-		blue  = mp_obj_get_float(blue_in);
+		red   = (float)mp_obj_get_float(red_in);
+		green = (float)mp_obj_get_float(green_in);
+		blue  = (float)mp_obj_get_float(blue_in);
 
 		ctx_gradient_add_stop(
 			self->ctx, pos, red, green, blue, alpha_f
@@ -1173,8 +1173,8 @@ static mp_obj_t mp_ctx_new_drawlist  (mp_obj_t width_in, mp_obj_t height_in)
 {
 	mp_ctx_obj_t *o = m_new_obj(mp_ctx_obj_t);
 	o->base.type    = &mp_ctx_type;
-	o->ctx          = ctx_new_drawlist(mp_obj_get_float(width_in),
-                                           mp_obj_get_float(height_in));
+	o->ctx          = ctx_new_drawlist((int)mp_obj_get_float(width_in),
+                                           (int)mp_obj_get_float(height_in));
 
 	return MP_OBJ_FROM_PTR(o);
 }
@@ -1238,9 +1238,9 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
        case MP_QSTR_height:
             return mp_obj_new_int(ctx_height (self->ctx));
        case MP_QSTR_x:
-            return mp_obj_new_int(ctx_x (self->ctx));
+            return mp_obj_new_float(ctx_x (self->ctx));
        case MP_QSTR_y:
-            return mp_obj_new_int(ctx_y (self->ctx));
+            return mp_obj_new_float(ctx_y (self->ctx));
     }
   }
   else
@@ -1270,15 +1270,15 @@ mp_ctx_attr_op (mp_obj_t self_in, qstr attr, mp_obj_t set_val)
        case MP_QSTR_text_baseline:
          ctx_text_baseline (self->ctx, mp_obj_get_int (set_val)); break;
        case MP_QSTR_line_width:
-         ctx_line_width (self->ctx, mp_obj_get_float (set_val)); break;
+         ctx_line_width (self->ctx, (float)mp_obj_get_float (set_val)); break;
        case MP_QSTR_line_dash_offset:
-         ctx_line_dash_offset (self->ctx, mp_obj_get_float (set_val)); break;
+         ctx_line_dash_offset (self->ctx, (float)mp_obj_get_float (set_val)); break;
        case MP_QSTR_miter_limit:
-         ctx_miter_limit (self->ctx, mp_obj_get_float (set_val)); break;
+         ctx_miter_limit (self->ctx, (float)mp_obj_get_float (set_val)); break;
        case MP_QSTR_global_alpha:
-         ctx_global_alpha (self->ctx, mp_obj_get_float (set_val)); break;
+         ctx_global_alpha (self->ctx, (float)mp_obj_get_float (set_val)); break;
        case MP_QSTR_font_size:
-         ctx_font_size (self->ctx, mp_obj_get_float (set_val)); break;
+         ctx_font_size (self->ctx, (float)mp_obj_get_float (set_val)); break;
     }
     return set_val;
   }

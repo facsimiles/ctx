@@ -1343,7 +1343,7 @@ void vt_audio (VT *vt, const char *command)
      else
      {
        audio->data_size += chunk_size;
-       audio->data = ctx_realloc (audio->data, audio->data_size + 1);
+       audio->data = ctx_realloc (audio->data, audio->data_size+1 - chunk_size, audio->data_size + 1);
      }
      memcpy (audio->data + old_size, payload, chunk_size);
      audio->data[audio->data_size]=0;

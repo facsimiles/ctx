@@ -492,7 +492,7 @@ struct _CtxEvents
   int              idle_id;
   CtxList         *items;
   CtxItem         *last_item;
-  double           tap_hysteresis;
+  float            tap_hysteresis;
 #if CTX_CLIENTS
   CtxList         *clients;
   CtxClient *active;

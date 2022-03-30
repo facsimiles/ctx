@@ -333,7 +333,7 @@ float ctx_float_color_rgb_to_gray (CtxState *state, const float *rgb)
 uint8_t ctx_u8_color_rgb_to_gray (CtxState *state, const uint8_t *rgb)
 {
         // XXX todo replace with correct according to primaries
-  return CTX_CSS_RGB_TO_LUMINANCE(rgb);
+  return (uint8_t)(CTX_CSS_RGB_TO_LUMINANCE(rgb));
 }
 
 void ctx_color_get_graya (CtxState *state, CtxColor *color, float *out)
@@ -734,16 +734,16 @@ static ColorDef _ctx_colors[]={
   {CTX_fuchsia,  1, 0, 1, 1},
   {CTX_cyan,     0, 1, 1, 1},
   {CTX_white,    1, 1, 1, 1},
-  {CTX_silver,   0.75294, 0.75294, 0.75294, 1},
-  {CTX_gray,     0.50196, 0.50196, 0.50196, 1},
-  {CTX_magenta,  0.50196, 0, 0.50196, 1},
-  {CTX_maroon,   0.50196, 0, 0, 1},
-  {CTX_purple,   0.50196, 0, 0.50196, 1},
-  {CTX_green,    0, 0.50196, 0, 1},
+  {CTX_silver,   0.75294f, 0.75294f, 0.75294f, 1},
+  {CTX_gray,     0.50196f, 0.50196f, 0.50196f, 1},
+  {CTX_magenta,  0.50196f, 0, 0.50196f, 1},
+  {CTX_maroon,   0.50196f, 0, 0, 1},
+  {CTX_purple,   0.50196f, 0, 0.50196f, 1},
+  {CTX_green,    0, 0.50196f, 0, 1},
   {CTX_lime,     0, 1, 0, 1},
-  {CTX_olive,    0.50196, 0.50196, 0, 1},
-  {CTX_navy,     0, 0,      0.50196, 1},
-  {CTX_teal,     0, 0.50196, 0.50196, 1},
+  {CTX_olive,    0.50196f, 0.50196f, 0, 1},
+  {CTX_navy,     0, 0,      0.50196f, 1},
+  {CTX_teal,     0, 0.50196f, 0.50196f, 1},
   {CTX_aqua,     0, 1, 1, 1},
   {CTX_transparent, 0, 0, 0, 0},
   {CTX_none,     0, 0, 0, 0},
@@ -1055,10 +1055,10 @@ void ctx_gradient_add_stop_u8
 void ctx_gradient_add_stop
 (Ctx *ctx, float pos, float r, float g, float b, float a)
 {
-  int ir = r * 255;
-  int ig = g * 255;
-  int ib = b * 255;
-  int ia = a * 255;
+  int ir =(int)(r * 255);
+  int ig =(int)(g * 255);
+  int ib =(int)(b * 255);
+  int ia =(int)(a * 255);
   ir = CTX_CLAMP (ir, 0,255);
   ig = CTX_CLAMP (ig, 0,255);
   ib = CTX_CLAMP (ib, 0,255);

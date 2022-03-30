@@ -35,7 +35,7 @@ static void ctx_state_set (CtxState *state, uint32_t key, float value)
 }
 
 
-#define CTX_KEYDB_STRING_START (-90000.0)
+#define CTX_KEYDB_STRING_START (-90000.0f)
 #define CTX_KEYDB_STRING_END   (CTX_KEYDB_STRING_START + CTX_STRINGPOOL_SIZE)
 
 static int ctx_float_is_string (float val)
@@ -48,7 +48,7 @@ CTX_STATIC int ctx_float_to_string_index (float val)
   int idx = -1;
   if (ctx_float_is_string (val))
   {
-    idx = (int)(val) - CTX_KEYDB_STRING_START;
+    idx = (int)(val - CTX_KEYDB_STRING_START);
   }
   return idx;
 }
@@ -119,7 +119,7 @@ CTX_STATIC void ctx_state_set_string (CtxState *state, uint32_t key, const char 
 
   if (ctx_str_is_number (string))
   {
-    ctx_state_set (state, key, strtod (string, NULL));
+    ctx_state_set (state, key, _ctx_parse_float (string, NULL));
     return;
   }
   // should do same with color
@@ -170,7 +170,7 @@ float ctx_get_float (Ctx *ctx, uint32_t hash)
 }
 int ctx_get_int (Ctx *ctx, uint32_t hash)
 {
-  return ctx_state_get (&ctx->state, hash);
+  return (int)ctx_state_get (&ctx->state, hash);
 }
 void ctx_set_float (Ctx *ctx, uint32_t hash, float value)
 {
