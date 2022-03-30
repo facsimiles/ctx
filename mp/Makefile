@@ -17,7 +17,7 @@ INC += -I$(BUILD)
 
 INC += -Ilib/
 
-CFLAGS += -std=gnu99 -Wall -Wdouble-promotion
+CFLAGS += -std=gnu99 -Wall -Wdouble-promotion -Wfloat-conversion -Wno-unused-command-line-argument
 #-Werror  
 CFLAGS += -O3 -DNDEBUG
 CFLAGS += $(INC) -lidbfs.js

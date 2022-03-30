@@ -99,12 +99,20 @@ static inline void *ctx_calloc (size_t nmemb, size_t size)
 
 static inline void *ctx_realloc (void *ptr, size_t old_size, size_t new_size)
 {
+#if MICROPY_MALLOC_USES_ALLOCATED_SIZE
   return m_realloc(ptr, old_size, new_size);
+#else
+  return m_realloc(ptr, new_size);
+#endif
 }
 
 static inline void ctx_free (void *ptr)
 {
+#if MICROPY_MALLOC_USES_ALLOCATED_SIZE
   return m_free(ptr, 0);
+#else
+  return m_free(ptr);
+#endif
 }
 
 #define CTX_MAX_FONTS 2
@@ -537,7 +545,11 @@ static mp_obj_t mp_ctx_line_dash(mp_obj_t self_in, mp_obj_t dashes_in)
 
 	ctx_line_dash(self->ctx, dashes, count);
 
+#if MICROPY_MALLOC_USES_ALLOCATED_SIZE
 	m_free(dashes, sizeof(float)*count);
+#else
+	m_free(dashes);
+#endif
         return self_in;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_ctx_line_dash_obj, mp_ctx_line_dash);
