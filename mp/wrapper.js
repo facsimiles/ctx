@@ -91,15 +91,15 @@ var mainProgram = function()
   setTimeout(repopulate_file_picker, 550);
   setTimeout(function(){
 
-          try { a=FS.stat("/sd/main.py");
-          } catch (e){
-            document.getElementById('mp_js_stdout').innerText = 'installing main';
-            FS.writeFile('/sd/main.py', FS.readFile('/main.py'));
-          }
+          //try { a=FS.stat("/sd/main.py");
+          //} catch (e){
+          //  document.getElementById('mp_js_stdout').innerText = 'installing main';
+          FS.writeFile('/sd/main.py', FS.readFile('/main.py'));
+          //}
           try { a=FS.stat("/sd/canvas.py");
           } catch (e){
-            document.getElementById('mp_js_stdout').innerText = 'installing main';
             FS.writeFile('/sd/canvas.py', FS.readFile('/canvas.py'));
+            FS.writeFile('/sd/Calculator.py', FS.readFile('/Calculator.py'));
             FS.writeFile('/sd/README', FS.readFile('/README'));
           }
 
@@ -303,9 +303,18 @@ window.windowToCanvas = function(canvas, x, y)
         theme:'cobalt'
      });
 
-
-window.heap_set = function (newheap)
+window.change_res = function ()
 {
+  var newres = document.getElementById('res').value;
+  var width = parseInt(newres);
+  var height = parseInt(newres.substr(newres.indexOf('x')+1));
+  document.getElementById('c').width = width;
+  document.getElementById('c').height = height;
+}
+
+window.heap_set = function ()
+{
+  var newheap = document.getElementById('heap').value;
    window.heap = parseInt(newheap) * 1024;
    _mp_js_set_heap_size (window.heap);
 }
@@ -431,7 +440,8 @@ window.editor_load = function (path)
      }
      }
   }
-
+  change_res();
+  heap_set();
 }
 
 Module["onRuntimeInitialized"] = mainProgram;

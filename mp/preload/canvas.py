@@ -5,7 +5,7 @@ def get_ctx():  # perhaps turn this into an attribute of the module?
   if _ctx != None:
       return _ctx
   _ctx = modctx.get_context(23*1024)
-  _ctx.flags = _ctx.HASH_CACHE|_ctx.RGB332
+  _ctx.flags = _ctx.HASH_CACHE|_ctx.RGB332|_ctx.INTRA_UPDATE
   return _ctx
 
 _ctx = None

@@ -142,7 +142,7 @@ static mp_obj_t mp_os_listdir(size_t n_args, const mp_obj_t *args)
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(listdir_obj, 0, 1, mp_os_listdir);
 
-static mp_obj_t mp_os_unlink(mp_obj_t py_path)
+static mp_obj_t mp_os_remove(mp_obj_t py_path)
 {
 	const char *path = mp_obj_str_get_str(py_path);
 	if (pycrd_filename_restricted(path)) {
@@ -155,7 +155,7 @@ static mp_obj_t mp_os_unlink(mp_obj_t py_path)
 	}
 	return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_1(unlink_obj, mp_os_unlink);
+static MP_DEFINE_CONST_FUN_OBJ_1(remove_obj, mp_os_remove);
 
 static mp_obj_t mp_os_mkdir(mp_obj_t py_path)
 {
@@ -254,7 +254,7 @@ static const mp_rom_map_elem_t os_module_globals_table[] = {
 	{ MP_ROM_QSTR(MP_QSTR_sync), MP_ROM_PTR(&sync_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_exec), MP_ROM_PTR(&exec_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_listdir), MP_ROM_PTR(&listdir_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_unlink), MP_ROM_PTR(&unlink_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_remove), MP_ROM_PTR(&remove_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_mkdir), MP_ROM_PTR(&mkdir_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_rename), MP_ROM_PTR(&rename_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_read_battery), MP_ROM_PTR(&read_battery_obj) },

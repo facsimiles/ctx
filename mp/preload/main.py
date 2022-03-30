@@ -1,12 +1,13 @@
 import canvas
-o=canvas.ctx
 import io,os,gc,time,sys
 
-# immediate mode user interfaces on a microcontroller with ctx and micropython on rp2040
+o=canvas.ctx
+# we construct the ctx-rendering flags used for
+# clients on start-up
+clientflags = o.flags |o.HASH_CACHE | o.RGB332
 
-o.flags = o.HASH_CACHE | o.GRAY4 #| o.REDUCED # the UI is grayscale allow grayscale
-
-clientflags = o.HASH_CACHE | o.RGB332
+# and set the flags specific for the launcher
+o.flags |= o.HASH_CACHE | o.GRAY4
 
 light_red=(255,80,80)
 white=(255,255,255)

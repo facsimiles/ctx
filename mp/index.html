@@ -37,8 +37,8 @@
        div#toolbar { height: 1.4em; }
        div.led { display: inline-block; width: .5em; height:.5em;border: 1px solid #333;}
     </style>
-    <script src="build/micropython.js"></script>
-    <script src="build/fs.js"></script>
+    <script src="build/micropython.js?2"></script>
+    <script src="build/fs.js?2"></script>
   </head>
   <body>
     <div id='toolbar'>
@@ -48,7 +48,25 @@
       <button id='saveas' title='shift+ctrl+s' onclick='dosaveas()'>save as</button>
       <button id='remove' title='note, the file continues being open in the editor' onclick='dounlink()'>remove file</button>
 
-      <select title='requires a restart to take effect' id='heap' onchange='heap_set(this.value)'>
+
+      <select title='requires restart to take effect' id='res' onchange='change_res();'>
+              <option value='1024x768'>1024x768</option>
+              <option value='800x600'>800x480</option>
+              <option value='640x480'>640x480</option>
+              <option value='480x640'>480x640</option>
+              <option value='480x320' selected>480x320</option>
+              <option value='320x480'>320x480</option>
+              <option value='320x240'>320x240</option>
+              <option value='240x320'>240x240</option>
+              <option value='240x240'>240x240</option>
+              <option value='160x80'>160x80</option>
+              <option value='80x160'>80x160</option>
+              <option value='128x128'>128x128</option>
+              <option value='64x64'>64x64</option>
+              <option value='32x32'>32x32</option>
+      </select>
+
+      <select id='heap' onchange='heap_set()'>
               <option value='16'>16kb heap</option>
               <option value='23'>23kb heap</option>
               <option value='32'>32kb heap</option>
@@ -66,6 +84,7 @@
               <option value='128'>128kb heap</option>
               <option value='144'>144kb heap</option>
               <option value='160'>160kb heap</option>
+              <option value='178'>178kb heap</option>
               <option value='192' selected>192kb heap</option>
               <option value='256'>256kb heap</option>
               <option value='512'>512kb heap</option>
@@ -98,7 +117,7 @@
     </textarea>
     </div>
     <!--<canvas id='c' width='320' height='240' tabindex='1'></canvas>-->
-    <canvas id='c' width='320' height='240' tabindex='1'></canvas>
+    <canvas id='c' width='480' height='320' tabindex='1'></canvas>
     <div id='mp_js_stdout' tabindex='2'></div>
   </body>
 </html>
