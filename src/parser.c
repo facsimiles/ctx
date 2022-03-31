@@ -849,9 +849,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
             parser->numbers[2] = _ctx_parse_float ((char*)parser->holding, NULL);
             {
               CtxEntry e = {CTX_KERNING_PAIR, };
-              e.data.u16[0] = parser->numbers[0];
-              e.data.u16[1] = parser->numbers[1];
-              e.data.s32[1] = parser->numbers[2] * 256;
+              e.data.u16[0] = (uint16_t)parser->numbers[0];
+              e.data.u16[1] = (uint16_t)parser->numbers[1];
+              e.data.s32[1] = (int32_t)(parser->numbers[2] * 256);
               ctx_process (ctx, &e);
             }
             break;
@@ -881,8 +881,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           if (parser->texture_done++ == 1)
           {
              const char *eid = (char*)parser->texture_id;
-             int width  = arg(0);
-             int height = arg(1);
+             int width  = (int)arg(0);
+             int height = (int)arg(1);
              CtxPixelFormat format = (CtxPixelFormat)arg(2);
              int stride = ctx_pixel_format_get_stride (format, width);
              int data_len = stride * height;
@@ -998,7 +998,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         //append_dash_val (ctx, arg(0));
         break;
       case CTX_ARC_TO:
-        ctx_svg_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5), arg(6));
+        ctx_svg_arc_to (ctx, arg(0), arg(1), arg(2), (int)arg(3), (int)arg(4), arg(5), arg(6));
         break;
       case CTX_REL_ARC_TO:
         //ctx_rel_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4) );
@@ -1006,7 +1006,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         {
           float x = ctx_x (ctx);
           float y = ctx_y (ctx);
-          ctx_svg_arc_to (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5)+x, arg(6)+y);
+          ctx_svg_arc_to (ctx, arg(0), arg(1), arg(2), (int)arg(3), (int)arg(4), arg(5)+x, arg(6)+y);
         }
         break;
       case CTX_REL_SMOOTH_TO:
@@ -1195,7 +1195,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_line_dash_offset (ctx, arg(0));
         break;
       case CTX_IMAGE_SMOOTHING:
-        ctx_image_smoothing (ctx, arg(0));
+        ctx_image_smoothing (ctx, (int)arg(0));
         break;
       case CTX_SHADOW_COLOR:
         ctx_shadow_rgba (ctx, arg(0), arg(1), arg(2), arg(3));
@@ -1220,7 +1220,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_BLEND_MODE:
         {
-          int blend_mode = arg(0);
+          int blend_mode = (int)arg(0);
           if (blend_mode == CTX_COLOR) blend_mode = CTX_BLEND_COLOR;
           ctx_blend_mode (ctx, (CtxBlend)blend_mode);
         }
@@ -1280,7 +1280,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_begin_path (ctx);
         break;
       case CTX_GLYPH:
-        ctx_glyph (ctx, arg(0), 0);
+        ctx_glyph (ctx, (uint32_t)arg(0), 0);
         break;
       case CTX_CLOSE_PATH:
         ctx_close_path (ctx);
