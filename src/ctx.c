@@ -2678,7 +2678,7 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   else if (backend->destroy == (void*) ctx_headless_destroy) return CTX_BACKEND_HEADLESS;
 #endif
 #endif
-#if CTX_TERM
+#if CTX_TERMINAL_EVENTS
   else if (backend->destroy == (void*) ctx_term_destroy) return CTX_BACKEND_TERM;
 #endif
 #if CTX_RASTERIZER
@@ -2699,7 +2699,7 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 #if CTX_CAIRO
   else if (backend->destroy == (void*) ctx_cairo_destroy) return CTX_BACKEND_CAIRO;
 #endif
-#if CTX_TERMIMG
+#if CTX_TERMINAL_EVENTS
   else if (backend->destroy == (void*) ctx_termimg_destroy) return CTX_BACKEND_TERMIMG;
 #endif
   return CTX_BACKEND_NONE;

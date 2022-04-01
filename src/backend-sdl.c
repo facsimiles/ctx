@@ -169,17 +169,17 @@ static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
     static char tmp_title[1024];
     static uint64_t prev_time = 0;
     uint64_t time = ctx_ticks ();
-    float fps = 1000000.0/  (time - ctx_sdl_start_time);
-    float fps2 = 1000000.0/  (time - prev_time);
+    float fps = 1000000.0f/  (time - ctx_sdl_start_time);
+    float fps2 = 1000000.0f/  (time - prev_time);
     prev_time = time;
     static float fps_avg = 0.0f;
 
-    if (time - prev_time < 1000 * 1000 * 0.05)
+    if (time - prev_time < 1000 * 1000 * 0.05f)
     fps_avg = (fps_avg * 0.9f + fps2 *  0.1f);
 
-    sprintf (tmp_title, "FPS: %.1f %.1f %.1f", (fps2*0.75+fps_avg*0.25), fps2, fps);
+    sprintf (tmp_title, "FPS: %.1f %.1f %.1f", (double)(fps2*0.75f+fps_avg*0.25f), (double)fps2, (double)fps);
 #if CTX_SHAPE_CACHE 
-    sprintf (&tmp_title[strlen(tmp_title)], " shape hit rate: %.2f", ctx_shape_cache_rate);
+    sprintf (&tmp_title[strlen(tmp_title)], " shape hit rate: %.2f", (double)ctx_shape_cache_rate);
 #endif
 
     SDL_SetWindowTitle (sdl->window, tmp_title);
@@ -529,8 +529,9 @@ Ctx *ctx_new_sdl (int width, int height)
   CtxSDL *sdl = (CtxSDL*)ctx_calloc (sizeof (CtxSDL), 1);
   CtxTiled *tiled = (void*)sdl;
   CtxBackend *backend = (CtxBackend*)sdl;
-
+#if CTX_BABL
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
+#endif
   if (width <= 0 || height <= 0)
   {
     width  = 1920;

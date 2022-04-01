@@ -72,7 +72,7 @@ ctx_print_int (CtxFormatter *formatter, int val)
 static void
 ctx_print_float (CtxFormatter *formatter, float val)
 {
-  if (val < 0.0)
+  if (val < 0.0f)
   {
     ctx_formatter_addstr (formatter, "-", 1);
     val = -val;
@@ -83,7 +83,7 @@ ctx_print_float (CtxFormatter *formatter, float val)
   else
     remainder /= 10;
 
-  ctx_print_int (formatter, val);
+  ctx_print_int (formatter, (int)val);
   if (remainder)
   {
     ctx_formatter_addstr (formatter, ".", 1);
@@ -413,7 +413,7 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
   _ctx_print_endcmd (formatter);
 }
 
-
+#if 0
 static void
 ctx_print_a85 (CtxFormatter *formatter, uint8_t *data, int length)
 {
@@ -424,6 +424,7 @@ ctx_print_a85 (CtxFormatter *formatter, uint8_t *data, int length)
   ctx_formatter_addstr (formatter, "~ ", 2);
   ctx_free (tmp);
 }
+#endif
 
 static void
 ctx_print_yenc (CtxFormatter *formatter, uint8_t *data, int length)
@@ -654,7 +655,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
                   ctx_print_float (formatter, c->graya.a);
                   break;
                 case CTX_RGBA:
-                  if (c->rgba.a != 1.0)
+                  if (c->rgba.a != 1.0f)
                   {
                     ctx_formatter_addstr (formatter, "rgba", 4);
                     ctx_formatter_addstr (formatter, suffix, -1);
@@ -872,7 +873,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
            utf8[ctx_unichar_to_utf8 (c->kern.glyph_after, utf8)]=0;
            ctx_print_escaped_string (formatter, (char*)utf8);
            ctx_formatter_addstr (formatter, "\", ", 3);
-           ctx_print_float (formatter, c->kern.amount/256.0);
+           ctx_print_float (formatter, c->kern.amount/256.0f);
            ctx_print_escaped_string (formatter, (char*)utf8);
         }
         _ctx_print_endcmd (formatter);
@@ -886,7 +887,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
            utf8[ctx_unichar_to_utf8 (entry->data.u32[0], utf8)]=0;
            ctx_print_escaped_string (formatter, (char*)utf8);
            ctx_formatter_addstr (formatter, "\", ", 3);
-           ctx_print_float (formatter, entry->data.u32[1]/256.0);
+           ctx_print_float (formatter, entry->data.u32[1]/256.0f);
            ctx_print_escaped_string (formatter, (char*)utf8);
         }
         _ctx_print_endcmd (formatter);

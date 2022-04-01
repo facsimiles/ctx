@@ -193,7 +193,9 @@ static inline uint8_t ctx_tvg_u6_u2 (CtxTinyVG *tvg, uint8_t *u2_ret)
   return (ret & 63);
 }
 
-static inline int32_t ctx_tvg_val (CtxTinyVG *tvg)
+// XXX if this is inline the ESP32 fails with a compiler error
+//
+static int32_t ctx_tvg_val (CtxTinyVG *tvg)
 {
   switch (tvg->val_type)
   {

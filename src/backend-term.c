@@ -97,7 +97,7 @@ static void ctx_term_set_fg (int red, int green, int blue)
   _ctx_curfg=lc;
   if (_ctx_term256 == 0)
   {
-    printf("\e[38;2;%i;%i;%im", red,green,blue);
+    fprintf(stderr, "\e[38;2;%i;%i;%im", red,green,blue);
   }
   else
   {
@@ -113,10 +113,10 @@ static void ctx_term_set_fg (int red, int green, int blue)
 
     if (((int)(r/1.66)== (int)(g/1.66)) && ((int)(g/1.66) == ((int)(b/1.66))))
     {
-      printf("\e[38;5;%im", 16 + 216 + gray);
+      fprintf(stderr,"\e[38;5;%im", 16 + 216 + gray);
     }
     else
-      printf("\e[38;5;%im", 16 + r * 6 * 6 + g * 6  + b);
+      fprintf(stderr,"\e[38;5;%im", 16 + r * 6 * 6 + g * 6  + b);
   }
 }
 
@@ -128,7 +128,7 @@ static void ctx_term_set_bg(int red, int green, int blue)
   _ctx_curbg=lc;
   if (_ctx_term256 == 0)
   {
-    printf("\e[48;2;%i;%i;%im", red,green,blue);
+    fprintf(stderr,"\e[48;2;%i;%i;%im", red,green,blue);
   }
   else
   {
@@ -144,10 +144,10 @@ static void ctx_term_set_bg(int red, int green, int blue)
 
     if (((int)(r/1.66)== (int)(g/1.66)) && ((int)(g/1.66) == ((int)(b/1.66))))
     {
-      printf("\e[48;5;%im", 16 + 216 + gray);
+      fprintf(stderr,"\e[48;5;%im", 16 + 216 + gray);
     }
     else
-      printf("\e[48;5;%im", 16 + r * 6 * 6 + g * 6  + b);
+      fprintf(stderr,"\e[48;5;%im", 16 + r * 6 * 6 + g * 6  + b);
   }
 }
 
@@ -156,9 +156,9 @@ static int _ctx_term_force_full = 0;
 void ctx_term_scanout (CtxTerm *term)
 {
   int row = 1;
-  printf ("\e[H");
+  fprintf (stderr,"\e[H");
 //  printf ("\e[?25l");
-  printf ("\e[0m");
+  fprintf (stderr, "\e[0m");
 
   int cur_fg[3]={-1,-1,-1};
   int cur_bg[3]={-1,-1,-1};
@@ -192,24 +192,24 @@ void ctx_term_scanout (CtxTerm *term)
           cur_bg[1]=cell->bg[1];
           cur_bg[2]=cell->bg[2];
         }
-        printf ("%s", cell->utf8);
+        fprintf (stderr, "%s", cell->utf8);
       }
       else
       {
         // TODO: accumulate succesive such to be ignored items,
         // and compress them into one, making us compress largely
         // reused screens well
-        printf ("\e[C");
+        fprintf (stderr, "\e[C");
       }
       strcpy (cell->prev_utf8, cell->utf8);
       memcpy (cell->prev_fg, cell->fg, 3);
       memcpy (cell->prev_bg, cell->bg, 3);
     }
     if (row != term->rows)
-      printf ("\n\r");
+      fprintf (stderr, "\n\r");
     row ++;
   }
-  printf ("\e[0m");
+  fprintf (stderr, "\e[0m");
   //printf ("\e[?25h");
   //
 }
@@ -856,11 +856,13 @@ inline static void ctx_term_end_frame (Ctx *ctx)
     ctx_free (glyph);
   }
 
+#endif
   printf ("\e[H");
   printf ("\e[0m");
   ctx_term_scanout (term);
   printf ("\e[0m");
   fflush (NULL);
+#if CTX_BRAILLE_TEXT
   while (rasterizer->glyphs)
     ctx_list_remove (&rasterizer->glyphs, rasterizer->glyphs->data);
 #endif
@@ -925,8 +927,8 @@ Ctx *ctx_new_term (int width, int height)
   if (mode && strcmp (mode, "0") && strcmp (mode, "no"))
     _ctx_term_force_full = 1;
 
-  fprintf (stdout, "\e[?1049h");
-  fprintf (stdout, "\e[?25l"); // cursor off
+  fprintf (stderr, "\e[?1049h");
+  fprintf (stderr, "\e[?25l"); // cursor off
 
   int maxwidth = ctx_terminal_cols  () * ctx_term_cw;
   int maxheight = (ctx_terminal_rows ()) * ctx_term_ch;

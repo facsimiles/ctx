@@ -848,7 +848,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           case 2:
             parser->numbers[2] = _ctx_parse_float ((char*)parser->holding, NULL);
             {
-              CtxEntry e = {CTX_KERNING_PAIR, };
+              CtxEntry e = {CTX_KERNING_PAIR, {{0},}};
               e.data.u16[0] = (uint16_t)parser->numbers[0];
               e.data.u16[1] = (uint16_t)parser->numbers[1];
               e.data.s32[1] = (int32_t)(parser->numbers[2] * 256);
@@ -932,9 +932,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         /* XXX : reuse n_args logic - to enforce order */
         if (parser->n_numbers == 1)
         {
-          CtxEntry e = {CTX_DEFINE_GLYPH, };
+          CtxEntry e = {CTX_DEFINE_GLYPH, {{0},}};
           e.data.u32[0] = parser->color_space_slot;
-          e.data.u32[1] = arg(0) * 256;
+          e.data.u32[1] = (int)arg(0) * 256;
           ctx_process (ctx, &e);
         }
         else
@@ -1070,7 +1070,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->pcy = ctx_y (ctx);
         break;
       case CTX_ARC:
-        ctx_arc (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );
+        ctx_arc (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), (int)arg(5));
         break;
       case CTX_APPLY_TRANSFORM:
         ctx_apply_transform (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) , arg(6), arg(7), arg(8));
@@ -1345,15 +1345,15 @@ static void ctx_parser_transform_percent (CtxParser *parser, CtxCode code, int a
           {
             case 0:
             case 3:
-              *value *= (parser->width/100.0);
+              *value *= (parser->width/100.0f);
               break;
             case 1:
             case 4:
-              *value *= (parser->height/100.0);
+              *value *= (parser->height/100.0f);
               break;
             case 2:
             case 5:
-              *value *= small/100.0;
+              *value *= small/100.0f;
               break;
           }
         break;
@@ -1362,47 +1362,47 @@ static void ctx_parser_transform_percent (CtxParser *parser, CtxCode code, int a
       case CTX_LINE_WIDTH:
       case CTX_LINE_DASH_OFFSET:
         {
-          *value *= (small/100.0);
+          *value *= (small/100.0f);
         }
         break;
       case CTX_ARC_TO:
       case CTX_REL_ARC_TO:
         if (arg_no > 3)
           {
-            *value *= (small/100.0);
+            *value *= (small/100.0f);
           }
         else
           {
             if (arg_no % 2 == 0)
-              { *value  *= ( (parser->width) /100.0); }
+              { *value  *= ( (parser->width) /100.0f); }
             else
-              { *value *= ( (parser->height) /100.0); }
+              { *value *= ( (parser->height) /100.0f); }
           }
         break;
       case CTX_ROUND_RECTANGLE:
         if (arg_no == 4)
         {
-          { *value *= ((parser->height)/100.0); }
+          { *value *= ((parser->height)/100.0f); }
           return;
         }
         /* FALLTHROUGH */
       default: // even means x coord
         if (arg_no % 2 == 0)
-          { *value  *= ((parser->width)/100.0); }
+          { *value  *= ((parser->width)/100.0f); }
         else
-          { *value *= ((parser->height)/100.0); }
+          { *value *= ((parser->height)/100.0f); }
         break;
     }
 }
 
 static void ctx_parser_transform_percent_height (CtxParser *parser, CtxCode code, int arg_no, float *value)
 {
-  *value *= (parser->height/100.0);
+  *value *= (parser->height/100.0f);
 }
 
 static void ctx_parser_transform_percent_width (CtxParser *parser, CtxCode code, int arg_no, float *value)
 {
-  *value *= (parser->height/100.0);
+  *value *= (parser->height/100.0f);
 }
 
 static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_no, float *value)
@@ -1985,7 +1985,7 @@ ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time,
   int scene_no = *scene_no_p;
   CtxString *str = ctx_string_new ("");
   int in_var = 0;
-  float scene_duration = 5.0;
+  float scene_duration = 5.0f;
 
   int i;
 
@@ -2027,7 +2027,7 @@ again:
        }
        else if (p>='0' && p<='9' && duration < 0)
        {
-          duration = atof (&string[i]);
+          duration = _ctx_parse_float (&string[i], NULL);
        }
     }
     else
