@@ -285,7 +285,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
              float cy1 = ctx_tvg_unit(tvg);
                    x   = ctx_tvg_unit(tvg);
                    y   = ctx_tvg_unit(tvg);
-             if (cx0 + cy0 + cx1 + cy1){}
+             if (cx0 + cy0 + cx1 + cy1 != 0.f){}
              ADD_COORD(x,y);
            }
            break;
@@ -295,7 +295,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
              float   radius = ctx_tvg_unit (tvg);
                      x = ctx_tvg_unit (tvg);
                      y = ctx_tvg_unit (tvg);
-             if (radius && large_and_sweep){};
+             if (radius && large_and_sweep != 0.f){};
              ADD_COORD(x,y);
            }
            break;
