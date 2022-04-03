@@ -295,7 +295,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
              float   radius = ctx_tvg_unit (tvg);
                      x = ctx_tvg_unit (tvg);
                      y = ctx_tvg_unit (tvg);
-             if (radius && large_and_sweep != 0.f){};
+             if (radius != 0.0f && large_and_sweep != 0){};
              ADD_COORD(x,y);
            }
            break;
@@ -307,7 +307,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
              float rotation = ctx_tvg_unit (tvg);
                    x        = ctx_tvg_unit (tvg);
                    y        = ctx_tvg_unit (tvg);
-             if (rotation && rx && ry && large_and_sweep) {};
+             if (rotation !=0.0f && rx != 0.0f && ry !=0.0f && large_and_sweep) {};
              ADD_COORD(x,y);
            }
            break;
@@ -318,7 +318,7 @@ ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
            {
              float cx0 = ctx_tvg_unit(tvg);
              float cy0 = ctx_tvg_unit(tvg);
-             if (cx0 + cy0){}
+             if (cx0 + cy0 != 0.0f){}
              x = ctx_tvg_unit(tvg);
              y = ctx_tvg_unit(tvg);
              ADD_COORD(x,y);
