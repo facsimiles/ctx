@@ -578,8 +578,32 @@ static void ctx_color_raw (Ctx *ctx, CtxColorModel model, float *components, int
 
 void ctx_rgba (Ctx *ctx, float r, float g, float b, float a)
 {
+#if CTX_PROTOCOL_U8_COLOR
+  uint8_t ru, gu, bu, au;
+  if (r < 0) ru = 0;
+  else if ( r > 1.0f) ru = 255;
+  else ru = (uint8_t)(r * 255);
+  if (g < 0) gu = 0;
+  else if ( g > 1.0f) gu = 255;
+  else gu = (uint8_t)(g * 255);
+  if (b < 0) bu = 0;
+  else if ( b > 1.0f) bu = 255;
+  else bu = (uint8_t)(b * 255);
+  if (a < 0) au = 0;
+  else if ( a > 1.0f) au = 255;
+  else au = (uint8_t)(a * 255);
+
+  CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, ru,gu,bu,au, 0, 0, 0, 0);
+
+  uint8_t rgba[4];
+  ctx_color_get_rgba8 (&ctx->state, &ctx->state.gstate.source_fill.color, rgba);
+  if (rgba[0] == ru && rgba[1] == gu && rgba[2] == bu && rgba[3] == au)
+     return;
+  ctx_process (ctx, &command);
+#else
   float components[4]={r,g,b,a};
   ctx_color_raw (ctx, CTX_RGBA, components, 0);
+#endif
 }
 
 void ctx_rgba_stroke (Ctx *ctx, float r, float g, float b, float a)
