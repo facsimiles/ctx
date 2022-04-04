@@ -28,6 +28,17 @@ typedef struct CtxCbBackend
 void ctx_cb_set_flags (Ctx *ctx, int flags)
 {
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
+  if (flags & CTX_FLAG_GRAY2)
+    flags |= CTX_FLAG_LOWFI;
+  if (flags & CTX_FLAG_GRAY4)
+    flags |= CTX_FLAG_LOWFI;
+  if (flags & CTX_FLAG_GRAY8)
+    flags |= CTX_FLAG_LOWFI;
+  if (flags & CTX_FLAG_RGB332)
+    flags |= CTX_FLAG_LOWFI;
+
+  if (flags & CTX_FLAG_LOWFI)
+    flags |= CTX_FLAG_HASH_CACHE;
   backend_cb->flags = flags;
 }
 
@@ -650,13 +661,13 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   backend->end_frame         = ctx_cb_end_frame;
   cb_backend->format         = format;
   cb_backend->fb             = (uint16_t*)scratch_fb;
-  cb_backend->flags          = flags;
   cb_backend->set_pixels     = set_pixels;
   cb_backend->update_fb      = update_fb;
   cb_backend->set_pixels_user_data = set_pixels_user_data;
   cb_backend->update_fb_user_data   = update_fb_user_data;
   cb_backend->memory_budget  = memory_budget;
   ctx_set_backend (ctx, backend);
+  ctx_cb_set_flags (ctx, flags);
   cb_backend->ctx = ctx;
   if (!scratch_fb)
   {
