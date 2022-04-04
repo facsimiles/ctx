@@ -168,6 +168,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
 
     int render_height = (memory_budget - (small_height * small_stride)) /
                         (width * bpp);
+
     const uint8_t *fb_u8 = (uint8_t*)fb;
     uint16_t *scaled = (uint16_t*)&fb_u8[small_height*small_stride];
 
@@ -279,7 +280,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
               int sx = 0;
               for (int x = 0; x < width;)
               {
-                uint16_t val = fb[sbase+(sx++)];
+                uint16_t val = fb[sbase/2+(sx++)];
                 for (int i = 0; i < scale_factor && x < width; i++, x++)
                   scaled[off++]  = val;
               }
