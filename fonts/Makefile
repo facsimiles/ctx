@@ -27,58 +27,52 @@ clean:
 ctxf/ascii.ctxf: Makefile
 	../tools/ctx-fontgen ttf/DejaVuSans.ttf regular ascii binary > $@
 ctx-font-ascii.h: Makefile
-	../tools/ctx-fontgen ttf/DejaVuSans.ttf regular ascii > $@
-
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii > $@
 ctxf/regular.ctxf: Makefile
 	../tools/ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras binary > $@
 ctx-font-regular.h: Makefile
-	../tools/ctx-fontgen ttf/DejaVuSans.ttf regular ascii-extras > $@
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii-extras > $@
+ctx-font-bold.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Arimo-Bold.ttf bold ascii-extras > $@
+ctx-font-italic.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Arimo-Italic.ttf italic ascii-extras > $@
+ctx-font-bold-italic.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Arimo-BoldItalic.ttf bold_italic ascii-extras > $@
 
 ctxf/mono.ctxf: Makefile
 	../tools/ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 binary > $@
 ctx-font-mono.h: Makefile
-	../tools/ctx-fontgen ttf/DejaVuSansMono.ttf mono ascii-extras-cp437-vt100 > $@
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Cousine-Regular.ttf mono ascii-extras-cp437-vt100 > $@
+ctx-font-mono-bold.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Cousine-Bold.ttf mono_bold ascii-extras-cp437-vt100 > $@
+ctx-font-mono-italic.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Cousine-Italic.ttf mono_italic ascii-extras-cp437-vt100 > $@
+ctx-font-mono-bold-italic.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Cousine-BoldItalic.ttf mono_bold_italic ascii-extras-cp437-vt100 > $@
+
+ctx-font-serif.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Tinos-Regular.ttf serif ascii-extras-cp437-vt100 > $@
+ctx-font-serif-bold.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Tinos-Bold.ttf serif_bold ascii-extras-cp437-vt100 > $@
+ctx-font-serif-italic.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Tinos-Italic.ttf serif_italic ascii-extras-cp437-vt100 > $@
+ctx-font-serif-bold-italic.h: Makefile
+	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Tinos-BoldItalic.ttf serif_bold_italic ascii-extras-cp437-vt100 > $@
+
+ 
 
 ctxf/emoji.ctxf: Makefile
 	../tools/ctx-fontgen ttf/DejaVuSans.ttf emoji emoji binary > $@
 ctx-font-emoji.h: Makefile
 	../tools/ctx-fontgen ttf/DejaVuSans.ttf emoji emoji > $@
+ 
+%.h: /usr/share/fonts/truetype/gentium/%.ttf  Makefile
+	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
+%.h: /usr/share/fonts/truetype/croscore/%.ttf  Makefile
+	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
+%.h: /usr/share/fonts/truetype/crosextra/%.ttf  Makefile
+	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
 
-DejaVuSansMono.h: Makefile
-	xxd -i ttf/DejaVuSansMono.ttf > DejaVuSansMono.h
-	echo '#define DEJAVU_SANS_MONO 1' >> DejaVuSansMono.h
-
-DejaVuSans.h: Makefile
-	xxd -i ttf/DejaVuSans.ttf > DejaVuSans.h
-	echo '#define DEJAVU_SANS 1' >> DejaVuSans.h
-
-Roboto-Bold.h: Makefile
-	xxd -i ttf/Roboto-Bold.ttf > $@
-	echo '#define ROBOTO_BOLD 1' >> $@
-
-Roboto-Light.h: Makefile
-	xxd -i ttf/Roboto-Light.ttf > $@
-	echo '#define ROBOTO_LIGHT 1' >> $@
-
-Roboto-Regular.h: Makefile
-	xxd -i ttf/Roboto-Regular.ttf > $@
-	echo '#define ROBOTO_REGULAR 1' >> $@
-
-NotoMono-Regular.h: Makefile
-	xxd -i ttf/NotoMono-Regular.ttf > $@
-	echo '#define NOTO_MONO_REGULAR 1' >> $@
-
-NotoEmoji-Regular.h: Makefile
-	xxd -i ttf/NotoEmoji-Regular.ttf > $@
-	echo '#define NOTO_EMOJI_REGULAR 1' >> $@
-
-Vera.h: Makefile
-	xxd -i ttf/Vera.ttf > Vera.h
-	echo '#define VERA 1' >> Vera.h
-
-unscii-16.h: Makefile
-	xxd -i ttf/unscii-16.ttf > unscii-16.h
-	echo '#define UNSCII_16 1' >> unscii-16.h
 
 %: %.c ../ctx.h
 	gcc $< -o $@ -lm -I.. -I../fonts

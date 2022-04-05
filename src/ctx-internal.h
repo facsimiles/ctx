@@ -539,6 +539,10 @@ struct _Ctx
   CtxDrawlist       current_path; // possibly transformed coordinates !
   CtxIterator       current_path_iterator;
 #endif
+  CtxFont *fonts; // a copy to keep it alive with mp's
+                  // garbage collector, the fonts themselves
+                  // are static and shared beyond ctx contexts
+ 
 
 };
 
@@ -795,7 +799,6 @@ struct _CtxRasterizer
 #if CTX_ENABLE_SHADOW_BLUR
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
-
 
 #if CTX_STATIC_OPAQUE
   uint8_t opaque[CTX_MAX_SCANLINE_LENGTH];

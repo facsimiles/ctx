@@ -64,9 +64,14 @@
 #include <cairo.h>
 #endif
 
-#define _CTX_INTERNAL_FONT_ // drops ascii in favor of regular
+#define CTX_STATIC_FONT(font_string, font_data) \
+  ctx_load_font_ctx(font_string, font_data, sizeof (font_data))
+
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
+#define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx-regular", ctx_font_regular)
+#define CTX_FONT_1 CTX_STATIC_FONT("mono-ctx-regular", ctx_font_mono)
+
 //#include "DejaVuSansMono.h"
 //#include "DejaVuSans.h"
 //#include "Roboto-Regular.h"

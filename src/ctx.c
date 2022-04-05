@@ -1873,6 +1873,7 @@ void _ctx_set_transformation (Ctx *ctx, int transformation)
 {
   ctx->transformation = transformation;
 }
+static void ctx_setup (Ctx *ctx);
 
 #if CTX_SIMD
 void ctx_simd_setup (void);
@@ -1881,6 +1882,7 @@ static void
 _ctx_init (Ctx *ctx)
 {
   static int done_first_run = 0;
+  ctx_setup (ctx);
 
   if (!done_first_run)
   {
@@ -1916,9 +1918,10 @@ _ctx_init (Ctx *ctx)
   ctx->drawlist.flags |= CTX_TRANSFORMATION_BITPACK;
 #endif
   ctx->texture_cache = ctx;
+
+  ctx->fonts = ctx_fonts;
 }
 
-static void ctx_setup (void);
 
 #if CTX_DRAWLIST_STATIC
 static Ctx ctx_state;
@@ -1965,7 +1968,6 @@ void *ctx_get_backend (Ctx *ctx)
 static Ctx *
 _ctx_new_drawlist (int width, int height)
 {
-  ctx_setup ();
 #if CTX_DRAWLIST_STATIC
   Ctx *ctx = &ctx_state;
 #else
@@ -2067,9 +2069,9 @@ ctx_new_for_drawlist (int width, int height, void *data, size_t length)
 }
 
 
-static void ctx_setup (void)
+static void ctx_setup (Ctx *ctx)
 {
-  ctx_font_setup ();
+  ctx_font_setup (ctx);
 }
 
 void

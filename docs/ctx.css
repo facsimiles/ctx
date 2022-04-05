@@ -1,6 +1,6 @@
 
           body { margin: 0; padding: 0;}
-          #page, #content { 
+          #page { 
             margin-left: auto;
                 margin-right :auto;
                 padding-left: 7em;
@@ -10,7 +10,6 @@
                 margin-top: 0em;
                 hyphens: auto;
                 hyphenate-limit-chars: 6 3 2;
-
           }
           h1 { font-size: 2.0rem; font-weight:normal;}
           h2 { font-size: 1.8rem; font-weight:normal;}

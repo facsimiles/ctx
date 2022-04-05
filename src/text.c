@@ -3,7 +3,7 @@
 static CtxFont *ctx_fonts = NULL;
 static int     ctx_font_count = 0;
 
-static void ctx_font_setup (void);
+static void ctx_font_setup (Ctx *ctx);
 
 #if CTX_FONT_ENGINE_STB
 static float
@@ -27,7 +27,7 @@ CtxFontEngine ctx_font_engine_stb =
 int
 ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 {
-  ctx_font_setup ();
+  ctx_font_setup (NULL);
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
   ctx_fonts[ctx_font_count].type = 1;
@@ -47,7 +47,7 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 int
 ctx_load_font_ttf_file (const char *name, const char *path)
 {
-  ctx_font_setup ();
+  ctx_font_setup (NULL);
   uint8_t *contents = NULL;
   long length = 0;
   ctx_get_contents (path, &contents, &length);
@@ -441,7 +441,7 @@ static CtxFontEngine ctx_font_engine_ctx =
 int
 ctx_load_font_ctx (const char *name, const void *data, int length)
 {
-  ctx_font_setup ();
+  ctx_font_setup (NULL);
   if (length % sizeof (CtxEntry) )
     { return -1; }
   if (ctx_font_count >= CTX_MAX_FONTS)
@@ -460,7 +460,7 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
 int
 ctx_load_font_ctx_file (const char *name, const char *path)
 {
-  ctx_font_setup ();
+  ctx_font_setup (NULL);
   uint8_t *contents = NULL;
   long length = 0;
   ctx_get_contents (path, &contents, &length);
@@ -562,7 +562,7 @@ static CtxFontEngine ctx_font_engine_ctx_fs =
 int
 ctx_load_font_ctx_fs (const char *name, const void *path, int length) // length is ignored
 {
-  ctx_font_setup ();
+  ctx_font_setup (NULL);
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
 
@@ -830,17 +830,79 @@ int ctx_resolve_font (const char *name)
   return 0;
 }
 
-static void ctx_font_setup (void)
+#define CTX_STATIC_FONT(font_string, font_data) \
+  ctx_load_font_ctx(font_string, font_data, sizeof (font_data))
+
+#ifndef CTX_FONT_0
+#define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx", ctx_font_ascii)
+#endif
+
+static void ctx_font_setup (Ctx *ctx)
 {
   static int initialized = 0;
-  if (initialized) { return; }
+  if (initialized) { 
+    if (ctx)
+      ctx->fonts = ctx_fonts;
+    return;
+  }
   initialized = 1;
 
   if (!ctx_fonts)
+#ifdef EMSCRIPTEN
+    ctx_fonts = calloc (CTX_MAX_FONTS, sizeof (CtxFont));
+#else
     ctx_fonts = ctx_calloc (CTX_MAX_FONTS, sizeof (CtxFont));
+#endif
+  if (ctx)
+    ctx->fonts = ctx_fonts;
+
+  ctx_font_count = 0; // oddly - this is needed in arduino
 
 #if CTX_FONT_ENGINE_CTX
-  ctx_font_count = 0; // oddly - this is needed in arduino
+#ifdef CTX_FONT_0
+  CTX_FONT_0;
+#endif
+#ifdef CTX_FONT_1
+  CTX_FONT_1;
+#endif
+#ifdef CTX_FONT_2
+  CTX_FONT_2;
+#endif
+#ifdef CTX_FONT_3
+  CTX_FONT_3;
+#endif
+#ifdef CTX_FONT_4
+  CTX_FONT_4;
+#endif
+#ifdef CTX_FONT_5
+  CTX_FONT_5;
+#endif
+#ifdef CTX_FONT_6
+  CTX_FONT_6;
+#endif
+#ifdef CTX_FONT_7
+  CTX_FONT_7;
+#endif
+#ifdef CTX_FONT_8
+  CTX_FONT_8;
+#endif
+#ifdef CTX_FONT_9
+  CTX_FONT_9;
+#endif
+#ifdef CTX_FONT_10
+  CTX_FONT_10;
+#endif
+#ifdef CTX_FONT_11
+  CTX_FONT_11;
+#endif
+#ifdef CTX_FONT_12
+  CTX_FONT_12;
+#endif
+#endif
+
+#if 0
+
+#if CTX_FONT_ENGINE_CTX
 
 #if CTX_FONT_ENGINE_CTX_FS
   ctx_load_font_ctx_fs ("sans-ctx", "/tmp/ctx-regular", 0);
@@ -908,6 +970,8 @@ static void ctx_font_setup (void)
 #endif
 #if NOTO_MONO_REGULAR
   ctx_load_font_ttf ("mono-NotoMono_Regular", ttf_NotoMono_Regular_ttf, ttf_NotoMono_Regular_ttf_len);
+#endif
+
 #endif
 }
 

@@ -4328,9 +4328,12 @@ foo:
   ctx_interpret_pos_bare (state, entry, NULL);
 }
 
+
+//static CtxFont *ctx_fonts;
 void
 ctx_rasterizer_deinit (CtxRasterizer *rasterizer)
 {
+  //rasterizer->fonts = ctx_fonts;
   ctx_drawlist_deinit (&rasterizer->edge_list);
 #if CTX_ENABLE_CLIP
   if (rasterizer->clip_buffer)
