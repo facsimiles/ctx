@@ -550,7 +550,7 @@
 #endif
 
 #ifndef CTX_MAX_FONTS
-#define CTX_MAX_FONTS            3
+#define CTX_MAX_FONTS            32
 #endif
 
 #ifndef CTX_MAX_STATES

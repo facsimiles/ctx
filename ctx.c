@@ -65,12 +65,22 @@
 #endif
 
 #define CTX_STATIC_FONT(font_string, font_data) \
-  ctx_load_font_ctx(font_string, font_data, sizeof (font_data))
+  ctx_load_font_ctx(font_string,                \
+                    ctx_font_##font_data,       \
+                    sizeof (ctx_font_##font_data))
 
 #include "ctx-font-regular.h"
 #include "ctx-font-mono.h"
-#define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx-regular", ctx_font_regular)
-#define CTX_FONT_1 CTX_STATIC_FONT("mono-ctx-regular", ctx_font_mono)
+#include "Cousine-Regular.h"
+#include "Cousine-Bold.h"
+#include "Cousine-Italic.h"
+#include "Cousine-BoldItalic.h"
+
+#define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx-regular", regular)
+#define CTX_FONT_1 CTX_STATIC_FONT("mono-regular", Cousine_Regular)
+#define CTX_FONT_2 CTX_STATIC_FONT("mono-italic",  Cousine_Italic)
+#define CTX_FONT_3 CTX_STATIC_FONT("mono-bold",  Cousine_Bold)
+#define CTX_FONT_4 CTX_STATIC_FONT("mono-bold-italic",  Cousine_BoldItalic)
 
 //#include "DejaVuSansMono.h"
 //#include "DejaVuSans.h"

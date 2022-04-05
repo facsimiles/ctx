@@ -7470,14 +7470,17 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
     ctx_translate (ctx, 0, vt->font_size * offset_y);
   }
   y -= vt->font_size * 0.22;
-  if (bold
-      && backend_type != CTX_BACKEND_TERM)
-    {
-      ctx_move_to (ctx, x - vt->font_size/30.0, y);
-      //ctx_line_width (ctx, vt->font_size/30.0);
-      ctx_glyph (ctx, unichar, 0);
-    }
   ctx_move_to (ctx, x, y);
+  if (bold)
+  {
+    if (!did_save)
+    {
+      ctx_save (ctx);
+      did_save = 1;
+    }
+    // TODO : check if proportional and use other font for that
+    ctx_font (ctx, "mono-bold");
+  }
   ctx_glyph (ctx, unichar, 0);
   if (did_save)
     ctx_restore (ctx);
