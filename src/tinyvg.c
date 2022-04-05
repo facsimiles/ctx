@@ -5,7 +5,9 @@
 
 #if CTX_TINYVG
 
+#ifndef CTX_TVG_STDIO
 #define CTX_TVG_STDIO     1
+#endif
 
 #if CTX_TVG_STDIO
 #include <sys/types.h>
@@ -113,6 +115,7 @@ static inline void ctx_tvg_seek (CtxTinyVG *tvg, uint32_t pos)
   }
 }
 
+#if CTX_TVG_STDIO
 static void ctx_tvg_init_fd (CtxTinyVG *tvg, Ctx *ctx, int fd, int flags)
 {
   memset (tvg, 0, sizeof (CtxTinyVG));
@@ -125,6 +128,7 @@ static void ctx_tvg_init_fd (CtxTinyVG *tvg, Ctx *ctx, int fd, int flags)
   tvg->cache = &tvg->_cache[0];
   tvg->cache_length = CTX_TVG_CACHE_SIZE;
 }
+#endif
 
 static void ctx_tvg_init_data (CtxTinyVG *tvg, Ctx *ctx, void *data, int len, int flags)
 {
@@ -137,15 +141,17 @@ static void ctx_tvg_init_data (CtxTinyVG *tvg, Ctx *ctx, void *data, int len, in
   tvg->flags = flags;
 }
 
-#if CTX_TVG_STDIO
 static inline int ctx_tvg_prime_cache (CtxTinyVG *tvg, uint32_t pos, int len)
 {
+#if CTX_TVG_STDIO
   if (!tvg->fd)
+#endif
   {
     if (pos + len < tvg->length)
       return 1;
     return 0;
   }
+#if CTX_TVG_STDIO
   if (tvg->cache_offset < pos && tvg->cache_offset + CTX_TVG_CACHE_SIZE - 1 > pos+len)
   {
     return 1;
@@ -159,9 +165,9 @@ static inline int ctx_tvg_prime_cache (CtxTinyVG *tvg, uint32_t pos, int len)
   }
   read (tvg->fd, tvg->cache, CTX_TVG_CACHE_SIZE);
   tvg->fd_pos += CTX_TVG_CACHE_SIZE;
+#endif
   return 1;
 }
-#endif
 
 static inline void ctx_tvg_memcpy (CtxTinyVG *tvg, void *dst, int pos, int len)
 {
@@ -771,7 +777,10 @@ ctx_tvg_draw (CtxTinyVG *tvg)
      for (int i = 0; i < count; i++)
        tvg->pal[i] = ctx_tvg_u8 (tvg);
    }
-   else if (!tvg->fd)
+   else 
+#if CTX_TVG_STDIO
+           if (!tvg->fd)
+#endif
    {
      tvg->pal = &tvg->cache[tvg->pos];
      ctx_tvg_seek (tvg, tvg->pos + tvg->color_bytes * tvg->color_count);

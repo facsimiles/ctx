@@ -1951,14 +1951,14 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
     event.unicode = keyval; 
 #ifdef EMSCRIPTEN
     if (string)
-    event.string = strdup(string);
+      event.string = strdup(string);
     else
-    event.string = strdup("--");
+      event.string = strdup("--");
 #else
     if (string)
-    event.string = ctx_strdup(string);
+      event.string = ctx_strdup(string);
     else
-    event.string = ctx_strdup("--");
+      event.string = ctx_strdup("--");
 #endif
     event.stop_propagate = 0;
     event.time = time;

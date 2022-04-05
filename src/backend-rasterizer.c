@@ -2784,7 +2784,7 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
   full_segments = (int)(factor * radius * CTX_PI * 2 / 4.0f);
   if (full_segments > CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS)
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
-  if (full_segments < 24) full_segments = 24;
+  if (full_segments < 42) full_segments = 42;
   float step = CTX_PI*2.0f/full_segments;
   int steps;
 
