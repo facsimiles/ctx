@@ -7909,10 +7909,11 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
       if (italic)
         {
           ctx_save (ctx);
-          ctx_translate (ctx, (x0 + cw/3), (y0 + vt->ch/2) );
-          ctx_scale (ctx, 0.9, 0.9);
-          ctx_rotate (ctx, 0.15);
-          ctx_translate (ctx, - (x0 + cw/3), - (y0 + vt->ch/2) );
+          //ctx_translate (ctx, (x0 + cw/3), (y0 + vt->ch/2) );
+          //ctx_scale (ctx, 0.9, 0.9);
+          //ctx_rotate (ctx, 0.15);
+          //ctx_translate (ctx, - (x0 + cw/3), - (y0 + vt->ch/2) );
+          ctx_font (ctx, "mono-italic");
         }
       vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold, scale_x, scale_y, offset_y);
       if (italic)
