@@ -10,9 +10,7 @@ Cousine-Regular.h \
 Tinos-Bold.h \
 Tinos-BoldItalic.h \
 Tinos-Italic.h \
-Tinos-Regular.h
-
-extra: \
+Tinos-Regular.h \
 Caladea-Bold.h \
 Caladea-BoldItalic.h \
 Caladea-Italic.h \

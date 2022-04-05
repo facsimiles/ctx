@@ -6,8 +6,6 @@
 
 #endif
 #include <stdint.h>
-#define _CTX_INTERNAL_FONT_
-#include "ctx-font-regular.h"
 
 //#define CTX_IMPLEMENTATION 1
 //#define ITK_IMPLEMENTATION 1

@@ -22,6 +22,7 @@ CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers
 LIBS  += -lm -lpthread -lz
 
+
 #TERMINAL_CFILES = $(wildcard terminal/*.c)
 #TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
 TERMINAL_OBJS = terminal/terminal.o terminal/ctx-keyboard.o
@@ -69,31 +70,11 @@ build.conf:
 demos/c/%: demos/c/%.c build.conf Makefile build.conf media-handlers/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
-fonts/ctx-font-ascii.h: tools/ctx-fontgen
-	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii > $@
-fonts/ctx-font-ascii-spacing.h: fonts/ctx-font-ascii.h tools/ctx-fontgen
-	grep -v "},$$" $< > $@
-fonts/ctx-font-regular-spacing.h: fonts/ctx-font-regular.h tools/ctx-fontgen
-	grep -v "},$$" $< > $@
+fonts/Carlito-Regular.h: tools/ctx-fontgen
+	make -C fonts
+FONT_STAMP=fonts/Carlito-Regular.h
 
-fonts/ctxf/ascii.ctxf: tools/ctx-fontgen
-	@mkdir fonts/ctxf || true
-	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf ascii ascii binary > $@
-fonts/ctxf/regular.ctxf: tools/ctx-fontgen
-	@mkdir fonts/ctxf || true
-	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras binary > $@
-fonts/ctx-font-regular.h: tools/ctx-fontgen
-	./tools/ctx-fontgen fonts/ttf/DejaVuSans.ttf regular ascii-extras > $@
-fonts/ctx-font-mono.h: tools/ctx-fontgen
-	./tools/ctx-fontgen fonts/ttf/DejaVuSansMono.ttf mono ascii-extras > $@
-fonts/NotoMono-Regular.h: build.conf Makefile
-	cd fonts; xxd -i ttf/NotoMono-Regular.ttf > NotoMono-Regular.h
-	echo '#define NOTO_MONO_REGULAR 1' >> $@
-fonts/Roboto-Regular.h: build.conf Makefile
-	cd fonts; xxd -i ttf/Roboto-Regular.ttf > Roboto-Regular.h
-	echo '#define ROBOTO_REGULAR 1' >> $@
 
-used_fonts: fonts/ctx-font-regular.h fonts/ctx-font-mono.h fonts/ctxf/ascii.ctxf 
 test: ctx
 	make -C tests
 distclean: clean
@@ -173,19 +154,19 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings)
 
-ctx.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf media-handlers/itk.h
+ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf media-handlers/itk.h
 	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
-ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	rm -f vec.missed
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_X86_64_V2 -momit-leaf-frame-pointer -ftree-vectorize -ffast-math -mfpmath=sse -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) 
 	#-fopt-info-vec-missed=vec.missed
-ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	rm -f vec.optimized
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_X86_64_V3 -mmovbe -momit-leaf-frame-pointer -mxsave -mxsaveopt -ftree-vectorize -ffast-math -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma -mmovbe $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 	#-fopt-info-vec-optimized=vec.optimized
 
-ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile fonts/ctx-font-regular.h fonts/ctx-font-mono.h build.conf
+ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_ARM_NEON -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 
@@ -216,8 +197,6 @@ ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_
 
 docs/ctx.h.html: ctx.h Makefile build.conf
 	highlight -l -a --encoding=utf8 -W ctx.h > docs/ctx.h.html
-docs/ctx-font-regular.h.html: fonts/ctx-font-regular.h Makefile build.conf
-	highlight -l -a --encoding=utf8 -W fonts/ctx-font-regular.h > docs/ctx-font-regular.h.htm
 
 #git gc
 
@@ -241,7 +220,7 @@ updateweb: all ctx.static test docs/ctx.h.html docs/ctx-font-regular.h.html
 	#upx docs/binaries/ctx-i486-static
 	cp -fru .git/* /home/pippin/pgo/ctx.graphics/.git
 	cp -ru docs/* ~/pgo/ctx.graphics/
-	cp ctx.h fonts/ctx-font-regular.h ~/pgo/ctx.graphics/
+	cp ctx.h ~/pgo/ctx.graphics/
 
 afl/ctx: ctx.h
 	make clean
@@ -255,7 +234,7 @@ flatpak:
 flatpak-install:
 	rm -rf build-dir;flatpak-builder --install --user build-dir meta/graphics.ctx.terminal.yml
 
-ctx.h: src/*.[ch] src/index fonts/ctx-font-ascii.h tools/ctx-fontgen
+ctx.h: src/*.[ch] src/index $(FONT_STAMP) tools/ctx-fontgen
 	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@)
 
 ctx-nofont.h: src/*.c src/*.h src/index

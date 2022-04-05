@@ -69,35 +69,39 @@
                     ctx_font_##font_data,       \
                     sizeof (ctx_font_##font_data))
 
-#include "ctx-font-regular.h"
-#include "ctx-font-mono.h"
+#include "Carlito-Regular.h"
+#include "Carlito-Bold.h"
+#include "Carlito-Italic.h"
+#include "Carlito-BoldItalic.h"
 #include "Cousine-Regular.h"
 #include "Cousine-Bold.h"
 #include "Cousine-Italic.h"
 #include "Cousine-BoldItalic.h"
+#include "Arimo-Regular.h"
+#include "Arimo-Bold.h"
+#include "Arimo-Italic.h"
+#include "Arimo-BoldItalic.h"
+#include "Tinos-Regular.h"
+#include "Tinos-Bold.h"
+#include "Tinos-Italic.h"
+#include "Tinos-BoldItalic.h"
 
-#define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx-regular", regular)
-#define CTX_FONT_1 CTX_STATIC_FONT("mono-regular cousine-regular", Cousine_Regular)
-#define CTX_FONT_2 CTX_STATIC_FONT("mono-italic cousine-italic",  Cousine_Italic)
-#define CTX_FONT_3 CTX_STATIC_FONT("mono-bold cousine-bold",  Cousine_Bold)
-#define CTX_FONT_4 CTX_STATIC_FONT("mono-bold-italic cousine-bold-italic",  Cousine_BoldItalic)
-
-//#include "DejaVuSansMono.h"
-//#include "DejaVuSans.h"
-//#include "Roboto-Regular.h"
-//#include "NotoMono-Regular.h"
-//#include "DejaVuSansMono.h"
-//#include "0xA000-Mono.h"
-//#include "unscii-16.h"
-
-
-// optional dependencies
-#if 0 
-  #include "stb_truetype.h"
-  #include "stb_image.h"
-  #include "stb_image_write.h"
-#endif
-
+#define CTX_FONT_0 CTX_STATIC_FONT("carlito-regular", Carlito_Regular)
+#define CTX_FONT_1 CTX_STATIC_FONT("carlito-bold", Carlito_Bold)
+#define CTX_FONT_2 CTX_STATIC_FONT("carlito-italic", Carlito_Italic)
+#define CTX_FONT_3 CTX_STATIC_FONT("carlito-bold-italic", Carlito_BoldItalic)
+#define CTX_FONT_4 CTX_STATIC_FONT("cousine-regular mono-regular", Cousine_Regular)
+#define CTX_FONT_5 CTX_STATIC_FONT("cousine-italic mono-italic",  Cousine_Italic)
+#define CTX_FONT_6 CTX_STATIC_FONT("cousine-bold mono-bold",  Cousine_Bold)
+#define CTX_FONT_7 CTX_STATIC_FONT("cousine-bold-italic mono-bold-italic",  Cousine_BoldItalic)
+#define CTX_FONT_8 CTX_STATIC_FONT("tinos-regular", Tinos_Regular)
+#define CTX_FONT_9 CTX_STATIC_FONT("tinos-bold", Tinos_Bold)
+#define CTX_FONT_10 CTX_STATIC_FONT("tinos-italic", Tinos_Italic)
+#define CTX_FONT_11 CTX_STATIC_FONT("tinos-bold-italic", Tinos_BoldItalic)
+#define CTX_FONT_12 CTX_STATIC_FONT("arimo-regular sans-regular", Arimo_Regular)
+#define CTX_FONT_13 CTX_STATIC_FONT("arimo-bold sans-bold", Arimo_Bold)
+#define CTX_FONT_14 CTX_STATIC_FONT("arimo-italic sans-italic", Arimo_Italic)
+#define CTX_FONT_15 CTX_STATIC_FONT("arimo-bold-italic sans-bold-italic", Arimo_BoldItalic)
 
 #define CTX_IMPLEMENTATION 1
 
