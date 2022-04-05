@@ -898,6 +898,30 @@ static void ctx_font_setup (Ctx *ctx)
 #ifdef CTX_FONT_12
   CTX_FONT_12;
 #endif
+#ifdef CTX_FONT_13
+  CTX_FONT_13;
+#endif
+#ifdef CTX_FONT_14
+  CTX_FONT_14;
+#endif
+#ifdef CTX_FONT_15
+  CTX_FONT_15;
+#endif
+#ifdef CTX_FONT_16
+  CTX_FONT_16;
+#endif
+#ifdef CTX_FONT_17
+  CTX_FONT_17;
+#endif
+#ifdef CTX_FONT_18
+  CTX_FONT_18;
+#endif
+#ifdef CTX_FONT_19
+  CTX_FONT_19;
+#endif
+#ifdef CTX_FONT_20
+  CTX_FONT_20;
+#endif
 #endif
 
 #if 0

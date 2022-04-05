@@ -256,7 +256,7 @@ char* string =
   }
   printf ("};\n");
   printf ("#define CTX_FONT_%s 1\n", name);
-  printf ("#define ctx_font_%s_len %d\n", name, output_font.count*9);
+  //printf ("#define ctx_font_%s_len %d\n", name, output_font.count*9);
   printf ("#endif\n");
   }
   else
