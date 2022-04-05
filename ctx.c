@@ -77,10 +77,10 @@
 #include "Cousine-BoldItalic.h"
 
 #define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx-regular", regular)
-#define CTX_FONT_1 CTX_STATIC_FONT("mono-regular", Cousine_Regular)
-#define CTX_FONT_2 CTX_STATIC_FONT("mono-italic",  Cousine_Italic)
-#define CTX_FONT_3 CTX_STATIC_FONT("mono-bold",  Cousine_Bold)
-#define CTX_FONT_4 CTX_STATIC_FONT("mono-bold-italic",  Cousine_BoldItalic)
+#define CTX_FONT_1 CTX_STATIC_FONT("mono-regular cousine-regular", Cousine_Regular)
+#define CTX_FONT_2 CTX_STATIC_FONT("mono-italic cousine-italic",  Cousine_Italic)
+#define CTX_FONT_3 CTX_STATIC_FONT("mono-bold cousine-bold",  Cousine_Bold)
+#define CTX_FONT_4 CTX_STATIC_FONT("mono-bold-italic cousine-bold-italic",  Cousine_BoldItalic)
 
 //#include "DejaVuSansMono.h"
 //#include "DejaVuSans.h"

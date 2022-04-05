@@ -815,6 +815,13 @@ static int _ctx_resolve_font (const char *name)
   return -1;
 }
 
+const char *ctx_get_font_name (Ctx *ctx, int no)
+{
+  if (no >= 0 && no < ctx_font_count)
+    return ctx_fonts[no].name;
+  return NULL;
+}
+
 int ctx_resolve_font (const char *name)
 {
   int ret = _ctx_resolve_font (name);
@@ -829,6 +836,7 @@ int ctx_resolve_font (const char *name)
     }
   return 0;
 }
+
 
 #define CTX_STATIC_FONT(font_string, font_data) \
   ctx_load_font_ctx(font_string, font_data, sizeof (font_data))

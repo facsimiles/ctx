@@ -122,6 +122,9 @@ int  ctx_append_drawlist    (Ctx *ctx, void *data, int length);
 void  ctx_drawlist_clear (Ctx *ctx);
 
 
+const char *ctx_get_font_name (Ctx *ctx, int no);
+
+
 /**
  * ctx_destroy:
  * @ctx: a ctx context
