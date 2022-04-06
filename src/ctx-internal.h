@@ -375,7 +375,8 @@ struct _CtxFont
 {
   CtxFontEngine *engine;
   const char *name;
-  int type; // 0 ctx    1 stb    2 monobitmap
+  uint8_t type; // 0 ctx    1 stb    2 monobitmap
+  uint8_t monospaced;
   union
   {
     struct

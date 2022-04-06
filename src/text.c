@@ -57,6 +57,16 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
   ctx_strcpy ( (char *) ctx_fonts[ctx_font_count].name, name);
 
   ctx_fonts[ctx_font_count].engine = &ctx_font_engine_stb;
+
+  CtxFont *font = &ctx_fonts[ctx_font_count];
+  if (font->engine->glyph_width (font, NULL, 'O') ==
+      font->engine->glyph_width (font, NULL, 'I'))
+  {
+    font->monospaced = 1;
+  }
+  else
+    font->monospaced = 0;
+
   ctx_font_count ++;
   return ctx_font_count-1;
 }
@@ -97,13 +107,15 @@ static float
 ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
-  float font_size          = ctx->state.gstate.font_size;
+  float font_size          = 1.0f;
+  if (ctx)
+      font_size = ctx->state.gstate.font_size;
   float scale              = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   int advance, lsb;
   int glyph = ctx_glyph_stb_find (font, unichar);
 
 #if CTX_EVENTS
-  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0f - font_size) < 0.03f)
+  if (ctx && ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0f - font_size) < 0.03f)
     return 2;
 #endif
 
@@ -261,31 +273,23 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
     }
   return 0.0;
 }
-#if 0
-static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
-{
-  for (int i = 0; i < font->ctx.length; i++)
-    {
-      CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
-      if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == unichar)
-        { return i; }
-    }
-  return 0;
-}
-#endif
 
 
 static float
 ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
-  CtxState *state = &ctx->state;
-  float font_size = state->gstate.font_size;
+  float font_size = 1.0f;
+  if (ctx)
+  {
+    CtxState *state = &ctx->state;
+    font_size = state->gstate.font_size;
+  }
   int   start     = ctx_glyph_find_ctx (font, ctx, unichar);
   if (start < 0)
     { return 0.0; }  // XXX : fallback
 
 #if CTX_EVENTS
-  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && 
+  if (ctx && ctx_backend_type (ctx) == CTX_BACKEND_TERM && 
                   ctx_fabsf(3.0f - font_size) < 0.03f 
                   )
     return 2.0f;
@@ -470,7 +474,17 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
   ctx_font_init_ctx (&ctx_fonts[ctx_font_count]);
   ctx_fonts[ctx_font_count].engine = &ctx_font_engine_ctx;
+
+  CtxFont *font = &ctx_fonts[ctx_font_count];
   ctx_font_count++;
+  if (font->engine->glyph_width (font, NULL, 'O') ==
+      font->engine->glyph_width (font, NULL, 'I'))
+  {
+    font->monospaced = 1;
+  }
+  else
+    font->monospaced = 0;
+
   return ctx_font_count-1;
 }
 
@@ -667,14 +681,73 @@ _ctx_glyphs (Ctx     *ctx,
     }
 }
 
+#define CTX_MAX_WORD_LEN 128
+
+#if 1
+static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
+{
+  for (int i = 0; i < font->ctx.length; i++)
+    {
+      CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
+      if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == unichar)
+        { return i; }
+    }
+  return 0;
+}
+#endif
+
+static inline int
+_ctx_text_substitute_ligatures (Ctx *ctx, CtxFont *font,
+                                uint32_t *unichar, uint32_t next_unichar)
+{
+  if (font->monospaced)
+    return 0;
+  if (*unichar == 'f')
+    switch (next_unichar)
+    {
+      case 'f': if (ctx_glyph_find (ctx, font, 0xfb00))
+        {
+          *unichar = 0xfb00;
+          return 1;
+        }
+        break;
+      case 'i':
+        if (ctx_glyph_find (ctx, font, 0xfb01))
+        {
+          *unichar = 0xfb01;
+          return 1;
+        }
+        break;
+      case 'l': 
+        if (ctx_glyph_find (ctx, font, 0xfb02))
+        {
+          *unichar = 0xfb02;
+          return 1;
+        }
+        break;
+      case 't': 
+        if (ctx_glyph_find (ctx, font, 0xfb05))
+        {
+          *unichar = 0xfb05;
+          return 1;
+        }
+        break;
+    }
+  return 0;
+}
+
 static void
 _ctx_text (Ctx        *ctx,
            const char *string,
            int         stroke,
            int         visible)
 {
+  char word[CTX_MAX_WORD_LEN];
+  int word_len = 0;
   CtxState *state = &ctx->state;
+  CtxFont *font = &ctx_fonts[state->gstate.font];
   float x = ctx->state.x;
+  word[word_len]=0;
   switch ( (int) ctx_state_get (state, CTX_text_align) )
     //switch (state->gstate.text_align)
     {
@@ -713,32 +786,90 @@ _ctx_text (Ctx        *ctx,
         break;
     }
   float x0 = x;
-  for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1) )
+  float x1 = x + 10000.0f;
+  
+  float wrap_left = ctx_get_wrap_left (ctx);
+  float wrap_right = ctx_get_wrap_right (ctx);
+  if (wrap_left != wrap_right)
+  {
+    x0 = wrap_left;
+  }
+
+  if (*string)
+  for (const char *utf8 = string; (utf8==string ) || utf8[-1]; utf8 = *utf8?ctx_utf8_skip (utf8, 1):(utf8+1))
     {
-      if (*utf8 == '\n')
+      if (*utf8 == '\n' ||
+          *utf8 == ' ' ||
+          *utf8 == '\0')
         {
-          y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
-          x = x0;
-          if (visible)
-            { ctx_move_to (ctx, x, y); }
-        }
-      else
-        {
-          uint32_t unichar = ctx_utf8_to_unichar (utf8);
-          if (visible)
+          float word_width = 0.0;
+          word[word_len]=0;
+
+          for (const char *bp = &word[0]; *bp; bp = ctx_utf8_skip (bp, 1))
+          {
+            uint32_t unichar      = ctx_utf8_to_unichar (bp);
+            const char *next_utf8 = ctx_utf8_skip (bp, 1);
+            uint32_t next_unichar = *next_utf8?ctx_utf8_to_unichar (next_utf8):0;
+
+            if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next_unichar))
+              bp++;
+
+            float glyph_width     = ctx_glyph_width (ctx, unichar);
+            word_width += glyph_width;
+            if (next_unichar)
+              word_width += ctx_glyph_kern (ctx, unichar, next_unichar);
+          }
+
+          if (wrap_left != wrap_right &&
+              x + word_width >= wrap_right)
+          {
+            y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
+            x = x0;
+          }
+
+          for (const char *bp = &word[0]; *bp; bp = ctx_utf8_skip (bp, 1))
+          {
+            uint32_t unichar      = ctx_utf8_to_unichar (bp);
+            const char *next_utf8 = ctx_utf8_skip (bp, 1);
+            uint32_t next_unichar = *next_utf8?ctx_utf8_to_unichar (next_utf8):0;
+
+            if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next_unichar))
+              bp++;
+
+            float glyph_width     = ctx_glyph_width (ctx, unichar);
+            if (x + glyph_width >= x1)
+            {
+              y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
+              x = x0;
+            }
+            if (visible)
             {
               ctx_move_to (ctx, x, y + baseline_offset);
               _ctx_glyph (ctx, unichar, stroke);
             }
-          const char *next_utf8 = ctx_utf8_skip (utf8, 1);
-          if (next_utf8)
-            {
-              x += ctx_glyph_width (ctx, unichar);
-              x += ctx_glyph_kern (ctx, unichar, ctx_utf8_to_unichar (next_utf8) );
-            }
-          if (visible)
-            { ctx_move_to (ctx, x, y); }
+            x += glyph_width;
+            if (next_unichar)
+              x += ctx_glyph_kern (ctx, unichar, next_unichar );
+          }
+
+          if (*utf8 == '\n')
+          {
+            y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
+            x = x0;
+          }
+          else if (*utf8 == ' ')
+          {
+            x += ctx_glyph_width (ctx, ' ');
+          }
+          word_len=0;
+          word[word_len]=0;
         }
+      else
+      {
+        if (word_len + 1 < CTX_MAX_WORD_LEN-1)
+          word[word_len++]=*utf8;
+      }
+
     }
   if (!visible)
     { ctx_move_to (ctx, x, y); }
