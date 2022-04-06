@@ -836,6 +836,11 @@ void ctx_line_dash_offset (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_LINE_DASH_OFFSET, x);
 }
 
+void ctx_line_height (Ctx *ctx, float x)
+{
+  CTX_PROCESS_F1 (CTX_LINE_HEIGHT, x);
+}
+
 void ctx_wrap_left (Ctx *ctx, float x)
 {
   CTX_PROCESS_F1 (CTX_WRAP_LEFT , x);
@@ -1366,6 +1371,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
   CtxCommand *c = (CtxCommand *) entry;
   switch (entry->code)
     {
+      case CTX_LINE_HEIGHT:
+        ctx_state_set (state, CTX_line_height, ctx_arg_float (0) );
+        break;
       case CTX_WRAP_LEFT:
         ctx_state_set (state, CTX_wrap_left, ctx_arg_float (0) );
         break;

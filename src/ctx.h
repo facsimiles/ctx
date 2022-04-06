@@ -1606,6 +1606,7 @@ typedef enum
   CTX_EXTEND           = 146, // ke u32 extend mode, default=0
   CTX_WRAP_LEFT        = 147, // kL
   CTX_WRAP_RIGHT       = 148, // kR
+  CTX_LINE_HEIGHT      = 149, // kH
                               //
   CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
   CTX_FILL_RECT        = 201, // fillRect   - only exist in long form

@@ -274,6 +274,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_LINE_CAP:
       case CTX_LINE_WIDTH:
       case CTX_LINE_DASH_OFFSET:
+      case CTX_LINE_HEIGHT:
       case CTX_WRAP_LEFT:
       case CTX_WRAP_RIGHT:
       case CTX_IMAGE_SMOOTHING:
@@ -408,6 +409,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
       case 'c': return ctx_parser_set_command (parser, CTX_LINE_CAP);
       case 'w': return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
       case 'D': return ctx_parser_set_command (parser, CTX_LINE_DASH_OFFSET);
+      case 'H': return ctx_parser_set_command (parser, CTX_LINE_HEIGHT);
       case 'L': return ctx_parser_set_command (parser, CTX_WRAP_LEFT);
       case 'R': return ctx_parser_set_command (parser, CTX_WRAP_RIGHT);
       case 'S': return ctx_parser_set_command (parser, CTX_IMAGE_SMOOTHING);
@@ -577,6 +579,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
             return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
           case CTX_lineDashOffset:
             return ctx_parser_set_command (parser, CTX_LINE_DASH_OFFSET);
+          case CTX_line_height:
+            return ctx_parser_set_command (parser, CTX_LINE_HEIGHT);
           case CTX_wrap_left:
             return ctx_parser_set_command (parser, CTX_WRAP_LEFT);
           case CTX_wrap_right:
@@ -1201,6 +1205,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_LINE_DASH_OFFSET:
         ctx_line_dash_offset (ctx, arg(0));
+        break;
+      case CTX_LINE_HEIGHT:
+        ctx_line_height (ctx, arg(0));
         break;
       case CTX_WRAP_LEFT:
         ctx_wrap_left (ctx, arg(0));

@@ -216,6 +216,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_LINE_CAP:             return "lineCap"; break;
           case CTX_LINE_WIDTH:           return "lineWidth"; break;
           case CTX_LINE_DASH_OFFSET:     return "lineDashOffset"; break;
+          case CTX_LINE_HEIGHT:          return "line_height";break;
           case CTX_WRAP_LEFT:            return "wrap_left"; break;
           case CTX_WRAP_RIGHT:           return "wrap_right"; break;
           case CTX_IMAGE_SMOOTHING:      return "imageSmoothing"; break;
@@ -266,6 +267,7 @@ static void _ctx_print_name (CtxFormatter *formatter, int code)
         case CTX_LINE_CAP:          name[1]='c'; break;
         case CTX_LINE_WIDTH:        name[1]='w'; break;
         case CTX_LINE_DASH_OFFSET:  name[1]='D'; break;
+        case CTX_LINE_HEIGHT:       name[1]='H'; break;
         case CTX_WRAP_LEFT:         name[1]='L'; break;
         case CTX_WRAP_RIGHT:        name[1]='R'; break;
         case CTX_IMAGE_SMOOTHING:   name[1]='S'; break;
@@ -601,6 +603,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_ROTATE:
       case CTX_LINE_WIDTH:
       case CTX_LINE_DASH_OFFSET:
+      case CTX_LINE_HEIGHT:
       case CTX_WRAP_LEFT:
       case CTX_WRAP_RIGHT:
       case CTX_GLOBAL_ALPHA:
