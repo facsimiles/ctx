@@ -95,19 +95,19 @@ int launch_main (int argc, char **argv)
     {
       layer = 1;
     }
-    else if (strstr (argv[no], "--x="))
+    else if (ctx_strstr (argv[no], "--x="))
     {
       x = atof (argv[no + strlen ("--x=")]);
     }
-    else if (strstr (argv[no], "--y="))
+    else if (ctx_strstr (argv[no], "--y="))
     {
       y = atof (argv[no + strlen ("--y=")]);
     }
-    else if (strstr (argv[no], "--width="))
+    else if (ctx_strstr (argv[no], "--width="))
     {
       width = atof (argv[no + strlen ("--width=")]);
     }
-    else if (strstr (argv[no], "--height="))
+    else if (ctx_strstr (argv[no], "--height="))
     {
       height = atof (argv[no + strlen ("--height=")]);
     }
@@ -164,7 +164,7 @@ int make_thumb (const char *src_path, const char *dst_path)
   int idim = 256; // largest width or height
   stride = width * 4;
   float dim = idim;
-  int was_jpg = strstr(src_path, "jpg")?1:0;
+  int was_jpg = ctx_strstr(src_path, "jpg")?1:0;
   if (!data)
      return -1;
   if (dim > width && dim > height)
@@ -394,8 +394,8 @@ int main (int argc, char **argv)
 
 #if 0
   if (argv[1])
-  if ((strstr(argv[1], ".js")  && strstr(argv[1], ".js")[3]==0) ||
-      (strstr(argv[1], ".html")  && strstr(argv[1], ".html")[5]==0) ||
+  if ((ctx_strstr(argv[1], ".js")  && ctx_strstr(argv[1], ".js")[3]==0) ||
+      (ctx_strstr(argv[1], ".html")  && ctx_strstr(argv[1], ".html")[5]==0) ||
       (!strncmp (argv[1], "http", 4)))
     return js_main (argc, argv);
 #endif

@@ -351,7 +351,7 @@ static int vt_col_to_pos (VT *vt, int col)
   if (vt->current_line->contains_proportional)
     {
       Ctx *ctx = _ctx_new_drawlist (vt->width, vt->height);
-      ctx_font (ctx, "regular");
+      ctx_font (ctx, "Regular");
       ctx_font_size (ctx, vt->font_size);
       int x = 0;
       pos = 0;
@@ -5390,7 +5390,7 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
   if (!strcmp (str, "capslock")) return;
 
 #if 0
-  if (!strstr (str, "-page"))
+  if (!ctx_strstr (str, "-page"))
     vt_set_scroll (vt, 0);
 #endif
 
@@ -7479,7 +7479,7 @@ void vt_ctx_glyph (Ctx *ctx, VT *vt, float x, float y, int unichar, int bold, fl
       did_save = 1;
     }
     // TODO : check if proportional and use other font for that
-    ctx_font (ctx, "mono-bold");
+    ctx_font (ctx, "Mono Bold");
   }
   ctx_glyph (ctx, unichar, 0);
   if (did_save)
@@ -7621,7 +7621,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
     {
       if (vt->font_is_mono)
         {
-          ctx_font (ctx, "regular");
+          ctx_font (ctx, "Regular");
           vt->font_is_mono = 0;
         }
       cw = ctx_glyph_width (ctx, unichar);
@@ -7630,7 +7630,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
     {
       if (vt->font_is_mono == 0)
         {
-          ctx_font (ctx, "mono");
+          ctx_font (ctx, "Mono");
           vt->font_is_mono = 1;
           if (col > 1)
             {
@@ -7913,7 +7913,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
           //ctx_scale (ctx, 0.9, 0.9);
           //ctx_rotate (ctx, 0.15);
           //ctx_translate (ctx, - (x0 + cw/3), - (y0 + vt->ch/2) );
-          ctx_font (ctx, "mono-italic");
+          ctx_font (ctx, "Mono Italic");
         }
       vt_ctx_glyph (ctx, vt, x0, y0, unichar, bold, scale_x, scale_y, offset_y);
       if (italic)
@@ -8303,7 +8303,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                             0.00, -0.0007, 1.0);
   x0 = 0;
   y0 = 0;
-  ctx_font (ctx, "mono");
+  ctx_font (ctx, "Mono");
   vt->font_is_mono = 0;
   ctx_font_size (ctx, vt->font_size * vt->font_to_cell_scale);
   vt->has_blink = 0;

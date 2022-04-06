@@ -27,17 +27,35 @@ CtxFontEngine ctx_font_engine_stb =
 int
 ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 {
+  char buf[256];
   ctx_font_setup (NULL);
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
-  ctx_fonts[ctx_font_count].type = 1;
-  ctx_fonts[ctx_font_count].name = (char *) ctx_malloc (ctx_strlen (name) + 1);
-  ctx_strcpy ( (char *) ctx_fonts[ctx_font_count].name, name);
+
   if (!stbtt_InitFont (&ctx_fonts[ctx_font_count].stb.ttf_info, ttf_contents, 0) )
     {
       ctx_log ( "Font init failed\n");
       return -1;
     }
+
+  if (name == NULL || !strcmp (name, "import")){
+  int length = 0;
+  const char *val = stbtt_GetFontNameDefault (&ctx_fonts[ctx_font_count].stb.ttf_info,
+                          &length);
+  if (val)
+  {
+    memset(buf,0,sizeof(buf));
+    memcpy(buf,val, length);
+    name = buf;
+  }
+  else
+    name = "import";
+  }
+
+  ctx_fonts[ctx_font_count].type = 1;
+  ctx_fonts[ctx_font_count].name = (char *) ctx_malloc (ctx_strlen (name) + 1);
+  ctx_strcpy ( (char *) ctx_fonts[ctx_font_count].name, name);
+
   ctx_fonts[ctx_font_count].engine = &ctx_font_engine_stb;
   ctx_font_count ++;
   return ctx_font_count-1;
@@ -802,16 +820,83 @@ ctx_stroke_text (Ctx *ctx, const char *string,
 
 static int _ctx_resolve_font (const char *name)
 {
+  char temp[ctx_strlen (name)+1];
+  /* first we look for exact */
   for (int i = 0; i < ctx_font_count; i ++)
     {
       if (!ctx_strcmp (ctx_fonts[i].name, name) )
         { return i; }
     }
+  /* ... and substring matches for passed in string */
   for (int i = 0; i < ctx_font_count; i ++)
     {
       if (ctx_strstr (ctx_fonts[i].name, name) )
         { return i; }
     }
+
+  /* then we normalize some names */
+  if (!strncmp (name, "Helvetica", 9))
+  {
+     memset(temp,0,sizeof(temp));
+     strncpy (temp, name + 4, sizeof(temp)-1);
+     memcpy (temp, "Arrrr", 5); 
+     name = temp;
+  }
+  else if (!strncmp (name, "Monospace", 9))
+  {
+     memset(temp,0,sizeof(temp));
+     strncpy (temp, name + 2, sizeof(temp)-1);
+     memcpy (temp, "Courier", 7); 
+     name = temp;
+  }
+  else if (!strncmp (name, "Mono ", 5))
+  {
+    memset(temp,0,sizeof(temp));
+    strncpy (temp + 3, name, sizeof(temp)-1-3);
+    memcpy (temp, "Courier ", 8); 
+    name = temp;
+  }
+  else if (!strcmp (name, "Mono"))
+  {
+    name = "Courier";
+  }
+
+  /* and attempt substring matching with mangled named
+   * permitting matches with length and two first chars
+   * to be valid
+   */
+  {
+    char *subname = (char*)name;
+    int namelen = 0; 
+    if (strchr (subname, ' '))
+    {
+      subname = strchr (subname, ' ');
+      namelen = subname - name;
+      subname++;
+    }
+    for (int i = 0; i < ctx_font_count; i ++)
+    {
+      if (ctx_fonts[i].name[0]==name[0] &&
+          ctx_fonts[i].name[1]==name[1] &&
+          ctx_fonts[i].name[namelen] == name[namelen] &&
+          (namelen == 0 || ctx_strstr (ctx_fonts[i].name, subname) ))
+        return i;
+    }
+  }
+
+  /* then we look for a match of the substring after the first
+   * space
+   */
+  if (strchr (name, ' '))
+  {
+     char *subname = strchr (name, ' ');
+     for (int i = 0; i < ctx_font_count; i ++)
+     {
+       if (ctx_strstr (ctx_fonts[i].name, subname) )
+         { return i; }
+     }
+  }
+
   return -1;
 }
 
@@ -838,11 +923,32 @@ int ctx_resolve_font (const char *name)
 }
 
 
-#define CTX_STATIC_FONT(font_string, font_data) \
-  ctx_load_font_ctx(font_string, font_data, sizeof (font_data))
 
-#ifndef CTX_FONT_0
-#define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx", ctx_font_ascii)
+#if !( defined(CTX_FONT_0) ||\
+       defined(CTX_FONT_1) ||\
+       defined(CTX_FONT_2) ||\
+       defined(CTX_FONT_3) ||\
+       defined(CTX_FONT_4) ||\
+       defined(CTX_FONT_5) ||\
+       defined(CTX_FONT_6) ||\
+       defined(CTX_FONT_7) ||\
+       defined(CTX_FONT_8) ||\
+       defined(CTX_FONT_9) ||\
+       defined(CTX_FONT_10) ||\
+       defined(CTX_FONT_11) ||\
+       defined(CTX_FONT_12) ||\
+       defined(CTX_FONT_13) ||\
+       defined(CTX_FONT_14) ||\
+       defined(CTX_FONT_15) ||\
+       defined(CTX_FONT_16) ||\
+       defined(CTX_FONT_17) ||\
+       defined(CTX_FONT_18) ||\
+       defined(CTX_FONT_19) ||\
+       defined(CTX_FONT_20) ||\
+       defined(CTX_FONT_21))
+#define CTX_STATIC_FONT(font_string, font_data) \
+  ctx_load_font_ctx(font_string, ctx_font_##font_data, sizeof (ctx_font_##font_data))
+#define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx", ascii)
 #endif
 
 static void ctx_font_setup (Ctx *ctx)
@@ -930,80 +1036,39 @@ static void ctx_font_setup (Ctx *ctx)
 #ifdef CTX_FONT_20
   CTX_FONT_20;
 #endif
+#ifdef CTX_FONT_21
+  CTX_FONT_21;
 #endif
-
-#if 0
-
-#if CTX_FONT_ENGINE_CTX
-
-#if CTX_FONT_ENGINE_CTX_FS
-  ctx_load_font_ctx_fs ("sans-ctx", "/tmp/ctx-regular", 0);
-#else
-#if CTX_FONT_ascii
-  ctx_load_font_ctx ("sans-ctx", ctx_font_ascii, sizeof (ctx_font_ascii) );
+#ifdef CTX_FONT_22
+  CTX_FONT_22;
 #endif
-#if CTX_FONT_regular
-  ctx_load_font_ctx ("sans-ctx-regular", ctx_font_regular, sizeof (ctx_font_regular) );
+#ifdef CTX_FONT_23
+  CTX_FONT_23;
 #endif
+#ifdef CTX_FONT_24
+  CTX_FONT_24;
 #endif
-
-#if CTX_FONT_mono
-  ctx_load_font_ctx ("mono-ctx", ctx_font_mono, sizeof (ctx_font_mono) );
+#ifdef CTX_FONT_25
+  CTX_FONT_25;
 #endif
-#if CTX_FONT_bold
-  ctx_load_font_ctx ("bold-ctx", ctx_font_bold, sizeof (ctx_font_bold) );
+#ifdef CTX_FONT_26
+  CTX_FONT_26;
 #endif
-#if CTX_FONT_italic
-  ctx_load_font_ctx ("italic-ctx", ctx_font_italic, sizeof (ctx_font_italic) );
+#ifdef ctx_font_27
+  ctx_font_27;
 #endif
-#if CTX_FONT_bold_italic
-  ctx_load_font_ctx ("bold-italic-ctx", ctx_font_bold_italic, sizeof (ctx_font_bold_italic) );
+#ifdef ctx_font_28
+  ctx_font_28;
 #endif
-#if CTX_FONT_sans
-  ctx_load_font_ctx ("sans-ctx", ctx_font_sans, sizeof (ctx_font_sans) );
+#ifdef CTX_FONT_29
+  CTX_FONT_29;
 #endif
-#if CTX_FONT_serif
-  ctx_load_font_ctx ("serif-ctx", ctx_font_serif, sizeof (ctx_font_serif) );
+#ifdef CTX_FONT_30
+  CTX_FONT_30;
 #endif
-#if CTX_FONT_symbol
-  ctx_load_font_ctx ("symbol-ctx", ctx_font_symbol, sizeof (ctx_font_symbol) );
+#ifdef CTX_FONT_31
+  CTX_FONT_31;
 #endif
-#if CTX_FONT_emoji
-  ctx_load_font_ctx ("emoji-ctx", ctx_font_emoji, sizeof (ctx_font_emoji) );
-#endif
-#endif
-
-#if NOTO_EMOJI_REGULAR
-  ctx_load_font_ttf ("sans-NotoEmoji_Regular", ttf_NotoEmoji_Regular_ttf, ttf_NotoEmoji_Regular_ttf_len);
-#endif
-#if ROBOTO_LIGHT
-  ctx_load_font_ttf ("sans-light-Roboto_Light", ttf_Roboto_Light_ttf, ttf_Roboto_Light_ttf_len);
-#endif
-#if ROBOTO_REGULAR
-  ctx_load_font_ttf ("sans-Roboto_Regular", ttf_Roboto_Regular_ttf, ttf_Roboto_Regular_ttf_len);
-#endif
-#if ROBOTO_BOLD
-  ctx_load_font_ttf ("sans-bold-Roboto_Bold", ttf_Roboto_Bold_ttf, ttf_Roboto_Bold_ttf_len);
-#endif
-#if DEJAVU_SANS
-  ctx_load_font_ttf ("sans-DejaVuSans", ttf_DejaVuSans_ttf, ttf_DejaVuSans_ttf_len);
-#endif
-#if VERA
-  ctx_load_font_ttf ("sans-Vera", ttf_Vera_ttf, ttf_Vera_ttf_len);
-#endif
-#if UNSCII_16
-  ctx_load_font_ttf ("mono-unscii16", ttf_unscii_16_ttf, ttf_unscii_16_ttf_len);
-#endif
-#if XA000_MONO
-  ctx_load_font_ttf ("mono-0xA000", ttf_0xA000_Mono_ttf, ttf_0xA000_Mono_ttf_len);
-#endif
-#if DEJAVU_SANS_MONO
-  ctx_load_font_ttf ("mono-DejaVuSansMono", ttf_DejaVuSansMono_ttf, ttf_DejaVuSansMono_ttf_len);
-#endif
-#if NOTO_MONO_REGULAR
-  ctx_load_font_ttf ("mono-NotoMono_Regular", ttf_NotoMono_Regular_ttf, ttf_NotoMono_Regular_ttf_len);
-#endif
-
 #endif
 }
 
