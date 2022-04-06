@@ -18,7 +18,12 @@ Caladea-Regular.h \
 Carlito-Bold.h \
 Carlito-BoldItalic.h \
 Carlito-Italic.h \
-Carlito-Regular.h
+Carlito-Regular.h \
+Roboto-Regular.h \
+Roboto-Bold.h \
+Roboto-Thin.h \
+Roboto-Italic.h \
+Roboto-BoldItalic.h
 
 
 clean:
@@ -29,7 +34,15 @@ ctxf/ascii.ctxf: Makefile
 ctx-font-ascii.h: Makefile
 	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii > $@
 
-%.h: /usr/share/fonts/truetype/croscore/%.ttf  Makefile
+
+%.h: ttf/%.ttf  Makefile ../tools/ctx-fontgen
 	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
-%.h: /usr/share/fonts/truetype/crosextra/%.ttf  Makefile
+%.h: /usr/share/fonts/truetype/croscore/%.ttf  Makefile ../tools/ctx-fontgen
 	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
+%.h: /usr/share/fonts/truetype/crosextra/%.ttf  Makefile ../tools/ctx-fontgen
+	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
+
+%.h: /usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/%.ttf  Makefile ../tools/ctx-fontgen
+	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
+
+
