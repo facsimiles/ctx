@@ -100,10 +100,13 @@ int main (int argc, char **argv)
     if (argv[4] &&  !strcmp(argv[4], "binary"))
      binary=1;
   }
-  ctx_load_font_ttf_file ("import", argv[1]);
+  int font_no = ctx_load_font_ttf_file ("import", argv[1]);
+
   ctx = ctx_new (1000, 1000, "drawlist");
   _ctx_set_transformation (ctx, CTX_TRANSFORMATION_RELATIVE);
   ctx_font (ctx, "import");
+
+  const char *font_name = ctx_get_font_name (NULL, font_no);
 
   if (strstr (subsets, "all"))
   for (int glyph = 0; glyph < 65536*8; glyph++) add_glyph (ctx, glyph);
@@ -150,7 +153,7 @@ char* string =
   {
   char *string =
 	
-"éñÑßæøåö£ÆÖØÅ€§π°üÜﬀﬁﬂﬃﬄﬅ…”““”«»©®™⭾⏎⌫·←↑↓→☀☁☂☢☭☮☯☽✉⚙⚠␣²◆♥♦♣♠÷≈±╴−╶▶▷▽▼•☑☒☐📁📄";
+"éñÑßæøåö£ÆÖØÅ€§π°üÜﬀﬁﬂﬃﬄﬅ…Ł”““”«»©®™⭾⏎⌫·←↑↓→☀☁☂☢☭☮☯☽✉⚙⚠␣²◆♥♦♣♠÷≈±╴−╶▶▷▽▼•☑☒☐📁📄";
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }
@@ -189,6 +192,49 @@ char* string =
   {
   printf ("#ifndef CTX_FONT_%s\n", name);
   printf ("/* this is a ctx encoded font based on %s */\n", basename (argv[1]));
+
+  int apache = 0;
+
+  if (strstr (argv[1], "Roboto-"))
+  {
+    apache = 1;
+    printf ("/* Copyright 2014 Christian Robertson\n");
+  }
+
+  if (strstr (argv[1], "Carlito-"))
+  {
+    apache = 1;
+    printf ("/* Copyright 2013 Łukasz Dziedzic \n");
+  }
+
+  if (strstr (argv[1], "Arimo-") ||
+      strstr (argv[1], "Tinos-") ||
+      strstr (argv[1], "Cousine-"))
+  {
+    apache = 1;
+    printf ("/* Copyright 2013 Steve Matteson \n");
+  }
+
+  if (strstr (argv[1], "Caladea-"))
+  {
+    apache = 1;
+    printf ("/* Copyright 2014 Carolina Giovagnoli and Andres Torresi \n");
+  }
+
+  if (apache) printf (
+" \n"
+" Licensed under the Apache License, Version 2.0 (the \"License\");\n"
+" you may not use this file except in compliance with the License.\n"
+" You may obtain a copy of the License at\n"
+" \n"
+" http://www.apache.org/licenses/LICENSE-2.0\n"
+" \n"
+" Unless required by applicable law or agreed to in writing, software\n"
+" distributed under the License is distributed on an \"AS IS\" BASIS,\n"
+" WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n"
+" See the License for the specific language governing permissions and\n"
+" limitations under the License.\n"
+" */\n");
   printf ("/* CTX_SUBDIV:%i  CTX_BAKE_FONT_SIZE:%i */\n", CTX_SUBDIV, CTX_BAKE_FONT_SIZE);
 
   printf ("/* glyphs covered: \n\n");
@@ -256,7 +302,7 @@ char* string =
   }
   printf ("};\n");
   printf ("#define CTX_FONT_%s 1\n", name);
-  //printf ("#define ctx_font_%s_len %d\n", name, output_font.count*9);
+  printf ("#define ctx_font_%s_name \"%s\"\n", name, font_name);
   printf ("#endif\n");
   }
   else
