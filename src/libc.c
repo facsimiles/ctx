@@ -58,6 +58,7 @@ static inline int ctx_strncmp (const char *a, const char *b, size_t n)
   for (i = 0; a[i] && b[i] && i < n; a++, b++)
     if (a[0] != b[0])
       { return 1; }
+  if (i >=n) return 1;
   return 0;
 }
 
@@ -73,11 +74,8 @@ static inline char *ctx_strstr (const char *h, const char *n)
   int needle_len = ctx_strlen (n);
   if (n[0]==0)
     { return (char *) h; }
-  while (h)
+  while (*h)
     {
-      h = ctx_strchr (h, n[0]);
-      if (!h)
-        { return NULL; }
       if (!ctx_strncmp (h, n, needle_len) )
         { return (char *) h; }
       h++;
