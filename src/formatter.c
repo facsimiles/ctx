@@ -216,9 +216,9 @@ const char *_ctx_code_to_name (int code)
           case CTX_LINE_CAP:             return "lineCap"; break;
           case CTX_LINE_WIDTH:           return "lineWidth"; break;
           case CTX_LINE_DASH_OFFSET:     return "lineDashOffset"; break;
-          case CTX_LINE_HEIGHT:          return "line_height";break;
-          case CTX_WRAP_LEFT:            return "wrap_left"; break;
-          case CTX_WRAP_RIGHT:           return "wrap_right"; break;
+          case CTX_LINE_HEIGHT:          return "lineHeight";break;
+          case CTX_WRAP_LEFT:            return "wrapLeft"; break;
+          case CTX_WRAP_RIGHT:           return "wrapRight"; break;
           case CTX_IMAGE_SMOOTHING:      return "imageSmoothing"; break;
           case CTX_SHADOW_BLUR:          return "shadowBlur";  break;
           case CTX_FILL_RULE:            return "fillRule"; break;

@@ -579,11 +579,11 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
             return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
           case CTX_lineDashOffset:
             return ctx_parser_set_command (parser, CTX_LINE_DASH_OFFSET);
-          case CTX_line_height:
+          case CTX_lineHeight:
             return ctx_parser_set_command (parser, CTX_LINE_HEIGHT);
-          case CTX_wrap_left:
+          case CTX_wrapLeft:
             return ctx_parser_set_command (parser, CTX_WRAP_LEFT);
-          case CTX_wrap_right:
+          case CTX_wrapRight:
             return ctx_parser_set_command (parser, CTX_WRAP_RIGHT);
           case CTX_imageSmoothing:
             return ctx_parser_set_command (parser, CTX_IMAGE_SMOOTHING);

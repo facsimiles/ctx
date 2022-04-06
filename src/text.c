@@ -717,7 +717,7 @@ _ctx_text (Ctx        *ctx,
     {
       if (*utf8 == '\n')
         {
-          y += ctx->state.gstate.font_size * ctx_state_get (state, CTX_line_spacing);
+          y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
           x = x0;
           if (visible)
             { ctx_move_to (ctx, x, y); }

@@ -3,8 +3,9 @@
 
 #define TOKENHASH(a)    ((uint32_t)a)
 
-#define CTX_wrap_left TOKENHASH(3712481047)
-#define CTX_wrap_right TOKENHASH(2759406977)
+#define CTX_wrapLeft TOKENHASH(2742686349)
+#define CTX_wrapRight TOKENHASH(2519274407)
+#define CTX_lineHeight TOKENHASH(2180215986)
 
 #define CTX_start_frame TOKENHASH(2941171367)
 #define CTX_end_frame TOKENHASH(2292627705)
@@ -114,7 +115,6 @@
 #define CTX_line_cap TOKENHASH(3442398380)
 #define CTX_lineCap TOKENHASH(4099906770)
 #define CTX_setLineCap TOKENHASH(3062640202)
-#define CTX_line_height TOKENHASH(2825006065)
 #define CTX_line_join TOKENHASH(2796226529)
 #define CTX_lineJoin TOKENHASH(3149521206)
 #define CTX_setLineJoin TOKENHASH(3876390174)
