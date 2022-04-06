@@ -3,6 +3,9 @@
 
 #define TOKENHASH(a)    ((uint32_t)a)
 
+#define CTX_wrap_left TOKENHASH(3712481047)
+#define CTX_wrap_right TOKENHASH(2759406977)
+
 #define CTX_start_frame TOKENHASH(2941171367)
 #define CTX_end_frame TOKENHASH(2292627705)
 #define CTX_startFrame TOKENHASH(4232434924)

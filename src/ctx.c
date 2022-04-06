@@ -836,6 +836,16 @@ void ctx_line_dash_offset (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_LINE_DASH_OFFSET, x);
 }
 
+void ctx_wrap_left (Ctx *ctx, float x)
+{
+  CTX_PROCESS_F1 (CTX_WRAP_LEFT , x);
+}
+
+void ctx_wrap_right (Ctx *ctx, float x)
+{
+  CTX_PROCESS_F1 (CTX_WRAP_RIGHT, x);
+}
+
 int ctx_get_image_smoothing (Ctx *ctx)
 {
   return ctx->state.gstate.image_smoothing;
@@ -1081,6 +1091,20 @@ CtxExtend ctx_get_extend (Ctx *ctx)
 CtxTextAlign ctx_get_text_align  (Ctx *ctx)
 {
   return (CtxTextAlign)ctx_state_get (&ctx->state, CTX_text_align);
+}
+
+float ctx_get_wrap_left        (Ctx *ctx)
+{
+  return ctx_state_get (&ctx->state, CTX_wrap_left);
+}
+float ctx_get_wrap_right       (Ctx *ctx)
+{
+  return ctx_state_get (&ctx->state, CTX_wrap_right);
+}
+
+float ctx_get_line_height      (Ctx *ctx)
+{
+  return ctx_state_get (&ctx->state, CTX_line_height);
 }
 
 CtxTextBaseline ctx_get_text_baseline (Ctx *ctx)
@@ -1342,6 +1366,12 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
   CtxCommand *c = (CtxCommand *) entry;
   switch (entry->code)
     {
+      case CTX_WRAP_LEFT:
+        ctx_state_set (state, CTX_wrap_left, ctx_arg_float (0) );
+        break;
+      case CTX_WRAP_RIGHT:
+        ctx_state_set (state, CTX_wrap_right, ctx_arg_float (0) );
+        break;
       case CTX_LINE_DASH_OFFSET:
         state->gstate.line_dash_offset = ctx_arg_float (0);
         break;
@@ -1844,6 +1874,10 @@ void ctx_colorspace_babl (CtxState   *state,
                           const Babl *space);
 #endif
 
+#ifndef CTX_TEXT_WRAP
+#define CTX_TEXT_WRAP 1
+#endif
+
 CTX_STATIC void
 ctx_state_init (CtxState *state)
 {
@@ -1856,6 +1890,11 @@ ctx_state_init (CtxState *state)
   state->gstate.source_stroke.type = CTX_SOURCE_INHERIT_FILL;
   ctx_color_set_graya (state, &state->gstate.source_fill.color, 1.0f, 1.0f);
   ctx_state_set (state, CTX_line_spacing, 1.0f);
+#if CTX_TEXT_WRAP
+  ctx_state_set (state, CTX_wrap_left, 0.0f);
+  ctx_state_set (state, CTX_wrap_right, 0.0f);
+#endif
+
   state->ink_min_x              = 8192;
   state->ink_min_y              = 8192;
   state->ink_max_x              = -8192;

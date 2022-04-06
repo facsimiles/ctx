@@ -124,6 +124,12 @@ void  ctx_drawlist_clear (Ctx *ctx);
 
 const char *ctx_get_font_name (Ctx *ctx, int no);
 
+/* by default both are 0.0 which makes wrapping disabled
+ */
+void ctx_wrap_left (Ctx *ctx, float x);
+void ctx_wrap_right (Ctx *ctx, float x);
+void ctx_line_height (Ctx *ctx, float x);
+
 
 /**
  * ctx_destroy:
@@ -587,6 +593,11 @@ float ctx_get_font_size        (Ctx *ctx);
 float ctx_get_miter_limit      (Ctx *ctx);
 int   ctx_get_image_smoothing   (Ctx *ctx);
 float ctx_get_line_dash_offset (Ctx *ctx);
+
+float ctx_get_wrap_left        (Ctx *ctx);
+float ctx_get_wrap_right       (Ctx *ctx);
+float ctx_get_line_height      (Ctx *ctx);
+
 const char *ctx_get_font       (Ctx *ctx);
 float ctx_get_line_width       (Ctx *ctx);
 void  ctx_current_point        (Ctx *ctx, float *x, float *y);
@@ -1591,7 +1602,10 @@ typedef enum
   CTX_IMAGE_SMOOTHING  = 144, // kS
   CTX_LINE_DASH_OFFSET = 145, // kD lineDashOffset
 
+
   CTX_EXTEND           = 146, // ke u32 extend mode, default=0
+  CTX_WRAP_LEFT        = 147, // kL
+  CTX_WRAP_RIGHT       = 148, // kR
                               //
   CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
   CTX_FILL_RECT        = 201, // fillRect   - only exist in long form
