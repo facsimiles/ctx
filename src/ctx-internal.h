@@ -389,11 +389,13 @@ struct _CtxFont
       uint32_t *index;
 #endif
     } ctx;
+#if CTX_FONT_ENGINE_CTX_FS
     struct
     {
       const char *name;
       char *path;
     } ctx_fs;
+#endif
 #if CTX_FONT_ENGINE_STB
     struct
     {
