@@ -53,8 +53,8 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
   }
 
   ctx_fonts[ctx_font_count].type = 1;
-  ctx_fonts[ctx_font_count].name = (char *) ctx_malloc (ctx_strlen (name) + 1);
-  ctx_strcpy ( (char *) ctx_fonts[ctx_font_count].name, name);
+  ctx_fonts[ctx_font_count].stb.name = (char *) ctx_malloc (ctx_strlen (name) + 1);
+  ctx_strcpy ( (char *) ctx_fonts[ctx_font_count].stb.name, name);
 
   ctx_fonts[ctx_font_count].engine = &ctx_font_engine_stb;
 
@@ -188,7 +188,13 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 }
 #endif
 
+static inline int ctx_font_get_length (CtxFont *font)
+{
+   return font->ctx.data->data.u32[1];
+}
+
 #if CTX_FONT_ENGINE_CTX
+
 
 #if CTX_GLYPH_INDEX
 static int ctx_font_find_glyph_cached (CtxFont *font, uint32_t glyph)
@@ -229,10 +235,12 @@ static int ctx_font_find_glyph_cached (CtxFont *font, uint32_t glyph)
 }
 #endif
 
+
 static uint32_t
 ctx_glyph_find_next (CtxFont *font, Ctx *ctx, int offset)
 {
-  for (int i = offset; i < font->ctx.length; i++)
+  int length = ctx_font_get_length (font);
+  for (int i = offset; i < length; i++)
   {
     CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
     if (entry->code == CTX_DEFINE_GLYPH)
@@ -265,7 +273,7 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
   }
 #else
   int start = 0;
-  int end = font->ctx.length;
+  int end = ctx_font_get_length (font);
   int max_iter = 10;
 
   do {
@@ -304,7 +312,8 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
     return 0.0f;
 #endif
 
-  for (int i = first_kern + 1; i < font->ctx.length; i++)
+  int length = ctx_font_get_length (font);
+  for (int i = first_kern + 1; i < length; i++)
     {
       CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
       if (entry->code == CTX_KERNING_PAIR)
@@ -339,7 +348,8 @@ ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
     return 2.0f;
 #endif
 
-  for (int i = start; i < font->ctx.length; i++)
+  int length = ctx_font_get_length (font);
+  for (int i = start; i < length; i++)
     {
       CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
       if (entry->code == CTX_DEFINE_GLYPH)
@@ -439,8 +449,9 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxDrawlist drawlist;
   drawlist.entries = font->ctx.data;
-  drawlist.count = font->ctx.length;
-  drawlist.size  = font->ctx.length;
+  int length = ctx_font_get_length (font);
+  drawlist.count = length;
+  drawlist.size  = length;
   drawlist.flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
   return ctx_glyph_drawlist (font, ctx, &drawlist, unichar, stroke);
 }
@@ -515,9 +526,9 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
   ctx_fonts[ctx_font_count].type = 0;
-  ctx_fonts[ctx_font_count].name = name;
+  //ctx_fonts[ctx_font_count].name = name;
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry *) data;
-  ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
+  //ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
   ctx_font_init_ctx (&ctx_fonts[ctx_font_count]);
   ctx_fonts[ctx_font_count].engine = &ctx_font_engine_ctx;
 
@@ -645,7 +656,7 @@ ctx_load_font_ctx_fs (const char *name, const void *path, int length) // length 
     { return -1; }
 
   ctx_fonts[ctx_font_count].type = 42;
-  ctx_fonts[ctx_font_count].name = name;
+  ctx_fonts[ctx_font_count].ctx_fs.name = name;
   ctx_fonts[ctx_font_count].ctx_fs.path = ctx_strdup (path);
   int path_len = ctx_strlen (path);
   if (ctx_fonts[ctx_font_count].ctx_fs.path[path_len-1] == '/')
@@ -727,12 +738,14 @@ _ctx_glyphs (Ctx     *ctx,
     }
 }
 
+
 #define CTX_MAX_WORD_LEN 128
 
 #if 1
 static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
 {
-  for (int i = 0; i < font->ctx.length; i++)
+  int length = ctx_font_get_length (font);
+  for (int i = 0; i < length; i++)
     {
       CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
       if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == unichar)
@@ -995,19 +1008,33 @@ ctx_stroke_text (Ctx *ctx, const char *string,
   ctx_text_stroke (ctx, string);
 }
 
+static const char *ctx_font_get_name (CtxFont *font)
+{
+  switch (font->type)
+  {
+    case 0:  return (char*)(font->ctx.data+2);
+#if CTX_FONT_ENGINE_STB
+    case 1:  return font->stb.name;
+    case 2:  return font->stb.name;
+#endif
+  }
+  return "-";
+}
+
+
 static int _ctx_resolve_font (const char *name)
 {
   char temp[ctx_strlen (name)+1];
   /* first we look for exact */
   for (int i = 0; i < ctx_font_count; i ++)
     {
-      if (!ctx_strcmp (ctx_fonts[i].name, name) )
+      if (!ctx_strcmp (ctx_font_get_name (&ctx_fonts[i]), name) )
         { return i; }
     }
   /* ... and substring matches for passed in string */
   for (int i = 0; i < ctx_font_count; i ++)
     {
-      if (ctx_strstr (ctx_fonts[i].name, name) )
+      if (ctx_strstr (ctx_font_get_name (&ctx_fonts[i]), name) )
         { return i; }
     }
 
@@ -1053,10 +1080,11 @@ static int _ctx_resolve_font (const char *name)
     }
     for (int i = 0; i < ctx_font_count; i ++)
     {
-      if (ctx_fonts[i].name[0]==name[0] &&
-          ctx_fonts[i].name[1]==name[1] &&
-          ctx_fonts[i].name[namelen] == name[namelen] &&
-          (namelen == 0 || ctx_strstr (ctx_fonts[i].name, subname) ))
+      const char *font_name = ctx_font_get_name (&ctx_fonts[i]);
+      if (font_name[0]==name[0] &&
+          font_name[1]==name[1] &&
+          font_name[namelen] == name[namelen] &&
+          (namelen == 0 || ctx_strstr (font_name, subname) ))
         return i;
     }
   }
@@ -1069,7 +1097,8 @@ static int _ctx_resolve_font (const char *name)
      char *subname = strchr (name, ' ');
      for (int i = 0; i < ctx_font_count; i ++)
      {
-       if (ctx_strstr (ctx_fonts[i].name, subname) )
+       const char *font_name = ctx_font_get_name (&ctx_fonts[i]);
+       if (ctx_strstr (font_name, subname) )
          { return i; }
      }
   }
@@ -1080,7 +1109,7 @@ static int _ctx_resolve_font (const char *name)
 const char *ctx_get_font_name (Ctx *ctx, int no)
 {
   if (no >= 0 && no < ctx_font_count)
-    return ctx_fonts[no].name;
+    return ctx_font_get_name (&ctx_fonts[no]);
   return NULL;
 }
 

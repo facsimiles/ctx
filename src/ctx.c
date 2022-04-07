@@ -989,7 +989,7 @@ ctx_font (Ctx *ctx, const char *family_name)
 const char *
 ctx_get_font (Ctx *ctx)
 {
-  return ctx_fonts[ctx->state.gstate.font].name;
+  return ctx_get_font_name (ctx, ctx->state.gstate.font);
 }
 
 void ctx_line_to (Ctx *ctx, float x, float y)

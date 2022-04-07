@@ -375,13 +375,12 @@ struct _CtxFontEngine
 struct _CtxFont
 {
   CtxFontEngine *engine;
-  const char *name;
   union
   {
     struct
     {
       CtxEntry *data;
-      uint16_t length;
+    //uint16_t length;
       /* we've got ~110 bytes to fill to cover as
          much data as stbtt_fontinfo */
       //int16_t glyph_pos[26]; // for a..z
@@ -392,11 +391,13 @@ struct _CtxFont
     } ctx;
     struct
     {
+      const char *name;
       char *path;
     } ctx_fs;
 #if CTX_FONT_ENGINE_STB
     struct
     {
+      const char *name;
       stbtt_fontinfo ttf_info;
       int cache_index;
       uint32_t cache_unichar;
