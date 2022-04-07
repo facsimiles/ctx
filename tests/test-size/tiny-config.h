@@ -51,4 +51,4 @@
 #define CTX_MAX_DEVICES 1
 #define CTX_MAX_CBS                8
 #define CTX_MAX_LISTEN_FDS         1
-
+#define CTX_ONE_FONT_ENGINE        1

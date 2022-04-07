@@ -5,6 +5,15 @@ static int     ctx_font_count = 0;
 
 static void ctx_font_setup (Ctx *ctx);
 
+static inline int ctx_font_is_monospaced (CtxFont *font)
+{
+#if CTX_ONE_FONT_ENGINE
+  return 0; // XXX
+#else
+  return font->monospaced;
+#endif
+}
+
 #if CTX_FONT_ENGINE_STB
 static float
 ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar);
@@ -23,6 +32,7 @@ CtxFontEngine ctx_font_engine_stb =
   ctx_glyph_width_stb,
   ctx_glyph_kern_stb,
 };
+
 
 int
 ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
@@ -370,7 +380,9 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
   int in_glyph = 0;
   float font_size = state->gstate.font_size;
   int start = 0;
+#if CTX_ONE_FONT_ENGINE==0
   if (font->type == 0)
+#endif
   {
   start = ctx_glyph_find_ctx (font, ctx, unichar);
   if (start < 0)
@@ -525,15 +537,20 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
     { return -1; }
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
+
+#if CTX_ONE_FONT_ENGINE==0
   ctx_fonts[ctx_font_count].type = 0;
+  ctx_fonts[ctx_font_count].engine = &ctx_font_engine_ctx;
+#endif
   //ctx_fonts[ctx_font_count].name = name;
   ctx_fonts[ctx_font_count].ctx.data = (CtxEntry *) data;
   //ctx_fonts[ctx_font_count].ctx.length = length / sizeof (CtxEntry);
   ctx_font_init_ctx (&ctx_fonts[ctx_font_count]);
-  ctx_fonts[ctx_font_count].engine = &ctx_font_engine_ctx;
 
-  CtxFont *font = &ctx_fonts[ctx_font_count];
   ctx_font_count++;
+
+#if CTX_ONE_FONT_ENGINE==0
+  CtxFont *font = &ctx_fonts[ctx_font_count-1];
   if (font->engine->glyph_width (font, NULL, 'O') ==
       font->engine->glyph_width (font, NULL, 'I'))
   {
@@ -541,6 +558,7 @@ ctx_load_font_ctx (const char *name, const void *data, int length)
   }
   else
     font->monospaced = 0;
+#endif
 
   return ctx_font_count-1;
 }
@@ -673,7 +691,14 @@ _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
   // a begin-path here did not remove stray spikes in terminal
-  return font->engine->glyph (font, ctx, unichar, stroke);
+  CtxFontEngine *engine;
+#if CTX_ONE_FONT_ENGINE
+  engine  = &ctx_font_engine_ctx;
+#else
+  engine  = font->engine;
+#endif
+
+  return engine->glyph (font, ctx, unichar, stroke);
 }
 
 int
@@ -697,15 +722,26 @@ float
 ctx_glyph_width (Ctx *ctx, int unichar)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
-
-  return font->engine->glyph_width (font, ctx, unichar);
+  CtxFontEngine *engine;
+#if CTX_ONE_FONT_ENGINE
+  engine  = &ctx_font_engine_ctx;
+#else
+  engine  = font->engine;
+#endif
+  return engine->glyph_width (font, ctx, unichar);
 }
 
 static float
 ctx_glyph_kern (Ctx *ctx, int unicharA, int unicharB)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
-  return font->engine->glyph_kern (font, ctx, unicharA, unicharB);
+  CtxFontEngine *engine;
+#if CTX_ONE_FONT_ENGINE
+  engine  = &ctx_font_engine_ctx;
+#else
+  engine  = font->engine;
+#endif
+  return engine->glyph_kern (font, ctx, unicharA, unicharB);
 }
 
 float
@@ -759,7 +795,7 @@ static inline int
 _ctx_text_substitute_ligatures (Ctx *ctx, CtxFont *font,
                                 uint32_t *unichar, uint32_t next_unichar)
 {
-  if (font->monospaced)
+  if (ctx_font_is_monospaced (font))
     return 0;
   if (*unichar == 'f')
     switch (next_unichar)
@@ -1010,6 +1046,9 @@ ctx_stroke_text (Ctx *ctx, const char *string,
 
 static const char *ctx_font_get_name (CtxFont *font)
 {
+#if CTX_ONE_FONT_ENGINE
+    return (char*)(font->ctx.data+2);
+#else
   switch (font->type)
   {
     case 0:  return (char*)(font->ctx.data+2);
@@ -1019,6 +1058,7 @@ static const char *ctx_font_get_name (CtxFont *font)
 #endif
   }
   return "-";
+#endif
 }
 
 

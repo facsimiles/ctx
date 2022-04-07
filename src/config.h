@@ -417,6 +417,11 @@
 #endif
 #endif
 
+#ifndef CTX_ONE_FONT_ENGINE
+#define CTX_ONE_FONT_ENGINE 0
+#endif
+
+
 #ifndef CTX_FONT_ENGINE_CTX_FS
 #define CTX_FONT_ENGINE_CTX_FS 0
 #endif
