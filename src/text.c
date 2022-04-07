@@ -1,6 +1,6 @@
 #include "ctx-split.h"
 
-static CtxFont *ctx_fonts = NULL;
+static CtxFont ctx_fonts[CTX_MAX_FONTS];// = NULL;
 static int     ctx_font_count = 0;
 
 static void ctx_font_setup (Ctx *ctx);
@@ -190,6 +190,7 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 
 #if CTX_FONT_ENGINE_CTX
 
+#if CTX_GLYPH_INDEX
 static int ctx_font_find_glyph_cached (CtxFont *font, uint32_t glyph)
 {
 #if 1
@@ -226,11 +227,14 @@ static int ctx_font_find_glyph_cached (CtxFont *font, uint32_t glyph)
   return -1;
 #endif
 }
+#endif
 
 static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
+#if CTX_GLYPH_INDEX
   int ret = ctx_font_find_glyph_cached (font, unichar);
   if (ret >= 0) return ret;
+#endif
 
   for (int i = 0; i < font->ctx.length; i++)
   {
@@ -401,18 +405,19 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   return ctx_glyph_drawlist (font, ctx, &drawlist, unichar, stroke);
 }
 
-#if 1
+#if 0
 uint32_t ctx_glyph_no (Ctx *ctx, int no)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
   if (no < 0 || no >= font->ctx.glyphs)
     { return 0; }
-  return font->ctx.index[no*2];
+  return font->ctx.index[no*2]; // needs index
 }
 #endif
 
 static void ctx_font_init_ctx (CtxFont *font)
 {
+#if CTX_GLYPH_INDEX
   int glyph_count = 0;
   for (int i = 0; i < font->ctx.length; i++)
     {
@@ -440,6 +445,7 @@ static void ctx_font_init_ctx (CtxFont *font)
           no++;
         }
     }
+#endif
 }
 
 int
@@ -1092,14 +1098,14 @@ static void ctx_font_setup (Ctx *ctx)
   }
   initialized = 1;
 
-  if (!ctx_fonts)
+  //if (!ctx_fonts)
 #ifdef EMSCRIPTEN
-    ctx_fonts = calloc (CTX_MAX_FONTS, sizeof (CtxFont));
+    //ctx_fonts = calloc (CTX_MAX_FONTS, sizeof (CtxFont));
 #else
-    ctx_fonts = ctx_calloc (CTX_MAX_FONTS, sizeof (CtxFont));
+    //ctx_fonts = ctx_calloc (CTX_MAX_FONTS, sizeof (CtxFont));
 #endif
   if (ctx)
-    ctx->fonts = ctx_fonts;
+    ctx->fonts = &ctx_fonts[0];
 
   ctx_font_count = 0; // oddly - this is needed in arduino
 

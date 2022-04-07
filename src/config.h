@@ -553,6 +553,10 @@
 #define CTX_MAX_FONTS            32
 #endif
 
+#ifndef CTX_GLYPH_INDEX
+#define CTX_GLYPH_INDEX 0
+#endif
+
 #ifndef CTX_MAX_STATES
 #define CTX_MAX_STATES           10
 #endif

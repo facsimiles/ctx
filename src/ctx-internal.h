@@ -375,19 +375,19 @@ struct _CtxFont
 {
   CtxFontEngine *engine;
   const char *name;
-  uint8_t type; // 0 ctx    1 stb    2 monobitmap
-  uint8_t monospaced;
   union
   {
     struct
     {
       CtxEntry *data;
-      int length;
+      uint16_t length;
       /* we've got ~110 bytes to fill to cover as
          much data as stbtt_fontinfo */
       //int16_t glyph_pos[26]; // for a..z
-      int       glyphs; // number of glyphs
+#if CTX_GLYPH_INDEX
+      uint16_t  glyphs; // number of glyphs
       uint32_t *index;
+#endif
     } ctx;
     struct
     {
@@ -403,6 +403,8 @@ struct _CtxFont
 #endif
     struct { int start; int end; int gw; int gh; const uint8_t *data;} monobitmap;
   };
+  uint8_t type; // 0 ctx    1 stb    2 monobitmap
+  uint8_t monospaced;
 };
 
 enum _CtxIteratorFlag
