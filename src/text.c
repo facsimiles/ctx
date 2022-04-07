@@ -229,12 +229,27 @@ static int ctx_font_find_glyph_cached (CtxFont *font, uint32_t glyph)
 }
 #endif
 
+static uint32_t
+ctx_glyph_find_next (CtxFont *font, Ctx *ctx, int offset)
+{
+  for (int i = offset; i < font->ctx.length; i++)
+  {
+    CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
+    if (entry->code == CTX_DEFINE_GLYPH)
+    {
+      return entry->data.u32[0];
+    }
+  }
+  return 0;
+}
+
 static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
 #if CTX_GLYPH_INDEX
   int ret = ctx_font_find_glyph_cached (font, unichar);
   if (ret >= 0) return ret;
 #endif
+#if 0
 
   for (int i = 0; i < font->ctx.length; i++)
   {
@@ -248,6 +263,31 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
        //   
     }
   }
+#else
+  int start = 0;
+  int end = font->ctx.length;
+  int max_iter = 10;
+
+  do {
+    int middle = (start + end) / 2;
+    uint32_t middle_glyph = ctx_glyph_find_next (font, ctx, middle);
+
+    if (unichar  == middle_glyph)
+    {
+       return middle;
+    }
+    else if (unichar < middle_glyph)
+    {
+       end = middle;
+    } else
+    {
+       start = middle;
+    }
+
+    if (start == end)
+      return -1;
+  } while (max_iter -- > 0);
+#endif
   return -1;
 }
 

@@ -401,7 +401,9 @@ struct _CtxFont
       uint32_t cache_unichar;
     } stb;
 #endif
+#if 0
     struct { int start; int end; int gw; int gh; const uint8_t *data;} monobitmap;
+#endif
   };
   uint8_t type; // 0 ctx    1 stb    2 monobitmap
   uint8_t monospaced;
