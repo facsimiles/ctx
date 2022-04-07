@@ -196,6 +196,8 @@ char* string =
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }
 
+  ctx_drawlist_add_data (&output_font, name, strlen(name));
+
   real_add_glyphs (ctx);
 
   for (unsigned int i = 0; i < n_glyphs; i++)
