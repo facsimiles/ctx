@@ -32,8 +32,9 @@ CtxDrawlist output_font={NULL,};
 uint32_t glyphs[65536];
 unsigned int n_glyphs = 0;
 
+
 void
-add_glyph (Ctx *ctx, uint32_t glyph)
+add_glyph_real (Ctx *ctx, uint32_t glyph)
 {
   for (unsigned int i = 0; i < n_glyphs; i++)
   {
@@ -61,6 +62,36 @@ add_glyph (Ctx *ctx, uint32_t glyph)
     args[1] = entry->data.u32[1];
     ctx_drawlist_add_u32 (&output_font, entry->code, &args[0]);
   }
+}
+
+uint32_t incoming_glyphs[65536];
+unsigned int n_incoming_glyphs = 0;
+
+void
+add_glyph (Ctx *ctx, uint32_t glyph)
+{
+  for (unsigned int i = 0; i < n_incoming_glyphs; i++)
+  {
+    if (incoming_glyphs[i] == glyph)
+      return;
+  }
+  incoming_glyphs[n_incoming_glyphs++] = glyph;
+}
+
+int compare_glyphs (const void*a, const void *b)
+{
+  uint32_t au = ((uint32_t*)a)[0];
+  uint32_t bu = ((uint32_t*)b)[0];
+  return au - bu;
+}
+
+void
+real_add_glyphs (Ctx *ctx)
+{
+  qsort (incoming_glyphs, n_incoming_glyphs, sizeof (uint32_t),
+         compare_glyphs);
+  for (unsigned int i = 0; i < n_incoming_glyphs; i++)
+    add_glyph_real (ctx, incoming_glyphs[i]);
 }
 
 static int find_glyph (CtxDrawlist *drawlist, uint32_t unichar)
@@ -164,6 +195,8 @@ char* string =
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1))
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }
+
+  real_add_glyphs (ctx);
 
   for (unsigned int i = 0; i < n_glyphs; i++)
     for (unsigned int j = 0; j < n_glyphs; j++)
@@ -301,7 +334,6 @@ char* string =
     printf ("\n");
   }
   printf ("};\n");
-  printf ("#define CTX_FONT_%s 1\n", name);
   printf ("#define ctx_font_%s_name \"%s\"\n", name, font_name);
   printf ("#endif\n");
   }

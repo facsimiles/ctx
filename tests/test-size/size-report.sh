@@ -1,7 +1,7 @@
 #!/bin/sh
 
-ASCII_FONT=`ls -l ../../fonts/ctxf/ascii.ctxf|cut -f 5 -d ' '`
-REGULAR_FONT=`ls -l ../../fonts/ctxf/regular.ctxf|cut -f 5 -d ' '`
+ASCII_FONT=`ls -l ../../fonts/ctx-font-ascii.ctxf|cut -f 5 -d ' '`
+REGULAR_FONT=`ls -l ../../fonts/Roboto-Regular.ctxf|cut -f 5 -d ' '`
 BASELINE=`ls -l ../test-size/musl-static-baseline|cut -f 5 -d ' '`
 TINY=`ls -l ../test-size/musl-static-tiny|cut -f 5 -d ' '`
 SMALL=`ls -l ../test-size/musl-static-small|cut -f 5 -d ' '`

@@ -70,9 +70,9 @@ build.conf:
 demos/c/%: demos/c/%.c build.conf Makefile build.conf media-handlers/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
-fonts/Carlito-Regular.h: tools/ctx-fontgen
-	make -C fonts
-FONT_STAMP=fonts/Carlito-Regular.h
+fonts/ctx-font-ascii.h: tools/ctx-fontgen
+	make -C fonts ctx-font-ascii.h
+FONT_STAMP=fonts/ctx-font-ascii.h
 
 
 test: ctx

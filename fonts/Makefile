@@ -1,4 +1,5 @@
 all: ctx-font-ascii.h \
+ctx-font-mono.h \
 Arimo-Bold.h \
 Arimo-BoldItalic.h \
 Arimo-Italic.h \
@@ -32,14 +33,24 @@ CTX_FONTGEN=../tools/ctx-fontgen
 TTF_TO_ID=sed -e s/-/_/g -e s/\.ttf// -e 's:.*/::'
 
 clean:
-	rm -f *.h 
+	rm -f *.h  *.ctxf
 
-ctxf/ascii.ctxf: Makefile
-	$(CTX_FONTGEN) /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii binary > $@
-ctxf/regular.ctxf: Makefile
-	$(CTX_FONTGEN) /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii-extras binary > $@
+%.ctxf: /usr/share/fonts/truetype/croscore/%.ttf Makefile
+	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras binary > $@
+%.ctxf: /usr/share/fonts/truetype/crosextra/%.ttf Makefile
+	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras binary > $@
+%.ctxf: ttf/%.ttf Makefile
+	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras binary > $@
+
+ctx-font-ascii.ctxf: Makefile
+	$(CTX_FONTGEN) ttf/Roboto-Regular.ttf ascii ascii binary > $@
 ctx-font-ascii.h: Makefile
-	$(CTX_FONTGEN) /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf ascii ascii > $@
+	$(CTX_FONTGEN) ttf/Roboto-Regular.ttf ascii ascii > $@
+
+ctx-font-mono.ctxf: Makefile
+	$(CTX_FONTGEN) ttf/Cousine-Regular.ttf mono ascii binary > $@
+ctx-font-mono.h: Makefile
+	$(CTX_FONTGEN) ttf/Cousine-Regular.ttf mono ascii > $@
 
 %.h: ttf/%.ttf  Makefile $(CTX_FONTGEN)
 	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras > $@
@@ -50,5 +61,4 @@ ctx-font-ascii.h: Makefile
 
 %.h: /usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/%.ttf  Makefile $(CTX_FONTGEN)
 	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras > $@
-
 
