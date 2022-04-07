@@ -554,7 +554,7 @@
 #endif
 
 #ifndef CTX_GLYPH_INDEX
-#define CTX_GLYPH_INDEX 0
+#define CTX_GLYPH_INDEX          0
 #endif
 
 #ifndef CTX_MAX_STATES

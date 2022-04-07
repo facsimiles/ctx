@@ -23,26 +23,32 @@ Roboto-Regular.h \
 Roboto-Bold.h \
 Roboto-Thin.h \
 Roboto-Italic.h \
-Roboto-BoldItalic.h
+Roboto-BoldItalic.h 
 
+
+
+CTX_FONTGEN=../tools/ctx-fontgen
+
+TTF_TO_ID=sed -e s/-/_/g -e s/\.ttf// -e 's:.*/::'
 
 clean:
 	rm -f *.h 
 
 ctxf/ascii.ctxf: Makefile
-	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii binary > $@
+	$(CTX_FONTGEN) /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii binary > $@
+ctxf/regular.ctxf: Makefile
+	$(CTX_FONTGEN) /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii-extras binary > $@
 ctx-font-ascii.h: Makefile
-	../tools/ctx-fontgen /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf regular ascii > $@
+	$(CTX_FONTGEN) /usr/share/fonts/truetype/croscore/Arimo-Regular.ttf ascii ascii > $@
 
+%.h: ttf/%.ttf  Makefile $(CTX_FONTGEN)
+	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras > $@
+%.h: /usr/share/fonts/truetype/croscore/%.ttf  Makefile $(CTX_FONTGEN)
+	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras > $@
+%.h: /usr/share/fonts/truetype/crosextra/%.ttf  Makefile $(CTX_FONTGEN)
+	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras > $@
 
-%.h: ttf/%.ttf  Makefile ../tools/ctx-fontgen
-	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
-%.h: /usr/share/fonts/truetype/croscore/%.ttf  Makefile ../tools/ctx-fontgen
-	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
-%.h: /usr/share/fonts/truetype/crosextra/%.ttf  Makefile ../tools/ctx-fontgen
-	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
-
-%.h: /usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/%.ttf  Makefile ../tools/ctx-fontgen
-	../tools/ctx-fontgen $< `echo $<|sed s/-/_/g|sed s/\.ttf// | sed 's:.*/::'`  ascii-extras > $@
+%.h: /usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/%.ttf  Makefile $(CTX_FONTGEN)
+	$(CTX_FONTGEN) $< `echo $<|$(TTF_TO_ID)` ascii-extras > $@
 
 

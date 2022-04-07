@@ -6,6 +6,8 @@
 #include "../test-size/tiny-config.h"
 #undef CTX_PARSER
 #define CTX_PARSER          1
+#define CTX_EVENTS 1
+#define CTX_TERMINAL_EVENTS 0
 #define CTX_IMPLEMENTATION
 
 #include "ctx.h"

@@ -371,6 +371,7 @@ struct _CtxFontEngine
   float (*glyph_kern)  (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB);
 };
 
+#pragma pack(push,1)
 struct _CtxFont
 {
   CtxFontEngine *engine;
@@ -405,9 +406,10 @@ struct _CtxFont
     struct { int start; int end; int gw; int gh; const uint8_t *data;} monobitmap;
 #endif
   };
-  uint8_t type; // 0 ctx    1 stb    2 monobitmap
-  uint8_t monospaced;
+  uint8_t type:3; // 0 ctx    1 stb    2 monobitmap
+  uint8_t monospaced:1;
 };
+#pragma pack(pop)
 
 enum _CtxIteratorFlag
 {

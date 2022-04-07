@@ -15,9 +15,9 @@ text: text.c ../../*.h ../../fonts/*.h Makefile
 	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts -march=native --cflags --libs` 
 
 ../../fonts/ctxf/ascii.ctxf:
-	make -C ../.. fonts/ctxf/ascii.ctxf
+	make -C ../../fonts ctxf/ascii.ctxf
 ../../fonts/ctxf/regular.ctxf:
-	make -C ../.. fonts/ctxf/regular.ctxf
+	make -C ../../fonts ctxf/regular.ctxf
 
 %: %.c ../../*.h ../../fonts/*.h Makefile tiny-config.h
 	$(CC) $(SMALL_CFLAGS)  $< -o $@ -I../../ -I../../fonts -march=native
@@ -32,5 +32,5 @@ perf-circ: perf-circ.c ../../*.h ../../fonts/*.h Makefile
 perf-circ-nosimd: perf-circ-nosimd.c ../../*.h ../../fonts/*.h Makefile
 	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts `pkg-config cairo --cflags --libs` -lm
 
-ctx-info-32bit: ctx-info.c ../../ctx.h tiny-config.h
-	i686-linux-gnu-gcc $< -o $@ -lm -I../.. -I../../fonts -Wall -lm -I../../deps
+ctx-info-32bit: ctx-info.c ../../ctx.h tiny-config.h Makefile
+	i686-linux-gnu-gcc $< -o $@ -g -lm -I../.. -I../../fonts -Wall -lm -I../../deps
