@@ -148,6 +148,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_SET_KEY:              return "setParam"; break;
           case CTX_COLOR:                return "setColor"; break;
           case CTX_DEFINE_GLYPH:         return "defineGlyph"; break;
+          case CTX_DEFINE_FONT:          return "defineFont"; break;
           case CTX_KERNING_PAIR:         return "kerningPair"; break;
           case CTX_SET_PIXEL:            return "setPixel"; break;
           case CTX_GLOBAL_ALPHA:         return "globalAlpha"; break;
@@ -871,6 +872,11 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_DATA_REV:
       case CTX_END_FRAME:
         break;
+
+      case CTX_DEFINE_FONT:
+        // XXX: todo
+        break;
+
       case CTX_KERNING_PAIR:
         _ctx_print_name (formatter, entry->code);
         ctx_formatter_addstr (formatter, "\"", 1);

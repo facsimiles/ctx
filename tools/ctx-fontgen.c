@@ -91,7 +91,8 @@ real_add_glyphs (Ctx *ctx)
   qsort (incoming_glyphs, n_incoming_glyphs, sizeof (uint32_t),
          compare_glyphs);
   for (unsigned int i = 0; i < n_incoming_glyphs; i++)
-    add_glyph_real (ctx, incoming_glyphs[i]);
+    if (incoming_glyphs[i])
+      add_glyph_real (ctx, incoming_glyphs[i]);
 }
 
 static int find_glyph (CtxDrawlist *drawlist, uint32_t unichar)
@@ -196,7 +197,15 @@ char* string =
     add_glyph (ctx, ctx_utf8_to_unichar (utf8));
   }
 
-  ctx_drawlist_add_data (&output_font, name, strlen(name));
+  {
+    CtxEntry entry;
+    entry.code = CTX_DEFINE_FONT;
+    entry.data.u8[0] = CTX_SUBDIV;
+    entry.data.u8[1] = CTX_BAKE_FONT_SIZE;
+    entry.data.u32[1] = 23; // length
+    ctx_drawlist_add_single (&output_font, &entry);
+  }
+  ctx_drawlist_add_data (&output_font, font_name, strlen(font_name));
 
   real_add_glyphs (ctx);
 
@@ -222,6 +231,9 @@ char* string =
     }
 
   ctx_destroy (ctx);
+
+
+  output_font.entries[0].data.u32[1] = output_font.count;
 
   if (!binary)
   {
@@ -270,7 +282,6 @@ char* string =
 " See the License for the specific language governing permissions and\n"
 " limitations under the License.\n"
 " */\n");
-  printf ("/* CTX_SUBDIV:%i  CTX_BAKE_FONT_SIZE:%i */\n", CTX_SUBDIV, CTX_BAKE_FONT_SIZE);
 
   printf ("/* glyphs covered: \n\n");
   int col = 0;
@@ -296,6 +307,7 @@ char* string =
          printf ("\n  ");
        }
     }
+
   }
 
   printf ("  */\n");
@@ -329,6 +341,17 @@ char* string =
          default:
            printf ("/*        %s        x-advance: %f */", buf, entry->data.u32[1]/256.0);
        }
+    }
+    else if (entry->code == 15)
+    {
+      printf ("/* length:%i CTX_SUBDIV:%i CTX_BAKE_FONT_SIZE:%i */",
+              entry->data.u32[1],
+              entry->data.u8[0],
+              entry->data.u8[1]);
+    }
+    else if (entry->code == '(')
+    {
+      printf ("/* %s */", (char*)(entry+1));
     }
     else
     {

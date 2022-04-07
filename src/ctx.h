@@ -1496,6 +1496,8 @@ typedef enum
                    //     >    UNUSED
                    //     ?    UNUSED
 
+  CTX_DEFINE_FONT      = 15,
+
   CTX_DEFINE_GLYPH     = '@', // unichar width - u32
   CTX_ARC_TO           = 'A', // x1 y1 x2 y2 radius
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction

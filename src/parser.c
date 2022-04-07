@@ -261,6 +261,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_STROKE:
       case CTX_FILL:
       case CTX_PAINT:
+      case CTX_DEFINE_FONT:
       case CTX_NEW_PAGE:
       case CTX_CLIP:
       case CTX_EXIT:
@@ -531,6 +532,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_drgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
 #endif
+          case CTX_defineFont:
+            return ctx_parser_set_command (parser, CTX_DEFINE_FONT);
           case CTX_defineGlyph:
             return ctx_parser_set_command (parser, CTX_DEFINE_GLYPH);
           case CTX_kerningPair:
@@ -939,6 +942,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         parser->command = CTX_DEFINE_TEXTURE;
         break;
 
+      case CTX_DEFINE_FONT:
+        // XXX: todo
+        break;
 
       case CTX_DEFINE_GLYPH:
         /* XXX : reuse n_args logic - to enforce order */

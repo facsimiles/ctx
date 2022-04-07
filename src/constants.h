@@ -7,6 +7,7 @@
 #define CTX_wrapRight TOKENHASH(2519274407)
 #define CTX_lineHeight TOKENHASH(2180215986)
 #define CTX_line_height TOKENHASH(2825006065)
+#define CTX_defineFont TOKENHASH(2930064664)
 
 #define CTX_start_frame TOKENHASH(2941171367)
 #define CTX_end_frame TOKENHASH(2292627705)

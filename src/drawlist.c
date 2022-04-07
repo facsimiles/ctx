@@ -283,6 +283,7 @@ again:
         case CTX_SAVE:
         case CTX_CLIP:
         case CTX_PRESERVE:
+        case CTX_DEFINE_FONT:
         case CTX_DEFINE_GLYPH:
         case CTX_IDENTITY:
         case CTX_FONT_SIZE:
