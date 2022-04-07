@@ -70,8 +70,25 @@ build.conf:
 demos/c/%: demos/c/%.c build.conf Makefile build.conf media-handlers/itk.h libctx.a
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
-fonts/ctx-font-ascii.h: tools/ctx-fontgen
-	make -C fonts ctx-font-ascii.h
+fonts/ctx-font-ascii.h: tools/ctx-fontgen Makefile
+	make -C fonts ctx-font-ascii.h \
+		Roboto-Regular.h \
+		Arimo-Regular.h \
+		Arimo-Italic.h \
+		Arimo-BoldItalic.h \
+		Arimo-Bold.h \
+		Carlito-Regular.h \
+		Carlito-Italic.h \
+		Carlito-BoldItalic.h \
+		Carlito-Bold.h \
+		Cousine-Regular.h \
+		Cousine-Italic.h \
+		Cousine-BoldItalic.h \
+		Cousine-Bold.h \
+		Tinos-Regular.h \
+		Tinos-Italic.h \
+		Tinos-BoldItalic.h \
+		Tinos-Bold.h
 FONT_STAMP=fonts/ctx-font-ascii.h
 
 
