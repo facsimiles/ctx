@@ -205,7 +205,38 @@ char* string =
     entry.data.u32[1] = 23; // length
     ctx_drawlist_add_single (&output_font, &entry);
   }
-  ctx_drawlist_add_data (&output_font, font_name, strlen(font_name));
+
+  ctx_drawlist_add_data (&output_font, font_name, strlen(font_name)+1);
+
+  const char *license = NULL;
+
+  if (strstr (argv[1], "Roboto-"))
+  {
+    license = "Apache Licence, Version 2.0\nCopyright 2014 Christian Robertson - Apache 2";
+  }
+
+  if (strstr (argv[1], "Carlito-"))
+  {
+    license = "Apache License, Version 2.0\nCopyright 2013 Łukasz Dziedzic";
+  }
+
+  if (strstr (argv[1], "Arimo-") ||
+      strstr (argv[1], "Tinos-") ||
+      strstr (argv[1], "Cousine-"))
+  {
+    license = "Apache License, Version 2.0\nCopyright 2013 Steve Matteson";
+  }
+
+  if (strstr (argv[1], "Caladea-"))
+  {
+    license = "Apache License, Verison 2.0\nCopyright 2014 Carolina Giovagnoli and Andres Torresi";
+  }
+
+
+  if (license)
+  ctx_drawlist_add_data (&output_font, license, strlen(license)+1);
+
+
 
   real_add_glyphs (ctx);
 
@@ -238,52 +269,7 @@ char* string =
   if (!binary)
   {
   printf ("#ifndef CTX_FONT_%s\n", name);
-  printf ("/* this is a ctx encoded font based on %s */\n", basename (argv[1]));
-
-  int apache = 0;
-
-  if (strstr (argv[1], "Roboto-"))
-  {
-    apache = 1;
-    printf ("/* Copyright 2014 Christian Robertson\n");
-  }
-
-  if (strstr (argv[1], "Carlito-"))
-  {
-    apache = 1;
-    printf ("/* Copyright 2013 Łukasz Dziedzic \n");
-  }
-
-  if (strstr (argv[1], "Arimo-") ||
-      strstr (argv[1], "Tinos-") ||
-      strstr (argv[1], "Cousine-"))
-  {
-    apache = 1;
-    printf ("/* Copyright 2013 Steve Matteson \n");
-  }
-
-  if (strstr (argv[1], "Caladea-"))
-  {
-    apache = 1;
-    printf ("/* Copyright 2014 Carolina Giovagnoli and Andres Torresi \n");
-  }
-
-  if (apache) printf (
-" \n"
-" Licensed under the Apache License, Version 2.0 (the \"License\");\n"
-" you may not use this file except in compliance with the License.\n"
-" You may obtain a copy of the License at\n"
-" \n"
-" http://www.apache.org/licenses/LICENSE-2.0\n"
-" \n"
-" Unless required by applicable law or agreed to in writing, software\n"
-" distributed under the License is distributed on an \"AS IS\" BASIS,\n"
-" WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n"
-" See the License for the specific language governing permissions and\n"
-" limitations under the License.\n"
-" */\n");
-
-  printf ("/* glyphs covered: \n\n");
+  printf ("/* glyph index: \n");
   int col = 0;
   for (unsigned int i = 0; i < output_font.count; i++)
   {
@@ -351,7 +337,16 @@ char* string =
     }
     else if (entry->code == '(')
     {
-      printf ("/* %s */", (char*)(entry+1));
+      char *str = (char*)(entry+1);
+      printf ("/*");
+      for (int i = 0; str[i]; i++)
+      {
+        if (str[i] == '\n')
+                printf ("\n                                ");
+        else
+                printf ("%c", str[i]);
+      }
+      printf ("*/");
     }
     else
     {
