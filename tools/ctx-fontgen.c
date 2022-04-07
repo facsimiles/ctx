@@ -348,6 +348,10 @@ char* string =
       }
       printf ("*/");
     }
+    else if (entry->code == '[')
+    {
+      printf ("/*kerning*/");
+    }
     else
     {
     }

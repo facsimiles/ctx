@@ -35,6 +35,9 @@ TTF_TO_ID=sed -e s/-/_/g -e s/\.ttf// -e 's:.*/::'
 clean:
 	rm -f *.h  *.ctxf
 
+ctxf:
+	for a in *.h;do make `echo $$a|sed 's/\.h/.ctxf/'`;done
+
 ctx-font-ascii.ctxf: Makefile
 	$(CTX_FONTGEN) ttf/Roboto-Regular.ttf ascii ascii binary > $@
 ctx-font-ascii.h: Makefile
