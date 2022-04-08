@@ -114,7 +114,6 @@ int update_fb (Ctx *ctx, void *user_data)
 #endif
 #endif
 
-   int sync = 0;
    int ret = 0;
 
    if (key_queued)
@@ -126,12 +125,12 @@ int update_fb (Ctx *ctx, void *user_data)
      switch (type)
      {
        case 1:
-         ctx_key_down(ctx,keycode,NULL,0, sync);
-         ctx_key_press(ctx,keycode,NULL,0, sync);
+         ctx_key_down(ctx,keycode,NULL,0);
+         ctx_key_press(ctx,keycode,NULL,0);
          ret = 1;
          break;
        case 2:
-         ctx_key_up(ctx,keycode,NULL,0, sync);
+         ctx_key_up(ctx,keycode,NULL,0);
          ret = 1;
          break;
      }
@@ -139,15 +138,15 @@ int update_fb (Ctx *ctx, void *user_data)
 
    if (pointer_down && !pointer_was_down)
    {
-      ctx_pointer_press (ctx, pointer_x, pointer_y, 0, 0, sync);
+      ctx_pointer_press (ctx, pointer_x, pointer_y, 0, 0);
       ret = 1;
    } else if (!pointer_down && pointer_was_down)
    {
-      ctx_pointer_release (ctx, pointer_x, pointer_y, 0, 0, sync);
+      ctx_pointer_release (ctx, pointer_x, pointer_y, 0, 0);
       ret = 1;
    } else if (pointer_down)
    {
-      ctx_pointer_motion (ctx, pointer_x, pointer_y, 0, 0, sync);
+      ctx_pointer_motion (ctx, pointer_x, pointer_y, 0, 0);
       ret = 1;
    }
 

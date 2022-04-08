@@ -1320,8 +1320,7 @@ static int tap_and_hold_fire (Ctx *ctx, void *data)
 
 CTX_EXPORT int
 ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
-                  char *string,
-                  int sync)
+                  char *string)
 {
   CtxList *l;
   CtxList *hitlist = NULL;
@@ -1373,8 +1372,7 @@ ctx_pointer_drop (Ctx *ctx, float x, float y, int device_no, uint32_t time,
 }
 
 CTX_EXPORT int
-ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time,
-                   int sync)
+ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
   CtxEvents *events = &ctx->events;
   CtxList *hitlist = NULL;
@@ -1483,8 +1481,7 @@ void _ctx_resized (Ctx *ctx, int width, int height, long time)
 }
 
 CTX_EXPORT int
-ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time,
-                     int sync)
+ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
   CtxEvents *events = &ctx->events;
   if (time == 0)
@@ -1586,8 +1583,7 @@ ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time,
  *  propagation.
  */
 CTX_EXPORT int
-ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time,
-                    int sync)
+ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 {
   CtxList *hitlist = NULL;
   CtxList *grablist = NULL, *g;
@@ -1692,7 +1688,7 @@ ctx_pointer_motion (Ctx *ctx, float x, float y, int device_no, uint32_t time,
 }
 
 CTX_EXPORT void
-ctx_incoming_message (Ctx *ctx, const char *message, long time, int sync)
+ctx_incoming_message (Ctx *ctx, const char *message, long time)
 {
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_MESSAGE);
   CtxEvent event = {0, };
@@ -1724,7 +1720,7 @@ ctx_incoming_message (Ctx *ctx, const char *message, long time, int sync)
 }
 
 CTX_EXPORT int
-ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time, int sync)
+ctx_scrolled (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time)
 {
   CtxList *hitlist = NULL;
   CtxList *l;
@@ -1883,8 +1879,7 @@ static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,
 
 CTX_EXPORT int
 ctx_key_press (Ctx *ctx, unsigned int keyval,
-               const char *string, uint32_t time,
-               int sync)
+               const char *string, uint32_t time)
 {
   char temp_key[128]="";
   char event_type[128]="";
@@ -1937,11 +1932,11 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
 
   if (!ctx_strcmp (event_type, "pm") ||
       !ctx_strcmp (event_type, "pd"))
-    return ctx_pointer_motion (ctx, x, y, b, 0, sync);
+    return ctx_pointer_motion (ctx, x, y, b, 0);
   else if (!ctx_strcmp (event_type, "pp"))
-    return ctx_pointer_press (ctx, x, y, b, 0, sync);
+    return ctx_pointer_press (ctx, x, y, b, 0);
   else if (!ctx_strcmp (event_type, "pr"))
-    return ctx_pointer_release (ctx, x, y, b, 0, sync);
+    return ctx_pointer_release (ctx, x, y, b, 0);
   //else if (!ctx_strcmp (event_type, "keydown"))
   //  return ctx_key_down (ctx, keyval, string + 8, time);
   //else if (!ctx_strcmp (event_type, "keyup"))
@@ -2000,8 +1995,7 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
 
 CTX_EXPORT int
 ctx_key_down (Ctx *ctx, unsigned int keyval,
-              const char *string, uint32_t time,
-              int sync)
+              const char *string, uint32_t time)
 {
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_DOWN);
   CtxEvent event = {0,};
@@ -2053,8 +2047,7 @@ ctx_key_down (Ctx *ctx, unsigned int keyval,
 
 CTX_EXPORT int
 ctx_key_up (Ctx *ctx, unsigned int keyval,
-            const char *string, uint32_t time,
-            int sync)
+            const char *string, uint32_t time)
 {
   CtxItem *item = _ctx_detect (ctx, 0, 0, CTX_KEY_UP);
   CtxEvent event = {0,};
@@ -2956,7 +2949,7 @@ static inline int event_check_pending (CtxTiled *tiled)
       {
         if (tiled->vt_active)
         {
-          ctx_key_press (tiled->backend.ctx, 0, event, 0, 1); // we deliver all events as key-press, the key_press handler disambiguates
+          ctx_key_press (tiled->backend.ctx, 0, event, 0); // we deliver all events as key-press, the key_press handler disambiguates
           events++;
         }
         ctx_free (event);

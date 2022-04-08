@@ -257,7 +257,6 @@ static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
 
 void ctx_sdl_consume_events (Ctx *ctx)
 {
-  int sync = 1;
   CtxBackend *backend = (void*)ctx->backend;
   CtxTiled    *tiled = (void*)backend;
   CtxSDL      *sdl = (void*)backend;
@@ -273,20 +272,20 @@ void ctx_sdl_consume_events (Ctx *ctx)
     {
       case SDL_MOUSEBUTTONDOWN:
         SDL_CaptureMouse (1);
-        ctx_pointer_press (ctx, event.button.x, event.button.y, event.button.button, 0, sync);
+        ctx_pointer_press (ctx, event.button.x, event.button.y, event.button.button, 0);
         break;
       case SDL_MOUSEBUTTONUP:
         SDL_CaptureMouse (0);
-        ctx_pointer_release (ctx, event.button.x, event.button.y, event.button.button, 0, sync);
+        ctx_pointer_release (ctx, event.button.x, event.button.y, event.button.button, 0);
         break;
       case SDL_MOUSEMOTION:
         //  XXX : look at mask and generate motion for each pressed
         //        button
-        ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 1, 0, sync);
+        ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 1, 0);
         break;
       case SDL_FINGERMOTION:
         ctx_pointer_motion (ctx, event.tfinger.x * tiled->width, event.tfinger.y * tiled->height,
-            (event.tfinger.fingerId%10) + 4, 0, sync);
+            (event.tfinger.fingerId%10) + 4, 0);
         break;
       case SDL_FINGERDOWN:
         {
@@ -297,13 +296,13 @@ void ctx_sdl_consume_events (Ctx *ctx)
                         // least under wayland
         {
           ctx_pointer_press (ctx, event.tfinger.x * tiled->width, event.tfinger.y * tiled->height, 
-          (event.tfinger.fingerId%10) + 4, 0, sync);
+          (event.tfinger.fingerId%10) + 4, 0);
         }
         }
         break;
       case SDL_FINGERUP:
         ctx_pointer_release (ctx, event.tfinger.x * tiled->width, event.tfinger.y * tiled->height,
-          (event.tfinger.fingerId%10) + 4, 0, sync);
+          (event.tfinger.fingerId%10) + 4, 0);
         break;
 #if 1
       case SDL_TEXTINPUT:
@@ -333,7 +332,7 @@ void ctx_sdl_consume_events (Ctx *ctx)
                 case '\\': keycode = 220; break;
               }
             }
-            ctx_key_press (ctx, keycode, name, 0, sync);
+            ctx_key_press (ctx, keycode, name, 0);
           }
         break;
 #endif
@@ -372,7 +371,7 @@ void ctx_sdl_consume_events (Ctx *ctx)
           }
           int keycode;
           name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
-          ctx_key_down (ctx, keycode, name, 0, sync);
+          ctx_key_down (ctx, keycode, name, 0);
 
           if (strlen (name)
               &&(event.key.keysym.mod & (KMOD_CTRL) ||
@@ -399,13 +398,13 @@ void ctx_sdl_consume_events (Ctx *ctx)
               }
             if (strcmp (name, "space"))
               {
-               ctx_key_press (ctx, keycode, name, 0, sync);
+               ctx_key_press (ctx, keycode, name, 0);
               }
           }
           else
           {
 #if 0
-             ctx_key_press (ctx, 0, buf, 0, sync);
+             ctx_key_press (ctx, 0, buf, 0);
 #endif
           }
         }
@@ -436,7 +435,7 @@ void ctx_sdl_consume_events (Ctx *ctx)
 
            int keycode;
            const char *name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
-           ctx_key_up (ctx, keycode, name, 0, sync);
+           ctx_key_up (ctx, keycode, name, 0);
         }
         break;
       case SDL_QUIT:

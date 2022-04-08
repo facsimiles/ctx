@@ -1277,18 +1277,18 @@ void  ctx_events_clear_items (Ctx *ctx);
  */
 
 int ctx_key_down  (Ctx *ctx, unsigned int keyval,
-                   const char *string, uint32_t time, int sync);
+                   const char *string, uint32_t time);
 int ctx_key_up    (Ctx *ctx, unsigned int keyval,
-                   const char *string, uint32_t time, int sync);
+                   const char *string, uint32_t time);
 int ctx_key_press (Ctx *ctx, unsigned int keyval,
-                   const char *string, uint32_t time, int sync);
-int ctx_scrolled  (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time, int sync);
-void ctx_incoming_message (Ctx *ctx, const char *message, long time, int sync);
-int ctx_pointer_motion    (Ctx *ctx, float x, float y, int device_no, uint32_t time, int sync);
-int ctx_pointer_release   (Ctx *ctx, float x, float y, int device_no, uint32_t time, int sync);
-int ctx_pointer_press     (Ctx *ctx, float x, float y, int device_no, uint32_t time, int sync);
+                   const char *string, uint32_t time);
+int ctx_scrolled  (Ctx *ctx, float x, float y, CtxScrollDirection scroll_direction, uint32_t time);
+void ctx_incoming_message (Ctx *ctx, const char *message, long time);
+int ctx_pointer_motion    (Ctx *ctx, float x, float y, int device_no, uint32_t time);
+int ctx_pointer_release   (Ctx *ctx, float x, float y, int device_no, uint32_t time);
+int ctx_pointer_press     (Ctx *ctx, float x, float y, int device_no, uint32_t time);
 int ctx_pointer_drop      (Ctx *ctx, float x, float y, int device_no, uint32_t time,
-                           char *string, int sync);
+                           char *string);
 
 
 

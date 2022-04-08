@@ -163,7 +163,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
             sprintf (&combined[strlen(combined)], key->sequence_fn);
           else
             sprintf (&combined[strlen(combined)], key->sequence);
-          ctx_key_press (event->ctx, 0, combined, 0, 1);
+          ctx_key_press (event->ctx, 0, combined, 0);
         }
         else
         {
@@ -181,7 +181,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
           {
             sequence = key->sequence_shifted;
           }
-          ctx_key_press (event->ctx, 0, sequence, 0, 1);
+          ctx_key_press (event->ctx, 0, sequence, 0);
         }
       }
       break;
