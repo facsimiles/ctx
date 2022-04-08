@@ -205,47 +205,6 @@ static inline int ctx_font_get_length (CtxFont *font)
 
 #if CTX_FONT_ENGINE_CTX
 
-
-#if CTX_GLYPH_INDEX
-static int ctx_font_find_glyph_cached (CtxFont *font, uint32_t glyph)
-{
-#if 1
-  int min       = 0;
-  int max       = font->ctx.glyphs-1;
-  uint32_t found;
-
-  do {
-    int pos = (min + max)/2;
-    found = font->ctx.index[pos*2];
-    if (found == glyph)
-    {
-      return font->ctx.index[pos*2+1];
-    } else if (min == max)
-      return -1;
-    else if (min == max-1)
-      return -1;
-    else if (found < glyph)
-    {
-      min = pos;
-    } else {
-      max = pos;
-    }
-
-  } while (min != max);
-
-  return -1;
-#else
-  for (int i = 0; i < font->ctx.glyphs; i++)
-    {
-      if (font->ctx.index[i * 2] == glyph)
-        { return font->ctx.index[i * 2 + 1]; }
-    }
-  return -1;
-#endif
-}
-#endif
-
-
 static uint32_t
 ctx_glyph_find_next (CtxFont *font, Ctx *ctx, int offset)
 {
@@ -263,9 +222,15 @@ ctx_glyph_find_next (CtxFont *font, Ctx *ctx, int offset)
 
 static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
-#if CTX_GLYPH_INDEX
-  int ret = ctx_font_find_glyph_cached (font, unichar);
-  if (ret >= 0) return ret;
+#if CTX_GLYPH_CACHE
+  uint32_t hash = ((((size_t)(font) * 17) ^ unichar) * 17) %
+            (CTX_GLYPH_CACHE_SIZE);
+  if (ctx)
+  {
+    if (ctx->glyph_index_cache[hash].font == font &&
+        ctx->glyph_index_cache[hash].unichar == unichar)
+          return ctx->glyph_index_cache[hash].offset;
+  }
 #endif
 #if 0
 
@@ -275,6 +240,14 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
     if (entry->code == CTX_DEFINE_GLYPH &&
         entry->data.u32[0] == unichar)
     {
+#if CTX_GLYPH_CACHE
+       if (ctx)
+       {
+         ctx->glyph_index_cache[hash].font    = font;
+         ctx->glyph_index_cache[hash].unichar = unichar;
+         ctx->glyph_index_cache[hash].offset  = i;
+       }
+#endif
        return i;
        // XXX this could be prone to insertion of valid header
        // data in included bitmaps.. is that an issue?
@@ -292,6 +265,14 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 
     if (unichar  == middle_glyph)
     {
+#if CTX_GLYPH_CACHE
+       if (ctx)
+       {
+         ctx->glyph_index_cache[hash].font    = font;
+         ctx->glyph_index_cache[hash].unichar = unichar;
+         ctx->glyph_index_cache[hash].offset  = middle;
+       }
+#endif
        return middle;
     }
     else if (unichar < middle_glyph)
@@ -336,7 +317,6 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
     }
   return 0.0;
 }
-
 
 static float
 ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
@@ -480,35 +460,6 @@ uint32_t ctx_glyph_no (Ctx *ctx, int no)
 
 static void ctx_font_init_ctx (CtxFont *font)
 {
-#if CTX_GLYPH_INDEX
-  int glyph_count = 0;
-  for (int i = 0; i < font->ctx.length; i++)
-    {
-      CtxEntry *entry = &font->ctx.data[i];
-      if (entry->code == CTX_DEFINE_GLYPH)
-        { glyph_count ++; }
-    }
-  font->ctx.glyphs = glyph_count;
-#if CTX_DRAWLIST_STATIC
-  static uint32_t idx[512]; // one might have to adjust this for
-  // larger fonts XXX
-  // should probably be made a #define
-  font->ctx.index = &idx[0];
-#else
-  font->ctx.index = (uint32_t *) ctx_malloc (sizeof (uint32_t) * 2 * glyph_count);
-#endif
-  int no = 0;
-  for (int i = 0; i < font->ctx.length; i++)
-    {
-      CtxEntry *entry = &font->ctx.data[i];
-      if (entry->code == CTX_DEFINE_GLYPH)
-        {
-          font->ctx.index[no*2]   = entry->data.u32[0];
-          font->ctx.index[no*2+1] = i;
-          no++;
-        }
-    }
-#endif
 }
 
 int
@@ -518,6 +469,7 @@ int
 ctx_load_font_ctx_file (const char *name, const char *path);
 #endif
 
+#if CTX_ONE_FONT_ENGINE==0
 static CtxFontEngine ctx_font_engine_ctx =
 {
 #if CTX_FONTS_FROM_FILE
@@ -528,6 +480,7 @@ static CtxFontEngine ctx_font_engine_ctx =
   ctx_glyph_width_ctx,
   ctx_glyph_kern_ctx,
 };
+#endif
 
 int
 ctx_load_font_ctx (const char *name, const void *data, int length)

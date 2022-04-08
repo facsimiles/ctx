@@ -557,8 +557,12 @@
 #define CTX_MAX_FONTS            32
 #endif
 
-#ifndef CTX_GLYPH_INDEX
-#define CTX_GLYPH_INDEX          0
+#ifndef CTX_GLYPH_CACHE
+#define CTX_GLYPH_CACHE 1
+#endif
+
+#ifndef CTX_GLYPH_CACHE_SIZE
+#define CTX_GLYPH_CACHE_SIZE  128
 #endif
 
 #ifndef CTX_MAX_STATES

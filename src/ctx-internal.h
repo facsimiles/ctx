@@ -371,6 +371,7 @@ struct _CtxFontEngine
   float (*glyph_kern)  (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB);
 };
 
+
 #pragma pack(push,1)
 struct _CtxFont
 {
@@ -386,10 +387,6 @@ struct _CtxFont
       /* we've got ~110 bytes to fill to cover as
          much data as stbtt_fontinfo */
       //int16_t glyph_pos[26]; // for a..z
-#if CTX_GLYPH_INDEX
-      uint16_t  glyphs; // number of glyphs
-      uint32_t *index;
-#endif
     } ctx;
 #if CTX_FONT_ENGINE_CTX_FS
     struct
@@ -526,6 +523,15 @@ typedef struct _CtxEidInfo
   int   height;
 } CtxEidInfo;
 
+
+struct _CtxGlyphEntry
+{
+  uint32_t  unichar;
+  uint16_t  offset;
+  CtxFont  *font;
+};
+typedef struct _CtxGlyphEntry CtxGlyphEntry;
+
 struct _Ctx
 {
   CtxBackend       *backend;
@@ -552,6 +558,9 @@ struct _Ctx
 #if CTX_CURRENT_PATH
   CtxDrawlist       current_path; // possibly transformed coordinates !
   CtxIterator       current_path_iterator;
+#endif
+#if CTX_GLYPH_CACHE
+  CtxGlyphEntry     glyph_index_cache[CTX_GLYPH_CACHE_SIZE];
 #endif
   CtxFont *fonts; // a copy to keep it alive with mp's
                   // garbage collector, the fonts themselves
