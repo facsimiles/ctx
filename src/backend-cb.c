@@ -597,7 +597,7 @@ ctx_cb_end_frame (Ctx *ctx)
                     int x1 = x0 +  tile_width-1;
                     int y1 = y0 +  tile_height-1;
 
-#if 0
+#if 1
              int max_tiles = (cb_backend->memory_budget / tile_dim);
                     int cont = 1;
                     /* merge horizontal adjecant dirty tiles */
