@@ -803,6 +803,10 @@ void ctx_restore (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_RESTORE);
 }
+void ctx_new_page (Ctx *ctx)
+{
+  CTX_PROCESS_VOID (CTX_NEW_PAGE);
+}
 
 void ctx_start_group (Ctx *ctx)
 {

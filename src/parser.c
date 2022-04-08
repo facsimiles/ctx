@@ -1130,6 +1130,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_SCALE:
         ctx_scale (ctx, arg(0), arg(1) );
         break;
+      case CTX_NEW_PAGE:
+        ctx_new_page (ctx);
+        break;
       case CTX_QUAD_TO:
         parser->pcx = arg(0);
         parser->pcy = arg(1);

@@ -471,6 +471,8 @@ void ctx_view_box         (Ctx *ctx,
                            float x0, float y0,
                            float w, float h);
 
+void ctx_new_page         (Ctx *ctx);
+
 /**
  * ctx_set_pixel_u8:
  *
