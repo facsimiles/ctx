@@ -891,6 +891,8 @@ typedef struct _CtxCtx CtxCtx;
 struct _CtxCtx
 {
    CtxBackend backend;
+   int  width;
+   int  height;
    int  cols;
    int  rows;
    int  was_down;

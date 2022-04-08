@@ -335,6 +335,18 @@ void ctx_set_size (Ctx *ctx, int width, int height)
   {
     ctx->width = width;
     ctx->height = height;
+    switch (ctx_backend_type (ctx))
+    {
+      case CTX_BACKEND_CTX:
+      case CTX_BACKEND_TERM:
+      case CTX_BACKEND_TERMIMG:
+        {CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
+         ctxctx->width = width;
+         ctxctx->height = height;
+        }
+        break;
+      default: break;
+    }
 #if CTX_EVENTS
     _ctx_resized (ctx, width, height, 0);
 #endif

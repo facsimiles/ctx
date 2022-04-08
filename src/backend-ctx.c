@@ -501,15 +501,15 @@ Ctx *ctx_new_ctx (int width, int height)
   {
     ctxctx->cols = ctx_terminal_cols ();
     ctxctx->rows = ctx_terminal_rows ();
-    width  = ctx->width  = ctx_terminal_width ();
-    height = ctx->height = ctx_terminal_height ();
+    width  = ctx->width  = ctxctx->width = ctx_terminal_width ();
+    height = ctx->height = ctxctx->width = ctx_terminal_height ();
     font_size = height / ctxctx->rows;
     ctx_font_size (ctx, font_size);
   }
   else
   {
-    ctx->width  = width;
-    ctx->height = height;
+    ctxctx->width = ctx->width  = width;
+    ctxctx->height = ctx->height = height;
     ctxctx->cols   = width / 80;
     ctxctx->rows   = height / 24;
   }
