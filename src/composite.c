@@ -5738,19 +5738,9 @@ ctx_332_unpack (uint8_t pixel,
                 uint8_t *green,
                 uint8_t *blue)
 {
-  uint32_t b = (pixel & 3) * 85;
-  uint32_t g = (((pixel >> 2) & 7)*255)/7;
-  uint32_t r = (((pixel >> 5) & 7)*255)/7;
-
-#if 0
-  *blue  = (b > 224) * 255 + (b <= 224) * b;
-  *green = (g > 224) * 255 + (g <= 224) * g;
-  *red   = (r > 224) * 255 + (r <= 224) * r;
-#else
-  *blue  =  b;
-  *green =  g;
-  *red   =  r;
-#endif
+  *green = (((pixel >> 2) & 7)*255)/7;
+  *red   = (((pixel >> 5) & 7)*255)/7;
+  *blue  = ((((pixel & 3) << 1) | ((pixel >> 2) & 1))*255)/7;
 }
 
 static inline uint8_t
@@ -5758,13 +5748,9 @@ ctx_332_pack (uint8_t red,
               uint8_t green,
               uint8_t blue)
 {
-  red = ctx_sadd8 (red, 15);
-  green = ctx_sadd8 (green, 15);
-  blue = ctx_sadd8 (blue, 40);
-  uint8_t c  = (red >> 5) << 5;
-  c |= (green >> 5) << 2;
-  c |= (blue / 85);
-  return c;
+  return ((ctx_sadd8(red,15) >> 5) << 5)
+        |((ctx_sadd8(green,15) >> 5) << 2)
+        |(ctx_sadd8(blue,15) >> 6);
 }
 #if CTX_ENABLE_RGB332
 
@@ -7258,7 +7244,7 @@ CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
 #endif
 #if CTX_ENABLE_RGB332
   {
-    CTX_FORMAT_RGB332, 3, 8, 4, 10, 12, CTX_FORMAT_RGBA8,
+    CTX_FORMAT_RGB332, 3, 8, 4, 12, 12, CTX_FORMAT_RGBA8,
     ctx_RGB332_to_RGBA8, ctx_RGBA8_to_RGB332,
     ctx_composite_RGB332, ctx_setup_RGB332,
   },
