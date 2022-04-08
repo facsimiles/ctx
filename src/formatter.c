@@ -874,6 +874,11 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         break;
 
       case CTX_DEFINE_FONT:
+        _ctx_print_name (formatter, entry->code);
+        ctx_formatter_addstr (formatter, "\"", 1);
+        ctx_print_escaped_string (formatter, ctx_arg_string()-1 ); // XXX -1?
+        ctx_formatter_addstr (formatter, "\"", 1);
+        _ctx_print_endcmd (formatter);
         // XXX: todo
         break;
 

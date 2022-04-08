@@ -709,9 +709,21 @@ again:
       _file_get_contents (source_path, &contents, &length);
       mrg_print_xml (mrg, (char *) contents);
     }
+  else if (!strcmp (get_suffix (source_path), ".ctxf"))
+    {
+      unsigned char *contents = NULL;
+      long length;
+      _file_get_contents (source_path, &contents, &length);
+      if (contents)
+        {
+          ctx_set_drawlist (ctx, contents, length);
+        }
+    }
   else
 #endif
-    //      if (!strcmp (get_suffix (source_path), ".ctx") )
+    if (!strcmp (get_suffix (source_path), ".ctx") ||
+        !strcmp (get_suffix (source_path), ".ctxc") ||
+        0)
     {
       unsigned char *contents = NULL;
       long length;
