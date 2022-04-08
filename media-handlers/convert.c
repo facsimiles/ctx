@@ -1043,6 +1043,18 @@ again:
         stbi_write_png (dest_path, width, height, 4, pixels, stride);
       free (pixels);
     }
+  else if (!strcmp (get_suffix (dest_path), ".ctx") )
+    {
+      FILE *f = fopen (dest_path, "w");
+      ctx_render_stream (ctx, f, 1);
+      fclose (f);
+    }
+  else if (!strcmp (get_suffix (dest_path), ".ctxc") )
+    {
+      FILE *f = fopen (dest_path, "w");
+      ctx_render_stream (ctx, f, 0);
+      fclose (f);
+    }
   ctx_destroy (ctx);
   return 0;
 }
