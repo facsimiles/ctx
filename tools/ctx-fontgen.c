@@ -91,7 +91,7 @@ real_add_glyphs (Ctx *ctx)
   qsort (incoming_glyphs, n_incoming_glyphs, sizeof (uint32_t),
          compare_glyphs);
   for (unsigned int i = 0; i < n_incoming_glyphs; i++)
-    if (incoming_glyphs[i])
+    if (incoming_glyphs[i] && incoming_glyphs[i]!='\r')
       add_glyph_real (ctx, incoming_glyphs[i]);
 }
 
