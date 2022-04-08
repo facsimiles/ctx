@@ -1009,11 +1009,11 @@ ctx_stroke_text (Ctx *ctx, const char *string,
 static const char *ctx_font_get_name (CtxFont *font)
 {
 #if CTX_ONE_FONT_ENGINE
-    return (char*)(font->ctx.data+2);
+    return ((char*)(font->ctx.data+2))+1;
 #else
   switch (font->type)
   {
-    case 0:  return (char*)(font->ctx.data+2);
+    case 0:  return ((char*)(font->ctx.data+2))+1;
 #if CTX_FONT_ENGINE_STB
     case 1:  return font->stb.name;
     case 2:  return font->stb.name;

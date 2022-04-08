@@ -210,30 +210,32 @@ char* string =
     ctx_drawlist_add_single (&output_font, &entry);
   }
 
-  ctx_drawlist_add_data (&output_font, font_name, strlen(font_name)+1);
+  char temp_name[256];
+  sprintf (temp_name, " %s", font_name);
+  ctx_drawlist_add_data (&output_font, temp_name, strlen(temp_name)+1);
 
   const char *license = NULL;
 
   if (strstr (argv[1], "Roboto-"))
   {
-    license = "Apache Licence, Version 2.0\nCopyright 2014 Christian Robertson - Apache 2";
+    license = " Apache Licence, Version 2.0\nCopyright 2014 Christian Robertson - Apache 2";
   }
 
   if (strstr (argv[1], "Carlito-"))
   {
-    license = "Apache License, Version 2.0\nCopyright 2013 Łukasz Dziedzic";
+    license = " Apache License, Version 2.0\nCopyright 2013 Łukasz Dziedzic";
   }
 
   if (strstr (argv[1], "Arimo-") ||
       strstr (argv[1], "Tinos-") ||
       strstr (argv[1], "Cousine-"))
   {
-    license = "Apache License, Version 2.0\nCopyright 2013 Steve Matteson";
+    license = " Apache License, Version 2.0\nCopyright 2013 Steve Matteson";
   }
 
   if (strstr (argv[1], "Caladea-"))
   {
-    license = "Apache License, Verison 2.0\nCopyright 2014 Carolina Giovagnoli and Andres Torresi";
+    license = " Apache License, Verison 2.0\nCopyright 2014 Carolina Giovagnoli and Andres Torresi";
   }
 
 

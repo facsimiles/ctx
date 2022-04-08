@@ -876,10 +876,10 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_DEFINE_FONT:
         _ctx_print_name (formatter, entry->code);
         ctx_formatter_addstr (formatter, "\"", 1);
-        ctx_print_escaped_string (formatter, ctx_arg_string()-1 ); // XXX -1?
+        ctx_print_escaped_string (formatter, ctx_arg_string());
         ctx_formatter_addstr (formatter, "\"", 1);
         _ctx_print_endcmd (formatter);
-        // XXX: todo
+        // XXX: todo, also print license if present
         break;
 
       case CTX_KERNING_PAIR:
