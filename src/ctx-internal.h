@@ -400,8 +400,6 @@ struct _CtxFont
     {
       const char *name;
       stbtt_fontinfo ttf_info;
-      int cache_index;
-      uint32_t cache_unichar;
     } stb;
 #endif
 #if 0

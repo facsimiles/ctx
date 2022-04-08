@@ -99,17 +99,32 @@ ctx_load_font_ttf_file (const char *name, const char *path)
 #endif
 
 static int
-ctx_glyph_stb_find (CtxFont *font, uint32_t unichar)
+ctx_glyph_stb_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
-  int index = font->stb.cache_index;
-  if (font->stb.cache_unichar == unichar)
-    {
-      return index;
-    }
-  font->stb.cache_unichar = 0;
-  index = font->stb.cache_index = stbtt_FindGlyphIndex (ttf_info, unichar);
-  font->stb.cache_unichar = unichar;
+
+#if CTX_GLYPH_CACHE
+  uint32_t hash = ((((size_t)(font) * 23) ^ unichar) * 17) %
+            (CTX_GLYPH_CACHE_SIZE);
+  if (ctx)
+  {
+    if (ctx->glyph_index_cache[hash].font == font &&
+        ctx->glyph_index_cache[hash].unichar == unichar)
+          return ctx->glyph_index_cache[hash].offset;
+  }
+#endif
+
+  int index = stbtt_FindGlyphIndex (ttf_info, unichar);
+
+#if CTX_GLYPH_CACHE
+  if (ctx)
+  {
+    ctx->glyph_index_cache[hash].font    = font;
+    ctx->glyph_index_cache[hash].unichar = unichar;
+    ctx->glyph_index_cache[hash].offset  = index;
+  }
+#endif
+
   return index;
 }
 
@@ -122,7 +137,7 @@ ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
       font_size = ctx->state.gstate.font_size;
   float scale              = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   int advance, lsb;
-  int glyph = ctx_glyph_stb_find (font, unichar);
+  int glyph = ctx_glyph_stb_find (ctx, font, unichar);
 
 #if CTX_EVENTS
   if (ctx && ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0f - font_size) < 0.03f)
@@ -141,8 +156,8 @@ ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
   float font_size = ctx->state.gstate.font_size;
   float scale = stbtt_ScaleForPixelHeight (ttf_info, font_size);
-  int glyphA = ctx_glyph_stb_find (font, unicharA);
-  int glyphB = ctx_glyph_stb_find (font, unicharB);
+  int glyphA = ctx_glyph_stb_find (ctx, font, unicharA);
+  int glyphB = ctx_glyph_stb_find (ctx, font, unicharB);
   return stbtt_GetGlyphKernAdvance (ttf_info, glyphA, glyphB) * scale;
 }
 
@@ -150,7 +165,7 @@ static int
 ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
-  int glyph = ctx_glyph_stb_find (font, unichar);
+  int glyph = ctx_glyph_stb_find (ctx, font, unichar);
   if (glyph==0)
     { return -1; }
   float font_size = ctx->state.gstate.font_size;
@@ -223,7 +238,7 @@ ctx_glyph_find_next (CtxFont *font, Ctx *ctx, int offset)
 static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
 #if CTX_GLYPH_CACHE
-  uint32_t hash = ((((size_t)(font) * 17) ^ unichar) * 17) %
+  uint32_t hash = ((((size_t)(font) * 23) ^ unichar) * 17) %
             (CTX_GLYPH_CACHE_SIZE);
   if (ctx)
   {
