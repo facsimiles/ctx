@@ -691,14 +691,12 @@ _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
   // a begin-path here did not remove stray spikes in terminal
-  CtxFontEngine *engine;
 #if CTX_ONE_FONT_ENGINE
-  engine  = &ctx_font_engine_ctx;
+  return ctx_glyph_ctx (font, ctx, unichar, stroke);
 #else
-  engine  = font->engine;
+  return font->engine->glyph (font, ctx, unichar, stroke);
 #endif
 
-  return engine->glyph (font, ctx, unichar, stroke);
 }
 
 int
@@ -722,26 +720,22 @@ float
 ctx_glyph_width (Ctx *ctx, int unichar)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
-  CtxFontEngine *engine;
 #if CTX_ONE_FONT_ENGINE
-  engine  = &ctx_font_engine_ctx;
+  return ctx_glyph_width_ctx (font, ctx, unichar);
 #else
-  engine  = font->engine;
+  return font->engine->glyph_width (font, ctx, unichar);
 #endif
-  return engine->glyph_width (font, ctx, unichar);
 }
 
 static float
 ctx_glyph_kern (Ctx *ctx, int unicharA, int unicharB)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
-  CtxFontEngine *engine;
 #if CTX_ONE_FONT_ENGINE
-  engine  = &ctx_font_engine_ctx;
+  return ctx_glyph_kern_ctx (font, ctx, unicharA, unicharB);
 #else
-  engine  = font->engine;
+  return font->engine->glyph_kern (font, ctx, unicharA, unicharB);
 #endif
-  return engine->glyph_kern (font, ctx, unicharA, unicharB);
 }
 
 float
