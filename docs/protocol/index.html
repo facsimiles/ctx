@@ -256,6 +256,59 @@ global alpha.</td></tr>
         <p>Blobs are represented as strings using a85 ~~ as quotemarks.
         (optional compression makses sense to add here).</p>
 
+           <a name='binary'></a>
+        <h3>Binary variant</h3>
+
+        <p>Internally the core datastructure of ctx is a binary variant
+        of this protocol. Stored in chunks of 9 bytes of code + data,
+        the various backends consume chunks of this position independent
+        commandstream. Multiple threads do this read-only in parallel
+        for the KMS/SDL backends.
+        </p>
+
+        <p>Below is the start of one of the fonts in ctx in this binary
+        form, annotated with comments.</p>
+
+        <pre>
+#ifndef CTX_FONT_Roboto_Regular
+/* glyph index: 
+ !"#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghi
+  jklmnopqrstuvwxyz{|}~ ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔ
+  ÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŁπ“”•…€™−≈␣ﬀﬁﬂﬃﬄﬅ  */
+static const struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}
+ctx_font_Roboto_Regular[]={
+{15, 0x0000a008, 0x000012e5},/* length:4837 CTX_SUBDIV:8 CTX_BAKE_FONT_SIZE:160 */
+{'(', 0x00000008, 0x00000001},/* Roboto*/
+{32, 0x6f626f52, 0x00006f74},
+{')', 0x00000008, 0x00000001},
+{'(', 0x0000004b, 0x00000009},/* Apache Licence, Version 2.0
+                                Copyright 2014 Christian Robertson - Apache 2*/
+{32, 0x63617041, 0x4c206568},
+{'i', 0x636e6563, 0x56202c65},
+{'e', 0x6f697372, 0x2e32206e},
+{'0', 0x706f430a, 0x67697279},
+{'h', 0x30322074, 0x43203431},
+{'h', 0x74736972, 0x206e6169},
+{'R', 0x7265626f, 0x6e6f7374},
+{32, 0x7041202d, 0x65686361},
+{32, 0x00000032, 0x00000000},
+{')', 0x0000004b, 0x00000009},
+{'@', 0x00000020, 0x000021dd},/*                 x-advance: 33.863281 */
+{'@', 0x00000021, 0x00002333},/*        !        x-advance: 35.199219 */
+{'M', 0x41c08889, 0xc2c22223},
+{'l', 0xbf5ddde0, 0x428b5556},
+{'4', 0x0000ffa7, 0xfdd3fff9},
+{'6', 0x00000067, 0x02d6ff96},
+{'8', 0xd80ee800, 0xf02bf00e},
+{'8', 0x102b001c, 0x280f100f},
+{'8', 0x27f11600, 0x10d510f2},
+{'8', 0xf0d500e4, 0xd9f2f0f2},
+{'@', 0x00000022, 0x00002bbb},/*        "        x-advance: 43.730469 */
+{'M', 0x41944445, 0xc2baaaab},
+{'l', 0xc0000000, 0x41be6664},
+{'l', 0xc0ecccce, 0x00000000},
+{'4', 0xfefa0000, 0x0000004b},
+        </pre>
            </div>
       </body>
 </html>

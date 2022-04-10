@@ -41,15 +41,19 @@
       <p> The <a href='rasterizer/'>ctx rasterizer</a> is
       fast, portable and compact. With compositing directly to RGBA8, GRAYA8,
       GRAYAF, RGBAF and CMYKAF pixel formats.
-      For <a href='mcu/'>microcontrollers</a> rendering to lower bitdepth
+      For <a href='mcu/'>microcontrollers</a> using <a href='sdk/'>C</a> or <a
+              href='uctx'>microppython</a>. ctx renders to lower bitdepth
       RGB332, RGB565 variants as well as 1,2 and 4 bit per pixel grayscale is
       handled. Combined with floating point pixel encoding support and color
-      management ctx scales to meet <a href='https://gegl.org/'>GEGL</a> and <a
-      href='https://www.gimp.org.'>GIMP</a>s needs.</p>
+             management ctx scales to meet <a href='https://gegl.org/'>GEGL</a>
+             and <a href='https://www.gimp.org.'>GIMP</a>s needs.</p>
 
-      <p>Applications can be written using only the rasterzier or also using
-      higher level abstractions handling framebuffer creation, event handling
-      and multithreaded rendering.
+      <p>ctx provides abstractions for event injection and dispatch. It
+      provides hit-detection, this allows abstracting over multiple input
+      devices/buttons with a mouste+keyboard abstraction. In the event
+      method callback both absolute and local (At time of callbakc registration)
+      coordinates are provided.
+      </p>
       The same API can also be used for writing applications that run inside
       the <a href='terminal/'>ctx terminal</a>, which provides escape sequences
               that enable drawing 2D vector graphics both inline, and for
