@@ -761,9 +761,6 @@ struct _CtxRasterizer
   int        inner_x;
   int        inner_y;
 
-  float      x;
-  float      y;
-
   float      first_x;
   float      first_y;
 

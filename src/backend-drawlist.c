@@ -10,9 +10,9 @@ static void ctx_drawlist_backend_destroy (CtxBackend *backend)
   ctx_free (backend);
 }
 
+#if CTX_CURRENT_PATH
 static void ctx_update_current_path (Ctx *ctx, CtxEntry *entry)
 {
-#if CTX_CURRENT_PATH
   switch (entry->code)
     {
       case CTX_TEXT:
@@ -47,8 +47,8 @@ static void ctx_update_current_path (Ctx *ctx, CtxEntry *entry)
       default:
         break;
     }
-#endif
 }
+#endif
 
 static void
 ctx_drawlist_process (Ctx *ctx, CtxEntry *entry)
