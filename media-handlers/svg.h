@@ -6274,7 +6274,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
             width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-        ctx_identity (mrg_cr (mrg));
+        ctx_identity (mrg_cr (mrg)); // XXX should be dropped
         ctx_scale (mrg_cr(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
         html->state->floats = 0;
 

@@ -808,7 +808,12 @@
 #define CTX_TINYVG 0
 #endif
 
+#ifndef CTX_PDF
+#define CTX_PDF 1
+#endif
+
 #define uncompress tinf_uncompress
 #define Z_OK TINF_OK
 #define Z_BUF_ERROR TINF_BUF_ERROR
 #define Z_DATA_ERROR TINF_DATA_ERROR
+

@@ -19,10 +19,6 @@
 #define CTX_RGBA8_RB_MASK  (CTX_RGBA8_R_MASK | CTX_RGBA8_B_MASK)
 #define CTX_RGBA8_GA_MASK  (CTX_RGBA8_G_MASK | CTX_RGBA8_A_MASK)
 
-static inline float ctx_fmod1f (float val)
-{
-  return ctx_fabsf (val - (int)(val));
-}
 
 
 CTX_INLINE static void

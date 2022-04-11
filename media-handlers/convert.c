@@ -1055,6 +1055,12 @@ again:
         stbi_write_png (dest_path, width, height, 4, pixels, stride);
       free (pixels);
     }
+  else if (!strcmp (get_suffix (dest_path), ".pdf") )
+    {
+      Ctx *dctx = ctx_new_pdf (dest_path, width, height);
+      ctx_render_ctx (ctx, dctx);
+      ctx_destroy (dctx);
+    }
   else if (!strcmp (get_suffix (dest_path), ".ctx") )
     {
       FILE *f = fopen (dest_path, "w");

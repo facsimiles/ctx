@@ -2419,8 +2419,8 @@ CtxMediaTypeClass ctx_media_type_class (const char *media_type);
 float ctx_term_get_cell_width (Ctx *ctx);
 float ctx_term_get_cell_height (Ctx *ctx);
 
-
-void ctx_logo (Ctx *ctx, float x, float y, float dim);
+Ctx * ctx_new_pdf (const char *path, int width, int height);
+void ctx_render_pdf (Ctx *ctx, const char *path);
 
 #ifndef CTX_CODEC_CHAR
 //#define CTX_CODEC_CHAR '\035'

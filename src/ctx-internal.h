@@ -1394,6 +1394,16 @@ void ctx_push_backend (Ctx *ctx,
 void ctx_pop_backend (Ctx *ctx);
 
 
+static inline float ctx_fmod1f (float val)
+{
+  return ctx_fabsf (val - (int)(val));
+}
+
+static inline float ctx_fmodf (float val, float modulus)
+{
+  return ctx_fmod1f(val/modulus) * modulus;
+}
+
 #if EMSCRIPTEN
 #define CTX_EXPORT EMSCRIPTEN_KEEPALIVE
 #else

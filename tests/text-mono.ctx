@@ -1,6 +1,6 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 rgb 0 0 0
-font "mono"
+font "Mono"
 fontSize 1@
 moveTo 0@ 1@
 text "This is mono
