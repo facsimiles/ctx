@@ -809,7 +809,7 @@
 #endif
 
 #ifndef CTX_PDF
-#define CTX_PDF 1
+#define CTX_PDF 0
 #endif
 
 #define uncompress tinf_uncompress

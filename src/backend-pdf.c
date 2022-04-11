@@ -15,26 +15,21 @@ struct
   char         *font;
   CtxString    *document;
   CtxState      state;
-  int pat;
-  int xref[CTX_PDF_MAX_OBJS];
-  int objs;
-  int page_length_offset;
+  int           pat;
+  int           xref[CTX_PDF_MAX_OBJS];
+  int           objs;
+  int           page_length_offset;
+  int           kids_offset;
+  int           page_count_offset;
 
+  int           width;
+  int           height;
 
-  int page_objs[CTX_PDF_MAX_PAGES];
-  int content_objs[CTX_PDF_MAX_PAGES];
-  int page_count;
+  int           page_objs[CTX_PDF_MAX_PAGES];
+  int           content_objs[CTX_PDF_MAX_PAGES];
+  int           page_count;
 
- 
-  int catalog;
-  int outlines;
-  int pages;
-  int kids;
-  int font1;
-  int font2;
-  int content;
-
-
+  int           pages; // known to be 1
 };
 
 #define ctx_pdf_printf(fmt, a...) do {\
@@ -76,6 +71,42 @@ float alpha = size / 2.0,
 *dy = ctx_sinf(start + size);
 }
 
+int pdf_add_object (CtxPDF *pdf)
+{
+  // we use 1 indexing in this array
+  pdf->xref[++pdf->objs] = pdf->document->length;
+  ctx_pdf_printf("%i 0 obj\n\n", pdf->objs);
+  return pdf->objs;
+}
+void pdf_end_object (CtxPDF *pdf)
+{
+  ctx_pdf_printf("endobj\n\n");
+}
+
+static void
+pdf_start_page (CtxPDF *pdf)
+{
+  pdf->page_count++;
+  pdf->content_objs[pdf->page_count]=pdf_add_object (pdf); // 2 - our actual page contents
+  ctx_pdf_printf ("<<\n/Length ");
+  pdf->page_length_offset = pdf->document->length;
+  ctx_pdf_printf ("XXXXXXXXXX\n>>\n");
+  ctx_pdf_printf ("stream\nBT\n1 0 0 -1 0 %i cm\n/F1 24 Tf\n", pdf->height);
+}
+
+static void
+pdf_end_page (CtxPDF *pdf)
+{
+  int length = (pdf->document->length - pdf->page_length_offset) - 18;
+  char buf[12];
+  snprintf (buf, 11, "% 10d", length);
+  memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 10);
+  ctx_pdf_printf("ET\n");
+  ctx_pdf_printf("\nendstream \n");
+  pdf_end_object(pdf);
+}
+
+
 static void
 ctx_pdf_process (Ctx *ctx, CtxCommand *c)
 {
@@ -91,6 +122,10 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
 
   switch (entry->code)
     {
+      case CTX_NEW_PAGE:
+        pdf_end_page (pdf);
+        pdf_start_page (pdf);
+        break;
       case CTX_LINE_TO:
         ctx_pdf_printf("%f %f l\n", c->line_to.x, c->line_to.y);
         break;
@@ -408,6 +443,10 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         }
         break;
       case CTX_GRADIENT_STOP:
+        // we set the color so we might get a flavour of the gradient
+         ctx_pdf_printf("%f %f %f rg\n", ctx_arg_u8(4)/255.0f,
+                                         ctx_arg_u8(4+1)/255.0f,
+                                         ctx_arg_u8(4+2)/255.0f);
         break;
       case CTX_TEXT:
         /* XXX: implement some/same linebreaking/wrap, positioning
@@ -436,40 +475,91 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
 //  ctx_process (pdf->backend.ctx, entry);
 }
 
-int pdf_add_object (CtxPDF *pdf)
-{
-        // we use 1 indexing in this array
-  pdf->xref[++pdf->objs] = pdf->document->length;
-  ctx_pdf_printf("%i 0 obj\n\n", pdf->objs);
-  return pdf->objs;
-}
 
 void ctx_pdf_destroy (CtxPDF *pdf)
 {
   FILE *f = fopen (pdf->path, "w");
+  char buf[12];
 
-  int length = (pdf->document->length - pdf->page_length_offset) - 18;
+  pdf_end_page (pdf);
 
-  char buf[11];
-  snprintf (buf, 10, "% 9d", length);
-  memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 9);
+  int outlines=pdf_add_object (pdf); // 1
+  ctx_pdf_printf("<<\n/Type /Outlines\n/Count 0\n>>\n");
+  pdf_end_object(pdf);
+  int catalog=pdf_add_object (pdf); // 2
+  ctx_pdf_printf("<<\n/Type /Catalog\n/Outlines %i 0 R\n/Pages %i 0 R\n>>\n", outlines, pdf->pages);
+  pdf_end_object(pdf);
 
-  ctx_pdf_printf("ET\n");
-        ctx_pdf_printf("\nendstream \nendobj\n\n");
+  int font1=pdf_add_object (pdf); // 3
+  ctx_pdf_printf ("<<\n");
+  ctx_pdf_printf (
+"/Name /F1\n"
+"/Subtype /Type1\n"
+"/Type /Font\n"
+"/BaseFont /Helvetica\n"
+"/Encoding /MacRomanEncoding\n"
+">>\n");
+  pdf_end_object(pdf);
+  int font2=pdf_add_object (pdf); // 4
+  ctx_pdf_printf ("<<\n");
+  ctx_pdf_printf (
+"/Name /F2\n"
+"/Subtype /Type1\n"
+"/Type /Font\n"
+"/BaseFont /Times\n"
+"/Encoding /MacRomanEncoding\n"
+">>\n");
+  pdf_end_object(pdf);
+  int fontmap=pdf_add_object(pdf);
+  ctx_pdf_printf ("<</F1 %i 0 R /F2 %i 0 R >>\n", font1, font2);
+  pdf_end_object(pdf);
 
-        int start_xref = pdf->document->length + 1;
-ctx_pdf_printf ("xref\n0 %i\n", pdf->objs + 1);
-ctx_pdf_printf ("0000000000 65535 f\n");
+
+for (int page_no =1; page_no <= pdf->page_count; page_no++)
+{
+  pdf->page_objs[page_no]=pdf_add_object (pdf);
+  ctx_pdf_printf ("<<\n"
+"/ProcSet [/PDF /Text]\n"
+"/Contents %i 0 R\n"
+"/Type /Page\n"
+"/Resources \n<<\n"
+"/Font %i 0 R\n"
+">>\n"
+"/Parent %i 0 R\n"
+"/MediaBox [0 0 %i %i]\n"
+">>\n", pdf->content_objs[page_no], fontmap, pdf->pages
+, pdf->width, pdf->height);
+  pdf_end_object(pdf);
+
+}
+
+  // we now patch-back the value in pages earlier
+  snprintf (buf, 11, "% 10d", pdf->page_count);
+  memcpy   (&pdf->document->str[pdf->page_count_offset], buf, 10);
+
+  // we now patch-back the value in pages earlier
+  int kids = pdf_add_object (pdf); 
+  snprintf (buf, 11, "% 10d", kids);
+  memcpy   (&pdf->document->str[pdf->kids_offset], buf, 10);
+
+  ctx_pdf_printf ("[");
+  for (int page_no =1; page_no <= pdf->page_count; page_no++)
+    ctx_pdf_printf ("%i 0 R ", pdf->page_objs[page_no]);
+  ctx_pdf_printf ("]");
+  pdf_end_object(pdf);
+
+  int start_xref = pdf->document->length + 1;
+  ctx_pdf_printf ("xref\n0 %i\n", pdf->objs + 1);
+  ctx_pdf_printf ("0000000000 65535 f\n");
         for(int i = 1; i <= pdf->objs; i++)
         {
-          ctx_pdf_printf ("%010d 65535 f\n", pdf->xref[i]);
+          ctx_pdf_printf ("%010d 65535 n\n", pdf->xref[i]);
         }
-ctx_pdf_printf ("\n"
-"trailer\n"
-"<< /Size 8 /Root %i 0 R >>\n"
+  ctx_pdf_printf ("\ntrailer\n"
+"<< /Size %i /Root %i 0 R >>\n"
 "startxref\n"
 "%d\n"
-"%%EOF\n", pdf->catalog,
+"%%EOF\n", pdf->objs+1, catalog,
        start_xref);
 
   fwrite (pdf->document->str, pdf->document->length, 1, f);
@@ -483,85 +573,46 @@ ctx_new_pdf (const char *path, int width, int height)
   Ctx *ctx = _ctx_new_drawlist (width, height);
   CtxPDF *pdf = ctx_calloc(sizeof(CtxPDF),1);
   CtxBackend *backend  = (CtxBackend*)pdf;
-  if (width <= 0 || 1) width = 612;
-  if (width <= 0 || 1) height = 792;
+  if (width <= 0) width = 595;
+  if (width <= 0) height = 842;
+
+
+  pdf->width = width;
+  pdf->height = height;
+
   backend->destroy = (void*)ctx_pdf_destroy;
   backend->process = ctx_pdf_process;
-  backend->ctx = ctx;
-  pdf->document = ctx_string_new("");
+  backend->ctx     = ctx;
+  pdf->document    = ctx_string_new("");
 
   pdf->path = ctx_strdup (path);
   ctx_state_init (&pdf->state);
   ctx_set_backend (ctx, (void*)pdf);
-//  ctx->transformation = CTX_TRANSFORMATION_SCREEN_SPACE;
-  ctx_pdf_printf("%%PDF-1.4\n%%%c%c%c%c\n", 0xe2, 0xe3, 0xcf, 0xd3);
+  ctx_pdf_printf ("%%PDF-1.4\n%%%c%c%c%c\n", 0xe2, 0xe3, 0xcf, 0xd3);
+  pdf->pages=pdf_add_object (pdf); // 1
+  ctx_pdf_printf ("<<\n/Kids ");
+  pdf->kids_offset = pdf->document->length;
+  ctx_pdf_printf ("XXXXXXXXXX 0 R\n");
+  ctx_pdf_printf ("/Type /Pages\n");
+  ctx_pdf_printf ("/Count ");
+  pdf->page_count_offset = pdf->document->length;
+  ctx_pdf_printf ("XXXXXXXXXX");
+  ctx_pdf_printf ("\n>>\n");
+  pdf_end_object(pdf);
 
 
-  pdf->outlines=pdf_add_object (pdf); // 1
-  ctx_pdf_printf("<<\n/Type /Outlines\n/Count 0\n>>\nendobj\n\n");
-  pdf->catalog=pdf_add_object (pdf); // 2
-  ctx_pdf_printf("<<\n/Type /Catalog\n/Outlines %i 0 R\n/Pages 5 0 R\n>>\nendobj\n\n", pdf->outlines);
+  pdf_start_page (pdf);
 
-  pdf->font1=pdf_add_object (pdf); // 3
-  ctx_pdf_printf ("<<\n");
-  ctx_pdf_printf (
-"/Name /F1\n"
-"/Subtype /Type1\n"
-"/Type /Font\n"
-"/BaseFont /Helvetica\n"
-"/Encoding /MacRomanEncoding\n"
-">>\n"
-"endobj\n\n");
-
-  pdf->font2=pdf_add_object (pdf); // 4
-  ctx_pdf_printf ("<<\n");
-  ctx_pdf_printf (
-"/Name /F2\n"
-"/Subtype /Type1\n"
-"/Type /Font\n"
-"/BaseFont /Times\n"
-"/Encoding /MacRomanEncoding\n"
-">>\n"
-"endobj\n\n"
-);
-
-  pdf->pages=pdf_add_object (pdf); // 5
-  ctx_pdf_printf("<<\n/Kids [6 0 R]\n/Type /Pages\n/Count 1\n>>\nendobj\n\n");
-
-  int page_base = pdf->page_objs[1]=pdf_add_object (pdf); // 6  - this is a page
-  ctx_pdf_printf ("<<\n"
-"/ProcSet [/PDF /Text]\n"
-"/Contents 8 0 R\n"
-"/Type /Page\n"
-"/Resources \n<<\n"
-"/Font \n<<\n/F1 %i 0 R\n/F2 %i 0 R\n>>\n"
-">>\n"
-"/Parent %i 0 R\n"
-"/MediaBox [0 0 %i %i]\n"
-">>\n"
-"endobj\n\n", pdf->font1, pdf->font2, pdf->pages
-, width, height);
-
-  pdf->kids = pdf_add_object (pdf); // 7 we abstract it out for later writing
-  ctx_pdf_printf ("[%i 0 R]", pdf->page_objs[1]);
-  ctx_pdf_printf ("endobj\n\n");
-
-  pdf->content_objs[1]=pdf_add_object (pdf); // 8 - out actual page contents
-  ctx_pdf_printf ("<<\n/Length ");
-  pdf->page_length_offset = pdf->document->length;
-  ctx_pdf_printf ("XXXXXXXXX\n>>\n");
-  ctx_pdf_printf ("stream\nBT\n1 0 0 -1 0 %i cm\n/F1 24 Tf\n", height);
   return ctx;
 }
 
 void
 ctx_render_pdf (Ctx *ctx, const char *path)
 {
-  Ctx *pdf = ctx_new_pdf (path, 640, 480);
+  Ctx *pdf = ctx_new_pdf (path, 0, 0);
   CtxIterator iterator;
   CtxCommand *command;
-  ctx_iterator_init (&iterator, &ctx->drawlist, 0,
-                     CTX_ITERATOR_EXPAND_BITPACK);
+  ctx_iterator_init (&iterator, &ctx->drawlist, 0, CTX_ITERATOR_EXPAND_BITPACK);
   while ( (command = ctx_iterator_next (&iterator) ) )
     { ctx_pdf_process (pdf, command); }
   ctx_destroy (pdf);
