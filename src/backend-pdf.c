@@ -1,6 +1,7 @@
 #include "ctx-split.h"
-
 #if CTX_PDF
+
+#define CTX_PDF_MAX_OBJS 256
 
 typedef struct _CtxPDF CtxPDF;
 struct
@@ -14,9 +15,12 @@ struct
   CtxString    *document;
   CtxState      state;
   int pat;
+  int xref[CTX_PDF_MAX_OBJS];
+  int objs;
+  int page_length_offset;
 };
 
-#define PDF_PRINTF(fmt, a...) do {\
+#define ctx_pdf_printf(fmt, a...) do {\
         ctx_string_append_printf (pdf->document, fmt, ##a);\
 }while (0)
 
@@ -71,40 +75,40 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
   switch (entry->code)
     {
       case CTX_LINE_TO:
-        PDF_PRINTF("%f %f l\n", c->line_to.x, c->line_to.y);
+        ctx_pdf_printf("%f %f l\n", c->line_to.x, c->line_to.y);
         break;
       case CTX_HOR_LINE_TO:
-        PDF_PRINTF("%f %f l\n", ctx_arg_float(0), c->line_to.y);
+        ctx_pdf_printf("%f %f l\n", ctx_arg_float(0), c->line_to.y);
         break;
       case CTX_VER_LINE_TO:
-        PDF_PRINTF("%f %f l\n", ctx_arg_float(0), c->line_to.y);
+        ctx_pdf_printf("%f %f l\n", ctx_arg_float(0), c->line_to.y);
         break;
       case CTX_MOVE_TO:
-        PDF_PRINTF("%f %f m\n", c->move_to.x, c->move_to.y);
+        ctx_pdf_printf("%f %f m\n", c->move_to.x, c->move_to.y);
         break;
       case CTX_CURVE_TO:
-        PDF_PRINTF("%f %f %f %f %f %f c\n",
+        ctx_pdf_printf("%f %f %f %f %f %f c\n",
                         c->curve_to.cx1, c->curve_to.cy1,
                         c->curve_to.cx2, c->curve_to.cy2,
                         c->curve_to.x, c->curve_to.y);
         break;
       case CTX_REL_LINE_TO:
-        PDF_PRINTF("%f %f l\n", c->line_to.x + state->x, c->line_to.y + state->y);
+        ctx_pdf_printf("%f %f l\n", c->line_to.x + state->x, c->line_to.y + state->y);
         break;
       case CTX_REL_MOVE_TO:
-        PDF_PRINTF("%f %f m\n", c->move_to.x + state->x, c->move_to.y + state->y);
+        ctx_pdf_printf("%f %f m\n", c->move_to.x + state->x, c->move_to.y + state->y);
         break;
       case CTX_REL_CURVE_TO:
-        PDF_PRINTF("%f %f %f %f %f %f c\n",
+        ctx_pdf_printf("%f %f %f %f %f %f c\n",
                         c->curve_to.cx1 + state->x, c->curve_to.cy1 + state->y,
                         c->curve_to.cx2 + state->x, c->curve_to.cy2 + state->y,
                         c->curve_to.x   + state->x, c->curve_to.y   + state->y);
         break;
       case CTX_REL_HOR_LINE_TO:
-        PDF_PRINTF("%f %f l\n", ctx_arg_float(0) + state->x, c->line_to.y + state->y);
+        ctx_pdf_printf("%f %f l\n", ctx_arg_float(0) + state->x, c->line_to.y + state->y);
         break;
       case CTX_REL_VER_LINE_TO:
-        PDF_PRINTF("%f %f l\n", ctx_arg_float(0) + state->x, c->line_to.y + state->y);
+        ctx_pdf_printf("%f %f l\n", ctx_arg_float(0) + state->x, c->line_to.y + state->y);
         break;
       case CTX_PRESERVE:
         pdf->preserve = 1;
@@ -119,7 +123,7 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
           float cy1 = (cy * 2 + state->y) / 3.0f;
           float cx2 = (cx * 2 + x) / 3.0f;
           float cy2 = (cy * 2 + y) / 3.0f;
-          PDF_PRINTF("%f %f %f %f %f %f c\n",
+          ctx_pdf_printf("%f %f %f %f %f %f c\n",
                              cx1, cy1, cx2, cy2, x, y);
         }
         break;
@@ -133,14 +137,14 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
           float cy1 = (cy * 2 ) / 3.0f;
           float cx2 = (cx * 2 + x) / 3.0f;
           float cy2 = (cy * 2 + y) / 3.0f;
-          PDF_PRINTF("%f %f %f %f %f %f c\n",
+          ctx_pdf_printf("%f %f %f %f %f %f c\n",
                              cx1 + state->x, cy1 + state->y,
                              cx2 + state->x, cy2 + state->y,
                              x   + state->x, y   + state->y);
         }
         break;
       case CTX_LINE_WIDTH:
-        PDF_PRINTF("%f w\n", ctx_arg_float (0));
+        ctx_pdf_printf("%f w\n", ctx_arg_float (0));
         break;
       case CTX_ARC:
         {
@@ -201,10 +205,10 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
 
              float rx = w / 2.0f;
              float ry = h / 2.0f;
-             PDF_PRINTF("%f %f m\n", x + rx * curves[0][0], y + ry * curves[0][1]);
+             ctx_pdf_printf("%f %f m\n", x + rx * curves[0][0], y + ry * curves[0][1]);
              for (int i = 0; i < n_curves; i++)
              {
-               PDF_PRINTF("%f %f %f %f %f %f c\n", 
+               ctx_pdf_printf("%f %f %f %f %f %f c\n", 
                                  x + rx * curves[i][2], y + ry * curves[i][3],
                                  x + rx * curves[i][4], y + ry * curves[i][5],
                                  x + rx * curves[i][6], y + ry * curves[i][7]);
@@ -235,38 +239,36 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
            case CTX_RGB:
            case CTX_RGBA:
            case CTX_DRGBA:
-             PDF_PRINTF("%f %f %f rg\n", c->rgba.r, c->rgba.g, c->rgba.b);
-             PDF_PRINTF("%f %f %f RG\n", c->rgba.r, c->rgba.g, c->rgba.b);
+             ctx_pdf_printf("%f %f %f rg\n", c->rgba.r, c->rgba.g, c->rgba.b);
+             ctx_pdf_printf("%f %f %f RG\n", c->rgba.r, c->rgba.g, c->rgba.b);
              break;
-#if CTX_ENABLE_CMYK
            case CTX_CMYKA:
            case CTX_CMYK:
            case CTX_DCMYKA:
            case CTX_DCMYK:
-              PDF_PRINTF("%f %f %f %f k\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
-              PDF_PRINTF("%f %f %f %f K\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
+              ctx_pdf_printf("%f %f %f %f k\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
+              ctx_pdf_printf("%f %f %f %f K\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
               break;
-#endif
            case CTX_GRAYA:
            case CTX_GRAY:
-              PDF_PRINTF("%f g\n", c->graya.g);
-              PDF_PRINTF("%f G\n", c->graya.g);
+              ctx_pdf_printf("%f g\n", c->graya.g);
+              ctx_pdf_printf("%f G\n", c->graya.g);
               break;
             }
         break;
       case CTX_SET_RGBA_U8:
-        PDF_PRINTF("%f %f %f RG\n",
+        ctx_pdf_printf("%f %f %f RG\n",
                                ctx_u8_to_float (ctx_arg_u8 (0) ),
                                ctx_u8_to_float (ctx_arg_u8 (1) ),
                                ctx_u8_to_float (ctx_arg_u8 (2) ));
-        PDF_PRINTF("%f %f %f rg\n",
+        ctx_pdf_printf("%f %f %f rg\n",
                                ctx_u8_to_float (ctx_arg_u8 (0) ),
                                ctx_u8_to_float (ctx_arg_u8 (1) ),
                                ctx_u8_to_float (ctx_arg_u8 (2) ));
         break;
       case CTX_RECTANGLE:
       case CTX_ROUND_RECTANGLE: // XXX - arcs
-        PDF_PRINTF("%f %f %f %f re\n",
+        ctx_pdf_printf("%f %f %f %f re\n",
                          c->rectangle.x, c->rectangle.y,
                          c->rectangle.width, c->rectangle.height);
         break;
@@ -283,23 +285,23 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
       case CTX_FILL:
         if (pdf->preserve)
         {
-          PDF_PRINTF("f\n");
+          ctx_pdf_printf("f\n");
           // XXX reconstruct path
           pdf->preserve = 0;
         }
         else
         {
           // XXX have state and check even odd-rule if so use "f*" instead
-          PDF_PRINTF("f\n");
+          ctx_pdf_printf("f\n");
         }
         break;
-      case CTX_TRANSLATE: PDF_PRINTF("1 0 0 1 %f %f cm\n", c->f.a0, c->f.a1); break;
-      case CTX_SCALE:     PDF_PRINTF("%f 0 0 %f 0 0 cm\n", c->f.a0, c->f.a1); break;
-      case CTX_ROTATE:    PDF_PRINTF("%f %f %f %f 0 0 cm\n", 
+      case CTX_TRANSLATE: ctx_pdf_printf("1 0 0 1 %f %f cm\n", c->f.a0, c->f.a1); break;
+      case CTX_SCALE:     ctx_pdf_printf("%f 0 0 %f 0 0 cm\n", c->f.a0, c->f.a1); break;
+      case CTX_ROTATE:    ctx_pdf_printf("%f %f %f %f 0 0 cm\n", 
                              ctx_cosf (-c->f.a0), ctx_sinf (-c->f.a0),
                             -ctx_sinf (-c->f.a0), ctx_cosf (-c->f.a0));break;
       case CTX_APPLY_TRANSFORM:
-        PDF_PRINTF("%f %f %f %f %f %f cm\n",
+        ctx_pdf_printf("%f %f %f %f %f %f cm\n",
                    c->f.a0, c->f.a1,
                    c->f.a3, c->f.a4,
                    c->f.a4, c->f.a7);
@@ -307,51 +309,46 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
       case CTX_STROKE:
         if (pdf->preserve)
         {
-          PDF_PRINTF("S\n");
+          ctx_pdf_printf("S\n");
           pdf->preserve = 0;
         }
         else
         {
-          PDF_PRINTF("S\n");
+          ctx_pdf_printf("S\n");
         }
         break;
-#if 0
-      case CTX_IDENTITY:
-        pdf_identity_matrix (cr);
-        break;
-#endif
       case CTX_CLIP:
         if (pdf->preserve)
         {
-          PDF_PRINTF("W\n");
+          ctx_pdf_printf("W\n");
           pdf->preserve = 0;
         }
         else
         {
-          PDF_PRINTF("W\n");
+          ctx_pdf_printf("W\n");
         }
         break;
         break;
       case CTX_BEGIN_PATH:
-        PDF_PRINTF("n\n");
+        ctx_pdf_printf("n\n");
         break;
       case CTX_CLOSE_PATH:
-        PDF_PRINTF("h\n");
+        ctx_pdf_printf("h\n");
         break;
       case CTX_SAVE:
-        PDF_PRINTF("q\n");
+        ctx_pdf_printf("q\n");
         break;
       case CTX_RESTORE:
-        PDF_PRINTF("Q\n");
+        ctx_pdf_printf("Q\n");
         break;
       case CTX_FONT_SIZE:
         //pdf_set_font_size (cr, ctx_arg_float (0) );
         break;
       case CTX_MITER_LIMIT:
-        PDF_PRINTF("%f M\n", ctx_arg_float (0));
+        ctx_pdf_printf("%f M\n", ctx_arg_float (0));
         break;
       case CTX_LINE_CAP:
-        PDF_PRINTF("%i J\n", ctx_arg_u8 (0));
+        ctx_pdf_printf("%i J\n", ctx_arg_u8 (0));
         break;
 #if 0
       case CTX_BLEND_MODE:
@@ -375,22 +372,22 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         break;
 #endif
       case CTX_LINE_JOIN:
-        PDF_PRINTF("%i j\n", ctx_arg_u8 (0));
+        ctx_pdf_printf("%i j\n", ctx_arg_u8 (0));
         break;
       case CTX_LINEAR_GRADIENT:
         {
-          PDF_PRINTF("1 0 0 rg\n");
+          ctx_pdf_printf("1 0 0 rg\n");
         }
         break;
       case CTX_RADIAL_GRADIENT:
         {
-          PDF_PRINTF("0 2 0 rg\n");
+          ctx_pdf_printf("0 2 0 rg\n");
         }
         break;
       case CTX_TEXTURE:
       case CTX_DEFINE_TEXTURE:
         {
-          PDF_PRINTF("0 0 1 rg\n");
+          ctx_pdf_printf("0 0 1 rg\n");
         }
         break;
       case CTX_GRADIENT_STOP:
@@ -403,10 +400,10 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
          *      any non default parameters
          */
         if (state->gstate.font == 0)
-          PDF_PRINTF("/F1 %f Tf\n", state->gstate.font_size);
+          ctx_pdf_printf("/F1 %f Tf\n", state->gstate.font_size);
         else
-          PDF_PRINTF("/F2 %f Tf\n", state->gstate.font_size);
-        PDF_PRINTF("1 0 0 -1 %f %f Tm  ( %s ) Tj\n",
+          ctx_pdf_printf("/F2 %f Tf\n", state->gstate.font_size);
+        ctx_pdf_printf("1 0 0 -1 %f %f Tm ( %s ) Tj\n",
                         state->x,
                         state->y,
                         ctx_arg_string ());
@@ -422,35 +419,42 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
 //  ctx_process (pdf->backend.ctx, entry);
 }
 
+int pdf_add_object (CtxPDF *pdf)
+{
+        // we use 1 indexing in this array
+  pdf->xref[++pdf->objs] = pdf->document->length;
+  ctx_pdf_printf("%i 0 obj\n\n", pdf->objs);
+  return pdf->objs;
+}
+
 void ctx_pdf_destroy (CtxPDF *pdf)
 {
-        PDF_PRINTF(
-"  ET\n"
-"endstream\n"
-"endobj\n"
-"\n"
-"xref\n"
-"0 8\n"
-"0000000000 65535 f\n"
-"0000000009 00000 n\n"
-"0000000074 00000 n\n"
-"0000000120 00000 n\n"
-"0000000179 00000 n\n"
-"0000000364 00000 n\n"
-"0000000466 00000 n\n"
-"0000000496 00000 n\n"
-"\n"
-"trailer\n"
-"  << /Size 8\n"
-"    /Root 1 0 R\n"
-"  >>\n"
-"startxref\n"
-"625\n"
-"%%EOF\n"
-                  );
-
-
   FILE *f = fopen (pdf->path, "w");
+
+  int length = (pdf->document->length - pdf->page_length_offset) - 18;
+
+  char buf[11];
+  snprintf (buf, 10, "% 9d", length);
+  memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 9);
+
+  ctx_pdf_printf("ET\n");
+        ctx_pdf_printf("\nendstream \nendobj\n\n");
+
+        int start_xref = pdf->document->length + 1;
+ctx_pdf_printf ("xref\n0 %i\n", pdf->objs + 1);
+ctx_pdf_printf ("0000000000 65535 f\n");
+        for(int i = 1; i <= pdf->objs; i++)
+        {
+          ctx_pdf_printf ("%010d 65535 f\n", pdf->xref[i]);
+        }
+ctx_pdf_printf ("\n"
+"trailer\n"
+"<< /Size 8 /Root 1 0 R >>\n"
+"startxref\n"
+"%d\n"
+"%%EOF\n",
+       start_xref);
+
   fwrite (pdf->document->str, pdf->document->length, 1, f);
   ctx_string_free (pdf->document, 1);
   ctx_free (pdf);
@@ -459,64 +463,78 @@ void ctx_pdf_destroy (CtxPDF *pdf)
 Ctx *
 ctx_new_pdf (const char *path, int width, int height)
 {
-  Ctx *ctx = _ctx_new_drawlist (640, 480);
+  Ctx *ctx = _ctx_new_drawlist (width, height);
   CtxPDF *pdf = ctx_calloc(sizeof(CtxPDF),1);
   CtxBackend *backend  = (CtxBackend*)pdf;
+  if (width <= 0 || 1) width = 612;
+  if (width <= 0 || 1) height = 792;
   backend->destroy = (void*)ctx_pdf_destroy;
   backend->process = ctx_pdf_process;
   backend->ctx = ctx;
-  pdf->document=ctx_string_new("%PDF-1.4\nblåbær\n"
-"1 0 obj << /Type /Catalog /Outlines 2 0 R /Pages 3 0 R  >> endobj\n"
-"2 0 obj << /Type /Outlines /Count 0 >> endobj\n"
-"3 0 obj << /Type /Pages /Kids [ 4 0 R ] /Count 1 >> endobj\n"
-"4 0 obj << /Type /Page\n"
-"      /Parent 3 0 R\n"
-"      /MediaBox [ 0 0 612 792 ]\n"
-"      /Contents 7 0 R\n"
-"      /Resources << "
-"/Font << /F1 5 0 R /F2 6 0 R >>\n"
- "/ProcSet [ /PDF /Text ]\n"
-"  >>\n"
-">>\n"
-"endobj\n"
-"\n"
-"5 0 obj\n"
-"  << /Type /Font\n"
-"    /Subtype /Type1\n"
-"    /Name /F1\n"
-"    /BaseFont /Helvetica\n"
-"    /Encoding /MacRomanEncoding\n"
-"  >>\n"
-"endobj\n"
-"6 0 obj\n"
-"  << /Type /Font\n"
-"    /Subtype /Type1\n"
-"    /Name /F2\n"
-"    /BaseFont /Times\n"
-"    /Encoding /MacRomanEncoding\n"
-"  >>\n"
-"endobj\n"
-"\n"
-"7 0 obj\n"
-"  << /Length 73 >>\n"
-"stream\n"
-"  BT\n"
-"1 0 0 -1 0 792 cm\n"
-"/F1 24 Tf\n"
-);
+  pdf->document = ctx_string_new("");
 
   pdf->path = ctx_strdup (path);
   ctx_state_init (&pdf->state);
   ctx_set_backend (ctx, (void*)pdf);
 //  ctx->transformation = CTX_TRANSFORMATION_SCREEN_SPACE;
+  ctx_pdf_printf("%%PDF-1.4\n%%%c%c%c%c\n", 0xe2, 0xe3, 0xcf, 0xd3);
+
+  pdf_add_object (pdf);
+  ctx_pdf_printf("<<\n/Type /Catalog\n/Outlines 2 0 R\n/Pages 3 0 R\n>>\nendobj\n\n");
+
+  pdf_add_object (pdf);
+  ctx_pdf_printf("<<\n/Type /Outlines\n/Count 0\n>>\nendobj\n\n");
+
+  pdf_add_object (pdf);
+  ctx_pdf_printf("<<\n/Kids [4 0 R]\n/Type /Pages\n/Count 1\n>>\nendobj\n\n");
+  pdf_add_object (pdf);
+  ctx_pdf_printf ("<<\n"
+"/ProcSet [/PDF /Text]\n"
+"/Contents 7 0 R\n"
+"/Type /Page\n"
+"/Resources \n<<\n"
+"/Font \n<<\n/F1 5 0 R\n/F2 6 0 R\n>>\n"
+">>\n"
+"/Parent 3 0 R\n"
+"/MediaBox [0 0 %i %i]\n"
+">>\n"
+"endobj\n\n"
+, width, height);
+
+  pdf_add_object (pdf);
+  ctx_pdf_printf ("<<\n");
+  ctx_pdf_printf (
+"/Name /F1\n"
+"/Subtype /Type1\n"
+"/Type /Font\n"
+"/BaseFont /Helvetica\n"
+"/Encoding /MacRomanEncoding\n"
+">>\n"
+"endobj\n\n");
+
+  pdf_add_object (pdf);
+  ctx_pdf_printf ("<<\n");
+  ctx_pdf_printf (
+"/Name /F2\n"
+"/Subtype /Type1\n"
+"/Type /Font\n"
+"/BaseFont /Times\n"
+"/Encoding /MacRomanEncoding\n"
+">>\n"
+"endobj\n\n"
+);
+  pdf_add_object (pdf);
+  ctx_pdf_printf ("<<\n/Length ");
+  pdf->page_length_offset = pdf->document->length;
+  ctx_pdf_printf ("XXXXXXXXX\n>>\n");
+  ctx_pdf_printf ("stream\nBT\n1 0 0 -1 0 %i cm\n/F1 24 Tf\n", height);
   return ctx;
 }
-
 
 void
 ctx_render_pdf (Ctx *ctx, const char *path)
 {
-  Ctx *pdf = ctx_new_pdf (path, 1000, 1000);
+  Ctx *pdf = ctx_new_pdf (path, 640, 480);
   CtxIterator iterator;
   CtxCommand *command;
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
