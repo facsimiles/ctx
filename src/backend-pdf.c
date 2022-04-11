@@ -3,6 +3,8 @@
 
 #define CTX_PDF_MAX_OBJS 256
 
+#define CTX_PDF_MAX_PAGES CTX_PDF_MAX_OBJS
+
 typedef struct _CtxPDF CtxPDF;
 struct
   _CtxPDF
@@ -11,13 +13,28 @@ struct
   int           preserve;
   const char   *path;
   char         *font;
-  float         font_size;
   CtxString    *document;
   CtxState      state;
   int pat;
   int xref[CTX_PDF_MAX_OBJS];
   int objs;
   int page_length_offset;
+
+
+  int page_objs[CTX_PDF_MAX_PAGES];
+  int content_objs[CTX_PDF_MAX_PAGES];
+  int page_count;
+
+ 
+  int catalog;
+  int outlines;
+  int pages;
+  int kids;
+  int font1;
+  int font2;
+  int content;
+
+
 };
 
 #define ctx_pdf_printf(fmt, a...) do {\
@@ -449,10 +466,10 @@ ctx_pdf_printf ("0000000000 65535 f\n");
         }
 ctx_pdf_printf ("\n"
 "trailer\n"
-"<< /Size 8 /Root 1 0 R >>\n"
+"<< /Size 8 /Root %i 0 R >>\n"
 "startxref\n"
 "%d\n"
-"%%EOF\n",
+"%%EOF\n", pdf->catalog,
        start_xref);
 
   fwrite (pdf->document->str, pdf->document->length, 1, f);
@@ -479,29 +496,13 @@ ctx_new_pdf (const char *path, int width, int height)
 //  ctx->transformation = CTX_TRANSFORMATION_SCREEN_SPACE;
   ctx_pdf_printf("%%PDF-1.4\n%%%c%c%c%c\n", 0xe2, 0xe3, 0xcf, 0xd3);
 
-  pdf_add_object (pdf);
-  ctx_pdf_printf("<<\n/Type /Catalog\n/Outlines 2 0 R\n/Pages 3 0 R\n>>\nendobj\n\n");
 
-  pdf_add_object (pdf);
+  pdf->outlines=pdf_add_object (pdf); // 1
   ctx_pdf_printf("<<\n/Type /Outlines\n/Count 0\n>>\nendobj\n\n");
+  pdf->catalog=pdf_add_object (pdf); // 2
+  ctx_pdf_printf("<<\n/Type /Catalog\n/Outlines %i 0 R\n/Pages 5 0 R\n>>\nendobj\n\n", pdf->outlines);
 
-  pdf_add_object (pdf);
-  ctx_pdf_printf("<<\n/Kids [4 0 R]\n/Type /Pages\n/Count 1\n>>\nendobj\n\n");
-  pdf_add_object (pdf);
-  ctx_pdf_printf ("<<\n"
-"/ProcSet [/PDF /Text]\n"
-"/Contents 7 0 R\n"
-"/Type /Page\n"
-"/Resources \n<<\n"
-"/Font \n<<\n/F1 5 0 R\n/F2 6 0 R\n>>\n"
-">>\n"
-"/Parent 3 0 R\n"
-"/MediaBox [0 0 %i %i]\n"
-">>\n"
-"endobj\n\n"
-, width, height);
-
-  pdf_add_object (pdf);
+  pdf->font1=pdf_add_object (pdf); // 3
   ctx_pdf_printf ("<<\n");
   ctx_pdf_printf (
 "/Name /F1\n"
@@ -512,7 +513,7 @@ ctx_new_pdf (const char *path, int width, int height)
 ">>\n"
 "endobj\n\n");
 
-  pdf_add_object (pdf);
+  pdf->font2=pdf_add_object (pdf); // 4
   ctx_pdf_printf ("<<\n");
   ctx_pdf_printf (
 "/Name /F2\n"
@@ -523,7 +524,29 @@ ctx_new_pdf (const char *path, int width, int height)
 ">>\n"
 "endobj\n\n"
 );
-  pdf_add_object (pdf);
+
+  pdf->pages=pdf_add_object (pdf); // 5
+  ctx_pdf_printf("<<\n/Kids [6 0 R]\n/Type /Pages\n/Count 1\n>>\nendobj\n\n");
+
+  int page_base = pdf->page_objs[1]=pdf_add_object (pdf); // 6  - this is a page
+  ctx_pdf_printf ("<<\n"
+"/ProcSet [/PDF /Text]\n"
+"/Contents 8 0 R\n"
+"/Type /Page\n"
+"/Resources \n<<\n"
+"/Font \n<<\n/F1 %i 0 R\n/F2 %i 0 R\n>>\n"
+">>\n"
+"/Parent %i 0 R\n"
+"/MediaBox [0 0 %i %i]\n"
+">>\n"
+"endobj\n\n", pdf->font1, pdf->font2, pdf->pages
+, width, height);
+
+  pdf->kids = pdf_add_object (pdf); // 7 we abstract it out for later writing
+  ctx_pdf_printf ("[%i 0 R]", pdf->page_objs[1]);
+  ctx_pdf_printf ("endobj\n\n");
+
+  pdf->content_objs[1]=pdf_add_object (pdf); // 8 - out actual page contents
   ctx_pdf_printf ("<<\n/Length ");
   pdf->page_length_offset = pdf->document->length;
   ctx_pdf_printf ("XXXXXXXXX\n>>\n");
