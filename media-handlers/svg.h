@@ -6365,7 +6365,8 @@ mrg_parse_svg_path (Mrg *mrg, const char *str)
 
   if (!str)
     return -1;
-  ctx_move_to (ctx, 0, 0);
+  //ctx_move_to (ctx, 0, 0);
+  //ctx_begin_path (ctx);
   cx = 0; cy = 0;
   pcx = cx; pcy = cy;
 
