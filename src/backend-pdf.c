@@ -19,6 +19,7 @@ struct
   int           xref[CTX_PDF_MAX_OBJS];
   int           objs;
   int           page_length_offset;
+  int           page_height_offset;
   int           kids_offset;
   int           page_count_offset;
 
@@ -27,6 +28,7 @@ struct
 
   int           page_objs[CTX_PDF_MAX_PAGES];
   int           content_objs[CTX_PDF_MAX_PAGES];
+  float         page_size[CTX_PDF_MAX_PAGES][4];
   int           page_count;
 
   int           pages; // known to be 1
@@ -91,7 +93,14 @@ pdf_start_page (CtxPDF *pdf)
   ctx_pdf_printf ("<<\n/Length ");
   pdf->page_length_offset = pdf->document->length;
   ctx_pdf_printf ("XXXXXXXXXX\n>>\n");
-  ctx_pdf_printf ("stream\nBT\n1 0 0 -1 0 %i cm\n/F1 24 Tf\n", pdf->height);
+  ctx_pdf_printf ("stream\nBT\n1 0 0 -1 0 ");
+  pdf->page_height_offset = pdf->document->length;
+  ctx_pdf_printf ("XXXXXXXXXX cm\n/F1 24 Tf\n", pdf->height);
+
+  pdf->page_size[pdf->page_count][0] = 0;
+  pdf->page_size[pdf->page_count][1] = 0;
+  pdf->page_size[pdf->page_count][2] = pdf->width;
+  pdf->page_size[pdf->page_count][3] = pdf->height;
 }
 
 static void
@@ -101,6 +110,8 @@ pdf_end_page (CtxPDF *pdf)
   char buf[12];
   snprintf (buf, 11, "% 10d", length);
   memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 10);
+  snprintf (buf, 11, "% 10f", pdf->page_size[pdf->page_count][3]);
+  memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);
   ctx_pdf_printf("ET\n");
   ctx_pdf_printf("\nendstream \n");
   pdf_end_object(pdf);
@@ -470,6 +481,12 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
       case CTX_DATA_REV:
       case CTX_END_FRAME:
         break;
+      case CTX_VIEW_BOX:
+        pdf->page_size[pdf->page_count][0] = ctx_arg_float(0);
+        pdf->page_size[pdf->page_count][1] = ctx_arg_float(1);
+        pdf->page_size[pdf->page_count][2] = ctx_arg_float(2);
+        pdf->page_size[pdf->page_count][3] = ctx_arg_float(3);
+        break;
     }
   ctx_interpret_pos_bare (&pdf->state, entry, pdf);
 #if CTX_CURRENT_PATH
@@ -481,9 +498,6 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
     CtxIterator iterator;
     CtxCommand *command;
     
-    //CtxEntry clear_path = {CTX_BEGIN_PATH};
-    //ctx_pdf_process (ctx, (CtxCommand*)&clear_path);
-    //ctx_update_current_path (ctx, &clear_path);
     ctx_iterator_init (&iterator, preserved, 0, CTX_ITERATOR_EXPAND_BITPACK);
     while ( (command = ctx_iterator_next (&iterator) ) )
       { ctx_pdf_process (ctx, command); }
@@ -541,9 +555,12 @@ for (int page_no =1; page_no <= pdf->page_count; page_no++)
 "/Font %i 0 R\n"
 ">>\n"
 "/Parent %i 0 R\n"
-"/MediaBox [0 0 %i %i]\n"
-">>\n", pdf->content_objs[page_no], fontmap, pdf->pages
-, pdf->width, pdf->height);
+"/MediaBox [%f %f %f %f]\n"
+">>\n", pdf->content_objs[page_no], fontmap, pdf->pages,
+  pdf->page_size[page_no][0],
+  pdf->page_size[page_no][1],
+  pdf->page_size[page_no][2],
+  pdf->page_size[page_no][3]);
   pdf_end_object(pdf);
 
 }
