@@ -8,10 +8,10 @@
 /* This enum should be kept in sync with the corresponding mmm enum.
  */
 typedef enum {
-  CTX_f32,
-  CTX_f32S,
-  CTX_s16,
-  CTX_s16S
+  CTX_F32,
+  CTX_F32S,
+  CTX_S16,
+  CTX_S16S
 } CtxPCM;
 
 void   ctx_pcm_set_format        (Ctx *ctx, CtxPCM format);

@@ -140,7 +140,7 @@ app_t * app_create(const char *filename, int texture_mode) {
 		audio_spec.samples = 4096;
                 */
                 ctx_pcm_set_sample_rate (self->ctx, samplerate);
-                ctx_pcm_set_format (self->ctx, CTX_f32S);
+                ctx_pcm_set_format (self->ctx, CTX_F32S);
 
 		plm_set_audio_lead_time(self->plm, (double)4096.0 / (double)samplerate);
 	}

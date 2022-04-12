@@ -256,3 +256,13 @@ ctx.h: src/*.[ch] src/index $(FONT_STAMP) tools/ctx-fontgen
 
 ctx-nofont.h: src/*.c src/*.h src/index
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
+
+squoze5/squoze5: squoze5/*.[ch]
+	make -C squoze5 squoze5
+
+src/constants.h: src/*.c Makefile squoze5/squoze5
+	echo '#ifndef __CTX_CONSTANTS' > $@
+	echo '#define __CTX_CONSTANTS' >> $@
+	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z]'|sort | uniq | cut -f 2 -d _`;do echo "#define CTX_$$a `./squoze5/squoze5 -32 $$a`";done \
+		>> $@
+	echo '#endif' >> $@

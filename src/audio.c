@@ -23,18 +23,18 @@ int ctx_pcm_bytes_per_frame (CtxPCM format)
 {
   switch (format)
   {
-    case CTX_f32:  return 4;
-    case CTX_f32S: return 8;
-    case CTX_s16:  return 2;
-    case CTX_s16S: return 4;
+    case CTX_F32:  return 4;
+    case CTX_F32S: return 8;
+    case CTX_S16:  return 2;
+    case CTX_S16S: return 4;
     default: return 1;
   }
 }
 
 static float    ctx_host_freq     = 48000;
-static CtxPCM   ctx_host_format   = CTX_s16S;
+static CtxPCM   ctx_host_format   = CTX_S16S;
 static float    client_freq   = 48000;
-static CtxPCM   ctx_client_format = CTX_s16S;
+static CtxPCM   ctx_client_format = CTX_S16S;
 static int      ctx_pcm_queued    = 0;
 static int      ctx_pcm_cur_left  = 0;
 static CtxList *ctx_pcm_list;                 /* data is a blob a 32bit uint first, followed by pcm-data */
@@ -50,11 +50,11 @@ ctx_pcm_channels (CtxPCM format)
 {
   switch (format)
   {
-    case CTX_s16:
-    case CTX_f32:
+    case CTX_S16:
+    case CTX_F32:
       return 1;
-    case CTX_s16S:
-    case CTX_f32S:
+    case CTX_S16S:
+    case CTX_F32S:
       return 2;
   }
   return 0;
@@ -129,8 +129,8 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
     int is_float = 0;
     int16_t data[81920*8]={0,};
 
-    if (ctx_client_format == CTX_f32 ||
-        ctx_client_format == CTX_f32S)
+    if (ctx_client_format == CTX_F32 ||
+        ctx_client_format == CTX_F32S)
       is_float = 1;
 
     c = snd_pcm_wait(h, 1000);
@@ -163,7 +163,7 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
             if (client_channels > 1)
               right = packet[0] * (1<<15);
           }
-          else // s16
+          else // S16
           {
             uint16_t *packet = (ctx_pcm_list->data);
             packet += 8;
@@ -260,8 +260,8 @@ void ctx_ctx_pcm (Ctx *ctx)
     uint8_t data[81920*8]={0,};
     int c;
 
-    if (ctx_client_format == CTX_f32 ||
-        ctx_client_format == CTX_f32S)
+    if (ctx_client_format == CTX_F32 ||
+        ctx_client_format == CTX_F32S)
       is_float = 1;
 
     c = 2000;
@@ -286,7 +286,7 @@ void ctx_ctx_pcm (Ctx *ctx)
             if (client_channels > 1)
               right = packet[1] * (1<<15);
           }
-          else // s16
+          else // S16
           {
             uint16_t *packet = (ctx_pcm_list->data);
             packet += 8;
@@ -339,7 +339,7 @@ int ctx_pcm_init (Ctx *ctx)
   if (ctx_backend_type (ctx) == CTX_BACKEND_CTX)
   {
      ctx_host_freq = 8000;
-     ctx_host_format = CTX_s16;
+     ctx_host_format = CTX_S16;
 #if 0
      pthread_t tid;
      pthread_create(&tid, NULL, (void*)ctx_audio_start, ctx);
@@ -520,7 +520,7 @@ int ctx_pcm_get_sample_rate (Ctx *ctx)
 void ctx_pcm_set_format (Ctx *ctx, CtxPCM format) { }
 void ctx_pcm_set_sample_rate (Ctx *ctx, int sample_rate) { }
 int ctx_pcm_get_sample_rate (Ctx *ctx) { return 48000; }
-CtxPCM ctx_pcm_get_format (Ctx *ctx) { return CTX_s16S; }
+CtxPCM ctx_pcm_get_format (Ctx *ctx) { return CTX_S16S; }
 int ctx_pcm_queue (Ctx *ctx, const int8_t *data, int frames) { return frames; }
 float ctx_pcm_get_queued_length (Ctx *ctx) { return 0.0; }
 
