@@ -41,11 +41,24 @@ void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
 
 #if CTX_CURRENT_PATH
 CtxIterator *
-ctx_current_path (Ctx *ctx)
+ctx_current_path_iterator (Ctx *ctx)
 {
   CtxIterator *iterator = &ctx->current_path_iterator;
   ctx_iterator_init (iterator, &ctx->current_path, 0, CTX_ITERATOR_EXPAND_BITPACK);
   return iterator;
+}
+
+CtxDrawlist *
+ctx_current_path (Ctx *ctx)
+{
+  CtxDrawlist *drawlist = ctx_calloc (sizeof (CtxDrawlist) + 
+                              ctx->current_path.count * 9, 1);
+  drawlist->entries = (CtxEntry*)(&drawlist[1]);
+  drawlist->size = drawlist->count = ctx->current_path.count;
+  drawlist->flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
+  memcpy (drawlist->entries, ctx->current_path.entries,
+          drawlist->count * 9);
+  return drawlist;
 }
 
 void
@@ -58,7 +71,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
   float x = 0;
   float y = 0;
 
-  CtxIterator *iterator = ctx_current_path (ctx);
+  CtxIterator *iterator = ctx_current_path_iterator (ctx);
   CtxCommand *command;
 
   while ((command = ctx_iterator_next (iterator)))
