@@ -2340,9 +2340,6 @@ void ctx_colorspace (Ctx           *ctx,
 
 
 
-
-
-
 void
 ctx_parser_set_size (CtxParser *parser,
                      int        width,

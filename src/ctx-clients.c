@@ -33,18 +33,6 @@ extern Ctx *ctx;
 #define flag_set(a, f)    ((a) |= (f));
 #define flag_unset(a, f)  ((a) &= ~(f));
 
-//#define CTX_x            CTX_STRH('x',0,0,0,0,0,0,0,0,0,0,0,0,0)
-//#define CTX_y            CTX_STRH('y',0,0,0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_lower_bottom CTX_STRH('l','o','w','e','r','-','b','o','t','t','o','m',0,0)
-#define CTX_lower        CTX_STRH('l','o','w','e','r',0,0,0,0,0,0,0,0,0)
-#define CTX_raise        CTX_STRH('r','a','i','s','e',0,0,0,0,0,0,0,0,0)
-#define CTX_raise_top    CTX_STRH('r','a','i','s','e','-','t','o','p',0,0,0,0,0)
-#define CTX_terminate    CTX_STRH('t','e','r','m','i','n','a','t','e',0,0,0,0,0)
-#define CTX_maximize     CTX_STRH('m','a','x','i','m','i','z','e',0,0,0,0,0,0)
-#define CTX_unmaximize   CTX_STRH('u','n','m','a','x','i','m','i','z','e',0,0,0,0)
-//#define CTX_width        CTX_STRH('w','i','d','t','h',0,0,0,0,0,0,0,0,0)
-#define CTX_action       CTX_STRH('a','c','t','i','o','n',0,0,0,0,0,0,0,0)
-//#define CTX_height       CTX_STRH('h','e','i','g','h','t',0,0,0,0,0,0,0,0)
 
 void terminal_update_title    (const char *title);
 void ctx_sdl_set_fullscreen   (Ctx *ctx, int val);
@@ -127,9 +115,9 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
         case CTX_maximize:     ctx_client_maximize (client); break;
         case CTX_unmaximize:   ctx_client_unmaximize (client); break;
         case CTX_lower:        ctx_client_lower (client); break;
-        case CTX_lower_bottom: ctx_client_lower_bottom (client);  break;
+        case CTX_lowerBottom:  ctx_client_lower_bottom (client);  break;
         case CTX_raise:        ctx_client_raise (client); break;
-        case CTX_raise_top:    ctx_client_raise_top (client); break;
+        case CTX_raiseTop:     ctx_client_raise_top (client); break;
       }
       break;
   }

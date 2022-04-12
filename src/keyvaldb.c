@@ -12,12 +12,12 @@ static float ctx_state_get (CtxState *state, uint32_t hash)
 
 static void ctx_state_set (CtxState *state, uint32_t key, float value)
 {
-  if (key != CTX_new_state)
+  if (key != CTX_newState)
     {
       if (ctx_state_get (state, key) == value)
         { return; }
       for (int i = state->gstate.keydb_pos-1;
-           i >= 0 && state->keydb[i].key != CTX_new_state;
+           i >= 0 && state->keydb[i].key != CTX_newState;
            i--)
         {
           if (state->keydb[i].key == key)

@@ -448,7 +448,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_stroke:         ret = CTX_STROKE; break;
           case CTX_fill:           ret = CTX_FILL; break;
           case CTX_paint:          ret = CTX_PAINT; break;
-          case CTX_end_frame:      ret = CTX_END_FRAME; break;
           case CTX_endFrame:       ret = CTX_END_FRAME; break;
           case CTX_horLineTo:      ret = CTX_HOR_LINE_TO; break;
           case CTX_rotate:         ret = CTX_ROTATE; break;
@@ -459,8 +458,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_newPage:        ret = CTX_NEW_PAGE; break;
           case CTX_quadTo:         ret = CTX_QUAD_TO; break;
           case CTX_viewBox:        ret = CTX_VIEW_BOX; break;
-          case CTX_smooth_to:      ret = CTX_SMOOTH_TO; break;
-          case CTX_smooth_quad_to: ret = CTX_SMOOTHQ_TO; break;
+          case CTX_smoothTo:       ret = CTX_SMOOTH_TO; break;
+          case CTX_smoothQuadTo:   ret = CTX_SMOOTHQ_TO; break;
           case CTX_clear:          ret = CTX_COMPOSITE_CLEAR; break;
           case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
           case CTX_destinationOver:  ret = CTX_COMPOSITE_DESTINATION_OVER; break;
@@ -485,7 +484,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case CTX_normal:         ret = CTX_BLEND_NORMAL;break;
           case CTX_screen:         ret = CTX_BLEND_SCREEN;break;
           case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
-          case CTX_start_frame:    ret = CTX_START_FRAME; break;
           case CTX_startFrame:     ret = CTX_START_FRAME; break;
           case CTX_verLineTo:      ret = CTX_VER_LINE_TO; break;
           case CTX_exit:
@@ -685,10 +683,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           /* words that correspond to low integer constants
           */
           case CTX_nonzero:     return CTX_FILL_RULE_WINDING;
-          case CTX_non_zero:    return CTX_FILL_RULE_WINDING;
           case CTX_winding:     return CTX_FILL_RULE_WINDING;
-          case CTX_evenOdd:
-          case CTX_even_odd:    return CTX_FILL_RULE_EVEN_ODD;
+          case CTX_evenOdd:     return CTX_FILL_RULE_EVEN_ODD;
           case CTX_bevel:       return CTX_JOIN_BEVEL;
           case CTX_round:       return CTX_JOIN_ROUND;
           case CTX_miter:       return CTX_JOIN_MITER;

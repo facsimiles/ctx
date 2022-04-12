@@ -144,7 +144,7 @@ ctx_gstate_push (CtxState *state)
     { return; }
   state->gstate_stack[state->gstate_no] = state->gstate;
   state->gstate_no++;
-  ctx_state_set (state, CTX_new_state, 0.0f);
+  ctx_state_set (state, CTX_newState, 0.0f);
   state->has_clipped=0;
 }
 
@@ -1103,7 +1103,7 @@ CtxExtend ctx_get_extend (Ctx *ctx)
 
 CtxTextAlign ctx_get_text_align  (Ctx *ctx)
 {
-  return (CtxTextAlign)ctx_state_get (&ctx->state, CTX_text_align);
+  return (CtxTextAlign)ctx_state_get (&ctx->state, CTX_textAlign);
 }
 
 float ctx_get_wrap_left        (Ctx *ctx)
@@ -1122,7 +1122,7 @@ float ctx_get_line_height      (Ctx *ctx)
 
 CtxTextBaseline ctx_get_text_baseline (Ctx *ctx)
 {
-  return (CtxTextBaseline)ctx_state_get (&ctx->state, CTX_text_baseline);
+  return (CtxTextBaseline)ctx_state_get (&ctx->state, CTX_textBaseline);
 }
 
 CtxLineCap ctx_get_line_cap (Ctx *ctx)
@@ -1424,13 +1424,13 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->gstate.extend = (CtxExtend) ctx_arg_u32 (0);
         break;
       case CTX_TEXT_ALIGN:
-        ctx_state_set (state, CTX_text_align, ctx_arg_u8 (0) );
+        ctx_state_set (state, CTX_textAlign, ctx_arg_u8 (0) );
         break;
       case CTX_TEXT_BASELINE:
-        ctx_state_set (state, CTX_text_baseline, ctx_arg_u8 (0) );
+        ctx_state_set (state, CTX_textBaseline, ctx_arg_u8 (0) );
         break;
       case CTX_TEXT_DIRECTION:
-        ctx_state_set (state, CTX_text_direction, ctx_arg_u8 (0) );
+        ctx_state_set (state, CTX_textDirection, ctx_arg_u8 (0) );
         break;
       case CTX_GLOBAL_ALPHA:
         state->gstate.global_alpha_u8 = ctx_float_to_u8 (ctx_arg_float (0) );
