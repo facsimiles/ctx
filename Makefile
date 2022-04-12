@@ -195,7 +195,8 @@ src/%.o: src/%.c split/*.h
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c
+media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c \
+media-handlers/w3c-constants.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
@@ -263,6 +264,12 @@ squoze5/squoze5: squoze5/*.[ch]
 src/constants.h: src/*.c Makefile squoze5/squoze5
 	echo '#ifndef __CTX_CONSTANTS' > $@
 	echo '#define __CTX_CONSTANTS' >> $@
-	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z]'|sort | uniq | cut -f 2 -d _`;do echo "#define CTX_$$a `./squoze5/squoze5 -32 $$a`";done \
+	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][a-zA-Z_0-9]*'|sort | uniq | cut -f 2 -d _`;do echo "#define CTX_$$a `./squoze5/squoze5 -32 $$a`u";done \
+		>> $@
+	echo '#endif' >> $@
+media-handlers/w3c-constants.h: media-handlers/svg.h Makefile squoze5/squoze5
+	echo '#ifndef __W3C_CONSTANTS' > $@
+	echo '#define __W3C_CONSTANTS' >> $@
+	for a in `cat media-handlers/svg.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze5/squoze5 -32 $$b`u // \"$$b\"";done \
 		>> $@
 	echo '#endif' >> $@
