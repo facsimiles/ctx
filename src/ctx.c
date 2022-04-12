@@ -1464,6 +1464,10 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         state->source = 1;
         break;
 
+      case CTX_FONT:
+        state->gstate.font = ctx_resolve_font (ctx_arg_string());
+        break;
+
       case CTX_COLOR:
         {
           int is_stroke = (state->source != 0);

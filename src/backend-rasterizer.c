@@ -2767,7 +2767,7 @@ _ctx_font (Ctx *ctx, const char *name);
 static void
 ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name)
 {
-  _ctx_font (rasterizer->backend.ctx, font_name);
+  //_ctx_font (rasterizer->backend.ctx, font_name);
 }
 
 static void

@@ -117,6 +117,43 @@ pdf_end_page (CtxPDF *pdf)
   pdf_end_object(pdf);
 }
 
+static char *ctx_utf8_to_mac_roman (const uint8_t *string)
+{
+  CtxString *ret = ctx_string_new ("");
+  if (*string)
+  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?ctx_utf8_skip (utf8, 1):(utf8+1))
+  {
+    uint8_t copy[5];
+
+    memcpy (copy, utf8, ctx_utf8_len (utf8[0]));
+    copy[ctx_utf8_len (utf8)+1]=0;
+    if (copy[0] <=127)
+    {
+      ctx_string_append_byte (ret, copy[0]);
+    }
+    else
+    {
+      int code = 128;
+      /* it would be better to to this comparison on a unicode table,
+       * but this was easier to create
+       */
+#define C(a) \
+      if (!strcmp ((char*)&copy[0], a)) { ctx_string_append_byte (ret, code); continue; }; code++
+      C("Ä");C("Å");C("Ç");C("É");C("Ñ");C("Ö");C("Ü");C("á");C("à");C("â");C("ä");C("ã");C("å");C("ç");C("é");C("è");
+      C("ê");C("ë");C("í");C("ì");C("î");C("ï");C("ñ");C("ó");C("ò");C("ô");C("ö");C("õ");C("ú");C("ù");C("û");C("ü");
+      C("†");C("°");C("¢");C("£");C("§");C("•");C("¶");C("ß");C("®");C("©");C("™");C("´");C("¨");C("≠");C("Æ");C("Ø");
+      C("∞");C("±");C("≤");C("≥");C("¥");C("µ");C("∂");C("∑");C("∏");C("π");C("∫");C("ª");C("º");C("Ω");C("æ");C("ø");
+      C("¿");C("¡");C("¬");C("√");C("ƒ");C("≈");C("∆");C("«");C("»");C("…");C(" ");C("À");C("Ã");C("Õ");C("Œ");C("œ");
+      C("–");C("—");C("“");C("”");C("‘");C("’");C("÷");C("◊");C("ÿ");C("Ÿ");C("⁄");C("€");C("‹");C("›");C("ﬁ");C("ﬂ");
+      C("‡");C("·");C("‚");C("„");C("‰");C("Â");C("Ê");C("Á");C("Ë");C("È");C("Í");C("Î");C("Ï");C("Ì");C("Ó");C("Ô");
+      C("?");C("Ò");C("Ú");C("Û");C("Ù");C("ı");C("ˆ");C("˜");C("¯");C("˘");C("˙");C("˚");C("¸");C("˝");C("˛");C("ˇ");
+#undef C
+      ctx_string_append_byte (ret, '?');
+    }
+  }
+
+  return ctx_string_dissolve (ret);
+}
 
 static void
 ctx_pdf_process (Ctx *ctx, CtxCommand *c)
@@ -405,7 +442,16 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         ctx_pdf_printf("Q\n");
         break;
       case CTX_FONT_SIZE:
-        //pdf_set_font_size (cr, ctx_arg_float (0) );
+        if (state->gstate.font == 0)
+          ctx_pdf_printf("/F1 %f Tf\n", state->gstate.font_size);
+        else
+          ctx_pdf_printf("/F2 %f Tf\n", state->gstate.font_size);
+        break;
+      case CTX_FONT:
+        if (state->gstate.font == 0)
+          ctx_pdf_printf("/F1 %f Tf\n", state->gstate.font_size);
+        else
+          ctx_pdf_printf("/F2 %f Tf\n", state->gstate.font_size);
         break;
       case CTX_MITER_LIMIT:
         ctx_pdf_printf("%f M\n", ctx_arg_float (0));
@@ -466,14 +512,15 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
          *      or fallback to rasterizing as curves if
          *      any non default parameters
          */
-        if (state->gstate.font == 0)
-          ctx_pdf_printf("/F1 %f Tf\n", state->gstate.font_size);
-        else
-          ctx_pdf_printf("/F2 %f Tf\n", state->gstate.font_size);
-        ctx_pdf_printf("1 0 0 -1 %f %f Tm ( %s ) Tj\n",
+
+        ctx_pdf_printf("1 0 0 -1 %f %f Tm ",
                         state->x,
-                        state->y,
-                        ctx_arg_string ());
+                        state->y);
+        {
+          char *str_mac_roman = ctx_utf8_to_mac_roman ((uint8_t*)ctx_arg_string ());
+          ctx_pdf_printf ("( %s ) Tj\n", str_mac_roman);
+          ctx_free (str_mac_roman);
+        }
         break;
       case CTX_CONT:
       case CTX_EDGE:
@@ -486,6 +533,9 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         pdf->page_size[pdf->page_count][1] = ctx_arg_float(1);
         pdf->page_size[pdf->page_count][2] = ctx_arg_float(2);
         pdf->page_size[pdf->page_count][3] = ctx_arg_float(3);
+        ctx_set_size (ctx, 
+          ctx_arg_float(2),
+          ctx_arg_float(3));
         break;
     }
   ctx_interpret_pos_bare (&pdf->state, entry, pdf);
