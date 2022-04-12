@@ -6,13 +6,13 @@
 #define CTX_PDF_MAX_PAGES CTX_PDF_MAX_OBJS
 
 typedef struct _CtxPDF CtxPDF;
+enum { CTX_PDF_HELVETICA = 1, CTX_PDF_TIMES, CTX_PDF_COURIER };
 struct
   _CtxPDF
 {
   CtxBackend    backend;
   int           preserve;
   const char   *path;
-  char         *font;
   CtxString    *document;
   CtxState      state;
   int           pat;
@@ -32,7 +32,9 @@ struct
   int           page_count;
 
   int           pages; // known to be 1
+  int           font;
 };
+
 
 #define ctx_pdf_printf(fmt, a...) do {\
         ctx_string_append_printf (pdf->document, fmt, ##a);\
@@ -121,12 +123,12 @@ static char *ctx_utf8_to_mac_roman (const uint8_t *string)
 {
   CtxString *ret = ctx_string_new ("");
   if (*string)
-  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?ctx_utf8_skip (utf8, 1):(utf8+1))
+  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?ctx_utf8_skip ((char*)utf8, 1):(utf8+1))
   {
     uint8_t copy[5];
 
     memcpy (copy, utf8, ctx_utf8_len (utf8[0]));
-    copy[ctx_utf8_len (utf8)+1]=0;
+    copy[ctx_utf8_len (utf8[0])]=0;
     if (copy[0] <=127)
     {
       ctx_string_append_byte (ret, copy[0]);
@@ -332,22 +334,29 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
 #endif
         break;
       case CTX_COLOR:
-        switch ( ((int) ctx_arg_float (0)) & 511) // XXX remove 511 after stroke source is complete
+        int space =  ((int) ctx_arg_float (0)) & 511;
+        switch (space) // XXX remove 511 after stroke source is complete
         {
-           case CTX_RGB:
            case CTX_RGBA:
            case CTX_DRGBA:
+             /*FALLTHROUGH*/
+             ctx_pdf_printf("/G%i gs\n", (int) ((c->rgba.a + .05) * 9));
+           case CTX_RGB:
              ctx_pdf_printf("%f %f %f rg\n", c->rgba.r, c->rgba.g, c->rgba.b);
              ctx_pdf_printf("%f %f %f RG\n", c->rgba.r, c->rgba.g, c->rgba.b);
              break;
            case CTX_CMYKA:
-           case CTX_CMYK:
            case CTX_DCMYKA:
+             ctx_pdf_printf("/G%i gs\n", (int)(c->cmyka.a + .05) * 10);
+               /*FALLTHROUGH*/
+           case CTX_CMYK:
            case CTX_DCMYK:
               ctx_pdf_printf("%f %f %f %f k\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
               ctx_pdf_printf("%f %f %f %f K\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
               break;
            case CTX_GRAYA:
+             ctx_pdf_printf("/G%i gs\n", (int)(c->graya.a + .05) * 10);
+               /*FALLTHROUGH*/
            case CTX_GRAY:
               ctx_pdf_printf("%f g\n", c->graya.g);
               ctx_pdf_printf("%f G\n", c->graya.g);
@@ -355,6 +364,7 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
             }
         break;
       case CTX_SET_RGBA_U8:
+        ctx_pdf_printf("/G%i gs\n", ctx_arg_u8(3)*10/255);
         ctx_pdf_printf("%f %f %f RG\n",
                                ctx_u8_to_float (ctx_arg_u8 (0) ),
                                ctx_u8_to_float (ctx_arg_u8 (1) ),
@@ -442,16 +452,19 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         ctx_pdf_printf("Q\n");
         break;
       case CTX_FONT_SIZE:
-        if (state->gstate.font == 0)
-          ctx_pdf_printf("/F1 %f Tf\n", state->gstate.font_size);
-        else
-          ctx_pdf_printf("/F2 %f Tf\n", state->gstate.font_size);
+        ctx_pdf_printf("/F%i %f Tf\n", pdf->font, state->gstate.font_size);
         break;
       case CTX_FONT:
-        if (state->gstate.font == 0)
-          ctx_pdf_printf("/F1 %f Tf\n", state->gstate.font_size);
-        else
-          ctx_pdf_printf("/F2 %f Tf\n", state->gstate.font_size);
+        {
+          const char *str = ctx_arg_string ();
+          if (!strcmp (str, "Helvetica"))      pdf->font = CTX_PDF_HELVETICA;
+          if (!strcmp (str, "Helvetica Bold")) pdf->font = CTX_PDF_HELVETICA;
+          if (!strcmp (str, "Times"))          pdf->font = CTX_PDF_TIMES;
+          if (!strcmp (str, "Times Bold"))     pdf->font = CTX_PDF_TIMES;
+          if (!strcmp (str, "Courier"))        pdf->font = CTX_PDF_COURIER;
+          if (!strcmp (str, "Courier Bold"))   pdf->font = CTX_PDF_COURIER;
+        }
+        ctx_pdf_printf("/F%i %f Tf\n", pdf->font, state->gstate.font_size);
         break;
       case CTX_MITER_LIMIT:
         ctx_pdf_printf("%f M\n", ctx_arg_float (0));
@@ -588,31 +601,55 @@ void ctx_pdf_destroy (CtxPDF *pdf)
 "/BaseFont /Times\n"
 "/Encoding /MacRomanEncoding\n"
 ">>\n");
+  int font3=pdf_add_object (pdf); // 4
+  ctx_pdf_printf ("<<\n");
+  ctx_pdf_printf (
+"/Name /F3\n"
+"/Subtype /Type1\n"
+"/Type /Font\n"
+"/BaseFont /Courier\n"
+"/Encoding /MacRomanEncoding\n"
+">>\n");
   pdf_end_object(pdf);
   int fontmap=pdf_add_object(pdf);
-  ctx_pdf_printf ("<</F1 %i 0 R /F2 %i 0 R >>\n", font1, font2);
+  ctx_pdf_printf ("<</F1 %i 0 R /F2 %i 0 R /F3 %i 0 R >>\n", font1, font2, font3);
   pdf_end_object(pdf);
 
+  int alphas[10];
+
+  for (int i = 0; i < 10; i ++)
+  {
+  alphas[i]=pdf_add_object (pdf); // 4
+  ctx_pdf_printf ("<< /Type /ExtGState /ca %.2f /CA %.2f >>\n", i/9.0f);
+  pdf_end_object(pdf);
+  }
+
+  int alpha_map=pdf_add_object(pdf);
+  ctx_pdf_printf ("<<\n");
+  for (int i = 0; i < 10; i ++)
+    ctx_pdf_printf ("/G%i %i 0 R\n", i, alphas[i]);
+  ctx_pdf_printf (">>\n");
+  pdf_end_object(pdf);
 
 for (int page_no =1; page_no <= pdf->page_count; page_no++)
 {
   pdf->page_objs[page_no]=pdf_add_object (pdf);
   ctx_pdf_printf ("<<\n"
-"/ProcSet [/PDF /Text]\n"
 "/Contents %i 0 R\n"
 "/Type /Page\n"
 "/Resources \n<<\n"
+"/ProcSet [/PDF /Text]\n"
 "/Font %i 0 R\n"
+"/ExtGState %i 0 R\n"
 ">>\n"
 "/Parent %i 0 R\n"
 "/MediaBox [%f %f %f %f]\n"
-">>\n", pdf->content_objs[page_no], fontmap, pdf->pages,
+">>\n", pdf->content_objs[page_no], fontmap, alpha_map, pdf->pages,
   pdf->page_size[page_no][0],
   pdf->page_size[page_no][1],
   pdf->page_size[page_no][2],
   pdf->page_size[page_no][3]);
   pdf_end_object(pdf);
-
 }
 
   // we now patch-back the value in pages earlier
@@ -674,6 +711,7 @@ ctx_new_pdf (const char *path, int width, int height)
   pdf->pages=pdf_add_object (pdf); // 1
   ctx_pdf_printf ("<<\n/Kids ");
   pdf->kids_offset = pdf->document->length;
+  pdf->font = 0;
   ctx_pdf_printf ("XXXXXXXXXX 0 R\n");
   ctx_pdf_printf ("/Type /Pages\n");
   ctx_pdf_printf ("/Count ");
