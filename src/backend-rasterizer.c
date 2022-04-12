@@ -2010,8 +2010,8 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
 {
   int tx = 0, ty = 0;
 
-  rasterizer->state->x        = x;
-  rasterizer->state->y        = y;
+  rasterizer->x        = x;
+  rasterizer->y        = y;
   rasterizer->first_x  = x;
   rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
@@ -2029,8 +2029,8 @@ ctx_rasterizer_line_to_fixed (CtxRasterizer *rasterizer, int x, int y)
   //  need a separate call for doing this at end of beziers and arcs
   //if (done)
   //{
-  //   rasterizer->state->y         = y*1.0f/CTX_FULL_AA;
-  //   rasterizer->state->x         = x*1.0f/CTX_SUBDIV;
+  //     rasterizer->y         = y*1.0/CTX_FULL_AA;
+  //     rasterizer->x         = x*1.0/CTX_SUBDIV;
   //}
   int tx = 0, ty = 0;
   _ctx_user_to_device_prepped_fixed (rasterizer->state, x, y, &tx, &ty);
@@ -2051,8 +2051,8 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   int tx = 0, ty = 0;
   rasterizer->has_shape = 1;
-  rasterizer->state->y         = y;
-  rasterizer->state->x         = x;
+  rasterizer->y         = y;
+  rasterizer->x         = x;
 
   _ctx_user_to_device_prepped (rasterizer->state, x, y, &tx, &ty);
   tx -= rasterizer->blit_x * CTX_SUBDIV;
@@ -2271,8 +2271,8 @@ ctx_rasterizer_rel_move_to (CtxRasterizer *rasterizer, float x, float y)
 {
   //if (CTX_UNLIKELY(x == 0.f && y == 0.f))
   //{ return; }
-  x += rasterizer->state->x;
-  y += rasterizer->state->y;
+  x += rasterizer->x;
+  y += rasterizer->y;
   ctx_rasterizer_move_to (rasterizer, x, y);
 }
 
@@ -2281,8 +2281,8 @@ ctx_rasterizer_rel_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   //if (CTX_UNLIKELY(x== 0.f && y==0.f))
   //  { return; }
-  x += rasterizer->state->x;
-  y += rasterizer->state->y;
+  x += rasterizer->x;
+  y += rasterizer->y;
   ctx_rasterizer_line_to (rasterizer, x, y);
 }
 
@@ -2290,12 +2290,12 @@ static void
 ctx_rasterizer_rel_curve_to (CtxRasterizer *rasterizer,
                              float x0, float y0, float x1, float y1, float x2, float y2)
 {
-  x0 += rasterizer->state->x;
-  y0 += rasterizer->state->y;
-  x1 += rasterizer->state->x;
-  y1 += rasterizer->state->y;
-  x2 += rasterizer->state->x;
-  y2 += rasterizer->state->y;
+  x0 += rasterizer->x;
+  y0 += rasterizer->y;
+  x1 += rasterizer->x;
+  y1 += rasterizer->y;
+  x2 += rasterizer->x;
+  y2 += rasterizer->y;
   ctx_rasterizer_curve_to (rasterizer, x0, y0, x1, y1, x2, y2);
 }
 
@@ -2699,8 +2699,8 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   if (rasterizer->term_glyphs && !stroke &&
       fabsf (font_size - ch) < 0.5f)
   {
-    float tx = rasterizer->state->x;
-    float ty = rasterizer->state->y;
+    float tx = rasterizer->x;
+    float ty = rasterizer->y;
     _ctx_user_to_device (rasterizer->state, &tx, &ty);
     int col = (int)(tx / cw + 1);
     int row = (int)(ty / ch + 1);
@@ -2739,8 +2739,8 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
   if (rasterizer->term_glyphs && !stroke &&
       fabsf (font_size - ch) < 0.5f)
   {
-    float tx = rasterizer->state->x;
-    float ty = rasterizer->state->y;
+    float tx = rasterizer->x;
+    float ty = rasterizer->y;
     _ctx_user_to_device (rasterizer->state, &tx, &ty);
     int col = (int)(tx / cw + 1);
     int row = (int)(ty / ch + 1);
@@ -2864,7 +2864,7 @@ ctx_rasterizer_quad_to (CtxRasterizer *rasterizer,
                         float        y)
 {
   ctx_rasterizer_curve_to (rasterizer,
-                           (cx * 2 + rasterizer->state->x) / 3.0f, (cy * 2 + rasterizer->state->y) / 3.0f,
+                           (cx * 2 + rasterizer->x) / 3.0f, (cy * 2 + rasterizer->y) / 3.0f,
                            (cx * 2 + x) / 3.0f,           (cy * 2 + y) / 3.0f,
                            x,                              y);
 }
@@ -2874,8 +2874,8 @@ ctx_rasterizer_rel_quad_to (CtxRasterizer *rasterizer,
                             float cx, float cy,
                             float x,  float y)
 {
-  ctx_rasterizer_quad_to (rasterizer, cx + rasterizer->state->x, cy + rasterizer->state->y,
-                          x  + rasterizer->state->x, y  + rasterizer->state->y);
+  ctx_rasterizer_quad_to (rasterizer, cx + rasterizer->x, cy + rasterizer->y,
+                          x  + rasterizer->x, y  + rasterizer->y);
 }
 
 static void

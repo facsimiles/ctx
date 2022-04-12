@@ -129,10 +129,6 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
 void
 ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
 {
-  if (ex1) *ex1 = 0;
-  if (ey1) *ey1 = 0;
-  if (ex2) *ex2 = 0;
-  if (ey2) *ey2 = 0;
 }
 #endif
 
@@ -2690,7 +2686,14 @@ ctx_current_point (Ctx *ctx, float *x, float *y)
       if (x) { *x = 0.0f; }
       if (y) { *y = 0.0f; }
     }
+#if CTX_RASTERIZER_X
+  if (ctx->backend && ctx->backend->process == ctx_rasterizer_process)
+    {
+      user_x = ((CtxRasterizer *) (ctx->backend) )->x;
+      user_y = ((CtxRasterizer *) (ctx->backend) )->y;
+    }
   else
+#endif
     {
       user_x = ctx->state.x;
       user_y = ctx->state.y;

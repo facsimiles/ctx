@@ -176,8 +176,8 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           float height = ctx_get_font_size (rasterizer->backend.ctx);
            CtxIntRectangle shape_rect;
 
-           float tx = rasterizer->state->x;
-           float ty = rasterizer->state->y - height * 1.2f;
+           float tx = rasterizer->x;
+           float ty = rasterizer->y - height * 1.2f;
            float tx2 = tx+width;
            float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5f);
 
@@ -219,8 +219,8 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 
            CtxIntRectangle shape_rect;
 
-           float tx = rasterizer->state->x;
-           float ty = rasterizer->state->y - height * 1.2f;
+           float tx = rasterizer->x;
+           float ty = rasterizer->y - height * 1.2f;
            float tx2 = tx+width;
            float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5f);
            ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
@@ -252,10 +252,10 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           float width = ctx_text_width (rasterizer->backend.ctx, (char*)string);
           float height = ctx_get_font_size (rasterizer->backend.ctx);
 
-          float tx = rasterizer->state->x;
-          float ty = rasterizer->state->y;
-          float tx2 = rasterizer->state->x + width;
-          float ty2 = rasterizer->state->y + height * 2;
+          float tx = rasterizer->x;
+          float ty = rasterizer->y;
+          float tx2 = rasterizer->x + width;
+          float ty2 = rasterizer->y + height * 2;
           CtxIntRectangle shape_rect;
           ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
 
