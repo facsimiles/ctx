@@ -114,9 +114,8 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
   CtxEntry *entry = (CtxEntry *) &c->entry;
   CtxState *state = &pdf->state;
 
-#if CTX_CURRENT_PATH
-  ctx_update_current_path (ctx, entry);
-#endif
+  CtxDrawlist *preserved = NULL;
+
 
   ctx_interpret_style (&pdf->state, entry, NULL);
 
@@ -205,8 +204,8 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
                  w = c->arc.radius,
                  h = c->arc.radius,
                  stop  = c->arc.angle1,
-                 start = c->arc.angle2,
-                 direction = c->arc.direction;
+                 start = c->arc.angle2;
+                 //direction = c->arc.direction;
 
            start = start * 0.99;
 
@@ -238,13 +237,12 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
              // Create curves
              float epsilon = 0.00001f; // Smallest visible angle on displays up to 4K.
              float arcToDraw = 0;
-             int first = 0;
-             float curves[4][8]={0.0f,};
+             float curves[4][8]={{0.0f,}};
              int n_curves = 0;
              while(stop - start > epsilon) {
                arcToDraw = ctx_minf(stop - start, CTX_PI/2);
                {
-                 float cx0, cy0, cx1, cy1, cx2, cy2, x, y;
+                 //float cx0, cy0, cx1, cy1, cx2, cy2, x, y;
                  acuteArcToBezier(start, arcToDraw, 
                                  &curves[n_curves][0], &curves[n_curves][1],
                                  &curves[n_curves][2], &curves[n_curves][3],
@@ -337,8 +335,8 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
       case CTX_FILL:
         if (pdf->preserve)
         {
+          preserved = ctx_current_path (ctx);
           ctx_pdf_printf("f\n");
-          // XXX reconstruct path
           pdf->preserve = 0;
         }
         else
@@ -361,6 +359,7 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
       case CTX_STROKE:
         if (pdf->preserve)
         {
+          preserved = ctx_current_path (ctx);
           ctx_pdf_printf("S\n");
           pdf->preserve = 0;
         }
@@ -372,6 +371,7 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
       case CTX_CLIP:
         if (pdf->preserve)
         {
+          preserved = ctx_current_path (ctx);
           ctx_pdf_printf("W\n");
           pdf->preserve = 0;
         }
@@ -472,9 +472,24 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         break;
     }
   ctx_interpret_pos_bare (&pdf->state, entry, pdf);
-//  ctx_process (pdf->backend.ctx, entry);
-}
+#if CTX_CURRENT_PATH
+  ctx_update_current_path (ctx, entry);
+#endif
 
+  if (preserved)
+  {
+    CtxIterator iterator;
+    CtxCommand *command;
+    
+    //CtxEntry clear_path = {CTX_BEGIN_PATH};
+    //ctx_pdf_process (ctx, (CtxCommand*)&clear_path);
+    //ctx_update_current_path (ctx, &clear_path);
+    ctx_iterator_init (&iterator, preserved, 0, CTX_ITERATOR_EXPAND_BITPACK);
+    while ( (command = ctx_iterator_next (&iterator) ) )
+      { ctx_pdf_process (ctx, command); }
+    ctx_free (preserved);
+  }
+}
 
 void ctx_pdf_destroy (CtxPDF *pdf)
 {
