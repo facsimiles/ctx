@@ -43,6 +43,7 @@ struct
   int           width;
   int           height;
 
+  char         *encoding;
   int           page_objs[CTX_PDF_MAX_PAGES];
   int           content_objs[CTX_PDF_MAX_PAGES];
   float         page_size[CTX_PDF_MAX_PAGES][4];
@@ -171,6 +172,43 @@ static char *ctx_utf8_to_mac_roman (const uint8_t *string)
     }
   }
 
+  return ctx_string_dissolve (ret);
+}
+
+static char *ctx_utf8_to_windows_1252 (const uint8_t *string)
+{
+  CtxString *ret = ctx_string_new ("");
+  if (*string)
+  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?(uint8_t*)ctx_utf8_skip ((char*)utf8, 1):(utf8+1))
+  {
+    uint8_t copy[5];
+
+    memcpy (copy, utf8, ctx_utf8_len (utf8[0]));
+    copy[ctx_utf8_len (utf8[0])]=0;
+    if (copy[0] <=127)
+    {
+      ctx_string_append_byte (ret, copy[0]);
+    }
+    else
+    {
+      int code = 128;
+      /* it would be better to to this comparison on a unicode table,
+       * but this was easier to create
+       */
+#define C(a) \
+      if (!strcmp ((char*)&copy[0], a)) { ctx_string_append_byte (ret, code); continue; }; code++
+C("€");C(" ");C("‚");C("ƒ");C("„");C("…");C("†");C("‡");C("ˆ");C("‰");C("Š");C("‹");C("Œ");C(" ");C("Ž");C(" ");
+C(" ");C("‘");C("’");C("“");C("”");C("•");C("–");C("—");C("˜");C("™");C("š");C("›");C("œ");C(" ");C("ž");C("Ÿ");
+C(" ");C("¡");C("¢");C("£");C("¤");C("¥");C("¦");C("§");C("¨");C("©");C("ª");C("«");C("¬");C("-");C("®");C("¯");
+C("°");C("±");C("²");C("³");C("´");C("µ");C("¶");C("·");C("¸");C("¹");C("º");C("»");C("¼");C("½");C("¾");C("¿");
+C("À");C("Á");C("Â");C("Ã");C("Ä");C("Å");C("Æ");C("Ç");C("È");C("É");C("Ê");C("Ë");C("Ì");C("Í");C("Î");C("Ï");
+C("Ð");C("Ñ");C("Ò");C("Ó");C("Ô");C("Õ");C("Ö");C("×");C("Ø");C("Ù");C("Ú");C("Û");C("Ü");C("Ý");C("Þ");C("ß");
+C("à");C("á");C("â");C("ã");C("ä");C("å");C("æ");C("ç");C("è");C("é");C("ê");C("ë");C("ì");C("í");C("î");C("ï");
+C("ð");C("ñ");C("ò");C("ó");C("ô");C("õ");C("ö");C("÷");C("ø");C("ù");C("ú");C("û");C("ü");C("ý");C("þ");C("ÿ");
+#undef C
+      ctx_string_append_byte (ret, '?');
+    }
+  }
   return ctx_string_dissolve (ret);
 }
 
@@ -359,6 +397,8 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
              ctx_pdf_printf("/G%i gs\n", (int) ((c->rgba.a + .05) * 9));
              /*FALLTHROUGH*/
            case CTX_RGB:
+              if (space == CTX_RGB || space == CTX_DRGB)
+                ctx_pdf_printf("/G%i gs\n", 9);
              ctx_pdf_printf("%f %f %f rg\n", c->rgba.r, c->rgba.g, c->rgba.b);
              ctx_pdf_printf("%f %f %f RG\n", c->rgba.r, c->rgba.g, c->rgba.b);
              break;
@@ -368,6 +408,8 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
                /*FALLTHROUGH*/
            case CTX_CMYK:
            case CTX_DCMYK:
+              if (space == CTX_CMYK || space == CTX_DCMYK)
+                ctx_pdf_printf("/G%i gs\n", 9);
               ctx_pdf_printf("%f %f %f %f k\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
               ctx_pdf_printf("%f %f %f %f K\n", c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
               break;
@@ -375,6 +417,8 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
              ctx_pdf_printf("/G%i gs\n", (int)(c->graya.a + .05) * 10);
                /*FALLTHROUGH*/
            case CTX_GRAY:
+              if (space == CTX_GRAY)
+                ctx_pdf_printf("/G%i gs\n", 9);
               ctx_pdf_printf("%f g\n", c->graya.g);
               ctx_pdf_printf("%f G\n", c->graya.g);
               break;
@@ -546,10 +590,17 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         ctx_pdf_printf("1 0 0 -1 %f %f Tm ",
                         state->x,
                         state->y);
+        if (0)
         {
-          char *str_mac_roman = ctx_utf8_to_mac_roman ((uint8_t*)ctx_arg_string ());
-          ctx_pdf_printf ("( %s ) Tj\n", str_mac_roman);
-          ctx_free (str_mac_roman);
+          char *encoded = ctx_utf8_to_mac_roman ((uint8_t*)ctx_arg_string ());
+          ctx_pdf_printf ("( %s ) Tj\n", encoded);
+          ctx_free (encoded);
+        }
+        else
+        {
+          char *encoded = ctx_utf8_to_windows_1252 ((uint8_t*)ctx_arg_string ());
+          ctx_pdf_printf ("( %s ) Tj\n", encoded);
+          ctx_free (encoded);
         }
         break;
       case CTX_CONT:
@@ -606,8 +657,8 @@ void ctx_pdf_destroy (CtxPDF *pdf)
 "/Subtype /Type1\n"
 "/Type /Font\n"
 "/BaseFont /Helvetica\n"
-"/Encoding /MacRomanEncoding\n"
-">>\n");
+"/Encoding %s\n"
+">>\n", pdf->encoding);
   pdf_end_object(pdf);
   int font2=pdf_add_object (pdf); // 4
   ctx_pdf_printf ("<<\n");
@@ -616,8 +667,8 @@ void ctx_pdf_destroy (CtxPDF *pdf)
 "/Subtype /Type1\n"
 "/Type /Font\n"
 "/BaseFont /Times\n"
-"/Encoding /MacRomanEncoding\n"
-">>\n");
+"/Encoding %s\n"
+">>\n", pdf->encoding);
   int font3=pdf_add_object (pdf); // 4
   ctx_pdf_printf ("<<\n");
   ctx_pdf_printf (
@@ -625,8 +676,8 @@ void ctx_pdf_destroy (CtxPDF *pdf)
 "/Subtype /Type1\n"
 "/Type /Font\n"
 "/BaseFont /Courier\n"
-"/Encoding /MacRomanEncoding\n"
-">>\n");
+"/Encoding %s\n"
+">>\n", pdf->encoding);
   pdf_end_object(pdf);
   int fontmap=pdf_add_object(pdf);
   ctx_pdf_printf ("<</F1 %i 0 R /F2 %i 0 R /F3 %i 0 R >>\n", font1, font2, font3);
@@ -729,6 +780,8 @@ ctx_new_pdf (const char *path, int width, int height)
   ctx_pdf_printf ("<<\n/Kids ");
   pdf->kids_offset = pdf->document->length;
   pdf->font = CTX_PDF_HELVETICA;
+  //pdf->encoding = "/MacRomanEncoding";
+  pdf->encoding = "/WinAnsiEncoding";
   ctx_pdf_printf ("XXXXXXXXXX 0 R\n");
   ctx_pdf_printf ("/Type /Pages\n");
   ctx_pdf_printf ("/Count ");
@@ -736,8 +789,6 @@ ctx_new_pdf (const char *path, int width, int height)
   ctx_pdf_printf ("XXXXXXXXXX");
   ctx_pdf_printf ("\n>>\n");
   pdf_end_object(pdf);
-
-
   pdf_start_page (pdf);
 
   return ctx;
