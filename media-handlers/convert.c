@@ -649,6 +649,11 @@ int convert_main (int argc, char **argv)
       if (rows < 0) rows = ctx_terminal_rows ();
       if (cols < 0) cols = ctx_terminal_cols ();
       break;
+    case CTX_OUTPUT_MODE_CTX_FILE:
+    case CTX_OUTPUT_MODE_CTX_COMPACT_FILE:
+      if (rows < 0) rows = 25;
+      if (cols < 0) cols = 80;
+      break;
   }
   }
 

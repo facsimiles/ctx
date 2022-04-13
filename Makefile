@@ -196,7 +196,6 @@ src/%.o: src/%.c split/*.h
 terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c \
-media-handlers/w3c-constants.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
@@ -220,6 +219,7 @@ docs/ctx.h.html: ctx.h Makefile build.conf
 
 foo: ctx
 updateweb: all ctx.static test docs/ctx.h.html
+	make -C docs/uctx
 	git repack
 	(cd docs ; stagit .. )
 	cat tests/index.html | sed 's/.*script.*//' > tmp

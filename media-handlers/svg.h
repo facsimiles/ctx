@@ -38,7 +38,7 @@
 /*
  *  extra hashed strings to be picked up
  *
- *  CTX_id  CTX_class  CTX_d CTX_rel  
+ *  CTX_id  CTX_class  CTX_d CTX_rel    CTX_viewbox
  *
  */
 
@@ -6258,6 +6258,8 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
         numbers++;
       }
     }
+
+    if (number[0] == 0.0f) {};
 #if 0
     matrix->m[0][0] = number[0];
     matrix->m[0][1] = number[1];
@@ -6589,7 +6591,7 @@ mrg_parse_polygon (Mrg *mrg, const char *str)
 
   if (!str)
     return;
-  ctx_move_to (ctx, 0, 0);
+  //ctx_move_to (ctx, 0, 0);
 
   s = (void*)str;
 again:
@@ -7176,7 +7178,6 @@ void mrg_xml_render (Mrg *mrg,
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
         //  strncpy (htmlctx->attribute[htmlctx->attributes], data, MRG_XML_MAX_ATTRIBUTE_LEN-1);
         att = ctx_strhash (data);
-        //fprintf (stderr, "  %s:%i\n", data, att);
         break;
       case t_val:
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
@@ -7195,7 +7196,7 @@ void mrg_xml_render (Mrg *mrg,
               CTX_stroke_miterlimit,
               CTX_stroke_linejoin,
               CTX_stroke,
-              // CTX_viewBox,
+              // CTX_viewBox,  // CTX_version
               CTX_color,
               CTX_background_color,
               CTX_background,
@@ -7325,7 +7326,7 @@ void mrg_xml_render (Mrg *mrg,
 
         else if (data_hash == CTX_svg)
         {
-          const char *vbox = PROPS(viewBox);
+          const char *vbox = PROPS(viewbox);
           if (vbox)
           {
             float x = _ctx_str_get_float (vbox, 0);

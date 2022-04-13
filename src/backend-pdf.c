@@ -620,7 +620,7 @@ void ctx_pdf_destroy (CtxPDF *pdf)
   for (int i = 0; i < 10; i ++)
   {
   alphas[i]=pdf_add_object (pdf); // 4
-  ctx_pdf_printf ("<< /Type /ExtGState /ca %.2f /CA %.2f >>\n", i/9.0f);
+  ctx_pdf_printf ("<< /Type /ExtGState /ca %.2f /CA %.2f >>\n", i/9.0f, i/9.0f);
   pdf_end_object(pdf);
   }
 
