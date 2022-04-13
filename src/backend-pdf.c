@@ -112,7 +112,7 @@ pdf_end_page (CtxPDF *pdf)
   char buf[12];
   snprintf (buf, 11, "% 10d", length);
   memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 10);
-  snprintf (buf, 11, "% 10f", pdf->page_size[pdf->page_count][3]);
+  snprintf (buf, 11, "% 9f", pdf->page_size[pdf->page_count][3]);
   memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);
   ctx_pdf_printf("ET\n");
   ctx_pdf_printf("\nendstream \n");
@@ -123,7 +123,7 @@ static char *ctx_utf8_to_mac_roman (const uint8_t *string)
 {
   CtxString *ret = ctx_string_new ("");
   if (*string)
-  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?ctx_utf8_skip ((char*)utf8, 1):(utf8+1))
+  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?(uint8_t*)ctx_utf8_skip ((char*)utf8, 1):(utf8+1))
   {
     uint8_t copy[5];
 
@@ -339,8 +339,8 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         {
            case CTX_RGBA:
            case CTX_DRGBA:
-             /*FALLTHROUGH*/
              ctx_pdf_printf("/G%i gs\n", (int) ((c->rgba.a + .05) * 9));
+             /*FALLTHROUGH*/
            case CTX_RGB:
              ctx_pdf_printf("%f %f %f rg\n", c->rgba.r, c->rgba.g, c->rgba.b);
              ctx_pdf_printf("%f %f %f RG\n", c->rgba.r, c->rgba.g, c->rgba.b);
@@ -711,7 +711,7 @@ ctx_new_pdf (const char *path, int width, int height)
   pdf->pages=pdf_add_object (pdf); // 1
   ctx_pdf_printf ("<<\n/Kids ");
   pdf->kids_offset = pdf->document->length;
-  pdf->font = 0;
+  pdf->font = CTX_PDF_HELVETICA;
   ctx_pdf_printf ("XXXXXXXXXX 0 R\n");
   ctx_pdf_printf ("/Type /Pages\n");
   ctx_pdf_printf ("/Count ");

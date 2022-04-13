@@ -2198,6 +2198,9 @@ struct _CtxBackend
 
 typedef struct _CtxIterator CtxIterator;
 
+void
+ctx_logo (Ctx *ctx, float x, float y, float dim);
+
 /* to be freed with ctx_free */
 CtxDrawlist *
 ctx_current_path (Ctx *ctx);

@@ -2853,7 +2853,7 @@ void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
 #endif
 
 
-CTX_EXPORT void
+CTX_EXPORT  void
 ctx_logo (Ctx *ctx, float x, float y, float dim)
 {
      //float width = ctx_width (ctx);
