@@ -7,19 +7,19 @@
 
 typedef struct _CtxPDF CtxPDF;
 enum { CTX_PDF_TIMES = 1,
-       CTX_PDF_HELVETICA,
-       CTX_PDF_COURIER,
-       CTX_PDF_SYMBOL,
+       CTX_PDF_HELVETICA, //2
+       CTX_PDF_COURIER, //3
+       CTX_PDF_SYMBOL, //4
        CTX_PDF_TIMES_BOLD,
        CTX_PDF_HELVETICA_BOLD,
        CTX_PDF_COURIER_BOLD,
-       CTX_PDF_ZAPF_DING_BATS,
-       CTX_PDF_TIMES_ITALIC,
-       CTX_PDF_HELVETICA_ITALIC,
-       CTX_PDF_COURIER_ITALIC,
-       CTX_PDF_TIMES_BOLD_ITALIC,
-       CTX_PDF_HELVETICA_BOLD_ITALIC,
-       CTX_PDF_COURIER_BOLD_ITALIC,
+       CTX_PDF_ZAPF_DING_BATS, // 8
+       CTX_PDF_TIMES_ITALIC, // 9
+       CTX_PDF_HELVETICA_ITALIC, // 10
+       CTX_PDF_COURIER_ITALIC, // 11
+       CTX_PDF_TIMES_BOLD_ITALIC, // 12
+       CTX_PDF_HELVETICA_BOLD_ITALIC, //13
+       CTX_PDF_COURIER_BOLD_ITALIC, //14
        // courier and helvetica variants are called
        // oblique not italic in the PDF spec
 
@@ -97,12 +97,12 @@ int pdf_add_object (CtxPDF *pdf)
 {
   // we use 1 indexing in this array
   pdf->xref[++pdf->objs] = pdf->document->length;
-  ctx_pdf_printf("%i 0 obj\n\n", pdf->objs);
+  ctx_pdf_printf("%i 0 obj ", pdf->objs);
   return pdf->objs;
 }
 void pdf_end_object (CtxPDF *pdf)
 {
-  ctx_pdf_printf("endobj\n\n");
+  ctx_pdf_printf("endobj\n");
 }
 
 static void
@@ -110,10 +110,10 @@ pdf_start_page (CtxPDF *pdf)
 {
   pdf->page_count++;
   pdf->content_objs[pdf->page_count]=pdf_add_object (pdf); // 2 - our actual page contents
-  ctx_pdf_printf ("<<\n/Length ");
+  ctx_pdf_printf ("<</Length ");
   pdf->page_length_offset = pdf->document->length;
-  ctx_pdf_printf ("XXXXXXXXXX\n>>\n");
-  ctx_pdf_printf ("stream\nBT\n1 0 0 -1 0 ");
+  ctx_pdf_printf ("XXXXXXXXXX>>\n");
+  ctx_pdf_printf ("stream BT\n1 0 0 -1 0 ");
   pdf->page_height_offset = pdf->document->length;
   ctx_pdf_printf ("XXXXXXXXXX cm\n/F1 24 Tf\n", pdf->height);
 
@@ -133,7 +133,7 @@ pdf_end_page (CtxPDF *pdf)
   snprintf (buf, 11, "% 9f", pdf->page_size[pdf->page_count][3]);
   memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);
   ctx_pdf_printf("ET\n");
-  ctx_pdf_printf("\nendstream \n");
+  ctx_pdf_printf("  endstream\n");
   pdf_end_object(pdf);
 }
 
@@ -519,11 +519,23 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         {
           const char *str = ctx_arg_string ();
           if (!strcmp (str, "Helvetica"))      pdf->font = CTX_PDF_HELVETICA;
-          if (!strcmp (str, "Helvetica Bold")) pdf->font = CTX_PDF_HELVETICA;
+          if (!strcmp (str, "Helvetica Bold")) pdf->font = CTX_PDF_HELVETICA_BOLD;
+          if (!strcmp (str, "Helvetica Italic")) pdf->font = CTX_PDF_HELVETICA_ITALIC;
+          if (!strcmp (str, "Helvetica BoldItalic")) pdf->font = CTX_PDF_HELVETICA_BOLD_ITALIC;
+          if (!strcmp (str, "Helvetica Bold Italic")) pdf->font = CTX_PDF_HELVETICA_BOLD_ITALIC;
+          if (!strcmp (str, "Symbol"))          pdf->font = CTX_PDF_SYMBOL;
+          if (!strcmp (str, "Zapf Dingbats"))   pdf->font = CTX_PDF_ZAPF_DING_BATS;
+          if (!strcmp (str, "ZapfDingbats"))   pdf->font = CTX_PDF_ZAPF_DING_BATS;
           if (!strcmp (str, "Times"))          pdf->font = CTX_PDF_TIMES;
-          if (!strcmp (str, "Times Bold"))     pdf->font = CTX_PDF_TIMES;
+          if (!strcmp (str, "Times Italic"))   pdf->font = CTX_PDF_TIMES_ITALIC;
+          if (!strcmp (str, "Times Bold"))     pdf->font = CTX_PDF_TIMES_BOLD;
+          if (!strcmp (str, "Times Bold Italic"))     pdf->font = CTX_PDF_TIMES_BOLD_ITALIC;
+          if (!strcmp (str, "Times BoldItalic"))     pdf->font = CTX_PDF_TIMES_BOLD_ITALIC;
           if (!strcmp (str, "Courier"))        pdf->font = CTX_PDF_COURIER;
-          if (!strcmp (str, "Courier Bold"))   pdf->font = CTX_PDF_COURIER;
+          if (!strcmp (str, "Courier Bold"))   pdf->font = CTX_PDF_COURIER_BOLD;
+          if (!strcmp (str, "Courier Italic"))   pdf->font = CTX_PDF_COURIER_ITALIC;
+          if (!strcmp (str, "Courier Bold Italic"))  pdf->font = CTX_PDF_COURIER_BOLD_ITALIC;
+          if (!strcmp (str, "Courier BoldItalic"))   pdf->font = CTX_PDF_COURIER_BOLD_ITALIC;
         }
         ctx_pdf_printf("/F%i %f Tf\n", pdf->font, state->gstate.font_size);
         break;
@@ -593,13 +605,13 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         if (0)
         {
           char *encoded = ctx_utf8_to_mac_roman ((uint8_t*)ctx_arg_string ());
-          ctx_pdf_printf ("( %s ) Tj\n", encoded);
+          ctx_pdf_printf ("(%s) Tj\n", encoded);
           ctx_free (encoded);
         }
         else
         {
           char *encoded = ctx_utf8_to_windows_1252 ((uint8_t*)ctx_arg_string ());
-          ctx_pdf_printf ("( %s ) Tj\n", encoded);
+          ctx_pdf_printf ("(%s) Tj\n", encoded);
           ctx_free (encoded);
         }
         break;
@@ -643,44 +655,36 @@ void ctx_pdf_destroy (CtxPDF *pdf)
 
   pdf_end_page (pdf);
 
-  int outlines=pdf_add_object (pdf); // 1
-  ctx_pdf_printf("<<\n/Type /Outlines\n/Count 0\n>>\n");
+  int outlines=pdf_add_object (pdf);
+  ctx_pdf_printf("<</Type /Outlines /Count 0 >> ");
   pdf_end_object(pdf);
-  int catalog=pdf_add_object (pdf); // 2
-  ctx_pdf_printf("<<\n/Type /Catalog\n/Outlines %i 0 R\n/Pages %i 0 R\n>>\n", outlines, pdf->pages);
+  int catalog=pdf_add_object (pdf);
+  ctx_pdf_printf("<</Type /Catalog /Outlines %i 0 R /Pages %i 0 R>>", outlines, pdf->pages);
   pdf_end_object(pdf);
 
-  int font1=pdf_add_object (pdf); // 3
-  ctx_pdf_printf ("<<\n");
-  ctx_pdf_printf (
-"/Name /F1\n"
-"/Subtype /Type1\n"
-"/Type /Font\n"
-"/BaseFont /Helvetica\n"
-"/Encoding %s\n"
-">>\n", pdf->encoding);
+  int font[16];
+  int font_no = 1;
+
+  char *font_names[]={"","Times","Helvetica","Courier","Symbol",
+"Times-Bold", "Helvetica-Bold", "Courier-Bold",
+"ZapfDingbats", "Times-Italic", "Helvetica-Oblique",
+"Courier-Oblique", "Times-BoldItalic", "Helvetica-BoldItalic", "Courier-BoldItalic"
+  };
+
+  for (int font_no = 1; font_no <= 14; font_no++)
+  {
+  font[font_no]=
+  pdf_add_object (pdf);
+  ctx_pdf_printf ("<</Name /F%i /Subtype /Type1 /Type /Font "
+"/BaseFont /%s /Encoding %s>>", font_no, font_names[font_no], pdf->encoding);
   pdf_end_object(pdf);
-  int font2=pdf_add_object (pdf); // 4
-  ctx_pdf_printf ("<<\n");
-  ctx_pdf_printf (
-"/Name /F2\n"
-"/Subtype /Type1\n"
-"/Type /Font\n"
-"/BaseFont /Times\n"
-"/Encoding %s\n"
-">>\n", pdf->encoding);
-  int font3=pdf_add_object (pdf); // 4
-  ctx_pdf_printf ("<<\n");
-  ctx_pdf_printf (
-"/Name /F3\n"
-"/Subtype /Type1\n"
-"/Type /Font\n"
-"/BaseFont /Courier\n"
-"/Encoding %s\n"
-">>\n", pdf->encoding);
-  pdf_end_object(pdf);
+  }
+
   int fontmap=pdf_add_object(pdf);
-  ctx_pdf_printf ("<</F1 %i 0 R /F2 %i 0 R /F3 %i 0 R >>\n", font1, font2, font3);
+  ctx_pdf_printf ("<<");
+  for (int font_no = 1; font_no <= 14; font_no++)
+    ctx_pdf_printf ("/F%i %i 0 R ", font_no, font[font_no]);
+  ctx_pdf_printf (">>");
   pdf_end_object(pdf);
 
   int alphas[10];
@@ -777,17 +781,16 @@ ctx_new_pdf (const char *path, int width, int height)
   ctx_set_backend (ctx, (void*)pdf);
   ctx_pdf_printf ("%%PDF-1.4\n%%%c%c%c%c\n", 0xe2, 0xe3, 0xcf, 0xd3);
   pdf->pages=pdf_add_object (pdf); // 1
-  ctx_pdf_printf ("<<\n/Kids ");
-  pdf->kids_offset = pdf->document->length;
   pdf->font = CTX_PDF_HELVETICA;
   //pdf->encoding = "/MacRomanEncoding";
   pdf->encoding = "/WinAnsiEncoding";
-  ctx_pdf_printf ("XXXXXXXXXX 0 R\n");
-  ctx_pdf_printf ("/Type /Pages\n");
-  ctx_pdf_printf ("/Count ");
+
+  ctx_pdf_printf ("<</Kids ");
+  pdf->kids_offset = pdf->document->length;
+  ctx_pdf_printf ("XXXXXXXXXX 0 R /Type /Pages /Count ");
   pdf->page_count_offset = pdf->document->length;
   ctx_pdf_printf ("XXXXXXXXXX");
-  ctx_pdf_printf ("\n>>\n");
+  ctx_pdf_printf (">>");
   pdf_end_object(pdf);
   pdf_start_page (pdf);
 
