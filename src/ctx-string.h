@@ -45,6 +45,8 @@ void        ctx_string_insert_unichar (CtxString *string, int pos, uint32_t unic
 void        ctx_string_replace_unichar (CtxString *string, int pos, uint32_t unichar);
 void        ctx_string_remove         (CtxString *string, int pos);
 char       *ctx_strdup_printf         (const char *format, ...);
+void        ctx_string_append_int     (CtxString *string, int val);
+void        ctx_string_append_float   (CtxString *string, float val);
 
 #ifndef TRUE
 #define TRUE 1

@@ -408,3 +408,62 @@ CtxString *ctx_string_new_printf (const char *format, ...)
   ctx_free (buffer);
   return string;
 }
+
+
+void
+ctx_string_append_int (CtxString *string, int val)
+{
+  char buf[64];
+  char *bp = &buf[0];
+  int remainder;
+  if (val < 0)
+  {
+    buf[0]='-';
+    bp++;
+    remainder = -val;
+  }
+  else
+  remainder = val;
+
+  int len = 0;
+  do {
+    int digit = remainder % 10;
+    bp[len++] = digit + '0';
+    remainder /= 10;
+  } while (remainder);
+
+  bp[len]=0;
+  for (int i = 0; i < len/2; i++)
+  {
+    int tmp = bp[i];
+    bp[i] = bp[len-1-i];
+    bp[len-1-i] = tmp;
+  }
+  len += (val < 0);
+  ctx_string_append_str (string, buf);
+}
+
+void
+ctx_string_append_float (CtxString *string, float val)
+{
+  if (val < 0.0f)
+  {
+    ctx_string_append_byte (string, '-');
+    val = -val;
+  }
+  int remainder = ((int)(val*10000))%10000;
+  if (remainder % 10 > 5)
+    remainder = remainder/10+1;
+  else
+    remainder /= 10;
+  ctx_string_append_int (string, (int)val);
+  if (remainder)
+  {
+    ctx_string_append_byte (string, '.');
+    if (remainder < 10)
+      ctx_string_append_byte (string, '0');
+    if (remainder < 100)
+      ctx_string_append_byte (string, '0');
+    ctx_string_append_int (string, remainder);
+  }
+}
