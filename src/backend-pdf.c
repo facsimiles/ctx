@@ -6,7 +6,24 @@
 #define CTX_PDF_MAX_PAGES CTX_PDF_MAX_OBJS
 
 typedef struct _CtxPDF CtxPDF;
-enum { CTX_PDF_HELVETICA = 1, CTX_PDF_TIMES, CTX_PDF_COURIER };
+enum { CTX_PDF_TIMES = 1,
+       CTX_PDF_HELVETICA,
+       CTX_PDF_COURIER,
+       CTX_PDF_SYMBOL,
+       CTX_PDF_TIMES_BOLD,
+       CTX_PDF_HELVETICA_BOLD,
+       CTX_PDF_COURIER_BOLD,
+       CTX_PDF_ZAPF_DING_BATS,
+       CTX_PDF_TIMES_ITALIC,
+       CTX_PDF_HELVETICA_ITALIC,
+       CTX_PDF_COURIER_ITALIC,
+       CTX_PDF_TIMES_BOLD_ITALIC,
+       CTX_PDF_HELVETICA_BOLD_ITALIC,
+       CTX_PDF_COURIER_BOLD_ITALIC,
+       // courier and helvetica variants are called
+       // oblique not italic in the PDF spec
+
+};
 struct
   _CtxPDF
 {
