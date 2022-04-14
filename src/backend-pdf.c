@@ -54,37 +54,44 @@ _CtxPdfResource
 struct
   _CtxPDF
 {
-  CtxBackend    backend;
-  int           preserve;
-  const char   *path;
-  CtxString    *document;
-  CtxState      state;
-  int           pat;
-  int           xref[CTX_PDF_MAX_OBJS];
-  int           objs;
-  int           page_length_offset;
-  int           page_height_offset;
-  int           kids_offset;
-  int           page_count_offset;
+  CtxBackend     backend;
+  int            preserve;
+  const char    *path;
+  CtxString     *document;
+  CtxState       state;
+  int            pat;
+  int            xref[CTX_PDF_MAX_OBJS];
+  int            objs;
+  int            page_length_offset;
+  int            page_height_offset;
+  int            kids_offset;
+  int            page_count_offset;
 
-  int           width;
-  int           height;
+  int            width;
+  int            height;
 
-  char         *encoding;
+  char          *encoding;
+
   CtxPdfResource resource[CTX_PDF_MAX_RESOURCES];
+  int            resource_count;
+
   int            page_resource[CTX_PDF_MAX_RESOURCES];
-  int           resource_count;
-  int           page_resource_count;
+  int            page_resource_count;
+  int            new_resource[CTX_PDF_MAX_RESOURCES];
+  int            new_resource_count;
 
+  int            next_obj; // pre-emptive builds
+                           // during page build
 
-  int           page_objs[CTX_PDF_MAX_PAGES];
-  int           content_objs[CTX_PDF_MAX_PAGES];
-  float         page_size[4];
-  int           page_count;
+  float          page_size[4];
 
-  int           pages; // known to be 1
-  int           font;
-  int           font_map;
+  int            page_objs[CTX_PDF_MAX_PAGES];
+  int            content_objs[CTX_PDF_MAX_PAGES];
+  int            page_count;
+
+  int            pages; // known to be 1
+  int            font;
+  int            font_map;
 
 
   int alphas[10];
@@ -150,6 +157,10 @@ static void acuteArcToBezier(float start, float size,
  *dy = ctx_sinf(start + size);
 }
 
+
+static char *ctx_utf8_to_mac_roman (const uint8_t *string);
+static char *ctx_utf8_to_windows_1252 (const uint8_t *string);
+
 void pdf_end_object (CtxPDF *pdf)
 {
   ctx_pdf_printf("endobj\n");
@@ -177,6 +188,8 @@ pdf_start_page (CtxPDF *pdf)
   ctx_pdf_printf ("XXXXXXXXXX cm\n/F1 24 Tf\n", pdf->height);
 
   pdf->page_resource_count = 0;
+  pdf->new_resource_count = 0;
+  pdf->next_obj = pdf->content_objs[pdf->page_count]+1;
 }
 
 static void
@@ -190,105 +203,44 @@ pdf_end_page (CtxPDF *pdf)
   memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);
   ctx_pdf_printf("ET\nendstream\n");
 
+  for (int i = 0; i < pdf->new_resource_count; i ++)
+  {
+    float opacity = 1.0f;
+    for (int j = 0; j < pdf->resource_count; j ++)
+    {
+      if (pdf->resource[j].id == pdf->new_resource[i])
+        opacity = pdf->resource[j].opacity.value;
+    }
+    pdf->alphas[i]=pdf_add_object (pdf); // 4
+    ctx_pdf_printf ("<</Type/ExtGState/ca %.2f/CA %.2f>>", opacity, opacity);
+  }
 
   pdf->page_objs[pdf->page_count]=pdf_add_object (pdf);
         ctx_pdf_printf ("<<"
 "/Contents %i 0 R/Type/Page/Resources<</ProcSet[/PDF/Text]/Font %i 0 R", pdf->content_objs[pdf->page_count], pdf->font_map);
         //ctx_pdf_printf ("/ExtGState %i 0 R ", alpha_map);
         ctx_pdf_printf ("/ExtGState ");
+
    ctx_pdf_printf ("<<");
-   for (int i = 0; i < 10; i ++)
-     ctx_pdf_printf ("/G%i %i 0 R", i, pdf->alphas[i]);
+   for (int i = 0; i < pdf->page_resource_count; i++)
+   {
+     ctx_pdf_printf ("/G%i %i 0 R", pdf->page_resource[i],
+                                    pdf->page_resource[i]);
+   }
    ctx_pdf_printf (">>");
+
         ctx_pdf_printf (" >>/Parent %i 0 R/MediaBox[%f %f %f %f]>>", 
                        pdf->pages,
     pdf->page_size[0],
     pdf->page_size[1],
-    pdf->page_size[2],
-    pdf->page_size[3]);
+    pdf->page_size[2]+pdf->page_size[0],
+    pdf->page_size[3]+pdf->page_size[1]);
 
 }
 
-static char *ctx_utf8_to_mac_roman (const uint8_t *string)
-{
-  CtxString *ret = ctx_string_new ("");
-  if (*string)
-  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?(uint8_t*)ctx_utf8_skip ((char*)utf8, 1):(utf8+1))
-  {
-    uint8_t copy[5];
-
-    memcpy (copy, utf8, ctx_utf8_len (utf8[0]));
-    copy[ctx_utf8_len (utf8[0])]=0;
-    if (copy[0] <=127)
-    {
-      ctx_string_append_byte (ret, copy[0]);
-    }
-    else
-    {
-      int code = 128;
-      /* it would be better to to this comparison on a unicode table,
-       * but this was easier to create
-       */
-#define C(a) \
-      if (!strcmp ((char*)&copy[0], a)) { ctx_string_append_byte (ret, code); continue; }; code++
-      C("Ä");C("Å");C("Ç");C("É");C("Ñ");C("Ö");C("Ü");C("á");C("à");C("â");C("ä");C("ã");C("å");C("ç");C("é");C("è");
-      C("ê");C("ë");C("í");C("ì");C("î");C("ï");C("ñ");C("ó");C("ò");C("ô");C("ö");C("õ");C("ú");C("ù");C("û");C("ü");
-      C("†");C("°");C("¢");C("£");C("§");C("•");C("¶");C("ß");C("®");C("©");C("™");C("´");C("¨");C("≠");C("Æ");C("Ø");
-      C("∞");C("±");C("≤");C("≥");C("¥");C("µ");C("∂");C("∑");C("∏");C("π");C("∫");C("ª");C("º");C("Ω");C("æ");C("ø");
-      C("¿");C("¡");C("¬");C("√");C("ƒ");C("≈");C("∆");C("«");C("»");C("…");C(" ");C("À");C("Ã");C("Õ");C("Œ");C("œ");
-      C("–");C("—");C("“");C("”");C("‘");C("’");C("÷");C("◊");C("ÿ");C("Ÿ");C("⁄");C("€");C("‹");C("›");C("ﬁ");C("ﬂ");
-      C("‡");C("·");C("‚");C("„");C("‰");C("Â");C("Ê");C("Á");C("Ë");C("È");C("Í");C("Î");C("Ï");C("Ì");C("Ó");C("Ô");
-      C("?");C("Ò");C("Ú");C("Û");C("Ù");C("ı");C("ˆ");C("˜");C("¯");C("˘");C("˙");C("˚");C("¸");C("˝");C("˛");C("ˇ");
-      ctx_string_append_byte (ret, '?');
-    }
-  }
-
-  return ctx_string_dissolve (ret);
-}
-
-static char *ctx_utf8_to_windows_1252 (const uint8_t *string)
-{
-  CtxString *ret = ctx_string_new ("");
-  if (*string)
-  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?(uint8_t*)ctx_utf8_skip ((char*)utf8, 1):(utf8+1))
-  {
-    uint8_t copy[5];
-
-    memcpy (copy, utf8, ctx_utf8_len (utf8[0]));
-    copy[ctx_utf8_len (utf8[0])]=0;
-    if (copy[0] == '(' || copy[0] == ')')
-    {
-      ctx_string_append_byte (ret, '\\');
-      ctx_string_append_byte (ret, copy[0]);
-    }
-    else if (copy[0] <=127)
-    {
-      ctx_string_append_byte (ret, copy[0]);
-    }
-    else
-    {
-      int code = 128;
-      /* it would be better to to this comparison on a unicode table,
-       * but this was easier to create
-       */
-C("€");C(" ");C("‚");C("ƒ");C("„");C("…");C("†");C("‡");C("ˆ");C("‰");C("Š");C("‹");C("Œ");C(" ");C("Ž");C(" ");
-C(" ");C("‘");C("’");C("“");C("”");C("•");C("–");C("—");C("˜");C("™");C("š");C("›");C("œ");C(" ");C("ž");C("Ÿ");
-C(" ");C("¡");C("¢");C("£");C("¤");C("¥");C("¦");C("§");C("¨");C("©");C("ª");C("«");C("¬");C("-");C("®");C("¯");
-C("°");C("±");C("²");C("³");C("´");C("µ");C("¶");C("·");C("¸");C("¹");C("º");C("»");C("¼");C("½");C("¾");C("¿");
-C("À");C("Á");C("Â");C("Ã");C("Ä");C("Å");C("Æ");C("Ç");C("È");C("É");C("Ê");C("Ë");C("Ì");C("Í");C("Î");C("Ï");
-C("Ð");C("Ñ");C("Ò");C("Ó");C("Ô");C("Õ");C("Ö");C("×");C("Ø");C("Ù");C("Ú");C("Û");C("Ü");C("Ý");C("Þ");C("ß");
-C("à");C("á");C("â");C("ã");C("ä");C("å");C("æ");C("ç");C("è");C("é");C("ê");C("ë");C("ì");C("í");C("î");C("ï");
-C("ð");C("ñ");C("ò");C("ó");C("ô");C("õ");C("ö");C("÷");C("ø");C("ù");C("ú");C("û");C("ü");C("ý");C("þ");C("ÿ");
-#undef C
-      ctx_string_append_byte (ret, '?');
-    }
-  }
-  return ctx_string_dissolve (ret);
-}
 
 void ctx_pdf_set_opacity (CtxPDF *pdf, float alpha)
 {
-  int i;
   int obj_no = 0;
 
   for (int i = 0; i < pdf->resource_count; i++)
@@ -304,23 +256,22 @@ void ctx_pdf_set_opacity (CtxPDF *pdf, float alpha)
   {
      pdf->resource[pdf->resource_count].type = 0;
      pdf->resource[pdf->resource_count].opacity.value = alpha;
-     obj_no = pdf->resource[pdf->resource_count].id = 1+pdf->resource_count;
+     obj_no = pdf->resource[pdf->resource_count].id = 
+             pdf->next_obj++;
      pdf->resource_count++;
+
+     pdf->new_resource[pdf->new_resource_count++] =
+       obj_no;
   }
 
-  int found = 0;
+  ctx_pdf_printf("/G%i gs ", obj_no);
+
   for (int i = 0; i < pdf->page_resource_count; i ++)
   {
-    pdf->page_resource[i] == obj_no;
-    found = 0;
+    if (pdf->page_resource[i] == obj_no)
+      return;
   }
-  if (!found)
-    pdf->page_resource[pdf->page_resource_count++] = obj_no;
-
-  if (1)
-    ctx_pdf_printf("/G%i gs ", obj_no);
-  else
-    ctx_pdf_printf("/G%i gs ", (int) ((alpha + .05) * 9));
+  pdf->page_resource[pdf->page_resource_count++] = obj_no;
 }
 
 static void
@@ -745,7 +696,6 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
   }
 }
 
-
 void ctx_pdf_destroy (CtxPDF *pdf)
 {
   FILE *f = fopen (pdf->path, "w");
@@ -828,7 +778,8 @@ ctx_new_pdf (const char *path, int width, int height)
   ctx_pdf_printf (">>");
 
 
-  { // make a sharable default fontmap
+  { // shared fontmap for all pages
+    // good enough without TTF fonts
   int font[16];
 
   char *font_names[]={"","Times","Helvetica","Courier","Symbol",
@@ -852,11 +803,6 @@ ctx_new_pdf (const char *path, int width, int height)
   ctx_pdf_printf (">>");
   }
 
-  for (int i = 0; i < 10; i ++)
-  {
-    pdf->alphas[i]=pdf_add_object (pdf); // 4
-    ctx_pdf_printf ("<</Type/ExtGState/ca %.2f/CA %.2f>>", i/9.0f, i/9.0f);
-  }
 
   pdf->page_size[0] = 0;
   pdf->page_size[1] = 0;
@@ -879,5 +825,87 @@ ctx_render_pdf (Ctx *ctx, const char *path)
     { ctx_pdf_process (pdf, command); }
   ctx_destroy (pdf);
 }
+
+
+
+
+static char *ctx_utf8_to_mac_roman (const uint8_t *string)
+{
+  CtxString *ret = ctx_string_new ("");
+  if (*string)
+  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?(uint8_t*)ctx_utf8_skip ((char*)utf8, 1):(utf8+1))
+  {
+    uint8_t copy[5];
+
+    memcpy (copy, utf8, ctx_utf8_len (utf8[0]));
+    copy[ctx_utf8_len (utf8[0])]=0;
+    if (copy[0] <=127)
+    {
+      ctx_string_append_byte (ret, copy[0]);
+    }
+    else
+    {
+      int code = 128;
+      /* it would be better to to this comparison on a unicode table,
+       * but this was easier to create
+       */
+#define C(a) \
+      if (!strcmp ((char*)&copy[0], a)) { ctx_string_append_byte (ret, code); continue; }; code++
+      C("Ä");C("Å");C("Ç");C("É");C("Ñ");C("Ö");C("Ü");C("á");C("à");C("â");C("ä");C("ã");C("å");C("ç");C("é");C("è");
+      C("ê");C("ë");C("í");C("ì");C("î");C("ï");C("ñ");C("ó");C("ò");C("ô");C("ö");C("õ");C("ú");C("ù");C("û");C("ü");
+      C("†");C("°");C("¢");C("£");C("§");C("•");C("¶");C("ß");C("®");C("©");C("™");C("´");C("¨");C("≠");C("Æ");C("Ø");
+      C("∞");C("±");C("≤");C("≥");C("¥");C("µ");C("∂");C("∑");C("∏");C("π");C("∫");C("ª");C("º");C("Ω");C("æ");C("ø");
+      C("¿");C("¡");C("¬");C("√");C("ƒ");C("≈");C("∆");C("«");C("»");C("…");C(" ");C("À");C("Ã");C("Õ");C("Œ");C("œ");
+      C("–");C("—");C("“");C("”");C("‘");C("’");C("÷");C("◊");C("ÿ");C("Ÿ");C("⁄");C("€");C("‹");C("›");C("ﬁ");C("ﬂ");
+      C("‡");C("·");C("‚");C("„");C("‰");C("Â");C("Ê");C("Á");C("Ë");C("È");C("Í");C("Î");C("Ï");C("Ì");C("Ó");C("Ô");
+      C("?");C("Ò");C("Ú");C("Û");C("Ù");C("ı");C("ˆ");C("˜");C("¯");C("˘");C("˙");C("˚");C("¸");C("˝");C("˛");C("ˇ");
+      ctx_string_append_byte (ret, '?');
+    }
+  }
+
+  return ctx_string_dissolve (ret);
+}
+
+static char *ctx_utf8_to_windows_1252 (const uint8_t *string)
+{
+  CtxString *ret = ctx_string_new ("");
+  if (*string)
+  for (const uint8_t *utf8 = (uint8_t*)string; utf8[0]; utf8 = *utf8?(uint8_t*)ctx_utf8_skip ((char*)utf8, 1):(utf8+1))
+  {
+    uint8_t copy[5];
+
+    memcpy (copy, utf8, ctx_utf8_len (utf8[0]));
+    copy[ctx_utf8_len (utf8[0])]=0;
+    if (copy[0] == '(' || copy[0] == ')')
+    {
+      ctx_string_append_byte (ret, '\\');
+      ctx_string_append_byte (ret, copy[0]);
+    }
+    else if (copy[0] <=127)
+    {
+      ctx_string_append_byte (ret, copy[0]);
+    }
+    else
+    {
+      int code = 128;
+      /* it would be better to to this comparison on a unicode table,
+       * but this was easier to create
+       */
+C("€");C(" ");C("‚");C("ƒ");C("„");C("…");C("†");C("‡");C("ˆ");C("‰");C("Š");C("‹");C("Œ");C(" ");C("Ž");C(" ");
+C(" ");C("‘");C("’");C("“");C("”");C("•");C("–");C("—");C("˜");C("™");C("š");C("›");C("œ");C(" ");C("ž");C("Ÿ");
+C(" ");C("¡");C("¢");C("£");C("¤");C("¥");C("¦");C("§");C("¨");C("©");C("ª");C("«");C("¬");C("-");C("®");C("¯");
+C("°");C("±");C("²");C("³");C("´");C("µ");C("¶");C("·");C("¸");C("¹");C("º");C("»");C("¼");C("½");C("¾");C("¿");
+C("À");C("Á");C("Â");C("Ã");C("Ä");C("Å");C("Æ");C("Ç");C("È");C("É");C("Ê");C("Ë");C("Ì");C("Í");C("Î");C("Ï");
+C("Ð");C("Ñ");C("Ò");C("Ó");C("Ô");C("Õ");C("Ö");C("×");C("Ø");C("Ù");C("Ú");C("Û");C("Ü");C("Ý");C("Þ");C("ß");
+C("à");C("á");C("â");C("ã");C("ä");C("å");C("æ");C("ç");C("è");C("é");C("ê");C("ë");C("ì");C("í");C("î");C("ï");
+C("ð");C("ñ");C("ò");C("ó");C("ô");C("õ");C("ö");C("÷");C("ø");C("ù");C("ú");C("û");C("ü");C("ý");C("þ");C("ÿ");
+#undef C
+      ctx_string_append_byte (ret, '?');
+    }
+  }
+  return ctx_string_dissolve (ret);
+}
+
+
 
 #endif
