@@ -79,7 +79,7 @@ struct
 
   int           page_objs[CTX_PDF_MAX_PAGES];
   int           content_objs[CTX_PDF_MAX_PAGES];
-  float         page_size[CTX_PDF_MAX_PAGES][4];
+  float         page_size[4];
   int           page_count;
 
   int           pages; // known to be 1
@@ -176,10 +176,6 @@ pdf_start_page (CtxPDF *pdf)
   pdf->page_height_offset = pdf->document->length;
   ctx_pdf_printf ("XXXXXXXXXX cm\n/F1 24 Tf\n", pdf->height);
 
-  pdf->page_size[pdf->page_count][0] = 0;
-  pdf->page_size[pdf->page_count][1] = 0;
-  pdf->page_size[pdf->page_count][2] = pdf->width;
-  pdf->page_size[pdf->page_count][3] = pdf->height;
   pdf->page_resource_count = 0;
 }
 
@@ -190,7 +186,7 @@ pdf_end_page (CtxPDF *pdf)
   char buf[12];
   snprintf (buf, 11, "% 10d", length);
   memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 10);
-  snprintf (buf, 11, "% 9f", pdf->page_size[pdf->page_count][3]);
+  snprintf (buf, 11, "% 9f", pdf->page_size[3]);
   memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);
   ctx_pdf_printf("ET\nendstream\n");
 
@@ -206,10 +202,10 @@ pdf_end_page (CtxPDF *pdf)
    ctx_pdf_printf (">>");
         ctx_pdf_printf (" >>/Parent %i 0 R/MediaBox[%f %f %f %f]>>", 
                        pdf->pages,
-    pdf->page_size[pdf->page_count][0],
-    pdf->page_size[pdf->page_count][1],
-    pdf->page_size[pdf->page_count][2],
-    pdf->page_size[pdf->page_count][3]);
+    pdf->page_size[0],
+    pdf->page_size[1],
+    pdf->page_size[2],
+    pdf->page_size[3]);
 
 }
 
@@ -312,7 +308,14 @@ void ctx_pdf_set_opacity (CtxPDF *pdf, float alpha)
      pdf->resource_count++;
   }
 
-  pdf->page_resource[pdf->page_resource_count++] = obj_no;
+  int found = 0;
+  for (int i = 0; i < pdf->page_resource_count; i ++)
+  {
+    pdf->page_resource[i] == obj_no;
+    found = 0;
+  }
+  if (!found)
+    pdf->page_resource[pdf->page_resource_count++] = obj_no;
 
   if (1)
     ctx_pdf_printf("/G%i gs ", obj_no);
@@ -716,10 +719,10 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
       case CTX_END_FRAME:
         break;
       case CTX_VIEW_BOX:
-        pdf->page_size[pdf->page_count][0] = ctx_arg_float(0);
-        pdf->page_size[pdf->page_count][1] = ctx_arg_float(1);
-        pdf->page_size[pdf->page_count][2] = ctx_arg_float(2);
-        pdf->page_size[pdf->page_count][3] = ctx_arg_float(3);
+        pdf->page_size[0] = ctx_arg_float(0);
+        pdf->page_size[1] = ctx_arg_float(1);
+        pdf->page_size[2] = ctx_arg_float(2);
+        pdf->page_size[3] = ctx_arg_float(3);
         ctx_set_size (ctx, 
           ctx_arg_float(2),
           ctx_arg_float(3));
@@ -854,6 +857,11 @@ ctx_new_pdf (const char *path, int width, int height)
     pdf->alphas[i]=pdf_add_object (pdf); // 4
     ctx_pdf_printf ("<</Type/ExtGState/ca %.2f/CA %.2f>>", i/9.0f, i/9.0f);
   }
+
+  pdf->page_size[0] = 0;
+  pdf->page_size[1] = 0;
+  pdf->page_size[2] = pdf->width;
+  pdf->page_size[3] = pdf->height;
 
   pdf_start_page (pdf);
 
