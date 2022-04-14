@@ -87,22 +87,22 @@
 #include "Tinos-Italic.h"
 #include "Tinos-BoldItalic.h"
 
-#define CTX_FONT_0  CTX_STATIC_FONT(Carlito_Regular)
-#define CTX_FONT_1  CTX_STATIC_FONT(Carlito_Bold)
-#define CTX_FONT_2  CTX_STATIC_FONT(Carlito_Italic)
-#define CTX_FONT_3  CTX_STATIC_FONT(Carlito_BoldItalic)
-#define CTX_FONT_4  CTX_STATIC_FONT(Cousine_Regular)
-#define CTX_FONT_5  CTX_STATIC_FONT(Cousine_Italic)
-#define CTX_FONT_6  CTX_STATIC_FONT(Cousine_Bold)
-#define CTX_FONT_7  CTX_STATIC_FONT(Cousine_BoldItalic)
-#define CTX_FONT_8  CTX_STATIC_FONT(Tinos_Regular)
-#define CTX_FONT_9  CTX_STATIC_FONT(Tinos_Bold)
-#define CTX_FONT_10 CTX_STATIC_FONT(Tinos_Italic)
-#define CTX_FONT_11 CTX_STATIC_FONT(Tinos_BoldItalic)
-#define CTX_FONT_12 CTX_STATIC_FONT(Arimo_Regular)
-#define CTX_FONT_13 CTX_STATIC_FONT(Arimo_Bold)
-#define CTX_FONT_14 CTX_STATIC_FONT(Arimo_Italic)
-#define CTX_FONT_15 CTX_STATIC_FONT(Arimo_BoldItalic)
+#define CTX_FONT_0  CTX_STATIC_FONT(Arimo_Regular)
+#define CTX_FONT_1  CTX_STATIC_FONT(Arimo_Bold)
+#define CTX_FONT_2  CTX_STATIC_FONT(Arimo_Italic)
+#define CTX_FONT_3  CTX_STATIC_FONT(Arimo_BoldItalic)
+#define CTX_FONT_4  CTX_STATIC_FONT(Tinos_Regular)
+#define CTX_FONT_5  CTX_STATIC_FONT(Tinos_Bold)
+#define CTX_FONT_6  CTX_STATIC_FONT(Tinos_Italic)
+#define CTX_FONT_7  CTX_STATIC_FONT(Tinos_BoldItalic)
+#define CTX_FONT_8  CTX_STATIC_FONT(Cousine_Regular)
+#define CTX_FONT_9  CTX_STATIC_FONT(Cousine_Italic)
+#define CTX_FONT_10  CTX_STATIC_FONT(Cousine_Bold)
+#define CTX_FONT_11  CTX_STATIC_FONT(Cousine_BoldItalic)
+#define CTX_FONT_12  CTX_STATIC_FONT(Carlito_Regular)
+#define CTX_FONT_13  CTX_STATIC_FONT(Carlito_Bold)
+#define CTX_FONT_14  CTX_STATIC_FONT(Carlito_Italic)
+#define CTX_FONT_15  CTX_STATIC_FONT(Carlito_BoldItalic)
 
 #define CTX_IMPLEMENTATION 1
 

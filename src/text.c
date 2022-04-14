@@ -1045,7 +1045,7 @@ static int _ctx_resolve_font (const char *name)
   {
      memset(temp,0,sizeof(temp));
      strncpy (temp, name + 4, sizeof(temp)-1);
-     memcpy (temp, "Arrrr", 5); 
+     memcpy (temp, "Arrrr", 5);  // we should match Arial and Arimo
      name = temp;
   }
   else if (!strncmp (name, "Monospace", 9))
@@ -1178,9 +1178,10 @@ static void ctx_font_setup (Ctx *ctx)
   if (ctx)
     ctx->fonts = &ctx_fonts[0];
 
-  ctx_font_count = 0; // oddly - this is needed in arduino
+  ctx_font_count = 0; 
 
 #if CTX_FONT_ENGINE_CTX
+
 #ifdef CTX_FONT_0
   CTX_FONT_0;
 #endif
