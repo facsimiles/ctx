@@ -1,7 +1,18 @@
+/*
+ * TODO:
+ *   gradients
+ *   text-layout
+ *   textures
+ *   links
+ *
+ */
+
+
 #include "ctx-split.h"
 #if CTX_PDF
 
 #define CTX_PDF_MAX_OBJS 256
+#define CTX_PDF_MAX_RESOURCES 256 // in one page
 
 #define CTX_PDF_MAX_PAGES CTX_PDF_MAX_OBJS
 
@@ -25,6 +36,21 @@ enum { CTX_PDF_TIMES = 1,
 
 };
 
+typedef struct
+_CtxPdfResource
+{
+  int id;
+  int type;
+  union { 
+     struct { float value;} opacity;
+     struct { int   no;}    font;
+     // texture
+     // linear-gradient
+     // radial-gradient
+  };
+} CtxPdfResource;
+
+
 struct
   _CtxPDF
 {
@@ -45,6 +71,12 @@ struct
   int           height;
 
   char         *encoding;
+  CtxPdfResource resource[CTX_PDF_MAX_RESOURCES];
+  int            page_resource[CTX_PDF_MAX_RESOURCES];
+  int           resource_count;
+  int           page_resource_count;
+
+
   int           page_objs[CTX_PDF_MAX_PAGES];
   int           content_objs[CTX_PDF_MAX_PAGES];
   float         page_size[CTX_PDF_MAX_PAGES][4];
@@ -52,6 +84,10 @@ struct
 
   int           pages; // known to be 1
   int           font;
+  int           font_map;
+
+
+  int alphas[10];
 };
 
 
@@ -144,6 +180,7 @@ pdf_start_page (CtxPDF *pdf)
   pdf->page_size[pdf->page_count][1] = 0;
   pdf->page_size[pdf->page_count][2] = pdf->width;
   pdf->page_size[pdf->page_count][3] = pdf->height;
+  pdf->page_resource_count = 0;
 }
 
 static void
@@ -156,6 +193,24 @@ pdf_end_page (CtxPDF *pdf)
   snprintf (buf, 11, "% 9f", pdf->page_size[pdf->page_count][3]);
   memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);
   ctx_pdf_printf("ET\nendstream\n");
+
+
+  pdf->page_objs[pdf->page_count]=pdf_add_object (pdf);
+        ctx_pdf_printf ("<<"
+"/Contents %i 0 R/Type/Page/Resources<</ProcSet[/PDF/Text]/Font %i 0 R", pdf->content_objs[pdf->page_count], pdf->font_map);
+        //ctx_pdf_printf ("/ExtGState %i 0 R ", alpha_map);
+        ctx_pdf_printf ("/ExtGState ");
+   ctx_pdf_printf ("<<");
+   for (int i = 0; i < 10; i ++)
+     ctx_pdf_printf ("/G%i %i 0 R", i, pdf->alphas[i]);
+   ctx_pdf_printf (">>");
+        ctx_pdf_printf (" >>/Parent %i 0 R/MediaBox[%f %f %f %f]>>", 
+                       pdf->pages,
+    pdf->page_size[pdf->page_count][0],
+    pdf->page_size[pdf->page_count][1],
+    pdf->page_size[pdf->page_count][2],
+    pdf->page_size[pdf->page_count][3]);
+
 }
 
 static char *ctx_utf8_to_mac_roman (const uint8_t *string)
@@ -233,6 +288,36 @@ C("ð");C("ñ");C("ò");C("ó");C("ô");C("õ");C("ö");C("÷");C("ø");C("ù");
     }
   }
   return ctx_string_dissolve (ret);
+}
+
+void ctx_pdf_set_opacity (CtxPDF *pdf, float alpha)
+{
+  int i;
+  int obj_no = 0;
+
+  for (int i = 0; i < pdf->resource_count; i++)
+  {
+    if (pdf->resource[i].type == 0 &&
+        pdf->resource[i].opacity.value == alpha)
+    {
+      obj_no = pdf->resource[i].id;
+    }
+  }
+
+  if (obj_no == 0)
+  {
+     pdf->resource[pdf->resource_count].type = 0;
+     pdf->resource[pdf->resource_count].opacity.value = alpha;
+     obj_no = pdf->resource[pdf->resource_count].id = 1+pdf->resource_count;
+     pdf->resource_count++;
+  }
+
+  pdf->page_resource[pdf->page_resource_count++] = obj_no;
+
+  if (1)
+    ctx_pdf_printf("/G%i gs ", obj_no);
+  else
+    ctx_pdf_printf("/G%i gs ", (int) ((alpha + .05) * 9));
 }
 
 static void
@@ -421,11 +506,11 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         {
            case CTX_RGBA:
            case CTX_DRGBA:
-             ctx_pdf_printf("/G%i gs ", (int) ((c->rgba.a + .05) * 9));
+             ctx_pdf_set_opacity (pdf, c->rgba.a);
              /*FALLTHROUGH*/
            case CTX_RGB:
               if (space == CTX_RGB || space == CTX_DRGB)
-                ctx_pdf_printf("/G%i gs ", 9);
+                ctx_pdf_set_opacity (pdf, 1.0);
              ctx_pdf_print3f(c->rgba.r, c->rgba.g, c->rgba.b);
              ctx_pdf_print("rg ");
              ctx_pdf_print3f(c->rgba.r, c->rgba.g, c->rgba.b);
@@ -433,23 +518,23 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
              break;
            case CTX_CMYKA:
            case CTX_DCMYKA:
-             ctx_pdf_printf("/G%i gs ", (int)(c->cmyka.a + .05) * 10);
+             ctx_pdf_set_opacity (pdf, c->cmyka.a);
                /*FALLTHROUGH*/
            case CTX_CMYK:
            case CTX_DCMYK:
               if (space == CTX_CMYK || space == CTX_DCMYK)
-                ctx_pdf_printf("/G%i gs ", 9);
+                ctx_pdf_set_opacity (pdf, 1.0);
               ctx_pdf_print4f(c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
               ctx_pdf_print("k ");
               ctx_pdf_print4f(c->cmyka.c, c->cmyka.m, c->cmyka.y, c->cmyka.k);
               ctx_pdf_print("K ");
               break;
            case CTX_GRAYA:
-             ctx_pdf_printf("/G%i gs ", (int)(c->graya.a + .05) * 10);
+             ctx_pdf_set_opacity (pdf, c->graya.a);
                /*FALLTHROUGH*/
            case CTX_GRAY:
               if (space == CTX_GRAY)
-                ctx_pdf_printf("/G%i gs ", 9);
+                ctx_pdf_set_opacity (pdf, 1.0);
               ctx_pdf_print1f(c->graya.g);
               ctx_pdf_print("g ");
               ctx_pdf_print1f(c->graya.g);
@@ -657,6 +742,7 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
   }
 }
 
+
 void ctx_pdf_destroy (CtxPDF *pdf)
 {
   FILE *f = fopen (pdf->path, "w");
@@ -669,59 +755,12 @@ void ctx_pdf_destroy (CtxPDF *pdf)
   int catalog=pdf_add_object (pdf);
   ctx_pdf_printf("<</Type/Catalog/Outlines %i 0 R/Pages %i 0 R>>", outlines, pdf->pages);
 
-  int font[16];
 
-  char *font_names[]={"","Times","Helvetica","Courier","Symbol",
-"Times-Bold", "Helvetica-Bold", "Courier-Bold",
-"ZapfDingbats", "Times-Italic", "Helvetica-Oblique",
-"Courier-Oblique", "Times-BoldItalic", "Helvetica-BoldItalic", "Courier-BoldItalic"
-  };
-
-  for (int font_no = 1; font_no <= 14; font_no++)
-  {
-  font[font_no]=
-  pdf_add_object (pdf);
-  ctx_pdf_printf ("<</Name/F%i/Subtype/Type1/Type/Font"
-"/BaseFont /%s /Encoding %s>>", font_no, font_names[font_no], pdf->encoding);
-  }
-
-  int fontmap=pdf_add_object(pdf);
-  ctx_pdf_printf ("<<");
-  for (int font_no = 1; font_no <= 14; font_no++)
-    ctx_pdf_printf ("/F%i %i 0 R", font_no, font[font_no]);
-  ctx_pdf_printf (">>");
-
-  int alphas[10];
-
-  for (int i = 0; i < 10; i ++)
-  {
-    alphas[i]=pdf_add_object (pdf); // 4
-    ctx_pdf_printf ("<</Type/ExtGState/ca %.2f/CA %.2f>>", i/9.0f, i/9.0f);
-  }
-
-  int alpha_map=pdf_add_object(pdf);
-  ctx_pdf_printf ("<<");
-  for (int i = 0; i < 10; i ++)
-    ctx_pdf_printf ("/G%i %i 0 R", i, alphas[i]);
-
-  ctx_pdf_printf (">>");
-
-  for (int page_no =1; page_no <= pdf->page_count; page_no++)
-  {
-    pdf->page_objs[page_no]=pdf_add_object (pdf);
-    ctx_pdf_printf ("<<"
-"/Contents %i 0 R/Type/Page/Resources<</ProcSet[/PDF/Text]/Font %i 0 R/ExtGState %i 0 R>>/Parent %i 0 R/MediaBox[%f %f %f %f]>>", pdf->content_objs[page_no], fontmap, alpha_map, pdf->pages,
-  pdf->page_size[page_no][0],
-  pdf->page_size[page_no][1],
-  pdf->page_size[page_no][2],
-  pdf->page_size[page_no][3]);
-}
-
-  // we now patch-back the value in pages earlier
+  // patch-back the value in pages earlier
   snprintf (buf, 11, "% 10d", pdf->page_count);
   memcpy   (&pdf->document->str[pdf->page_count_offset], buf, 10);
 
-  // we now patch-back the value in pages earlier
+  // patch-back the value in pages earlier
   int kids = pdf_add_object (pdf); 
   snprintf (buf, 11, "% 10d", kids);
   memcpy   (&pdf->document->str[pdf->kids_offset], buf, 10);
@@ -784,6 +823,38 @@ ctx_new_pdf (const char *path, int width, int height)
   pdf->page_count_offset = pdf->document->length;
   ctx_pdf_printf ("XXXXXXXXXX");
   ctx_pdf_printf (">>");
+
+
+  { // make a sharable default fontmap
+  int font[16];
+
+  char *font_names[]={"","Times","Helvetica","Courier","Symbol",
+"Times-Bold", "Helvetica-Bold", "Courier-Bold",
+"ZapfDingbats", "Times-Italic", "Helvetica-Oblique",
+"Courier-Oblique", "Times-BoldItalic", "Helvetica-BoldItalic", "Courier-BoldItalic"
+  };
+
+  for (int font_no = 1; font_no <= 14; font_no++)
+  {
+  font[font_no]=
+  pdf_add_object (pdf);
+  ctx_pdf_printf ("<</Name/F%i/Subtype/Type1/Type/Font"
+"/BaseFont /%s /Encoding %s>>", font_no, font_names[font_no], pdf->encoding);
+  }
+
+  pdf->font_map=pdf_add_object(pdf);
+  ctx_pdf_printf ("<<");
+  for (int font_no = 1; font_no <= 14; font_no++)
+    ctx_pdf_printf ("/F%i %i 0 R", font_no, font[font_no]);
+  ctx_pdf_printf (">>");
+  }
+
+  for (int i = 0; i < 10; i ++)
+  {
+    pdf->alphas[i]=pdf_add_object (pdf); // 4
+    ctx_pdf_printf ("<</Type/ExtGState/ca %.2f/CA %.2f>>", i/9.0f, i/9.0f);
+  }
+
   pdf_start_page (pdf);
 
   return ctx;
