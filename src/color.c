@@ -10,7 +10,7 @@ int ctx_color_model_get_components (CtxColorModel model)
         return 1;
       case CTX_GRAYA:
       case CTX_GRAYA_A:
-        return 1;
+        return 2;
       case CTX_RGB:
       case CTX_LAB:
       case CTX_LCH:
