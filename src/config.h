@@ -12,6 +12,9 @@
  * option is used set to 0 by the tool that converts ttf fonts to ctx internal
  * representation - both should be possible so that this tool can be made
  * into a TTF/OTF font import at runtime (perhaps even with live subsetting).
+ *
+ * improving this feature and making it runtime selectable could also
+ * be part of encoding all text as beziers upon pdf export
  */
 #ifndef CTX_BACKEND_TEXT
 #define CTX_BACKEND_TEXT 1

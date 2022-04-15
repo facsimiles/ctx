@@ -459,6 +459,8 @@ ctx_string_append_float (CtxString *string, float val)
   ctx_string_append_int (string, (int)val);
   if (remainder)
   {
+    if (remainder<0)
+      remainder=-remainder;
     ctx_string_append_byte (string, '.');
     if (remainder < 10)
       ctx_string_append_byte (string, '0');
