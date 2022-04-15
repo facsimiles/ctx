@@ -186,7 +186,7 @@ pdf_start_page (CtxPDF *pdf)
   ctx_pdf_printf ("<</Length ");
   pdf->page_length_offset = pdf->document->length;
   ctx_pdf_printf ("XXXXXXXXXX>>\n");
-  ctx_pdf_printf ("stream BT\n1 0 0 -1 0 ");
+  ctx_pdf_printf ("stream\nBT\n1 0 0 -1 0 ");
   pdf->page_height_offset = pdf->document->length;
   ctx_pdf_printf ("XXXXXXXXXX cm\n/F1 24 Tf\n", pdf->height);
 
@@ -204,7 +204,7 @@ pdf_end_page (CtxPDF *pdf)
   memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 10);
   snprintf (buf, 11, "% 9f", pdf->page_size[3]);
   memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);
-  ctx_pdf_printf("ET\nendstream\n");
+  ctx_pdf_printf("\nET\nendstream\n");
 
   for (int i = 0; i < pdf->new_resource_count; i ++)
   {
@@ -739,7 +739,7 @@ void ctx_pdf_destroy (CtxPDF *pdf)
   ctx_pdf_print ("]");
   pdf_end_object(pdf);
 
-  int start_xref = pdf->document->length + 1;
+  int start_xref = pdf->document->length + 1 + 1;
   ctx_pdf_printf ("xref\n0 %i\n", pdf->objs + 1);
   ctx_pdf_print ("0000000000 65535 f\n");
         for(int i = 1; i <= pdf->objs; i++)
@@ -780,6 +780,7 @@ ctx_new_pdf (const char *path, int width, int height)
   ctx_state_init (&pdf->state);
   ctx_set_backend (ctx, (void*)pdf);
   ctx_pdf_print ("%PDF-1.4\n%ÆØÅ\n");
+  //ctx_pdf_printf ("%%PDF-1.4\n%%%c%c%c%c\n", 0xe2, 0xe3, 0xcf, 0xd3);
   pdf->pages=pdf_add_object (pdf); // 1
   pdf->font = CTX_PDF_HELVETICA;
   //pdf->encoding = "/MacRomanEncoding";
