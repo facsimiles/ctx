@@ -166,7 +166,7 @@ static char *ctx_utf8_to_windows_1252 (const uint8_t *string);
 
 void pdf_end_object (CtxPDF *pdf)
 {
-  ctx_pdf_print("endobj\n");
+  ctx_pdf_print("\nendobj\n");
 }
 
 int pdf_add_object (CtxPDF *pdf)
