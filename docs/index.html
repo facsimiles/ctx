@@ -33,10 +33,15 @@
 
       <div id='page'>
 
-      <h1>vector graphics rasterizer and multi process user land</h1>
+      <h1>interactive 2D vector graphics protocol</h1>
 
-      <p>ctx is an R&amp;D effort into interactive 2D vector graphics rendering
-      and user interfaces and a related software and protocol stack.</p>
+      <p>ctx is an R&amp;D an interactive 2D vector graphics protocol,
+      providing remote backends and process multiplexing integrated
+      with a terminal emulator/window manager; providing an end-to-end
+      vector rendering framework. It aims for fast rendering and
+      rasterization on microcontrollers with minimal resource usage
+      in a way that corresponds well with multithreaded desktop rendering.
+      </p>
 
       <p> The <a href='rasterizer/'>ctx rasterizer</a> is
       fast, portable and compact. With compositing directly to RGBA8, GRAYA8,
@@ -51,7 +56,7 @@
       <p>ctx provides abstractions for event injection and dispatch. It
       provides hit-detection, this allows abstracting over multiple input
       devices/buttons with a mouste+keyboard abstraction. In the event
-      method callback both absolute and local (At time of callbakc registration)
+      method callback both absolute and local (At time of callback registration)
       coordinates are provided.
       </p>
       The same API can also be used for writing applications that run inside
