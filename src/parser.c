@@ -1285,7 +1285,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_VIEW_BOX:
         ctx_view_box (ctx, arg(0), arg(1), arg(2), arg(3) );
-        ctx_parser_set_size (parser, arg(2), arg(3), 0, 0);
+        ctx_parser_set_size (parser, (int)arg(2), (int)arg(3), 0, 0);
         break;
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (ctx, arg(0), arg(1), arg(2), arg(3) );
