@@ -5,11 +5,11 @@ typedef struct CtxCbBackend
   CtxBackend     backend;
   CtxPixelFormat format;
   int            flags;
-  int     memory_budget;
-  int     min_col; // hasher cols and rows
-  int     min_row; // hasher cols and rows
-  int     max_col; // hasher cols and rows
-  int     max_row; // hasher cols and rows
+  int            memory_budget;
+  int            min_col; // hasher cols and rows
+  int            min_row; // hasher cols and rows
+  int            max_col; // hasher cols and rows
+  int            max_row; // hasher cols and rows
   uint16_t      *fb;
   Ctx           *ctx;
 
@@ -135,6 +135,88 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
 #endif
   }
   fb = backend_cb->fb;
+
+#if CTX_ENABLE_CBRLE
+  if (flags & CTX_FLAG_CBRLE)
+  {
+    int bitdepth = memory_budget * 8 / height / width;
+    int zformat;
+    if (bitdepth < 1)
+    {
+      fprintf (stderr, "not enough memory for 1bit cbrle\n");
+      return 1;
+    }
+    switch (bitdepth)
+    {
+      case 1: zformat = CTX_FORMAT_CBRLE_1; break;
+      case 2: zformat = CTX_FORMAT_CBRLE_2; break;
+      case 3: zformat = CTX_FORMAT_CBRLE_3; break;
+      case 4: zformat = CTX_FORMAT_CBRLE_4; break;
+      case 5: zformat = CTX_FORMAT_CBRLE_5; break;
+      case 6: zformat = CTX_FORMAT_CBRLE_6; break;
+      case 7: zformat = CTX_FORMAT_CBRLE_7; break;
+      case 8: zformat = CTX_FORMAT_CBRLE_8; break;
+      case 9: zformat = CTX_FORMAT_CBRLE_9; break;
+      case 10: zformat = CTX_FORMAT_CBRLE_10; break;
+      case 11: zformat = CTX_FORMAT_CBRLE_11; break;
+      case 12: zformat = CTX_FORMAT_CBRLE_12; break;
+      case 13: zformat = CTX_FORMAT_CBRLE_13; break;
+      case 14: zformat = CTX_FORMAT_CBRLE_14; break;
+      case 15: zformat = CTX_FORMAT_CBRLE_15; break;
+      case 16: zformat = CTX_FORMAT_CBRLE_16; break;
+      case 17: zformat = CTX_FORMAT_CBRLE_17; break;
+      case 18: zformat = CTX_FORMAT_CBRLE_18; break;
+      case 19: zformat = CTX_FORMAT_CBRLE_19; break;
+      case 20: zformat = CTX_FORMAT_CBRLE_20; break;
+      case 21: zformat = CTX_FORMAT_CBRLE_21; break;
+      case 22: zformat = CTX_FORMAT_CBRLE_22; break;
+      case 23: zformat = CTX_FORMAT_CBRLE_23; break;
+      default:
+      case 24: zformat = CTX_FORMAT_CBRLE_24; break;
+    }
+    //zformat = CTX_FORMAT_GRAY4;
+    //bitdepth = 4;
+    int stride = (width * bitdepth + 7) / 8;
+
+    memset(fb, 0, stride * height);
+    CtxRasterizer *r = ctx_rasterizer_init ((CtxRasterizer*)&backend_cb->rasterizer,
+                ctx, NULL, &ctx->state, fb, x0, y0, width, height,
+                stride, zformat, CTX_ANTIALIAS_DEFAULT);
+    ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
+    ctx_push_backend (ctx, r);
+
+    //ctx_scale (ctx, 1.0f/scale_factor, 1.0f/scale_factor);
+    ctx_translate (ctx, -1.0f * x0, -1.0f * y0);
+    if (active_mask)
+      ctx_render_ctx_masked (ctx, ctx, active_mask);
+    else
+      ctx_render_ctx (ctx, ctx);
+
+    for (int y = 0; y < height;y++)
+    {
+      uint8_t rgba8[width*4];
+      uint16_t rgb565[width];
+
+      _ctx_CBRLE_decompress ((uint8_t*)&fb[stride * y/2], 
+                              rgba8, width, stride, 0, width);
+
+      for (int i = 0; i < width; i++)
+      {
+         rgb565[i] = ctx_888_to_565 ( ((uint32_t*)&rgba8[i*4])[0], 1);
+      }
+
+      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
+                            //x0, y0, width, render_height, (uint16_t*)scaled,
+                            //width * render_height * bpp);
+                            x0,y0+y,width,1,(void*)rgb565,
+                            stride);// * height);
+    }
+
+    ctx_pop_backend (ctx);    
+
+    return abort;
+  }
+#endif
 
   if (flags & CTX_FLAG_LOWFI)
   {
@@ -386,8 +468,6 @@ ctx_cb_y1 (Ctx *ctx)
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
 }
-
-
 
 
 static void

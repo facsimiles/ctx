@@ -15,6 +15,7 @@ audio.h
 start-implementation
 ctx-clients.h
 ctx-internal.h
+cbrle.c
 drawlist.h
 composite.c
 backend-rasterizer.c

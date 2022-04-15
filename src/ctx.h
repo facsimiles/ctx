@@ -626,14 +626,41 @@ enum _CtxPixelFormat
   CTX_FORMAT_RGBAF,  // 9
   CTX_FORMAT_GRAYF,  // 10
   CTX_FORMAT_GRAYAF, // 11
-  CTX_FORMAT_GRAY1,  //15
-  CTX_FORMAT_CMYK8,  //13
-  CTX_FORMAT_CMYKAF, //13
-  CTX_FORMAT_CMYKA8, //12 
-  CTX_FORMAT_GRAY2,  //16 // matching flags
-  CTX_FORMAT_YUV420, //17
-  CTX_FORMAT_RGBA8_SEPARATE_ALPHA, // 18
+  CTX_FORMAT_GRAY1,  // 12
+  CTX_FORMAT_CMYK8,  // 13
+  CTX_FORMAT_CMYKAF, // 14
+  CTX_FORMAT_CMYKA8, // 15 
+  CTX_FORMAT_GRAY2,  // 16 // matching flags
+  CTX_FORMAT_YUV420, // 17
   CTX_FORMAT_GRAY4=32, // to match flags
+  CTX_FORMAT_CBRLE_1,   // CBRLE constant bitrate runlength encoded 1 bpp
+  CTX_FORMAT_CBRLE_2,   // these formats are used internally with the CBRLE
+  CTX_FORMAT_CBRLE_3,   // flag passed to the cb backend. (should be exteneded
+  CTX_FORMAT_CBRLE_4,   // to also apply to the tiled backends).
+  CTX_FORMAT_CBRLE_5,   //
+  CTX_FORMAT_CBRLE_6,   // When used in other backends they determine automatically
+  CTX_FORMAT_CBRLE_7,   // which specific CBRLE format to use, based on available
+  CTX_FORMAT_CBRLE_8,   // memory budget.
+  CTX_FORMAT_CBRLE_9,   // 
+  CTX_FORMAT_CBRLE_10,  // The specific formats are also used for testing and
+  CTX_FORMAT_CBRLE_11,  // improving the visual quality vs performance loss
+  CTX_FORMAT_CBRLE_12,  // when lossy.
+  CTX_FORMAT_CBRLE_13,  //
+  CTX_FORMAT_CBRLE_14,  // 
+  CTX_FORMAT_CBRLE_15,  //
+  CTX_FORMAT_CBRLE_16,  // 
+  CTX_FORMAT_CBRLE_17,  //  
+  CTX_FORMAT_CBRLE_18,  //  
+  CTX_FORMAT_CBRLE_19,  //  
+  CTX_FORMAT_CBRLE_20,  //  
+  CTX_FORMAT_CBRLE_21,  //  
+  CTX_FORMAT_CBRLE_22,  //  
+  CTX_FORMAT_CBRLE_23,  //  
+  CTX_FORMAT_CBRLE_24,  //  
+  CTX_FORMAT_CBRLE_32,  //  
+  CTX_FORMAT_CBRLE,     // 
+  CTX_FORMAT_BGRA8Z,    // 
+  CTX_FORMAT_RGBA8_SEPARATE_ALPHA, //
 };
 typedef enum   _CtxPixelFormat CtxPixelFormat;
 
@@ -697,13 +724,13 @@ typedef struct _CtxDrawlist CtxDrawlist;
 typedef void (*CtxFullCb) (CtxDrawlist *drawlist, void *data);
 
 int ctx_pixel_format_bits_per_pixel (CtxPixelFormat format); // bits per pixel
-int ctx_pixel_format_get_stride (CtxPixelFormat format, int width);
-int ctx_pixel_format_components (CtxPixelFormat format);
+int ctx_pixel_format_get_stride     (CtxPixelFormat format, int width);
+int ctx_pixel_format_components     (CtxPixelFormat format);
 
-void _ctx_set_store_clear (Ctx *ctx);
+void _ctx_set_store_clear    (Ctx *ctx);
 void _ctx_set_transformation (Ctx *ctx, int transformation);
 
-Ctx *ctx_hasher_new (int width, int height, int cols, int rows, CtxDrawlist *drawlist);
+Ctx *ctx_hasher_new          (int width, int height, int cols, int rows, CtxDrawlist *drawlist);
 uint32_t ctx_hasher_get_hash (Ctx *ctx, int col, int row);
 
 int ctx_utf8_strlen (const char *s);
@@ -749,10 +776,10 @@ int ctx_utf8_strlen (const char *s);
 #endif
 
 #if CTX_SDL
-#define ctx_mutex_t            SDL_mutex
-#define ctx_create_mutex()     SDL_CreateMutex()
-#define ctx_lock_mutex(a)      SDL_LockMutex(a)
-#define ctx_unlock_mutex(a)    SDL_UnlockMutex(a)
+#define ctx_mutex_t           SDL_mutex
+#define ctx_create_mutex()    SDL_CreateMutex()
+#define ctx_lock_mutex(a)     SDL_LockMutex(a)
+#define ctx_unlock_mutex(a)   SDL_UnlockMutex(a)
 #else
 #define ctx_mutex_t           int
 #define ctx_create_mutex()    NULL
@@ -762,22 +789,23 @@ int ctx_utf8_strlen (const char *s);
 
 
 /* these are configuration flags for a ctx renderer, not all
- * flags are applicable for all rendereres, some flags can
- * be toggled at runtime.
+ * flags are applicable for all rendereres, the cb backend
+ * has the widest support currently.
  */
 typedef enum CtxFlags {
   //CTX_FLAG_DEFAULTS   = 0,
-  CTX_FLAG_GRAY8      = 1 << 0,
-  CTX_FLAG_HASH_CACHE = 1 << 1,
-  CTX_FLAG_LOWFI      = 1 << 2,
-  CTX_FLAG_RGB332     = 1 << 3, // values match
-  CTX_FLAG_GRAY2      = 1 << 4, // other RGB332,GRAY2 and GRAY4
-  CTX_FLAG_GRAY4      = 1 << 5, // and gray4 defs
+  CTX_FLAG_GRAY8        = 1 << 0, // use GRAY8, implies LOWFI
+  CTX_FLAG_HASH_CACHE   = 1 << 1, // use a hashcache to determine which parts to redraw, implied by LOWFI
+  CTX_FLAG_LOWFI        = 1 << 2, // use lower res and color fidelity preview renders
+  CTX_FLAG_RGB332       = 1 << 3, // 8bit indexed with fixed palette, implies lowfi
+  CTX_FLAG_GRAY2        = 1 << 4, // 4 level grayscale, implies lowfi
+  CTX_FLAG_GRAY4        = 1 << 5, // 16 level grayscale, implies lowfi
   //CTX_FLAG_DAMAGE_CONTROL = 1 << 6,
-  CTX_FLAG_SHOW_FPS   = 1 << 7,
-  CTX_FLAG_KEEP_DATA  = 1 << 8,
+  CTX_FLAG_SHOW_FPS     = 1 << 7, // possibly show fps in titlebar or printed to a log
+  CTX_FLAG_KEEP_DATA    = 1 << 8, // keep existing fb-data instead of doing an initial clear
   CTX_FLAG_INTRA_UPDATE = 1 << 9,
-  CTX_FLAG_STAY_LOW     = 1 << 10,
+  CTX_FLAG_STAY_LOW     = 1 << 10,  // stay with the color fidelity drop in lowfi
+  CTX_FLAG_CBRLE        = 1 << 11   // use possibly lossy RLE encoded scanlines with constant bitrate
 } CtxFlags;
 
 
@@ -857,7 +885,6 @@ typedef enum
   CTX_COMPOSITE_DESTINATION_OUT  = 288,
   CTX_COMPOSITE_DESTINATION_ATOP = 320,
   CTX_COMPOSITE_XOR              = 352,
-
   CTX_COMPOSITE_ALL              = (32+64+128+256)
 #else
   CTX_COMPOSITE_SOURCE_OVER      =0,

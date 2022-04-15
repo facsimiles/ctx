@@ -3381,10 +3381,12 @@ static inline void
 ctx_setup_native_color (CtxRasterizer *rasterizer)
 {
   if (rasterizer->state->gstate.source_fill.type == CTX_SOURCE_COLOR)
+  {
     rasterizer->format->from_comp (rasterizer, 0,
       &rasterizer->color[0],
       &rasterizer->color_native,
       1);
+  }
 }
 
 static void
@@ -3558,6 +3560,23 @@ ctx_setup_RGB (CtxRasterizer *rasterizer)
 
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
 }
+
+
+#if CTX_ENABLE_CBRLE
+static void
+ctx_setup_CBRLE (CtxRasterizer *rasterizer)
+{
+  ctx_setup_RGBA8 (rasterizer);
+  //ctx_setup_native_color (rasterizer);
+
+#if 0
+  if (rasterizer->comp == CTX_COV_PATH_RGBA8_COPY)
+    rasterizer->comp = CTX_COV_PATH_CBRLE_COPY;
+  else
+#endif
+    rasterizer->comp = CTX_COV_PATH_FALLBACK;
+}
+#endif
 
 #if CTX_ENABLE_RGB332
 static void
@@ -5766,7 +5785,7 @@ ctx_332_to_888 (uint8_t in)
                   &rgba[0],
                   &rgba[1],
                   &rgba[2]);
-  //rgba[3] = 255;
+  rgba[3] = 255;
   return ret;
 }
 
@@ -5859,6 +5878,93 @@ ctx_565_pack (uint8_t  red,
     { return (c>>8) | (c<<8); } /* swap bytes */
   return c;
 }
+
+ // ARGB - 
+#if CTX_ENABLE_CBRLE
+
+
+static inline void
+ctx_RGBA8_to_CBRLE (CtxRasterizer *rasterizer, int u, const uint8_t *rgba, void *buf, int count)
+{
+  uint8_t *pixel = (uint8_t *) buf;
+  int width = rasterizer->blit_width;
+  int format_bits = rasterizer->format->bpp;
+  pixel-= (u *format_bits)/8;
+  int size = (width * format_bits)/8;
+
+  ctx_CBRLE_compress (&rgba[-u*4], pixel, width, size, u, count, CBRLE_MODE_SET, NULL, 1);
+}
+
+static inline void
+ctx_CBRLE_to_RGBA8 (CtxRasterizer *rasterizer, int u, const void *buf, uint8_t *rgba, int count)
+{
+  const uint8_t *pixel = (uint8_t *) buf;
+  int width = rasterizer->blit_width;
+  uint8_t temp[width * 4];
+  int format_bits = rasterizer->format->bpp;
+  pixel-= (u *format_bits)/8;
+  int size = (width * format_bits)/8;
+
+  _ctx_CBRLE_decompress (pixel, &temp[0], width, size, u, ctx_mini(count, width-u));//count);
+
+  uint32_t *src = (uint32_t*)&temp[4*u];
+  while (count--)
+  {
+      ((uint32_t*)rgba)[0] = *src++;
+      rgba += 4;
+  }
+}
+
+
+static void
+ctx_composite_CBRLE (CTX_COMPOSITE_ARGUMENTS)
+{
+  uint8_t *pixel = (uint8_t*)dst;
+  int format_bits = rasterizer->format->bpp;
+  pixel-= (x0 *format_bits)/8;
+
+#if 0
+  if (pixel[0] || pixel[1])
+  {
+
+  if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color))
+  {
+    int width = rasterizer->blit_width;
+    int size = (width * format_bits)/8;
+    ctx_CBRLE_compress (rasterizer->color, pixel, width, size, x0, count,
+                         CBRLE_MODE_OVER, coverage, 1);
+    return;
+  }
+  else if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_copy_normal_color) &&
+           getenv("CTX_CBRLE_COPY"))
+  {
+    int width = rasterizer->blit_width;
+    int size = (width * format_bits)/8;
+    ctx_CBRLE_compress (rasterizer->color, pixel, width, size, x0, count, 
+                         CBRLE_MODE_COPY, coverage, 1);
+    return;
+  }
+  }
+
+#endif
+
+  uint8_t pixels[count * 4];
+  ctx_CBRLE_to_RGBA8 (rasterizer, x0, dst, &pixels[0], count);
+  rasterizer->comp_op (rasterizer, &pixels[0], rasterizer->color, x0, coverage, count);
+  ctx_RGBA8_to_CBRLE (rasterizer, x0, &pixels[0], dst, count);
+}
+
+#endif
+
+
+
+
+
+
+
+
+
+
 #if CTX_ENABLE_RGB565 | CTX_ENABLE_RGB565_BYTESWAPPED
 
 static inline void
@@ -6225,7 +6331,8 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (CtxRasterize
           src1 = data + u1 + bwidth * (v);
         }
     
-        ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[!top][xa], &rb_row[!top][xa+1]);
+        ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[!top][xa],
+                                                   &rb_row[!top][xa+1]);
         ui += ui_delta;
         vi += vi_delta;
       }
@@ -6400,7 +6507,8 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (CtxRasterize
                src1 = src0 + 1;
            }
          }
-         ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[top][xa], &rb_row[top][xa+1]);
+         ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[top][xa],
+                                                    &rb_row[top][xa+1]);
          ui += ui_delta;
          vi += vi_delta;
        }
@@ -7244,14 +7352,150 @@ CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
 #if CTX_ENABLE_RGB332
   {
     CTX_FORMAT_RGB332, 3, 8, 4, 12, 12, CTX_FORMAT_RGBA8,
-    ctx_RGB332_to_RGBA8, ctx_RGBA8_to_RGB332,
+    ctx_RGB332_to_RGBA8,  ctx_RGBA8_to_RGB332,
     ctx_composite_RGB332, ctx_setup_RGB332,
+  },
+#endif
+#if CTX_ENABLE_CBRLE
+  {
+    CTX_FORMAT_CBRLE_1, 4, 1, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_3, 4, 3, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_2, 4, 2, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_4, 4, 4, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_5, 4, 5, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_6, 4, 6, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_7, 4, 7, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_8, 4, 8, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_9, 4, 9, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_10, 4, 10, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_11, 4, 11, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_12, 4, 12, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_13, 4, 13, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_14, 4, 14, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_15, 4, 15, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_16, 4, 16, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+
+  {
+    CTX_FORMAT_CBRLE_17, 4, 17, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_18, 4, 18, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_19, 4, 19, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_20, 4, 20, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_21, 4, 21, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_22, 4, 22, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+
+  {
+    CTX_FORMAT_CBRLE_23, 4, 23, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+
+
+  {
+    CTX_FORMAT_CBRLE_24, 4, 24, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE_32, 4, 32, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
+  },
+  {
+    CTX_FORMAT_CBRLE, 4, 32, 4, 12, 12, CTX_FORMAT_RGBA8,
+    ctx_CBRLE_to_RGBA8,  ctx_RGBA8_to_CBRLE,
+    ctx_composite_CBRLE, ctx_setup_CBRLE,
   },
 #endif
 #if CTX_ENABLE_RGB565
   {
     CTX_FORMAT_RGB565, 3, 16, 4, 16, 32, CTX_FORMAT_RGBA8,
-    ctx_RGB565_to_RGBA8, ctx_RGBA8_to_RGB565,
+    ctx_RGB565_to_RGBA8,  ctx_RGBA8_to_RGB565,
     ctx_composite_RGB565, ctx_setup_RGB565,
   },
 #endif

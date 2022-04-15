@@ -2912,9 +2912,12 @@ ctx_logo (Ctx *ctx, float x, float y, float dim)
      ctx_fill (ctx);
      
      ctx_restore (ctx);
-
-  //ctx_parse (ctx, "rgb 1 0 0 rectangle 0 0 1000 1000 fill rgb 0 1 0 rectangle 40 40 40 40 fill ");
-//  ctx_destroy (ctx);
 }
 
-
+void
+ctx_CBRLE_decompress (const uint8_t *rgba8z, uint8_t *rgba8, int width, int size)
+{
+#if CTX_ENABLE_CBRLE
+  _ctx_CBRLE_decompress (rgba8z, rgba8, width, size, 0, width);
+#endif
+}

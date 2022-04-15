@@ -39,10 +39,12 @@
 
 #define CTX_FONT_ENGINE_CTX_FS   1
 //#define CTX_HASH_COLS  1
-//#define CTX_HASH_ROWS  1
+//#define CTX_HASH_ROWS  16
 
 #define CTX_SCREENSHOT           1 
 #define CTX_RASTERIZER           1
+
+#define CTX_ENABLE_CBRLE         1
 
 //#include "stb_image_write.h"
 //#include "stb_image.h"
