@@ -15,6 +15,18 @@ int ctx_terminal_cols (void);
 int ctx_terminal_width (void);
 int ctx_terminal_height (void);
 
+inline static void
+ctx_332_unpack (uint8_t pixel,
+                uint8_t *red,
+                uint8_t *green,
+                uint8_t *blue)
+{
+  *green = (((pixel >> 2) & 7)*255)/7;
+  *red   = (((pixel >> 5) & 7)*255)/7;
+  *blue  = ((((pixel & 3) << 1) | ((pixel >> 2) & 1))*255)/7;
+}
+
+
 #include "stb_image_write.h"
 
 // ctx should be a busy box like wrapper
@@ -895,6 +907,34 @@ again:
          pixels[i*4 + 0] = r;
          pixels[i*4 + 1] = g;
          pixels[i*4 + 2] = b;
+         pixels[i*4 + 3] = 255;
+      }
+
+
+      ctx_utf8_output_buf ( (uint8_t *) pixels,
+                            CTX_FORMAT_RGBA8,
+                            width, height, stride, reverse);
+    }
+  else if (dest_path == NULL || !strcmp (dest_path, "RGB332") )
+    {
+      int reverse = 0;
+      int stride = width * 4;
+      int stride_332 = width;
+      uint8_t pixels_332[stride_332*height];
+      uint8_t pixels[stride*height];
+      Ctx *dctx = ctx_new_for_framebuffer (&pixels_332[0], width, height, stride_332, CTX_FORMAT_RGB332);
+      memset (pixels, 0, sizeof (pixels) );
+      memset (pixels_332, 0, sizeof (pixels_332) );
+      ctx_render_ctx (ctx, dctx);
+      ctx_destroy (dctx);
+
+      for (int i = 0; i < width * height; i++)
+      {
+         uint8_t pixel = ((uint8_t*)(pixels_332))[i];
+         ctx_332_unpack (pixel,
+          &pixels[i*4 + 0],
+          &pixels[i*4 + 1],
+          &pixels[i*4 + 2]);
          pixels[i*4 + 3] = 255;
       }
 
