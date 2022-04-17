@@ -662,7 +662,7 @@
 
 #if CTX_EVENTS
 #ifndef CTX_HEADLESS
-#define CTX_HEADLESS 1
+#define CTX_HEADLESS 0
 #endif
 #endif
 
