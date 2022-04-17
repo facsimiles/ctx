@@ -674,8 +674,9 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
     cb_backend->memory_budget = 0;
     ctx_cb_set_memory_budget (ctx, memory_budget);
   }
-
+#if CTX_EVENTS
   ctx_get_event (ctx);
+#endif
   return ctx;
 }
 
