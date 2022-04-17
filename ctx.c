@@ -18,6 +18,8 @@
 #define CTX_CLIENTS              1
 #define CTX_FONTS_FROM_FILE      1
 
+#define CTX_HEADLESS             1
+
 #define CTX_PDF                  1
 #define CTX_TINYVG               1
 

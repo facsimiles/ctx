@@ -660,9 +660,10 @@
 
 
 
-#if CTX_EVENTS
 #ifndef CTX_HEADLESS
-#define CTX_HEADLESS 0
+
+#if CTX_FB || CTX_SDL || CTX_KMS
+#define CTX_HEADLESS 1
 #endif
 #endif
 

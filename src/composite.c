@@ -6920,8 +6920,8 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
 
   x0 = ctx_maxf (x0, blit_x);
   y0 = ctx_maxf (y0, blit_y);
-  x1 = ctx_minf (x1, blit_x + blit_width );
-  y1 = ctx_minf (y1, blit_y + blit_height );
+  x1 = ctx_minf (x1, blit_x + blit_width);
+  y1 = ctx_minf (y1, blit_y + blit_height);
 
   uint8_t left = (int)(255-ctx_fmod1f (x0) * 255);
   uint8_t top  = (int)(255-ctx_fmod1f (y0) * 255);
@@ -6937,6 +6937,9 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   int has_bottom = (bottom <255);
   int has_right  = (right >0);
   int has_left   = (left >0);
+
+  if (x1 >= blit_x + blit_width) has_right = 0;
+  if (y1 >= blit_y + blit_height) has_bottom = 0;
 
   int width = (int)(x1 - x0);
 
