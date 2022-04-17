@@ -32,7 +32,7 @@ static void ctx_svg_arc_circle_to (Ctx *ctx,
   float len_squared = ctx_pow2(radius_vec_x) + ctx_pow2(radius_vec_y);
   if (len_squared - 0.03f > r * r || r < 0)
   {
-    r = sqrtf (len_squared);
+    r = ctx_sqrtf (len_squared);
   }
 
   float center_x = midpoint_x +
