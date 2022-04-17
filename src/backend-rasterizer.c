@@ -4400,7 +4400,11 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
   {
      CtxTiled *fb = (CtxTiled*)(ctx->backend);
      fb->antialias = antialias;
+#if CTX_THREADS
      for (int i = 0; i < _ctx_max_threads; i++)
+#else
+     int i = 0;
+#endif
      {
        ctx_set_antialias (fb->host[i], antialias);
      }
