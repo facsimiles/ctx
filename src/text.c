@@ -578,16 +578,16 @@ ctx_glyph_width_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
   CtxState *state = &ctx->state;
   char path[1024];
-  sprintf (path, "%s/%010p", font->ctx_fs.path, unichar);
+  sprintf (path, "%s/%010x", font->ctx_fs.path, (uint32_t)unichar);
   uint8_t *data = NULL;
   long int len_bytes = 0;
   ctx_get_contents (path, &data, &len_bytes);
   float ret = 0.0;
   float font_size = state->gstate.font_size;
   if (data){
-    Ctx *glyph_ctx = ctx_new ();
-    ctx_parse (glyph_ctx, data);
-    for (int i = 0; i < glyph_ctx->drawlist.count; i++)
+    Ctx *glyph_ctx = ctx_new_drawlist (100, 100);
+    ctx_parse (glyph_ctx, (char*)data);
+    for (uint32_t i = 0; i < glyph_ctx->drawlist.count; i++)
     {
       CtxEntry *e = &glyph_ctx->drawlist.entries[i];
       if (e->code == CTX_DEFINE_GLYPH)
@@ -603,14 +603,14 @@ static int
 ctx_glyph_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 {
   char path[1024];
-  sprintf (path, "file://%s/%010p", font->ctx_fs.path, unichar);
+  sprintf (path, "file://%s/%010x", font->ctx_fs.path, unichar);
   uint8_t *data = NULL;
   long int len_bytes = 0;
   ctx_get_contents (path, &data, &len_bytes);
 
   if (data){
-    Ctx *glyph_ctx = ctx_new ();
-    ctx_parse (glyph_ctx, data);
+    Ctx *glyph_ctx = ctx_new_drawlist (100, 100);
+    ctx_parse (glyph_ctx, (char*)data);
     int ret = ctx_glyph_drawlist (font, ctx, &(glyph_ctx->drawlist),
                                   unichar, stroke);
     ctx_free (data);
@@ -641,7 +641,7 @@ ctx_load_font_ctx_fs (const char *name, const void *path, int length) // length 
   if (ctx_font_count >= CTX_MAX_FONTS)
     { return -1; }
 
-  ctx_fonts[ctx_font_count].type = 42;
+  ctx_fonts[ctx_font_count].type = 3;
   ctx_fonts[ctx_font_count].ctx_fs.name = name;
   ctx_fonts[ctx_font_count].ctx_fs.path = ctx_strdup (path);
   int path_len = ctx_strlen (path);
@@ -893,7 +893,7 @@ _ctx_text (Ctx        *ctx,
             if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next_unichar))
               bp++;
 
-            float glyph_width     = ctx_glyph_width (ctx, unichar);
+            float glyph_width = ctx_glyph_width (ctx, unichar);
             if (x + glyph_width >= x1)
             {
               y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
@@ -1179,6 +1179,16 @@ static void ctx_font_setup (Ctx *ctx)
     ctx->fonts = &ctx_fonts[0];
 
   ctx_font_count = 0; 
+
+#if CTX_FONT_ENGINE_CTX_FS
+  if (getenv ("CTX_FONT_LIVE_PATH"))
+  {
+    if (getenv ("CTX_FONT_LIVE_NAME"))
+      ctx_load_font_ctx_fs (getenv ("CTX_FONT_LIVE_NAME"), getenv ("CTX_FONT_LIVE_PATH"), 0);
+    else
+      ctx_load_font_ctx_fs ("Arrrr Regular", getenv ("CTX_FONT_LIVE_PATH"),0);
+  }
+#endif
 
 #if CTX_FONT_ENGINE_CTX
 

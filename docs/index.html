@@ -35,17 +35,53 @@
 
       <h1>interactive 2D vector graphics protocol</h1>
 
-      <p>ctx is an R&amp;D an interactive 2D vector graphics protocol,
+      <p>ctx is an interactive 2D vector graphics protocol,
       providing remote backends and process multiplexing integrated
       with a terminal emulator/window manager; providing an end-to-end
-      vector rendering framework. It aims for fast rendering and
-      rasterization on microcontrollers with minimal resource usage
-      in a way that corresponds well with multithreaded desktop rendering.
+      vector rendering framework suitable for serial links. It aims for
+      rendering quality and <a href='performance/'>performance</a> with minimal
+      footprint and resource usage, suitable for bare-metal use on 32bit
+      microcontrollers without additional dependencies and scaling to handling
+      <a href='output.pdf'>PDF</a>, floating point buffer, CMYK and
+      multi-threaded rendering.
       </p>
 
+<!--
+      <h3>drawing interfaces</h3>
+      <p>The ctx protocol, both in C API, text and binary form also known in
+      ctx as drawlists are the primary means of driving CTX. The ctx parser can
+      text directly to API calls, which also allows using a backend that builds
+      up a drawlist. For conversion purposes ctx has inherited the SVG parser
+      from mrg, this permits doing some conversion.
+      </p>
+
+
+      <h3>backends</h3>
+      <p>
+
+      </p>
+      <dl>
+          <dt>drawlist</dt>
+          <dd>This backend creates a binary ctx protocol drawlist of
+          the drawing commands.</dd>
+
+          <dt>rasterizer</dt>
+          <dd>the core ctx rasterizer</dd>
+
+          <dt>SDL2</dt>
+          <dd></dd>
+
+          <dt>DRM/KMS/framebuffer</dt>
+          <dd>Using DRM dumb buffers or directly mmaping a framebuffer device,
+          multi threaded.</dd>
+
+          
+      </dl>
+-->
+
       <p> The <a href='rasterizer/'>ctx rasterizer</a> is
-      fast, portable and compact. With compositing directly to RGBA8, GRAYA8,
-      GRAYAF, RGBAF and CMYKAF pixel formats.
+      fast, portable and compact with a wide range of supported pixel encodings
+      from 1bit to 32bit per pixel, in grayscale, RGB and CMYK.
       For <a href='mcu/'>microcontrollers</a> using <a href='sdk/'>C</a> or <a
               href='uctx'>micropython</a>. ctx renders to lower bitdepth
       RGB332, RGB565 variants as well as 1,2 and 4 bit per pixel grayscale is

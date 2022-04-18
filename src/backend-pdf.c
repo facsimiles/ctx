@@ -199,8 +199,8 @@ static void
 pdf_end_page (CtxPDF *pdf)
 {
   int length = (pdf->document->length - pdf->page_length_offset) - 17;
-  char buf[12];
-  snprintf (buf, 11, "% 10d", length);
+  char buf[11];
+  snprintf (buf, 11, "%9u", length);
   memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 10);
   snprintf (buf, 11, "% 9f", pdf->page_size[3]);
   memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);

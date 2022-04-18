@@ -15,6 +15,8 @@
 #define CTX_EXTRAS 1
 #define CTX_AVX2 0
 #define CTX_IMPLEMENTATION
+#define CTX_EVENTS 1
+#define CTX_FONTS_FROM_FILE 1
 #define CTX_PARSER 1
 #include "ctx-nofont.h"
 #include <sys/stat.h>
@@ -111,7 +113,7 @@ int main (int argc, char **argv)
        if (output_file)
          fclose (output_file);
        char output_path[100];
-       sprintf (output_path, "%s/%010p", output_dir, font.entries[i].data.u32[0]);
+       sprintf (output_path, "%s/%010x", output_dir, font.entries[i].data.u32[0]);
        fprintf (stderr, "%s\n", output_path);
        output_file = fopen (output_path, "w");
        formatter.target = output_file;
