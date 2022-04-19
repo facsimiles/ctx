@@ -299,8 +299,23 @@ int file_main (int argc, char **argv)
   return 0;
 }
 
+static int lsfonts_main (int argc, char **argv)
+{
+  Ctx *ctx = ctx_new (0,0,NULL);
+
+  for (int i = 0; i < CTX_MAX_FONTS; i++)
+  {
+    const char *name = ctx_get_font_name (ctx, i);
+    if (name)
+      printf ("%s\n", name);
+  }
+  return 0;
+}
+
 int main (int argc, char **argv)
 {
+  if (!strcmp (basename(argv[1]), "lsfonts"))
+    return lsfonts_main (argc-1, argv+1);
   if (!strcmp (basename(argv[1]), "stuff"))
     return stuff_main (argc-1, argv+1);
   if (!strcmp (basename(argv[0]), "stuff"))
