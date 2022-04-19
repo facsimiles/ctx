@@ -642,7 +642,7 @@ ctx_load_font_ctx_fs (const char *name, const void *path, int length) // length 
     { return -1; }
 
   ctx_fonts[ctx_font_count].type = 3;
-  ctx_fonts[ctx_font_count].ctx_fs.name = name;
+  ctx_fonts[ctx_font_count].ctx_fs.name = strdup (name);
   ctx_fonts[ctx_font_count].ctx_fs.path = ctx_strdup (path);
   int path_len = ctx_strlen (path);
   if (ctx_fonts[ctx_font_count].ctx_fs.path[path_len-1] == '/')
@@ -1017,6 +1017,9 @@ static const char *ctx_font_get_name (CtxFont *font)
 #if CTX_FONT_ENGINE_STB
     case 1:  return font->stb.name;
     case 2:  return font->stb.name;
+#endif
+#if CTX_FONT_ENGINE_CTX_FS
+    case 3:  return font->ctx_fs.name;
 #endif
   }
   return "-";

@@ -517,7 +517,7 @@ void itk_reset (ITK *itk)
   }
 
   ctx_save (ctx);
-  ctx_font (ctx, "regular");
+  ctx_font (ctx, "Regular");
   ctx_font_size (ctx, itk_em (itk));
 
   itk->next_flags = ITK_FLAG_DEFAULT;
