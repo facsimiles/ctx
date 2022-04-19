@@ -908,7 +908,6 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
            ctx_print_escaped_string (formatter, (char*)utf8);
            ctx_formatter_addstr (formatter, "\", ", 3);
            ctx_print_float (formatter, entry->data.u32[1]/256.0f);
-           ctx_print_escaped_string (formatter, (char*)utf8);
         }
         _ctx_print_endcmd (formatter);
         break;
