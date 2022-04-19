@@ -1026,7 +1026,6 @@ static const char *ctx_font_get_name (CtxFont *font)
 #endif
 }
 
-
 static int _ctx_resolve_font (const char *name)
 {
   char temp[ctx_strlen (name)+1];

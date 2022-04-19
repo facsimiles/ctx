@@ -122,6 +122,33 @@ ctx_cairo_process (Ctx *ctx, CtxCommand *c)
                                ctx_u8_to_float (ctx_arg_u8 (2) ),
                                ctx_u8_to_float (ctx_arg_u8 (3) ) );
         break;
+
+      case CTX_COLOR:
+        int space =  ((int) ctx_arg_float (0)) & 511;
+        switch (space) // XXX remove 511 after stroke source is complete
+        {
+           case CTX_RGBA:
+           case CTX_DRGBA:
+             cairo_set_source_rgba (cr, c->rgba.r, c->rgba.g, c->rgba.b, c->rgba.a);
+             break;
+           case CTX_RGB:
+             cairo_set_source_rgba (cr, c->rgba.r, c->rgba.g, c->rgba.b, 1.0f);
+             break;
+           case CTX_CMYKA:
+           case CTX_DCMYKA:
+           case CTX_CMYK:
+           case CTX_DCMYK:
+              break;
+           case CTX_GRAYA:
+             cairo_set_source_rgba (cr, c->graya.g, c->graya.g, c->graya.g, c->graya.a);
+             break;
+               /*FALLTHROUGH*/
+           case CTX_GRAY:
+             cairo_set_source_rgba (cr, c->graya.g, c->graya.g, c->graya.g, 1.0f);
+             break;
+            }
+        break;
+
 #if 0
       case CTX_SET_RGBA_STROKE: // XXX : we need to maintain
         //       state for the two kinds
@@ -179,7 +206,6 @@ ctx_cairo_process (Ctx *ctx, CtxCommand *c)
         {
           cairo_clip (cr);
         }
-        break;
         break;
       case CTX_BEGIN_PATH:
         cairo_new_path (cr);
