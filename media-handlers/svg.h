@@ -105,7 +105,7 @@ struct _CtxStyleNode
               //   argument (like for nth-child)
   uint32_t pseudo_hash[CTX_STYLE_MAX_PSEUDO];
 };
-
+ 
 typedef enum {
   CTX_FLOAT_NONE = 0,
   CTX_FLOAT_LEFT,
