@@ -739,7 +739,7 @@ void ctx_pdf_destroy (CtxPDF *pdf)
   ctx_pdf_print ("]");
   pdf_end_object(pdf);
 
-  int start_xref = pdf->document->length + 1 + 1;
+  int start_xref = pdf->document->length;
   ctx_pdf_printf ("xref\n0 %i\n", pdf->objs + 1);
   ctx_pdf_print ("0000000000 65535 f\n");
         for(int i = 1; i <= pdf->objs; i++)
