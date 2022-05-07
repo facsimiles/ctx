@@ -5131,7 +5131,7 @@ int vt_poll (VT *vt, int timeout)
   // read_size*2   56.99s
   int remaining_chars = read_size * 3;// * 100;
   int len = 0;
-  vt_audio_task (vt, 0);
+  //vt_audio_task (vt, 0);
 #if 1
   if (vt->cursor_visible && vt->smooth_scroll)
     {
@@ -5141,10 +5141,13 @@ int vt_poll (VT *vt, int timeout)
   read_size = MIN (read_size, remaining_chars);
   long start_ticks = ctx_ticks ();
   long ticks = start_ticks;
+  int first = 1;
   while (remaining_chars > 0 &&
-         vt_waitdata (vt, 0) &&
+         vt_waitdata (vt, first?0:1000*5) &&
          ( ticks - start_ticks < timeout ||  vt->state == vt_state_ctx))
     {
+      first = 0;
+      vt_audio_task (vt, 0);
   if (vt->in_smooth_scroll)
     {
       remaining_chars = 1;
@@ -5168,7 +5171,6 @@ int vt_poll (VT *vt, int timeout)
            remaining_chars = read_size * 2;
          }
       }
-      vt_audio_task (vt, 0);
       ticks = ctx_ticks ();
     }
   if (got_data < 0)

@@ -174,7 +174,7 @@ int pdf_add_object (CtxPDF *pdf)
   if (pdf->objs) pdf_end_object (pdf);
   // we use 1 indexing in this array
   pdf->xref[++pdf->objs] = pdf->document->length;
-  ctx_pdf_printf("%i 0 obj", pdf->objs);
+  ctx_pdf_printf("%i 0 obj\n", pdf->objs);
   return pdf->objs;
 }
 
@@ -200,7 +200,7 @@ pdf_end_page (CtxPDF *pdf)
 {
   int length = (pdf->document->length - pdf->page_length_offset) - 17;
   char buf[11];
-  snprintf (buf, 11, "%9u", length);
+  snprintf (buf, 11, "%10u", length);
   memcpy   (&pdf->document->str[pdf->page_length_offset], buf, 10);
   snprintf (buf, 11, "% 9f", pdf->page_size[3]);
   memcpy   (&pdf->document->str[pdf->page_height_offset], buf, 10);
@@ -746,11 +746,11 @@ void ctx_pdf_destroy (CtxPDF *pdf)
         {
           ctx_pdf_printf ("%010d 65535 n\n", pdf->xref[i]);
         }
-  ctx_pdf_printf ("\ntrailer\n"
-"<</Size %i/Root %i 0 R>>\n"
+  ctx_pdf_printf ("trailer\n\n"
+"<</Root %i 0 R\n/Size %i>>\n"
 "startxref\n"
 "%d\n"
-"%%EOF\n", pdf->objs+1, catalog,
+"%%%%EOF\n", catalog, pdf->objs+1,
        start_xref);
 
   fwrite (pdf->document->str, pdf->document->length, 1, f);
