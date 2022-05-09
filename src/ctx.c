@@ -2915,9 +2915,9 @@ ctx_logo (Ctx *ctx, float x, float y, float dim)
 }
 
 void
-ctx_CBRLE_decompress (const uint8_t *rgba8z, uint8_t *rgba8, int width, int size)
+ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size)
 {
 #if CTX_ENABLE_CBRLE
-  _ctx_CBRLE_decompress (rgba8z, rgba8, width, size, 0, width);
+  _ctx_CBRLE_decompress (cbrle, rgba8, width, size, 0, width);
 #endif
 }
