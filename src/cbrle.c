@@ -29,6 +29,10 @@
 #if CTX_ENABLE_CBRLE
 
 
+#define PAL_GRAY_PREDEF 0
+
+#define PAL_GRAY_OFFSET      (PAL_GRAY_PREDEF * 8)
+
 #define GRADIENT_THRESHOLD     4
 #define COLOR_THRESHOLD_START  3
 #define COLOR_THRESHOLD_END    (color_budget<=128?32:21)
@@ -236,6 +240,7 @@ ctx_CBRLE_get_color_idx (uint8_t *rgba8z, int size, int color_budget, uint32_t p
   prev_val = prev_val & ctx_CBRLE_get_color_mask (gen+1);
 
   uint32_t best_diff = 255*255*3;
+#if PAL_GRAY_PREDEF
   if (!found)
   {
     uint32_t diff;
@@ -252,9 +257,7 @@ ctx_CBRLE_get_color_idx (uint8_t *rgba8z, int size, int color_budget, uint32_t p
       found = 1;
     }
   }
-
-  //if (gen > 8 || colors == color_budget)
-  //    return idx;
+#endif
 
   if (!found)
   {
@@ -266,7 +269,7 @@ ctx_CBRLE_get_color_idx (uint8_t *rgba8z, int size, int color_budget, uint32_t p
       best_diff = diff;
       best = idx;
     }
-    if (best !=-1) idx = best + 8;
+    if (best !=-1) idx = best + PAL_GRAY_OFFSET;
 
     /* the color diff threshold is dynamic, as
      * palette space gets tighter we are less eager to add*/
@@ -275,7 +278,7 @@ ctx_CBRLE_get_color_idx (uint8_t *rgba8z, int size, int color_budget, uint32_t p
       idx = colors++;
       ((uint32_t*)(&rgba8z[size-4-idx*4]))[0] = prev_val;
       rgba8z[2] = colors;
-      idx += 8;
+      idx += PAL_GRAY_OFFSET;
     }
   }
 
@@ -292,6 +295,7 @@ ctx_over_RGBA8_2 (uint32_t dst, uint32_t si_ga, uint32_t si_rb, uint32_t si_a, u
 static inline uint32_t
 ctx_CBRLE_idx_to_color (const uint8_t *rgba8z, int size, int idx)
 {
+#if PAL_GRAY_PREDEF
   if (idx < 8)
 #if 0
     return  (idx * 17 +
@@ -302,7 +306,8 @@ ctx_CBRLE_idx_to_color (const uint8_t *rgba8z, int size, int idx)
      return hard_pal[idx];
 #endif
   else
-     return ((uint32_t*)(&rgba8z[size-4-(idx-8)*4]))[0];
+#endif
+     return ((uint32_t*)(&rgba8z[size-4-(idx-PAL_GRAY_OFFSET)*4]))[0];
 }
 
 static inline int
