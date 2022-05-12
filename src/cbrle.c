@@ -29,19 +29,32 @@
 #if CTX_ENABLE_CBRLE
 
 
+#define CBRLE_GRADIENT  1
+#define ALLOW_MERGE     1
+
 #define PAL_GRAY_PREDEF 0
 
-#define PAL_GRAY_OFFSET      (PAL_GRAY_PREDEF * 8)
-
-#define GRADIENT_THRESHOLD     4
-#define COLOR_THRESHOLD_START  3
+#define GRADIENT_THRESHOLD     1
+#define COLOR_THRESHOLD_START  6
 #define COLOR_THRESHOLD_END    (color_budget<=128?32:21)
+
+#define MAX_GRADIENT_LENGTH    (color_budget<=128?63:63)
+
+// with high numbers, repeated recompressions steal a *lot* of time
+// when data is overflowing
+//
+#define MAX_RECOMPRESS         2
+
+// increase to have larger safety margin between pixeldata
+// and palette
+#define BORDER                 1
+
+
+//  -- currently unused
 #define MERGE_THRESHOLD        64   //(no<2?50:98)
 #define MERGE_CHANCE           42   //(no<2?25:80)
 
-#define MAX_GRADIENT_LENGTH    (color_budget<=128?8:6)
-#define MAX_RECOMPRESS         2
-#define BORDER                 1
+#define PAL_GRAY_OFFSET      (PAL_GRAY_PREDEF * 8)
 
 enum {
         CBRLE_MODE_SET=0,
@@ -60,35 +73,24 @@ static inline int encode_pix (uint8_t *cbrle, int pos,
                               uint8_t idx, int range, int gradient,
                               int allow_merge)
 {
-#if 1
+#if ALLOW_MERGE
    if (allow_merge && pos > 3)
    {
-#if 1 
-      if (cbrle[pos-1] < 128 &&  //
-          cbrle[pos-2] < 128 &&  // previous must be single
-          (cbrle[pos-1] & 15) == idx)
+      if (cbrle[pos-1]        < 128 &&  //
+          cbrle[pos-2]        < 128 &&  // previous must be single
+          (cbrle[pos-1] >> 4) == 0 && idx <4 && range == 1 &&
+          (cbrle[pos-1]&15) <4)
       {
-         int sum_range = (cbrle[pos-1] >> 4) + 1 + range;
-         if (sum_range <= 8)
-         {
-           cbrle[pos-1] = (sum_range-1) * 16 + idx;
-           return 0;
-         }
-         else if (sum_range < 62 && 0)
-         {
-           cbrle[pos-1] = sum_range + 128 + 0 * 64;
-           cbrle[pos] = idx;
-           return 1;
-         }
+         int previdx = cbrle[pos-1]&15;
+         cbrle[pos-1] = (8-1) * 16 + (idx << 2) + previdx;
+         return 0;
       }
-#endif
    }
 #endif
 
    if (range > 64)
      fprintf (stderr, "ERROR trying to encode too big range %i!\n", range);
-   //gradient = 0;
-   if (idx <= 15 && range <= 8 && !gradient)
+   if (idx <= 15 && range < 8 && !gradient)
    {
      cbrle[pos] = (range-1) * 16 + idx;
      return 1;
@@ -109,20 +111,36 @@ static inline int encode_pix (uint8_t *cbrle, int pos,
 //
 // returns number of bytes in encoded form.
 static inline int decode_pix (const uint8_t *pix,
-                              uint8_t       *ret_col,
+                              uint8_t       *ret_col1,
+                              uint8_t       *ret_col2,
                               int           *length_px,
                               int           *gradient)
 {
   int encoded_length = 1;
   int len = 1;
   int col = 0;
+  int col2 = 0;
   if (gradient)
     *gradient = 0;
   if ((*pix & 0x80) == 0)
   {
-    col = ( pix[0] & 15);
     len = pix[0] >> 4;
     len++;
+    if (len == 8)
+    {
+      len = 2;
+      col = pix[0] & 15;
+      col2 = col >> 2;
+      col = col & 3;
+      if (ret_col2)
+        *ret_col2 = col2;
+    }
+    else
+    {
+      col = ( pix[0] & 15);
+      if (ret_col2)
+        *ret_col2 = col;
+    }
   }
   else
   {
@@ -135,18 +153,20 @@ static inline int decode_pix (const uint8_t *pix,
     }
     col = pix[1];
     encoded_length = 2;
+    if (ret_col2)
+      *ret_col2 = col;
   }
   if (length_px)
     *length_px = len;
-  if (ret_col)
-    *ret_col = col;
+  if (ret_col1)
+    *ret_col1 = col;
   return encoded_length;
 }
 
 
 static inline int decode_pix_len (const uint8_t *pix, int *length_px)
 {
-  return decode_pix (pix, NULL, length_px, NULL);
+  return decode_pix (pix, NULL, NULL, length_px, NULL);
 }
 
 
@@ -189,6 +209,8 @@ static const uint32_t hard_pal[8]={
 #define pow2(a) ((a)*(a))
 #define ctx_sqrtf sqrtf
 
+
+
 static inline int
 ctx_CBRLE_get_color_mask (int gen)
 {
@@ -227,18 +249,20 @@ ctx_CBRLE_get_color_idx (uint8_t *cbrle, int size, int color_budget, uint32_t co
                   ctx_sqrtf((colors  / ( color_budget-1.0f))) );
 
 #if 0 // reduce color-depth of grays
-  if (gen > 0 &&
+  if (//gen > 0 &&
       (color&0xf0) == ((color >> 8) & 0xf0) &&
       (color&0xf0) == ((color >> 16) & 0xf0))
   {
-    color  = hard_pal[ (color>>(5+8)) & 7];
+    color  &= 0xfff0f0f0u;
   }
 #endif
 
-  color = color & ctx_CBRLE_get_color_mask (gen+1);
+  color = color & ctx_CBRLE_get_color_mask (gen+2);
 
   uint32_t best_diff = 255*255*3;
-#if PAL_GRAY_PREDEF
+
+
+#if PAL_GRAY_PREDEF // predefined 8 grays
   if (!found)
   {
     uint32_t diff;
@@ -271,7 +295,7 @@ ctx_CBRLE_get_color_idx (uint8_t *cbrle, int size, int color_budget, uint32_t co
 
     /* the color diff threshold is dynamic, as
      * palette space gets tighter we are less eager to add*/
-    if (best_diff > threshold && colors < color_budget) // didn't find - store new color
+    if (best_diff > threshold && colors < color_budget-1) // didn't find - store new color
     {
       idx = colors++;
       ((uint32_t*)(&cbrle[size-4-idx*4]))[0] = color;
@@ -312,9 +336,10 @@ static inline int
 ctx_CBRLE_compute_color_budget (int width, int size)
 {
   int color_budget = 256;
+  //return color_budget;
   switch ((size*8/width)){
       case 1:
-      case 2: color_budget  = 4;break;
+      case 2: color_budget  = 8;break;
       case 3: color_budget  = 8;break;
       case 4: color_budget  = 16;break;
       case 5: color_budget  = 32;break;
@@ -365,7 +390,40 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
   uint32_t src_rgba= ((uint32_t*)rgba_in)[0];
   int color_budget = ctx_CBRLE_compute_color_budget (width, size);
 
+#if CBRLE_GRADIENT
   int in_gradient = 0;
+#endif
+
+  if (mode == 0)
+  {
+#if 0
+  for (int round = 0; round < 1; round++)
+  for (int i = 1; i < width-1; i++)
+  {
+    int g0 = rgba[(i-1)*4+1];
+    int g1 = rgba[(i)*4+1];
+    int g2 = rgba[(i+1)*4+1];
+
+    if (abs(g0-g1) < abs(g1-g2))
+    {
+      for (int c = 0; c < 4; c++)
+      {
+        rgba[i*4+c]=(rgba[(i-1)*4+c]+rgba[i*4+c])/2;
+      }
+    }
+    else if (abs(g0-g1) == abs(g1-g2))
+    {
+    }
+    else
+    {
+      for (int c = 0; c < 4; c++)
+      {
+        rgba[i*4+c]=(rgba[(i+1)*4+c]+rgba[(i)*4+c])/2;
+      }
+    }
+  }
+#endif
+  }
 
   uint8_t trailer[size+2];
   int trailer_size = 0;
@@ -416,8 +474,9 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
        else
        {
          uint8_t idx;
+         uint8_t idx2;
          int gradient;
-         decode_pix (&cbrle[pos], &idx, &repeat, &gradient);
+         decode_pix (&cbrle[pos], &idx, &idx2, &repeat, &gradient);
          
          trailer_start = pos + codelen;
          if (x + repeat == skip + count)
@@ -463,10 +522,11 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
     {
        int     repeat = 0;
        uint8_t idx;
+       uint8_t idx2;
        int     dec_repeat;
        int     gradient;
        //int len = decode_pix_len (&cbrle[pos], &repeat);
-       int len = decode_pix (&cbrle[pos], &idx, &dec_repeat, &gradient);
+       int len = decode_pix (&cbrle[pos], &idx, &idx2, &dec_repeat, &gradient);
        if (x + dec_repeat < skip)
        {
          pos  += len;
@@ -539,7 +599,9 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
     cbrle[3]=0; // alpha
   }
 
+#if CBRLE_GRADIENT
   int prev_in_gradient = 0;
+#endif
 
   if (mode == CBRLE_MODE_OVER)
   {
@@ -550,16 +612,16 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
      for (int mpos = 0; mpos < copy_size && x < width && count > 0; )
      {
        uint8_t offsetA = 0;
+       uint8_t offset2 = 0;
        int repeat = 0;
        int gradient = 0;
-       mpos += decode_pix (&copy[mpos], &offsetA, &repeat, &gradient);
+       mpos += decode_pix (&copy[mpos], &offsetA, &offset2, &repeat, &gradient);
 
        uint32_t color = ctx_CBRLE_idx_to_color (cbrle, size, offsetA);
 
        repeat = ctx_mini (repeat, count);
        if (repeat)
        {
-         uint32_t composited;
          do {
             int part = 0;
             int cov = coverage[0];
@@ -572,12 +634,15 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
               repeat   --;
             }
 
-            composited = ctx_over_RGBA8_2 (color, si_ga, si_rb, si_a, cov);
-            int idx = ctx_CBRLE_get_color_idx (cbrle, size,
+            {
+         uint32_t composited = ctx_over_RGBA8_2 (color, si_ga, si_rb, si_a, cov);
+         int idx = ctx_CBRLE_get_color_idx (cbrle, size,
                               ctx_mini(color_budget,  size-pos-colors*4 - 2), // XXX expensive?
                               composited, recompress);
-            colors = cbrle[2];
+         colors = cbrle[2];
+
             pos += encode_pix  (cbrle, pos, idx, part, gradient, 1);
+            }
          } while (repeat > 0);
        }
      }
@@ -589,16 +654,17 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
      for (int mpos = 0; mpos < copy_size && x < width && count > 0; )
      {
        uint8_t offsetA = 0;
+       uint8_t offset2 = 0;
        int repeat = 0;
        int gradient = 0;
-       mpos += decode_pix (&copy[mpos], &offsetA, &repeat, &gradient);
+       mpos += decode_pix (&copy[mpos], &offsetA, &offset2, &repeat, &gradient);
 
        uint32_t color = ctx_CBRLE_idx_to_color (cbrle, size, offsetA);
 
        repeat = ctx_mini (repeat, count);
        if (repeat)
        {
-         uint32_t composited;
+         colors = cbrle[2];
          do {
             int part = 0;
             int cov = coverage[0];
@@ -611,10 +677,12 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
               repeat--;
             }
 
-            composited = ctx_lerp_RGBA8_2 (color, si_ga, si_rb, cov);
-            int idx = ctx_CBRLE_get_color_idx (cbrle, size, ctx_mini(color_budget,  size-pos-colors*4 - 8), composited, recompress);
-            colors = cbrle[2];
+            {
+         uint32_t composited;
+         composited = ctx_lerp_RGBA8_2 (color, si_ga, si_rb, cov);
+         int idx = ctx_CBRLE_get_color_idx (cbrle, size, ctx_mini(color_budget,  size-pos-colors*4 - 8), composited, recompress);
             pos += encode_pix  (cbrle, pos, idx, part, gradient, 1);
+            }
          } while (repeat > 0);
        }
      }
@@ -639,10 +707,12 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
       uint32_t val = ((uint32_t*)rgba)[0] & 0xffffffff;
       // NOTE: we could probably drop precision to known lower precision reached here,
       //       but it requires more global state
+#if CBRLE_GRADIENT
       uint32_t next_val = 0x23ff00ff;
 
       if (x + 1 < width && count>1)
         next_val = ((uint32_t*)rgba)[1] & 0xffffffffu;
+#endif
 
       if (pos > size - BORDER - trailer_size - colors * 4)
       {
@@ -668,7 +738,7 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
         if (repeats)
         {
 
-#if 1 
+#if CBRLE_GRADIENT
           if ((( repeats == 1 && in_gradient == 0) ||
                 ( repeats < MAX_GRADIENT_LENGTH && in_gradient == 1)) 
 
@@ -685,11 +755,21 @@ ctx_CBRLE_compress (const uint8_t *rgba_in,
             int idx = ctx_CBRLE_get_color_idx (cbrle, size, ctx_mini(color_budget,  size-pos-colors*4-BORDER ), prev_val, recompress);
             colors = cbrle[2];
 
-            pos += encode_pix (cbrle, pos, idx, repeats, ((prev_in_gradient==1) &&
-                                                           (in_gradient == 1)), 1);
+            pos += encode_pix (cbrle, pos, idx, repeats,
+                            
+#if CBRLE_GRADIENT
+                      ((prev_in_gradient==1) && (in_gradient == 1))
+#else
+                      0
+#endif
+                      
+                      
+                      , 1);
 
+#if CBRLE_GRADIENT
             prev_in_gradient = in_gradient;
             in_gradient = 0;
+#endif
             repeats = 0;
           }
         }
@@ -748,9 +828,11 @@ _ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size
 {
   int x = 0;
   int pos = 4;
-  uint32_t pixA, prev_pix;
+  uint32_t pixA = 0;
+#if CBRLE_GRADIENT
+  uint32_t prev_pix = 0;
+#endif
   const uint8_t *codepix=cbrle+4;
-  pixA = prev_pix = 0;
 
   int length = ((uint16_t*)cbrle)[0];
   //int colors = cbrle[2]; 
@@ -778,13 +860,15 @@ _ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size
   for (; pos < length && x < width; )
   {
     uint8_t offsetA = 0;
+    uint8_t offset2 = 0;
     int repeat = 0;
     int gradient = 0;
-    int codelen = decode_pix (codepix, &offsetA, &repeat, &gradient);
+    int codelen = decode_pix (codepix, &offsetA, &offset2, &repeat, &gradient);
     //fprintf (stderr, "{%i r%i%s}", offsetA, repeat, gradient?"g":"");
 
     pixA = ctx_CBRLE_idx_to_color (cbrle, size, offsetA);
 
+#if CBRLE_GRADIENT
     if (gradient)
     {
       for (int i = 0; i < repeat && x < width && count--; i++)
@@ -797,11 +881,23 @@ _ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size
       }
     }
     else
+#endif
     {
-       for (int i = 0; i < repeat && x < width && count--; i++)
+       if (offsetA != offset2 && repeat == 2)
+       {
+         uint32_t pixB = ctx_CBRLE_idx_to_color (cbrle, size, offset2);
          ((uint32_t*)(&rgba8[(x++)*4]))[0] = pixA;
+         ((uint32_t*)(&rgba8[(x++)*4]))[0] = pixB;
+       }
+       else
+       {
+         for (int i = 0; i < repeat && x < width && count--; i++)
+           ((uint32_t*)(&rgba8[(x++)*4]))[0] = pixA;
+       }
     }
+#if CBRLE_GRADIENT
     prev_pix = pixA;
+#endif
 
     codepix += codelen;
     pos += codelen;
@@ -878,8 +974,8 @@ ctx_CBRLE_recompress_smoothen (uint8_t *cbrle, int size, int width, int length)
   uint8_t temp[width*4];
   _ctx_CBRLE_decompress (cbrle, temp, width, size, 0, width);
 
-#if 1
-  for (int round = 0; round < 1; round++)
+#if 0
+  for (int round = 0; round < 2; round++)
   for (int i = 1; i < width-1; i++)
   {
     for (int c = 0; c < 4; c++)
@@ -890,7 +986,7 @@ ctx_CBRLE_recompress_smoothen (uint8_t *cbrle, int size, int width, int length)
 #endif
 
 #if 1
-  for (int round = 0; round < 1; round++)
+  for (int round = 0; round < 2; round++)
   for (int i = 1; i < width-1; i++)
   {
     int g0 = temp[(i-1)*4+1];
@@ -906,10 +1002,12 @@ ctx_CBRLE_recompress_smoothen (uint8_t *cbrle, int size, int width, int length)
     }
     else if (abs(g0-g1) == abs(g1-g2))
     {
+#if 0
       for (int c = 0; c < 4; c++)
       {
         temp[i*4+c]=(temp[(i+1)*4+c]+temp[i*4+c]+temp[(i-1)*4+c])/3;
       }
+#endif
     }
     else
     {
@@ -947,16 +1045,20 @@ ctx_CBRLE_recompress (uint8_t *cbrle, int size, int width, int length, int no)
     return ((uint16_t*)cbrle)[0];
   }
 #endif
+#if 1
   if (no == 0)
   {
     ctx_CBRLE_recompress_smoothen (cbrle, size, width, length);
     if (((uint16_t*)cbrle)[0] < length -8)
       return ((uint16_t*)cbrle)[0];
   }
+#endif
 
+#if 0
   ctx_CBRLE_recompress_drop_bits (cbrle, size, width, length, no);
   if (((uint16_t*)cbrle)[0] < length -8)
     return ((uint16_t*)cbrle)[0];
+#endif
 
 
 #if 0
