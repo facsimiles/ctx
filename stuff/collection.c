@@ -24,7 +24,7 @@ void metadata_wipe_cache (Collection *collection, int full)
   }
 }
 
-void metadata_load (Collection *collection, const char *path, int text_file)
+void metadata_load (Collection *collection, const char *path, int text_editor_mode)
 {
   collection->metadata_cache_no = -3;
   collection->metadata_cache = NULL;
@@ -35,7 +35,7 @@ void metadata_load (Collection *collection, const char *path, int text_file)
   collection->metadata = NULL;
   collection->metadata_len = 0;
   collection->metadata_size = 0;
-  if (text_file)
+  if (text_editor_mode)
   {
     uint8_t *contents = NULL;
     long length = 0;
@@ -93,13 +93,13 @@ void dir_mkdir_ancestors (const char *path, unsigned int mode)
 }
 
 #if 1
-void metadata_save (Collection *collection, int text_file)
+void metadata_save (Collection *collection, int text_editor_mode)
 {
   if (!collection->metadata_path) return;
   dir_mkdir_ancestors (collection->metadata_path, 0777);
 
   FILE *file = fopen (collection->metadata_path, "w");
-  if (text_file)
+  if (text_editor_mode)
   {
     int count = metadata_count (collection);
     for (int i = 0; i < count; i++)
@@ -275,6 +275,9 @@ char *metadata_escape_item (const char *item) // XXX expand with length to
                                               // handle \0 and
                                               // thus arbitrary blobs?
 {
+  if (item[0]==0)return strdup("\\0"); // this is kind of a hack - but it avoids
+                                       // bare newlines - which we have trouble with
+                                       // XXX XXX XXX
   CtxString *str = ctx_string_new ("");
   for (int i = 0; item[i]; i++)
   {
@@ -481,6 +484,7 @@ int metadata_get_int (Collection *collection, int no, const char *key, int def_v
 
 void metadata_swap (Collection *collection, int no_a, int no_b)
 {
+   if (no_a == no_b) return;
    if (no_b < no_a)
    {
      int tmp = no_a;
@@ -507,16 +511,21 @@ void metadata_swap (Collection *collection, int no_a, int no_b)
    memcpy (a_temp, collection->metadata + a_start, a_len);
    memcpy (b_temp, collection->metadata + b_start, b_len);
 
-   memmove (collection->metadata + b_start, collection->metadata + b_start + b_len, collection->metadata_len - b_start - b_len);
+   memmove (collection->metadata + b_start,
+            collection->metadata + b_start + b_len, collection->metadata_len - b_start - b_len);
    collection->metadata_len -= b_len;
-   memmove (collection->metadata + a_start, collection->metadata + a_start + a_len, collection->metadata_len - a_start - a_len);
+   memmove (collection->metadata + a_start,
+            collection->metadata + a_start + a_len, collection->metadata_len - a_start - a_len);
    collection->metadata_len -= a_len;
 
    b_start -= a_len;
-   memmove (collection->metadata + b_start + a_len, collection->metadata + b_start, collection->metadata_len - b_start);
+   memmove (collection->metadata + b_start + a_len,
+            collection->metadata + b_start, collection->metadata_len - b_start);
    memcpy (collection->metadata + b_start, a_temp, a_len);
    collection->metadata_len += a_len;
-   memmove (collection->metadata + a_start + b_len, collection->metadata + a_start, collection->metadata_len - a_start);
+   memmove (collection->metadata + a_start + b_len,
+            collection->metadata + a_start,
+            collection->metadata_len - a_start);
    memcpy (collection->metadata + a_start, b_temp, b_len);
    collection->metadata_len += b_len;
 

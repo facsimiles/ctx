@@ -2,7 +2,6 @@
  * library, with adaptations to permit multipass SIMD builds.
  */
 
-
 #include <stdint.h>
 #include <termios.h>
 #include <unistd.h>

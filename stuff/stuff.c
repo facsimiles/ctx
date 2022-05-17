@@ -546,7 +546,7 @@ collection_set_path (Collection *collection,
     free (namelist[n]);
   free (namelist);
 
-  // TODO remove non-existent collection
+  // TODO fully remove non-existent collection when empty
 
   //if (added)
   //  metadata_dirt();
@@ -1697,14 +1697,18 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   else
   {
     int count = items_to_move (collection, start_no);
+    fprintf (stderr, "item_to_move: %i\n", count);
+    fprintf (stderr, "did_skips: %i\n", did_skips);
+    fprintf (stderr, "focused_no: %i\n", focused_no);
+    fprintf (stderr, "start_no: %i\n\n", start_no);
     if (!did_skips) focused_no++;
+    metadata_insert (collection, focused_no-1, "b");
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (collection, focused_no-1 + i, "b");
       metadata_swap (collection, start_no+1 +i, focused_no-1 +i);
-      metadata_remove (collection, start_no+1 +i);
-      metadata_dirt ();
     }
+    metadata_remove (collection, start_no+count);
+    metadata_dirt ();
     focused_no--;
   }
 
@@ -2428,19 +2432,15 @@ void text_edit_stop (CtxEvent *event, void *a, void *b)
 void text_edit_return (CtxEvent *event, void *a, void *b)
 {
   char *str = metadata_get_name (collection, focused_no);
-  metadata_insert (collection, focused_no+1, str);
+  metadata_insert (collection, focused_no+1, str + text_edit);
+  str[text_edit]=0;
+  metadata_set_name (collection, focused_no, str);
 
   if (metadata_get_int (collection, focused_no, "bullet", 0))
   {
     metadata_set_float (collection, focused_no+1, "bullet",
                       metadata_get_int (collection, focused_no, "bullet", 0));
   }
-
-  metadata_dirt ();
-
-  metadata_set_name (collection, focused_no+1, str + text_edit);
-  str[text_edit]=0;
-  metadata_set_name (collection, focused_no, str);
 
   metadata_dirt ();
   free (str);
@@ -2875,7 +2875,7 @@ make_tail_entry (Collection *collection)
 {
   if (focused_no == -1)
   {
-    metadata_insert (collection, 0, " ");
+    metadata_insert (collection, 0, "_");
     focused_no = 0;
     layout_find_item = focused_no = focused_no;
   }
@@ -3438,6 +3438,9 @@ char **dir_get_viewer_argv (const char *path, int no)
 static void dir_layout (ITK *itk, Collection *collection)
 {
   Ctx *ctx = itk->ctx;
+
+  printf ("%s\n", collection->path);
+
   float em = itk_em (itk);
   float prev_height = layout_config.height;
   float row_max_height = 0;
@@ -3524,7 +3527,7 @@ static void dir_layout (ITK *itk, Collection *collection)
          {
            layout_show_page = layout_page_no; // change to right page
            ctx_queue_draw (itk->ctx); // queue another redraw
-                                        // of the right page we'll find it then
+                                      // of the right page we'll find it then
          }
          else
          {
@@ -3622,10 +3625,10 @@ static void dir_layout (ITK *itk, Collection *collection)
           label = layout_config.label;
       }
 
-      xstr = metadata_get_string (collection, i, "x");
-      ystr = metadata_get_string (collection, i, "y");
-      wstr = metadata_get_string (collection, i, "width");
-      hstr = metadata_get_string (collection, i, "height");
+      xstr     = metadata_get_string (collection, i, "x");
+      ystr     = metadata_get_string (collection, i, "y");
+      wstr     = metadata_get_string (collection, i, "width");
+      hstr     = metadata_get_string (collection, i, "height");
       origin_x = metadata_get_float (collection, i, "origin-x", 0.0);
       origin_y = metadata_get_float (collection, i, "origin-y", 0.0);
 
