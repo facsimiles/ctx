@@ -2568,7 +2568,6 @@ const char *ctx_guess_media_type (const char *path, const char *content, int len
 
   if (extension_match && !ctx_strcmp (extension_match, "application/ctx"))
   {
-          fprintf (stderr, "!!\n");
     //if (!ctx_path_is_exec (path))
     //  extension_match = NULL;
   }

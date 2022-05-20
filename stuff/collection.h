@@ -15,9 +15,6 @@ typedef enum CtxAtom {
  CTX_ATOM_FILE,
 } CtxAtom;
 
-
-
-
 typedef struct Collection {
   char   *path;
   char   *title;
@@ -79,7 +76,7 @@ void metadata_unset        (Collection *collection,
 int metadata_insert        (Collection *collection,
                             int pos,
                             const char *item);
-void metadata_set_name     (Collection *collection, int pos, const char *new_name);
+void metadata_set_name     (Collection *collection, int no, const char *new_name);
 void metadata_add          (Collection *collection, int no, const char *key, const char *value);
 void metadata_set          (Collection *collection, int no, const char *key, const char *value);
 void metadata_set_float    (Collection *collection, int no, const char *key, float value);
@@ -94,6 +91,9 @@ CtxAtom collection_item_get_type_atom (Collection *collection, int i);
 int     collection_measure_chunk      (Collection *collection, int no);
 
 int collection_ancestor_folded (Collection *collection, int no);
+int collection_has_children    (Collection *collection, int no);
+void collection_update_files (Collection *collection);
 
-int collection_has_children (Collection *collection, int no);
 #endif
+
+

@@ -552,6 +552,7 @@ void metadata_remove (Collection *collection, int no)
    collection->metadata_len -= a_len;
    collection->metadata[collection->metadata_len]=0;
    metadata_wipe_cache (collection, 1);
+   collection_update_files (collection);
 }
 
 void metadata_unset (Collection *collection, int no, const char *key)
@@ -647,6 +648,7 @@ int metadata_insert (Collection *collection, int pos, const char *item)
 
 void metadata_set_name (Collection *collection, int pos, const char *new_name)
 {
+  // TODO : if it is a file, do a corresponding rename!
   char *m = metadata_find_no (collection, pos);
   if (m)
   {
@@ -759,62 +761,12 @@ static int custom_sort (const struct dirent **a,
 extern int text_editor;
 
 void
-collection_set_path (Collection *collection,
-                     const char *path,
-                     const char *title)
+collection_update_files (Collection *collection)
 {
-  char *resolved_path = realpath (path, NULL);
-  char *title2 = NULL;
-
   struct  dirent **namelist = NULL;
   int     n;
 
-  //fprintf (stderr, "setting path %s %s", path, title);
-
-  if (title) title2 = strdup (title);
-  else title2 = strdup (path);
-
-
-  if (collection->path)
-    free (collection->path);
-  collection->path = resolved_path;
-  if (collection->title)
-    free (collection->title);
-  collection->title = title2;
-
   n = scandir (collection->path, &namelist, NULL, custom_sort);
-
-  metadata_load (collection, resolved_path, text_editor);
-  collection->count = metadata_count (collection);
-
-  if (text_editor)
-    return;
-
-#if 0
-  {
-    if (0)
-    {
-    //set_grid (NULL, NULL, NULL);
-    char *v_type = metadata_get_string (".", "view");
-    if (v_type)
-    {
-      if (!strcmp (v_type, "layout"))
-      {
-         set_layout (NULL, NULL, NULL);
-      }
-      else if (!strcmp (v_type, "list"))
-      {
-         set_list (NULL, NULL, NULL);
-      }
-      else if (!strcmp (v_type, "grid"))
-      {
-         set_grid (NULL, NULL, NULL);
-      }
-      free (v_type);
-    }
-    }
-  }
-#endif
 
   CtxList *to_add = NULL; // XXX a temporary list here might be redundant
   for (int i = 0; i < n; i++)
@@ -832,7 +784,7 @@ collection_set_path (Collection *collection,
   {
     char *name = to_add->data;
     int n = metadata_insert(collection, -1, name);
-    metadata_set (collection, n, "type", "ctx/file");
+    metadata_set (collection, n, "type", "file");
     ctx_list_remove (&to_add, name);
     free (name);
   }
@@ -874,10 +826,41 @@ collection_set_path (Collection *collection,
     free (namelist[n]);
   free (namelist);
 
-  // TODO fully remove non-existent collection when empty
-
+  // TODO fully remove non-existent collection when empty?
   //if (added)
   //  metadata_dirt();
+}
+
+
+void
+collection_set_path (Collection *collection,
+                     const char *path,
+                     const char *title)
+{
+  char *resolved_path = realpath (path, NULL);
+  char *title2 = NULL;
+
+
+  //fprintf (stderr, "setting path %s %s", path, title);
+
+  if (title) title2 = strdup (title);
+  else title2 = strdup (path);
+
+
+  if (collection->path)
+    free (collection->path);
+  collection->path = resolved_path;
+  if (collection->title)
+    free (collection->title);
+  collection->title = title2;
+
+  metadata_load (collection, resolved_path, text_editor);
+  collection->count = metadata_count (collection);
+
+  if (text_editor)
+    return;
+
+  collection_update_files (collection);
 }
 
 
@@ -935,20 +918,20 @@ CtxAtom collection_item_get_type_atom (Collection *collection, int i)
   if (type)
   {
 #if 0
-    if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
+    if (!strcmp (type, "layoutbox") && layout_config.use_layout_boxes)
     {
       free (type); return CTX_ATOM_LAYOUTBOX;
     }
     else
 #endif
-    if (!strcmp (type, "ctx/newpage"))    {free (type); return CTX_ATOM_NEWPAGE;}
-    else if (!strcmp (type, "ctx/startpage"))  {free (type); return CTX_ATOM_STARTPAGE;}
-    else if (!strcmp (type, "ctx/startgroup")) {free (type); return CTX_ATOM_STARTGROUP;}
-    else if (!strcmp (type, "ctx/endgroup"))   {free (type); return CTX_ATOM_ENDGROUP;}
-    else if (!strcmp (type, "ctx/rectangle"))  {free (type); return CTX_ATOM_RECTANGLE;}
-    else if (!strcmp (type, "ctx/text"))       {free (type); return CTX_ATOM_TEXT;}
-    else if (!strcmp (type, "ctx/ctx"))        {free (type); return CTX_ATOM_CTX;}
-    else if (!strcmp (type, "ctx/file"))       {free (type); return CTX_ATOM_FILE;}
+    if (!strcmp (type, "newpage"))    {free (type); return CTX_ATOM_NEWPAGE;}
+    else if (!strcmp (type, "startpage"))  {free (type); return CTX_ATOM_STARTPAGE;}
+    else if (!strcmp (type, "startgroup")) {free (type); return CTX_ATOM_STARTGROUP;}
+    else if (!strcmp (type, "endgroup"))   {free (type); return CTX_ATOM_ENDGROUP;}
+    else if (!strcmp (type, "rectangle"))  {free (type); return CTX_ATOM_RECTANGLE;}
+    else if (!strcmp (type, "text"))       {free (type); return CTX_ATOM_TEXT;}
+    else if (!strcmp (type, "ctx"))        {free (type); return CTX_ATOM_CTX;}
+    else if (!strcmp (type, "file"))       {free (type); return CTX_ATOM_FILE;}
     free (type);
   }
   return CTX_ATOM_TEXT;

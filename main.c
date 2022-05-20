@@ -213,23 +213,10 @@ int make_thumb (const char *src_path, const char *dst_path)
   return 0;
 }
 
+char *ctx_get_thumb_path (const char *path);
 char *ctx_thumb_path (const char *path)
 {
-  char *hex="0123456789abcdefghijkl";
-  unsigned char path_hash[40];
-  char path_hash_hex[41];
-  CtxSHA1 *sha1 = ctx_sha1_new ();
-  ctx_sha1_process (sha1, (uint8_t*)"file://", strlen ("file://"));
-  ctx_sha1_process (sha1, (uint8_t*)path, strlen (path));
-  ctx_sha1_done(sha1, path_hash);
-  ctx_sha1_free (sha1);
-  for (int j = 0; j < 20; j++)
-  {
-    path_hash_hex[j*2+0]=hex[path_hash[j]/16];
-    path_hash_hex[j*2+1]=hex[path_hash[j]%16];
-  }
-  path_hash_hex[40]=0;
-  return ctx_strdup_printf ("%s/.ctx-thumbnails/%s", getenv ("HOME"), path_hash_hex);
+  return ctx_get_thumb_path (path);
 }
 
 int thumb_main (int argc, char **argv)

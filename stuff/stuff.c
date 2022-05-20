@@ -28,6 +28,9 @@
 #include "itk.h"
 #include <signal.h>
 #include "argvs.h"
+#include <libgen.h>
+#include <limits.h>
+#include <stdlib.h>
 
 typedef enum ImageZoom
 {
@@ -197,6 +200,24 @@ static void queue_thumb (const char *path, const char *thumbpath)
   ctx_list_append (&thumb_queue, item);
 }
 
+char *get_dirname (const char *path)
+{
+  char *ret;
+  char *tmp = strdup (path);
+  ret = strdup (dirname (tmp));
+  free (tmp);
+  return ret;
+}
+
+char *get_basename (const char *path)
+{
+  char *ret;
+  char *tmp = strdup (path);
+  ret = strdup (basename (tmp));
+  free (tmp);
+  return ret;
+}
+
 char *ctx_get_thumb_path (const char *path) // XXX add dim as arg?
 {
   char *hex="0123456789abcdefghijkl";
@@ -215,15 +236,22 @@ char *ctx_get_thumb_path (const char *path) // XXX add dim as arg?
     path_hash_hex[j*2+1]=hex[path_hash[j]%16];
   }
   path_hash_hex[40]=0;
-  return ctx_strdup_printf ("%s/.ctx-thumbnails/%s", getenv ("HOME"), path_hash_hex);
+#if 0
+  char *ret = ctx_strdup_printf ("%s/.ctx-thumbnails/%s", getenv ("HOME"), path_hash_hex);
+#else
+  char *dname = get_dirname (path);
+  char *bname = get_basename (path);
+  char *ret = ctx_strdup_printf ("%s/.ctx/512x512/%s", dname, bname);
+  free (dname);
+  free (bname);
+#endif
+  return ret;
 }
 
 static void user_data_free (CtxClient *client, void *user_data)
 {
   free (user_data);
 }
-
-
 
 
 void ui_queue_thumb (const char *path)
@@ -405,28 +433,6 @@ static void metadata_dirt(void)
 }
 
 
-
-#include <libgen.h>
-#include <limits.h>
-#include <stdlib.h>
-
-char *get_dirname (const char *path)
-{
-  char *ret;
-  char *tmp = strdup (path);
-  ret = strdup (dirname (tmp));
-  free (tmp);
-  return ret;
-}
-
-char *get_basename (const char *path)
-{
-  char *ret;
-  char *tmp = strdup (path);
-  ret = strdup (basename (tmp));
-  free (tmp);
-  return ret;
-}
 
 const char *get_suffix (const char *path)
 {
@@ -1553,12 +1559,12 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
       // insert new group
       target = no;
       metadata_insert (collection, target, "~~~");
-      metadata_set (collection, target, "type", "ctx/endgroup");
+      metadata_set (collection, target, "type", "endgroup");
       for (int i = 0; i <count;i++)
       metadata_insert (collection, target, "f");
 
       metadata_insert (collection, target, "___");
-      metadata_set (collection, target, "type", "ctx/startgroup");
+      metadata_set (collection, target, "type", "startgroup");
 
       for (int i = 0; i < count; i++)
       {
@@ -2776,7 +2782,7 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
     case CTX_DRAG_PRESS:
        fprintf (stderr, "rect drag %f %f\n", e->x, e->y);
        metadata_insert (collection, focused_no, "");
-       metadata_set (collection, focused_no, "type", "ctx/rectangle");
+       metadata_set (collection, focused_no, "type", "rectangle");
        x0 = e->x;
        y0 = e->y;
        metadata_set_float (collection, focused_no, "x", x0 / itk->width);
@@ -2965,13 +2971,13 @@ int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
      focused_no = start_no;
 
      metadata_insert(collection, focused_no+1, "___");
-     metadata_set (collection, focused_no+1, "type", "ctx/startgroup");
+     metadata_set (collection, focused_no+1, "type", "startgroup");
 
      metadata_insert(collection, focused_no+2, "");
      text_edit = 0;
 
      metadata_insert(collection, focused_no+3, "~~~");
-     metadata_set (collection, focused_no+3, "type", "ctx/endgroup");
+     metadata_set (collection, focused_no+3, "type", "endgroup");
      focused_no++;
   }
   metadata_dirt();
@@ -3644,11 +3650,11 @@ static void dir_layout (ITK *itk, Collection *collection)
         {
            if (atom == CTX_ATOM_RECTANGLE)
            {
-             media_type = "ctx/rectangle";
+             media_type = "rectangle";
            }
            else if (atom == CTX_ATOM_CTX)
            {
-             media_type = "ctx/ctx";
+             media_type = "ctx";
            }
            else if (atom == CTX_ATOM_TEXT)
            {
@@ -4100,7 +4106,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
         ctx_rectangle (itk->ctx, itk->x, itk->y + height - em * (lines + 1),
                         width, em * (lines + 0.5));
-        ctx_rgba (itk->ctx, 0,0,0,0.6);
+        ctx_rgba (itk->ctx, 0,0,0,0.1);
         ctx_fill (itk->ctx);
 
         for (int i = 0; i < lines; i++)
@@ -5606,7 +5612,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    int count = 0;
    fprintf (stderr, ".");
    int got_content = 0;
-   for (int i = 0; i < 400 && got_content < 2; i ++)
+   for (int i = 0; i < 100 && got_content < 2; i ++)
    {
      //CtxEvent *event = NULL;
      ctx_start_frame (ctx);
@@ -5622,7 +5628,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
 
      while(ctx_get_event (ctx));
      ctx_clients_handle_events (ctx);
-     usleep (1000 * 10);
+     usleep (1000 * 40);
    }
    ctx_screenshot (ctx, dst_path);
    ctx_client_remove (ctx, client);
