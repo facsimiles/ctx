@@ -1790,12 +1790,12 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
     {
       // insert new group
       target = no;
-      metadata_insert (collection, target, "e");
+      metadata_insert (collection, target, "~~~");
       metadata_set (collection, target, "type", "ctx/endgroup");
       for (int i = 0; i <count;i++)
       metadata_insert (collection, target, "f");
 
-      metadata_insert (collection, target, "g");
+      metadata_insert (collection, target, "___");
       metadata_set (collection, target, "type", "ctx/startgroup");
 
       for (int i = 0; i < count; i++)
@@ -3209,13 +3209,13 @@ int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
   {
      focused_no = start_no;
 
-     metadata_insert(collection, focused_no+1, "j");
+     metadata_insert(collection, focused_no+1, "___");
      metadata_set (collection, focused_no+1, "type", "ctx/startgroup");
 
      metadata_insert(collection, focused_no+2, "");
      text_edit = 0;
 
-     metadata_insert(collection, focused_no+3, "l");
+     metadata_insert(collection, focused_no+3, "~~~");
      metadata_set (collection, focused_no+3, "type", "ctx/endgroup");
      focused_no++;
   }
@@ -3439,7 +3439,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 {
   Ctx *ctx = itk->ctx;
 
-  printf ("%s\n", collection->path);
+  //printf ("%s\n", collection->path);
 
   float em = itk_em (itk);
   float prev_height = layout_config.height;
@@ -5611,14 +5611,13 @@ static int card_files (ITK *itk_, void *data)
   }
 
 
-
-
   if (show_keybindings && !viewer)
   {
     float bindings_height = ctx_height (ctx) * 0.3;
     float bindings_pos = ctx_height (ctx) - bindings_height;
     float em = itk->font_size;
     ctx_save (ctx);
+    //ctx_font (ctx, "regular");
     ctx_font_size (ctx, em);
     ctx_line_width (ctx, em*0.05);
     ctx_rgba (ctx, 0,0,0,0.6);
@@ -5830,6 +5829,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
 {
    //int width = 256;
    //int height = 256;
+   fprintf (stderr, "%s %s\n", src_path, dst_path);
    int width = 512;
    int height = 512;
    float font_size = height * 0.075;
@@ -5847,7 +5847,10 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
                   ITK_CLIENT_PRELOAD,
                   NULL, NULL);
 
-   for (int i = 0; i < 40; i ++)
+   int count = 0;
+   fprintf (stderr, ".");
+   int got_content = 0;
+   for (int i = 0; i < 400 && got_content < 2; i ++)
    {
      //CtxEvent *event = NULL;
      ctx_start_frame (ctx);
@@ -5855,15 +5858,19 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
      ctx_gray (ctx, 0);
      ctx_fill (ctx);
      ctx_clients_draw (ctx, 0);
-     ctx_end_frame (ctx);
+     ctx_get_drawlist (ctx, &count);
+     //fprintf (stderr, "{%i}", count);
+     if (count > 120 || got_content) // formulated like this,
+        got_content++;                // to catch the tiny size of correctly cached
+     ctx_end_frame (ctx);             // textures
+
      while(ctx_get_event (ctx));
      ctx_clients_handle_events (ctx);
-     usleep (1000 * 25);
+     usleep (1000 * 10);
    }
    ctx_screenshot (ctx, dst_path);
-//   fprintf (stderr, ".");
    ctx_client_remove (ctx, client);
-// fprintf (stderr, "!");
+ //fprintf (stderr, "!");
    ctx_destroy (ctx);
 
    return 0;
