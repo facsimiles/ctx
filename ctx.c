@@ -41,12 +41,15 @@
 //#define CTX_HASH_ROWS  16
 
 #define CTX_SCREENSHOT           1 
+#include "stb_image.h"
+#include "stb_image_write.h" // needed in addition to screenshot
+                             // to fully enable
+
+
 #define CTX_RASTERIZER           1
 
 #define CTX_ENABLE_CBRLE         1
 
-//#include "stb_image_write.h"
-//#include "stb_image.h"
 
 #ifdef CTX_SIMD_X86_64_V2
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v2
