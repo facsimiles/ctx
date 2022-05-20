@@ -220,7 +220,7 @@ static inline int ctx_font_get_length (CtxFont *font)
 
 #if CTX_FONT_ENGINE_CTX
 
-static uint32_t
+static inline uint32_t
 ctx_glyph_find_next (CtxFont *font, Ctx *ctx, int offset)
 {
   int length = ctx_font_get_length (font);
@@ -247,9 +247,9 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
           return ctx->glyph_index_cache[hash].offset;
   }
 #endif
-#if 0
-
-  for (int i = 0; i < font->ctx.length; i++)
+#if 1
+  int length = ctx_font_get_length (font);
+  for (int i = 0; i < length; i++)
   {
     CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
     if (entry->code == CTX_DEFINE_GLYPH &&
@@ -273,11 +273,24 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
   int start = 0;
   int end = ctx_font_get_length (font);
   int max_iter = 10;
+    uint32_t start_glyph = ctx_glyph_find_next (font, ctx, start);
+    if (unichar  == start_glyph)
+    {
+#if CTX_GLYPH_CACHE
+       if (ctx)
+       {
+         ctx->glyph_index_cache[hash].font    = font;
+         ctx->glyph_index_cache[hash].unichar = unichar;
+         ctx->glyph_index_cache[hash].offset  = start;
+       }
+#endif
+       return start;
+    }
 
   do {
     int middle = (start + end) / 2;
-    uint32_t middle_glyph = ctx_glyph_find_next (font, ctx, middle);
 
+    uint32_t middle_glyph = ctx_glyph_find_next (font, ctx, middle);
     if (unichar  == middle_glyph)
     {
 #if CTX_GLYPH_CACHE
@@ -853,7 +866,7 @@ _ctx_text (Ctx        *ctx,
   }
 
   if (*string)
-  for (const char *utf8 = string; (utf8==string ) || utf8[-1]; utf8 = *utf8?ctx_utf8_skip (utf8, 1):(utf8+1))
+  for (const char *utf8 = string; utf8 && ( (utf8==string ) || utf8[-1]); utf8 = *utf8?ctx_utf8_skip (utf8, 1):NULL)
     {
       if (*utf8 == '\n' ||
           *utf8 == ' ' ||
@@ -923,8 +936,12 @@ _ctx_text (Ctx        *ctx,
         }
       else
       {
-        if (word_len + 1 < CTX_MAX_WORD_LEN-1)
-          word[word_len++]=*utf8;
+        int len = ctx_utf8_len (*utf8);
+        for (int i = 0; i < len; i++)
+        {
+          if (word_len + 1 < CTX_MAX_WORD_LEN-1)
+            word[word_len++]=utf8[i];
+        }
       }
 
     }
