@@ -33,7 +33,7 @@ while test $# -gt 0
 do
     case "$1" in
      "--disable-sdl") HAVE_SDL=0    ;;
-     "--debug") CFLAGS=' -g '    ;;
+     "--debug") CFLAGS=' -g ' ; HAVE_SIMD=0   ;;
      "--asan") CFLAGS=" -fsanitize=address -g";LIBS=' -lasan -g '  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined -g";LIBS=' -lasan -g '  ;;
      "--enable-kms") HAVE_KMS=1 ;;
