@@ -736,3 +736,259 @@ void metadata_dump (Collection *collection)
     fflush (stdout);
   }
 }
+
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <math.h>
+#include <ctype.h>
+#include <signal.h>
+
+static int custom_sort (const struct dirent **a,
+                        const struct dirent **b)
+{
+  if ((*a)->d_type != (*b)->d_type)
+  {
+    return ((*a)->d_type - (*b)->d_type);
+  }
+  return strcmp ((*a)->d_name , (*b)->d_name);
+}
+
+extern int text_editor;
+
+void
+collection_set_path (Collection *collection,
+                     const char *path,
+                     const char *title)
+{
+  char *resolved_path = realpath (path, NULL);
+  char *title2 = NULL;
+
+  struct  dirent **namelist = NULL;
+  int     n;
+
+  //fprintf (stderr, "setting path %s %s", path, title);
+
+  if (title) title2 = strdup (title);
+  else title2 = strdup (path);
+
+
+  if (collection->path)
+    free (collection->path);
+  collection->path = resolved_path;
+  if (collection->title)
+    free (collection->title);
+  collection->title = title2;
+
+  n = scandir (collection->path, &namelist, NULL, custom_sort);
+
+  metadata_load (collection, resolved_path, text_editor);
+  collection->count = metadata_count (collection);
+
+  if (text_editor)
+    return;
+
+#if 0
+  {
+    if (0)
+    {
+    //set_grid (NULL, NULL, NULL);
+    char *v_type = metadata_get_string (".", "view");
+    if (v_type)
+    {
+      if (!strcmp (v_type, "layout"))
+      {
+         set_layout (NULL, NULL, NULL);
+      }
+      else if (!strcmp (v_type, "list"))
+      {
+         set_list (NULL, NULL, NULL);
+      }
+      else if (!strcmp (v_type, "grid"))
+      {
+         set_grid (NULL, NULL, NULL);
+      }
+      free (v_type);
+    }
+    }
+  }
+#endif
+
+  CtxList *to_add = NULL; // XXX a temporary list here might be redundant
+  for (int i = 0; i < n; i++)
+  {
+    int found = 0;
+    const char *name = namelist[i]->d_name;
+    if (metadata_item_to_no (collection, name)>=0)
+       found = 1;
+    if (!found && (name[0] != '.'))
+    {
+      ctx_list_prepend (&to_add, strdup (name));
+    }
+  }
+  while (to_add)
+  {
+    char *name = to_add->data;
+    int n = metadata_insert(collection, -1, name);
+    metadata_set (collection, n, "type", "ctx/file");
+    ctx_list_remove (&to_add, name);
+    free (name);
+  }
+
+  collection->count = metadata_count (collection);
+  CtxList *to_remove = NULL;
+  for (int i = 0; i < collection->count; i++)
+  {
+    int atom = collection_item_get_type_atom (collection, i);
+    if (atom == CTX_ATOM_FILE)
+    {
+      char *name = metadata_get_name (collection, i);
+      char *path = ctx_strdup_printf ("%s/%s", collection->path, name);
+      struct stat stat_buf;
+      if (lstat (path, &stat_buf) != 0)
+      {
+        //DIR_INFO ("removing file item %s", name);
+        ctx_list_prepend (&to_remove, strdup (name));
+      }
+      free (name);
+      free (path);
+    }
+  }
+  while (to_remove)
+  {
+    char *name = to_remove->data;
+    int no = 0;
+    if ((no = metadata_item_to_no (collection, name))>=0)
+    {
+      metadata_remove (collection, no);
+    }
+    ctx_list_remove (&to_remove, name);
+    free (name);
+  }
+
+  collection->count = metadata_count (collection);
+
+  while (n--)
+    free (namelist[n]);
+  free (namelist);
+
+  // TODO fully remove non-existent collection when empty
+
+  //if (added)
+  //  metadata_dirt();
+}
+
+
+int collection_item_get_level (Collection *collection, int no)
+{
+  int level = 0;
+  for (int i = 0; i <= no; i++)
+  {
+    int atom = collection_item_get_type_atom (collection, i);
+    switch (atom)
+    {
+      case CTX_ATOM_STARTGROUP:
+        level++;
+        break;
+      case CTX_ATOM_ENDGROUP:
+        level--;
+        break;
+      default:
+        break;
+    }
+  }
+  return level;
+}
+
+
+int collection_get_parent (Collection *collection, int no)
+{
+  int level = 1;
+  CtxAtom atom;
+  while (level > 0 && no >= 0)
+  {
+    no--;
+    atom = collection_item_get_type_atom (collection, no);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level--;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level++;
+      }
+  }
+  no--;
+  if (no < 0)
+    no = 0;
+  return no;
+}
+
+CtxAtom collection_item_get_type_atom (Collection *collection, int i)
+{
+  if (text_editor)
+    return CTX_ATOM_TEXT;
+
+  char *type = metadata_get_string (collection, i, "type");
+  if (type)
+  {
+#if 0
+    if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
+    {
+      free (type); return CTX_ATOM_LAYOUTBOX;
+    }
+    else
+#endif
+    if (!strcmp (type, "ctx/newpage"))    {free (type); return CTX_ATOM_NEWPAGE;}
+    else if (!strcmp (type, "ctx/startpage"))  {free (type); return CTX_ATOM_STARTPAGE;}
+    else if (!strcmp (type, "ctx/startgroup")) {free (type); return CTX_ATOM_STARTGROUP;}
+    else if (!strcmp (type, "ctx/endgroup"))   {free (type); return CTX_ATOM_ENDGROUP;}
+    else if (!strcmp (type, "ctx/rectangle"))  {free (type); return CTX_ATOM_RECTANGLE;}
+    else if (!strcmp (type, "ctx/text"))       {free (type); return CTX_ATOM_TEXT;}
+    else if (!strcmp (type, "ctx/ctx"))        {free (type); return CTX_ATOM_CTX;}
+    else if (!strcmp (type, "ctx/file"))       {free (type); return CTX_ATOM_FILE;}
+    free (type);
+  }
+  return CTX_ATOM_TEXT;
+}
+
+int collection_measure_chunk (Collection *collection, int no)
+{
+  int count = 1;
+  int self_level = collection_item_get_level (collection, no);
+  int level;
+
+  do {
+    no ++;
+    level = collection_item_get_level (collection, no);
+    if (level > self_level) count++;
+  } while (level > self_level);
+  if (count > 1) count ++;
+  
+  return count;
+}
+
+int collection_ancestor_folded (Collection *collection, int no)
+{
+  int iter = collection_get_parent (collection, no);
+  while (iter != 0)
+  {
+    if (metadata_get_int (collection, iter+1, "folded", 0))
+    {
+      return 1;
+    }
+    iter = collection_get_parent (collection, iter);
+  }
+  return 0;
+}
+
+int collection_has_children (Collection *collection, int no)
+{
+  CtxAtom  atom = collection_item_get_type_atom (collection, no+1);
+  if (atom == CTX_ATOM_STARTGROUP)
+    return 1;
+  return 0;
+}
+

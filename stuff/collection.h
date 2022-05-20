@@ -1,6 +1,23 @@
 #ifndef COLLECTION_H
 #define COLLECTION_H
 
+// doesnt belong here - it is global for stuff...
+//
+typedef enum CtxAtom {
+ CTX_ATOM_TEXT = 0,
+ CTX_ATOM_LAYOUTBOX,
+ CTX_ATOM_STARTPAGE, // for layout purposes, alse causes a newpage
+ CTX_ATOM_NEWPAGE,
+ CTX_ATOM_STARTGROUP,
+ CTX_ATOM_ENDGROUP,
+ CTX_ATOM_RECTANGLE,
+ CTX_ATOM_CTX,
+ CTX_ATOM_FILE,
+} CtxAtom;
+
+
+
+
 typedef struct Collection {
   char   *path;
   char   *title;
@@ -67,4 +84,16 @@ void metadata_add          (Collection *collection, int no, const char *key, con
 void metadata_set          (Collection *collection, int no, const char *key, const char *value);
 void metadata_set_float    (Collection *collection, int no, const char *key, float value);
 
+void collection_set_path (Collection *collection,
+                          const char *path,
+                          const char *title);
+int collection_item_get_level (Collection *collection, int no);
+int collection_get_parent     (Collection *collection, int no);
+
+CtxAtom collection_item_get_type_atom (Collection *collection, int i);
+int     collection_measure_chunk      (Collection *collection, int no);
+
+int collection_ancestor_folded (Collection *collection, int no);
+
+int collection_has_children (Collection *collection, int no);
 #endif

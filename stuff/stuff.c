@@ -237,16 +237,6 @@ void ui_queue_thumb (const char *path)
 
 void viewer_load_path (const char *path, const char *name);
 
-static int custom_sort (const struct dirent **a,
-                        const struct dirent **b)
-{
-  if ((*a)->d_type != (*b)->d_type)
-  {
-    return ((*a)->d_type - (*b)->d_type);
-  }
-  return strcmp ((*a)->d_name , (*b)->d_name);
-}
-
 
 typedef enum {
   CTX_DIR_LAYOUT,
@@ -372,46 +362,10 @@ typedef enum CtxBullet {
   CTX_BULLET_DONE,
 } CtxBullet;
 
-typedef enum CtxAtom {
- CTX_ATOM_TEXT = 0,
- CTX_ATOM_LAYOUTBOX,
- CTX_ATOM_STARTPAGE, // for layout purposes, alse causes a newpage
- CTX_ATOM_NEWPAGE,
- CTX_ATOM_STARTGROUP,
- CTX_ATOM_ENDGROUP,
- CTX_ATOM_RECTANGLE,
- CTX_ATOM_CTX,
- CTX_ATOM_FILE,
-} CtxAtom;
 
 Collection file_state;
 Collection *collection = &file_state;
 
-
-CtxAtom item_get_type_atom (Collection *collection, int i)
-{
-  if (text_editor)
-    return CTX_ATOM_TEXT;
-
-  char *type = metadata_get_string (collection, i, "type");
-  if (type)
-  {
-    if (!strcmp (type, "ctx/layoutbox") && layout_config.use_layout_boxes)
-    {
-      free (type); return CTX_ATOM_LAYOUTBOX;
-    }
-    else if (!strcmp (type, "ctx/newpage"))    {free (type); return CTX_ATOM_NEWPAGE;}
-    else if (!strcmp (type, "ctx/startpage"))  {free (type); return CTX_ATOM_STARTPAGE;}
-    else if (!strcmp (type, "ctx/startgroup")) {free (type); return CTX_ATOM_STARTGROUP;}
-    else if (!strcmp (type, "ctx/endgroup"))   {free (type); return CTX_ATOM_ENDGROUP;}
-    else if (!strcmp (type, "ctx/rectangle"))  {free (type); return CTX_ATOM_RECTANGLE;}
-    else if (!strcmp (type, "ctx/text"))       {free (type); return CTX_ATOM_TEXT;}
-    else if (!strcmp (type, "ctx/ctx"))        {free (type); return CTX_ATOM_CTX;}
-    else if (!strcmp (type, "ctx/file"))       {free (type); return CTX_ATOM_FILE;}
-    free (type);
-  }
-  return CTX_ATOM_TEXT;
-}
 
 static int metadata_dirty = 0;
 
@@ -429,134 +383,13 @@ static void drop_item_renderers (Ctx *ctx)
   }
 }
 
-void
-collection_set_path (Collection *collection,
-                     const char *path,
-                     const char *title)
-{
-  char *resolved_path = realpath (path, NULL);
-  char *title2 = NULL;
-
-  struct  dirent **namelist = NULL;
-  int     n;
-
-  DIR_INFO("setting path %s %s", path, title);
-
-  if (title) title2 = strdup (title);
-  else title2 = strdup (path);
-
-  drop_item_renderers (ctx);
-
-  if (collection->path)
-    free (collection->path);
-  collection->path = resolved_path;
-  if (collection->title)
-    free (collection->title);
-  collection->title = title2;
-
-  n = scandir (collection->path, &namelist, NULL, custom_sort);
-
-  metadata_load (collection, resolved_path, text_editor);
-  collection->count = metadata_count (collection);
-
-  if (text_editor)
-    return;
-
-#if 0
-  {
-    if (0)
-    {
-    //set_grid (NULL, NULL, NULL);
-    char *v_type = metadata_get_string (".", "view");
-    if (v_type)
-    {
-      if (!strcmp (v_type, "layout"))
-      {
-         set_layout (NULL, NULL, NULL);
-      }
-      else if (!strcmp (v_type, "list"))
-      {
-         set_list (NULL, NULL, NULL);
-      }
-      else if (!strcmp (v_type, "grid"))
-      {
-         set_grid (NULL, NULL, NULL);
-      }
-      free (v_type);
-    }
-    }
-  }
-#endif
-
-  CtxList *to_add = NULL; // XXX a temporary list here might be redundant
-  for (int i = 0; i < n; i++)
-  {
-    int found = 0;
-    const char *name = namelist[i]->d_name;
-    if (metadata_item_to_no (collection, name)>=0)
-       found = 1;
-    if (!found && (name[0] != '.'))
-    {
-      ctx_list_prepend (&to_add, strdup (name));
-    }
-  }
-  while (to_add)
-  {
-    char *name = to_add->data;
-    int n = metadata_insert(collection, -1, name);
-    metadata_set (collection, n, "type", "ctx/file");
-    ctx_list_remove (&to_add, name);
-    free (name);
-  }
-
-  collection->count = metadata_count (collection);
-  CtxList *to_remove = NULL;
-  for (int i = 0; i < collection->count; i++)
-  {
-    int atom = item_get_type_atom (collection, i);
-    if (atom == CTX_ATOM_FILE)
-    {
-      char *name = metadata_get_name (collection, i);
-      char *path = ctx_strdup_printf ("%s/%s", collection->path, name);
-      struct stat stat_buf;
-      if (lstat (path, &stat_buf) != 0)
-      {
-        DIR_INFO ("removing file item %s", name);
-        ctx_list_prepend (&to_remove, strdup (name));
-      }
-      free (name);
-      free (path);
-    }
-  }
-  while (to_remove)
-  {
-    char *name = to_remove->data;
-    int no = 0;
-    if ((no = metadata_item_to_no (collection, name))>=0)
-    {
-      metadata_remove (collection, no);
-    }
-    ctx_list_remove (&to_remove, name);
-    free (name);
-  }
-
-  collection->count = metadata_count (collection);
-
-  while (n--)
-    free (namelist[n]);
-  free (namelist);
-
-  // TODO fully remove non-existent collection when empty
-
-  //if (added)
-  //  metadata_dirt();
-}
 
 static void save_metadata(void)
 {  if (metadata_dirty)
    {
      metadata_save (collection, text_editor);
      collection_set_path (collection, collection->path, collection->title);
+     drop_item_renderers (ctx);
      metadata_dirty = 0;
    }
 
@@ -665,6 +498,7 @@ static void _set_location (const char *location)
     if (path_is_dir (getenv ("HOME")))
     {
       collection_set_path (collection, getenv ("HOME"), NULL);
+      drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
     }
@@ -675,6 +509,7 @@ static void _set_location (const char *location)
     if (path_is_dir (tpath))
     {
       collection_set_path (collection, tpath, NULL);
+      drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
     }
@@ -693,6 +528,7 @@ static void _set_location (const char *location)
     //if (path_is_dir (loc))
     {
       collection_set_path (collection, loc, NULL);
+      drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
     }
@@ -708,6 +544,7 @@ static void _set_location (const char *location)
       mkdir (path, 0777);
     }
     collection_set_path (collection, path, location);
+    drop_item_renderers (ctx);
     free (path);
     focused_no = 0;
     layout_find_item = 0;
@@ -795,7 +632,7 @@ int toggle_keybindings_display (COMMAND_ARGS) /* "toggle-keybindings-display", 0
 int outline_expand (COMMAND_ARGS) /* "expand", 0, "", "" */
 {
   int no = focused_no;
-  if (item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
+  if (collection_item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
     return -1;
 
   metadata_unset (collection, no+1, "folded");
@@ -806,7 +643,7 @@ int outline_expand (COMMAND_ARGS) /* "expand", 0, "", "" */
 int outline_collapse (COMMAND_ARGS) /* "fold", 0, "", "" */
 {
   int no = focused_no;
-  if (item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
+  if (collection_item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
     return 0;
 
   metadata_set_float (collection, no+1, "folded", 1);
@@ -845,7 +682,6 @@ static int dir_item_count_links (int i)
   free (name);
   return count;
 }
-
 
 static char *string_link_no (const char *string, int link_no)
 {
@@ -967,7 +803,7 @@ int dir_follow_link (COMMAND_ARGS) /* "follow-link", 0, "", "" */
 
 int cmd_edit_text_home (COMMAND_ARGS) /* "edit-text-home", 0, "", "edit start of line" */
 {
-  int virtual = (item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT);
+  int virtual = (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT);
   if (!virtual) return 0;
 
   text_edit = 0;
@@ -976,7 +812,7 @@ int cmd_edit_text_home (COMMAND_ARGS) /* "edit-text-home", 0, "", "edit start of
 
 int cmd_edit_text_end (COMMAND_ARGS) /* "edit-text-end", 0, "", "edit end of line" */
 {
-  int virtual = (item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT);
+  int virtual = (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT);
   if (!virtual) return 0;
   char *name = metadata_get_name (collection, focused_no);
   int pos = 0;
@@ -993,9 +829,9 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
 {
   int no = focused_no;
 
-  if (item_get_type_atom (collection, no) == CTX_ATOM_TEXT)
+  if (collection_item_get_type_atom (collection, no) == CTX_ATOM_TEXT)
   {
-    if (item_get_type_atom (collection, no+1) == CTX_ATOM_ENDGROUP||
+    if (collection_item_get_type_atom (collection, no+1) == CTX_ATOM_ENDGROUP||
         no >= metadata_count (collection)-1)
       argvs_eval ("edit-text-end");
     else
@@ -1141,86 +977,12 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
   ctx_queue_draw (e->ctx);
 }
 
-static int item_get_level (Collection *collection, int no)
-{
-  int level = 0;
-  for (int i = 0; i <= no; i++)
-  {
-    int atom = item_get_type_atom (collection, i);
-    switch (atom)
-    {
-      case CTX_ATOM_STARTGROUP:
-        level++;
-        break;
-      case CTX_ATOM_ENDGROUP:
-        level--;
-        break;
-      default:
-        break;
-    }
-  }
-  return level;
-}
 
-
-int
-collection_get_parent (Collection *collection, int no)
-{
-  int level = 1;
-  CtxAtom atom;
-  while (level > 0 && no >= 0)
-  {
-    no--;
-    atom = item_get_type_atom (collection, no);
-    if (atom == CTX_ATOM_STARTGROUP)
-      {
-        level--;
-      }
-    else if (atom == CTX_ATOM_ENDGROUP)
-      {
-        level++;
-      }
-  }
-  no--;
-  if (no < 0)
-    no = 0;
-  return no;
-}
-
-static int collection_ancestor_folded (Collection *collection, int no)
-{
-  int iter = collection_get_parent (collection, no);
-  while (iter != 0)
-  {
-    if (metadata_get_int (collection, iter+1, "folded", 0))
-    {
-      return 1;
-    }
-    iter = collection_get_parent (collection, iter);
-  }
-  return 0;
-}
-
-static int items_to_move (Collection *collection, int no)
-{
-  int count = 1;
-  int self_level = item_get_level (collection, no);
-  int level;
-
-  do {
-    no ++;
-    level = item_get_level (collection, no);
-    if (level > self_level) count++;
-  } while (level > self_level);
-  if (count > 1) count ++;
-  
-  return count;
-}
 
 int cmd_duplicate (COMMAND_ARGS) /* "duplicate", 0, "", "duplicate item" */
 {
   int no = focused_no;
-  int count = items_to_move (collection, no);
+  int count = collection_measure_chunk (collection, no);
 
   int insert_pos = no + count;
   for (int i = 0; i < count; i ++)
@@ -1253,14 +1015,14 @@ int cmd_duplicate (COMMAND_ARGS) /* "duplicate", 0, "", "duplicate item" */
 int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
 {
   int no = focused_no;
-  int count = items_to_move (collection, no);
+  int count = collection_measure_chunk (collection, no);
 
-  //int virtual = (item_get_type_atom (collection, no) == CTX_ATOM_TEXT);
+  //int virtual = (collection_item_get_type_atom (collection, no) == CTX_ATOM_TEXT);
   //if (virtual)
   //
   DIR_DETAIL("items to remove %i", count);
-  CtxAtom pre_atom = item_get_type_atom (collection, no-1);
-  CtxAtom post_atom = item_get_type_atom (collection, no+count);
+  CtxAtom pre_atom = collection_item_get_type_atom (collection, no-1);
+  CtxAtom post_atom = collection_item_get_type_atom (collection, no+count);
   for (int i = 0; i < count; i++)
   {
     metadata_remove (collection, no);
@@ -1409,7 +1171,7 @@ dir_prev (Collection *collection, int i)
   */
  do {
    pos -= 1;
-   int atom = item_get_type_atom (collection, pos);
+   int atom = collection_item_get_type_atom (collection, pos);
    switch (atom)
    {
      case CTX_ATOM_STARTGROUP:
@@ -1445,7 +1207,7 @@ dir_next (Collection *collection, int i)
 
  do {
    pos += 1;
-   int atom = item_get_type_atom (collection, pos);
+   int atom = collection_item_get_type_atom (collection, pos);
    switch (atom)
    {
      case CTX_ATOM_STARTGROUP:
@@ -1467,7 +1229,7 @@ dir_prev_sibling (Collection *collection, int i)
   int start_level = 0;
   int level = 0; // not absolute level, but relative level balance
   pos --;
-  int atom = item_get_type_atom (collection, pos);
+  int atom = collection_item_get_type_atom (collection, pos);
   if (atom == CTX_ATOM_ENDGROUP)
           level ++;
   else if (atom == CTX_ATOM_STARTGROUP)
@@ -1475,7 +1237,7 @@ dir_prev_sibling (Collection *collection, int i)
   while (level > start_level)
   {
     pos--;
-    atom = item_get_type_atom (collection, pos);
+    atom = collection_item_get_type_atom (collection, pos);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -1493,7 +1255,7 @@ dir_prev_sibling (Collection *collection, int i)
          atom == CTX_ATOM_NEWPAGE)
   {
     pos--;
-    atom = item_get_type_atom (collection, pos);
+    atom = collection_item_get_type_atom (collection, pos);
   }
   if (level < start_level || pos < 0)
   {
@@ -1511,7 +1273,7 @@ dir_next_sibling (Collection *collection, int i)
   int atom;
  
   i++;
-  atom = item_get_type_atom (collection, i);
+  atom = collection_item_get_type_atom (collection, i);
   if (atom == CTX_ATOM_ENDGROUP)
   {
     return -1;
@@ -1523,7 +1285,7 @@ dir_next_sibling (Collection *collection, int i)
     while (level > start_level && i < collection->count)
     {
       i++;
-      atom = item_get_type_atom (collection, i);
+      atom = collection_item_get_type_atom (collection, i);
       if (atom == CTX_ATOM_STARTGROUP)
       {
         level++;
@@ -1538,13 +1300,13 @@ dir_next_sibling (Collection *collection, int i)
     {
        level--;
        i++;
-       atom = item_get_type_atom (collection, i);
+       atom = collection_item_get_type_atom (collection, i);
     }
   }
   while (atom == CTX_ATOM_NEWPAGE)
   {
     i++;
-    atom = item_get_type_atom (collection, i);
+    atom = collection_item_get_type_atom (collection, i);
   }
 
   if (level != start_level || i >= collection->count)
@@ -1564,27 +1326,27 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
   //for (int i = 0; i < count; i++)
   {
   int start_no    = focused_no;
-  int count = items_to_move (collection, start_no);
+  int count = collection_measure_chunk (collection, start_no);
   
   int start_level = 0;
   int level = 0;
   int did_skips = 0;
   int did_foo =0;
 
-  if (item_get_type_atom (collection, focused_no + count) == CTX_ATOM_ENDGROUP)
+  if (collection_item_get_type_atom (collection, focused_no + count) == CTX_ATOM_ENDGROUP)
   {
     return -1;
   }
 
-  if (item_get_type_atom (collection, focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
-      item_get_type_atom (collection, focused_no + count) == CTX_ATOM_TEXT)
+  if (collection_item_get_type_atom (collection, focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
+      collection_item_get_type_atom (collection, focused_no + count) == CTX_ATOM_TEXT)
   {
     focused_no+=count;
     did_foo = 1;
   }
 
   focused_no++;
-  int atom = item_get_type_atom (collection, focused_no);
+  int atom = collection_item_get_type_atom (collection, focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
   {
     focused_no--;
@@ -1596,7 +1358,7 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
   while (level > start_level)
   {
     focused_no++;
-    atom = item_get_type_atom (collection, focused_no);
+    atom = collection_item_get_type_atom (collection, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level++;
@@ -1617,7 +1379,7 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
 // thus text needs to be extended to exist over multiple frames
 
   level++;
-  if (item_get_type_atom (collection, focused_no) == CTX_ATOM_ENDGROUP)
+  if (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_ENDGROUP)
   {
     level--;
     focused_no++;
@@ -1667,7 +1429,7 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   }
 
   focused_no--;
-  int atom = item_get_type_atom (collection, focused_no);
+  int atom = collection_item_get_type_atom (collection, focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
      level++;
   else if (atom == CTX_ATOM_STARTGROUP)
@@ -1676,7 +1438,7 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   while (level > start_level)
   {
     focused_no--;
-    atom = item_get_type_atom (collection, focused_no);
+    atom = collection_item_get_type_atom (collection, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -1696,7 +1458,7 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   }
   else
   {
-    int count = items_to_move (collection, start_no);
+    int count = collection_measure_chunk (collection, start_no);
     fprintf (stderr, "item_to_move: %i\n", count);
     fprintf (stderr, "did_skips: %i\n", did_skips);
     fprintf (stderr, "focused_no: %i\n", focused_no);
@@ -1720,9 +1482,9 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
 int make_sibling_of_parent (COMMAND_ARGS) /* "make-sibling-of-parent", 0, "", "" */
 {
   int no = focused_no;
-  int level = item_get_level (collection, no);
+  int level = collection_item_get_level (collection, no);
 
-  int count = items_to_move (collection, no);
+  int count = collection_measure_chunk (collection, no);
 
   if (level>0)
   {
@@ -1730,13 +1492,13 @@ int make_sibling_of_parent (COMMAND_ARGS) /* "make-sibling-of-parent", 0, "", ""
     int target_level;
     do {
       target++;
-      target_level = item_get_level (collection, target);
+      target_level = collection_item_get_level (collection, target);
     } while (target_level >= level);
 
     int remove_level = 0;
     
-    if (item_get_type_atom (collection, no-1) == CTX_ATOM_STARTGROUP &&
-        item_get_type_atom (collection, no+count) == CTX_ATOM_ENDGROUP)
+    if (collection_item_get_type_atom (collection, no-1) == CTX_ATOM_STARTGROUP &&
+        collection_item_get_type_atom (collection, no+count) == CTX_ATOM_ENDGROUP)
       remove_level = 1;
 
     for (int i = 0; i < count; i ++)
@@ -1772,9 +1534,9 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
     return -1;
 
   {
-    int count = items_to_move (collection, no);
+    int count = collection_measure_chunk (collection, no);
     int target = no-1;
-    int atom = item_get_type_atom (collection, target);
+    int atom = collection_item_get_type_atom (collection, target);
     if (atom == CTX_ATOM_STARTGROUP)
        return -1;
     if (atom == CTX_ATOM_ENDGROUP)
@@ -2474,7 +2236,7 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
       metadata_dirt ();
     }
     else if (text_edit == 0 && focused_no > 0 &&
-            (item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
+            (collection_item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
             )
     {
       char *name_prev = metadata_get_name (collection, focused_no-1);
@@ -2506,7 +2268,7 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     free (name);
     if (text_edit == (int)strlen(str->str))
     {
-      if (item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
+      if (collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
       {
         char *name_next = metadata_get_name (collection, focused_no+1);
         ctx_string_append_str (str, name_next);
@@ -2532,7 +2294,7 @@ int dir_join (CtxEvent *event, void *a, void *b) /* "join-with-next", 0, "", "" 
     char *name = metadata_get_name (collection, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
-    if (item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
+    if (collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
     {
       char *name_next = metadata_get_name (collection, focused_no+1);
       if (name[strlen(name)-1]!=' ')
@@ -2610,7 +2372,7 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
   if (text_edit>len)
   {
     if (focused_no + 1 < collection->count &&
-        item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
+        collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
     {
       text_edit=0;
       layout_find_item = focused_no  + 1;
@@ -2641,8 +2403,8 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
   {
     char *name = metadata_get_name (collection, focused_no);
     if (name[0]==0 &&
-        item_get_type_atom (collection, focused_no-1) == CTX_ATOM_STARTGROUP &&
-        item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP)
+        collection_item_get_type_atom (collection, focused_no-1) == CTX_ATOM_STARTGROUP &&
+        collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP)
     {
       text_edit = 0;
       argvs_eval ("remove");
@@ -2652,7 +2414,7 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
       metadata_dirt();
     }
     else if (focused_no>0 && 
-             item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
+             collection_item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
 
     {
       char *name = metadata_get_name (collection, focused_no-1);
@@ -2677,7 +2439,7 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit == 0)
   {
-    if (item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
+    if (collection_item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
     {
       char *name = metadata_get_name (collection, focused_no-1);
       text_edit=ctx_utf8_strlen(name);
@@ -2761,8 +2523,8 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   }
 
 #if 0
-  if (item_get_type_atom (collection, focused_no-1) != CTX_ATOM_TEXT && 
-      item_get_type_atom (collection, focused_no-1) != CTX_ATOM_ENDGROUP)
+  if (collection_item_get_type_atom (collection, focused_no-1) != CTX_ATOM_TEXT && 
+      collection_item_get_type_atom (collection, focused_no-1) != CTX_ATOM_ENDGROUP)
   {
     event->stop_propagate=1;
     return;
@@ -2774,7 +2536,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
 
   if (name[0]==0 &&
       (focused_no+1 >= collection->count ||
-      item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP))
+      collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP))
     {
       int next_focus = dir_prev_sibling (collection, focused_no);
       argvs_eval ("remove");
@@ -2791,7 +2553,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   else
 #else
     focused_no--;
-    while (item_get_type_atom (collection, focused_no) != CTX_ATOM_TEXT)
+    while (collection_item_get_type_atom (collection, focused_no) != CTX_ATOM_TEXT)
       focused_no --;
 #endif
     {
@@ -2881,7 +2643,7 @@ make_tail_entry (Collection *collection)
   }
   else
   {
-  metadata_insert (collection, focused_no+items_to_move(collection,focused_no), "");
+  metadata_insert (collection, focused_no+collection_measure_chunk(collection,focused_no), "");
   layout_find_item = focused_no = dir_next_sibling (collection, focused_no);
   }
   metadata_dirt ();
@@ -2902,7 +2664,7 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
   }
 
 #if 0
-  if (item_get_type_atom (collection, focused_no+1) != CTX_ATOM_TEXT)
+  if (collection_item_get_type_atom (collection, focused_no+1) != CTX_ATOM_TEXT)
   {
     char *str = metadata_get_name (collection, focused_no);
     if (str[0])
@@ -2912,7 +2674,7 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
   }
 #else
   focused_no ++;
-  while (item_get_type_atom (collection, focused_no) != CTX_ATOM_TEXT)
+  while (collection_item_get_type_atom (collection, focused_no) != CTX_ATOM_TEXT)
     focused_no ++;
 #endif
   text_edit = TEXT_EDIT_FIND_CURSOR_FIRST_ROW;
@@ -3149,7 +2911,7 @@ int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
   while (level > 0 && focused_no >= 0)
   {
     focused_no--;
-    atom = item_get_type_atom (collection, focused_no);
+    atom = collection_item_get_type_atom (collection, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -3180,13 +2942,6 @@ int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
   return 0;
 }
 
-int collection_has_children (Collection *collection, int no)
-{
-  CtxAtom  atom = item_get_type_atom (collection, no+1);
-  if (atom == CTX_ATOM_STARTGROUP)
-    return 1;
-  return 0;
-}
 
 int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
 {
@@ -3194,7 +2949,7 @@ int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
   layout_focused_link = -1;
   
   focused_no++;
-  CtxAtom  atom = item_get_type_atom (collection, focused_no);
+  CtxAtom  atom = collection_item_get_type_atom (collection, focused_no);
 
   if (atom == CTX_ATOM_STARTGROUP)
   {
@@ -3546,7 +3301,7 @@ static void dir_layout (ITK *itk, Collection *collection)
       float height = 0;
       
       int hidden = 0;
-      CtxAtom atom = item_get_type_atom (collection, i);
+      CtxAtom atom = collection_item_get_type_atom (collection, i);
 
       switch (atom)
       {
@@ -3700,7 +3455,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
 
 
-      int virtual = (item_get_type_atom (collection, i) == CTX_ATOM_TEXT);
+      int virtual = (collection_item_get_type_atom (collection, i) == CTX_ATOM_TEXT);
 
       if (virtual)
         atom = CTX_ATOM_TEXT;
@@ -5102,7 +4857,7 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
           }
 
-          if (item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT &&
+          if (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT &&
               metadata_get_float (collection, focused_no, "x", -1234.0) == -1234.0 &&
               !is_text_editing())
           {
@@ -5838,6 +5593,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
    collection_set_path (collection, dir, dir);
+   drop_item_renderers (ctx);
    char **command = dir_get_viewer_argv (src_path, metadata_item_to_no (collection, base));
    if (!command)
            return -1;
