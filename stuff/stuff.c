@@ -3112,7 +3112,7 @@ char **dir_get_viewer_argv (const char *path, int no)
   {
     ctx_list_append (&args, strdup ("ctx"));
     ctx_list_append (&args, strdup (path));
-    ctx_list_append (&args, strdup ("--paused"));
+    //ctx_list_append (&args, strdup ("--paused"));
     ctx_list_append (&args, strdup ("--seek-to"));
     ctx_list_append (&args, ctx_strdup_printf ("%.2f", in));
   }
@@ -3476,7 +3476,9 @@ static void dir_layout (ITK *itk, Collection *collection)
             itk->y += row_max_height;
             row_max_height = 0;
           }
-          if (itk->y + height > y1 || atom == CTX_ATOM_NEWPAGE || atom == CTX_ATOM_STARTPAGE)
+          if (itk->y + height > y1 ||
+              atom == CTX_ATOM_NEWPAGE ||
+              atom == CTX_ATOM_STARTPAGE)
           {
             if (layout_box_count > layout_box_no+1 && atom != CTX_ATOM_NEWPAGE && atom != CTX_ATOM_STARTPAGE)
             {
@@ -3525,7 +3527,6 @@ static void dir_layout (ITK *itk, Collection *collection)
            }
          }
       }
-
 
   if (layout_config.outliner)
   {
@@ -4417,8 +4418,8 @@ void viewer_load_path (const char *path, const char *name)
         //fprintf (stderr, "%s\n", command);
         viewer = ctx_client_new_argv (ctx, command,
           0, 0, ctx_width(ctx), ctx_height(ctx), itk->font_size, ITK_CLIENT_PRELOAD, strdup (client_name), user_data_free);
-        if (viewer_media_type[0] == 'v')
-        ctx_add_timeout (ctx, 1000 * 0.2, viewer_space, NULL);
+        //if (viewer_media_type[0] == 'v')
+        //ctx_add_timeout (ctx, 1000 * 0.2, viewer_space, NULL);
       }
       free (client_name);
       ctx_client_raise_top (ctx, ctx_client_id (viewer));
@@ -5580,21 +5581,23 @@ void ctx_screenshot (Ctx *ctx, const char *path);
 
 int stuff_make_thumb (const char *src_path, const char *dst_path)
 {
-   //int width = 256;
-   //int height = 256;
-   //fprintf (stderr, "%i:%s %s\n", text_editor, src_path, dst_path);
    int width = 256;
    int height = 256;
    float font_size = height * 0.075;
    float live_font_factor = 1.0;
    Ctx *ctx = ctx_new (width, height, "headless");
+   // XXX : broken/glitched thumbnails with "drawlist" it should
+   // be possible to use just that though
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
    collection_set_path (collection, dir, dir);
    drop_item_renderers (ctx);
    char **command = dir_get_viewer_argv (src_path, metadata_item_to_no (collection, base));
+
    if (!command)
       return -1;
+
+   fprintf (stderr, "%s %s\n", command[0], command[1]);
    CtxClient *client = ctx_client_new_argv (ctx, command,
                   0, 0, width, height,
                   font_size * live_font_factor,
@@ -5604,8 +5607,8 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    int count = 0;
    int got_content = 0;
    int slept_time = 0;
-   int sleep_time = 500;
-   for (int i = 0; slept_time < 1000 * 2500 && got_content < 2; i ++)
+   int sleep_time = 1000;
+   for (int i = 0; slept_time < 1000 * 3500 && got_content < 2; i ++)
    {
      //CtxEvent *event = NULL;
      ctx_start_frame (ctx);

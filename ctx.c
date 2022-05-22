@@ -37,8 +37,8 @@
 //#define CTX_PARSER_MAXLEN      1024*1024*64
 
 #define CTX_FONT_ENGINE_CTX_FS   1
-//#define CTX_HASH_COLS  1
-//#define CTX_HASH_ROWS  16
+#define CTX_HASH_COLS  5
+#define CTX_HASH_ROWS  5
 
 #define CTX_SCREENSHOT           1 
 #include "stb_image.h"

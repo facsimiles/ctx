@@ -303,10 +303,10 @@ int main (int argc, char **argv)
 {
   if (!strcmp (basename(argv[1]), "lsfonts"))
     return lsfonts_main (argc-1, argv+1);
-  if (!strcmp (basename(argv[1]), "stuff"))
-    return stuff_main (argc-1, argv+1);
-  if (!strcmp (basename(argv[0]), "stuff"))
-    return stuff_main (argc, argv);
+//  if (!strcmp (basename(argv[1]), "stuff"))
+//    return stuff_main (argc-1, argv+1);
+//  if (!strcmp (basename(argv[0]), "stuff"))
+//    return stuff_main (argc, argv);
   if (!strcmp (basename(argv[1]), "hexview"))
     return ctx_hexview_main (argc-1, argv+1);
   for (int i = 1; argv[i]; i++)

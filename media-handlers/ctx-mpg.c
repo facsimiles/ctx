@@ -326,6 +326,7 @@ int ctx_mpg_main(int argc, char *argv[]) {
        
         for (int i = 1; i <  argc; i++)
         {
+                fprintf (stderr, "%s ", argv[i]);
           if (argv[i][0] == '-')
           {
             if (argv[i][1] == 'y' ||
@@ -369,6 +370,7 @@ int ctx_mpg_main(int argc, char *argv[]) {
             path = argv[i];
           }
         }
+        fprintf (stderr, "\n");
 
         if (frame_drop < 1) frame_drop = 1;
         if (frame_drop > 32) frame_drop = 32;
