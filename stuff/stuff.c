@@ -220,31 +220,13 @@ char *get_basename (const char *path)
 
 char *ctx_get_thumb_path (const char *path) // XXX add dim as arg?
 {
-  char *hex="0123456789abcdefghijkl";
-  unsigned char path_hash[40];
-  char path_hash_hex[41];
-  CtxSHA1 *sha1 = ctx_sha1_new ();
   char *rp = realpath (path, NULL);
-  ctx_sha1_process (sha1, (uint8_t*)"file://", strlen ("file://"));
-  ctx_sha1_process (sha1, (uint8_t*)path, strlen (rp));
-  ctx_sha1_done(sha1, path_hash);
-  ctx_sha1_free (sha1);
-  free (rp);
-  for (int j = 0; j < 20; j++)
-  {
-    path_hash_hex[j*2+0]=hex[path_hash[j]/16];
-    path_hash_hex[j*2+1]=hex[path_hash[j]%16];
-  }
-  path_hash_hex[40]=0;
-#if 0
-  char *ret = ctx_strdup_printf ("%s/.ctx-thumbnails/%s", getenv ("HOME"), path_hash_hex);
-#else
-  char *dname = get_dirname (path);
-  char *bname = get_basename (path);
+  char *dname = get_dirname (rp);
+  char *bname = get_basename (rp);
   char *ret = ctx_strdup_printf ("%s/.ctx/512x512/%s", dname, bname);
   free (dname);
   free (bname);
-#endif
+  free (rp);
   return ret;
 }
 
@@ -1464,10 +1446,6 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   else
   {
     int count = collection_measure_chunk (collection, start_no);
-    fprintf (stderr, "item_to_move: %i\n", count);
-    fprintf (stderr, "did_skips: %i\n", did_skips);
-    fprintf (stderr, "focused_no: %i\n", focused_no);
-    fprintf (stderr, "start_no: %i\n\n", start_no);
     if (!did_skips) focused_no++;
     metadata_insert (collection, focused_no-1, "b");
     for (int i = 0; i < count; i ++)
