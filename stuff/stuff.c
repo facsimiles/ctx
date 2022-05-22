@@ -253,7 +253,6 @@ static void user_data_free (CtxClient *client, void *user_data)
   free (user_data);
 }
 
-
 void ui_queue_thumb (const char *path)
 {
   char *rp = realpath (path, NULL);
@@ -1705,6 +1704,23 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
   char *thumb_path = ctx_get_thumb_path (path);
   if (access (thumb_path, F_OK) != -1)
   {
+    struct stat thumb_stat;
+    struct stat path_stat;
+
+    lstat (path, &path_stat);
+    lstat (thumb_path, &thumb_stat);
+
+    if (thumb_stat.st_atime <
+        path_stat.st_atime)
+    {
+      //fprintf (stderr, "requeing %s\n", path);
+      ctx_drop_eid (ctx, thumb_path);
+      unlink (thumb_path);
+      queue_thumb (path, thumb_path);
+    }
+    else
+    {
+
     char reteid[65]="";
       ctx_save (ctx);
     ctx_texture_load (ctx, thumb_path, &imgw, &imgh, reteid);
@@ -1738,6 +1754,7 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
     }
       ctx_restore (ctx);
     return;
+    }
   }
   else
   {
