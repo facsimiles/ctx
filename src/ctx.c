@@ -324,6 +324,39 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
   return ret;
 }
 
+void ctx_drop_eid (Ctx *ctx, const char *eid)
+{
+  ctx = ctx->texture_cache;
+  CtxList *to_remove = NULL;
+  for (CtxList *l = ctx->eid_db; l; l = l->next)
+  {
+    CtxEidInfo *eid_info = (CtxEidInfo*)l->data;
+    if (!ctx_strcmp (eid_info->eid, eid))
+    {
+      ctx_list_prepend (&to_remove, eid_info);
+    }
+  }
+  while (to_remove)
+  {
+    CtxEidInfo *eid_info = (CtxEidInfo*)to_remove->data;
+    ctx_free (eid_info->eid);
+    ctx_free (eid_info);
+    ctx_list_remove (&ctx->eid_db, eid_info);
+    ctx_list_remove (&to_remove, eid_info);
+  }
+
+  for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
+  {
+    if (ctx->texture[i].data &&
+        ctx->texture[i].eid  &&
+        !ctx_strcmp (ctx->texture[i].eid, eid))
+    {
+      ctx->texture[i].eid[0]++;
+    }
+  }
+}
+
+
 void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
 {
   int eid_len = ctx_strlen (eid);
@@ -537,7 +570,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     eid = ascii;
   }
 
-  if (ctx_eid_valid (ctx, eid , tw, th))
+  if (ctx_eid_valid (ctx, eid, tw, th))
   {
      if (reid)
      {

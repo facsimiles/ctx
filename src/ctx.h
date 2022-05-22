@@ -571,6 +571,8 @@ void ctx_define_texture (Ctx *ctx,
                          void       *data,
                          char       *ret_eid);
 
+void ctx_drop_eid (Ctx *ctx, const char *eid);
+
 /* ctx_source_transform:
  */
 void
