@@ -223,7 +223,7 @@ char *ctx_get_thumb_path (const char *path) // XXX add dim as arg?
   char *rp = realpath (path, NULL);
   char *dname = get_dirname (rp);
   char *bname = get_basename (rp);
-  char *ret = ctx_strdup_printf ("%s/.ctx/512x512/%s", dname, bname);
+  char *ret = ctx_strdup_printf ("%s/.ctx/256x256/%s", dname, bname);
   free (dname);
   free (bname);
   free (rp);
@@ -3095,7 +3095,7 @@ char **dir_get_viewer_argv (const char *path, int no)
   if (!args)
   if (media_type_class == CTX_MEDIA_TYPE_TEXT)
   {
-    ctx_list_append (&args, strdup ("stuff"));
+    ctx_list_append (&args, strdup ("ctx"));
     ctx_list_append (&args, strdup ("-E"));
     ctx_list_append (&args, strdup (path));
   }
@@ -3879,11 +3879,11 @@ static void dir_layout (ITK *itk, Collection *collection)
                break;
                case CTX_BULLET_DONE:
                ctx_move_to (itk->ctx, x, itk->y + em);
-               ctx_text (itk->ctx, "☑"); //☒
+               ctx_text (itk->ctx, "[v]");//☑"); //☒
                break;
                case CTX_BULLET_TODO:
                ctx_move_to (itk->ctx, x, itk->y + em);
-               ctx_text (itk->ctx, "☐");
+               ctx_text (itk->ctx, "[ ]");//☐");
                break;
              }
           }
@@ -3897,7 +3897,6 @@ static void dir_layout (ITK *itk, Collection *collection)
                ctx_text (itk->ctx, "▶");//▷▽▼");
             }
           }
-
 
           //if (c->no == itk->focus_no)
           //fprintf (stderr, "%f %i %i %i\n", text_edit_desired_x, text_edit, prev_line, next_line);
@@ -4083,9 +4082,7 @@ static void dir_layout (ITK *itk, Collection *collection)
         ctx_text (itk->ctx, media_type);
 
         ctx_restore (itk->ctx);
-
       }
-
       free (newpath);
 
       if (label)
@@ -5585,9 +5582,9 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
 {
    //int width = 256;
    //int height = 256;
-   fprintf (stderr, "%s %s\n", src_path, dst_path);
-   int width = 512;
-   int height = 512;
+   //fprintf (stderr, "%i:%s %s\n", text_editor, src_path, dst_path);
+   int width = 256;
+   int height = 256;
    float font_size = height * 0.075;
    float live_font_factor = 1.0;
    Ctx *ctx = ctx_new (width, height, "headless");
@@ -5597,7 +5594,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    drop_item_renderers (ctx);
    char **command = dir_get_viewer_argv (src_path, metadata_item_to_no (collection, base));
    if (!command)
-           return -1;
+      return -1;
    CtxClient *client = ctx_client_new_argv (ctx, command,
                   0, 0, width, height,
                   font_size * live_font_factor,
@@ -5605,14 +5602,15 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
                   NULL, NULL);
 
    int count = 0;
-   fprintf (stderr, ".");
    int got_content = 0;
-   for (int i = 0; i < 100 && got_content < 2; i ++)
+   int slept_time = 0;
+   int sleep_time = 500;
+   for (int i = 0; slept_time < 1000 * 2500 && got_content < 2; i ++)
    {
      //CtxEvent *event = NULL;
      ctx_start_frame (ctx);
      ctx_rectangle (ctx, 0, 0, width, height);
-     ctx_gray (ctx, 0);
+     ctx_gray (ctx, 0.0f);
      ctx_fill (ctx);
      ctx_clients_draw (ctx, 0);
      ctx_get_drawlist (ctx, &count);
@@ -5623,11 +5621,12 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
 
      while(ctx_get_event (ctx));
      ctx_clients_handle_events (ctx);
-     usleep (1000 * 40);
+     sleep_time *= 1.5;
+     usleep (sleep_time);
+     slept_time += sleep_time;
    }
    ctx_screenshot (ctx, dst_path);
    ctx_client_remove (ctx, client);
- //fprintf (stderr, "!");
    ctx_destroy (ctx);
 
    return 0;

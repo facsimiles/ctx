@@ -92,7 +92,7 @@ int     collection_measure_chunk      (Collection *collection, int no);
 
 int collection_ancestor_folded (Collection *collection, int no);
 int collection_has_children    (Collection *collection, int no);
-void collection_update_files (Collection *collection);
+void collection_update_files   (Collection *collection);
 
 #endif
 
