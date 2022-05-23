@@ -32,6 +32,7 @@ int ctx_tinyvg_main (int argc, char **argv);
 int ctx_img_main (int argc, char **argv);
 int ctx_gif_main (int argc, char **argv);
 int stuff_main (int argc, char **argv);
+int stuffcmd_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
 int ctx_tcp_main (int argc, char **argv);
 int ctx_hexview_main (int argc, char **argv);
@@ -303,6 +304,9 @@ int main (int argc, char **argv)
 {
   if (!strcmp (basename(argv[1]), "lsfonts"))
     return lsfonts_main (argc-1, argv+1);
+  if (!strcmp (basename(argv[1]), "stuffcmd"))
+    return stuffcmd_main (argc-1, argv+1);
+
 //  if (!strcmp (basename(argv[1]), "stuff"))
 //    return stuff_main (argc-1, argv+1);
 //  if (!strcmp (basename(argv[0]), "stuff"))

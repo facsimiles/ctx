@@ -974,7 +974,7 @@ int cmd_duplicate (COMMAND_ARGS) /* "duplicate", 0, "", "duplicate item" */
   int insert_pos = no + count;
   for (int i = 0; i < count; i ++)
   {
-    char *name = metadata_get_name (collection, no);
+    char *name = metadata_get_name (collection, no + i);
     metadata_insert (collection, insert_pos + i, name);
     free (name);
     int keys = metadata_item_key_count (collection, no + i);
@@ -1397,18 +1397,18 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
   }
 
   layout_find_item = focused_no;
-  itk->focus_no = -1;
+  if (itk)
+    itk->focus_no = -1;
 
   return 0;
 }
 
 int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling", 0, "", "" */
 {
-  int start_no = focused_no;
-  
-  int level = 0;
+  int start_no    = focused_no;
+  int level       = 0;
   int start_level = 0;
-  int did_skips = 0;
+  int did_skips   = 0;
 
   if (dir_prev_sibling (collection, focused_no) < 0)
   {
@@ -1439,25 +1439,30 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
       did_skips = 1;
     }
   }
+
   if (level < start_level)
   {
      focused_no = start_no;
   }
   else
   {
+    if (did_skips) focused_no --;
     int count = collection_measure_chunk (collection, start_no);
-    if (!did_skips) focused_no++;
-    metadata_insert (collection, focused_no-1, "b");
+    //fprintf (stderr, "!%i %i %i!", start_no, focused_no, count);
     for (int i = 0; i < count; i ++)
     {
-      metadata_swap (collection, start_no+1 +i, focused_no-1 +i);
+      metadata_insert (collection, focused_no + i , "b");
+      metadata_swap (collection, start_no + i +1, focused_no+i);
+      metadata_remove (collection, start_no+i +1);
     }
-    metadata_remove (collection, start_no+count);
+    //fprintf (stderr, "\n");
+    //if (did_skips)
+    //focused_no++;
     metadata_dirt ();
-    focused_no--;
   }
 
   layout_find_item = focused_no;
+  if (itk)
   itk->focus_no = -1;
   return 0;
 }
@@ -2726,6 +2731,13 @@ static int item_get_list_index (Collection *collection, int i)
   return count;
 }
 
+int focus_no (COMMAND_ARGS) /* "focus-no", 1, "", "" */
+{
+  focused_no = atoi(argv[1]);
+  return 0;
+}
+
+
 int focus_next (COMMAND_ARGS) /* "focus-next", 0, "", "" */
 {
   layout_focused_link = -1;
@@ -2943,6 +2955,51 @@ int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
   return 0;
 }
 
+int dir_set_name (COMMAND_ARGS) /* "set-name", 2, "<no> <name>", "" */
+{
+  metadata_set_name (collection, atoi(argv[1]), argv[2]);
+  return 0;
+}
+
+int dir_load (COMMAND_ARGS) /* "load-path", 1, "<path>", "" */
+{
+  collection_set_path (collection, argv[1], NULL);
+  return 0;
+}
+
+
+int dir_dump (COMMAND_ARGS) /* "dump", 0, "", "" */
+{
+   metadata_dump (collection);
+   return 0;
+}
+
+int stuffcmd_main (int argc, char **argv)
+{
+  char *script = NULL;
+  long length = 0;
+  char *rp = realpath (argv[1], NULL);
+  if (rp)
+  {
+    ctx_get_contents (rp, (uint8_t**)&script, &length);
+    if (script)
+    {
+      char *startline = script;
+      char *endline = strchr(script, '\n');
+      while (endline && *endline)
+      {
+        *endline = '\0';
+        fprintf (stdout, "%s\n", startline);
+        argvs_eval (startline);
+        startline = endline + 1;
+        endline = strchr (startline, '\n');
+      }
+      free (script);
+    }
+    free (rp);
+  }
+  return 0;
+}
 
 int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
 {
@@ -5499,6 +5556,7 @@ static int card_files (ITK *itk_, void *data)
   return 1;
 }
 
+
 int stuff_main (int argc, char **argv)
 {
   //setenv ("CTX_SHAPE_CACHE", "0", 1);
@@ -5581,6 +5639,7 @@ void ctx_screenshot (Ctx *ctx, const char *path);
 
 int stuff_make_thumb (const char *src_path, const char *dst_path)
 {
+   ctx_init (NULL, NULL);
    int width = 256;
    int height = 256;
    float font_size = height * 0.075;
@@ -5597,7 +5656,6 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    if (!command)
       return -1;
 
-   fprintf (stderr, "%s %s\n", command[0], command[1]);
    CtxClient *client = ctx_client_new_argv (ctx, command,
                   0, 0, width, height,
                   font_size * live_font_factor,
@@ -5607,7 +5665,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    int count = 0;
    int got_content = 0;
    int slept_time = 0;
-   int sleep_time = 1000;
+   int sleep_time = 500;
    for (int i = 0; slept_time < 1000 * 3500 && got_content < 2; i ++)
    {
      //CtxEvent *event = NULL;

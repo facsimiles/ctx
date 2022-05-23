@@ -81,6 +81,7 @@ void metadata_add          (Collection *collection, int no, const char *key, con
 void metadata_set          (Collection *collection, int no, const char *key, const char *value);
 void metadata_set_float    (Collection *collection, int no, const char *key, float value);
 
+void metadata_dump         (Collection *collection);
 void collection_set_path (Collection *collection,
                           const char *path,
                           const char *title);

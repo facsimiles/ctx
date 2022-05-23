@@ -175,12 +175,12 @@ static char *metadata_find_no (Collection *collection, int no)
   }
 #endif
 
-  while (m && *m)
+  while (*m)
   {
     if (m[0] != ' ')
     {
-      while (m && *m && *m != '\n') m++;
-      if (m && *m == '\n') m++;
+      while (*m && *m != '\n') m++;
+      if (*m == '\n') m++;
       if (count == no)
       {
         if (update_cache)
@@ -194,8 +194,9 @@ static char *metadata_find_no (Collection *collection, int no)
     }
     else
     {
-      while (m && *m && *m != '\n') m++;
-      if (m && *m && *m == '\n') m++;
+      // it is a key
+      while (*m && *m != '\n') m++;
+      if (*m && *m == '\n') m++;
     }
   }
   return NULL;
@@ -265,8 +266,10 @@ static int _metadata_metalen (Collection *collection, const char *m)
   int len = 0;
   do {
     if (*m && m[0] == ' ') 
-    while (*m && m[0] != '\n') { m++; len++ ;}
-    if (*m == '\n') { m++; len++ ;}
+    {
+      while (*m && m[0] != '\n') { m++; len++ ;}
+      if (*m == '\n') { m++; len++ ;}
+    }
   } while (*m && m[0] == ' ');
   return len;
 }
@@ -275,9 +278,11 @@ char *metadata_escape_item (const char *item) // XXX expand with length to
                                               // handle \0 and
                                               // thus arbitrary blobs?
 {
-  if (item[0]==0)return strdup("\\0"); // this is kind of a hack - but it avoids
-                                       // bare newlines - which we have trouble with
-                                       // XXX XXX XXX
+  if (item[0]==0)return strdup("\\0");
+  // this is kind of a hack - but it avoids
+  // bare newlines - which some parts of the code
+  // still has trouble with
+  // XXX XXX XXX
   CtxString *str = ctx_string_new ("");
   for (int i = 0; item[i]; i++)
   {
@@ -379,11 +384,11 @@ char *metadata_key_name (Collection *collection, int ino, int no)
   do {
      if (count == no)
      {
-     while (*m && m[0] == ' ') m++;
-     while (*m && m[0] != '=') {
-       ctx_string_append_byte (str, m[0]);
-       m++;
-     }
+       while (*m && m[0] == ' ') m++;
+       while (*m && m[0] != '=') {
+         ctx_string_append_byte (str, m[0]);
+         m++;
+       }
        return ctx_string_dissolve (str);
      }
      while (m && *m && *m != '\n') m++;
@@ -468,7 +473,6 @@ float metadata_get_float (Collection *collection, int no, const char *key, float
    return ret;
 }
 
-
 int metadata_get_int (Collection *collection, int no, const char *key, int def_val)
 {
    char *value = metadata_get_string (collection, no, key);
@@ -480,7 +484,6 @@ int metadata_get_int (Collection *collection, int no, const char *key, int def_v
    }
    return ret;
 }
-
 
 void metadata_swap (Collection *collection, int no_a, int no_b)
 {
@@ -627,6 +630,7 @@ int metadata_insert (Collection *collection, int pos, const char *item)
     pos = collection->metadata_len;
   else
     m = metadata_find_no (collection, pos);
+
   if (m)
   {
     char *name = metadata_get_name_escaped (collection, pos);
@@ -724,16 +728,26 @@ void metadata_dump (Collection *collection)
 {
   int item_count = metadata_count (collection);
   fprintf (stdout, "item count: %i\n", item_count);
+  int indent = 0;
+
   for (int i = 0; i < item_count; i ++)
   {
     char *item_name = metadata_get_name (collection, i);
-    fprintf (stdout, "%i : %s : %i\n", i, item_name, metadata_item_to_no (collection, item_name));
+    for (int i = 0; i < indent; i++) fprintf (stdout, " ");
+    fprintf (stdout, "%s     :%i,%i\n", item_name, i, metadata_item_to_no (collection, item_name));
     int keys = metadata_item_key_count (collection, i);
     for (int k = 0; k < keys; k ++)
     {
       char *key_name = metadata_key_name (collection, i, k);
-      fprintf (stdout, " %s=%s\n", key_name,
+      for (int i = 0; i < indent; i++) fprintf (stdout, " ");
+      fprintf (stdout, "   %s=%s\n", key_name,
                       metadata_get_string (collection, i, key_name));
+      if (!strcmp (key_name, "type") &&
+          !strcmp(metadata_get_string (collection, i, key_name), "startgroup"))
+              indent +=4;
+      else if (!strcmp (key_name, "type") &&
+          !strcmp(metadata_get_string (collection, i, key_name), "endgroup"))
+              indent -=4;
     }
     fflush (stdout);
   }
@@ -840,9 +854,6 @@ collection_set_path (Collection *collection,
   char *resolved_path = realpath (path, NULL);
   char *title2 = NULL;
 
-
-  //fprintf (stderr, "setting path %s %s", path, title);
-
   if (title) title2 = strdup (title);
   else title2 = strdup (path);
 
@@ -924,7 +935,7 @@ CtxAtom collection_item_get_type_atom (Collection *collection, int i)
     }
     else
 #endif
-    if (!strcmp (type, "newpage"))    {free (type); return CTX_ATOM_NEWPAGE;}
+    if (!strcmp (type, "newpage"))         {free (type); return CTX_ATOM_NEWPAGE;}
     else if (!strcmp (type, "startpage"))  {free (type); return CTX_ATOM_STARTPAGE;}
     else if (!strcmp (type, "startgroup")) {free (type); return CTX_ATOM_STARTGROUP;}
     else if (!strcmp (type, "endgroup"))   {free (type); return CTX_ATOM_ENDGROUP;}
