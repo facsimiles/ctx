@@ -157,10 +157,6 @@ void ctx_headless_destroy (CtxHeadless *fb)
   ctx_free (tiled->fb); // it is not the tiled renderers responsibilty,
                     // since it might not be allocated this way
   tiled->fb = NULL;
-  ctx_babl_exit (); // we do this together with the fb,
-                    // which makes it happen only once
-                    // even if the headless_free is called
-                    // twice
   }
   //munmap (tiled->fb, fb->fb_mapped_size);
   //close (fb->fb_fd);
@@ -177,7 +173,6 @@ static CtxHeadless *ctx_headless = NULL;
 
 Ctx *ctx_new_headless (int width, int height)
 {
-  ctx_babl_init ();
   if (width < 0 || height < 0)
   {
     width = 1920;

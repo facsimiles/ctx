@@ -332,7 +332,6 @@ void ctx_fb_destroy (CtxFb *fb)
   if (system("stty sane")){};
   ctx_tiled_destroy ((CtxTiled*)fb);
   //ctx_free (fb);
-  ctx_babl_exit ();
 }
 
 //static unsigned char *fb_icc = NULL;
@@ -524,8 +523,6 @@ Ctx *ctx_new_fb (int width, int height)
   else
     tiled->pixels = ctx_calloc (fb->fb_mapped_size, 1);
   tiled->show_frame = (void*)ctx_fb_show_frame;
-
-  ctx_babl_init ();
 
 #if CTX_BABL
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);

@@ -67,9 +67,6 @@ void _ctx_texture_unlock (void)
 void
 ctx_init (int *argc, char ***argv)
 {
-#if CTX_BABL
-  ctx_babl_init ();
-#endif
 #if 0
   const char *backend = getenv ("CTX_BACKEND");
   if (!backend || ctx_strcmp (backend, "ctx"))
@@ -2916,29 +2913,6 @@ static inline EvSource *evsource_kb_new (void)
 }
 #endif
 
-#if CTX_BABL
-static int _ctx_babl_inits = 0;
-#endif
-static inline void ctx_babl_init (void)
-{
-#if CTX_BABL
-  if (_ctx_babl_inits == 1)
-  {
-    babl_init ();
-  }
-  _ctx_babl_inits ++;
-#endif
-}
-static inline void ctx_babl_exit (void)
-{
-#if CTX_BABL
-  _ctx_babl_inits --;
-  if (_ctx_babl_inits == 0)
-  {
-    babl_exit ();
-  }
-#endif
-}
 
 static inline int event_check_pending (CtxTiled *tiled)
 {

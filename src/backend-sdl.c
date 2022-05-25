@@ -491,7 +491,6 @@ void ctx_sdl_destroy (CtxSDL *sdl)
   if (sdl->window)
   {
     SDL_DestroyWindow (sdl->window);
-    ctx_babl_exit ();
   }
   sdl->texture = NULL;sdl->backend = NULL;sdl->window = NULL;
 
@@ -545,7 +544,6 @@ Ctx *ctx_new_sdl (int width, int height)
      ctx_free (sdl);
      return NULL;
   }
-  ctx_babl_init ();
   sdl->fullscreen = 0;
 
 

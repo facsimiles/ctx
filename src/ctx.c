@@ -1992,6 +1992,9 @@ _ctx_init (Ctx *ctx)
 
   if (!done_first_run)
   {
+#if CTX_BABL
+    babl_init ();
+#endif
     done_first_run = 1;
 #if CTX_SIMD
     ctx_simd_setup ();
