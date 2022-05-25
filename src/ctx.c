@@ -600,6 +600,11 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     }
   }
 
+  for (int i = 0; i < w * h; i++)
+  {
+     ctx_RGBA8_associate_alpha (&pixels[i * 4]);
+  }
+
   if (pixels)
   {
     switch (components)
