@@ -3969,6 +3969,7 @@ static void dir_layout (ITK *itk, Collection *collection)
           float line_width = metadata_get_float (collection, i, "line-width", 1.0);
           //float opacity    = metadata_get_float (collection, i, "opacity", 1.0);
 
+          if (gotpos) label = 0;
           ctx_rectangle (itk->ctx, itk->x, itk->y, width, height);
           if (fill)
           {
