@@ -874,7 +874,6 @@ collection_set_path (Collection *collection,
   collection_update_files (collection);
 }
 
-
 int collection_item_get_level (Collection *collection, int no)
 {
   int level = 0;

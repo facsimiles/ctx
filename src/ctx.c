@@ -551,6 +551,7 @@ void
 ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 {
   const char *eid = path;
+  if (strstr (path, "svg"))return;
   char ascii[41]="";
   int eid_len = ctx_strlen (eid);
   if (eid_len > 50)
@@ -600,10 +601,6 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     }
   }
 
-  for (int i = 0; i < w * h; i++)
-  {
-     ctx_RGBA8_associate_alpha (&pixels[i * 4]);
-  }
 
   if (pixels)
   {
@@ -612,7 +609,12 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
       case 1: pixel_format = CTX_FORMAT_GRAY8;  break;
       case 2: pixel_format = CTX_FORMAT_GRAYA8; break;
       case 3: pixel_format = CTX_FORMAT_RGB8;   break;
-      case 4: pixel_format = CTX_FORMAT_RGBA8;  break;
+      case 4: pixel_format = CTX_FORMAT_RGBA8;
+      for (int i = 0; i < w * h; i++)
+      {
+        ctx_RGBA8_associate_alpha (&pixels[i * 4]);
+      }
+        break;
     }
     if (tw) *tw = w;
     if (th) *th = h;
