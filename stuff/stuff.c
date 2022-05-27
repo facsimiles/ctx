@@ -422,8 +422,8 @@ const char *get_suffix (const char *path)
 
   if (last_slash > last_dot) return "";
   if (last_dot)
-    return last_dot + 1;
-  return "";
+return last_dot + 1;
+return "";
 }
 
 int ctx_handle_img (Ctx *ctx, const char *path);
@@ -2060,7 +2060,8 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       if (print)
       {
           ctx_rectangle (itk->ctx,
-                    cursor_x-1, y - line_height*0.8, text_editor?space_width:2, line_height);
+                    cursor_x-1, y - line_height * 0.8f,
+                    text_editor?space_width:2, line_height*0.9f);
           ctx_fill (itk->ctx);
           ctx_restore (ctx);
       }
@@ -2335,7 +2336,7 @@ void text_edit_shift_return (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-void text_edit_ignore (CtxEvent *event, void *a, void *b)
+void ignore_and_stop_propagate (CtxEvent *event, void *a, void *b)
 {
   event->stop_propagate=1;
 }
@@ -2637,6 +2638,7 @@ int cmd_page (COMMAND_ARGS) /* "page", 1, "<next|prev|previous|integer>", "" */
 }
 
 int item_context_active = 0;
+int item_context_choice = 0;
 
 static void
 make_tail_entry (Collection *collection)
@@ -3048,6 +3050,7 @@ int item_properties (COMMAND_ARGS) /* "toggle-context", 0, "", "" */
   else
   {
     item_context_active = 1;
+    item_context_choice = 0;
   }
   return 0;
 }
@@ -3064,7 +3067,6 @@ typedef struct CtxRectangle
 static CtxRectangle layout_box[CTX_MAX_LAYOUT_BOXES];
 int layout_box_count = 0;
 int layout_box_no = 0;
-
 
 static CtxControl *focused_control = NULL;
 
@@ -3740,7 +3742,8 @@ static void dir_layout (ITK *itk, Collection *collection)
 
           if (!viewer)
           {
-          if (!is_text_editing())
+          if (!is_text_editing()
+              && !item_context_active)
           {
 #define BIND_KEY(key, command, help) \
             do {ctx_add_key_binding (ctx, key, NULL, help, ui_run_command, command);} while(0)
@@ -3765,8 +3768,6 @@ static void dir_layout (ITK *itk, Collection *collection)
 
             if (!layout_config.outliner)
             {
-               if (!text_editor)
-               BIND_KEY ("alt-return", "toggle-context", "item properties");
 
                if (layout_focused_link >= 0)
                {
@@ -3822,9 +3823,13 @@ static void dir_layout (ITK *itk, Collection *collection)
               BIND_KEY ("insert", "insert-text", "insert text item");
             }
           }
+          if (!text_editor)
+            BIND_KEY ("alt-return", "toggle-context", "item properties");
 
 
-          if (!layout_config.outliner && !is_text_editing ())
+          if (!layout_config.outliner
+              && !is_text_editing ()
+              && !item_context_active)
           {
             BIND_KEY ("control-page-down",
                       "move-after-next-sibling",
@@ -4157,7 +4162,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
         ctx_rectangle (itk->ctx, itk->x, itk->y + height - em * (lines + 1),
                         width, em * (lines + 0.5));
-        ctx_rgba (itk->ctx, 0,0,0,0.1);
+        ctx_rgba (itk->ctx, 0,0,0,0.4);
         ctx_fill (itk->ctx);
 
         for (int i = 0; i < lines; i++)
@@ -4695,6 +4700,29 @@ static void dir_location_select_all (CtxEvent *e, void *d1, void *d2)
   ctx_queue_draw (e->ctx);
 }
 
+
+static void item_context_choice_prev (CtxEvent *e, void *d1, void *d2)
+{
+  item_context_choice --;
+  if (item_context_choice < 0) item_context_choice = 0;
+  e->stop_propagate = 1;
+  ctx_queue_draw (e->ctx);
+}
+
+static void item_context_choice_next (CtxEvent *e, void *d1, void *d2)
+{
+  item_context_choice ++;
+  e->stop_propagate = 1;
+  ctx_queue_draw (e->ctx);
+}
+
+static void item_context_make_choice (CtxEvent *e, void *d1, void *d2)
+{
+  item_context_active = 0;
+  e->stop_propagate = 1;
+  ctx_queue_draw (e->ctx);
+}
+
 static void dir_location_extend_sel_left (CtxEvent *e, void *d1, void *d2)
 {
   commandline_cursor_end --;
@@ -4808,7 +4836,8 @@ static int card_files (ITK *itk_, void *data)
      ctx_scale (itk->ctx, dir_scale, dir_scale);
 
 
-    if (!is_text_editing())
+    if (!is_text_editing() &&
+        !item_context_active)
     {
       BIND_KEY ("control-+", "zoom in", "zoom in");
       BIND_KEY ("control-=", "zoom in", "zoom in");
@@ -4836,7 +4865,9 @@ static int card_files (ITK *itk_, void *data)
  // }
  // else
   {
-    if (!is_text_editing() && !text_editor)
+    if (!is_text_editing()
+        && !text_editor
+        && !item_context_active)
     {
 
     ctx_add_key_binding (ctx, "control-r", NULL, 
@@ -4861,7 +4892,8 @@ static int card_files (ITK *itk_, void *data)
       }
   }
 
-  if (!is_text_editing())
+  if (!is_text_editing() &&
+      !item_context_active)
   {
     if (layout_show_page < layout_last_page)
       BIND_KEY("page-down", "page next", "next page");
@@ -4870,7 +4902,10 @@ static int card_files (ITK *itk_, void *data)
   }
 
 
-  if (!viewer && text_edit <= TEXT_EDIT_OFF && !layout_config.outliner)
+  if (!viewer
+      && text_edit <= TEXT_EDIT_OFF
+      && !layout_config.outliner 
+      && !item_context_active)
   {
 
 
@@ -4903,20 +4938,23 @@ static int card_files (ITK *itk_, void *data)
 #endif
           }
 
-          ctx_add_key_binding (ctx, "any", NULL, "add char", dir_any, NULL);
+          if (!item_context_active)
+            ctx_add_key_binding (ctx, "any", NULL, "add char", dir_any, NULL);
           if (editing_location)
           {
             ctx_add_key_binding (ctx, "escape", NULL, "stop editing location", dir_location_escape, NULL);
             ctx_add_key_binding (ctx, "return", NULL, "confirm new location", dir_location_return, NULL);
           }
-          if (!text_editor)
+          if (!text_editor &&
+              !item_context_active)
           {
             ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
           }
 
-          if (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT &&
-              metadata_get_float (collection, focused_no, "x", -1234.0) == -1234.0 &&
-              !is_text_editing())
+          if (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT
+              && metadata_get_float (collection, focused_no, "x", -1234.0) == -1234.0
+              && !is_text_editing()
+              && !item_context_active)
           {
 
             if (layout_focused_link >= 0)
@@ -4976,13 +5014,15 @@ static int card_files (ITK *itk_, void *data)
 
 
 #if 1
-      if (!viewer && text_edit>TEXT_EDIT_OFF)
+      if (!viewer &&
+          text_edit>TEXT_EDIT_OFF
+          && !item_context_active)
       {
           ctx_add_key_binding (ctx, "tab", NULL, NULL,
-                          text_edit_ignore,
+                          ignore_and_stop_propagate,
                           NULL);
           ctx_add_key_binding (ctx, "shift-tab", NULL, NULL,
-                          text_edit_ignore,
+                          ignore_and_stop_propagate,
                           NULL);
 
           ctx_add_key_binding (ctx, "control-left", NULL, "previous word",
@@ -5056,12 +5096,13 @@ static int card_files (ITK *itk_, void *data)
   if (item_context_active && focused_control && focused_no>=0)
   {
     char *choices[]={
-    "make absolute positioned (ctrl-space)",
-    "move up (ctrl-up)",
-    "move down (ctrl-down)",
-    "indent (ctrl-right)",
-    "outdent (ctrl-left)",
-            NULL
+      "indent/ (ctrl-right)", "make-child-of-previous",
+      "outdent/ (ctrl-left)", "make-sibling-of-parent",
+      "raise (ctrl-page-up)",   "move-before-previous-sibling",
+      "lower (ctrl-page-down)", "move-after-next-sibling",
+      "toggle executable",      "foo",
+      "rename",                 "foo",
+      NULL,NULL
     };
 
     float em = itk->font_size;
@@ -5069,6 +5110,30 @@ static int card_files (ITK *itk_, void *data)
     float x = focused_control->x + focused_control->width;
     float y = focused_control->y;
     float height = em * 9;
+    ctx_add_key_binding (ctx, "up", NULL, "previous choice",
+                    item_context_choice_prev,
+                    NULL);
+    ctx_add_key_binding (ctx, "down", NULL, "next choice",
+                    item_context_choice_next,
+                    NULL);
+    ctx_add_key_binding (ctx, "return", NULL, "make choice",
+                    item_context_make_choice,
+                    NULL);
+    ctx_add_key_binding (ctx, "left", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    ctx_add_key_binding (ctx, "right", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    ctx_add_key_binding (ctx, "delete", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    ctx_add_key_binding (ctx, "tab", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    ctx_add_key_binding (ctx, "shift-tab", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
 
     if (width < focused_control->width) x-= width;
     else
@@ -5081,16 +5146,17 @@ static int card_files (ITK *itk_, void *data)
 
     ctx_begin_path (itk->ctx);
     ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.4);
-    ctx_rectangle (itk->ctx, 0, itk->panel->scroll, ctx_width (itk->ctx), ctx_height (itk->ctx));
+    ctx_rectangle (itk->ctx, 0, itk->panel->scroll,
+                   ctx_width (itk->ctx), ctx_height (itk->ctx));
     ctx_fill (itk->ctx);
-    ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.8);
+    ctx_rgba (itk->ctx, 0.0, 0.0, 0.0, 0.8);
     ctx_rectangle (itk->ctx, x, y, width, height);
 
     ctx_fill (itk->ctx);
 
-    for (int i =0; choices[i]; i++)
+    for (int i =0; choices[i]; i+=2)
     {
-      if (i + 1 == item_context_active)
+      if (i == item_context_choice * 2)
          ctx_rgb(itk->ctx, 1,1,1);
       else
          ctx_rgb(itk->ctx, 0.7,0.7,0.7);
