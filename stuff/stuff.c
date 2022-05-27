@@ -1596,24 +1596,24 @@ int item_cycle_bullet(COMMAND_ARGS) /* "cycle-bullet", 0, "", "" */
 
 int item_cycle_heading (COMMAND_ARGS) /* "cycle-heading", 0, "", "" */
 {
-  char *klass = metadata_get_string (collection, focused_no, "class");
+  char *klass = metadata_get_string (collection, focused_no, "tag");
 
   if (!klass) klass = strdup ("");
 
   if (!strcmp (klass, "h1"))
-    metadata_set (collection, focused_no, "class", "h2");
+    metadata_set (collection, focused_no, "tag", "h2");
   else if (!strcmp (klass, "h2"))
-    metadata_set (collection, focused_no, "class", "h3");
+    metadata_set (collection, focused_no, "tag", "h3");
   else if (!strcmp (klass, "h3"))
-    metadata_set (collection, focused_no, "class", "h4");
+    metadata_set (collection, focused_no, "tag", "h4");
   else if (!strcmp (klass, "h4"))
-    metadata_set (collection, focused_no, "class", "h5");
+    metadata_set (collection, focused_no, "tag", "h5");
   else if (!strcmp (klass, "h5"))
-    metadata_set (collection, focused_no, "class", "h6");
+    metadata_set (collection, focused_no, "tag", "h6");
   else if (!strcmp (klass, "h6"))
-    metadata_unset (collection, focused_no, "class");
+    metadata_unset (collection, focused_no, "tag");
   else
-    metadata_set (collection, focused_no, "class", "h1");
+    metadata_set (collection, focused_no, "tag", "h1");
   metadata_dirt ();
   return 0;
 }
@@ -3801,7 +3801,7 @@ static void dir_layout (ITK *itk, Collection *collection)
             if (!text_editor)
             {
               const char *label = "make heading";
-              char *klass = metadata_get_string (collection, i, "class");
+              char *klass = metadata_get_string (collection, i, "tag");
               if (klass)
               {
                 label = "cycle heading";
@@ -4303,7 +4303,7 @@ static int thumb_monitor (Ctx *ctx, void *data)
 
   if (thumb_pid == 0 || kill (thumb_pid, 0) == -1)
   {
-    int batch_size = 4;
+    int batch_size = 2;
     int count = initial_args;
     for (CtxList *iter = thumb_queue;iter && count < batch_size + initial_args; iter = iter->next)
     {

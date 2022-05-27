@@ -359,7 +359,7 @@ void itk_style_color (Ctx *ctx, const char *name)
    }
    else
    {
-     ctx_rgb (ctx, 1, 0, 1);
+     ctx_rgb (ctx, 0, 0, 0); // XXX : this shows up in thumbnails
      //ctx_rgb_stroke (ctx, 1, 0, 1);
    }
 }
@@ -468,8 +468,8 @@ void itk_reset (ITK *itk)
 "itk-font-size: 32.0;\n"
 
 "titlebar-bg:          #0007;\n"
-"titlebar-fg:          #999a\n"
-"titlebar-close:       #fff9\n"
+"titlebar-fg:          #999a;\n"
+"titlebar-close:       #fff9;\n"
 "titlebar-focused-close: #c44;\n"
 "titlebar-focused-bg:  #333b;\n"
 "titlebar-focused-fg:  #ffff;\n"

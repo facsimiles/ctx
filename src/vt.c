@@ -8335,6 +8335,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       else
         {
           itk_style_color (ctx, "terminal-bg");
+          //ctx_rgba (ctx,0,0,0,1.0f);
           ctx_fill  (ctx);
         }
 #endif

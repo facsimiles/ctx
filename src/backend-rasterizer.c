@@ -2777,6 +2777,7 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
     _ctx_user_to_device (rasterizer->state, &tx, &ty);
     int col = (int)(tx / cw + 1);
     int row = (int)(ty / ch + 1);
+
     for (int i = 0; string[i]; i++, col++)
     {
       CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
