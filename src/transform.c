@@ -139,9 +139,18 @@ CTX_STATIC void
 _ctx_user_to_device_distance (CtxState *state, float *x, float *y)
 {
   const CtxMatrix *m = &state->gstate.transform;
-  _ctx_matrix_apply_transform (m, x, y);
-  *x -= m->m[2][0];
-  *y -= m->m[2][1];
+
+  float x0 = 0.0f;
+  float y0 = 0.0f;
+  float x1 = *x;
+  float y1 = *y;
+
+  _ctx_matrix_apply_transform (m, &x0, &y0);
+  _ctx_matrix_apply_transform (m, &x1, &y1);
+  *x = (x1-x0);
+  *y = (y1-y0);
+  //*x -= m->m[2][0];
+  //*y -= m->m[2][1];
 }
 
 void ctx_user_to_device          (Ctx *ctx, float *x, float *y)
