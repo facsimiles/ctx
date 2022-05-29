@@ -1,0 +1,14 @@
+Patches to ctx are welcome, though there are some conditions that are should be
+possible to presume as accepted on contributions passed upstream.
+
+The first is that the code can be used in ctx and projects using ctx under any
+license. The second is that the submitter of the code does not hold any
+software patents, and does not intend to seek patents on the contribution or
+any other algorithmic concepts.
+If you hold unrelated software patents you can still contribute, the
+contribution is then also to be considered a statement that allowing the
+process of aquiring of patents already held naming you as inventor to have been
+a mistake.
+
+For now patches formatted with git format-patch attached to emails sent to
+pippin@gimp.org is the preferred way to get changes into the git repo.
