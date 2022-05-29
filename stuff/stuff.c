@@ -514,6 +514,9 @@ static void _set_location (const char *location)
     }
     //if (path_is_dir (loc))
     {
+      //fprintf (stderr, "%i:%s\n", __LINE__, loc);
+      if (loc[strlen(loc)-1]=='/')
+        loc[strlen(loc)-1]='\0';
       collection_set_path (collection, loc, NULL);
       drop_item_renderers (ctx);
       focused_no = -1;
@@ -523,6 +526,7 @@ static void _set_location (const char *location)
   } else
   {
     char *path = dir_metadata_path (location);
+    fprintf (stderr, "%i:%s\n", __LINE__, path);
     if (path_is_dir (path))
     {
     }
@@ -3250,6 +3254,7 @@ char **dir_get_viewer_argv (const char *path, int no)
   return ctx_str_list_to_pasv (&args);
 }
 
+
 static void dir_layout (ITK *itk, Collection *collection)
 {
   Ctx *ctx = itk->ctx;
@@ -3328,9 +3333,29 @@ static void dir_layout (ITK *itk, Collection *collection)
 
   if (y1 < 100) y1 = itk->height;
 
+  
+  ctx_save (itk->ctx);
+  ctx_move_to (itk->ctx, itk->x0, 4 * itk->font_size);
+  ctx_rgba (itk->ctx, 1,1,1,1);
+  ctx_font_size (itk->ctx, itk->y);
   int printing = (layout_page_no == layout_show_page);
+  if (printing)
+  {
+  CtxControl *c = itk_add_control (itk, UI_LABEL, "foo!",
+                       itk->x0, itk->y,
+                       itk->x0-itk->x,
+                       itk->font_size * 2);
+  }
+  if (collection->title)
+    ctx_text (ctx, collection->title);
+  else
+    ctx_text (ctx, collection->path);
+  ctx_restore (itk->ctx);
+  itk->y += 2 * itk->font_size;
+
   if (layout_config.outliner)
      printing = 1;
+
 
   for (int i = 0; i < collection->count; i++)
   {
@@ -4823,7 +4848,7 @@ static int card_files (ITK *itk_, void *data)
 #endif
 
     if (activate_from_start)
-            argvs_eval ("activate");
+       argvs_eval ("activate");
   }
   //thumb_monitor (ctx, NULL);
 
@@ -4879,17 +4904,14 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_key_binding (ctx, "control-5", NULL, "text edit view", set_text_edit, NULL);
     }
 
-    //if (layout_config.outliner)
-    //  outliner_layout (itk, collection);
-    //else
+    if (!viewer)
       dir_layout (itk, collection);
 
-
-      if (ctx_clients (ctx))
-      {
-        ctx_font_size (ctx, itk->font_size);
-        ctx_clients_draw (ctx, 0);
-      }
+    if (ctx_clients (ctx))
+    {
+      ctx_font_size (ctx, itk->font_size);
+      ctx_clients_draw (ctx, 0);
+    }
   }
 
   if (!is_text_editing() &&
@@ -5154,7 +5176,7 @@ static int card_files (ITK *itk_, void *data)
 
     ctx_fill (itk->ctx);
 
-    for (int i =0; choices[i]; i+=2)
+    for (int i = 0; choices[i]; i+=2)
     {
       if (i == item_context_choice * 2)
          ctx_rgb(itk->ctx, 1,1,1);
