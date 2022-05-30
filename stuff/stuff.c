@@ -4394,9 +4394,10 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   float pre_thumb_size = 2.0;
 
   char *client_a = ctx_strdup_printf ("%s-%i", pathA, focused_no+1);
+#if 0
   if ((client=ctx_client_find (ctx, client_a)))
   {
-     //fprintf (stderr, "reusing %s\n", client_a);
+     fprintf (stderr, "reusing %s\n", client_a);
      ctx_client_move (ctx, ctx_client_id (client), 
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
           ctx_height (ctx) - itk->font_size * pre_thumb_size);
@@ -4405,11 +4406,12 @@ int viewer_pre_next (Ctx *ctx, void *data1)
           itk->font_size * pre_thumb_size);
   }
   else
+#endif
   {
     char **command = dir_get_viewer_argv (pathA, focused_no+1);
     if (command)
     {
-     //fprintf (stderr, "preloading %s\n", client_a);
+     fprintf (stderr, "preloading %s\n", client_a);
      //fprintf (stderr, "%s\n", command);
      client= ctx_client_new_argv (ctx, command,
           ctx_width (ctx) - itk->font_size * pre_thumb_size,
@@ -4443,6 +4445,7 @@ int viewer_pre_next (Ctx *ctx, void *data1)
     ctx_list_remove (&to_remove, to_remove->data);
   }
 #endif
+
   free (client_a);
   free (client_cur);
   return 0;
