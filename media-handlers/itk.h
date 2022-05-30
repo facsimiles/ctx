@@ -1794,9 +1794,9 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
     {
       CtxControl *candidate = iter->data;
 
-#define ITK_SPACE_WARP 1.5
+#define ITK_SPACE_WARP 1.0
 #define POW2(a) ((a)*(a))
-#define ITK_SPACE_MATCH_WARP 0.4
+#define ITK_SPACE_MATCH_WARP 1.0
 
       float dist = sqrtf ( POW2((candidate->x - control->x) * ITK_SPACE_WARP) +
                            POW2(candidate->y - control->y));
