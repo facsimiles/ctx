@@ -295,8 +295,8 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.list_data = 0;
   layout_config.padding_left = 0.5f;
   layout_config.padding_right = 0.5f;
-  layout_config.padding_top = 0.5f;
-  layout_config.padding_bottom = 0.5f;
+  layout_config.padding_top = 0.25f;
+  layout_config.padding_bottom = 0.25f;
   layout_config.margin_top = 3.5f;
 
   layout_config.use_layout_boxes = 1;
@@ -3685,7 +3685,7 @@ static void dir_layout (ITK *itk, Collection *collection)
                        NULL, NULL,
                        (i == focused_no && text_edit >= 0),
                        i == focused_no);
-          height = height - itk->y; // + em;// * 0.5;
+          height = height - itk->y;// + em;// * 0.5;
           row_max_height = height;
         }
       }
@@ -3695,9 +3695,9 @@ static void dir_layout (ITK *itk, Collection *collection)
       {
         ctx_begin_path (itk->ctx);
         c = itk_add_control (itk, UI_LABEL, "foo",
-        itk->x - em * padding_left/2, itk->y - em * padding_top/3,
-        width + em * (padding_left/2+padding_right/2),
-        height + em * (padding_top/3+padding_bottom/2));
+        itk->x - em * padding_left, itk->y, // - em * padding_top,
+        width + em * (padding_left+padding_right),
+        height + em * (padding_top+padding_bottom));
         if (focused_no == i)
            focused_control = c;
       }
@@ -4235,7 +4235,7 @@ static void dir_layout (ITK *itk, Collection *collection)
           itk->x = itk->x0;
           if (layout_config.stack_vertical)
           {
-            itk->y += row_max_height;
+            itk->y += row_max_height + layout_config.padding_bottom * em;
             row_max_height = 0;
           }
 #if 1
@@ -4986,7 +4986,7 @@ static int card_files (ITK *itk_, void *data)
               BIND_KEY ("up", "focus-previous-link", "focus previous link");
             else
             {
-              BIND_KEY ("up", "focus-previous", "focus previous");
+              //BIND_KEY ("up", "focus-previous", "focus previous");
               if (vim_keys)
               BIND_KEY ("k", "focus-previous", "focus previous");
             }
@@ -4998,7 +4998,7 @@ static int card_files (ITK *itk_, void *data)
               BIND_KEY ("down", "focus-next-link", "focus next link");
             else
             {
-              BIND_KEY ("down", "focus-next", "focus next");
+              //BIND_KEY ("down", "focus-next", "focus next");
             }
             if (vim_keys)
               BIND_KEY ("j", "focus-next", "focus next");
