@@ -68,7 +68,6 @@ typedef struct LayoutConfig
 
   int use_layout_boxes;
   int outliner;
-  int codes;
 
   int hide_non_file;
   float margin_top; // page_margin
@@ -302,7 +301,6 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.use_layout_boxes = 1;
   layout_config.level_indent = 2.0;
   layout_config.outliner = 0;
-  layout_config.codes = 0;
   layout_config.monospace = 0;
   layout_config.line_height = 1.0;
 
@@ -643,11 +641,6 @@ int outline_collapse (COMMAND_ARGS) /* "fold", 0, "", "" */
 }
 
 
-static void toggle_reveal_codes (CtxEvent *e, void *d1, void *d2)
-{
-  layout_config.codes = !layout_config.codes;
-  ctx_queue_draw (e->ctx);
-}
 static int layout_focused_link = -1;
 
 static int dir_item_count_links (int i)
@@ -3398,7 +3391,7 @@ static void dir_layout (ITK *itk, Collection *collection)
         case CTX_ATOM_LAYOUTBOX:
           break;
         case CTX_ATOM_STARTGROUP:
-          if (!layout_config.codes) hidden = 1;
+          hidden = 1;
           level ++;
           {
             int folded = metadata_get_int (collection, i, "folded", 0);
@@ -3411,7 +3404,7 @@ static void dir_layout (ITK *itk, Collection *collection)
           {
             is_folded = 0;
           }
-          if (!layout_config.codes) hidden = 1;
+          hidden = 1;
           level --;
           break;
         case CTX_ATOM_NEWPAGE:
@@ -3422,9 +3415,7 @@ static void dir_layout (ITK *itk, Collection *collection)
           layout_box[0].y = 0.02;
           layout_box[0].width = 0.9;
           layout_box[0].height = 4000.0;
-
-          if (!layout_config.codes)
-             hidden = 1;
+          hidden = 1;
           break;
       }
 
@@ -3618,32 +3609,6 @@ static void dir_layout (ITK *itk, Collection *collection)
     atom = CTX_ATOM_TEXT;
     hidden = 0;
     printing = 1;
-    layout_config.codes = 1;
-  }
-  if (layout_config.codes)
-  {
-      switch (atom)
-      {
-        case CTX_ATOM_RECTANGLE: free(d_name);d_name = strdup("rectangle"); break;
-        case CTX_ATOM_TEXT:      break;
-        case CTX_ATOM_FILE: break;
-        case CTX_ATOM_CTX:       free(d_name);d_name = strdup("ctx"); break;
-        case CTX_ATOM_LAYOUTBOX: free(d_name);d_name = strdup("layoutbox"); break;
-        case CTX_ATOM_STARTGROUP: free(d_name);d_name = strdup("startgroup");
-                                  if (layout_config.outliner)
-                                    level--; 
-                                  break;
-        case CTX_ATOM_ENDGROUP:   free(d_name);d_name = strdup("endgroup"); break;
-        case CTX_ATOM_NEWPAGE:    free(d_name);d_name = strdup("newpage"); break;
-        case CTX_ATOM_STARTPAGE:  free(d_name);d_name = strdup("startpage"); break;
-      }
-    if ((atom != CTX_ATOM_FILE &&
-         atom != CTX_ATOM_RECTANGLE) || layout_config.outliner)
-    {
-      atom = CTX_ATOM_TEXT;
-      label = 0;
-    ///  height = em * 1.5;
-    }
   }
 
       if (!hidden)
@@ -4898,8 +4863,6 @@ static int card_files (ITK *itk_, void *data)
         && !item_context_active)
     {
 
-    ctx_add_key_binding (ctx, "control-r", NULL, 
-                    layout_config.codes?"hide codes":"reveal codes", toggle_reveal_codes, NULL);
     ctx_add_key_binding (ctx, "control-1", NULL, "debug outline view", set_outline, NULL);
     ctx_add_key_binding (ctx, "control-2", NULL, "layout view", set_layout, NULL);
     ctx_add_key_binding (ctx, "control-3", NULL, "list view", set_list, NULL);
@@ -5159,6 +5122,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_key_binding (ctx, "shift-tab", NULL, NULL,
                     ignore_and_stop_propagate,
                     NULL);
+    BIND_KEY ("escape", "toggle-context", "cancel context menu");
 
     if (width < focused_control->width) x-= width;
     else
