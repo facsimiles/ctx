@@ -94,7 +94,6 @@ int layout_page_no = 0;
 int layout_show_page = 0;
 int layout_last_page = 0;
 float dir_scale = 1.0f;
-int tool_no = 0;
 typedef enum {
    STUFF_TOOL_SELECT,
    STUFF_TOOL_LOCATION,
@@ -5190,9 +5189,22 @@ static int card_files (ITK *itk_, void *data)
       else
          ctx_rgb(itk->ctx, 0.7,0.7,0.7);
       y+=em;
-
       ctx_move_to (itk->ctx, x+em, y);
       ctx_text( itk->ctx, choices[i]);
+    }
+         ctx_rgb(itk->ctx, 0.7,0.7,0.7);
+    {
+      int keys = metadata_item_key_count (collection, focused_no);
+      for (int k = 0; k < keys; k++)
+      {
+         char *key = metadata_key_name (collection, focused_no, k);
+         char *value = metadata_get_string (collection, focused_no, key);
+         char tmp[strlen(key)+strlen(value)+1+1];
+         sprintf (tmp, "%s=%s", key, value);
+         y+=em;
+         ctx_move_to (itk->ctx, x+em, y);
+         ctx_text (itk->ctx, tmp);
+      }
     }
 
 
@@ -5354,7 +5366,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_clients_draw (ctx, 1);
   }
 
-
+#if 0
   if (!text_editor)
   {
   ctx_save (ctx);
@@ -5473,6 +5485,7 @@ static int card_files (ITK *itk_, void *data)
   }
   ctx_restore (ctx);
   }
+#endif
 
   if (!editing_location && text_edit == TEXT_EDIT_OFF && commandline->str[0]){
     float em = itk->font_size;
