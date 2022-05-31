@@ -4246,6 +4246,10 @@ static void dir_layout (ITK *itk, Collection *collection)
 //  itk->y     = saved_y;
 
 
+  if (focused_no == -1)
+  {
+    BIND_KEY ("alt-return", "toggle-context", "document properties");
+  }
 }
 
 static void empty_thumb_queue (void)
@@ -5052,9 +5056,9 @@ static int card_files (ITK *itk_, void *data)
       }
 #endif
 
-  if (item_context_active && focused_control && focused_no>=0)
+  if (item_context_active && focused_control && focused_no>=-1)
   {
-    char *choices[]={
+    char *choices_item[]={
       "indent/ (ctrl-right)", "make-child-of-previous",
       "outdent/ (ctrl-left)", "make-sibling-of-parent",
       "raise (ctrl-page-up)",   "move-before-previous-sibling",
@@ -5063,12 +5067,21 @@ static int card_files (ITK *itk_, void *data)
       "rename",                 "foo",
       NULL,NULL
     };
+    char *choices_document[]={
+      "view",                   "foo",
+      "store view",             "foo",
+      "rename",                 "foo",
+      NULL,NULL
+    };
+    char **choices = choices_item;
 
     float em = itk->font_size;
     float width = em * 20;
     float x = focused_control->x + focused_control->width;
     float y = focused_control->y;
     float height = em * 9;
+
+
     ctx_add_key_binding (ctx, "up", NULL, "previous choice",
                     item_context_choice_prev,
                     NULL);
@@ -5102,6 +5115,14 @@ static int card_files (ITK *itk_, void *data)
        {
          x = focused_control->x - width;
        }
+    }
+
+    if (focused_no == -1)
+    {
+      x = 10 * em;
+      y = 4 * em;
+
+      choices = choices_document;
     }
 
     ctx_begin_path (itk->ctx);
