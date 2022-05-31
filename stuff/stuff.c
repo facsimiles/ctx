@@ -94,14 +94,6 @@ int layout_page_no = 0;
 int layout_show_page = 0;
 int layout_last_page = 0;
 float dir_scale = 1.0f;
-typedef enum {
-   STUFF_TOOL_SELECT,
-   STUFF_TOOL_LOCATION,
-   STUFF_TOOL_RECTANGLE,
-   STUFF_TOOL_TEXT,
-   STUFF_TOOL_BEZIER,
-   STUFF_TOOL_CIRCLE
-} StuffTool;
 
 unsigned long viewer_slide_start = 0;
 unsigned long viewer_slide_trigger = 0;
@@ -2833,7 +2825,6 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
   ctx_string_set (commandline, collection->title?collection->title:collection->path);
   commandline_cursor_end = 0;
   commandline_cursor_start = strlen (commandline->str);
-  tool_no = STUFF_TOOL_LOCATION;
   if (e)
   {
     e->stop_propagate = 1;
@@ -2853,59 +2844,6 @@ static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
     ctx_queue_draw (e->ctx);
   }
 }
-
-static void
-set_tool_no (int a)
-{
-  if (tool_no == STUFF_TOOL_LOCATION && a != tool_no)
-  {
-    dir_location_escape (NULL, NULL, NULL);
-  }
-  tool_no = a;
-  if (tool_no == STUFF_TOOL_LOCATION)
-  {
-    dir_location (NULL, NULL, NULL);
-  }
-}
-
-float toolbar_x = 0.0;
-float toolbar_y = 0.0;
-
-static void
-tool_drag (CtxEvent *event, void *a, void *b)
-{
-  static float start_x;
-  static float start_y;
-
-  static float orig_x;
-  static float orig_y;
-
-
-  switch (event->type)
-  {
-    case CTX_DRAG_PRESS:
-      tool_no = (size_t)(a);
-      set_tool_no (tool_no);
-      start_x = event->x;
-      start_y = event->y;
-      orig_x = toolbar_x;
-      orig_y = toolbar_y;
-      break;
-    case CTX_DRAG_MOTION:
-      toolbar_x = orig_x + (event->x-start_x);
-      toolbar_y = orig_y + (event->y-start_y);
-      ctx_queue_draw (event->ctx);
-      break;
-    case CTX_DRAG_RELEASE:
-      break;
-    default:
-      break;
-  }
-
-  ctx_queue_draw (event->ctx);
-  event->stop_propagate=1;
-}
-
 
 int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
 {
@@ -3310,6 +3248,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
   if (!layout_config.outliner)
   {
+#if 0
   if (tool_no == STUFF_TOOL_RECTANGLE)
   {
     ctx_rectangle (itk->ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
@@ -3317,6 +3256,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
     ctx_begin_path (itk->ctx);
   }
+#endif
   }
 
   if (y1 < 100) y1 = itk->height;
@@ -3749,10 +3689,6 @@ static void dir_layout (ITK *itk, Collection *collection)
         }
 
 
-        switch (tool_no)
-        {
-          case STUFF_TOOL_SELECT:
-          case STUFF_TOOL_LOCATION:
         if (c->no == itk->focus_no && layout_find_item < 0)
         {
           focused = 1;
@@ -3906,8 +3842,6 @@ static void dir_layout (ITK *itk, Collection *collection)
         else
         {
           ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
-        }
-        break;
         }
 
       ctx_begin_path (ctx);
@@ -4665,8 +4599,6 @@ static void dir_location_return (CtxEvent *e, void *d1, void *d2)
   set_location (commandline->str);
   ctx_string_set (commandline, "");
 
-  set_tool_no (STUFF_TOOL_SELECT);
-  
   e->stop_propagate = 1;
   ctx_queue_draw (e->ctx);
 }
