@@ -161,6 +161,11 @@ static char *metadata_find_no (Collection *collection, int no)
   char *m = collection->metadata;
   int count = 0;
 
+  if (no == -2)
+  {
+    return m;
+  }
+
   int update_cache = 1;
 #if 1
   if (collection->metadata_cache_no == no) return collection->metadata_cache;
@@ -214,6 +219,13 @@ char *metadata_get_name (Collection *collection, int no)
     collection->cache_size = new_count;
     collection->cache = calloc (sizeof(void*), new_count);
   }
+
+  if (no == -2)
+  {
+     return metadata_get_string (collection, no, "title");
+  }
+
+
   /* this makes use reuse the cache */
   const char *m = metadata_find_no (collection, no);
   if (!m) return NULL;
@@ -653,6 +665,13 @@ int metadata_insert (Collection *collection, int pos, const char *item)
 void metadata_set_name (Collection *collection, int pos, const char *new_name)
 {
   // TODO : if it is a file, do a corresponding rename!
+  //
+  if (pos == -2)
+  {
+     metadata_set (collection, pos, "title", new_name);
+     return;
+  }
+
   char *m = metadata_find_no (collection, pos);
   if (m)
   {
