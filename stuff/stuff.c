@@ -411,8 +411,6 @@ static void metadata_dirt(void)
 //  save_metadata ();
 }
 
-
-
 const char *get_suffix (const char *path)
 {
   const char *last_dot = strrchr (path, '.');
@@ -960,8 +958,6 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
   viewer_loaded_path = NULL;
   ctx_queue_draw (e->ctx);
 }
-
-
 
 int cmd_duplicate (COMMAND_ARGS) /* "duplicate", 0, "", "duplicate item" */
 {
@@ -1916,9 +1912,9 @@ static void dir_select_item (CtxEvent *event, void *data1, void *data2)
 
 /*
  * this is the core text layout with linebreaking work function it is used
- * in two places and we do not want to repeat the logic
+ * in two places and we do not want to repeat the logic as it would quickly
+ * go out of sync leading to bad bugs.
  */
-
 static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
                          float space_width, float wrap_width, float line_height,
                          int sel_start, 
@@ -3328,7 +3324,6 @@ static void dir_layout (ITK *itk, Collection *collection)
 
   
   ctx_save (itk->ctx);
-  ctx_move_to (itk->ctx, itk->x0, 4 * itk->font_size);
   ctx_rgba (itk->ctx, 1,1,1,1);
   ctx_font_size (itk->ctx, itk->y);
   int printing = (layout_page_no == layout_show_page);
@@ -3339,10 +3334,55 @@ static void dir_layout (ITK *itk, Collection *collection)
                        itk->x0-itk->x,
                        itk->font_size * 2);
   }
-  if (collection->title)
-    ctx_text (ctx, collection->title);
+
+  if (editing_location)
+  {
+    {
+      char *copy = strdup (commandline->str);
+      char tmp;
+      float sel_start = 0.0;
+      float sel_end = 0.0;
+      int c_start = commandline_cursor_start;
+      int c_end   = commandline_cursor_end;
+
+      if (c_end < c_start)
+      {
+        c_end   = commandline_cursor_start;
+        c_start = commandline_cursor_end;
+      }
+
+      tmp = copy[c_start];
+      copy[c_start] = 0;
+      sel_start = ctx_text_width (ctx, copy) - 1;
+      copy[c_start] = tmp;
+
+      tmp = copy[c_end];
+      copy[c_end] = 0;
+      sel_end = ctx_text_width (ctx, copy) + 1;
+      copy[c_end] = tmp;
+
+      free (copy);
+
+      ctx_rectangle (ctx, itk->x0 + sel_start, 2.5 * em - em,
+                          sel_end-sel_start,em * 3.2);
+      if (c_start==c_end)
+        ctx_rgba (ctx, 1,1, 0.2, 1);
+      else
+        ctx_rgba (ctx, 0.5,0, 0, 1);
+      ctx_fill (ctx);
+      ctx_move_to (itk->ctx, itk->x0, 4 * em);
+      ctx_rgba (ctx, 1,1,1, 0.6);
+      ctx_text (ctx, commandline->str);
+    }
+  }
   else
-    ctx_text (ctx, collection->path);
+  {
+    ctx_move_to (itk->ctx, itk->x0, 4 * em);
+    if (collection->title)
+      ctx_text (ctx, collection->title);
+    else
+      ctx_text (ctx, collection->path);
+  }
   ctx_restore (itk->ctx);
   itk->y += 2 * itk->font_size;
 
@@ -4730,7 +4770,7 @@ static void dir_any (CtxEvent *e, void *d1, void *d2)
   const char *str = e->string;
   
   if (!editing_location)
-          return; // generic commandline will move to tooldock
+       return; // generic commandline will move to tooldock
   
   e->stop_propagate = 1;
 
