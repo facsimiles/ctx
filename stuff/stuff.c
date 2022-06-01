@@ -1517,8 +1517,8 @@ static void draw_img (ITK *itk, float x, float y, float w, float h, const char *
     lstat (path, &path_stat);
     lstat (thumb_path, &thumb_stat);
 
-    if (thumb_stat.st_atime <
-        path_stat.st_atime)
+    if (thumb_stat.st_mtime <
+        path_stat.st_mtime)
     {
       //fprintf (stderr, "requeing %s\n", path);
       ctx_drop_eid (ctx, thumb_path);
@@ -3119,13 +3119,24 @@ static void dir_layout (ITK *itk, Collection *collection)
     // for title - up front, to maintain focus
     // order
     //CtxControl *title_control =
-            itk_add_control (itk, UI_LABEL, "title",
-                       itk->x0 - em * 0.5f,
-                       itk->font_size * 2,
-                       itk->width,
-                       itk->font_size * 3);
+    itk_add_control (itk, UI_LABEL, "title",
+                     itk->x0 - em * 0.5f,
+                     itk->font_size * 0,
+                     itk->width,
+                     itk->font_size * 3);
   }
-  itk->y = 5 * itk->font_size;
+  itk->y = 3 * itk->font_size;
+  for (int i = 0; i < 4; i++)
+  {
+    ctx_begin_path (itk->ctx);
+    itk_add_control (itk, UI_LABEL, "tag",
+                     itk->x0 + i * itk->font_size * 6,
+                     itk->font_size * 3,
+                     itk->font_size * 5,
+                     itk->font_size * 1);
+  }
+
+  itk->y = 4 * itk->font_size;
 
   if (layout_config.outliner)
      printing = 1;
@@ -4075,14 +4086,14 @@ static void dir_layout (ITK *itk, Collection *collection)
 
       free (copy);
 
-      ctx_rectangle (ctx, itk->x0 + sel_start, 3.0 * em - em,
+      ctx_rectangle (ctx, itk->x0 + sel_start, 1.0 * em - em,
                           sel_end-sel_start,em * 3.0);
       if (c_start==c_end)
         ctx_rgba (ctx, 1,1, 0.2, 1);
       else
         ctx_rgba (ctx, 0.5,0, 0, 1);
       ctx_fill (ctx);
-      ctx_move_to (itk->ctx, itk->x0, 4 * em);
+      ctx_move_to (itk->ctx, itk->x0, 2 * em);
       ctx_rgba (ctx, 1,1,1, 1);
       ctx_text (ctx, commandline->str);
     }
@@ -4090,7 +4101,7 @@ static void dir_layout (ITK *itk, Collection *collection)
   else
   {
     ctx_rgba (itk->ctx, 1,1,1,0.8);
-    ctx_move_to (itk->ctx, itk->x0, 4 * em);
+    ctx_move_to (itk->ctx, itk->x0, 2 * em);
     if (collection->title)
       ctx_text (ctx, collection->title);
     else
