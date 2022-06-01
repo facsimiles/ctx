@@ -95,6 +95,16 @@ int collection_ancestor_folded (Collection *collection, int no);
 int collection_has_children    (Collection *collection, int no);
 void collection_update_files   (Collection *collection);
 
+int
+collection_prev (Collection *collection, int no);
+int
+collection_next (Collection *collection, int no);
+int
+collection_prev_sibling (Collection *collection, int no);
+int
+collection_next_sibling (Collection *collection, int no);
+
+
 #endif
 
 

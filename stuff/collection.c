@@ -1005,3 +1005,158 @@ int collection_has_children (Collection *collection, int no)
   return 0;
 }
 
+
+int
+collection_prev (Collection *collection, int i)
+{
+ int pos = i;
+ int again = 0;
+
+ /* XXX : does not work properly with collapsed predecessors
+  *
+  */
+ do {
+   pos -= 1;
+   int atom = collection_item_get_type_atom (collection, pos);
+   switch (atom)
+   {
+     case CTX_ATOM_STARTGROUP:
+     case CTX_ATOM_ENDGROUP:
+     case CTX_ATOM_LAYOUTBOX:
+       again = 1;
+       break;
+     default:
+       if (collection_ancestor_folded (collection, pos))
+         again = 1;
+       else
+         again = 0;
+   }
+ } while (pos >= 0 && again);
+
+ //int prev_sibling = dir_prev_sibling (collection, i);
+ // move forward towards pos, as far as we can, skipping folded
+ // our last position is what we should return
+
+
+ return pos;
+}
+
+int
+collection_next (Collection *collection, int i)
+{
+ int pos = i;
+ int again = 0;
+
+ if (i+1>=collection->count)
+   return -1;
+
+ do {
+   pos += 1;
+   int atom = collection_item_get_type_atom (collection, pos);
+   switch (atom)
+   {
+     case CTX_ATOM_STARTGROUP:
+     case CTX_ATOM_ENDGROUP:
+     case CTX_ATOM_LAYOUTBOX:
+       again = 1;
+       break;
+     default:
+       again = 0;
+   }
+ } while (pos >= 0 && again);
+ return pos;
+}
+
+int
+collection_prev_sibling (Collection *collection, int i)
+{
+  int pos = i;
+  int start_level = 0;
+  int level = 0; // not absolute level, but relative level balance
+  pos --;
+  int atom = collection_item_get_type_atom (collection, pos);
+  if (atom == CTX_ATOM_ENDGROUP)
+          level ++;
+  else if (atom == CTX_ATOM_STARTGROUP)
+          level --;
+  while (level > start_level)
+  {
+    pos--;
+    atom = collection_item_get_type_atom (collection, pos);
+    if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level--;
+      }
+    else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level++;
+      }
+    else
+    {
+    }
+  }
+  while (atom == CTX_ATOM_STARTGROUP ||
+         atom == CTX_ATOM_LAYOUTBOX ||
+         atom == CTX_ATOM_NEWPAGE)
+  {
+    pos--;
+    atom = collection_item_get_type_atom (collection, pos);
+  }
+  if (level < start_level || pos < 0)
+  {
+     return -1;
+  }
+  return pos;
+}
+
+int
+collection_next_sibling (Collection *collection, int i)
+{
+  int start_level = 0;
+  int level = 0;
+
+  int atom;
+ 
+  i++;
+  atom = collection_item_get_type_atom (collection, i);
+  if (atom == CTX_ATOM_ENDGROUP)
+  {
+    return -1;
+  }
+  if (atom == CTX_ATOM_STARTGROUP)
+  {
+    level++;
+
+    while (level > start_level && i < collection->count)
+    {
+      i++;
+      atom = collection_item_get_type_atom (collection, i);
+      if (atom == CTX_ATOM_STARTGROUP)
+      {
+        level++;
+      }
+      else if (atom == CTX_ATOM_ENDGROUP)
+      {
+        level--;
+      }
+    }
+    level++;
+    while (atom == CTX_ATOM_ENDGROUP)
+    {
+       level--;
+       i++;
+       atom = collection_item_get_type_atom (collection, i);
+    }
+  }
+  while (atom == CTX_ATOM_NEWPAGE)
+  {
+    i++;
+    atom = collection_item_get_type_atom (collection, i);
+  }
+
+  if (level != start_level || i >= collection->count)
+  {
+     return -1;
+  }
+  return i;
+}

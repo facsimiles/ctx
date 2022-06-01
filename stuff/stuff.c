@@ -86,7 +86,7 @@ int text_editor = 0; /* global variable that changes how some loading/saving
                         is done - we are not expected to run within a regular
                         instance but our own process
                       */
-static int vim_keys = 1;
+static int vim_keys = 0;
 int show_keybindings = 0;
 int focused_no = -1;
 int layout_page_no = 0;
@@ -1127,186 +1127,16 @@ int cmd_move (COMMAND_ARGS) /* "move", 1, "<up|left|right|down>", "shift items p
   return 0;
 }
 
-#if 0
-static void move_before_previous_sibling (CtxEvent *e, void *d1, void *d2)
-{
-  int no = focused_no;
-  if (no>0)
-  {
-    metadata_swap (collection, no, no-1);
-    metadata_dirt ();
-    ctx_queue_draw (e->ctx);
-    itk_focus (itk, -1);
-  }
-}
-#endif
-
-static int
-dir_prev (Collection *collection, int i)
-{
- int pos = i;
- int again = 0;
-
- /* XXX : does not work properly with collapsed predecessors
-  *
-  */
- do {
-   pos -= 1;
-   int atom = collection_item_get_type_atom (collection, pos);
-   switch (atom)
-   {
-     case CTX_ATOM_STARTGROUP:
-     case CTX_ATOM_ENDGROUP:
-     case CTX_ATOM_LAYOUTBOX:
-       again = 1;
-       break;
-     default:
-       if (collection_ancestor_folded (collection, pos))
-         again = 1;
-       else
-         again = 0;
-   }
- } while (pos >= 0 && again);
-
- //int prev_sibling = dir_prev_sibling (collection, i);
- // move forward towards pos, as far as we can, skipping folded
- // our last position is what we should return
-
-
- return pos;
-}
-
-
-static int
-dir_next (Collection *collection, int i)
-{
- int pos = i;
- int again = 0;
-
- if (i+1>=collection->count)
-   return -1;
-
- do {
-   pos += 1;
-   int atom = collection_item_get_type_atom (collection, pos);
-   switch (atom)
-   {
-     case CTX_ATOM_STARTGROUP:
-     case CTX_ATOM_ENDGROUP:
-     case CTX_ATOM_LAYOUTBOX:
-       again = 1;
-       break;
-     default:
-       again = 0;
-   }
- } while (pos >= 0 && again);
- return pos;
-}
-
-static int
-dir_prev_sibling (Collection *collection, int i)
-{
-  int pos = i;
-  int start_level = 0;
-  int level = 0; // not absolute level, but relative level balance
-  pos --;
-  int atom = collection_item_get_type_atom (collection, pos);
-  if (atom == CTX_ATOM_ENDGROUP)
-          level ++;
-  else if (atom == CTX_ATOM_STARTGROUP)
-          level --;
-  while (level > start_level)
-  {
-    pos--;
-    atom = collection_item_get_type_atom (collection, pos);
-    if (atom == CTX_ATOM_STARTGROUP)
-      {
-        level--;
-      }
-    else if (atom == CTX_ATOM_ENDGROUP)
-      {
-        level++;
-      }
-    else
-    {
-    }
-  }
-  while (atom == CTX_ATOM_STARTGROUP ||
-         atom == CTX_ATOM_LAYOUTBOX ||
-         atom == CTX_ATOM_NEWPAGE)
-  {
-    pos--;
-    atom = collection_item_get_type_atom (collection, pos);
-  }
-  if (level < start_level || pos < 0)
-  {
-     return -1;
-  }
-  return pos;
-}
-
-static int
-dir_next_sibling (Collection *collection, int i)
-{
-  int start_level = 0;
-  int level = 0;
-
-  int atom;
- 
-  i++;
-  atom = collection_item_get_type_atom (collection, i);
-  if (atom == CTX_ATOM_ENDGROUP)
-  {
-    return -1;
-  }
-  if (atom == CTX_ATOM_STARTGROUP)
-  {
-    level++;
-
-    while (level > start_level && i < collection->count)
-    {
-      i++;
-      atom = collection_item_get_type_atom (collection, i);
-      if (atom == CTX_ATOM_STARTGROUP)
-      {
-        level++;
-      }
-      else if (atom == CTX_ATOM_ENDGROUP)
-      {
-        level--;
-      }
-    }
-    level++;
-    while (atom == CTX_ATOM_ENDGROUP)
-    {
-       level--;
-       i++;
-       atom = collection_item_get_type_atom (collection, i);
-    }
-  }
-  while (atom == CTX_ATOM_NEWPAGE)
-  {
-    i++;
-    atom = collection_item_get_type_atom (collection, i);
-  }
-
-  if (level != start_level || i >= collection->count)
-  {
-     return -1;
-  }
-  return i;
-}
-
 int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", "" */
 {
-  if (dir_next_sibling (collection, focused_no) < 0)
+  int start_no    = focused_no;
+  if (collection_next_sibling (collection, focused_no) < 0)
   {
     return -1;
   }
 
   //for (int i = 0; i < count; i++)
   {
-  int start_no    = focused_no;
   int count = collection_measure_chunk (collection, start_no);
   
   int start_level = 0;
@@ -1404,7 +1234,7 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   int start_level = 0;
   int did_skips   = 0;
 
-  if (dir_prev_sibling (collection, focused_no) < 0)
+  if (collection_prev_sibling (collection, focused_no) < 0)
   {
      return -1;
   }
@@ -2646,7 +2476,7 @@ make_tail_entry (Collection *collection)
   else
   {
   metadata_insert (collection, focused_no+collection_measure_chunk(collection,focused_no), "");
-  layout_find_item = focused_no = dir_next_sibling (collection, focused_no);
+  layout_find_item = focused_no = collection_next_sibling (collection, focused_no);
   }
   metadata_dirt ();
   itk->focus_no = -1;
@@ -2701,13 +2531,13 @@ int focus_previous_link (COMMAND_ARGS) /* "focus-previous-link", 0, "", "" */
 int focus_next_sibling (COMMAND_ARGS) /* "focus-next-sibling", 0, "", "" */
 {
   layout_focused_link = -1;
-  if (dir_next_sibling (collection, focused_no) < 0)
+  if (collection_next_sibling (collection, focused_no) < 0)
   {
     make_tail_entry (collection);
     return -1;
   }
 
-  layout_find_item = focused_no = dir_next_sibling (collection, focused_no);
+  layout_find_item = focused_no = collection_next_sibling (collection, focused_no);
   itk->focus_no = -1;
   return 0;
 }
@@ -2720,7 +2550,7 @@ static int item_get_list_index (Collection *collection, int i)
   while (pos >= 0 &&
          metadata_get_int (collection, pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
   {
-     pos = dir_prev_sibling (collection, pos);
+     pos = collection_prev_sibling (collection, pos);
      count++;
   }
 
@@ -2737,7 +2567,7 @@ int focus_no (COMMAND_ARGS) /* "focus-no", 1, "", "" */
 int focus_next (COMMAND_ARGS) /* "focus-next", 0, "", "" */
 {
   layout_focused_link = -1;
-  int pos = dir_next (collection, focused_no);
+  int pos = collection_next (collection, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -2749,7 +2579,7 @@ int focus_next (COMMAND_ARGS) /* "focus-next", 0, "", "" */
 int focus_previous (COMMAND_ARGS) /* "focus-previous", 0, "", "" */
 {
   layout_focused_link = -1;
-  int pos = dir_prev (collection, focused_no);
+  int pos = collection_prev (collection, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -2761,7 +2591,7 @@ int focus_previous (COMMAND_ARGS) /* "focus-previous", 0, "", "" */
 int focus_previous_sibling (COMMAND_ARGS) /* "focus-previous-sibling", 0, "", "" */
 {
   layout_focused_link = -1;
-  int pos = dir_prev_sibling (collection, focused_no);
+  int pos = collection_prev_sibling (collection, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -3288,7 +3118,8 @@ static void dir_layout (ITK *itk, Collection *collection)
     // allocate room for and key-nav/focus rect
     // for title - up front, to maintain focus
     // order
-    CtxControl *title_control = itk_add_control (itk, UI_LABEL, "title",
+    //CtxControl *title_control =
+            itk_add_control (itk, UI_LABEL, "title",
                        itk->x0 - em * 0.5f,
                        itk->font_size * 2,
                        itk->width,
@@ -4214,7 +4045,7 @@ static void dir_layout (ITK *itk, Collection *collection)
   {
   ctx_save (itk->ctx);
   ctx_font_size (itk->ctx, itk->font_size * 2);
-  int printing = (layout_page_no == layout_show_page);
+  //int printing = (layout_page_no == layout_show_page);
 
   if (editing_location)
   {
