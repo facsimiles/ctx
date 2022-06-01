@@ -4812,36 +4812,34 @@ static int card_files (ITK *itk_, void *data)
             if (vim_keys)
               BIND_KEY ("j", "focus-next", "focus next");
 
-            if (!text_editor)
+            if (!text_editor && focused_no >= 0)
             {
-            BIND_KEY ("left", "fold", "fold");
-            if (layout_focused_link >= 0)
-               BIND_KEY ("right", "follow-link", "follow link");
-            else
-            {
-               if (collection_has_children (collection, focused_no))
-                 BIND_KEY ("right", "expand", "expand");
-               else
-                 BIND_KEY ("right", "enter-children", "enter children");
-                 // enter-children creates child if it doesnt exist
-            }
-
-            if (vim_keys)
-            {
-              BIND_KEY ("h", "fold", "fold");
+              BIND_KEY ("left", "fold", "fold");
               if (layout_focused_link >= 0)
-                 BIND_KEY ("l", "follow-link", "follow link");
+                 BIND_KEY ("right", "follow-link", "follow link");
               else
               {
-                 if (collection_has_children (collection, focused_no))
-                   BIND_KEY ("l", "expand", "expand");
-                 else
-                   BIND_KEY ("l", "enter-children", "enter children");
-                 // enter-children creates child if it doesnt exist
+                if (collection_has_children (collection, focused_no))
+                  BIND_KEY ("right", "expand", "expand");
+                else
+                  BIND_KEY ("right", "enter-children", "enter children");
+                  // enter-children creates child if it doesnt exist
               }
-            }
 
-
+              if (vim_keys)
+              {
+                BIND_KEY ("h", "fold", "fold");
+                if (layout_focused_link >= 0)
+                   BIND_KEY ("l", "follow-link", "follow link");
+                else
+                {
+                  if (collection_has_children (collection, focused_no))
+                    BIND_KEY ("l", "expand", "expand");
+                  else
+                    BIND_KEY ("l", "enter-children", "enter children");
+                  // enter-children creates child if it doesnt exist
+                }
+              }
             }
           }
   }
