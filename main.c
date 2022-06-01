@@ -300,6 +300,8 @@ static int lsfonts_main (int argc, char **argv)
   return 0;
 }
 
+int stuff_ls_main (int argc, char **argv);
+
 int main (int argc, char **argv)
 {
   if (!strcmp (basename(argv[1]), "lsfonts"))
@@ -307,6 +309,8 @@ int main (int argc, char **argv)
   if (!strcmp (basename(argv[1]), "stuffcmd"))
     return stuffcmd_main (argc-1, argv+1);
 
+  if (!strcmp (basename(argv[1]), "ls"))
+    return stuff_ls_main (argc-1, argv+1);
 //  if (!strcmp (basename(argv[1]), "stuff"))
 //    return stuff_main (argc-1, argv+1);
 //  if (!strcmp (basename(argv[0]), "stuff"))

@@ -86,7 +86,6 @@ int text_editor = 0; /* global variable that changes how some loading/saving
                         is done - we are not expected to run within a regular
                         instance but our own process
                       */
-
 static int vim_keys = 1;
 int show_keybindings = 0;
 int focused_no = -1;
@@ -499,7 +498,7 @@ static void _set_location (const char *location)
       else
       loc = realpath (location+2, NULL);
     }
-    //if (path_is_dir (loc))
+    if (path_is_dir (loc))
     {
       //fprintf (stderr, "%i:%s\n", __LINE__, loc);
       if (loc[strlen(loc)-1]=='/')
@@ -508,6 +507,17 @@ static void _set_location (const char *location)
       drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
+      text_editor = 0;
+    }
+    else
+    {
+      text_editor = 1;
+      set_text_edit (NULL, NULL, NULL);
+      focused_no = 0;
+      layout_find_item = focused_no;
+      focused_no = -1;
+      layout_find_item = 0;
+      collection_set_path (collection, loc, NULL);
     }
     if (loc != location) free (loc);
   } else
@@ -2933,6 +2943,15 @@ int stuffcmd_main (int argc, char **argv)
   return 0;
 }
 
+int stuff_ls_main (int argc, char **argv)
+{
+  const char *path = ".";
+  if (argv[1]) path = argv[1];
+  collection_set_path (collection, path, path);
+  metadata_dump (collection);
+  return 1;
+}
+
 int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
 {
   int start_no = focused_no;
@@ -3261,73 +3280,24 @@ static void dir_layout (ITK *itk, Collection *collection)
 
   if (y1 < 100) y1 = itk->height;
 
-  
-  ctx_save (itk->ctx);
-  ctx_rgba (itk->ctx, 1,1,1,1);
-  ctx_font_size (itk->ctx, itk->y);
+
   int printing = (layout_page_no == layout_show_page);
+
   if (printing)
   {
-  CtxControl *c = itk_add_control (itk, UI_LABEL, "foo!",
-                       itk->x0, itk->y,
-                       itk->x0-itk->x,
-                       itk->font_size * 2);
+    // allocate room for and key-nav/focus rect
+    // for title - up front, to maintain focus
+    // order
+    CtxControl *title_control = itk_add_control (itk, UI_LABEL, "title",
+                       itk->x0 - em * 0.5f,
+                       itk->font_size * 2,
+                       itk->width,
+                       itk->font_size * 3);
   }
-
-  if (editing_location)
-  {
-    {
-      char *copy = strdup (commandline->str);
-      char tmp;
-      float sel_start = 0.0;
-      float sel_end = 0.0;
-      int c_start = commandline_cursor_start;
-      int c_end   = commandline_cursor_end;
-
-      if (c_end < c_start)
-      {
-        c_end   = commandline_cursor_start;
-        c_start = commandline_cursor_end;
-      }
-
-      tmp = copy[c_start];
-      copy[c_start] = 0;
-      sel_start = ctx_text_width (ctx, copy) - 1;
-      copy[c_start] = tmp;
-
-      tmp = copy[c_end];
-      copy[c_end] = 0;
-      sel_end = ctx_text_width (ctx, copy) + 1;
-      copy[c_end] = tmp;
-
-      free (copy);
-
-      ctx_rectangle (ctx, itk->x0 + sel_start, 2.5 * em - em,
-                          sel_end-sel_start,em * 3.2);
-      if (c_start==c_end)
-        ctx_rgba (ctx, 1,1, 0.2, 1);
-      else
-        ctx_rgba (ctx, 0.5,0, 0, 1);
-      ctx_fill (ctx);
-      ctx_move_to (itk->ctx, itk->x0, 4 * em);
-      ctx_rgba (ctx, 1,1,1, 0.6);
-      ctx_text (ctx, commandline->str);
-    }
-  }
-  else
-  {
-    ctx_move_to (itk->ctx, itk->x0, 4 * em);
-    if (collection->title)
-      ctx_text (ctx, collection->title);
-    else
-      ctx_text (ctx, collection->path);
-  }
-  ctx_restore (itk->ctx);
-  itk->y += 2 * itk->font_size;
+  itk->y = 5 * itk->font_size;
 
   if (layout_config.outliner)
      printing = 1;
-
 
   for (int i = 0; i < collection->count; i++)
   {
@@ -3788,8 +3758,8 @@ static void dir_layout (ITK *itk, Collection *collection)
               BIND_KEY ("insert", "insert-text", "insert text item");
             }
           }
-          if (!text_editor)
-            BIND_KEY ("alt-return", "toggle-context", "item properties");
+          if (!text_editor && !editing_location && !is_text_editing ())
+            BIND_KEY ("space", "toggle-context", "item properties");
 
 
           if (!layout_config.outliner
@@ -4209,7 +4179,6 @@ static void dir_layout (ITK *itk, Collection *collection)
         }
       }
 
-
       if (layout_config.outliner)
       {
   int keys = metadata_item_key_count (collection, i);
@@ -4241,14 +4210,73 @@ static void dir_layout (ITK *itk, Collection *collection)
 
   ctx_restore (itk->ctx);
 
+  // draw title
+  {
+  ctx_save (itk->ctx);
+  ctx_font_size (itk->ctx, itk->font_size * 2);
+  int printing = (layout_page_no == layout_show_page);
+
+  if (editing_location)
+  {
+    {
+      char *copy = strdup (commandline->str);
+      char tmp;
+      float sel_start = 0.0;
+      float sel_end = 0.0;
+      int c_start = commandline_cursor_start;
+      int c_end   = commandline_cursor_end;
+
+      if (c_end < c_start)
+      {
+        c_end   = commandline_cursor_start;
+        c_start = commandline_cursor_end;
+      }
+
+      tmp = copy[c_start];
+      copy[c_start] = 0;
+      sel_start = ctx_text_width (ctx, copy) - 1;
+      copy[c_start] = tmp;
+
+      tmp = copy[c_end];
+      copy[c_end] = 0;
+      sel_end = ctx_text_width (ctx, copy) + 1;
+      copy[c_end] = tmp;
+
+      free (copy);
+
+      ctx_rectangle (ctx, itk->x0 + sel_start, 3.0 * em - em,
+                          sel_end-sel_start,em * 3.0);
+      if (c_start==c_end)
+        ctx_rgba (ctx, 1,1, 0.2, 1);
+      else
+        ctx_rgba (ctx, 0.5,0, 0, 1);
+      ctx_fill (ctx);
+      ctx_move_to (itk->ctx, itk->x0, 4 * em);
+      ctx_rgba (ctx, 1,1,1, 1);
+      ctx_text (ctx, commandline->str);
+    }
+  }
+  else
+  {
+    ctx_rgba (itk->ctx, 1,1,1,0.8);
+    ctx_move_to (itk->ctx, itk->x0, 4 * em);
+    if (collection->title)
+      ctx_text (ctx, collection->title);
+    else
+      ctx_text (ctx, collection->path);
+  }
+  ctx_restore (itk->ctx);
+  }
+
+
   itk->x0    = saved_x0;
   itk->width = saved_width;
 //  itk->y     = saved_y;
 
-
-  if (focused_no == -1)
+  if (focused_no == -1 && !editing_location)
   {
-    BIND_KEY ("alt-return", "toggle-context", "document properties");
+    BIND_KEY ("space", "toggle-context", "document properties");
+    ctx_add_key_binding (ctx, "return", NULL, "location entry", dir_location, NULL);
   }
 }
 
@@ -4833,17 +4861,18 @@ static int card_files (ITK *itk_, void *data)
  // }
  // else
   {
+#if 0
     if (!is_text_editing()
         && !text_editor
         && !item_context_active)
     {
-
     ctx_add_key_binding (ctx, "control-1", NULL, "debug outline view", set_outline, NULL);
     ctx_add_key_binding (ctx, "control-2", NULL, "layout view", set_layout, NULL);
     ctx_add_key_binding (ctx, "control-3", NULL, "list view", set_list, NULL);
     ctx_add_key_binding (ctx, "control-4", NULL, "folder view", set_grid, NULL);
     ctx_add_key_binding (ctx, "control-5", NULL, "text edit view", set_text_edit, NULL);
     }
+#endif
 
     if (!viewer)
       dir_layout (itk, collection);
@@ -5488,12 +5517,12 @@ static int card_files (ITK *itk_, void *data)
   {
     float bindings_height = ctx_height (ctx) * 0.3;
     float bindings_pos = ctx_height (ctx) - bindings_height;
-    float em = itk->font_size;
+    float em = itk->font_size * 0.66;
     ctx_save (ctx);
     //ctx_font (ctx, "regular");
     ctx_font_size (ctx, em);
     ctx_line_width (ctx, em*0.05);
-    ctx_rgba (ctx, 0,0,0,0.6);
+    ctx_rgba (ctx, 0,0,0,0.9);
     ctx_rectangle (ctx, 0, bindings_pos, ctx_width (ctx), bindings_height);
     ctx_fill (ctx);
     float x = em;
@@ -5564,7 +5593,7 @@ static int card_files (ITK *itk_, void *data)
           else if (!strcmp (n, "tab"))     { n = "Tab"; }
           else if (!strcmp (n, "return"))  { n = "Enter"; }
           //else if (!strcmp (n, "return"))  { n = "⏎"; }
-          else if (!strcmp (n, "backspace")) { n = "⌫"; }
+          //else if (!strcmp (n, "backspace")) { n = "⌫"; }
           //else if (!strcmp (n, "backspace")) { n = "Backspace"; }
           else if (!strcmp (n, "page-down")) { n = "PgDn"; }
           else if (!strcmp (n, "page-up")) { n = "PgUpn"; }
@@ -5693,6 +5722,7 @@ int stuff_main (int argc, char **argv)
 
   return 0;
 }
+
 
 #include <libgen.h>
 

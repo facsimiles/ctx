@@ -749,11 +749,12 @@ void metadata_dump (Collection *collection)
   fprintf (stdout, "item count: %i\n", item_count);
   int indent = 0;
 
-  for (int i = 0; i < item_count; i ++)
+  for (int i = -1; i < item_count; i ++)
   {
-    char *item_name = metadata_get_name (collection, i);
+    char *item_name = i>=0? metadata_get_name (collection, i):NULL;
     for (int i = 0; i < indent; i++) fprintf (stdout, " ");
-    fprintf (stdout, "%s     :%i,%i\n", item_name, i, metadata_item_to_no (collection, item_name));
+    if (item_name)
+      fprintf (stdout, "%s     :%i,%i\n", item_name, i, metadata_item_to_no (collection, item_name));
     int keys = metadata_item_key_count (collection, i);
     for (int k = 0; k < keys; k ++)
     {
