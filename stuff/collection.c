@@ -92,7 +92,6 @@ void dir_mkdir_ancestors (const char *path, unsigned int mode)
   free (tmppaths);
 }
 
-#if 1
 void metadata_save (Collection *collection, int text_editor_mode)
 {
   if (!collection->metadata_path) return;
@@ -116,7 +115,6 @@ void metadata_save (Collection *collection, int text_editor_mode)
   }
   fclose (file);
 }
-#endif
 
 int metadata_count (Collection *collection)
 {
@@ -250,9 +248,6 @@ char *metadata_get_name (Collection *collection, int no)
             case '0':
               ctx_string_append_byte (str, '\0');
               break;
-            //case '-': // soft-hyphen
-            //  ctx_string_append_byte (str, '.');
-            //  break;
             default:
               ctx_string_append_byte (str, m[i+1]);
           }
@@ -1004,7 +999,6 @@ int collection_has_children (Collection *collection, int no)
     return 1;
   return 0;
 }
-
 
 int
 collection_prev (Collection *collection, int i)

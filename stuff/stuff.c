@@ -4814,13 +4814,18 @@ static int card_files (ITK *itk_, void *data)
 
             if (!text_editor && focused_no >= 0)
             {
-              BIND_KEY ("left", "fold", "fold");
+              if (collection_has_children (collection, focused_no) && 
+                  !metadata_get_int (collection, focused_no+1, "folded", 0))
+                BIND_KEY ("left", "fold", "fold");
               if (layout_focused_link >= 0)
                  BIND_KEY ("right", "follow-link", "follow link");
               else
               {
                 if (collection_has_children (collection, focused_no))
-                  BIND_KEY ("right", "expand", "expand");
+                {
+                  if (metadata_get_int (collection, focused_no+1, "folded", 0))
+                    BIND_KEY ("right", "expand", "expand");
+                }
                 else
                   BIND_KEY ("right", "enter-children", "enter children");
                   // enter-children creates child if it doesnt exist

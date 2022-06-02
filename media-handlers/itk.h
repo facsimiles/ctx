@@ -1700,172 +1700,442 @@ CtxControl *itk_focused_control(ITK *itk)
   }
 
   if (itk->focus_label)
-  for (CtxList *l = itk->controls; l; l=l->next)
   {
-    CtxControl *control = l->data;
-    if (control->label && !strcmp (itk->focus_label, control->label))
+    for (CtxList *l = itk->controls; l; l=l->next)
     {
-       itk->focus_no = control->no;
-       ctx_queue_draw (itk->ctx);
-       return control;
+      CtxControl *control = l->data;
+      if (control->label && !strcmp (itk->focus_label, control->label))
+      {
+         itk->focus_no = control->no;
+         ctx_queue_draw (itk->ctx);
+         free (itk->focus_label);
+         itk->focus_label = NULL;
+         return control;
+      }
     }
+    free (itk->focus_label);
+    itk->focus_label = NULL;
   }
 
   return NULL;
 }
 
+#define ITK_DIRECTION_PREVIOUS  -1
+#define ITK_DIRECTION_NEXT       1
+#define ITK_DIRECTION_LEFT       2
+#define ITK_DIRECTION_RIGHT      3
+#define ITK_DIRECTION_UP         4
+#define ITK_DIRECTION_DOWN       5
+
 void itk_focus (ITK *itk, int dir)
 {
-
    entry_commit (itk);
    if (itk->focus_no < 0)
    {
      itk->focus_no = 0;
      return;
    }
-   itk->focus_no += dir;
-   if (itk->focus_label){
-     free (itk->focus_label);
-     itk->focus_label = NULL;
-   }
 
-   int n_controls = ctx_list_length (itk->controls);
-   CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
-   if (iter)
+   if (dir == ITK_DIRECTION_PREVIOUS ||
+       dir == ITK_DIRECTION_NEXT)
    {
-     CtxControl *control = iter->data;
-     if (control->label)
-       itk->focus_label = strdup (control->label);
-     //fprintf (stderr, "%s\n", control_focus_label);
-   }
-   else
-   {
-     if (itk->focus_wraparound)
+     itk->focus_no += dir;
+     if (itk->focus_label){
+       free (itk->focus_label);
+       itk->focus_label = NULL;
+     }
+
+     int n_controls = ctx_list_length (itk->controls);
+     CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
+     if (iter)
      {
-       if (itk->focus_no > 1)
-         itk->focus_no = 0;
-       else
-         itk->focus_no = itk->control_no - 1;
+       CtxControl *control = iter->data;
+       if (control->label)
+         itk->focus_label = strdup (control->label);
      }
      else
      {
-       if (itk->focus_no <= 1)
-         itk->focus_no = 0;
+       if (itk->focus_wraparound)
+       {
+         if (itk->focus_no > 1)
+           itk->focus_no = 0;
+         else
+           itk->focus_no = itk->control_no - 1;
+       }
        else
-         itk->focus_no = itk->control_no - 1;
+       {
+         if (itk->focus_no <= 1)
+           itk->focus_no = 0;
+         else
+           itk->focus_no = itk->control_no - 1;
+       }
      }
+     // XXX no control means inifinie loop?
+     //CtxControl *control =
+             itk_focused_control (itk);
+#if 0
+     if (!control || 
+         !(control->flags & ITK_FLAG_ACTIVE)){
+       itk_focus (itk, dir);
+     }
+#endif
    }
-
-   // XXX no control means inifinie loop?
-   CtxControl *control = itk_focused_control (itk);
-   if (!control || 
-       !(control->flags & ITK_FLAG_ACTIVE)){
-     itk_focus (itk, dir);
-   }
-}
-
-
-void itk_key_up (CtxEvent *event, void *data, void *data2)
-{
-  ITK *itk = data;
-  CtxControl *control = itk_focused_control (itk);
-
-  if (control && control->type == UI_CHOICE && itk->choice_active)
+  else 
   {
-    int *val = control->val;
-    int old_val = *val;
-    int prev_val = old_val;
-    for (CtxList *l = itk->choices; l; l=l?l->next:NULL)
-    {
-      UiChoice *choice = l->data;
-      if (choice->val == old_val)
-      {
-        *val = prev_val;
-        l=NULL;
-      }
-      prev_val = choice->val;
-    }
-  }
-  else if (control)
-  {
+    /* this implements the non-inner element portions of:
+     *   https://drafts.csswg.org/css-nav-1/#find-the-shortest-distance
+     *
+     * validity is determined by the centers of the items.
+     */
+
+    CtxControl *control = itk_focused_control (itk);
     CtxControl *best = control;
     float best_dist = 10000000000.0;
-    for (CtxList *iter = itk->controls; iter; iter=iter->next)
     {
-      CtxControl *candidate = iter->data;
-
-#define ITK_SPACE_WARP 1.0
-#define POW2(a) ((a)*(a))
-#define ITK_SPACE_MATCH_WARP 1.0
-
-      float dist = sqrtf ( POW2((candidate->x - control->x) * ITK_SPACE_WARP) +
-                           POW2(candidate->y - control->y));
-
-      if (candidate->x - control->x == 0) dist *= ITK_SPACE_MATCH_WARP;
-
-      if ((candidate != control) && 
-          (dist < best_dist) &&
-          (candidate->y < control->y))
+      float mid_ref_x = control->x + control->width/2;
+      float mid_ref_y = control->y + control->height/2;
+      for (CtxList *iter = itk->controls; iter; iter=iter->next)
       {
-        best_dist = dist;
-        best      = candidate;
+        CtxControl *candidate = iter->data;
+        float mid_cand_x = candidate->x + candidate->width/2;
+        float mid_cand_y = candidate->y + candidate->height/2;
+
+        int valid = 0;
+        if (candidate != control)
+        switch (dir)
+        {
+          case ITK_DIRECTION_DOWN:
+            valid = mid_cand_y > mid_ref_y;
+            break;
+          case ITK_DIRECTION_UP:
+            valid = mid_cand_y < mid_ref_y;
+            break;
+          case ITK_DIRECTION_LEFT:
+            valid = mid_cand_x < mid_ref_x;
+            break;
+          case ITK_DIRECTION_RIGHT:
+            valid = mid_cand_x > mid_ref_x;
+            break;
+        }
+
+        if (valid)
+        {
+          float cand_coord[2]={0.f,0.f};
+          float control_coord[2]={0.f,0.f};
+
+          float overlap = 0.0f;
+          float orthogonalBias = 1.0f;
+          float orthogonalWeight = 1.0f;
+          float alignWeight = 5.0f;
+
+
+        switch (dir)
+        {
+          case ITK_DIRECTION_DOWN:
+            control_coord[1] = control->y + control->height;
+            cand_coord[1]    = candidate->y;
+            orthogonalBias   = control->width / 2.0f;
+            orthogonalWeight = 2.0f;
+
+            if (candidate->x + candidate->width < control->x)
+            {
+////    ---------- control
+///  --            candidate
+              cand_coord[0]    = candidate->x + candidate->width;
+              control_coord[0] = control->x;
+            }
+            else if (candidate->x < control->x &&
+                     candidate->x + candidate->width < control->x + control->width)
+            {
+///     ----------
+///  ------
+              cand_coord[0]    = control->x;
+              control_coord[0] = control->x;
+              overlap = (candidate->x+candidate->width) - (control->x);
+            }
+            else if (candidate->x > control->x &&
+                     candidate->x + candidate->width < control->x + control->width)
+            {
+///     ----------
+///       ------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = candidate->width;
+            }
+            else if (candidate->x < control->x &&
+                     candidate->x + candidate->width > control->x + control->width)
+            {
+///     ----------
+///   --------------
+              cand_coord[0]    = control->x;
+              control_coord[0] = control->x;
+              overlap          = control->width;
+            }
+            else if (candidate->x > control->x &&
+                     candidate->x < control->x + control->width &&
+                     candidate->x + candidate->width > control->x + control->width)
+            {
+///     ----------
+///         ----------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = control->x + control->width -
+                                 candidate->x;
+            }
+            else if (candidate->x > control->x + control->width)
+            {
+///     ----------
+///                  ------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = control->x + control->width;
+            }
+            else
+            {
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = candidate->width;
+            }
+
+            break;
+          case ITK_DIRECTION_UP:
+
+            control_coord[1] = control->y;
+            cand_coord[1]    = candidate->y + candidate->height;
+            orthogonalBias   = control->width / 2.0f;
+            orthogonalWeight = 2.0f;
+
+            if (candidate->x + candidate->width < control->x)
+            {
+////    ---------- control
+///  --            candidate
+              cand_coord[0]    = candidate->x + candidate->width;
+              control_coord[0] = control->x;
+            }
+            else if (candidate->x < control->x &&
+                     candidate->x + candidate->width < control->x + control->width)
+            {
+///     ----------
+///  ------
+              cand_coord[0]    = control->x;
+              control_coord[0] = control->x;
+              overlap = (candidate->x+candidate->width) - (control->x);
+            }
+            else if (candidate->x > control->x &&
+                     candidate->x + candidate->width < control->x + control->width)
+            {
+///     ----------
+///       ------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = candidate->width;
+            }
+            else if (candidate->x < control->x &&
+                     candidate->x + candidate->width > control->x + control->width)
+            {
+///     ----------
+///   --------------
+              cand_coord[0]    = control->x;
+              control_coord[0] = control->x;
+              overlap          = control->width;
+            }
+            else if (candidate->x > control->x &&
+                     candidate->x < control->x + control->width &&
+                     candidate->x + candidate->width > control->x + control->width)
+            {
+///     ----------
+///         ----------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = control->x + control->width -
+                                 candidate->x;
+            }
+            else if (candidate->x > control->x + control->width)
+            {
+///     ----------
+///                  ------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = control->x + control->width;
+            }
+            else
+            {
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = candidate->width;
+            }
+
+            break;
+          case ITK_DIRECTION_LEFT:
+            control_coord[0] = control->x;
+            cand_coord[0]    = candidate->x + candidate->width;
+            orthogonalBias   = control->height / 2.0f;
+            orthogonalWeight = 30.0f;
+
+            if (candidate->y + candidate->height < control->y)
+            {
+////    ---------- control
+///  --            candidate
+              cand_coord[1]    = candidate->y + candidate->height;
+              control_coord[1] = control->y;
+            }
+            else if (candidate->y < control->y &&
+                     candidate->y + candidate->height < control->y + control->height)
+            {
+///     ----------
+///  ------
+              cand_coord[1]    = control->y;
+              control_coord[1] = control->y;
+              overlap = (candidate->y+candidate->height) - (control->y);
+            }
+            else if (candidate->y > control->y &&
+                     candidate->y + candidate->height < control->y + control->height)
+            {
+///     ----------
+///       ------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap = candidate->height;
+            }
+            else if (candidate->y < control->y &&
+                     candidate->y + candidate->height > control->y + control->height)
+            {
+///     ----------
+///   --------------
+              cand_coord[1]    = control->y;
+              control_coord[1] = control->y;
+              overlap = control->height;
+            }
+            else if (candidate->y > control->y &&
+                     candidate->y < control->y + control->height &&
+                     candidate->y + candidate->height > control->y + control->height)
+            {
+///     ----------
+///         ----------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap = control->y + control->height - candidate->y;
+            }
+            else if (candidate->y > control->y + control->height)
+            {
+///     ----------
+///                  ------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = control->y + control->height;
+            }
+            else
+            {
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap          = candidate->height;
+            }
+
+
+
+
+            break;
+          case ITK_DIRECTION_RIGHT:
+            control_coord[0] = control->x + control->width;
+            cand_coord[0]    = candidate->x;
+            orthogonalBias   = control->height / 2.0f;
+            orthogonalWeight = 30.0f;
+
+            if (candidate->y + candidate->height < control->y)
+            {
+////    ---------- control
+///  --            candidate
+              cand_coord[1]    = candidate->y + candidate->height;
+              control_coord[1] = control->y;
+            }
+            else if (candidate->y < control->y &&
+                     candidate->y + candidate->height < control->y + control->height)
+            {
+///     ----------
+///  ------
+              cand_coord[1]    = control->y;
+              control_coord[1] = control->y;
+              overlap = (candidate->y+candidate->height) - (control->y);
+            }
+            else if (candidate->y > control->y &&
+                     candidate->y + candidate->height < control->y + control->height)
+            {
+///     ----------
+///       ------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap = candidate->height;
+            }
+            else if (candidate->y < control->y &&
+                     candidate->y + candidate->height > control->y + control->height)
+            {
+///     ----------
+///   --------------
+              cand_coord[1]    = control->y;
+              control_coord[1] = control->y;
+              overlap = control->height;
+            }
+            else if (candidate->y > control->y &&
+                     candidate->y < control->y + control->height &&
+                     candidate->y + candidate->height > control->y + control->height)
+            {
+///     ----------
+///         ----------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap = control->y + control->height - candidate->y;
+            }
+            else if (candidate->y > control->y + control->height)
+            {
+///     ----------
+///                  ------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = control->y + control->height;
+            }
+            else
+            {
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap          = candidate->height;
+            }
+
+            break;
+        }
+
+        float displacement =  0.0f;
+
+        switch (dir)
+        {
+          case ITK_DIRECTION_DOWN:
+          case ITK_DIRECTION_UP:
+            displacement = (fabsf(cand_coord[0]-control_coord[0]) +
+                    orthogonalBias) * orthogonalWeight;
+            break;
+          case ITK_DIRECTION_LEFT:
+          case ITK_DIRECTION_RIGHT:
+            displacement = (fabsf(cand_coord[1]-control_coord[1]) +
+                    orthogonalBias) * orthogonalWeight;
+            break;
+        }
+
+        float alignBias = overlap / (orthogonalBias*2.0f);
+        float alignment = alignWeight * alignBias;
+
+        float euclidian = hypotf (cand_coord[0]-control_coord[0],
+                                  cand_coord[1]-control_coord[1]);
+
+
+        float dist = euclidian  + displacement - alignment - ((overlap==0.0)?0.0:sqrtf(overlap));
+          if (dist <= best_dist)
+          {
+             best_dist = dist;
+             best = candidate;
+          }
+        }
       }
     }
+
     entry_commit (itk);
     itk_set_focus (itk, best->no);
     itk->active = 0;
   }
-  ctx_queue_draw (event->ctx);
-  event->stop_propagate = 1;
-}
-
-
-void itk_key_down (CtxEvent *event, void *data, void *data2)
-{
-  ITK *itk = data;
-  CtxControl *control = itk_focused_control (itk);
-  if (control && control->type == UI_CHOICE && itk->choice_active)
-  {
-    int *val = control->val;
-    int old_val = *val;
-    for (CtxList *l = itk->choices; l; l=l?l->next:NULL)
-    {
-      UiChoice *choice = l->data;
-      if (choice->val == old_val)
-      {
-         if (l->next)
-         {
-           l = l->next;
-           choice = l->data;
-           (*val) = choice->val;
-         }
-      }
-    }
-  }
-  else if (control)
-  {
-    CtxControl *best = control;
-    float best_dist = 10000000000.0;
-    for (CtxList *iter = itk->controls; iter; iter=iter->next)
-    {
-      CtxControl *candidate = iter->data;
-      float dist = sqrtf ( POW2((candidate->x - control->x) * ITK_SPACE_WARP) +
-                           POW2(candidate->y - control->y));
-      if (candidate->x - control->x == 0) dist *= ITK_SPACE_MATCH_WARP;
-      if ((candidate != control) && 
-          (dist < best_dist) &&
-          (candidate->y > control->y))
-      {
-        best_dist = dist;
-        best      = candidate;
-      }
-    }
-    entry_commit (itk);
-    itk_set_focus (itk, best->no);
-    itk->active = 0;
-  }
-  event->stop_propagate = 1;
-  ctx_queue_draw (event->ctx);
 }
 
 void itk_key_tab (CtxEvent *event, void *data, void *data2)
@@ -1873,11 +2143,7 @@ void itk_key_tab (CtxEvent *event, void *data, void *data2)
   ITK *itk = data;
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
-  switch (control->type)
-  {
-
-  }
-  itk_focus (itk, 1);
+  itk_focus (itk, ITK_DIRECTION_NEXT);
   itk->active = 0;
 
   event->stop_propagate = 1;
@@ -1889,11 +2155,7 @@ void itk_key_shift_tab (CtxEvent *event, void *data, void *data2)
   ITK *itk = data;
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
-  switch (control->type)
-  {
-
-  }
-  itk_focus (itk, -1);
+  itk_focus (itk, ITK_DIRECTION_PREVIOUS);
   itk->active = 0;
 
   event->stop_propagate = 1;
@@ -1992,25 +2254,7 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
   }
   else
   {
-    CtxControl *best = control;
-    float best_dist = 10000000000.0;
-    for (CtxList *iter = itk->controls; iter; iter=iter->next)
-    {
-      CtxControl *candidate = iter->data;
-      float dist = sqrtf ( POW2(candidate->x - control->x)  +
-                           POW2((candidate->y - control->y) * ITK_SPACE_WARP));
-      if (candidate->y == control->y) dist *= ITK_SPACE_MATCH_WARP;
-
-      if ((candidate != control) && 
-          (dist < best_dist) &&
-          (candidate->x < control->x))
-      {
-        best_dist = dist;
-        best      = candidate;
-      }
-    }
-    entry_commit (itk);
-    itk_set_focus (itk, best->no);
+    itk_focus (itk, ITK_DIRECTION_LEFT);
     itk->active = 0;
   }
 
@@ -2053,32 +2297,77 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
   }
   else
   {
-    CtxControl *best = control;
-    float best_dist = 10000000000.0;
-    for (CtxList *iter = itk->controls; iter; iter=iter->next)
-    {
-      CtxControl *candidate = iter->data;
-      float dist = sqrtf ( POW2(candidate->x - control->x)  +
-                           POW2((candidate->y - control->y) * ITK_SPACE_WARP));
-      if (candidate->y == control->y) dist *= ITK_SPACE_MATCH_WARP;
-#undef POW2
-      if ((candidate != control) && 
-          (dist < best_dist) &&
-          (candidate->x > control->x))
-      {
-        best_dist = dist;
-        best      = candidate;
-      }
-    }
-    entry_commit (itk);
-    itk_set_focus (itk, best->no);
+    itk_focus (itk, ITK_DIRECTION_RIGHT);
     itk->active = 0;
   }
 
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
 
+}
+
+
+void itk_key_up (CtxEvent *event, void *data, void *data2)
+{
+  ITK *itk = data;
+  CtxControl *control = itk_focused_control (itk);
+
+  if (control && control->type == UI_CHOICE && itk->choice_active)
+  {
+    int *val = control->val;
+    int old_val = *val;
+    int prev_val = old_val;
+    for (CtxList *l = itk->choices; l; l=l?l->next:NULL)
+    {
+      UiChoice *choice = l->data;
+      if (choice->val == old_val)
+      {
+        *val = prev_val;
+        l=NULL;
+      }
+      prev_val = choice->val;
+    }
+  }
+  else if (control)
+  {
+    itk_focus (itk, ITK_DIRECTION_UP);
+    itk->active = 0;
+  }
+  ctx_queue_draw (event->ctx);
+  event->stop_propagate = 1;
+}
+
+void itk_key_down (CtxEvent *event, void *data, void *data2)
+{
+  ITK *itk = data;
+  CtxControl *control = itk_focused_control (itk);
+  if (control && control->type == UI_CHOICE && itk->choice_active)
+  {
+    int *val = control->val;
+    int old_val = *val;
+    for (CtxList *l = itk->choices; l; l=l?l->next:NULL)
+    {
+      UiChoice *choice = l->data;
+      if (choice->val == old_val)
+      {
+         if (l->next)
+         {
+           l = l->next;
+           choice = l->data;
+           (*val) = choice->val;
+         }
+      }
+    }
+  }
+  else if (control)
+  {
+    itk_focus (itk, ITK_DIRECTION_DOWN);
+    itk->active = 0;
+  }
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
 }
+
 
 void itk_key_backspace (CtxEvent *event, void *data, void *data2)
 {
