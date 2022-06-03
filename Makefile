@@ -33,7 +33,7 @@ TERMINAL_OBJS = terminal/terminal.o terminal/ctx-keyboard.o
 MEDIA_HANDLERS_OBJS = \
   stuff/stuff.o \
   stuff/argvs.o \
-  stuff/collection.o \
+  stuff/diz.o \
   media-handlers/ctx-gif.o \
   media-handlers/ctx-img.o \
   media-handlers/ctx-mpg.o \

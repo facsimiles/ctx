@@ -111,7 +111,7 @@ int  ctx_sha1_done    (CtxSHA1 *sha1, unsigned char *out);
 
 extern Ctx *ctx;
 
-#include "collection.h"
+#include "diz.h"
 
 #define PATH_SEP "/"
 
@@ -360,11 +360,11 @@ typedef enum CtxBullet {
 } CtxBullet;
 
 
-Collection file_state;
-Collection *collection = &file_state;
+Diz file_state;
+Diz *diz = &file_state;
 
 
-static int metadata_dirty = 0;
+static int diz_dirty = 0;
 
 static void drop_item_renderers (Ctx *ctx)
 {
@@ -382,22 +382,22 @@ static void drop_item_renderers (Ctx *ctx)
 
 
 static void save_metadata(void)
-{  if (metadata_dirty)
+{  if (diz_dirty)
    {
-     metadata_save (collection, text_editor);
-     collection_set_path (collection, collection->path, collection->title);
+     diz_save (diz, text_editor);
+     diz_set_path (diz, diz->path, diz->title);
      drop_item_renderers (ctx);
-     metadata_dirty = 0;
+     diz_dirty = 0;
    }
 
 }
 
-static void metadata_dirt(void)
+static void diz_dirt(void)
 {
-  metadata_dirty++;
-  collection->metadata_cache_no=-3;
-  //metadata_save ();
-  collection->count = metadata_count (collection);
+  diz_dirty++;
+  diz->metadata_cache_no=-3;
+  //diz_save ();
+  diz->count = diz_count (diz);
 //  save_metadata ();
 }
 
@@ -433,9 +433,9 @@ static inline int is_text_editing (void)
 
 int dir_insert (COMMAND_ARGS) /* "insert-text", 0, "", "" */
 {
-  metadata_insert (collection, focused_no, "");
+  diz_insert (diz, focused_no, "");
   text_edit = 0;
-  metadata_dirt ();
+  diz_dirt ();
   return 0;
 }
 
@@ -457,7 +457,7 @@ static int path_is_dir (const char *path)
   return S_ISDIR (stat_buf.st_mode);
 }
 
-static char *dir_metadata_path (const char *path);
+static char *dir_diz_path (const char *path);
 
 static CtxList *history = NULL;
 static CtxList *future = NULL;
@@ -470,7 +470,7 @@ static void _set_location (const char *location)
   {
     if (path_is_dir (getenv ("HOME")))
     {
-      collection_set_path (collection, getenv ("HOME"), NULL);
+      diz_set_path (diz, getenv ("HOME"), NULL);
       drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
@@ -481,7 +481,7 @@ static void _set_location (const char *location)
     char *tpath = ctx_strdup_printf ("%s/%s", getenv("HOME"), &location[2]);
     if (path_is_dir (tpath))
     {
-      collection_set_path (collection, tpath, NULL);
+      diz_set_path (diz, tpath, NULL);
       drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
@@ -493,8 +493,8 @@ static void _set_location (const char *location)
     char *loc = (char*)location;
     if (location[0] == '.' && location[1] == '/')
     {
-      if (collection->path)
-      loc = ctx_strdup_printf ("%s/%s", collection->path, location+2);
+      if (diz->path)
+      loc = ctx_strdup_printf ("%s/%s", diz->path, location+2);
       else
       loc = realpath (location+2, NULL);
     }
@@ -503,7 +503,7 @@ static void _set_location (const char *location)
       //fprintf (stderr, "%i:%s\n", __LINE__, loc);
       if (loc[strlen(loc)-1]=='/')
         loc[strlen(loc)-1]='\0';
-      collection_set_path (collection, loc, NULL);
+      diz_set_path (diz, loc, NULL);
       drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
@@ -517,12 +517,12 @@ static void _set_location (const char *location)
       layout_find_item = focused_no;
       focused_no = -1;
       layout_find_item = 0;
-      collection_set_path (collection, loc, NULL);
+      diz_set_path (diz, loc, NULL);
     }
     if (loc != location) free (loc);
   } else
   {
-    char *path = dir_metadata_path (location);
+    char *path = dir_diz_path (location);
     fprintf (stderr, "%i:%s\n", __LINE__, path);
     if (path_is_dir (path))
     {
@@ -531,7 +531,7 @@ static void _set_location (const char *location)
     {
       mkdir (path, 0777);
     }
-    collection_set_path (collection, path, location);
+    diz_set_path (diz, path, location);
     drop_item_renderers (ctx);
     free (path);
     focused_no = 0;
@@ -549,10 +549,10 @@ int cmd_history (COMMAND_ARGS) /* "history", 1, "<forward|back>", "moved history
     char *location = history->data;
     ctx_list_remove (&history, location);
 
-    if (collection->title)
-      ctx_list_prepend (&future, strdup (collection->title));
+    if (diz->title)
+      ctx_list_prepend (&future, strdup (diz->title));
     else
-      ctx_list_prepend (&future, strdup (collection->path));
+      ctx_list_prepend (&future, strdup (diz->path));
 
     _set_location (location);
 
@@ -566,10 +566,10 @@ int cmd_history (COMMAND_ARGS) /* "history", 1, "<forward|back>", "moved history
     char *location = future->data;
     ctx_list_remove (&future, location);
 
-    if (collection->title)
-      ctx_list_prepend (&history, strdup (collection->title));
+    if (diz->title)
+      ctx_list_prepend (&history, strdup (diz->title));
     else
-      ctx_list_prepend (&history, strdup (collection->path));
+      ctx_list_prepend (&history, strdup (diz->path));
 
     _set_location (location);
     free (location);
@@ -586,12 +586,12 @@ static void set_location (const char *location)
       free (future->data);
       ctx_list_remove (&future, future->data);
     }
-    if (collection->path)
+    if (diz->path)
     {
-      if (collection->title)
-        ctx_list_prepend (&history, strdup (collection->title));
+      if (diz->title)
+        ctx_list_prepend (&history, strdup (diz->title));
       else
-        ctx_list_prepend (&history, strdup (collection->path));
+        ctx_list_prepend (&history, strdup (diz->path));
     }
   }
   _set_location (location);
@@ -599,11 +599,11 @@ static void set_location (const char *location)
 
 int cmd_go_parent (COMMAND_ARGS) /* "go-parent", 0, "", "" */
 {
-  char *old_path = strdup (collection->path);
-  char *new_path = get_dirname (collection->path);
+  char *old_path = strdup (diz->path);
+  char *new_path = get_dirname (diz->path);
   set_location (new_path);
 
-  layout_find_item = metadata_item_to_no (collection, strrchr (old_path, '/')+1);
+  layout_find_item = diz_name_to_no (diz, strrchr (old_path, '/')+1);
   free (old_path);
 
   itk->focus_no = -1;
@@ -620,22 +620,22 @@ int toggle_keybindings_display (COMMAND_ARGS) /* "toggle-keybindings-display", 0
 int outline_expand (COMMAND_ARGS) /* "expand", 0, "", "" */
 {
   int no = focused_no;
-  if (collection_item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
+  if (diz_type_atom (diz, no+1) != CTX_ATOM_STARTGROUP)
     return -1;
 
-  metadata_unset (collection, no+1, "folded");
-  metadata_dirt ();
+  diz_unset (diz, no+1, "folded");
+  diz_dirt ();
   return 0;
 }
 
 int outline_collapse (COMMAND_ARGS) /* "fold", 0, "", "" */
 {
   int no = focused_no;
-  if (collection_item_get_type_atom (collection, no+1) != CTX_ATOM_STARTGROUP)
+  if (diz_type_atom (diz, no+1) != CTX_ATOM_STARTGROUP)
     return 0;
 
-  metadata_set_float (collection, no+1, "folded", 1);
-  metadata_dirt ();
+  diz_set_float (diz, no+1, "folded", 1);
+  diz_dirt ();
   return 0;
 }
 
@@ -644,7 +644,7 @@ static int layout_focused_link = -1;
 
 static int dir_item_count_links (int i)
 {
-  char *name = metadata_get_name (collection, i);
+  char *name = diz_get_name (diz, i);
   char *p = name;
   int in_link = 0;
   int count = 0;
@@ -732,7 +732,7 @@ static char *string_link_no (const char *string, int link_no)
 
 static char *dir_item_link_no (int item, int link_no)
 {
-  char *name = metadata_get_name (collection, item);
+  char *name = diz_get_name (diz, item);
   char *ret = string_link_no (name, link_no);
   free (name);
   return ret;
@@ -755,7 +755,7 @@ static const char *ctx_basedir (void)
 }
 
 
-static char *dir_metadata_path (const char *path)
+static char *dir_diz_path (const char *path)
 {
   char *ret;
   char *hex="0123456789abcdef";
@@ -786,7 +786,7 @@ int dir_follow_link (COMMAND_ARGS) /* "follow-link", 0, "", "" */
 
 int cmd_edit_text_home (COMMAND_ARGS) /* "edit-text-home", 0, "", "edit start of line" */
 {
-  int virtual = (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT);
+  int virtual = (diz_type_atom (diz, focused_no) == CTX_ATOM_TEXT);
   if (!virtual) return 0;
 
   text_edit = 0;
@@ -795,9 +795,9 @@ int cmd_edit_text_home (COMMAND_ARGS) /* "edit-text-home", 0, "", "edit start of
 
 int cmd_edit_text_end (COMMAND_ARGS) /* "edit-text-end", 0, "", "edit end of line" */
 {
-  int virtual = (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT);
+  int virtual = (diz_type_atom (diz, focused_no) == CTX_ATOM_TEXT);
   if (!virtual) return 0;
-  char *name = metadata_get_name (collection, focused_no);
+  char *name = diz_get_name (diz, focused_no);
   int pos = 0;
   if (name)
   {
@@ -812,10 +812,10 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
 {
   int no = focused_no;
 
-  if (collection_item_get_type_atom (collection, no) == CTX_ATOM_TEXT)
+  if (diz_type_atom (diz, no) == CTX_ATOM_TEXT)
   {
-    if (collection_item_get_type_atom (collection, no+1) == CTX_ATOM_ENDGROUP||
-        no >= metadata_count (collection)-1)
+    if (diz_type_atom (diz, no+1) == CTX_ATOM_ENDGROUP||
+        no >= diz_count (diz)-1)
       argvs_eval ("edit-text-end");
     else
       argvs_eval ("edit-text-home");
@@ -823,7 +823,7 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
   }
 
   char *new_path;
-  char *name = metadata_get_name (collection, no);
+  char *name = diz_get_name (diz, no);
 
   if (!strcmp (name, ".."))
   {
@@ -833,7 +833,7 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
   }
   else
   {
-    new_path = ctx_strdup_printf ("%s/%s", collection->path, name);
+    new_path = ctx_strdup_printf ("%s/%s", diz->path, name);
   }
   const char *media_type = ctx_path_get_media_type (new_path); 
   if (!strcmp(media_type, "inode/directory"))
@@ -860,20 +860,20 @@ static void item_drag (CtxEvent *e, void *d1, void *d2)
       break;
     case CTX_DRAG_MOTION:
       {
-      float x = metadata_get_float (collection, focused_no, "x", -10000);
+      float x = diz_get_float (diz, focused_no, "x", -10000);
       if (x >=0)
       {
-        x = metadata_get_float (collection, focused_no, "x", 0.0f);
+        x = diz_get_float (diz, focused_no, "x", 0.0f);
         x += e->delta_x / ctx_width (e->ctx);
-        metadata_set_float (collection, focused_no, "x", x);
+        diz_set_float (diz, focused_no, "x", x);
         ctx_queue_draw (e->ctx);
       }
-      float y = metadata_get_float (collection, focused_no, "y", -10000);
+      float y = diz_get_float (diz, focused_no, "y", -10000);
       if (y >=0)
       {
-        y = metadata_get_float (collection, focused_no, "y", 0.0f);
+        y = diz_get_float (diz, focused_no, "y", 0.0f);
         y += e->delta_y / ctx_width (e->ctx);
-        metadata_set_float (collection, focused_no, "y", y);
+        diz_set_float (diz, focused_no, "y", y);
         ctx_queue_draw (e->ctx);
       }
       e->stop_propagate = 1;
@@ -963,24 +963,24 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
 int cmd_duplicate (COMMAND_ARGS) /* "duplicate", 0, "", "duplicate item" */
 {
   int no = focused_no;
-  int count = collection_measure_chunk (collection, no);
+  int count = diz_measure_chunk (diz, no);
 
   int insert_pos = no + count;
   for (int i = 0; i < count; i ++)
   {
-    char *name = metadata_get_name (collection, no + i);
-    metadata_insert (collection, insert_pos + i, name);
+    char *name = diz_get_name (diz, no + i);
+    diz_insert (diz, insert_pos + i, name);
     free (name);
-    int keys = metadata_item_key_count (collection, no + i);
+    int keys = diz_key_count (diz, no + i);
     for (int k = 0; k < keys; k++)
     {
-      char *key = metadata_key_name (collection, no + i, k);
+      char *key = diz_key_name (diz, no + i, k);
       if (key)
       {
-        char *val = metadata_get_string (collection, no + i, key);
+        char *val = diz_get_string (diz, no + i, key);
         if (val)
         {
-          metadata_set (collection, insert_pos + i, key, val);
+          diz_set_string (diz, insert_pos + i, key, val);
           //itk->x += level * em * 3 + em;
           //itk_labelf (itk, "%s=%s", key, val);
           free (val);
@@ -989,24 +989,24 @@ int cmd_duplicate (COMMAND_ARGS) /* "duplicate", 0, "", "duplicate item" */
       }
     }
   }
-  metadata_dirt ();
+  diz_dirt ();
   return 0;
 }
 
 int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
 {
   int no = focused_no;
-  int count = collection_measure_chunk (collection, no);
+  int count = diz_measure_chunk (diz, no);
 
-  //int virtual = (collection_item_get_type_atom (collection, no) == CTX_ATOM_TEXT);
+  //int virtual = (diz_type_atom (diz, no) == CTX_ATOM_TEXT);
   //if (virtual)
   //
   DIR_DETAIL("items to remove %i", count);
-  CtxAtom pre_atom = collection_item_get_type_atom (collection, no-1);
-  CtxAtom post_atom = collection_item_get_type_atom (collection, no+count);
+  CtxAtom pre_atom = diz_type_atom (diz, no-1);
+  CtxAtom post_atom = diz_type_atom (diz, no+count);
   for (int i = 0; i < count; i++)
   {
-    metadata_remove (collection, no);
+    diz_remove (diz, no);
   }
 
 #if 1
@@ -1014,8 +1014,8 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
       post_atom == CTX_ATOM_ENDGROUP)
   {
     DIR_DETAIL("removed group");
-    metadata_remove (collection, no-1);
-    metadata_remove (collection, no-1);
+    diz_remove (diz, no-1);
+    diz_remove (diz, no-1);
     layout_find_item = no-2;
     itk->focus_no = -1;
   }
@@ -1024,7 +1024,7 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
   //layout_find_item = no;
 
   text_edit = TEXT_EDIT_OFF;
-  metadata_dirt();
+  diz_dirt();
   return 0;
 }
 
@@ -1035,11 +1035,11 @@ static void move_after_next_sibling (CtxEvent *e, void *d1, void *d2)
 {
   int no = (size_t)(d1);
   //char *new_path;
-  //if (!strcmp (collection->items[no], ".."))dd
-  if (no<collection->count-1)
+  //if (!strcmp (diz->items[no], ".."))dd
+  if (no<diz->count-1)
   {
-    metadata_swap (no, no+1);
-    metadata_dirt();
+    diz_swap (no, no+1);
+    diz_dirt();
     ctx_queue_draw (e->ctx);
     itk_focus (itk, 1);
   }
@@ -1050,79 +1050,79 @@ static void move_after_next_sibling (CtxEvent *e, void *d1, void *d2)
 static void grow_height (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float height = metadata_get_float (collection, no, "height", -100.0);
+  float height = diz_get_float (diz, no, "height", -100.0);
   height += 0.01;
   if (height > 1.2) height = 1.2;
-  metadata_set_float (collection, no, "height", height);
-  metadata_dirt ();
+  diz_set_float (diz, no, "height", height);
+  diz_dirt ();
   ctx_queue_draw (e->ctx);
 }
 
 static void shrink_height (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float height = metadata_get_float (collection, no, "height", -100.0);
+  float height = diz_get_float (diz, no, "height", -100.0);
   height -= 0.01;
   if (height < 0.01) height = 0.01;
-  metadata_set_float (collection, no, "height", height);
-  metadata_dirt ();
+  diz_set_float (diz, no, "height", height);
+  diz_dirt ();
   ctx_queue_draw (e->ctx);
 }
 
 static void grow_width (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float width = metadata_get_float (collection, no, "width", -100.0);
+  float width = diz_get_float (diz, no, "width", -100.0);
   width += 0.01;
   if (width > 1.5) width = 1.5;
-  metadata_set_float (collection, no, "width", width);
-  metadata_dirt ();
+  diz_set_float (diz, no, "width", width);
+  diz_dirt ();
   ctx_queue_draw (e->ctx);
 }
 
 static void shrink_width (CtxEvent *e, void *d1, void *d2)
 {
   int no = focused_no;
-  float width = metadata_get_float (collection, no, "width", -100.0);
+  float width = diz_get_float (diz, no, "width", -100.0);
   width -= 0.01;
   if (width < 0.0) width = 0.01;
-  metadata_set_float (collection, no, "width", width);
-  metadata_dirt ();
+  diz_set_float (diz, no, "width", width);
+  diz_dirt ();
   ctx_queue_draw (e->ctx);
 }
 
 int cmd_move (COMMAND_ARGS) /* "move", 1, "<up|left|right|down>", "shift items position" */
 {
   int no = focused_no;
-  float x = metadata_get_float (collection, no, "x", -100.0);
-  float y = metadata_get_float (collection, no, "y", -100.0);
+  float x = diz_get_float (diz, no, "x", -100.0);
+  float y = diz_get_float (diz, no, "y", -100.0);
   if (!strcmp (argv[1], "up"))
   {
     y -= 0.01;
     if (y< 0) y = 0.01;
-    metadata_set_float (collection, no, "y", y);
-    metadata_dirt ();
+    diz_set_float (diz, no, "y", y);
+    diz_dirt ();
   }
   else if (!strcmp (argv[1], "left"))
   {
     x -= 0.01;
     if (x < 0.0) x = 0.0;
-    metadata_set_float (collection, no, "x", x);
-    metadata_dirt ();
+    diz_set_float (diz, no, "x", x);
+    diz_dirt ();
   }
   else if (!strcmp (argv[1], "down"))
   {
     y += 0.01;
     if (y< 0) y = 0.01;
-    metadata_set_float (collection, no, "y", y);
-    metadata_dirt ();
+    diz_set_float (diz, no, "y", y);
+    diz_dirt ();
   }
   else if (!strcmp (argv[1], "right"))
   {
     x += 0.01;
     if (x < 0) x = 0;
-    metadata_set_float (collection, no, "x", x);
-    metadata_dirt ();
+    diz_set_float (diz, no, "x", x);
+    diz_dirt ();
   }
   return 0;
 }
@@ -1130,34 +1130,34 @@ int cmd_move (COMMAND_ARGS) /* "move", 1, "<up|left|right|down>", "shift items p
 int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", "" */
 {
   int start_no    = focused_no;
-  if (collection_next_sibling (collection, focused_no) < 0)
+  if (diz_next_sibling (diz, focused_no) < 0)
   {
     return -1;
   }
 
   //for (int i = 0; i < count; i++)
   {
-  int count = collection_measure_chunk (collection, start_no);
+  int count = diz_measure_chunk (diz, start_no);
   
   int start_level = 0;
   int level = 0;
   int did_skips = 0;
   int did_foo =0;
 
-  if (collection_item_get_type_atom (collection, focused_no + count) == CTX_ATOM_ENDGROUP)
+  if (diz_type_atom (diz, focused_no + count) == CTX_ATOM_ENDGROUP)
   {
     return -1;
   }
 
-  if (collection_item_get_type_atom (collection, focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
-      collection_item_get_type_atom (collection, focused_no + count) == CTX_ATOM_TEXT)
+  if (diz_type_atom (diz, focused_no + count + 1) == CTX_ATOM_STARTGROUP &&
+      diz_type_atom (diz, focused_no + count) == CTX_ATOM_TEXT)
   {
     focused_no+=count;
     did_foo = 1;
   }
 
   focused_no++;
-  int atom = collection_item_get_type_atom (collection, focused_no);
+  int atom = diz_type_atom (diz, focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
   {
     focused_no--;
@@ -1169,7 +1169,7 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
   while (level > start_level)
   {
     focused_no++;
-    atom = collection_item_get_type_atom (collection, focused_no);
+    atom = diz_type_atom (diz, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level++;
@@ -1190,7 +1190,7 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
 // thus text needs to be extended to exist over multiple frames
 
   level++;
-  if (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_ENDGROUP)
+  if (diz_type_atom (diz, focused_no) == CTX_ATOM_ENDGROUP)
   {
     level--;
     focused_no++;
@@ -1209,12 +1209,12 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
 
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (collection, focused_no, "a");
-      metadata_dirt ();
-      metadata_swap (collection, focused_no, start_no);
-      metadata_dirt ();
-      metadata_remove (collection, start_no);
-      metadata_dirt ();
+      diz_insert (diz, focused_no, "a");
+      diz_dirt ();
+      diz_swap (diz, focused_no, start_no);
+      diz_dirt ();
+      diz_remove (diz, start_no);
+      diz_dirt ();
     }
     focused_no-=count;
   }
@@ -1234,13 +1234,13 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   int start_level = 0;
   int did_skips   = 0;
 
-  if (collection_prev_sibling (collection, focused_no) < 0)
+  if (diz_prev_sibling (diz, focused_no) < 0)
   {
      return -1;
   }
 
   focused_no--;
-  int atom = collection_item_get_type_atom (collection, focused_no);
+  int atom = diz_type_atom (diz, focused_no);
   if (atom == CTX_ATOM_ENDGROUP)
      level++;
   else if (atom == CTX_ATOM_STARTGROUP)
@@ -1249,7 +1249,7 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   while (level > start_level)
   {
     focused_no--;
-    atom = collection_item_get_type_atom (collection, focused_no);
+    atom = diz_type_atom (diz, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -1271,18 +1271,18 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
   else
   {
     if (did_skips) focused_no --;
-    int count = collection_measure_chunk (collection, start_no);
+    int count = diz_measure_chunk (diz, start_no);
     //fprintf (stderr, "!%i %i %i!", start_no, focused_no, count);
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (collection, focused_no + i , "b");
-      metadata_swap (collection, start_no + i +1, focused_no+i);
-      metadata_remove (collection, start_no+i +1);
+      diz_insert (diz, focused_no + i , "b");
+      diz_swap (diz, start_no + i +1, focused_no+i);
+      diz_remove (diz, start_no+i +1);
     }
     //fprintf (stderr, "\n");
     //if (did_skips)
     //focused_no++;
-    metadata_dirt ();
+    diz_dirt ();
   }
 
   layout_find_item = focused_no;
@@ -1294,9 +1294,9 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
 int make_sibling_of_parent (COMMAND_ARGS) /* "make-sibling-of-parent", 0, "", "" */
 {
   int no = focused_no;
-  int level = collection_item_get_level (collection, no);
+  int level = diz_item_get_level (diz, no);
 
-  int count = collection_measure_chunk (collection, no);
+  int count = diz_measure_chunk (diz, no);
 
   if (level>0)
   {
@@ -1304,37 +1304,37 @@ int make_sibling_of_parent (COMMAND_ARGS) /* "make-sibling-of-parent", 0, "", ""
     int target_level;
     do {
       target++;
-      target_level = collection_item_get_level (collection, target);
+      target_level = diz_item_get_level (diz, target);
     } while (target_level >= level);
 
     int remove_level = 0;
     
-    if (collection_item_get_type_atom (collection, no-1) == CTX_ATOM_STARTGROUP &&
-        collection_item_get_type_atom (collection, no+count) == CTX_ATOM_ENDGROUP)
+    if (diz_type_atom (diz, no-1) == CTX_ATOM_STARTGROUP &&
+        diz_type_atom (diz, no+count) == CTX_ATOM_ENDGROUP)
       remove_level = 1;
 
     for (int i = 0; i < count; i ++)
     {
-      metadata_insert (collection, target+1+i, "c");
-      metadata_swap (collection, no+i, target+1+i);
+      diz_insert (diz, target+1+i, "c");
+      diz_swap (diz, no+i, target+1+i);
     }
 
     if (remove_level)
     {
       for (int i = 0; i < count + 2; i++)
-        metadata_remove (collection, no-1);
+        diz_remove (diz, no-1);
       layout_find_item = no - 1;
     }
     else
     {
       for (int i = 0; i < count; i++)
-        metadata_remove (collection, no);
+        diz_remove (diz, no);
       layout_find_item = target - count;
     }
 
     itk->focus_no = -1;
 
-    metadata_dirt ();
+    diz_dirt ();
   }
   return 0;
 }
@@ -1346,36 +1346,36 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
     return -1;
 
   {
-    int count = collection_measure_chunk (collection, no);
+    int count = diz_measure_chunk (diz, no);
     int target = no-1;
-    int atom = collection_item_get_type_atom (collection, target);
+    int atom = diz_type_atom (diz, target);
     if (atom == CTX_ATOM_STARTGROUP)
        return -1;
     if (atom == CTX_ATOM_ENDGROUP)
     {
       for (int i = 0; i < count; i++)
       {
-        metadata_insert (collection, target+i, "d");
-        metadata_swap (collection, no+1+i, target+i);
-        metadata_remove (collection, no+1+i);
+        diz_insert (diz, target+i, "d");
+        diz_swap (diz, no+1+i, target+i);
+        diz_remove (diz, no+1+i);
       }
     }
     else
     {
       // insert new group
       target = no;
-      metadata_insert (collection, target, "~~~");
-      metadata_set (collection, target, "type", "endgroup");
+      diz_insert (diz, target, "~~~");
+      diz_set_string (diz, target, "type", "endgroup");
       for (int i = 0; i <count;i++)
-      metadata_insert (collection, target, "f");
+      diz_insert (diz, target, "f");
 
-      metadata_insert (collection, target, "___");
-      metadata_set (collection, target, "type", "startgroup");
+      diz_insert (diz, target, "___");
+      diz_set_string (diz, target, "type", "startgroup");
 
       for (int i = 0; i < count; i++)
       {
-        metadata_swap (collection, no+count+2, target+1+i);
-        metadata_remove (collection, no+count+2);
+        diz_swap (diz, no+count+2, target+1+i);
+        diz_remove (diz, no+count+2);
       }
     }
 
@@ -1388,57 +1388,57 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
     //layout_find_item = focused_no;
 #endif
 
-    metadata_dirt ();
+    diz_dirt ();
   }
   return 0;
 }
 
 int item_cycle_bullet(COMMAND_ARGS) /* "cycle-bullet", 0, "", "" */
 {
-  int bullet = metadata_get_int (collection, focused_no, "bullet", CTX_BULLET_NONE);
+  int bullet = diz_get_int (diz, focused_no, "bullet", CTX_BULLET_NONE);
   switch (bullet)
   {
     case CTX_BULLET_NONE:
-      metadata_set_float (collection, focused_no, "bullet", CTX_BULLET_BULLET);
+      diz_set_float (diz, focused_no, "bullet", CTX_BULLET_BULLET);
       break;
     case CTX_BULLET_BULLET:
-      metadata_set_float (collection, focused_no, "bullet", CTX_BULLET_NUMBERS);
+      diz_set_float (diz, focused_no, "bullet", CTX_BULLET_NUMBERS);
       break;
     case CTX_BULLET_NUMBERS:
-      metadata_set_float (collection, focused_no, "bullet", CTX_BULLET_TODO);
+      diz_set_float (diz, focused_no, "bullet", CTX_BULLET_TODO);
       break;
     case CTX_BULLET_TODO:
-      metadata_set_float (collection, focused_no, "bullet", CTX_BULLET_DONE);
+      diz_set_float (diz, focused_no, "bullet", CTX_BULLET_DONE);
       break;
     case CTX_BULLET_DONE:
-      metadata_unset (collection, focused_no, "bullet");
+      diz_unset (diz, focused_no, "bullet");
       break;
   }
-  metadata_dirt ();
+  diz_dirt ();
   return 0;
 }
 
 int item_cycle_heading (COMMAND_ARGS) /* "cycle-heading", 0, "", "" */
 {
-  char *klass = metadata_get_string (collection, focused_no, "tag");
+  char *klass = diz_get_string (diz, focused_no, "tag");
 
   if (!klass) klass = strdup ("");
 
   if (!strcmp (klass, "h1"))
-    metadata_set (collection, focused_no, "tag", "h2");
+    diz_set_string (diz, focused_no, "tag", "h2");
   else if (!strcmp (klass, "h2"))
-    metadata_set (collection, focused_no, "tag", "h3");
+    diz_set_string (diz, focused_no, "tag", "h3");
   else if (!strcmp (klass, "h3"))
-    metadata_set (collection, focused_no, "tag", "h4");
+    diz_set_string (diz, focused_no, "tag", "h4");
   else if (!strcmp (klass, "h4"))
-    metadata_set (collection, focused_no, "tag", "h5");
+    diz_set_string (diz, focused_no, "tag", "h5");
   else if (!strcmp (klass, "h5"))
-    metadata_set (collection, focused_no, "tag", "h6");
+    diz_set_string (diz, focused_no, "tag", "h6");
   else if (!strcmp (klass, "h6"))
-    metadata_unset (collection, focused_no, "tag");
+    diz_unset (diz, focused_no, "tag");
   else
-    metadata_set (collection, focused_no, "tag", "h1");
-  metadata_dirt ();
+    diz_set_string (diz, focused_no, "tag", "h1");
+  diz_dirt ();
   return 0;
 }
 
@@ -1603,7 +1603,7 @@ const char *viewer_media_type = NULL;
 
 int viewer_load_next (Ctx *ctx, void *data1)
 {
-  if (focused_no+1 >= metadata_count(collection))
+  if (focused_no+1 >= diz_count(diz))
     return 0;
      //fprintf (stderr, "{%s}\n", viewer_media_type);
   if (viewer && viewer_media_type && viewer_media_type[0]=='v')
@@ -1731,7 +1731,7 @@ static void goto_link (CtxEvent *event, void *data1, void *data2)
 static void dir_revert (CtxEvent *event, void *data1, void *data2)
 {
   // XXX: NYI
-  metadata_dirt();
+  diz_dirt();
 }
 
 static void dir_select_item (CtxEvent *event, void *data1, void *data2)
@@ -2024,18 +2024,18 @@ void text_edit_stop (CtxEvent *event, void *a, void *b)
 
 void text_edit_return (CtxEvent *event, void *a, void *b)
 {
-  char *str = metadata_get_name (collection, focused_no);
-  metadata_insert (collection, focused_no+1, str + text_edit);
+  char *str = diz_get_name (diz, focused_no);
+  diz_insert (diz, focused_no+1, str + text_edit);
   str[text_edit]=0;
-  metadata_set_name (collection, focused_no, str);
+  diz_set_name (diz, focused_no, str);
 
-  if (metadata_get_int (collection, focused_no, "bullet", 0))
+  if (diz_get_int (diz, focused_no, "bullet", 0))
   {
-    metadata_set_float (collection, focused_no+1, "bullet",
-                      metadata_get_int (collection, focused_no, "bullet", 0));
+    diz_set_float (diz, focused_no+1, "bullet",
+                      diz_get_int (diz, focused_no, "bullet", 0));
   }
 
-  metadata_dirt ();
+  diz_dirt ();
   free (str);
 
   ctx_queue_draw (event->ctx);
@@ -2057,32 +2057,32 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
   {
     if (text_edit>0)
     {
-      char *name = metadata_get_name (collection, focused_no);
+      char *name = diz_get_name (diz, focused_no);
       CtxString *str = ctx_string_new (name);
       free (name);
       ctx_string_remove (str, text_edit-1);
-      metadata_set_name (collection, focused_no, str->str);
+      diz_set_name (diz, focused_no, str->str);
       ctx_string_free (str, 1);
       text_edit--;
-      metadata_dirt ();
+      diz_dirt ();
     }
     else if (text_edit == 0 && focused_no > 0 &&
-            (collection_item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
+            (diz_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
             )
     {
-      char *name_prev = metadata_get_name (collection, focused_no-1);
-      char *name = metadata_get_name (collection, focused_no);
+      char *name_prev = diz_get_name (diz, focused_no-1);
+      char *name = diz_get_name (diz, focused_no);
       CtxString *str = ctx_string_new (name_prev);
       text_edit = strlen (str->str);
       ctx_string_append_str (str, name);
       free (name);
       free (name_prev);
-      metadata_set_name (collection, focused_no-1, str->str);
+      diz_set_name (diz, focused_no-1, str->str);
       ctx_string_free (str, 1);
-      metadata_remove (collection, focused_no);
+      diz_remove (diz, focused_no);
       focused_no--;
       itk->focus_no--;
-      metadata_dirt ();
+      diz_dirt ();
     }
   }
   ctx_queue_draw (event->ctx);
@@ -2094,26 +2094,26 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
 {
   if (focused_no>=0){
 
-    char *name = metadata_get_name (collection, focused_no);
+    char *name = diz_get_name (diz, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     if (text_edit == (int)strlen(str->str))
     {
-      if (collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
+      if (diz_type_atom (diz, focused_no+1) == CTX_ATOM_TEXT)
       {
-        char *name_next = metadata_get_name (collection, focused_no+1);
+        char *name_next = diz_get_name (diz, focused_no+1);
         ctx_string_append_str (str, name_next);
         free (name_next);
-        metadata_remove (collection, focused_no+1);
+        diz_remove (diz, focused_no+1);
       }
     }
     else
     {
       ctx_string_remove (str, text_edit);
     }
-    metadata_set_name (collection, focused_no, str->str);
+    diz_set_name (diz, focused_no, str->str);
     ctx_string_free (str, 1);
-    metadata_dirt ();
+    diz_dirt ();
   }
   ctx_queue_draw (event->ctx);
   event->stop_propagate=1;
@@ -2122,21 +2122,21 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
 int dir_join (CtxEvent *event, void *a, void *b) /* "join-with-next", 0, "", "" */
 {
   if (focused_no>=0){
-    char *name = metadata_get_name (collection, focused_no);
+    char *name = diz_get_name (diz, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
-    if (collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
+    if (diz_type_atom (diz, focused_no+1) == CTX_ATOM_TEXT)
     {
-      char *name_next = metadata_get_name (collection, focused_no+1);
+      char *name_next = diz_get_name (diz, focused_no+1);
       if (name[strlen(name)-1]!=' ')
         ctx_string_append_str (str, " ");
       ctx_string_append_str (str, name_next);
       free (name_next);
-      metadata_remove (collection, focused_no+1);
+      diz_remove (diz, focused_no+1);
     }
-    metadata_set_name (collection, focused_no, str->str);
+    diz_set_name (diz, focused_no, str->str);
     ctx_string_free (str, 1);
-    metadata_dirt ();
+    diz_dirt ();
   }
   return 0;
 }
@@ -2146,16 +2146,16 @@ void text_edit_shift_return (CtxEvent *event, void *a, void *b)
   if (focused_no>=0){
     const char *insertedA = "\\";
     const char *insertedB = "n";
-    char *name = metadata_get_name (collection, focused_no);
+    char *name = diz_get_name (diz, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     ctx_string_insert_utf8 (str, text_edit, insertedB);
     ctx_string_insert_utf8 (str, text_edit, insertedA);
-    metadata_set_name (collection, focused_no, str->str);
+    diz_set_name (diz, focused_no, str->str);
     ctx_string_free (str, 1);
     text_edit++;
   }
-  metadata_dirt ();
+  diz_dirt ();
   ctx_queue_draw (event->ctx);
   event->stop_propagate=1;
 }
@@ -2172,15 +2172,15 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
   if (ctx_utf8_strlen (inserted) > 1)
     return;
   if (focused_no>=0){
-    char *name = metadata_get_name (collection, focused_no);
+    char *name = diz_get_name (diz, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     ctx_string_insert_utf8 (str, text_edit, inserted);
-    metadata_set_name (collection, focused_no, str->str);
+    diz_set_name (diz, focused_no, str->str);
     ctx_string_free (str, 1);
     text_edit++;
   }
-  metadata_dirt ();
+  diz_dirt ();
   //save_metadata();
   ctx_queue_draw (event->ctx);
   event->stop_propagate=1;
@@ -2193,7 +2193,7 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
     event->stop_propagate = 1;
     return;
   }
-  char *name = metadata_get_name (collection, focused_no);
+  char *name = diz_get_name (diz, focused_no);
   int len = ctx_utf8_strlen (name);
   free (name);
   text_edit_desired_x = -100;
@@ -2202,8 +2202,8 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
 
   if (text_edit>len)
   {
-    if (focused_no + 1 < collection->count &&
-        collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_TEXT)
+    if (focused_no + 1 < diz->count &&
+        diz_type_atom (diz, focused_no+1) == CTX_ATOM_TEXT)
     {
       text_edit=0;
       layout_find_item = focused_no  + 1;
@@ -2232,23 +2232,23 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit < 0)
   {
-    char *name = metadata_get_name (collection, focused_no);
+    char *name = diz_get_name (diz, focused_no);
     if (name[0]==0 &&
-        collection_item_get_type_atom (collection, focused_no-1) == CTX_ATOM_STARTGROUP &&
-        collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP)
+        diz_type_atom (diz, focused_no-1) == CTX_ATOM_STARTGROUP &&
+        diz_type_atom (diz, focused_no+1) == CTX_ATOM_ENDGROUP)
     {
       text_edit = 0;
       argvs_eval ("remove");
 
       //layout_find_item = focused_no-1;
       //itk->focus_no = -1;
-      metadata_dirt();
+      diz_dirt();
     }
     else if (focused_no>0 && 
-             collection_item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
+             diz_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
 
     {
-      char *name = metadata_get_name (collection, focused_no-1);
+      char *name = diz_get_name (diz, focused_no-1);
       text_edit=ctx_utf8_strlen(name);
       free (name);
       layout_find_item = focused_no -1;
@@ -2270,9 +2270,9 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit == 0)
   {
-    if (collection_item_get_type_atom (collection, focused_no-1) == CTX_ATOM_TEXT)
+    if (diz_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
     {
-      char *name = metadata_get_name (collection, focused_no-1);
+      char *name = diz_get_name (diz, focused_no-1);
       text_edit=ctx_utf8_strlen(name);
       free (name);
       focused_no--;
@@ -2285,7 +2285,7 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
   }
   else
   {
-    char *text = metadata_get_name (collection, focused_no); 
+    char *text = diz_get_name (diz, focused_no); 
     if (text_edit >0 && text[text_edit-1]==' ')  // XXX should be utf8 aware
       text_edit--;
     while (text_edit>0 && text[text_edit-1]!=' ') 
@@ -2302,7 +2302,7 @@ void text_edit_control_right (CtxEvent *event, void *a, void *b)
   text_edit_desired_x = -100;
 
   {
-    char *text = metadata_get_name (collection, focused_no); 
+    char *text = diz_get_name (diz, focused_no); 
     if (text[text_edit]==' ')  // XXX should be utf8 aware
       text_edit++;
     while (text[text_edit] && text[text_edit]!=' ') 
@@ -2325,7 +2325,7 @@ void text_edit_home (CtxEvent *event, void *a, void *b)
 void text_edit_end (CtxEvent *event, void *a, void *b)
 {
   text_edit_desired_x = -100;
-  char *name = metadata_get_name (collection, focused_no);
+  char *name = diz_get_name (diz, focused_no);
   text_edit = ctx_utf8_strlen (name);
   if (event)
   {
@@ -2354,22 +2354,22 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   }
 
 #if 0
-  if (collection_item_get_type_atom (collection, focused_no-1) != CTX_ATOM_TEXT && 
-      collection_item_get_type_atom (collection, focused_no-1) != CTX_ATOM_ENDGROUP)
+  if (diz_type_atom (diz, focused_no-1) != CTX_ATOM_TEXT && 
+      diz_type_atom (diz, focused_no-1) != CTX_ATOM_ENDGROUP)
   {
     event->stop_propagate=1;
     return;
   }
-  //text_edit=strlen(collection->items[focused_no-1]);
+  //text_edit=strlen(diz->items[focused_no-1]);
   //
   //
-  char *name = metadata_get_name (collection, focused_no);
+  char *name = diz_get_name (diz, focused_no);
 
   if (name[0]==0 &&
-      (focused_no+1 >= collection->count ||
-      collection_item_get_type_atom (collection, focused_no+1) == CTX_ATOM_ENDGROUP))
+      (focused_no+1 >= diz->count ||
+      diz_type_atom (diz, focused_no+1) == CTX_ATOM_ENDGROUP))
     {
-      int next_focus = dir_prev_sibling (collection, focused_no);
+      int next_focus = dir_prev_sibling (diz, focused_no);
       argvs_eval ("remove");
       if (was_editing_before_tail)
       {
@@ -2378,13 +2378,13 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
       else
         text_edit = TEXT_EDIT_OFF;
       focused_no = next_focus+1;
-      metadata_dirt();
+      diz_dirt();
   free (name);
     }
   else
 #else
     focused_no--;
-    while (collection_item_get_type_atom (collection, focused_no) != CTX_ATOM_TEXT)
+    while (diz_type_atom (diz, focused_no) != CTX_ATOM_TEXT)
       focused_no --;
 #endif
     {
@@ -2465,20 +2465,20 @@ int item_context_active = 0;
 int item_context_choice = 0;
 
 static void
-make_tail_entry (Collection *collection)
+make_tail_entry (Diz *diz)
 {
   if (focused_no == -1)
   {
-    metadata_insert (collection, 0, "_");
+    diz_insert (diz, 0, "_");
     focused_no = 0;
     layout_find_item = focused_no = focused_no;
   }
   else
   {
-  metadata_insert (collection, focused_no+collection_measure_chunk(collection,focused_no), "");
-  layout_find_item = focused_no = collection_next_sibling (collection, focused_no);
+  diz_insert (diz, focused_no+diz_measure_chunk(diz,focused_no), "");
+  layout_find_item = focused_no = diz_next_sibling (diz, focused_no);
   }
-  metadata_dirt ();
+  diz_dirt ();
   itk->focus_no = -1;
   was_editing_before_tail = (text_edit != TEXT_EDIT_OFF);
   text_edit = 0;
@@ -2496,17 +2496,17 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
   }
 
 #if 0
-  if (collection_item_get_type_atom (collection, focused_no+1) != CTX_ATOM_TEXT)
+  if (diz_type_atom (diz, focused_no+1) != CTX_ATOM_TEXT)
   {
-    char *str = metadata_get_name (collection, focused_no);
+    char *str = diz_get_name (diz, focused_no);
     if (str[0])
-      make_tail_entry (collection);
+      make_tail_entry (diz);
     free (str);
     return;
   }
 #else
   focused_no ++;
-  while (collection_item_get_type_atom (collection, focused_no) != CTX_ATOM_TEXT)
+  while (diz_type_atom (diz, focused_no) != CTX_ATOM_TEXT)
     focused_no ++;
 #endif
   text_edit = TEXT_EDIT_FIND_CURSOR_FIRST_ROW;
@@ -2531,26 +2531,26 @@ int focus_previous_link (COMMAND_ARGS) /* "focus-previous-link", 0, "", "" */
 int focus_next_sibling (COMMAND_ARGS) /* "focus-next-sibling", 0, "", "" */
 {
   layout_focused_link = -1;
-  if (collection_next_sibling (collection, focused_no) < 0)
+  if (diz_next_sibling (diz, focused_no) < 0)
   {
-    make_tail_entry (collection);
+    make_tail_entry (diz);
     return -1;
   }
 
-  layout_find_item = focused_no = collection_next_sibling (collection, focused_no);
+  layout_find_item = focused_no = diz_next_sibling (diz, focused_no);
   itk->focus_no = -1;
   return 0;
 }
 
-static int item_get_list_index (Collection *collection, int i)
+static int item_get_list_index (Diz *diz, int i)
 {
   int pos = i;
   int count = 0;
 
   while (pos >= 0 &&
-         metadata_get_int (collection, pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
+         diz_get_int (diz, pos, "bullet", CTX_BULLET_NONE) == CTX_BULLET_NUMBERS)
   {
-     pos = collection_prev_sibling (collection, pos);
+     pos = diz_prev_sibling (diz, pos);
      count++;
   }
 
@@ -2567,7 +2567,7 @@ int focus_no (COMMAND_ARGS) /* "focus-no", 1, "", "" */
 int focus_next (COMMAND_ARGS) /* "focus-next", 0, "", "" */
 {
   layout_focused_link = -1;
-  int pos = collection_next (collection, focused_no);
+  int pos = diz_next (diz, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -2579,7 +2579,7 @@ int focus_next (COMMAND_ARGS) /* "focus-next", 0, "", "" */
 int focus_previous (COMMAND_ARGS) /* "focus-previous", 0, "", "" */
 {
   layout_focused_link = -1;
-  int pos = collection_prev (collection, focused_no);
+  int pos = diz_prev (diz, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -2591,7 +2591,7 @@ int focus_previous (COMMAND_ARGS) /* "focus-previous", 0, "", "" */
 int focus_previous_sibling (COMMAND_ARGS) /* "focus-previous-sibling", 0, "", "" */
 {
   layout_focused_link = -1;
-  int pos = collection_prev_sibling (collection, focused_no);
+  int pos = diz_prev_sibling (diz, focused_no);
   if (pos >= 0)
   {
     layout_find_item = focused_no = pos;
@@ -2614,43 +2614,43 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
   {
     case CTX_DRAG_PRESS:
        fprintf (stderr, "rect drag %f %f\n", e->x, e->y);
-       metadata_insert (collection, focused_no, "");
-       metadata_set (collection, focused_no, "type", "rectangle");
+       diz_insert (diz, focused_no, "");
+       diz_set_string (diz, focused_no, "type", "rectangle");
        x0 = e->x;
        y0 = e->y;
-       metadata_set_float (collection, focused_no, "x", x0 / itk->width);
-       metadata_set_float (collection, focused_no, "y", y0 / itk->width);
-       metadata_dirt ();
+       diz_set_float (diz, focused_no, "x", x0 / itk->width);
+       diz_set_float (diz, focused_no, "y", y0 / itk->width);
+       diz_dirt ();
        break;
     case CTX_DRAG_MOTION:
 
        if (e->x > x0)
        {
-         metadata_set_float (collection, focused_no, "x", x0 / itk->width);
-         metadata_set_float (collection, focused_no, "width", (e->x-x0) / itk->width);
+         diz_set_float (diz, focused_no, "x", x0 / itk->width);
+         diz_set_float (diz, focused_no, "width", (e->x-x0) / itk->width);
        }
        else
        {
-         metadata_set_float (collection, focused_no, "x", e->x / itk->width);
-         metadata_set_float (collection, focused_no, "width", (x0-e->x) / itk->width);
+         diz_set_float (diz, focused_no, "x", e->x / itk->width);
+         diz_set_float (diz, focused_no, "width", (x0-e->x) / itk->width);
        }
 
        if (e->y > y0)
        {
-         metadata_set_float (collection, focused_no, "y", y0 / itk->width);
-         metadata_set_float (collection, focused_no, "height", (e->y-y0) / itk->width);
+         diz_set_float (diz, focused_no, "y", y0 / itk->width);
+         diz_set_float (diz, focused_no, "height", (e->y-y0) / itk->width);
        }
        else
        {
-         metadata_set_float (collection, focused_no, "y", e->y / itk->width);
-         metadata_set_float (collection, focused_no, "height", (y0-e->y) / itk->width);
+         diz_set_float (diz, focused_no, "y", e->y / itk->width);
+         diz_set_float (diz, focused_no, "height", (y0-e->y) / itk->width);
        }
 
-       metadata_dirt ();
+       diz_dirt ();
        ctx_queue_draw (e->ctx);
        break;
     case CTX_DRAG_RELEASE:
-       metadata_dirt ();
+       diz_dirt ();
        break;
     default:
        break;
@@ -2662,7 +2662,7 @@ int editing_location = 0;
 static void dir_location (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 1;
-  ctx_string_set (commandline, collection->title?collection->title:collection->path);
+  ctx_string_set (commandline, diz->title?diz->title:diz->path);
   commandline_cursor_end = 0;
   commandline_cursor_start = strlen (commandline->str);
   if (e)
@@ -2696,7 +2696,7 @@ int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
   while (level > 0 && focused_no >= 0)
   {
     focused_no--;
-    atom = collection_item_get_type_atom (collection, focused_no);
+    atom = diz_type_atom (diz, focused_no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -2710,10 +2710,10 @@ int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
     }
   }
 
-  if (metadata_get_int (collection, focused_no, "was-folded", 0))
+  if (diz_get_int (diz, focused_no, "was-folded", 0))
   {
-    metadata_set_float (collection, focused_no, "folded", 1.0);
-    metadata_unset (collection, focused_no, "was-folded");
+    diz_set_float (diz, focused_no, "folded", 1.0);
+    diz_unset (diz, focused_no, "was-folded");
   }
   focused_no--;
   if (focused_no < 0)
@@ -2729,20 +2729,20 @@ int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
 
 int dir_set_name (COMMAND_ARGS) /* "set-name", 2, "<no> <name>", "" */
 {
-  metadata_set_name (collection, atoi(argv[1]), argv[2]);
+  diz_set_name (diz, atoi(argv[1]), argv[2]);
   return 0;
 }
 
 int dir_load (COMMAND_ARGS) /* "load-path", 1, "<path>", "" */
 {
-  collection_set_path (collection, argv[1], NULL);
+  diz_set_path (diz, argv[1], NULL);
   return 0;
 }
 
 
 int dir_dump (COMMAND_ARGS) /* "dump", 0, "", "" */
 {
-   metadata_dump (collection);
+   diz_dump (diz);
    return 0;
 }
 
@@ -2777,8 +2777,8 @@ int stuff_ls_main (int argc, char **argv)
 {
   const char *path = ".";
   if (argv[1]) path = argv[1];
-  collection_set_path (collection, path, path);
-  metadata_dump (collection);
+  diz_set_path (diz, path, path);
+  diz_dump (diz);
   return 1;
 }
 
@@ -2788,14 +2788,14 @@ int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
   layout_focused_link = -1;
   
   focused_no++;
-  CtxAtom  atom = collection_item_get_type_atom (collection, focused_no);
+  CtxAtom  atom = diz_type_atom (diz, focused_no);
 
   if (atom == CTX_ATOM_STARTGROUP)
   {
-    if (metadata_get_int (collection, focused_no, "folded", 0))
+    if (diz_get_int (diz, focused_no, "folded", 0))
     {
-      metadata_set_float (collection, focused_no, "was-folded", 1);
-      metadata_set_float (collection, focused_no, "folded", 0);
+      diz_set_float (diz, focused_no, "was-folded", 1);
+      diz_set_float (diz, focused_no, "folded", 0);
     }
     focused_no++;
   }
@@ -2803,17 +2803,18 @@ int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
   {
      focused_no = start_no;
 
-     metadata_insert(collection, focused_no+1, "___");
-     metadata_set (collection, focused_no+1, "type", "startgroup");
+     diz_insert(diz, focused_no+1, "___");
+     diz_set_string (diz, focused_no+1, "type", "startgroup");
 
-     metadata_insert(collection, focused_no+2, "");
+     diz_insert(diz, focused_no+2, "");
      text_edit = 0;
 
-     metadata_insert(collection, focused_no+3, "~~~");
-     metadata_set (collection, focused_no+3, "type", "endgroup");
+     diz_insert(diz, focused_no+3, "~~~");
+     diz_set_string (diz, focused_no+3, "type", "endgroup");
+
      focused_no++;
   }
-  metadata_dirt();
+  diz_dirt();
 
   layout_find_item = focused_no;
   itk->focus_no = -1;
@@ -2914,8 +2915,8 @@ char **dir_get_viewer_argv (const char *path, int no)
   CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
   char *escaped_path = malloc (strlen (path) * 2 + 20);
   escape_path (path, escaped_path);
-  float in = metadata_get_float (collection, no, "in", 0.0f);
-  //float out = metadata_get_float (collection, no, "out", 0.0f);
+  float in = diz_get_float (diz, no, "in", 0.0f);
+  //float out = diz_get_float (diz, no, "out", 0.0f);
   if (!strcmp (media_type, "inode/directory"))
   {
     //fprintf (stderr, "is dir\n");
@@ -3030,11 +3031,11 @@ char **dir_get_viewer_argv (const char *path, int no)
 }
 
 
-static void dir_layout (ITK *itk, Collection *collection)
+static void dir_layout (ITK *itk, Diz *diz)
 {
   Ctx *ctx = itk->ctx;
 
-  //printf ("%s\n", collection->path);
+  //printf ("%s\n", diz->path);
 
   float em = itk_em (itk);
   float prev_height = layout_config.height;
@@ -3049,7 +3050,7 @@ static void dir_layout (ITK *itk, Collection *collection)
   layout_box[0].width = 0.8;
   layout_box[0].height = 4000.0;
 
-  collection->metadata_cache_no = -3;
+  diz->metadata_cache_no = -3;
   prev_line_pos = -1;
   next_line_pos = -1;
 
@@ -3141,9 +3142,9 @@ static void dir_layout (ITK *itk, Collection *collection)
   if (layout_config.outliner)
      printing = 1;
 
-  for (int i = 0; i < collection->count; i++)
+  for (int i = 0; i < diz->count; i++)
   {
-      char *d_name = metadata_get_name (collection, i);
+      char *d_name = diz_get_name (diz, i);
       if (layout_find_item == i)
       {
 
@@ -3170,7 +3171,7 @@ static void dir_layout (ITK *itk, Collection *collection)
       float height = 0;
       
       int hidden = 0;
-      CtxAtom atom = collection_item_get_type_atom (collection, i);
+      CtxAtom atom = diz_type_atom (diz, i);
 
       switch (atom)
       {
@@ -3185,7 +3186,7 @@ static void dir_layout (ITK *itk, Collection *collection)
           hidden = 1;
           level ++;
           {
-            int folded = metadata_get_int (collection, i, "folded", 0);
+            int folded = diz_get_int (diz, i, "folded", 0);
 
             if (folded && ! is_folded) is_folded = level;
           }
@@ -3239,7 +3240,7 @@ static void dir_layout (ITK *itk, Collection *collection)
       if (!text_editor)
       {
 
-      label = metadata_get_int (collection, i, "label", -1234);
+      label = diz_get_int (diz, i, "label", -1234);
       if (label == -1234) {
         if (atom == CTX_ATOM_TEXT)
           label = 0;
@@ -3247,24 +3248,24 @@ static void dir_layout (ITK *itk, Collection *collection)
           label = layout_config.label;
       }
 
-      xstr     = metadata_get_string (collection, i, "x");
-      ystr     = metadata_get_string (collection, i, "y");
-      wstr     = metadata_get_string (collection, i, "width");
-      hstr     = metadata_get_string (collection, i, "height");
-      origin_x = metadata_get_float (collection, i, "origin-x", 0.0);
-      origin_y = metadata_get_float (collection, i, "origin-y", 0.0);
+      xstr     = diz_get_string (diz, i, "x");
+      ystr     = diz_get_string (diz, i, "y");
+      wstr     = diz_get_string (diz, i, "width");
+      hstr     = diz_get_string (diz, i, "height");
+      origin_x = diz_get_float (diz, i, "origin-x", 0.0);
+      origin_y = diz_get_float (diz, i, "origin-y", 0.0);
 
 
-      padding_left = metadata_get_float (collection, i, "padding-left", layout_config.padding_left);
-      padding_right = metadata_get_float (collection, i, "padding-right", layout_config.padding_right);
-      padding_top = metadata_get_float (collection, i, "padding-top", layout_config.padding_top);
-      padding_bottom = metadata_get_float (collection, i, "padding-bottom", layout_config.padding_bottom);
+      padding_left = diz_get_float (diz, i, "padding-left", layout_config.padding_left);
+      padding_right = diz_get_float (diz, i, "padding-right", layout_config.padding_right);
+      padding_top = diz_get_float (diz, i, "padding-top", layout_config.padding_top);
+      padding_bottom = diz_get_float (diz, i, "padding-bottom", layout_config.padding_bottom);
 
       //padding_left += level * layout_config.level_indent;
 
-      x = metadata_get_float (collection, i, "x", 0.0);
-      y = metadata_get_float (collection, i, "y", 0.0);
-      //float opacity = metadata_get_float (i, "opacity", 1.0f);
+      x = diz_get_float (diz, i, "x", 0.0);
+      y = diz_get_float (diz, i, "y", 0.0);
+      //float opacity = diz_get_float (i, "opacity", 1.0f);
       }
 
       if (xstr)
@@ -3295,7 +3296,7 @@ static void dir_layout (ITK *itk, Collection *collection)
         if (text_editor)
           width = -1000.0;
         else
-          width  = metadata_get_float (collection, i, "width", -1000.0);
+          width  = diz_get_float (diz, i, "width", -1000.0);
         if (width < 0 || layout_config.fixed_size)
           width = 
             layout_config.fill_width? itk->width * 1.0:
@@ -3309,7 +3310,7 @@ static void dir_layout (ITK *itk, Collection *collection)
         if (text_editor)
           height = -1000.0;
         else
-          height = metadata_get_float (collection, i, "height", -1000.0);
+          height = diz_get_float (diz, i, "height", -1000.0);
         if (height < 0 || layout_config.fixed_size)  height =
           layout_config.fill_height? itk->height * 1.0:
           layout_config.height * em;
@@ -3322,7 +3323,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
 
 
-      int virtual = (collection_item_get_type_atom (collection, i) == CTX_ATOM_TEXT);
+      int virtual = (diz_type_atom (diz, i) == CTX_ATOM_TEXT);
 
       if (virtual)
         atom = CTX_ATOM_TEXT;
@@ -3463,11 +3464,11 @@ static void dir_layout (ITK *itk, Collection *collection)
               //ctx_rgb(itk->ctx,1,0,0);
               //ctx_fill(itk->ctx);
         struct stat stat_buf;
-        char *newpath = malloc (strlen(collection->path)+strlen(d_name) + 2);
-        if (!strcmp (collection->path, PATH_SEP))
+        char *newpath = malloc (strlen(diz->path)+strlen(d_name) + 2);
+        if (!strcmp (diz->path, PATH_SEP))
           sprintf (newpath, "%s%s", PATH_SEP, d_name);
         else
-          sprintf (newpath, "%s%s%s", collection->path, PATH_SEP, d_name);
+          sprintf (newpath, "%s%s%s", diz->path, PATH_SEP, d_name);
         int focused = 0;
 
         const char *media_type = "inline/text";
@@ -3560,7 +3561,7 @@ static void dir_layout (ITK *itk, Collection *collection)
 
             if (!text_editor)
             {
-              int bullet = metadata_get_int (collection, i, "bullet", CTX_BULLET_NONE);
+              int bullet = diz_get_int (diz, i, "bullet", CTX_BULLET_NONE);
               const char *label = "cycle bullet";
               switch (bullet)
               {
@@ -3579,7 +3580,7 @@ static void dir_layout (ITK *itk, Collection *collection)
             if (!text_editor)
             {
               const char *label = "make heading";
-              char *klass = metadata_get_string (collection, i, "tag");
+              char *klass = diz_get_string (diz, i, "tag");
               if (klass)
               {
                 label = "cycle heading";
@@ -3692,7 +3693,7 @@ static void dir_layout (ITK *itk, Collection *collection)
                        0);
           }
 
-          int bullet = metadata_get_int (collection, i, "bullet", CTX_BULLET_NONE);
+          int bullet = diz_get_int (diz, i, "bullet", CTX_BULLET_NONE);
           if (bullet != CTX_BULLET_NONE)
           {
              float x = itk->x - em * 0.7 ;//+ level * em * layout_config.level_indent;
@@ -3708,7 +3709,7 @@ static void dir_layout (ITK *itk, Collection *collection)
                ctx_move_to (itk->ctx, x + em * 0.5, itk->y + em);
                {
                  char buf[64]="";
-                 sprintf (buf, "%i", item_get_list_index (collection, i));
+                 sprintf (buf, "%i", item_get_list_index (diz, i));
                  ctx_save (itk->ctx);
                  ctx_text_align (itk->ctx, CTX_TEXT_ALIGN_RIGHT);
                  ctx_text (itk->ctx, buf);
@@ -3726,7 +3727,7 @@ static void dir_layout (ITK *itk, Collection *collection)
              }
           }
           {
-            int folded = metadata_get_int (collection, i+1, "folded", -3);
+            int folded = diz_get_int (diz, i+1, "folded", -3);
             if (folded > 0)
             {
                float x = itk->x - em * 0.5;//
@@ -3744,10 +3745,10 @@ static void dir_layout (ITK *itk, Collection *collection)
       else
         if (atom == CTX_ATOM_RECTANGLE)
         {
-          char *fill       = metadata_get_string (collection, i, "fill");
-          char *stroke     = metadata_get_string (collection, i, "stroke");
-          float line_width = metadata_get_float (collection, i, "line-width", 1.0);
-          //float opacity    = metadata_get_float (collection, i, "opacity", 1.0);
+          char *fill       = diz_get_string (diz, i, "fill");
+          char *stroke     = diz_get_string (diz, i, "stroke");
+          float line_width = diz_get_float (diz, i, "line-width", 1.0);
+          //float opacity    = diz_get_float (diz, i, "opacity", 1.0);
 
           if (gotpos) label = 0;
           ctx_rectangle (itk->ctx, itk->x, itk->y, width, height);
@@ -3778,7 +3779,7 @@ static void dir_layout (ITK *itk, Collection *collection)
           ctx_parse (itk->ctx, d_name);
           ctx_restore (itk->ctx);
         }
-        else if (metadata_get_int (collection, i, "live", 0))
+        else if (diz_get_int (diz, i, "live", 0))
           {
             char *client_name = ctx_strdup_printf ("%s-%i", newpath, i);
             CtxClient *client = ctx_client_find (ctx, client_name);
@@ -4023,13 +4024,13 @@ static void dir_layout (ITK *itk, Collection *collection)
 
       if (layout_config.outliner)
       {
-  int keys = metadata_item_key_count (collection, i);
+  int keys = diz_key_count (diz, i);
   for (int k = 0; k < keys; k++)
   {
-    char *key = metadata_key_name (collection, i, k);
+    char *key = diz_key_name (diz, i, k);
     if (key)
     {
-      char *val = metadata_get_string (collection, i, key);
+      char *val = diz_get_string (diz, i, key);
       if (val)
       {
         itk->x += level * em * 3 + em;
@@ -4102,10 +4103,10 @@ static void dir_layout (ITK *itk, Collection *collection)
   {
     ctx_rgba (itk->ctx, 1,1,1,0.8);
     ctx_move_to (itk->ctx, itk->x0, 2 * em);
-    if (collection->title)
-      ctx_text (ctx, collection->title);
+    if (diz->title)
+      ctx_text (ctx, diz->title);
     else
-      ctx_text (ctx, collection->path);
+      ctx_text (ctx, diz->path);
   }
   ctx_restore (itk->ctx);
   }
@@ -4184,7 +4185,7 @@ extern float font_size;
 
 int viewer_pre_next (Ctx *ctx, void *data1)
 {
-  if (focused_no+1 >= metadata_count(collection))
+  if (focused_no+1 >= diz_count(diz))
     return 0;
   //focused_no++;
   //layout_find_item = focused_no;
@@ -4193,14 +4194,14 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   char *path;
   char *pathA;
   CtxClient *client;
-  name = metadata_get_name (collection, focused_no);
-  path = ctx_strdup_printf ("%s/%s", collection->path, name);
+  name = diz_get_name (diz, focused_no);
+  path = ctx_strdup_printf ("%s/%s", diz->path, name);
 
   char *client_cur = ctx_strdup_printf ("%s-%i", path, focused_no);
   free (name);
 
-  name = metadata_get_name (collection, focused_no+1);
-  pathA = ctx_strdup_printf ("%s/%s", collection->path, name);
+  name = diz_get_name (diz, focused_no+1);
+  pathA = ctx_strdup_printf ("%s/%s", diz->path, name);
   free (name);
 
   float pre_thumb_size = 2.0;
@@ -4282,7 +4283,7 @@ void viewer_load_path (const char *path, const char *name)
   if (viewer_loaded_name) free (viewer_loaded_name);
   viewer_loaded_name = strdup (name);
 
-  int no = focused_no;//metadata_item_to_no (collection, name);
+  int no = focused_no;//diz_name_to_no (diz, name);
 
 
   if (path)
@@ -4347,8 +4348,8 @@ void viewer_load_path (const char *path, const char *name)
 
 
   float duration = 5.0;
-  float in = metadata_get_float (collection, no, "in", -1);
-  float out = metadata_get_float (collection, no, "out", -1);
+  float in = diz_get_float (diz, no, "in", -1);
+  float out = diz_get_float (diz, no, "out", -1);
   if (out > 0)
   {
     duration = out - in;
@@ -4429,7 +4430,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
       }
       else
       {
-        char *new_path = ctx_strdup_printf ("%s/%s", collection->path, arg);
+        char *new_path = ctx_strdup_printf ("%s/%s", diz->path, arg);
         set_location (new_path);
         free (new_path);
       }
@@ -4441,7 +4442,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
   {
      // all other code should be doing absolute paths,
      // this makes it easier to launch commands
-     chdir (collection->path);
+     chdir (diz->path);
     // system (commandline->str);
 
     CtxClient *old = ctx_client_find (ctx, "stdout");
@@ -4454,7 +4455,7 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
                     itk->font_size,
                     ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE|ITK_CLIENT_TITLEBAR, strdup("stdout"), user_data_free);
 
-     metadata_dirt();
+     diz_dirt();
      save_metadata();
   }
 
@@ -4717,7 +4718,7 @@ static int card_files (ITK *itk_, void *data)
 #endif
 
     if (!viewer)
-      dir_layout (itk, collection);
+      dir_layout (itk, diz);
 
     if (ctx_clients (ctx))
     {
@@ -4785,8 +4786,8 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
           }
 
-          if (collection_item_get_type_atom (collection, focused_no) == CTX_ATOM_TEXT
-              && metadata_get_float (collection, focused_no, "x", -1234.0) == -1234.0
+          if (diz_type_atom (diz, focused_no) == CTX_ATOM_TEXT
+              && diz_get_float (diz, focused_no, "x", -1234.0) == -1234.0
               && !is_text_editing()
               && !item_context_active)
           {
@@ -4814,16 +4815,16 @@ static int card_files (ITK *itk_, void *data)
 
             if (!text_editor && focused_no >= 0)
             {
-              if (collection_has_children (collection, focused_no) && 
-                  !metadata_get_int (collection, focused_no+1, "folded", 0))
+              if (diz_has_children (diz, focused_no) && 
+                  !diz_get_int (diz, focused_no+1, "folded", 0))
                 BIND_KEY ("left", "fold", "fold");
               if (layout_focused_link >= 0)
                  BIND_KEY ("right", "follow-link", "follow link");
               else
               {
-                if (collection_has_children (collection, focused_no))
+                if (diz_has_children (diz, focused_no))
                 {
-                  if (metadata_get_int (collection, focused_no+1, "folded", 0))
+                  if (diz_get_int (diz, focused_no+1, "folded", 0))
                     BIND_KEY ("right", "expand", "expand");
                 }
                 else
@@ -4838,7 +4839,7 @@ static int card_files (ITK *itk_, void *data)
                    BIND_KEY ("l", "follow-link", "follow link");
                 else
                 {
-                  if (collection_has_children (collection, focused_no))
+                  if (diz_has_children (diz, focused_no))
                     BIND_KEY ("l", "expand", "expand");
                   else
                     BIND_KEY ("l", "enter-children", "enter children");
@@ -5021,11 +5022,11 @@ static int card_files (ITK *itk_, void *data)
     }
          ctx_rgb(itk->ctx, 0.7,0.7,0.7);
     {
-      int keys = metadata_item_key_count (collection, focused_no);
+      int keys = diz_key_count (diz, focused_no);
       for (int k = 0; k < keys; k++)
       {
-         char *key = metadata_key_name (collection, focused_no, k);
-         char *value = metadata_get_string (collection, focused_no, key);
+         char *key = diz_key_name (diz, focused_no, k);
+         char *value = diz_get_string (diz, focused_no, key);
          char tmp[strlen(key)+strlen(value)+1+1];
          sprintf (tmp, "%s=%s", key, value);
          y+=em;
@@ -5041,14 +5042,14 @@ static int card_files (ITK *itk_, void *data)
        focused_control->x + focused_control->width, focused_control->y, 200, 200);
                   
        //           ctx_width(ctx)/4, itk->font_size*1, ctx_width(ctx)/4, itk->font_size*8);
-  int keys = metadata_item_key_count (collection->items[focused_no]);
-  itk_labelf (itk, "%s - %i", collection->items[focused_no], keys);
+  int keys = diz_key_count (diz->items[focused_no]);
+  itk_labelf (itk, "%s - %i", diz->items[focused_no], keys);
   for (int k = 0; k < keys; k++)
   {
-    char *key = metadata_key_name (collection->items[focused_no], k);
+    char *key = diz_key_name (diz->items[focused_no], k);
     if (key)
     {
-      char *val = metadata_get_string (collection->items[focused_no], key);
+      char *val = diz_get_string (diz->items[focused_no], key);
       if (val)
       {
         itk_labelf (itk, "%s=%s", key, val);
@@ -5099,7 +5100,7 @@ static int card_files (ITK *itk_, void *data)
 
     if (viewer_slideshow && viewer_slide_prev_time)
     {
-      float fade_duration = metadata_get_float (collection, focused_no, "fade", 0.0f);
+      float fade_duration = diz_get_float (diz, focused_no, "fade", 0.0f);
       long int fade_ticks = 1000 * 1000 * fade_duration;
 
       if (viewer_slide_duration >= 0)
@@ -5113,8 +5114,8 @@ static int card_files (ITK *itk_, void *data)
         else if (viewer_slide_duration < fade_ticks)
         {
           float opacity = (fade_ticks - viewer_slide_duration) / (1.0 * fade_ticks);
-          char *name = metadata_get_name (collection, focused_no+1);
-          char *pathA = ctx_strdup_printf ("%s/%s", collection->path, name);
+          char *name = diz_get_name (diz, focused_no+1);
+          char *pathA = ctx_strdup_printf ("%s/%s", diz->path, name);
           free (name);
           char *client_a = ctx_strdup_printf ("%s-%i", pathA, focused_no+1);
           free (pathA);
@@ -5278,10 +5279,10 @@ static int card_files (ITK *itk_, void *data)
     {
       ctx_rgba (ctx, 1,1,1, 0.6);
       ctx_move_to (ctx, 6.4 * em, 1.5 * em);
-      if (collection->title)
-        ctx_text (ctx, collection->title);
+      if (diz->title)
+        ctx_text (ctx, diz->title);
       else
-        ctx_text (ctx, collection->path);
+        ctx_text (ctx, diz->path);
     }
     ctx_restore (ctx);
   }
@@ -5550,7 +5551,7 @@ int stuff_main (int argc, char **argv)
       name = 0;
     }
     set_location (dir);
-    focused_no = metadata_item_to_no (collection, name);
+    focused_no = diz_name_to_no (diz, name);
     layout_find_item = focused_no;
 
     if (name && name[0])
@@ -5561,6 +5562,11 @@ int stuff_main (int argc, char **argv)
   }
 
   itk_main (card_files, NULL);
+
+
+  fprintf (stderr, "parents: %i\n",
+                  diz_value_count (diz, -1, "parent"));
+
   save_metadata ();
 
   ctx_string_free (commandline, 1);
@@ -5586,9 +5592,9 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    // be possible to use just that though
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
-   collection_set_path (collection, dir, dir);
+   diz_set_path (diz, dir, dir);
    drop_item_renderers (ctx);
-   char **command = dir_get_viewer_argv (src_path, metadata_item_to_no (collection, base));
+   char **command = dir_get_viewer_argv (src_path, diz_name_to_no (diz, base));
 
    if (!command)
       return -1;
