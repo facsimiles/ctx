@@ -532,6 +532,8 @@ static void _set_location (const char *location)
       mkdir (path, 0777);
     }
     diz_set_path (diz, path, location);
+    diz_set_name (diz, -1, location);
+    save_metadata ();////diz_save (diz, 0);
     drop_item_renderers (ctx);
     free (path);
     focused_no = 0;
@@ -1605,10 +1607,9 @@ int viewer_load_next (Ctx *ctx, void *data1)
 {
   if (focused_no+1 >= diz_count(diz))
     return 0;
-     //fprintf (stderr, "{%s}\n", viewer_media_type);
   if (viewer && viewer_media_type && viewer_media_type[0]=='v')
   {
-     ctx_client_feed_keystring (viewer, NULL, "space");
+    ctx_client_feed_keystring (viewer, NULL, "space");
   }
 
   focused_no++;
@@ -1736,7 +1737,15 @@ static void dir_revert (CtxEvent *event, void *data1, void *data2)
 
 static void dir_select_item (CtxEvent *event, void *data1, void *data2)
 {
-   itk->focus_no = (size_t)data1;
+   if ((size_t)data1 == (size_t)-1)
+   {
+     focused_no = -1;
+     itk->focus_no = 0;
+   }
+   else
+   {
+     itk->focus_no = (size_t)data1;
+   }
    ctx_queue_draw (event->ctx);
    event->stop_propagate = 1;
 }
@@ -2659,6 +2668,7 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
 }
 
 int editing_location = 0;
+static ITKPanel *panel = NULL;
 static void dir_location (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 1;
@@ -2667,6 +2677,13 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
   commandline_cursor_start = strlen (commandline->str);
   if (e)
   {
+      if (itk->focus_label)
+    free (itk->focus_label);
+    itk->focus_label = NULL;
+
+    itk_panels_reset_scroll (itk);
+    focused_no = -1;
+    itk->focus_no = 0;
     e->stop_propagate = 1;
     ctx_queue_draw (e->ctx);
   }
@@ -3030,6 +3047,11 @@ char **dir_get_viewer_argv (const char *path, int no)
   return ctx_str_list_to_pasv (&args);
 }
 
+static void ui_visit_tag (CtxEvent *event, void *a, void *b)
+{
+  fprintf (stderr, "visit %s\n", (char*)a);
+  event->stop_propagate = 1;
+}
 
 static void dir_layout (ITK *itk, Diz *diz)
 {
@@ -3124,20 +3146,64 @@ static void dir_layout (ITK *itk, Diz *diz)
                      itk->x0 - em * 0.5f,
                      itk->font_size * 0,
                      itk->width,
-                     itk->font_size * 3);
+                     itk->font_size * 2.5);
+    ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)((size_t)(-1)), NULL);
   }
-  itk->y = 3 * itk->font_size;
-  for (int i = 0; i < 4; i++)
+#define BIND_KEY(key, command, help) \
+            do {ctx_add_key_binding (ctx, key, NULL, help, ui_run_command, command);} while(0)
+
+  itk->y = 2.0 * itk->font_size;
+  int parents = diz_value_count (diz, -1, "parent");
+  float tx = itk->x0;// + itk->font_size / 2;
+  for (int i = 0; i < parents; i++)
   {
+    char *parent = diz_get_string_no (diz, -1, "parent", i);
     ctx_begin_path (itk->ctx);
-    itk_add_control (itk, UI_LABEL, "tag",
-                     itk->x0 + i * itk->font_size * 6,
-                     itk->font_size * 3,
-                     itk->font_size * 5,
+    float width = ctx_text_width (itk->ctx, parent);
+
+    CtxControl *c = itk_add_control (itk, UI_LABEL, "tag",
+                     tx,
+                     itk->font_size * 2.5,
+                     itk->font_size + width,
                      itk->font_size * 1);
+    ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
+    ctx_font_size (itk->ctx, itk->font_size);
+    ctx_rgb (itk->ctx, 1, 1, 0);
+    ctx_move_to (itk->ctx, tx + 0.5 * itk->font_size,
+                 itk->font_size * 3.3);
+    tx += width + itk->font_size;
+    ctx_text (itk->ctx, parent);
+    if (itk->focus_no == c->no)
+    {
+      char *dup_par = strdup (parent);
+      ctx_add_key_binding_full (ctx, "return", NULL, "", ui_visit_tag, dup_par, free, dup_par);
+    }
+    free (parent);
   }
 
-  itk->y = 4 * itk->font_size;
+  {
+    ctx_begin_path (itk->ctx);
+    float width = ctx_text_width (itk->ctx, "add tag");
+    CtxControl *c = itk_add_control (itk, UI_LABEL, "tag",
+                     tx,
+                     itk->font_size * 2.5,
+                     itk->font_size + width,
+                     itk->font_size * 1);
+    ctx_font_size (itk->ctx, itk->font_size);
+    ctx_rgb (itk->ctx, 1, 1, 0);
+    ctx_move_to (itk->ctx, tx + 0.5 * itk->font_size,
+                 itk->font_size * 3.3);
+
+    if (itk->focus_no == c->no)
+    {
+      ctx_text (itk->ctx, "add tag");
+      BIND_KEY ("return", "add-tag", "add tag");
+    }
+    else
+      ctx_text (itk->ctx, "+ ");
+  }
+
+  itk->y = 4.0 * itk->font_size;
 
   if (layout_config.outliner)
      printing = 1;
@@ -3451,10 +3517,10 @@ static void dir_layout (ITK *itk, Diz *diz)
       if (printing)
       {
         ctx_begin_path (itk->ctx);
-        c = itk_add_control (itk, UI_LABEL, "foo",
-        itk->x - em * padding_left, itk->y, // - em * padding_top,
-        width + em * (padding_left+padding_right),
-        height + em * (padding_top+padding_bottom));
+        c = itk_add_control (itk, UI_LABEL, "item",
+          itk->x - em * (padding_left * 2), itk->y, // - em * padding_top,
+          width + em * (padding_left*2+padding_right),
+          height + em * (padding_top+padding_bottom));
         if (focused_no == i)
            focused_control = c;
       }
@@ -3514,6 +3580,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           //ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_tap_and_hold, (void*)(size_t)i, NULL);
 
 
+              BIND_KEY ("insert", "insert-text", "insert text item");
           ctx_begin_path (itk->ctx);
           //ctx_rgb(itk->ctx,1,0,0);
           //ctx_fill(itk->ctx);
@@ -3523,8 +3590,6 @@ static void dir_layout (ITK *itk, Diz *diz)
           if (!is_text_editing()
               && !item_context_active)
           {
-#define BIND_KEY(key, command, help) \
-            do {ctx_add_key_binding (ctx, key, NULL, help, ui_run_command, command);} while(0)
 
             BIND_KEY("control-o", "?", "get help");
             BIND_KEY("control-p", "? ?", "get help");
@@ -3598,7 +3663,6 @@ static void dir_layout (ITK *itk, Diz *diz)
                 BIND_KEY ("i", "edit-text-home", "insert text");
                 BIND_KEY ("A", "edit-text-end", "insert text");
               }
-              BIND_KEY ("insert", "insert-text", "insert text item");
             }
           }
           if (!text_editor && !editing_location && !is_text_editing ())
@@ -4051,6 +4115,30 @@ static void dir_layout (ITK *itk, Diz *diz)
       free (d_name);
   }
 
+  if (diz->count <= 0)
+  {
+      CtxControl *c = NULL;
+      if (printing)
+      {
+        float width = itk->width;
+        float height = em;
+
+        ctx_begin_path (itk->ctx);
+        c = itk_add_control (itk, UI_LABEL, "item",
+          itk->x - em * (layout_config.padding_left * 2), itk->y, // - em * padding_top,
+          width + em * (layout_config.padding_left*2+layout_config.padding_right),
+          height + em * (layout_config.padding_top+layout_config.padding_bottom));
+        if (itk->focus_no == c->no)
+        {
+          itk_labelf (itk, "press return to add item");
+          //ctx_add_key_binding (ctx, "return", NULL, "edit first item", dir_location, NULL);
+          BIND_KEY ("return", "insert-text", "insert text item");
+        }
+        else
+        itk_labelf (itk, "no items");
+      }
+  }
+
   ctx_restore (itk->ctx);
 
   // draw title
@@ -4088,7 +4176,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       free (copy);
 
       ctx_rectangle (ctx, itk->x0 + sel_start, 1.0 * em - em,
-                          sel_end-sel_start,em * 3.0);
+                          sel_end-sel_start,em * 2.5);
       if (c_start==c_end)
         ctx_rgba (ctx, 1,1, 0.2, 1);
       else
@@ -4103,6 +4191,15 @@ static void dir_layout (ITK *itk, Diz *diz)
   {
     ctx_rgba (itk->ctx, 1,1,1,0.8);
     ctx_move_to (itk->ctx, itk->x0, 2 * em);
+
+    char *title = diz_get_string (diz, -1, "title");
+
+    if (title)
+    {
+      ctx_text (ctx, title);
+      free (title);
+    }
+    else
     if (diz->title)
       ctx_text (ctx, diz->title);
     else
@@ -4116,7 +4213,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   itk->width = saved_width;
 //  itk->y     = saved_y;
 
-  if (focused_no == -1 && !editing_location)
+  if (focused_no == -1 && !editing_location && itk->focus_no == 0)
   {
     BIND_KEY ("space", "toggle-context", "document properties");
     ctx_add_key_binding (ctx, "return", NULL, "location entry", dir_location, NULL);
@@ -4473,6 +4570,9 @@ static void dir_location_return (CtxEvent *e, void *d1, void *d2)
   editing_location = 0;
   set_location (commandline->str);
   ctx_string_set (commandline, "");
+  focused_no = -1;
+  layout_find_item = 0;
+  //        ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
 
   e->stop_propagate = 1;
   ctx_queue_draw (e->ctx);
@@ -4538,7 +4638,6 @@ static void dir_location_select_all (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
   ctx_queue_draw (e->ctx);
 }
-
 
 static void item_context_choice_prev (CtxEvent *e, void *d1, void *d2)
 {
@@ -4627,7 +4726,6 @@ static int delayed_dirt (Ctx *ctx, void *data)
 
 static int activate_from_start = 0;
 
-
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
@@ -4668,7 +4766,7 @@ static int card_files (ITK *itk_, void *data)
 
   BIND_KEY ("F1", "toggle-keybindings-display", "toggle keybinding help");
 
-  itk_panel_start (itk, "", 0,0, ctx_width(ctx),
+  panel = itk_panel_start (itk, "", 0,0, ctx_width(ctx),
                   ctx_height (ctx));
 
   if (dir_scale != 1.0f)
@@ -5564,8 +5662,8 @@ int stuff_main (int argc, char **argv)
   itk_main (card_files, NULL);
 
 
-  fprintf (stderr, "parents: %i\n",
-                  diz_value_count (diz, -1, "parent"));
+  //fprintf (stderr, "parents: %i\n",
+  //                diz_value_count (diz, -1, "parent"));
 
   save_metadata ();
 
@@ -5618,7 +5716,6 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
      ctx_fill (ctx);
      ctx_clients_draw (ctx, 0);
      ctx_get_drawlist (ctx, &count);
-     //fprintf (stderr, "{%i}", count);
      if (count > 120 || got_content) // formulated like this,
         got_content++;                // to catch the tiny size of correctly cached
      ctx_end_frame (ctx);             // textures

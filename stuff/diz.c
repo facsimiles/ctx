@@ -410,9 +410,9 @@ char *diz_get_string_no (Diz *diz, int item_no, const char *key, int value_no){
       {
         char ret[1034];
         int i;
-        for (i = keylen; m[i] != '\n' && i-keylen < 1024; i++)
-          ret[i-keylen] = m[i];
-        ret[i-keylen] = 0;
+        for (i = keylen + 2; m[i] != '\n' && i-keylen < 1024; i++)
+          ret[i-keylen - 2] = m[i];
+        ret[i-keylen - 2] = 0;
         return strdup (ret);
       }
       count ++;

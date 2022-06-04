@@ -15,13 +15,14 @@
  */
 
 typedef struct _ITK ITK;
+typedef struct _ITKPanel ITKPanel;
 
 extern int _itk_key_bindings_active;
 ITK *itk_new   (Ctx *ctx);
 void itk_free  (ITK *itk);
 void itk_reset (ITK *itk);
 
-void itk_panel_start (ITK *itk, const char *title, int x, int y, int width, int height);
+ITKPanel *itk_panel_start (ITK *itk, const char *title, int x, int y, int width, int height);
 void itk_panel_end   (ITK *itk);
 
 void itk_newline    (ITK *itk);
@@ -92,7 +93,6 @@ enum {
   ITK_FLAG_DEFAULT    = (ITK_FLAG_SHOW_LABEL|ITK_FLAG_ACTIVE)
 };
 
-typedef struct _ITKPanel ITKPanel;
 struct _ITKPanel{
   int x;
   int y;
@@ -611,9 +611,9 @@ CtxControl *itk_add_control (ITK *itk,
   control->height = height;
   ctx_list_prepend (&itk->controls, control);
 
-  if (itk->focus_no == control->no)
+  if (itk->focus_no == control->no && itk->focus_no != 0)
   {
-     if (itk->y - itk->panel->scroll < em * 2)// && control->height < itk->panel->height -em * 2)
+     if (itk->y - itk->panel->scroll < em * 2)
      {
         if (itk->panel->scroll != 0.0f)
         {
@@ -626,10 +626,6 @@ CtxControl *itk_add_control (ITK *itk,
      else if (itk->y - itk->panel->scroll +  control->height > itk->panel->y + itk->panel->height - em * 2 && control->height < itk->panel->height - em * 2)
      {
           itk->panel->scroll += itk->scroll_speed * itk->panel->height * (itk->panel->do_scroll_jump?5:1);
-#if 0
-        if (itk->panel->scroll > itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y)) - em * itk->rel_ver_advance;
-            itk->panel->scroll = itk->panel->max_y - itk->panel->scroll_start_y - (itk->panel->height-itk->panel->scroll_start_y-itk->panel->y) - em * itk->rel_ver_advance;
-#endif
 
         ctx_queue_draw (itk->ctx);
      }
@@ -644,8 +640,14 @@ CtxControl *itk_add_control (ITK *itk,
   if (itk->focus_no == control->no &&
       control->type != UI_BUTTON)  // own-bg
   {
+#if 0
     itk_style_color (itk->ctx, "itk-focused-bg");
     ctx_fill (itk->ctx);
+#else
+    itk_style_color (itk->ctx, "itk-fg");
+    ctx_line_width (itk->ctx, 2.0f);
+    ctx_stroke (itk->ctx);
+#endif
   }
   else
   {
@@ -890,7 +892,7 @@ void itk_scroll_end (ITK *itk)
 
 }
 
-void itk_panel_start (ITK *itk, const char *title,
+ITKPanel *itk_panel_start (ITK *itk, const char *title,
                       int x, int y, int width, int height)
 {
   Ctx *ctx = itk->ctx;
@@ -922,6 +924,7 @@ void itk_panel_start (ITK *itk, const char *title,
     itk_titlebar (itk, title);
 
   itk_scroll_start (itk, panel->height - (itk->y - panel->y));
+  return panel;
 }
 
 void itk_panel_resize_drag (CtxEvent *event, void *data, void *data2)
@@ -1805,16 +1808,16 @@ void itk_focus (ITK *itk, int dir)
         switch (dir)
         {
           case ITK_DIRECTION_DOWN:
-            valid = mid_cand_y > mid_ref_y;
+            valid = candidate->y > control->y;
             break;
           case ITK_DIRECTION_UP:
-            valid = mid_cand_y < mid_ref_y;
+            valid = candidate->y < control->y;
             break;
           case ITK_DIRECTION_LEFT:
-            valid = mid_cand_x < mid_ref_x;
+            valid = candidate->x < control->x;
             break;
           case ITK_DIRECTION_RIGHT:
-            valid = mid_cand_x > mid_ref_x;
+            valid = candidate->x > control->x;
             break;
         }
 
@@ -1824,6 +1827,7 @@ void itk_focus (ITK *itk, int dir)
           float control_coord[2]={0.f,0.f};
 
           float overlap = 0.0f;
+          float orthogonalSize = 1.0f;
           float orthogonalBias = 1.0f;
           float orthogonalWeight = 1.0f;
           float alignWeight = 5.0f;
@@ -1834,7 +1838,8 @@ void itk_focus (ITK *itk, int dir)
           case ITK_DIRECTION_DOWN:
             control_coord[1] = control->y + control->height;
             cand_coord[1]    = candidate->y;
-            orthogonalBias   = control->width / 2.0f;
+            orthogonalSize   = control->width;
+            orthogonalBias   = orthogonalSize / 2.0f;
             orthogonalWeight = 2.0f;
 
             if (candidate->x + candidate->width < control->x)
@@ -1901,7 +1906,8 @@ void itk_focus (ITK *itk, int dir)
 
             control_coord[1] = control->y;
             cand_coord[1]    = candidate->y + candidate->height;
-            orthogonalBias   = control->width / 2.0f;
+            orthogonalSize   = control->width;
+            orthogonalBias   = orthogonalSize / 2.0f;
             orthogonalWeight = 2.0f;
 
             if (candidate->x + candidate->width < control->x)
@@ -1967,7 +1973,8 @@ void itk_focus (ITK *itk, int dir)
           case ITK_DIRECTION_LEFT:
             control_coord[0] = control->x;
             cand_coord[0]    = candidate->x + candidate->width;
-            orthogonalBias   = control->height / 2.0f;
+            orthogonalSize   = control->height;
+            orthogonalBias   = orthogonalSize / 2.0f;
             orthogonalWeight = 30.0f;
 
             if (candidate->y + candidate->height < control->y)
@@ -2035,7 +2042,8 @@ void itk_focus (ITK *itk, int dir)
           case ITK_DIRECTION_RIGHT:
             control_coord[0] = control->x + control->width;
             cand_coord[0]    = candidate->x;
-            orthogonalBias   = control->height / 2.0f;
+            orthogonalSize   = control->height;
+            orthogonalBias   = orthogonalSize / 2.0f;
             orthogonalWeight = 30.0f;
 
             if (candidate->y + candidate->height < control->y)
@@ -2115,14 +2123,17 @@ void itk_focus (ITK *itk, int dir)
             break;
         }
 
-        float alignBias = overlap / (orthogonalBias*2.0f);
+        float alignBias = overlap / orthogonalSize;
         float alignment = alignWeight * alignBias;
 
         float euclidian = hypotf (cand_coord[0]-control_coord[0],
                                   cand_coord[1]-control_coord[1]);
 
 
-        float dist = euclidian  + displacement - alignment - ((overlap==0.0)?0.0:sqrtf(overlap));
+        float dist = euclidian  + displacement - alignment - sqrtf(sqrtf(overlap));
+        // here we deviate from the algorithm - giving a smaller bonus to overlap
+        // to ensure more intermediate small ones miht be chosen
+        //float dist = euclidian  + displacement - alignment - sqrtf(overlap);
           if (dist <= best_dist)
           {
              best_dist = dist;
@@ -2438,21 +2449,18 @@ void itk_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
 void itk_key_bindings (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
+  ctx_add_key_binding (ctx, "tab", NULL, "focus next",            itk_key_tab,       itk);
+  ctx_add_key_binding (ctx, "shift-tab", NULL, "focus previous",      itk_key_shift_tab, itk);
+
 
   ctx_add_key_binding (ctx, "up", NULL, "spatial focus up",   itk_key_up,        itk);
   ctx_add_key_binding (ctx, "down", NULL, "spatical focus down", itk_key_down,      itk);
-
-  // XXX simplify callbacks, and do binding based on selected control
-  //     (with per control-type vfunc)
-
   ctx_add_key_binding (ctx, "right", NULL, "spatial focus right",          itk_key_right,     itk);
   ctx_add_key_binding (ctx, "left", NULL, "spatial focus left",           itk_key_left,      itk);
 
   ctx_add_key_binding (ctx, "return", NULL, "",         itk_key_return,    itk);
   ctx_add_key_binding (ctx, "backspace", NULL, "",      itk_key_backspace, itk);
   ctx_add_key_binding (ctx, "delete", NULL, "",         itk_key_delete,    itk);
-  ctx_add_key_binding (ctx, "tab", NULL, "focus next",            itk_key_tab,       itk);
-  ctx_add_key_binding (ctx, "shift-tab", NULL, "focus previous",      itk_key_shift_tab, itk);
   ctx_add_key_binding (ctx, "any", NULL, "",            itk_key_unhandled, itk);
 }
 
