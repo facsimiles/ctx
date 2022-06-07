@@ -597,6 +597,8 @@ static void set_location (const char *location)
     }
   }
   _set_location (location);
+  focused_no = -1;
+  layout_find_item = -1;
 }
 
 int cmd_go_parent (COMMAND_ARGS) /* "go-parent", 0, "", "" */
@@ -4570,8 +4572,6 @@ static void dir_location_return (CtxEvent *e, void *d1, void *d2)
   editing_location = 0;
   set_location (commandline->str);
   ctx_string_set (commandline, "");
-  focused_no = -1;
-  layout_find_item = 0;
   //        ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
 
   e->stop_propagate = 1;
@@ -4872,7 +4872,7 @@ static int card_files (ITK *itk_, void *data)
           }
 
           if (!item_context_active)
-            ctx_add_key_binding (ctx, "any", NULL, "add char", dir_any, NULL);
+            ctx_add_key_binding (ctx, "any", NULL, NULL, dir_any, NULL);
           if (editing_location)
           {
             ctx_add_key_binding (ctx, "escape", NULL, "stop editing location", dir_location_escape, NULL);
