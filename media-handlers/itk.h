@@ -2458,10 +2458,10 @@ void itk_key_bindings (ITK *itk)
   ctx_add_key_binding (ctx, "right", NULL, "spatial focus right",          itk_key_right,     itk);
   ctx_add_key_binding (ctx, "left", NULL, "spatial focus left",           itk_key_left,      itk);
 
-  ctx_add_key_binding (ctx, "return", NULL, "",         itk_key_return,    itk);
-  ctx_add_key_binding (ctx, "backspace", NULL, "",      itk_key_backspace, itk);
-  ctx_add_key_binding (ctx, "delete", NULL, "",         itk_key_delete,    itk);
-  ctx_add_key_binding (ctx, "any", NULL, "",            itk_key_unhandled, itk);
+  ctx_add_key_binding (ctx, "return", NULL, "enter/edit", itk_key_return,    itk);
+  ctx_add_key_binding (ctx, "backspace", NULL, NULL,    itk_key_backspace, itk);
+  ctx_add_key_binding (ctx, "delete", NULL, NULL,       itk_key_delete,    itk);
+  ctx_add_key_binding (ctx, "any", NULL, NULL,          itk_key_unhandled, itk);
 }
 
 void ctx_choice_set (CtxEvent *event, void *data, void *data2)
