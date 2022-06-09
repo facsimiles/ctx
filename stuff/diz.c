@@ -36,7 +36,7 @@ void diz_wipe_cache (Diz *diz, int full)
   }
 }
 
-void diz_load (Diz *diz, const char *path, int text_editor_mode)
+void diz_load_text_file (Diz *diz, const char *path)
 {
   diz->metadata_cache_no = -3;
   diz->metadata_cache = NULL;
@@ -47,7 +47,6 @@ void diz_load (Diz *diz, const char *path, int text_editor_mode)
   diz->metadata = NULL;
   diz->metadata_len = 0;
   diz->metadata_size = 0;
-  if (text_editor_mode)
   {
     uint8_t *contents = NULL;
     long length = 0;
@@ -77,7 +76,20 @@ void diz_load (Diz *diz, const char *path, int text_editor_mode)
     }
 
   }
-  else
+  diz_wipe_cache (diz, 1);
+}
+
+void diz_load_dir (Diz *diz, const char *path)
+{
+  diz->metadata_cache_no = -3;
+  diz->metadata_cache = NULL;
+  if (diz->metadata_path) free (diz->metadata_path);
+  diz->metadata_path = malloc (strlen (path) + 20);
+  if (diz->metadata)
+    free (diz->metadata);
+  diz->metadata = NULL;
+  diz->metadata_len = 0;
+  diz->metadata_size = 0;
   {
     snprintf (diz->metadata_path, strlen(path)+20, "%s/.ctx/index", path);
   ctx_get_contents (diz->metadata_path, (uint8_t**)&diz->metadata, &diz->metadata_size);
@@ -239,6 +251,11 @@ char *diz_get_name (Diz *diz, int no)
   /* this makes use reuse the cache */
   const char *m = diz_find_no (diz, no);
   if (!m) return NULL;
+  if (m == diz->metadata)
+  {
+    if (no < 0) return "eeep";
+    return "beep";
+  }
   m--;
   m--;
   while (m[0]!='\n' && m != diz->metadata)m--;
@@ -606,6 +623,10 @@ void diz_remove (Diz *diz, int no)
 
 void diz_unset (Diz *diz, int no, const char *key)
 {
+  int count = diz_value_count (diz, no, key);
+
+  while (count --)
+  {
   const char *a_meta = diz_find_no (diz, no);
   CtxString *str = ctx_string_new ("");
   const char *m = a_meta;
@@ -650,6 +671,64 @@ void diz_unset (Diz *diz, int no, const char *key)
             diz->metadata + a_start + a_len, diz->metadata_len - a_start - a_len);
    diz->metadata_len -= a_len;
    diz->metadata[diz->metadata_len]=0;
+  }
+   diz_wipe_cache (diz, 1);
+}
+
+void diz_unset_value (Diz *diz, int no, const char *key, const char *value)
+{
+  const char *a_meta = diz_find_no (diz, no);
+  CtxString *str_key = ctx_string_new ("");
+  CtxString *str_value = ctx_string_new ("");
+  const char *m = a_meta;
+  const char *prop_start = m;
+  int a_len = 0;
+
+  if (!m) return;
+  if (m[0] == ' ')
+  do {
+     ctx_string_set (str_key, "");
+     ctx_string_set (str_value, "");
+     a_len = 0;
+     prop_start = m;
+     while (*m && m[0] == ' '){ m++;
+       a_len++;
+     }
+     while (*m && m[0] != '=') {
+       ctx_string_append_byte (str_key, m[0]);
+       m++;
+       a_len++;
+     }
+     if (m[0] == '=') { m ++; a_len++; }
+     while (m && *m && *m != '\n'){
+       ctx_string_append_byte (str_value, m[0]);
+       m++;
+       a_len++;
+     }
+     if (*m == '\n'){
+       m++;
+       a_len ++;
+     }
+     if (!strcmp (key, str_key->str) &&
+         !strcmp (value, str_value->str))
+     {
+       break;
+     }
+     prop_start = NULL;
+  } while (m[0] == ' ');
+
+  ctx_string_free (str_key, 1);
+  ctx_string_free (str_value, 1);
+
+  if (!prop_start)
+    return;
+   
+   int a_start = prop_start - diz->metadata;
+
+   memmove (diz->metadata + a_start,
+            diz->metadata + a_start + a_len, diz->metadata_len - a_start - a_len);
+   diz->metadata_len -= a_len;
+   diz->metadata[diz->metadata_len]=0;
    diz_wipe_cache (diz, 1);
 }
 
@@ -672,7 +751,7 @@ int diz_insert (Diz *diz, int pos, const char *item)
 {
   const char *m = NULL;
   if (pos == -1)
-    pos = diz->metadata_len;
+    pos = diz_count (diz);
   else
     m = diz_find_no (diz, pos);
 
@@ -731,32 +810,36 @@ void diz_set_name (Diz *diz, int pos, const char *new_name)
 
 void diz_add_string (Diz *diz, int no, const char *key, const char *value)
 {
-  CtxString *str = ctx_string_new ( " ");
-  diz_unset (diz, no, key);
+//  diz_unset (diz, no, key);
 
   const char *m = diz_find_no (diz, no);
   int offset = diz->metadata_len;
   if (m)
   {
+    CtxString *str = ctx_string_new ( " ");
+#if 1
     while (m[0] == ' ')
     {
-       while (m[0] != '\n') m++;
+       while (m[0] && m[0] != '\n') m++;
        if (m[0] == '\n') m++;
     }
+#endif
     offset = m - diz->metadata;
+    ctx_string_append_str (str, key);
+    ctx_string_append_byte (str, '=');
+    ctx_string_append_str (str, value);
+    ctx_string_append_byte (str, '\n');
+    _diz_insert (diz, offset, str->str, str->length);
   }
   else
   {
     // XXX assert?
     //ctx_string_append_str (str, item);
     //ctx_string_append_byte (str, '\n');
+    fprintf (stderr, "unexpected %s %i  %s:%i   %s %s\n", __FUNCTION__, no, __FILE__, __LINE__, key, value);
+    offset = 0;
   }
-  ctx_string_append_str (str, key);
-  ctx_string_append_byte (str, '=');
-  ctx_string_append_str (str, value);
-  ctx_string_append_byte (str, '\n');
 
-  _diz_insert (diz, offset, str->str, str->length);
 }
 
 void diz_add_string_unique (Diz *diz, int item_no, const char *key, const char *new_value)
@@ -909,6 +992,29 @@ diz_update_files (Diz *diz)
 
 
 void
+diz_set_path_text_editor  (Diz *diz,
+                     const char *path,
+                     const char *title)
+{
+  char *resolved_path = realpath (path, NULL);
+  char *title2 = NULL;
+
+  if (title) title2 = strdup (title);
+  else title2 = strdup (path);
+
+  if (diz->path)
+    free (diz->path);
+  diz->path = resolved_path;
+  if (diz->title)
+    free (diz->title);
+  diz->title = title2;
+
+  diz_load_text_file (diz, resolved_path);
+  diz->count = diz_count (diz);
+}
+
+
+void
 diz_set_path (Diz *diz,
                      const char *path,
                      const char *title)
@@ -927,11 +1033,8 @@ diz_set_path (Diz *diz,
     free (diz->title);
   diz->title = title2;
 
-  diz_load (diz, resolved_path, text_editor);
+  diz_load_dir (diz, resolved_path);
   diz->count = diz_count (diz);
-
-  if (text_editor)
-    return;
 
   diz_update_files (diz);
 }
@@ -1252,4 +1355,16 @@ CtxAtom diz_type_atom (Diz *diz, int i)
   }
   return CTX_ATOM_TEXT;
 }
+
+
+void diz_dirt (Diz *diz)
+{
+  if (!diz) return;
+  diz->dirty++;
+  diz->metadata_cache_no=-3;
+  //diz_save ();
+  diz->count = diz_count (diz);
+//  save_metadata ();
+}
+
 
