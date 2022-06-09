@@ -1748,6 +1748,7 @@ static void dir_select_item (CtxEvent *event, void *data1, void *data2)
    {
      itk->focus_no = (size_t)data1;
    }
+   entry_commit (itk);
    ctx_queue_draw (event->ctx);
    event->stop_propagate = 1;
 }
@@ -3592,9 +3593,6 @@ static void dir_layout (ITK *itk, Diz *diz)
           if (!is_text_editing()
               && !item_context_active)
           {
-
-            BIND_KEY("control-o", "?", "get help");
-            BIND_KEY("control-p", "? ?", "get help");
 
             if (!text_editor)
             {

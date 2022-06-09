@@ -39,7 +39,7 @@ void itk_slider_int (ITK *itk, const char *label, int *val, int min, int max, in
 void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step);
 void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step);
 
-void itk_entry      (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
+int itk_entry      (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
                      void (*commit)(ITK *itk, void *commit_data), void *commit_data);
 void itk_toggle     (ITK *itk, const char *label, int *val);
 int  itk_radio      (ITK *itk, const char *label, int set);
@@ -212,6 +212,7 @@ struct _ITK{
 
   int   active;  // currently in edit-mode of focused widget
 
+  int   active_entry;
   int focus_wraparound;
 
   int   focus_no;
@@ -1218,17 +1219,20 @@ void itk_slider_int32 (ITK *itk, const char *label, int32_t *val, int32_t min, i
 
 void entry_commit (ITK *itk)
 {
+  if (itk->active_entry<0)
+     return;
 
   for (CtxList *l = itk->controls; l; l=l->next)
   {
     CtxControl *control = l->data;
-    if (control->no == itk->focus_no)
+    if (control->no == itk->active_entry)
     {
       switch (control->type)
       {
         case UI_ENTRY:
-         if (itk->active && itk->entry_copy)
+         if (itk->entry_copy)
          {
+  fprintf (stderr, "ec %i %s\n", itk->active_entry, itk->entry_copy);
            if (control->commit)
            {
              control->commit (itk, control->data);
@@ -1239,6 +1243,8 @@ void entry_commit (ITK *itk)
            }
            free (itk->entry_copy);
            itk->entry_copy = NULL;
+           itk->active = 2;
+           ctx_queue_draw (itk->ctx);
          }
       }
       return;
@@ -1255,20 +1261,20 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
   if (itk->active)
   {
     entry_commit (itk);
-    itk->active = 0;
   }
   else
   {
     itk->entry_copy = strdup (control->val);
     itk->entry_pos = strlen (control->val);
     itk->active = 1;
+    itk->active_entry = control->no;
   }
 
   itk_set_focus (itk, control->no);
   ctx_queue_draw (event->ctx);
 }
 
-void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
+int itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
                   void (*commit)(ITK *itk,
                                  void *commit_data),
                                 void *commit_data)
@@ -1291,7 +1297,7 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   control->val = val;
   if (fallback)
     control->fallback = strdup (fallback);
-//control->ref_count++;
+  control->ref_count++;
 //control->ref_count++;
   control->commit = commit;
   control->data = commit_data;
@@ -1347,6 +1353,15 @@ void itk_entry (ITK *itk, const char *label, const char *fallback, char *val, in
   }
   itk->x += ewidth;
   itk_newline (itk);
+
+  if (itk->active == 2 && control->no == itk->active_entry)
+  {
+    itk->active = 0;
+    itk->active_entry = -1;
+    return 1;
+  }
+  else
+  return 0;
 }
 
 void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
@@ -2145,7 +2160,6 @@ void itk_focus (ITK *itk, int dir)
 
     entry_commit (itk);
     itk_set_focus (itk, best->no);
-    itk->active = 0;
   }
 }
 
@@ -2155,7 +2169,6 @@ void itk_key_tab (CtxEvent *event, void *data, void *data2)
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
   itk_focus (itk, ITK_DIRECTION_NEXT);
-  itk->active = 0;
 
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
@@ -2167,7 +2180,6 @@ void itk_key_shift_tab (CtxEvent *event, void *data, void *data2)
   CtxControl *control = itk_focused_control (itk);
   if (!control) return;
   itk_focus (itk, ITK_DIRECTION_PREVIOUS);
-  itk->active = 0;
 
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
@@ -2192,13 +2204,13 @@ void itk_key_return (CtxEvent *event, void *data, void *data2)
          if (itk->active)
          {
            entry_commit (itk);
-           itk->active = 0;
          }
          else
          {
            itk->entry_copy = strdup (control->val);
            itk->entry_pos = strlen (control->val);
            itk->active = 1;
+           itk->active_entry = control->no;
          }
        }
        break;
@@ -2266,7 +2278,6 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
   else
   {
     itk_focus (itk, ITK_DIRECTION_LEFT);
-    itk->active = 0;
   }
 
   event->stop_propagate = 1;
@@ -2309,14 +2320,11 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
   else
   {
     itk_focus (itk, ITK_DIRECTION_RIGHT);
-    itk->active = 0;
   }
 
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
-
 }
-
 
 void itk_key_up (CtxEvent *event, void *data, void *data2)
 {
@@ -2342,7 +2350,6 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
   else if (control)
   {
     itk_focus (itk, ITK_DIRECTION_UP);
-    itk->active = 0;
   }
   ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
@@ -2373,7 +2380,6 @@ void itk_key_down (CtxEvent *event, void *data, void *data2)
   else if (control)
   {
     itk_focus (itk, ITK_DIRECTION_DOWN);
-    itk->active = 0;
   }
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
@@ -2431,6 +2437,9 @@ void itk_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
       if (!strcmp (str, "space"))
         str = " ";
 
+      if (ctx_utf8_strlen (str) == 1)
+      {
+
       char *tmp = malloc (strlen (itk->entry_copy) + strlen (str) + 1);
 
       char *rest = strdup (&itk->entry_copy[itk->entry_pos]);
@@ -2442,6 +2451,11 @@ void itk_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
       free (itk->entry_copy);
       itk->entry_copy = tmp;
       ctx_queue_draw (event->ctx);
+      }
+      else
+      {
+              fprintf (stderr, "unhandled %s\n", str);
+      }
     }
   event->stop_propagate = 1;
 }
