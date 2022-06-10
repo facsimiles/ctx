@@ -445,7 +445,7 @@ static int path_is_dir (const char *path)
   return S_ISDIR (stat_buf.st_mode);
 }
 
-static char *dir_diz_path (const char *path);
+static char *diz_wiki_path (const char *path);
 
 static CtxList *history = NULL;
 static CtxList *future = NULL;
@@ -510,15 +510,7 @@ static void _set_location (const char *location)
     if (loc != location) free (loc);
   } else
   {
-    char *path = dir_diz_path (location);
-    fprintf (stderr, "%i:%s\n", __LINE__, path);
-    if (path_is_dir (path))
-    {
-    }
-    else
-    {
-      mkdir (path, 0777);
-    }
+    char *path = diz_wiki_path (location);
     diz_set_path (diz, path, location);
     diz_set_name (diz, -1, location);
     save_metadata ();////diz_save (diz, 0);
@@ -742,19 +734,19 @@ static const char *ctx_basedir (void)
     }
     else
       val = strdup ("/tmp/ctx");
+    mkdir (val, 0777);
   }
   return val;
 }
 
-
-static char *dir_diz_path (const char *path)
+static char *diz_wiki_path (const char *wiki_title)
 {
-  char *ret;
+  char *path;
   char *hex="0123456789abcdef";
   unsigned char hash[40];
   unsigned char hash_hex[51];
   CtxSHA1 *sha1 = ctx_sha1_new ();
-  ctx_sha1_process (sha1, (uint8_t*)path, strlen (path));
+  ctx_sha1_process (sha1, (uint8_t*)wiki_title, strlen (wiki_title));
   ctx_sha1_done (sha1, hash);
   ctx_sha1_free (sha1);
   for (int j = 0; j < 20; j++)
@@ -763,10 +755,10 @@ static char *dir_diz_path (const char *path)
     hash_hex[j*2+1]=hex[hash[j]%16];
   }
   hash_hex[40]=0;
-  ret = ctx_strdup_printf ("%s/%s", ctx_basedir(), hash_hex);
-  return ret;
+  path = ctx_strdup_printf ("%s/%s", ctx_basedir(), hash_hex);
+  mkdir (path, 0777);
+  return path;
 }
-
 
 int dir_follow_link (COMMAND_ARGS) /* "follow-link", 0, "", "" */
 {
@@ -3212,6 +3204,8 @@ static void dir_layout (ITK *itk, Diz *diz)
       if (itk_entry (itk, "", "+", tag, sizeof(tag)-1, NULL, NULL))
       {
         diz_add_string_unique (diz, -1, "parent", tag);
+
+
         diz_dirt (diz);
         tag[0]=0;
         ctx_queue_draw (itk->ctx);
