@@ -160,7 +160,7 @@ static char *diz_get_name_escaped (Diz *diz, int no)
   if (!m) return NULL;
   int count = 0;
   do {
-     if (m && m[0] != ' '){
+     if (m[0] != ' '){
         if (count == no)
         {
           CtxString *str = ctx_string_new ("");
@@ -172,7 +172,7 @@ static char *diz_get_name_escaped (Diz *diz, int no)
         }
         count ++;
      }
-     while (m && *m && *m != '\n') m++;
+     while (*m && *m != '\n') m++;
      if (*m == '\n') m++;
   } while (m && m[0]);
   return NULL;
@@ -223,7 +223,7 @@ static char *diz_find_no (Diz *diz, int no)
     {
       // it is a key
       while (*m && *m != '\n') m++;
-      if (*m && *m == '\n') m++;
+      if (*m == '\n') m++;
     }
   }
   return NULL;
@@ -291,7 +291,6 @@ char *diz_get_name (Diz *diz, int no)
         ctx_string_append_byte (str, m[i]);
     }
   }
-
   diz->cache[no]=strdup(str->str);
   return ctx_string_dissolve (str);
 }
@@ -529,7 +528,7 @@ char *diz_get_string (Diz *diz, int no, const char *key)
        }
        return ctx_string_dissolve (str);
      }
-     while (m && *m && *m != '\n') m++;
+     while (*m && *m != '\n') m++;
      if (*m == '\n') m++;
   } while (m[0] == ' ');
   ctx_string_free (str, 1);
