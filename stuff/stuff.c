@@ -3040,9 +3040,36 @@ static void ui_visit_tag (CtxEvent *event, void *a, void *b)
   event->stop_propagate = 1;
 }
 
+
+static char *diz_tag_child_item_path (const char *tag, const char *path)
+{
+  char *hex="0123456789abcdef";
+  unsigned char hash[40];
+  unsigned char hash_hex[51];
+  CtxSHA1 *sha1 = ctx_sha1_new ();
+  ctx_sha1_process (sha1, (uint8_t*)diz->path, strlen (diz->path));
+  ctx_sha1_done (sha1, hash);
+  ctx_sha1_free (sha1);
+  for (int j = 0; j < 20; j++)
+  {
+    hash_hex[j*2+0]=hex[hash[j]/16];
+    hash_hex[j*2+1]=hex[hash[j]%16];
+  }
+  hash_hex[40]=0;
+  char *link_target = ctx_strdup_printf ("%s/%s",
+                      diz_wiki_path (tag),
+                      hash_hex);
+  return link_target;
+}
+
 static void ui_remove_tag (CtxEvent *event, void *a, void *b)
 {
   diz_unset_value (diz, -1, "parent", (char*)a);
+
+  char *link_target = diz_tag_child_item_path ((char*)a, diz->path);
+  unlink (link_target);
+  free (link_target);
+
   diz_dirt (diz);
   ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
@@ -3204,8 +3231,9 @@ static void dir_layout (ITK *itk, Diz *diz)
       if (itk_entry (itk, "", "+", tag, sizeof(tag)-1, NULL, NULL))
       {
         diz_add_string_unique (diz, -1, "parent", tag);
-
-
+        char *link_path = diz_tag_child_item_path (tag, diz->path);
+        symlink (diz->path, link_path);
+        free (link_path);
         diz_dirt (diz);
         tag[0]=0;
         ctx_queue_draw (itk->ctx);
@@ -5654,6 +5682,18 @@ int stuff_main (int argc, char **argv)
   else
   {
     set_layout (NULL, NULL, NULL);
+
+    if (path_is_dir (path))
+    {
+      char *name = NULL;
+      set_location (path);
+      focused_no = -1;
+      layout_find_item = focused_no;
+
+    }
+    else
+    {
+
     char *dir = strdup (path);
     char *name = NULL;
     if (strrchr (dir, '/'))
@@ -5674,6 +5714,7 @@ int stuff_main (int argc, char **argv)
       activate_from_start = 1;
     }
     free (dir);
+    }
   }
 
   itk_main (card_files, NULL);
