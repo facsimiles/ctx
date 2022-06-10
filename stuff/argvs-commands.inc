@@ -17,6 +17,7 @@ int dir_insert (COMMAND_ARGS);
 int dir_load (COMMAND_ARGS);
 int dir_parent (COMMAND_ARGS);
 int dir_set_name (COMMAND_ARGS);
+int dir_visit_symlink (COMMAND_ARGS);
 int dir_zoom (COMMAND_ARGS);
 int focus_next (COMMAND_ARGS);
 int focus_next_link (COMMAND_ARGS);
@@ -52,6 +53,7 @@ void argvs_register(void) {
  argvs_add (dir_load ,  "load-path", 1, "<path>", "" );
  argvs_add (dir_parent ,  "parent", 0, "", "" );
  argvs_add (dir_set_name ,  "set-name", 2, "<no> <name>", "" );
+ argvs_add (dir_visit_symlink ,  "visit-symlink", 0, "", "" );
  argvs_add (dir_zoom ,  "zoom", 1, "<in|out|val>", "" );
  argvs_add (focus_next ,  "focus-next", 0, "", "" );
  argvs_add (focus_next_link ,  "focus-next-link", 0, "", "" );

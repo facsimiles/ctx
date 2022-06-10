@@ -13,6 +13,7 @@ typedef enum CtxAtom {
  CTX_ATOM_RECTANGLE,
  CTX_ATOM_CTX,
  CTX_ATOM_FILE,
+ CTX_ATOM_SYMLINK,
 } CtxAtom;
 
 typedef struct Diz {
@@ -33,7 +34,6 @@ typedef struct Diz {
   int     dirty;
 } Diz;
 
-void diz_load         (Diz *diz, const char *path, int text_file);
 void diz_save         (Diz *diz, int text_file);
 void diz_set_path     (Diz *diz, const char *path, const char *title);
 

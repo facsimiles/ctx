@@ -598,8 +598,11 @@ void diz_swap (Diz *diz, int no_a, int no_b)
 static void _diz_remove (Diz *diz, int no)
 {
    char *a_name = diz_get_name_escaped (diz, no);
-   int a_name_len = strlen (a_name);
    const char *a_meta = diz_find_no (diz, no);
+
+   if (!a_meta)
+     return;
+   int a_name_len = strlen (a_name);
 
    int a_start = (a_meta - diz->metadata) - a_name_len - 1;
    int a_len = a_name_len + 1 + _diz_metalen (diz, a_meta);
@@ -919,6 +922,16 @@ static int custom_sort (const struct dirent **a,
 
 extern int text_editor;
 
+static int path_is_link (const char *path)
+{
+  struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
+  lstat (path, &stat_buf);
+  return S_ISLNK (stat_buf.st_mode);
+}
+
+#include <libgen.h>
+
 static void
 diz_update_files (Diz *diz)
 {
@@ -934,7 +947,9 @@ diz_update_files (Diz *diz)
     const char *name = namelist[i]->d_name;
     if (diz_name_to_no (diz, name)>=0)
        found = 1;
-    if (!found && (name[0] != '.'))
+    if (!found && (name[0] != '.')) // skipping dot-files
+                                    // could be a setting default
+                                    // would be on.
     {
       ctx_list_prepend (&to_add, strdup (name));
     }
@@ -942,10 +957,39 @@ diz_update_files (Diz *diz)
   while (to_add)
   {
     char *name = to_add->data;
+    char *full_path = ctx_strdup_printf ("%s/%s", diz->path, name);
     int n = diz_insert(diz, -1, name);
-    diz_set_string (diz, n, "type", "file");
+    if (path_is_link (full_path))
+    {
+      char target[1024];
+      ssize_t len;
+      if ((len = readlink(full_path, target, sizeof(target)-1)) != -1)
+         target[len] = '\0';
+
+      diz_set_string (diz, n, "type", "symlink");
+      diz_set_string (diz, n, "target", target);
+
+      //if (strstr (target, ".ctx"))
+     // {
+        //Diz temp_diz;
+        //memset(&temp_diz, 0, sizeof (temp_diz));
+        //diz_set_path (&temp_diz, target, NULL);
+        //char *title = temp_diz.title;
+        //diz_set_string (diz, n, "label", temp_diz.title);
+     // }
+     // else
+      {
+        diz_set_string (diz, n, "label", basename(target));
+      }
+
+    }
+    else
+    {
+      diz_set_string (diz, n, "type", "file");
+    }
     ctx_list_remove (&to_add, name);
     free (name);
+    free (full_path);
   }
 
   diz->count = diz_count (diz);
@@ -953,7 +997,8 @@ diz_update_files (Diz *diz)
   for (int i = 0; i < diz->count; i++)
   {
     int atom = diz_type_atom (diz, i);
-    if (atom == CTX_ATOM_FILE)
+    if (atom == CTX_ATOM_FILE ||
+        atom == CTX_ATOM_SYMLINK)
     {
       char *name = diz_get_name (diz, i);
       char *path = ctx_strdup_printf ("%s/%s", diz->path, name);
@@ -967,6 +1012,8 @@ diz_update_files (Diz *diz)
       free (path);
     }
   }
+  diz_dirt (diz);
+
   while (to_remove)
   {
     char *name = to_remove->data;
@@ -977,6 +1024,7 @@ diz_update_files (Diz *diz)
     }
     ctx_list_remove (&to_remove, name);
     free (name);
+    diz_dirt (diz);
   }
 
   diz->count = diz_count (diz);
@@ -1351,6 +1399,9 @@ CtxAtom diz_type_atom (Diz *diz, int i)
 
     else if (!strcmp (type, "file"))
     {free (type); return CTX_ATOM_FILE;}
+
+    else if (!strcmp (type, "symlink"))
+    {free (type); return CTX_ATOM_SYMLINK;}
     free (type);
   }
   return CTX_ATOM_TEXT;
