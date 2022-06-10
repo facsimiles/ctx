@@ -1823,15 +1823,19 @@ void itk_focus (ITK *itk, int dir)
 
     CtxControl *control = itk_focused_control (itk);
     CtxControl *best = control;
+
+    if (!best)
+       best = itk->controls->data;
+
     float best_dist = 10000000000.0;
     {
-      float mid_ref_x = control->x + control->width/2;
-      float mid_ref_y = control->y + control->height/2;
+      //float mid_ref_x = control->x + control->width/2;
+      //float mid_ref_y = control->y + control->height/2;
       for (CtxList *iter = itk->controls; iter; iter=iter->next)
       {
         CtxControl *candidate = iter->data;
-        float mid_cand_x = candidate->x + candidate->width/2;
-        float mid_cand_y = candidate->y + candidate->height/2;
+        //float mid_cand_x = candidate->x + candidate->width/2;
+        //float mid_cand_y = candidate->y + candidate->height/2;
 
         int valid = 0;
         if (candidate != control)
