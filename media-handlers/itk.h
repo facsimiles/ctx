@@ -39,8 +39,21 @@ void itk_slider_int (ITK *itk, const char *label, int *val, int min, int max, in
 void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step);
 void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step);
 
-int itk_entry      (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
+/*  returns 1 when the value has been committed
+ */
+int itk_entry      (ITK        *itk,
+                    const char *label,
+                    const char *fallback,
+                    char       *val,
+                    int         maxlen,
                      void (*commit)(ITK *itk, void *commit_data), void *commit_data);
+
+/* to be called on focus changes that might take focus away from
+ * edited itk_entry
+ */
+void itk_entry_commit (ITK *itk);
+
+
 void itk_toggle     (ITK *itk, const char *label, int *val);
 int  itk_radio      (ITK *itk, const char *label, int set);
 int  itk_expander   (ITK *itk, const char *label, int *val);
@@ -1217,7 +1230,7 @@ void itk_slider_int32 (ITK *itk, const char *label, int32_t *val, int32_t min, i
                  itk_slider_set_int32, NULL);
 }
 
-void entry_commit (ITK *itk)
+void itk_entry_commit (ITK *itk)
 {
   if (itk->active_entry<0)
      return;
@@ -1260,7 +1273,7 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
 
   if (itk->active)
   {
-    entry_commit (itk);
+    itk_entry_commit (itk);
   }
   else
   {
@@ -1679,7 +1692,7 @@ void itk_set_focus (ITK *itk, int pos)
        if (control->label)
          itk->focus_label = strdup (control->label);
      }
-     entry_commit (itk);
+     itk_entry_commit (itk);
      ctx_queue_draw (itk->ctx);
    }
 }
@@ -1747,7 +1760,7 @@ CtxControl *itk_focused_control(ITK *itk)
 
 void itk_focus (ITK *itk, int dir)
 {
-   entry_commit (itk);
+   itk_entry_commit (itk);
    if (itk->focus_no < 0)
    {
      itk->focus_no = 0;
@@ -2158,7 +2171,7 @@ void itk_focus (ITK *itk, int dir)
       }
     }
 
-    entry_commit (itk);
+    itk_entry_commit (itk);
     itk_set_focus (itk, best->no);
   }
 }
@@ -2203,7 +2216,7 @@ void itk_key_return (CtxEvent *event, void *data, void *data2)
        {
          if (itk->active)
          {
-           entry_commit (itk);
+           itk_entry_commit (itk);
          }
          else
          {

@@ -48,6 +48,7 @@ void diz_remove       (Diz *diz, int item_no);
 
 // XXX : currently does not work properly with multi-keys
 void diz_unset        (Diz *diz, int item_no, const char *key);
+void diz_unset_value  (Diz *diz, int no, const char *key, const char *value);
 int  diz_insert       (Diz *diz, int pos, const char *item_name);
 
 void diz_set_name     (Diz *diz, int item_no, const char *new_name);
@@ -57,7 +58,6 @@ void diz_add_string   (Diz *diz, int item_no, const char *key, const char *value
 void diz_set_float    (Diz *diz, int item_no, const char *key, float value);
 
 void diz_add_string_unique (Diz *diz, int item_no, const char *key, const char *value);
-void diz_unset_value (Diz *diz, int no, const char *key, const char *value);
 
 /* metadata query API */
 

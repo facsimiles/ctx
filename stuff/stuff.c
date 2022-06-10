@@ -1739,7 +1739,7 @@ static void dir_select_item (CtxEvent *event, void *data1, void *data2)
    {
      itk->focus_no = (size_t)data1;
    }
-   entry_commit (itk);
+   itk_entry_commit (itk);
    ctx_queue_draw (event->ctx);
    event->stop_propagate = 1;
 }
@@ -3056,6 +3056,9 @@ static void ui_remove_tag (CtxEvent *event, void *a, void *b)
   event->stop_propagate = 1;
 }
 
+#define BIND_KEY(key, command, help) \
+            do {ctx_add_key_binding (ctx, key, NULL, help, ui_run_command, command);} while(0)
+
 static void dir_layout (ITK *itk, Diz *diz)
 {
   Ctx *ctx = itk->ctx;
@@ -3120,6 +3123,17 @@ static void dir_layout (ITK *itk, Diz *diz)
   float space_width = ctx_text_width (itk->ctx, " ");
   ctx_font_size (itk->ctx, itk->font_size);
 
+            if (!is_text_editing() && !viewer && !text_editor)
+            {
+
+              if (history)
+                BIND_KEY("alt-left", "history back", "back");
+              if (future)
+                BIND_KEY("alt-right", "history forward", "forward");
+
+              BIND_KEY ("alt-up",    "go-parent",    "go to parent");
+              BIND_KEY ("alt-down",  "activate",  "enter item");
+            }
 
   if (!layout_config.outliner)
   {
@@ -3152,8 +3166,6 @@ static void dir_layout (ITK *itk, Diz *diz)
                      itk->font_size * 2.5);
     ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)((size_t)(-1)), NULL);
   }
-#define BIND_KEY(key, command, help) \
-            do {ctx_add_key_binding (ctx, key, NULL, help, ui_run_command, command);} while(0)
 
   itk->y = 2.0 * itk->font_size;
   int parents = diz_value_count (diz, -1, "parent");
@@ -3197,7 +3209,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       itk->y+= itk->font_size * 0.5;
       float w = itk->width;
       itk->width = width;
-      if (itk_entry (itk, "", "+", tag, 99, NULL, NULL))
+      if (itk_entry (itk, "", "+", tag, sizeof(tag)-1, NULL, NULL))
       {
         diz_add_string_unique (diz, -1, "parent", tag);
         diz_dirt (diz);
@@ -3615,17 +3627,9 @@ static void dir_layout (ITK *itk, Diz *diz)
               && !item_context_active)
           {
 
-            if (!text_editor)
-            {
 
-              if (history)
-                BIND_KEY("alt-left", "history back", "back");
-              if (future)
-                BIND_KEY("alt-right", "history forward", "forward");
 
-              BIND_KEY ("alt-up",    "go-parent",    "go to parent");
-              BIND_KEY ("alt-down",  "activate",  "enter item");
-            }
+
             BIND_KEY ("control-d", "duplicate", "duplicate item");
 
             BIND_KEY ("delete", "remove", "remove item");
@@ -4237,7 +4241,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   if (focused_no == -1 && !editing_location && itk->focus_no == 0)
   {
     BIND_KEY ("space", "toggle-context", "document properties");
-    ctx_add_key_binding (ctx, "return", NULL, "location entry", dir_location, NULL);
+    ctx_add_key_binding (ctx, "return", NULL, "edit location", dir_location, NULL);
   }
 }
 
