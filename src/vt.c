@@ -3031,10 +3031,10 @@ static void ctx_wait_frame (Ctx *ctx, VT *vt)
            max_wait-- > 0)
     {
 #if CTX_AUDIO
-      usleep (5);
+      usleep (10);
       vt_audio_task (vt, 0);
 #else
-      usleep (5);
+      usleep (10);
 #endif
       ctx_show_frame (ctx, 0);
     }
