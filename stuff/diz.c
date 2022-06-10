@@ -318,7 +318,7 @@ static char *diz_escape_item (const char *item) // XXX expand with length to
   // bare newlines - which some parts of the code
   // still has trouble with
   // XXX XXX XXX
-  if (item[0]==0)return strdup("\\0");
+  //if (item[0]==0)return strdup("\\0");
   
   CtxString *str = ctx_string_new ("");
   for (int i = 0; item[i]; i++)

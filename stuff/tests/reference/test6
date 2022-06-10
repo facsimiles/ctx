@@ -1,0 +1,30 @@
+load-path a
+insert-text
+insert-text
+set-name 0 foo
+set-name 1 bar
+focus-no 1
+make-child-of-previous
+focus-no 0
+duplicate
+focus-no 4
+insert-text
+insert-text
+focus-no 4
+move-before-previous-sibling
+dump
+item count: 10
+     :0,0
+foo     :1,1
+___     :2,2
+   type=startgroup
+    bar     :3,3
+    ~~~     :4,4
+       type=endgroup
+     :5,0
+foo     :6,1
+___     :7,2
+   type=startgroup
+    bar     :8,3
+    ~~~     :9,4
+       type=endgroup

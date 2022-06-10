@@ -3036,7 +3036,8 @@ char **dir_get_viewer_argv (const char *path, int no)
 
 static void ui_visit_tag (CtxEvent *event, void *a, void *b)
 {
-  fprintf (stderr, "visit %s\n", (char*)a);
+  set_location ((char*)a);
+  ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
 

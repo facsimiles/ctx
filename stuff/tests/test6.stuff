@@ -1,0 +1,15 @@
+load-path a
+insert-text
+insert-text
+set-name 0 foo
+set-name 1 bar
+focus-no 1
+make-child-of-previous
+focus-no 0
+duplicate
+focus-no 4
+insert-text
+insert-text
+focus-no 4
+move-before-previous-sibling
+dump
