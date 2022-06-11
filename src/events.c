@@ -2945,7 +2945,6 @@ static inline int event_check_pending (CtxTiled *tiled)
 
 #endif
 
-
 void ctx_queue_draw (Ctx *ctx)
 {
   ctx->dirty ++;
@@ -2965,7 +2964,36 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
      ctx_rgb (tester, 1,1,1);
      ctx_append_drawlist (tester, dl->entries, dl->count*9);
      ctx_fill (tester);
-     //fprintf (stderr, "in_fill pix:%x  count:%i x:%f y:%f x1:%f y1:%f  x2:%f y2:%f\n", pixels[1+3], dl->count,x,y, x1, y1, x2, y2);
+     ctx_free (dl);
+     ctx_destroy (tester);
+     if (pixels[1+3] != 0)
+       return 1;
+     return 0;
+#else
+     return 1
+#endif
+  }
+  return 0;
+}
+
+int ctx_in_stroke (Ctx *ctx, float x, float y)
+{
+  float x1, y1, x2, y2;
+  ctx_path_extents (ctx, &x1, &y1, &x2, &y2);
+  if (x1 <= x && x <= x2 && y1 <= y && y <= y2)
+  {
+#if CTX_CURRENT_PATH
+     uint32_t pixels[9] = {0,};
+     Ctx *tester = ctx_new_for_framebuffer (&pixels[0], 3, 3, 3*4, CTX_FORMAT_RGBA8);
+     CtxDrawlist *dl = ctx_current_path (ctx);
+     ctx_translate (tester, -(x-1), -(y-1));
+     ctx_gray (tester, 1.0f);
+     ctx_append_drawlist (tester, dl->entries, dl->count*9);
+     ctx_line_width  (tester, ctx_get_line_width  (ctx));
+     ctx_line_cap    (tester, ctx_get_line_cap    (ctx));
+     ctx_line_join   (tester, ctx_get_line_join   (ctx));
+     ctx_miter_limit (tester, ctx_get_miter_limit (ctx));
+     ctx_stroke (tester);
      ctx_free (dl);
      ctx_destroy (tester);
      if (pixels[1+3] != 0)
