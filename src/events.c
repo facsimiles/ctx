@@ -735,7 +735,8 @@ void _ctx_item_unref (CtxItem *item)
     }
     if (item->path)
     {
-      //cairo_path_destroy (item->path);
+      ctx_free (item->path);
+      item->path = NULL;
     }
     ctx_free (item);
   }
@@ -753,8 +754,14 @@ static int
 path_equal (void *path,
             void *path2)
 {
-  //  XXX
-  return 0;
+  CtxDrawlist *a = (CtxDrawlist*)path;
+  CtxDrawlist *b = (CtxDrawlist*)path2;
+  if (!a && !b) return 1;
+  if (!a && b) return 0;
+  if (!b && a) return 0;
+  if (a->count != b->count)
+    return 0;
+  return !memcmp (a->entries, b->entries, a->count * 9);
 }
 
 void ctx_listen_set_cursor (Ctx      *ctx,
@@ -817,7 +824,7 @@ void ctx_listen_full (Ctx     *ctx,
     item->cb[0].finalize_data = finalize_data;
     item->cb_count = 1;
     item->types = types;
-    //item->path = cairo_copy_path (cr); // XXX
+    item->path = ctx_current_path (ctx);
     item->path_hash = ctx_path_hash (item->path);
     ctx_get_matrix (ctx, &item->inv_matrix);
     ctx_matrix_invert (&item->inv_matrix);
@@ -1009,10 +1016,10 @@ static CtxList *_ctx_device_get_grabs (Ctx *ctx, int device_no)
 
 static void _mrg_restore_path (Ctx *ctx, void *path)  //XXX
 {
-  //int i;
-  //cairo_path_data_t *data;
-  //cairo_new_path (cr);
-  //cairo_append_path (cr, path);
+  CtxDrawlist *dl = (CtxDrawlist*)path;
+  if (!dl) return;
+
+  ctx_append_drawlist (ctx, dl->entries, dl->count*9);
 }
 
 CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
@@ -1057,9 +1064,9 @@ CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
       if (item->path)
       {
         _mrg_restore_path (ctx, item->path);
+        // XXX  - is this done on wrongly transformed coordinates?
         if (ctx_in_fill (ctx, u, v))
         {
-          ctx_begin_path (ctx);
           ctx_list_prepend (&ret, item);
         }
         ctx_begin_path (ctx);
@@ -2943,3 +2950,31 @@ void ctx_queue_draw (Ctx *ctx)
 {
   ctx->dirty ++;
 }
+
+int ctx_in_fill (Ctx *ctx, float x, float y)
+{
+  float x1, y1, x2, y2;
+  ctx_path_extents (ctx, &x1, &y1, &x2, &y2);
+  if (x1 <= x && x <= x2 && y1 <= y && y <= y2)
+  {
+#if CTX_CURRENT_PATH
+     uint32_t pixels[9] = {0,};
+     Ctx *tester = ctx_new_for_framebuffer (&pixels[0], 3, 3, 3*4, CTX_FORMAT_RGBA8);
+     CtxDrawlist *dl = ctx_current_path (ctx);
+     ctx_translate (tester, -(x-1), -(y-1));
+     ctx_rgb (tester, 1,1,1);
+     ctx_append_drawlist (tester, dl->entries, dl->count*9);
+     ctx_fill (tester);
+     //fprintf (stderr, "in_fill pix:%x  count:%i x:%f y:%f x1:%f y1:%f  x2:%f y2:%f\n", pixels[1+3], dl->count,x,y, x1, y1, x2, y2);
+     ctx_free (dl);
+     ctx_destroy (tester);
+     if (pixels[1+3] != 0)
+       return 1;
+     return 0;
+#else
+     return 1
+#endif
+  }
+  return 0;
+}
+

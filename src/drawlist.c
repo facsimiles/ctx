@@ -501,10 +501,28 @@ int ctx_append_drawlist (Ctx *ctx, void *data, int length)
       ctx_log("drawlist not multiple of 9\n");
       return -1;
     }
+#if 0
   for (unsigned int i = 0; i < length / sizeof (CtxEntry); i++)
     {
       ctx_drawlist_add_single (&ctx->drawlist, &entries[i]);
     }
+#else
+  CtxDrawlist dl;
+  dl.entries = entries;
+  dl.count = length/9;
+  dl.size = length;
+  dl.flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
+  dl.bitpack_pos = 0;
+
+  CtxIterator it;
+  ctx_iterator_init (&it, &dl, 0, 0);
+  CtxCommand *command;
+ 
+  while ((command = ctx_iterator_next (&it)))
+  {
+     ctx_process (ctx, (CtxEntry*)command);
+  }
+#endif
   return 0;
 }
 

@@ -79,7 +79,7 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
      int got_coord = 0;
      switch (command->code)
      {
-        // XXX missing many curve types
+        // XXX missing some segment types
         case CTX_LINE_TO:
         case CTX_MOVE_TO:
           x = command->move_to.x;
@@ -88,8 +88,8 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
           break;
         case CTX_REL_LINE_TO:
         case CTX_REL_MOVE_TO:
-          x += command->move_to.x;
-          y += command->move_to.y;
+          x += command->line_to.x;
+          y += command->line_to.y;
           got_coord++;
           break;
         case CTX_CURVE_TO:
@@ -98,8 +98,8 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
           got_coord++;
           break;
         case CTX_REL_CURVE_TO:
-          x += command->curve_to.x;
-          y += command->curve_to.y;
+          x += command->rel_curve_to.x;
+          y += command->rel_curve_to.y;
           got_coord++;
           break;
         case CTX_ARC:
@@ -122,7 +122,9 @@ ctx_path_extents (Ctx *ctx, float *ex1, float *ey1, float *ex2, float *ey2)
           y += command->rectangle.height;
           got_coord++;
           break;
+        default:
      }
+          //fprintf(stderr, "[%c]", command->code);
     if (got_coord)
     {
       minx = ctx_minf (minx, x);

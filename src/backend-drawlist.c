@@ -29,13 +29,15 @@ static void ctx_update_current_path (Ctx *ctx, CtxEntry *entry)
       case CTX_CLOSE_PATH:
       case CTX_LINE_TO:
       case CTX_MOVE_TO:
+      case CTX_CURVE_TO:
       case CTX_QUAD_TO:
       case CTX_SMOOTH_TO:
       case CTX_SMOOTHQ_TO:
+      case CTX_REL_LINE_TO:
+      case CTX_REL_MOVE_TO:
       case CTX_REL_QUAD_TO:
       case CTX_REL_SMOOTH_TO:
       case CTX_REL_SMOOTHQ_TO:
-      case CTX_CURVE_TO:
       case CTX_REL_CURVE_TO:
       case CTX_ARC:
       case CTX_ARC_TO:

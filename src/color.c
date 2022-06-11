@@ -446,41 +446,6 @@ ctx_get_drgba (Ctx *ctx, float *rgba)
 }
 #endif
 
-int ctx_in_fill (Ctx *ctx, float x, float y)
-{
-  float x1, y1, x2, y2;
-  ctx_path_extents (ctx, &x1, &y1, &x2, &y2);
-
-  if (x1 <= x && x <= x2 &&
-      y1 <= y && y <= y2)
-  {
-#if CTX_CURRENT_PATH
-#if 0
-     uint32_t pixel = 0;
-     CtxMatrix transform;
-     ctx_get_matrix (ctx, &transform);
-     Ctx *tester = ctx_new_for_framebuffer (&pixel, 1, 1, 4, CTX_FORMAT_RGBA8);
-     CtxIterator *iterator = ctx_current_path (ctx);
-     CtxCommand *command;
-     ctx_set_matrix (tester, &transform);
-     ctx_rgb (tester, 1,1,1);
-     ctx_translate (tester, x, y);
-     while ((command = ctx_iterator_next (iterator)))
-     {
-       fprintf (stderr, "%c", command->code);
-       ctx_process (tester, (CtxEntry*)command);
-     }
-     fprintf (stderr, "foo\n");
-     ctx_fill (ctx);
-     ctx_destroy (tester);
-     if (pixel == 0xffffff) return 1;
-#endif
-     return 1;
-#endif
-  }
-  return 0;
-}
-
 
 #if CTX_ENABLE_CMYK
 #if 0

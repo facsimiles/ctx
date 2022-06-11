@@ -507,7 +507,9 @@ static void card_drag (ITK *itk, int frame_no)
   ctx_fill (ctx);
   frame_no %= 400;
 
+  ctx_rotate (ctx, 0.2);
   ctx_scale (ctx, width/100, height/100);
+  ctx_scale (ctx, 0.9, 0.9);
 
   for (int i = 0; i <  8; i++)
   {
