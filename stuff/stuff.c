@@ -3743,6 +3743,7 @@ static void dir_layout (ITK *itk, Diz *diz)
                if (layout_focused_link >= 0)
                {
                  BIND_KEY ("return", "follow-link", "follow link");
+                 BIND_KEY ("alt-down", "follow-link", "follow link");
                }
                else
               {
@@ -5108,6 +5109,9 @@ static int card_files (ITK *itk_, void *data)
                           text_edit_right,
                           NULL);
           ctx_add_key_binding (ctx, "escape", NULL, "stop editing",
+                          text_edit_stop,
+                          NULL);
+          ctx_add_key_binding (ctx, "alt-up", NULL, "stop editing",
                           text_edit_stop,
                           NULL);
           ctx_add_key_binding (ctx, "control-return", NULL, "stop editing",
