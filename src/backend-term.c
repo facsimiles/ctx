@@ -765,7 +765,7 @@ inline static void ctx_term_process (Ctx *ctx,
             col < (shape_rect.x+(int)shape_rect.width);
             col++)
 
-       {
+       if (0){ // disabled - offset is wrong (or offset of cursor in stuff is wrong
          for (CtxList *l = rasterizer->glyphs; l; l=l?l->next:NULL)
          {
            CtxTermGlyph *glyph = l->data;
