@@ -289,7 +289,7 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.margin_top = 3.5f;
 
   layout_config.use_layout_boxes = 1;
-  layout_config.level_indent = 2.0;
+  layout_config.level_indent = 2.5;
   layout_config.outliner = 0;
   layout_config.monospace = 0;
   layout_config.line_height = 1.0;
@@ -1003,6 +1003,11 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
   DIR_DETAIL("items to remove %i", count);
   CtxAtom pre_atom = diz_type_atom (diz, no-1);
   CtxAtom post_atom = diz_type_atom (diz, no+count);
+
+  int was_last = 0;
+
+  if (no + count >= diz->count) was_last = 1;
+
   for (int i = 0; i < count; i++)
   {
     diz_remove (diz, no);
@@ -1014,13 +1019,18 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
   {
     DIR_DETAIL("removed group");
     diz_remove (diz, no-1);
+    diz_dirt(diz);
     diz_remove (diz, no-1);
-    layout_find_item = no-2;
+    diz_dirt(diz);
+    layout_find_item = no-2-was_last;
     itk->focus_no = -1;
   }
-  //se
+  else
+  {
+    if (was_last)
+      layout_find_item = no - 1;
+  }
 #endif
-  //layout_find_item = no;
 
   text_edit = TEXT_EDIT_OFF;
   diz_dirt(diz);
@@ -5757,11 +5767,9 @@ int stuff_main (int argc, char **argv)
 
     if (path_is_dir (path))
     {
-      char *name = NULL;
       set_location (path);
       focused_no = -1;
       layout_find_item = focused_no;
-
     }
     else
     {
@@ -5775,7 +5783,7 @@ int stuff_main (int argc, char **argv)
     }
     else
     {
-      name = 0;
+      name = NULL;
     }
     set_location (dir);
     focused_no = diz_name_to_no (diz, name);

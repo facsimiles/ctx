@@ -1782,7 +1782,9 @@ void itk_focus (ITK *itk, int dir)
      {
        CtxControl *control = iter->data;
        if (control->label)
+       {
          itk->focus_label = strdup (control->label);
+       }
      }
      else
      {
@@ -1802,9 +1804,9 @@ void itk_focus (ITK *itk, int dir)
        }
      }
      // XXX no control means inifinie loop?
-     //CtxControl *control =
+     CtxControl *control =
              itk_focused_control (itk);
-#if 0
+#if 1
      if (!control || 
          !(control->flags & ITK_FLAG_ACTIVE)){
        itk_focus (itk, dir);
