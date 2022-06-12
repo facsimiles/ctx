@@ -3903,8 +3903,13 @@ static void dir_layout (ITK *itk, Diz *diz)
         {
           ctx_save (itk->ctx);
 
-          char *label = diz_get_string (diz, i, "label");
+          char *target = diz_get_string (diz, i, "target");
+          Diz *tdiz = diz_new ();
+          diz_set_path (tdiz, target, NULL);
+          char *label = strdup (tdiz->title);
+          diz_destroy (tdiz);
 
+                  
           ctx_gray (itk->ctx, 0.95);
 
           if (c->no == itk->focus_no && layout_find_item < 0)

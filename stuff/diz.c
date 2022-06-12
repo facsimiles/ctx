@@ -1069,19 +1069,26 @@ diz_set_path (Diz *diz,
   char *resolved_path = realpath (path, NULL);
   char *title2 = NULL;
 
-  if (title) title2 = strdup (title);
-  else title2 = strdup (path);
-
 
   if (diz->path)
     free (diz->path);
   diz->path = resolved_path;
   if (diz->title)
     free (diz->title);
-  diz->title = title2;
+  diz->title = NULL;
 
   diz_load_dir (diz, resolved_path);
   diz->count = diz_count (diz);
+
+  if (!title)
+    title = diz_get_string (diz, -1, "title");
+  else
+    title = strdup (title);
+
+  if (title)
+     diz->title = title;
+  else
+    diz->title = strdup (resolved_path);
 
   diz_update_files (diz);
 }
