@@ -1417,4 +1417,17 @@ void diz_dirt (Diz *diz)
 //  save_metadata ();
 }
 
+Diz *diz_new (void)
+{
+  Diz *diz = calloc (sizeof (Diz), 1);
+  return diz;
+}
 
+void diz_destroy  (Diz *diz)
+{
+  diz_wipe_cache (diz, 1);
+  if (diz->path) free (diz->path);
+  if (diz->title) free (diz->title);
+  if (diz->metadata) free (diz->metadata);
+  free (diz);
+}

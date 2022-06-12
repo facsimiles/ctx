@@ -34,8 +34,14 @@ typedef struct Diz {
   int     dirty;
 } Diz;
 
-void diz_save         (Diz *diz, int text_file);
-void diz_set_path     (Diz *diz, const char *path, const char *title);
+Diz *diz_new      (void);
+void diz_destroy  (Diz *diz);
+
+void diz_save     (Diz *diz, int text_file);
+Diz *diz_new      (void);
+void diz_destroy  (Diz *diz);
+void diz_set_path (Diz *diz, const char *path, const char *title);
+
 
 void
 diz_set_path_text_editor  (Diz *diz,

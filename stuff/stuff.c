@@ -359,9 +359,7 @@ typedef enum CtxBullet {
   CTX_BULLET_DONE,
 } CtxBullet;
 
-
-Diz file_state;
-Diz *diz = &file_state;
+Diz *diz = NULL;
 
 static void drop_item_renderers (Ctx *ctx)
 {
@@ -2775,6 +2773,7 @@ int dir_dump (COMMAND_ARGS) /* "dump", 0, "", "" */
 
 int stuffcmd_main (int argc, char **argv)
 {
+  diz = diz_new ();
   char *script = NULL;
   long length = 0;
   char *rp = realpath (argv[1], NULL);
@@ -2804,6 +2803,7 @@ int stuff_ls_main (int argc, char **argv)
 {
   const char *path = ".";
   if (argv[1]) path = argv[1];
+  Diz *diz = diz_new ();
   diz_set_path (diz, path, path);
   diz_dump (diz);
   return 1;
@@ -3317,7 +3317,8 @@ static void dir_layout (ITK *itk, Diz *diz)
     else
     {
       float width = ctx_text_width (itk->ctx, " + ");
-      CtxControl *c = itk_add_control (itk, UI_LABEL, "tag",
+      //CtxControl *c = 
+              itk_add_control (itk, UI_LABEL, "tag",
                       tx,
                       itk->font_size * 2.5,
                       itk->font_size + width,
@@ -5726,7 +5727,7 @@ static int card_files (ITK *itk_, void *data)
 int stuff_main (int argc, char **argv)
 {
   //setenv ("CTX_SHAPE_CACHE", "0", 1);
-
+  diz = diz_new ();
   const char *path = NULL;
   
   for (int i = 1; argv[i]; i++)
@@ -5810,6 +5811,7 @@ int stuff_main (int argc, char **argv)
   save_metadata ();
 
   ctx_string_free (commandline, 1);
+  diz_destroy (diz);
 
   return 0;
 }
@@ -5822,6 +5824,7 @@ void ctx_screenshot (Ctx *ctx, const char *path);
 
 int stuff_make_thumb (const char *src_path, const char *dst_path)
 {
+   diz = diz_new ();
    ctx_init (NULL, NULL);
    int width = 256;
    int height = 256;
@@ -5871,6 +5874,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    ctx_screenshot (ctx, dst_path);
    ctx_client_remove (ctx, client);
    ctx_destroy (ctx);
+   diz_destroy (diz);
 
    return 0;
 }
