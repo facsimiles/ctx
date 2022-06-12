@@ -2953,18 +2953,35 @@ void ctx_queue_draw (Ctx *ctx)
 int ctx_in_fill (Ctx *ctx, float x, float y)
 {
   float x1, y1, x2, y2;
+  float width, height;
+  float factor = 1.0f;
   ctx_path_extents (ctx, &x1, &y1, &x2, &y2);
+  width = x2-x1;
+  height = y2-y1;
+
+  while ((width < 200 || height < 200) && factor < 16.0f)
+  {
+    width *=2;
+    height *=2;
+    factor *=2;
+  }
+  x1 *= factor;
+  y1 *= factor;
+  x2 *= factor;
+  y2 *= factor;
+  x *= factor;
+  y *= factor;
+
   if (x1 <= x && x <= x2 && y1 <= y && y <= y2)
   {
 #if CTX_CURRENT_PATH
      uint32_t pixels[9] = {0,};
      Ctx *tester = ctx_new_for_framebuffer (&pixels[0], 3, 3, 3*4, CTX_FORMAT_RGBA8);
-     CtxDrawlist *dl = ctx_current_path (ctx);
      ctx_translate (tester, -(x-1), -(y-1));
-     ctx_rgb (tester, 1,1,1);
-     ctx_append_drawlist (tester, dl->entries, dl->count*9);
+     ctx_scale (tester, factor, factor);
+     ctx_gray (tester, 1.0f);
+     ctx_append_drawlist (tester, ctx->current_path.entries, ctx->current_path.count*9);
      ctx_fill (tester);
-     ctx_free (dl);
      ctx_destroy (tester);
      if (pixels[1+3] != 0)
        return 1;
@@ -2979,22 +2996,38 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
 int ctx_in_stroke (Ctx *ctx, float x, float y)
 {
   float x1, y1, x2, y2;
+  float width, height;
+  float factor = 1.0f;
   ctx_path_extents (ctx, &x1, &y1, &x2, &y2);
+  width = x2-x1;
+  height = y2-y1;
+
+  while ((width < 200 || height < 200) && factor < 16.0f)
+  {
+    width *=2;
+    height *=2;
+    factor *=2;
+  }
+  x1 *= factor;
+  y1 *= factor;
+  x2 *= factor;
+  y2 *= factor;
+  x *= factor;
+  y *= factor;
   if (x1 <= x && x <= x2 && y1 <= y && y <= y2)
   {
 #if CTX_CURRENT_PATH
      uint32_t pixels[9] = {0,};
      Ctx *tester = ctx_new_for_framebuffer (&pixels[0], 3, 3, 3*4, CTX_FORMAT_RGBA8);
-     CtxDrawlist *dl = ctx_current_path (ctx);
      ctx_translate (tester, -(x-1), -(y-1));
+     ctx_scale (tester, factor, factor);
      ctx_gray (tester, 1.0f);
-     ctx_append_drawlist (tester, dl->entries, dl->count*9);
-     ctx_line_width  (tester, ctx_get_line_width  (ctx));
+     ctx_append_drawlist (tester, ctx->current_path.entries, ctx->current_path.count*9);
+     ctx_line_width  (tester, ctx_get_line_width  (ctx) * factor);
      ctx_line_cap    (tester, ctx_get_line_cap    (ctx));
      ctx_line_join   (tester, ctx_get_line_join   (ctx));
-     ctx_miter_limit (tester, ctx_get_miter_limit (ctx));
+     ctx_miter_limit (tester, ctx_get_miter_limit (ctx) * factor);
      ctx_stroke (tester);
-     ctx_free (dl);
      ctx_destroy (tester);
      if (pixels[1+3] != 0)
        return 1;

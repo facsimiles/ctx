@@ -442,7 +442,7 @@ typedef struct _CtxGlyph CtxGlyph;
 CtxGlyph *ctx_glyph_allocate     (int n_glyphs);
 /**
  */
-void      gtx_glyph_free         (CtxGlyph   *glyphs);
+void      ctx_glyph_free         (CtxGlyph   *glyphs);
 /**
  */
 int       ctx_glyph              (Ctx        *ctx, uint32_t unichar, int stroke);
