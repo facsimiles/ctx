@@ -4031,21 +4031,21 @@ static void dir_layout (ITK *itk, Diz *diz)
 
              ctx_arc (itk->ctx, itk->x + width * origin_x,
                            itk->y + height * origin_y,
-                           0.5 * em,
+                           0.5f * em,
                            0.0,
                            M_PI * 2, 0);
-             ctx_rgba (itk->ctx, 1, 1,0, 0.9);
+             ctx_rgba (itk->ctx, 1, 1,0, 0.9f);
              ctx_fill (itk->ctx);
 
              ctx_rectangle (itk->ctx, itk->x + resize_dim * em, itk->y, width - resize_dim * 2 * em, resize_dim * em);
-             ctx_rgba (itk->ctx, 0,0,0, 0.5);
+             ctx_rgba (itk->ctx, 0,0,0, 0.5f);
              ctx_fill (itk->ctx);
 
 
              ctx_rectangle (itk->ctx, itk->x + width - resize_dim * em,
                                       itk->y + height - resize_dim * em,
                                       resize_dim * em, resize_dim * em);
-             ctx_rgba (itk->ctx, 0,0,0, 0.5);
+             ctx_rgba (itk->ctx, 0,0,0, 0.5f);
              ctx_fill (itk->ctx);
           }
         }
@@ -4119,7 +4119,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       }
       free (newpath);
 
-      if (label)
+      if (label && d_name[0])
       {
       char *title = malloc (strlen (d_name) + 32);
       strcpy (title, d_name);
