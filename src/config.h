@@ -246,6 +246,7 @@
 #ifndef CTX_32BIT_SEGMENTS
 #define CTX_32BIT_SEGMENTS 1  // without this clipping problems might
                               // occur when drawing far outside the viewport
+                              // or with large translate amounts
                               // on micro controllers you most often will
                               // want this set to 0
 #endif

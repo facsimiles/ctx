@@ -759,14 +759,13 @@ void ctx_pdf_destroy (CtxPDF *pdf)
 }
 
 Ctx *
-ctx_new_pdf (const char *path, int width, int height)
+ctx_new_pdf (const char *path, float width, float height)
 {
   Ctx *ctx = _ctx_new_drawlist (width, height);
   CtxPDF *pdf = ctx_calloc(sizeof(CtxPDF),1);
   CtxBackend *backend  = (CtxBackend*)pdf;
   if (width <= 0) width = 595;
   if (width <= 0) height = 842;
-
 
   pdf->width = width;
   pdf->height = height;
