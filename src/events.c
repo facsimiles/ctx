@@ -754,6 +754,7 @@ static int
 path_equal (void *path,
             void *path2)
 {
+        return 0;
   CtxDrawlist *a = (CtxDrawlist*)path;
   CtxDrawlist *b = (CtxDrawlist*)path2;
   if (!a && !b) return 1;
@@ -761,7 +762,7 @@ path_equal (void *path,
   if (!b && a) return 0;
   if (a->count != b->count)
     return 0;
-  return !memcmp (a->entries, b->entries, a->count * 9);
+  return memcmp (a->entries, b->entries, a->count * 9) == 0;
 }
 
 void ctx_listen_set_cursor (Ctx      *ctx,
@@ -829,6 +830,7 @@ void ctx_listen_full (Ctx     *ctx,
     ctx_get_matrix (ctx, &item->inv_matrix);
     ctx_matrix_invert (&item->inv_matrix);
 
+#if 0
     if (ctx->events.items)
     {
       CtxList *l;
@@ -854,6 +856,7 @@ void ctx_listen_full (Ctx     *ctx,
         }
       }
     }
+#endif
     item->ref_count       = 1;
     ctx->events.last_item = item;
     ctx_list_prepend_full (&ctx->events.items, item, _ctx_item_unref2, NULL);
@@ -2958,7 +2961,6 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
   ctx_path_extents (ctx, &x1, &y1, &x2, &y2);
   width = x2-x1;
   height = y2-y1;
-
   while ((width < 200 || height < 200) && factor < 16.0f)
   {
     width *=2;
