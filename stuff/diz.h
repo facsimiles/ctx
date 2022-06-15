@@ -39,16 +39,13 @@ typedef struct Diz {
 Diz *diz_new      (void);
 void diz_destroy  (Diz *diz);
 
-void diz_save     (Diz *diz, int text_file);
+void diz_save     (Diz *diz);
 Diz *diz_new      (void);
 void diz_destroy  (Diz *diz);
-void diz_set_path (Diz *diz, const char *path, const char *title);
-
+void diz_set_path (Diz *diz, const char *path);
 
 void
-diz_set_path_text_editor  (Diz *diz,
-                     const char *path,
-                     const char *title);
+diz_set_path_text_editor  (Diz *diz, const char *path);
 
 /* metadata setting API */
 void diz_swap         (Diz *diz, int item_no_a, int item_no_b);

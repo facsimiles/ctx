@@ -96,6 +96,13 @@ void diz_load_dir (Diz *diz, const char *path)
   diz->metadata_len = (int)diz->metadata_size;
   }
   diz_wipe_cache (diz, 1);
+  if (diz->title) free (diz->title);
+  diz->title = diz_get_string (diz, -1, "title");
+  if (!diz->title)
+  {
+    //char *bname = strrchr (path, '/');
+    diz->title = strdup (path);
+  }
 }
 
 static void mkdir_ancestors (const char *path, unsigned int mode)
@@ -116,8 +123,9 @@ static void mkdir_ancestors (const char *path, unsigned int mode)
   free (tmppaths);
 }
 
-void diz_save (Diz *diz, int text_editor_mode)
+void diz_save (Diz *diz)
 {
+  int text_editor_mode = diz->is_text_editor;
   if (!diz->metadata_path) return;
   mkdir_ancestors (diz->metadata_path, 0777);
 
@@ -865,6 +873,12 @@ void diz_add_string_unique (Diz *diz, int item_no, const char *key, const char *
 
 void diz_set_string (Diz *diz, int item_no, const char *key, const char *value)
 {
+  if (item_no == -1 && !strcmp (key, "title"))
+  {
+    if (diz->title)
+      free (diz->title);
+    diz->title = strdup (value);
+  }
   diz_unset (diz, item_no, key);
   diz_add_string (diz, item_no, key, value);
 }
@@ -1045,21 +1059,15 @@ diz_update_files (Diz *diz)
 
 void
 diz_set_path_text_editor  (Diz *diz,
-                     const char *path,
-                     const char *title)
+                           const char *path)
 {
   char *resolved_path = realpath (path, NULL);
-  char *title2 = NULL;
 
-  if (title) title2 = strdup (title);
-  else title2 = strdup (path);
+  if (diz->title) { free (diz->title); diz->title = NULL; }
 
   if (diz->path)
     free (diz->path);
   diz->path = resolved_path;
-  if (diz->title)
-    free (diz->title);
-  diz->title = title2;
 
   diz_load_text_file (diz, resolved_path);
   diz->count = diz_count (diz);
@@ -1068,17 +1076,13 @@ diz_set_path_text_editor  (Diz *diz,
 
 
 void
-diz_set_path (Diz *diz,
-                     const char *path,
-                     const char *title)
+diz_set_path (Diz *diz, const char *path)
 {
+
   char *resolved_path = realpath (path, NULL);
-  char *title2 = NULL;
-
-
   if (diz->path)
     free (diz->path);
-  diz->path = resolved_path;
+  diz->path = strdup (resolved_path);
   if (diz->title)
     free (diz->title);
   diz->title = NULL;
@@ -1086,18 +1090,9 @@ diz_set_path (Diz *diz,
   diz_load_dir (diz, resolved_path);
   diz->count = diz_count (diz);
 
-  if (!title)
-    title = diz_get_string (diz, -1, "title");
-  else
-    title = strdup (title);
-
-  if (title)
-     diz->title = title;
-  else
-    diz->title = strdup (resolved_path);
-
   diz_update_files (diz);
   diz->is_text_editor = 0;
+  free (resolved_path);
 }
 
 int diz_item_get_level (Diz *diz, int no)

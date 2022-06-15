@@ -379,8 +379,8 @@ static void save_metadata (void)
 { 
   if (diz->dirty)
   {
-    diz_save (diz, text_editor);
-    diz_set_path (diz, diz->path, diz->title);
+    diz_save (diz);
+    diz_set_path (diz, diz->path);
     drop_item_renderers (ctx);
     diz->dirty = 0;
   }
@@ -456,7 +456,7 @@ static void _set_location (const char *location)
   {
     if (path_is_dir (getenv ("HOME")))
     {
-      diz_set_path (diz, getenv ("HOME"), NULL);
+      diz_set_path (diz, getenv ("HOME"));
       drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
@@ -467,7 +467,7 @@ static void _set_location (const char *location)
     char *tpath = ctx_strdup_printf ("%s/%s", getenv("HOME"), &location[2]);
     if (path_is_dir (tpath))
     {
-      diz_set_path (diz, tpath, NULL);
+      diz_set_path (diz, tpath);
       drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
@@ -489,7 +489,7 @@ static void _set_location (const char *location)
       //fprintf (stderr, "%i:%s\n", __LINE__, loc);
       if (loc[strlen(loc)-1]=='/')
         loc[strlen(loc)-1]='\0';
-      diz_set_path (diz, loc, NULL);
+      diz_set_path (diz, loc);
       drop_item_renderers (ctx);
       focused_no = -1;
       layout_find_item = 0;
@@ -503,13 +503,13 @@ static void _set_location (const char *location)
       layout_find_item = focused_no;
       focused_no = -1;
       layout_find_item = 0;
-      diz_set_path_text_editor (diz, loc, NULL);
+      diz_set_path_text_editor (diz, loc);
     }
     if (loc != location) free (loc);
   } else
   {
     char *path = diz_wiki_path (location);
-    diz_set_path (diz, path, location);
+    diz_set_path (diz, path);
     diz_set_name (diz, -1, location);
     save_metadata ();
     drop_item_renderers (ctx);
@@ -2680,6 +2680,7 @@ static ITKPanel *panel = NULL;
 static void dir_location (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 1;
+
   ctx_string_set (commandline, diz->title?diz->title:diz->path);
   commandline_cursor_end = 0;
   commandline_cursor_start = strlen (commandline->str);
@@ -2760,7 +2761,7 @@ int dir_set_name (COMMAND_ARGS) /* "set-name", 2, "<no> <name>", "" */
 
 int dir_load (COMMAND_ARGS) /* "load-path", 1, "<path>", "" */
 {
-  diz_set_path (diz, argv[1], NULL);
+  diz_set_path (diz, argv[1]);
   return 0;
 }
 
@@ -2804,7 +2805,7 @@ int stuff_ls_main (int argc, char **argv)
   const char *path = ".";
   if (argv[1]) path = argv[1];
   Diz *diz = diz_new ();
-  diz_set_path (diz, path, path);
+  diz_set_path (diz, path);
   diz_dump (diz);
   return 1;
 }
@@ -3905,8 +3906,8 @@ static void dir_layout (ITK *itk, Diz *diz)
 
           char *target = diz_get_string (diz, i, "target");
           Diz *tdiz = diz_new ();
-          diz_set_path (tdiz, target, NULL);
-          char *label = strdup (tdiz->title);
+          diz_set_path (tdiz, target);
+          char *label = strdup (tdiz->title?tdiz->title:"xx");
           diz_destroy (tdiz);
 
                   
@@ -5840,7 +5841,7 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
    // be possible to use just that though
    char *dir = dirname (strdup(src_path));
    char *base = strdup(basename (strdup(src_path)));
-   diz_set_path (diz, dir, dir);
+   diz_set_path (diz, dir);
    drop_item_renderers (ctx);
    char **command = dir_get_viewer_argv (src_path, diz_name_to_no (diz, base));
 
