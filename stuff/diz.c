@@ -130,6 +130,8 @@ void diz_dir_save (Diz *diz)
   mkdir_ancestors (diz->metadata_path, 0777);
 
   FILE *file = fopen (diz->metadata_path, "w");
+  if (!file)
+    return;
   if (text_editor_mode)
   {
     int count = diz_dir_count (diz);
@@ -761,7 +763,11 @@ int diz_dir_insert (Diz *diz, int pos, const char *item)
 {
   const char *m = NULL;
   if (pos == -1)
+  {
     pos = diz_dir_count (diz);
+    if (pos < 0)
+      pos = 0;
+  }
   else
     m = diz_dir_find_no (diz, pos);
 
@@ -984,6 +990,7 @@ diz_dir_update_files (Diz *diz)
       if ((len = readlink(full_path, target, sizeof(target)-1)) != -1)
          target[len] = '\0';
 
+      fprintf (stderr, "we inserted %i\n", n);
       diz_dir_set_string (diz, n, "type", "symlink");
       diz_dir_set_string (diz, n, "target", target);
 
