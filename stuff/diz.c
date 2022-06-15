@@ -937,7 +937,12 @@ diz_update_files (Diz *diz)
   struct  dirent **namelist = NULL;
   int     n;
 
+  if (diz->is_text_editor)
+    return;
+
   n = scandir (diz->path, &namelist, NULL, custom_sort);
+  if (n < 0)
+    return;
 
   CtxList *to_add = NULL; // XXX a temporary list here might be redundant
   for (int i = 0; i < n; i++)
@@ -1058,6 +1063,7 @@ diz_set_path_text_editor  (Diz *diz,
 
   diz_load_text_file (diz, resolved_path);
   diz->count = diz_count (diz);
+  diz->is_text_editor = 1;
 }
 
 
@@ -1091,6 +1097,7 @@ diz_set_path (Diz *diz,
     diz->title = strdup (resolved_path);
 
   diz_update_files (diz);
+  diz->is_text_editor = 0;
 }
 
 int diz_item_get_level (Diz *diz, int no)

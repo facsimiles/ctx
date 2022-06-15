@@ -32,6 +32,8 @@ typedef struct Diz {
   int     cache_size;
 
   int     dirty;
+
+  int     is_text_editor;
 } Diz;
 
 Diz *diz_new      (void);
