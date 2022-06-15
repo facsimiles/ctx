@@ -847,13 +847,22 @@ void diz_dir_add_string (Diz *diz, int no, const char *key, const char *value)
     ctx_string_append_byte (str, '\n');
     _diz_dir_insert (diz, offset, str->str, str->length);
   }
-  else
+  else if (no == -1)
   {
+    CtxString *str = ctx_string_new ( " ");
     // XXX assert?
     //ctx_string_append_str (str, item);
     //ctx_string_append_byte (str, '\n');
-    fprintf (stderr, "unexpected %s %i  %s:%i   %s %s\n", __FUNCTION__, no, __FILE__, __LINE__, key, value);
     offset = 0;
+    ctx_string_append_str (str, key);
+    ctx_string_append_byte (str, '=');
+    ctx_string_append_str (str, value);
+    ctx_string_append_byte (str, '\n');
+    _diz_dir_insert (diz, offset, str->str, str->length);
+  }
+  else
+  {
+    fprintf (stderr, "unexpected %s %i  %s:%i   %s %s\n", __FUNCTION__, no, __FILE__, __LINE__, key, value);
   }
 
 }
