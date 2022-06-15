@@ -7,16 +7,16 @@
 static void  mkdir_ancestors      (const char  *path,
                                    unsigned int mode);
 
-static void  diz_update_files     (Diz *diz);
-static void _diz_remove           (Diz *diz, int no);
+static void  diz_dir_update_files     (Diz *diz);
+static void _diz_dir_remove           (Diz *diz, int no);
 
-static char *diz_get_name_escaped (Diz *diz,
+static char *diz_dir_get_name_escaped (Diz *diz,
                                    int  no);
 
-static char *diz_escape_item      (const char *item);
+static char *diz_dir_escape_item      (const char *item);
 
 
-void diz_wipe_cache (Diz *diz, int full)
+void diz_dir_wipe_cache (Diz *diz, int full)
 {
   if (full)
     diz->metadata_cache_no = -3;
@@ -36,7 +36,7 @@ void diz_wipe_cache (Diz *diz, int full)
   }
 }
 
-void diz_load_text_file (Diz *diz, const char *path)
+void diz_dir_load_text_file (Diz *diz, const char *path)
 {
   diz->metadata_cache_no = -3;
   diz->metadata_cache = NULL;
@@ -62,7 +62,7 @@ void diz_load_text_file (Diz *diz, const char *path)
          char p = contents[i];
          if (p == '\n')
          {
-           diz_insert (diz, -1, line->str);
+           diz_dir_insert (diz, -1, line->str);
            ctx_string_set (line, "");
          }
          else
@@ -71,15 +71,15 @@ void diz_load_text_file (Diz *diz, const char *path)
          }
        }
        if (line->str[0])
-         diz_insert (diz, -1, line->str);
+         diz_dir_insert (diz, -1, line->str);
        free (contents);
     }
 
   }
-  diz_wipe_cache (diz, 1);
+  diz_dir_wipe_cache (diz, 1);
 }
 
-void diz_load_dir (Diz *diz, const char *path)
+void diz_dir_load_dir (Diz *diz, const char *path)
 {
   diz->metadata_cache_no = -3;
   diz->metadata_cache = NULL;
@@ -95,9 +95,9 @@ void diz_load_dir (Diz *diz, const char *path)
   ctx_get_contents (diz->metadata_path, (uint8_t**)&diz->metadata, &diz->metadata_size);
   diz->metadata_len = (int)diz->metadata_size;
   }
-  diz_wipe_cache (diz, 1);
+  diz_dir_wipe_cache (diz, 1);
   if (diz->title) free (diz->title);
-  diz->title = diz_get_string (diz, -1, "title");
+  diz->title = diz_dir_get_string (diz, -1, "title");
   if (!diz->title)
   {
     //char *bname = strrchr (path, '/');
@@ -123,7 +123,7 @@ static void mkdir_ancestors (const char *path, unsigned int mode)
   free (tmppaths);
 }
 
-void diz_save (Diz *diz)
+void diz_dir_save (Diz *diz)
 {
   int text_editor_mode = diz->is_text_editor;
   if (!diz->metadata_path) return;
@@ -132,10 +132,10 @@ void diz_save (Diz *diz)
   FILE *file = fopen (diz->metadata_path, "w");
   if (text_editor_mode)
   {
-    int count = diz_count (diz);
+    int count = diz_dir_count (diz);
     for (int i = 0; i < count; i++)
     {
-      char *line = diz_get_name (diz, i);
+      char *line = diz_dir_get_name (diz, i);
       fwrite (line, strlen (line), 1, file);
       fwrite ("\n", 1, 1, file);
       free (line);
@@ -148,7 +148,7 @@ void diz_save (Diz *diz)
   fclose (file);
 }
 
-int diz_count (Diz *diz)
+int diz_dir_count (Diz *diz)
 {
   const char *m = diz->metadata;
   if (!m) return -1;
@@ -162,7 +162,7 @@ int diz_count (Diz *diz)
   return count;
 }
 
-static char *diz_get_name_escaped (Diz *diz, int no)
+static char *diz_dir_get_name_escaped (Diz *diz, int no)
 {
   const char *m = diz->metadata;
   if (!m) return NULL;
@@ -186,7 +186,7 @@ static char *diz_get_name_escaped (Diz *diz, int no)
   return NULL;
 }
 
-static char *diz_find_no (Diz *diz, int no)
+static char *diz_dir_find_no (Diz *diz, int no)
 {
   char *m = diz->metadata;
   int count = 0;
@@ -237,7 +237,7 @@ static char *diz_find_no (Diz *diz, int no)
   return NULL;
 }
 
-char *diz_get_name (Diz *diz, int no)
+char *diz_dir_get_name (Diz *diz, int no)
 {
   if (diz->cache)
   { if (diz->cache[no])
@@ -245,19 +245,19 @@ char *diz_get_name (Diz *diz, int no)
   }
   else
   {
-    int new_count = diz_count (diz);
+    int new_count = diz_dir_count (diz);
     diz->cache_size = new_count;
     diz->cache = calloc (sizeof(void*), new_count);
   }
 
   if (no == -1)
   {
-     return diz_get_string (diz, no, "title");
+     return diz_dir_get_string (diz, no, "title");
   }
 
 
   /* this makes use reuse the cache */
-  const char *m = diz_find_no (diz, no);
+  const char *m = diz_dir_find_no (diz, no);
   if (!m) return NULL;
   if (m == diz->metadata)
   {
@@ -304,7 +304,7 @@ char *diz_get_name (Diz *diz, int no)
 }
 
 
-static int _diz_metalen (Diz *diz, const char *m)
+static int _diz_dir_metalen (Diz *diz, const char *m)
 {
   int len = 0;
   do {
@@ -317,7 +317,7 @@ static int _diz_metalen (Diz *diz, const char *m)
   return len;
 }
 
-static char *diz_escape_item (const char *item) // XXX expand with length to
+static char *diz_dir_escape_item (const char *item) // XXX expand with length to
                                               // handle \0 and
                                               // thus arbitrary blobs?
 {
@@ -362,9 +362,9 @@ static char *diz_escape_item (const char *item) // XXX expand with length to
   return ctx_string_dissolve (str);
 }
 
-static const char *diz_find_item (Diz *diz, const char *item)
+static const char *diz_dir_find_item (Diz *diz, const char *item)
 {
-  char *escaped_item = diz_escape_item (item);
+  char *escaped_item = diz_dir_escape_item (item);
   int item_len = strlen (escaped_item);
   const char *m = diz->metadata;
 
@@ -382,9 +382,9 @@ static const char *diz_find_item (Diz *diz, const char *item)
   return NULL;
 }
 
-int diz_name_to_no (Diz *diz, const char *item)
+int diz_dir_name_to_no (Diz *diz, const char *item)
 {
-  char *escaped_item = diz_escape_item (item);
+  char *escaped_item = diz_dir_escape_item (item);
   int item_len = strlen (escaped_item);
   const char *m = diz->metadata;
   int no = 0;
@@ -404,9 +404,9 @@ int diz_name_to_no (Diz *diz, const char *item)
   return -1;
 }
 
-int diz_value_count   (Diz *diz, int item_no, const char *key)
+int diz_dir_value_count   (Diz *diz, int item_no, const char *key)
 {
-  const char *m = diz_find_no (diz, item_no);
+  const char *m = diz_dir_find_no (diz, item_no);
   if (!m) return -1;
   int count = 0;
   int keylen = strlen (key);
@@ -420,8 +420,8 @@ int diz_value_count   (Diz *diz, int item_no, const char *key)
   return count;
 }
 
-char *diz_get_string_no (Diz *diz, int item_no, const char *key, int value_no){
-  const char *m = diz_find_no (diz, item_no);
+char *diz_dir_get_string_no (Diz *diz, int item_no, const char *key, int value_no){
+  const char *m = diz_dir_find_no (diz, item_no);
   if (!m) return strdup("xXx");
   int count = 0;
   int keylen = strlen (key);
@@ -447,9 +447,9 @@ char *diz_get_string_no (Diz *diz, int item_no, const char *key, int value_no){
   return strdup("xxxx");
 }
 
-int diz_key_count (Diz *diz, int no)
+int diz_dir_key_count (Diz *diz, int no)
 {
-  const char *m = diz_find_no (diz, no);
+  const char *m = diz_dir_find_no (diz, no);
   if (!m) return -1;
   int count = 0;
   if (m[0] == ' ')
@@ -461,9 +461,9 @@ int diz_key_count (Diz *diz, int no)
   return count;
 }
 
-char *diz_key_name (Diz *diz, int ino, int no)
+char *diz_dir_key_name (Diz *diz, int ino, int no)
 {
-  const char *m = diz_find_no (diz, ino);
+  const char *m = diz_dir_find_no (diz, ino);
   CtxString *str = ctx_string_new ("");
   if (!m) return NULL;
   int count = 0;
@@ -485,9 +485,9 @@ char *diz_key_name (Diz *diz, int ino, int no)
   return NULL;
 }
 
-char *diz_get_string (Diz *diz, int no, const char *key)
+char *diz_dir_get_string (Diz *diz, int no, const char *key)
 {
-  const char *m = diz_find_no (diz, no);
+  const char *m = diz_dir_find_no (diz, no);
   CtxString *str = ctx_string_new ("");
   if (!m) return NULL;
   if (m[0] == ' ')
@@ -543,12 +543,12 @@ char *diz_get_string (Diz *diz, int no, const char *key)
   return NULL;
 }
 
-char *diz_get (Diz *diz, int no, const char *key)
+char *diz_dir_get (Diz *diz, int no, const char *key)
 {
-  return diz_get_string (diz, no, key);
+  return diz_dir_get_string (diz, no, key);
 }
 
-void diz_swap (Diz *diz, int no_a, int no_b)
+void diz_dir_swap (Diz *diz, int no_a, int no_b)
 {
    if (no_a == no_b) return;
    if (no_b < no_a)
@@ -557,19 +557,19 @@ void diz_swap (Diz *diz, int no_a, int no_b)
      no_a = no_b; no_b = tmp;
    }
 
-   char *a_name = diz_get_name_escaped (diz, no_a);
-   char *b_name = diz_get_name_escaped (diz, no_b);
+   char *a_name = diz_dir_get_name_escaped (diz, no_a);
+   char *b_name = diz_dir_get_name_escaped (diz, no_b);
    int a_name_len = strlen (a_name);
    int b_name_len = strlen (b_name);
-   const char *a_meta = diz_find_no (diz, no_a);
-   const char *b_meta = diz_find_no (diz, no_b);
+   const char *a_meta = diz_dir_find_no (diz, no_a);
+   const char *b_meta = diz_dir_find_no (diz, no_b);
 
    int a_start = (a_meta - diz->metadata) - a_name_len - 1;
-   int a_len = a_name_len + 1 + _diz_metalen (diz, a_meta);
+   int a_len = a_name_len + 1 + _diz_dir_metalen (diz, a_meta);
 
 
    int b_start = (b_meta - diz->metadata) - b_name_len - 1;
-   int b_len = b_name_len + 1 + _diz_metalen (diz, b_meta);
+   int b_len = b_name_len + 1 + _diz_dir_metalen (diz, b_meta);
 
    char *a_temp = malloc (a_len);
    char *b_temp = malloc (b_len);
@@ -599,45 +599,45 @@ void diz_swap (Diz *diz, int no_a, int no_b)
    free (b_temp);
 
    diz->metadata_cache_no = -3;
-   diz_wipe_cache (diz, 1);
+   diz_dir_wipe_cache (diz, 1);
 }
 
-static void _diz_remove (Diz *diz, int no)
+static void _diz_dir_remove (Diz *diz, int no)
 {
-   char *a_name = diz_get_name_escaped (diz, no);
-   const char *a_meta = diz_find_no (diz, no);
+   char *a_name = diz_dir_get_name_escaped (diz, no);
+   const char *a_meta = diz_dir_find_no (diz, no);
 
    if (!a_meta)
      return;
    int a_name_len = strlen (a_name);
 
    int a_start = (a_meta - diz->metadata) - a_name_len - 1;
-   int a_len = a_name_len + 1 + _diz_metalen (diz, a_meta);
+   int a_len = a_name_len + 1 + _diz_dir_metalen (diz, a_meta);
 
    memmove (diz->metadata + a_start,
             diz->metadata + a_start + a_len,
             diz->metadata_len - a_start - a_len);
    diz->metadata_len -= a_len;
    diz->metadata[diz->metadata_len]=0;
-   diz_wipe_cache (diz, 1);
-   //diz_update_files (diz);
+   diz_dir_wipe_cache (diz, 1);
+   //diz_dir_update_files (diz);
    //
    // on a timeout? XXX
 }
 
-void diz_remove (Diz *diz, int no)
+void diz_dir_remove (Diz *diz, int no)
 {
-   _diz_remove (diz, no);
-   diz_update_files (diz);
+   _diz_dir_remove (diz, no);
+   diz_dir_update_files (diz);
 }
 
-void diz_unset (Diz *diz, int no, const char *key)
+void diz_dir_unset (Diz *diz, int no, const char *key)
 {
-  int count = diz_value_count (diz, no, key);
+  int count = diz_dir_value_count (diz, no, key);
 
   while (count --)
   {
-  const char *a_meta = diz_find_no (diz, no);
+  const char *a_meta = diz_dir_find_no (diz, no);
   CtxString *str = ctx_string_new ("");
   const char *m = a_meta;
   const char *prop_start = m;
@@ -682,12 +682,12 @@ void diz_unset (Diz *diz, int no, const char *key)
    diz->metadata_len -= a_len;
    diz->metadata[diz->metadata_len]=0;
   }
-   diz_wipe_cache (diz, 1);
+   diz_dir_wipe_cache (diz, 1);
 }
 
-void diz_unset_value (Diz *diz, int no, const char *key, const char *value)
+void diz_dir_unset_value (Diz *diz, int no, const char *key, const char *value)
 {
-  const char *a_meta = diz_find_no (diz, no);
+  const char *a_meta = diz_dir_find_no (diz, no);
   CtxString *str_key = ctx_string_new ("");
   CtxString *str_value = ctx_string_new ("");
   const char *m = a_meta;
@@ -739,10 +739,10 @@ void diz_unset_value (Diz *diz, int no, const char *key, const char *value)
             diz->metadata + a_start + a_len, diz->metadata_len - a_start - a_len);
    diz->metadata_len -= a_len;
    diz->metadata[diz->metadata_len]=0;
-   diz_wipe_cache (diz, 1);
+   diz_dir_wipe_cache (diz, 1);
 }
 
-static void _diz_insert (Diz *diz, int pos, const char *data, int len)
+static void _diz_dir_insert (Diz *diz, int pos, const char *data, int len)
 {
   int wipe_full = (pos != diz->metadata_len);
   if (diz->metadata_len + len >= diz->metadata_size - 1)
@@ -754,20 +754,20 @@ static void _diz_insert (Diz *diz, int pos, const char *data, int len)
   memcpy (diz->metadata + pos, data, len);
   diz->metadata_len += len;
   diz->metadata[diz->metadata_len] = 0;
-  diz_wipe_cache (diz, wipe_full);
+  diz_dir_wipe_cache (diz, wipe_full);
 }
 
-int diz_insert (Diz *diz, int pos, const char *item)
+int diz_dir_insert (Diz *diz, int pos, const char *item)
 {
   const char *m = NULL;
   if (pos == -1)
-    pos = diz_count (diz);
+    pos = diz_dir_count (diz);
   else
-    m = diz_find_no (diz, pos);
+    m = diz_dir_find_no (diz, pos);
 
   if (m)
   {
-    char *name = diz_get_name_escaped (diz, pos);
+    char *name = diz_dir_get_name_escaped (diz, pos);
     m -= strlen (name) + 1;
     free (name);
   }
@@ -775,29 +775,29 @@ int diz_insert (Diz *diz, int pos, const char *item)
   {
     m = diz->metadata + diz->metadata_len;
   }
-  char *escaped_item = diz_escape_item (item);
+  char *escaped_item = diz_dir_escape_item (item);
   char tmp[strlen (escaped_item) + 3];
   snprintf (tmp, sizeof(tmp), "%s\n", escaped_item);
   free (escaped_item);
 
-  _diz_insert (diz, m-diz->metadata, tmp, strlen (tmp));
+  _diz_dir_insert (diz, m-diz->metadata, tmp, strlen (tmp));
   return pos;
 }
 
-void diz_set_name (Diz *diz, int pos, const char *new_name)
+void diz_dir_set_name (Diz *diz, int pos, const char *new_name)
 {
   // TODO : if it is a file, do a corresponding rename!
   //
   if (pos == -1)
   {
-     diz_set_string (diz, pos, "title", new_name);
+     diz_dir_set_string (diz, pos, "title", new_name);
      return;
   }
 
-  char *m = diz_find_no (diz, pos);
+  char *m = diz_dir_find_no (diz, pos);
   if (m)
   {
-    char *name = diz_get_name_escaped (diz, pos);
+    char *name = diz_dir_get_name_escaped (diz, pos);
     int name_len = strlen (name);
     free (name);
 
@@ -810,19 +810,19 @@ void diz_set_name (Diz *diz, int pos, const char *new_name)
     return;
   }
 
-  char *new_escaped = diz_escape_item (new_name);
+  char *new_escaped = diz_dir_escape_item (new_name);
   char tmp[strlen (new_escaped) + 3];
   snprintf (tmp, sizeof(tmp), "%s\n", new_escaped);
   free (new_escaped);
 
-  _diz_insert (diz, m-diz->metadata, tmp, strlen (tmp));
+  _diz_dir_insert (diz, m-diz->metadata, tmp, strlen (tmp));
 }
 
-void diz_add_string (Diz *diz, int no, const char *key, const char *value)
+void diz_dir_add_string (Diz *diz, int no, const char *key, const char *value)
 {
-//  diz_unset (diz, no, key);
+//  diz_dir_unset (diz, no, key);
 
-  const char *m = diz_find_no (diz, no);
+  const char *m = diz_dir_find_no (diz, no);
   int offset = diz->metadata_len;
   if (m)
   {
@@ -839,7 +839,7 @@ void diz_add_string (Diz *diz, int no, const char *key, const char *value)
     ctx_string_append_byte (str, '=');
     ctx_string_append_str (str, value);
     ctx_string_append_byte (str, '\n');
-    _diz_insert (diz, offset, str->str, str->length);
+    _diz_dir_insert (diz, offset, str->str, str->length);
   }
   else
   {
@@ -852,12 +852,12 @@ void diz_add_string (Diz *diz, int no, const char *key, const char *value)
 
 }
 
-void diz_add_string_unique (Diz *diz, int item_no, const char *key, const char *new_value)
+void diz_dir_add_string_unique (Diz *diz, int item_no, const char *key, const char *new_value)
 {
-  int value_count = diz_value_count (diz, item_no, key);
+  int value_count = diz_dir_value_count (diz, item_no, key);
   for (int i = 0; i < value_count; i++)
   {
-    char *value = diz_get_string_no (diz, item_no, key, i);
+    char *value = diz_dir_get_string_no (diz, item_no, key, i);
     if (value)
     {
       if (!strcmp (value, new_value))
@@ -868,10 +868,10 @@ void diz_add_string_unique (Diz *diz, int item_no, const char *key, const char *
       free (value);
     }
   }
-  diz_add_string (diz, item_no, key, new_value);
+  diz_dir_add_string (diz, item_no, key, new_value);
 }
 
-void diz_set_string (Diz *diz, int item_no, const char *key, const char *value)
+void diz_dir_set_string (Diz *diz, int item_no, const char *key, const char *value)
 {
   if (item_no == -1 && !strcmp (key, "title"))
   {
@@ -879,35 +879,35 @@ void diz_set_string (Diz *diz, int item_no, const char *key, const char *value)
       free (diz->title);
     diz->title = strdup (value);
   }
-  diz_unset (diz, item_no, key);
-  diz_add_string (diz, item_no, key, value);
+  diz_dir_unset (diz, item_no, key);
+  diz_dir_add_string (diz, item_no, key, value);
 }
 
 
-void diz_dump (Diz *diz)
+void diz_dir_dump (Diz *diz)
 {
-  int item_count = diz_count (diz);
+  int item_count = diz_dir_count (diz);
   fprintf (stdout, "item count: %i\n", item_count);
   int indent = 0;
 
   for (int i = -1; i < item_count; i ++)
   {
-    char *item_name = i>=0? diz_get_name (diz, i):NULL;
+    char *item_name = i>=0? diz_dir_get_name (diz, i):NULL;
     for (int i = 0; i < indent; i++) fprintf (stdout, " ");
     if (item_name)
-      fprintf (stdout, "%s     :%i,%i\n", item_name, i, diz_name_to_no (diz, item_name));
-    int keys = diz_key_count (diz, i);
+      fprintf (stdout, "%s     :%i,%i\n", item_name, i, diz_dir_name_to_no (diz, item_name));
+    int keys = diz_dir_key_count (diz, i);
     for (int k = 0; k < keys; k ++)
     {
-      char *key_name = diz_key_name (diz, i, k);
+      char *key_name = diz_dir_key_name (diz, i, k);
       for (int i = 0; i < indent; i++) fprintf (stdout, " ");
       fprintf (stdout, "   %s=%s\n", key_name,
-                      diz_get_string (diz, i, key_name));
+                      diz_dir_get_string (diz, i, key_name));
       if (!strcmp (key_name, "type") &&
-          !strcmp(diz_get_string (diz, i, key_name), "startgroup"))
+          !strcmp(diz_dir_get_string (diz, i, key_name), "startgroup"))
               indent +=4;
       else if (!strcmp (key_name, "type") &&
-          !strcmp(diz_get_string (diz, i, key_name), "endgroup"))
+          !strcmp(diz_dir_get_string (diz, i, key_name), "endgroup"))
               indent -=4;
     }
     fflush (stdout);
@@ -946,7 +946,7 @@ static int path_is_link (const char *path)
 #include <libgen.h>
 
 static void
-diz_update_files (Diz *diz)
+diz_dir_update_files (Diz *diz)
 {
   struct  dirent **namelist = NULL;
   int     n;
@@ -963,7 +963,7 @@ diz_update_files (Diz *diz)
   {
     int found = 0;
     const char *name = namelist[i]->d_name;
-    if (diz_name_to_no (diz, name)>=0)
+    if (diz_dir_name_to_no (diz, name)>=0)
        found = 1;
     if (!found && (name[0] != '.')) // skipping dot-files
                                     // could be a setting default
@@ -976,7 +976,7 @@ diz_update_files (Diz *diz)
   {
     char *name = to_add->data;
     char *full_path = ctx_strdup_printf ("%s/%s", diz->path, name);
-    int n = diz_insert(diz, -1, name);
+    int n = diz_dir_insert(diz, -1, name);
     if (path_is_link (full_path))
     {
       char target[1024];
@@ -984,41 +984,41 @@ diz_update_files (Diz *diz)
       if ((len = readlink(full_path, target, sizeof(target)-1)) != -1)
          target[len] = '\0';
 
-      diz_set_string (diz, n, "type", "symlink");
-      diz_set_string (diz, n, "target", target);
+      diz_dir_set_string (diz, n, "type", "symlink");
+      diz_dir_set_string (diz, n, "target", target);
 
       //if (strstr (target, ".ctx"))
      // {
         //Diz temp_diz;
         //memset(&temp_diz, 0, sizeof (temp_diz));
-        //diz_set_path (&temp_diz, target, NULL);
+        //diz_dir_set_path (&temp_diz, target, NULL);
         //char *title = temp_diz.title;
-        //diz_set_string (diz, n, "label", temp_diz.title);
+        //diz_dir_set_string (diz, n, "label", temp_diz.title);
      // }
      // else
       {
-        diz_set_string (diz, n, "label", basename(target));
+        diz_dir_set_string (diz, n, "label", basename(target));
       }
 
     }
     else
     {
-      diz_set_string (diz, n, "type", "file");
+      diz_dir_set_string (diz, n, "type", "file");
     }
     ctx_list_remove (&to_add, name);
     free (name);
     free (full_path);
   }
 
-  diz->count = diz_count (diz);
+  diz->count = diz_dir_count (diz);
   CtxList *to_remove = NULL;
   for (int i = 0; i < diz->count; i++)
   {
-    int atom = diz_type_atom (diz, i);
+    int atom = diz_dir_type_atom (diz, i);
     if (atom == CTX_ATOM_FILE ||
         atom == CTX_ATOM_SYMLINK)
     {
-      char *name = diz_get_name (diz, i);
+      char *name = diz_dir_get_name (diz, i);
       char *path = ctx_strdup_printf ("%s/%s", diz->path, name);
       struct stat stat_buf;
       if (lstat (path, &stat_buf) != 0)
@@ -1030,22 +1030,22 @@ diz_update_files (Diz *diz)
       free (path);
     }
   }
-  diz_dirt (diz);
+  diz_dir_dirt (diz);
 
   while (to_remove)
   {
     char *name = to_remove->data;
     int no = 0;
-    if ((no = diz_name_to_no (diz, name))>=0)
+    if ((no = diz_dir_name_to_no (diz, name))>=0)
     {
-      _diz_remove (diz, no);
+      _diz_dir_remove (diz, no);
     }
     ctx_list_remove (&to_remove, name);
     free (name);
-    diz_dirt (diz);
+    diz_dir_dirt (diz);
   }
 
-  diz->count = diz_count (diz);
+  diz->count = diz_dir_count (diz);
 
   while (n--)
     free (namelist[n]);
@@ -1053,12 +1053,12 @@ diz_update_files (Diz *diz)
 
   // TODO fully remove non-existent diz when empty?
   //if (added)
-  //  diz_dirt();
+  //  diz_dir_dirt();
 }
 
 
 void
-diz_set_path_text_editor  (Diz *diz,
+diz_dir_set_path_text_editor  (Diz *diz,
                            const char *path)
 {
   char *resolved_path = realpath (path, NULL);
@@ -1069,14 +1069,14 @@ diz_set_path_text_editor  (Diz *diz,
     free (diz->path);
   diz->path = resolved_path;
 
-  diz_load_text_file (diz, resolved_path);
-  diz->count = diz_count (diz);
+  diz_dir_load_text_file (diz, resolved_path);
+  diz->count = diz_dir_count (diz);
   diz->is_text_editor = 1;
 }
 
 
 void
-diz_set_path (Diz *diz, const char *path)
+diz_dir_set_path (Diz *diz, const char *path)
 {
 
   char *resolved_path = realpath (path, NULL);
@@ -1087,20 +1087,20 @@ diz_set_path (Diz *diz, const char *path)
     free (diz->title);
   diz->title = NULL;
 
-  diz_load_dir (diz, resolved_path);
-  diz->count = diz_count (diz);
+  diz_dir_load_dir (diz, resolved_path);
+  diz->count = diz_dir_count (diz);
 
-  diz_update_files (diz);
+  diz_dir_update_files (diz);
   diz->is_text_editor = 0;
   free (resolved_path);
 }
 
-int diz_item_get_level (Diz *diz, int no)
+int diz_dir_item_get_level (Diz *diz, int no)
 {
   int level = 0;
   for (int i = 0; i <= no; i++)
   {
-    int atom = diz_type_atom (diz, i);
+    int atom = diz_dir_type_atom (diz, i);
     switch (atom)
     {
       case CTX_ATOM_STARTGROUP:
@@ -1116,15 +1116,15 @@ int diz_item_get_level (Diz *diz, int no)
   return level;
 }
 
-int diz_measure_chunk (Diz *diz, int no)
+int diz_dir_measure_chunk (Diz *diz, int no)
 {
   int count = 1;
-  int self_level = diz_item_get_level (diz, no);
+  int self_level = diz_dir_item_get_level (diz, no);
   int level;
 
   do {
     no ++;
-    level = diz_item_get_level (diz, no);
+    level = diz_dir_item_get_level (diz, no);
     if (level > self_level) count++;
   } while (level > self_level);
   if (count > 1) count ++;
@@ -1134,14 +1134,14 @@ int diz_measure_chunk (Diz *diz, int no)
 
 //////////// below are code making interacting with it nicer
 
-int diz_get_parent (Diz *diz, int no)
+int diz_dir_get_parent (Diz *diz, int no)
 {
   int level = 1;
   CtxAtom atom;
   while (level > 0 && no >= 0)
   {
     no--;
-    atom = diz_type_atom (diz, no);
+    atom = diz_dir_type_atom (diz, no);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -1157,30 +1157,30 @@ int diz_get_parent (Diz *diz, int no)
   return no;
 }
 
-int diz_ancestor_is_folded (Diz *diz, int no)
+int diz_dir_ancestor_is_folded (Diz *diz, int no)
 {
-  int iter = diz_get_parent (diz, no);
+  int iter = diz_dir_get_parent (diz, no);
   while (iter != 0)
   {
-    if (diz_get_int (diz, iter+1, "folded", 0))
+    if (diz_dir_get_int (diz, iter+1, "folded", 0))
     {
       return 1;
     }
-    iter = diz_get_parent (diz, iter);
+    iter = diz_dir_get_parent (diz, iter);
   }
   return 0;
 }
 
-int diz_has_children (Diz *diz, int no)
+int diz_dir_has_children (Diz *diz, int no)
 {
-  CtxAtom  atom = diz_type_atom (diz, no+1);
+  CtxAtom  atom = diz_dir_type_atom (diz, no+1);
   if (atom == CTX_ATOM_STARTGROUP)
     return 1;
   return 0;
 }
 
 int
-diz_prev (Diz *diz, int i)
+diz_dir_prev (Diz *diz, int i)
 {
  int pos = i;
  int again = 0;
@@ -1190,7 +1190,7 @@ diz_prev (Diz *diz, int i)
   */
  do {
    pos -= 1;
-   int atom = diz_type_atom (diz, pos);
+   int atom = diz_dir_type_atom (diz, pos);
    switch (atom)
    {
      case CTX_ATOM_STARTGROUP:
@@ -1199,7 +1199,7 @@ diz_prev (Diz *diz, int i)
        again = 1;
        break;
      default:
-       if (diz_ancestor_is_folded (diz, pos))
+       if (diz_dir_ancestor_is_folded (diz, pos))
          again = 1;
        else
          again = 0;
@@ -1215,7 +1215,7 @@ diz_prev (Diz *diz, int i)
 }
 
 int
-diz_next (Diz *diz, int i)
+diz_dir_next (Diz *diz, int i)
 {
  int pos = i;
  int again = 0;
@@ -1225,7 +1225,7 @@ diz_next (Diz *diz, int i)
 
  do {
    pos += 1;
-   int atom = diz_type_atom (diz, pos);
+   int atom = diz_dir_type_atom (diz, pos);
    switch (atom)
    {
      case CTX_ATOM_STARTGROUP:
@@ -1241,13 +1241,13 @@ diz_next (Diz *diz, int i)
 }
 
 int
-diz_prev_sibling (Diz *diz, int i)
+diz_dir_prev_sibling (Diz *diz, int i)
 {
   int pos = i;
   int start_level = 0;
   int level = 0; // not absolute level, but relative level balance
   pos --;
-  int atom = diz_type_atom (diz, pos);
+  int atom = diz_dir_type_atom (diz, pos);
   if (atom == CTX_ATOM_ENDGROUP)
           level ++;
   else if (atom == CTX_ATOM_STARTGROUP)
@@ -1255,7 +1255,7 @@ diz_prev_sibling (Diz *diz, int i)
   while (level > start_level)
   {
     pos--;
-    atom = diz_type_atom (diz, pos);
+    atom = diz_dir_type_atom (diz, pos);
     if (atom == CTX_ATOM_STARTGROUP)
       {
         level--;
@@ -1273,7 +1273,7 @@ diz_prev_sibling (Diz *diz, int i)
          atom == CTX_ATOM_NEWPAGE)
   {
     pos--;
-    atom = diz_type_atom (diz, pos);
+    atom = diz_dir_type_atom (diz, pos);
   }
   if (level < start_level || pos < 0)
   {
@@ -1283,7 +1283,7 @@ diz_prev_sibling (Diz *diz, int i)
 }
 
 int
-diz_next_sibling (Diz *diz, int i)
+diz_dir_next_sibling (Diz *diz, int i)
 {
   int start_level = 0;
   int level = 0;
@@ -1291,7 +1291,7 @@ diz_next_sibling (Diz *diz, int i)
   int atom;
  
   i++;
-  atom = diz_type_atom (diz, i);
+  atom = diz_dir_type_atom (diz, i);
   if (atom == CTX_ATOM_ENDGROUP)
   {
     return -1;
@@ -1303,7 +1303,7 @@ diz_next_sibling (Diz *diz, int i)
     while (level > start_level && i < diz->count)
     {
       i++;
-      atom = diz_type_atom (diz, i);
+      atom = diz_dir_type_atom (diz, i);
       if (atom == CTX_ATOM_STARTGROUP)
       {
         level++;
@@ -1318,13 +1318,13 @@ diz_next_sibling (Diz *diz, int i)
     {
        level--;
        i++;
-       atom = diz_type_atom (diz, i);
+       atom = diz_dir_type_atom (diz, i);
     }
   }
   while (atom == CTX_ATOM_NEWPAGE)
   {
     i++;
-    atom = diz_type_atom (diz, i);
+    atom = diz_dir_type_atom (diz, i);
   }
 
   if (level != start_level || i >= diz->count)
@@ -1334,7 +1334,7 @@ diz_next_sibling (Diz *diz, int i)
   return i;
 }
 
-void diz_set_float (Diz *diz, int item_no, const char *key, float value)
+void diz_dir_set_float (Diz *diz, int item_no, const char *key, float value)
 {
   char str[64];
   sprintf (str, "%f", value);
@@ -1342,12 +1342,12 @@ void diz_set_float (Diz *diz, int item_no, const char *key, float value)
     str[strlen(str)-1] = 0;
   if (str[strlen(str)-1] == '.')
     str[strlen(str)-1] = 0;
-  diz_set_string (diz, item_no, key, str);
+  diz_dir_set_string (diz, item_no, key, str);
 }
 
-float diz_get_float (Diz *diz, int item_no, const char *key, float def_val)
+float diz_dir_get_float (Diz *diz, int item_no, const char *key, float def_val)
 {
-   char *value = diz_get_string (diz, item_no, key);
+   char *value = diz_dir_get_string (diz, item_no, key);
    float ret = def_val;
    if (value)
    {
@@ -1357,9 +1357,9 @@ float diz_get_float (Diz *diz, int item_no, const char *key, float def_val)
    return ret;
 }
 
-int diz_get_int (Diz *diz, int no, const char *key, int def_val)
+int diz_dir_get_int (Diz *diz, int no, const char *key, int def_val)
 {
-   char *value = diz_get_string (diz, no, key);
+   char *value = diz_dir_get_string (diz, no, key);
    int ret = def_val;
    if (value)
    {
@@ -1369,12 +1369,12 @@ int diz_get_int (Diz *diz, int no, const char *key, int def_val)
    return ret;
 }
 
-CtxAtom diz_type_atom (Diz *diz, int i)
+CtxAtom diz_dir_type_atom (Diz *diz, int i)
 {
   if (text_editor)
     return CTX_ATOM_TEXT;
 
-  char *type = diz_get_string (diz, i, "type");
+  char *type = diz_dir_get_string (diz, i, "type");
   if (type)
   {
 #if 0
@@ -1416,25 +1416,25 @@ CtxAtom diz_type_atom (Diz *diz, int i)
 }
 
 
-void diz_dirt (Diz *diz)
+void diz_dir_dirt (Diz *diz)
 {
   if (!diz) return;
   diz->dirty++;
   diz->metadata_cache_no=-3;
-  //diz_save ();
-  diz->count = diz_count (diz);
+  //diz_dir_save ();
+  diz->count = diz_dir_count (diz);
 //  save_metadata ();
 }
 
-Diz *diz_new (void)
+Diz *diz_dir_new (void)
 {
   Diz *diz = calloc (sizeof (Diz), 1);
   return diz;
 }
 
-void diz_destroy  (Diz *diz)
+void diz_dir_destroy  (Diz *diz)
 {
-  diz_wipe_cache (diz, 1);
+  diz_dir_wipe_cache (diz, 1);
   if (diz->path) free (diz->path);
   if (diz->title) free (diz->title);
   if (diz->metadata) free (diz->metadata);

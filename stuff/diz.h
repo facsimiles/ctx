@@ -36,71 +36,71 @@ typedef struct Diz {
   int     is_text_editor;
 } Diz;
 
-Diz *diz_new      (void);
-void diz_destroy  (Diz *diz);
+Diz *diz_dir_new      (void);
+void diz_dir_destroy  (Diz *diz);
 
-void diz_save     (Diz *diz);
-Diz *diz_new      (void);
-void diz_destroy  (Diz *diz);
-void diz_set_path (Diz *diz, const char *path);
+void diz_dir_save     (Diz *diz);
+Diz *diz_dir_new      (void);
+void diz_dir_destroy  (Diz *diz);
+void diz_dir_set_path (Diz *diz, const char *path);
 
 void
-diz_set_path_text_editor  (Diz *diz, const char *path);
+diz_dir_set_path_text_editor  (Diz *diz, const char *path);
 
 /* metadata setting API */
-void diz_swap         (Diz *diz, int item_no_a, int item_no_b);
-void diz_remove       (Diz *diz, int item_no);
+void diz_dir_swap         (Diz *diz, int item_no_a, int item_no_b);
+void diz_dir_remove       (Diz *diz, int item_no);
 
 // XXX : currently does not work properly with multi-keys
-void diz_unset        (Diz *diz, int item_no, const char *key);
-void diz_unset_value  (Diz *diz, int no, const char *key, const char *value);
-int  diz_insert       (Diz *diz, int pos, const char *item_name);
+void diz_dir_unset        (Diz *diz, int item_no, const char *key);
+void diz_dir_unset_value  (Diz *diz, int no, const char *key, const char *value);
+int  diz_dir_insert       (Diz *diz, int pos, const char *item_name);
 
-void diz_set_name     (Diz *diz, int item_no, const char *new_name);
+void diz_dir_set_name     (Diz *diz, int item_no, const char *new_name);
 
-void diz_set_string   (Diz *diz, int item_no, const char *key, const char *value);
-void diz_add_string   (Diz *diz, int item_no, const char *key, const char *value);
-void diz_set_float    (Diz *diz, int item_no, const char *key, float value);
+void diz_dir_set_string   (Diz *diz, int item_no, const char *key, const char *value);
+void diz_dir_add_string   (Diz *diz, int item_no, const char *key, const char *value);
+void diz_dir_set_float    (Diz *diz, int item_no, const char *key, float value);
 
-void diz_add_string_unique (Diz *diz, int item_no, const char *key, const char *value);
+void diz_dir_add_string_unique (Diz *diz, int item_no, const char *key, const char *value);
 
 /* metadata query API */
 
-int     diz_count         (Diz *diz);
-int     diz_name_to_no    (Diz *diz, const char *name);
+int     diz_dir_count         (Diz *diz);
+int     diz_dir_name_to_no    (Diz *diz, const char *name);
 
-char   *diz_get_name      (Diz *diz, int item_no);
+char   *diz_dir_get_name      (Diz *diz, int item_no);
 
-int     diz_key_count     (Diz *diz, int item_no);
-char   *diz_key_name      (Diz *diz, int item_no, int no);
-char   *diz_get_string    (Diz *diz, int item_no, const char *key);
-float   diz_get_float     (Diz *diz, int item_no, const char *key, float def_val);
-int     diz_get_int       (Diz *diz, int item_no, const char *key, int def_val);
+int     diz_dir_key_count     (Diz *diz, int item_no);
+char   *diz_dir_key_name      (Diz *diz, int item_no, int no);
+char   *diz_dir_get_string    (Diz *diz, int item_no, const char *key);
+float   diz_dir_get_float     (Diz *diz, int item_no, const char *key, float def_val);
+int     diz_dir_get_int       (Diz *diz, int item_no, const char *key, int def_val);
 
 
-int     diz_value_count   (Diz *diz, int item_no, const char *key);
-char   *diz_get_string_no (Diz *diz, int item_no, const char *key, int value_no);
+int     diz_dir_value_count   (Diz *diz, int item_no, const char *key);
+char   *diz_dir_get_string_no (Diz *diz, int item_no, const char *key, int value_no);
 
 ////////////////////////////
 
-CtxAtom diz_type_atom          (Diz *diz, int item_no);
-int     diz_measure_chunk      (Diz *diz, int item_no);
-int     diz_item_get_level     (Diz *diz, int item_no);
-int     diz_get_parent         (Diz *diz, int item_no);
+CtxAtom diz_dir_type_atom          (Diz *diz, int item_no);
+int     diz_dir_measure_chunk      (Diz *diz, int item_no);
+int     diz_dir_item_get_level     (Diz *diz, int item_no);
+int     diz_dir_get_parent         (Diz *diz, int item_no);
 
-int     diz_ancestor_is_folded (Diz *diz, int item_no);
-int     diz_has_children       (Diz *diz, int item_no);
+int     diz_dir_ancestor_is_folded (Diz *diz, int item_no);
+int     diz_dir_has_children       (Diz *diz, int item_no);
 
-int     diz_prev               (Diz *diz, int item_no);
-int     diz_next               (Diz *diz, int item_no);
-int     diz_prev_sibling       (Diz *diz, int item_no);
-int     diz_next_sibling       (Diz *diz, int item_no);
+int     diz_dir_prev               (Diz *diz, int item_no);
+int     diz_dir_next               (Diz *diz, int item_no);
+int     diz_dir_prev_sibling       (Diz *diz, int item_no);
+int     diz_dir_next_sibling       (Diz *diz, int item_no);
 
 
-void    diz_dump               (Diz *diz);
+void    diz_dir_dump               (Diz *diz);
 
 // should be internal only?
-void diz_dirt (Diz *diz);
+void diz_dir_dirt (Diz *diz);
 #endif
 
 
