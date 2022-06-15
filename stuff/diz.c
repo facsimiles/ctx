@@ -241,6 +241,10 @@ static char *diz_dir_find_no (Diz *diz, int no)
 
 char *diz_dir_get_name (Diz *diz, int no)
 {
+  if (no == -1)
+  {
+     return diz_dir_get_string (diz, no, "title");
+  }
   if (diz->cache)
   { if (diz->cache[no])
       return strdup (diz->cache[no]);
@@ -252,10 +256,6 @@ char *diz_dir_get_name (Diz *diz, int no)
     diz->cache = calloc (sizeof(void*), new_count);
   }
 
-  if (no == -1)
-  {
-     return diz_dir_get_string (diz, no, "title");
-  }
 
 
   /* this makes use reuse the cache */

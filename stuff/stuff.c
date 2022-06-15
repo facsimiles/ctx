@@ -509,6 +509,7 @@ static void _set_location (const char *location)
   } else
   {
     char *path = diz_dir_wiki_path (location);
+    text_editor = 0;
     diz_dir_set_path (diz, path);
     diz_dir_set_name (diz, -1, location);
     save_metadata ();
