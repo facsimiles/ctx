@@ -127,7 +127,11 @@ int main (int argc, char **argv)
       //
       itk_slider_uint8  (itk, "slide byte", &abc, 0, 100, 1);
       
-      itk_entry (itk, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL);
+      if (
+      itk_entry (itk, "Foo", "text entry", (char*)&input, sizeof(input)-1, NULL, NULL))
+      {
+         fprintf (stderr, "text entry commited: \"%s\"\n", input);
+      }
 
       itk_choice (itk, "power", &chosen, NULL, NULL);
       itk_choice_add (itk, 0,    "on");
