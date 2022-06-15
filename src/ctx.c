@@ -2485,6 +2485,7 @@ ctx_get_contents (const char     *uri,
 
 
 typedef struct CtxMagicEntry {
+  int is_text;
   const char *mime_type;
   const char *ext1;
   int len;
@@ -2492,74 +2493,74 @@ typedef struct CtxMagicEntry {
 } CtxMagicEntry;
 
 static CtxMagicEntry ctx_magics[]={
-  {"image/bmp",  ".bmp", 0, {0}},
-  {"image/png",  ".png", 8, {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}},
-  {"image/jpeg", ".jpg", 8,  {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
-  {"image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xe0}},
-  {"image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xee}},
-  {"image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xe1}},
-  {"image/jpeg", ".jpeg", 8, {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
+  {0, "image/bmp",  ".bmp", 0, {0}},
+  {0, "image/png",  ".png", 8, {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}},
+  {0, "image/jpeg", ".jpg", 8,  {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
+  {0, "image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xe0}},
+  {0, "image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xee}},
+  {0, "image/jpeg", ".jpg", 4,  {0xff, 0xd8, 0xff, 0xe1}},
+  {0, "image/jpeg", ".jpeg", 8, {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
 
-  {"image/psd", ".psd", 4,  {0x38, 0x42, 0x50, 0x53}},
-  {"image/tinyvg", ".tvg", 3, {0x72, 0x56, 1}}, 
-  {"image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x37, 0x61}},
-  {"image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x39, 0x61}},
-  {"image/exr",  ".exr", 4, {0x76, 0x2f, 0x31, 0x01}},
-  {"video/mpeg", ".mpg", 4, {0x00, 0x00, 0x01, 0xba}},
-  {"application/blender", ".blend", 8, {0x42, 0x4c,0x45,0x4e,0x44,0x45,0x52}},
-  {"image/xcf",  ".xcf", 8, {0x67, 0x69,0x6d,0x70,0x20,0x78,0x63,0x66}},
-  {"application/bzip2", ".bz2", 3, {0x42, 0x5a, 0x68}},
-  {"application/gzip", ".gz", 2, {0x1f, 0x8b}},
-  {"application/zip", ".zip", 4, {0x50, 0x4b, 0x03, 0x04}},
-  {"application/zip", ".zip", 4, {0x50, 0x4b, 0x05, 0x06}},
-  {"application/rar", ".rar", 6, {0x52, 0x61, 0x72, 0x1a, 0x07, 0x00}},
-  {"application/rar", ".rar", 7, {0x52, 0x61, 0x72, 0x1a, 0x07, 0x01, 0x00}},
-  {"text/x-csrc", ".c", 0, {0,}},
-  {"text/x-chdr", ".h", 0, {0,}},
-  {"text/css", ".css", 0, {0x0}},
+  {0, "image/psd", ".psd", 4,  {0x38, 0x42, 0x50, 0x53}},
+  {0, "image/tinyvg", ".tvg", 3, {0x72, 0x56, 1}}, 
+  {0, "image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x37, 0x61}},
+  {0, "image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x39, 0x61}},
+  {0, "image/exr",  ".exr", 4, {0x76, 0x2f, 0x31, 0x01}},
+  {0, "video/mpeg", ".mpg", 4, {0x00, 0x00, 0x01, 0xba}},
+  {0, "application/blender", ".blend", 8, {0x42, 0x4c,0x45,0x4e,0x44,0x45,0x52}},
+  {0, "image/xcf",  ".xcf", 8, {0x67, 0x69,0x6d,0x70,0x20,0x78,0x63,0x66}},
+  {0, "application/bzip2", ".bz2", 3, {0x42, 0x5a, 0x68}},
+  {0, "application/gzip", ".gz", 2, {0x1f, 0x8b}},
+  {0, "application/zip", ".zip", 4, {0x50, 0x4b, 0x03, 0x04}},
+  {0, "application/zip", ".zip", 4, {0x50, 0x4b, 0x05, 0x06}},
+  {0, "application/rar", ".rar", 6, {0x52, 0x61, 0x72, 0x1a, 0x07, 0x00}},
+  {0, "application/rar", ".rar", 7, {0x52, 0x61, 0x72, 0x1a, 0x07, 0x01, 0x00}},
+  {1, "text/x-csrc", ".c", 0, {0,}},
+  {1, "text/x-chdr", ".h", 0, {0,}},
+  {1, "text/css", ".css", 0, {0x0}},
 
-  {"application/gzip", ".z", 2, {0x1f, 0x9d}},
+  {0, "application/gzip", ".z", 2, {0x1f, 0x9d}},
 
-  {"application/dos-mz", ".exe", 2, {0x4d, 0x5a}},
+  {0, "application/dos-mz", ".exe", 2, {0x4d, 0x5a}},
 
-  {"text/csv", ".csv", 0, {0x0}},
-  {"text/html", ".htm", 0, {0x0}},
-  {"text/html", ".html", 0, {0x0}},
-  {"text/x-makefile", "makefile", 0, {0x0}},
-  {"application/atom+xml", ".atom", 0, {0x0}},
-  {"application/rdf+xml", ".rdf", 0, {0x0}},
-  {"application/javascript", ".js", 0, {0x0}},
-  {"application/json", ".json", 0, {0x0}},
-  {"application/octet-stream", ".bin", 0, {0x0}},
-  {"application/x-object", ".o", 0, {0x0}},
-  {"text/utf-8", ".txt", 0, {0xef, 0xbb, 0xbf}}, // utf8 bom
-  {"text/x-sh", ".sh", 0, {0x0}},
-  {"text/x-python", ".py", 0, {0x0}},
-  {"text/x-perl", ".pl", 0, {0x0}},
-  {"text/x-perl", ".pm", 0, {0x0}},
-  {"application/x-shellscript", ".sh", 2, {0x23, 0x21}}, // #!
-  {"application/pdf", ".pdf", 0, {0x0}},
-  {"application/ctx", ".ctx", 0, {0x0}},
-  {"application/wasm", ".wasm", 0, {0x00, 0x61, 0x73, 0x6d}},
-  {"text/xml", ".xml",     0, {0x0}},
-  {"video/mp4", ".mp4",    7, {0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f}},
-  {"video/matroska", ".mkv", 4, {0x1a, 0x45, 0xdf, 0xa3}},
-  {"video/ogg", ".ogv",    0, {0x0}},
-  {"audio/flac", ".flac",  0, {0x66, 0x4c, 0x61, 0x43}},
-  {"audio/sp-midi", ".mid",  4, {0x4d, 0x54, 0x68, 0x64}},
-  {"audio/x-wav", ".wav",  4, {0x52, 0x49, 0x46, 0x46}},
-  {"audio/ogg", ".ogg",    4, {0x4f, 0x67, 0x67, 0x53}},
-  {"audio/ogg", ".opus",   0, {0x0}},
-  {"audio/ogg", ".oga",    0, {0x0}},
-  {"audio/mpeg", ".mp1",   0, {0x0}},
-  {"audio/m3u", ".m3u",    0, {0x0}},
-  {"audio/mpeg", ".mp2",   0, {0x0}},
-  {"audio/mpeg", ".mp3",   0, {0x0}},
-  {"audio/mpeg", ".m4a",   0, {0x0}},
-  {"audio/mpeg", ".mpga",  0, {0x0}},
-  {"audio/mpeg", ".mpega", 0, {0x0}},
-  {"font/otf", ".otf", 0,{0x0}},
-  {"font/ttf", ".ttf", 5,{0x0, 0x01, 0x00, 0x00, 0x00}},
+  {1, "text/csv", ".csv", 0, {0x0}},
+  {1, "text/html", ".htm", 0, {0x0}},
+  {1, "text/html", ".html", 0, {0x0}},
+  {1, "text/x-makefile", "makefile", 0, {0x0}},
+  {1, "application/atom+xml", ".atom", 0, {0x0}},
+  {1, "application/rdf+xml", ".rdf", 0, {0x0}},
+  {1, "application/javascript", ".js", 0, {0x0}},
+  {1, "application/json", ".json", 0, {0x0}},
+  {0, "application/octet-stream", ".bin", 0, {0x0}},
+  {0, "application/x-object", ".o", 0, {0x0}},
+  {1, "text/utf-8", ".txt", 0, {0xef, 0xbb, 0xbf}}, // utf8 bom
+  {1, "text/x-sh", ".sh", 0, {0x0}},
+  {1, "text/x-python", ".py", 0, {0x0}},
+  {1, "text/x-perl", ".pl", 0, {0x0}},
+  {1, "text/x-perl", ".pm", 0, {0x0}},
+  {1, "application/x-shellscript", ".sh", 2, {0x23, 0x21}}, // #!
+  {0, "application/pdf", ".pdf", 0, {0x0}},
+  {0, "application/ctx", ".ctx", 0, {0x0}},
+  {0, "application/wasm", ".wasm", 0, {0x00, 0x61, 0x73, 0x6d}},
+  {1, "text/xml", ".xml",     0, {0x0}},
+  {0, "video/mp4", ".mp4",    7, {0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f}},
+  {0, "video/matroska", ".mkv", 4, {0x1a, 0x45, 0xdf, 0xa3}},
+  {0, "video/ogg", ".ogv",    0, {0x0}},
+  {0, "audio/flac", ".flac",  0, {0x66, 0x4c, 0x61, 0x43}},
+  {0, "audio/sp-midi", ".mid",  4, {0x4d, 0x54, 0x68, 0x64}},
+  {0, "audio/x-wav", ".wav",  4, {0x52, 0x49, 0x46, 0x46}},
+  {0, "audio/ogg", ".ogg",    4, {0x4f, 0x67, 0x67, 0x53}},
+  {0, "audio/ogg", ".opus",   0, {0x0}},
+  {0, "audio/ogg", ".oga",    0, {0x0}},
+  {0, "audio/mpeg", ".mp1",   0, {0x0}},
+  {0, "audio/m3u", ".m3u",    0, {0x0}},
+  {0, "audio/mpeg", ".mp2",   0, {0x0}},
+  {0, "audio/mpeg", ".mp3",   0, {0x0}},
+  {0, "audio/mpeg", ".m4a",   0, {0x0}},
+  {0, "audio/mpeg", ".mpga",  0, {0x0}},
+  {0, "audio/mpeg", ".mpega", 0, {0x0}},
+  {0, "font/otf", ".otf", 0,{0x0}},
+  {0, "font/ttf", ".ttf", 5,{0x0, 0x01, 0x00, 0x00, 0x00}},
   // inode-directory
 };
 
@@ -2674,6 +2675,19 @@ const char *ctx_path_get_media_type (const char *path)
   return guess;
   }
   return "application/none";
+}
+
+int ctx_media_type_is_text (const char *media_type)
+{
+  for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
+    if (media_type == ctx_magics[i].mime_type)
+       return ctx_magics[i].is_text;
+  for (unsigned int i = 0; i < sizeof (ctx_magics)/sizeof(ctx_magics[0]);i++)
+    if (!strcmp (media_type,  ctx_magics[i].mime_type))
+       return ctx_magics[i].is_text;
+  if (!strcmp (media_type, "text/plain"))
+    return 1;
+  return 0;
 }
 
 CtxMediaTypeClass ctx_media_type_class (const char *media_type)

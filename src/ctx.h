@@ -2444,6 +2444,7 @@ typedef enum {
   CTX_MEDIA_TYPE_APPLICATION,
 } CtxMediaTypeClass;
 
+int ctx_media_type_is_text (const char *media_type);
 CtxMediaTypeClass ctx_media_type_class (const char *media_type);
 
 
