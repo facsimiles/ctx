@@ -833,7 +833,12 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
     full_path = ctx_strdup_printf ("%s/%s", diz->path, name);
   }
   const char *media_type = ctx_path_get_media_type (full_path); 
-  if (!strcmp(media_type, "inode/directory"))
+  if (ctx_media_type_is_text (media_type))
+  {
+    set_location (full_path);
+    itk->focus_no = 0;
+  }
+  else if (!strcmp(media_type, "inode/directory"))
   {
     set_location (full_path);
     itk->focus_no = 0;
@@ -3216,7 +3221,9 @@ static void dir_layout (ITK *itk, Diz *diz)
   float space_width = ctx_text_width (itk->ctx, " ");
   ctx_font_size (itk->ctx, itk->font_size);
 
-            if (!is_text_editing() && !viewer && !text_editor)
+            if (!is_text_editing() && !viewer &&
+              !item_context_active
+                            )
             {
 
               if (history)
@@ -3225,7 +3232,8 @@ static void dir_layout (ITK *itk, Diz *diz)
                 BIND_KEY("alt-right", "history forward", "forward");
 
               BIND_KEY ("alt-up",    "go-parent",    "go to parent");
-              BIND_KEY ("alt-down",  "activate",  "enter item");
+              if (!text_editor)
+                BIND_KEY ("alt-down",  "activate",  "enter item");
             }
 
   if (!layout_config.outliner)
@@ -3272,6 +3280,8 @@ static void dir_layout (ITK *itk, Diz *diz)
     {
       char *dup_par = strdup (parent);
       ctx_add_key_binding_full (ctx, "return", NULL, "view category", ui_visit_tag, dup_par, free, dup_par);
+      dup_par = strdup (parent);
+      ctx_add_key_binding_full (ctx, "alt-down", NULL, "view category", ui_visit_tag, dup_par, free, dup_par);
       dup_par = strdup (parent);
       ctx_add_key_binding_full (ctx, "delete", NULL, "remove tag", ui_remove_tag, dup_par, free, dup_par);
     }
@@ -4937,7 +4947,7 @@ static int card_files (ITK *itk_, void *data)
  // }
  // else
   {
-#if 0
+#if 1
     if (!is_text_editing()
         && !text_editor
         && !item_context_active)
@@ -5269,6 +5279,17 @@ static int card_files (ITK *itk_, void *data)
          ctx_move_to (itk->ctx, x+em, y);
          ctx_text (itk->ctx, tmp);
       }
+    }
+
+    if (focused_no>=0)
+    {
+      char *name = diz_dir_get_name (diz, focused_no);
+      char *full_path = ctx_strdup_printf ("%s/%s", diz->path, name);
+      y+=em;
+      ctx_move_to (itk->ctx, x+em, y);
+      ctx_text (itk->ctx, ctx_path_get_media_type (full_path));
+      free (full_path);
+      free (name);
     }
 
 

@@ -1,5 +1,5 @@
-#ifndef COLLECTION_H
-#define COLLECTION_H
+#ifndef DIZ_H
+#define DIZ_H
 
 // doesnt belong here - it is global for stuff...
 //
@@ -101,6 +101,9 @@ void    diz_dir_dump               (Diz *diz);
 
 // should be internal only?
 void diz_dir_dirt (Diz *diz);
+
+
+
 #endif
 
 
