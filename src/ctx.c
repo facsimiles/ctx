@@ -40,7 +40,7 @@ void ctx_dirty_rect (Ctx *ctx, int *x, int *y, int *width, int *height)
 }
 
 #if CTX_CURRENT_PATH
-CtxIterator *
+static CtxIterator *
 ctx_current_path_iterator (Ctx *ctx)
 {
   CtxIterator *iterator = &ctx->current_path_iterator;
@@ -2100,6 +2100,10 @@ ctx_new_drawlist (int width, int height)
   return _ctx_new_drawlist (width, height);
 }
 
+#if CTX_EVENTS
+static Ctx *ctx_new_ui (int width, int height, const char *backend);
+#endif
+
 CTX_EXPORT Ctx *
 ctx_new (int width, int height, const char *backend)
 {
@@ -2972,6 +2976,8 @@ ctx_logo (Ctx *ctx, float x, float y, float dim)
      ctx_restore (ctx);
 }
 
+void
+ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size);
 void
 ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size)
 {

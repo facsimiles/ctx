@@ -1313,16 +1313,6 @@ int ctx_is_set (Ctx *ctx, uint32_t hash);
 
 static Ctx *_ctx_new_drawlist (int width, int height);
 
-/**
- * ctx_new_ui:
- *
- * Create a new interactive ctx context, might depend on additional
- * integration.
- *
- * The values for backend are as for the environment variable,
- * NULL for auto.
- */
-static Ctx *ctx_new_ui (int width, int height, const char *backend);
 
 static inline void
 _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)

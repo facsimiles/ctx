@@ -568,7 +568,7 @@ ctx_add_data (Ctx *ctx, void *data, int length)
 
 int ctx_drawlist_add_u32 (CtxDrawlist *drawlist, CtxCode code, uint32_t u32[2])
 {
-  CtxEntry entry[3];
+  CtxEntry entry[4];
   entry[0].code = code;
   entry[0].data.u32[0] = u32[0];
   entry[0].data.u32[1] = u32[1];
@@ -577,7 +577,7 @@ int ctx_drawlist_add_u32 (CtxDrawlist *drawlist, CtxCode code, uint32_t u32[2])
 
 int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
 {
-  CtxEntry entry[3] = {{CTX_DATA, {{0},}}};
+  CtxEntry entry[4] = {{CTX_DATA, {{0},}}};
   entry[0].data.u32[0] = 0;
   entry[0].data.u32[1] = 0;
   int ret = ctx_drawlist_add_single (drawlist, &entry[0]);
@@ -596,7 +596,7 @@ int ctx_drawlist_add_data (CtxDrawlist *drawlist, const void *data, int length)
   memcpy (&drawlist->entries[ret+1], data, length);
   {
     //int reverse = ctx_drawlist_add (drawlist, CTX_DATA_REV);
-    CtxEntry entry[3] = {{CTX_DATA_REV, {{0},}}};
+    CtxEntry entry[4] = {{CTX_DATA_REV, {{0},}}};
     entry[0].data.u32[0] = length;
     entry[0].data.u32[1] = length_in_blocks;
     ctx_drawlist_add_single (drawlist, &entry[0]);

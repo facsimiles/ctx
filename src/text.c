@@ -956,7 +956,7 @@ ctx_glyph_allocate (int n_glyphs)
   return (CtxGlyph *) ctx_malloc (sizeof (CtxGlyph) * n_glyphs);
 }
 void
-gtx_glyph_free     (CtxGlyph *glyphs)
+ctx_glyph_free     (CtxGlyph *glyphs)
 {
   ctx_free (glyphs);
 }
