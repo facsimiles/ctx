@@ -2281,7 +2281,7 @@ ctx_fragment_color_RGBAF (CtxRasterizer *rasterizer, float x, float y, float z, 
 static void ctx_fragment_image_RGBAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
   float *outf = (float *) out;
-  uint8_t rgba[4];
+  uint8_t rgba[4 * count];
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   switch (buffer->format->bpp)
@@ -4402,8 +4402,8 @@ ctx_fragment_color_GRAYAF (CtxRasterizer *rasterizer, float x, float y, float z,
 
 static void ctx_fragment_image_GRAYAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
-  uint8_t rgba[4];
-  float rgbaf[4];
+  uint8_t rgba[4*count];
+  float rgbaf[4*count];
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   switch (buffer->format->bpp)
