@@ -441,34 +441,46 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
   return abort;
 }
 
-CTX_EXPORT int
+
+/* XXX: todo replace this with a single function that writes
+ * to pointers, like path_extent
+ */
+static int
 ctx_cb_x0 (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return cb_backend->min_col * (ctx_width (ctx)/CTX_HASH_COLS);
 }
 
-CTX_EXPORT int
+static int
 ctx_cb_x1 (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return (cb_backend->max_col+1) * (ctx_width (ctx)/CTX_HASH_COLS)-1;
 }
 
-CTX_EXPORT int
+static int
 ctx_cb_y0 (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return cb_backend->min_row * (ctx_height (ctx)/CTX_HASH_ROWS);
 }
 
-CTX_EXPORT int
+static int
 ctx_cb_y1 (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
   return (cb_backend->max_row+1) * (ctx_height (ctx)/CTX_HASH_ROWS)-1;
 }
 
+void
+ctx_cb_extent (Ctx *ctx, float *x0, float *y0, float *x1, float *y1)
+{
+  if (x0) *x0 = ctx_cb_x0 (ctx);
+  if (y0) *y0 = ctx_cb_y0 (ctx);
+  if (x1) *x1 = ctx_cb_x1 (ctx);
+  if (y1) *y1 = ctx_cb_y1 (ctx);
+}
 
 static void
 ctx_cb_end_frame (Ctx *ctx)
