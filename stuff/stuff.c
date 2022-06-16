@@ -274,8 +274,8 @@ static void set_layout (CtxEvent *e, void *d1, void *d2)
   layout_config.fill_width = 0;
   layout_config.fill_height = 0;
   layout_config.zoom = 0;
-  layout_config.width = 7;
-  layout_config.height = 7;
+  layout_config.width = 5;
+  layout_config.height = 5;
   layout_config.border = 0;
   layout_config.margin = 0.0;
   layout_config.fixed_size = 0;
@@ -3172,9 +3172,9 @@ static void dir_layout (ITK *itk, Diz *diz)
 
   layout_box_count = 0;
   layout_box_no = 0;
-  layout_box[0].x = 0.1;
+  layout_box[0].x = 0.05;
   layout_box[0].y = (layout_config.margin_top * em) / itk->width;
-  layout_box[0].width = 0.8;
+  layout_box[0].width = 0.9;
   layout_box[0].height = 4000.0;
 
   diz->metadata_cache_no = -3;
@@ -4802,6 +4802,8 @@ static void item_context_choice_next (CtxEvent *e, void *d1, void *d2)
 
 static void item_context_make_choice (CtxEvent *e, void *d1, void *d2)
 {
+  char **choices = d1;
+  argvs_eval (choices[item_context_choice*2+1]);
   item_context_active = 0;
   e->stop_propagate = 1;
   ctx_queue_draw (e->ctx);
@@ -5180,7 +5182,7 @@ static int card_files (ITK *itk_, void *data)
 
   if (item_context_active && focused_control && focused_no>=-1)
   {
-    char *choices_item[]={
+    static char *choices_item[]={
       "indent/ (ctrl-right)", "make-child-of-previous",
       "outdent/ (ctrl-left)", "make-sibling-of-parent",
       "raise (ctrl-page-up)",   "move-before-previous-sibling",
@@ -5189,7 +5191,7 @@ static int card_files (ITK *itk_, void *data)
       "rename",                 "foo",
       NULL,NULL
     };
-    char *choices_document[]={
+    static char *choices_document[]={
       "view",                   "foo",
       "store view",             "foo",
       "rename",                 "foo",
@@ -5204,31 +5206,6 @@ static int card_files (ITK *itk_, void *data)
     float height = em * 9;
 
 
-    ctx_add_key_binding (ctx, "up", NULL, "previous choice",
-                    item_context_choice_prev,
-                    NULL);
-    ctx_add_key_binding (ctx, "down", NULL, "next choice",
-                    item_context_choice_next,
-                    NULL);
-    ctx_add_key_binding (ctx, "return", NULL, "make choice",
-                    item_context_make_choice,
-                    NULL);
-    ctx_add_key_binding (ctx, "left", NULL, NULL,
-                    ignore_and_stop_propagate,
-                    NULL);
-    ctx_add_key_binding (ctx, "right", NULL, NULL,
-                    ignore_and_stop_propagate,
-                    NULL);
-    ctx_add_key_binding (ctx, "delete", NULL, NULL,
-                    ignore_and_stop_propagate,
-                    NULL);
-    ctx_add_key_binding (ctx, "tab", NULL, NULL,
-                    ignore_and_stop_propagate,
-                    NULL);
-    ctx_add_key_binding (ctx, "shift-tab", NULL, NULL,
-                    ignore_and_stop_propagate,
-                    NULL);
-    BIND_KEY ("escape", "toggle-context", "cancel context menu");
 
     if (width < focused_control->width) x-= width;
     else
@@ -5246,6 +5223,32 @@ static int card_files (ITK *itk_, void *data)
 
       choices = choices_document;
     }
+
+    ctx_add_key_binding (ctx, "up", NULL, "previous choice",
+                    item_context_choice_prev,
+                    NULL);
+    ctx_add_key_binding (ctx, "down", NULL, "next choice",
+                    item_context_choice_next,
+                    NULL);
+    ctx_add_key_binding (ctx, "return", NULL, "make choice",
+                    item_context_make_choice,
+                    choices);
+    ctx_add_key_binding (ctx, "left", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    ctx_add_key_binding (ctx, "right", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    ctx_add_key_binding (ctx, "delete", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    ctx_add_key_binding (ctx, "tab", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    ctx_add_key_binding (ctx, "shift-tab", NULL, NULL,
+                    ignore_and_stop_propagate,
+                    NULL);
+    BIND_KEY ("escape", "toggle-context", "cancel context menu");
 
     ctx_begin_path (itk->ctx);
     ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.4);
