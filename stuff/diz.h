@@ -56,6 +56,7 @@ void diz_dir_unset        (Diz *diz, int item_no, const char *key);
 void diz_dir_unset_value  (Diz *diz, int no, const char *key, const char *value);
 int  diz_dir_insert       (Diz *diz, int pos, const char *item_name);
 
+// XXX replace with diz_dir_set_string(diz,item_no,"string", new_name);
 void diz_dir_set_name     (Diz *diz, int item_no, const char *new_name);
 
 void diz_dir_set_string   (Diz *diz, int item_no, const char *key, const char *value);
@@ -71,6 +72,8 @@ int     diz_dir_name_to_no    (Diz *diz, const char *name);
 
 char   *diz_dir_get_name      (Diz *diz, int item_no);
 
+
+int     diz_dir_has_key       (Diz *diz, int item_no, const char *key);
 int     diz_dir_key_count     (Diz *diz, int item_no);
 char   *diz_dir_key_name      (Diz *diz, int item_no, int no);
 char   *diz_dir_get_string    (Diz *diz, int item_no, const char *key);

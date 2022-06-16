@@ -21,6 +21,7 @@
 #define MRG_PRINTF 1
 #endif
 
+extern int item_context_active;
 
 #ifdef MRG_PRINTF
 #include <mrg.h>
@@ -277,6 +278,7 @@ int argvs_eval_argv (char **cargv, int cargc)
   CmdIterator *ci = cmd_iterator_new (NULL);
   CmdEntry *command;
   int ret = -1;
+  item_context_active = 0;
 
   if (cargc <= 0)
   {
@@ -308,6 +310,7 @@ int argvs_eval (const char *cmdline)
   char *rest, *copy;
   int ret = 0;
 
+  item_context_active = 0;
   copy = calloc (strlen (cmdline)+2, 1);
   strcpy (copy, cmdline);
   rest = copy;

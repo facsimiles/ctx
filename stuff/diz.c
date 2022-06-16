@@ -463,6 +463,21 @@ int diz_dir_key_count (Diz *diz, int no)
   return count;
 }
 
+int
+diz_dir_has_key (Diz *diz, int item_no, const char *key)
+{
+   int key_count = diz_dir_key_count (diz, item_no);
+   int found = 0;
+   for (int i = 0; i < key_count && !found; i++)
+   {
+      char *key_name = diz_dir_key_name (diz, item_no, i);
+      if (!strcmp (key_name, key))
+        found = 1;
+      free (key_name);
+   }
+   return found;
+}
+
 char *diz_dir_key_name (Diz *diz, int ino, int no)
 {
   const char *m = diz_dir_find_no (diz, ino);
@@ -1393,8 +1408,8 @@ CtxAtom diz_dir_type_atom (Diz *diz, int i)
   char *type = diz_dir_get_string (diz, i, "type");
   if (type)
   {
-#if 0
-    if (!strcmp (type, "layoutbox") && layout_config.use_layout_boxes)
+#if 1
+    if (!strcmp (type, "layoutbox"))// && layout_config.use_layout_boxes)
     {
       free (type); return CTX_ATOM_LAYOUTBOX;
     }

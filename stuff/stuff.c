@@ -242,7 +242,7 @@ typedef enum {
 }
 CtxDirView;
 
-static int layout_find_item = -1;
+static int layout_find_item = -1; // -1 = found
 ITK *itk = NULL;
 
 int ctx_vt_had_alt_screen (VT *vt);
@@ -318,11 +318,12 @@ static void set_outline (CtxEvent *e, void *d1, void *d2)
 {
   set_layout (e, d1, d2);
   layout_config.outliner = 1;
-}
+} 
 
 static void set_list (CtxEvent *e, void *d1, void *d2)
 {
-  ctx_queue_draw (e->ctx);
+  if (e)
+    ctx_queue_draw (e->ctx);
   set_layout (e, d1, d2);
   layout_config.width = 2;
   layout_config.height = 2;
@@ -349,6 +350,16 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
   layout_config.label = 1;
   layout_config.use_layout_boxes = 0;
   layout_config.hide_non_file = 1;
+}
+
+int dir_view (COMMAND_ARGS) /* "view", 1, "<view>", "change view mode for category" */
+{
+   if (!strcmp (argv[1], "grid")) set_grid (NULL, NULL, NULL);
+   if (!strcmp (argv[1], "list")) set_list (NULL, NULL, NULL);
+   if (!strcmp (argv[1], "layout")) set_layout (NULL, NULL, NULL);
+   if (!strcmp (argv[1], "outline")) set_outline (NULL, NULL, NULL);
+   if (!strcmp (argv[1], "text-edit")) set_text_edit (NULL, NULL, NULL);
+   return 0;
 }
 
 typedef enum CtxBullet {
@@ -594,13 +605,22 @@ int cmd_go_parent (COMMAND_ARGS) /* "go-parent", 0, "", "" */
   return 0;
 }
 
+int toggle_fullscreen (COMMAND_ARGS) /* "toggle-fullscreen", 0, "", "" */
+{
+  if (ctx_get_fullscreen (ctx))
+    ctx_set_fullscreen (ctx, 0);
+  else
+    ctx_set_fullscreen (ctx, 1);
+  return 0;
+}
+
 int toggle_keybindings_display (COMMAND_ARGS) /* "toggle-keybindings-display", 0, "", ""*/
 {
   show_keybindings = !show_keybindings;
   return 0;
 }
 
-int outline_expand (COMMAND_ARGS) /* "expand", 0, "", "" */
+int outline_expand (COMMAND_ARGS) /* "outline-expand", 0, "", "" */
 {
   int no = focused_no;
   if (diz_dir_type_atom (diz, no+1) != CTX_ATOM_STARTGROUP)
@@ -611,7 +631,7 @@ int outline_expand (COMMAND_ARGS) /* "expand", 0, "", "" */
   return 0;
 }
 
-int outline_collapse (COMMAND_ARGS) /* "fold", 0, "", "" */
+int outline_collapse (COMMAND_ARGS) /* "outline-fold", 0, "", "" */
 {
   int no = focused_no;
   if (diz_dir_type_atom (diz, no+1) != CTX_ATOM_STARTGROUP)
@@ -782,7 +802,7 @@ int dir_follow_link (COMMAND_ARGS) /* "follow-link", 0, "", "" */
   return 0;
 }
 
-int cmd_edit_text_home (COMMAND_ARGS) /* "edit-text-home", 0, "", "edit start of line" */
+int cmd_edit_text_home (COMMAND_ARGS) /* "item-edit-text", 0, "", "edit start of line" */
 {
   int virtual = (diz_dir_type_atom (diz, focused_no) == CTX_ATOM_TEXT);
   if (!virtual) return 0;
@@ -791,7 +811,7 @@ int cmd_edit_text_home (COMMAND_ARGS) /* "edit-text-home", 0, "", "edit start of
   return 0;
 }
 
-int cmd_edit_text_end (COMMAND_ARGS) /* "edit-text-end", 0, "", "edit end of line" */
+int cmd_edit_text_end (COMMAND_ARGS) /* "item-edit-text-end", 0, "", "edit end of line" */
 {
   int virtual = (diz_dir_type_atom (diz, focused_no) == CTX_ATOM_TEXT);
   if (!virtual) return 0;
@@ -814,9 +834,9 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
   {
     if (diz_dir_type_atom (diz, no+1) == CTX_ATOM_ENDGROUP||
         no >= diz_dir_count (diz)-1)
-      argvs_eval ("edit-text-end");
+      argvs_eval ("item-edit-text-end");
     else
-      argvs_eval ("edit-text-home");
+      argvs_eval ("item-edit-text");
     return 0;
   }
 
@@ -834,7 +854,13 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
     full_path = ctx_strdup_printf ("%s/%s", diz->path, name);
   }
   const char *media_type = ctx_path_get_media_type (full_path); 
-  if (ctx_media_type_is_text (media_type))
+  int runnable = diz_dir_get_int (diz, no, "runnable", 0);
+
+  if (runnable)
+  {
+    viewer_load_path (full_path, name);
+  }
+  else if (ctx_media_type_is_text (media_type))
   {
     set_location (full_path);
     itk->focus_no = 0;
@@ -963,7 +989,7 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
   ctx_queue_draw (e->ctx);
 }
 
-int cmd_duplicate (COMMAND_ARGS) /* "duplicate", 0, "", "duplicate item" */
+int cmd_duplicate (COMMAND_ARGS) /* "item-duplicate", 0, "", "duplicate item" */
 {
   int no = focused_no;
   int count = diz_dir_measure_chunk (diz, no);
@@ -1104,7 +1130,7 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
   ctx_queue_draw (e->ctx);
 }
 
-int cmd_move (COMMAND_ARGS) /* "move", 1, "<up|left|right|down>", "shift items position" */
+int cmd_move (COMMAND_ARGS) /* "item-move-pos", 1, "<up|left|right|down>", "shift items position" */
 {
   int no = focused_no;
   float x = diz_dir_get_float (diz, no, "x", -100.0);
@@ -1358,6 +1384,15 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
   if (no < 1)
     return -1;
 
+  int prev_no = diz_dir_prev_sibling (diz, no);
+  int was_folded = 0;
+  if (diz_dir_has_children (diz, prev_no)
+      && diz_dir_get_int (diz, prev_no+1, "folded", 0))
+  {
+      diz_dir_unset (diz, prev_no+1, "folded");
+      was_folded = 1;
+  }
+
   {
     int count = diz_dir_measure_chunk (diz, no);
     int target = no-1;
@@ -1398,6 +1433,18 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
 #else
     //itk->focus_no -= (target-focused_no);
     focused_no = target;
+
+    if (was_folded)
+    {
+      int temp = focused_no + 1;
+      while (temp > 0)
+      {
+        focused_no = temp;
+        temp = diz_dir_next_sibling (diz, temp);
+      }
+      layout_find_item = target;
+      itk->focus_no = -1;
+    }
     //layout_find_item = focused_no;
 #endif
 
@@ -2449,6 +2496,17 @@ void dir_font_down (CtxEvent *event, void *a, void *b)
   //drop_item_renderers (itk->ctx);
 }
 
+int dir_font_size (COMMAND_ARGS) /* "font-size", 1, "<up|down|val>", "" */
+{
+  if (!strcmp (argv[1], "up"))
+    itk->font_size *= 1.05f;
+  else if (!strcmp (argv[1], "down"))
+    itk->font_size /= 1.05f;
+  else
+    itk->font_size = atof (argv[1]);
+  return 0;
+}
+
 void dir_set_page (CtxEvent *event, void *a, void *b)
 {
   layout_show_page = (size_t)(a);
@@ -2704,6 +2762,18 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
   }
 }
 
+int edit_location (COMMAND_ARGS) /* "location-edit", 0, "", "" */
+{
+   dir_location (NULL, NULL, NULL);
+   return 0;
+}
+
+int cmd_quit (COMMAND_ARGS) /* "quit", 0, "", "" */
+{
+   ctx_quit (ctx);
+   return 0;
+}
+
 static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
@@ -2717,7 +2787,7 @@ static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
   }
 }
 
-int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
+int dir_parent (COMMAND_ARGS) /* "outline-focus-parent", 0, "", "" */
 {
   layout_focused_link = -1;
   int start_no = focused_no;
@@ -2756,6 +2826,20 @@ int dir_parent (COMMAND_ARGS) /* "parent", 0, "", "" */
   layout_find_item = focused_no;
   itk->focus_no = -1;
 
+  return 0;
+}
+
+int dir_set (COMMAND_ARGS) /* "set", 2, "<key> <value>", "" */
+{
+  diz_dir_set_string (diz, focused_no, argv[1], argv[2]);
+  return 0;
+}
+
+int dir_unset (COMMAND_ARGS) /* "unset", 1, "<key>", "unset the specified key on focused item" */
+{
+  diz_dir_unset (diz, focused_no, argv[1]);
+  if (!strcmp (argv[1], "live"))
+     drop_item_renderers (ctx);
   return 0;
 }
 
@@ -2816,7 +2900,7 @@ int stuff_ls_main (int argc, char **argv)
   return 1;
 }
 
-int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
+int dir_enter_children (COMMAND_ARGS) /* "outline-focus-first-child", 0, "", "" */
 {
   int start_no = focused_no;
   layout_focused_link = -1;
@@ -2855,7 +2939,22 @@ int dir_enter_children (COMMAND_ARGS) /* "enter-children", 0, "", "" */
   return 0;
 }
 
-int item_properties (COMMAND_ARGS) /* "toggle-context", 0, "", "" */
+int cmd_show_context (COMMAND_ARGS) /* "context-menu-show", 0, "", "" */
+{
+  item_context_active = 1;
+  item_context_choice = 0;
+  return 0;
+}
+
+int cmd_hide_context (COMMAND_ARGS) /* "context-menu-hide", 0, "", "" */
+{
+  item_context_active = 0;
+  item_context_choice = 0;
+  return 0;
+}
+
+
+int cmd_toggle_context (COMMAND_ARGS) /* "toggle-context", 0, "", "" */
 {
   if (item_context_active)
   {
@@ -2951,6 +3050,7 @@ char **dir_get_viewer_argv (const char *path, int no)
   escape_path (path, escaped_path);
   float in = diz_dir_get_float (diz, no, "in", 0.0f);
   //float out = diz_dir_get_float (diz, no, "out", 0.0f);
+  int runnable = diz_dir_get_int (diz, no, "runnable", 0);
   if (!strcmp (media_type, "inode/directory"))
   {
     //fprintf (stderr, "is dir\n");
@@ -2958,7 +3058,7 @@ char **dir_get_viewer_argv (const char *path, int no)
   }
 
   if (!args)
-  if (path_is_executable (path) && !strcmp (get_suffix(path), "ctx"))
+  if (path_is_executable (path) && runnable)//!strcmp (get_suffix(path), "ctx"))
   {
     ctx_list_append (&args, strdup (path));
   }
@@ -3158,6 +3258,30 @@ if (bullet != CTX_BULLET_NONE)
 #define BIND_KEY(key, command, help) \
             do {ctx_add_key_binding (ctx, key, NULL, help, ui_run_command, command);} while(0)
 
+#define MAX_CONTEXT_MENU_ITEMS 40
+static char *context_menu[MAX_CONTEXT_MENU_ITEMS * 3];
+int context_menu_items = 0;
+
+static void add_context_binding (int active_context,
+                                 const char *label,
+                                 const char *command,
+                                 const char *key)
+{
+  if (item_context_active)
+    return;
+  if (active_context)
+  {
+    context_menu[context_menu_items * 3 + 0] = strdup (label);
+    context_menu[context_menu_items * 3 + 1] = strdup (command);
+    context_menu[context_menu_items * 3 + 2] = strdup (key);
+    if (context_menu_items < MAX_CONTEXT_MENU_ITEMS)
+      context_menu_items++;
+  }
+  if (strcmp (key, "escape"))
+    BIND_KEY (key, (char*)command, label);
+}
+
+
 static void dir_layout (ITK *itk, Diz *diz)
 {
   Ctx *ctx = itk->ctx;
@@ -3221,6 +3345,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           ctx_font (itk->ctx, "mono");
   float space_width = ctx_text_width (itk->ctx, " ");
   ctx_font_size (itk->ctx, itk->font_size);
+      int location_active = (focused_no == -1 && itk->focus_no == 0);
 
             if (!is_text_editing() && !viewer &&
               !item_context_active
@@ -3232,10 +3357,18 @@ static void dir_layout (ITK *itk, Diz *diz)
               if (future)
                 BIND_KEY("alt-right", "history forward", "forward");
 
-              BIND_KEY ("alt-up",    "go-parent",    "go to parent");
               if (!text_editor)
                 BIND_KEY ("alt-down",  "activate",  "enter item");
             }
+            else
+            {
+
+              if (!is_text_editing() && !viewer && !text_editor)
+                BIND_KEY ("alt-down",  "activate",  "enter item");
+            }
+            add_context_binding (location_active, "go to parent", "go-parent", "alt-up");
+            
+            // as "alt-up",    "go-parent",    "go to parent");
 
   if (!layout_config.outliner)
   {
@@ -3409,6 +3542,7 @@ static void dir_layout (ITK *itk, Diz *diz)
         case CTX_ATOM_STARTPAGE:
           layout_box_count = 0;
           layout_box_no = 0;
+          // XXX need better default for new page
           layout_box[0].x = 0.05;
           layout_box[0].y = 0.02;
           layout_box[0].width = 0.9;
@@ -3721,7 +3855,6 @@ static void dir_layout (ITK *itk, Diz *diz)
           if (dir_item_count_links (focused_no) == 0)
            layout_focused_link = -1;
 
-
           focused = 1;
           //fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
           ctx_begin_path (itk->ctx);
@@ -3732,7 +3865,8 @@ static void dir_layout (ITK *itk, Diz *diz)
           //ctx_listen (itk->ctx, CTX_TAP_AND_HOLD, item_tap_and_hold, (void*)(size_t)i, NULL);
 
 
-              BIND_KEY ("insert", "insert-text", "insert text item");
+              //BIND_KEY ("insert", "insert-text", "insert text item");
+          add_context_binding (1, "insert text item", "insert-text", "insert");
           ctx_begin_path (itk->ctx);
           //ctx_rgb(itk->ctx,1,0,0);
           //ctx_fill(itk->ctx);
@@ -3742,13 +3876,8 @@ static void dir_layout (ITK *itk, Diz *diz)
           if (!is_text_editing()
               && !item_context_active)
           {
-
-
-
-
-            BIND_KEY ("control-d", "duplicate", "duplicate item");
-
-            BIND_KEY ("delete", "remove", "remove item");
+            add_context_binding (1, "duplicate", "item-duplicate", "control-d");
+            add_context_binding (1, "remove", "remove", "delete");
 
             if (!layout_config.outliner)
             {
@@ -3761,7 +3890,7 @@ static void dir_layout (ITK *itk, Diz *diz)
                else
               {
                 if (text_editor)
-                  BIND_KEY ("return", "edit-text-home", "edit paragraph");
+                  BIND_KEY ("return", "item-edit-text", "edit paragraph");
                 else
                 {
                   if (atom == CTX_ATOM_SYMLINK)
@@ -3783,11 +3912,11 @@ static void dir_layout (ITK *itk, Diz *diz)
                 case CTX_BULLET_TODO:    label = "mark done"; break;
                 case CTX_BULLET_DONE:    label = "no bullet"; break;
               }
-              BIND_KEY ("control-t", "cycle-bullet", label);
+              add_context_binding (1, label, "cycle-bullet", "control-t");
             }
 
-
-            BIND_KEY ("control-j", "join-with-next", "join");
+            if (atom == CTX_ATOM_TEXT)
+              add_context_binding (1, "join with next paragraph", "join-with-next", "control-j");
 
             if (!text_editor)
             {
@@ -3802,30 +3931,38 @@ static void dir_layout (ITK *itk, Diz *diz)
               {
 
               }
-              BIND_KEY ("control-h", "cycle-heading", label);
+              if (atom == CTX_ATOM_TEXT)
+                add_context_binding (1, label, "cycle-heading", "control-h");
             }
 
               if (text_editor || vim_keys)
               {
-                BIND_KEY ("i", "edit-text-home", "insert text");
-                BIND_KEY ("A", "edit-text-end", "insert text");
+                BIND_KEY ("i", "item-edit-text", "insert text");
+                BIND_KEY ("A", "item-edit-text-end", "insert text");
               }
             }
           }
-          if (!text_editor && !editing_location && !is_text_editing ())
-            BIND_KEY ("space", "toggle-context", "item properties");
+          if (!text_editor && !editing_location
+                           && !is_text_editing () 
+                           && layout_focused_link < 0)
+          {
+            if (item_context_active)
+              BIND_KEY ("alt-return", "context-menu-hide", "item properties");
+            else
+              BIND_KEY ("alt-return", "context-menu-show", "item properties");
+          }
 
 
           if (!layout_config.outliner
               && !is_text_editing ()
               && !item_context_active)
           {
-            BIND_KEY ("control-page-down",
-                      "move-after-next-sibling",
-                      "move after next sibling");
-            BIND_KEY ("control-page-up",
-                      "move-before-previous-sibling",
-                      "move before previoue sibling");
+            add_context_binding (1, "move after next sibling",
+                                    "move-after-next-sibling",
+                                    "control-page-down");
+            add_context_binding (1, "move before previous sibling",
+                                    "move-before-previous-sibling",
+                                    "control-page-up");
 
           if (gotpos)
           {
@@ -3835,14 +3972,22 @@ static void dir_layout (ITK *itk, Diz *diz)
             ctx_add_key_binding (ctx, "shift-control-left", NULL, "shrink width", shrink_width, NULL);
             ctx_add_key_binding (ctx, "shift-control-right", NULL, "grow width", grow_width, NULL);
 
-          BIND_KEY("control-left", "move left", "move left");
-          BIND_KEY("control-up", "move up", "move up");
-          BIND_KEY("control-right", "move right", "move right");
-          BIND_KEY("control-down", "move down", "move down");
+          BIND_KEY("control-left", "item-move-pos left", "item-move-pos left");
+          BIND_KEY("control-up", "item-move-pos up", "item-move-pos up");
+          BIND_KEY("control-right", "item-move-pos right", "item-move-pos right");
+          BIND_KEY("control-down", "item-move-pos down", "item-move-pos down");
 
           }
           else
           {
+#if 0
+            add_context_binding (1,"move after next sibling",
+                                 "move-after-next-sibling",
+                                 "control-down");
+            add_context_binding (1,"move before previous sibling",
+                                 "move-before-previous-sibling",
+                                 "control-up");
+#endif
             BIND_KEY ("control-down",
                       "move-after-next-sibling",
                       "move after next sibling");
@@ -3852,12 +3997,54 @@ static void dir_layout (ITK *itk, Diz *diz)
 
             if (!text_editor)
             {
+#if 0
               BIND_KEY ("control-left", "make-sibling-of-parent", "make sibling of parent");
 
               BIND_KEY ("control-right", "make-child-of-previous", "make child of previous");
+#else
+              add_context_binding (1,
+                              "demote",
+                              "make-sibling-of-parent",
+                              "control-left");
+              add_context_binding (1,
+                              "promote",
+                              "make-child-of-previous",
+                              "control-right");
+#endif
             }
 
           }
+
+
+          if (atom == CTX_ATOM_FILE && strcmp (media_type, "inode/directory"))
+           {
+                   // XXX only if executable
+            int runnable = diz_dir_get_int (diz, focused_no, "runnable", 0);
+            if (runnable)
+            {
+              add_context_binding (1,
+                            "make non runnable",
+                            "unset runnable",
+                            "control-r");
+              int live = diz_dir_get_int (diz, focused_no, "live", 0);
+              if (live)
+              add_context_binding (1,
+                            "make unlive",
+                            "unset live",
+                            "control-l");
+              else
+              add_context_binding (1,
+                            "make live",
+                            "set live 1",
+                            "control-l");
+            }
+            else
+            add_context_binding (1,
+                            "make runnable",
+                            "set runnable 1",
+                            "control-r");
+                            
+           }
           }
 
           }
@@ -4363,7 +4550,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
   if (focused_no == -1 && !editing_location && itk->focus_no == 0)
   {
-    BIND_KEY ("space", "toggle-context", "document properties");
+    BIND_KEY ("alt-return", "toggle-context", "document properties");
     ctx_add_key_binding (ctx, "return", NULL, "edit location", dir_location, NULL);
   }
 }
@@ -4536,9 +4723,11 @@ void viewer_load_path (const char *path, const char *name)
     viewer_loaded_path = strdup (path);
 
     // not entirely precise?
+    // and does not permit override through diz-data XXX
     viewer_media_type = ctx_path_get_media_type (path);
 
     char **command = dir_get_viewer_argv (path, no);
+   
 
     if (command)
     {
@@ -4796,14 +4985,17 @@ static void item_context_choice_prev (CtxEvent *e, void *d1, void *d2)
 static void item_context_choice_next (CtxEvent *e, void *d1, void *d2)
 {
   item_context_choice ++;
+  if (item_context_choice >= context_menu_items)
+    item_context_choice = context_menu_items-1;
+
   e->stop_propagate = 1;
   ctx_queue_draw (e->ctx);
 }
 
 static void item_context_make_choice (CtxEvent *e, void *d1, void *d2)
 {
-  char **choices = d1;
-  argvs_eval (choices[item_context_choice*2+1]);
+  //char **choices = d1;
+  argvs_eval (context_menu[item_context_choice*3+1]);
   item_context_active = 0;
   e->stop_propagate = 1;
   ctx_queue_draw (e->ctx);
@@ -4874,6 +5066,17 @@ static int delayed_dirt (Ctx *ctx, void *data)
 
 static int activate_from_start = 0;
 
+static void clear_context_menu (void)
+{
+  for (int i = 0; i < context_menu_items * 3; i++)
+  {
+    if (context_menu[i]) { free (context_menu[i]);
+       context_menu[i] = NULL;
+    }
+  }
+  context_menu_items=0;
+}
+
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
@@ -4881,6 +5084,20 @@ static int card_files (ITK *itk_, void *data)
   //float em = itk_em (itk);
   //float row_height = em * 1.2;
   static int first = 1;
+
+  int location_active = (focused_no == -1 && itk->focus_no == 0);
+  if (item_context_active == 0)
+  {
+    clear_context_menu ();
+    add_context_binding (1, "close", "", "escape");
+  }
+  else
+  {
+    for (int i = 0; i < context_menu_items; i++)
+    {
+      BIND_KEY(context_menu[i*3+2], context_menu[i*3+1], context_menu[i*3]);
+    }
+  }
 
   if (viewer)
   {
@@ -4921,14 +5138,29 @@ static int card_files (ITK *itk_, void *data)
      ctx_scale (itk->ctx, dir_scale, dir_scale);
 
 
+#if 0
+    add_context_binding (location_active, "Zoom in", "zoom in", "shift-control-+");
+    add_context_binding (location_active, "Zoom out", "zoom out", "shift-control--");
+    add_context_binding (location_active, "Zoom reset", "zoom 1.0", "shift-control-0");
+#endif
+    add_context_binding (location_active, "larger text", "font-size up", "control-+");
+    add_context_binding (location_active, "smaller text", "font-size down", "control--");
+    add_context_binding (location_active, "reset text size", "font-size 14.0", "control-0");
+
     if (!is_text_editing() &&
         !item_context_active)
     {
-      BIND_KEY ("control-+", "zoom in", "zoom in");
-      BIND_KEY ("control-=", "zoom in", "zoom in");
-      BIND_KEY ("control--", "zoom out", "zoom out");
-      BIND_KEY ("control-0", "zoom 1.0", "zoom reset");
+      BIND_KEY ("shift-control-+", "zoom in", "zoom in");
+      BIND_KEY ("shift-control-=", "zoom in", "zoom in");
+      BIND_KEY ("shift-control--", "zoom out", "zoom out");
+      BIND_KEY ("shift-control-0", "zoom 1.0", "zoom reset");
 
+      BIND_KEY ("control-+", "font-size up", "larger text");
+      BIND_KEY ("control-=", "font-size up", "larger text");
+      BIND_KEY ("control--", "font-size down", "smaller text");
+      BIND_KEY ("control-0", "font-size 14.0", "reset text size");
+
+#if 0
       ctx_add_key_binding (ctx, "shift-control-+", NULL, "increase font size",
                       dir_font_up,
                       NULL);
@@ -4938,6 +5170,7 @@ static int card_files (ITK *itk_, void *data)
       ctx_add_key_binding (ctx, "shift-control--", NULL, "decrease font size",
                       dir_font_down,
                       NULL);
+#endif
       //ctx_add_key_binding (ctx, "control-0", NULL, "reset font size",
       //                 dir_zoom_reset,
       //                 NULL);
@@ -4951,15 +5184,19 @@ static int card_files (ITK *itk_, void *data)
  // else
   {
 #if 1
+    if (ctx_get_fullscreen (ctx))
+      add_context_binding (location_active, "windowed", "toggle-fullscreen", "F11");
+    else
+      add_context_binding (location_active, "fullscreen", "toggle-fullscreen", "F11");
     if (!is_text_editing()
         && !text_editor
         && !item_context_active)
     {
-    ctx_add_key_binding (ctx, "control-1", NULL, "debug outline view", set_outline, NULL);
-    ctx_add_key_binding (ctx, "control-2", NULL, "layout view", set_layout, NULL);
-    ctx_add_key_binding (ctx, "control-3", NULL, "list view", set_list, NULL);
-    ctx_add_key_binding (ctx, "control-4", NULL, "folder view", set_grid, NULL);
-    ctx_add_key_binding (ctx, "control-5", NULL, "text edit view", set_text_edit, NULL);
+      add_context_binding (location_active, "outline view", "view outline", "control-1");
+      add_context_binding (location_active, "layout view", "view layout", "control-2");
+      add_context_binding (location_active, "list view", "view list", "control-3");
+      add_context_binding (location_active, "folder view", "view grid", "control-4");
+      add_context_binding (location_active, "text-edit view", "view text-edit", "control-5");
     }
 #endif
 
@@ -5026,10 +5263,10 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "escape", NULL, "stop editing location", dir_location_escape, NULL);
             ctx_add_key_binding (ctx, "return", NULL, "confirm new location", dir_location_return, NULL);
           }
-          if (!text_editor &&
-              !item_context_active)
+          if (!text_editor)
           {
-            ctx_add_key_binding (ctx, "control-l", NULL, "location entry", dir_location, NULL);
+            add_context_binding (location_active, "change location", "location-edit", "control-l");
+            add_context_binding (location_active, "quit", "quit", "control-q");
           }
 
           if (diz_dir_type_atom (diz, focused_no) == CTX_ATOM_TEXT
@@ -5063,7 +5300,7 @@ static int card_files (ITK *itk_, void *data)
             {
               if (diz_dir_has_children (diz, focused_no) && 
                   !diz_dir_get_int (diz, focused_no+1, "folded", 0))
-                BIND_KEY ("left", "fold", "fold");
+                BIND_KEY ("left", "outline-fold", "fold");
               if (layout_focused_link >= 0)
                  BIND_KEY ("right", "follow-link", "follow link");
               else
@@ -5071,24 +5308,24 @@ static int card_files (ITK *itk_, void *data)
                 if (diz_dir_has_children (diz, focused_no))
                 {
                   if (diz_dir_get_int (diz, focused_no+1, "folded", 0))
-                    BIND_KEY ("right", "expand", "expand");
+                    BIND_KEY ("right", "outline-expand", "expand");
                 }
                 else
-                  BIND_KEY ("right", "enter-children", "enter children");
+                  BIND_KEY ("right", "outline-focus-first-child", "enter children");
                   // enter-children creates child if it doesnt exist
               }
 
               if (vim_keys)
               {
-                BIND_KEY ("h", "fold", "fold");
+                BIND_KEY ("h", "outline-fold", "fold");
                 if (layout_focused_link >= 0)
                    BIND_KEY ("l", "follow-link", "follow link");
                 else
                 {
                   if (diz_dir_has_children (diz, focused_no))
-                    BIND_KEY ("l", "expand", "expand");
+                    BIND_KEY ("l", "outline-expand", "expand");
                   else
-                    BIND_KEY ("l", "enter-children", "enter children");
+                    BIND_KEY ("l", "outline-focus-first-child", "enter children");
                   // enter-children creates child if it doesnt exist
                 }
               }
@@ -5180,34 +5417,23 @@ static int card_files (ITK *itk_, void *data)
       }
 #endif
 
-  if (item_context_active && focused_control && focused_no>=-1)
+  if (item_context_active && focused_no>=-1)
   {
-    static char *choices_item[]={
-      "indent/ (ctrl-right)", "make-child-of-previous",
-      "outdent/ (ctrl-left)", "make-sibling-of-parent",
-      "raise (ctrl-page-up)",   "move-before-previous-sibling",
-      "lower (ctrl-page-down)", "move-after-next-sibling",
-      "toggle executable",      "foo",
-      "rename",                 "foo",
-      NULL,NULL
-    };
-    static char *choices_document[]={
-      "view",                   "foo",
-      "store view",             "foo",
-      "rename",                 "foo",
-      NULL,NULL
-    };
-    char **choices = choices_item;
-
     float em = itk->font_size;
     float width = em * 20;
-    float x = focused_control->x + focused_control->width;
-    float y = focused_control->y;
-    float height = em * 9;
+    float x;
+    float y;
+    float height = em * (context_menu_items + 3);
 
-
-
-    if (width < focused_control->width) x-= width;
+    if (focused_control && focused_no > -1)
+    {
+    x = focused_control->x + focused_control->width;
+    y = focused_control->y;
+    if (width < focused_control->width)
+    {
+       // menu thinner than item itself, place menu on item        
+       x = focused_control->x + focused_control->width/2 - width/2;
+    }
     else
     {
        if (x + width > itk->width)
@@ -5215,14 +5441,15 @@ static int card_files (ITK *itk_, void *data)
          x = focused_control->x - width;
        }
     }
-
-    if (focused_no == -1)
+    }
+    else
     {
       x = 10 * em;
       y = 4 * em;
-
-      choices = choices_document;
     }
+
+    if (y + height - itk->panel->scroll> ctx_height (ctx))
+        y = ctx_height (ctx)-height + itk->panel->scroll;
 
     ctx_add_key_binding (ctx, "up", NULL, "previous choice",
                     item_context_choice_prev,
@@ -5232,7 +5459,7 @@ static int card_files (ITK *itk_, void *data)
                     NULL);
     ctx_add_key_binding (ctx, "return", NULL, "make choice",
                     item_context_make_choice,
-                    choices);
+                    NULL);
     ctx_add_key_binding (ctx, "left", NULL, NULL,
                     ignore_and_stop_propagate,
                     NULL);
@@ -5248,7 +5475,6 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_key_binding (ctx, "shift-tab", NULL, NULL,
                     ignore_and_stop_propagate,
                     NULL);
-    BIND_KEY ("escape", "toggle-context", "cancel context menu");
 
     ctx_begin_path (itk->ctx);
     ctx_rgba (itk->ctx, 0.0,0.0,0.0, 0.4);
@@ -5260,15 +5486,21 @@ static int card_files (ITK *itk_, void *data)
 
     ctx_fill (itk->ctx);
 
-    for (int i = 0; choices[i]; i+=2)
+    for (int i = 0; context_menu[i]; i+=3)
     {
-      if (i == item_context_choice * 2)
+      if (i == item_context_choice * 3)
          ctx_rgb(itk->ctx, 1,1,1);
       else
          ctx_rgb(itk->ctx, 0.7,0.7,0.7);
       y+=em;
       ctx_move_to (itk->ctx, x+em, y);
-      ctx_text( itk->ctx, choices[i]);
+      ctx_text( itk->ctx, context_menu[i]);
+      ctx_save( itk->ctx);
+      ctx_global_alpha( itk->ctx, 0.4);
+      ctx_text( itk->ctx, "(");
+      ctx_text( itk->ctx, context_menu[i+2]);
+      ctx_text( itk->ctx, ")");
+      ctx_restore( itk->ctx);
     }
          ctx_rgb(itk->ctx, 0.7,0.7,0.7);
     {
