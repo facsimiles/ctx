@@ -4553,6 +4553,7 @@ static void dir_layout (ITK *itk, Diz *diz)
     BIND_KEY ("alt-return", "toggle-context", "document properties");
     ctx_add_key_binding (ctx, "return", NULL, "edit location", dir_location, NULL);
   }
+  BIND_KEY ("resize-event", "", NULL); // causes a queue-draw
 }
 
 static void empty_thumb_queue (void)
@@ -5961,9 +5962,8 @@ static int card_files (ITK *itk_, void *data)
             tx += w + 0.7 * em;
             free (str);
           }
-
-
         }
+
         ctx_rgba (ctx, 1,1,1,0.9);
         ctx_move_to (ctx, tx, y);
         ctx_text (ctx, binding[i].label);
