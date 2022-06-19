@@ -626,7 +626,7 @@ int outline_expand (COMMAND_ARGS) /* "outline-expand", 0, "", "" */
   if (diz_dir_type_atom (diz, no+1) != CTX_ATOM_STARTGROUP)
     return -1;
 
-  diz_dir_unset (diz, no+1, "folded");
+  diz_dir_unset (diz, no, "folded");
   diz_dir_dirt (diz);
   return 0;
 }
@@ -637,7 +637,7 @@ int outline_collapse (COMMAND_ARGS) /* "outline-fold", 0, "", "" */
   if (diz_dir_type_atom (diz, no+1) != CTX_ATOM_STARTGROUP)
     return 0;
 
-  diz_dir_set_float (diz, no+1, "folded", 1);
+  diz_dir_set_float (diz, no, "folded", 1);
   diz_dir_dirt (diz);
   return 0;
 }
@@ -1387,9 +1387,9 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
   int prev_no = diz_dir_prev_sibling (diz, no);
   int was_folded = 0;
   if (diz_dir_has_children (diz, prev_no)
-      && diz_dir_get_int (diz, prev_no+1, "folded", 0))
+      && diz_dir_get_int (diz, prev_no, "folded", 0))
   {
-      diz_dir_unset (diz, prev_no+1, "folded");
+      diz_dir_unset (diz, prev_no, "folded");
       was_folded = 1;
   }
 
@@ -2812,10 +2812,10 @@ int dir_parent (COMMAND_ARGS) /* "outline-focus-parent", 0, "", "" */
     }
   }
 
-  if (diz_dir_get_int (diz, focused_no, "was-folded", 0))
+  if (diz_dir_get_int (diz, focused_no-1, "was-folded", 0))
   {
-    diz_dir_set_float (diz, focused_no, "folded", 1.0);
-    diz_dir_unset (diz, focused_no, "was-folded");
+    diz_dir_set_float (diz, focused_no-1, "folded", 1.0);
+    diz_dir_unset (diz, focused_no-1, "was-folded");
   }
   focused_no--;
   if (focused_no < 0)
@@ -2910,10 +2910,10 @@ int dir_enter_children (COMMAND_ARGS) /* "outline-focus-first-child", 0, "", "" 
 
   if (atom == CTX_ATOM_STARTGROUP)
   {
-    if (diz_dir_get_int (diz, focused_no, "folded", 0))
+    if (diz_dir_get_int (diz, focused_no-1, "folded", 0))
     {
-      diz_dir_set_float (diz, focused_no, "was-folded", 1);
-      diz_dir_set_float (diz, focused_no, "folded", 0);
+      diz_dir_set_float (diz, focused_no-1, "was-folded", 1);
+      diz_dir_set_float (diz, focused_no-1, "folded", 0);
     }
     focused_no++;
   }
@@ -3243,7 +3243,7 @@ if (bullet != CTX_BULLET_NONE)
    }
 }
 {
-  int folded = diz_dir_get_int (diz, i+1, "folded", -3);
+  int folded = diz_dir_get_int (diz, i, "folded", -3);
   if (folded > 0)
   {
      float x = itk->x - em * 0.5;//
@@ -3525,7 +3525,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           hidden = 1;
           level ++;
           {
-            int folded = diz_dir_get_int (diz, i, "folded", 0);
+            int folded = diz_dir_get_int (diz, i-1, "folded", 0);
 
             if (folded && ! is_folded) is_folded = level;
           }
@@ -5300,7 +5300,7 @@ static int card_files (ITK *itk_, void *data)
             if (!text_editor && focused_no >= 0)
             {
               if (diz_dir_has_children (diz, focused_no) && 
-                  !diz_dir_get_int (diz, focused_no+1, "folded", 0))
+                  !diz_dir_get_int (diz, focused_no, "folded", 0))
                 BIND_KEY ("left", "outline-fold", "fold");
               if (layout_focused_link >= 0)
                  BIND_KEY ("right", "follow-link", "follow link");
@@ -5308,7 +5308,7 @@ static int card_files (ITK *itk_, void *data)
               {
                 if (diz_dir_has_children (diz, focused_no))
                 {
-                  if (diz_dir_get_int (diz, focused_no+1, "folded", 0))
+                  if (diz_dir_get_int (diz, focused_no, "folded", 0))
                     BIND_KEY ("right", "outline-expand", "expand");
                 }
                 else
