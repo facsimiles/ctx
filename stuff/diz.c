@@ -1471,3 +1471,13 @@ void diz_dir_destroy  (Diz *diz)
   if (diz->metadata) free (diz->metadata);
   free (diz);
 }
+
+void diz_dir_remove_children (Diz *diz, int no)
+{
+  if (!diz_dir_has_children (diz, no))
+     return;
+  int count = diz_dir_next_sibling (diz, no) - no - 1;
+  for (int i = 0; i < count; i ++)
+    diz_dir_remove (diz, no+1);
+}
+

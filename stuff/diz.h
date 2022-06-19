@@ -93,12 +93,12 @@ int     diz_dir_get_parent         (Diz *diz, int item_no);
 
 int     diz_dir_ancestor_is_folded (Diz *diz, int item_no);
 int     diz_dir_has_children       (Diz *diz, int item_no);
+void    diz_dir_remove_children    (Diz *diz, int item_no);
 
 int     diz_dir_prev               (Diz *diz, int item_no);
 int     diz_dir_next               (Diz *diz, int item_no);
 int     diz_dir_prev_sibling       (Diz *diz, int item_no);
 int     diz_dir_next_sibling       (Diz *diz, int item_no);
-
 
 void    diz_dir_dump               (Diz *diz);
 

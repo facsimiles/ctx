@@ -2188,7 +2188,7 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
-int dir_join (CtxEvent *event, void *a, void *b) /* "join-with-next", 0, "", "" */
+int dir_join (COMMAND_ARGS) /* "join-with-next", 0, "", "" */
 {
   if (focused_no>=0){
     char *name = diz_dir_get_name (diz, focused_no);
@@ -2855,6 +2855,55 @@ int dir_load (COMMAND_ARGS) /* "load-path", 1, "<path>", "" */
   return 0;
 }
 
+
+char *dir_exec_command (const char *commandline){
+  FILE *fp;
+  char path[1024];
+  CtxString *str = ctx_string_new ("");
+
+  /* Open the command for reading. */
+  chdir (diz->path);
+  fp = popen(commandline, "r");
+  if (fp == NULL) {
+    ctx_string_set (str, "Failed to run command\n");
+    return ctx_string_dissolve (str);
+  }
+
+  while (fgets(path, sizeof(path), fp) != NULL) {
+    ctx_string_append_str (str, path);
+  }
+
+  pclose(fp);
+
+  return ctx_string_dissolve (str);
+}
+
+
+int run_command (COMMAND_ARGS) /* "run-command", 0, "", "" */
+{
+   char *commandline = diz_dir_get_name (diz, focused_no);
+   
+   diz_dir_remove_children (diz, focused_no);
+   diz_dir_unset (diz, focused_no, "folded");
+
+
+     diz_dir_insert(diz, focused_no+1, "");
+     diz_dir_set_string (diz, focused_no+1, "type", "startgroup");
+
+     char *full_commandline = ctx_strdup_printf ("%s %s", commandline, " 2>&1");
+     char *result = dir_exec_command(full_commandline);
+     free (full_commandline);
+     if (result[strlen(result)-1]=='\n')
+       result[strlen(result)-1]=0;
+     diz_dir_insert(diz, focused_no+2, result);
+     free (result);
+
+     diz_dir_insert(diz, focused_no+3, "");
+     diz_dir_set_string (diz, focused_no+3, "type", "endgroup");
+     diz_dir_dirt (diz);
+   free (commandline);
+   return 0;
+}
 
 int dir_dump (COMMAND_ARGS) /* "dump", 0, "", "" */
 {
@@ -3964,14 +4013,14 @@ static void dir_layout (ITK *itk, Diz *diz)
                                     "move-before-previous-sibling",
                                     "control-page-up");
 
-          if (gotpos)
-          {
             ctx_add_key_binding (ctx, "shift-control-down", NULL, "grow height", grow_height, NULL);
             ctx_add_key_binding (ctx, "shift-control-up", NULL, "shrink height", shrink_height, NULL);
 
             ctx_add_key_binding (ctx, "shift-control-left", NULL, "shrink width", shrink_width, NULL);
             ctx_add_key_binding (ctx, "shift-control-right", NULL, "grow width", grow_width, NULL);
 
+          if (gotpos)
+          {
           BIND_KEY("control-left", "item-move-pos left", "item-move-pos left");
           BIND_KEY("control-up", "item-move-pos up", "item-move-pos up");
           BIND_KEY("control-right", "item-move-pos right", "item-move-pos right");
@@ -4061,42 +4110,37 @@ static void dir_layout (ITK *itk, Diz *diz)
         if (atom == CTX_ATOM_TEXT)
         {
           ctx_save (itk->ctx);
-
-          //if (c->no == itk->focus_no)
-          //  ctx_rgb (itk->ctx, 1, 0, text_edit>=0?0:1);
-          //else
-          //  ctx_rgb (itk->ctx, 1, 0, 1);
           ctx_gray (itk->ctx, 0.95);
-
 
           if (c->no == itk->focus_no && layout_find_item < 0)
           {
-          layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
-                       space_width, width - em * level * layout_config.level_indent, em,
-                       text_edit,text_edit,
-                       1, NULL, NULL,
-                       &prev_line_pos, &next_line_pos,
-                       (i == focused_no && text_edit >= 0),
-                       1);
+            layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
+                         space_width, width - em * level * layout_config.level_indent, em,
+                         text_edit,text_edit,
+                         1, NULL, NULL,
+                         &prev_line_pos, &next_line_pos,
+                         (i == focused_no && text_edit >= 0), 1);
           }
           else
           {
-
-          layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
-                       space_width, width - em * level * layout_config.level_indent, em,
-                       -1, -1,
-                       1, NULL, NULL,
-                       NULL, NULL,
-                       0,
-                       0);
+            layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
+                         space_width, width - em * level * layout_config.level_indent, em,
+                         -1, -1,
+                         1, NULL, NULL,
+                         NULL, NULL,
+                         0, 0);
           }
 
           stuff_draw_bullet (itk, diz, i);
 
-          //if (c->no == itk->focus_no)
-          //fprintf (stderr, "%f %i %i %i\n", text_edit_desired_x, text_edit, prev_line, next_line);
-
           ctx_restore (itk->ctx);
+          if (i == focused_no)
+          {
+            add_context_binding (1,
+                            "run command",
+                            "run-command",
+                            "control-return");
+          }
         }
         else if (atom == CTX_ATOM_SYMLINK)
         {
@@ -4113,31 +4157,24 @@ static void dir_layout (ITK *itk, Diz *diz)
 
           if (c->no == itk->focus_no && layout_find_item < 0)
           {
-          layout_text (itk->ctx, itk->x + padding_left * em, itk->y, label,
-                       space_width, width - em * level * layout_config.level_indent, em,
-                       text_edit,text_edit,
-                       1, NULL, NULL,
-                       &prev_line_pos, &next_line_pos,
-                       (i == focused_no && text_edit >= 0),
-                       1);
+            layout_text (itk->ctx, itk->x + padding_left * em, itk->y, label,
+                         space_width, width - em * level * layout_config.level_indent, em,
+                         text_edit,text_edit,
+                         1, NULL, NULL,
+                         &prev_line_pos, &next_line_pos,
+                         (i == focused_no && text_edit >= 0), 1);
           }
           else
           {
-
-          layout_text (itk->ctx, itk->x + padding_left * em, itk->y, label,
-                       space_width, width - em * level * layout_config.level_indent, em,
-                       -1, -1,
-                       1, NULL, NULL,
-                       NULL, NULL,
-                       0,
-                       0);
+            layout_text (itk->ctx, itk->x + padding_left * em, itk->y, label,
+                         space_width, width - em * level * layout_config.level_indent, em,
+                         -1, -1,
+                         1, NULL, NULL,
+                         NULL, NULL,
+                         0, 0);
           }
 
           stuff_draw_bullet (itk, diz, i);
-
-
-          //if (c->no == itk->focus_no)
-          //fprintf (stderr, "%f %i %i %i\n", text_edit_desired_x, text_edit, prev_line, next_line);
 
           ctx_restore (itk->ctx);
         }
@@ -4146,7 +4183,7 @@ static void dir_layout (ITK *itk, Diz *diz)
         {
           char *fill       = diz_dir_get_string (diz, i, "fill");
           char *stroke     = diz_dir_get_string (diz, i, "stroke");
-          float line_width = diz_dir_get_float (diz, i, "line-width", 1.0);
+          float line_width = diz_dir_get_float  (diz, i, "line-width", 1.0);
           //float opacity    = diz_dir_get_float (diz, i, "opacity", 1.0);
 
           if (gotpos) label = 0;

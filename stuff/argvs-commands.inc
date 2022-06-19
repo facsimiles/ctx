@@ -19,6 +19,7 @@ int dir_enter_children (COMMAND_ARGS);
 int dir_follow_link (COMMAND_ARGS);
 int dir_font_size (COMMAND_ARGS);
 int dir_insert (COMMAND_ARGS);
+int dir_join (COMMAND_ARGS);
 int dir_load (COMMAND_ARGS);
 int dir_parent (COMMAND_ARGS);
 int dir_set (COMMAND_ARGS);
@@ -43,6 +44,7 @@ int move_after_next_sibling (COMMAND_ARGS);
 int move_before_previous_sibling (COMMAND_ARGS);
 int outline_collapse (COMMAND_ARGS);
 int outline_expand (COMMAND_ARGS);
+int run_command (COMMAND_ARGS);
 int toggle_fullscreen (COMMAND_ARGS);
 int toggle_keybindings_display (COMMAND_ARGS);
 void argvs_register(void) {
@@ -64,6 +66,7 @@ void argvs_register(void) {
  argvs_add (dir_follow_link ,  "follow-link", 0, "", "" );
  argvs_add (dir_font_size ,  "font-size", 1, "<up|down|val>", "" );
  argvs_add (dir_insert ,  "insert-text", 0, "", "" );
+ argvs_add (dir_join ,  "join-with-next", 0, "", "" );
  argvs_add (dir_load ,  "load-path", 1, "<path>", "" );
  argvs_add (dir_parent ,  "outline-focus-parent", 0, "", "" );
  argvs_add (dir_set ,  "set", 2, "<key> <value>", "" );
@@ -88,6 +91,7 @@ void argvs_register(void) {
  argvs_add (move_before_previous_sibling ,  "move-before-previous-sibling", 0, "", "" );
  argvs_add (outline_collapse ,  "outline-fold", 0, "", "" );
  argvs_add (outline_expand ,  "outline-expand", 0, "", "" );
+ argvs_add (run_command ,  "run-command", 0, "", "" );
  argvs_add (toggle_fullscreen ,  "toggle-fullscreen", 0, "", "" );
  argvs_add (toggle_keybindings_display ,  "toggle-keybindings-display", 0, "", "");
 };
