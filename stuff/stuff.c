@@ -1412,12 +1412,12 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
     {
       // insert new group
       target = no;
-      diz_dir_insert (diz, target, "~~~");
+      diz_dir_insert (diz, target, "");
       diz_dir_set_string (diz, target, "type", "endgroup");
       for (int i = 0; i <count;i++)
       diz_dir_insert (diz, target, "f");
 
-      diz_dir_insert (diz, target, "___");
+      diz_dir_insert (diz, target, "");
       diz_dir_set_string (diz, target, "type", "startgroup");
 
       for (int i = 0; i < count; i++)
@@ -2921,13 +2921,13 @@ int dir_enter_children (COMMAND_ARGS) /* "outline-focus-first-child", 0, "", "" 
   {
      focused_no = start_no;
 
-     diz_dir_insert(diz, focused_no+1, "___");
+     diz_dir_insert(diz, focused_no+1, "");
      diz_dir_set_string (diz, focused_no+1, "type", "startgroup");
 
      diz_dir_insert(diz, focused_no+2, "");
      text_edit = 0;
 
-     diz_dir_insert(diz, focused_no+3, "~~~");
+     diz_dir_insert(diz, focused_no+3, "");
      diz_dir_set_string (diz, focused_no+3, "type", "endgroup");
 
      focused_no++;
