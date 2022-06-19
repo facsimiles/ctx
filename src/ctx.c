@@ -2986,3 +2986,15 @@ ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size)
   _ctx_CBRLE_decompress (cbrle, rgba8, width, size, 0, width);
 #endif
 }
+
+
+void
+ctx_clip_extents (Ctx *ctx, float *x0, float *y0,
+                           float *x1, float *y1)
+{
+   CtxGState *gstate = &ctx->state.gstate;
+   if(x0)*x0 = gstate->clip_min_x;
+   if(y0)*y0 = gstate->clip_min_y;
+   if(x1)*x1 = gstate->clip_max_x;
+   if(y1)*y1 = gstate->clip_max_y;
+}

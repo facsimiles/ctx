@@ -611,6 +611,9 @@ void  ctx_get_transform        (Ctx *ctx, float *a, float *b,
                                 float *g, float *h,
                                 float *i);
 
+void
+ctx_clip_extents (Ctx *ctx, float *x0, float *y0,
+                            float *x1, float *y1);
 
 /* The pixel formats supported as render targets
  */
@@ -2416,10 +2419,12 @@ struct
 
 void ctx_apply_matrix (Ctx *ctx, CtxMatrix *matrix);
 void ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y);
+void ctx_matrix_apply_transform_distance (const CtxMatrix *m, float *x, float *y);
 void ctx_matrix_invert (CtxMatrix *m);
 void ctx_matrix_identity (CtxMatrix *matrix);
 void ctx_matrix_scale (CtxMatrix *matrix, float x, float y);
 void ctx_matrix_rotate (CtxMatrix *matrix, float angle);
+void ctx_matrix_translate (CtxMatrix *matrix, float x, float y);
 void ctx_matrix_multiply (CtxMatrix       *result,
                           const CtxMatrix *t,
                           const CtxMatrix *s);

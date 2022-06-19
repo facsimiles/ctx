@@ -3525,6 +3525,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
                                          rasterizer->state->gstate.clip_max_y);
 }
 
+
 static void
 ctx_rasterizer_clip (CtxRasterizer *rasterizer)
 {
