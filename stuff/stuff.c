@@ -3964,6 +3964,7 @@ static void dir_layout (ITK *itk, Diz *diz)
             itk->y += row_max_height;
 
           itk->x = itk->x0 + level * layout_config.level_indent * em;
+          //width -= em * level * layout_config.level_indent;
           /* measure height, and snap cursor */
           layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
                        space_width, width - em * level * layout_config.level_indent, em,
@@ -3984,7 +3985,9 @@ static void dir_layout (ITK *itk, Diz *diz)
         ctx_begin_path (itk->ctx);
         c = itk_add_control (itk, UI_LABEL, "item",
           itk->x - em * (padding_left * 2), itk->y, // - em * padding_top,
-          width + em * (padding_left*2+padding_right),
+          width + em * (padding_left*2+padding_right)
+           - em * level * layout_config.level_indent
+          ,
           height + em * (padding_top+padding_bottom));
         if (focused_no == i)
            focused_control = c;
