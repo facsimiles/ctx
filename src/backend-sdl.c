@@ -257,6 +257,8 @@ static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
 
 void ctx_sdl_consume_events (Ctx *ctx)
 {
+  static float x = 0.0f;
+  static float y = 0.0f;
   CtxBackend *backend = (void*)ctx->backend;
   CtxTiled    *tiled = (void*)backend;
   CtxSDL      *sdl = (void*)backend;
@@ -282,6 +284,8 @@ void ctx_sdl_consume_events (Ctx *ctx)
         //  XXX : look at mask and generate motion for each pressed
         //        button
         ctx_pointer_motion (ctx, event.motion.x, event.motion.y, 1, 0);
+        x = event.motion.x;
+        y = event.motion.y;
         break;
       case SDL_FINGERMOTION:
         ctx_pointer_motion (ctx, event.tfinger.x * tiled->width, event.tfinger.y * tiled->height,
@@ -440,6 +444,13 @@ void ctx_sdl_consume_events (Ctx *ctx)
         break;
       case SDL_QUIT:
         ctx_quit (ctx);
+        break;
+      case SDL_DROPFILE:
+        ctx_pointer_drop (ctx, x, y, 0, 0, event.drop.file);
+        break;
+      case SDL_DROPTEXT:
+        if (!strncmp ("file://", event.drop.file, 7))
+          ctx_pointer_drop (ctx, x, y, 0, 0, event.drop.file + 7);
         break;
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
