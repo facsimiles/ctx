@@ -352,6 +352,8 @@ static void set_grid (CtxEvent *e, void *d1, void *d2)
   layout_config.hide_non_file = 1;
 }
 
+
+
 int dir_view (COMMAND_ARGS) /* "view", 1, "<view>", "change view mode for category" */
 {
    if (!strcmp (argv[1], "grid")) set_grid (NULL, NULL, NULL);
@@ -371,6 +373,93 @@ typedef enum CtxBullet {
 } CtxBullet;
 
 Diz *diz = NULL;
+
+
+static CtxControl *focused_control = NULL;
+
+int diz_dir_is_in_flow (Diz *diz, int no)
+{
+   return (diz_dir_has_key (diz, no, "x") == 0 &&
+           diz_dir_has_key (diz, no, "y") == 0);
+}
+
+int item_unflow (COMMAND_ARGS) /* "unflow", 0, "", "moves item out of flow and static on page" */
+{
+  if (diz_dir_has_children (diz, focused_no))
+  {
+    fprintf (stderr, "not unflowing with children\n");
+    return -1;
+  }
+
+  if (focused_control)
+  {
+     diz_dir_set_float (diz, focused_no, "x",
+                  focused_control->x / itk->width);
+     diz_dir_set_float (diz, focused_no, "y",
+                  focused_control->y / itk->width);
+
+     diz_dir_set_float (diz, focused_no, "width",
+                  focused_control->width / itk->width);
+     diz_dir_set_float (diz, focused_no, "height",
+                  focused_control->height / itk->width);
+     diz_dir_dirt (diz);
+
+#if 0
+     int insertion_point = diz_dir_prev_sibling (diz, focused_no);
+     while (insertion_point &&
+            diz_dir_type_atom (diz, insertion_point) != CTX_ATOM_NEWPAGE &&
+            diz_dir_is_in_flow (diz, insertion_point))
+     {
+       if (diz_dir_prev_sibling (diz, insertion_point)>=0)
+         insertion_point = diz_dir_prev_sibling (diz, insertion_point);
+       else if(diz_dir_get_parent (diz, insertion_point)>=0)
+         insertion_point = diz_dir_get_parent (diz, insertion_point);
+       else
+         insertion_point = 0;
+     }
+     if (diz_dir_type_atom (diz, insertion_point) == CTX_ATOM_NEWPAGE)
+        insertion_point = diz_dir_next_sibling (diz, insertion_point);
+     diz_dir_insert (diz, insertion_point, "temp");
+     diz_dir_dirt (diz);
+     diz_dir_swap (diz, insertion_point, focused_no+1);
+     diz_dir_dirt (diz);
+     diz_dir_remove (diz, focused_no+1);
+     diz_dir_dirt (diz);
+#else
+     int insertion_point = focused_no+1;
+     while (insertion_point < diz->count &&
+            diz_dir_type_atom (diz, insertion_point) != CTX_ATOM_NEWPAGE &&
+            diz_dir_is_in_flow (diz, insertion_point))
+     {
+         insertion_point++;
+     }
+     //if (diz_dir_type_atom (diz, insertion_point) == CTX_ATOM_NEWPAGE)
+     //   insertion_point = diz_dir_next_sibling (diz, insertion_point);
+     diz_dir_insert (diz, insertion_point, "temp");
+     diz_dir_dirt (diz);
+     diz_dir_swap (diz, insertion_point, focused_no);
+     diz_dir_dirt (diz);
+     diz_dir_remove (diz, focused_no);
+     diz_dir_dirt (diz);
+#endif
+     focused_no = insertion_point-1;
+     layout_find_item = focused_no;
+     itk->focus_no = -1;
+  }
+     
+
+  return 0;
+}
+
+int item_reflow (COMMAND_ARGS) /* "reflow", 0, "", "moves item out of flow and static on page" */
+{
+  diz_dir_unset (diz, focused_no, "x");
+  diz_dir_unset (diz, focused_no, "y");
+  // not needed - but tidiest to do a fullish reset to dynamic size
+    diz_dir_unset (diz, focused_no, "width");
+    diz_dir_unset (diz, focused_no, "height");
+  return 0;
+}
 
 static void drop_item_renderers (Ctx *ctx)
 {
@@ -430,6 +519,15 @@ static inline int is_text_editing (void)
 int dir_insert (COMMAND_ARGS) /* "insert-text", 0, "", "" */
 {
   diz_dir_insert (diz, focused_no, "");
+  text_edit = 0;
+  diz_dir_dirt (diz);
+  return 0;
+}
+
+int dir_insert_newpage (COMMAND_ARGS) /* "insert-newpage", 0, "", "" */
+{
+  diz_dir_insert (diz, focused_no, "");
+  diz_dir_set_string (diz, focused_no, "type", "newpage");
   text_edit = 0;
   diz_dir_dirt (diz);
   return 0;
@@ -1022,6 +1120,7 @@ int cmd_duplicate (COMMAND_ARGS) /* "item-duplicate", 0, "", "duplicate item" */
   return 0;
 }
 
+void dir_set_page (CtxEvent *event, void *a, void *b);
 int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
 {
   int no = focused_no;
@@ -1032,6 +1131,7 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
   //
   DIR_DETAIL("items to remove %i", count);
   CtxAtom pre_atom = diz_dir_type_atom (diz, no-1);
+  CtxAtom atom = diz_dir_type_atom (diz, no);
   CtxAtom post_atom = diz_dir_type_atom (diz, no+count);
 
   int was_last = 0;
@@ -1053,6 +1153,12 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
     diz_dir_remove (diz, no-1);
     diz_dir_dirt(diz);
     layout_find_item = no-2-was_last;
+    itk->focus_no = -1;
+  }
+  else if (atom == CTX_ATOM_NEWPAGE)
+  {
+    layout_show_page --;
+    layout_find_item = focused_no-1;
     itk->focus_no = -1;
   }
   else
@@ -2891,7 +2997,11 @@ int run_command (COMMAND_ARGS) /* "run-command", 0, "", "" */
      diz_dir_set_string (diz, focused_no+1, "type", "startgroup");
 
      char *full_commandline = ctx_strdup_printf ("%s %s", commandline, " 2>&1");
-     char *result = dir_exec_command(full_commandline);
+     char *result;
+     if (commandline[0]=='$')
+       result = dir_exec_command(full_commandline+1);
+     else
+       result = dir_exec_command(full_commandline);
      free (full_commandline);
      if (result[strlen(result)-1]=='\n')
        result[strlen(result)-1]=0;
@@ -3030,7 +3140,6 @@ static CtxRectangle layout_box[CTX_MAX_LAYOUT_BOXES];
 int layout_box_count = 0;
 int layout_box_no = 0;
 
-static CtxControl *focused_control = NULL;
 
 static void escape_path (const char *path, char *escaped_path)
 {
@@ -3330,6 +3439,13 @@ static void add_context_binding (int active_context,
     BIND_KEY (key, (char*)command, label);
 }
 
+static void layout_box_defaults (CtxRectangle *rectangle)
+{
+  rectangle->x = 0.05;
+  rectangle->y = 0.02;
+  rectangle->width = 0.9;
+  rectangle->height = 4000.0;
+}
 
 static void dir_layout (ITK *itk, Diz *diz)
 {
@@ -3345,10 +3461,13 @@ static void dir_layout (ITK *itk, Diz *diz)
 
   layout_box_count = 0;
   layout_box_no = 0;
+#if 0
   layout_box[0].x = 0.05;
   layout_box[0].y = (layout_config.margin_top * em) / itk->width;
   layout_box[0].width = 0.9;
   layout_box[0].height = 4000.0;
+#endif
+  layout_box_defaults (&layout_box[0]);
 
   diz->metadata_cache_no = -3;
   prev_line_pos = -1;
@@ -3434,97 +3553,99 @@ static void dir_layout (ITK *itk, Diz *diz)
 
   if (y1 < 100) y1 = itk->height;
 
-
+  int last_page = 0;
   int printing = (layout_page_no == layout_show_page);
 
-  if (printing)
+  if (layout_show_page == 0)
   {
-    // allocate room for and key-nav/focus rect
-    // for title - up front, to maintain focus
-    // order
-    //CtxControl *title_control =
-    itk_add_control (itk, UI_LABEL, "title",
-                     itk->x0 - em * 0.5f,
-                     itk->font_size * 0,
-                     itk->width,
-                     itk->font_size * 2.5);
-    ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)((size_t)(-1)), NULL);
-  }
-
-  itk->y = 2.0 * itk->font_size;
-  int parents = diz_dir_value_count (diz, -1, "parent");
-  float tx = itk->x0;// + itk->font_size / 2;
-  for (int i = 0; i < parents; i++)
-  {
-    char *parent = diz_dir_get_string_no (diz, -1, "parent", i);
-    ctx_begin_path (itk->ctx);
-    float width = ctx_text_width (itk->ctx, parent);
-    if (itk->focus_no == itk->control_no)
+    if (printing)
     {
-      char *dup_par = strdup (parent);
-      ctx_add_key_binding_full (ctx, "return", NULL, "view category", ui_visit_tag, dup_par, free, dup_par);
-      dup_par = strdup (parent);
-      ctx_add_key_binding_full (ctx, "alt-down", NULL, "view category", ui_visit_tag, dup_par, free, dup_par);
-      dup_par = strdup (parent);
-      ctx_add_key_binding_full (ctx, "delete", NULL, "remove tag", ui_remove_tag, dup_par, free, dup_par);
+      // allocate room for and key-nav/focus rect
+      // for title - up front, to maintain focus
+      // order
+      //CtxControl *title_control =
+      itk_add_control (itk, UI_LABEL, "title",
+                       itk->x0 - em * 0.5f,
+                       itk->font_size * 0,
+                       itk->width,
+                       itk->font_size * 2.5);
+      ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)((size_t)(-1)), NULL);
     }
-
-    CtxControl *c = itk_add_control (itk, UI_LABEL, "tag",
-                     tx,
-                     itk->font_size * 2.5,
-                     itk->font_size + width,
-                     itk->font_size * 1);
-    ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
-    ctx_font_size (itk->ctx, itk->font_size);
-    ctx_rgb (itk->ctx, 1, 1, 0);
-    ctx_move_to (itk->ctx, tx + 0.5 * itk->font_size,
-                 itk->font_size * 3.3);
-    tx += width + itk->font_size;
-    ctx_text (itk->ctx, parent);
-    free (parent);
-  }
-
-  {
-    ctx_begin_path (itk->ctx);
-    static char tag[100]="";
-
-    if (itk->focus_no == itk->control_no || 1)
+  
+    itk->y = 2.0 * itk->font_size;
+    int parents = diz_dir_value_count (diz, -1, "parent");
+    float tx = itk->x0;// + itk->font_size / 2;
+    for (int i = 0; i < parents; i++)
     {
-      float width = ctx_text_width (itk->ctx, "aaaaaaaaaaa");
-      itk->x = tx + itk->font_size * 0.2;
-      itk->y+= itk->font_size * 0.5;
-      float w = itk->width;
-      itk->width = width;
-      if (itk_entry (itk, "", "+", tag, sizeof(tag)-1, NULL, NULL))
+      char *parent = diz_dir_get_string_no (diz, -1, "parent", i);
+      ctx_begin_path (itk->ctx);
+      float width = ctx_text_width (itk->ctx, parent);
+      if (itk->focus_no == itk->control_no)
       {
-        diz_dir_add_string_unique (diz, -1, "parent", tag);
-        char *link_path = diz_dir_tag_child_item_path (tag, diz->path);
-        symlink (diz->path, link_path);
-        free (link_path);
-        diz_dir_dirt (diz);
-        tag[0]=0;
-        ctx_queue_draw (itk->ctx);
+        char *dup_par = strdup (parent);
+        ctx_add_key_binding_full (ctx, "return", NULL, "view category", ui_visit_tag, dup_par, free, dup_par);
+        dup_par = strdup (parent);
+        ctx_add_key_binding_full (ctx, "alt-down", NULL, "view category", ui_visit_tag, dup_par, free, dup_par);
+        dup_par = strdup (parent);
+        ctx_add_key_binding_full (ctx, "delete", NULL, "remove tag", ui_remove_tag, dup_par, free, dup_par);
       }
-      itk->y-= itk->font_size * 0.5;
-      itk->width = w;
-    }
-    else
-    {
-      float width = ctx_text_width (itk->ctx, " + ");
-      //CtxControl *c = 
-              itk_add_control (itk, UI_LABEL, "tag",
-                      tx,
-                      itk->font_size * 2.5,
-                      itk->font_size + width,
-                      itk->font_size * 1);
+  
+      CtxControl *c = itk_add_control (itk, UI_LABEL, "tag",
+                       tx,
+                       itk->font_size * 2.5,
+                       itk->font_size + width,
+                       itk->font_size * 1);
+      ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
       ctx_font_size (itk->ctx, itk->font_size);
       ctx_rgb (itk->ctx, 1, 1, 0);
       ctx_move_to (itk->ctx, tx + 0.5 * itk->font_size,
                    itk->font_size * 3.3);
-      ctx_text (itk->ctx, "+ ");
+      tx += width + itk->font_size;
+      ctx_text (itk->ctx, parent);
+      free (parent);
+    }
+  
+    {
+      ctx_begin_path (itk->ctx);
+      static char tag[100]="";
+  
+      if (itk->focus_no == itk->control_no || 1)
+      {
+        float width = ctx_text_width (itk->ctx, "aaaaaaaaaaa");
+        itk->x = tx + itk->font_size * 0.2;
+        itk->y+= itk->font_size * 0.5;
+        float w = itk->width;
+        itk->width = width;
+        if (itk_entry (itk, "", "+", tag, sizeof(tag)-1, NULL, NULL))
+        {
+          diz_dir_add_string_unique (diz, -1, "parent", tag);
+          char *link_path = diz_dir_tag_child_item_path (tag, diz->path);
+          symlink (diz->path, link_path);
+          free (link_path);
+          diz_dir_dirt (diz);
+          tag[0]=0;
+          ctx_queue_draw (itk->ctx);
+        }
+        itk->y-= itk->font_size * 0.5;
+        itk->width = w;
+      }
+      else
+      {
+        float width = ctx_text_width (itk->ctx, " + ");
+        //CtxControl *c = 
+                itk_add_control (itk, UI_LABEL, "tag",
+                        tx,
+                        itk->font_size * 2.5,
+                        itk->font_size + width,
+                        itk->font_size * 1);
+        ctx_font_size (itk->ctx, itk->font_size);
+        ctx_rgb (itk->ctx, 1, 1, 0);
+        ctx_move_to (itk->ctx, tx + 0.5 * itk->font_size,
+                     itk->font_size * 3.3);
+        ctx_text (itk->ctx, "+ ");
+      }
     }
   }
-
   itk->y = 4.0 * itk->font_size;
 
   if (layout_config.outliner)
@@ -3587,16 +3708,14 @@ static void dir_layout (ITK *itk, Diz *diz)
           hidden = 1;
           level --;
           break;
-        case CTX_ATOM_NEWPAGE:
         case CTX_ATOM_STARTPAGE:
+          hidden = 1;
+          /*FALLTHROUGH*/
+        case CTX_ATOM_NEWPAGE:
           layout_box_count = 0;
           layout_box_no = 0;
           // XXX need better default for new page
-          layout_box[0].x = 0.05;
-          layout_box[0].y = 0.02;
-          layout_box[0].width = 0.9;
-          layout_box[0].height = 4000.0;
-          hidden = 1;
+          layout_box_defaults(&layout_box[0]);
           break;
       }
 
@@ -3728,7 +3847,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
       if (layout_config.stack_horizontal && layout_config.stack_vertical)
       {
-      if (itk->x + width  > itk->x0 + itk->width || atom == CTX_ATOM_NEWPAGE || atom == CTX_ATOM_STARTPAGE) //panel->x + itk->panel->width)
+      if (itk->x + width  > itk->x0 + itk->width ||atom == CTX_ATOM_NEWPAGE || atom == CTX_ATOM_STARTPAGE) //panel->x + itk->panel->width)
       {
           itk->x = itk->x0;
           if (layout_config.stack_vertical)
@@ -3760,7 +3879,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
               layout_page_no++;
               printing = (layout_page_no == layout_show_page);
-              layout_last_page = layout_page_no;
+              last_page = layout_page_no;
             }
           }
           itk->x  += level * em * layout_config.level_indent;
@@ -3786,6 +3905,11 @@ static void dir_layout (ITK *itk, Diz *diz)
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
            }
          }
+      }
+      else if (atom == CTX_ATOM_NEWPAGE)
+      {
+         width = itk->width;
+         height = 1;
       }
 
   if (layout_config.outliner)
@@ -3916,12 +4040,25 @@ static void dir_layout (ITK *itk, Diz *diz)
 
               //BIND_KEY ("insert", "insert-text", "insert text item");
           add_context_binding (1, "insert text item", "insert-text", "insert");
+          add_context_binding (1, "insert new page", "insert-newpage", "control-insert");
           ctx_begin_path (itk->ctx);
           //ctx_rgb(itk->ctx,1,0,0);
           //ctx_fill(itk->ctx);
 
           if (!viewer)
           {
+
+
+           if (gotpos)
+           {
+              add_context_binding (1, "reflow", "reflow", "control-f");
+           }
+           else
+           {
+              add_context_binding (1, "unflow", "unflow", "control-f");
+           }
+
+
           if (!is_text_editing()
               && !item_context_active)
           {
@@ -4134,7 +4271,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           stuff_draw_bullet (itk, diz, i);
 
           ctx_restore (itk->ctx);
-          if (i == focused_no)
+          if (i == focused_no && d_name[0]=='$')
           {
             add_context_binding (1,
                             "run command",
@@ -4204,6 +4341,21 @@ static void dir_layout (ITK *itk, Diz *diz)
             ctx_stroke (itk->ctx);
             free (stroke);
           }
+        }
+        else if (atom == CTX_ATOM_NEWPAGE)
+        {
+#if 0
+           ctx_rgb(itk->ctx, 1.0,0,0);
+           ctx_rectangle (itk->ctx, itk->x, itk->y, itk->width, 2);
+           ctx_fill (itk->ctx);
+#endif
+           ctx_save (itk->ctx);
+           ctx_move_to (itk->ctx, itk->width/2, itk->y - itk->font_size * 0.25f);
+           ctx_gray (itk->ctx, 0.8);
+           char buf[128];
+           sprintf (buf, "page %i/%i", layout_show_page+1, layout_last_page+1);
+           ctx_text (itk->ctx, buf);
+           ctx_restore (itk->ctx);
         }
         else if (atom == CTX_ATOM_LAYOUTBOX)
         {
@@ -4447,7 +4599,7 @@ static void dir_layout (ITK *itk, Diz *diz)
              y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
 
              layout_page_no++;
-             layout_last_page = layout_page_no;
+             last_page = layout_page_no;
              printing = (layout_page_no == layout_show_page);
             }
 
@@ -4486,6 +4638,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       }
       free (d_name);
   }
+  layout_last_page = last_page;
 
   if (diz->count <= 0)
   {
@@ -4514,6 +4667,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   ctx_restore (itk->ctx);
 
   // draw title
+  if (layout_show_page == 0)
   {
   ctx_save (itk->ctx);
   ctx_font_size (itk->ctx, itk->font_size * 2);
@@ -5115,6 +5269,7 @@ static void clear_context_menu (void)
   context_menu_items=0;
 }
 
+
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
@@ -5169,8 +5324,8 @@ static int card_files (ITK *itk_, void *data)
 
   BIND_KEY ("F1", "toggle-keybindings-display", "toggle keybinding help");
 
-  panel = itk_panel_start (itk, "", 0,0, ctx_width(ctx),
-                  ctx_height (ctx));
+  panel = itk_panel_start (itk, "", 0,0, ctx_width (ctx),
+                                         ctx_height (ctx));
 
   if (dir_scale != 1.0f)
      ctx_scale (itk->ctx, dir_scale, dir_scale);
@@ -5254,16 +5409,14 @@ static int card_files (ITK *itk_, void *data)
     if (layout_show_page < layout_last_page)
       BIND_KEY("page-down", "page next", "next page");
     if (layout_show_page > 0)
-      BIND_KEY("page-down", "page previous", "previous page");
+      BIND_KEY("page-up", "page previous", "previous page");
   }
-
 
   if (!viewer
       && text_edit <= TEXT_EDIT_OFF
       && !layout_config.outliner 
       && !item_context_active)
   {
-
 
           if (commandline->str[0])
           {

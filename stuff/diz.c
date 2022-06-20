@@ -1300,8 +1300,7 @@ diz_dir_prev_sibling (Diz *diz, int i)
     }
   }
   while (atom == CTX_ATOM_STARTGROUP ||
-         atom == CTX_ATOM_LAYOUTBOX ||
-         atom == CTX_ATOM_NEWPAGE)
+         atom == CTX_ATOM_LAYOUTBOX)
   {
     pos--;
     atom = diz_dir_type_atom (diz, pos);
