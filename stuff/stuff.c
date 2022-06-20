@@ -4743,8 +4743,11 @@ static void dir_layout (ITK *itk, Diz *diz)
   {
     BIND_KEY ("alt-return", "toggle-context", "document properties");
     ctx_add_key_binding (ctx, "return", NULL, "edit location", dir_location, NULL);
+    ctx_add_key_binding (ctx, "alt-down", NULL, "edit location", dir_location, NULL);
   }
   BIND_KEY ("resize-event", "", NULL); // causes a queue-draw
+                                    
+
 }
 
 static void empty_thumb_queue (void)
@@ -5269,6 +5272,10 @@ static void clear_context_menu (void)
   context_menu_items=0;
 }
 
+static void drop_event (CtxEvent *event, void *a, void *b)
+{
+        fprintf (stderr, "dropped :) %s\n", event->string);
+}
 
 static int card_files (ITK *itk_, void *data)
 {
@@ -6173,6 +6180,11 @@ static int card_files (ITK *itk_, void *data)
     ctx_restore (ctx);
   }
 
+  // drop target
+  ctx_begin_path (ctx);
+  ctx_rectangle (ctx, 0,0, ctx_width (ctx), ctx_height (ctx));
+  ctx_listen (ctx, CTX_DROP, drop_event, NULL, NULL);
+  ctx_begin_path (ctx);
   return 1;
 }
 
