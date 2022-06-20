@@ -3049,6 +3049,20 @@ int stuffcmd_main (int argc, char **argv)
   return 0;
 }
 
+int stuff_realpath_main (int argc, char **argv)
+{
+  const char *category = argv[1];
+  if (category)
+  {
+    if (category[0] == '/' || category[0] == '.')
+      fprintf (stdout, "%s\n", realpath(category, NULL));
+    else
+      fprintf (stdout, "%s\n", diz_dir_wiki_path (category));
+    return 0;
+  }
+  return 1;
+}
+
 int stuff_ls_main (int argc, char **argv)
 {
   const char *path = ".";

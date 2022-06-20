@@ -301,6 +301,7 @@ static int lsfonts_main (int argc, char **argv)
 }
 
 int stuff_ls_main (int argc, char **argv);
+int stuff_realpath_main (int argc, char **argv);
 
 int main (int argc, char **argv)
 {
@@ -311,6 +312,8 @@ int main (int argc, char **argv)
 
   if (!strcmp (basename(argv[1]), "ls"))
     return stuff_ls_main (argc-1, argv+1);
+  if (!strcmp (basename(argv[1]), "realpath"))
+    return stuff_realpath_main (argc-1, argv+1);
 //  if (!strcmp (basename(argv[1]), "stuff"))
 //    return stuff_main (argc-1, argv+1);
 //  if (!strcmp (basename(argv[0]), "stuff"))
