@@ -105,6 +105,7 @@ void    diz_dir_dump               (Diz *diz);
 // should be internal only?
 void diz_dir_dirt (Diz *diz);
 
+void mkdir_ancestors (const char *path, unsigned int mode);
 
 
 #endif

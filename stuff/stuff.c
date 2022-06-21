@@ -553,6 +553,12 @@ static int path_is_dir (const char *path)
   return S_ISDIR (stat_buf.st_mode);
 }
 
+static int path_exist (const char *path)
+{
+  struct stat stat_buf;
+  if (!path || path[0]==0) return 0;
+  return (lstat (path, &stat_buf) == 0);
+}
 
 static char *diz_dir_wiki_path (const char *path);
 
@@ -561,31 +567,18 @@ static CtxList *future = NULL;
 
 static void _set_location (const char *location)
 {
+  char *tpath = NULL;
   save_metadata();
 
-  if (location[0] == '~' && location[1] == '0')
-  {
-    if (path_is_dir (getenv ("HOME")))
-    {
-      diz_dir_set_path (diz, getenv ("HOME"));
-      drop_item_renderers (ctx);
-      focused_no = -1;
-      layout_find_item = 0;
-    }
-  }
-  else if (location[0] == '~')
+
+  if (location[0] == '~')
   {
     char *tpath = ctx_strdup_printf ("%s/%s", getenv("HOME"), &location[2]);
-    if (path_is_dir (tpath))
-    {
-      diz_dir_set_path (diz, tpath);
-      drop_item_renderers (ctx);
-      focused_no = -1;
-      layout_find_item = 0;
-    }
-    free (tpath);
+    location = tpath;
   }
-  else if (location[0] == '/' || location[0] == '.')
+
+
+  if (location[0] == '/' || location[0] == '.')
   {
     char *loc = (char*)location;
     if (location[0] == '.' && location[1] == '/')
@@ -595,6 +588,26 @@ static void _set_location (const char *location)
       else
       loc = realpath (location+2, NULL);
     }
+
+    if (!path_exist(loc))
+    {
+    //  char *last_slash = strrchr(loc,'/');
+    //  *last_slash = 0;
+      mkdir_ancestors (loc, 0777);
+    //  *last_slash = '/';
+      if (loc[strlen(loc)-1]=='/')
+      {
+      }
+      else
+      {
+        fprintf (stderr, "should make file %s\n", loc);
+        FILE *f = fopen (loc, "w");
+        fclose (f);
+      }
+    }
+    
+    {
+
     if (path_is_dir (loc))
     {
       //fprintf (stderr, "%i:%s\n", __LINE__, loc);
@@ -616,20 +629,22 @@ static void _set_location (const char *location)
       layout_find_item = 0;
       diz_dir_set_path_text_editor (diz, loc);
     }
+    }
     if (loc != location) free (loc);
   } else
   {
-    char *path = diz_dir_wiki_path (location);
+    tpath = diz_dir_wiki_path (location);
     text_editor = 0;
-    diz_dir_set_path (diz, path);
+    diz_dir_set_path (diz, tpath);
     diz_dir_set_name (diz, -1, location);
     save_metadata ();
     drop_item_renderers (ctx);
-    free (path);
     focused_no = 0;
     layout_find_item = 0;
   }
   itk_panels_reset_scroll (itk);
+  if (tpath)
+    free (tpath);
 }
 
 int cmd_history (COMMAND_ARGS) /* "history", 1, "<forward|back>", "moved history forward or back" */

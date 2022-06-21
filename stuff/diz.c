@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-static void  mkdir_ancestors      (const char  *path,
-                                   unsigned int mode);
+void  mkdir_ancestors      (const char  *path,
+                            unsigned int mode);
 
 static void  diz_dir_update_files     (Diz *diz);
 static void _diz_dir_remove           (Diz *diz, int no);
@@ -105,7 +105,7 @@ void diz_dir_load_dir (Diz *diz, const char *path)
   }
 }
 
-static void mkdir_ancestors (const char *path, unsigned int mode)
+void mkdir_ancestors (const char *path, unsigned int mode)
 {
   char *tmppaths=strdup (path);
   char *sl = strchr (tmppaths, '/');
