@@ -314,11 +314,13 @@ static void set_text_edit (CtxEvent *e, void *d1, void *d2)
   layout_config.margin_top    = 0.0f;
 }
 
+#if 0
 static void set_outline (CtxEvent *e, void *d1, void *d2)
 {
   set_layout (e, d1, d2);
   layout_config.outliner = 1;
 } 
+#endif
 
 static void set_list (CtxEvent *e, void *d1, void *d2)
 {
@@ -359,7 +361,7 @@ int dir_view (COMMAND_ARGS) /* "view", 1, "<view>", "change view mode for catego
    if (!strcmp (argv[1], "grid")) set_grid (NULL, NULL, NULL);
    if (!strcmp (argv[1], "list")) set_list (NULL, NULL, NULL);
    if (!strcmp (argv[1], "layout")) set_layout (NULL, NULL, NULL);
-   if (!strcmp (argv[1], "outline")) set_outline (NULL, NULL, NULL);
+   //if (!strcmp (argv[1], "outline")) set_outline (NULL, NULL, NULL);
    if (!strcmp (argv[1], "text-edit")) set_text_edit (NULL, NULL, NULL);
    return 0;
 }
@@ -742,12 +744,37 @@ int outline_collapse (COMMAND_ARGS) /* "outline-fold", 0, "", "" */
 
 static int layout_focused_link = -1;
 
-static int dir_item_count_links (int i)
+static inline int char_is_digit (char c) {
+  return c >= '0' && c <= '9';
+}
+static inline int char_is_day_digit (char c) {
+  return c >= '0' && c <= '9';
+}
+
+static int word_is_date (const char *word)
 {
-  char *name = diz_dir_get_name (diz, i);
+  if (!char_is_digit(word[0])) return 0;
+  if (!char_is_digit(word[1])) return 0;
+  if (!char_is_digit(word[2])) return 0;
+  if (!char_is_digit(word[3])) return 0;
+  //if (word[4]==0) return 1;
+  if (word[4]!='-') return 0;
+  if (!(word[5]>='0' && word[5]<='1')) return 0;
+  if (!char_is_digit(word[6])) return 0;
+  if (word[7]==0) return 1;
+  if (word[7]!='-') return 0;
+  if (!(word[8]>='0' && word[8]<='3')) return 0;
+  if (!char_is_digit(word[9])) return 0;
+  if (word[10]==0) return 1;
+  return 0;
+}
+
+static int string_count_links (const char *name)
+{
+  int count = 0;
   char *p = name;
   int in_link = 0;
-  int count = 0;
+  CtxString *word = ctx_string_new ("");
   while (*p)
   {
     switch (*p)
@@ -759,10 +786,19 @@ static int dir_item_count_links (int i)
         if (in_link) count ++;
         in_link = 0;
         break;
+      case ' ':
+        if (word_is_date (word->str))
+          count ++;
+        ctx_string_set (word, "");
+        break;
+      default:
+        ctx_string_append_byte (word, *p);
     }
     p++;
   }
-  free (name);
+  if (word_is_date (word->str))
+    count ++;
+  ctx_string_free (word, 1);
   return count;
 }
 
@@ -774,6 +810,7 @@ static char *string_link_no (const char *string, int link_no)
   const char *p = string;
   int in_link = 0;
   int count = 0;
+  CtxString *word = ctx_string_new ("");
   while (p == string || p[-1])
   {
     switch (*p)
@@ -803,6 +840,26 @@ static char *string_link_no (const char *string, int link_no)
       case '\0':
       default:
 
+        if (*p == '\0' || *p == ' ')
+        {
+          if (word_is_date (word->str) && !in_link)
+          {
+            count++;
+            if (link_no == count-1)
+            {
+              ctx_string_free (str, 1);
+              ctx_string_free (str_secondary, 1);
+              return ctx_string_dissolve (word);
+            }
+          }
+          ctx_string_set(word, "");
+        }
+        else
+        {
+          ctx_string_append_byte (word, *p);
+        }
+
+
         if (*p && in_link == 2)
         ctx_string_append_byte (str_secondary, *p);
         else if (*p && in_link == 1)
@@ -818,6 +875,7 @@ static char *string_link_no (const char *string, int link_no)
             ret = ctx_string_dissolve (str);
           else
             ctx_string_free (str, 1);
+          ctx_string_free (word, 1);
           return ret;
         }
         break;
@@ -826,9 +884,18 @@ static char *string_link_no (const char *string, int link_no)
   }
   ctx_string_free (str_secondary, 1);
   ctx_string_free (str, 1);
+  ctx_string_free (word, 1);
   return NULL;
 }
 
+static int dir_item_count_links (int i)
+{
+  int count = 0;
+  char *name = diz_dir_get_name (diz, i);
+  count = string_count_links (name);
+  free (name);
+  return count;
+}
 
 static char *dir_item_link_no (int item, int link_no)
 {
@@ -887,7 +954,6 @@ int dir_visit_symlink (COMMAND_ARGS) /* "visit-symlink", 0, "", "" */
   layout_focused_link = -1;
   return 0;
 }
-
 
 int dir_follow_link (COMMAND_ARGS) /* "follow-link", 0, "", "" */
 {
@@ -1964,6 +2030,13 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
       int wlen_utf8 = ctx_utf8_strlen (word);
       float word_width = ctx_text_width (itk->ctx, word);
 
+      if (word_is_date (word))
+      {
+         was_in_link=1;
+         if (is_focused && layout_focused_link == link_no) was_in_link++;
+         link_no++;//fprintf (stderr, "[%s]",word);
+      }
+
       if (sel_start == TEXT_EDIT_FIND_CURSOR_FIRST_ROW)
       {
         if (pot_cursor < 0 && (x + word_width > text_edit_desired_x || *p == '\0'))
@@ -2068,7 +2141,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         }
       if (print)
       {
-        if (was_in_link && !text_editor)
+        if (was_in_link   && !text_editor )
         {
           ctx_save (itk->ctx);
           ctx_begin_path (itk->ctx);
@@ -2100,8 +2173,8 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         }
         else
         {
-        ctx_move_to (itk->ctx, x, y);
-        ctx_text (itk->ctx, word);
+          ctx_move_to (itk->ctx, x, y);
+          ctx_text (itk->ctx, word);
         }
       }
       }
@@ -2135,7 +2208,8 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
     }
 
     was_in_link = (in_link != 0);
-    if (was_in_link && is_focused) was_in_link += (link_no == layout_focused_link);
+    if (was_in_link && is_focused)
+       was_in_link += (link_no == layout_focused_link);
     was_no = link_no;
 
     switch (*p)
@@ -5409,11 +5483,10 @@ static int card_files (ITK *itk_, void *data)
         && !text_editor
         && !item_context_active)
     {
-      add_context_binding (location_active, "outline view", "view outline", "control-1");
-      add_context_binding (location_active, "layout view", "view layout", "control-2");
-      add_context_binding (location_active, "list view", "view list", "control-3");
-      add_context_binding (location_active, "folder view", "view grid", "control-4");
-      add_context_binding (location_active, "text-edit view", "view text-edit", "control-5");
+      add_context_binding (location_active, "layout view", "view layout", "control-1");
+      add_context_binding (location_active, "list view", "view list", "control-2");
+      add_context_binding (location_active, "folder view", "view grid", "control-3");
+      add_context_binding (location_active, "text-edit view", "view text-edit", "control-4");
     }
 #endif
 
