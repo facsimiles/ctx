@@ -408,6 +408,7 @@ static void ctx_kms_show_frame (CtxKMS *fb, int block)
 
 void ctx_kms_consume_events (Ctx *ctx)
 {
+  ctx_fb_global = ctx;
   CtxKMS *fb = (void*)ctx->backend;
   ctx_kms_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
@@ -573,7 +574,8 @@ Ctx *ctx_new_kms (int width, int height)
 #undef start_thread
 
 
-  EvSource *kb = evsource_kb_new ();
+  EvSource *kb = evsource_kb_raw_new ();
+  if (!kb) kb = evsource_kb_term_new ();
   if (kb)
   {
     tiled->evsource[tiled->evsource_count++] = kb;

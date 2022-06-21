@@ -196,12 +196,12 @@ static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
   const char *name = &buf[0];
    switch (sym)
    {
-     case SDLK_RSHIFT: scan_code = 16 ; break;
-     case SDLK_LSHIFT: scan_code = 16 ; break;
-     case SDLK_LCTRL: scan_code = 17 ; break;
-     case SDLK_RCTRL: scan_code = 17 ; break;
-     case SDLK_LALT:  scan_code = 18 ; break;
-     case SDLK_RALT:  scan_code = 18 ; break;
+     case SDLK_RSHIFT: name="shift";scan_code = 16 ; break;
+     case SDLK_LSHIFT: name="shift";scan_code = 16 ; break;
+     case SDLK_LCTRL: name="control";scan_code = 17 ; break;
+     case SDLK_RCTRL: name="control";scan_code = 17 ; break;
+     case SDLK_LALT:  name="alt";scan_code = 18 ; break;
+     case SDLK_RALT:  name="alt";scan_code = 18 ; break;
      case SDLK_CAPSLOCK: name = "capslock"; scan_code = 20 ; break;
      //case SDLK_NUMLOCK: name = "numlock"; scan_code = 144 ; break;
      //case SDLK_SCROLLLOCK: name = "scrollock"; scan_code = 145 ; break;
@@ -353,90 +353,23 @@ void ctx_sdl_consume_events (Ctx *ctx)
           {
             sdl->key_repeat ++;
           }
-          switch (event.key.keysym.sym)
-          {
-            case SDLK_LSHIFT: sdl->lshift = 1; break;
-            case SDLK_RSHIFT: sdl->rshift = 1; break;
-            case SDLK_LCTRL:  sdl->lctrl = 1; break;
-            case SDLK_LALT:   sdl->lalt = 1; break;
-            case SDLK_RCTRL:  sdl->rctrl = 1; break;
-          }
-          if (sdl->lshift | sdl->rshift | sdl->lctrl | sdl->lalt | sdl->rctrl)
-          {
-            ctx->events.modifier_state ^= ~(CTX_MODIFIER_STATE_CONTROL|
-                                            CTX_MODIFIER_STATE_ALT|
-                                            CTX_MODIFIER_STATE_SHIFT);
-            if (sdl->lshift | sdl->rshift)
-              ctx->events.modifier_state |= CTX_MODIFIER_STATE_SHIFT;
-            if (sdl->lctrl | sdl->rctrl)
-              ctx->events.modifier_state |= CTX_MODIFIER_STATE_CONTROL;
-            if (sdl->lalt)
-              ctx->events.modifier_state |= CTX_MODIFIER_STATE_ALT;
-          }
           int keycode;
           name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
+
           ctx_key_down (ctx, keycode, name, 0);
 
-          if (strlen (name)
-              &&(event.key.keysym.mod & (KMOD_CTRL) ||
-                 event.key.keysym.mod & (KMOD_ALT) ||
-                 ctx_utf8_strlen (name) >= 2))
-          {
-            if (event.key.keysym.mod & (KMOD_CTRL) )
-              {
-                static char buf[64] = "";
-                sprintf (buf, "control-%s", name);
-                name = buf;
-              }
-            if (event.key.keysym.mod & (KMOD_ALT) )
-              {
-                static char buf[128] = "";
-                sprintf (buf, "alt-%s", name);
-                name = buf;
-              }
-            if (event.key.keysym.mod & (KMOD_SHIFT) )
-              {
-                static char buf[196] = "";
-                sprintf (buf, "shift-%s", name);
-                name = buf;
-              }
-            if (strcmp (name, "space"))
-              {
-               ctx_key_press (ctx, keycode, name, 0);
-              }
-          }
-          else
-          {
-#if 0
-             ctx_key_press (ctx, 0, buf, 0);
-#endif
-          }
+          if (ctx_utf8_strlen (name) > 1 ||
+              (ctx->events.modifier_state &
+                                           (CTX_MODIFIER_STATE_CONTROL|
+                                            CTX_MODIFIER_STATE_ALT))
+              )
+          if (strcmp(name, "space"))
+            ctx_key_press (ctx, keycode, name, 0);
         }
         break;
       case SDL_KEYUP:
         {
            sdl->key_balance --;
-           switch (event.key.keysym.sym)
-           {
-             case SDLK_LSHIFT: sdl->lshift = 0; break;
-             case SDLK_RSHIFT: sdl->rshift = 0; break;
-             case SDLK_LCTRL: sdl->lctrl = 0; break;
-             case SDLK_RCTRL: sdl->rctrl = 0; break;
-             case SDLK_LALT:  sdl->lalt  = 0; break;
-           }
-
-          {
-            ctx->events.modifier_state ^= ~(CTX_MODIFIER_STATE_CONTROL|
-                                            CTX_MODIFIER_STATE_ALT|
-                                            CTX_MODIFIER_STATE_SHIFT);
-            if (sdl->lshift | sdl->rshift)
-              ctx->events.modifier_state |= CTX_MODIFIER_STATE_SHIFT;
-            if (sdl->lctrl | sdl->rctrl)
-              ctx->events.modifier_state |= CTX_MODIFIER_STATE_CONTROL;
-            if (sdl->lalt)
-              ctx->events.modifier_state |= CTX_MODIFIER_STATE_ALT;
-          }
-
            int keycode;
            const char *name = ctx_sdl_keysym_to_name (event.key.keysym.sym, &keycode);
            ctx_key_up (ctx, keycode, name, 0);
@@ -507,8 +440,6 @@ void ctx_sdl_destroy (CtxSDL *sdl)
 
   ctx_tiled_destroy ((CtxTiled*)sdl);
 }
-
-
 
 void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
 {

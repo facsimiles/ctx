@@ -1886,6 +1886,86 @@ static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,
    }
    return str;
 }
+typedef struct CtxKeyMap {
+  const char *us;
+  const char *unshifted;
+  const char *shifted;
+} CtxKeyMap;
+
+static CtxKeyMap intl_key_map[]=
+{
+   {"`","`","~"},
+   {"1","1","!"},
+   {"2","2","@"},
+   {"3","3","#"},
+   {"4","4","$"},
+   {"5","5","%"},
+   {"6","6","^"},
+   {"7","7","&"},
+   {"8","8","*"},
+   {"9","9","("},
+   {"0","0",")"},
+   {"-","-","_"},
+   {"=","=","+"},
+
+   {"q","q","Q"},
+   {"w","w","W"},
+   {"e","e","E"},
+   {"r","r","R"},
+   {"t","t","T"},
+   {"y","y","Y"},
+   {"u""u","U"},
+   {"i","i","I"},
+   {"o","o","O"},
+   {"p","p","P"},
+   {"[","[","{"},
+   {"]","]","}"},
+   {"\\","\\","|"},
+
+   {"a","a","A"},
+   {"s","s","S"},
+   {"d","d","D"},
+   {"f","f","F"},
+   {"g","g","G"},
+   {"h","h","H"},
+   {"j","j","J"},
+   {"k","k","K"},
+   {"l","l","L"},
+
+   {"z","z","Z"},
+   {"x","x","X"},
+   {"c","c","C"},
+   {"v","v","V"},
+   {"b","b","B"},
+   {"n","n","N"},
+   {"m","m","M"},
+   {";",";",":"},
+   {"'","'","\""},
+
+   {".",".","<"},
+   {",",",",">"},
+   {"/","/","?"}
+};
+
+static const char *keymap_get_shifted (const char *key)
+{
+  for (unsigned int i = 0; i < sizeof (intl_key_map)/sizeof(intl_key_map[0]);i++)
+  {
+     if (!strcmp (key, intl_key_map[i].us))
+        return intl_key_map[i].shifted;
+  }
+  return key;
+}
+
+static const char *keymap_get_unshifted (const char *key)
+{
+  for (unsigned int i = 0; i < sizeof (intl_key_map)/sizeof(intl_key_map[0]);i++)
+  {
+     if (!strcmp (key, intl_key_map[i].us))
+        return intl_key_map[i].unshifted;
+  }
+  return key;
+}
 
 CTX_EXPORT int
 ctx_key_press (Ctx *ctx, unsigned int keyval,
@@ -1894,32 +1974,58 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
   char temp_key[128]="";
   char event_type[128]="";
   float x, y; int b;
+
   if (!string)
   {
     string = ctx_keycode_to_keyname (ctx->events.modifier_state, keyval);
+  }
 
-    if (!ctx_strcmp (string, "shift") ||
-        !ctx_strcmp (string, "control") ||
-        !ctx_strcmp (string, "alt"))
-      return 0;
+  if (!ctx_strcmp (string, "shift") ||
+      !ctx_strcmp (string, "control") ||
+      !ctx_strcmp (string, "alt"))
+  {
+    return 0;
+  }
 
-    if (ctx->events.modifier_state)
+  {
+          // code duplication.. perhaps always do this?
     {
-       if (ctx->events.modifier_state & CTX_MODIFIER_STATE_SHIFT &&
+       if (ctx->events.modifier_state & CTX_MODIFIER_STATE_SHIFT)
+       {
+          if(
+             ctx_utf8_strlen (string)>1 ||
            (ctx->events.modifier_state & CTX_MODIFIER_STATE_ALT||
             ctx->events.modifier_state & CTX_MODIFIER_STATE_CONTROL))
+          {
+            if (strstr (string, "shift-") == NULL ||
+                strcmp (strstr (string, "shift-"), "shift-"))
+            sprintf (&temp_key[ctx_strlen(temp_key)], "shift-");
+          }
+          else 
+          {
+            string = keymap_get_shifted (string);
+          }
+       }
+       else
        {
-         string = ctx_keycode_to_keyname (0, keyval);
-         sprintf (&temp_key[ctx_strlen(temp_key)], "shift-");
+          if (!(ctx->events.modifier_state & CTX_MODIFIER_STATE_ALT||
+                ctx->events.modifier_state & CTX_MODIFIER_STATE_CONTROL))
+          {
+            string = keymap_get_unshifted (string);
+          }
        }
 
-       if (ctx->events.modifier_state & CTX_MODIFIER_STATE_ALT)
+       if ((ctx->events.modifier_state & CTX_MODIFIER_STATE_ALT))
        {
+         if (strstr (string, "alt-") == NULL ||
+             strcmp (strstr (string, "alt-"), "alt-"))
          sprintf (&temp_key[ctx_strlen(temp_key)], "alt-");
        }
-       if (ctx->events.modifier_state & CTX_MODIFIER_STATE_CONTROL)
+       if ((ctx->events.modifier_state & CTX_MODIFIER_STATE_CONTROL))
        {
-         sprintf (&temp_key[ctx_strlen(temp_key)], "control-");
+         if (strstr (string, "control-") == NULL ||
+             strcmp (strstr (string, "control-"), "control-"))
+           sprintf (&temp_key[ctx_strlen(temp_key)], "control-");
        }
        sprintf (&temp_key[ctx_strlen(temp_key)], "%s", string);
        string = temp_key;
@@ -2519,24 +2625,24 @@ static inline EvSource *evsource_mice_new (void)
   return NULL;
 }
 
-static int evsource_kb_has_event (void);
-static char *evsource_kb_get_event (void);
-static void evsource_kb_destroy (int sign);
-static int evsource_kb_get_fd (void);
+static int evsource_kb_term_has_event (void);
+static char *evsource_kb_term_get_event (void);
+static void evsource_kb_term_destroy (int sign);
+static int evsource_kb_term_get_fd (void);
 
 /* kept out of struct to be reachable by atexit */
-static EvSource ctx_ev_src_kb = {
+static EvSource ctx_ev_src_kb_term = {
   NULL,
-  (void*)evsource_kb_has_event,
-  (void*)evsource_kb_get_event,
-  (void*)evsource_kb_destroy,
-  (void*)evsource_kb_get_fd,
+  (void*)evsource_kb_term_has_event,
+  (void*)evsource_kb_term_get_event,
+  (void*)evsource_kb_term_destroy,
+  (void*)evsource_kb_term_get_fd,
   NULL
 };
 
 static struct termios orig_attr;
 
-static void real_evsource_kb_destroy (int sign)
+static void real_evsource_kb_term_destroy (int sign)
 {
   static int done = 0;
 
@@ -2564,22 +2670,22 @@ static void real_evsource_kb_destroy (int sign)
   //fprintf (stderr, "evsource kb destroy\n");
 }
 
-static void evsource_kb_destroy (int sign)
+static void evsource_kb_term_destroy (int sign)
 {
-  real_evsource_kb_destroy (-11);
+  real_evsource_kb_term_destroy (-11);
 }
 
-static int evsource_kb_init ()
+static int evsource_kb_term_init ()
 {
 //  ioctl(STDIN_FILENO, KDSKBMODE, K_RAW);
-  //atexit ((void*) real_evsource_kb_destroy);
-  signal (SIGSEGV, (void*) real_evsource_kb_destroy);
-  signal (SIGABRT, (void*) real_evsource_kb_destroy);
-  signal (SIGBUS,  (void*) real_evsource_kb_destroy);
-  signal (SIGKILL, (void*) real_evsource_kb_destroy);
-  signal (SIGINT,  (void*) real_evsource_kb_destroy);
-  signal (SIGTERM, (void*) real_evsource_kb_destroy);
-  signal (SIGQUIT, (void*) real_evsource_kb_destroy);
+  //atexit ((void*) real_evsource_kb_term_destroy);
+  signal (SIGSEGV, (void*) real_evsource_kb_term_destroy);
+  signal (SIGABRT, (void*) real_evsource_kb_term_destroy);
+  signal (SIGBUS,  (void*) real_evsource_kb_term_destroy);
+  signal (SIGKILL, (void*) real_evsource_kb_term_destroy);
+  signal (SIGINT,  (void*) real_evsource_kb_term_destroy);
+  signal (SIGTERM, (void*) real_evsource_kb_term_destroy);
+  signal (SIGQUIT, (void*) real_evsource_kb_term_destroy);
 
   struct termios raw;
   if (tcgetattr (STDIN_FILENO, &orig_attr) == -1)
@@ -2597,7 +2703,7 @@ static int evsource_kb_init ()
 
   return 0;
 }
-static int evsource_kb_has_event (void)
+static int evsource_kb_term_has_event (void)
 {
   struct timeval tv;
   int retval;
@@ -2818,12 +2924,7 @@ static int fb_keyboard_match_keycode (const char *buf, int length, const MmmKeyC
   return matches==1?2:matches;
 }
 
-//int is_active (void *host)
-//{
-//        return 1;
-//}
-
-static char *evsource_kb_get_event (void)
+static char *evsource_kb_term_get_event (void)
 {
   unsigned char buf[20];
   int length;
@@ -2907,17 +3008,302 @@ static char *evsource_kb_get_event (void)
   return ctx_strdup("fail");
 }
 
-static int evsource_kb_get_fd (void)
+static int evsource_kb_term_get_fd (void)
 {
   return STDIN_FILENO;
 }
 
 
-static inline EvSource *evsource_kb_new (void)
+static inline EvSource *evsource_kb_term_new (void)
 {
-  if (evsource_kb_init() == 0)
+  if (evsource_kb_term_init() == 0)
   {
-    return &ctx_ev_src_kb;
+    return &ctx_ev_src_kb_term;
+  }
+  return NULL;
+}
+#endif
+
+
+
+#define CTX_RAW_KB_EVENTS 1
+#if CTX_RAW_KB_EVENTS
+
+static int evsource_kb_raw_has_event (void);
+static char *evsource_kb_raw_get_event (void);
+static void evsource_kb_raw_destroy (int sign);
+static int evsource_kb_raw_get_fd (void);
+
+
+/* kept out of struct to be reachable by atexit */
+static EvSource ctx_ev_src_kb_raw = {
+  NULL,
+  (void*)evsource_kb_raw_has_event,
+  (void*)evsource_kb_raw_get_event,
+  (void*)evsource_kb_raw_destroy,
+  (void*)evsource_kb_raw_get_fd,
+  NULL
+};
+
+#if 0
+static void real_evsource_kb_raw_destroy (int sign)
+{
+  static int done = 0;
+
+  if (sign == 0)
+    return;
+
+  if (done)
+    return;
+  done = 1;
+
+  switch (sign)
+  {
+    case  -11:break; /* will be called from atexit with sign==-11 */
+    case   SIGSEGV: break;//fprintf (stderr, " SIGSEGV\n");break;
+    case   SIGABRT: fprintf (stderr, " SIGABRT\n");break;
+    case   SIGBUS:  fprintf (stderr, " SIGBUS\n");break;
+    case   SIGKILL: fprintf (stderr, " SIGKILL\n");break;
+    case   SIGINT:  fprintf (stderr, " SIGINT\n");break;
+    case   SIGTERM: fprintf (stderr, " SIGTERM\n");break;
+    case   SIGQUIT: fprintf (stderr, " SIGQUIT\n");break;
+    default: fprintf (stderr, "sign: %i\n", sign);
+             fprintf (stderr, "%i %i %i %i %i %i %i\n", SIGSEGV, SIGABRT, SIGBUS, SIGKILL, SIGINT, SIGTERM, SIGQUIT);
+  }
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
+  //fprintf (stderr, "evsource kb destroy\n");
+}
+#endif
+
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <sys/ioctl.h>
+#include <errno.h>
+#include <linux/input.h>
+
+static int kb_fd = -1;
+static void evsource_kb_raw_destroy (int sign)
+{
+#if 0
+  real_evsource_kb_raw_destroy (-11);
+#endif
+  if (kb_fd)
+    close (kb_fd);
+  kb_fd = 0;
+}
+
+
+static int evsource_kb_raw_init ()
+{
+#if 0
+//  ioctl(STDIN_FILENO, KDSKBMODE, K_RAW);
+  //atexit ((void*) real_evsource_kb_term_destroy);
+  signal (SIGSEGV, (void*) real_evsource_kb_raw_destroy);
+  signal (SIGABRT, (void*) real_evsource_kb_raw_destroy);
+  signal (SIGBUS,  (void*) real_evsource_kb_raw_destroy);
+  signal (SIGKILL, (void*) real_evsource_kb_raw_destroy);
+  signal (SIGINT,  (void*) real_evsource_kb_raw_destroy);
+  signal (SIGTERM, (void*) real_evsource_kb_raw_destroy);
+  signal (SIGQUIT, (void*) real_evsource_kb_raw_destroy);
+
+  struct termios raw;
+  if (tcgetattr (STDIN_FILENO, &orig_attr) == -1)
+    {
+      fprintf (stderr, "error initializing keyboard\n");
+      return -1;
+    }
+  raw = orig_attr;
+
+  cfmakeraw (&raw);
+
+  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
+  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
+    return 0; // XXX? return other value?
+#endif
+
+   kb_fd = open( "/dev/input/event0", O_RDONLY | O_CLOEXEC );
+        if( -1 == kb_fd )
+        {
+            kb_fd = 0;
+            return -1;
+        }
+        char name[ 32 ];
+        if( -1 == ioctl( kb_fd, EVIOCGNAME( sizeof( name )), name ))
+        {
+            kb_fd = 0;
+            return -1;
+        }
+
+        // Grab input
+        if( -1 == ioctl( kb_fd, EVIOCGRAB, (void*)1 ))
+        {
+            fprintf(stderr, "Failed to grab input %s: (%i) %m", name, errno );
+            kb_fd = 0;
+            return -1;
+        }
+
+  return 0;
+}
+static int evsource_kb_raw_has_event (void)
+{
+  struct timeval tv;
+  int retval;
+
+  fd_set rfds;
+  FD_ZERO (&rfds);
+  FD_SET(kb_fd, &rfds);
+  tv.tv_sec = 0; tv.tv_usec = 0;
+  retval = select (kb_fd+1, &rfds, NULL, NULL, &tv);
+  return retval == 1;
+}
+
+typedef struct CtxRawKey{
+  int code;
+  const char *name;
+  const char *shifted;
+} CtxRawKey;
+
+
+static CtxRawKey raw_key_map[]=
+{
+   {KEY_F1, "F1"},
+   {KEY_F2, "F2"},
+   {KEY_F3, "F3"},
+   {KEY_F4, "F4"},
+   {KEY_F5, "F5"},
+   {KEY_F6, "F6"},
+   {KEY_F7, "F7"},
+   {KEY_F8, "F8"},
+   {KEY_F9, "F9"},
+   {KEY_F10, "F10"},
+   {KEY_ESC, "escape"},
+   {KEY_SPACE, "space"},
+   {KEY_ENTER, "return"},
+   {KEY_LEFT, "left"},
+   {KEY_RIGHT, "right"},
+   {KEY_UP, "up"},
+   {KEY_DOWN, "down"},
+   {KEY_HOME, "home"},
+   {KEY_END, "end"},
+   {KEY_PAGEUP, "page-up"},
+   {KEY_PAGEDOWN, "page-down"},
+   {KEY_INSERT, "insert"},
+   {KEY_DELETE, "delete"},
+   {KEY_LEFTCTRL, "control"},
+   {KEY_RIGHTCTRL, "control"},
+   {KEY_LEFTSHIFT, "shift"},
+   {KEY_RIGHTSHIFT, "shift"},
+   {KEY_LEFTALT, "alt"},
+   {KEY_RIGHTALT, "alt"},
+   {KEY_MINUS, "-"},
+   {KEY_EQUAL, "="},
+   {KEY_BACKSPACE, "backspace"},
+   {KEY_TAB, "tab"},
+   {KEY_GRAVE, "`"},
+   {KEY_BACKSLASH, "\\"},
+   {KEY_SLASH, "/"},
+   {KEY_1, "1","!"},
+   {KEY_2, "2","@"},
+   {KEY_3, "3","#"},
+   {KEY_4, "4","$"},
+   {KEY_5, "5","%"},
+   {KEY_6, "6","^"},
+   {KEY_7, "7","&"},
+   {KEY_8, "8","*"},
+   {KEY_9, "9","("},
+   {KEY_0, "0",")"},
+
+   {KEY_Q, "q","Q"},
+   {KEY_W, "w","W"},
+   {KEY_E, "e","E"},
+   {KEY_R, "r","R"},
+   {KEY_T, "t","T"},
+   {KEY_Y, "y","Y"},
+   {KEY_U, "u","U"},
+   {KEY_I, "i","I"},
+   {KEY_O, "o","O"},
+   {KEY_P, "p","P"},
+   {KEY_A, "a","A"},
+   {KEY_S, "s","S"},
+   {KEY_D, "d","D"},
+   {KEY_F, "f","F"},
+   {KEY_G, "g","G"},
+   {KEY_H, "h","H"},
+   {KEY_J, "j","J"},
+   {KEY_K, "k","K"},
+   {KEY_L, "l","L"},
+   {KEY_Z, "z","Z"},
+   {KEY_X, "x","X"},
+   {KEY_C, "c","C"},
+   {KEY_V, "v","V"},
+   {KEY_B, "b","B"},
+   {KEY_N, "n","N"},
+   {KEY_M, "m","M"},
+   {KEY_SEMICOLON, ";",":"},
+   {KEY_APOSTROPHE, "'", "\""},
+   {KEY_EQUAL, "=", "+"},
+   {KEY_MINUS, "-", "_"},
+   {KEY_COMMA, ",", "<"},
+   {KEY_DOT, ".", ">"},
+   {KEY_SLASH, "/", "?"},
+   {KEY_LEFTBRACE, "[", "{"},
+   {KEY_RIGHTBRACE, "]", "}"}
+};
+
+static Ctx*ctx_fb_global = NULL;
+
+static char *evsource_kb_raw_get_event (void)
+{
+  struct input_event ev;
+  if (!ctx_fb_global) return NULL;
+  memset (&ev, 0, sizeof (ev));
+  if (-1==read(kb_fd, &ev, sizeof(ev)))
+  {
+    return NULL;
+  }
+  if (ev.type == EV_KEY)
+  {
+     for (unsigned int i = 0; i < sizeof(raw_key_map)/sizeof(raw_key_map[0]); i++)
+     {
+       if (raw_key_map[i].code == ev.code)
+       {
+          const char *name = raw_key_map[i].name;
+          switch (ev.value)
+          {
+            case 0: /* up */
+              ctx_key_up (ctx_fb_global, 0, name, 0);
+              break;
+            case 1: /* down */
+              ctx_key_down (ctx_fb_global, 0, name, 0);
+              /*FALLTHROUGH*/
+            case 2: /* repeat */
+              if (strcmp(name,"shift") &&
+                  strcmp(name,"control") &&
+                  strcmp(name,"alt"))
+              ctx_key_press (ctx_fb_global, 0, name, 0);
+              break;
+          }
+          return NULL;
+       }
+     }
+  }
+  return NULL;
+}
+
+static int evsource_kb_raw_get_fd (void)
+{
+  if (kb_fd >= 0)
+    return kb_fd;
+  return 0;
+}
+
+
+static inline EvSource *evsource_kb_raw_new (void)
+{
+  if (evsource_kb_raw_init() == 0)
+  {
+    return &ctx_ev_src_kb_raw;
   }
   return NULL;
 }

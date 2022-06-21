@@ -301,6 +301,7 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 
 void ctx_fb_consume_events (Ctx *ctx)
 {
+  ctx_fb_global = ctx;
   CtxFb *fb = (void*)ctx->backend;
   ctx_fb_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
@@ -589,7 +590,8 @@ Ctx *ctx_new_fb (int width, int height)
   start_thread(15);
 #undef start_thread
 
-  EvSource *kb = evsource_kb_new ();
+  EvSource *kb = evsource_kb_raw_new ();
+  if (!kb) kb = evsource_kb_term_new ();
   if (kb)
   {
     tiled->evsource[tiled->evsource_count++] = kb;
