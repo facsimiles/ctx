@@ -784,7 +784,7 @@ static int word_is_date (const char *word)
 static int string_count_links (const char *name)
 {
   int count = 0;
-  char *p = name;
+  const char *p = name;
   int in_link = 0;
   CtxString *word = ctx_string_new ("");
   while (*p)
@@ -3725,6 +3725,7 @@ static void dir_layout (ITK *itk, Diz *diz)
         itk->y+= itk->font_size * 0.5;
         float w = itk->width;
         itk->width = width;
+        float y = itk->y;
         if (itk_entry (itk, "", "+", tag, sizeof(tag)-1, NULL, NULL))
         {
           diz_dir_add_string_unique (diz, -1, "parent", tag);
@@ -3735,6 +3736,8 @@ static void dir_layout (ITK *itk, Diz *diz)
           tag[0]=0;
           ctx_queue_draw (itk->ctx);
         }
+        itk->x+= width;
+        itk->y= y;
         itk->y-= itk->font_size * 0.5;
         itk->width = w;
       }
