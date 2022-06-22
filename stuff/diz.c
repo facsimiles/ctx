@@ -155,12 +155,12 @@ int diz_dir_count (Diz *diz)
   const char *m = diz->metadata;
   if (!m) return -1;
   int count = 0;
-  if (m[0])
-  do {
+  while (m[0])
+  {
      if (m[0] != ' ') count ++;
      while (m && *m && *m != '\n') m++;
      if (*m == '\n') m++;
-  } while (m[0]);
+  }
   return count;
 }
 
@@ -412,13 +412,13 @@ int diz_dir_value_count   (Diz *diz, int item_no, const char *key)
   if (!m) return -1;
   int count = 0;
   int keylen = strlen (key);
-  if (m[0] == ' ')
-  do {
+  while (m[0] == ' ')
+  {
     if (!strncmp (m+1, key, keylen) && m[1+keylen] == '=')
       count ++;
     while (m && *m && *m != '\n') m++;
     if (*m == '\n') m++;
-  } while (m[0] == ' ');
+  }
   return count;
 }
 
@@ -427,9 +427,8 @@ char *diz_dir_get_string_no (Diz *diz, int item_no, const char *key, int value_n
   if (!m) return strdup("xXx");
   int count = 0;
   int keylen = strlen (key);
-  if (m[0] == ' ')
-  do {
-
+  while (m[0] == ' ')
+  {
     if (!strncmp (m+1, key, keylen) && m[1+keylen]== '=')
     {
       if (value_no == count)
@@ -445,21 +444,24 @@ char *diz_dir_get_string_no (Diz *diz, int item_no, const char *key, int value_n
     }
     while (m && *m && *m != '\n') m++;
     if (*m == '\n') m++;
-  } while (m[0] == ' ');
+  }
   return strdup("xxxx");
 }
 
 int diz_dir_key_count (Diz *diz, int no)
 {
+  // XXX this returns the number of values set,
+  //     it is incorrect with multi-key
+
   const char *m = diz_dir_find_no (diz, no);
   if (!m) return -1;
   int count = 0;
-  if (m[0] == ' ')
-  do {
+  while (m[0] == ' ')
+  {
      while (m && *m && *m != '\n') m++;
      if (*m == '\n') m++;
      count ++;
-  } while (m[0] == ' ');
+  }
   return count;
 }
 
@@ -478,15 +480,16 @@ diz_dir_has_key (Diz *diz, int item_no, const char *key)
    return found;
 }
 
-char *diz_dir_key_name (Diz *diz, int ino, int no)
+char *diz_dir_key_name (Diz *diz, int item_no, int keyno)
 {
-  const char *m = diz_dir_find_no (diz, ino);
+  // keyno is incorrect.. it is keyvalno ..
+  const char *m = diz_dir_find_no (diz, item_no);
   CtxString *str = ctx_string_new ("");
   if (!m) return NULL;
   int count = 0;
-  if (m[0] == ' ')
-  do {
-     if (count == no)
+  while (m[0] == ' ')
+  {
+     if (count == keyno)
      {
        while (*m && m[0] == ' ') m++;
        while (*m && m[0] != '=') {
@@ -498,7 +501,7 @@ char *diz_dir_key_name (Diz *diz, int ino, int no)
      while (m && *m && *m != '\n') m++;
      if (*m == '\n') m++;
      count ++;
-  } while (m[0] == ' ');
+  }
   return NULL;
 }
 
@@ -507,8 +510,8 @@ char *diz_dir_get_string (Diz *diz, int no, const char *key)
   const char *m = diz_dir_find_no (diz, no);
   CtxString *str = ctx_string_new ("");
   if (!m) return NULL;
-  if (m[0] == ' ')
-  do {
+  while (m[0] == ' ')
+  {
      ctx_string_set (str, "");
      while (*m && m[0] == ' ') m++;
      while (*m && m[0] != '=') {
@@ -555,7 +558,7 @@ char *diz_dir_get_string (Diz *diz, int no, const char *key)
      }
      while (*m && *m != '\n') m++;
      if (*m == '\n') m++;
-  } while (m[0] == ' ');
+  }
   ctx_string_free (str, 1);
   return NULL;
 }
@@ -661,8 +664,8 @@ void diz_dir_unset (Diz *diz, int no, const char *key)
   int a_len = 0;
 
   if (!m) return;
-  if (m[0] == ' ')
-  do {
+  while (m[0] == ' ')
+  {
      ctx_string_set (str, "");
      a_len = 0;
      prop_start = m;
@@ -687,7 +690,7 @@ void diz_dir_unset (Diz *diz, int no, const char *key)
        break;
      }
      prop_start = NULL;
-  } while (m[0] == ' ');
+  }
 
   if (!prop_start)
     return;
@@ -712,8 +715,8 @@ void diz_dir_unset_value (Diz *diz, int no, const char *key, const char *value)
   int a_len = 0;
 
   if (!m) return;
-  if (m[0] == ' ')
-  do {
+  while (m[0] == ' ')
+  {
      ctx_string_set (str_key, "");
      ctx_string_set (str_value, "");
      a_len = 0;
@@ -742,7 +745,7 @@ void diz_dir_unset_value (Diz *diz, int no, const char *key, const char *value)
        break;
      }
      prop_start = NULL;
-  } while (m[0] == ' ');
+  }
 
   ctx_string_free (str_key, 1);
   ctx_string_free (str_value, 1);
