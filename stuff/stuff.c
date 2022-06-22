@@ -1977,6 +1977,9 @@ static void dir_revert (CtxEvent *event, void *data1, void *data2)
   diz_dir_dirt(diz);
 }
 
+int editing_location = 0;
+static void dir_location_escape (CtxEvent *e, void *d1, void *d2);
+
 static void dir_select_item (CtxEvent *event, void *data1, void *data2)
 {
    if ((size_t)data1 == (size_t)-1)
@@ -1987,7 +1990,12 @@ static void dir_select_item (CtxEvent *event, void *data1, void *data2)
    else
    {
      itk->focus_no = (size_t)data1;
+     layout_find_item = -1;
    }
+   if (editing_location)
+   {
+     dir_location_escape (event, NULL, NULL);
+   } 
    itk_entry_commit (itk);
    ctx_queue_draw (event->ctx);
    event->stop_propagate = 1;
@@ -2931,7 +2939,6 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
   e->stop_propagate = 1;
 }
 
-int editing_location = 0;
 static ITKPanel *panel = NULL;
 static void dir_location (CtxEvent *e, void *d1, void *d2)
 {
