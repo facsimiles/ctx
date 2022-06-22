@@ -1,4 +1,3 @@
-//
 // todo
 //   custom order , size / time orders
 //   layout view
@@ -15,7 +14,6 @@
 // for runs of templates - instantiate or embed the following style of pages
 //
 // newpage can be issued or done manually
-//
 
 #include <unistd.h>
 #include <dirent.h>
@@ -234,7 +232,6 @@ void ui_queue_thumb (const char *path)
 }
 
 void viewer_load_path (const char *path, const char *name);
-
 
 typedef enum {
   CTX_DIR_LAYOUT,
@@ -2943,17 +2940,19 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
   ctx_string_set (commandline, diz->title?diz->title:diz->path);
   commandline_cursor_end = 0;
   commandline_cursor_start = strlen (commandline->str);
-  if (e)
+  //if (e)
   {
       if (itk->focus_label)
     free (itk->focus_label);
     itk->focus_label = NULL;
 
     itk_panels_reset_scroll (itk);
-    focused_no = -1;
     itk->focus_no = 0;
+    focused_no = -1;
+    layout_find_item = focused_no;
+    if(e)
     e->stop_propagate = 1;
-    ctx_queue_draw (e->ctx);
+    ctx_queue_draw (itk->ctx);
   }
 }
 
@@ -4849,7 +4848,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   {
     BIND_KEY ("alt-return", "toggle-context", "document properties");
     ctx_add_key_binding (ctx, "return", NULL, "edit location", dir_location, NULL);
-    ctx_add_key_binding (ctx, "alt-down", NULL, "edit location", dir_location, NULL);
+    ctx_add_key_binding (ctx, "alt-down", NULL, NULL, dir_location, NULL);
   }
   BIND_KEY ("resize-event", "", NULL); // causes a queue-draw
                                     
@@ -5539,13 +5538,13 @@ static int card_files (ITK *itk_, void *data)
                             dir_run_commandline,
                             NULL);
 
-          ctx_add_key_binding (ctx, "left", NULL, "add char", dir_location_left, NULL);
-          ctx_add_key_binding (ctx, "right", NULL, "add char", dir_location_right, NULL);
+          ctx_add_key_binding (ctx, "left", NULL, "move cursor left", dir_location_left, NULL);
+          ctx_add_key_binding (ctx, "right", NULL, "move cursor right", dir_location_right, NULL);
 
           ctx_add_key_binding (ctx, "control-a", NULL, "add char", dir_location_select_all, NULL);
 
-          ctx_add_key_binding (ctx, "shift-left", NULL, "add char", dir_location_extend_sel_left, NULL);
-          ctx_add_key_binding (ctx, "shift-right", NULL, "add char", dir_location_extend_sel_right, NULL);
+          ctx_add_key_binding (ctx, "shift-left", NULL, "extend selection left", dir_location_extend_sel_left, NULL);
+          ctx_add_key_binding (ctx, "shift-right", NULL, "extend selection right", dir_location_extend_sel_right, NULL);
 #if 1
           BIND_KEY ("up", "", "<ignored>");
           BIND_KEY ("down", "", "<ignored>");
@@ -5565,8 +5564,12 @@ static int card_files (ITK *itk_, void *data)
           {
             ctx_add_key_binding (ctx, "escape", NULL, "stop editing location", dir_location_escape, NULL);
             ctx_add_key_binding (ctx, "return", NULL, "confirm new location", dir_location_return, NULL);
+            ctx_add_key_binding (ctx, "down", NULL, NULL, dir_location_return, NULL);
+            ctx_add_key_binding (ctx, "tab", NULL, NULL, ui_run_command, "");
+            ctx_add_key_binding (ctx, "shift-tab", NULL, NULL, ui_run_command, "");
+            ctx_add_key_binding (ctx, "alt-up", NULL, NULL, ui_run_command, "");
           }
-          if (!text_editor)
+          if (!editing_location)
           {
             add_context_binding (location_active, "change location", "location-edit", "control-l");
             add_context_binding (location_active, "quit", "quit", "control-q");
@@ -5808,6 +5811,7 @@ static int card_files (ITK *itk_, void *data)
          ctx_rgb(itk->ctx, 0.7,0.7,0.7);
     {
       int keys = diz_dir_key_count (diz, focused_no);
+
       for (int k = 0; k < keys; k++)
       {
          char *key = diz_dir_key_name (diz, focused_no, k);
