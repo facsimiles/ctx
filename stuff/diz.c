@@ -4,6 +4,9 @@
 #include <sys/types.h>
 #include <stdio.h>
 
+#define DIZ_MAX_KEYS   32
+#define DIZ_MAX_KEYLEN 32
+
 void  mkdir_ancestors      (const char  *path,
                             unsigned int mode);
 
@@ -448,21 +451,87 @@ char *diz_dir_get_string_no (Diz *diz, int item_no, const char *key, int value_n
   return strdup("xxxx");
 }
 
+
 int diz_dir_key_count (Diz *diz, int no)
 {
   // XXX this returns the number of values set,
   //     it is incorrect with multi-key
+  char found_key[DIZ_MAX_KEYS][DIZ_MAX_KEYLEN];
+  int found_key_count = 0;
+
+  char key[DIZ_MAX_KEYLEN]="";
+  int keylen=0;
 
   const char *m = diz_dir_find_no (diz, no);
   if (!m) return -1;
-  int count = 0;
   while (m[0] == ' ')
   {
+     m++;
+     keylen=0;
+     while (*m && *m != '='){
+       if (keylen < DIZ_MAX_KEYLEN-1)
+       key[keylen++]=*m;
+       m++;
+     }
+     key[keylen]=0;
+
+     while (*m && *m != '\n') m++;
+     if (*m == '\n') m++;
+
+     int found = 0;
+     for (int i = 0; !found && i < found_key_count; i++)
+     {
+       if (!strcmp (found_key[i], key))
+          found = 1;
+     }
+     if (!found && found_key_count < DIZ_MAX_KEYS)
+     {
+       memcpy(found_key[found_key_count], key, DIZ_MAX_KEYLEN);
+       found_key_count++;
+     }
+  }
+  return found_key_count;
+}
+
+char *diz_dir_key_name (Diz *diz, int item_no, int keyno)
+{
+  // keyno is incorrect.. it is keyvalno ..
+  const char *m = diz_dir_find_no (diz, item_no);
+
+  char found_key[DIZ_MAX_KEYS][DIZ_MAX_KEYLEN];
+  int found_key_count = 0;
+
+  char key[DIZ_MAX_KEYLEN]="";
+  int keylen=0;
+
+  if (!m) return NULL;
+  while (m[0] == ' ')
+  {
+     m++;
+     keylen=0;
+     while (*m && m[0] != '=') {
+       key[keylen++]=*m;
+       m++;
+     }
+     key[keylen]=0;
      while (m && *m && *m != '\n') m++;
      if (*m == '\n') m++;
-     count ++;
+
+     int found = 0;
+     for (int i = 0; !found && i < found_key_count; i++)
+     {
+       if (!strcmp (found_key[i], key))
+          found = 1;
+     }
+     if (!found && found_key_count < DIZ_MAX_KEYS)
+     {
+       if (keyno == found_key_count) return strdup (key);
+       memcpy(found_key[found_key_count], key, DIZ_MAX_KEYLEN);
+       found_key_count++;
+     }
+
   }
-  return count;
+  return NULL;
 }
 
 int
@@ -480,30 +549,6 @@ diz_dir_has_key (Diz *diz, int item_no, const char *key)
    return found;
 }
 
-char *diz_dir_key_name (Diz *diz, int item_no, int keyno)
-{
-  // keyno is incorrect.. it is keyvalno ..
-  const char *m = diz_dir_find_no (diz, item_no);
-  CtxString *str = ctx_string_new ("");
-  if (!m) return NULL;
-  int count = 0;
-  while (m[0] == ' ')
-  {
-     if (count == keyno)
-     {
-       while (*m && m[0] == ' ') m++;
-       while (*m && m[0] != '=') {
-         ctx_string_append_byte (str, m[0]);
-         m++;
-       }
-       return ctx_string_dissolve (str);
-     }
-     while (m && *m && *m != '\n') m++;
-     if (*m == '\n') m++;
-     count ++;
-  }
-  return NULL;
-}
 
 char *diz_dir_get_string (Diz *diz, int no, const char *key)
 {
