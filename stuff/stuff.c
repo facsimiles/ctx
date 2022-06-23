@@ -581,7 +581,11 @@ static void _set_location (const char *location)
     if (location[0] == '.' && location[1] == '/')
     {
       if (diz->path)
-      loc = ctx_strdup_printf ("%s/%s", diz->path, location+2);
+      {
+        char *t= ctx_strdup_printf ("%s/%s", diz->path, location+2);
+        loc = realpath (t, NULL);
+        free (t);
+      }
       else
       loc = realpath (location+2, NULL);
     }
@@ -2946,7 +2950,14 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 1;
 
-  ctx_string_set (commandline, diz->title?diz->title:diz->path);
+  if (diz->title)
+  {
+    ctx_string_set (commandline, diz->title);
+  }
+  else
+  {
+    ctx_string_set (commandline, diz->path);
+  }
   commandline_cursor_end = 0;
   commandline_cursor_start = strlen (commandline->str);
   //if (e)

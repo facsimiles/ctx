@@ -104,7 +104,10 @@ void diz_dir_load_dir (Diz *diz, const char *path)
   if (!diz->title)
   {
     //char *bname = strrchr (path, '/');
-    diz->title = strdup (path);
+    if (path[strlen(path)-1]=='/')
+      diz->title = strdup (path);
+    else
+      diz->title = ctx_strdup_printf ("%s/", path);
   }
 }
 
