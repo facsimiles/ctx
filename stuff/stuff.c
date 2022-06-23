@@ -4556,6 +4556,7 @@ static void dir_layout (ITK *itk, Diz *diz)
         }
         else if (atom == CTX_ATOM_LAYOUTBOX)
         {
+           label = 0;
         }
         else if (atom == CTX_ATOM_CTX)
         {
