@@ -54,7 +54,7 @@ int itk_entry      (ITK        *itk,
 void itk_entry_commit (ITK *itk);
 
 
-void itk_toggle     (ITK *itk, const char *label, int *val);
+int  itk_toggle     (ITK *itk, const char *label, int *val);
 int  itk_radio      (ITK *itk, const char *label, int set);
 int  itk_expander   (ITK *itk, const char *label, int *val);
 int  itk_button     (ITK *itk, const char *label);
@@ -72,6 +72,7 @@ void itk_key_bindings (ITK *itk);
 void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2);
 typedef struct _CtxControl CtxControl;
 CtxControl *itk_focused_control(ITK *itk);
+CtxControl *itk_find_control (ITK *itk, int no);
 CtxControl *itk_add_control (ITK *itk,
                              int type,
                              const char *label,
@@ -1231,6 +1232,18 @@ void itk_slider_int32 (ITK *itk, const char *label, int32_t *val, int32_t min, i
                  itk_slider_set_int32, NULL);
 }
 
+CtxControl *itk_find_control (ITK *itk, int no)
+{
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->no == no)
+     return control;
+  }
+  return NULL;
+}
+
+
 void itk_entry_commit (ITK *itk)
 {
   if (itk->active_entry<0)
@@ -1383,13 +1396,14 @@ void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
   ITK *itk = userdata2;
   CtxControl *control = userdata;
   int *val = control->val;
+  itk->button_pressed = 1; // reusing despite name
   *val = (*val)?0:1;
   event->stop_propagate = 1;
   itk_set_focus (itk, control->no);
   ctx_queue_draw (event->ctx);
 }
 
-void itk_toggle (ITK *itk, const char *label, int *val)
+int itk_toggle (ITK *itk, const char *label, int *val)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
@@ -1427,6 +1441,14 @@ void itk_toggle (ITK *itk, const char *label, int *val)
 
   itk->x += itk->rel_hgap * em;
   itk_newline (itk);
+
+  if (control->no == itk->focus_no && itk->button_pressed)
+  {
+    itk->button_pressed = 0;
+    ctx_queue_draw (ctx);
+    return 1;
+  }
+  return 0;
 }
 
 static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
