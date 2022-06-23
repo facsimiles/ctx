@@ -637,7 +637,7 @@ static void _set_location (const char *location)
     tpath = diz_dir_wiki_path (location);
     text_editor = 0;
     diz_dir_set_path (diz, tpath);
-    diz_dir_set_name (diz, -1, location);
+    diz_dir_set_data (diz, -1, location);
     save_metadata ();
     drop_item_renderers (ctx);
     focused_no = 0;
@@ -907,7 +907,7 @@ static char *string_link_no (const char *string, int link_no)
 static int dir_item_count_links (int i)
 {
   int count = 0;
-  char *name = diz_dir_get_name (diz, i);
+  char *name = diz_dir_get_data (diz, i);
   count = string_count_links (name);
   free (name);
   return count;
@@ -915,7 +915,7 @@ static int dir_item_count_links (int i)
 
 static char *dir_item_link_no (int item, int link_no)
 {
-  char *name = diz_dir_get_name (diz, item);
+  char *name = diz_dir_get_data (diz, item);
   char *ret = string_link_no (name, link_no);
   free (name);
   return ret;
@@ -995,7 +995,7 @@ int cmd_edit_text_end (COMMAND_ARGS) /* "item-edit-text-end", 0, "", "edit end o
 {
   int virtual = (diz_dir_type_atom (diz, focused_no) == CTX_ATOM_TEXT);
   if (!virtual) return 0;
-  char *name = diz_dir_get_name (diz, focused_no);
+  char *name = diz_dir_get_data (diz, focused_no);
   int pos = 0;
   if (name)
   {
@@ -1021,7 +1021,7 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
   }
 
   char *full_path;
-  char *name = diz_dir_get_name (diz, no);
+  char *name = diz_dir_get_data (diz, no);
 
   if (!strcmp (name, ".."))
   {
@@ -1179,7 +1179,7 @@ int cmd_duplicate (COMMAND_ARGS) /* "item-duplicate", 0, "", "duplicate item" */
   int insert_pos = no + count;
   for (int i = 0; i < count; i ++)
   {
-    char *name = diz_dir_get_name (diz, no + i);
+    char *name = diz_dir_get_data (diz, no + i);
     diz_dir_insert (diz, insert_pos + i, name);
     free (name);
     int keys = diz_dir_key_count (diz, no + i);
@@ -2299,10 +2299,10 @@ void text_edit_stop (CtxEvent *event, void *a, void *b)
 
 void text_edit_return (CtxEvent *event, void *a, void *b)
 {
-  char *str = diz_dir_get_name (diz, focused_no);
+  char *str = diz_dir_get_data (diz, focused_no);
   diz_dir_insert (diz, focused_no+1, str + text_edit);
   str[text_edit]=0;
-  diz_dir_set_name (diz, focused_no, str);
+  diz_dir_set_data (diz, focused_no, str);
 
   if (diz_dir_get_int (diz, focused_no, "bullet", 0))
   {
@@ -2332,11 +2332,11 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
   {
     if (text_edit>0)
     {
-      char *name = diz_dir_get_name (diz, focused_no);
+      char *name = diz_dir_get_data (diz, focused_no);
       CtxString *str = ctx_string_new (name);
       free (name);
       ctx_string_remove (str, text_edit-1);
-      diz_dir_set_name (diz, focused_no, str->str);
+      diz_dir_set_data (diz, focused_no, str->str);
       ctx_string_free (str, 1);
       text_edit--;
       diz_dir_dirt (diz);
@@ -2345,14 +2345,14 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
             (diz_dir_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
             )
     {
-      char *name_prev = diz_dir_get_name (diz, focused_no-1);
-      char *name = diz_dir_get_name (diz, focused_no);
+      char *name_prev = diz_dir_get_data (diz, focused_no-1);
+      char *name = diz_dir_get_data (diz, focused_no);
       CtxString *str = ctx_string_new (name_prev);
       text_edit = strlen (str->str);
       ctx_string_append_str (str, name);
       free (name);
       free (name_prev);
-      diz_dir_set_name (diz, focused_no-1, str->str);
+      diz_dir_set_data (diz, focused_no-1, str->str);
       ctx_string_free (str, 1);
       diz_dir_remove (diz, focused_no);
       focused_no--;
@@ -2369,14 +2369,14 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
 {
   if (focused_no>=0){
 
-    char *name = diz_dir_get_name (diz, focused_no);
+    char *name = diz_dir_get_data (diz, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     if (text_edit == (int)strlen(str->str))
     {
       if (diz_dir_type_atom (diz, focused_no+1) == CTX_ATOM_TEXT)
       {
-        char *name_next = diz_dir_get_name (diz, focused_no+1);
+        char *name_next = diz_dir_get_data (diz, focused_no+1);
         ctx_string_append_str (str, name_next);
         free (name_next);
         diz_dir_remove (diz, focused_no+1);
@@ -2386,7 +2386,7 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     {
       ctx_string_remove (str, text_edit);
     }
-    diz_dir_set_name (diz, focused_no, str->str);
+    diz_dir_set_data (diz, focused_no, str->str);
     ctx_string_free (str, 1);
     diz_dir_dirt (diz);
   }
@@ -2397,19 +2397,19 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
 int dir_join (COMMAND_ARGS) /* "join-with-next", 0, "", "" */
 {
   if (focused_no>=0){
-    char *name = diz_dir_get_name (diz, focused_no);
+    char *name = diz_dir_get_data (diz, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     if (diz_dir_type_atom (diz, focused_no+1) == CTX_ATOM_TEXT)
     {
-      char *name_next = diz_dir_get_name (diz, focused_no+1);
+      char *name_next = diz_dir_get_data (diz, focused_no+1);
       if (name[strlen(name)-1]!=' ')
         ctx_string_append_str (str, " ");
       ctx_string_append_str (str, name_next);
       free (name_next);
       diz_dir_remove (diz, focused_no+1);
     }
-    diz_dir_set_name (diz, focused_no, str->str);
+    diz_dir_set_data (diz, focused_no, str->str);
     ctx_string_free (str, 1);
     diz_dir_dirt (diz);
   }
@@ -2421,12 +2421,12 @@ void text_edit_shift_return (CtxEvent *event, void *a, void *b)
   if (focused_no>=0){
     const char *insertedA = "\\";
     const char *insertedB = "n";
-    char *name = diz_dir_get_name (diz, focused_no);
+    char *name = diz_dir_get_data (diz, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     ctx_string_insert_utf8 (str, text_edit, insertedB);
     ctx_string_insert_utf8 (str, text_edit, insertedA);
-    diz_dir_set_name (diz, focused_no, str->str);
+    diz_dir_set_data (diz, focused_no, str->str);
     ctx_string_free (str, 1);
     text_edit++;
   }
@@ -2447,11 +2447,11 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
   if (ctx_utf8_strlen (inserted) > 1)
     return;
   if (focused_no>=0){
-    char *name = diz_dir_get_name (diz, focused_no);
+    char *name = diz_dir_get_data (diz, focused_no);
     CtxString *str = ctx_string_new (name);
     free (name);
     ctx_string_insert_utf8 (str, text_edit, inserted);
-    diz_dir_set_name (diz, focused_no, str->str);
+    diz_dir_set_data (diz, focused_no, str->str);
     ctx_string_free (str, 1);
     text_edit++;
   }
@@ -2468,7 +2468,7 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
     event->stop_propagate = 1;
     return;
   }
-  char *name = diz_dir_get_name (diz, focused_no);
+  char *name = diz_dir_get_data (diz, focused_no);
   int len = ctx_utf8_strlen (name);
   free (name);
   text_edit_desired_x = -100;
@@ -2507,7 +2507,7 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
 
   if (text_edit < 0)
   {
-    char *name = diz_dir_get_name (diz, focused_no);
+    char *name = diz_dir_get_data (diz, focused_no);
     if (name[0]==0 &&
         diz_dir_type_atom (diz, focused_no-1) == CTX_ATOM_STARTGROUP &&
         diz_dir_type_atom (diz, focused_no+1) == CTX_ATOM_ENDGROUP)
@@ -2523,7 +2523,7 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
              diz_dir_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
 
     {
-      char *name = diz_dir_get_name (diz, focused_no-1);
+      char *name = diz_dir_get_data (diz, focused_no-1);
       text_edit=ctx_utf8_strlen(name);
       free (name);
       layout_find_item = focused_no -1;
@@ -2547,7 +2547,7 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
   {
     if (diz_dir_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
     {
-      char *name = diz_dir_get_name (diz, focused_no-1);
+      char *name = diz_dir_get_data (diz, focused_no-1);
       text_edit=ctx_utf8_strlen(name);
       free (name);
       focused_no--;
@@ -2560,7 +2560,7 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
   }
   else
   {
-    char *text = diz_dir_get_name (diz, focused_no); 
+    char *text = diz_dir_get_data (diz, focused_no); 
     if (text_edit >0 && text[text_edit-1]==' ')  // XXX should be utf8 aware
       text_edit--;
     while (text_edit>0 && text[text_edit-1]!=' ') 
@@ -2577,7 +2577,7 @@ void text_edit_control_right (CtxEvent *event, void *a, void *b)
   text_edit_desired_x = -100;
 
   {
-    char *text = diz_dir_get_name (diz, focused_no); 
+    char *text = diz_dir_get_data (diz, focused_no); 
     if (text[text_edit]==' ')  // XXX should be utf8 aware
       text_edit++;
     while (text[text_edit] && text[text_edit]!=' ') 
@@ -2600,7 +2600,7 @@ void text_edit_home (CtxEvent *event, void *a, void *b)
 void text_edit_end (CtxEvent *event, void *a, void *b)
 {
   text_edit_desired_x = -100;
-  char *name = diz_dir_get_name (diz, focused_no);
+  char *name = diz_dir_get_data (diz, focused_no);
   text_edit = ctx_utf8_strlen (name);
   if (event)
   {
@@ -2638,7 +2638,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   //text_edit=strlen(diz->items[focused_no-1]);
   //
   //
-  char *name = diz_dir_get_name (diz, focused_no);
+  char *name = diz_dir_get_data (diz, focused_no);
 
   if (name[0]==0 &&
       (focused_no+1 >= diz->count ||
@@ -2784,7 +2784,7 @@ void text_edit_down (CtxEvent *event, void *a, void *b)
 #if 0
   if (diz_dir_type_atom (diz, focused_no+1) != CTX_ATOM_TEXT)
   {
-    char *str = diz_dir_get_name (diz, focused_no);
+    char *str = diz_dir_get_data (diz, focused_no);
     if (str[0])
       make_tail_entry (diz);
     free (str);
@@ -3059,7 +3059,7 @@ int dir_unset (COMMAND_ARGS) /* "unset", 1, "<key>", "unset the specified key on
 
 int dir_set_name (COMMAND_ARGS) /* "set-name", 2, "<no> <name>", "" */
 {
-  diz_dir_set_name (diz, atoi(argv[1]), argv[2]);
+  diz_dir_set_data (diz, atoi(argv[1]), argv[2]);
   return 0;
 }
 
@@ -3095,7 +3095,7 @@ char *dir_exec_command (const char *commandline){
 
 int run_command (COMMAND_ARGS) /* "run-command", 0, "", "" */
 {
-   char *commandline = diz_dir_get_name (diz, focused_no);
+   char *commandline = diz_dir_get_data (diz, focused_no);
    
    diz_dir_remove_children (diz, focused_no);
    diz_dir_unset (diz, focused_no, "folded");
@@ -3572,7 +3572,7 @@ static void layout_box_defaults (CtxRectangle *rectangle)
 char *make_client_name (Diz *diz, int no)
 {
    if (!diz || no < 0) return "";
-   char *name = diz_dir_get_name (diz, no);
+   char *name = diz_dir_get_data (diz, no);
    char *ret = ctx_strdup_printf ("%s:%s", diz->path, name);
    free (name);
    return ret;
@@ -3787,7 +3787,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
   for (int i = 0; i < diz->count; i++)
   {
-      char *d_name = diz_dir_get_name (diz, i);
+      char *d_name = diz_dir_get_data (diz, i);
       if (layout_find_item == i)
       {
          if (!printing)
@@ -4963,13 +4963,13 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   //char *path;
   char *pathA;
   CtxClient *client = NULL;
-  //name = diz_dir_get_name (diz, focused_no);
+  //name = diz_dir_get_data (diz, focused_no);
   //path = ctx_strdup_printf ("%s/%s", diz->path, name);
 
   char *client_cur = make_client_name (diz, focused_no);
   //free (name);
 
-  name = diz_dir_get_name (diz, focused_no+1);
+  name = diz_dir_get_data (diz, focused_no+1);
   pathA = ctx_strdup_printf ("%s/%s", diz->path, name);
   free (name);
 
@@ -5868,7 +5868,7 @@ static int card_files (ITK *itk_, void *data)
 
     if (focused_no>=0)
     {
-      char *name = diz_dir_get_name (diz, focused_no);
+      char *name = diz_dir_get_data (diz, focused_no);
       char *full_path = ctx_strdup_printf ("%s/%s", diz->path, name);
       y+=em;
       ctx_move_to (itk->ctx, x+em, y);
@@ -5956,7 +5956,7 @@ static int card_files (ITK *itk_, void *data)
         else if (viewer_slide_duration < fade_ticks)
         {
           float opacity = (fade_ticks - viewer_slide_duration) / (1.0 * fade_ticks);
-          char *name = diz_dir_get_name (diz, focused_no+1);
+          char *name = diz_dir_get_data (diz, focused_no+1);
           char *pathA = ctx_strdup_printf ("%s/%s", diz->path, name);
           free (name);
           char *client_a = make_client_name (diz, focused_no+1);

@@ -13,9 +13,8 @@ void  mkdir_ancestors      (const char  *path,
 static void  diz_dir_update_files     (Diz *diz);
 static void _diz_dir_remove           (Diz *diz, int no);
 
-static char *diz_dir_get_name_escaped (Diz *diz,
+static char *diz_dir_get_data_escaped (Diz *diz,
                                    int  no);
-
 static char *diz_dir_escape_item      (const char *item);
 
 
@@ -143,7 +142,7 @@ void diz_dir_save (Diz *diz)
     int count = diz_dir_count (diz);
     for (int i = 0; i < count; i++)
     {
-      char *line = diz_dir_get_name (diz, i);
+      char *line = diz_dir_get_data (diz, i);
       fwrite (line, strlen (line), 1, file);
       fwrite ("\n", 1, 1, file);
       free (line);
@@ -170,7 +169,7 @@ int diz_dir_count (Diz *diz)
   return count;
 }
 
-static char *diz_dir_get_name_escaped (Diz *diz, int no)
+static char *diz_dir_get_data_escaped (Diz *diz, int no)
 {
   const char *m = diz->metadata;
   if (!m) return NULL;
@@ -245,7 +244,7 @@ static char *diz_dir_find_no (Diz *diz, int no)
   return NULL;
 }
 
-char *diz_dir_get_name (Diz *diz, int no)
+char *diz_dir_get_data (Diz *diz, int no)
 {
   if (no == -1)
   {
@@ -429,6 +428,9 @@ int diz_dir_value_count   (Diz *diz, int item_no, const char *key)
 }
 
 char *diz_dir_get_string_no (Diz *diz, int item_no, const char *key, int value_no){
+  if (!strcmp (key, "data"))
+    return diz_dir_get_data (diz, item_no);
+
   const char *m = diz_dir_find_no (diz, item_no);
   if (!m) return strdup("xXx");
   int count = 0;
@@ -555,6 +557,8 @@ diz_dir_has_key (Diz *diz, int item_no, const char *key)
 
 char *diz_dir_get_string (Diz *diz, int no, const char *key)
 {
+  if (!strcmp (key, "data"))
+    return diz_dir_get_data (diz, no);
   const char *m = diz_dir_find_no (diz, no);
   CtxString *str = ctx_string_new ("");
   if (!m) return NULL;
@@ -625,8 +629,8 @@ void diz_dir_swap (Diz *diz, int no_a, int no_b)
      no_a = no_b; no_b = tmp;
    }
 
-   char *a_name = diz_dir_get_name_escaped (diz, no_a);
-   char *b_name = diz_dir_get_name_escaped (diz, no_b);
+   char *a_name = diz_dir_get_data_escaped (diz, no_a);
+   char *b_name = diz_dir_get_data_escaped (diz, no_b);
    int a_name_len = strlen (a_name);
    int b_name_len = strlen (b_name);
    const char *a_meta = diz_dir_find_no (diz, no_a);
@@ -672,7 +676,7 @@ void diz_dir_swap (Diz *diz, int no_a, int no_b)
 
 static void _diz_dir_remove (Diz *diz, int no)
 {
-   char *a_name = diz_dir_get_name_escaped (diz, no);
+   char *a_name = diz_dir_get_data_escaped (diz, no);
    const char *a_meta = diz_dir_find_no (diz, no);
 
    if (!a_meta)
@@ -839,7 +843,7 @@ int diz_dir_insert (Diz *diz, int pos, const char *item)
 
   if (m)
   {
-    char *name = diz_dir_get_name_escaped (diz, pos);
+    char *name = diz_dir_get_data_escaped (diz, pos);
     m -= strlen (name) + 1;
     free (name);
   }
@@ -856,7 +860,7 @@ int diz_dir_insert (Diz *diz, int pos, const char *item)
   return pos;
 }
 
-void diz_dir_set_name (Diz *diz, int pos, const char *new_name)
+void diz_dir_set_data (Diz *diz, int pos, const char *new_name)
 {
   // TODO : if it is a file, do a corresponding rename!
   //
@@ -869,7 +873,7 @@ void diz_dir_set_name (Diz *diz, int pos, const char *new_name)
   char *m = diz_dir_find_no (diz, pos);
   if (m)
   {
-    char *name = diz_dir_get_name_escaped (diz, pos);
+    char *name = diz_dir_get_data_escaped (diz, pos);
     int name_len = strlen (name);
     free (name);
 
@@ -893,6 +897,11 @@ void diz_dir_set_name (Diz *diz, int pos, const char *new_name)
 void diz_dir_add_string (Diz *diz, int no, const char *key, const char *value)
 {
 //  diz_dir_unset (diz, no, key);
+  if (!strcmp (key, "data"))
+  {
+    diz_dir_set_data (diz, no, value);
+    return;
+  }
 
   const char *m = diz_dir_find_no (diz, no);
   int offset = diz->metadata_len;
@@ -973,7 +982,7 @@ void diz_dir_dump (Diz *diz)
 
   for (int i = -1; i < item_count; i ++)
   {
-    char *item_name = i>=0? diz_dir_get_name (diz, i):NULL;
+    char *item_name = i>=0? diz_dir_get_data (diz, i):NULL;
     for (int i = 0; i < indent; i++) fprintf (stdout, " ");
     if (item_name)
       fprintf (stdout, "%s     :%i,%i\n", item_name, i, diz_dir_name_to_no (diz, item_name));
@@ -1100,7 +1109,7 @@ diz_dir_update_files (Diz *diz)
     if (atom == CTX_ATOM_FILE ||
         atom == CTX_ATOM_SYMLINK)
     {
-      char *name = diz_dir_get_name (diz, i);
+      char *name = diz_dir_get_data (diz, i);
       char *path = ctx_strdup_printf ("%s/%s", diz->path, name);
       struct stat stat_buf;
       if (lstat (path, &stat_buf) != 0)
