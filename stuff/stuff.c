@@ -3556,6 +3556,15 @@ static void layout_box_defaults (CtxRectangle *rectangle)
   rectangle->height = 4000.0;
 }
 
+char *make_client_name (Diz *diz, int no)
+{
+   if (!diz || no < 0) return "";
+   char *name = diz_dir_get_name (diz, no);
+   char *ret = ctx_strdup_printf ("%s:%s", diz->path, name);
+   free (name);
+   return ret;
+}
+
 static void dir_layout (ITK *itk, Diz *diz)
 {
   Ctx *ctx = itk->ctx;
@@ -4484,9 +4493,8 @@ static void dir_layout (ITK *itk, Diz *diz)
         }
         else if (diz_dir_get_int (diz, i, "live", 0))
           {
-            char *client_name = ctx_strdup_printf ("%s-%i", newpath, i);
+            char *client_name = make_client_name (diz, i);
             CtxClient *client = ctx_client_find (ctx, client_name);
-            free (client_name);
             float live_font_factor = 0.33;
             if (!client)
             {
@@ -4515,7 +4523,7 @@ static void dir_layout (ITK *itk, Diz *diz)
                   itk->x, itk->y, width, height,
                   itk->font_size * live_font_factor,
                   ITK_CLIENT_PRELOAD,
-                  ctx_strdup_printf ("%s-%i", newpath, i), user_data_free);
+                  strdup (client_name), user_data_free);
                 free (command);
               }
             }
@@ -4526,6 +4534,7 @@ static void dir_layout (ITK *itk, Diz *diz)
               ctx_client_resize (ctx, ctx_client_id (client), width, height);
 
             }
+            free (client_name);
           }
 
         else if (ctx_media_type_class (media_type) == CTX_MEDIA_TYPE_IMAGE)
@@ -4933,14 +4942,14 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   //layout_find_item = focused_no;
 
   char *name;
-  char *path;
+  //char *path;
   char *pathA;
   CtxClient *client = NULL;
-  name = diz_dir_get_name (diz, focused_no);
-  path = ctx_strdup_printf ("%s/%s", diz->path, name);
+  //name = diz_dir_get_name (diz, focused_no);
+  //path = ctx_strdup_printf ("%s/%s", diz->path, name);
 
-  char *client_cur = ctx_strdup_printf ("%s-%i", path, focused_no);
-  free (name);
+  char *client_cur = make_client_name (diz, focused_no);
+  //free (name);
 
   name = diz_dir_get_name (diz, focused_no+1);
   pathA = ctx_strdup_printf ("%s/%s", diz->path, name);
@@ -4948,7 +4957,7 @@ int viewer_pre_next (Ctx *ctx, void *data1)
 
   float pre_thumb_size = 2.0;
 
-  char *client_a = ctx_strdup_printf ("%s-%i", pathA, focused_no+1);
+  char *client_a = make_client_name (diz, focused_no+1);
 #if 0
   if ((client=ctx_client_find (ctx, client_a)))
   {
@@ -4963,6 +4972,7 @@ int viewer_pre_next (Ctx *ctx, void *data1)
   else
 #endif
   {
+
     char **command = dir_get_viewer_argv (pathA, focused_no+1);
     if (command)
     {
@@ -5042,7 +5052,7 @@ void viewer_load_path (const char *path, const char *name)
     if (command)
     {
       //fprintf (stderr, "ctx-dir:%f\n", itk->font_size);
-      char *client_name = ctx_strdup_printf ("%s-%i", path, no);
+      char *client_name = make_client_name (diz, no);
       if ((viewer=ctx_client_find (ctx, client_name)))
       {
         //fprintf (stderr, "reloading %s\n", client_name);
@@ -5927,7 +5937,7 @@ static int card_files (ITK *itk_, void *data)
           char *name = diz_dir_get_name (diz, focused_no+1);
           char *pathA = ctx_strdup_printf ("%s/%s", diz->path, name);
           free (name);
-          char *client_a = ctx_strdup_printf ("%s-%i", pathA, focused_no+1);
+          char *client_a = make_client_name (diz, focused_no+1);
           free (pathA);
           CtxClient *client;
           if ((client=ctx_client_find (ctx, client_a)))
