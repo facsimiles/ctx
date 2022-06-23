@@ -56,7 +56,11 @@ void diz_dir_unset        (Diz *diz, int item_no, const char *key);
 void diz_dir_unset_value  (Diz *diz, int no, const char *key, const char *value);
 int  diz_dir_insert       (Diz *diz, int pos, const char *item_name);
 
-// XXX replace with diz_dir_set_string(diz,item_no,"data", new_name);
+// this is the "data" or utf8 contents of an item in a document/category
+// for paragraphs of text it is the text, for files it is the file-name.
+// for some things like start/end of children (and internal items) the
+// dat might be empty, it can also be set with diz_dir_set_string with key
+// set as "data".
 void diz_dir_set_data     (Diz *diz, int item_no, const char *new_name);
 
 void diz_dir_set_string   (Diz *diz, int item_no, const char *key, const char *value);
@@ -70,8 +74,8 @@ void diz_dir_add_string_unique (Diz *diz, int item_no, const char *key, const ch
 int     diz_dir_count         (Diz *diz);
 int     diz_dir_name_to_no    (Diz *diz, const char *name);
 
+/* short-cut for get_string(diz,item_no,"data"); */
 char   *diz_dir_get_data      (Diz *diz, int item_no);
-
 
 int     diz_dir_has_key       (Diz *diz, int item_no, const char *key);
 int     diz_dir_key_count     (Diz *diz, int item_no);

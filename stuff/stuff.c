@@ -3788,6 +3788,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   for (int i = 0; i < diz->count; i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
+      const char *ui = diz_dir_get_string (diz, i, "ui");
       if (layout_find_item == i)
       {
          if (!printing)
@@ -4045,6 +4046,18 @@ static void dir_layout (ITK *itk, Diz *diz)
          width = itk->width;
          height = 1;
       }
+      else if (atom == CTX_ATOM_STARTPAGE)
+      {
+         width = itk->width;
+         height = 1;
+         // reset to only default layout box
+         //  default layout box is paginated in paginated mode
+         //  and auto+height otherwise..
+         //
+         layout_box_no = 0;
+         layout_box_count = 0;
+         layout_box_defaults (&layout_box[0]);
+      }
 
   if (layout_config.outliner)
   {
@@ -4099,16 +4112,50 @@ static void dir_layout (ITK *itk, Diz *diz)
         }
       }
 
+           static int foo = 1;
       CtxControl *c = NULL;
       if (printing)
       {
         ctx_begin_path (itk->ctx);
+        if (ui && !strcmp (ui, "toggle"))
+        {
+           itk_toggle (itk, d_name, &foo);
+           c = itk_find_control (itk, itk->control_no-1);
+           itk_sameline (itk);
+        }
+        else if (ui && !strcmp (ui, "slider"))
+        {
+           static float f = 23.0;
+           float min = diz_dir_get_float (diz, i, "min", 0.0f);
+           float max = diz_dir_get_float (diz, i, "max", 100.0f);
+           float step = diz_dir_get_float (diz, i, "step", (max-min)/100.0f);
+           itk_slider_float (itk, d_name, &f, min, max, step);
+           c = itk_find_control (itk, itk->control_no-1);
+           itk_sameline (itk);
+        }
+        else if (ui && !strcmp (ui, "choice"))
+        {
+           static int choice = 0;
+           itk_choice (itk, d_name, &choice, NULL, NULL);
+           int n_choices = diz_dir_value_count (diz, i, "choice");
+           for (int j = 0; j < n_choices; j++)
+           {
+              char *val = diz_dir_get_string_no (diz, i, "choice", j);
+              itk_choice_add (itk, j, val);
+              free (val);
+           }
+           c = itk_find_control (itk, itk->control_no-1);
+           itk_sameline (itk);
+        }
+        else
+        {
         c = itk_add_control (itk, UI_LABEL, "item",
           itk->x - em * (padding_left * 2), itk->y, // - em * padding_top,
           width + em * (padding_left*2+padding_right)
            - em * level * layout_config.level_indent
           ,
           height + em * (padding_top+padding_bottom));
+        }
         if (focused_no == i)
            focused_control = c;
       }
@@ -4159,6 +4206,8 @@ static void dir_layout (ITK *itk, Diz *diz)
         }
 
 
+        if (ui) {} 
+        else
         if (c->no == itk->focus_no && layout_find_item < 0)
         {
 
@@ -4197,7 +4246,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
 
           if (!is_text_editing()
-              && !item_context_active)
+              && !item_context_active && !ui)
           {
             add_context_binding (1, "duplicate", "item-duplicate", "control-d");
             add_context_binding (1, "remove", "remove", "delete");
@@ -4383,7 +4432,16 @@ static void dir_layout (ITK *itk, Diz *diz)
 
         if (atom == CTX_ATOM_TEXT)
         {
+
           ctx_save (itk->ctx);
+          if (ui)
+          {
+          //  ctx_rgb (itk->ctx, 0, 1, 0);
+          //  ctx_rectangle (itk->ctx, itk->x, itk->y, 20, 2);
+          //  ctx_fill (itk->ctx);
+          }
+          else
+          {
           ctx_gray (itk->ctx, 0.95);
 
           if (c->no == itk->focus_no && layout_find_item < 0)
@@ -4407,8 +4465,9 @@ static void dir_layout (ITK *itk, Diz *diz)
           }
 
           stuff_draw_bullet (itk, diz, i);
-
+          }
           ctx_restore (itk->ctx);
+
           if (i == focused_no && d_name[0]=='$')
           {
             add_context_binding (1,
@@ -4775,6 +4834,8 @@ static void dir_layout (ITK *itk, Diz *diz)
 
       }
       free (d_name);
+      if (ui)
+              free (ui);
   }
   layout_last_page = last_page;
 
@@ -5616,7 +5677,8 @@ static int card_files (ITK *itk_, void *data)
           if (diz_dir_type_atom (diz, focused_no) == CTX_ATOM_TEXT
               && diz_dir_get_float (diz, focused_no, "x", -1234.0) == -1234.0
               && !is_text_editing()
-              && !item_context_active)
+              && !item_context_active
+              && !diz_dir_has_key (diz, focused_no, "ui"))
           {
 
             if (layout_focused_link >= 0)
