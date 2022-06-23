@@ -1146,7 +1146,9 @@ static void deactivate_viewer (CtxEvent *e, void *d1, void *d2)
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (ctx_client_flags (client) & ITK_CLIENT_PRELOAD)
+    int flags = ctx_client_flags (client);
+    if (flags & ITK_CLIENT_PRELOAD &&
+        !(flags & ITK_CLIENT_LIVE))
     {
       ctx_list_prepend (&to_remove, client);
     }
@@ -3767,7 +3769,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       }
     }
   }
-  itk->y = 4.0 * itk->font_size;
+  itk->y = 4 * itk->font_size;
 
   if (layout_config.outliner)
      printing = 1;
@@ -4375,6 +4377,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
           if (c->no == itk->focus_no && layout_find_item < 0)
           {
+            itk_style_color (itk->ctx, "itk-focused-fg");
             layout_text (itk->ctx, itk->x + padding_left * em, itk->y, d_name,
                          space_width, width - em * level * layout_config.level_indent, em,
                          text_edit,text_edit,
@@ -4522,7 +4525,7 @@ static void dir_layout (ITK *itk, Diz *diz)
                 client = ctx_client_new_argv (ctx, command,
                   itk->x, itk->y, width, height,
                   itk->font_size * live_font_factor,
-                  ITK_CLIENT_PRELOAD,
+                  ITK_CLIENT_PRELOAD|ITK_CLIENT_LIVE,
                   strdup (client_name), user_data_free);
                 free (command);
               }
@@ -4834,12 +4837,16 @@ static void dir_layout (ITK *itk, Diz *diz)
       ctx_fill (ctx);
       ctx_move_to (itk->ctx, itk->x0, 2 * em);
       ctx_rgba (ctx, 1,1,1, 1);
+      itk_style_color (itk->ctx, "itk-focused-fg");
       ctx_text (ctx, commandline->str);
     }
   }
   else
   {
-    ctx_rgba (itk->ctx, 1,1,1,0.8);
+    if (itk->focus_no == 0)
+      itk_style_color (itk->ctx, "itk-focused-fg");
+    else
+      itk_style_color (itk->ctx, "itk-fg");
     ctx_move_to (itk->ctx, itk->x0, 2 * em);
 
     char *title = diz_dir_get_string (diz, -1, "title");
@@ -5567,7 +5574,7 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "shift-right", NULL, "extend selection right", dir_location_extend_sel_right, NULL);
 #if 1
           BIND_KEY ("up", "", "<ignored>");
-          BIND_KEY ("down", "", "<ignored>");
+          BIND_KEY ("down", "", "ignored");
 #else
             ctx_add_key_binding (ctx, "up", NULL, NULL,
                             dir_ignore,
@@ -5584,7 +5591,7 @@ static int card_files (ITK *itk_, void *data)
           {
             ctx_add_key_binding (ctx, "escape", NULL, "stop editing location", dir_location_escape, NULL);
             ctx_add_key_binding (ctx, "return", NULL, "confirm new location", dir_location_return, NULL);
-            ctx_add_key_binding (ctx, "down", NULL, NULL, dir_location_return, NULL);
+            ctx_add_key_binding (ctx, "down", NULL, NULL, dir_location_escape, NULL);
             ctx_add_key_binding (ctx, "tab", NULL, NULL, ui_run_command, "");
             ctx_add_key_binding (ctx, "shift-tab", NULL, NULL, ui_run_command, "");
             ctx_add_key_binding (ctx, "alt-up", NULL, NULL, ui_run_command, "");
@@ -5835,12 +5842,16 @@ static int card_files (ITK *itk_, void *data)
       for (int k = 0; k < keys; k++)
       {
          char *key = diz_dir_key_name (diz, focused_no, k);
-         char *value = diz_dir_get_string (diz, focused_no, key);
-         char tmp[strlen(key)+strlen(value)+1+1];
-         sprintf (tmp, "%s=%s", key, value);
-         y+=em;
-         ctx_move_to (itk->ctx, x+em, y);
-         ctx_text (itk->ctx, tmp);
+         int n_values = diz_dir_value_count (diz, focused_no, key);
+         for (int v = 0; v < n_values; v++)
+         {
+           char *value = diz_dir_get_string_no (diz, focused_no, key, v);
+           char tmp[strlen(key)+strlen(value)+1+1];
+           sprintf (tmp, "%s=%s", key, value);
+           y+=em;
+           ctx_move_to (itk->ctx, x+em, y);
+           ctx_text (itk->ctx, tmp);
+         }
       }
     }
 

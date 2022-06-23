@@ -1405,7 +1405,8 @@ typedef enum CtxClientFlags {
   ITK_CLIENT_KEEP_ALIVE   = 1<<7,  // do not automatically
   ITK_CLIENT_FINISHED     = 1<<8,  // do not automatically
                                    // remove after process quits
-  ITK_CLIENT_PRELOAD      = 1<<9
+  ITK_CLIENT_PRELOAD      = 1<<9,
+  ITK_CLIENT_LIVE         = 1<<10
 } CtxClientFlags;
 typedef void (*CtxClientFinalize)(CtxClient *client, void *user_data);
 

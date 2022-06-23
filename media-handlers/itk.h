@@ -494,7 +494,8 @@ void itk_reset (ITK *itk)
 "terminal-active-bg-reverse: #dddb;\n"
 "\n"
 "itk-bg:             rgba(30,40,50, 1.0);\n"
-"itk-focused-bg:     rgba(70,70,90,0.45);\n"
+"itk-focused-bg:     rgba(0,0,0,1.0);\n"
+"itk-focused-fg:     rgb(255,255,255,1.0);\n"
 "itk-fg:             rgb(225,225,225);\n"
 "itk-interactive:    rgb(255,5,5);\n"
 "itk-interactive-bg: rgba(50,40,50,0.45);\n"
@@ -654,10 +655,10 @@ CtxControl *itk_add_control (ITK *itk,
   if (itk->focus_no == control->no &&
       control->type != UI_BUTTON)  // own-bg
   {
-#if 0
+#if 1
     itk_style_color (itk->ctx, "itk-focused-bg");
     ctx_fill (itk->ctx);
-#else
+    ctx_rectangle (itk->ctx, x, y, width, height);
     itk_style_color (itk->ctx, "itk-fg");
     ctx_line_width (itk->ctx, 2.0f);
     ctx_stroke (itk->ctx);
