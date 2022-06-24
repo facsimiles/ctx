@@ -133,7 +133,7 @@ int main (int argc, char **argv)
          fprintf (stderr, "text entry commited: \"%s\"\n", input);
       }
 
-      itk_choice (itk, "power", &chosen, NULL, NULL);
+      chosen = itk_choice (itk, "power", chosen);
       itk_choice_add (itk, 0,    "on");
       itk_choice_add (itk, 1,    "off");
       itk_choice_add (itk, 2,    "good");
@@ -141,7 +141,7 @@ int main (int argc, char **argv)
       itk_choice_add (itk, 2030, "electric");
       itk_choice_add (itk, 2040, "novel");
 
-      itk_toggle (itk, "baz ", &baz);
+      baz = itk_toggle (itk, "baz ", baz);
       }
 
 #if 0

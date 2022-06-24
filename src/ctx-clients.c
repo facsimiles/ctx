@@ -808,8 +808,8 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
       }
 #endif
       //itk_sameline (itk);
-      //itk_toggle (itk, "on screen keyboard", &on_screen_keyboard);
-      //itk_toggle (itk, "focus follows mouse", &focus_follows_mouse);
+      on_screen_keyboard = itk_toggle (itk, "on screen keyboard", on_screen_keyboard);
+      focus_follow_mouse = itk_toggle (itk, "focus follows mouse", focus_follows_mouse);
       itk_slider_float (itk, "CTX_GREEN", &_ctx_green, 0.0, 1.0, 0.5);
       itk_ctx_settings (itk);
       itk_itk_settings (itk);

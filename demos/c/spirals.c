@@ -42,7 +42,7 @@ static int spirals_ui (ITK *itk, void *data)
       itk_panel_start (itk, "spiraling things", ctx_width(ctx)*3/4,0,ctx_width(ctx)/4, ctx_height(ctx)/2);
 
       static int animate = 0;
-      itk_toggle     (itk, "animate", &animate);
+      animate = itk_toggle (itk, "animate", animate);
       if (animate)
       {
         twist += 0.00001;
@@ -62,7 +62,7 @@ static int spirals_ui (ITK *itk, void *data)
       itk_slider_int (itk, "count",          &dot_count, 1,  50000, 10);
       itk_slider_float (itk, "radius",    &dot_scale, 2.0, 400.0, 4.5);
       itk_slider_float (itk, "twist amount", &twist, -3.14152, 3.14152, 0.0005);
-      itk_choice (itk, "shape", &shape, NULL, NULL);
+      shape = itk_choice (itk, "shape", shape);
       itk_choice_add (itk, 0, "circle");
       itk_choice_add (itk, 1, "square");
 

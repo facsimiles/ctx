@@ -3799,7 +3799,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   for (int i = 0; i < diz->count; i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
-      const char *ui = diz_dir_get_string (diz, i, "ui");
+      char *ui = diz_dir_get_string (diz, i, "ui");
       if (layout_find_item == i)
       {
          if (!printing)
@@ -4123,36 +4123,59 @@ static void dir_layout (ITK *itk, Diz *diz)
         }
       }
 
-           static int foo = 1;
       CtxControl *c = NULL;
       if (printing)
       {
         ctx_begin_path (itk->ctx);
         if (ui && !strcmp (ui, "toggle"))
         {
-           itk_toggle (itk, d_name, &foo);
+           // XXX as schema specify a list of standards subsets confirming to
+           //     otherwise free-form, one can construct ones own meanings of
+           //     the hypergraph
+           int old_val = diz_dir_get_int (diz, i, "value", 0);
+           int new_val = itk_toggle (itk, d_name, old_val);
+
+           if (old_val != new_val)
+           {
+              diz_dir_set_float (diz, i, "value", new_val);
+           }
            c = itk_find_control (itk, itk->control_no-1);
            itk_sameline (itk);
         }
         else if (ui && !strcmp (ui, "slider"))
         {
-           static float f = 23.0;
+           float f = diz_dir_get_float (diz, i, "value", 0.0f);
            float min = diz_dir_get_float (diz, i, "min", 0.0f);
            float max = diz_dir_get_float (diz, i, "max", 100.0f);
            float step = diz_dir_get_float (diz, i, "step", (max-min)/100.0f);
-           itk_slider_float (itk, d_name, &f, min, max, step);
+           float new_f = itk_slider (itk, d_name, f, min, max, step);
+           if (new_f != f)
+              diz_dir_set_float (diz, i, "value", new_f);
            c = itk_find_control (itk, itk->control_no-1);
            itk_sameline (itk);
         }
         else if (ui && !strcmp (ui, "choice"))
         {
-           static int choice = 0;
-           itk_choice (itk, d_name, &choice, NULL, NULL);
+           char *old_str = diz_dir_get_string (diz, i, "value");
+           if (!old_str)old_str = strdup("?.?");
            int n_choices = diz_dir_value_count (diz, i, "choice");
+           int old_val = 0;
+           for (int j = 0; j < n_choices; j++)
+           {
+              char *val = diz_dir_get_string_no (diz, i, "choice", j);
+              if (!strcmp (val, old_str))
+                old_val = j;
+              free (val);
+           }
+           int new_val = itk_choice (itk, d_name, old_val);
            for (int j = 0; j < n_choices; j++)
            {
               char *val = diz_dir_get_string_no (diz, i, "choice", j);
               itk_choice_add (itk, j, val);
+              if (new_val == j && old_val != new_val)
+              {
+                diz_dir_set_string (diz, i, "value", val);
+              }
               free (val);
            }
            c = itk_find_control (itk, itk->control_no-1);

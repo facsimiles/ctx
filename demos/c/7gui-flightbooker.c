@@ -9,7 +9,7 @@ static int booker_ui (ITK *itk, void *data)
 
   static int return_flight = 0;
   itk_set_flag (itk, ITK_FLAG_SHOW_LABEL, 0);
-  itk_choice (itk, "", &return_flight, NULL, NULL);
+  return_flight = itk_choice (itk, "", return_flight);
   itk_choice_add (itk, 0, "one-way flight");
   itk_choice_add (itk, 1, "return flight");
 
