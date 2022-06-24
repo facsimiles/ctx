@@ -34,7 +34,10 @@ void itk_hgap (ITK *itk, float amount);
 void itk_label      (ITK *itk, const char *label);
 void itk_labelf (ITK *itk, const char *format, ...);
 void itk_titlebar   (ITK *itk, const char *label);
-void itk_slider     (ITK *itk, const char *label, float *val, float min, float max, float step);
+
+
+float itk_slider_float2 (ITK *itk, const char *lebel, float val, float min, float max, float step);
+
 void itk_slider_int (ITK *itk, const char *label, int *val, int min, int max, int step);
 void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step);
 void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step);

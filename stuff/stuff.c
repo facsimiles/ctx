@@ -619,6 +619,7 @@ static void _set_location (const char *location)
       focused_no = -1;
       layout_find_item = 0;
       text_editor = 0;
+      layout_config.monospace = 0;
     }
     else
     {
@@ -646,6 +647,13 @@ static void _set_location (const char *location)
   itk_panels_reset_scroll (itk);
   if (tpath)
     free (tpath);
+  if (itk && itk->ctx)
+  {
+  if (diz->title)
+  ctx_windowtitle (itk->ctx, diz->title);
+  else
+  ctx_windowtitle (itk->ctx, diz->path);
+  }
 }
 
 int cmd_history (COMMAND_ARGS) /* "history", 1, "<forward|back>", "moved history forward or back" */
@@ -3640,8 +3648,8 @@ static void dir_layout (ITK *itk, Diz *diz)
   itk->width       = layout_box[layout_box_no].width * saved_width ;
   y1 = (layout_box[layout_box_no].y + layout_box[layout_box_no].height) * saved_width;
   ctx_save (itk->ctx);
-  if (layout_config.monospace)
-          ctx_font (itk->ctx, "mono");
+  //if (layout_config.monospace)
+  //  ctx_font (itk->ctx, "mono");
   float space_width = ctx_text_width (itk->ctx, " ");
   ctx_font_size (itk->ctx, itk->font_size);
       int location_active = (focused_no == -1 && itk->focus_no == 0);
@@ -3687,6 +3695,8 @@ static void dir_layout (ITK *itk, Diz *diz)
   int last_page = 0;
   int printing = (layout_page_no == layout_show_page);
 
+  float title_width = ctx_minf (em*16.0f, itk->width/2);
+
   if (layout_show_page == 0)
   {
     if (printing)
@@ -3696,16 +3706,16 @@ static void dir_layout (ITK *itk, Diz *diz)
       // order
       //CtxControl *title_control =
       itk_add_control (itk, UI_LABEL, "title",
-                       itk->x0 - em * 0.5f,
+                       0.0 * em,
                        itk->font_size * 0,
-                       itk->width,
-                       itk->font_size * 2.5);
+                       title_width,
+                       itk->font_size * 1.3);
       ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)((size_t)(-1)), NULL);
     }
   
-    itk->y = 2.0 * itk->font_size;
+    itk->y = 0.0 * itk->font_size;
     int parents = diz_dir_value_count (diz, -1, "parent");
-    float tx = itk->x0;// + itk->font_size / 2;
+    float tx = 0.5 * em + title_width + 0.5 * em; //itk->x0;// + itk->font_size / 2;
     for (int i = 0; i < parents; i++)
     {
       char *parent = diz_dir_get_string_no (diz, -1, "parent", i);
@@ -3723,14 +3733,14 @@ static void dir_layout (ITK *itk, Diz *diz)
   
       CtxControl *c = itk_add_control (itk, UI_LABEL, "tag",
                        tx,
-                       itk->font_size * 2.5,
+                       itk->y,
                        itk->font_size + width,
                        itk->font_size * 1);
       ctx_listen (itk->ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
       ctx_font_size (itk->ctx, itk->font_size);
       ctx_rgb (itk->ctx, 1, 1, 0);
       ctx_move_to (itk->ctx, tx + 0.5 * itk->font_size,
-                   itk->font_size * 3.3);
+                   itk->y + itk->font_size*0.8);
       tx += width + itk->font_size;
       ctx_text (itk->ctx, parent);
       free (parent);
@@ -3742,9 +3752,9 @@ static void dir_layout (ITK *itk, Diz *diz)
   
       if (itk->focus_no == itk->control_no || 1)
       {
-        float width = ctx_text_width (itk->ctx, "aaaaaaaaaaa");
+        float width = em * 5;
         itk->x = tx + itk->font_size * 0.2;
-        itk->y+= itk->font_size * 0.5;
+        //itk->y+= itk->font_size * 0.1;
         float w = itk->width;
         itk->width = width;
         float y = itk->y;
@@ -3782,6 +3792,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   }
   itk->y = 4 * itk->font_size;
 
+  itk->x = itk->x0;
   if (layout_config.outliner)
      printing = 1;
 
@@ -4033,7 +4044,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
            if (layout_box_count == 1)
            {
-             layout_box_no = 0;
+             layout_box_no    = 0;
              itk->x0 = itk->x = layout_box[layout_box_no].x * saved_width;
              itk->y           = layout_box[layout_box_no].y * saved_width;
              itk->width       = layout_box[layout_box_no].width * saved_width ;
@@ -4870,9 +4881,10 @@ static void dir_layout (ITK *itk, Diz *diz)
   if (layout_show_page == 0)
   {
   ctx_save (itk->ctx);
-  ctx_font_size (itk->ctx, itk->font_size * 2);
+  ctx_font_size (itk->ctx, itk->font_size * 1.0);
   //int printing = (layout_page_no == layout_show_page);
 
+    itk->x0 = 1 * em;
   if (editing_location)
   {
     {
@@ -4901,14 +4913,14 @@ static void dir_layout (ITK *itk, Diz *diz)
 
       free (copy);
 
-      ctx_rectangle (ctx, itk->x0 + sel_start, 1.0 * em - em,
-                          sel_end-sel_start,em * 2.5);
+      ctx_rectangle (ctx, itk->x0 + sel_start, 0.0 * em,
+                          sel_end-sel_start,em * 1);
       if (c_start==c_end)
         ctx_rgba (ctx, 1,1, 0.2, 1);
       else
         ctx_rgba (ctx, 0.5,0, 0, 1);
       ctx_fill (ctx);
-      ctx_move_to (itk->ctx, itk->x0, 2 * em);
+      ctx_move_to (itk->ctx, itk->x0, 1 * em);
       ctx_rgba (ctx, 1,1,1, 1);
       itk_style_color (itk->ctx, "itk-focused-fg");
       ctx_text (ctx, commandline->str);
@@ -4920,7 +4932,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       itk_style_color (itk->ctx, "itk-focused-fg");
     else
       itk_style_color (itk->ctx, "itk-fg");
-    ctx_move_to (itk->ctx, itk->x0, 2 * em);
+    ctx_move_to (itk->ctx, itk->x0, 1 * em);
 
     char *title = diz_dir_get_string (diz, -1, "title");
 
