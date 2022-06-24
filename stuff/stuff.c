@@ -401,7 +401,6 @@ int item_unflow (COMMAND_ARGS) /* "unflow", 0, "", "moves item out of flow and s
                   focused_control->width / itk->width);
      diz_dir_set_float (diz, focused_no, "height",
                   focused_control->height / itk->width);
-     diz_dir_dirt (diz);
 
 #if 0
      int insertion_point = diz_dir_prev_sibling (diz, focused_no);
@@ -419,14 +418,12 @@ int item_unflow (COMMAND_ARGS) /* "unflow", 0, "", "moves item out of flow and s
      if (diz_dir_type_atom (diz, insertion_point) == CTX_ATOM_NEWPAGE)
         insertion_point = diz_dir_next_sibling (diz, insertion_point);
      diz_dir_insert (diz, insertion_point, "temp");
-     diz_dir_dirt (diz);
      diz_dir_swap (diz, insertion_point, focused_no+1);
-     diz_dir_dirt (diz);
      diz_dir_remove (diz, focused_no+1);
-     diz_dir_dirt (diz);
 #else
      int insertion_point = focused_no+1;
-     while (insertion_point < diz->count &&
+     int count = diz_dir_count (diz);
+     while (insertion_point < count &&
             diz_dir_type_atom (diz, insertion_point) != CTX_ATOM_NEWPAGE &&
             diz_dir_is_in_flow (diz, insertion_point))
      {
@@ -435,11 +432,8 @@ int item_unflow (COMMAND_ARGS) /* "unflow", 0, "", "moves item out of flow and s
      //if (diz_dir_type_atom (diz, insertion_point) == CTX_ATOM_NEWPAGE)
      //   insertion_point = diz_dir_next_sibling (diz, insertion_point);
      diz_dir_insert (diz, insertion_point, "temp");
-     diz_dir_dirt (diz);
      diz_dir_swap (diz, insertion_point, focused_no);
-     diz_dir_dirt (diz);
      diz_dir_remove (diz, focused_no);
-     diz_dir_dirt (diz);
 #endif
      focused_no = insertion_point-1;
      layout_find_item = focused_no;
@@ -519,7 +513,6 @@ int dir_insert (COMMAND_ARGS) /* "insert-text", 0, "", "" */
 {
   diz_dir_insert (diz, focused_no, "");
   text_edit = 0;
-  diz_dir_dirt (diz);
   return 0;
 }
 
@@ -528,7 +521,6 @@ int dir_insert_newpage (COMMAND_ARGS) /* "insert-newpage", 0, "", "" */
   diz_dir_insert (diz, focused_no, "");
   diz_dir_set_string (diz, focused_no, "type", "newpage");
   text_edit = 0;
-  diz_dir_dirt (diz);
   return 0;
 }
 
@@ -751,7 +743,6 @@ int outline_expand (COMMAND_ARGS) /* "outline-expand", 0, "", "" */
     return -1;
 
   diz_dir_unset (diz, no, "folded");
-  diz_dir_dirt (diz);
   return 0;
 }
 
@@ -762,7 +753,6 @@ int outline_collapse (COMMAND_ARGS) /* "outline-fold", 0, "", "" */
     return 0;
 
   diz_dir_set_float (diz, no, "folded", 1);
-  diz_dir_dirt (diz);
   return 0;
 }
 
@@ -1208,7 +1198,6 @@ int cmd_duplicate (COMMAND_ARGS) /* "item-duplicate", 0, "", "duplicate item" */
       }
     }
   }
-  diz_dir_dirt (diz);
   return 0;
 }
 
@@ -1228,7 +1217,8 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
 
   int was_last = 0;
 
-  if (no + count >= diz->count) was_last = 1;
+  if (no + count >= diz_dir_count (diz))
+    was_last = 1;
 
   for (int i = 0; i < count; i++)
   {
@@ -1241,9 +1231,7 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
   {
     DIR_DETAIL("removed group");
     diz_dir_remove (diz, no-1);
-    diz_dir_dirt(diz);
     diz_dir_remove (diz, no-1);
-    diz_dir_dirt(diz);
     layout_find_item = no-2-was_last;
     itk->focus_no = -1;
   }
@@ -1261,7 +1249,6 @@ int cmd_remove (COMMAND_ARGS) /* "remove", 0, "", "remove item" */
 #endif
 
   text_edit = TEXT_EDIT_OFF;
-  diz_dir_dirt(diz);
   return 0;
 }
 
@@ -1273,10 +1260,9 @@ static void move_after_next_sibling (CtxEvent *e, void *d1, void *d2)
   int no = (size_t)(d1);
   //char *full_path;
   //if (!strcmp (diz->items[no], ".."))dd
-  if (no<diz->count-1)
+  if (no<diz_dir_count (diz)-1)
   {
     diz_dir_swap (no, no+1);
-    diz_dir_dirt(diz);
     ctx_queue_draw (e->ctx);
     itk_focus (itk, 1);
   }
@@ -1291,7 +1277,6 @@ static void grow_height (CtxEvent *e, void *d1, void *d2)
   height += 0.01;
   if (height > 1.2) height = 1.2;
   diz_dir_set_float (diz, no, "height", height);
-  diz_dir_dirt (diz);
   ctx_queue_draw (e->ctx);
 }
 
@@ -1302,7 +1287,6 @@ static void shrink_height (CtxEvent *e, void *d1, void *d2)
   height -= 0.01;
   if (height < 0.01) height = 0.01;
   diz_dir_set_float (diz, no, "height", height);
-  diz_dir_dirt (diz);
   ctx_queue_draw (e->ctx);
 }
 
@@ -1313,7 +1297,6 @@ static void grow_width (CtxEvent *e, void *d1, void *d2)
   width += 0.01;
   if (width > 1.5) width = 1.5;
   diz_dir_set_float (diz, no, "width", width);
-  diz_dir_dirt (diz);
   ctx_queue_draw (e->ctx);
 }
 
@@ -1324,7 +1307,6 @@ static void shrink_width (CtxEvent *e, void *d1, void *d2)
   width -= 0.01;
   if (width < 0.0) width = 0.01;
   diz_dir_set_float (diz, no, "width", width);
-  diz_dir_dirt (diz);
   ctx_queue_draw (e->ctx);
 }
 
@@ -1338,28 +1320,24 @@ int cmd_move (COMMAND_ARGS) /* "item-move-pos", 1, "<up|left|right|down>", "shif
     y -= 0.01;
     if (y< 0) y = 0.01;
     diz_dir_set_float (diz, no, "y", y);
-    diz_dir_dirt (diz);
   }
   else if (!strcmp (argv[1], "left"))
   {
     x -= 0.01;
     if (x < 0.0) x = 0.0;
     diz_dir_set_float (diz, no, "x", x);
-    diz_dir_dirt (diz);
   }
   else if (!strcmp (argv[1], "down"))
   {
     y += 0.01;
     if (y< 0) y = 0.01;
     diz_dir_set_float (diz, no, "y", y);
-    diz_dir_dirt (diz);
   }
   else if (!strcmp (argv[1], "right"))
   {
     x += 0.01;
     if (x < 0) x = 0;
     diz_dir_set_float (diz, no, "x", x);
-    diz_dir_dirt (diz);
   }
   return 0;
 }
@@ -1447,11 +1425,8 @@ int move_after_next_sibling (COMMAND_ARGS) /* "move-after-next-sibling", 0, "", 
     for (int i = 0; i < count; i ++)
     {
       diz_dir_insert (diz, focused_no, "a");
-      diz_dir_dirt (diz);
       diz_dir_swap (diz, focused_no, start_no);
-      diz_dir_dirt (diz);
       diz_dir_remove (diz, start_no);
-      diz_dir_dirt (diz);
     }
     focused_no-=count;
   }
@@ -1519,7 +1494,6 @@ int move_before_previous_sibling (COMMAND_ARGS) /* "move-before-previous-sibling
     //fprintf (stderr, "\n");
     //if (did_skips)
     //focused_no++;
-    diz_dir_dirt (diz);
   }
 
   layout_find_item = focused_no;
@@ -1570,8 +1544,6 @@ int make_sibling_of_parent (COMMAND_ARGS) /* "make-sibling-of-parent", 0, "", ""
     }
 
     itk->focus_no = -1;
-
-    diz_dir_dirt (diz);
   }
   return 0;
 }
@@ -1645,8 +1617,6 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
     }
     //layout_find_item = focused_no;
 #endif
-
-    diz_dir_dirt (diz);
   }
   return 0;
 }
@@ -1672,7 +1642,6 @@ int item_cycle_bullet(COMMAND_ARGS) /* "cycle-bullet", 0, "", "" */
       diz_dir_unset (diz, focused_no, "bullet");
       break;
   }
-  diz_dir_dirt (diz);
   return 0;
 }
 
@@ -1696,7 +1665,6 @@ int item_cycle_heading (COMMAND_ARGS) /* "cycle-heading", 0, "", "" */
     diz_dir_unset (diz, focused_no, "tag");
   else
     diz_dir_set_string (diz, focused_no, "tag", "h1");
-  diz_dir_dirt (diz);
   return 0;
 }
 
@@ -1988,7 +1956,6 @@ static void goto_link (CtxEvent *event, void *data1, void *data2)
 static void dir_revert (CtxEvent *event, void *data1, void *data2)
 {
   // XXX: NYI
-  diz_dir_dirt(diz);
 }
 
 int editing_location = 0;
@@ -2318,7 +2285,6 @@ void text_edit_return (CtxEvent *event, void *a, void *b)
                       diz_dir_get_int (diz, focused_no, "bullet", 0));
   }
 
-  diz_dir_dirt (diz);
   free (str);
 
   ctx_queue_draw (event->ctx);
@@ -2347,7 +2313,6 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
       diz_dir_set_data (diz, focused_no, str->str);
       ctx_string_free (str, 1);
       text_edit--;
-      diz_dir_dirt (diz);
     }
     else if (text_edit == 0 && focused_no > 0 &&
             (diz_dir_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
@@ -2365,7 +2330,6 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
       diz_dir_remove (diz, focused_no);
       focused_no--;
       itk->focus_no--;
-      diz_dir_dirt (diz);
     }
   }
   ctx_queue_draw (event->ctx);
@@ -2396,7 +2360,6 @@ void text_edit_delete (CtxEvent *event, void *a, void *b)
     }
     diz_dir_set_data (diz, focused_no, str->str);
     ctx_string_free (str, 1);
-    diz_dir_dirt (diz);
   }
   ctx_queue_draw (event->ctx);
   event->stop_propagate=1;
@@ -2419,7 +2382,6 @@ int dir_join (COMMAND_ARGS) /* "join-with-next", 0, "", "" */
     }
     diz_dir_set_data (diz, focused_no, str->str);
     ctx_string_free (str, 1);
-    diz_dir_dirt (diz);
   }
   return 0;
 }
@@ -2438,7 +2400,6 @@ void text_edit_shift_return (CtxEvent *event, void *a, void *b)
     ctx_string_free (str, 1);
     text_edit++;
   }
-  diz_dir_dirt (diz);
   ctx_queue_draw (event->ctx);
   event->stop_propagate=1;
 }
@@ -2463,7 +2424,6 @@ void text_edit_any (CtxEvent *event, void *a, void *b)
     ctx_string_free (str, 1);
     text_edit++;
   }
-  diz_dir_dirt (diz);
   //save_metadata();
   ctx_queue_draw (event->ctx);
   event->stop_propagate=1;
@@ -2485,7 +2445,7 @@ void text_edit_right (CtxEvent *event, void *a, void *b)
 
   if (text_edit>len)
   {
-    if (focused_no + 1 < diz->count &&
+    if (focused_no + 1 < diz_dir_count (diz) &&
         diz_dir_type_atom (diz, focused_no+1) == CTX_ATOM_TEXT)
     {
       text_edit=0;
@@ -2525,7 +2485,6 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
 
       //layout_find_item = focused_no-1;
       //itk->focus_no = -1;
-      diz_dir_dirt(diz);
     }
     else if (focused_no>0 && 
              diz_dir_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
@@ -2649,7 +2608,7 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
   char *name = diz_dir_get_data (diz, focused_no);
 
   if (name[0]==0 &&
-      (focused_no+1 >= diz->count ||
+      (focused_no+1 >= diz_dir_count (diz) ||
       diz_dir_type_atom (diz, focused_no+1) == CTX_ATOM_ENDGROUP))
     {
       int next_focus = dir_prev_sibling (diz, focused_no);
@@ -2661,7 +2620,6 @@ void text_edit_up (CtxEvent *event, void *a, void *b)
       else
         text_edit = TEXT_EDIT_OFF;
       focused_no = next_focus+1;
-      diz_dir_dirt(diz);
   free (name);
     }
   else
@@ -2772,7 +2730,6 @@ make_tail_entry (Diz *diz)
   diz_dir_insert (diz, focused_no+diz_dir_measure_chunk(diz,focused_no), "");
   layout_find_item = focused_no = diz_dir_next_sibling (diz, focused_no);
   }
-  diz_dir_dirt (diz);
   itk->focus_no = -1;
   was_editing_before_tail = (text_edit != TEXT_EDIT_OFF);
   text_edit = 0;
@@ -2915,7 +2872,6 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
        y0 = e->y;
        diz_dir_set_float (diz, focused_no, "x", x0 / itk->width);
        diz_dir_set_float (diz, focused_no, "y", y0 / itk->width);
-       diz_dir_dirt (diz);
        break;
     case CTX_DRAG_MOTION:
 
@@ -2941,11 +2897,9 @@ tool_rect_drag (CtxEvent *e, void *d1, void *d2)
          diz_dir_set_float (diz, focused_no, "height", (y0-e->y) / itk->width);
        }
 
-       diz_dir_dirt (diz);
        ctx_queue_draw (e->ctx);
        break;
     case CTX_DRAG_RELEASE:
-       diz_dir_dirt (diz);
        break;
     default:
        break;
@@ -3126,7 +3080,6 @@ int run_command (COMMAND_ARGS) /* "run-command", 0, "", "" */
 
      diz_dir_insert(diz, focused_no+3, "");
      diz_dir_set_string (diz, focused_no+3, "type", "endgroup");
-     diz_dir_dirt (diz);
    free (commandline);
    return 0;
 }
@@ -3221,7 +3174,6 @@ int dir_enter_children (COMMAND_ARGS) /* "outline-focus-first-child", 0, "", "" 
 
      focused_no++;
   }
-  diz_dir_dirt(diz);
 
   layout_find_item = focused_no;
   itk->focus_no = -1;
@@ -3489,7 +3441,6 @@ static void ui_remove_tag (CtxEvent *event, void *a, void *b)
   unlink (link_target);
   free (link_target);
 
-  diz_dir_dirt (diz);
   ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }
@@ -3764,7 +3715,6 @@ static void dir_layout (ITK *itk, Diz *diz)
           char *link_path = diz_dir_tag_child_item_path (tag, diz->path);
           symlink (diz->path, link_path);
           free (link_path);
-          diz_dir_dirt (diz);
           tag[0]=0;
           ctx_queue_draw (itk->ctx);
         }
@@ -3796,7 +3746,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   if (layout_config.outliner)
      printing = 1;
 
-  for (int i = 0; i < diz->count; i++)
+  for (int i = 0; i < diz_dir_count (diz); i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
       char *ui = diz_dir_get_string (diz, i, "ui");
@@ -4874,7 +4824,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   }
   layout_last_page = last_page;
 
-  if (diz->count <= 0)
+  if (diz_dir_count (diz) <= 0)
   {
       CtxControl *c = NULL;
       if (printing)
@@ -5324,7 +5274,6 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
                     itk->font_size,
                     ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE|ITK_CLIENT_TITLEBAR, strdup("stdout"), user_data_free);
 
-     diz_dir_dirt(diz);
      save_metadata();
   }
 
