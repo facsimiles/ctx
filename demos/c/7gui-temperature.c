@@ -16,7 +16,7 @@ static int temperature_ui (ITK *itk, void *data)
   Ctx *ctx = itk->ctx;
   itk_panel_start (itk, "7gui - Temperature Converter", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
 
-  if (itk_entry (itk, "celcius", "C", celcius_val, 20-1))
+  if (itk_entry_str_len (itk, "celcius", "C", celcius_val, 20-1))
   {
     float celcius;
     CtxControl *control = itk_focused_control (itk);
@@ -31,7 +31,7 @@ static int temperature_ui (ITK *itk, void *data)
       sprintf (fahrenheit_val, "%.2f", celcius * (9/5.0) + 32);
     }
   }
-  if (itk_entry (itk, "fahrenheit", "F", fahrenheit_val, 20-1))
+  if (itk_entry_str_len (itk, "fahrenheit", "F", fahrenheit_val, 20-1))
   {
     float fahrenheit;
     CtxControl *control = itk_focused_control (itk);

@@ -39,13 +39,13 @@ static int crud_ui (ITK *itk, int frame_no)
                   ctx_width (ctx) * 0.8, ctx_height (ctx));
 
   itk->width/=2;
-  itk_entry (itk, "Filter prefix:", "", filter_prefix, 20-1);
+  itk_entry_str_len (itk, "Filter prefix:", "", filter_prefix, 20-1);
 
   int saved_y = itk->y;
   itk->x += itk->width;
   itk->x0 += itk->width;
-  itk_entry (itk, "Name:", "",    name, 20-1);
-  itk_entry (itk, "Surname:", "", surname, 20-1);
+  itk_entry_str_len (itk, "Name:", "",    name, 20-1);
+  itk_entry_str_len (itk, "Surname:", "", surname, 20-1);
   itk->x -= itk->width;
   itk->x0 -= itk->width;
 

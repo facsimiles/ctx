@@ -57,12 +57,28 @@ void itk_choice_add (ITK *itk, int value, const char *label);
 
 
 /*  returns 1 when the value has been changed
+ *
+ *  this expects a string to write to maxlen is length including
+ *  room for terminating \0
+ *
+ *  return 1 when the value has been changed
  */
-int itk_entry       (ITK        *itk,
-                     const char *label,
-                     const char *fallback,
-                     char       *val,
-                     int         maxlen);
+int itk_entry_str_len (ITK        *itk,
+                       const char *label,
+                       const char *fallback,
+                       char       *val,
+                       int         maxlen);
+
+/*
+ * returns NULL if value is unchanged or a newly allocated string
+ * when entry has been changed.
+ *
+ */
+char *itk_entry (ITK *itk,
+                 const char *label,
+                 const char *fallback,
+                 const char *val);
+
 
 
 /* returns the new value - if it has changed due to interaction
@@ -1243,7 +1259,7 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
   ctx_queue_draw (event->ctx);
 }
 
-int itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int maxlen)
+int itk_entry_str_len (ITK *itk, const char *label, const char *fallback, char *val, int maxlen)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
@@ -1324,7 +1340,6 @@ int itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int
     itk->active_entry = -1;
     return 1;
   }
-  else
   return 0;
 }
 

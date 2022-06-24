@@ -666,7 +666,7 @@ static int spreadsheet_ui (ITK  *itk, void *data)
         itk->x = x;
         itk->y = y - em;
         itk->width = col_width[col];
-        if (itk_entry (itk, "", "", cell->value, sizeof(cell->value)-1))
+        if (itk_entry_str_len (itk, "", "", cell->value, sizeof(cell->value)-1))
         {
           cell_set_value (cell, itk->entry_copy);
         }
