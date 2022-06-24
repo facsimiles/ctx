@@ -3709,7 +3709,7 @@ static void dir_layout (ITK *itk, Diz *diz)
         float w = itk->width;
         itk->width = width;
         float y = itk->y;
-        if (itk_entry (itk, "", "+", tag, sizeof(tag)-1, NULL, NULL))
+        if (itk_entry (itk, "", "+", tag, sizeof(tag)-1))
         {
           diz_dir_add_string_unique (diz, -1, "parent", tag);
           char *link_path = diz_dir_tag_child_item_path (tag, diz->path);
@@ -4786,7 +4786,6 @@ static void dir_layout (ITK *itk, Diz *diz)
             }
 
           }
-
 #endif
           itk->x += level * layout_config.level_indent * em;
         }

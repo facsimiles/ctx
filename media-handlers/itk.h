@@ -6,7 +6,11 @@
 #endif
 #include "ctx.h"
 
-/* An immediate mode toolkit for ctx
+/* An immediate mode toolkit for ctx, ctx expects to receive full frames of
+ * data to draw and by keeping knowledge of the contents of the previous frame
+ * avoid re-drawing unchanged areas of the display.
+ *
+ * 
  *
  * TODO/BUGS:
  *   - more than one scroll per panel
@@ -17,53 +21,30 @@ typedef struct _ITK ITK;
 typedef struct _ITKPanel ITKPanel;
 
 extern int _itk_key_bindings_active;
-ITK *itk_new   (Ctx *ctx);
-void itk_free  (ITK *itk);
-void itk_reset (ITK *itk);
+ITK *itk_new        (Ctx *ctx);
+void itk_free       (ITK *itk);
+void itk_reset      (ITK *itk);
 
 ITKPanel *itk_panel_start (ITK *itk, const char *title, int x, int y, int width, int height);
-void itk_panel_end   (ITK *itk);
+void      itk_panel_end   (ITK *itk);
 
 void itk_newline    (ITK *itk);
 void itk_sameline   (ITK *itk);
 void itk_seperator  (ITK *itk);
-
-void itk_hgap (ITK *itk, float amount);
-
-void itk_label      (ITK *itk, const char *label);
-void itk_labelf (ITK *itk, const char *format, ...);
 void itk_titlebar   (ITK *itk, const char *label);
 
-float itk_slider (ITK *itk, const char *label, float value, double min, double max, double step);
+void itk_label      (ITK *itk, const char *label);
+void itk_labelf     (ITK *itk, const char *format, ...);
 
-/* it is just as easy to directly use itk_slider, to neither causes a callback - these need a stable allocation and work less well with
- * more dynamic setters/getters
- */
-void itk_slider_int   (ITK *itk, const char *label, int *val, int min, int max, int step);
-void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step);
-void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step);
 
-/*  returns 1 when the value has been committed - removing the need for the commit callback.
- */
-int itk_entry      (ITK        *itk,
-                    const char *label,
-                    const char *fallback,
-                    char       *val,
-                    int         maxlen,
-                     void (*commit)(ITK *itk, void *commit_data), void *commit_data);
-
-/* to be called on focus changes that might take focus away from
- * edited itk_entry
- */
-void itk_entry_commit (ITK *itk);
-
-/* return new value if changed */
 int  itk_toggle     (ITK *itk, const char *label, int in_val);
 
 /* returns 1 when pressed */
 int  itk_button     (ITK *itk, const char *label);
 
-/* this is already modernized and doesnt use a pointer */
+/* this is already modernized - it is the same as itk_toggle but gets rendered
+ * differently
+ */
 int  itk_radio      (ITK *itk, const char *label, int set);
 
 
@@ -75,35 +56,78 @@ int  itk_choice     (ITK *itk, const char *label, int in_val);
 void itk_choice_add (ITK *itk, int value, const char *label);
 
 
+/*  returns 1 when the value has been changed
+ */
+int itk_entry       (ITK        *itk,
+                     const char *label,
+                     const char *fallback,
+                     char       *val,
+                     int         maxlen);
+
+
+/* returns the new value - if it has changed due to interaction
+ */
+float itk_slider    (ITK *itk, const char *label, float value, double min, double max, double step);
+
+/* these are utilities to keep some code a little bit shorter
+ */
+void itk_slider_int   (ITK *itk, const char *label, int *val, int min, int max, int step);
+void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step);
+void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step);
+
+
+/* to be called on focus changes that might take focus away from
+ * edited itk_entry
+ */
+void itk_entry_commit (ITK *itk);
+
+/* return new value if changed */
+
+
 //void itk_choice_add (ITK *itk, int value, const char *label);
-void itk_done       (ITK *itk);
-
-void itk_style_color (Ctx *ctx, const char *name);
+void        itk_done         (ITK *itk);
+void        itk_style_color  (Ctx *ctx, const char *name);
 const char *itk_style_string (const char *name);
-float itk_style_float (char *name);
+float       itk_style_float  (char *name);
+float       itk_em           (ITK *itk);
 
-float itk_em (ITK *itk);
 /* runs until ctx_quit itk->ctx) is called */
-void itk_run_ui (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data);
-void itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data);
+void itk_run_ui       (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data);
+
+
+/*
+   A helper function that does itk_run_ui on a ctx context that is both created
+   and destroyed, this helps keep small programs tiny.
+
+   void itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
+   {
+     Ctx *ctx = ctx_new (-1, -1, NULL);
+     ITK *itk = itk_new (ctx);
+     itk_run_ui (itk, ui_fun, ui_data);
+     itk_free (itk);
+     ctx_destroy (ctx);
+    }
+ */
+
+void itk_main         (int (*ui_fun)(ITK *itk, void *data), void *ui_data);
 void itk_key_bindings (ITK *itk);
-void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2);
+
 typedef struct _CtxControl CtxControl;
-CtxControl *itk_focused_control(ITK *itk);
-CtxControl *itk_find_control (ITK *itk, int no);
-CtxControl *itk_add_control (ITK *itk,
-                             int type,
-                             const char *label,
-                             float x, float y,
-                             float width, float height);
-void itk_set_flag (ITK *itk, int flag, int on);
-void itk_panels_reset_scroll (ITK *itk);
+CtxControl *itk_focused_control (ITK *itk);
+CtxControl *itk_find_control    (ITK *itk, int no);
+CtxControl *itk_add_control     (ITK *itk,
+                                 int type,
+                                 const char *label,
+                                 float x, float y,
+                                 float width, float height);
+void itk_set_flag               (ITK *itk, int flag, int on);
 
-void
-itk_ctx_settings (ITK *itk);
 
-void
-itk_itk_settings (ITK *itk);
+void itk_panels_reset_scroll    (ITK *itk);
+
+void itk_ctx_settings (ITK *itk);
+void itk_itk_settings (ITK *itk);
+void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2);
 
 enum {
   UI_SLIDER = 1,
@@ -129,16 +153,16 @@ enum {
 
 
 struct _ITKPanel{
-  int x;
-  int y;
-  int width;
-  int height;
-  int expanded;
-  int max_y;
+  int   x;
+  int   y;
+  int   width;
+  int   height;
+  int   expanded;
+  int   max_y;
   float scroll_start_y;
   float scroll;
 
-  int do_scroll_jump;
+  int   do_scroll_jump;
   const char *title;
 };
 
@@ -201,8 +225,6 @@ struct _CtxControl{
   float max;
   float step;
 
-  void (*action)(void *data);
-  void (*commit)(ITK *itk, void *data);
   double (*get_val)(void *valp, void *data);
   void(*set_val)(void *valp, double val, void *data);
   void(*finalize)(void *data);
@@ -246,10 +268,15 @@ struct _ITK{
   float rel_vgap;
   float scroll_speed;
 
-  int   button_pressed;
+  int   return_value; // when set to 1, we return the internally held from the
+                      // defining app state when the widget was drawn/intercations
+                      // started.
+
   float slider_value; // for reporting back slider value
 
-  int   active;  // currently in edit-mode of focused widget
+  int   active;  // 0 not actively editing
+                 // 1 currently in edit-mode of focused widget
+                 // 2 means return edited value
 
   int   active_entry;
   int   focus_wraparound;
@@ -293,14 +320,6 @@ struct _ITK{
 
 
 #ifdef ITK_IMPLEMENTATION
-
-void itk_hgap (ITK *itk, float amount)
-{
-  /* NYI: but with retaiing of actual layout/draw of widgets
-   * for one built up horizontal run, this would permit building
-   * extended paragraph layouting into the itk model
-   */
-}
 
 void itk_begin_menu_bar (ITK *itk, const char *title)
 {
@@ -1045,7 +1064,7 @@ static void itk_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2
 
   itk_float_constrain (control, &new_val);
 
-  itk->button_pressed = 1;
+  itk->return_value = 1;
   control->value = new_val;
   itk->slider_value = new_val;
   //if (control->set_val)
@@ -1108,9 +1127,9 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
   itk->x += (1.0 - itk->label_width) * itk->width;
   itk_newline (itk);
 
-  if (control->no == itk->focus_no && itk->button_pressed)
+  if (control->no == itk->focus_no && itk->return_value)
   {
-    itk->button_pressed = 0;
+    itk->return_value = 0;
     ctx_queue_draw (ctx);
     return itk->slider_value;
   }
@@ -1190,14 +1209,7 @@ void itk_entry_commit (ITK *itk)
          if (itk->entry_copy)
          {
   fprintf (stderr, "ec %i %s\n", itk->active_entry, itk->entry_copy);
-           if (control->commit)
-           {
-             control->commit (itk, control->data);
-           }
-           else
-           {
-             strcpy (control->val, itk->entry_copy);
-           }
+           strcpy (control->val, itk->entry_copy);
            free (itk->entry_copy);
            itk->entry_copy = NULL;
            itk->active = 2;
@@ -1231,10 +1243,7 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
   ctx_queue_draw (event->ctx);
 }
 
-int itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int maxlen,
-                  void (*commit)(ITK *itk,
-                                 void *commit_data),
-                                void *commit_data)
+int itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int maxlen)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
@@ -1256,8 +1265,6 @@ int itk_entry (ITK *itk, const char *label, const char *fallback, char *val, int
     control->fallback = strdup (fallback);
   control->ref_count++;
 //control->ref_count++;
-  control->commit = commit;
-  control->data = commit_data;
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
 
@@ -1326,7 +1333,7 @@ void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
   ITK *itk = userdata2;
   CtxControl *control = userdata;
   int *val = control->val;
-  itk->button_pressed = 1; // reusing despite name
+  itk->return_value = 1; // reusing despite name
   *val = (*val)?0:1;
   event->stop_propagate = 1;
   itk_set_focus (itk, control->no);
@@ -1349,12 +1356,10 @@ static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
   CtxControl *control = userdata;
-  if (control->action)
-    control->action (control->val);
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
   itk_set_focus (itk, control->no);
-  itk->button_pressed = 1;
+  itk->return_value = 1;
 }
 
 int itk_toggle (ITK *itk, const char *label, int input_val)
@@ -1396,9 +1401,9 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
   itk->x += itk->rel_hgap * em;
   itk_newline (itk);
 
-  if (control->no == itk->focus_no && itk->button_pressed)
+  if (control->no == itk->focus_no && itk->return_value)
   {
-    itk->button_pressed = 0;
+    itk->return_value = 0;
     ctx_queue_draw (ctx);
     return !input_val;
   }
@@ -1440,9 +1445,9 @@ int itk_radio (ITK *itk, const char *label, int set)
 
   itk->x += itk->rel_hgap * em;
   itk_newline (itk);
-  if (control->no == itk->focus_no && itk->button_pressed)
+  if (control->no == itk->focus_no && itk->return_value)
   {
-    itk->button_pressed = 0;
+    itk->return_value = 0;
     ctx_queue_draw (ctx);
     return 1;
   }
@@ -1557,9 +1562,9 @@ int itk_button (ITK *itk, const char *label)
   itk->x += itk->rel_hgap * em;
 
   itk_newline (itk);
-  if (control->no == itk->focus_no && itk->button_pressed)
+  if (control->no == itk->focus_no && itk->return_value)
   {
-    itk->button_pressed = 0;
+    itk->return_value = 0;
     ctx_queue_draw (ctx);
     return 1;
   }
@@ -1575,45 +1580,6 @@ static void itk_choice_clicked (CtxEvent *event, void *userdata, void *userdata2
   itk_set_focus (itk, control->no);
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
-}
-
-void itk_choice_dep (ITK *itk, const char *label, int *val, void (*action)(void *user_data), void *user_data)
-{
-  Ctx *ctx = itk->ctx;
-  float em = itk_em (itk);
-
-  float new_x = itk->x + itk->width * (itk->label_width);
-  itk_text (itk, label);
-  itk->x = new_x;
-
-  itk_style_color (itk->ctx, "itk-bg");
-  CtxControl *control = itk_add_control (itk, UI_CHOICE, label, itk->x, itk->y, itk->width * (1.0-itk->label_width), em * itk->rel_ver_advance);
-  control->action = action;
-  control->data = user_data;
-  control->val = val;
-
-  control_ref (control);
-  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_CLICK, itk_choice_clicked, control, itk, control_finalize, NULL);
-
-  ctx_begin_path (ctx);
-  if (itk->focus_no == control->no)
-    itk_style_color (itk->ctx, "itk-focused-bg");
-  else
-    itk_style_color (itk->ctx, "itk-interactive-bg");
-  ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
-  ctx_fill (ctx);
-
-  //itk->x = itk->x + itk->width * (1.0-itk->label_width);
-
-  itk_newline (itk);
-  if (control->no == itk->focus_no)
-  {
-    itk->popup_x = control->x;
-    itk->popup_y = control->y + (itk->panel?-itk->panel->scroll:0);
-    itk->popup_width = control->width;
-    itk->popup_height = control->height;
-  }
 }
 
 int itk_choice (ITK *itk, const char *label, int val)
@@ -1656,9 +1622,9 @@ int itk_choice (ITK *itk, const char *label, int val)
     itk->popup_y = control->y + (itk->panel?-itk->panel->scroll:0);
     itk->popup_width = control->width;
     itk->popup_height = control->height;
-    if (itk->button_pressed)
+    if (itk->return_value)
     {
-      itk->button_pressed = 0;
+      itk->return_value = 0;
       return itk->choice_no;
     }
   }
@@ -2261,7 +2227,7 @@ void itk_key_return (CtxEvent *event, void *data, void *data2)
         }
         break;
       case UI_TOGGLE:
-          itk->button_pressed=1;
+          itk->return_value=1;
           break;
       case UI_EXPANDER:
         {
@@ -2272,9 +2238,7 @@ void itk_key_return (CtxEvent *event, void *data, void *data2)
       case UI_RADIO:
       case UI_BUTTON:
         {
-          if (control->action)
-            control->action(control->val);
-          itk->button_pressed=1;
+          itk->return_value=1;
         }
         break;
     }
@@ -2311,7 +2275,7 @@ void itk_key_left (CtxEvent *event, void *data, void *data2)
           val = control->min;
 
         itk->slider_value = control->value = val;
-        itk->button_pressed = 1;
+        itk->return_value = 1;
       }
       break;
   }
@@ -2354,7 +2318,7 @@ void itk_key_right (CtxEvent *event, void *data, void *data2)
         if (val > control->max) val = control->max;
 
         itk->slider_value = control->value = val;
-        itk->button_pressed = 1;
+        itk->return_value = 1;
       }
       break;
   }
@@ -2383,7 +2347,7 @@ void itk_key_up (CtxEvent *event, void *data, void *data2)
       if (choice->val == old_val)
       {
         itk->choice_no = prev_val;
-        itk->button_pressed = 1;
+        itk->return_value = 1;
         l=NULL;
       }
       prev_val = choice->val;
@@ -2415,7 +2379,7 @@ void itk_key_down (CtxEvent *event, void *data, void *data2)
            l = l->next;
            choice = l->data;
            itk->choice_no = choice->val;
-           itk->button_pressed = 1;
+           itk->return_value = 1;
          }
       }
     }
@@ -2510,11 +2474,10 @@ void itk_key_bindings (ITK *itk)
   ctx_add_key_binding (ctx, "tab", NULL, "focus next",            itk_key_tab,       itk);
   ctx_add_key_binding (ctx, "shift-tab", NULL, "focus previous",      itk_key_shift_tab, itk);
 
-
-  ctx_add_key_binding (ctx, "up", NULL, "spatial focus up",   itk_key_up,        itk);
-  ctx_add_key_binding (ctx, "down", NULL, "spatical focus down", itk_key_down,      itk);
-  ctx_add_key_binding (ctx, "right", NULL, "spatial focus right",          itk_key_right,     itk);
-  ctx_add_key_binding (ctx, "left", NULL, "spatial focus left",           itk_key_left,      itk);
+  ctx_add_key_binding (ctx, "up", NULL, "spatial focus up",        itk_key_up,    itk);
+  ctx_add_key_binding (ctx, "down", NULL, "spatical focus down",   itk_key_down,  itk);
+  ctx_add_key_binding (ctx, "right", NULL, "spatial focus right",  itk_key_right, itk);
+  ctx_add_key_binding (ctx, "left", NULL, "spatial focus left",    itk_key_left,  itk);
 
   ctx_add_key_binding (ctx, "return", NULL, "enter/edit", itk_key_return,    itk);
   ctx_add_key_binding (ctx, "backspace", NULL, NULL,    itk_key_backspace, itk);
@@ -2525,9 +2488,8 @@ void itk_key_bindings (ITK *itk)
 static void itk_choice_set (CtxEvent *event, void *data, void *data2)
 {
   ITK *itk = data;
-  CtxControl *control = itk_focused_control (itk);
   itk->choice_no = (size_t)(data2);
-  itk->button_pressed = 1;
+  itk->return_value = 1;
   ctx_queue_draw (event->ctx);
   event->stop_propagate = 1;
 }

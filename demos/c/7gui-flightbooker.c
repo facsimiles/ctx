@@ -13,11 +13,11 @@ static int booker_ui (ITK *itk, void *data)
   itk_choice_add (itk, 0, "one-way flight");
   itk_choice_add (itk, 1, "return flight");
 
-  itk_entry (itk, "depart", "dd.mm.yyyy", depart_date, 20-1, NULL, NULL);
+  itk_entry (itk, "depart", "dd.mm.yyyy", depart_date, 20-1);
 
   if (!return_flight)
     itk_set_flag (itk, ITK_FLAG_ACTIVE, 0);
-  itk_entry (itk, "return", "dd.mm.yyyy", return_date, 20-1, NULL, NULL);
+  itk_entry (itk, "return", "dd.mm.yyyy", return_date, 20-1);
 
   if (itk_button (itk, "Book"))
   {

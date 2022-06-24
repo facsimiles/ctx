@@ -359,13 +359,6 @@ static void cell_set_value (Cell *cell, const char *value)
   dirty_cell (cell);
 }
 
-static void commit_cell (ITK *itk, void *data)
-{
-  //CtxControl *control = itk_focused_control (itk);
-  Cell *cell = data;
-  cell_set_value (cell, itk->entry_copy);
-}
-
 static int spreadsheet_ui (ITK  *itk, void *data)
 {
   Ctx *ctx = itk->ctx;
@@ -673,7 +666,10 @@ static int spreadsheet_ui (ITK  *itk, void *data)
         itk->x = x;
         itk->y = y - em;
         itk->width = col_width[col];
-        itk_entry (itk, "", "", cell->value, sizeof(cell->value)-1, commit_cell, cell);
+        if (itk_entry (itk, "", "", cell->value, sizeof(cell->value)-1))
+        {
+          cell_set_value (cell, itk->entry_copy);
+        }
         itk->focus_no = itk->control_no-1;
         if (itk->focus_label){
           free (itk->focus_label);
