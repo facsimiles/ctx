@@ -1335,6 +1335,8 @@ char *itk_entry (ITK        *itk,
     itk->active_entry = -1;
     char *copy = itk->entry_copy;
     itk->entry_copy = NULL;
+    ctx_queue_draw (itk->ctx); // queue a draw - since it is likely the
+                               // response triggers computation
     return copy;
   }
   return NULL;
@@ -1651,6 +1653,7 @@ int itk_choice (ITK *itk, const char *label, int val)
     if (itk->return_value)
     {
       itk->return_value = 0;
+      ctx_queue_draw (itk->ctx);
       return itk->choice_no;
     }
   }
