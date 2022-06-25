@@ -196,34 +196,6 @@ struct _ITKPanel{
   const char *title;
 };
 
-typedef enum
-{
-  ITK_BG,
-  ITK_FG,
-  ITK_FOCUSED_BG,
-
-  ITK_INTERACTIVE,
-  ITK_INTERACTIVE_BG,
-
-  ITK_ENTRY_CURSOR,
-  ITK_ENTRY_FALLBACK,
-
-  ITK_SCROLL_FG,
-  ITK_SCROLL_BG,
-
-  ITK_BUTTON_FG,
-  ITK_BUTTON_BG,
-  ITK_BUTTON_FOCUSED_BG,
-  ITK_BUTTON_PRESSED_FG,
-  ITK_BUTTON_PRESSED_BG,
-  ITK_BUTTON_SHADOW,
-
-  ITK_SLIDER_TEXT,
-  ITK_SLIDER_CURSOR,
-
-  ITK_LAST_COLOR
-} ItkControlType;
-
 typedef struct ITKPal{
   char id;
   uint8_t r;
@@ -257,12 +229,6 @@ struct _CtxControl{
   float step;
 };
 
-typedef struct _UiChoice  UiChoice;
-struct _UiChoice
-{
-  int   val;
-  char *label;
-};
 
 struct _ITK{
   Ctx *ctx;
@@ -344,6 +310,14 @@ struct _ITK{
 
 
 #ifdef ITK_IMPLEMENTATION
+
+typedef struct _UiChoice  UiChoice;
+struct _UiChoice
+{
+  int   val;
+  char *label;
+};
+#include "svg.h"
 
 void itk_begin_menu_bar (ITK *itk, const char *title)
 {
