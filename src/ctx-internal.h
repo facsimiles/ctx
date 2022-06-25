@@ -669,7 +669,6 @@ extern void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                            uint8_t      cov);
 
 
-int ctx_utf8_len (const unsigned char first_byte);
 const char *ctx_utf8_skip (const char *s, int utf8_length);
 int ctx_utf8_strlen (const char *s);
 int

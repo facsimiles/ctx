@@ -739,6 +739,7 @@ Ctx *ctx_hasher_new          (int width, int height, int cols, int rows, CtxDraw
 uint32_t ctx_hasher_get_hash (Ctx *ctx, int col, int row);
 
 int ctx_utf8_strlen (const char *s);
+int ctx_utf8_len (const unsigned char first_byte);
 
 #ifndef CTX_BABL
 #ifdef _BABL_H

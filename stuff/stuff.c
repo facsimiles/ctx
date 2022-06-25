@@ -2110,6 +2110,7 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
         pot_cursor = -10;
       }
       {
+        char next[6]="";
         if (!cursor_drawn && pos >= sel_start)
         {
           int seg = wlen_utf8 - (pos-sel_start);
@@ -2124,6 +2125,9 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
             o+=ul;
           }
           tmp[o]=0;
+
+          memcpy (next, &word[o], ctx_utf8_len (word[o]));
+          next [ctx_utf8_len (word[o])]=0;
           //memcpy (tmp, word, seg);
           if (print)
             ctx_rgb (itk->ctx, 1,0,0);
@@ -2132,9 +2136,15 @@ static void layout_text (Ctx *ctx, float x, float y, const char *d_name,
             text_edit_desired_x = cursor_x;
       if (print)
       {
+          float width = space_width;
+          if (text_editor || next[0]==0)
+                   width = space_width;
+          else
+             width = ctx_text_width (itk->ctx, next);
           ctx_rectangle (itk->ctx,
                     cursor_x-1, y - line_height * 0.8f,
-                    text_editor?space_width:2, line_height*0.9f);
+                    width,
+                    line_height*0.9f);
           ctx_fill (itk->ctx);
           ctx_restore (ctx);
       }
@@ -4909,7 +4919,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       free (copy);
 
       ctx_rectangle (ctx, itk->x0 + sel_start, 0.0 * em,
-                          sel_end-sel_start,em * 1);
+                          sel_end-sel_start, em * 1);
       if (c_start==c_end)
         ctx_rgba (ctx, 1,1, 0.2, 1);
       else
