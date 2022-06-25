@@ -39,7 +39,6 @@ void itk_labelf     (ITK *itk, const char *format, ...);
 
 int  itk_toggle     (ITK *itk, const char *label, int in_val);
 
-/* returns 1 when pressed */
 int  itk_button     (ITK *itk, const char *label);
 
 /* this is already modernized - it is the same as itk_toggle but gets rendered
@@ -96,6 +95,7 @@ int itk_entry_str_len (ITK        *itk,
  * edited itk_entry
  */
 void itk_entry_commit (ITK *itk);
+void itk_lost_focus (ITK *itk);
 
 /* return new value if changed */
 
@@ -162,6 +162,7 @@ enum {
 enum {
   ITK_FLAG_SHOW_LABEL = (1<<0),
   ITK_FLAG_ACTIVE     = (1<<1),
+  ITK_FLAG_CANCEL_ON_LOST_FOCUS = (1<<2),
   ITK_FLAG_DEFAULT    = (ITK_FLAG_SHOW_LABEL|ITK_FLAG_ACTIVE)
 };
  // XXX : commit or cancel entry on focus change
@@ -321,12 +322,11 @@ struct _ITK{
   char *menu_path;
 
   uint64_t next_flags;
-  void *next_id; // to pre-empt a control and get it a more unique
+  void    *next_id; // to pre-empt a control and get it a more unique
                  // identifier than the numeric pos
-
-  int line_no;
-  int lines_drawn;
-  int light_mode;
+  int   line_no;
+  int   lines_drawn;
+  int   light_mode;
 };
 
 
@@ -1229,6 +1229,40 @@ void itk_entry_commit (ITK *itk)
   }
 }
 
+void itk_lost_focus (ITK *itk)
+{
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->no == itk->active_entry)
+    {
+      switch (control->type)
+      {
+        case UI_ENTRY:
+         if (itk->active_entry < 0)
+           return;
+         if (control->flags & ITK_FLAG_CANCEL_ON_LOST_FOCUS)
+         {
+           itk->active_entry = -1;
+           itk->active = 0;
+         }
+         else if (itk->entry_copy)
+         {
+           itk->active = 2;
+         }
+         ctx_queue_draw (itk->ctx);
+         break;
+        default :
+         itk->active = 0;
+         itk->choice_active = 0;
+         ctx_queue_draw (itk->ctx);
+         break;
+      }
+      return;
+    }
+  }
+}
+
 void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
@@ -1237,13 +1271,13 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
 
   if (itk->active)
   {
-    itk_entry_commit (itk);
+    itk_lost_focus (itk);
   }
   else
   {
-    itk->entry_copy = strdup (control->val);
-    itk->entry_pos  = strlen (control->val);
-    itk->active     = 1;
+    itk->entry_copy = strdup (control->entry_value);
+    itk->entry_pos = strlen (itk->entry_copy);
+    itk->active = 1;
     itk->active_entry = control->no;
   }
 
@@ -1704,7 +1738,7 @@ void itk_set_focus (ITK *itk, int pos)
        if (control->label)
          itk->focus_label = strdup (control->label);
      }
-     itk_entry_commit (itk);
+     itk_lost_focus (itk);
      ctx_queue_draw (itk->ctx);
    }
 }
@@ -1772,7 +1806,7 @@ CtxControl *itk_focused_control(ITK *itk)
 
 void itk_focus (ITK *itk, int dir)
 {
-   itk_entry_commit (itk);
+   itk_lost_focus (itk);
    if (itk->focus_no < 0)
    {
      itk->focus_no = 0;
@@ -2189,7 +2223,6 @@ void itk_focus (ITK *itk, int dir)
       }
     }
 
-    itk_entry_commit (itk);
     itk_set_focus (itk, best->no);
   }
 }

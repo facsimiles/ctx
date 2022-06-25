@@ -14,7 +14,7 @@ static void  diz_dir_update_files     (Diz *diz);
 static void _diz_dir_remove           (Diz *diz, int no);
 
 static char *diz_dir_get_data_escaped (Diz *diz,
-                                   int  no);
+                                       int  no);
 static char *diz_dir_escape_item      (const char *item);
 
 
@@ -381,6 +381,7 @@ static char *diz_dir_escape_item (const char *item) // XXX expand with length to
 static const char *diz_dir_find_item (Diz *diz, const char *item)
 {
   char *escaped_item = diz_dir_escape_item (item);
+  // XXX - we should unescape, and not rely on bit-exact escaping
   int item_len = strlen (escaped_item);
   const char *m = diz->metadata;
 
@@ -400,6 +401,7 @@ static const char *diz_dir_find_item (Diz *diz, const char *item)
 
 int diz_dir_name_to_no (Diz *diz, const char *item)
 {
+  // XXX - we should unescape, and not rely on bit-exact escaping
   char *escaped_item = diz_dir_escape_item (item);
   int item_len = strlen (escaped_item);
   const char *m = diz->metadata;

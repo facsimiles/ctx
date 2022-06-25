@@ -604,7 +604,7 @@ static void _set_location (const char *location)
     if (path_is_dir (loc))
     {
       //fprintf (stderr, "%i:%s\n", __LINE__, loc);
-      if (loc[strlen(loc)-1]=='/')
+      if (strlen (loc) > 1 && loc[strlen(loc)-1]=='/')
         loc[strlen(loc)-1]='\0';
       diz_dir_set_path (diz, loc);
       drop_item_renderers (ctx);
@@ -1977,7 +1977,7 @@ static void dir_select_item (CtxEvent *event, void *data1, void *data2)
    {
      dir_location_escape (event, NULL, NULL);
    } 
-   itk_entry_commit (itk);
+   itk_lost_focus (itk);
    ctx_queue_draw (event->ctx);
    event->stop_propagate = 1;
 }
@@ -3710,6 +3710,7 @@ static void dir_layout (ITK *itk, Diz *diz)
         float y = itk->y;
 
         char *new_tag;
+        itk_set_flag (itk, ITK_FLAG_CANCEL_ON_LOST_FOCUS, 1);
         if ((new_tag = itk_entry (itk, "", "+", "")))
         {
           diz_dir_add_string_unique (diz, -1, "parent", new_tag);
@@ -4131,6 +4132,24 @@ static void dir_layout (ITK *itk, Diz *diz)
            }
            c = itk_find_control (itk, itk->control_no-1);
            itk_sameline (itk);
+        }
+        else if (ui && !strcmp (ui, "string"))
+        {
+           char *old_str = diz_dir_get_string (diz, i, "value");
+           char *fallback_str = diz_dir_get_string (diz, i, "fallback");
+           if (!old_str)old_str = strdup("?.?");
+           char *new_str;
+           if ((new_str = itk_entry (itk, d_name, fallback_str, old_str)))
+           {
+             diz_dir_set_string (diz, i, "value", new_str);
+             free (new_str);
+           }
+           c = itk_find_control (itk, itk->control_no-1);
+           itk_sameline (itk);
+           if (fallback_str)
+             free (fallback_str);
+           if (old_str)
+             free (old_str);
         }
         else
         {
@@ -5167,7 +5186,6 @@ void viewer_load_path (const char *path, const char *name)
   {
     viewer = NULL;
   }
-
 
   float duration = 5.0;
   float in = diz_dir_get_float (diz, no, "in", -1);

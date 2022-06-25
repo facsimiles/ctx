@@ -54,8 +54,6 @@
 
 #endif
 
-
-
 /* mrg - MicroRaptor Gui
  * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
  * 
@@ -536,9 +534,7 @@ void _ctX_bindings_key_down (CtxEvent *event, void *data1, void *data2)
 
 #include <stdio.h>
 
-
-typedef struct _Mrg Mrg;
-
+typedef struct _Mrg    Mrg;
 typedef struct _MrgXml MrgXml;
 
 enum
@@ -756,7 +752,7 @@ init_statetable (void) {
     a(s_tag,          "!",  0,0,              c_eat,            s_tagexcl);
     a(s_tag,          "?",  0,0,              c_eat,            s_prolog);
     a(s_tag,          NULL, 0,255,            c_eat+c_store,    s_tagnamestart);
-    a(s_tagclose,     NULL,    0,255,         c_eat+c_store,    s_tagclosenamestart);
+    a(s_tagclose,     NULL, 0,255,         c_eat+c_store,    s_tagclosenamestart);
     a(s_tagclosenamestart,    ">",    0,0,    c_eat,            s_tagclosedone);
     a(s_tagclosenamestart,    NULL,    0,255, c_eat+c_store,    s_tagclosename);
     a(s_tagclosename,    ">",    0,0,         c_eat,            s_tagclosedone);
