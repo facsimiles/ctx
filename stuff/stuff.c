@@ -3699,7 +3699,6 @@ static void dir_layout (ITK *itk, Diz *diz)
   
     {
       ctx_begin_path (itk->ctx);
-      static char tag[100]="";
   
       if (itk->focus_no == itk->control_no || 1)
       {
@@ -3709,14 +3708,16 @@ static void dir_layout (ITK *itk, Diz *diz)
         float w = itk->width;
         itk->width = width;
         float y = itk->y;
-        if (itk_entry_str_len (itk, "", "+", tag, sizeof(tag)-1))
+
+        char *new_tag;
+        if ((new_tag = itk_entry (itk, "", "+", "")))
         {
-          diz_dir_add_string_unique (diz, -1, "parent", tag);
-          char *link_path = diz_dir_tag_child_item_path (tag, diz->path);
+          diz_dir_add_string_unique (diz, -1, "parent", new_tag);
+          char *link_path = diz_dir_tag_child_item_path (new_tag, diz->path);
           symlink (diz->path, link_path);
           free (link_path);
-          tag[0]=0;
           ctx_queue_draw (itk->ctx);
+          free (new_tag);
         }
         itk->x+= width;
         itk->y= y;

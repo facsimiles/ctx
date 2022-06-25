@@ -56,18 +56,6 @@ int  itk_choice     (ITK *itk, const char *label, int in_val);
 void itk_choice_add (ITK *itk, int value, const char *label);
 
 
-/*  returns 1 when the value has been changed
- *
- *  this expects a string to write to maxlen is length including
- *  room for terminating \0
- *
- *  return 1 when the value has been changed
- */
-int itk_entry_str_len (ITK        *itk,
-                       const char *label,
-                       const char *fallback,
-                       char       *val,
-                       int         maxlen);
 
 /*
  * returns NULL if value is unchanged or a newly allocated string
@@ -91,6 +79,18 @@ void itk_slider_int   (ITK *itk, const char *label, int *val, int min, int max, 
 void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step);
 void itk_slider_uint8 (ITK *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step);
 
+/*  returns 1 when the value has been changed
+ *
+ *  this expects a string to write to maxlen is length including
+ *  room for terminating \0
+ *
+ *  return 1 when the value has been changed
+ */
+int itk_entry_str_len (ITK        *itk,
+                       const char *label,
+                       const char *fallback,
+                       char       *val,
+                       int         maxlen);
 
 /* to be called on focus changes that might take focus away from
  * edited itk_entry
@@ -235,7 +235,7 @@ struct _CtxControl{
 
   float value;
 
-
+  char *entry_value;
   char *fallback;
   float min;
   float max;
@@ -509,6 +509,8 @@ static inline void control_unref (CtxControl *control)
       free (w->label);
     if (w->fallback)
       free (w->fallback);
+    if (w->entry_value)
+      free (w->entry_value);
 
     free (w);
     return;
@@ -1224,10 +1226,10 @@ void itk_entry_commit (ITK *itk)
         case UI_ENTRY:
          if (itk->entry_copy)
          {
-  fprintf (stderr, "ec %i %s\n", itk->active_entry, itk->entry_copy);
-           strcpy (control->val, itk->entry_copy);
-           free (itk->entry_copy);
-           itk->entry_copy = NULL;
+  //fprintf (stderr, "ec %i %s\n", itk->active_entry, itk->entry_copy);
+  //         strcpy (control->val, itk->entry_copy);
+ //          free (itk->entry_copy);
+ //          itk->entry_copy = NULL;
            itk->active = 2;
            ctx_queue_draw (itk->ctx);
          }
@@ -1250,8 +1252,8 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
   else
   {
     itk->entry_copy = strdup (control->val);
-    itk->entry_pos = strlen (control->val);
-    itk->active = 1;
+    itk->entry_pos  = strlen (control->val);
+    itk->active     = 1;
     itk->active_entry = control->no;
   }
 
@@ -1259,7 +1261,11 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
   ctx_queue_draw (event->ctx);
 }
 
-int itk_entry_str_len (ITK *itk, const char *label, const char *fallback, char *val, int maxlen)
+
+char *itk_entry (ITK        *itk,
+                 const char *label,
+                 const char *fallback,
+                 const char *in_val)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
@@ -1276,11 +1282,10 @@ int itk_entry_str_len (ITK *itk, const char *label, const char *fallback, char *
     ewidth = itk->width;
   }
   CtxControl *control = itk_add_control (itk, UI_ENTRY, label, itk->x, itk->y, ewidth, em * itk->rel_ver_advance);
-  control->val = val;
+  control->entry_value = strdup (in_val);
   if (fallback)
     control->fallback = strdup (fallback);
   control->ref_count++;
-//control->ref_count++;
 
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
 
@@ -1314,13 +1319,13 @@ int itk_entry_str_len (ITK *itk, const char *label, const char *fallback, char *
   }
   else
   {
-    if (val[0])
+    if (in_val[0])
     {
       if (control->flags & ITK_FLAG_ACTIVE)
         itk_style_color (itk->ctx, "itk-interactive");
       else
         itk_style_color (itk->ctx, "itk-fg");
-      ctx_text (ctx, val);
+      ctx_text (ctx, in_val);
     }
     else
     {
@@ -1338,9 +1343,25 @@ int itk_entry_str_len (ITK *itk, const char *label, const char *fallback, char *
   {
     itk->active = 0;
     itk->active_entry = -1;
-    return 1;
+    char *copy = itk->entry_copy;
+    itk->entry_copy = NULL;
+    return copy;
   }
-  return 0;
+  return NULL;
+}
+
+int itk_entry_str_len (ITK *itk, const char *label, const char *fallback, char *val, int maxlen)
+{
+   char *new_val;
+   if ((new_val = itk_entry (itk, label, fallback, val)))
+   {
+      if ((int)strlen (new_val) > maxlen -1)
+        new_val[maxlen-1]=0;
+      strcpy (val, new_val);
+      free (new_val);
+      return 1;
+   }
+   return 0;
 }
 
 void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
@@ -2224,8 +2245,8 @@ void itk_key_return (CtxEvent *event, void *data, void *data2)
          }
          else
          {
-           itk->entry_copy = strdup (control->val);
-           itk->entry_pos = strlen (control->val);
+           itk->entry_copy = strdup (control->entry_value);
+           itk->entry_pos = strlen (itk->entry_copy);
            itk->active = 1;
            itk->active_entry = control->no;
          }
