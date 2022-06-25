@@ -4229,12 +4229,15 @@ static void dir_layout (ITK *itk, Diz *diz)
               add_context_binding (1, "unflow", "unflow", "control-f");
            }
 
+           if (!is_text_editing())
+           {
+             add_context_binding (1, "duplicate", "item-duplicate", "control-d");
+             add_context_binding (1, "remove", "remove", "delete");
+           }
 
           if (!is_text_editing()
               && !item_context_active && !ui)
           {
-            add_context_binding (1, "duplicate", "item-duplicate", "control-d");
-            add_context_binding (1, "remove", "remove", "delete");
 
             if (!layout_config.outliner)
             {
@@ -5857,9 +5860,9 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_key_binding (ctx, "right", NULL, NULL,
                     ignore_and_stop_propagate,
                     NULL);
-    ctx_add_key_binding (ctx, "delete", NULL, NULL,
-                    ignore_and_stop_propagate,
-                    NULL);
+    //ctx_add_key_binding (ctx, "delete", NULL, NULL,
+    //                ignore_and_stop_propagate,
+    //                NULL);
     ctx_add_key_binding (ctx, "tab", NULL, NULL,
                     ignore_and_stop_propagate,
                     NULL);

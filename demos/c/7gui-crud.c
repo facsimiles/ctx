@@ -44,6 +44,7 @@ static int crud_ui (ITK *itk, int frame_no)
   int saved_y = itk->y;
   itk->x += itk->width;
   itk->x0 += itk->width;
+
   itk_entry_str_len (itk, "Name:", "",    name, 20-1);
   itk_entry_str_len (itk, "Surname:", "", surname, 20-1);
   itk->x -= itk->width;

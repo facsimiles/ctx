@@ -19,8 +19,6 @@ static int temperature_ui (ITK *itk, void *data)
   if (itk_entry_str_len (itk, "celcius", "C", celcius_val, 20-1))
   {
     float celcius;
-    CtxControl *control = itk_focused_control (itk);
-    strcpy (control->val, itk->entry_copy);
     int invalid = 0;
     for (int i = 0; celcius_val[i]; i++)
       if (!((celcius_val[i] >= '0' && celcius_val[i] <= '9') || celcius_val[i]=='.'))
@@ -30,12 +28,14 @@ static int temperature_ui (ITK *itk, void *data)
       celcius = atof (celcius_val);
       sprintf (fahrenheit_val, "%.2f", celcius * (9/5.0) + 32);
     }
+    else
+    {
+      sprintf (fahrenheit_val, "ERR");
+    }
   }
   if (itk_entry_str_len (itk, "fahrenheit", "F", fahrenheit_val, 20-1))
   {
     float fahrenheit;
-    CtxControl *control = itk_focused_control (itk);
-    strcpy (control->val, itk->entry_copy);
     int invalid = 0;
     for (int i = 0; fahrenheit_val[i]; i++)
       if (!((fahrenheit_val[i] >= '0' && fahrenheit_val[i] <= '9') || fahrenheit_val[i]=='.'))
@@ -44,6 +44,10 @@ static int temperature_ui (ITK *itk, void *data)
     {
       fahrenheit = atof (fahrenheit_val);
       sprintf (celcius_val, "%.2f", (fahrenheit - 32) * (5/9.0));
+    }
+    else
+    {
+      sprintf (celcius_val, "ERR");
     }
   }
   itk_panel_end (itk);
