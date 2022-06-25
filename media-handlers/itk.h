@@ -236,16 +236,11 @@ struct _CtxControl{
   float value;
 
   char *entry_value;
+
   char *fallback;
   float min;
   float max;
   float step;
-
-  double (*get_val)(void *valp, void *data);
-  void(*set_val)(void *valp, double val, void *data);
-  void(*finalize)(void *data);
-
-  void *data;
 };
 
 typedef struct _UiChoice  UiChoice;
@@ -503,8 +498,6 @@ static inline void control_unref (CtxControl *control)
   {
     CtxControl *w = control;
 
-    if (control->finalize)
-      control->finalize (control->data);
     if (w->label)
       free (w->label);
     if (w->fallback)
@@ -1101,9 +1094,6 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
 
   CtxControl *control = itk_add_control (itk, UI_SLIDER, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width) - em * 1.5, em * itk->rel_ver_advance);
   //control->data = data;
-  //control->set_val = set_val;
-  //control->get_val = get_val;
-  //control->finalize = finalize;
   //
   control->value  = value;
   control->min  = min;
@@ -1121,7 +1111,7 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
   ctx_listen_with_finalize (ctx, CTX_DRAG, itk_slider_cb_drag, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
 
-  double fval = value;//get_val (val, data);
+  double fval = value;
 
   if (step == 1.0)
   {
