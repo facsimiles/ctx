@@ -11,7 +11,6 @@
  * avoid re-drawing unchanged areas of the display.
  *
  * 
- *
  * TODO/BUGS:
  *   - more than one scroll per panel
  *   - horizontal scroll
@@ -107,8 +106,22 @@ const char *itk_style_string (const char *name);
 float       itk_style_float  (char *name);
 float       itk_em           (ITK *itk);
 
+Ctx        *itk_ctx            (ITK *itk);
+float       itk_x              (ITK *itk);
+float       itk_y              (ITK *itk);
+void        itk_set_x          (ITK *itk, float x);
+void        itk_set_y          (ITK *itk, float y);
+void        itk_set_xy         (ITK *itk, float x, float y);
+void        itk_set_edge_left  (ITK *itk, float edge);
+void        itk_set_edge_right (ITK *itk, float edge);
+float       itk_wrap_width     (ITK *itk);
+float       itk_edge_left      (ITK *itk);
+float       itk_edge_right     (ITK *itk);
+void        itk_set_wrap_width (ITK *itk, float wwidth);
+
 /* runs until ctx_quit itk->ctx) is called */
-void itk_run_ui       (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data);
+void        itk_run_ui         (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data);
+void        itk_set_font_size  (ITK *itk, float font_size);
 
 
 /*
@@ -1725,19 +1738,7 @@ void itk_set_focus (ITK *itk, int pos)
    if (itk->focus_no != pos)
    {
      itk->focus_no = pos;
-     if (itk->focus_label){
-       free (itk->focus_label);
-       itk->focus_label = NULL;
-     }
 
-     int n_controls = ctx_list_length (itk->controls);
-     CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
-     if (iter)
-     {
-       CtxControl *control = iter->data;
-       if (control->label)
-         itk->focus_label = strdup (control->label);
-     }
      itk_lost_focus (itk);
      ctx_queue_draw (itk->ctx);
    }
@@ -1766,33 +1767,10 @@ CtxControl *itk_focused_control(ITK *itk)
     CtxControl *control = l->data;
     if (control->no == itk->focus_no)
     {
-      if (itk->focus_label)
-      {
-        if (control->label && !strcmp (itk->focus_label, control->label))
-          return control;
-      }
-      else
-        return control;
+      return control;
     }
   }
 
-  if (itk->focus_label)
-  {
-    for (CtxList *l = itk->controls; l; l=l->next)
-    {
-      CtxControl *control = l->data;
-      if (control->label && !strcmp (itk->focus_label, control->label))
-      {
-         itk->focus_no = control->no;
-         ctx_queue_draw (itk->ctx);
-         free (itk->focus_label);
-         itk->focus_label = NULL;
-         return control;
-      }
-    }
-    free (itk->focus_label);
-    itk->focus_label = NULL;
-  }
 
   return NULL;
 }
@@ -1817,20 +1795,13 @@ void itk_focus (ITK *itk, int dir)
        dir == ITK_DIRECTION_NEXT)
    {
      itk->focus_no += dir;
-     if (itk->focus_label){
-       free (itk->focus_label);
-       itk->focus_label = NULL;
-     }
 
      int n_controls = ctx_list_length (itk->controls);
      CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
      if (iter)
      {
        CtxControl *control = iter->data;
-       if (control->label)
-       {
-         itk->focus_label = strdup (control->label);
-       }
+       itk->focus_no = control->no;
      }
      else
      {
@@ -2781,6 +2752,58 @@ void itk_main (int (*ui_fun)(ITK *itk, void *data), void *ui_data)
   ctx_destroy (ctx);
 }
 
+
+float       itk_x            (ITK *itk)
+{
+  return itk->x;
+}
+float       itk_y            (ITK *itk)
+{
+  return itk->y;
+}
+void itk_set_x  (ITK *itk, float x)
+{
+  itk->x = x;
+}
+void itk_set_y  (ITK *itk, float y)
+{
+  itk->y = y;
+}
+void itk_set_xy  (ITK *itk, float x, float y)
+{
+  itk->x = x;
+  itk->y = y;
+}
+void itk_set_edge_left (ITK *itk, float edge)
+{
+   itk->x0 = edge;
+}
+float        itk_edge_left (ITK *itk)
+{
+   return itk->x0;
+}
+void itk_set_edge_right (ITK *itk, float edge)
+{
+   itk->width = edge - itk->x0;
+}
+float itk_wrap_width (ITK *itk)
+{
+    return itk->width; // XXX computed from edges:w
+}
+void itk_set_wrap_width (ITK *itk, float wwidth)
+{
+    itk->width = wwidth;
+}
+
+float        itk_edge_right (ITK *itk)
+{
+   return itk->x0 + itk->width;
+}
+
+Ctx        *itk_ctx            (ITK *itk)
+{
+  return itk->ctx;
+}
 
 
 #endif
