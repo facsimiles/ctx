@@ -4451,21 +4451,21 @@ static void dir_layout (ITK *itk, Diz *diz)
           char *label = NULL;
           if (target)
           {
-                  char *t = realpath (target, NULL);
-                  if (t)
-                  {
-          Diz *tdiz = diz_dir_new ();
-          diz_dir_set_path (tdiz, t);
-          label = strdup (tdiz->title?tdiz->title:"xx");
-          diz_dir_destroy (tdiz);
-          free (t);
-                  }
-                  else
-                    label = strdup (target);
-          free (target);
+            char *t = realpath (target, NULL);
+            if (t)
+             {
+               Diz *tdiz = diz_dir_new ();
+               diz_dir_set_path (tdiz, t);
+               label = strdup (tdiz->title?tdiz->title:"xx");
+               diz_dir_destroy (tdiz);
+               free (t);
+             }
+            else
+              label = strdup (target);
+            free (target);
           }
           else
-                  label = strdup ("OH?");
+            label = strdup ("OH?");
                   
           ctx_gray (ctx, 0.95);
 

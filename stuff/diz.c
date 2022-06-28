@@ -414,9 +414,9 @@ int diz_dir_name_to_no (Diz *diz, const char *item)
       free (escaped_item);
       return no;
     }
+    if (m[0] != ' ') no ++;
     while (m && *m && *m != '\n') m++;
     if (m && *m == '\n') m++;
-    if (m[0] != ' ') no ++;
   }
   free (escaped_item);
   return -1;
@@ -425,7 +425,7 @@ int diz_dir_name_to_no (Diz *diz, const char *item)
 int diz_dir_value_count   (Diz *diz, int item_no, const char *key)
 {
   const char *m = diz_dir_find_no (diz, item_no);
-  if (!m) return -1;
+  if (!m) return 0;
   int count = 0;
   int keylen = strlen (key);
   while (m[0] == ' ')
@@ -479,7 +479,7 @@ int diz_dir_key_count (Diz *diz, int no)
   int keylen=0;
 
   const char *m = diz_dir_find_no (diz, no);
-  if (!m) return -1;
+  if (!m) return 0;
   while (m[0] == ' ')
   {
      m++;
