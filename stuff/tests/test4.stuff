@@ -6,5 +6,5 @@ set-name 1 bar
 focus-no 1
 make-child-of-previous
 focus-no 0
-duplicate
+item-duplicate
 dump

@@ -6,18 +6,18 @@ set-name 1 bar
 focus-no 1
 make-child-of-previous
 focus-no 0
-duplicate
+item-duplicate
 dump
 item count: 8
 foo     :0,0
-___     :1,1
+     :1,1
    type=startgroup
     bar     :2,2
-    ~~~     :3,3
+         :3,1
        type=endgroup
 foo     :4,0
-___     :5,1
+     :5,1
    type=startgroup
     bar     :6,2
-    ~~~     :7,3
+         :7,1
        type=endgroup
