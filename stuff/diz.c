@@ -1093,7 +1093,7 @@ diz_dir_update_files (Diz *diz)
       if ((len = readlink(full_path, target, sizeof(target)-1)) != -1)
          target[len] = '\0';
 
-      fprintf (stderr, "we inserted %i\n", n);
+      //fprintf (stderr, "we inserted %i\n", n);
       diz_dir_set_string (diz, n, "type", "symlink");
       diz_dir_set_string (diz, n, "target", target);
 
@@ -1106,9 +1106,9 @@ diz_dir_update_files (Diz *diz)
         //diz_dir_set_string (diz, n, "label", temp_diz.title);
      // }
      // else
-      {
-        diz_dir_set_string (diz, n, "label", basename(target));
-      }
+      //{
+      //  diz_dir_set_string (diz, n, "label", basename(target));
+      //}
 
     }
     else

@@ -157,7 +157,6 @@ static inline void dir_log (int level, const char *format, ...)
 #define DIR_WARNING(args...) dir_log(DIR_LOG_WARNING, args)
 #define DIR_DETAIL(args...)  dir_log(DIR_LOG_DETAIL,  args)
 
-
 CtxList *thumb_queue = NULL;
 typedef struct ThumbQueueItem
 {
@@ -2945,6 +2944,8 @@ static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
   {
     e->stop_propagate = 1;
     ctx_queue_draw (e->ctx);
+    focused_no = 0;
+    set_find_item (itk, focused_no);
   }
 }
 
@@ -3692,8 +3693,6 @@ static void dir_layout (ITK *itk, Diz *diz)
   
     {
       ctx_begin_path (ctx);
-  
-      if (itk->focus_no == itk->control_no || 1)
       {
         float width = em * 5;
         itk_set_x (itk, tx + em * 0.2);
@@ -3716,21 +3715,6 @@ static void dir_layout (ITK *itk, Diz *diz)
         itk_set_x (itk, itk_x(itk) + width);
         itk_set_y (itk, y - em * 0.5);
         itk_set_wrap_width (itk, w);
-      }
-      else
-      {
-        float width = ctx_text_width (ctx, " + ");
-        //CtxControl *c = 
-                itk_add_control (itk, UI_LABEL, "tag",
-                        tx,
-                        em * 2.5,
-                        em + width,
-                        em * 1);
-        ctx_font_size (ctx, em);
-        ctx_rgb (ctx, 1, 1, 0);
-        ctx_move_to (ctx, tx + 0.5 * em,
-                     em * 3.3);
-        ctx_text (ctx, "+ ");
       }
     }
   }
@@ -3802,7 +3786,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           /*FALLTHROUGH*/
         case CTX_ATOM_NEWPAGE:
           layout_box_count = 0;
-          layout_box_no = 0;
+          layout_box_no    = 0;
           // XXX need better default for new page
           layout_box_defaults(&layout_box[0]);
           break;
@@ -4464,11 +4448,24 @@ static void dir_layout (ITK *itk, Diz *diz)
           ctx_save (ctx);
 
           char *target = diz_dir_get_string (diz, i, "target");
+          char *label = NULL;
+          if (target)
+          {
+                  char *t = realpath (target, NULL);
+                  if (t)
+                  {
           Diz *tdiz = diz_dir_new ();
-          diz_dir_set_path (tdiz, target);
-          char *label = strdup (tdiz->title?tdiz->title:"xx");
+          diz_dir_set_path (tdiz, t);
+          label = strdup (tdiz->title?tdiz->title:"xx");
           diz_dir_destroy (tdiz);
-
+          free (t);
+                  }
+                  else
+                    label = strdup (target);
+          free (target);
+          }
+          else
+                  label = strdup ("OH?");
                   
           ctx_gray (ctx, 0.95);
 
@@ -5283,6 +5280,9 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
 static void dir_location_return (CtxEvent *e, void *d1, void *d2)
 {
   editing_location = 0;
+  while (commandline->str[strlen(commandline->str)-1]== ' ')
+    commandline->str[strlen(commandline->str)-1]=0;
+  //fprintf (stderr, "{%s}", commandline->str);
   set_location (commandline->str);
   ctx_string_set (commandline, "");
   //        ctx_listen (ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
