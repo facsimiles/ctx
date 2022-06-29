@@ -270,9 +270,6 @@ char *diz_dir_get_data (Diz *diz, int no)
     diz->cache = calloc (sizeof(void*), new_count);
   }
 
-
-
-  /* this makes use reuse the cache */
   const char *m = diz_dir_find_no (diz, no);
   if (!m) return NULL;
   if (m == diz->metadata)

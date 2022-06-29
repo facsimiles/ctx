@@ -1939,6 +1939,8 @@ static void dir_revert (CtxEvent *event, void *data1, void *data2)
   // XXX: NYI
 }
 
+int item_context_active = 0;
+int item_context_choice = 0;
 int editing_location = 0;
 static void dir_location_escape (CtxEvent *e, void *d1, void *d2);
 
@@ -1958,6 +1960,7 @@ static void dir_select_item (CtxEvent *event, void *data1, void *data2)
    {
      dir_location_escape (event, NULL, NULL);
    } 
+   item_context_active=0;
    itk_lost_focus (itk);
    ctx_queue_draw (event->ctx);
    event->stop_propagate = 1;
@@ -2699,8 +2702,6 @@ int cmd_page (COMMAND_ARGS) /* "page", 1, "<next|prev|previous|integer>", "" */
   return 0;
 }
 
-int item_context_active = 0;
-int item_context_choice = 0;
 
 static void
 make_tail_entry (Diz *diz)
@@ -5472,7 +5473,7 @@ static int card_files (ITK *itk_, void *data)
   if (item_context_active == 0)
   {
     clear_context_menu ();
-    add_context_binding (1, "close", "", "escape");
+    add_context_binding (1, "close context menu", "", "escape");
   }
   else
   {
@@ -5802,7 +5803,7 @@ static int card_files (ITK *itk_, void *data)
       }
 #endif
 
-  if (item_context_active && focused_no>=-1)
+  if (item_context_active)
   {
     float em = itk_em (itk);
     float width = em * 20;
@@ -5812,25 +5813,25 @@ static int card_files (ITK *itk_, void *data)
 
     if (focused_control && focused_no > -1)
     {
-    x = focused_control->x + focused_control->width;
-    y = focused_control->y;
-    if (width < focused_control->width)
-    {
-       // menu thinner than item itself, place menu on item        
-       x = focused_control->x + focused_control->width/2 - width/2;
+      x = focused_control->x + focused_control->width;
+      y = focused_control->y;
+      if (width < focused_control->width)
+      {
+         // menu thinner than item itself, place menu on item        
+         x = focused_control->x + focused_control->width/2 - width/2;
+      }
+      else
+      {
+         if (x + width > itk_wrap_width (itk))
+         {
+           x = focused_control->x - width;
+         }
+      }
     }
     else
     {
-       if (x + width > itk_wrap_width (itk))
-       {
-         x = focused_control->x - width;
-       }
-    }
-    }
-    else
-    {
-      x = 10 * em;
-      y = 4 * em;
+      x = 0 * em;
+      y = 1 * em;
     }
 
     if (y + height - itk->panel->scroll> ctx_height (ctx))
