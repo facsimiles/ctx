@@ -64,12 +64,12 @@ typedef struct LayoutConfig
   float padding_bottom;
   float level_indent;
 
-  int use_layout_boxes;
-  int outliner;
+  int   use_layout_boxes;
+  int   outliner;
 
-  int hide_non_file;
+  int   hide_non_file;
   float margin_top; // page_margin
-  int monospace;
+  int   monospace;
   float line_height;
 } LayoutConfig;
 
@@ -84,13 +84,13 @@ int text_editor = 0; /* global variable that changes how some loading/saving
                         is done - we are not expected to run within a regular
                         instance but our own process
                       */
-static int vim_keys = 0;
-int show_keybindings = 0;
-int focused_no = -1;
-int layout_page_no = 0;
-int layout_show_page = 0;
-int layout_last_page = 0;
-float dir_scale = 1.0f;
+static int vim_keys         = 0;
+int        show_keybindings = 0;
+int        focused_no       = -1;
+int        layout_page_no   = 0;
+int        layout_show_page = 0;
+int        layout_last_page = 0;
+float      dir_scale        = 1.0f;
 
 unsigned long viewer_slide_start = 0;
 unsigned long viewer_slide_trigger = 0;
@@ -507,7 +507,7 @@ int        commandline_cursor_end = 0;
 static inline int is_text_editing (void)
 {
   return (text_edit != TEXT_EDIT_OFF) ||
-         (commandline->str[0]!=0);
+         (commandline && commandline->str[0]!=0);
 }
 
 
@@ -3719,7 +3719,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       }
     }
   }
-  itk_set_y (itk, 4 * em);
+  itk_set_y (itk, 2 * em);
   itk_set_x (itk, itk_edge_left (itk));
   if (layout_config.outliner)
      printing = 1;
@@ -5374,8 +5374,39 @@ static void item_context_choice_next (CtxEvent *e, void *d1, void *d2)
 static void item_context_make_choice (CtxEvent *e, void *d1, void *d2)
 {
   //char **choices = d1;
-  argvs_eval (context_menu[item_context_choice*3+1]);
-  item_context_active = 0;
+  //
+  if (commandline->str[0])
+  {
+      char *eq = strchr (commandline->str, '=');
+      if (eq && eq != commandline->str)
+      {
+        *eq='\0';
+        const char *value = eq+1;
+        const char *key = commandline->str;
+        if (strcmp (key, "parent"))
+        {
+          if (value[0])
+            diz_dir_set_string (diz, focused_no, key, value);
+          else
+            diz_dir_unset (diz, focused_no, key);
+        }
+      }
+      else
+      {
+        fprintf (stderr, "nothing to do for %s\n", commandline->str);
+      }
+      //ctx_string_free (commandline, 1);
+      //commandline = NULL;
+      commandline_cursor_end =
+      commandline_cursor_start = 0;
+      ctx_string_set (commandline, "");
+  }
+  else
+  {
+    argvs_eval (context_menu[item_context_choice*3+1]);
+    item_context_active = 0;
+  }
+ 
   e->stop_propagate = 1;
   ctx_queue_draw (e->ctx);
 }
@@ -5426,6 +5457,43 @@ static void dir_any (CtxEvent *e, void *d1, void *d2)
     commandline_cursor_end = commandline_cursor_start;
   }
 }
+
+static void context_any (CtxEvent *e, void *d1, void *d2)
+{
+  const char *str = e->string;
+  
+  e->stop_propagate = 1;
+
+  if (!strcmp (str, "space"))
+  {
+    str = " ";
+  }
+
+  //if (!commandline) commandline = ctx_string_new ("");
+
+  if (commandline_cursor_start != commandline_cursor_end)
+  {
+    int c_s = commandline_cursor_start;
+    int c_e = commandline_cursor_end;
+    if (c_s > c_e)
+    {
+      c_e = commandline_cursor_start;
+      c_s = commandline_cursor_end;
+    }
+    for (int i = c_s; i < c_e; i++)
+      ctx_string_remove (commandline, c_s);
+    commandline_cursor_start = c_s;
+  }
+
+  if (ctx_utf8_strlen (str) == 1)
+  {
+    ctx_string_insert_utf8 (commandline, commandline_cursor_start, str);
+    ctx_queue_draw (e->ctx);
+    commandline_cursor_start += strlen (str);
+    commandline_cursor_end = commandline_cursor_start;
+  }
+}
+
 
 static int malloc_trim_cb (Ctx *ctx, void *data)
 {
@@ -5608,7 +5676,7 @@ static int card_files (ITK *itk_, void *data)
       && !item_context_active)
   {
 
-          if (commandline->str[0])
+          if (commandline && commandline->str[0])
           {
             ctx_add_key_binding (ctx, "backspace", NULL, "remove char",
                             dir_backspace,
@@ -5809,7 +5877,7 @@ static int card_files (ITK *itk_, void *data)
     float width = em * 20;
     float x;
     float y;
-    float height = em * (context_menu_items + 3);
+    float height = em * (context_menu_items + 2.2 + diz_dir_key_count (diz, focused_no));
 
     if (focused_control && focused_no > -1)
     {
@@ -5843,9 +5911,23 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_key_binding (ctx, "down", NULL, "next choice",
                     item_context_choice_next,
                     NULL);
-    ctx_add_key_binding (ctx, "return", NULL, "make choice",
+    if (commandline)
+    {
+       if (commandline->str[commandline->length-1]=='=')
+         ctx_add_key_binding (ctx, "return", NULL, "unset key",
                     item_context_make_choice,
                     NULL);
+       else
+         ctx_add_key_binding (ctx, "return", NULL, "set key",
+                    item_context_make_choice,
+                    NULL);
+    }
+    else
+    {
+      ctx_add_key_binding (ctx, "return", NULL, "make choice",
+                           item_context_make_choice,
+                           NULL);
+    }
     ctx_add_key_binding (ctx, "left", NULL, NULL,
                     ignore_and_stop_propagate,
                     NULL);
@@ -5946,6 +6028,63 @@ static int card_files (ITK *itk_, void *data)
 #endif
 
     ctx_fill (ctx);
+    ctx_add_key_binding (ctx, "any", NULL, NULL, context_any, NULL);
+    if (commandline &&
+        commandline->str[0])
+      {
+        ctx_add_key_binding (ctx, "backspace", NULL, "remove char",
+                        dir_backspace,
+                        NULL);
+
+        //ctx_add_key_binding (ctx, "return", NULL, "run commandline",
+        //                dir_run_commandline,
+        //                NULL);
+      }
+  if (!editing_location && text_edit == TEXT_EDIT_OFF &&
+                   (commandline &&
+                   commandline->str[0])){
+    float em = itk_em (itk);
+    ctx_save (ctx);
+
+    char *copy = strdup (commandline->str);
+      float sel_start = 0.0;
+      float sel_end = 0.0;
+      int c_start = commandline_cursor_start;
+      int c_end   = commandline_cursor_end;
+      char tmp;
+
+      if (c_end < c_start)
+      {
+        c_end   = commandline_cursor_start;
+        c_start = commandline_cursor_end;
+      }
+
+      tmp = copy[c_start];
+      copy[c_start] = 0;
+      sel_start = ctx_text_width (ctx, copy) - 1;
+      copy[c_start] = tmp;
+
+      tmp = copy[c_end];
+      copy[c_end] = 0;
+      sel_end = ctx_text_width (ctx, copy) + 1;
+      copy[c_end] = tmp;
+
+      free (copy);
+
+      ctx_rectangle (ctx, 3.4 * em + sel_start, ctx_height (ctx) - 1.4 * em,
+                          sel_end-sel_start,em * 1.3);
+      if (c_start==c_end)
+        ctx_rgba (ctx, 1,1, 0.2, 1);
+      else
+        ctx_rgba (ctx, 0.5,0, 0, 1);
+      ctx_fill (ctx);
+      y+=em;
+    ctx_move_to (ctx, x+em, y);//3.4 * em, ctx_height (ctx) - 0.5 * em);
+    ctx_rgba (ctx, 1,1,1, 0.6);
+
+    ctx_text (ctx, commandline->str);
+    ctx_restore (ctx);
+  }
   }
 
   itk_panel_end (itk);
@@ -6199,48 +6338,6 @@ static int card_files (ITK *itk_, void *data)
   }
 #endif
 
-  if (!editing_location && text_edit == TEXT_EDIT_OFF && commandline->str[0]){
-    float em = itk_em (itk);
-    ctx_save (ctx);
-
-    char *copy = strdup (commandline->str);
-      float sel_start = 0.0;
-      float sel_end = 0.0;
-      int c_start = commandline_cursor_start;
-      int c_end   = commandline_cursor_end;
-      char tmp;
-
-      if (c_end < c_start)
-      {
-        c_end   = commandline_cursor_start;
-        c_start = commandline_cursor_end;
-      }
-
-      tmp = copy[c_start];
-      copy[c_start] = 0;
-      sel_start = ctx_text_width (ctx, copy) - 1;
-      copy[c_start] = tmp;
-
-      tmp = copy[c_end];
-      copy[c_end] = 0;
-      sel_end = ctx_text_width (ctx, copy) + 1;
-      copy[c_end] = tmp;
-
-      free (copy);
-
-      ctx_rectangle (ctx, 3.4 * em + sel_start, ctx_height (ctx) - 1.4 * em,
-                          sel_end-sel_start,em * 1.3);
-      if (c_start==c_end)
-        ctx_rgba (ctx, 1,1, 0.2, 1);
-      else
-        ctx_rgba (ctx, 0.5,0, 0, 1);
-      ctx_fill (ctx);
-    ctx_move_to (ctx, 3.4 * em, ctx_height (ctx) - 0.5 * em);
-    ctx_rgba (ctx, 1,1,1, 0.6);
-
-    ctx_text (ctx, commandline->str);
-    ctx_restore (ctx);
-  }
 
 
   if (show_keybindings && !viewer)
