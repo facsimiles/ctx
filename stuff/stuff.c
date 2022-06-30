@@ -2913,6 +2913,7 @@ static void dir_location (CtxEvent *e, void *d1, void *d2)
   //if (e)
   {
     itk_panels_reset_scroll (itk);
+    text_edit = TEXT_EDIT_OFF;
     focused_no = -1;
     set_find_item (itk, focused_no);
     if(e)
@@ -4209,9 +4210,9 @@ static void dir_layout (ITK *itk, Diz *diz)
               add_context_binding (1, "unflow", "unflow", "control-f");
            }
 
+           add_context_binding (1, "duplicate", "item-duplicate", "control-d");
            if (!is_text_editing())
            {
-             add_context_binding (1, "duplicate", "item-duplicate", "control-d");
              add_context_binding (1, "remove", "remove", "delete");
            }
 
@@ -4294,7 +4295,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
 
           if (!layout_config.outliner
-              && !is_text_editing ()
+        //    && !is_text_editing ()
               && !item_context_active)
           {
             add_context_binding (1, "move after next sibling",
@@ -4304,18 +4305,21 @@ static void dir_layout (ITK *itk, Diz *diz)
                                     "move-before-previous-sibling",
                                     "control-page-up");
 
-            ctx_add_key_binding (ctx, "shift-control-down", NULL, "grow height", grow_height, NULL);
-            ctx_add_key_binding (ctx, "shift-control-up", NULL, "shrink height", shrink_height, NULL);
+            if (!is_text_editing())
+            {
+            ctx_add_key_binding (ctx, "control-down", NULL, "grow height", grow_height, NULL);
+            ctx_add_key_binding (ctx, "control-up", NULL, "shrink height", shrink_height, NULL);
 
-            ctx_add_key_binding (ctx, "shift-control-left", NULL, "shrink width", shrink_width, NULL);
-            ctx_add_key_binding (ctx, "shift-control-right", NULL, "grow width", grow_width, NULL);
+            ctx_add_key_binding (ctx, "control-left", NULL, "shrink width", shrink_width, NULL);
+            ctx_add_key_binding (ctx, "control-right", NULL, "grow width", grow_width, NULL);
+            }
 
           if (gotpos)
           {
-          BIND_KEY("control-left", "item-move-pos left", "item-move-pos left");
-          BIND_KEY("control-up", "item-move-pos up", "item-move-pos up");
-          BIND_KEY("control-right", "item-move-pos right", "item-move-pos right");
-          BIND_KEY("control-down", "item-move-pos down", "item-move-pos down");
+          BIND_KEY("shift-control-left", "item-move-pos left", "item-move-pos left");
+          BIND_KEY("shift-control-up", "item-move-pos up", "item-move-pos up");
+          BIND_KEY("shift-control-right", "item-move-pos right", "item-move-pos right");
+          BIND_KEY("shift-control-down", "item-move-pos down", "item-move-pos down");
 
           }
           else
@@ -4328,10 +4332,10 @@ static void dir_layout (ITK *itk, Diz *diz)
                                  "move-before-previous-sibling",
                                  "control-up");
 #endif
-            BIND_KEY ("control-down",
+            BIND_KEY ("shift-control-down",
                       "move-after-next-sibling",
                       "move after next sibling");
-            BIND_KEY ("control-up",
+            BIND_KEY ("shift-control-up",
                       "move-before-previous-sibling",
                       "move before previoue sibling");
 
@@ -4345,11 +4349,11 @@ static void dir_layout (ITK *itk, Diz *diz)
               add_context_binding (1,
                               "demote",
                               "make-sibling-of-parent",
-                              "control-left");
+                              "shift-control-left");
               add_context_binding (1,
                               "promote",
                               "make-child-of-previous",
-                              "control-right");
+                              "shift-control-right");
 #endif
             }
 
@@ -5602,10 +5606,12 @@ static int card_files (ITK *itk_, void *data)
     if (!is_text_editing() &&
         !item_context_active)
     {
+#if 0
       BIND_KEY ("shift-control-+", "zoom in", "zoom in");
       BIND_KEY ("shift-control-=", "zoom in", "zoom in");
       BIND_KEY ("shift-control--", "zoom out", "zoom out");
       BIND_KEY ("shift-control-0", "zoom 1.0", "zoom reset");
+#endif
 
       BIND_KEY ("control-+", "font-size up", "larger text");
       BIND_KEY ("control-=", "font-size up", "larger text");
@@ -5661,13 +5667,19 @@ static int card_files (ITK *itk_, void *data)
     }
   }
 
-  if (!is_text_editing() &&
-      !item_context_active)
+  if (!item_context_active)
   {
     if (layout_show_page < layout_last_page)
       BIND_KEY("page-down", "page next", "next page");
     if (layout_show_page > 0)
       BIND_KEY("page-up", "page previous", "previous page");
+
+    add_context_binding (location_active, "change location", "location-edit", "control-l");
+    add_context_binding (location_active, "quit", "quit", "control-q");
+
+
+
+
   }
 
   if (!viewer
@@ -5716,10 +5728,8 @@ static int card_files (ITK *itk_, void *data)
             ctx_add_key_binding (ctx, "shift-tab", NULL, NULL, ui_run_command, "");
             ctx_add_key_binding (ctx, "alt-up", NULL, NULL, ui_run_command, "");
           }
-          if (!editing_location)
+          else
           {
-            add_context_binding (location_active, "change location", "location-edit", "control-l");
-            add_context_binding (location_active, "quit", "quit", "control-q");
           }
 
           if (diz_dir_type_atom (diz, focused_no) == CTX_ATOM_TEXT
@@ -5828,7 +5838,7 @@ static int card_files (ITK *itk_, void *data)
           ctx_add_key_binding (ctx, "control-return", NULL, "stop editing",
                           text_edit_stop,
                           NULL);
-          ctx_add_key_binding (ctx, "shift-return", NULL, "hard newline",
+          ctx_add_key_binding (ctx, "shift-return", NULL, "newline",
                             text_edit_shift_return,
                             NULL);
 
