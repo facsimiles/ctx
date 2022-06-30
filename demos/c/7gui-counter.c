@@ -3,8 +3,9 @@
 static int counter_ui (ITK  *itk, void *data)
 {
   static int value = 0;
+  Ctx *ctx = itk_ctx (itk);
   itk_panel_start (itk, "7gui - Counter",
-                   0, 0, ctx_width (itk->ctx), ctx_height (itk->ctx));
+                   0, 0, ctx_width (ctx), ctx_height (ctx));
 
   itk_labelf (itk, "%i", value);
   itk_sameline (itk);

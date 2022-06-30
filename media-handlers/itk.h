@@ -114,15 +114,26 @@ void        itk_set_y          (ITK *itk, float y);
 void        itk_set_xy         (ITK *itk, float x, float y);
 void        itk_set_edge_left  (ITK *itk, float edge);
 void        itk_set_edge_right (ITK *itk, float edge);
+void        itk_set_edge_top   (ITK *itk, float edge);
+void        itk_set_edge_bottom(ITK *itk, float edge);
 float       itk_wrap_width     (ITK *itk);
+float       itk_height         (ITK *itk);
 float       itk_edge_left      (ITK *itk);
 float       itk_edge_right     (ITK *itk);
+float       itk_edge_top       (ITK *itk);
+float       itk_edge_bottom    (ITK *itk);
 void        itk_set_wrap_width (ITK *itk, float wwidth);
 
 /* runs until ctx_quit itk->ctx) is called */
 void        itk_run_ui         (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data);
 void        itk_set_font_size  (ITK *itk, float font_size);
 
+void        itk_set_scale (ITK *itk, float scale);
+float       itk_scale (ITK *itk);
+float itk_rel_ver_advance (ITK *itk);
+
+int         itk_focus_no (ITK *itk);
+int         itk_is_editing_entry (ITK *itk);
 
 /*
    A helper function that does itk_run_ui on a ctx context that is both created
@@ -230,6 +241,11 @@ struct _CtxControl{
 };
 
 
+
+
+#ifdef ITK_IMPLEMENTATION
+#include "svg.h"
+
 struct _ITK{
   Ctx *ctx;
   int (*ui_fun)(ITK *itk, void *data);
@@ -239,9 +255,10 @@ struct _ITK{
 
   float edge_left;
   float edge_top;
+  float edge_right;
+  float edge_bottom;
   float width;
   float height;
-
 
 
   /// ITK ancestors.. for css
@@ -308,18 +325,87 @@ struct _ITK{
   int   line_no;
   int   lines_drawn;
   int   light_mode;
+
+////////////////////////////////
+
+  float            rem;
+  MrgHtml          html;
+  float            ddpx;
+  CtxList         *stylesheet;
+  void            *css_parse_state;
+  CtxString       *style;
+  CtxString       *style_global;
+  int              quit;
+  //float            x; /* in px */
+  //float            y; /* in px */
+  CtxIntRectangle     dirty;
+  CtxIntRectangle     dirty_during_paint; // queued during painting
+  MrgState        *state;
+  CtxList         *geo_cache;
+  MrgState         states[CTX_MAX_STATE_DEPTH];
+  int              state_no;
+  int              in_paint;
+  void            *backend_data;
+  int              do_clip;
+  int (*mrg_get_contents) (const char  *referer,
+                           const char  *input_uri,
+                           char       **contents,
+                           long        *length,
+                           void        *get_contents_data);
+  void *get_contents_data;
+
+  void (*ui_update)(Mrg *mrg, void *user_data);
+  void *user_data;
+
+  //MrgBackend *backend;
+  char      *title;
+
+    /** text editing state follows **/
+  int              text_edited;
+  int              got_edit;
+  CtxString       *edited_str;
+  char           **edited;
+
+  int              text_edit_blocked;
+  MrgNewText       update_string;
+  void            *update_string_user_data;
+
+  CtxDestroyNotify update_string_destroy_notify;
+  void            *update_string_destroy_data;
+
+  int              cursor_pos;
+  float            e_x;
+  float            e_y;
+  float            e_ws;
+  float            e_we;
+  float            e_em;
+  float            offset_x;
+  float            offset_y;
+  //cairo_scaled_font_t *scaled_font;
+
+  CtxEventType     text_listen_types[CTX_MAX_TEXT_LISTEN];
+  CtxCb            text_listen_cb[CTX_MAX_TEXT_LISTEN];
+  void            *text_listen_data1[CTX_MAX_TEXT_LISTEN];
+  void            *text_listen_data2[CTX_MAX_TEXT_LISTEN];
+
+  void     (*text_listen_finalize[CTX_MAX_TEXT_LISTEN])(void *listen_data, void *listen_data2, void *finalize_data);
+  void      *text_listen_finalize_data[CTX_MAX_TEXT_LISTEN];
+  int        text_listen_count;
+  int        text_listen_active;
+
+  int        printing;
+  //cairo_t *printing_cr;
+
+
+
+
 };
-
-
-#ifdef ITK_IMPLEMENTATION
-
 typedef struct _UiChoice  UiChoice;
 struct _UiChoice
 {
   int   val;
   char *label;
 };
-#include "svg.h"
 
 void itk_begin_menu_bar (ITK *itk, const char *title)
 {
@@ -428,6 +514,11 @@ void itk_style_color (Ctx *ctx, const char *name)
 void itk_set_font_size (ITK *itk, float font_size)
 {
   itk->font_size = font_size;
+}
+
+float itk_rel_ver_advance (ITK *itk)
+{
+  return itk->rel_ver_advance;
 }
 
 ITK *itk_new (Ctx *ctx)
@@ -2752,36 +2843,83 @@ void itk_set_xy  (ITK *itk, float x, float y)
   itk->x = x;
   itk->y = y;
 }
+
+void itk_set_edge_bottom (ITK *itk, float edge)
+{
+   itk->edge_bottom = edge;
+   itk->height = itk->edge_bottom - itk->edge_top;
+}
+void itk_set_edge_top (ITK *itk, float edge)
+{
+   itk->edge_top = edge;
+   itk->edge_bottom = itk->height + itk->edge_top;
+}
 void itk_set_edge_left (ITK *itk, float edge)
 {
    itk->edge_left = edge;
+   itk->edge_right = itk->width + itk->edge_left;
+
 }
-float        itk_edge_left (ITK *itk)
+float itk_edge_bottom (ITK *itk)
+{
+   return itk->edge_bottom ;
+}
+float itk_edge_top (ITK *itk)
+{
+   return itk->edge_top ;
+}
+float itk_edge_left (ITK *itk)
 {
    return itk->edge_left;
 }
+float itk_height (ITK *itk)
+{
+   return itk->height;
+}
 void itk_set_edge_right (ITK *itk, float edge)
 {
-   itk->width = edge - itk->edge_left;
+   itk->edge_right = edge;
+   itk->width      = itk->edge_right - itk->edge_left;
 }
 float itk_wrap_width (ITK *itk)
 {
-    return itk->width; // XXX computed from edges:w
+    return itk->width; // XXX compute from edges:w
 }
 void itk_set_wrap_width (ITK *itk, float wwidth)
 {
     itk->width = wwidth;
+    itk->edge_right = itk->edge_left + wwidth;
 }
 
-float        itk_edge_right (ITK *itk)
+float itk_edge_right (ITK *itk)
 {
-   return itk->edge_left + itk->width;
+   return itk->edge_right;
 }
 
-Ctx        *itk_ctx            (ITK *itk)
+Ctx *itk_ctx (ITK *itk)
 {
   return itk->ctx;
 }
 
+void        itk_set_scale (ITK *itk, float scale)
+{
+  itk->scale = scale;
+  ctx_queue_draw (itk->ctx);
+}
+
+float       itk_scale (ITK *itk)
+{
+        return itk->scale;
+}
+
+int itk_focus_no (ITK *itk)
+{
+  return itk->focus_no;
+}
+
+int         itk_is_editing_entry (ITK *itk)
+{
+  return itk->entry_copy != NULL;
+}
 
 #endif

@@ -610,8 +610,8 @@ int terminal_main (int argc, char **argv)
 
   ITK *itk = itk_new (ctx);
 
-  itk->scale = 1.0;
-  itk->font_size = font_size;
+  itk_set_scale (itk, 1.0);
+  itk_set_font_size (itk, font_size);
   start_font_size = font_size;
   ctx_font_size (ctx, font_size);
 
@@ -649,7 +649,7 @@ int terminal_main (int argc, char **argv)
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         itk_style_color (ctx, "wallpaper");
         ctx_fill (ctx);
-        ctx_font_size (ctx, itk->font_size);
+        ctx_font_size (ctx, itk_em (itk));
         ctx_clients_draw (ctx, 0);
         if ((n_clients != 1) || (ctx_clients (ctx) &&
                                  !flag_is_set(

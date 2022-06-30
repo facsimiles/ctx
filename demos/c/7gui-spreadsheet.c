@@ -361,7 +361,7 @@ static void cell_set_value (Cell *cell, const char *value)
 
 static int spreadsheet_ui (ITK  *itk, void *data)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   float em = itk_em (itk);
   float row_height = em * 1.2;
   static int inited = 0;
@@ -513,11 +513,11 @@ static int spreadsheet_ui (ITK  *itk, void *data)
                   0, 0,
                   ctx_width (ctx), ctx_height (ctx));
 
-  float saved_x = itk->x;
-  float saved_x0 = itk->edge_left;
-  float saved_y = itk->y;
+  float saved_x = itk_x (itk);
+  float saved_x0 = itk_edge_left (itk);
+  float saved_y = itk_y (itk);
 
-  if (!itk->entry_copy)
+  if (!itk_is_editing_entry (itk))
   {
     ctx_add_key_binding (ctx, "left", NULL, "foo", spreadsheet_keynav, NULL);
     ctx_add_key_binding (ctx, "right", NULL, "foo", spreadsheet_keynav, NULL);
@@ -527,13 +527,13 @@ static int spreadsheet_ui (ITK  *itk, void *data)
 
   /* draw white background */
   ctx_gray (ctx, 1.0);
-  ctx_rectangle (ctx, saved_x, saved_y, itk->width, ctx_height (ctx));
+  ctx_rectangle (ctx, saved_x, saved_y, itk_wrap_width (itk), ctx_height (ctx));
   ctx_fill (ctx);
 
   float row_header_width = em * 1.5;
 
   /* draw gray gutters for col/row headers */
-  ctx_rectangle (ctx, saved_x, saved_y, itk->width, row_height);
+  ctx_rectangle (ctx, saved_x, saved_y, itk_wrap_width (itk), row_height);
   ctx_gray (ctx, 0.7);
   ctx_fill (ctx);
   ctx_rectangle (ctx, saved_x, saved_y, row_header_width, ctx_height (ctx));

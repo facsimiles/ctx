@@ -59,7 +59,7 @@ static void circle_editor_motion_cb (CtxEvent *event, void *data1, void *data2)
 
 static int circle_editor_ui (ITK *itk, void *data)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   itk_panel_start (itk, "7gui - Circle Editor",
                   ctx_width(ctx)*0.2, 0,
                   ctx_width (ctx) * 0.8, ctx_height (ctx));
@@ -72,8 +72,9 @@ static int circle_editor_ui (ITK *itk, void *data)
   {
   }
 
-  ctx_rectangle (ctx, itk->x, itk->y,
-                  itk->width, itk->panel->height - (itk->y-itk->panel->y));
+  ctx_rectangle (ctx, itk_x (itk), itk_y (itk),
+                  itk_wrap_width (itk), itk_height (itk) - (itk_y (itk)-
+                         itk_edge_top (itk)));
   ctx_listen (ctx, CTX_RELEASE, circle_editor_release_cb, NULL, NULL);
   ctx_listen (ctx, CTX_MOTION, circle_editor_motion_cb, NULL, NULL);
 

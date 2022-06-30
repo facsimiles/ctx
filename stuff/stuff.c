@@ -891,16 +891,23 @@ static int dir_item_count_links (int i)
 {
   int count = 0;
   char *name = diz_dir_get_data (diz, i);
-  count = string_count_links (name);
-  free (name);
+  if (name)
+  {
+    count = string_count_links (name);
+    free (name);
+  }
   return count;
 }
 
 static char *dir_item_link_no (int item, int link_no)
 {
   char *name = diz_dir_get_data (diz, item);
-  char *ret = string_link_no (name, link_no);
-  free (name);
+  char *ret = NULL;
+  if (name)
+  {
+    string_link_no (name, link_no);
+    free (name);
+  }
   return ret;
 }
 
@@ -1005,7 +1012,7 @@ int cmd_activate (COMMAND_ARGS) /* "activate", 0, "", "activate item" */
 
   char *full_path;
   char *name = diz_dir_get_data (diz, no);
-
+  if (!name) name = ctx_strdup_printf ("unexpected NULL %s:%i", __FILE__, __LINE__);
   if (!strcmp (name, ".."))
   {
     argvs_eval ("go-parent");

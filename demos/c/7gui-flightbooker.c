@@ -2,7 +2,7 @@
 
 static int booker_ui (ITK *itk, void *data)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   static char depart_date[20]="22.09.1957";
   static char return_date[20]="22.09.1957";
   itk_panel_start (itk, "7gui - Flight Booker", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
