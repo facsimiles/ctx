@@ -740,15 +740,6 @@ int outline_expand (COMMAND_ARGS) /* "outline-expand", 0, "", "" */
   return 0;
 }
 
-int outline_collapse (COMMAND_ARGS) /* "outline-fold", 0, "", "" */
-{
-  int no = focused_no;
-  if (diz_dir_type_atom (diz, no+1) != CTX_ATOM_STARTGROUP)
-    return 0;
-
-  diz_dir_set_float (diz, no, "folded", 1);
-  return 0;
-}
 
 static int layout_focused_link = -1;
 
@@ -1101,8 +1092,8 @@ ui_run_command (CtxEvent *event, void *data1, void *data2)
   while (commandline && commandline[strlen(commandline)-1]==' ')
     commandline[strlen(commandline)-1]=0;
 
-  ctx_queue_draw (event->ctx);
   argvs_eval (commandline);
+  ctx_queue_draw (event->ctx);
 }
 
 CtxClient *viewer = NULL;
@@ -2457,13 +2448,12 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
 {
   text_edit_desired_x = -100;
 
-  text_edit--;
-
   if (focused_no < 0)
   {
      event->stop_propagate = 1;
      return;
   }
+  text_edit--;
 
   if (text_edit < 0)
   {
@@ -2496,12 +2486,23 @@ void text_edit_left (CtxEvent *event, void *a, void *b)
   event->stop_propagate=1;
 }
 
+int outline_fold (COMMAND_ARGS) /* "outline-fold", 0, "", "" */
+{
+  int no = focused_no;
+  if (diz_dir_type_atom (diz, no+1) != CTX_ATOM_STARTGROUP)
+    return 0;
+
+  diz_dir_set_float (diz, no, "folded", 1);
+  return 0;
+}
+
 void text_edit_control_left (CtxEvent *event, void *a, void *b)
 {
   text_edit_desired_x = -100;
 
   if (text_edit == 0)
   {
+#if 0
     if (diz_dir_type_atom (diz, focused_no-1) == CTX_ATOM_TEXT)
     {
       char *name = diz_dir_get_data (diz, focused_no-1);
@@ -2514,6 +2515,7 @@ void text_edit_control_left (CtxEvent *event, void *a, void *b)
     {
       text_edit = 0;
     }
+#endif
   }
   else
   {
@@ -2946,8 +2948,9 @@ static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
   {
     e->stop_propagate = 1;
     ctx_queue_draw (e->ctx);
-    focused_no = 0;
-    set_find_item (itk, focused_no);
+    focused_no = -1;
+    itk->focus_no = 0;
+    //set_find_item (itk, focused_no);
   }
 }
 
@@ -5646,8 +5649,8 @@ static int card_files (ITK *itk_, void *data)
       add_context_binding (location_active, "windowed", "toggle-fullscreen", "F11");
     else
       add_context_binding (location_active, "fullscreen", "toggle-fullscreen", "F11");
-    if (!is_text_editing()
-        && !text_editor
+    if (!is_text_editing() &&
+         !text_editor
         && !item_context_active)
     {
       add_context_binding (location_active, "layout view", "view layout", "control-1");
@@ -5762,22 +5765,30 @@ static int card_files (ITK *itk_, void *data)
 
             if (!text_editor && focused_no >= 0)
             {
-              if (diz_dir_has_children (diz, focused_no) && 
-                  !diz_dir_get_int (diz, focused_no, "folded", 0))
-                BIND_KEY ("left", "outline-fold", "fold");
-              if (layout_focused_link >= 0)
-                 BIND_KEY ("right", "follow-link", "follow link");
+
+              BIND_KEY ("right", "item-edit-text", "edit paragraph");
+
+              if (diz_dir_has_children (diz, focused_no))
+              {
+                  if (diz_dir_get_int (diz, focused_no, "folded", 0))
+                  {
+                    BIND_KEY ("right", "outline-expand", "expand");
+                    BIND_KEY ("control-right", "outline-expand", "expand");
+                  }
+                  else
+                  {
+                    BIND_KEY ("left", "outline-fold", "fold");
+                    BIND_KEY ("control-left", "outline-fold", "fold");
+                  }
+              }
               else
               {
-                if (diz_dir_has_children (diz, focused_no))
-                {
-                  if (diz_dir_get_int (diz, focused_no, "folded", 0))
-                    BIND_KEY ("right", "outline-expand", "expand");
-                }
-                else
-                  BIND_KEY ("right", "outline-focus-first-child", "enter children");
+                  // BIND_KEY ("right", "outline-focus-first-child", "enter children");
                   // enter-children creates child if it doesnt exist
               }
+
+                  if (layout_focused_link >= 0)
+                    BIND_KEY ("right", "follow-link", "follow link");
 
               if (vim_keys)
               {
@@ -5810,15 +5821,39 @@ static int card_files (ITK *itk_, void *data)
                           ignore_and_stop_propagate,
                           NULL);
 
+          if (diz_dir_has_children (diz, focused_no))
+          {
+            if (diz_dir_get_float (diz, focused_no, "folded", 0))
+               BIND_KEY("control-right", "outline-expand", "expand");
+            else
+            {
+              if (text_edit == 0)
+                BIND_KEY("control-left", "outline-fold", "fold");
+              else
+          ctx_add_key_binding (ctx, "control-left", NULL, "previous word",
+                          text_edit_control_left,
+                          NULL);
+            }
+          }
+          else
+          {
           ctx_add_key_binding (ctx, "control-left", NULL, "previous word",
                           text_edit_control_left,
                           NULL);
           ctx_add_key_binding (ctx, "control-right", NULL, "next word",
                           text_edit_control_right,
                           NULL);
+          }
+
+          if (text_edit>0)
           ctx_add_key_binding (ctx, "left", NULL, "previous char",
                           text_edit_left,
                           NULL);
+          else
+          ctx_add_key_binding (ctx, "left", NULL, "stop editing",
+                          text_edit_stop,
+                          NULL);
+
           ctx_add_key_binding (ctx, "up", NULL, "previous line",
                           text_edit_up,
                           NULL);
@@ -6081,7 +6116,7 @@ static int card_files (ITK *itk_, void *data)
 
       free (copy);
 
-      ctx_rectangle (ctx, 3.4 * em + sel_start, ctx_height (ctx) - 1.4 * em,
+      ctx_rectangle (ctx, x + em + sel_start, y,
                           sel_end-sel_start,em * 1.3);
       if (c_start==c_end)
         ctx_rgba (ctx, 1,1, 0.2, 1);

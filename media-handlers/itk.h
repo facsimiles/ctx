@@ -703,10 +703,12 @@ CtxControl *itk_add_control (ITK *itk,
 #if 1
     itk_style_color (itk->ctx, "itk-focused-bg");
     ctx_fill (itk->ctx);
+#if 0
     ctx_rectangle (itk->ctx, x, y, width, height);
     itk_style_color (itk->ctx, "itk-fg");
     ctx_line_width (itk->ctx, 2.0f);
     ctx_stroke (itk->ctx);
+#endif
 #endif
   }
   else
