@@ -234,18 +234,20 @@ struct _ITK{
   Ctx *ctx;
   int (*ui_fun)(ITK *itk, void *data);
   void *ui_data;
-  float x0;
-  float y0;
   float x;
   float y;
+
+  float edge_left;
+  float edge_top;
+  float width;
+  float height;
+
 
 
   /// ITK ancestors.. for css
   float stored_x; // for sameline()
 
   float font_size;
-  float width;
-  float height;
   float rel_hmargin;
   float rel_vmargin;
   float label_width;
@@ -772,7 +774,7 @@ void itk_newline (ITK *itk)
 {
   itk->y += itk_em (itk) * (itk->rel_ver_advance + itk->rel_vgap);
   itk->stored_x = itk->x;
-  itk->x = itk->x0;
+  itk->x = itk->edge_left;
   itk->line_no++;
 }
 
@@ -787,8 +789,8 @@ void itk_seperator (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
-//itk_base (itk, NULL, itk->x0, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
-  ctx_rectangle (ctx, itk->x0 - em * itk->rel_hmargin, itk->y, itk->width - em * itk->rel_hmargin*2, em * itk->rel_ver_advance/4);
+//itk_base (itk, NULL, itk->edge_left, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
+  ctx_rectangle (ctx, itk->edge_left - em * itk->rel_hmargin, itk->y, itk->width - em * itk->rel_hmargin*2, em * itk->rel_ver_advance/4);
   ctx_gray (ctx, 0.5);
   ctx_fill (ctx);
   itk_newline (itk);
@@ -866,7 +868,7 @@ void itk_scroll_start (ITK *itk, float height)
   Ctx *ctx = itk->ctx;
   ctx_save (ctx);
   itk->panel->scroll_start_y = itk->y;
-  ctx_rectangle (ctx, itk->x0 - itk->rel_hmargin*itk_em(itk), itk->y, panel->width, panel->height - (itk->y - panel->y));
+  ctx_rectangle (ctx, itk->edge_left - itk->rel_hmargin*itk_em(itk), itk->y, panel->width, panel->height - (itk->y - panel->y));
   ctx_clip (ctx);
   ctx_begin_path (ctx);
   ctx_translate (ctx, 0.0, -panel->scroll);
@@ -962,8 +964,8 @@ ITKPanel *itk_panel_start (ITK *itk, const char *title,
   Ctx *ctx = itk->ctx;
   ITKPanel *panel = add_panel (itk, title, x, y, width, height);
   float em = itk_em (itk);
-  itk->x0 = itk->x = panel->x + em * itk->rel_hmargin;
-  itk->y0 = itk->y = panel->y;
+  itk->edge_left = itk->x = panel->x + em * itk->rel_hmargin;
+  itk->edge_top = itk->y = panel->y;
   if (panel->width != 0)
   {
     panel->width = width;
@@ -2752,15 +2754,15 @@ void itk_set_xy  (ITK *itk, float x, float y)
 }
 void itk_set_edge_left (ITK *itk, float edge)
 {
-   itk->x0 = edge;
+   itk->edge_left = edge;
 }
 float        itk_edge_left (ITK *itk)
 {
-   return itk->x0;
+   return itk->edge_left;
 }
 void itk_set_edge_right (ITK *itk, float edge)
 {
-   itk->width = edge - itk->x0;
+   itk->width = edge - itk->edge_left;
 }
 float itk_wrap_width (ITK *itk)
 {
@@ -2773,7 +2775,7 @@ void itk_set_wrap_width (ITK *itk, float wwidth)
 
 float        itk_edge_right (ITK *itk)
 {
-   return itk->x0 + itk->width;
+   return itk->edge_left + itk->width;
 }
 
 Ctx        *itk_ctx            (ITK *itk)

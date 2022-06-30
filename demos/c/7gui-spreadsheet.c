@@ -514,7 +514,7 @@ static int spreadsheet_ui (ITK  *itk, void *data)
                   ctx_width (ctx), ctx_height (ctx));
 
   float saved_x = itk->x;
-  float saved_x0 = itk->x0;
+  float saved_x0 = itk->edge_left;
   float saved_y = itk->y;
 
   if (!itk->entry_copy)
@@ -783,7 +783,7 @@ static int spreadsheet_ui (ITK  *itk, void *data)
 
 
   itk->x  = saved_x;
-  itk->x0 = saved_x0;
+  itk->edge_left = saved_x0;
   itk->y  = saved_y;
 
   itk_panel_end (itk);
