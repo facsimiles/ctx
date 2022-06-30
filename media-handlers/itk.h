@@ -671,7 +671,7 @@ CtxControl *itk_add_control (ITK *itk,
   control->height = height;
   ctx_list_prepend (&itk->controls, control);
 
-  if (itk->focus_no == control->no && itk->focus_no != 0)
+  if (itk->focus_no == control->no && itk->focus_no >= 0)
   {
      if (itk->y - itk->panel->scroll < em * 2)
      {
