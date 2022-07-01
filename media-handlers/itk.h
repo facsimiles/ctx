@@ -247,11 +247,82 @@ struct _CtxControl{
 #include "svg.h"
 
 struct _ITK{
-  Ctx *ctx;
+  Ctx             *ctx;
+  float            rem;
+  MrgHtml          html;
+  float            ddpx;
+  CtxList         *stylesheet;
+  void            *css_parse_state;
+  CtxString       *style;
+  CtxString       *style_global;
+  int              quit;
+  float            x; /* in px */
+  float            y; /* in px */
+  CtxIntRectangle     dirty;
+  CtxIntRectangle     dirty_during_paint; // queued during painting
+  MrgState        *state;
+  CtxList         *geo_cache;
+  MrgState         states[CTX_MAX_STATE_DEPTH];
+  int              state_no;
+  int              in_paint;
+  void            *backend_data;
+  int              do_clip;
+  int (*mrg_get_contents) (const char  *referer,
+                           const char  *input_uri,
+                           char       **contents,
+                           long        *length,
+                           void        *get_contents_data);
+  void *get_contents_data;
+
+  void (*ui_update)(Mrg *mrg, void *user_data);
+  void *user_data;
+
+  //MrgBackend *backend;
+  char      *title;
+
+    /** text editing state follows **/
+  int              text_edited;
+  int              got_edit;
+  CtxString       *edited_str;
+  char           **edited;
+
+  int              text_edit_blocked;
+  MrgNewText       update_string;
+  void            *update_string_user_data;
+
+  CtxDestroyNotify update_string_destroy_notify;
+  void            *update_string_destroy_data;
+
+  int              cursor_pos;
+  float            e_x;
+  float            e_y;
+  float            e_ws;
+  float            e_we;
+  float            e_em;
+  float            offset_x;
+  float            offset_y;
+  //cairo_scaled_font_t *scaled_font;
+
+  CtxEventType     text_listen_types[CTX_MAX_TEXT_LISTEN];
+  CtxCb            text_listen_cb[CTX_MAX_TEXT_LISTEN];
+  void            *text_listen_data1[CTX_MAX_TEXT_LISTEN];
+  void            *text_listen_data2[CTX_MAX_TEXT_LISTEN];
+
+  void     (*text_listen_finalize[CTX_MAX_TEXT_LISTEN])(void *listen_data, void *listen_data2, void *finalize_data);
+  void      *text_listen_finalize_data[CTX_MAX_TEXT_LISTEN];
+  int        text_listen_count;
+  int        text_listen_active;
+
+  int        printing;
+  //cairo_t *printing_cr;
+
+  ////////////////////////////////////////////////////////////////////////////////
+
+  //Ctx *ctx;
+  //float x;
+  //float y;
   int (*ui_fun)(ITK *itk, void *data);
   void *ui_data;
-  float x;
-  float y;
 
   float edge_left;
   float edge_top;
@@ -328,73 +399,6 @@ struct _ITK{
 
 ////////////////////////////////
 
-  float            rem;
-  MrgHtml          html;
-  float            ddpx;
-  CtxList         *stylesheet;
-  void            *css_parse_state;
-  CtxString       *style;
-  CtxString       *style_global;
-  int              quit;
-  //float            x; /* in px */
-  //float            y; /* in px */
-  CtxIntRectangle     dirty;
-  CtxIntRectangle     dirty_during_paint; // queued during painting
-  MrgState        *state;
-  CtxList         *geo_cache;
-  MrgState         states[CTX_MAX_STATE_DEPTH];
-  int              state_no;
-  int              in_paint;
-  void            *backend_data;
-  int              do_clip;
-  int (*mrg_get_contents) (const char  *referer,
-                           const char  *input_uri,
-                           char       **contents,
-                           long        *length,
-                           void        *get_contents_data);
-  void *get_contents_data;
-
-  void (*ui_update)(Mrg *mrg, void *user_data);
-  void *user_data;
-
-  //MrgBackend *backend;
-  char      *title;
-
-    /** text editing state follows **/
-  int              text_edited;
-  int              got_edit;
-  CtxString       *edited_str;
-  char           **edited;
-
-  int              text_edit_blocked;
-  MrgNewText       update_string;
-  void            *update_string_user_data;
-
-  CtxDestroyNotify update_string_destroy_notify;
-  void            *update_string_destroy_data;
-
-  int              cursor_pos;
-  float            e_x;
-  float            e_y;
-  float            e_ws;
-  float            e_we;
-  float            e_em;
-  float            offset_x;
-  float            offset_y;
-  //cairo_scaled_font_t *scaled_font;
-
-  CtxEventType     text_listen_types[CTX_MAX_TEXT_LISTEN];
-  CtxCb            text_listen_cb[CTX_MAX_TEXT_LISTEN];
-  void            *text_listen_data1[CTX_MAX_TEXT_LISTEN];
-  void            *text_listen_data2[CTX_MAX_TEXT_LISTEN];
-
-  void     (*text_listen_finalize[CTX_MAX_TEXT_LISTEN])(void *listen_data, void *listen_data2, void *finalize_data);
-  void      *text_listen_finalize_data[CTX_MAX_TEXT_LISTEN];
-  int        text_listen_count;
-  int        text_listen_active;
-
-  int        printing;
-  //cairo_t *printing_cr;
 
 
 
@@ -551,6 +555,14 @@ ITK *itk_new (Ctx *ctx)
     itk->rel_hpad = 0.0;
   }
   itk->width = itk->font_size * 15;
+
+  Mrg *mrg = (Mrg*)itk;
+  mrg->in_paint = 1;
+  mrg->do_clip = 1;
+  _mrg_init (mrg, ctx_width(ctx), ctx_height(ctx));
+  ctx_style_defaults (mrg);
+
+  printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
 
   return itk;
 }

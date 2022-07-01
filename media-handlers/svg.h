@@ -2003,7 +2003,7 @@ void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
 #define CTX_STYLE_INLINE   25
 #define CTX_STYLE_CODE     30
 
-void ctx_css_default (Mrg *mrg)
+void itk_css_default (Mrg *mrg)
 {
   char *error = NULL;
   ctx_stylesheet_add (mrg, html_css, NULL, CTX_STYLE_INTERNAL, &error);
@@ -2029,11 +2029,11 @@ void ctx_css_default (Mrg *mrg)
   }
 }
 
-void ctx_stylesheet_clear (Mrg *mrg)
+void itk_stylesheet_clear (Mrg *mrg)
 {
   if (mrg->stylesheet)
     ctx_list_free (&mrg->stylesheet);
-  ctx_css_default (mrg);
+  itk_css_default (mrg);
 }
 
 typedef struct CtxStyleMatch
@@ -2301,7 +2301,7 @@ void ctx_css_add (Mrg *mrg, const char *css)
 }
 
 
-void ctx_stylesheet_clear (Mrg *mrg);
+void itk_stylesheet_clear (Mrg *mrg);
 void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
                          int priority,
                          char **error);
@@ -3528,7 +3528,7 @@ void ctx_style_defaults (Mrg *mrg)
     ctx_color_free (color);
   }
 
-  ctx_stylesheet_clear (mrg);
+  itk_stylesheet_clear (mrg);
   _ctx_init_style (mrg);
 
   if (mrg->style_global->length)
