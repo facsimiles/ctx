@@ -243,7 +243,7 @@ ITK *itk = NULL;
 
 static void set_find_item (ITK *itk, int no)
 {
-  if (itk) itk->focus_no = -1;
+  if (itk) itk_set_focus_no (itk, -1);
   layout_find_item = no;
 }
 
@@ -1581,9 +1581,8 @@ int make_child_of_previous (COMMAND_ARGS) /* "make-child-of-previous", 0, "", ""
 
 #if 0
     set_find_item (itk, target);
-    itk->focus_no = -1;
+    itk_set_focus_no (itk, -1);
 #else
-    //itk->focus_no -= (target-focused_no);
     focused_no = target;
 
     if (was_folded)
@@ -1947,11 +1946,11 @@ static void dir_select_item (CtxEvent *event, void *data1, void *data2)
    if ((size_t)data1 == (size_t)-1)
    {
      focused_no = -1;
-     itk->focus_no = 0;
+     itk_set_focus_no (itk, 0);
    }
    else
    {
-     itk->focus_no = (size_t)data1;
+     itk_set_focus_no (itk, (size_t)data1);
      layout_find_item = -1;
    }
    if (editing_location)
@@ -2320,7 +2319,7 @@ void text_edit_backspace (CtxEvent *event, void *a, void *b)
       ctx_string_free (str, 1);
       diz_dir_remove (diz, focused_no);
       focused_no--;
-      itk->focus_no--;
+      itk_set_focus_no (itk, itk_focus_no (itk)-1);
     }
   }
   ctx_queue_draw (event->ctx);
@@ -2684,7 +2683,7 @@ void dir_set_page (CtxEvent *event, void *a, void *b)
     layout_show_page = 0;
   if (layout_last_page < layout_show_page)
     layout_show_page = layout_last_page;
-  itk->focus_no = 0;
+  itk_set_focus_no (itk, 0);
   if (event)
   {
     ctx_queue_draw (event->ctx);
@@ -2727,7 +2726,7 @@ make_tail_entry (Diz *diz)
     focused_no = diz_dir_next_sibling (diz, focused_no);
     set_find_item (itk, focused_no);
   }
-  itk->focus_no = -1;
+  itk_set_focus_no (itk, -1);
   was_editing_before_tail = (text_edit != TEXT_EDIT_OFF);
   text_edit = 0;
 }
@@ -2956,7 +2955,7 @@ static void dir_location_escape (CtxEvent *e, void *d1, void *d2)
     e->stop_propagate = 1;
     ctx_queue_draw (e->ctx);
     focused_no = -1;
-    itk->focus_no = 0;
+    itk_set_focus_no (itk, 0);
     //set_find_item (itk, focused_no);
   }
 }
@@ -3609,7 +3608,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   //  ctx_font (ctx, "mono");
   float space_width = ctx_text_width (ctx, " ");
   ctx_font_size (ctx, em);
-      int location_active = (focused_no == -1 && itk->focus_no == 0);
+      int location_active = (focused_no == -1 && itk_focus_no (itk) == 0);
 
             if (!is_text_editing() && !viewer &&
               !item_context_active
@@ -3647,7 +3646,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 #endif
   }
 
-  if (y1 < 100) y1 = itk->height;
+  if (y1 < 100) y1 = itk_height (itk);
 
   int last_page = 0;
   int printing = (layout_page_no == layout_show_page);
@@ -3678,7 +3677,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       char *parent = diz_dir_get_string_no (diz, -1, "parent", i);
       ctx_begin_path (ctx);
       float width = ctx_text_width (ctx, parent);
-      if (itk->focus_no == itk->control_no)
+      if (itk_focus_no (itk) == itk_control_no (itk))
       {
         char *dup_par = strdup (parent);
         ctx_add_key_binding_full (ctx, "return", NULL, "view category", ui_visit_tag, dup_par, free, dup_par);
@@ -3749,13 +3748,13 @@ static void dir_layout (ITK *itk, Diz *diz)
          }
          else
          {
-           itk->focus_no = itk->control_no;
+           itk_set_focus_no (itk, itk_control_no (itk));
            focused_no = i;
            layout_find_item = -1;
          }
       }
 
-      if (itk->control_no == itk->focus_no && layout_find_item < 0)
+      if (itk_control_no (itk) == itk_focus_no (itk) && layout_find_item < 0)
       {
         focused_no = i;
       }
@@ -3906,7 +3905,7 @@ static void dir_layout (ITK *itk, Diz *diz)
         else
           height = diz_dir_get_float (diz, i, "height", -1000.0);
         if (height < 0 || layout_config.fixed_size)  height =
-          layout_config.fill_height? itk->height * 1.0:
+          layout_config.fill_height? itk_height (itk)  * 1.0:
           layout_config.height * em;
         else
           height *= saved_width;
@@ -4063,7 +4062,7 @@ static void dir_layout (ITK *itk, Diz *diz)
            {
               diz_dir_set_float (diz, i, "value", new_val);
            }
-           c = itk_find_control (itk, itk->control_no-1);
+           c = itk_find_control (itk, itk_control_no (itk)-1);
            itk_sameline (itk);
         }
         else if (ui && !strcmp (ui, "slider"))
@@ -4075,7 +4074,7 @@ static void dir_layout (ITK *itk, Diz *diz)
            float new_f = itk_slider (itk, d_name, f, min, max, step);
            if (new_f != f)
               diz_dir_set_float (diz, i, "value", new_f);
-           c = itk_find_control (itk, itk->control_no-1);
+           c = itk_find_control (itk, itk_control_no (itk)-1);
            itk_sameline (itk);
         }
         else if (ui && !strcmp (ui, "choice"))
@@ -4102,7 +4101,7 @@ static void dir_layout (ITK *itk, Diz *diz)
               }
               free (val);
            }
-           c = itk_find_control (itk, itk->control_no-1);
+           c = itk_find_control (itk, itk_control_no (itk)-1);
            itk_sameline (itk);
         }
         else if (ui && !strcmp (ui, "string"))
@@ -4116,7 +4115,7 @@ static void dir_layout (ITK *itk, Diz *diz)
              diz_dir_set_string (diz, i, "value", new_str);
              free (new_str);
            }
-           c = itk_find_control (itk, itk->control_no-1);
+           c = itk_find_control (itk, itk_control_no (itk)-1);
            itk_sameline (itk);
            if (fallback_str)
              free (fallback_str);
@@ -4184,7 +4183,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
         if (ui) {} 
         else
-        if (c->no == itk->focus_no && layout_find_item < 0)
+        if (c->no == itk_focus_no (itk) && layout_find_item < 0)
         {
 
           if (dir_item_count_links (focused_no) == 0)
@@ -4426,7 +4425,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           {
           ctx_gray (ctx, 0.95);
 
-          if (c->no == itk->focus_no && layout_find_item < 0)
+          if (c->no == itk_focus_no (itk) && layout_find_item < 0)
           {
             itk_style_color (ctx, "itk-focused-fg");
             layout_text (ctx, itk_x(itk) + padding_left * em, itk_y (itk), d_name,
@@ -4484,7 +4483,7 @@ static void dir_layout (ITK *itk, Diz *diz)
                   
           ctx_gray (ctx, 0.95);
 
-          if (c->no == itk->focus_no && layout_find_item < 0)
+          if (c->no == itk_focus_no (itk) && layout_find_item < 0)
           {
             layout_text (ctx, itk_x (itk) + padding_left * em, itk_y (itk), label,
                          space_width, width - em * level * layout_config.level_indent, em,
@@ -4611,7 +4610,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           if (gotpos) label = 0;
 
           draw_img (itk, itk_x (itk), itk_y (itk), width, height, newpath, gotdim?0:1);
-          if (c->no == itk->focus_no && layout_find_item < 0 && gotpos)
+          if (c->no == itk_focus_no (itk) && layout_find_item < 0 && gotpos)
           {
              int resize_dim = 4;
 
@@ -4644,7 +4643,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           if (gotpos) label = 0;
 
           draw_img (itk, itk_x (itk), itk_y (itk), width, height, newpath, gotdim?0:1);
-          if (c->no == itk->focus_no && layout_find_item < 0 && gotpos)
+          if (c->no == itk_focus_no (itk) && layout_find_item < 0 && gotpos)
           {
              int resize_dim = 4;
 
@@ -4845,7 +4844,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           itk_x(itk) - em * (layout_config.padding_left * 2), itk_y (itk), // - em * padding_top,
           width + em * (layout_config.padding_left*2+layout_config.padding_right),
           height + em * (layout_config.padding_top+layout_config.padding_bottom));
-        if (itk->focus_no == c->no)
+        if (itk_focus_no (itk) == c->no)
         {
           itk_labelf (itk, "press return to add item");
           //ctx_add_key_binding (ctx, "return", NULL, "edit first item", dir_location, NULL);
@@ -4909,7 +4908,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   }
   else
   {
-    if (itk->focus_no == 0)
+    if (itk_focus_no (itk))
       itk_style_color (ctx, "itk-focused-fg");
     else
       itk_style_color (ctx, "itk-fg");
@@ -4936,7 +4935,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   itk_set_wrap_width (itk, saved_width);
 //  itk->y     = saved_y;
 
-  if (focused_no == -1 && !editing_location && itk->focus_no == 0)
+  if (focused_no == -1 && !editing_location && itk_focus_no (itk) == 0)
   {
     BIND_KEY ("alt-return", "toggle-context", "document properties");
     ctx_add_key_binding (ctx, "return", NULL, "edit location", dir_location, NULL);
@@ -5543,15 +5542,21 @@ static void drop_event (CtxEvent *event, void *a, void *b)
         fprintf (stderr, "dropped :) %s\n", event->string);
 }
 
+void mrg_print_xml (ITK *mrg, char *xml);
+void mrg_printf_xml (ITK *mrg, const char *format, ...);
+
+
 static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
   ctx = itk_ctx (itk);
+  itk_set_wrap_width (itk, ctx_width (ctx));
+  itk_set_height (itk, ctx_height (ctx));
   //float em = itk_em (itk);
   //float row_height = em * 1.2;
   static int first = 1;
 
-  int location_active = (focused_no == -1 && itk->focus_no == 0);
+  int location_active = (focused_no == -1 && itk_focus_no (itk) == 0);
   if (item_context_active == 0)
   {
     clear_context_menu ();
@@ -5954,8 +5959,8 @@ static int card_files (ITK *itk_, void *data)
       y = 1 * em;
     }
 
-    if (y + height - itk->panel->scroll> ctx_height (ctx))
-        y = ctx_height (ctx)-height + itk->panel->scroll;
+    if (y + height - itk_panel_scroll (itk)> ctx_height (ctx))
+        y = ctx_height (ctx)-height + itk_panel_scroll (itk);
 
     ctx_add_key_binding (ctx, "up", NULL, "previous choice",
                     item_context_choice_prev,
@@ -5998,7 +6003,7 @@ static int card_files (ITK *itk_, void *data)
 
     ctx_begin_path (ctx);
     ctx_rgba (ctx, 0.0,0.0,0.0, 0.4);
-    ctx_rectangle (ctx, 0, itk->panel->scroll,
+    ctx_rectangle (ctx, 0, itk_panel_scroll (itk),
                    ctx_width (ctx), ctx_height (ctx));
     ctx_fill (ctx);
     ctx_rgba (ctx, 0.0, 0.0, 0.0, 0.8);
@@ -6520,6 +6525,12 @@ static int card_files (ITK *itk_, void *data)
       }
     }
     ctx_restore (ctx);
+  }
+
+  {
+    float em = itk_em (itk);
+    itk_set_xy (itk, em, em);
+    mrg_print_xml (itk, "<style>body{color:#cfc;font-size:30px; } b{color:red;};</style><html><body><div>fnor sadf ksadf jlkdsaf mlkjv mklsad mkclas mdkcla mdlkcas mdlck mdslkcmsa ldk mcaoskd mcwaei mcoakesmc oake mclwke mclwake mclokmc okasmc oaksmdocakse mcoaksmc oakds mclsakd mclsakd mclsakd mclaksdmclksad mcldsak mclskd mclsakd mclsadk mclsakdmclsadkmclsakdmclsadcd1</div> <div>fnord2</div><p id='a'> foo <b>bold</b> bar </p><ul><li id='b'>a</li><li>b</li></ul></body></html>");
   }
 
   // drop target

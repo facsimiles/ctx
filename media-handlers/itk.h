@@ -52,7 +52,9 @@ int  itk_expander   (ITK *itk, const char *label, int *val);
 /* return newly set value if ant change */
 int  itk_choice     (ITK *itk, const char *label, int in_val);
 void itk_choice_add (ITK *itk, int value, const char *label);
+void itk_set_focus_no (ITK *itk, int pos);
 
+int  itk_control_no (ITK *itk);
 
 
 /*
@@ -118,6 +120,7 @@ void        itk_set_edge_top   (ITK *itk, float edge);
 void        itk_set_edge_bottom(ITK *itk, float edge);
 float       itk_wrap_width     (ITK *itk);
 float       itk_height         (ITK *itk);
+void        itk_set_height     (ITK *itk, float height);
 float       itk_edge_left      (ITK *itk);
 float       itk_edge_right     (ITK *itk);
 float       itk_edge_top       (ITK *itk);
@@ -128,9 +131,9 @@ void        itk_set_wrap_width (ITK *itk, float wwidth);
 void        itk_run_ui         (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data);
 void        itk_set_font_size  (ITK *itk, float font_size);
 
-void        itk_set_scale (ITK *itk, float scale);
-float       itk_scale (ITK *itk);
-float itk_rel_ver_advance (ITK *itk);
+void        itk_set_scale       (ITK *itk, float scale);
+float       itk_scale           (ITK *itk);
+float       itk_rel_ver_advance (ITK *itk);
 
 int         itk_focus_no (ITK *itk);
 int         itk_is_editing_entry (ITK *itk);
@@ -241,6 +244,7 @@ struct _CtxControl{
 };
 
 
+float itk_panel_scroll (ITK *itk);
 
 
 #ifdef ITK_IMPLEMENTATION
@@ -517,6 +521,7 @@ void itk_style_color (Ctx *ctx, const char *name)
 
 void itk_set_font_size (ITK *itk, float font_size)
 {
+  mrg_set_font_size ((Mrg*)itk, font_size);
   itk->font_size = font_size;
 }
 
@@ -1154,7 +1159,6 @@ static void itk_float_constrain (CtxControl *control, float *val)
   }
   *val = new_val;
 }
-void itk_set_focus (ITK *itk, int pos);
 
 static void itk_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2)
 {
@@ -1162,7 +1166,7 @@ static void itk_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2
   CtxControl  *control = userdata;
   float new_val;
 
-  itk_set_focus (itk, control->no);
+  itk_set_focus_no (itk, control->no);
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
   new_val = ((event->x - control->x) / (control->width)) * (control->max-control->min) + control->min;
@@ -1375,7 +1379,7 @@ void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
     itk->active_entry = control->no;
   }
 
-  itk_set_focus (itk, control->no);
+  itk_set_focus_no (itk, control->no);
   ctx_queue_draw (event->ctx);
 }
 
@@ -1492,7 +1496,7 @@ void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
   itk->return_value = 1; // reusing despite name
   *val = (*val)?0:1;
   event->stop_propagate = 1;
-  itk_set_focus (itk, control->no);
+  itk_set_focus_no (itk, control->no);
   ctx_queue_draw (event->ctx);
 }
 
@@ -1514,7 +1518,7 @@ static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
   CtxControl *control = userdata;
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
-  itk_set_focus (itk, control->no);
+  itk_set_focus_no (itk, control->no);
   itk->return_value = 1;
 }
 
@@ -1616,7 +1620,7 @@ void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
   CtxControl *control = userdata;
   int *val = control->val;
   *val = (*val)?0:1;
-  itk_set_focus (itk, control->no);
+  itk_set_focus_no (itk, control->no);
   ctx_queue_draw (event->ctx);
 }
 
@@ -1733,7 +1737,7 @@ static void itk_choice_clicked (CtxEvent *event, void *userdata, void *userdata2
   CtxControl *control = userdata;
   itk->choice_active = 1;
   itk->choice_no = control->value;
-  itk_set_focus (itk, control->no);
+  itk_set_focus_no (itk, control->no);
   event->stop_propagate = 1;
   ctx_queue_draw (event->ctx);
 }
@@ -1814,7 +1818,7 @@ void itk_choice_add (ITK *itk, int value, const char *label)
 }
 
 
-void itk_set_focus (ITK *itk, int pos)
+void itk_set_focus_no (ITK *itk, int pos)
 {
    if (itk->focus_no != pos)
    {
@@ -2275,7 +2279,7 @@ void itk_focus (ITK *itk, int dir)
       }
     }
 
-    itk_set_focus (itk, best->no);
+    itk_set_focus_no (itk, best->no);
   }
 }
 
@@ -2856,21 +2860,39 @@ void itk_set_xy  (ITK *itk, float x, float y)
   itk->y = y;
 }
 
+
+void itk_set_height (ITK *itk, float height)
+{
+   itk->height = height;
+   itk->edge_bottom = itk->edge_top + height;
+   mrg_set_edge_top ((Mrg*)itk, itk->edge_top);
+   mrg_set_edge_bottom ((Mrg*)itk, itk->edge_bottom);
+}
+
 void itk_set_edge_bottom (ITK *itk, float edge)
 {
+   mrg_set_edge_bottom ((Mrg*)itk, edge);
    itk->edge_bottom = edge;
    itk->height = itk->edge_bottom - itk->edge_top;
 }
 void itk_set_edge_top (ITK *itk, float edge)
 {
+   mrg_set_edge_top ((Mrg*)itk, edge);
    itk->edge_top = edge;
    itk->edge_bottom = itk->height + itk->edge_top;
 }
 void itk_set_edge_left (ITK *itk, float edge)
 {
+   mrg_set_edge_left ((Mrg*)itk, edge);
    itk->edge_left = edge;
    itk->edge_right = itk->width + itk->edge_left;
 
+}
+void itk_set_edge_right (ITK *itk, float edge)
+{
+   mrg_set_edge_right ((Mrg*)itk, edge);
+   itk->edge_right = edge;
+   itk->width      = itk->edge_right - itk->edge_left;
 }
 float itk_edge_bottom (ITK *itk)
 {
@@ -2888,11 +2910,6 @@ float itk_height (ITK *itk)
 {
    return itk->height;
 }
-void itk_set_edge_right (ITK *itk, float edge)
-{
-   itk->edge_right = edge;
-   itk->width      = itk->edge_right - itk->edge_left;
-}
 float itk_wrap_width (ITK *itk)
 {
     return itk->width; // XXX compute from edges:w
@@ -2901,6 +2918,8 @@ void itk_set_wrap_width (ITK *itk, float wwidth)
 {
     itk->width = wwidth;
     itk->edge_right = itk->edge_left + wwidth;
+    mrg_set_edge_right (itk, itk->edge_right);
+    mrg_set_edge_left (itk, itk->edge_left);
 }
 
 float itk_edge_right (ITK *itk)
@@ -2934,4 +2953,13 @@ int         itk_is_editing_entry (ITK *itk)
   return itk->entry_copy != NULL;
 }
 
+int  itk_control_no (ITK *itk)
+{
+  return itk->control_no;
+}
+
+float itk_panel_scroll (ITK *itk)
+{
+  return itk->panel?itk->panel->scroll:0.0f;
+}
 #endif
