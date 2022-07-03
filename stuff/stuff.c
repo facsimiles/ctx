@@ -805,7 +805,6 @@ static char *string_link_no (const char *string, int link_no)
 {
   CtxString *str = ctx_string_new ("");
   CtxString *str_secondary = ctx_string_new ("");
-
   const char *p = string;
   int in_link = 0;
   int count = 0;
@@ -905,7 +904,7 @@ static char *dir_item_link_no (int item, int link_no)
   char *ret = NULL;
   if (name)
   {
-    string_link_no (name, link_no);
+    ret = string_link_no (name, link_no);
     free (name);
   }
   return ret;
