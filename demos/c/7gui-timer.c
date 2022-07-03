@@ -2,7 +2,7 @@
 
 static int timer_ui (ITK *itk, void *data)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   static float e = 0.0;
   static float d = 10.0;
 
@@ -13,7 +13,7 @@ static int timer_ui (ITK *itk, void *data)
   {
     if (prev_ticks)
       e += (ticks-prev_ticks)/1000.0/1000.0;
-    ctx_queue_draw (itk->ctx); // queue a redraw
+    ctx_queue_draw (ctx); // queue a redraw
                                  // causing our in-place timer to work
   }
   prev_ticks = ticks;

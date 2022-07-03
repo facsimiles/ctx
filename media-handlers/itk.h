@@ -2759,13 +2759,15 @@ itk_ctx_settings (ITK *itk)
   {
 
     hash_cache_enabled = itk_toggle (itk, "hash cache", hash_cache_enabled);
-#if CTX_SDL
-    ctx_show_fps = itk_toggle (itk, "fps debug", ctx_show_fps);
-#endif
     if (hash_cache_enabled != ctx_get_hash_cache (ctx)){
       ctx_set_hash_cache (ctx, hash_cache_enabled);
     }
-    itk_slider_int (itk, "threads", &threads, 1, CTX_MAX_THREADS, 1);
+    
+    
+#if CTX_SDL
+    ctx_show_fps = itk_toggle (itk, "fps debug", ctx_show_fps);
+#endif
+    threads = itk_slider (itk, "threads", threads, 1, CTX_MAX_THREADS, 1);
     if (threads != ctx_get_render_threads (ctx))
     {
       ctx_set_render_threads (ctx, threads);
@@ -2795,8 +2797,11 @@ itk_itk_settings (ITK *itk)
      //itk->focus_wraparound = itk_toggle (itk, "focus wraparound", itk->focus_wraparound);
      //enable_keybindings = itk_toggle (itk, "enable keybindings", enable_keybindings);
      //itk->light_mode = itk_toggle (itk, "light mode", itk->light_mode);
-     itk_slider_float (itk, "global scale", &itk->scale, 0.1, 8.0, 0.1);
-     itk_slider_float (itk, "font size ", &itk->font_size, 3.0, 60.0, 0.25);
+
+     itk->scale     = itk_slider (itk, "global scale", itk->scale, 0.1, 8.0, 0.1);
+     itk->font_size = itk_slider (itk, "font size ", itk->font_size, 3.0, 60.0, 0.25);
+
+     // these will go away with css styling merged.
      itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
      itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
      itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 1.0, 0.01);
@@ -2844,9 +2849,9 @@ itk_iteration (double time, void *data)
 
 void itk_run_ui (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data)
 {
-  itk->ui_fun = ui_fun;
+  itk->ui_fun  = ui_fun;
   itk->ui_data = ui_data;
-  int   ret_val = 1;
+  int  ret_val = 1;
 
 #ifdef EMSCRIPTEN
 #ifdef ASYNCIFY

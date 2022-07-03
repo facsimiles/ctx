@@ -180,7 +180,7 @@ int main (int argc, char **argv)
 
 static void card_gradients (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   int width  = ctx_width (ctx);
   int height = ctx_height(ctx);
   frame_no %= (int)(ctx_width (ctx) /2);
@@ -202,7 +202,7 @@ static void card_gradients (ITK *itk, int frame_no)
 
 static void card_dots (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   static int   dot_count = 500;
   static float twist = 2.9645;
   static float dot_scale = 42.0;
@@ -258,7 +258,7 @@ static void slider (Ctx *ctx, float x0, float y0, float width, float pos)
 
 static void card_sliders (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   int height = ctx_height (ctx);
   int width = ctx_width (ctx);
   frame_no = frame_no % 400;
@@ -368,7 +368,7 @@ static void _analog_clock (Ctx     *ctx,
 
 static void card_clock1 (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   uint64_t ms64 = ctx_ticks() / 1000;
   int width = ctx_width (ctx);
   int height = ctx_height (ctx);
@@ -378,7 +378,7 @@ static void card_clock1 (ITK *itk, int frame_no)
 
 static void card_clock2 (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   uint64_t ms64 = ctx_ticks()/ 1000;
   int width = ctx_width (ctx);
   int height = ctx_height (ctx);
@@ -388,7 +388,7 @@ static void card_clock2 (ITK *itk, int frame_no)
 
 static void card_fill_rule (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
 
   ctx_save (ctx);
   ctx_translate (ctx, 40.0, 0);
@@ -424,7 +424,7 @@ static void card_fill_rule (ITK *itk, int frame_no)
 
 static void card_curve_to (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   ctx_save (ctx);
   frame_no %= 400;
   ctx_translate (ctx, 40.0, 0);
@@ -502,7 +502,7 @@ static void card_drag (ITK *itk, int frame_no)
     first_run = 0;
   }
 
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
   ctx_save (ctx);
@@ -566,7 +566,7 @@ static void card_drag (ITK *itk, int frame_no)
 
 static void card_files (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   float em = itk_em (itk);
   //float row_height = em * 1.2;
   itk_panel_start (itk, "files", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
@@ -592,10 +592,10 @@ static void card_files (ITK *itk, int frame_no)
         sprintf (newpath, "%s%s%s", path, PATH_SEP, namelist[i]->d_name);
       lstat (newpath, &stat_buf);
       free (newpath);
-      itk_add_control (itk, UI_LABEL, "foo", itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+      itk_add_control (itk, UI_LABEL, "foo", itk_x (itk), itk_y (itk), itk_wrap_width (itk), em * itk_rel_ver_advance (itk));
       itk_labelf (itk, "%s\n", namelist[i]->d_name);
       itk_sameline (itk);
-      itk->x = itk_edge_left (itk) + itk_em (itk) * 10;
+      itk_set_x (itk, itk_edge_left (itk) + itk_em (itk) * 10);
       itk_labelf (itk, "%i", stat_buf.st_size);
     }
   }
@@ -644,7 +644,7 @@ static void init_textures  (void)
 
 static void card_textures (ITK *itk, int frame_no)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   init_textures  ();
 
   itk_panel_start (itk, "textures", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));

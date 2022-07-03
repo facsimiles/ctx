@@ -4,7 +4,7 @@
 
 static int spirals_ui (ITK *itk, void *data)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   static int   dot_count = 500;
   static float twist = 2.9645;
   static float dot_scale = 42.0;
@@ -46,7 +46,7 @@ static int spirals_ui (ITK *itk, void *data)
       if (animate)
       {
         twist += 0.00001;
-        ctx_queue_draw (itk->ctx);
+        ctx_queue_draw (ctx);
       }
 #if 1
       if (itk_button (itk, "+0.00001"))

@@ -13,7 +13,7 @@ static void commit_fahrenheit (ITK *itk, void *data)
 
 static int temperature_ui (ITK *itk, void *data)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   itk_panel_start (itk, "7gui - Temperature Converter", ctx_width(ctx)*0.2, 0, ctx_width (ctx) * 0.8, ctx_height (ctx));
 
   if (itk_entry_str_len (itk, "celcius", "C", celcius_val, 20-1))

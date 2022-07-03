@@ -40,7 +40,7 @@ static void clear (Ctx *ctx)
 
 static void scene_spirals (ITK *itk, int frame_no, float time_delta)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   clear (ctx);
 
   float alpha = 0.0;
@@ -85,7 +85,7 @@ static void scene_spirals (ITK *itk, int frame_no, float time_delta)
     ctx_fill (ctx);
   }
     twist += 0.00001;
-    ctx_queue_draw (itk->ctx);
+    ctx_queue_draw (ctx);
 
 #if 0
   itk_panel_start (itk, "spiraling things", ctx_width(ctx)*3/4,0,ctx_width(ctx)/4, ctx_height(ctx)/3);
@@ -119,7 +119,7 @@ static void scene_spirals (ITK *itk, int frame_no, float time_delta)
 
 static void scene_logo (ITK *itk, int frame_no, float time_delta)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
 
   static int dir = 1;
   static float dim = 0.0;
@@ -158,7 +158,7 @@ static void scene_logo (ITK *itk, int frame_no, float time_delta)
 
 static void scene_circles (ITK *itk, int frame_no, float time_delta)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
   float alpha = 0.0;
@@ -195,7 +195,7 @@ static void scene_circles (ITK *itk, int frame_no, float time_delta)
 
 static void scene_text (ITK *itk, int frame_no, float time_delta, float font_scale)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
   char *words[]={"ipsum", "dolor", "sic", "amet", "foo", "fnord", "umbaba", "takete", "metameric", "unix"};
   int n_words = sizeof(words)/sizeof(words[0]); 
   float width = ctx_width (ctx);
@@ -374,7 +374,7 @@ void ctx_parse2 (Ctx *ctx, const char *str, float *scene_time, int *scene_no);
 int n_scenes = sizeof (scenes)/sizeof(scenes[0]);
 static int ui_scenes (ITK *itk, void *data)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk_ctx (itk);
 
   uint64_t ticks = ctx_ticks ();
 
@@ -414,10 +414,10 @@ static int ui_scenes (ITK *itk, void *data)
   }
   else
   {
-    ctx_parse2 (itk->ctx, ctx_input, &scene_elapsed_time, &scene_no);
+    ctx_parse2 (ctx, ctx_input, &scene_elapsed_time, &scene_no);
     if (scene_elapsed_time > 30) scene_elapsed_time = 0;
   }
-    ctx_queue_draw (itk->ctx);
+    ctx_queue_draw (ctx);
 
   return 1;
 }
