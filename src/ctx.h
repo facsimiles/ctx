@@ -1156,6 +1156,13 @@ struct _CtxIntRectangle {
   int width;
   int height;
 };
+typedef struct _CtxFloatRectangle CtxFloatRectangle;
+struct _CtxFloatRectangle {
+  float x;
+  float y;
+  float width;
+  float height;
+};
 
 void ctx_quit (Ctx *ctx);
 int  ctx_has_quit (Ctx *ctx);

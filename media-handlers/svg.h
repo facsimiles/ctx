@@ -3575,7 +3575,7 @@ mrg_get_contents (Mrg         *mrg,
 }
 
 void _mrg_layout_pre (Mrg *mrg, MrgHtml *ctx);
-void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx);
+void _mrg_layout_post (Mrg *mrg, MrgHtml *ctx, CtxFloatRectangle *ret_rect);
 
 void mrg_set_style (Mrg *mrg, const char *style);
 
@@ -3642,9 +3642,11 @@ void mrg_start (Mrg *mrg, const char *style_id, void *id_ptr)
   mrg_start_with_style (mrg, style_id, id_ptr, NULL);
 }
 
-void mrg_end (Mrg *mrg)
+
+// XXX can we return the geometry here?
+void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
 {
-  _mrg_layout_post (mrg, &mrg->html);
+  _mrg_layout_post (mrg, &mrg->html, ret_rect);
   if (mrg->state->style_id)
   {
     free (mrg->state->style_id);
@@ -3660,8 +3662,6 @@ void mrg_end (Mrg *mrg)
   if (mrg->in_paint)
     ctx_restore (mrg_ctx (mrg));
 }
-
-void mrg_end       (Mrg *mrg);
 
 void  mrg_set_line_height (Mrg *mrg, float line_height);
 float mrg_line_height (Mrg *mrg);
@@ -4722,7 +4722,7 @@ static void _mrg_spaces (Mrg *mrg, int count)
              mrg_start (mrg, ".cursor", NULL);\
              _mrg_spaces (mrg, 1);\
              _mrg_nl (mrg);\
-             mrg_end (mrg);\
+             mrg_end (mrg, NULL);\
            }\
          else\
            _mrg_nl (mrg);\
@@ -4742,7 +4742,7 @@ static void _mrg_spaces (Mrg *mrg, int count)
              mrg_start (mrg, ".cursor", NULL);\
              _mrg_spaces (mrg, 1);\
              _mrg_nl (mrg);\
-             mrg_end (mrg);\
+             mrg_end (mrg, NULL);\
            }\
          else\
            _mrg_nl (mrg);\
@@ -4798,7 +4798,7 @@ static void emit_word (Mrg *mrg,
               if (print) { 
                mrg_start (mrg, ".cursor", NULL);
                _mrg_spaces (mrg, 1); 
-               mrg_end (mrg);
+               mrg_end (mrg, NULL);
               } else { 
                mrg->x += measure_word_width (mrg, " ");
               }
@@ -4810,7 +4810,7 @@ static void emit_word (Mrg *mrg,
                     {
                       mrg_start (mrg, "dim", NULL);
                       mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
-                      mrg_end (mrg);
+                      mrg_end (mrg, NULL);
                     }
                   else
                     _mrg_spaces (mrg, 1);
@@ -4834,7 +4834,7 @@ static void emit_word (Mrg *mrg,
           mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, word, cursor_start - *pos);
           mrg_start (mrg, ".cursor", NULL);
           mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, mrg_utf8_skip (word, cursor_start - *pos), 1);
-          mrg_end (mrg);
+          mrg_end (mrg, NULL);
           mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, mrg_utf8_skip (word, cursor_start - *pos + 1), len - (cursor_start - *pos) - 1);
 #else
 
@@ -4849,7 +4849,7 @@ static void emit_word (Mrg *mrg,
           mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup, -1);
           mrg_start (mrg, ".cursor", NULL);
           mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup2, -1);
-          mrg_end (mrg);
+          mrg_end (mrg, NULL);
           mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup3, -1);
 
           free (dup);
@@ -4931,7 +4931,7 @@ static int mrg_print_wrap (Mrg        *mrg,
           {
             mrg_start (mrg, "dim", NULL);
             mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "¶", -1);\
-            mrg_end (mrg);
+            mrg_end (mrg, NULL);
           }
           EMIT_NL();
           gotspace = 0;
@@ -4946,7 +4946,7 @@ static int mrg_print_wrap (Mrg        *mrg,
                   {
                     mrg_start (mrg, ".cursor", NULL);
                     _mrg_spaces (mrg, 1);
-                    mrg_end (mrg);
+                    mrg_end (mrg, NULL);
                   }
                   else
                     mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
@@ -4957,7 +4957,7 @@ static int mrg_print_wrap (Mrg        *mrg,
                     {
                       mrg_start (mrg, "dim", NULL);
                       mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
-                      mrg_end (mrg);
+                      mrg_end (mrg, NULL);
                     }
                   else
                     {
@@ -5011,7 +5011,7 @@ static int mrg_print_wrap (Mrg        *mrg,
           mrg->x += measure_word_width (mrg, " ");
         mrg_start (mrg, ".cursor", NULL);
         _mrg_spaces (mrg, 1);
-        mrg_end (mrg);
+        mrg_end (mrg, NULL);
       }
       else
         mrg->x += measure_word_width (mrg, " ");
@@ -5127,7 +5127,7 @@ static int mrg_print_wrap2 (Mrg        *mrg,
           {
             mrg_start (mrg, "dim", NULL);
             mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "¶", -1);\
-            mrg_end (mrg);
+            mrg_end (mrg, NULL);
           }
           EMIT_NL();
           gotspace = 0;
@@ -5141,7 +5141,7 @@ static int mrg_print_wrap2 (Mrg        *mrg,
                   {
                     mrg_start (mrg, ".cursor", NULL);
                     _mrg_spaces (mrg, 1);
-                    mrg_end (mrg);
+                    mrg_end (mrg, NULL);
                   }
                   else
                     mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
@@ -5152,7 +5152,7 @@ static int mrg_print_wrap2 (Mrg        *mrg,
                     {
                       mrg_start (mrg, "dim", NULL);
                       mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
-                      mrg_end (mrg);
+                      mrg_end (mrg, NULL);
                     }
                   else
                     {
@@ -5204,7 +5204,7 @@ static int mrg_print_wrap2 (Mrg        *mrg,
       {
         mrg_start (mrg, ".cursor", NULL);
         _mrg_spaces (mrg, 1);
-        mrg_end (mrg);
+        mrg_end (mrg, NULL);
       }
       else
         mrg->x += measure_word_width (mrg, " ");
@@ -6015,7 +6015,7 @@ void _mrg_set_post_nl (Mrg *mrg,
   mrg->state->post_nl_data = post_nl_data;
 }
 
-void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
+void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 {
   Ctx *ctx = mrg->ctx;
   float vmarg = 0;
@@ -6091,6 +6091,14 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html)
         html->state->block_start_y - mrg_em(mrg),
         geo->width,
         geo->height);
+    if (ret_rect)
+    {
+       ret_rect->x = html->state->block_start_x;
+       ret_rect->y = html->state->block_start_y - mrg_em(mrg);
+       ret_rect->width = geo->width;
+       ret_rect->height = geo->height;
+    }
+
 
     {
       CtxMatrix transform;
@@ -7098,7 +7106,7 @@ void mrg_xml_render (Mrg *mrg,
           if (!dealt_with){
             mrg_start (mrg, "dim", (void*)((size_t)pos));
             mrg_print (mrg, data);
-            mrg_end (mrg);
+            mrg_end (mrg, NULL);
           }
         }
         break;
@@ -7216,19 +7224,19 @@ void mrg_xml_render (Mrg *mrg,
 
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
-          mrg_end (mrg);
+          mrg_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
-          mrg_end (mrg);
+          mrg_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
         }
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
-          mrg_end (mrg);
+          mrg_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
-          mrg_end (mrg);
+          mrg_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
         }
@@ -7240,7 +7248,7 @@ void mrg_xml_render (Mrg *mrg,
                       (data_hash == CTX_dd && tag[depth-1] == CTX_dd) ||
                       (data_hash == CTX_p &&  tag[depth-1] == CTX_p)))
         {
-          mrg_end (mrg);
+          mrg_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
         }
@@ -7424,7 +7432,7 @@ void mrg_xml_render (Mrg *mrg,
           case CTX_br:
           case CTX_hr:
             should_be_empty = 1;
-            mrg_end (mrg);
+            mrg_end (mrg, NULL);
             //ctx_restore (mrg->ctx);
             depth--;
         }
@@ -7442,7 +7450,7 @@ void mrg_xml_render (Mrg *mrg,
             mrg_text_listen_done (mrg);
           }
           in_style = 0;
-          mrg_end (mrg);
+          mrg_end (mrg, NULL);
           //ctx_restore (mrg->ctx);
           depth--;
 
@@ -7450,13 +7458,13 @@ void mrg_xml_render (Mrg *mrg,
           {
             if (tag[depth] == CTX_p)
             {
-              mrg_end (mrg);
+              mrg_end (mrg, NULL);
               //ctx_restore (mrg->ctx);
               depth --;
             } else 
             if (depth > 0 && tag[depth-1] == data_hash)
             {
-              mrg_end (mrg);
+              mrg_end (mrg, NULL);
               //ctx_restore (mrg->ctx);
               depth --;
             }
@@ -7466,7 +7474,7 @@ void mrg_xml_render (Mrg *mrg,
               for (i = 0; i < 2; i ++)
               {
                 depth --;
-                mrg_end (mrg);
+                mrg_end (mrg, NULL);
                 //nctx_restore (mrg->ctx);
               }
             }
@@ -7479,7 +7487,7 @@ void mrg_xml_render (Mrg *mrg,
               for (i = 0; i < 3; i ++)
               {
                 depth --;
-                mrg_end (mrg);
+                mrg_end (mrg, NULL);
                // ctx_restore (mrg->ctx);
               }
             }
@@ -7491,7 +7499,7 @@ void mrg_xml_render (Mrg *mrg,
               for (i = 0; i < 4; i ++)
               {
                 depth --;
-                mrg_end (mrg);
+                mrg_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
             }
@@ -7503,7 +7511,7 @@ void mrg_xml_render (Mrg *mrg,
               for (i = 0; i < 5; i ++)
               {
                 depth --;
-                mrg_end (mrg);
+                mrg_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
             }
@@ -7513,16 +7521,16 @@ void mrg_xml_render (Mrg *mrg,
               if (data_hash == CTX_table && tag[depth] == CTX_td)
               {
                 depth--;
-                mrg_end (mrg);
+                mrg_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
                 depth--;
-                mrg_end (mrg);
+                mrg_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
               else if (data_hash == CTX_table && tag[depth] == CTX_tr)
               {
                 depth--;
-                mrg_end (mrg);
+                mrg_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
             }
@@ -7538,7 +7546,7 @@ void mrg_xml_render (Mrg *mrg,
     while (depth > 0)
     {
       //fprintf (stderr, " %s ", tag[depth-1]);
-      mrg_end (mrg);
+      mrg_end (mrg, NULL);
       depth--;
     }
     fprintf (stderr, "\n");
@@ -7570,9 +7578,9 @@ void mrg_xml_renderf (Mrg *mrg,
   free (buffer);
 }
 
-void mrg_print_xml (Mrg *mrg, char *xml)
+void mrg_print_xml (Mrg *mrg, const char *xml)
 {
-  mrg_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, xml);
+  mrg_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
 }
 
 void

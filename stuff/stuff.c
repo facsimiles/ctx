@@ -5542,9 +5542,6 @@ static void drop_event (CtxEvent *event, void *a, void *b)
         fprintf (stderr, "dropped :) %s\n", event->string);
 }
 
-void mrg_print_xml (ITK *mrg, char *xml);
-void mrg_printf_xml (ITK *mrg, const char *format, ...);
-
 
 static int card_files (ITK *itk_, void *data)
 {

@@ -246,6 +246,44 @@ struct _CtxControl{
 
 float itk_panel_scroll (ITK *itk);
 
+typedef struct _Mrg          Mrg;
+typedef struct _CtxStyle     CtxStyle;
+
+void mrg_start            (Mrg *mrg, const char *class_name, void *id_ptr);
+void mrg_start_with_style (Mrg        *mrg,
+                           const char *style_id,
+                           void       *id_ptr,
+                           const char *style);
+
+void mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
+                            const char *format, ...);
+void mrg_xml_render (Mrg *mrg,
+                     char *uri_base,
+                     void (*link_cb) (CtxEvent *event, void *href, void *link_data),
+                     void *link_data,
+                     void *(finalize)(void *listen_data, void *listen_data2, void *finalize_data),
+                     void *finalize_data,
+                     char *html_);
+
+void
+mrg_printf (Mrg *mrg, const char *format, ...);
+
+void mrg_print_xml (Mrg *mrg, const char *xml);
+
+void
+mrg_printf_xml (Mrg *mrg, const char *format, ...);
+
+void
+mrg_print_xml (Mrg *mrg, const char *utf8);
+
+// returns width added horizontally
+float mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length);
+
+void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
+                         int priority, char **error);
+CtxStyle *ctx_style (Mrg *mrg);
+
+void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
 
 #ifdef ITK_IMPLEMENTATION
 #include "svg.h"
