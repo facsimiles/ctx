@@ -4355,6 +4355,10 @@ static void dir_layout (ITK *itk, Diz *diz)
 
               BIND_KEY ("control-right", "make-child-of-previous", "make child of previous");
 #else
+              if (!diz_dir_has_children (diz, focused_no))
+              {
+                 BIND_KEY ("control-right", "outline-focus-first-child", "create child item");
+              }
               add_context_binding (1,
                               "demote",
                               "make-sibling-of-parent",
@@ -6527,7 +6531,7 @@ static int card_files (ITK *itk_, void *data)
   {
     float em = itk_em (itk);
     itk_set_xy (itk, em, em);
-    mrg_print_xml (itk, "<style>body{color:#cfc;font-size:30px; } b{color:red;};</style><html><body><div>fnor sadf ksadf jlkdsaf mlkjv mklsad mkclas mdkcla mdlkcas mdlck mdslkcmsa ldk mcaoskd mcwaei mcoakesmc oake mclwke mclwake mclokmc okasmc oaksmdocakse mcoaksmc oakds mclsakd mclsakd mclsakd mclaksdmclksad mcldsak mclskd mclsakd mclsadk mclsakdmclsadkmclsakdmclsadcd1</div> <div>fnord2</div><p id='a'> foo <b>bold</b> bar </p><ul><li id='b'>a</li><li>b</li></ul></body></html>");
+    mrg_print_xml (itk, "<style>body{color:#cfc;font-size:30px; } b{color:red;};p,div,li,ul{border:1px solid cyan;}</style><html><body><div>bad sadf ksadf jlkdsaf mlkjv mklsad mkclas mdkcla mdlkcas mdlck mdslkcmsa ldk mcaoskd mcwaei mcoakesmc oake mclwke mclwake mclokmc okasmc oaksmdocakse mcoaksmc oakds mclsakd mclsakd mclsakd mclaksdmclksad mcldsak mclskd mclsakd mclsadk mclsakdmclsadkmclsakdmclsadcd1</div> <div>fnord2</div><p id='a'> foo <b>bold</b> bar </p><ul><li id='b'>a</li><li>b</li></ul></body></html>");
   }
 
   // drop target
