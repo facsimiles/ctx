@@ -1020,13 +1020,13 @@ void itk_scroll_start (ITK *itk, float height)
   ctx_translate (ctx, 0.0, -panel->scroll);
 }
 
-// only applies to next created
+// applies to next created control
 void itk_id (ITK *itk, void *id)
 {
   itk->next_id = id; 
 }
 
-// only applies to next created
+// applies to next created control
 void itk_set_flag (ITK *itk, int flag, int on)
 {
   if (on)
@@ -1110,15 +1110,21 @@ ITKPanel *itk_panel_start (ITK *itk, const char *title,
   Ctx *ctx = itk->ctx;
   ITKPanel *panel = add_panel (itk, title, x, y, width, height);
   float em = itk_em (itk);
-  itk->edge_left = itk->x = panel->x + em * itk->rel_hmargin;
-  itk->edge_top = itk->y = panel->y;
+  itk_set_edge_left (itk, panel->x + em * itk->rel_hmargin);
+  itk_set_edge_top (itk, panel->y);
+  itk_set_xy (itk, itk_edge_left (itk), panel->y);
+  //itk->edge_left = itk->x = panel->x + em * itk->rel_hmargin;
+  //itk->edge_top = itk->y = panel->y;
+
   if (panel->width != 0)
   {
     panel->width = width;
     panel->height = height;
   }
-  itk->width  = panel->width;
+  itk->width = panel->width;
   itk->height = panel->height;
+  //itk_set_wrap_width (itk, panel->width);
+  //itk_set_height (itk, panel->height);
 
   itk->panel = panel;
 
@@ -1709,22 +1715,58 @@ int itk_expander (ITK *itk, const char *label, int *val)
 
 int itk_button (ITK *itk, const char *label)
 {
+#if 0
+  Ctx *ctx = itk->ctx;
+  Mrg *mrg = (Mrg*)itk;
+  float em = itk_em (itk);
+  float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  CtxFloatRectangle extent;
+   
+  mrg_start_with_style (mrg, "button", NULL, NULL);
+
+
+  mrg_print (mrg, label);
+
+
+  mrg_end (mrg, &extent);
+  fprintf (stderr, "%f %f %f %f\n", extent.x, extent.y, extent.width, extent.height);
+  CtxControl *control = itk_add_control (itk, UI_BUTTON, label,
+                  extent.x, extent.y, extent.width, extent.height);
+                             //itk->x, itk->y, width, em * itk->rel_ver_advance);
+
+  control_ref (control);
+  control->type = UI_BUTTON;
+  ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
+  //ctx_rgb (ctx, 1,0,1);
+  //ctx_fill (ctx);
+  ctx_begin_path (ctx);
+  //itk->x += width;
+  //itk->x += itk->rel_hgap * em;
+
+  //itk_newline (itk);
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return 1;
+  }
+  return 0;
+#else
+
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
-  CtxControl *control = itk_add_control (itk, UI_BUTTON, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
+
+
+
+  CtxControl *control = itk_add_control (itk, UI_BUTTON, label,
+                             itk->x, itk->y, width, em * itk->rel_ver_advance);
 
   itk_style_color (itk->ctx, "itk-button-shadow");
   ctx_begin_path (ctx);
   ctx_round_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, width, em * itk->rel_ver_advance, em*0.33);
   ctx_fill (ctx);
-
-#if 0
-  itk_style_color (itk->ctx, "itk-interactive");
-  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
-  ctx_line_width (ctx, 1);
-  ctx_stroke (ctx);
-#endif
 
   {
     float px = ctx_pointer_x (itk->ctx);
@@ -1767,6 +1809,8 @@ int itk_button (ITK *itk, const char *label)
     return 1;
   }
   return 0;
+
+#endif
 }
 
 static void itk_choice_clicked (CtxEvent *event, void *userdata, void *userdata2)

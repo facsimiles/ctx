@@ -1577,11 +1577,13 @@ const char * html_css =
 ".cursor{color:white;background: black;} \n"
 "br{display:block;}\n"
 "document{color:black;font-weight:normal;background-color:white;}\n"
-"body{background-color:transparent;}\n"
+"body{background-color:transparent;color:white;}\n"
 "a{color:blue;text-decoration: underline;}\n"
 "a:hover{background:black;color:white;text-decoration:underline; }\n"
 "style,script{display:none;}\n"
 "hr{margin-top:16px;font-size:1px;}\n"  /* hack that works in one way, but shrinks top margin too much */
+
+"button{border: 1px solid  green;background:blue;color:red;}\n"
 ;
 
 
@@ -2580,28 +2582,28 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         switch (n_vals)
         {
           case 1:
-            SET_PROP(margin_top, vals[0]);
-            SET_PROP(margin_right, vals[0]);
+            SET_PROP(margin_top,    vals[0]);
+            SET_PROP(margin_right,  vals[0]);
             SET_PROP(margin_bottom, vals[0]);
-            SET_PROP(margin_left, vals[0]);
+            SET_PROP(margin_left,   vals[0]);
             break;
           case 2:
-            SET_PROP(margin_top, vals[0]);
-            SET_PROP(margin_right, vals[1]);
+            SET_PROP(margin_top,    vals[0]);
+            SET_PROP(margin_right,  vals[1]);
             SET_PROP(margin_bottom, vals[0]);
-            SET_PROP(margin_left, vals[1]);
+            SET_PROP(margin_left,   vals[1]);
             break;
           case 3:
-            SET_PROP(margin_top, vals[0]);
-            SET_PROP(margin_right, vals[1]);
+            SET_PROP(margin_top,    vals[0]);
+            SET_PROP(margin_right,  vals[1]);
             SET_PROP(margin_bottom, vals[2]);
-            SET_PROP(margin_left, vals[1]);
+            SET_PROP(margin_left,   vals[1]);
             break;
           case 4:
-            SET_PROP(margin_top, vals[0]);
-            SET_PROP(margin_right, vals[1]);
+            SET_PROP(margin_top,    vals[0]);
+            SET_PROP(margin_right,  vals[1]);
             SET_PROP(margin_bottom, vals[2]);
-            SET_PROP(margin_left, vals[3]);
+            SET_PROP(margin_left,   vals[3]);
             break;
         }
       }
@@ -3505,7 +3507,7 @@ mrg_set_stylef (Mrg *mrg, const char *format, ...)
 void ctx_style_defaults (Mrg *mrg)
 {
   Ctx *ctx = mrg->ctx;
-  float em = 16;
+  float em = 32;
   mrg_set_em (mrg,  em);
   mrg_set_rem (mrg, em);
   mrg_set_edge_left (mrg, 0);
@@ -3525,6 +3527,12 @@ void ctx_style_defaults (Mrg *mrg)
     CtxColor *color = ctx_color_new ();
     ctx_color_set_from_string (mrg->ctx, color, "black");
     ctx_set_color (ctx, CTX_fill_color, color);
+    ctx_color_free (color);
+  }
+  {
+    CtxColor *color = ctx_color_new ();
+    ctx_color_set_from_string (mrg->ctx, color, "green");
+    ctx_set_color (ctx, CTX_color, color);
     ctx_color_free (color);
   }
 
@@ -3563,7 +3571,8 @@ mrg_get_contents (Mrg         *mrg,
   if (mrg->mrg_get_contents)
   {
     int ret;
-    ret = mrg->mrg_get_contents (referer, input_uri, contents, length, mrg->get_contents_data);
+    ret = mrg->mrg_get_contents (referer, input_uri, contents, length,
+                                 mrg->get_contents_data);
     return ret;
   }
   else
@@ -7602,7 +7611,8 @@ mrg_printf_xml (Mrg *mrg, const char *format, ...)
 
 void mrg_set_size (Mrg *mrg, int width, int height)
 {
-  if (ctx_width (mrg->ctx) != width || ctx_height (mrg->ctx) != height)
+  if (ctx_width (mrg->ctx) != width ||
+      ctx_height (mrg->ctx) != height)
   {
     ctx_set_size (mrg->ctx, width, height);
     mrg_queue_draw (mrg, NULL);
@@ -7811,9 +7821,9 @@ void _mrg_init (Mrg *mrg, int width, int height)
   mrg->state->style.color.blue = 0;
   mrg->state->style.color.alpha = 1;
 #endif
-  {
+  if(1){
     CtxColor *color = ctx_color_new ();
-    ctx_color_set_rgba (ctx_get_state (mrg->ctx), color, 0, 0, 0, 1);
+    ctx_color_set_rgba (ctx_get_state (mrg->ctx), color, 1, 0, 1, 1);
     ctx_set_color (mrg->ctx, CTX_color, color);
     ctx_color_free (color);
   }
