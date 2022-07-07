@@ -67,7 +67,7 @@ build.conf:
 	@echo "!! now run Make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
-demos/c/%: demos/c/%.c build.conf Makefile build.conf media-handlers/itk.h libctx.a
+demos/c/%: demos/c/%.c build.conf Makefile build.conf media-handlers/itk.h libctx.a 
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen Makefile
@@ -171,7 +171,7 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS
 
-ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf media-handlers/itk.h
+ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf media-handlers/itk.h media-handlers/svg.h
 	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
@@ -193,7 +193,7 @@ deps.o: deps.c build.conf Makefile
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
-terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h
+terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h 
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c \
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 

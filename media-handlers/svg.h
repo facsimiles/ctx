@@ -1583,7 +1583,17 @@ const char * html_css =
 "style,script{display:none;}\n"
 "hr{margin-top:16px;font-size:1px;}\n"  /* hack that works in one way, but shrinks top margin too much */
 
-"button{border: 1px solid  green;background:blue;color:red;}\n"
+
+
+////  also part of our default stylesheet
+"toggle{border: 1px solid green;border: 1px solid red;color:yellow;}\n"
+"toggle-focused{display:inline-block;color:red;border:1px solid red;}\n"
+"button{border: 1px solid green;border: 1px solid red;color:yellow;}\n"
+"button-focused{display:inline-block;color:red;border:1px solid red;}\n"
+"label{display:inline; color:white;}\n"
+"slider{display:inline-block; color:white;}\n"
+"slider-focused{display:inline-block; color:white;border: 1px solid red;}\n"
+"propline {border:1px solid magenta;display:block;}\n"
 ;
 
 
@@ -6031,6 +6041,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   CtxStyle *style = ctx_style (mrg);
   float height = PROP(height);
   float width = PROP(width);
+  int returned_dim = 0;
   
   /* adjust cursor back to before display */
 
@@ -6106,6 +6117,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
        ret_rect->y = html->state->block_start_y - mrg_em(mrg);
        ret_rect->width = geo->width;
        ret_rect->height = geo->height;
+       returned_dim = 1;
     }
 
 
@@ -6141,8 +6153,26 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
           mrg_y (mrg) + vmarg + PROP(border_bottom_width));
     }
   }
-  else if (style->display == CTX_DISPLAY_INLINE)
+  else if (style->display == CTX_DISPLAY_INLINE ||
+           style->display == CTX_DISPLAY_INLINE_BLOCK)
   {
+    float x0 = html->state->original_x;
+    float y0 = html->state->original_y - mrg_em (mrg);
+    float width = mrg->x - x0;
+    float height = mrg->y - y0;// + mrg_em(mrg);
+
+    if (ret_rect)
+    {
+       ret_rect->x = x0;
+       ret_rect->y = y0;
+       ret_rect->width = width;
+       ret_rect->height = height;
+
+      mrg_box (mrg, x0, y0, width, height);
+
+       returned_dim = 1;
+    }
+
     mrg->x += paint_span_bg_final (mrg, mrg->x, mrg->y, 0);
   }
 
@@ -6161,6 +6191,8 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 
   html->state_no--;
   html->state = &html->states[html->state_no];
+    if (ret_rect && !returned_dim)
+            fprintf (stderr, "didnt return dim!\n");
 }
 
 enum {

@@ -99,9 +99,9 @@ int main (int argc, char **argv)
 
       if (presses % 2)
       {
-        itk_sameline (itk);
         itk_label (itk, "label");
       }
+      itk_newline (itk);
 
       enum Mode
       {

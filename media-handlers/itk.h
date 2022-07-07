@@ -846,7 +846,7 @@ CtxControl *itk_add_control (ITK *itk,
 
   ctx_rectangle (itk->ctx, x, y, width, height);
   if (itk->focus_no == control->no &&
-      control->type != UI_BUTTON)  // own-bg
+      control->type == UI_LABEL)   // own-bg
   {
 #if 1
     itk_style_color (itk->ctx, "itk-focused-bg");
@@ -945,12 +945,21 @@ void itk_seperator (ITK *itk)
 
 void itk_label (ITK *itk, const char *label)
 {
+#if 1
+  Mrg *mrg = (Mrg*)itk;
+  mrg_start (mrg, "label", NULL);
+
+  mrg_print (mrg, label);
+
+  mrg_end (mrg, NULL);
+#else
 //float em = itk_em (itk);
 //itk_base (itk, NULL, itk->x, itk->y, itk->width, em * itk->rel_ver_advance, 0);
   itk_text (itk, label);
 
   itk->x += itk->rel_hgap * itk->font_size;
   itk_newline (itk);
+#endif
 }
 
 void itk_labelf (ITK *itk, const char *format, ...)
@@ -1226,6 +1235,7 @@ static void itk_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2
 
 float itk_slider (ITK *itk, const char *label, float value, double min, double max, double step)
 {
+#if 0
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
   float em = itk_em (itk);
@@ -1284,6 +1294,35 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
     return itk->slider_value;
   }
   return value;
+#else
+  Mrg *mrg = (Mrg*)itk;
+  Ctx *ctx = itk->ctx;
+
+  mrg_start (mrg, "propline", NULL);
+  itk_label (itk, label);
+
+  CtxFloatRectangle extent;
+  mrg_start (mrg, itk->focus_no == itk->control_no ? "slider-focused" : "slider", NULL);
+  mrg_printf (mrg, "%f", value);
+  mrg_end (mrg, &extent);
+  CtxControl *control = itk_add_control (itk, UI_SLIDER, label,
+                                         extent.x, extent.y, extent.width, extent.height);
+  control->value  = value;
+  control->min  = min;
+  control->max  = max;
+  control->step = step;
+  mrg_end (mrg, NULL);
+
+
+  itk_newline (itk);
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return itk->slider_value;
+  }
+  return value;
+#endif
 }
 
 void itk_slider_float (ITK *itk, const char *label, float *val, float min, float max, float step)
@@ -1544,18 +1583,6 @@ void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
   ctx_queue_draw (event->ctx);
 }
 
-int itk_toggle_deprecated (ITK *itk, const char *label, int *val)
-{
-  int old_val = *val;
-  int new_val = itk_toggle (itk, label, old_val);
-  if (new_val !=old_val)
-  {
-    *val = new_val;
-    return 1;
-  }
-  return 0;
-}
-
 static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
 {
   ITK *itk = userdata2;
@@ -1568,6 +1595,54 @@ static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
 
 int itk_toggle (ITK *itk, const char *label, int input_val)
 {
+#if 1
+  Ctx *ctx = itk->ctx;
+  Mrg *mrg = (Mrg*)itk;
+  float em = itk_em (itk);
+  float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  CtxFloatRectangle extent;
+  
+  mrg_start (mrg, "propline", NULL);
+  mrg_start (mrg, itk->focus_no == itk->control_no ? "toggle-focused" : "toggle", NULL);
+
+  mrg_print (mrg, label);
+
+  if (input_val)
+  {
+      mrg_print (mrg, "{x}");
+  }
+  else
+  {
+      mrg_print (mrg, "{ }");
+  }
+
+  mrg_end (mrg, &extent);
+  mrg_end (mrg, NULL);
+  CtxControl *control = itk_add_control (itk, UI_TOGGLE, label,
+                  extent.x, extent.y, extent.width, extent.height);
+                             //itk->x, itk->y, width, em * itk->rel_ver_advance);
+
+  control_ref (control);
+  control->type = UI_TOGGLE;
+  ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
+  //ctx_rgb (ctx, 1,0,1);
+  //ctx_fill (ctx);
+  ctx_begin_path (ctx);
+  //itk->x += width;
+  //itk->x += itk->rel_hgap * em;
+
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return !input_val;
+  }
+  return input_val;
+
+#else
+
+
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
   float width = ctx_text_width (ctx, label) + em * 1 + em * itk->rel_hpad;
@@ -1612,6 +1687,7 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
     return !input_val;
   }
   return input_val;
+#endif
 }
 
 
@@ -1715,21 +1791,19 @@ int itk_expander (ITK *itk, const char *label, int *val)
 
 int itk_button (ITK *itk, const char *label)
 {
-#if 0
+#if 1
   Ctx *ctx = itk->ctx;
   Mrg *mrg = (Mrg*)itk;
   float em = itk_em (itk);
   float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxFloatRectangle extent;
    
-  mrg_start_with_style (mrg, "button", NULL, NULL);
-
+  mrg_start (mrg, itk->focus_no == itk->control_no ? "button-focused" : "button", NULL);
 
   mrg_print (mrg, label);
 
 
   mrg_end (mrg, &extent);
-  fprintf (stderr, "%f %f %f %f\n", extent.x, extent.y, extent.width, extent.height);
   CtxControl *control = itk_add_control (itk, UI_BUTTON, label,
                   extent.x, extent.y, extent.width, extent.height);
                              //itk->x, itk->y, width, em * itk->rel_ver_advance);
@@ -1801,7 +1875,7 @@ int itk_button (ITK *itk, const char *label)
   itk->x += width;
   itk->x += itk->rel_hgap * em;
 
-  itk_newline (itk);
+//  itk_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
   {
     itk->return_value = 0;
