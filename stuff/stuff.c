@@ -5550,8 +5550,11 @@ static int card_files (ITK *itk_, void *data)
 {
   itk = itk_;
   ctx = itk_ctx (itk);
-  itk_set_wrap_width (itk, ctx_width (ctx));
-  itk_set_height (itk, ctx_height (ctx));
+  ctx_save (ctx);
+  float ddx = 1.0f;
+  ctx_scale (ctx, ddx, ddx);
+  itk_set_wrap_width (itk, ctx_width (ctx)/ddx);
+  itk_set_height (itk, ctx_height (ctx)/ddx);
   //float em = itk_em (itk);
   //float row_height = em * 1.2;
   static int first = 1;
@@ -5684,7 +5687,9 @@ static int card_files (ITK *itk_, void *data)
         ctx_get_contents (diz->path, &contents, &length);
         if (contents)
         {
+           ctx_save (ctx);
            mrg_print_xml ((Mrg*)itk, contents);
+           ctx_restore (ctx);
            free (contents);
         }
 
@@ -6558,6 +6563,7 @@ static int card_files (ITK *itk_, void *data)
   ctx_rectangle (ctx, 0,0, ctx_width (ctx), ctx_height (ctx));
   ctx_listen (ctx, CTX_DROP, drop_event, NULL, NULL);
   ctx_begin_path (ctx);
+  ctx_restore (ctx);
   return 1;
 }
 

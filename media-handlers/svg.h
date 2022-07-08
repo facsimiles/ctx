@@ -1300,7 +1300,7 @@ static void clear_both (MrgHtml *ctx)
   }
   y += mrg_em (mrg) * ctx_style(mrg)->line_height;
   mrg_set_xy (mrg, mrg_x (mrg), y);
-  //_mrg_draw_background_increment (mrg, &mrg->html, 0);
+  _mrg_draw_background_increment (mrg, &mrg->html, 0);
 #endif
 }
 
@@ -1477,8 +1477,17 @@ void _ctx_init_style (Mrg *mrg)
   s->fill_color.blue = 0;
   s->fill_color.alpha = 1;
 #endif
+#if 0
+  CtxColor *color = ctx_color_new ();
+  ctx_color_set_from_string (mrg->ctx, color, "black");
+  ctx_set_color (mrg->ctx, CTX_color, color);
+  ctx_set_color (mrg->ctx, CTX_border_top_color, color);
+  ctx_set_color (mrg->ctx, CTX_border_left_color, color);
+  ctx_set_color (mrg->ctx, CTX_border_right_color, color);
+  ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+#endif
 
-  //ctx_color_set_rgba (&mrg->ctx->state, &s->fill_color, 1, 0, 1, 0);
+  //ctx_color_set_rgba (&mrg->ctx->state, &s->color, 1, 0, 1, 0);
   //ctx_color_set_rgba (&mrg->ctx->state, &s->stroke_color, 1, 1, 0, 0);
   //ctx_color_set_rgba (&mrg->ctx->state, &s->background_color, 1, 1, 1, 0);
   /* this shouldn't be inherited? */
@@ -1532,7 +1541,7 @@ const char * html_css =
 "caption{display:table-caption}\n"
 "th{font-weight:bolder;text-align:center}\n"
 "caption{text-align:center}\n"
-"body{margin:0.5em}\n"
+"body{margin:8px;}\n" // was 0.5em
 "h1{font-size:2em;margin:.67em 0}\n"
 "h2{font-size:1.5em;margin:.75em 0}\n"
 "h3{font-size:1.17em;margin:.83em 0}\n"
@@ -1584,12 +1593,14 @@ const char * html_css =
 "hr{margin-top:16px;font-size:1px;}\n"  /* hack that works in one way, but shrinks top margin too much */
 
 
+//"h1,h2,h3,h4,h5,h6,p,div,b,span,ul,li,ol,dl,dt,dl,propline,button{border-left-color:gray;border-right-color:gray;}\n"
+
 
 ////  also part of our default stylesheet
 "toggle{border: 1px solid green;border: 1px solid red;color:yellow;}\n"
 "toggle-focused{display:inline-block;color:red;border:1px solid red;}\n"
-"button{border: 1px solid green;border: 1px solid red;color:yellow;}\n"
-"button-focused{display:inline-block;color:red;border:1px solid red;}\n"
+"button{border: 1px solid green;}\n"
+"button:focused{color:yellow;border: 1px solid yellow;}\n"
 "label{display:inline; color:white;}\n"
 "slider{display:inline-block; color:white;}\n"
 "slider-focused{display:inline-block; color:white;border: 1px solid red;}\n"
@@ -2058,7 +2069,7 @@ static int compare_matches (const void *a, const void *b, void *d)
 {
   const CtxStyleMatch *ma = a;
   const CtxStyleMatch *mb = b;
-  return ma->score - mb->score;
+  return mb->score - ma->score;
 }
 
 static inline int _ctx_nth_match (const char *selector, int child_no)
@@ -2222,8 +2233,7 @@ static char *_ctx_css_compute_style (Mrg *mrg, CtxStyleNode **ancestry, int a_de
   for (l = mrg->stylesheet; l; l = l->next)
   {
     CtxStyleEntry *entry = l->data;
-    int score = 0;
-    score = ctx_css_selector_match (mrg, entry, ancestry, a_depth);
+    int score = ctx_css_selector_match (mrg, entry, ancestry, a_depth);
 
     if (score)
     {
@@ -2549,10 +2559,9 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       break;
     case CTX_right:
     case CTX_bottom:
-    case CTX_width:
-    case CTX_color:
-    case CTX_font_size:
-      // handled in pass0
+    case CTX_width:     // handled in pass1m
+    case CTX_color:     // handled in pass0
+    case CTX_font_size: // handled in pass0
       break;
     case CTX_top:
     case CTX_height:
@@ -3618,10 +3627,11 @@ void mrg_start_with_style (Mrg        *mrg,
   mrg->state->style.display = CTX_DISPLAY_INLINE;
   mrg->state->style.id_ptr = id_ptr;
 
-  _ctx_init_style (mrg);
-
   if (mrg->in_paint)
     ctx_save (mrg_ctx (mrg));
+
+  _ctx_init_style (mrg);
+
 
   {
     char *collated_style = _ctx_stylesheet_collate_style (mrg);
@@ -4076,7 +4086,7 @@ _mrg_draw_background_increment (Mrg *mrg, void *data, int last)
 
 float mrg_ddpx (Mrg *mrg)
 {
-  return 1;
+  return mrg->ddpx;
 }
 
 /* mrg - MicroRaptor Gui
@@ -6168,10 +6178,9 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
        ret_rect->width = width;
        ret_rect->height = height;
 
-      mrg_box (mrg, x0, y0, width, height);
-
        returned_dim = 1;
     }
+    mrg_box (mrg, x0, y0, width, height);
 
     mrg->x += paint_span_bg_final (mrg, mrg->x, mrg->y, 0);
   }

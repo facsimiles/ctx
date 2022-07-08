@@ -747,6 +747,7 @@ void itk_reset (ITK *itk)
     ctx_list_remove (&itk->choices, choice);
   }
   itk->control_no = 0;
+  _mrg_init ((Mrg*)itk, ctx_width (itk->ctx), ctx_height (itk->ctx));
 }
 
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)
@@ -1151,6 +1152,7 @@ ITKPanel *itk_panel_start (ITK *itk, const char *title,
     itk_titlebar (itk, title);
 
   itk_scroll_start (itk, panel->height - (itk->y - panel->y));
+  mrg_start ((Mrg*)itk, "div", NULL);
   return panel;
 }
 
@@ -1168,6 +1170,7 @@ void itk_panel_end (ITK *itk)
   Ctx *ctx = itk->ctx;
   ITKPanel *panel = itk->panel;
   float em = itk_em (itk);
+  mrg_end ((Mrg*)itk, NULL);
   itk_scroll_end (itk);
 
   ctx_rectangle (ctx, panel->x + panel->width - em,
@@ -1798,7 +1801,7 @@ int itk_button (ITK *itk, const char *label)
   float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxFloatRectangle extent;
    
-  mrg_start (mrg, itk->focus_no == itk->control_no ? "button-focused" : "button", NULL);
+  mrg_start (mrg, itk->focus_no == itk->control_no ? "button:focused" : "button", NULL);
 
   mrg_print (mrg, label);
 
