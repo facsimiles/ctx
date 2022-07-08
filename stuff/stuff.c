@@ -5587,7 +5587,7 @@ static int card_files (ITK *itk_, void *data)
 #if GNU_C
     ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 #endif
-    ctx_add_timeout (ctx, 250, thumb_monitor, NULL);
+    ctx_add_timeout (ctx, 125, thumb_monitor, NULL);
     font_size = itk_em (itk);
     first = 0;
 
@@ -5673,7 +5673,27 @@ static int card_files (ITK *itk_, void *data)
 #endif
 
     if (!viewer)
-      dir_layout (itk, diz);
+    {
+      if (!strstr (diz->path, ".html"))
+        dir_layout (itk, diz);
+      else
+      {
+        Mrg *mrg = (Mrg*)itk;
+        uint8_t *contents;
+        long length;
+        ctx_get_contents (diz->path, &contents, &length);
+        if (contents)
+        {
+           mrg_print_xml ((Mrg*)itk, contents);
+           free (contents);
+        }
+
+
+
+        if (history)
+          BIND_KEY("alt-left", "history back", "back");
+      }
+    }
 
     if (ctx_clients (ctx))
     {

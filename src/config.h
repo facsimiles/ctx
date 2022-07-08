@@ -240,7 +240,7 @@
   //     
   //     for desktop-use this should be fully dynamic, possibly
   //     with chained pools, gradients are stored here.
-#define CTX_STRINGPOOL_SIZE     1000 //
+#define CTX_STRINGPOOL_SIZE     2000 //
 #endif
 
 #ifndef CTX_32BIT_SEGMENTS
