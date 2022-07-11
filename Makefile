@@ -171,7 +171,7 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS
 
-ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf media-handlers/itk.h media-handlers/svg.h
+ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf media-handlers/itk.h media-handlers/css.h
 	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
@@ -267,9 +267,9 @@ src/constants.h: src/*.c Makefile squoze5/squoze5
 	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][a-zA-Z_0-9]*'|sort | uniq | cut -f 2 -d _`;do echo "#define CTX_$$a `./squoze5/squoze5 -32 $$a`u";done \
 		>> $@
 	echo '#endif' >> $@
-media-handlers/w3c-constants.h: media-handlers/svg.h Makefile squoze5/squoze5
+media-handlers/w3c-constants.h: media-handlers/css.h Makefile squoze5/squoze5
 	echo '#ifndef __W3C_CONSTANTS' > $@
 	echo '#define __W3C_CONSTANTS' >> $@
-	for a in `cat media-handlers/svg.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze5/squoze5 -32 $$b`u // \"$$b\"";done \
+	for a in `cat media-handlers/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze5/squoze5 -32 $$b`u // \"$$b\"";done \
 		>> $@
 	echo '#endif' >> $@

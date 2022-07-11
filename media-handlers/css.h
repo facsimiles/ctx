@@ -1427,7 +1427,7 @@ static void ctx_parse_style_id (Mrg          *mrg,
   }
 }
 
-void _ctx_init_style (Mrg *mrg)
+void _ctx_initial_style (Mrg *mrg)
 {
   CtxStyle *s = ctx_style (mrg);
 
@@ -1442,12 +1442,6 @@ void _ctx_init_style (Mrg *mrg)
   s->clear    = CTX_CLEAR_NONE;
   s->overflow = CTX_OVERFLOW_VISIBLE;
   s->position = CTX_POSITION_STATIC;
-#if 0
-  s->border_top_color.alpha = 0;
-  s->border_left_color.alpha = 0;
-  s->border_right_color.alpha = 0;
-  s->border_bottom_color.alpha = 0;
-#endif
 
   SET_PROP(border_top_width, 0);
   SET_PROP(border_left_width, 0);
@@ -1467,6 +1461,15 @@ void _ctx_init_style (Mrg *mrg)
   SET_PROP(bottom, 0);
 
   ctx_set_float (mrg->ctx, CTX_stroke_width, 0.2);
+
+  CtxColor *color = ctx_color_new ();
+  ctx_get_color (mrg->ctx, CTX_color, color);
+  ctx_set_color (mrg->ctx, CTX_border_top_color, color);
+  ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+  ctx_set_color (mrg->ctx, CTX_border_left_color, color);
+  ctx_set_color (mrg->ctx, CTX_border_right_color, color);
+
+  ctx_color_free (color);
 #if 0
   s->stroke_color.red = 1;
   s->stroke_color.green = 0;
@@ -1485,6 +1488,12 @@ void _ctx_init_style (Mrg *mrg)
   ctx_set_color (mrg->ctx, CTX_border_left_color, color);
   ctx_set_color (mrg->ctx, CTX_border_right_color, color);
   ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+#endif
+#if 0
+  s->border_top_color.alpha = 0;
+  s->border_left_color.alpha = 0;
+  s->border_right_color.alpha = 0;
+  s->border_bottom_color.alpha = 0;
 #endif
 
   //ctx_color_set_rgba (&mrg->ctx->state, &s->color, 1, 0, 1, 0);
@@ -3498,7 +3507,7 @@ void mrg_set_style (Mrg *mrg, const char *style)
 
 void _mrg_set_style_properties (Mrg *mrg, const char *style_properties)
 {
-  _ctx_init_style (mrg);
+  _ctx_initial_style (mrg);
 
   if (style_properties)
   {
@@ -3556,7 +3565,7 @@ void ctx_style_defaults (Mrg *mrg)
   }
 
   itk_stylesheet_clear (mrg);
-  _ctx_init_style (mrg);
+  _ctx_initial_style (mrg);
 
   if (mrg->style_global->length)
   {
@@ -3614,7 +3623,7 @@ void mrg_start_with_style (Mrg        *mrg,
 {
   mrg->states[mrg->state_no].children++;
   if (mrg->state_no+1 >= CTX_MAX_STATES)
-          return;
+    return;
   mrg->state_no++;
   mrg->state = &mrg->states[mrg->state_no];
   *mrg->state = mrg->states[mrg->state_no-1];
@@ -3624,14 +3633,12 @@ void mrg_start_with_style (Mrg        *mrg,
 
   ctx_parse_style_id (mrg, mrg->state->style_id, &mrg->state->style_node);
 
-  mrg->state->style.display = CTX_DISPLAY_INLINE;
   mrg->state->style.id_ptr = id_ptr;
 
   if (mrg->in_paint)
     ctx_save (mrg_ctx (mrg));
 
-  _ctx_init_style (mrg);
-
+  _ctx_initial_style (mrg);
 
   {
     char *collated_style = _ctx_stylesheet_collate_style (mrg);
@@ -3968,7 +3975,7 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 
 static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
 {
-  _mrg_draw_background_increment (mrg, &mrg->html, 1);
+  //_mrg_draw_background_increment (mrg, &mrg->html, 1);
   _mrg_border_top (mrg, x, y, width, height);
   _mrg_border_left (mrg, x, y, width, height);
   _mrg_border_right (mrg, x, y, width, height);
@@ -4642,6 +4649,7 @@ mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length)
     mrg_draw_string (mrg, &mrg->state->style, x + left_pad, y, string, utf8_length);
   }
 
+  fprintf (stderr, "p: %f %s\n", wwidth, string);
   return wwidth + left_pad;
 }
 
@@ -4817,8 +4825,8 @@ static void emit_word (Mrg *mrg,
         EMIT_NL2();
       }
     }
-
-    if (mrg->x != mrg_edge_left(mrg) && gotspace)
+#if 0
+    if (mrg->x != mrg_edge_left(mrg))// && gotspace)
       { 
         if ((skip_lines<=0)) 
           { 
@@ -4856,6 +4864,11 @@ static void emit_word (Mrg *mrg,
               } 
           }
       } 
+    else
+    {
+      _mrg_spaces (mrg, 1);
+    }
+#endif
     if ((skip_lines<=0)) {
       if (print){if (cursor_start >= *pos && *pos + len > cursor_start && mrg->text_edited)
         { 
@@ -4914,6 +4927,7 @@ static int mrg_print_wrap (Mrg        *mrg,
   int wraps = 0;
   int pos;
   int gotspace = 0;
+  fprintf (stderr, "%i %s %i %i %i %i\n", print, data, length, max_lines, skip_lines, cursor_start);
 
   if (mrg->state->overflowed)
   {
@@ -4934,14 +4948,9 @@ static int mrg_print_wrap (Mrg        *mrg,
       mrg->e_ws = mrg_edge_left(mrg);
       mrg->e_we = mrg_edge_right(mrg);
       mrg->e_em = mrg_em (mrg);
-#if 0
-      if (mrg->scaled_font)
-        cairo_scaled_font_destroy (mrg->scaled_font);
-#endif
-      ctx_font_size (mrg_ctx (mrg), ctx_style(mrg)->font_size);
-      //mrg->scaled_font = cairo_get_scaled_font (mrg_ctx (mrg));
-      //cairo_scaled_font_reference (mrg->scaled_font);
     }
+
+  ctx_font_size (mrg_ctx (mrg), ctx_style(mrg)->font_size);
 
   for (c = 0 ; c < length && data[c] && ! mrg->state->overflowed; c++)
     switch (data[c])

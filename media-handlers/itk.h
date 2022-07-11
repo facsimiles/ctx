@@ -286,7 +286,7 @@ CtxStyle *ctx_style (Mrg *mrg);
 void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
 
 #ifdef ITK_IMPLEMENTATION
-#include "svg.h"
+#include "css.h"
 
 struct _ITK{
   Ctx             *ctx;
