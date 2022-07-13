@@ -5574,7 +5574,7 @@ ctx_GRAYA8_clear_normal (CTX_COMPOSITE_ARGUMENTS)
 static void
 ctx_GRAYA8_source_over_normal_color (CTX_COMPOSITE_ARGUMENTS)
 {
-#if 0
+#if 1
   ctx_u8_source_over_normal_color (2, rasterizer, dst, rasterizer->color, x0, coverage, count);
 #else
   uint8_t tsrc[5];
