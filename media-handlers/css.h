@@ -1537,7 +1537,6 @@ const char * html_css =
 "dir,hr,menu,pre{display:block;unicode-bidi:embed}\n"
 "h1,h2,h3,h4,h5{page-break-after:avoid}\n"
 "li{display:list-item}\n"
-"head{display:none}\n"
 "table{display:table}\n"
 "tr{display:table-row}\n"
 "thead{display:table-header-group }\n"
@@ -1598,7 +1597,7 @@ const char * html_css =
 "body{background-color:transparent;color:white;}\n"
 "a{color:blue;text-decoration: underline;}\n"
 "a:hover{background:black;color:white;text-decoration:underline; }\n"
-"style,script{display:none;}\n"
+"style,script,title{display:none;}\n"
 "hr{margin-top:16px;font-size:1px;}\n"  /* hack that works in one way, but shrinks top margin too much */
 
 
@@ -1613,7 +1612,7 @@ const char * html_css =
 "label{display:inline; color:white;}\n"
 "slider{display:inline-block; color:white;}\n"
 "slider-focused{display:inline-block; color:white;border: 1px solid red;}\n"
-"propline {border:1px solid magenta;display:block;}\n"
+"propline {display:block;margin:0.5em;}\n"
 ;
 
 
@@ -3196,6 +3195,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_display:
       switch (val_hash)
       {
+        case CTX_none:
         case CTX_hidden:       s->display = CTX_DISPLAY_NONE; break;
         case CTX_block:        s->display = CTX_DISPLAY_BLOCK; break;
         case CTX_list_item:    s->display = CTX_DISPLAY_LIST_ITEM; break;
@@ -4649,7 +4649,6 @@ mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length)
     mrg_draw_string (mrg, &mrg->state->style, x + left_pad, y, string, utf8_length);
   }
 
-  fprintf (stderr, "p: %f %s\n", wwidth, string);
   return wwidth + left_pad;
 }
 
@@ -4825,8 +4824,7 @@ static void emit_word (Mrg *mrg,
         EMIT_NL2();
       }
     }
-#if 0
-    if (mrg->x != mrg_edge_left(mrg))// && gotspace)
+    if (mrg->x != mrg_edge_left(mrg) && gotspace)
       { 
         if ((skip_lines<=0)) 
           { 
@@ -4864,11 +4862,6 @@ static void emit_word (Mrg *mrg,
               } 
           }
       } 
-    else
-    {
-      _mrg_spaces (mrg, 1);
-    }
-#endif
     if ((skip_lines<=0)) {
       if (print){if (cursor_start >= *pos && *pos + len > cursor_start && mrg->text_edited)
         { 
@@ -4927,7 +4920,6 @@ static int mrg_print_wrap (Mrg        *mrg,
   int wraps = 0;
   int pos;
   int gotspace = 0;
-  fprintf (stderr, "%i %s %i %i %i %i\n", print, data, length, max_lines, skip_lines, cursor_start);
 
   if (mrg->state->overflowed)
   {
@@ -5815,7 +5807,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)));
     }
 
-    if (PROP(margin_top) > html->state->vmarg)
+    if (PROP(margin_top) >= html->state->vmarg)
     mrg_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + (PROP(margin_top) - html->state->vmarg));
     else
     {
@@ -5938,6 +5930,12 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         mrg_set_xy (mrg, html->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
             y - style->font_size + PROP(padding_top) + PROP(border_top_width));
       } /* XXX: maybe spot for */
+      else if (1)
+      {
+         float width = PROP(width);
+         if (width)
+           mrg_set_edge_right (mrg, html->state->block_start_x  + width);
+      }
       break;
     case CTX_POSITION_ABSOLUTE:
       {
