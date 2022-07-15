@@ -5807,13 +5807,13 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)));
     }
 
-    if (PROP(margin_top) >= html->state->vmarg)
-    mrg_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + (PROP(margin_top) - html->state->vmarg));
+    float actual_top = PROP(margin_top);
+    if (actual_top >= html->state->vmarg)
+      actual_top = actual_top - html->state->vmarg;
     else
-    {
-      /* XXX: just ignoring vmarg when top-margin is negative? */
-      mrg_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + (PROP(margin_top)));
-    }
+      actual_top = 0;
+
+    mrg_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + actual_top);
 
     html->state->block_start_x = mrg_edge_left (mrg);
     html->state->block_start_y = mrg_y (mrg);
