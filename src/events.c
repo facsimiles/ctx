@@ -1113,17 +1113,18 @@ CtxItem *_ctx_detect (Ctx *ctx, float x, float y, CtxEventType type)
   return NULL;
 }
 
+static CtxEvent event_copy;
+
 static int
 _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, float x, float y)
 {
-  static CtxEvent s_event;
   CtxEvent transformed_event;
   int i;
 
 
   if (!event)
   {
-    event = &s_event;
+    event = &event_copy;
     event->type = type;
     event->x = x;
     event->y = y;
@@ -1204,9 +1205,9 @@ void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
   *count = 0;
 }
 
+
 CtxEvent *ctx_get_event (Ctx *ctx)
 {
-  static CtxEvent event_copy;
   if (ctx->events.events)
     {
       event_copy = *((CtxEvent*)(ctx->events.events->data));
