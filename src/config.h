@@ -830,3 +830,8 @@
 #ifndef CTX_RAW_KB_EVENTS
 #define CTX_RAW_KB_EVENTS 1
 #endif
+
+#ifndef CTX_BAREMETAL
+#define CTX_BAREMETAL 0
+#endif
+

@@ -100,6 +100,7 @@ extern int _ctx_damage_control;
 
 void ctx_list_backends(void)
 {
+#if CTX_BAREMETAL==0
     fprintf (stderr, "possible values for CTX_BACKEND:\n");
     fprintf (stderr, " ctx");
 #if CTX_SDL
@@ -116,6 +117,7 @@ void ctx_list_backends(void)
     fprintf (stderr, " termimg");
 #endif
     fprintf (stderr, "\n");
+#endif
 }
 
 static uint32_t ctx_ms (Ctx *ctx)
@@ -198,6 +200,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   }
 #endif
 
+#if CTX_BAREMETAL==0
   if (getenv ("CTX_HASH_CACHE"))
   {
     const char * val = getenv ("CTX_HASH_CACHE");
@@ -206,6 +209,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     if (!ctx_strcmp (val, "off"))
       _ctx_enable_hash_cache = 0;
   }
+#endif
 
 #if CTX_THREADS
   if (getenv ("CTX_THREADS"))
@@ -227,9 +231,11 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   if (_ctx_max_threads > CTX_MAX_THREADS) _ctx_max_threads = CTX_MAX_THREADS;
 #endif
 
+#if CTX_BAREMETAL==0
   //fprintf (stderr, "ctx using %i threads\n", _ctx_max_threads);
   if (!backend)
     backend = getenv ("CTX_BACKEND");
+#endif
 
   if (backend && !ctx_strcmp (backend, ""))
     backend = NULL;
@@ -309,7 +315,9 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #endif
   if (!ret)
   {
+#if CTX_BAREMETAL==0
     fprintf (stderr, "no interactive ctx backend\n");
+#endif
     ctx_list_backends ();
     exit (2);
   }
@@ -492,7 +500,9 @@ void ctx_add_key_binding_full (Ctx *ctx,
   CtxEvents *events = &ctx->events;
   if (events->n_bindings +1 >= CTX_MAX_KEYBINDINGS)
   {
+#if CTX_BAREMETAL==0
     fprintf (stderr, "warning: binding overflow\n");
+#endif
     return;
   }
   events->bindings[events->n_bindings].nick = ctx_strdup (key);
@@ -708,7 +718,9 @@ void _ctx_item_ref (CtxItem *item)
 {
   if (item->ref_count < 0)
   {
+#if CTX_BAREMETAL==0
     fprintf (stderr, "EEEEK!\n");
+#endif
   }
   item->ref_count++;
 }
@@ -718,7 +730,9 @@ void _ctx_item_unref (CtxItem *item)
 {
   if (item->ref_count <= 0)
   {
+#if CTX_BAREMETAL==0
     fprintf (stderr, "EEEEK!\n");
+#endif
     return;
   }
   item->ref_count--;
@@ -939,9 +953,11 @@ static void ctx_report_hit_region (CtxEvent *event,
                        void     *data,
                        void     *data2)
 {
+#if CTX_BAREMETAL==0
   const char *id = data;
 
   fprintf (stderr, "hit region %s\n", id);
+#endif
   // XXX: NYI
 }
 
@@ -1413,7 +1429,9 @@ ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 
   if (events->pointer_down[device_no] == 1)
   {
+#if CTX_BAREMETAL==0
     fprintf (stderr, "events thought device %i was already down\n", device_no);
+#endif
   }
   /* doing just one of these two should be enough? */
   events->pointer_down[device_no] = 1;
@@ -1715,7 +1733,9 @@ ctx_incoming_message (Ctx *ctx, const char *message, long time)
     event.time = time;
     event.string = message;
 
+#if CTX_BAREMETAL==0
     fprintf (stderr, "{%s|\n", message);
+#endif
 
       for (i = 0; i < item->cb_count; i++)
       {
@@ -1851,7 +1871,9 @@ static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,
          case 59: str=":"; break;
          case 61: str="+"; break;
          default:
+#if CTX_BAREMETAL==0
            fprintf (stderr, "unhandled skeycode %i\n", keycode);
+#endif
            str="?";
            break;
        }
@@ -1879,7 +1901,9 @@ static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,
            }
            else
            {
+#if CTX_BAREMETAL==0
              fprintf (stderr, "unhandled keycode %i\n", keycode);
+#endif
              str="?";
            }
            break;
@@ -2361,7 +2385,9 @@ int ctx_input_pending (Ctx *ctx, int timeout)
   int retval = select (_ctx_listen_max_fd + 1, &fdset, NULL, NULL, &tv);
   if (retval == -1)
   {
+#if CTX_BAREMETAL==0
     perror ("select");
+#endif
     return 0;
   }
 #ifdef EMSCRIPTEN
