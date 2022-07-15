@@ -749,7 +749,7 @@ void _ctx_item_unref2 (void *data, void *data2)
   _ctx_item_unref (item);
 }
 
-
+#if 0
 static int
 path_equal (void *path,
             void *path2)
@@ -764,6 +764,7 @@ path_equal (void *path,
     return 0;
   return memcmp (a->entries, b->entries, a->count * 9) == 0;
 }
+#endif
 
 void ctx_listen_set_cursor (Ctx      *ctx,
                             CtxCursor cursor)
@@ -3024,9 +3025,6 @@ static inline EvSource *evsource_kb_term_new (void)
 }
 #endif
 
-
-
-#define CTX_RAW_KB_EVENTS 1
 #if CTX_RAW_KB_EVENTS
 
 static int evsource_kb_raw_has_event (void);
@@ -3080,7 +3078,10 @@ static void real_evsource_kb_raw_destroy (int sign)
 #include <stdbool.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+
+
 #include <linux/input.h>
+
 
 static int kb_fd = -1;
 static void evsource_kb_raw_destroy (int sign)
@@ -3167,42 +3168,42 @@ typedef struct CtxRawKey{
 
 static CtxRawKey raw_key_map[]=
 {
-   {KEY_F1, "F1"},
-   {KEY_F2, "F2"},
-   {KEY_F3, "F3"},
-   {KEY_F4, "F4"},
-   {KEY_F5, "F5"},
-   {KEY_F6, "F6"},
-   {KEY_F7, "F7"},
-   {KEY_F8, "F8"},
-   {KEY_F9, "F9"},
-   {KEY_F10, "F10"},
-   {KEY_ESC, "escape"},
-   {KEY_SPACE, "space"},
-   {KEY_ENTER, "return"},
-   {KEY_LEFT, "left"},
-   {KEY_RIGHT, "right"},
-   {KEY_UP, "up"},
-   {KEY_DOWN, "down"},
-   {KEY_HOME, "home"},
-   {KEY_END, "end"},
-   {KEY_PAGEUP, "page-up"},
-   {KEY_PAGEDOWN, "page-down"},
-   {KEY_INSERT, "insert"},
-   {KEY_DELETE, "delete"},
-   {KEY_LEFTCTRL, "control"},
-   {KEY_RIGHTCTRL, "control"},
-   {KEY_LEFTSHIFT, "shift"},
-   {KEY_RIGHTSHIFT, "shift"},
-   {KEY_LEFTALT, "alt"},
-   {KEY_RIGHTALT, "alt"},
-   {KEY_MINUS, "-"},
-   {KEY_EQUAL, "="},
-   {KEY_BACKSPACE, "backspace"},
-   {KEY_TAB, "tab"},
-   {KEY_GRAVE, "`"},
-   {KEY_BACKSLASH, "\\"},
-   {KEY_SLASH, "/"},
+   {KEY_F1, "F1","F1"},
+   {KEY_F2, "F2","F2"},
+   {KEY_F3, "F3","F3"},
+   {KEY_F4, "F4","F4"},
+   {KEY_F5, "F5","F5"},
+   {KEY_F6, "F6","F6"},
+   {KEY_F7, "F7","F7"},
+   {KEY_F8, "F8","F8"},
+   {KEY_F9, "F9","F9"},
+   {KEY_F10, "F10","F10"},
+   {KEY_ESC, "escape","escape"},
+   {KEY_SPACE, "space","space"},
+   {KEY_ENTER, "return","return"},
+   {KEY_LEFT, "left","left"},
+   {KEY_RIGHT, "right","right"},
+   {KEY_UP, "up","up"},
+   {KEY_DOWN, "down","down"},
+   {KEY_HOME, "home","home"},
+   {KEY_END, "end","end"},
+   {KEY_PAGEUP, "page-up","page-up"},
+   {KEY_PAGEDOWN, "page-down","page-down"},
+   {KEY_INSERT, "insert","insert"},
+   {KEY_DELETE, "delete","delete"},
+   {KEY_LEFTCTRL, "control","control"},
+   {KEY_RIGHTCTRL, "control","control"},
+   {KEY_LEFTSHIFT, "shift","shift"},
+   {KEY_RIGHTSHIFT, "shift","shift"},
+   {KEY_LEFTALT, "alt","alt"},
+   {KEY_RIGHTALT, "alt","alt"},
+   {KEY_MINUS, "-","_"},
+   {KEY_EQUAL, "=","+"},
+   {KEY_BACKSPACE, "backspace","backspace"},
+   {KEY_TAB, "tab","tab"},
+   {KEY_GRAVE, "`","~"},
+   {KEY_BACKSLASH, "\\","|"},
+   {KEY_SLASH, "/","?"},
    {KEY_1, "1","!"},
    {KEY_2, "2","@"},
    {KEY_3, "3","#"},

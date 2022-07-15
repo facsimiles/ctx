@@ -825,3 +825,8 @@
 #ifndef CTX_ENABLE_CBRLE
 #define CTX_ENABLE_CBRLE 0
 #endif
+
+
+#ifndef CTX_RAW_KB_EVENTS
+#define CTX_RAW_KB_EVENTS 1
+#endif
