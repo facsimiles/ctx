@@ -570,7 +570,7 @@
 #endif
 
 #ifndef CTX_MAX_STATES
-#define CTX_MAX_STATES           10
+#define CTX_MAX_STATES           16
 #endif
 
 #ifndef CTX_MAX_EDGES

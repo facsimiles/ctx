@@ -3652,7 +3652,10 @@ void mrg_end (Mrg *mrg)
   }
   mrg->state_no--;
   if (mrg->state_no < 0)
-    fprintf (stderr, "unbalanced mrg_start/mrg_end, enderflow\n");
+  {
+    fprintf (stderr, "unbalanced mrg_start/mrg_end, enderflow %i\n", mrg->state_no);
+    mrg->state_no = 0;
+  }
   mrg->state = &mrg->states[mrg->state_no];
   if (mrg->in_paint)
     ctx_restore (mrg_ctx (mrg));
