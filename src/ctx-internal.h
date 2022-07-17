@@ -539,6 +539,7 @@ struct _Ctx
   int               height;
   int               dirty;
   Ctx              *texture_cache;
+  CtxList          *deferred;
   CtxList          *eid_db;
   CtxState          state;        /**/
   int               frame; /* used for texture lifetime */

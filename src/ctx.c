@@ -2998,3 +2998,128 @@ ctx_clip_extents (Ctx *ctx, float *x0, float *y0,
    if(x1)*x1 = gstate->clip_max_x;
    if(y1)*y1 = gstate->clip_max_y;
 }
+
+typedef struct CtxDeferredCommand {
+  char *name;
+  int offset;
+  int is_rect;
+} CtxDeferredCommand;
+
+
+void ctx_deferred_rel_line_to (Ctx *ctx, const char *name, float x, float y)
+{
+   CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
+   if (name)
+     deferred->name = strdup (name);
+   deferred->offset = ctx->drawlist.count;
+   ctx_list_prepend (&ctx->deferred, deferred);
+   ctx_rel_line_to (ctx, x, y);
+}
+
+void ctx_deferred_rectangle   (Ctx *ctx, const char *name,
+                               float x, float y,
+                               float width, float height)
+{
+   CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
+   if (name)
+     deferred->name = strdup (name);
+   deferred->offset = ctx->drawlist.count;
+   deferred->is_rect = 1;
+   ctx_list_prepend (&ctx->deferred, deferred);
+   ctx_rectangle (ctx, x, y, width, height);
+}
+
+static CtxList *ctx_deferred_commands (Ctx *ctx, const char *name, int *ret_count)
+{
+  CtxList *matching = NULL;
+  int count = 0;
+  for (CtxList *l = ctx->deferred; l; l = l->next)
+  {
+    CtxDeferredCommand *command = l->data;
+    if (name)
+    {
+       if (command->name && !strcmp (command->name, name))
+       {
+         ctx_list_prepend (&matching, command);
+         count ++;
+       }
+    }
+    else
+    {
+       if (command->name == NULL)
+       {
+         ctx_list_prepend (&matching, command);
+         count ++;
+       }
+    }
+  }
+  if (ret_count)
+    *ret_count = count;
+  return matching;
+}
+
+void ctx_resolve_rel_line_to  (Ctx *ctx, const char *name,
+                               void (*set_dim) (void *userdata,
+                                                const char *name,
+                                                int         count,
+                                                float *x,
+                                                float *y),
+                               void *userdata)
+{
+  int count = 0;
+  CtxList *matching = ctx_deferred_commands (ctx, name, &count);
+  while (matching)
+  {
+    CtxDeferredCommand *command = matching->data;
+
+    float x = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.x;
+    float y = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.y;
+
+    set_dim (userdata, name, count, &x, &y);
+
+    ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.x = x;
+    ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.y = y;
+
+    if (command->name)
+      free (command->name);
+    free (command);
+    ctx_list_remove (&ctx->deferred, command);
+    ctx_list_remove (&matching, command);
+  }
+}
+
+void ctx_resolve_rectangle    (Ctx *ctx, const char *name,
+                               void (*set_dim) (void *userdata,
+                                                const char *name,
+                                                int         count,
+                                                float *x,
+                                                float *y,
+                                                float *width,
+                                                float *height),
+                               void *userdata)
+{
+  int count = 0;
+  CtxList *matching = ctx_deferred_commands (ctx, name, &count);
+  while (matching)
+  {
+    CtxDeferredCommand *command = matching->data;
+
+    float x = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.x;
+    float y = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.y;
+    float w = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.width;
+    float h = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.height;
+
+    set_dim (userdata, name, count, &x, &y, &w, &h);
+
+    ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.x = x;
+    ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.y = y;
+    ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.width = w;
+    ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.height = h;
+
+    if (command->name)
+      free (command->name);
+    free (command);
+    ctx_list_remove (&ctx->deferred, command);
+    ctx_list_remove (&matching, command);
+  }
+}
