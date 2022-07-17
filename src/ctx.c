@@ -3000,7 +3000,7 @@ ctx_clip_extents (Ctx *ctx, float *x0, float *y0,
 }
 
 typedef struct CtxDeferredCommand {
-  char *name;
+  uint32_t name;
   int offset;
   int is_rect;
 } CtxDeferredCommand;
@@ -3010,7 +3010,7 @@ void ctx_deferred_rel_line_to (Ctx *ctx, const char *name, float x, float y)
 {
    CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
    if (name)
-     deferred->name = strdup (name);
+     deferred->name = ctx_strhash (name);
    deferred->offset = ctx->drawlist.count;
    ctx_list_prepend (&ctx->deferred, deferred);
    ctx_rel_line_to (ctx, x, y);
@@ -3022,7 +3022,7 @@ void ctx_deferred_rectangle   (Ctx *ctx, const char *name,
 {
    CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
    if (name)
-     deferred->name = strdup (name);
+     deferred->name = ctx_strhash (name);
    deferred->offset = ctx->drawlist.count;
    deferred->is_rect = 1;
    ctx_list_prepend (&ctx->deferred, deferred);
@@ -3032,13 +3032,14 @@ void ctx_deferred_rectangle   (Ctx *ctx, const char *name,
 static CtxList *ctx_deferred_commands (Ctx *ctx, const char *name, int *ret_count)
 {
   CtxList *matching = NULL;
+  uint32_t name_id = ctx_strhash (name);
   int count = 0;
   for (CtxList *l = ctx->deferred; l; l = l->next)
   {
     CtxDeferredCommand *command = l->data;
     if (name)
     {
-       if (command->name && !strcmp (command->name, name))
+       if (command->name == name_id)
        {
          ctx_list_prepend (&matching, command);
          count ++;
@@ -3046,7 +3047,7 @@ static CtxList *ctx_deferred_commands (Ctx *ctx, const char *name, int *ret_coun
     }
     else
     {
-       if (command->name == NULL)
+       if (command->name == 0)
        {
          ctx_list_prepend (&matching, command);
          count ++;
@@ -3080,8 +3081,6 @@ void ctx_resolve_rel_line_to  (Ctx *ctx, const char *name,
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.x = x;
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.y = y;
 
-    if (command->name)
-      free (command->name);
     free (command);
     ctx_list_remove (&ctx->deferred, command);
     ctx_list_remove (&matching, command);
@@ -3115,9 +3114,6 @@ void ctx_resolve_rectangle    (Ctx *ctx, const char *name,
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.y = y;
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.width = w;
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.height = h;
-
-    if (command->name)
-      free (command->name);
     free (command);
     ctx_list_remove (&ctx->deferred, command);
     ctx_list_remove (&matching, command);
