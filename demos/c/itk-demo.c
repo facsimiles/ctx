@@ -704,8 +704,134 @@ static void card_textures (ITK *itk, int frame_no)
 }
 
 
+static void ctx_spacer (Ctx *ctx, const char *name, float dx, float dy)
+{
+  ctx_deferred_rel_line_to (ctx, name, dx, dy);
+}
+
+static void distribute_space_hor_cb (Ctx *ctx, void *userdata, const char *name, int count, float *x, float *y, float *w, float *h)
+{
+  float *fptr = (float*)userdata;
+  *x += fptr[0] / count;
+}
+
+static void ctx_spacer_fill_horizontal (Ctx *ctx, const char *name, float space)
+{
+  ctx_resolve (ctx, name, distribute_space_hor_cb, &space);
+}
+
+static void set_y_cb (Ctx *ctx, void *userdata, const char *name, int count, float *x, float *y, float *w, float *h)
+{
+  float *fptr = (float*)userdata;
+  *y = fptr[0];
+}
+
+static void ctx_spacer_set_y (Ctx *ctx, const char *name, float space)
+{
+  ctx_resolve (ctx, name, set_y_cb, &space);
+}
+
+static void set_x_cb (Ctx *ctx, void *userdata, const char *name, int count, float *x, float *y, float *w, float *h)
+{
+  float *fptr = (float*)userdata;
+  *x = fptr[0];
+}
+
+static void ctx_spacer_set_x (Ctx *ctx, const char *name, float space)
+{
+  ctx_resolve (ctx, name, set_x_cb, &space);
+}
+
+static void card_deferred (ITK *itk, int frame_no)
+{
+
+  float ascent = 0.8;
+  float descent = 0.2;
+  float line_gap = 0.1;
+
+  Ctx *ctx = itk_ctx (itk);
+  float em = itk_em (itk);
+  int height = ctx_height (ctx);
+  int width = ctx_width (ctx);
+  frame_no = frame_no % 400;
+  /* a custom shape that could be wrapped in a function */
+
+  float x0 = height * 0.4;
+  float y0 = height * 0.2;
+  float computed_line_height = 0.0f;
+
+  for (int i = 0; i < 3; i++)
+  {
+    computed_line_height = 0.0f;
+    computed_line_height = ctx_maxf (computed_line_height, em);
+    ctx_font_size (ctx, em);
+  ctx_move_to (ctx, x0, y0);
+  ctx_rel_line_to (ctx, width, 0);
+  ctx_rgb (ctx, 1,0,0);
+  ctx_rel_move_to (ctx, -width, 0);
+  ctx_stroke (ctx);
+  ctx_rgb (ctx, 1,1,1);
+
+  
+  ctx_save (ctx);
+  ctx_move_to (ctx, x0, y0);
+  ctx_spacer (ctx, "line", 0.0f, em);
+
+  ctx_rel_move_to (ctx, 0, em * -0.4);
+
+  ctx_text (ctx, "foo");
+  ctx_spacer (ctx, "space", em, 0.0f);
+  ctx_text (ctx, "bar");
+  ctx_spacer (ctx, "space", em, 0.0f);
+  ctx_text (ctx, "baz");
+  ctx_spacer (ctx, "space", em, 0.0f);
+  if (i != 1)
+  {
+  ctx_font_size (ctx, em * 2.4);
+  computed_line_height = ctx_maxf (computed_line_height, em * 2.4);
+  }
+
+  ctx_text (ctx, "qux");
+  ctx_spacer (ctx, "space", em, 0.0f);
+  ctx_text (ctx, "qux");
+  ctx_spacer (ctx, "space", em, 0.0f);
+  ctx_text (ctx, "qux");
+  ctx_spacer_fill_horizontal (ctx, "space", -em * 4);//0.0f);
+
+  ctx_spacer_set_y (ctx, "line", computed_line_height * ascent);
+
+  y0 += computed_line_height * (1.0f+line_gap);
+
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ctx_move_to (ctx, x0, y0);
+  ctx_rel_line_to (ctx, width, 0);
+  ctx_stroke (ctx);
+
+  //ctx_deferred_rectangle (ctx, "box", 500,400, 100, 100);
+  //ctx_fill (ctx);
+
+  ctx_restore (ctx);
+
+  ctx_queue_draw (ctx);
+}
+
 Test tests[]=
 {
+  {"deferred",   card_deferred},
   {"sliders",    card_sliders},
   {"gradients",  card_gradients},
   {"textures",   card_textures},
