@@ -274,10 +274,12 @@ char *diz_dir_get_data (Diz *diz, int no)
   if (!m) return NULL;
   if (m == diz->metadata)
   {
-    if (no < 0) return "eeep";
-    return "beep";
+    if (no < 0) return strdup("eeep");
+    return strdup("beep");
   }
   m--;
+  if (m == diz->metadata)
+    return strdup("beep3");
   m--;
   while (m[0]!='\n' && m != diz->metadata)m--;
   if (m !=diz->metadata) m++;

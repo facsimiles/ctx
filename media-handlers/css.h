@@ -1735,6 +1735,9 @@ static void ctx_stylesheet_add_selector (Mrg *mrg, const char *selector, const c
   entry->selector = strdup (selector);
   entry->css = strdup (css);
   entry->specificity = ctx_css_compute_specifity (selector, priority);
+
+  //fprintf (stderr, "\nsel:%s]\ncss:%s\npri:%i\n", selector, css, priority);
+
   ctx_css_parse_selector (mrg, selector, entry);
   ctx_list_prepend_full (&mrg->stylesheet, entry, (void*)free_entry, NULL);
 }
@@ -1810,6 +1813,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
           case '/': if (p[1] == '*') { p++; ps->state = NEUTRAL_COMMENT; } break;
           case ' ':
           case '\n':
+          case '\r':
           case '\t':
           case ';':
             break;
@@ -1837,6 +1841,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
             ps->state = IN_VAL; // should be AVAL for media sections...
             break;
           case '\n':
+          case '\r':
           case '\t':
           case ' ':
             if (!strcmp (ps->rule[0], "import"))
@@ -1868,6 +1873,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
             while (ps->val_l && (
                 ps->val[ps->val_l-1] == ' ' ||
                 ps->val[ps->val_l-1] == '\n' ||
+                ps->val[ps->val_l-1] == '\r' ||
                 ps->val[ps->val_l-1] == '\t'))
               ps->val_l--;
             while (ps->val_l && ps->val[ps->val_l-1] != ')')
@@ -1925,6 +1931,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
             ps->state = IN_VAL;
             break;
           case '\n':
+          case '\r':
           case '\t':
             ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = ' ';
             ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]] = 0;
@@ -1950,6 +1957,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
           case '/': if (p[1] == '*') { p++; ps->state = COLON_COMMENT; } break;
           case ' ':
           case '\n':
+          case '\r':
           case '\t':
             break;
           case ':':
@@ -1966,6 +1974,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
           case '/': if (p[1] == '*') { p++; ps->state = EXPECT_VAL_COMMENT; } break;
           case ' ':
           case '\n':
+          case '\r':
           case '\t':
           case ';':
             break;
@@ -1987,6 +1996,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
             while (ps->val_l && (
                 ps->val[ps->val_l-1] == ' ' ||
                 ps->val[ps->val_l-1] == '\n' ||
+                ps->val[ps->val_l-1] == '\r' ||
                 ps->val[ps->val_l-1] == '\t'))
               ps->val_l--;
             ps->val[ps->val_l]=0;
@@ -1996,6 +2006,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
               while (ps->rule_l[no] && (
                   ps->rule[no][ps->rule_l[no]-1] == ' ' ||
                   ps->rule[no][ps->rule_l[no]-1] == '\n' ||
+                  ps->rule[no][ps->rule_l[no]-1] == '\r' ||
                   ps->rule[no][ps->rule_l[no]-1] == '\t'))
                 ps->rule_l[no]--;
               ps->rule[no][ps->rule_l[no]]=0;
@@ -2736,8 +2747,8 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
           {
             case ' ':
             case '\n':
-            case '\t':
             case '\r':
+            case '\t':
             case '\0':
               if (w)
               {
@@ -3644,6 +3655,7 @@ void mrg_start_with_style (Mrg        *mrg,
     char *collated_style = _ctx_stylesheet_collate_style (mrg);
     if (collated_style)
     {
+      fprintf (stderr, "%s : %s\n", mrg->state->style_id, collated_style);
       mrg_set_style (mrg, collated_style);
       free (collated_style);
     }
@@ -6202,11 +6214,13 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
     mrg_set_xy (mrg, html->state->original_x,
                      html->state->original_y);
   }
-  if (html->state_no)
-    html->states[html->state_no-1].vmarg = vmarg;
 
   html->state_no--;
+  if (html->state_no<0)
+     html->state_no=0;
   html->state = &html->states[html->state_no];
+  html->state->vmarg = vmarg;
+
     if (ret_rect && !returned_dim)
             fprintf (stderr, "didnt return dim!\n");
 }
@@ -7356,6 +7370,7 @@ void mrg_xml_render (Mrg *mrg,
             free (klass);
             /* collect XML attributes and convert into CSS declarations */
           ctx_string_append_str (style, PROPS(style));
+          fprintf (stderr, "%s : %s", combined, PROPS(style));
           mrg_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
@@ -7420,7 +7435,14 @@ void mrg_xml_render (Mrg *mrg,
         }
 
         else if (data_hash == CTX_style)
+        {
           in_style = 1;
+#if 0
+          if (mrg->css_parse_state)
+                  free (mrg->css_parse_state);
+          mrg->css_parse_state = NULL;
+#endif
+        }
         else
           in_style = 0;
 
@@ -7511,6 +7533,7 @@ void mrg_xml_render (Mrg *mrg,
           //ctx_restore (mrg->ctx);
           depth--;
 
+          if (depth<0)depth=0; // XXX
           if (tag[depth] != data_hash)
           {
             if (tag[depth] == CTX_p)
