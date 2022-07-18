@@ -7233,6 +7233,7 @@ void mrg_xml_render (Mrg *mrg,
         //ctx_save (mrg->ctx);
         tagpos = pos;
         ctx_string_clear (style);
+        ctx_set_string (mrg->ctx, CTX_style, "");
         break;
       case t_att:
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
@@ -7370,7 +7371,6 @@ void mrg_xml_render (Mrg *mrg,
             free (klass);
             /* collect XML attributes and convert into CSS declarations */
           ctx_string_append_str (style, PROPS(style));
-          fprintf (stderr, "%s : %s", combined, PROPS(style));
           mrg_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
