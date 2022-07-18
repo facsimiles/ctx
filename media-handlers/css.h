@@ -1300,7 +1300,7 @@ static void clear_both (MrgHtml *ctx)
   }
   y += mrg_em (mrg) * ctx_style(mrg)->line_height;
   mrg_set_xy (mrg, mrg_x (mrg), y);
-  _mrg_draw_background_increment (mrg, &mrg->html, 0);
+  //_mrg_draw_background_increment (mrg, &mrg->html, 0);
 #endif
 }
 
@@ -3655,7 +3655,6 @@ void mrg_start_with_style (Mrg        *mrg,
     char *collated_style = _ctx_stylesheet_collate_style (mrg);
     if (collated_style)
     {
-      fprintf (stderr, "%s : %s\n", mrg->state->style_id, collated_style);
       mrg_set_style (mrg, collated_style);
       free (collated_style);
     }
@@ -5834,7 +5833,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   if (style->display == CTX_DISPLAY_LIST_ITEM)
   {
     float x = mrg->x;
-    _mrg_draw_background_increment (mrg, html, 0);
+    //_mrg_draw_background_increment (mrg, html, 0);
     mrg->x -= mrg_em (mrg) * 1;
     mrg_print (mrg, "•"); //⚫"); //●");
     mrg->x = x;
@@ -6022,7 +6021,26 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
        }
 
     html->state->ptly = 0;
-    _mrg_draw_background_increment (mrg, html, 0);
+    char name[10]="ele_";
+    name[3]=html->state_no+2;
+
+  CtxColor *background_color = ctx_color_new ();
+  ctx_get_color (mrg->ctx, CTX_background_color, background_color);
+  if (!ctx_color_is_transparent (background_color))
+  {
+    mrg_ctx_set_source_color (mrg->ctx, background_color);
+    ctx_deferred_rectangle (mrg->ctx, name,
+       html->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
+       html->state->block_start_y - mrg_em(mrg) - PROP(padding_top),
+       width + PROP(padding_left) + PROP(padding_right),
+       height + PROP(padding_top) + PROP(padding_bottom));
+    ctx_fill (mrg->ctx);
+  }
+  ctx_color_free (background_color);
+
+
+
+    //_mrg_draw_background_increment (mrg, html, 0);
   }
 }
 
@@ -6063,6 +6081,14 @@ void _mrg_set_post_nl (Mrg *mrg,
   mrg->state->post_nl_data = post_nl_data;
 }
 
+static void update_rect_geo (Ctx *ctx, void *userdata, const char *name, int count,
+                             float *x, float *y, float *w, float *h)
+{
+  MrgGeoCache *geo = userdata;
+  *w = geo->width;
+  *h = geo->height;
+}
+
 void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 {
   Ctx *ctx = mrg->ctx;
@@ -6079,8 +6105,10 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   {
     float diff = height - (mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
     mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + diff);
-    if (diff > 0)
-      _mrg_draw_background_increment (mrg, html, 1);
+    //if (diff > 0)
+    //  _mrg_draw_background_increment (mrg, html, 1);
+
+    /// YYY
   }
 
   /* remember data to store about float, XXX: perhaps better to store
@@ -6134,6 +6162,11 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
       geo->height = height;
 
     geo->gen++;
+
+    char name[10]="ele_";
+    name[3]=html->state_no+2;
+
+    ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
 
     mrg_box (mrg,
         html->state->block_start_x,
@@ -7132,7 +7165,7 @@ void mrg_xml_render (Mrg *mrg,
   }
 
   _mrg_set_wrap_edge_vfuncs (mrg, wrap_edge_left, wrap_edge_right, htmlctx);
-  _mrg_set_post_nl (mrg, _mrg_draw_background_increment, htmlctx);
+  //_mrg_set_post_nl (mrg, _mrg_draw_background_increment, htmlctx);
   htmlctx->mrg = mrg;
   htmlctx->state = &htmlctx->states[0];
 
@@ -7483,7 +7516,7 @@ void mrg_xml_render (Mrg *mrg,
                height = img_height *1.0 / img_width * width;
             }
 
-            _mrg_draw_background_increment (mrg, &mrg->html, 0);
+            //_mrg_draw_background_increment (mrg, &mrg->html, 0);
             mrg->y += height;
 
             mrg_image (mrg,
