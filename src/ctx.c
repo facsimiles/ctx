@@ -2987,7 +2987,6 @@ ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size)
 #endif
 }
 
-
 void
 ctx_clip_extents (Ctx *ctx, float *x0, float *y0,
                            float *x1, float *y1)
@@ -3005,43 +3004,43 @@ typedef struct CtxDeferredCommand {
   int is_rect;
 } CtxDeferredCommand;
 
-void ctx_deferred_rel_move_to (Ctx *ctx, const char *name, float x, float y)
+static CtxDeferredCommand *deferred_new (Ctx *ctx, const char *name)
 {
    CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
    if (name)
      deferred->name = ctx_strhash (name);
    deferred->offset = ctx->drawlist.count;
    ctx_list_prepend (&ctx->deferred, deferred);
+   return deferred;
+}
+
+void ctx_deferred_move_to (Ctx *ctx, const char *name, float x, float y)
+{
+   deferred_new (ctx, name);
    ctx_move_to (ctx, x, y);
+}
+
+void ctx_deferred_rel_move_to (Ctx *ctx, const char *name, float x, float y)
+{
+   deferred_new (ctx, name);
+   ctx_rel_move_to (ctx, x, y);
 }
 
 void ctx_deferred_rel_line_to (Ctx *ctx, const char *name, float x, float y)
 {
-   CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
-   if (name)
-     deferred->name = ctx_strhash (name);
-   deferred->offset = ctx->drawlist.count;
-   ctx_list_prepend (&ctx->deferred, deferred);
+   deferred_new (ctx, name);
    ctx_rel_line_to (ctx, x, y);
 }
 
 void ctx_deferred_scale (Ctx *ctx, const char *name, float x, float y)
 {
-   CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
-   if (name)
-     deferred->name = ctx_strhash (name);
-   deferred->offset = ctx->drawlist.count;
-   ctx_list_prepend (&ctx->deferred, deferred);
+   deferred_new (ctx, name);
    ctx_scale (ctx, x, y);
 }
 
 void ctx_deferred_translate (Ctx *ctx, const char *name, float x, float y)
 {
-   CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
-   if (name)
-     deferred->name = ctx_strhash (name);
-   deferred->offset = ctx->drawlist.count;
-   ctx_list_prepend (&ctx->deferred, deferred);
+   deferred_new (ctx, name);
    ctx_translate (ctx, x, y);
 }
 
@@ -3049,11 +3048,7 @@ void ctx_deferred_rectangle   (Ctx *ctx, const char *name,
                                float x, float y,
                                float width, float height)
 {
-   CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
-   if (name)
-     deferred->name = ctx_strhash (name);
-   deferred->offset = ctx->drawlist.count;
-   ctx_list_prepend (&ctx->deferred, deferred);
+   CtxDeferredCommand *deferred = deferred_new (ctx, name);
    deferred->is_rect = 1;
    ctx_rectangle (ctx, x, y, width, height);
 }

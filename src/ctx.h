@@ -743,10 +743,11 @@ int ctx_utf8_len (const unsigned char first_byte);
 
 void ctx_deferred_scale       (Ctx *ctx, const char *name, float x, float y);
 void ctx_deferred_translate   (Ctx *ctx, const char *name, float x, float y);
+void ctx_deferred_move_to     (Ctx *ctx, const char *name, float x, float y);
 void ctx_deferred_rel_line_to (Ctx *ctx, const char *name, float x, float y);
 void ctx_deferred_rel_move_to (Ctx *ctx, const char *name, float x, float y);
 void ctx_deferred_rectangle   (Ctx *ctx, const char *name, float x, float y,
-                               float width, float height);
+                                                           float width, float height);
 void ctx_resolve              (Ctx *ctx, const char *name,
                                void (*set_dim) (Ctx *ctx,
                                                 void *userdata,
@@ -757,24 +758,6 @@ void ctx_resolve              (Ctx *ctx, const char *name,
                                                 float *width,
                                                 float *height),
                                void *userdata);
-#if 0
-void ctx_resolve_rel_line_to  (Ctx *ctx, const char *name,
-                               void (*set_dim) (void *userdata,
-                                                const char *name,
-                                                int         count,
-                                                float *x,
-                                                float *y),
-                               void *userdata);
-void ctx_resolve_rectangle    (Ctx *ctx, const char *name,
-                               void (*set_dim) (void *userdata,
-                                                const char *name,
-                                                int         count,
-                                                float *x,
-                                                float *y,
-                                                float *width,
-                                                float *height),
-                               void *userdata);
-#endif
 
 
 #ifndef CTX_BABL
