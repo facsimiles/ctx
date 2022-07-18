@@ -741,7 +741,9 @@ uint32_t ctx_hasher_get_hash (Ctx *ctx, int col, int row);
 int ctx_utf8_strlen (const char *s);
 int ctx_utf8_len (const unsigned char first_byte);
 
+void ctx_deferred_translate   (Ctx *ctx, const char *name, float x, float y);
 void ctx_deferred_rel_line_to (Ctx *ctx, const char *name, float x, float y);
+void ctx_deferred_rel_move_to (Ctx *ctx, const char *name, float x, float y);
 void ctx_deferred_rectangle   (Ctx *ctx, const char *name, float x, float y,
                                float width, float height);
 void ctx_resolve_rel_line_to  (Ctx *ctx, const char *name,
