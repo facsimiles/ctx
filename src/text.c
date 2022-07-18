@@ -946,6 +946,8 @@ _ctx_text (Ctx        *ctx,
 
     }
   if (!visible)
+    { ctx->state.x =x; ctx->state.y=y; }
+  else
     { ctx_move_to (ctx, x, y); }
 }
 
