@@ -3025,6 +3025,16 @@ void ctx_deferred_rel_line_to (Ctx *ctx, const char *name, float x, float y)
    ctx_rel_line_to (ctx, x, y);
 }
 
+void ctx_deferred_scale (Ctx *ctx, const char *name, float x, float y)
+{
+   CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
+   if (name)
+     deferred->name = ctx_strhash (name);
+   deferred->offset = ctx->drawlist.count;
+   ctx_list_prepend (&ctx->deferred, deferred);
+   ctx_scale (ctx, x, y);
+}
+
 void ctx_deferred_translate (Ctx *ctx, const char *name, float x, float y)
 {
    CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
@@ -3078,6 +3088,7 @@ static CtxList *ctx_deferred_commands (Ctx *ctx, const char *name, int *ret_coun
   return matching;
 }
 
+#if 0
 void ctx_resolve_rel_line_to  (Ctx *ctx, const char *name,
                                void (*set_dim) (void *userdata,
                                                 const char *name,
@@ -3138,3 +3149,56 @@ void ctx_resolve_rectangle    (Ctx *ctx, const char *name,
     ctx_list_remove (&matching, command);
   }
 }
+#endif
+
+void ctx_resolve (Ctx *ctx, const char *name,
+                            void (*resolve) (Ctx        *ctx,
+                                             void       *userdata,
+                                             const char *name,
+                                             int         count,
+                                             float      *x,
+                                             float      *y,
+                                             float      *width,  // ignored
+                                             float      *height),// for non-rect
+                             void *userdata)
+{
+  int count = 0;
+  CtxList *matching = ctx_deferred_commands (ctx, name, &count);
+  while (matching)
+  {
+    CtxDeferredCommand *command = matching->data;
+
+    float x, y, w = 0, h = 0;
+    if (command->is_rect)
+    {
+      x = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.x;
+      y = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.y;
+      w = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.width;
+      h = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.height;
+    }
+    else
+    {
+      x = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.x;
+      y = ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.y;
+    }
+
+    resolve (ctx, userdata, name, count, &x, &y, &w, &h);
+
+    if (command->is_rect)
+    {
+      ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.x = x;
+      ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.y = y;
+      ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.width = w;
+      ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.height = h;
+    }
+    else
+    {
+      ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.x = x;
+      ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.y = y;
+    }
+    free (command);
+    ctx_list_remove (&ctx->deferred, command);
+    ctx_list_remove (&matching, command);
+  }
+}
+
