@@ -370,6 +370,7 @@ typedef struct MrgState {
 
   int          children;
   int          overflowed:1;
+  unsigned int        got_text:1;
   int          span_bg_started:1;
 } MrgState;;
 
@@ -1300,7 +1301,6 @@ static void clear_both (MrgHtml *ctx)
   }
   y += mrg_em (mrg) * ctx_style(mrg)->line_height;
   mrg_set_xy (mrg, mrg_x (mrg), y);
-  //_mrg_draw_background_increment (mrg, &mrg->html, 0);
 #endif
 }
 
@@ -1330,8 +1330,12 @@ float _mrg_dynamic_edge_left (Mrg *mrg);
 void  mrg_set_edge_top (Mrg *mrg, float val)
 {
   mrg->state->edge_top = val;
+
+  // we always set top last, since it causes the
+  // reset of line handling
+  //
   mrg_set_xy (mrg, _mrg_dynamic_edge_left (mrg) + ctx_get_float (mrg_ctx(mrg), CTX_text_indent)
-      , mrg->state->edge_top + mrg_em (mrg));
+      , mrg->state->edge_top);// + mrg_em (mrg));
 }
 
 void  mrg_set_edge_left (Mrg *mrg, float val)
@@ -3986,7 +3990,6 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 
 static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
 {
-  //_mrg_draw_background_increment (mrg, &mrg->html, 1);
   _mrg_border_top (mrg, x, y, width, height);
   _mrg_border_left (mrg, x, y, width, height);
   _mrg_border_right (mrg, x, y, width, height);
@@ -4031,13 +4034,20 @@ static void mrg_box_fill (Mrg *mrg, CtxStyle *style, float x, float y, float wid
  *
  */
 
+static void set_line_height (Ctx *ctx, void *userdata, const char *name, int count, float *x, float *y, float *w, float *h)
+{
+  float *fptr = (float*)userdata;
+  *y = fptr[0];
+}
+
 static void
 _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state, 
     MrgHtmlState *html_state, void *data, int last)
 {
+  CtxStyle *style = &state->style;
+#if 0
   MrgHtml *html = &mrg->html;
   Ctx *ctx = mrg_ctx (mrg);
-  CtxStyle *style = &state->style;
   float gap = ctx_get_font_size (ctx) * mrg->state->style.line_height;
 
   int width = PROP(width);
@@ -4086,6 +4096,12 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
       html_state->ptly = mrg_y (mrg) - style->font_size  + gap;
     }
   }
+#else
+
+  //ctx_resolve (mrg->ctx, "line", set_line_height, &style->font_size);
+  //mrg->y += style->font_size;
+  state->got_text = 0;
+#endif
 }
 
 static void
@@ -4133,6 +4149,8 @@ static float measure_word_width (Mrg *mrg, const char *word)
 
 void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
 {
+  ctx_font_extents (mrg->ctx, ascent, descent, NULL);
+#if 0
 #if 0 // MRG_CAIRO
   cairo_scaled_font_t *scaled_font = mrg->scaled_font;
   cairo_font_extents_t extents;
@@ -4155,6 +4173,7 @@ void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
 #else
   if (ascent)  *ascent  = ctx_style(mrg)->font_size;
   if (descent) *descent = 0.0;
+#endif
 #endif
 }
 
@@ -4391,10 +4410,11 @@ void ctx_listen (Ctx     *ctx,
 
 /* x and y in cairo user units ; returns x advance in user units  */
 float mrg_draw_string (Mrg *mrg, CtxStyle *style, 
-                      float x, float y,
-                      const char *string,
-                      int utf8_len)
+                       const char *string,
+                       int utf8_len)
 {
+  float x = mrg->x;
+  float y = mrg->y;
   float new_x, old_x;
   char *temp_string = NULL;
   Ctx *cr = mrg_ctx (mrg);
@@ -4461,6 +4481,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
   {
     ctx_font_size (cr, style->font_size);
 
+#if 0
     if (PROP(text_stroke_width) > 0.01)
     {
       CtxColor *color = ctx_color_new ();
@@ -4473,6 +4494,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
       ctx_text_stroke (cr, string);
       ctx_color_free (color);
     }
+#endif
 
     {
     CtxColor *color = ctx_color_new ();
@@ -4480,7 +4502,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
     mrg_ctx_set_source_color (cr, color);
     ctx_color_free (color);
     }
-    ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
+    //ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
     ctx_current_point (cr, &old_x, NULL);
 
     /* when syntax highlighting,.. should do it as a coloring
@@ -4501,8 +4523,8 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
 
     if (style->text_decoration & CTX_TEXT_DECORATION_UNDERLINE)
       {
-        ctx_move_to (cr, old_x, y);
-        ctx_line_to (cr, new_x, y);
+        ctx_rel_move_to (cr, -(new_x-old_x), 0);
+        ctx_rel_line_to (cr, new_x-old_x, 0);
         ctx_stroke (cr);
       }
     if (style->text_decoration & CTX_TEXT_DECORATION_LINETHROUGH)
@@ -4517,7 +4539,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
         ctx_line_to (cr, new_x, y - style->font_size);
         ctx_stroke (cr);
       }
-    ctx_move_to (cr, new_x, y);
+    //ctx_move_to (cr, new_x, y);
   }
   else
   {
@@ -4553,7 +4575,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
   return new_x - old_x;
 }
 
-float mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length);
+float mrg_addstr (Mrg *mrg, const char *string, int utf8_length);
 
 float paint_span_bg_final (Mrg   *mrg, float x, float y,
                            float  width)
@@ -4639,11 +4661,21 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
 }
 
 float
-mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length)
+mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
 {
+  float x = mrg->x;
+  float y = mrg->y;
+  CtxStyle *style = ctx_style (mrg);
   float wwidth = measure_word_width (mrg, string); //XXX get rid of some computation here
   float left_pad;
   left_pad = paint_span_bg (mrg, x, y, wwidth);
+
+  if (!mrg->state->got_text)
+  {
+    ctx_move_to (mrg->ctx,  mrg->x + left_pad, mrg->y);
+    ctx_deferred_rel_move_to (mrg->ctx, "line", 0.0, 0.0);//mrg_em (mrg));
+    mrg->state->got_text = 1;
+  }
 
   {
     float tx = x;
@@ -4657,7 +4689,13 @@ mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length)
       /* bailing early*/
     }
     else
-    mrg_draw_string (mrg, &mrg->state->style, x + left_pad, y, string, utf8_length);
+    {
+      if (left_pad != 0.0f)
+      {
+        ctx_rel_move_to (mrg->ctx, left_pad, 0.0f);
+      }
+      mrg_draw_string (mrg, &mrg->state->style, string, utf8_length);
+    }
   }
 
   return wwidth + left_pad;
@@ -4731,10 +4769,10 @@ static void _mrg_spaces (Mrg *mrg, int count)
   while (count--)
     {
      if (mrg->state->style.print_symbols)
-        mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
+        mrg->x+=mrg_addstr (mrg, "␣", -1);
      else
      {
-        float diff = mrg_addstr (mrg, mrg->x, mrg->y, " ", 1);
+        float diff = mrg_addstr (mrg, " ", 1);
 
 #if 0
         if (mrg_is_terminal (mrg) && mrg_em (mrg) <= CPX * 4 / mrg->ddpx)
@@ -4855,7 +4893,7 @@ static void emit_word (Mrg *mrg,
                   if (mrg->state->style.print_symbols)
                     {
                       mrg_start (mrg, "dim", NULL);
-                      mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
+                      mrg->x += mrg_addstr (mrg, "␣", -1);
                       mrg_end (mrg, NULL);
                     }
                   else
@@ -4877,11 +4915,11 @@ static void emit_word (Mrg *mrg,
       if (print){if (cursor_start >= *pos && *pos + len > cursor_start && mrg->text_edited)
         { 
 #if 0  // XXX: there is a bug in mrg_addstr it doesn't respect the length argument 
-          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, word, cursor_start - *pos);
+          mrg->x += mrg_addstr (mrg,  word, cursor_start - *pos);
           mrg_start (mrg, ".cursor", NULL);
-          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, mrg_utf8_skip (word, cursor_start - *pos), 1);
+          mrg->x += mrg_addstr (mrg,  mrg_utf8_skip (word, cursor_start - *pos), 1);
           mrg_end (mrg, NULL);
-          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, mrg_utf8_skip (word, cursor_start - *pos + 1), len - (cursor_start - *pos) - 1);
+          mrg->x += mrg_addstr (mrg,  mrg_utf8_skip (word, cursor_start - *pos + 1), len - (cursor_start - *pos) - 1);
 #else
 
           char *dup, *dup2, *dup3;
@@ -4892,11 +4930,11 @@ static void emit_word (Mrg *mrg,
           *((char*)ctx_utf8_skip (dup,  cursor_start - *pos)) = 0;
           *((char*)ctx_utf8_skip (dup2, 1)) = 0;
 
-          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup, -1);
+          mrg->x += mrg_addstr (mrg,  dup, -1);
           mrg_start (mrg, ".cursor", NULL);
-          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup2, -1);
+          mrg->x += mrg_addstr (mrg,  dup2, -1);
           mrg_end (mrg, NULL);
-          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, dup3, -1);
+          mrg->x += mrg_addstr (mrg,  dup3, -1);
 
           free (dup);
           free (dup2);
@@ -4905,7 +4943,7 @@ static void emit_word (Mrg *mrg,
         }
       else
         {
-          mrg->x += mrg_addstr (mrg, mrg->x, mrg->y, word, len); 
+          mrg->x += mrg_addstr (mrg,  word, len); 
         }
       } else {
           mrg->x += wwidth;
@@ -4971,7 +5009,7 @@ static int mrg_print_wrap (Mrg        *mrg,
           if (mrg->state->style.print_symbols && print)
           {
             mrg_start (mrg, "dim", NULL);
-            mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "¶", -1);\
+            mrg->x+=mrg_addstr (mrg,  "¶", -1);\
             mrg_end (mrg, NULL);
           }
           EMIT_NL();
@@ -4990,19 +5028,19 @@ static int mrg_print_wrap (Mrg        *mrg,
                     mrg_end (mrg, NULL);
                   }
                   else
-                    mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
+                    mrg->x+=mrg_addstr (mrg,  " ", -1);
                 }
               else
                 {
                   if (mrg->state->style.print_symbols)
                     {
                       mrg_start (mrg, "dim", NULL);
-                      mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
+                      mrg->x+=mrg_addstr (mrg,  "␣", -1);
                       mrg_end (mrg, NULL);
                     }
                   else
                     {
-                      mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
+                      mrg->x+=mrg_addstr (mrg,  " ", -1);
                     }
                 }
             }
@@ -5167,7 +5205,7 @@ static int mrg_print_wrap2 (Mrg        *mrg,
           if (mrg->state->style.print_symbols && print)
           {
             mrg_start (mrg, "dim", NULL);
-            mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "¶", -1);\
+            mrg->x+=mrg_addstr (mrg,  "¶", -1);\
             mrg_end (mrg, NULL);
           }
           EMIT_NL();
@@ -5185,19 +5223,19 @@ static int mrg_print_wrap2 (Mrg        *mrg,
                     mrg_end (mrg, NULL);
                   }
                   else
-                    mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
+                    mrg->x+=mrg_addstr (mrg,  " ", -1);
                 }
               else
                 {
                   if (mrg->state->style.print_symbols)
                     {
                       mrg_start (mrg, "dim", NULL);
-                      mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, "␣", -1);
+                      mrg->x+=mrg_addstr (mrg,  "␣", -1);
                       mrg_end (mrg, NULL);
                     }
                   else
                     {
-                      mrg->x+=mrg_addstr (mrg, mrg->x, mrg->y, " ", -1);
+                      mrg->x+=mrg_addstr (mrg,  " ", -1);
                     }
                 }
             }
@@ -5308,7 +5346,7 @@ int mrg_print (Mrg *mrg, const char *string)
   if (mrg_edge_left(mrg) != mrg_edge_right(mrg))
    return mrg_print_wrap (mrg, 1, string, strlen (string), mrg->state->max_lines, mrg->state->skip_lines, mrg->cursor_pos, NULL, NULL);
 
-  ret  = mrg_addstr (mrg, mrg->x, mrg->y, string, ctx_utf8_strlen (string));
+  ret  = mrg_addstr (mrg,  string, ctx_utf8_strlen (string));
   mrg->x += ret;
   return ret;
 }
@@ -5834,6 +5872,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   {
     float x = mrg->x;
     //_mrg_draw_background_increment (mrg, html, 0);
+    
     mrg->x -= mrg_em (mrg) * 1;
     mrg_print (mrg, "•"); //⚫"); //●");
     mrg->x = x;
@@ -5991,6 +6030,8 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
      float height = PROP(height);
      float width = PROP(width);
 
+     mrg->state->got_text = 0;
+
      if (!height)
        {
          MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
@@ -6031,7 +6072,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
     mrg_ctx_set_source_color (mrg->ctx, background_color);
     ctx_deferred_rectangle (mrg->ctx, name,
        html->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
-       html->state->block_start_y - mrg_em(mrg) - PROP(padding_top),
+       html->state->block_start_y - PROP(padding_top),
        width + PROP(padding_left) + PROP(padding_right),
        height + PROP(padding_top) + PROP(padding_bottom));
     ctx_fill (mrg->ctx);
@@ -6100,11 +6141,23 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   
   /* adjust cursor back to before display */
 
-  if ((style->display == CTX_DISPLAY_BLOCK || style->float_) &&
-       height != 0.0)
+  if ((style->display == CTX_DISPLAY_BLOCK || style->float_
+      ||style->display == CTX_DISPLAY_LIST_ITEM 
+                          ) 
+                 // && height != 0.0
+      )
   {
-    float diff = height - (mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
-    mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + diff);
+    MrgHtml *html = &mrg->html;
+    if (mrg->state->got_text)
+    {
+      float line_height = style->font_size * style->line_height;
+      ctx_resolve (mrg->ctx, "line", set_line_height, &line_height);
+      mrg->y += line_height;
+    }
+    //mrg->x = html->state->block_start_x;
+
+    //float diff = height - (mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
+    //mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) );// + diff);
     //if (diff > 0)
     //  _mrg_draw_background_increment (mrg, html, 1);
 
@@ -6138,7 +6191,10 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
     html->states[html->state_no-1].floats++;
   }
 
-  if (style->display == CTX_DISPLAY_BLOCK || style->float_)
+
+  if (style->display == CTX_DISPLAY_BLOCK
+       || style->float_
+       || style->display == CTX_DISPLAY_LIST_ITEM)
   {
     MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
 
@@ -6150,14 +6206,22 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
       else
         geo->width = mrg->state->edge_right  - (ctx->state->block_start_x);
 #endif
-      geo->width = mrg_x (mrg) - (html->state->block_start_x);
+      if (style->float_)
+      {
+        geo->width = mrg_x (mrg) - (html->state->block_start_x);
+      }
+      else
+      {
+        geo->width = _mrg_dynamic_edge_right(mrg)-
+                      _mrg_dynamic_edge_left (mrg) - mrg_em (mrg);
+      }
     }
     else
       geo->width = width;
 
     //:mrg_edge_right (mrg) - mrg_edge_left (mrg);
     if (height == 0)
-      geo->height = mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg));
+      geo->height = mrg_y (mrg) - (html->state->block_start_y);
     else
       geo->height = height;
 
@@ -6170,13 +6234,13 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 
     mrg_box (mrg,
         html->state->block_start_x,
-        html->state->block_start_y - mrg_em(mrg),
+        html->state->block_start_y,
         geo->width,
         geo->height);
     if (ret_rect)
     {
        ret_rect->x = html->state->block_start_x;
-       ret_rect->y = html->state->block_start_y - mrg_em(mrg);
+       ret_rect->y = html->state->block_start_y;
        ret_rect->width = geo->width;
        ret_rect->height = geo->height;
        returned_dim = 1;
@@ -6193,8 +6257,8 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 
       if (x >= html->state->block_start_x &&
           x <  html->state->block_start_x + geo->width &&
-          y >= html->state->block_start_y - mrg_em (mrg) &&
-          y <  html->state->block_start_y - mrg_em (mrg) + geo->height)
+          y >= html->state->block_start_y  &&
+          y <  html->state->block_start_y + geo->height)
       {
         geo->hover = 1;
       }
@@ -7165,7 +7229,7 @@ void mrg_xml_render (Mrg *mrg,
   }
 
   _mrg_set_wrap_edge_vfuncs (mrg, wrap_edge_left, wrap_edge_right, htmlctx);
-  //_mrg_set_post_nl (mrg, _mrg_draw_background_increment, htmlctx);
+  _mrg_set_post_nl (mrg, _mrg_draw_background_increment, htmlctx);
   htmlctx->mrg = mrg;
   htmlctx->state = &htmlctx->states[0];
 

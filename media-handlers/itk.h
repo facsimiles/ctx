@@ -277,7 +277,7 @@ void
 mrg_print_xml (Mrg *mrg, const char *utf8);
 
 // returns width added horizontally
-float mrg_addstr (Mrg *mrg, float x, float y, const char *string, int utf8_length);
+float mrg_addstr (Mrg *mrg, const char *string, int utf8_length);
 
 void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
                          int priority, char **error);
@@ -355,6 +355,7 @@ struct _ITK{
   int        text_listen_count;
   int        text_listen_active;
 
+  int        got_text;
   int        printing;
   //cairo_t *printing_cr;
 
