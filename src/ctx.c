@@ -1033,10 +1033,8 @@ ctx_font_family (Ctx *ctx, const char *name)
 {
 #if CTX_BACKEND_TEXT
   ctx_process_cmd_str (ctx, CTX_FONT, name, 0, 0);
-  _ctx_font (ctx, name);
-#else
-  _ctx_font (ctx, name);
 #endif
+  _ctx_font (ctx, name);
 }
 
 void
@@ -3106,9 +3104,9 @@ void ctx_resolve_rel_line_to  (Ctx *ctx, const char *name,
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.x = x;
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.y = y;
 
-    free (command);
     ctx_list_remove (&ctx->deferred, command);
     ctx_list_remove (&matching, command);
+    free (command);
   }
 }
 
@@ -3139,9 +3137,9 @@ void ctx_resolve_rectangle    (Ctx *ctx, const char *name,
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.y = y;
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.width = w;
     ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rectangle.height = h;
-    free (command);
     ctx_list_remove (&ctx->deferred, command);
     ctx_list_remove (&matching, command);
+    free (command);
   }
 }
 #endif
@@ -3191,9 +3189,9 @@ void ctx_resolve (Ctx *ctx, const char *name,
       ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.x = x;
       ((CtxCommand*)&ctx->drawlist.entries[command->offset])->rel_line_to.y = y;
     }
-    free (command);
     ctx_list_remove (&ctx->deferred, command);
     ctx_list_remove (&matching, command);
+    free (command);
   }
 }
 
