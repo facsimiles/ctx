@@ -1024,6 +1024,58 @@ ctx_stroke_text (Ctx *ctx, const char *string,
   ctx_text_stroke (ctx, string);
 }
 
+int
+ctx_font_get_vmetrics (Ctx *ctx,
+                       CtxFont *font,
+                       float   *ascent,
+                       float   *descent,
+                       float   *linegap)
+{
+  float font_size          = 1.0f;
+  if (ctx)
+      font_size = ctx->state.gstate.font_size;
+  switch (font->type)
+  {
+    case 0:  
+      if (ascent) *ascent=0.8;
+      if (descent)*descent=0.2;
+      if (linegap)*linegap=1.2;
+      return 0;
+#if CTX_FONT_ENGINE_STB
+    case 1:  
+    case 2:  
+             {
+               int aval,dval,lgval;
+  stbtt_GetFontVMetrics(&font->stb.ttf_info, &aval, &dval, &lgval);
+  float scale = stbtt_ScaleForPixelHeight (&font->stb.ttf_info, font_size);
+               if (ascent) *ascent= aval * scale;
+               if (descent)*descent=dval * scale;
+               if (linegap)*linegap=lgval * scale;
+             }
+             
+             return 0;
+#endif
+#if CTX_FONT_ENGINE_CTX_FS
+    case 3:  return 0;
+#endif
+  }
+  return 0;
+}
+
+int
+ctx_font_extents (Ctx *ctx,
+                  float *ascent,
+                  float *descent,
+                  float *line_gap)
+{
+  CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+  return ctx_font_get_vmetrics (ctx,
+                         font,
+                         ascent,
+                         descent,
+                         line_gap);
+}
+
 static const char *ctx_font_get_name (CtxFont *font)
 {
 #if CTX_ONE_FONT_ENGINE
@@ -1149,7 +1201,6 @@ int ctx_resolve_font (const char *name)
     }
   return 0;
 }
-
 
 
 #if !( defined(CTX_FONT_0) ||\

@@ -424,6 +424,12 @@ void  ctx_font            (Ctx *ctx, const char *font);
  */
 void  ctx_font_family     (Ctx *ctx, const char *font_family);
 
+int
+ctx_font_extents (Ctx   *ctx,
+                  float *ascent,
+                  float *descent,
+                  float *line_gap);
+
 /**
  * ctx_parse:
  *
