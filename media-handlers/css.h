@@ -1601,7 +1601,7 @@ const char * html_css =
 "body{background-color:transparent;color:white;}\n"
 "a{color:blue;text-decoration: underline;}\n"
 "a:hover{background:black;color:white;text-decoration:underline; }\n"
-"style,script,title{display:none;}\n"
+"head{display:none;}\n"
 "hr{margin-top:16px;font-size:1px;}\n"  /* hack that works in one way, but shrinks top margin too much */
 
 
