@@ -5874,9 +5874,10 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
     float x = mrg->x;
     //_mrg_draw_background_increment (mrg, html, 0);
     
-    mrg->x -= mrg_em (mrg) * 1;
-    mrg_print (mrg, "•"); //⚫"); //●");
+    mrg->x -= mrg_em (mrg) * 0.5;
+    mrg_print (mrg, "•");
     mrg->x = x;
+    mrg->state->got_text = 0;
   }
 
   switch (style->position)
@@ -5926,7 +5927,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
         }
 
-        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top) - html->state->vmarg) - mrg_em(mrg));
+        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top) - html->state->vmarg));
 
         html->state->block_start_x = mrg_x (mrg);
         html->state->block_start_y = mrg_y (mrg);
@@ -5970,16 +5971,16 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         mrg_set_edge_left (mrg, left);
         mrg_set_edge_right (mrg,  left + width +
             PROP(padding_left) + PROP(border_right_width));
-        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top) - html->state->vmarg) - mrg_em(mrg));
+        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top) ));//- html->state->vmarg));
         html->state->block_start_x = mrg_x (mrg);
-        html->state->block_start_y = y - style->font_size + PROP(padding_top) + PROP(border_top_width);
+        html->state->block_start_y = y + PROP(padding_top) + PROP(border_top_width);
         html->state->floats = 0;
 
         /* change cursor point after floating something left; if pushed far
          * down, the new correct
          */
         mrg_set_xy (mrg, html->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
-            y - style->font_size + PROP(padding_top) + PROP(border_top_width));
+            y + PROP(padding_top) + PROP(border_top_width));
       } /* XXX: maybe spot for */
       else if (1)
       {
@@ -6214,7 +6215,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
       else
       {
         geo->width = _mrg_dynamic_edge_right(mrg)-
-                      _mrg_dynamic_edge_left (mrg) - mrg_em (mrg);
+                      _mrg_dynamic_edge_left (mrg);
       }
     }
     else

@@ -5677,6 +5677,9 @@ static int card_files (ITK *itk_, void *data)
 
     if (!viewer)
     {
+      itk_set_edge_left (itk, 0.0);
+      itk_set_edge_right (itk, ctx_width (itk_ctx (itk)) - itk_em (itk));
+      itk_set_edge_top (itk, 0.0);
       if (!strstr (diz->path, ".html"))
         dir_layout (itk, diz);
       else
