@@ -2359,7 +2359,6 @@ int dir_join (COMMAND_ARGS) /* "join-with-next", 0, "", "" */
   if (focused_no>=0){
     char *name = diz_dir_get_data (diz, focused_no);
     CtxString *str = ctx_string_new (name);
-    free (name);
     if (diz_dir_type_atom (diz, focused_no+1) == CTX_ATOM_TEXT)
     {
       char *name_next = diz_dir_get_data (diz, focused_no+1);
@@ -2370,6 +2369,7 @@ int dir_join (COMMAND_ARGS) /* "join-with-next", 0, "", "" */
       diz_dir_remove (diz, focused_no+1);
     }
     diz_dir_set_data (diz, focused_no, str->str);
+    free (name);
     ctx_string_free (str, 1);
   }
   return 0;
@@ -5691,12 +5691,10 @@ static int card_files (ITK *itk_, void *data)
         if (contents)
         {
            ctx_save (ctx);
-           mrg_print_xml ((Mrg*)itk, contents);
+           mrg_print_xml (mrg, (char*)contents);
            ctx_restore (ctx);
            free (contents);
         }
-
-
 
         if (history)
           BIND_KEY("alt-left", "history back", "back");
@@ -6558,7 +6556,7 @@ static int card_files (ITK *itk_, void *data)
   {
     float em = itk_em (itk);
     itk_set_xy (itk, em, em);
-    if(0)mrg_print_xml (itk, "<style>body{font-size:30px;} b{color:red;};p,div,li,ul{border:1px solid cyan;}</style><html><body><div>bad sadf ksadf jlkdsaf mlkjv mklsad mkclas mdkcla mdlkcas mdlck mdslkcmsa ldk mcaoskd mcwaei mcoakesmc oake mclwke mclwake mclokmc okasmc oaksmdocakse mcoaksmc oakds mclsakd mclsakd mclsakd mclaksdmclksad mcldsak mclskd mclsakd mclsadk mclsakdmclsadkmclsakdmclsadcd1</div> <div>fnord2</div><p id='a'> foo <b>bold</b> bar </p><ul><li id='b'>a</li><li>b</li></ul></body></html>");
+    if(0)mrg_print_xml ((Mrg*)itk, "<style>body{font-size:30px;} b{color:red;};p,div,li,ul{border:1px solid cyan;}</style><html><body><div>bad sadf ksadf jlkdsaf mlkjv mklsad mkclas mdkcla mdlkcas mdlck mdslkcmsa ldk mcaoskd mcwaei mcoakesmc oake mclwke mclwake mclokmc okasmc oaksmdocakse mcoaksmc oakds mclsakd mclsakd mclsakd mclaksdmclksad mcldsak mclskd mclsakd mclsadk mclsakdmclsadkmclsakdmclsadcd1</div> <div>fnord2</div><p id='a'> foo <b>bold</b> bar </p><ul><li id='b'>a</li><li>b</li></ul></body></html>");
   }
 
   // drop target
