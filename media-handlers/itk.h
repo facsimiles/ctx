@@ -743,9 +743,9 @@ void itk_reset (ITK *itk)
   while (itk->choices)
   {
     UiChoice *choice = itk->choices->data;
+    ctx_list_remove (&itk->choices, choice);
     free (choice->label);
     free (choice);
-    ctx_list_remove (&itk->choices, choice);
   }
   itk->control_no = 0;
   _mrg_init ((Mrg*)itk, ctx_width (itk->ctx), ctx_height (itk->ctx));
@@ -1602,8 +1602,8 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
 #if 1
   Ctx *ctx = itk->ctx;
   Mrg *mrg = (Mrg*)itk;
-  float em = itk_em (itk);
-  float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  //float em = itk_em (itk);
+  //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxFloatRectangle extent;
   
   mrg_start (mrg, "propline", NULL);
@@ -1798,8 +1798,8 @@ int itk_button (ITK *itk, const char *label)
 #if 1
   Ctx *ctx = itk->ctx;
   Mrg *mrg = (Mrg*)itk;
-  float em = itk_em (itk);
-  float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  //float em = itk_em (itk);
+  //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxFloatRectangle extent;
    
   mrg_start (mrg, itk->focus_no == itk->control_no ? "button:focused" : "button", NULL);
@@ -3083,8 +3083,8 @@ void itk_set_wrap_width (ITK *itk, float wwidth)
 {
     itk->width = wwidth;
     itk->edge_right = itk->edge_left + wwidth;
-    mrg_set_edge_right (itk, itk->edge_right);
-    mrg_set_edge_left (itk, itk->edge_left);
+    mrg_set_edge_right ((Mrg*)itk, itk->edge_right);
+    mrg_set_edge_left ((Mrg*)itk, itk->edge_left);
 }
 
 float itk_edge_right (ITK *itk)

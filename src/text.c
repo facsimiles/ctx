@@ -1031,9 +1031,9 @@ ctx_font_get_vmetrics (Ctx *ctx,
                        float   *descent,
                        float   *linegap)
 {
-  float font_size          = 1.0f;
-  if (ctx)
-      font_size = ctx->state.gstate.font_size;
+  //float font_size          = 1.0f;
+  //if (ctx)
+  //    font_size = ctx->state.gstate.font_size;
   switch (font->type)
   {
     case 0:  
@@ -1046,6 +1046,9 @@ ctx_font_get_vmetrics (Ctx *ctx,
     case 2:  
              {
                int aval,dval,lgval;
+               float font_size = 16.0f;
+  if (ctx)
+      font_size = ctx->state.gstate.font_size;
   stbtt_GetFontVMetrics(&font->stb.ttf_info, &aval, &dval, &lgval);
   float scale = stbtt_ScaleForPixelHeight (&font->stb.ttf_info, font_size);
                if (ascent) *ascent= aval * scale;

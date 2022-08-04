@@ -4044,7 +4044,7 @@ static void
 _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state, 
     MrgHtmlState *html_state, void *data, int last)
 {
-  CtxStyle *style = &state->style;
+  //CtxStyle *style = &state->style;
 #if 0
   MrgHtml *html = &mrg->html;
   Ctx *ctx = mrg_ctx (mrg);
@@ -4413,7 +4413,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
                        const char *string,
                        int utf8_len)
 {
-  float x = mrg->x;
+  //float x = mrg->x;
   float y = mrg->y;
   float new_x, old_x;
   char *temp_string = NULL;
@@ -4665,7 +4665,7 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
 {
   float x = mrg->x;
   float y = mrg->y;
-  CtxStyle *style = ctx_style (mrg);
+  //CtxStyle *style = ctx_style (mrg);
   float wwidth = measure_word_width (mrg, string); //XXX get rid of some computation here
   float left_pad;
   left_pad = paint_span_bg (mrg, x, y, wwidth);
@@ -5856,7 +5856,8 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
         (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)));
     }
 
-    float actual_top = PROP(margin_top);
+
+    float actual_top = PROP(margin_top) ;
     if (actual_top >= html->state->vmarg)
       actual_top = actual_top - html->state->vmarg;
     else
@@ -6147,7 +6148,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
                  // && height != 0.0
       )
   {
-    MrgHtml *html = &mrg->html;
+    //MrgHtml *html = &mrg->html;
     if (mrg->state->got_text)
     {
       float line_height = style->font_size * style->line_height;
