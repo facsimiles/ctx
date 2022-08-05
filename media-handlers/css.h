@@ -5927,7 +5927,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
         }
 
-        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top) - html->state->vmarg));
+        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top))); // - html->state->vmarg));
 
         html->state->block_start_x = mrg_x (mrg);
         html->state->block_start_y = mrg_y (mrg);
@@ -5966,21 +5966,20 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
           left = dynamic_edge_left + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
         }
 
-        y = mrg_y (mrg);
-
         mrg_set_edge_left (mrg, left);
         mrg_set_edge_right (mrg,  left + width +
             PROP(padding_left) + PROP(border_right_width));
-        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top) ));//- html->state->vmarg));
+        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top)));// - html->state->vmarg));
+                        //));//- html->state->vmarg));
         html->state->block_start_x = mrg_x (mrg);
-        html->state->block_start_y = y + PROP(padding_top) + PROP(border_top_width);
+        html->state->block_start_y = mrg_y (mrg);// + PROP(padding_top) + PROP(border_top_width);
         html->state->floats = 0;
 
         /* change cursor point after floating something left; if pushed far
          * down, the new correct
          */
-        mrg_set_xy (mrg, html->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
-            y + PROP(padding_top) + PROP(border_top_width));
+        //mrg_set_xy (mrg, html->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
+            //mrg_y (mrg) + PROP(padding_top) + PROP(border_top_width);
       } /* XXX: maybe spot for */
       else if (1)
       {
