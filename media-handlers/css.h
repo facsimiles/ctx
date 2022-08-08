@@ -4592,7 +4592,8 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
   {
     ctx_save (cr);
     ctx_rectangle (cr, x,
-                         y - mrg_em (mrg) * style->line_height +_mrg_text_shift (mrg)
+                         y + mrg_em (mrg)
+                        // - mrg_em (mrg) * style->line_height +_mrg_text_shift (mrg)
                          ,
                          width + PROP(padding_right),
                          mrg_em (mrg) * style->line_height);
@@ -4601,9 +4602,9 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
     ctx_restore (cr);
   }
 
-  _mrg_border_top_r (mrg, x, y - mrg_em (mrg) , width, mrg_em (mrg));
-  _mrg_border_bottom_r (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
-  _mrg_border_right (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
+  _mrg_border_top_r (mrg, x, y , width, mrg_em (mrg));
+  _mrg_border_bottom_r (mrg, x,y, width, mrg_em (mrg));
+  _mrg_border_right (mrg, x, y ,width, mrg_em (mrg));
 
   ctx_color_free (background_color);
   return PROP(padding_right) + PROP(border_right_width);
@@ -4635,7 +4636,8 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
   {
     ctx_save (cr);
     ctx_rectangle (cr, x + left_border,
-                         y - mrg_em (mrg) * style->line_height +_mrg_text_shift (mrg)
+                         y 
+                         //- mrg_em (mrg) * style->line_height +_mrg_text_shift (mrg)
                          ,
                          width + left_pad,
                          mrg_em (mrg) * style->line_height);
@@ -4646,14 +4648,14 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
 
   if (left_pad || left_border)
   {
-    _mrg_border_left (mrg, x + left_pad + left_border, y - mrg_em (mrg) , width, mrg_em (mrg));
-    _mrg_border_top_l (mrg, x + left_pad + left_border, y - mrg_em (mrg) , width , mrg_em (mrg));
-    _mrg_border_bottom_l (mrg, x + left_pad + left_border, y - mrg_em (mrg), width , mrg_em (mrg));
+    _mrg_border_left (mrg, x + left_pad + left_border, y, width, mrg_em (mrg));
+    _mrg_border_top_l (mrg, x + left_pad + left_border, y, width , mrg_em (mrg));
+    _mrg_border_bottom_l (mrg, x + left_pad + left_border, y, width , mrg_em (mrg));
   }
   else
   {
-    _mrg_border_top_m (mrg, x, y - mrg_em (mrg) , width, mrg_em (mrg));
-    _mrg_border_bottom_m (mrg, x, y - mrg_em (mrg), width, mrg_em (mrg));
+    _mrg_border_top_m (mrg, x, y, width, mrg_em (mrg));
+    _mrg_border_bottom_m (mrg, x, y, width, mrg_em (mrg));
   }
 
   ctx_color_free (background_color);
@@ -4671,7 +4673,7 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
   float left_pad;
   left_pad = paint_span_bg (mrg, x, y, wwidth);
 
-  if (!mrg->state->got_text)
+  //if (!mrg->state->got_text)
   {
     ctx_move_to (mrg->ctx,  mrg->x + left_pad, mrg->y);
     ctx_deferred_rel_move_to (mrg->ctx, "line", 0.0, 0.0);//mrg_em (mrg));
@@ -5811,6 +5813,12 @@ void  mrg_edit_end (Mrg *mrg)
   mrg_text_edit_bindings (mrg);
 }
 
+static int is_block_item (CtxStyle *style)
+{
+  return ((style->display == CTX_DISPLAY_BLOCK || style->float_
+      ||style->display == CTX_DISPLAY_LIST_ITEM ));
+}
+
 void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 {
   CtxStyle *style;
@@ -5936,7 +5944,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
       } else if (style->float_ == CTX_FLOAT_LEFT)
       {
-        float left, y;
+        float left;
         float width = PROP(width);
 
         if (width == 0.0)
@@ -6026,6 +6034,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   }
 
   if (style->display == CTX_DISPLAY_BLOCK ||
+      style->display == CTX_DISPLAY_LIST_ITEM ||
       style->display == CTX_DISPLAY_INLINE_BLOCK ||
       style->float_)
   {
@@ -6132,6 +6141,7 @@ static void update_rect_geo (Ctx *ctx, void *userdata, const char *name, int cou
   *h = geo->height;
 }
 
+
 void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 {
   Ctx *ctx = mrg->ctx;
@@ -6143,11 +6153,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   
   /* adjust cursor back to before display */
 
-  if ((style->display == CTX_DISPLAY_BLOCK || style->float_
-      ||style->display == CTX_DISPLAY_LIST_ITEM 
-                          ) 
-                 // && height != 0.0
-      )
+  if (is_block_item (style))
   {
     //MrgHtml *html = &mrg->html;
     if (mrg->state->got_text)
@@ -6172,6 +6178,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   if (style->float_)
   {
     int was_float = 0;
+
     float fx,fy,fw,fh; // these tempvars arent really needed.
     was_float = style->float_;
     fx = html->state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
@@ -6194,9 +6201,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   }
 
 
-  if (style->display == CTX_DISPLAY_BLOCK
-       || style->float_
-       || style->display == CTX_DISPLAY_LIST_ITEM)
+  if (is_block_item (style))
   {
     MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
 
@@ -6285,7 +6290,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
            style->display == CTX_DISPLAY_INLINE_BLOCK)
   {
     float x0 = html->state->original_x;
-    float y0 = html->state->original_y - mrg_em (mrg);
+    float y0 = html->state->original_y;// - mrg_em (mrg);
     float width = mrg->x - x0;
     float height = mrg->y - y0;// + mrg_em(mrg);
 
