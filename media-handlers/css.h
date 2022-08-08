@@ -1585,7 +1585,6 @@ const char * html_css =
 "tfoot{vertical-align:middle}\n"
 "td,th,tr{vertical-align:inherit}\n"
 "s,strike,del{text-decoration:line-through}\n"
-"hr{border:1px inset black;margin-bottom: 0.5em;margin-top:0.5em;}\n"
 "ol,ul,dir,"
 "menu{padding-left:2.5em}\n"
 "dd{margin-left:3em}\n"
@@ -1604,7 +1603,8 @@ const char * html_css =
 "a{color:blue;text-decoration: underline;}\n"
 "a:hover{background:black;color:white;text-decoration:underline; }\n"
 "head{display:none;}\n"
-"hr{margin-top:16px;font-size:1px;}\n"  /* hack that works in one way, but shrinks top margin too much */
+//"hr{border:1px inset black;margin-bottom: 0.5em;margin-top:0.5em;}\n"
+"hr{font-size:1px;border-bottom: 1px solid red;}\n"  /* hack that works in one way, but shrinks top margin too much */
 
 
 //"h1,h2,h3,h4,h5,h6,p,div,b,span,ul,li,ol,dl,dt,dl,propline,button{border-left-color:gray;border-right-color:gray;}\n"
@@ -4046,7 +4046,9 @@ static void
 _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state, 
     MrgHtmlState *html_state, void *data, int last)
 {
-  //CtxStyle *style = &state->style;
+  CtxStyle *style = &state->style;
+  float ascent, descent;
+  ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
 #if 0
   MrgHtml *html = &mrg->html;
   Ctx *ctx = mrg_ctx (mrg);
@@ -4100,8 +4102,12 @@ _mrg_draw_background_increment2 (Mrg *mrg, MrgState *state,
   }
 #else
 
-  //ctx_resolve (mrg->ctx, "line", set_line_height, &style->font_size);
-  //mrg->y += style->font_size;
+  float val = mrg->state->line_max_height * ascent;
+  ctx_resolve (mrg->ctx, "line", set_line_height, &val);
+      //fprintf (stderr, "%f\n", mrg->state->line_max_height);
+//  mrg->y += mrg->state->line_max_height * style->line_height;
+
+  mrg->state->line_max_height = style->font_size;
   state->got_text = 0;
 #endif
 }
@@ -4177,15 +4183,6 @@ void _mrg_get_ascent_descent (Mrg *mrg, float *ascent, float *descent)
   if (descent) *descent = 0.0;
 #endif
 #endif
-}
-
-
-static float _mrg_text_shift (Mrg *mrg)
-{
-  //CtxStyle *style = ctx_style (mrg);
-  float ascent, descent;
-  _mrg_get_ascent_descent (mrg, &ascent, &descent);
-  return (descent * 0.9); // XXX
 }
 
 const char * hl_punctuation[] =
@@ -6153,6 +6150,8 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   float height = PROP(height);
   float width = PROP(width);
   int returned_dim = 0;
+  float ascent, descent;
+  ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
   
   /* adjust cursor back to before display */
 
@@ -6161,8 +6160,9 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
     //MrgHtml *html = &mrg->html;
     if (mrg->state->got_text)
     {
-      ctx_resolve (mrg->ctx, "line", set_line_height, &mrg->state->line_max_height);
-      fprintf (stderr, "%f\n", mrg->state->line_max_height);
+      float val = mrg->state->line_max_height * ascent;
+      ctx_resolve (mrg->ctx, "line", set_line_height, &val);
+      //fprintf (stderr, "%f\n", mrg->state->line_max_height);
       mrg->y += mrg->state->line_max_height * style->line_height;
     }
     //mrg->x = html->state->block_start_x;
@@ -6180,27 +6180,27 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
    */
   if (style->float_)
   {
-    int was_float = 0;
+    CtxFloatData *float_data = 
+     &html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats];
+    // XXX protect against overflow
+    html->states[html->state_no-1].floats++;
 
-    float fx,fy,fw,fh; // these tempvars arent really needed.
-    was_float = style->float_;
-    fx = html->state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
-    fy = html->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width)
+    float_data->type = style->float_;
+    float_data->x = 
+       html->state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
+    float_data->y = 
+         html->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width)
       - PROP(margin_top);
 
-    fw = mrg_edge_right (mrg) - mrg_edge_left (mrg)
+    float_data->width = 
+         mrg_edge_right (mrg) - mrg_edge_left (mrg)
      + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left)
      + PROP(padding_right) + PROP(border_right_width) + PROP(margin_right);
 
-    fh = mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg))
+    float_data->height = 
+       mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg))
          + PROP(margin_bottom) + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width) + PROP(margin_top) + mrg_em (mrg);
 
-    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].type = was_float;
-    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].x = fx;
-    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].y = fy;
-    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].width = fw;
-    html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats].height = fh;
-    html->states[html->state_no-1].floats++;
   }
 
 
