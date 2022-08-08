@@ -1041,6 +1041,9 @@ ctx_font_get_vmetrics (Ctx *ctx,
   //    font_size = ctx->state.gstate.font_size;
   switch (font->type)
   {
+#if CTX_FONT_ENGINE_CTX_FS
+    case 3:
+#endif
     case 0:  
       if (ascent) *ascent=0.8f;
       if (descent)*descent=0.2f;
@@ -1056,15 +1059,12 @@ ctx_font_get_vmetrics (Ctx *ctx,
       font_size = ctx->state.gstate.font_size;
   stbtt_GetFontVMetrics(&font->stb.ttf_info, &aval, &dval, &lgval);
   float scale = stbtt_ScaleForPixelHeight (&font->stb.ttf_info, font_size);
-               if (ascent) *ascent= aval * scale;
-               if (descent)*descent=dval * scale;
-               if (linegap)*linegap=lgval * scale;
+               if (ascent) *ascent= (aval * scale) / font_size;
+               if (descent)*descent= (dval * scale) / font_size;
+               if (linegap)*linegap= (lgval * scale) / font_size;
              }
              
              return 0;
-#endif
-#if CTX_FONT_ENGINE_CTX_FS
-    case 3:  return 0;
 #endif
   }
 #endif
