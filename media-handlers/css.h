@@ -372,6 +372,7 @@ typedef struct MrgState {
   int          overflowed:1;
   unsigned int        got_text:1;
   int          span_bg_started:1;
+  float        line_max_height;
 } MrgState;;
 
 struct _Mrg {
@@ -4675,6 +4676,7 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
 
   //if (!mrg->state->got_text)
   {
+    mrg->state->line_max_height = ctx_maxf (mrg->state->line_max_height, ctx_style (mrg)->font_size);
     ctx_move_to (mrg->ctx,  mrg->x + left_pad, mrg->y);
     ctx_deferred_rel_move_to (mrg->ctx, "line", 0.0, 0.0);//mrg_em (mrg));
     mrg->state->got_text = 1;
@@ -6042,6 +6044,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
      float width = PROP(width);
 
      mrg->state->got_text = 0;
+     mrg->state->line_max_height = style->font_size;
 
      if (!height)
        {
@@ -6082,7 +6085,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   {
     mrg_ctx_set_source_color (mrg->ctx, background_color);
     ctx_deferred_rectangle (mrg->ctx, name,
-       html->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
+       html->state->block_start_x - PROP(padding_left),
        html->state->block_start_y - PROP(padding_top),
        width + PROP(padding_left) + PROP(padding_right),
        height + PROP(padding_top) + PROP(padding_bottom));
@@ -6158,9 +6161,9 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
     //MrgHtml *html = &mrg->html;
     if (mrg->state->got_text)
     {
-      float line_height = style->font_size * style->line_height;
-      ctx_resolve (mrg->ctx, "line", set_line_height, &line_height);
-      mrg->y += line_height;
+      ctx_resolve (mrg->ctx, "line", set_line_height, &mrg->state->line_max_height);
+      fprintf (stderr, "%f\n", mrg->state->line_max_height);
+      mrg->y += mrg->state->line_max_height * style->line_height;
     }
     //mrg->x = html->state->block_start_x;
 
