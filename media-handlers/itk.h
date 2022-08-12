@@ -386,7 +386,6 @@ struct _ITK{
   float scale;
 
   float rel_ver_advance;
-  float rel_hgap;
   float rel_hpad;
   float rel_vgap;
   float scroll_speed;
@@ -580,7 +579,6 @@ ITK *itk_new (Ctx *ctx)
   itk->rel_vmargin      = 0.5;
   itk->rel_hmargin      = 0.5;
   itk->rel_ver_advance  = 1.2;
-  itk->rel_hgap         = 0.5;
   itk->menu_path = strdup ("main/foo");
   itk->rel_hpad         = 0.3;
   itk->rel_vgap         = 0.2;
@@ -593,7 +591,6 @@ ITK *itk_new (Ctx *ctx)
     itk->font_size = 3;
     itk->rel_vgap = 0.0;
     itk->rel_ver_advance = 1.0;
-    itk->rel_hgap = 0.0;
     itk->rel_hpad = 0.0;
   }
   itk->width = itk->font_size * 15;
@@ -936,20 +933,10 @@ void itk_seperator (ITK *itk)
 
 void itk_label (ITK *itk, const char *label)
 {
-#if 1
   Mrg *mrg = (Mrg*)itk;
-//  mrg_start (mrg, "label", NULL);
-
+  mrg_start (mrg, "label", NULL);
   mrg_print (mrg, label);
-
-//mrg_end (mrg, NULL);
-#else
-//float em = itk_em (itk);
-//itk_base (itk, NULL, itk->x, itk->y, itk->width, em * itk->rel_ver_advance, 0);
-
-  itk->x += itk->rel_hgap * itk->font_size;
-  itk_newline (itk);
-#endif
+  mrg_end (mrg, NULL);
 }
 
 void itk_labelf (ITK *itk, const char *format, ...)
@@ -1586,7 +1573,6 @@ static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
 
 int itk_toggle (ITK *itk, const char *label, int input_val)
 {
-#if 1
   Ctx *ctx = itk->ctx;
   Mrg *mrg = (Mrg*)itk;
   //float em = itk_em (itk);
@@ -1624,7 +1610,6 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
   //ctx_fill (ctx);
   ctx_begin_path (ctx);
   //itk->x += width;
-  //itk->x += itk->rel_hgap * em;
 
   if (control->no == itk->focus_no && itk->return_value)
   {
@@ -1633,55 +1618,6 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
     return !input_val;
   }
   return input_val;
-
-#else
-
-
-  Ctx *ctx = itk->ctx;
-  float em = itk_em (itk);
-  float width = ctx_text_width (ctx, label) + em * 1 + em * itk->rel_hpad;
-  CtxControl *control = itk_add_control (itk, UI_TOGGLE, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
- // itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
-
-  itk_style_color (itk->ctx, "itk-interactive");
-
-  ctx_begin_path (ctx);
-  ctx_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, em, em);
-  ctx_line_width (ctx, em * 0.07);
-  ctx_stroke (ctx);
-
-  if (input_val == 1)
-  {
-    ctx_move_to (ctx, itk->x + em * 0.3, itk->y + em * 0.6);
-    ctx_line_to (ctx, itk->x + em * 0.6, itk->y + em * 0.9);
-    ctx_line_to (ctx, itk->x + em * 0.9, itk->y + em * 0.3);
-  //ctx_line_width (ctx, em * 0.1);
-    ctx_stroke (ctx);
-  }
-
-  ctx_move_to (ctx, itk->x + em * 1 + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
-  itk_style_color (itk->ctx, "itk-fg");
-  ctx_text (ctx, label);
-
-  control->type = UI_TOGGLE;
-  //control->val = val;
-  control_ref (control);
-  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-  ctx_begin_path (ctx);
-  itk->x += width;
-
-  itk->x += itk->rel_hgap * em;
-  itk_newline (itk);
-
-  if (control->no == itk->focus_no && itk->return_value)
-  {
-    itk->return_value = 0;
-    ctx_queue_draw (ctx);
-    return !input_val;
-  }
-  return input_val;
-#endif
 }
 
 
@@ -1717,7 +1653,7 @@ int itk_radio (ITK *itk, const char *label, int set)
   ctx_begin_path (ctx);
   itk->x += width;
 
-  itk->x += itk->rel_hgap * em;
+  itk->x += 0.5f * em;
   itk_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
   {
@@ -1786,8 +1722,6 @@ int itk_button (ITK *itk, const char *label)
   ctx_rgb (ctx, 1,1,0);
   ctx_fill (ctx);
   ctx_begin_path (ctx);
-  //itk->x += width;
-  //itk->x += itk->rel_hgap * em;
 
   //itk_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
@@ -1843,8 +1777,6 @@ int itk_button (ITK *itk, const char *label)
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
-  itk->x += width;
-  itk->x += itk->rel_hgap * em;
 
 //  itk_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
@@ -2891,7 +2823,6 @@ itk_itk_settings (ITK *itk)
      itk->font_size = itk_slider (itk, "font size ", itk->font_size, 3.0, 60.0, 0.25);
 
      // these will go away with css styling merged.
-     itk_slider_float (itk, "hgap", &itk->rel_hgap, 0.0, 3.0, 0.02);
      itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
      itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 1.0, 0.01);
      itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
