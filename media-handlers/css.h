@@ -1284,6 +1284,7 @@ static void clear_both (MrgHtml *ctx)
   float y = mrg_y (mrg);
   int i;
 
+  if (!ctx->state)return;
   if (ctx->state->floats)
   {
     for (i = 0; i < ctx->state->floats; i++)
@@ -1295,7 +1296,7 @@ static void clear_both (MrgHtml *ctx)
         }
       }
   }
-  y += mrg_em (mrg) * ctx_style(mrg)->line_height;
+  //y += mrg_em (mrg) * ctx_style(mrg)->line_height;
   mrg_set_xy (mrg, mrg_x (mrg), y);
 #endif
 }
@@ -1607,13 +1608,12 @@ const char * html_css =
 
 ////  also part of our default stylesheet
 "toggle{border: 1px solid green;border: 1px solid red;color:yellow;}\n"
-"toggle-focused{display:inline-block;color:red;border:1px solid red;}\n"
 "button{border: 1px solid green;}\n"
-"button:focused{color:yellow;border: 1px solid yellow;}\n"
+"button:focused{color:yellow;border: 1px solid yellow;background:blue;}\n"
 "label{display:inline; color:white;}\n"
 "slider{display:inline-block; color:white;}\n"
-"slider-focused{display:inline-block; color:white;border: 1px solid red;}\n"
-"propline {display:block;margin:0.5em;}\n"
+"propline {display:block;margin:1.0em;border:1 px solid transparent;}\n"
+"propline:focused {display:block;margin:1.0em;border:1px solid red;background:#faf}\n"
 ;
 
 
@@ -6171,10 +6171,10 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   else if (style->display == CTX_DISPLAY_INLINE ||
            style->display == CTX_DISPLAY_INLINE_BLOCK)
   {
-    float x0 = html->state->original_x;
-    float y0 = html->state->original_y;// - mrg_em (mrg);
-    float width = mrg->x - x0;
-    float height = mrg->y - y0;// + mrg_em(mrg);
+    float x0     = html->state->original_x;
+    float y0     = html->state->original_y;
+    float width  = mrg->x - x0;
+    float height = mrg->y - y0;
 
     if (ret_rect)
     {
@@ -6210,8 +6210,8 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   html->state = &html->states[html->state_no];
   html->state->vmarg = vmarg;
 
-    if (ret_rect && !returned_dim)
-            fprintf (stderr, "didnt return dim!\n");
+  if (ret_rect && !returned_dim)
+    fprintf (stderr, "didnt return dim!\n");
 }
 
 enum {

@@ -386,7 +386,6 @@ struct _ITK{
   float scale;
 
   float rel_ver_advance;
-  float rel_baseline;
   float rel_hgap;
   float rel_hpad;
   float rel_vgap;
@@ -581,7 +580,6 @@ ITK *itk_new (Ctx *ctx)
   itk->rel_vmargin      = 0.5;
   itk->rel_hmargin      = 0.5;
   itk->rel_ver_advance  = 1.2;
-  itk->rel_baseline     = 0.8;
   itk->rel_hgap         = 0.5;
   itk->menu_path = strdup ("main/foo");
   itk->rel_hpad         = 0.3;
@@ -884,15 +882,6 @@ CtxControl *itk_add_control (ITK *itk,
   return control;
 }
 
-static void itk_text (ITK *itk, const char *text)
-{
-  Ctx *ctx = itk->ctx;
-  itk_style_color (itk->ctx, "itk-fg");
-  ctx_move_to (ctx, itk->x,  itk->y + itk_em (itk) * itk->rel_baseline);
-  ctx_text (ctx, text);
-  itk->x += ctx_text_width (ctx, text);
-}
-
 #if 0
 static void itk_base (ITK *itk, const char *label, float x, float y, float width, float height, int focused)
 {
@@ -949,15 +938,14 @@ void itk_label (ITK *itk, const char *label)
 {
 #if 1
   Mrg *mrg = (Mrg*)itk;
-  mrg_start (mrg, "label", NULL);
+//  mrg_start (mrg, "label", NULL);
 
   mrg_print (mrg, label);
 
-  mrg_end (mrg, NULL);
+//mrg_end (mrg, NULL);
 #else
 //float em = itk_em (itk);
 //itk_base (itk, NULL, itk->x, itk->y, itk->width, em * itk->rel_ver_advance, 0);
-  itk_text (itk, label);
 
   itk->x += itk->rel_hgap * itk->font_size;
   itk_newline (itk);
@@ -1013,7 +1001,7 @@ void itk_titlebar (ITK *itk, const char *label)
   itk->line_no = 0;
   itk->lines_drawn = 0;
   //itk_base (itk, label, control->x, control->y, control->width - em * itk->rel_hmargin, em * itk->rel_ver_advance, itk->focus_no == control->no);
-  itk_text (itk, label);
+  itk_label (itk, label);
   //itk->lines_drawn = 1;
 
   itk_newline (itk);
@@ -1245,7 +1233,6 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
   float em = itk_em (itk);
 
   float new_x = itk->x + (itk->label_width) * itk->width;
-  itk_text (itk, label);
   itk->x = new_x;
 
   CtxControl *control = itk_add_control (itk, UI_SLIDER, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width) - em * 1.5, em * itk->rel_ver_advance);
@@ -1277,7 +1264,6 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
   {
     sprintf (buf, "%.3f", fval);
   }
-  ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
   itk_style_color (itk->ctx, "itk-slider-text");
   ctx_text (ctx, buf);
 
@@ -1302,11 +1288,14 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
   Mrg *mrg = (Mrg*)itk;
   Ctx *ctx = itk->ctx;
 
-  mrg_start (mrg, "propline", NULL);
+  if (itk->focus_no == itk->control_no)
+    mrg_start (mrg, "propline:focused", NULL);
+  else
+    mrg_start (mrg, "propline", NULL);
   itk_label (itk, label);
 
   CtxFloatRectangle extent;
-  mrg_start (mrg, itk->focus_no == itk->control_no ? "slider-focused" : "slider", NULL);
+  mrg_start (mrg, "slider", NULL);
   mrg_printf (mrg, "%f", value);
   mrg_end (mrg, &extent);
   CtxControl *control = itk_add_control (itk, UI_SLIDER, label,
@@ -1317,8 +1306,7 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
   control->step = step;
   mrg_end (mrg, NULL);
 
-
-  itk_newline (itk);
+  //itk_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
   {
     itk->return_value = 0;
@@ -1483,7 +1471,7 @@ char *itk_entry (ITK        *itk,
   float ewidth = itk->width * (1.0 - itk->label_width);
 
   if (label[0]) {
-    itk_text (itk, label);
+    itk_label (itk, label);
     itk->x = new_x;
   }
   else
@@ -1505,7 +1493,7 @@ char *itk_entry (ITK        *itk,
   }
 
   ctx_begin_path (ctx);
-  ctx_move_to (ctx, itk->x, itk->y + em * itk->rel_baseline);
+  ctx_move_to (ctx, itk->x, itk->y + em);
   if (itk->active &&
       itk->entry_copy && itk->focus_no == control->no)
   {
@@ -1606,8 +1594,11 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
   //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxFloatRectangle extent;
   
-  mrg_start (mrg, "propline", NULL);
-  mrg_start (mrg, itk->focus_no == itk->control_no ? "toggle-focused" : "toggle", NULL);
+  if (itk->focus_no == itk->control_no)
+    mrg_start (mrg, "propline:focused", NULL);
+  else
+    mrg_start (mrg, "propline", NULL);
+  mrg_start (mrg, "toggle", NULL);
 
   mrg_print (mrg, label);
 
@@ -1716,7 +1707,7 @@ int itk_radio (ITK *itk, const char *label, int set)
     ctx_fill (ctx);
   }
 
-  ctx_move_to (ctx, itk->x + em * 1 + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
+  ctx_move_to (ctx, itk->x + em * 1 + em * itk->rel_hpad,  itk->y + em * 1.0);
   itk_style_color (itk->ctx, "itk-fg");
   ctx_text (ctx, label);
 
@@ -1751,45 +1742,21 @@ void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
 int itk_expander (ITK *itk, const char *label, int *val)
 {
   Ctx *ctx = itk->ctx;
+  Mrg *mrg = (Mrg*)itk;
   float em = itk_em (itk);
-  CtxControl *control = itk_add_control (itk, UI_EXPANDER, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+  CtxFloatRectangle extent;
+  if (itk->focus_no == itk->control_no)
+    mrg_start (mrg, "propline:focused", NULL);
+  else
+    mrg_start (mrg, "propline", NULL);
+
+  itk_labelf (itk, "%s %s", *val?"V":">", label);
+
+  mrg_end (mrg, &extent);
+  CtxControl *control = itk_add_control (itk, UI_EXPANDER, label,
+                  extent.x, extent.y, extent.width, extent.height);
   control->val = val;
 
-  //control_ref (control);
-  control_ref (control);
-  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_CLICK, toggle_clicked, control, itk, control_finalize, NULL);
-  //itk_style_color (itk->ctx, "itk-interactive-bg");
-  //ctx_fill (ctx);
-
-  ctx_begin_path (ctx);
-  {
-     //itk_base (itk, label, control->x, control->y, control->width, em * itk->rel_ver_advance, itk->focus_no == control->no);
-     itk_style_color (itk->ctx, "itk-interactive");
-     if (*val)
-     {
-       ctx_move_to (ctx, itk->x, itk->y);
-
-       ctx_rel_move_to (ctx, em*0.1, em*0.1);
-       ctx_rel_line_to (ctx, em*0.8, 0);
-       ctx_rel_line_to (ctx, -0.4*em, em*0.8);
-       ctx_fill (ctx);
-     }
-     else
-     {
-       ctx_move_to (ctx, itk->x, itk->y);
-       ctx_rel_move_to (ctx, em*0.1, em*0.1);
-       ctx_rel_line_to (ctx, 0, em*0.8);
-       ctx_rel_line_to (ctx, em*0.8, -0.4*em);
-       ctx_close_path (ctx);
-       ctx_line_width (ctx, em * 0.07);
-       ctx_stroke (ctx);
-     }
-     itk->x += em * (1 + itk->rel_hpad);
-     itk_text (itk, label);
-  }
-
-  itk_newline (itk);
   return *val;
 }
 
@@ -1804,6 +1771,7 @@ int itk_button (ITK *itk, const char *label)
    
   mrg_start (mrg, itk->focus_no == itk->control_no ? "button:focused" : "button", NULL);
 
+//  itk_label (itk, label);
   mrg_print (mrg, label);
 
 
@@ -1816,8 +1784,8 @@ int itk_button (ITK *itk, const char *label)
   control->type = UI_BUTTON;
   ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-  //ctx_rgb (ctx, 1,0,1);
-  //ctx_fill (ctx);
+  ctx_rgb (ctx, 1,1,0);
+  ctx_fill (ctx);
   ctx_begin_path (ctx);
   //itk->x += width;
   //itk->x += itk->rel_hgap * em;
@@ -1908,7 +1876,7 @@ int itk_choice (ITK *itk, const char *label, int val)
   float em = itk_em (itk);
 
   float new_x = itk->x + itk->width * (itk->label_width);
-  itk_text (itk, label);
+  itk_label (itk, label);
   itk->x = new_x;
 
   itk_style_color (itk->ctx, "itk-bg");
@@ -1963,7 +1931,7 @@ void itk_choice_add (ITK *itk, int value, const char *label)
     {
       ctx_move_to (ctx, itk->x + itk->label_width * itk->width
                       ,
-                      itk->y + em * itk->rel_baseline  - em * (itk->rel_ver_advance + itk->rel_vgap));
+                      itk->y + em - em * (itk->rel_ver_advance + itk->rel_vgap));
       ctx_rgb (ctx, 1, 0, 0);
       ctx_text (ctx, label);
     }
@@ -2928,7 +2896,6 @@ itk_itk_settings (ITK *itk)
      itk_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
      itk_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 1.0, 0.01);
      itk_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
-     itk_slider_float (itk, "baseline", &itk->rel_baseline, 0.1, 4.0, 0.01);
      itk_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
      itk_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
      itk_slider_float (itk, "label width", &itk->label_width, 0.0, 40.0, 0.02);

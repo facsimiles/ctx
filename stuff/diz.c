@@ -279,7 +279,7 @@ char *diz_dir_get_data (Diz *diz, int no)
   }
   m--;
   if (m == diz->metadata)
-    return strdup("beep3");
+    return strdup("");
   m--;
   while (m[0]!='\n' && m != diz->metadata)m--;
   if (m !=diz->metadata) m++;
