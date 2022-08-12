@@ -5973,11 +5973,21 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   if (!ctx_color_is_transparent (background_color))
   {
     mrg_ctx_set_source_color (mrg->ctx, background_color);
-    ctx_deferred_rectangle (mrg->ctx, name,
-       html->state->block_start_x - PROP(padding_left),
-       html->state->block_start_y - PROP(padding_top),
-       width + PROP(padding_left) + PROP(padding_right),
-       height + PROP(padding_top) + PROP(padding_bottom));
+    if (is_block_item (style))
+    {
+      ctx_deferred_rectangle (mrg->ctx, name,
+         html->state->block_start_x - PROP(padding_left),
+         html->state->block_start_y - PROP(padding_top),
+         width + PROP(padding_left) + PROP(padding_right),
+         height + PROP(padding_top) + PROP(padding_bottom));
+    }
+    else
+    {
+      ctx_deferred_rectangle (mrg->ctx, name,
+         mrg_x (mrg), mrg_y (mrg),
+         width + PROP(padding_left) + PROP(padding_right),
+         height + PROP(padding_top) + PROP(padding_bottom));
+    }
     ctx_fill (mrg->ctx);
   }
   ctx_color_free (background_color);

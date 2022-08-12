@@ -1306,7 +1306,6 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
   control->step = step;
   mrg_end (mrg, NULL);
 
-  //itk_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
   {
     itk->return_value = 0;
