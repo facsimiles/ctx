@@ -349,7 +349,8 @@ typedef struct MrgState {
 
 struct _Mrg {
   Ctx            *ctx;
-
+  Ctx            *fixed_ctx;
+  Ctx            *absolute_ctx;
 
   float            rem;
   float            ddpx;
@@ -7005,7 +7006,6 @@ void mrg_xml_render (Mrg *mrg,
                      void *finalize_data,
                      char *html_)
 {
-  char *html;
   MrgXml *xmltok;
   uint32_t tag[CTX_MAX_STATE_DEPTH];
   int pos             = 0;
@@ -7018,9 +7018,7 @@ void mrg_xml_render (Mrg *mrg,
   int whitespaces = 0;
   uint32_t att = 0;
 
-  html = malloc (strlen (html_) + 3);
-  sprintf (html, "%s ", html_);
-  xmltok = xmltok_buf_new (html);
+  xmltok = xmltok_buf_new (html_);
 
   {
     int no = mrg->text_listen_count;
@@ -7509,6 +7507,7 @@ void mrg_xml_render (Mrg *mrg,
   }
 
   xmltok_free (xmltok);
+
   if (depth!=0){
     fprintf (stderr, "html parsing unbalanced, %i open tags.. \n", depth);
     while (depth > 0)
@@ -7521,7 +7520,17 @@ void mrg_xml_render (Mrg *mrg,
   }
 
   ctx_string_free (style, 1);
-  free (html);
+
+  if (mrg->absolute_ctx)
+  {
+     ctx_render_ctx (mrg->absolute_ctx, mrg->ctx);
+     ctx_destroy (mrg->absolute_ctx);
+  }
+  if (mrg->fixed_ctx)
+  {
+     ctx_render_ctx (mrg->fixed_ctx, mrg->ctx);
+     ctx_destroy (mrg->fixed_ctx);
+  }
 }
 
 void mrg_xml_renderf (Mrg *mrg,

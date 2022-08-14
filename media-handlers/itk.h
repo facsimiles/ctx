@@ -290,6 +290,8 @@ void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
 
 struct _ITK{
   Ctx             *ctx;
+  Ctx            *fixed_ctx;
+  Ctx            *absolute_ctx;
   float            rem;
   float            ddpx;
   CtxList         *stylesheet;

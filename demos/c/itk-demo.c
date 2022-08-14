@@ -746,7 +746,7 @@ static void card_deferred (ITK *itk, int frame_no)
 {
 
   float ascent = 0.8;
-  float descent = 0.2;
+  //float descent = 0.2;
   float line_gap = 0.1;
 
   Ctx *ctx = itk_ctx (itk);
