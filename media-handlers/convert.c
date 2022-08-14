@@ -4,11 +4,11 @@
 
 #include "ctx.h"
 
-#define CTX_SVG 0
+#define CTX_SVG 1
 
-#if CTX_SVG
-#include "svg.h"
-#endif
+typedef struct _Mrg Mrg;
+Mrg *mrg_new (Ctx *ctx, int width, int height);
+void mrg_print_xml (Mrg *mrg, const char *str);
 
 int ctx_terminal_rows (void);
 int ctx_terminal_cols (void);

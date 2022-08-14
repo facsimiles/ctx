@@ -934,9 +934,9 @@ void itk_seperator (ITK *itk)
 void itk_label (ITK *itk, const char *label)
 {
   Mrg *mrg = (Mrg*)itk;
-  mrg_start (mrg, "label", NULL);
+  //mrg_start (mrg, "label", NULL);
   mrg_print (mrg, label);
-  mrg_end (mrg, NULL);
+  //mrg_end (mrg, NULL);
 }
 
 void itk_labelf (ITK *itk, const char *format, ...)

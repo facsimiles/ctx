@@ -1612,8 +1612,8 @@ const char * html_css =
 "button:focused{color:yellow;border: 1px solid yellow;background:blue;}\n"
 "label{display:inline; color:white;}\n"
 "slider{display:inline-block; color:white;}\n"
-"propline {display:block;margin:1.0em;border:1 px solid transparent;}\n"
-"propline:focused {display:block;margin:1.0em;border:1px solid red;background:#faf}\n"
+"propline {display:block;margin:0.5em;border:1 px solid transparent;}\n"
+"propline:focused {display:block;margin:0.5em;border:1px solid red;background:#faf}\n"
 ;
 
 
