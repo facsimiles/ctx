@@ -143,22 +143,12 @@ struct _MrgHtml
   MrgHtmlState  states[CTX_MAX_STYLE_DEPTH];
   MrgHtmlState *state;
   int state_no;
-  CtxList *geo_cache;
   //char  attribute[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_ATTRIBUTE_LEN];
   //char  value[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_VALUE_LEN];
   //int   attributes;
 };
 
 typedef struct _Mrg Mrg;
-typedef struct _MrgGeoCache MrgGeoCache;
-struct _MrgGeoCache
-{
-  void *id_ptr;
-  float height;
-  float width;
-  int   hover;
-  int gen;
-};
 
 typedef enum {
   CTX_DISPLAY_INLINE = 0,
@@ -393,7 +383,6 @@ struct _Mrg {
   CtxIntRectangle     dirty;
   CtxIntRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;
-  CtxList         *geo_cache;
   MrgState         states[CTX_MAX_STATE_DEPTH];
   int              state_no;
   int              in_paint;
@@ -1085,27 +1074,6 @@ void mrg_clear (Mrg *mrg)
 {
   ctx_events_clear (mrg->ctx);
   _mrg_clear_text_closures (mrg);
-}
-
-MrgGeoCache *_mrg_get_cache (MrgHtml *htmlctx, void *id_ptr)
-{
-  CtxList *l;
-  for (l = htmlctx->geo_cache; l; l = l->next)
-  {
-    MrgGeoCache *item = l->data;
-    if (item->id_ptr == id_ptr)
-    {
-      memset (item, 0, sizeof (MrgGeoCache));
-      return item;
-    }
-  }
-  {
-    MrgGeoCache *item = calloc (sizeof (MrgGeoCache), 1);
-    item->id_ptr = id_ptr;
-    ctx_list_prepend_full (&htmlctx->geo_cache, item, (void*)free, NULL);
-    return item;
-  }
-  return NULL;
 }
 
 void mrg_set_edge_right (Mrg *mrg, float val);
@@ -6003,7 +5971,7 @@ void _mrg_set_post_nl (Mrg *mrg,
 static void update_rect_geo (Ctx *ctx, void *userdata, const char *name, int count,
                              float *x, float *y, float *w, float *h)
 {
-  MrgGeoCache *geo = userdata;
+  CtxFloatRectangle *geo = userdata;
   *w = geo->width;
   *h = geo->height;
 }
@@ -6064,8 +6032,8 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 
   if (is_block_item (style))
   {
-    MrgGeoCache _geo;
-    MrgGeoCache *geo = &_geo;
+    CtxFloatRectangle _geo;
+    CtxFloatRectangle *geo = &_geo;
     memset (geo, 0, sizeof (_geo));
 
     geo->width = width;
@@ -7574,7 +7542,6 @@ void mrg_xml_render (Mrg *mrg,
     fprintf (stderr, "\n");
   }
 
-//  ctx_list_free (&htmlctx->geo_cache); /* XXX: no point in doing that here */
   ctx_string_free (style, 1);
   free (html);
 }
@@ -7602,6 +7569,13 @@ void mrg_xml_renderf (Mrg *mrg,
 
 void mrg_print_xml (Mrg *mrg, const char *xml)
 {
+  mrg->in_paint = 1;
+  mrg->do_clip = 1;
+  //ITK *itk = (ITK*)mrg;
+  //_mrg_init (mrg, itk->width, itk->height);
+  //mrg_set_size (mrg, width, height);
+  ctx_style_defaults (mrg);
+
   mrg_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
 }
 

@@ -303,7 +303,6 @@ struct _ITK{
   CtxIntRectangle     dirty;
   CtxIntRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;
-  CtxList         *geo_cache;
   MrgState         states[CTX_MAX_STATE_DEPTH];
   int              state_no;
   int              in_paint;
@@ -1676,9 +1675,7 @@ void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
 
 int itk_expander (ITK *itk, const char *label, int *val)
 {
-  Ctx *ctx = itk->ctx;
   Mrg *mrg = (Mrg*)itk;
-  float em = itk_em (itk);
   CtxFloatRectangle extent;
   if (itk->focus_no == itk->control_no)
     mrg_start (mrg, "propline:focused", NULL);
