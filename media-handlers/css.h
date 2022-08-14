@@ -1095,7 +1095,7 @@ MrgGeoCache *_mrg_get_cache (MrgHtml *htmlctx, void *id_ptr)
     MrgGeoCache *item = l->data;
     if (item->id_ptr == id_ptr)
     {
-      item->gen++;
+      memset (item, 0, sizeof (MrgGeoCache));
       return item;
     }
   }
@@ -3421,14 +3421,8 @@ static void ctx_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
 
     if (width == 0)
     {
-      MrgGeoCache *geo = _mrg_get_cache (&mrg->html, s->id_ptr);
-      if (geo->gen)
-        width = geo->width;
-      else
-      {
-        width = 8 * s->font_size;
-        mrg_queue_draw (mrg, NULL);
-      }
+      width = 8 * s->font_size;
+      mrg_queue_draw (mrg, NULL);
     }
     SET_PROP(right, right);
     SET_PROP(left,
@@ -3442,14 +3436,9 @@ static void ctx_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
 
     if (height == 0)
     {
-      MrgGeoCache *geo = _mrg_get_cache (&mrg->html, s->id_ptr);
-      if (geo->gen)
-        height = geo->height;
-      else
-      {
-        height = 2 * s->font_size;
-        mrg_queue_draw (mrg, NULL);
-      }
+            // XXX
+      height = 2 * s->font_size;
+      mrg_queue_draw (mrg, NULL);
     }
     SET_PROP(top, mrg_height(mrg) - PROP(bottom) - height - PROP(padding_top) - PROP(border_top_width) - PROP(padding_bottom) - PROP(border_bottom_width) - PROP(margin_bottom));
   }
@@ -5795,11 +5784,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
         if (width == 0.0)
         {
-          MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
-          if (geo->width)
-            width = geo->width;
-          else
-            width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
+          width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
         width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
@@ -5840,11 +5825,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
         if (width == 0.0)
         {
-          MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
-          if (geo->width)
-            width = geo->width;
-          else
-            width = 4 * mrg_em (mrg);//mrg_edge_right (mrg) - mrg_edge_left (mrg);
+          width = 4 * mrg_em (mrg);//mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
         width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
@@ -5904,11 +5885,7 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
         if (!width)
         {
-          MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
-          if (geo->width)
-            width = geo->width;
-          else
-            width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
+          width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
         ctx_identity (mrg_ctx (mrg)); // XXX should be dropped
@@ -5937,19 +5914,11 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
      if (!height)
        {
-         MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
-         if (geo->height)
-           height = geo->height;
-         else
-           height = mrg_em (mrg) * 4;
+         height = mrg_em (mrg) * 4;
        }
      if (!width)
        {
-         MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
-         if (geo->width)
-           width = geo->width;
-         else
-           width = mrg_em (mrg) * 4;
+         width = mrg_em (mrg) * 4;
        }
 
     if (height  /* XXX: if we knew height of dynamic elements
@@ -6095,8 +6064,11 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 
   if (is_block_item (style))
   {
-    MrgGeoCache *geo = _mrg_get_cache (html, style->id_ptr);
+    MrgGeoCache _geo;
+    MrgGeoCache *geo = &_geo;
+    memset (geo, 0, sizeof (_geo));
 
+    geo->width = width;
     if (width == 0)
     {
 #if 0
@@ -6115,16 +6087,10 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
                       _mrg_dynamic_edge_left (mrg);
       }
     }
-    else
-      geo->width = width;
 
-    //:mrg_edge_right (mrg) - mrg_edge_left (mrg);
+    geo->height = height;
     if (height == 0)
       geo->height = mrg_y (mrg) - (html->state->block_start_y);
-    else
-      geo->height = height;
-
-    geo->gen++;
 
     char name[10]="ele_";
     name[3]=html->state_no+2;
@@ -6153,18 +6119,6 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
       float y = ctx_pointer_y (ctx);
       ctx_matrix_invert (&transform);
       ctx_matrix_apply_transform (&transform, &x, &y);
-
-      if (x >= html->state->block_start_x &&
-          x <  html->state->block_start_x + geo->width &&
-          y >= html->state->block_start_y  &&
-          y <  html->state->block_start_y + geo->height)
-      {
-        geo->hover = 1;
-      }
-      else
-      {
-        geo->hover = 0;
-      }
     }
 
     //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
@@ -7349,16 +7303,6 @@ void mrg_xml_render (Mrg *mrg,
           }
 
           //if (ctx_style(mrg)->id_ptr)
-          { // XXX : perhaps do this a tiny bit differently?
-            MrgGeoCache *geo = _mrg_get_cache (htmlctx, (void*)(size_t)(tagpos));
-            if (geo && geo->hover)
-            {
-              if (ctx_pointer_is_down (mrg->ctx, 0))
-                pseudo = ":active:hover";
-              else
-                pseudo = ":hover";
-            }
-          }
           sprintf (combined, "%s%s%s%s%s%s",
               data,
               klass?".":"",
