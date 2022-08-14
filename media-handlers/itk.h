@@ -291,7 +291,9 @@ void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
 struct _ITK{
   Ctx             *ctx;
   float            rem;
-  MrgHtml          html;
+  MrgHtmlState  html_states[CTX_MAX_STYLE_DEPTH];
+  MrgHtmlState *html_state;
+  int html_state_no;
   float            ddpx;
   CtxList         *stylesheet;
   void            *css_parse_state;
