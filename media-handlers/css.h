@@ -139,10 +139,9 @@ typedef void (*UiRenderFun)      (Mrg *mrg, void *ui_data);
 struct _MrgHtml
 {
   Mrg *mrg;
-  int foo;
-  MrgHtmlState  states[CTX_MAX_STYLE_DEPTH];
-  MrgHtmlState *state;
-  int state_no;
+  MrgHtmlState  html_states[CTX_MAX_STYLE_DEPTH];
+  MrgHtmlState *html_state;
+  int html_state_no;
   //char  attribute[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_ATTRIBUTE_LEN];
   //char  value[MRG_XML_MAX_ATTRIBUTES][MRG_XML_MAX_VALUE_LEN];
   //int   attributes;
@@ -1131,17 +1130,17 @@ static float _mrg_dynamic_edge_left2 (Mrg *mrg, MrgHtmlState *state)
 
 static float _mrg_parent_dynamic_edge_left (MrgHtml *ctx)
 {
-  MrgHtmlState *state = ctx->state;
-  if (ctx->state_no)
-    state = &ctx->states[ctx->state_no-1];
+  MrgHtmlState *state = ctx->html_state;
+  if (ctx->html_state_no)
+    state = &ctx->html_states[ctx->html_state_no-1];
   return _mrg_dynamic_edge_left2 (ctx->mrg, state);
 }
 
 static float _mrg_parent_dynamic_edge_right (MrgHtml *ctx)
 {
-  MrgHtmlState *state = ctx->state;
-  if (ctx->state_no)
-    state = &ctx->states[ctx->state_no-1];
+  MrgHtmlState *state = ctx->html_state;
+  if (ctx->html_state_no)
+    state = &ctx->html_states[ctx->html_state_no-1];
   return _mrg_dynamic_edge_right2 (ctx->mrg, state);
 }
 
@@ -1173,14 +1172,14 @@ static float _mrg_dynamic_edge_right (Mrg *mrg)
 static float wrap_edge_left (Mrg *mrg, void *data)
 {
   MrgHtml *ctx = data;
-  MrgHtmlState *state = ctx->state;
+  MrgHtmlState *state = ctx->html_state;
   return _mrg_dynamic_edge_left2 (mrg, state);
 }
 
 static float wrap_edge_right (Mrg *mrg, void *data)
 {
   MrgHtml *ctx = data;
-  MrgHtmlState *state = ctx->state;
+  MrgHtmlState *state = ctx->html_state;
   return _mrg_dynamic_edge_right2 (mrg, state);
 }
 
@@ -1190,11 +1189,11 @@ static void clear_left (MrgHtml *ctx)
   float y = mrg_y (mrg);
   int i;
 
-  if (ctx->state->floats)
+  if (ctx->html_state->floats)
   {
-    for (i = 0; i < ctx->state->floats; i++)
+    for (i = 0; i < ctx->html_state->floats; i++)
       {
-        CtxFloatData *f = &ctx->state->float_data[i];
+        CtxFloatData *f = &ctx->html_state->float_data[i];
         {
           if (f->type == CTX_FLOAT_LEFT)
           {
@@ -1213,11 +1212,11 @@ static void clear_right (MrgHtml *ctx)
   float y = mrg_y (mrg);
   int i;
 
-  if (ctx->state->floats)
+  if (ctx->html_state->floats)
   {
-    for (i = 0; i < ctx->state->floats; i++)
+    for (i = 0; i < ctx->html_state->floats; i++)
       {
-        CtxFloatData *f = &ctx->state->float_data[i];
+        CtxFloatData *f = &ctx->html_state->float_data[i];
         {
           if (f->type == CTX_FLOAT_RIGHT)
           {
@@ -1252,12 +1251,12 @@ static void clear_both (MrgHtml *ctx)
   float y = mrg_y (mrg);
   int i;
 
-  if (!ctx->state)return;
-  if (ctx->state->floats)
+  if (!ctx->html_state)return;
+  if (ctx->html_state->floats)
   {
-    for (i = 0; i < ctx->state->floats; i++)
+    for (i = 0; i < ctx->html_state->floats; i++)
       {
-        CtxFloatData *f = &ctx->state->float_data[i];
+        CtxFloatData *f = &ctx->html_state->float_data[i];
         {
           if (f->y + f->height > y)
             y = f->y + f->height;
@@ -5669,16 +5668,16 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
   CtxStyle *style;
   float dynamic_edge_left, dynamic_edge_right;
 
-  html->state_no++;
-  html->state = &html->states[html->state_no];
-  *html->state = html->states[html->state_no-1];
+  html->html_state_no++;
+  html->html_state = &html->html_states[html->html_state_no];
+  *html->html_state = html->html_states[html->html_state_no-1];
 
   style = ctx_style (mrg);
 
-  html->state->original_x = mrg_x (mrg);
-  html->state->original_y = mrg_y (mrg);
+  html->html_state->original_x = mrg_x (mrg);
+  html->html_state->original_y = mrg_y (mrg);
 
-  if (html->state_no)
+  if (html->html_state_no)
   {
     dynamic_edge_right = _mrg_parent_dynamic_edge_right(html);
     dynamic_edge_left  = _mrg_parent_dynamic_edge_left(html);
@@ -5713,15 +5712,15 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
     /* collapsing of vertical margins */
     float actual_top = PROP(margin_top) ;
-    if (actual_top >= html->state->vmarg)
-      actual_top = actual_top - html->state->vmarg;
+    if (actual_top >= html->html_state->vmarg)
+      actual_top = actual_top - html->html_state->vmarg;
     else
       actual_top = 0;
 
     mrg_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + actual_top);
 
-    html->state->block_start_x = mrg_edge_left (mrg);
-    html->state->block_start_y = mrg_y (mrg);
+    html->html_state->block_start_x = mrg_edge_left (mrg);
+    html->html_state->block_start_y = mrg_y (mrg);
   }
 
   /* the list-item is a cheak hack; can be implemented directly
@@ -5782,9 +5781,9 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
         mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top))); // - html->state->vmarg));
 
-        html->state->block_start_x = mrg_x (mrg);
-        html->state->block_start_y = mrg_y (mrg);
-        html->state->floats = 0;
+        html->html_state->block_start_x = mrg_x (mrg);
+        html->html_state->block_start_y = mrg_y (mrg);
+        html->html_state->floats = 0;
 
       } else if (style->float_ == CTX_FLOAT_LEFT)
       {
@@ -5820,9 +5819,9 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
             PROP(padding_left) /* + PROP(border_right_width)*/);
         mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top)));// - html->state->vmarg));
                         //));//- html->state->vmarg));
-        html->state->block_start_x = mrg_x (mrg);
-        html->state->block_start_y = mrg_y (mrg);// + PROP(padding_top) + PROP(border_top_width);
-        html->state->floats = 0;
+        html->html_state->block_start_x = mrg_x (mrg);
+        html->html_state->block_start_y = mrg_y (mrg);// + PROP(padding_top) + PROP(border_top_width);
+        html->html_state->floats = 0;
 
         /* change cursor point after floating something left; if pushed far
          * down, the new correct
@@ -5834,17 +5833,17 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
       {
          float width = PROP(width);
          if (width)
-           mrg_set_edge_right (mrg, html->state->block_start_x  + width);
+           mrg_set_edge_right (mrg, html->html_state->block_start_x  + width);
       }
       break;
     case CTX_POSITION_ABSOLUTE:
       {
-        html->state->floats = 0;
+        html->html_state->floats = 0;
         mrg_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
         mrg_set_edge_right (mrg, PROP(left) + PROP(width));
         mrg_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
-        html->state->block_start_x = mrg_x (mrg);
-        html->state->block_start_y = mrg_y (mrg);
+        html->html_state->block_start_x = mrg_x (mrg);
+        html->html_state->block_start_y = mrg_y (mrg);
       }
       break;
     case CTX_POSITION_FIXED:
@@ -5858,13 +5857,13 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
 
         ctx_identity (mrg_ctx (mrg)); // XXX should be dropped
         ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
-        html->state->floats = 0;
+        html->html_state->floats = 0;
 
         mrg_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
         mrg_set_edge_right (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left) + width);//mrg_width (mrg) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right)); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
         mrg_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
-        html->state->block_start_x = mrg_x (mrg);
-        html->state->block_start_y = mrg_y (mrg);
+        html->html_state->block_start_x = mrg_x (mrg);
+        html->html_state->block_start_y = mrg_y (mrg);
       }
       break;
   }
@@ -5894,16 +5893,16 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
        && style->overflow == CTX_OVERFLOW_HIDDEN)
        {
          ctx_rectangle (mrg_ctx(mrg),
-            html->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
-            html->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width),
+            html->html_state->block_start_x - PROP(padding_left) - PROP(border_left_width),
+            html->html_state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width),
             width + PROP(border_right_width) + PROP(border_left_width) + PROP(padding_left) + PROP(padding_right), //mrg_edge_right (mrg) - mrg_edge_left (mrg) + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width),
             height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width));
          ctx_clip (mrg_ctx(mrg));
        }
 
-    html->state->ptly = 0;
+    html->html_state->ptly = 0;
     char name[10]="ele_";
-    name[3]=html->state_no+2;
+    name[3]=html->html_state_no+2;
 
   CtxColor *background_color = ctx_color_new ();
   ctx_get_color (mrg->ctx, CTX_background_color, background_color);
@@ -5913,8 +5912,8 @@ void _mrg_layout_pre (Mrg *mrg, MrgHtml *html)
     if (is_block_item (style))
     {
       ctx_deferred_rectangle (mrg->ctx, name,
-         html->state->block_start_x - PROP(padding_left),
-         html->state->block_start_y - PROP(padding_top),
+         html->html_state->block_start_x - PROP(padding_left),
+         html->html_state->block_start_y - PROP(padding_top),
          width + PROP(padding_left) + PROP(padding_right),
          height + PROP(padding_top) + PROP(padding_bottom));
     }
@@ -6008,15 +6007,15 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   if (style->float_)
   {
     CtxFloatData *float_data = 
-     &html->states[html->state_no-1].float_data[html->states[html->state_no-1].floats];
+     &html->html_states[html->html_state_no-1].float_data[html->html_states[html->html_state_no-1].floats];
     // XXX protect against overflow
-    html->states[html->state_no-1].floats++;
+    html->html_states[html->html_state_no-1].floats++;
 
     float_data->type = style->float_;
     float_data->x = 
-       html->state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
+       html->html_state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
     float_data->y = 
-         html->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width)
+         html->html_state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width)
       - PROP(margin_top);
 
     float_data->width = 
@@ -6025,7 +6024,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
      + PROP(padding_right) + PROP(border_right_width) + PROP(margin_right);
 
     float_data->height = 
-       mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg))
+       mrg_y (mrg) - (html->html_state->block_start_y - mrg_em(mrg))
          + PROP(margin_bottom) + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width) + PROP(margin_top) + mrg_em (mrg);
   }
 
@@ -6040,14 +6039,14 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
     if (width == 0)
     {
 #if 0
-      if (mrg_y (mrg) == (ctx->state->block_start_y))
-        geo->width = mrg_x (mrg) - (ctx->state->block_start_x);
+      if (mrg_y (mrg) == (ctx->html_state->block_start_y))
+        geo->width = mrg_x (mrg) - (ctx->html_state->block_start_x);
       else
         geo->width = mrg->state->edge_right  - (ctx->state->block_start_x);
 #endif
       if (style->float_)
       {
-        geo->width = mrg_x (mrg) - (html->state->block_start_x);
+        geo->width = mrg_x (mrg) - (html->html_state->block_start_x);
       }
       else
       {
@@ -6058,22 +6057,22 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
 
     geo->height = height;
     if (height == 0)
-      geo->height = mrg_y (mrg) - (html->state->block_start_y);
+      geo->height = mrg_y (mrg) - (html->html_state->block_start_y);
 
     char name[10]="ele_";
-    name[3]=html->state_no+2;
+    name[3]=html->html_state_no+2;
 
     ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
 
     mrg_box (mrg,
-        html->state->block_start_x,
-        html->state->block_start_y,
+        html->html_state->block_start_x,
+        html->html_state->block_start_y,
         geo->width,
         geo->height);
     if (ret_rect)
     {
-       ret_rect->x = html->state->block_start_x;
-       ret_rect->y = html->state->block_start_y;
+       ret_rect->x = html->html_state->block_start_x;
+       ret_rect->y = html->html_state->block_start_y;
        ret_rect->width = geo->width;
        ret_rect->height = geo->height;
        returned_dim = 1;
@@ -6089,7 +6088,7 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
       ctx_matrix_apply_transform (&transform, &x, &y);
     }
 
-    //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (html->state->block_start_y - mrg_em(mrg)));
+    //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (html->html_state->block_start_y - mrg_em(mrg)));
 
     if (!style->float_ && style->display == CTX_DISPLAY_BLOCK)
     {
@@ -6103,8 +6102,8 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
   else if (style->display == CTX_DISPLAY_INLINE ||
            style->display == CTX_DISPLAY_INLINE_BLOCK)
   {
-    float x0     = html->state->original_x;
-    float y0     = html->state->original_y;
+    float x0     = html->html_state->original_x;
+    float y0     = html->html_state->original_y;
     float width  = mrg->x - x0;
     float height = mrg->y - y0;
 
@@ -6131,16 +6130,16 @@ void _mrg_layout_post (Mrg *mrg, MrgHtml *html, CtxFloatRectangle *ret_rect)
       style->position == CTX_POSITION_ABSOLUTE ||
       style->position == CTX_POSITION_FIXED)
   {
-    mrg_set_xy (mrg, html->state->original_x,
-                     html->state->original_y);
+    mrg_set_xy (mrg, html->html_state->original_x,
+                     html->html_state->original_y);
   }
 
   /* restore state to parent */
-  html->state_no--;
-  if (html->state_no<0)
-     html->state_no=0;
-  html->state = &html->states[html->state_no];
-  html->state->vmarg = vmarg;
+  html->html_state_no--;
+  if (html->html_state_no<0)
+     html->html_state_no=0;
+  html->html_state = &html->html_states[html->html_state_no];
+  html->html_state->vmarg = vmarg;
 
   if (ret_rect && !returned_dim)
     fprintf (stderr, "didnt return dim!\n");
@@ -7055,7 +7054,7 @@ void mrg_xml_render (Mrg *mrg,
   _mrg_set_wrap_edge_vfuncs (mrg, wrap_edge_left, wrap_edge_right, htmlctx);
   _mrg_set_post_nl (mrg, _mrg_resolve_line_height, htmlctx);
   htmlctx->mrg = mrg;
-  htmlctx->state = &htmlctx->states[0];
+  htmlctx->html_state = &htmlctx->html_states[0];
 
   while (type != t_eof)
   {
@@ -7823,7 +7822,7 @@ void _mrg_init (Mrg *mrg, int width, int height)
   mrg_set_size (mrg, width, height);
   _mrg_text_init (mrg);
 
-  mrg->html.state = &mrg->html.states[0];
+  mrg->html.html_state = &mrg->html.html_states[0];
   mrg->html.mrg = mrg;
   mrg->style = ctx_string_new ("");
 
