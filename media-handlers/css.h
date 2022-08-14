@@ -7544,16 +7544,10 @@ void mrg_xml_renderf (Mrg *mrg,
   mrg_xml_render (mrg, uri_base, link_cb, link_data, NULL, NULL, buffer);
   free (buffer);
 }
+void _mrg_init (Mrg *mrg, int width, int height);
 
 void mrg_print_xml (Mrg *mrg, const char *xml)
 {
-  //mrg->in_paint = 1;
-  //mrg->do_clip = 1;
-  //ITK *itk = (ITK*)mrg;
-  //_mrg_init (mrg, itk->width, itk->height);
-  //mrg_set_size (mrg, width, height);
-  //ctx_style_defaults (mrg);
-
   mrg_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
 }
 
@@ -7834,7 +7828,6 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   mrg->in_paint = 1;
   mrg->do_clip = 1;
   _mrg_init (mrg, width, height);
-  mrg_set_size (mrg, width, height);
   ctx_style_defaults (mrg);
 
 #if 0
