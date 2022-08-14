@@ -7513,7 +7513,7 @@ void mrg_xml_render (Mrg *mrg,
     fprintf (stderr, "html parsing unbalanced, %i open tags.. \n", depth);
     while (depth > 0)
     {
-      //fprintf (stderr, " %s ", tag[depth-1]);
+      fprintf (stderr, " %s ", squoze6_decode (tag[depth-1]));
       mrg_end (mrg, NULL);
       depth--;
     }
@@ -7547,12 +7547,12 @@ void mrg_xml_renderf (Mrg *mrg,
 
 void mrg_print_xml (Mrg *mrg, const char *xml)
 {
-  mrg->in_paint = 1;
-  mrg->do_clip = 1;
+  //mrg->in_paint = 1;
+  //mrg->do_clip = 1;
   //ITK *itk = (ITK*)mrg;
   //_mrg_init (mrg, itk->width, itk->height);
   //mrg_set_size (mrg, width, height);
-  ctx_style_defaults (mrg);
+  //ctx_style_defaults (mrg);
 
   mrg_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
 }
