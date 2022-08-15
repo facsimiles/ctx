@@ -1589,27 +1589,23 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
 
   if (input_val)
   {
-      mrg_print (mrg, "{x}");
+      mrg_print (mrg, "[x]");
   }
   else
   {
-      mrg_print (mrg, "{ }");
+      mrg_print (mrg, "[ ]");
   }
 
   mrg_end (mrg, &extent);
   mrg_end (mrg, NULL);
   CtxControl *control = itk_add_control (itk, UI_TOGGLE, label,
                   extent.x, extent.y, extent.width, extent.height);
-                             //itk->x, itk->y, width, em * itk->rel_ver_advance);
 
   control_ref (control);
   control->type = UI_TOGGLE;
   ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-  //ctx_rgb (ctx, 1,0,1);
-  //ctx_fill (ctx);
   ctx_begin_path (ctx);
-  //itk->x += width;
 
   if (control->no == itk->focus_no && itk->return_value)
   {

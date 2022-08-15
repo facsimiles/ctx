@@ -1552,7 +1552,7 @@ const char * html_css =
 
 
 ////  also part of our default stylesheet
-"toggle{border: 1px solid green;border: 1px solid red;color:yellow;}\n"
+"toggle{border: 1px solid green;border: 1px solid red;color:yellow;display:block;}\n"
 "button{border: 1px solid green;}\n"
 "button:focused{color:yellow;border: 1px solid yellow;background:blue;}\n"
 "label{display:inline; color:white;}\n"
