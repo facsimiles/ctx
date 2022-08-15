@@ -7786,7 +7786,10 @@ void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height)
   mrg->do_clip = 1;
   mrg->ctx = mrg->document_ctx = ctx;
   _ctx_events_init (mrg->ctx);
-  mrg->state = &mrg->states[0];
+  mrg->state_no = 0;
+  mrg->state = &mrg->states[mrg->state_no];
+  mrg->state->floats = 0;
+  //memset (mrg->states, 0, sizeof (mrg->states));
   /* XXX: is there a better place to set the default text color to black? */
 #if 0
   mrg->state->style.color.red =
@@ -7796,7 +7799,7 @@ void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height)
 #endif
   if(1){
     CtxColor *color = ctx_color_new ();
-    ctx_color_set_rgba (ctx_get_state (mrg->ctx), color, 1, 0, 1, 1);
+    ctx_color_set_rgba (ctx_get_state (mrg->ctx), color, 1, 1, 1, 1);
     ctx_set_color (mrg->ctx, CTX_color, color);
     ctx_color_free (color);
   }

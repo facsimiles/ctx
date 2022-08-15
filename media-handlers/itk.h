@@ -648,7 +648,7 @@ void control_finalize (void *control, void *foo, void *bar)
 
 void itk_reset (ITK *itk)
 {
-  Ctx *ctx = itk->ctx;
+  Ctx *ctx = itk->ctx = itk->document_ctx;
   ctx_start_frame           (ctx);
 
   if (itk_style)
@@ -743,6 +743,7 @@ void itk_reset (ITK *itk)
   }
   itk->control_no = 0;
   _mrg_init ((Mrg*)itk, ctx, ctx_width (itk->ctx), ctx_height (itk->ctx));
+//  ctx_style_defaults ((Mrg*)itk);
 }
 
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)

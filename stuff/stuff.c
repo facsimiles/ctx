@@ -5680,7 +5680,7 @@ static int card_files (ITK *itk_, void *data)
       itk_set_edge_left (itk, 0.0);
       itk_set_edge_right (itk, ctx_width (itk_ctx (itk)) - itk_em (itk));
       itk_set_edge_top (itk, 0.0);
-      if (!strstr (diz->path, ".html"))
+      if (!strstr (diz->path, ".html") && !strstr (diz->path, ".svg"))
         dir_layout (itk, diz);
       else
       {
@@ -6551,12 +6551,6 @@ static int card_files (ITK *itk_, void *data)
       }
     }
     ctx_restore (ctx);
-  }
-
-  {
-    float em = itk_em (itk);
-    itk_set_xy (itk, em, em);
-    if(0)mrg_print_xml ((Mrg*)itk, "<style>body{font-size:30px;} b{color:red;};p,div,li,ul{border:1px solid cyan;}</style><html><body><div>bad sadf ksadf jlkdsaf mlkjv mklsad mkclas mdkcla mdlkcas mdlck mdslkcmsa ldk mcaoskd mcwaei mcoakesmc oake mclwke mclwake mclokmc okasmc oaksmdocakse mcoaksmc oakds mclsakd mclsakd mclsakd mclaksdmclksad mcldsak mclskd mclsakd mclsadk mclsakdmclsadkmclsakdmclsadcd1</div> <div>fnord2</div><p id='a'> foo <b>bold</b> bar </p><ul><li id='b'>a</li><li>b</li></ul></body></html>");
   }
 
   // drop target
