@@ -349,6 +349,7 @@ typedef struct MrgState {
 
 struct _Mrg {
   Ctx            *ctx;
+  Ctx            *document_ctx;
   Ctx            *fixed_ctx;
   Ctx            *absolute_ctx;
 
@@ -7553,7 +7554,7 @@ void mrg_xml_renderf (Mrg *mrg,
   mrg_xml_render (mrg, uri_base, link_cb, link_data, NULL, NULL, buffer);
   free (buffer);
 }
-void _mrg_init (Mrg *mrg, int width, int height);
+void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height);
 
 void mrg_print_xml (Mrg *mrg, const char *xml)
 {
@@ -7778,8 +7779,12 @@ mrg_get_contents_default (const char  *referer,
   return mrg_get_contents_default (referer, input_uri, contents, length, ignored_user_data);
 }
 
-void _mrg_init (Mrg *mrg, int width, int height)
+void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height)
 {
+  //memset (mrg, 0, sizeof (Mrg));
+  mrg->in_paint = 1;
+  mrg->do_clip = 1;
+  mrg->ctx = mrg->document_ctx = ctx;
   _ctx_events_init (mrg->ctx);
   mrg->state = &mrg->states[0];
   /* XXX: is there a better place to set the default text color to black? */
@@ -7833,10 +7838,9 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   Mrg *mrg;
 
   mrg = calloc (sizeof (Mrg), 1);
-  mrg->ctx = ctx;
   mrg->in_paint = 1;
   mrg->do_clip = 1;
-  _mrg_init (mrg, width, height);
+  _mrg_init (mrg, ctx, width, height);
   ctx_style_defaults (mrg);
 
 #if 0

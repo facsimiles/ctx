@@ -290,6 +290,7 @@ void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
 
 struct _ITK{
   Ctx             *ctx;
+  Ctx            *document_ctx;
   Ctx            *fixed_ctx;
   Ctx            *absolute_ctx;
   float            rem;
@@ -570,7 +571,7 @@ float itk_rel_ver_advance (ITK *itk)
 ITK *itk_new (Ctx *ctx)
 {
   ITK *itk              = calloc (sizeof (ITK), 1);
-  itk->ctx              = ctx;
+  //itk->ctx              = ctx;
   //itk->panels = NULL;
   itk->focus_wraparound = 1;
   itk->scale            = 1.0;
@@ -596,9 +597,7 @@ ITK *itk_new (Ctx *ctx)
   itk->width = itk->font_size * 15;
 
   Mrg *mrg = (Mrg*)itk;
-  mrg->in_paint = 1;
-  mrg->do_clip = 1;
-  _mrg_init (mrg, ctx_width(ctx), ctx_height(ctx));
+  _mrg_init (mrg, ctx, ctx_width(ctx), ctx_height(ctx));
   ctx_style_defaults (mrg);
 
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
@@ -743,7 +742,7 @@ void itk_reset (ITK *itk)
     free (choice);
   }
   itk->control_no = 0;
-  _mrg_init ((Mrg*)itk, ctx_width (itk->ctx), ctx_height (itk->ctx));
+  _mrg_init ((Mrg*)itk, ctx, ctx_width (itk->ctx), ctx_height (itk->ctx));
 }
 
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)
