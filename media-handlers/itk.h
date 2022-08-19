@@ -317,9 +317,6 @@ struct _ITK{
                            void        *get_contents_data);
   void *get_contents_data;
 
-  void (*ui_update)(Mrg *mrg, void *user_data);
-  void *user_data;
-
   //MrgBackend *backend;
   char      *title;
 
