@@ -317,9 +317,6 @@ struct _ITK{
                            void        *get_contents_data);
   void *get_contents_data;
 
-  //MrgBackend *backend;
-  char      *title;
-
     /** text editing state follows **/
   int              text_edited;
   int              got_edit;
@@ -339,9 +336,6 @@ struct _ITK{
   float            e_ws;
   float            e_we;
   float            e_em;
-  float            offset_x;
-  float            offset_y;
-  //cairo_scaled_font_t *scaled_font;
 
   CtxEventType     text_listen_types[CTX_MAX_TEXT_LISTEN];
   CtxCb            text_listen_cb[CTX_MAX_TEXT_LISTEN];
@@ -355,13 +349,7 @@ struct _ITK{
 
   int        got_text;
   int        printing;
-  //cairo_t *printing_cr;
 
-  ////////////////////////////////////////////////////////////////////////////////
-
-  //Ctx *ctx;
-  //float x;
-  //float y;
   int (*ui_fun)(ITK *itk, void *data);
   void *ui_data;
 
