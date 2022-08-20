@@ -112,9 +112,9 @@ int main (int argc, char **argv)
 
       static int mode = Mode_Fwd;
       if (itk_radio(itk, "rew", mode==Mode_Rew)){mode = Mode_Rew;};
-      itk_sameline (itk);
+      //itk_sameline (itk);
       if (itk_radio(itk, "fwd", mode==Mode_Fwd)){mode = Mode_Fwd;};
-      itk_sameline (itk);
+      //itk_sameline (itk);
       if (itk_radio(itk, "play", mode==Mode_Play)){mode = Mode_Play;};
 
 

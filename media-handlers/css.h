@@ -1543,14 +1543,14 @@ const char * html_css =
 //"h1,h2,h3,h4,h5,h6,p,div,b,span,ul,li,ol,dl,dt,dl,propline,button{border-left-color:gray;border-right-color:gray;}\n"
 
 
-////  also part of our default stylesheet
-"toggle{border: 1px solid green;border: 1px solid red;color:yellow;display:block;}\n"
-"button{border: 1px solid green;}\n"
+//// itk defaults stylesheet
+"toggle        {border: 1px solid green;border: 1px solid red;color:yellow;display:block;}\n"
+"button        {border: 1px solid green;}\n"
 "button:focused{color:yellow;border: 1px solid yellow;background:blue;}\n"
-"label{display:inline; color:white;}\n"
-"slider{display:inline-block; color:white;}\n"
-"propline {display:block;margin:0.5em;border:1 px solid transparent;}\n"
-"propline:focused {display:block;margin:0.5em;border:1px solid red;background:#faf}\n"
+"label         {display:inline; color:white;}\n"
+"slider        {display:inline-block; color:white;}\n"
+"propline      {display:block;margin-top:0.25em;margin-bottom:0.25em;border:1 px solid transparent;}\n"
+"propline:focused {border:1px solid red;background:#faf}\n"
 ;
 
 

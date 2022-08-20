@@ -906,14 +906,9 @@ void itk_sameline (ITK *itk)
 
 void itk_seperator (ITK *itk)
 {
-  Ctx *ctx = itk->ctx;
-  float em = itk_em (itk);
-//itk_base (itk, NULL, itk->edge_left, itk->y, itk->width, em * itk->rel_ver_advance / 4, 0);
-  ctx_rectangle (ctx, itk->edge_left - em * itk->rel_hmargin, itk->y, itk->width - em * itk->rel_hmargin*2, em * itk->rel_ver_advance/4);
-  ctx_gray (ctx, 0.5);
-  ctx_fill (ctx);
-  itk_newline (itk);
-  itk->y -= em * itk->rel_ver_advance * 0.75;
+  Mrg *mrg = (Mrg*)itk;
+  mrg_start (mrg, "hr", NULL);
+  mrg_end (mrg, NULL);
 }
 
 void itk_label (ITK *itk, const char *label)
@@ -1436,7 +1431,56 @@ char *itk_entry (ITK        *itk,
                  const char *in_val)
 {
   Ctx *ctx = itk->ctx;
+  Mrg *mrg = (Mrg*)itk;
   float em = itk_em (itk);
+#if 1
+  if (itk->focus_no == itk->control_no)
+    mrg_start (mrg, "propline:focused", NULL);
+  else
+    mrg_start (mrg, "propline", NULL);
+  itk_label (itk, label);
+
+  if (itk->active &&
+      itk->entry_copy && itk->focus_no == itk->control_no)
+  {
+    int backup = itk->entry_copy[itk->entry_pos];
+    char buf[4]="|";
+    itk->entry_copy[itk->entry_pos]=0;
+    itk_label (itk, itk->entry_copy);
+    itk_label (itk, buf);
+
+    buf[0]=backup;
+    if (backup)
+    {
+      itk_label (itk, buf);
+      itk_label (itk, &itk->entry_copy[itk->entry_pos+1]);
+      itk->entry_copy[itk->entry_pos] = backup;
+    }
+  }
+  else
+  {
+    if (in_val[0])
+    {
+      itk_label (itk, in_val);
+    }
+    else
+    {
+      if (fallback)
+      {
+        itk_label (itk, fallback);
+      }
+    }
+  }
+
+  CtxFloatRectangle extent;
+  mrg_end (mrg, &extent);
+  CtxControl *control = itk_add_control (itk, UI_ENTRY, label,
+                  extent.x, extent.y, extent.width, extent.height);
+  control->entry_value = strdup (in_val);
+  if (fallback)
+    control->fallback = strdup (fallback);
+  control->ref_count++;
+#else
   float new_x = itk->x + itk->label_width * itk->width;
 
   float ewidth = itk->width * (1.0 - itk->label_width);
@@ -1506,6 +1550,7 @@ char *itk_entry (ITK        *itk,
   }
   itk->x += ewidth;
   itk_newline (itk);
+#endif
 
   if (itk->active == 2 && control->no == itk->active_entry)
   {
@@ -1605,44 +1650,46 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
 int itk_radio (ITK *itk, const char *label, int set)
 {
   Ctx *ctx = itk->ctx;
-  float em = itk_em (itk);
-  float width = ctx_text_width (ctx, label) + em * 1 + em * itk->rel_hpad;
-  CtxControl *control = itk_add_control (itk, UI_RADIO, label, itk->x, itk->y, width, em * itk->rel_ver_advance);
-//  itk_base (itk, label, itk->x, itk->y, width, em * itk->rel_ver_advance, itk->focus_no == control->no);
+  Mrg *mrg = (Mrg*)itk;
+  //float em = itk_em (itk);
+  //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  CtxFloatRectangle extent;
+  
+  if (itk->focus_no == itk->control_no)
+    mrg_start (mrg, "propline:focused", NULL);
+  else
+    mrg_start (mrg, "propline", NULL);
+  mrg_start (mrg, "toggle", NULL);
 
-  itk_style_color (itk->ctx, "itk-interactive");
-  ctx_begin_path (ctx);
-  ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.4, 0.0, 6.3, 0);
-  ctx_close_path (ctx);
-  ctx_line_width (ctx, em * 0.07);
-  ctx_stroke (ctx);
+  mrg_print (mrg, label);
 
   if (set)
   {
-    ctx_arc (ctx, itk->x + em * 0.55, itk->y + em * 0.57, em * 0.2, 0.0, 6.3, 0);
-    ctx_fill (ctx);
+      mrg_print (mrg, "(x)");
+  }
+  else
+  {
+      mrg_print (mrg, "( )");
   }
 
-  ctx_move_to (ctx, itk->x + em * 1 + em * itk->rel_hpad,  itk->y + em * 1.0);
-  itk_style_color (itk->ctx, "itk-fg");
-  ctx_text (ctx, label);
+  mrg_end (mrg, &extent);
+  mrg_end (mrg, NULL);
+  CtxControl *control = itk_add_control (itk, UI_TOGGLE, label,
+                  extent.x, extent.y, extent.width, extent.height);
 
-  control->type = UI_RADIO;
   control_ref (control);
-  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  control->type = UI_TOGGLE;
+  ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
   ctx_begin_path (ctx);
-  itk->x += width;
 
-  itk->x += 0.5f * em;
-  itk_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
   {
     itk->return_value = 0;
     ctx_queue_draw (ctx);
-    return 1;
+    return !set;
   }
-   return 0;
+  return set;
 }
 
 void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
