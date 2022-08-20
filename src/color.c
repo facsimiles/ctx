@@ -864,6 +864,7 @@ int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
   {
     float rgba[4];
     CtxColor ccolor;
+    bzero (&ccolor, sizeof (CtxColor));
     ctx_get_color (ctx, CTX_color, &ccolor);
     ctx_color_get_rgba (&(ctx->state), &ccolor, rgba);
     ctx_color_set_rgba (&(ctx->state), color, rgba[0], rgba[1], rgba[2], rgba[3]);
