@@ -1089,7 +1089,7 @@ ITKPanel *itk_panel_start (ITK *itk, const char *title,
   }
   itk->width = panel->width;
   itk->height = panel->height;
-  //itk_set_wrap_width (itk, panel->width);
+  itk_set_wrap_width (itk, panel->width - em);
   //itk_set_height (itk, panel->height);
 
   itk->panel = panel;
@@ -1430,9 +1430,7 @@ char *itk_entry (ITK        *itk,
                  const char *fallback,
                  const char *in_val)
 {
-  Ctx *ctx = itk->ctx;
   Mrg *mrg = (Mrg*)itk;
-  float em = itk_em (itk);
 #if 1
   if (itk->focus_no == itk->control_no)
     mrg_start (mrg, "propline:focused", NULL);
@@ -1830,29 +1828,28 @@ static void itk_choice_clicked (CtxEvent *event, void *userdata, void *userdata2
 int itk_choice (ITK *itk, const char *label, int val)
 {
   Ctx *ctx = itk->ctx;
-  float em = itk_em (itk);
-
-  float new_x = itk->x + itk->width * (itk->label_width);
-  itk_label (itk, label);
-  itk->x = new_x;
-
-  itk_style_color (itk->ctx, "itk-bg");
-  CtxControl *control = itk_add_control (itk, UI_CHOICE, label, itk->x, itk->y, itk->width * (1.0-itk->label_width), em * itk->rel_ver_advance);
-  control->value = val;
-
-  control_ref (control);
-  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
-  ctx_listen_with_finalize (ctx, CTX_CLICK, itk_choice_clicked, control, itk, control_finalize, NULL);
-
-  ctx_begin_path (ctx);
-  if (itk->focus_no == control->no)
-    itk_style_color (itk->ctx, "itk-focused-bg");
+  Mrg *mrg = (Mrg*)itk;
+  //float em = itk_em (itk);
+  //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  CtxFloatRectangle extent;
+  
+  if (itk->focus_no == itk->control_no)
+    mrg_start (mrg, "propline:focused", NULL);
   else
-    itk_style_color (itk->ctx, "itk-interactive-bg");
-  ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
-  ctx_fill (ctx);
+    mrg_start (mrg, "propline", NULL);
+  //mrg_start (mrg, "choice", NULL);
 
-  itk_newline (itk);
+  mrg_printf (mrg, "%s %i", label, val);
+
+  //mrg_end (mrg, NULL);
+  mrg_end (mrg, &extent);
+  CtxControl *control = itk_add_control (itk, UI_CHOICE, label,
+                  extent.x, extent.y, extent.width, extent.height);
+  control->value = val;
+  control_ref (control);
+  ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, itk_choice_clicked, control, itk, control_finalize, NULL);
+  ctx_begin_path (ctx);
   if (control->no == itk->focus_no)
   {
     if (!itk->choice_active)
@@ -1880,9 +1877,8 @@ int itk_choice (ITK *itk, const char *label, int val)
 
 void itk_choice_add (ITK *itk, int value, const char *label)
 {
-  Ctx *ctx = itk->ctx;
-  float em = itk_em (itk);
   CtxControl *control = itk->controls->data;
+#if 0
   {
     if (((int)control->value) == value)
     {
@@ -1893,6 +1889,7 @@ void itk_choice_add (ITK *itk, int value, const char *label)
       ctx_text (ctx, label);
     }
   }
+#endif
   if (control->no == itk->focus_no)
   {
      UiChoice *choice= calloc (sizeof (UiChoice), 1);

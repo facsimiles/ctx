@@ -1546,6 +1546,7 @@ const char * html_css =
 //// itk defaults stylesheet
 "toggle        {border: 1px solid green;border: 1px solid red;color:yellow;display:block;}\n"
 "button        {border: 1px solid green;}\n"
+"choice        {border: 1px solid brown;display:inline-block;}\n"
 "button:focused{color:yellow;border: 1px solid yellow;background:blue;}\n"
 "label         {display:inline; color:white;}\n"
 "slider        {display:inline-block; color:white;}\n"
