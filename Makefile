@@ -258,18 +258,18 @@ ctx.h: src/*.[ch] src/index $(FONT_STAMP) tools/ctx-fontgen
 ctx-nofont.h: src/*.c src/*.h src/index
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
 
-squoze5/squoze5: squoze5/*.[ch]
-	make -C squoze5 squoze5
+squoze/squoze: squoze/*.[ch]
+	make -C squoze squoze
 
-src/constants.h: src/*.c Makefile squoze5/squoze5
+src/constants.h: src/*.c Makefile squoze/squoze
 	echo '#ifndef __CTX_CONSTANTS' > $@
 	echo '#define __CTX_CONSTANTS' >> $@
-	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][a-zA-Z_0-9]*'|sort | uniq | cut -f 2 -d _`;do echo "#define CTX_$$a `./squoze5/squoze5 -32 $$a`u";done \
+	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][a-zA-Z_0-9]*'|sort | uniq | cut -f 2 -d _`;do echo "#define CTX_$$a `./squoze/squoze -32 $$a`u";done \
 		>> $@
 	echo '#endif' >> $@
-media-handlers/w3c-constants.h: media-handlers/css.h Makefile squoze5/squoze5
+media-handlers/w3c-constants.h: media-handlers/css.h Makefile squoze/squoze
 	echo '#ifndef __W3C_CONSTANTS' > $@
 	echo '#define __W3C_CONSTANTS' >> $@
-	for a in `cat media-handlers/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze5/squoze5 -32 $$b`u // \"$$b\"";done \
+	for a in `cat media-handlers/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -32 $$b`u // \"$$b\"";done \
 		>> $@
 	echo '#endif' >> $@

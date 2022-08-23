@@ -20,7 +20,7 @@ drawlist.h
 composite.c
 backend-rasterizer.c
 base64.h
-squoze5.h
+squoze.h
 drawlist.c
 transform.c
 audio.c

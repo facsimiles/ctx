@@ -7531,7 +7531,7 @@ void mrg_xml_render (Mrg *mrg,
     fprintf (stderr, "html parsing unbalanced, %i open tags.. \n", depth);
     while (depth > 0)
     {
-      fprintf (stderr, " %s ", squoze6_decode (tag[depth-1]));
+      fprintf (stderr, " %s ", squoze32_decode (tag[depth-1]));
       mrg_end (mrg, NULL);
       depth--;
     }
