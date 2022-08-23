@@ -302,6 +302,8 @@ struct _ITK{
   int              quit;
   float            x; /* in px */
   float            y; /* in px */
+  float            relative_x;
+  float            relative_y;
   CtxIntRectangle     dirty;
   CtxIntRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;

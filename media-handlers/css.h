@@ -348,10 +348,10 @@ typedef struct MrgState {
 } MrgState;;
 
 struct _Mrg {
-  Ctx            *ctx;
-  Ctx            *document_ctx;
-  Ctx            *fixed_ctx;
-  Ctx            *absolute_ctx;
+  Ctx             *ctx;
+  Ctx             *document_ctx;
+  Ctx             *fixed_ctx;
+  Ctx             *absolute_ctx;
 
   float            rem;
   float            ddpx;
@@ -363,6 +363,9 @@ struct _Mrg {
   int              quit;
   float            x; /* in px */
   float            y; /* in px */
+
+  float            relative_x;
+  float            relative_y;
   CtxIntRectangle     dirty;
   CtxIntRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;
@@ -3624,6 +3627,10 @@ void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
   _mrg_layout_post (mrg, ret_rect);
   if (mrg->in_paint)
     ctx_restore (mrg_ctx (mrg));
+  if (mrg->state_no == 0)
+  {
+    //fprintf (stderr, "time to resolve\n");
+  }
 }
 
 void  mrg_set_line_height (Mrg *mrg, float line_height);
@@ -5700,6 +5707,8 @@ void _mrg_layout_pre (Mrg *mrg)
     case CTX_POSITION_RELATIVE:
       /* XXX: deal with style->right and style->bottom */
       ctx_translate (mrg_ctx (mrg), PROP(left), PROP(top));
+      mrg->relative_x += PROP(left);
+      mrg->relative_y += PROP(top);
       /* fallthrough */
 
     case CTX_POSITION_STATIC:
@@ -6082,7 +6091,11 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
   /* restore relative shift */
   if (style->position == CTX_POSITION_RELATIVE)
+  {
     ctx_translate (mrg_ctx (mrg), -PROP(left), -PROP(top));
+    mrg->relative_x -= PROP(left);
+    mrg->relative_y -= PROP(top);
+  }
 
   /* restore insert position when having been out-of-context */
   if (style->float_ ||
