@@ -1031,15 +1031,20 @@ ctx_font_get_vmetrics (Ctx *ctx,
                        float   *descent,
                        float   *linegap)
 {
+#if CTX_ONE_FONT_ENGINE
+      if (ascent) *ascent=0.8f;
+      if (descent)*descent=0.2f;
+      if (linegap)*linegap=1.2f;
+#else
   //float font_size          = 1.0f;
   //if (ctx)
   //    font_size = ctx->state.gstate.font_size;
   switch (font->type)
   {
     case 0:  
-      if (ascent) *ascent=0.8;
-      if (descent)*descent=0.2;
-      if (linegap)*linegap=1.2;
+      if (ascent) *ascent=0.8f;
+      if (descent)*descent=0.2f;
+      if (linegap)*linegap=1.2f;
       return 0;
 #if CTX_FONT_ENGINE_STB
     case 1:  
@@ -1062,6 +1067,7 @@ ctx_font_get_vmetrics (Ctx *ctx,
     case 3:  return 0;
 #endif
   }
+#endif
   return 0;
 }
 
