@@ -7,9 +7,9 @@
 #include <string.h>
 #include <assert.h>
 
-uint32_t squoze32 (const char *utf8);
-uint64_t squoze52 (const char *utf8);
-uint64_t squoze62 (const char *utf8);
+uint32_t    squoze32        (const char *utf8);
+uint64_t    squoze52        (const char *utf8);
+uint64_t    squoze62        (const char *utf8);
 const char *squoze32_decode (uint32_t hash);
 const char *squoze52_decode (uint64_t hash);
 const char *squoze62_decode (uint64_t hash);
@@ -95,10 +95,16 @@ typedef struct EncodeUtf5 {
   uint32_t current;
 } EncodeUtf5;
 
+static inline int squoze_words_for_dim (int squoze_dim)
+{
+  return squoze_dim / 5;
+}
+
 static inline uint64_t
 squoze_overflow_mask_for_dim (int squoze_dim)
 {
-  return ((uint64_t)1<<(squoze_dim * 5 + 1));
+  int words = squoze_words_for_dim (squoze_dim);
+  return ((uint64_t)1<<(words * 5 + 1));
 }
 
 static int squoze_compute_cost_utf5 (int offset, int val, int next_val)
@@ -107,44 +113,8 @@ static int squoze_compute_cost_utf5 (int offset, int val, int next_val)
   cost += squoze_utf5_length (val);
   if (next_val)
   {
-    int no_change_cost = squoze_utf5_length (next_val);
-    // XXX remove this dead code
-#if 0 // not hit in test-corpus, it is easier to specify and
-      // port the hash consistently without it
-    offset = squoze_new_offset (val);
-    int change_cost = 1;
-    int needed_jump = squoze_needed_jump (offset, next_val);
-
-    if (needed_jump == 0)
-    {
-      change_cost += 1;
-    } else if (needed_jump >= -2 && needed_jump <= 2)
-    {
-      change_cost += 2;
-    }
-    else if (needed_jump >= -10 && needed_jump <= -10)
-    {
-      change_cost += 3;
-    }
-    else
-    {
-      change_cost += 100;
-    }
-
-    if (change_cost < no_change_cost)
-    {
-      cost += change_cost;
-    }
-    else
-#endif
-    {
-      cost += no_change_cost;
-    }
-
+    cost += squoze_utf5_length (next_val);
   }
-
-
-
   return cost;
 }
 
@@ -336,16 +306,16 @@ static inline uint64_t _squoze (int squoze_dim, const char *utf8)
   squoze5_encode (utf8, strlen (utf8), encoded, &encoded_len, 1, 1);
   uint64_t hash = 0;
   int  utf5 = (encoded[0] != SQUOZE_ENTER_SQUEEZE);
-  uint64_t multiplier = ((squoze_dim == 6) ? 0x25bd1e975
+  uint64_t multiplier = ((squoze_dim == 32) ? 0x25bd1e975
                                            : 0x98173415bd1e975);
 
   uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
   uint64_t all_bits        = overflowed_mask - 1;
 
-  int rshift = (squoze_dim == 6) ? 8 : 16;
+  int rshift = (squoze_dim == 32) ? 8 : 16;
+  int words = squoze_words_for_dim (squoze_dim);
 
-
-  if (encoded_len - (!utf5) <= squoze_dim)
+  if (encoded_len - (!utf5) <= words)
   {
     for (int i = !utf5; i < encoded_len; i++)
     {
@@ -454,21 +424,21 @@ static inline uint64_t squoze (int squoze_dim, const char *utf8)
 
 uint32_t squoze32 (const char *utf8)
 {
-  return squoze (6, utf8);
+  return squoze (32, utf8);
 }
 
 uint64_t squoze52 (const char *utf8)
 {
-  return squoze (10, utf8);
+  return squoze (52, utf8);
 }
 
 uint64_t squoze62 (const char *utf8)
 {
-  return squoze (12, utf8);
+  return squoze (62, utf8);
 }
 
 uint32_t ctx_strhash(const char *str) {
-  return squoze (6, str);
+  return squoze (32, str);
 }
 
 typedef struct CashUtf5Dec {
@@ -618,7 +588,7 @@ static void squoze_decode_utf5_bytes (int is_utf5,
 
 static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retlen)
 {
-  uint64_t overflowed_mask = ((uint64_t)1<<(squoze_dim * 5 + 1));
+  uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
 
   if (hash & overflowed_mask)
   {
@@ -684,17 +654,17 @@ static const char *squoze_decode (int squoze_dim, uint64_t hash)
 
 const char *squoze32_decode (uint32_t hash)
 {
-  return squoze_decode (6, hash);
+  return squoze_decode (32, hash);
 }
 
 const char *squoze52_decode (uint64_t hash)
 {
-  return squoze_decode (10, hash);
+  return squoze_decode (52, hash);
 }
 
 const char *squoze62_decode (uint64_t hash)
 {
-  return squoze_decode (12, hash);
+  return squoze_decode (62, hash);
 }
 
 static inline uint32_t

@@ -1,35 +1,34 @@
+squoze5 a 5-bit transfer format for unicode.
+============================================
 
-  squoze5 a 5-bit transfer format for unicode.
-  ============================================
+Øyvind Kolås, https://ctx.graphics/ 2021-12-02 
 
-  Øyvind Kolås, https://ctx.graphics/ 2021-12-02 
+Squoze5 extends the UTF-8 like variable length encoding of UTF-5 with a
+direct encoding mode.  Permitting transmission of short messages in more
+writing systems with RTTY, lora and other bandwidth constrained mediums where a
+5-bit stream works better than 8bit, most text is at any time often using a for
+non-western languages with high code points UTF-8 takes many more bits in
+relation to message length, for 8-bit data streams SCSU and BOCU-1 fil lthe
+same role as squoze5. This document also specifies squoze-32, squoze-52 and
+squoze-62 which are reversible string to integer hashes.
 
-  Squoze5 extends the UTF-8 like variable length encoding of UTF-5 with a
-  direct encoding mode.  Permitting transmission of short messages in more
-  writing systems with RTTY, lora and other bandwidth constrained mediums where a
-  5-bit stream works better than 8bit, most text is at any time often using a for
-  non-western languages with high code points UTF-8 takes many more bits in
-  relation to message length, for 8-bit data streams SCSU and BOCU-1 fil lthe
-  same role as squoze5. This document also specifies squoze-32, squoze-52 and
-  squoze-62 which are reversible string to integer hashes.
+In UTF-5 each quintet, 5-bit word, stores 4bits of data and a bit indicating
+if it is the start of a new character. UTF-5 uses the alphabet 0-9 followed
+by  A-V to represent the 5bit values 0-9 and 10-31, this set arises from
+UTF-5s intent to address internationalization within the constraints of DNS.
 
-  In UTF-5 each quintet, 5-bit word, stores 4bits of data and a bit indicating
-  if it is the start of a new character. UTF-5 uses the alphabet 0-9 followed
-  by  A-V to represent the 5bit values 0-9 and 10-31, this set arises from
-  UTF-5s intent to address internationalization within the constraints of DNS.
+The symbol 'G'/16 does not appear inside conformant UTF-5 sequences,
+this is used as a mode-change symbol changing to the squeeze mode, where
+many symbols in most scripts end up encoded in a quintet. Valdig UTF-5
+strings are also valid strings for decoding for a squoze5 decoder.
 
-  The symbol 'G'/16 does not appear inside conformant UTF-5 sequences,
-  this is used as a mode-change symbol changing to the squeeze mode, where
-  many symbols in most scripts end up encoded in a quintet. Valdig UTF-5
-  strings are also valid strings for decoding for a squoze5 decoder.
-
-  In squeeze mode the initial offset is set based on the last encoded
-  codepoint in UTF-5 mode. The offset needs to a multiple of 26 with
-  a phase offset of 19, which makes ASCII lowercase a-z be within initial
-  range. Squoze5 encodes the same character with the same quintet value
-  no matter which initial offset, this makes repeating patterns have a
-  chance of being repeated in the output and makes post-processing
-  compression relying on substring matching possible.
+In squeeze mode the initial offset is set based on the last encoded
+codepoint in UTF-5 mode. The offset needs to a multiple of 26 with
+a phase offset of 19, which makes ASCII lowercase a-z be within initial
+range. Squoze5 encodes the same character with the same quintet value
+no matter which initial offset, this makes repeating patterns have a
+chance of being repeated in the output and makes post-processing
+compression relying on substring matching possible.
 
 The quintets meaning of the quintets in squeeze mode are as follows:
 
@@ -50,8 +49,8 @@ The quintets meaning of the quintets in squeeze mode are as follows:
 
 31  V     switch to UTF-5 mode
 
-  two jump commands in a row are encoding larger offset changes, TODO:
-  confirm that the transcription of the bitpattern here matches implementation.
+two jump commands in a row are encoding larger offset changes, TODO:
+confirm that the transcription of the bitpattern here matches implementation.
 
     R R   offset += 26 * 3   
     R S   offset += 26 * 4  
@@ -70,89 +69,89 @@ The quintets meaning of the quintets in squeeze mode are as follows:
     U T   offset -= 26 * 9
     U U   offset -= 26 * 10
 
-  How to encode
-  -------------
-  
-  For compatiblity with UTF-5 we start out in UTF-5 rather than squeeze mode.
+How to encode
+-------------
 
-  The encoder makes a decision if the current mode is kept or not for every
-  code-point. The cost in output quintets is computed for UTF-5 and squeeze
-  mode is computed for this and the next code-point. We switch from UTF-5 to
-  squeeze when the cost of switching and the next two code-points is equal or
-  smaller, in the other direction we only switch when UTF-5 cost is lower.
+For compatiblity with UTF-5 we start out in UTF-5 rather than squeeze mode.
 
-  For example the string "Hello World" is encoded as follows:
+The encoder makes a decision if the current mode is kept or not for every
+code-point. The cost in output quintets is computed for UTF-5 and squeeze
+mode is computed for this and the next code-point. We switch from UTF-5 to
+squeeze when the cost of switching and the next two code-points is equal or
+smaller, in the other direction we only switch when UTF-5 cost is lower.
 
-  H   e  l l o   W  o  r l d                             11 bytes
-  GT2 U5 C C F 0 TH UF I C 4     16 quintets = 80 bits = 10 bytes
+For example the string "Hello World" is encoded as follows:
 
-  h  e l l o   w o r l d     11 bytes
-  G8 5 C C F 0 N F I C 4     12 quintets = 60 bits = 7.5bytes padded to 8 bytes
+H   e  l l o   W  o  r l d                             11 bytes
+GT2 U5 C C F 0 TH UF I C 4     16 quintets = 80 bits = 10 bytes
 
-2. squoze-32, squoze-52 and squoze-62 storing string in integers
+h  e l l o   w o r l d     11 bytes
+G8 5 C C F 0 N F I C 4     12 quintets = 60 bits = 7.5bytes padded to 8 bytes
 
-  These are reversible string hash hashes that result in 32bit 52bit or 62bit
-  unsigned integers, their capacity are 6, 10 or 12 quintets.  When the first bit
-  is set it indicates starting off in squeeze-mode, saving the need for an
-  initial 'G'. If the number of encoded quintets to encode is too high, the
-  highest bit is set which indicates overflow - and the rest of the bits act as a
-  regular hash function.
+ squoze-32, squoze-52 and squoze-62 storing string in integers
+
+These are reversible string hash hashes that result in 32bit 52bit or 62bit
+unsigned integers, their capacity are 6, 10 or 12 quintets.  When the first bit
+is set it indicates starting off in squeeze-mode, saving the need for an
+initial 'G'. If the number of encoded quintets to encode is too high, the
+highest bit is set which indicates overflow - and the rest of the bits act as a
+regular hash function.
 
 
-    $ ./squoze5 -e This is a test øæå ØÆÅ
-    1294529466 1234 2 1349992 6600566 1595769403
+  $ ./squoze5 -e This is a test øæå ØÆÅ
+  1294529466 1234 2 1349992 6600566 1595769403
 
-    $ ./squoze5 1294529466 1234 2 1349992 6600566 1595769403
-    This is a test
+  $ ./squoze5 1294529466 1234 2 1349992 6600566 1595769403
+  This is a test
 
-    We can use the squoze binary to encode to squoze5 to see what is going on:
+  We can use the squoze binary to encode to squoze5 to see what is going on:
 
-    $ ./squoze5 -ev This is a test øæå ØÆÅ
-    GTEU89J G9J G1 GK5JK GRTM43 T8GTON
+  $ ./squoze5 -ev This is a test øæå ØÆÅ
+  GTEU89J G9J G1 GK5JK GRTM43 T8GTON
 
-    $ ./squoze5 -ev 'This is a test øæå ØÆÅ'
-    GTEU89J09J010K5JK0RTM430TGTON
+  $ ./squoze5 -ev 'This is a test øæå ØÆÅ'
+  GTEU89J09J010K5JK0RTM430TGTON
 
-  To avoid ambiguity, if the final quintet is 0 a mode-change using either
-  'G' or 'V' as appropriate is used, this can for example happen when a
-  string ends in a space.
+To avoid ambiguity, if the final quintet is 0 a mode-change using either
+'G' or 'V' as appropriate is used, this can for example happen when a
+string ends in a space.
 
-  The hashing is implemented on top of utf-5 as follows:
+The hashing is implemented on top of utf-5 as follows:
 
-  for (int i = 0; i < encoded5bit_len; i++)
-  {
-    int val = encoded5bit[i];
-    hash = hash ^ val;
-    hash = hash * multiplier;
-    hash = hash & all_bits;
-    hash = hash ^ ((hash >> rshift));
-  }
-  hash |= overflowed_mask;
+for (int i = 0; i < encoded5bit_len; i++)
+{
+  int val = encoded5bit[i];
+  hash = hash ^ val;
+  hash = hash * multiplier;
+  hash = hash & all_bits;
+  hash = hash ^ ((hash >> rshift));
+}
+hash |= overflowed_mask;
 
-  Where multiplier, all_bits, overflowed_mask and rshift are set depending on
-  the digest length. This appears to give a reasonable good collision avoidance,
-  the constants used are likely to still change a bit.
+Where multiplier, all_bits, overflowed_mask and rshift are set depending on
+the digest length. This appears to give a reasonable good collision avoidance,
+the constants used are likely to still change a bit.
 
-  Squoze-10 can be used for memory efficient interning of strings, and in
-  parsers for switching on tokens, for minimal and embedded language interpreters
-  it allows treating a limited set of strings the same as numbers, allowing
-  simpler implementation and memory handling.
+Squoze-10 can be used for memory efficient interning of strings, and in
+parsers for switching on tokens, for minimal and embedded language interpreters
+it allows treating a limited set of strings the same as numbers, allowing
+simpler implementation and memory handling.
 
-  The commandline tool shown above is being used for evaluating and developing
-  squoze-5, it is part of the source files in the same folder as this README
-  and has the following documentation of its commandline options:
+The commandline tool shown above is being used for evaluating and developing
+squoze-5, it is part of the source files in the same folder as this README
+and has the following documentation of its commandline options:
 
-  Usage: squoze5 [options] <string|encoded> [string|encoded]
+Usage: squoze5 [options] <string|encoded> [string|encoded]
 
-  where options are:
-    --squoze32 -32  32 bit content adressed string hash
-    --squoze52 -52 52 bit content adressed string hash
-    --squoze62 -62 62 bit content adressed string hash
-    --squoze5 -v   squoze-5 encoding, with [0-9][A-V] alphabet
-    --utf-5 -5     UTF-5 encoding, with [0-9][A-V] alphabet
+where options are:
+  --squoze32 -32  32 bit content adressed string hash
+  --squoze52 -52 52 bit content adressed string hash
+  --squoze62 -62 62 bit content adressed string hash
+  --squoze5 -v   squoze-5 encoding, with [0-9][A-V] alphabet
+  --utf-5 -5     UTF-5 encoding, with [0-9][A-V] alphabet
 
-    --encode -e    force encoding, the default is autodetect
-    --base64 -b    use base64 as encoding for UTF-5/UTF-V
+  --encode -e    force encoding, the default is autodetect
+  --base64 -b    use base64 as encoding for UTF-5/UTF-V
 
 Multiple short options can be set together -e6 forces encoding in SQUOZE-6
 Without parameters it is as if --squoze10 has been passed as arguments.
@@ -160,19 +159,19 @@ Without parameters it is as if --squoze10 has been passed as arguments.
 
 3. Sample squoze-5 encodings and information density comparison.
 
-  The following are following are a sample sentence in different languages and
-  scripts, The first line shows the unicode input string, and the four following
-  lines are pairs for comparing informtion packing performance against UTF-8 and
-  UTF-5 without the squoze-5 direct encoding extension.
+The following are following are a sample sentence in different languages and
+scripts, The first line shows the unicode input string, and the four following
+lines are pairs for comparing informtion packing performance against UTF-8 and
+UTF-5 without the squoze-5 direct encoding extension.
 
-  Interstingly the variance in lengths in squoze-5 encoding is smaller than both
-  UTF-8 and UTF-5, with small self-contained alphabeths with high codepoints
-  benefiting the most - this adaptive scheme gives the same benefit ASCII has
-  in UTF-8 to all smaller adjabs/alphabets.
-  
-  The chinese sentence does not have small enough deltas between neighbors
-  for a change to direct necoding to be useful thus the squoze-5 encoding is
-  equivalent to the UTF-5 encoding, the entropy
+Interstingly the variance in lengths in squoze-5 encoding is smaller than both
+UTF-8 and UTF-5, with small self-contained alphabeths with high codepoints
+benefiting the most - this adaptive scheme gives the same benefit ASCII has
+in UTF-8 to all smaller adjabs/alphabets.
+
+The chinese sentence does not have small enough deltas between neighbors
+for a change to direct necoding to be useful thus the squoze-5 encoding is
+equivalent to the UTF-5 encoding, the entropy
 
 
           UTF-8: ខ្ញុំអាចញុំកញ្ចក់បាន ដោយគ្មានបញ្ហារ
