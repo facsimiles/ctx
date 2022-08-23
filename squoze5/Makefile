@@ -1,14 +1,14 @@
-all: squoze5 squoze5-test
+all: squoze
 clean:
-	rm -f squoze5 squoze5-test
-squoze5: squoze5.c squoze5.h Makefile
-	gcc -Wall squoze5.c -o squoze5 -O2 -g
-squoze5-test: squoze5-test.c squoze5.h Makefile
-	gcc -Wall squoze5-test.c -O2 -o squoze5-test
-report.txt: squoze5 gen-report.sh
+	rm -f squoze squoze-test
+squoze: squoze.c squoze.h Makefile
+	gcc -Wall squoze.c -o squoze -O2 -g
+squoze-test: squoze-test.c squoze.h Makefile
+	gcc -Wall squoze-test.c -O2 -o squoze-test
+report.txt: squoze gen-report.sh
 	./gen-report.sh > report.txt
-test: squoze5-test report.txt
-	./squoze5-test
+test: report.txt squoze-test
+	./squoze-test
 	sh -c 'diff -u reference.txt report.txt'
 	wc *.txt
 update-reference: report.txt

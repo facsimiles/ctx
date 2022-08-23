@@ -7,12 +7,12 @@
 #include <string.h>
 #include <assert.h>
 
-uint32_t squoze6 (const char *utf8);
-uint64_t squoze10 (const char *utf8);
-uint64_t squoze12 (const char *utf8);
-const char *squoze6_decode (uint32_t hash);
-const char *squoze10_decode (uint64_t hash);
-const char *squoze12_decode (uint64_t hash);
+uint32_t squoze32 (const char *utf8);
+uint64_t squoze52 (const char *utf8);
+uint64_t squoze62 (const char *utf8);
+const char *squoze32_decode (uint32_t hash);
+const char *squoze52_decode (uint64_t hash);
+const char *squoze62_decode (uint64_t hash);
 
 //#define SQUOZE_NO_INTERNING  // this disables the interning - providing only a hash (and decode for non-overflowed hashes)
 
@@ -108,6 +108,7 @@ static int squoze_compute_cost_utf5 (int offset, int val, int next_val)
   if (next_val)
   {
     int no_change_cost = squoze_utf5_length (next_val);
+    // XXX remove this dead code
 #if 0 // not hit in test-corpus, it is easier to specify and
       // port the hash consistently without it
     offset = squoze_new_offset (val);
@@ -451,17 +452,17 @@ static inline uint64_t squoze (int squoze_dim, const char *utf8)
   return hash;
 }
 
-uint32_t squoze6 (const char *utf8)
+uint32_t squoze32 (const char *utf8)
 {
   return squoze (6, utf8);
 }
 
-uint64_t squoze10 (const char *utf8)
+uint64_t squoze52 (const char *utf8)
 {
   return squoze (10, utf8);
 }
 
-uint64_t squoze12 (const char *utf8)
+uint64_t squoze62 (const char *utf8)
 {
   return squoze (12, utf8);
 }
@@ -681,17 +682,17 @@ static const char *squoze_decode (int squoze_dim, uint64_t hash)
 #endif
 }
 
-const char *squoze6_decode (uint32_t hash)
+const char *squoze32_decode (uint32_t hash)
 {
   return squoze_decode (6, hash);
 }
 
-const char *squoze10_decode (uint64_t hash)
+const char *squoze52_decode (uint64_t hash)
 {
   return squoze_decode (10, hash);
 }
 
-const char *squoze12_decode (uint64_t hash)
+const char *squoze62_decode (uint64_t hash)
 {
   return squoze_decode (12, hash);
 }

@@ -4,13 +4,13 @@
 dostr()
 {
   echo    "          UTF-8: $1"
-  echo -n '      squoze-32: ' ; ./squoze5 -e -32 "$1"
-  echo -n '      squoze-52: ' ; ./squoze5 -e -52 "$1"
-  echo -n '      squoze-52: ' ; ./squoze5 -e -62 "$1"
-  echo -n 'squoze-5 base64: ' ; ./squoze5 -v -e --base64 "$1"
+  echo -n '      squoze-32: ' ; ./squoze -e -32 "$1"
+  echo -n '      squoze-52: ' ; ./squoze -e -52 "$1"
+  echo -n '      squoze-62: ' ; ./squoze -e -62 "$1"
+  echo -n 'squoze-5 base64: ' ; ./squoze -v -e --base64 "$1"
   echo -n '   UTF-8 base64: ' ; echo -n "$1" | base64 --wrap=0 ; echo
-  echo -n '       squoze-5: ' ; ./squoze5 -ev "$1"
-  echo -n '          UTF-5: ' ; ./squoze5 -e --utf5 "$1"
+  echo -n '    squoze-5bit: ' ; ./squoze -ev "$1"
+  echo -n '          UTF-5: ' ; ./squoze -e --utf5 "$1"
   echo ""
 }
 

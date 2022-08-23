@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <libgen.h>
-#include "squoze5.h"
+#include "squoze.h"
 
 static int squoze_is_number (const char *str)
 {
@@ -207,16 +207,16 @@ int main (int argc, char **argv)
                 switch (dim)
                 {
                   case 6:
-                    val = squoze6 (input_str);
+                    val = squoze32 (input_str);
                     break;
                   case 10:
-                    val = squoze10 (input_str);
+                    val = squoze52 (input_str);
                     break;
                   case 12:
-                    val = squoze12 (input_str);
+                    val = squoze62 (input_str);
                     break;
                   default:
-                    val = squoze10 (input_str);
+                    val = squoze52 (input_str);
                     break;
                 }
                 if (!strcmp (escaped, input_str))
@@ -335,9 +335,9 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze6_decode (atol(argv[i])));
+          printf ("%s", squoze32_decode (atol(argv[i])));
         else
-          printf ("%u", squoze6 (argv[i]));
+          printf ("%u", squoze32 (argv[i]));
       }
       break;
     case 10:
@@ -345,9 +345,9 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze10_decode (atol(argv[i])));
+          printf ("%s", squoze52_decode (atol(argv[i])));
         else
-          printf ("%lu", squoze10 (argv[i]));
+          printf ("%lu", squoze52 (argv[i]));
       }
       break;
     case 12:
@@ -355,9 +355,9 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze12_decode (atol(argv[i])));
+          printf ("%s", squoze62_decode (atol(argv[i])));
         else
-          printf ("%lu", squoze12 (argv[i]));
+          printf ("%lu", squoze62 (argv[i]));
       }
       break;
   }

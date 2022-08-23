@@ -4,9 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-//#define CTX_IMPLEMENTATION
-//#include "ctx.h"
-#include "squoze5.h"
+#include "squoze.h"
 
 const char *strings[]={"0",
   "\n",
@@ -175,17 +173,17 @@ int main (int argc, char **argv)
     switch (dim)
     {
        case 6:
-        hash = squoze6 (input);
-        decoded = squoze6_decode (hash);
+        hash = squoze32 (input);
+        decoded = squoze32_decode (hash);
         break;
        case 12:
-        hash = squoze12 (input);
-        decoded = squoze12_decode (hash);
+        hash = squoze62 (input);
+        decoded = squoze62_decode (hash);
         break;
        case 10:
        default:
-        hash = squoze10 (input);
-        decoded = squoze10_decode (hash);
+        hash = squoze52 (input);
+        decoded = squoze52_decode (hash);
         break;
     }
     if (decoded && strcmp (input, decoded))
