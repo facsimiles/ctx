@@ -84,9 +84,13 @@ typedef struct _CtxEntry CtxEntry;
  * @ctx: a ctx context.
  * @count: return location for length of drawlist
  *
+ * The returned pointer is only valid as long as no further drawing has been
+ * done.
+ *
  * Returns a read only pointer to the first entry of the contexts drawlist.
  */
 const CtxEntry *ctx_get_drawlist (Ctx *ctx, int *count);
+
 
 /**
  * ctx_new_for_drawlist:

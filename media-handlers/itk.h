@@ -295,6 +295,7 @@ struct _ITK{
   Ctx            *absolute_ctx;
   float            rem;
   float            ddpx;
+  CtxList         *absolutes;
   CtxList         *stylesheet;
   void            *css_parse_state;
   CtxString       *style;

@@ -347,6 +347,19 @@ typedef struct MrgState {
   float        line_max_height;
 } MrgState;;
 
+
+typedef struct _MrgAbsolute MrgAbsolute;
+
+struct _MrgAbsolute {
+  int       zindex;
+  float     top;
+  float     left;
+  float     relative_x;
+  float     relative_y;
+  CtxEntry *entries;
+  int       count; 
+};
+
 struct _Mrg {
   Ctx             *ctx;
   Ctx             *document_ctx;
@@ -355,6 +368,7 @@ struct _Mrg {
 
   float            rem;
   float            ddpx;
+  CtxList         *absolutes;
   CtxList         *stylesheet;
   void            *css_parse_state;
   CtxString       *style;
@@ -3619,7 +3633,6 @@ void mrg_start (Mrg *mrg, const char *style_id, void *id_ptr)
 {
   mrg_start_with_style (mrg, style_id, id_ptr, NULL);
 }
-
 
 // XXX can we return the geometry here?
 void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
