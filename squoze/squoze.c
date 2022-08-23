@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <libgen.h>
 #include "squoze.h"
 
 static int squoze_is_number (const char *str)
@@ -39,13 +38,13 @@ int usage (const char *base)
 "Usage: %s [options] <string|encoded> [string|encoded]\n", base);
   fprintf (stderr,
 "\nwhere options are:\n"
-"  --squoze32 -32  32 bit content adressed string hash\n"
-"  --squoze52 -52 52 bit content adressed string hash\n"
+"  --squoze32 -32 32 bit content adressed string hash\n"
+"  --squoze52 -52 52 bit content adressed string hash (default)\n"
 "  --squoze62 -62 62 bit content adressed string hash\n"
 "  --squoze5 -v   squoze-5 encoding, with [0-9][A-V] alphabet\n"
 "  --utf-5 -5     UTF-5 encoding, with [0-9][A-V] alphabet\n"
 "\n"
-"  --encode -e    force encoding, the default is autodetect\n"
+"  --encode -e    force encoding, the default is autodetect, this allows encoding integers\n"
 "  --base64 -b    use base64 as encoding for UTF-5/UTF-V\n"
 "\n"
 "Multiple short options can be set together -e32 forces encoding in SQUOZE32\n"
@@ -66,15 +65,9 @@ void print_sep (void)
   count ++;
 }
 
-static int
-squoze5_file_get_contents (const char     *path,
-                           unsigned char **contents,
-                           long           *length);
-
-
 int main (int argc, char **argv)
 {
-  int dim = 10;
+  int dim = 52;
   int use_base64 = 0;
   int arg = 0;
   int force_encode = 0;
@@ -84,7 +77,6 @@ int main (int argc, char **argv)
   {
      return usage (base);
   }
-  const char *input_path = NULL;
 
   for (; argv[arg]; arg++)
   {
@@ -92,24 +84,19 @@ int main (int argc, char **argv)
        break;
      if (argv[arg][1] == '-')
      {
-     if (!strcmp (argv[arg], "--input")) { input_path = argv[arg+1];
-             
-             input_path = realpath (input_path, NULL);
-             arg++; }
-
      if (!strcmp (argv[arg], "--help")) return usage (base);
-     if (!strcmp (argv[arg], "--squoze32")) dim = 6;
-     if (!strcmp (argv[arg], "--squoze52")) dim = 10;
-     if (!strcmp (argv[arg], "--squoze62")) dim = 12;
-     if (!strcmp (argv[arg], "--squoze-52")) dim = 10;
-     if (!strcmp (argv[arg], "--squoze-62")) dim = 12;
-     if (!strcmp (argv[arg], "--squoze-32")) dim = 6;
-     if (!strcmp (argv[arg], "--utf-5")) dim = 5;
-     if (!strcmp (argv[arg], "--utf5")) dim = 5;
-     if (!strcmp (argv[arg], "--squoze5")) dim = 4;
-     if (!strcmp (argv[arg], "--squoze-5")) dim = 4;
-     if (!strcmp (argv[arg], "--encode")) force_encode = 1;
-     if (!strcmp (argv[arg], "--base64")) use_base64 = 1;
+     if (!strcmp (argv[arg], "--squoze32"))  dim = 32;
+     if (!strcmp (argv[arg], "--squoze52"))  dim = 52;
+     if (!strcmp (argv[arg], "--squoze62"))  dim = 62;
+     if (!strcmp (argv[arg], "--squoze-52")) dim = 32;
+     if (!strcmp (argv[arg], "--squoze-62")) dim = 52;
+     if (!strcmp (argv[arg], "--squoze-32")) dim = 62;
+     if (!strcmp (argv[arg], "--utf-5"))     dim = 5;
+     if (!strcmp (argv[arg], "--utf5"))      dim = 5;
+     if (!strcmp (argv[arg], "--squoze5"))   dim = 4;
+     if (!strcmp (argv[arg], "--squoze-5"))  dim = 4;
+     if (!strcmp (argv[arg], "--encode"))    force_encode = 1;
+     if (!strcmp (argv[arg], "--base64"))    use_base64 = 1;
      }
      else
      {
@@ -121,10 +108,10 @@ int main (int argc, char **argv)
            dim = atoi (&argv[arg][i]);
            switch (dim)
            {
-             case 32: dim = 6; break;
+             case 32: dim = 32; break;
              default:
-             case 52: dim = 10; break;
-             case 62: dim = 12; break;
+             case 52: dim = 52; break;
+             case 62: dim = 62; break;
              case 5: dim = 5; break;
              case 4: dim = 4; break;
            }
@@ -145,102 +132,6 @@ int main (int argc, char **argv)
        }
      }
   }
-
-
-  if (input_path)
-  {
-    uint8_t  line[4095];
-    int      len = 0;
-    uint8_t *contents = NULL;
-    long     length = 0;
-    squoze5_file_get_contents (input_path, &contents, &length);
-    if (length)
-    {
-      for (int i = 0; i <= length; i ++)
-      {
-        uint8_t val = 0;
-        if (i < length) val = contents[i];
-
-        switch (val)
-        {
-          case 0:
-          case '\n':
-            line[len] = 0;
-            if (!strstr ((char*)line, "define TOKENHASH")
-                    &&
-               (strstr ((char*)line, "TOKENHASH(") &&
-                strstr ((char*)line, "define")))
-            {
-              const char *input_str = NULL;
-              
-              if (strstr ((char*)line, "str="))
-              {
-                input_str = strdup ((strstr ((char*)line, "str=")+4));
-              } else
-              {
-                if (strchr ((char*)line, '_'))
-                {
-                  input_str = strdup (strchr ((char*)line, '_') + 1);
-                  if (strchr ((char*)input_str, ' '))
-                    strchr ((char*)input_str, ' ')[0] = 0;
-                }
-                else
-                  exit(-3);
-              }
-
-              char *escaped = strdup (input_str);
-
-              for (int i = 0; escaped[i]; i++)
-              {
-                switch (escaped[i])
-                {
-                  case '-':
-                  case ' ':
-                    escaped[i] = '_';
-                    break;
-                  default:
-                    break;
-                }
-              }
-              {
-                uint64_t val = 0;
-                switch (dim)
-                {
-                  case 6:
-                    val = squoze32 (input_str);
-                    break;
-                  case 10:
-                    val = squoze52 (input_str);
-                    break;
-                  case 12:
-                    val = squoze62 (input_str);
-                    break;
-                  default:
-                    val = squoze52 (input_str);
-                    break;
-                }
-                if (!strcmp (escaped, input_str))
-                  printf ("#define CTX_%s TOKENHASH(%lu)\n", escaped, val);
-                else
-                  printf ("#define CTX_%s TOKENHASH(%lu)  // str=%s\n", escaped, val,
-                                  input_str);
-              }
-              free (escaped);
-            }
-            else
-            printf ("%s\n", line);
-            len = 0;
-            break;
-          default:
-            line[len++] = val;
-            break;
-        }
-      }
-    }
-    return 0;
-  }
-
-
 
   switch (dim)
   {
@@ -330,7 +221,7 @@ int main (int argc, char **argv)
         }
       }
       break;
-    case 6:
+    case 32:
       for (int i = arg; argv[i]; i++)
       {
         print_sep ();
@@ -340,7 +231,7 @@ int main (int argc, char **argv)
           printf ("%u", squoze32 (argv[i]));
       }
       break;
-    case 10:
+    case 52:
       for (int i = arg; argv[i]; i++)
       {
         print_sep ();
@@ -350,7 +241,7 @@ int main (int argc, char **argv)
           printf ("%lu", squoze52 (argv[i]));
       }
       break;
-    case 12:
+    case 62:
       for (int i = arg; argv[i]; i++)
       {
         print_sep ();
@@ -476,42 +367,3 @@ squoze_base642bin (const char    *ascii,
     *length= outputno;
   return outputno;
 }
-
-
-
-static int
-squoze5_file_get_contents (const char     *path,
-                           unsigned char **contents,
-                           long           *length)
-{
-  FILE *file;
-  long  size;
-  long  remaining;
-  char *buffer;
-  file = fopen (path, "rb");
-  if (!file)
-    { return -1; }
-  fseek (file, 0, SEEK_END);
-  size = remaining = ftell (file);
-  if (length)
-    { *length =size; }
-  rewind (file);
-  buffer = malloc (size + 8);
-  if (!buffer)
-    {
-      fclose (file);
-      return -1;
-    }
-  remaining -= fread (buffer, 1, remaining, file);
-  if (remaining)
-    {
-      fclose (file);
-      free (buffer);
-      return -1;
-    }
-  fclose (file);
-  *contents = (void *) buffer;
-  buffer[size] = 0;
-  return 0;
-}
-
