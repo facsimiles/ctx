@@ -549,6 +549,14 @@ const CtxEntry *ctx_get_drawlist (Ctx *ctx, int *count)
   return ctx->drawlist.entries;
 }
 
+void ctx_drawlist_force_count (Ctx *ctx, int count)
+{
+   if (ctx->drawlist.count < count)
+     return;
+   ctx->drawlist.count = count;
+}
+
+
 int
 ctx_add_data (Ctx *ctx, void *data, int length)
 {

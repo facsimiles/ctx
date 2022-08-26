@@ -91,6 +91,15 @@ typedef struct _CtxEntry CtxEntry;
  */
 const CtxEntry *ctx_get_drawlist (Ctx *ctx, int *count);
 
+/**
+ * ctx_drawlist_force_count:
+ * @ctx: a ctx context
+ * @count: new count to set, must be lower than the current count.
+ *
+ * Shortens the length of the internal drawlist, dropping the last
+ * items.
+ */
+void ctx_drawlist_force_count (Ctx *ctx, int count);
 
 /**
  * ctx_new_for_drawlist:
