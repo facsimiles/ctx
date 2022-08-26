@@ -308,6 +308,7 @@ struct _CtxStyle {
   CtxOverflow         overflow:2;
   CtxDisplay          display:5;
   void               *id_ptr;
+  int                 z_index;
 };
 
 typedef struct _CtxStyle CtxStyle;
@@ -342,11 +343,12 @@ typedef struct MrgState {
 
   int          children;
   int          overflowed:1;
-  unsigned int        got_text:1;
+  unsigned int got_text:1;
   int          span_bg_started:1;
   float        line_max_height;
-} MrgState;;
 
+  int          drawlist_start_offset;
+} MrgState;
 
 typedef struct _MrgAbsolute MrgAbsolute;
 
@@ -380,8 +382,8 @@ struct _Mrg {
 
   float            relative_x;
   float            relative_y;
-  CtxIntRectangle     dirty;
-  CtxIntRectangle     dirty_during_paint; // queued during painting
+  CtxIntRectangle  dirty;
+  CtxIntRectangle  dirty_during_paint; // queued during painting
   MrgState        *state;
   MrgState         states[CTX_MAX_STATE_DEPTH];
   int              state_no;
@@ -2018,7 +2020,6 @@ void itk_css_default (Mrg *mrg)
 "unhandled{color:cyan;}"
 "binding:key{background-color:white;color:black;}"
 "binding:label{color:cyan;}"
-      
       ,NULL, CTX_STYLE_INTERNAL, &error);
 
   if (error)
@@ -3638,8 +3639,6 @@ void mrg_start (Mrg *mrg, const char *style_id, void *id_ptr)
 void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
 {
   _mrg_layout_post (mrg, ret_rect);
-  if (mrg->in_paint)
-    ctx_restore (mrg_ctx (mrg));
   if (mrg->state_no == 0)
   {
     //fprintf (stderr, "time to resolve\n");
@@ -5818,6 +5817,8 @@ void _mrg_layout_pre (Mrg *mrg)
       }
       break;
     case CTX_POSITION_ABSOLUTE:
+      ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
+      mrg->state->drawlist_start_offset--;
       {
         mrg->state->floats = 0;
         mrg_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
@@ -5828,6 +5829,8 @@ void _mrg_layout_pre (Mrg *mrg)
       }
       break;
     case CTX_POSITION_FIXED:
+      ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
+      mrg->state->drawlist_start_offset--;
       {
         int width = PROP(width);
 
@@ -6102,13 +6105,6 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     mrg->x += paint_span_bg_final (mrg, mrg->x, mrg->y, 0);
   }
 
-  /* restore relative shift */
-  if (style->position == CTX_POSITION_RELATIVE)
-  {
-    ctx_translate (mrg_ctx (mrg), -PROP(left), -PROP(top));
-    mrg->relative_x -= PROP(left);
-    mrg->relative_y -= PROP(top);
-  }
 
   /* restore insert position when having been out-of-context */
   if (style->float_ ||
@@ -6132,6 +6128,44 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     free (mrg->state->style_id);
     mrg->state->style_id = NULL;
   }
+  /* restore relative shift */
+  if (style->position == CTX_POSITION_RELATIVE)
+  {
+    //ctx_translate (mrg_ctx (mrg), -PROP(left), -PROP(top)); // not really
+    //                                                        // needed we'll
+    //                                                        // restore..
+    mrg->relative_x -= PROP(left);
+    mrg->relative_y -= PROP(top);
+  }
+
+  if (mrg->in_paint)
+    ctx_restore (mrg_ctx (mrg));
+
+  if (style->position == CTX_POSITION_ABSOLUTE ||
+      style->position == CTX_POSITION_FIXED)
+  {
+    int start_offset = mrg->state->drawlist_start_offset;
+    int end_offset;
+    const CtxEntry *entries = ctx_get_drawlist (mrg->ctx, &end_offset);
+    int count = end_offset - start_offset + 1;
+
+    //fprintf (stderr, "%i %i %i\n", start_offset, end_offset, count);
+    MrgAbsolute *absolute = calloc (sizeof (MrgAbsolute) + count * 9, 1);
+    absolute->zindex = style->z_index;
+    absolute->top    = PROP(top);
+    absolute->left   = PROP(left);
+    absolute->relative_x = mrg->relative_x;
+    absolute->relative_y = mrg->relative_y;
+    absolute->entries    = (CtxEntry*) (absolute + 1);
+    absolute->count      = count;
+    memcpy (absolute->entries, entries + start_offset, count * 9);
+
+    ctx_list_prepend (&mrg->absolutes, absolute);
+
+    ctx_drawlist_force_count (mrg->ctx, mrg->state->drawlist_start_offset);
+  }
+
+
   mrg->state_no--;
   if (mrg->state_no < 0)
   {
@@ -6144,6 +6178,8 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
   if (ret_rect && !returned_dim)
     fprintf (stderr, "didnt return dim!\n");
+
+
 }
 
 enum {
