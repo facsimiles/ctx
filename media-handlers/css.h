@@ -388,7 +388,6 @@ struct _Mrg {
   MrgState        *state;
   MrgState         states[CTX_MAX_STATE_DEPTH];
   int              state_no;
-  int              in_paint;
   void            *backend_data;
   int              do_clip;
   int (*mrg_get_contents) (const char  *referer,
@@ -3596,8 +3595,7 @@ void mrg_start_with_style (Mrg        *mrg,
 
   mrg->state->style.id_ptr = id_ptr;
 
-  if (mrg->in_paint)
-    ctx_save (mrg_ctx (mrg));
+  ctx_save (mrg_ctx (mrg));
 
   _ctx_initial_style (mrg);
 
@@ -4330,7 +4328,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
   }
   else 
 #endif
-  if (mrg->in_paint)
+  //if (mrg->in_paint)
   {
     ctx_font_size (cr, style->font_size);
 
@@ -4394,11 +4392,13 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
       }
     //ctx_move_to (cr, new_x, y);
   }
+#if 0
   else
   {
     ctx_font_size (cr, style->font_size);
     new_x = old_x + ctx_text_width (cr, string);
   }
+#endif
 
   if (mrg->text_listen_active)
   {
@@ -6162,8 +6162,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     mrg->relative_y -= PROP(top);
   }
 
-  if (mrg->in_paint)
-    ctx_restore (mrg_ctx (mrg));
+  ctx_restore (mrg_ctx (mrg));
 
   if (style->position == CTX_POSITION_ABSOLUTE ||
       style->position == CTX_POSITION_FIXED)
@@ -7861,7 +7860,6 @@ mrg_get_contents_default (const char  *referer,
 void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height)
 {
   //memset (mrg, 0, sizeof (Mrg));
-  mrg->in_paint = 1;
   mrg->do_clip = 1;
   mrg->ctx = mrg->document_ctx = ctx;
   _ctx_events_init (mrg->ctx);
@@ -7920,7 +7918,6 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
   Mrg *mrg;
 
   mrg = calloc (sizeof (Mrg), 1);
-  mrg->in_paint = 1;
   mrg->do_clip = 1;
   _mrg_init (mrg, ctx, width, height);
   ctx_style_defaults (mrg);

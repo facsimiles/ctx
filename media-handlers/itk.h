@@ -310,7 +310,6 @@ struct _ITK{
   MrgState        *state;
   MrgState         states[CTX_MAX_STATE_DEPTH];
   int              state_no;
-  int              in_paint;
   void            *backend_data;
   int              do_clip;
   int (*mrg_get_contents) (const char  *referer,
