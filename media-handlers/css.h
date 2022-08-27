@@ -428,7 +428,6 @@ struct _Mrg {
   int        text_listen_count;
   int        text_listen_active;
 
-  int        printing;
 };
 
 static Ctx *mrg_ctx (Mrg *mrg)
@@ -7865,7 +7864,14 @@ void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height)
   _ctx_events_init (mrg->ctx);
   mrg->state_no = 0;
   mrg->state = &mrg->states[mrg->state_no];
+
   mrg->state->floats = 0;
+#if 0
+  mrg->state->children = 0;
+  mrg->state->overflowed = 0;
+  mrg->state->span_bg_started = 0;
+#endif
+  //memset (mrg->state, 0, sizeof (MrgState));
   //memset (mrg->states, 0, sizeof (mrg->states));
   /* XXX: is there a better place to set the default text color to black? */
 #if 0
@@ -7889,7 +7895,6 @@ void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height)
   mrg_set_size (mrg, width, height);
   _mrg_text_init (mrg);
 
-  mrg->state = &mrg->states[0];
   mrg->style = ctx_string_new ("");
 
   mrg_set_mrg_get_contents (mrg, mrg_get_contents_default, NULL);

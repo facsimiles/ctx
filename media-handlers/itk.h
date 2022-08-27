@@ -349,19 +349,18 @@ struct _ITK{
   int        text_listen_count;
   int        text_listen_active;
 
-  int        got_text;
-  int        printing;
 
   int (*ui_fun)(ITK *itk, void *data);
   void *ui_data;
 
+  // the following should be removed in favor
+  // of the css|mrg data?
   float edge_left;
   float edge_top;
   float edge_right;
   float edge_bottom;
   float width;
   float height;
-
 
   /// ITK ancestors.. for css
   float stored_x; // for sameline()
