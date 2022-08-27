@@ -353,7 +353,8 @@ typedef struct MrgState {
 typedef struct _MrgAbsolute MrgAbsolute;
 
 struct _MrgAbsolute {
-  int       zindex;
+  int       z_index;
+  int       fixed;
   float     top;
   float     left;
   float     relative_x;
@@ -2975,6 +2976,9 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       SET_PROP(opacity, _ctx_parse_float (value, NULL));
     }
     break;
+    case CTX_z_index:
+      s->z_index = _ctx_parse_float (value, NULL);
+    break;
     case CTX_print_symbols:
     switch (val_hash)
     {
@@ -3635,13 +3639,33 @@ void mrg_start (Mrg *mrg, const char *style_id, void *id_ptr)
   mrg_start_with_style (mrg, style_id, id_ptr, NULL);
 }
 
+static int compare_zindex (const void *a, const void *b, void *d)
+{
+  const MrgAbsolute *ma = a;
+  const MrgAbsolute *mb = b;
+  return mb->z_index- ma->z_index;
+}
+
 // XXX can we return the geometry here?
 void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
 {
   _mrg_layout_post (mrg, ret_rect);
   if (mrg->state_no == 0)
   {
-    //fprintf (stderr, "time to resolve\n");
+    ctx_list_reverse (&mrg->absolutes);
+    ctx_list_sort (&mrg->absolutes, compare_zindex, NULL);
+
+    /* TODO: handle negative z-index */
+    /* TODO: also copy/paste registered interaction points */
+    while (mrg->absolutes)
+    {
+      MrgAbsolute *absolute = mrg->absolutes->data;
+      ctx_save (mrg->ctx);
+      ctx_translate (mrg->ctx, absolute->relative_x, absolute->relative_y);
+      ctx_append_drawlist (mrg->ctx, absolute->entries+1, (absolute->count-1)*9);
+      ctx_list_remove (&mrg->absolutes, absolute);
+      free (absolute);
+    }
   }
 }
 
@@ -6149,11 +6173,12 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     const CtxEntry *entries = ctx_get_drawlist (mrg->ctx, &end_offset);
     int count = end_offset - start_offset + 1;
 
-    //fprintf (stderr, "%i %i %i\n", start_offset, end_offset, count);
     MrgAbsolute *absolute = calloc (sizeof (MrgAbsolute) + count * 9, 1);
-    absolute->zindex = style->z_index;
+    absolute->z_index = style->z_index;
     absolute->top    = PROP(top);
     absolute->left   = PROP(left);
+    if (style->position == CTX_POSITION_FIXED)
+      absolute->fixed = 1;
     absolute->relative_x = mrg->relative_x;
     absolute->relative_y = mrg->relative_y;
     absolute->entries    = (CtxEntry*) (absolute + 1);

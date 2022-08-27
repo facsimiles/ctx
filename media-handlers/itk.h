@@ -2878,6 +2878,7 @@ itk_iteration (double time, void *data)
       if (_itk_key_bindings_active)
         itk_key_bindings (itk);
       ctx_add_key_binding (itk->ctx, "control-q", NULL, "Quit", itk_key_quit, NULL);
+      if (itk->ui_fun)
       ret_val = itk->ui_fun (itk, itk->ui_data);
 
       itk_done (itk);
