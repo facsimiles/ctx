@@ -1554,6 +1554,7 @@ const char * html_css =
 "a{color:blue;text-decoration: underline;}\n"
 "a:hover{background:black;color:white;text-decoration:underline; }\n"
 "head{display:none;}\n"
+"title{display:none;}\n"
 //"hr{border:1px inset black;margin-bottom: 0.5em;margin-top:0.5em;}\n"
 "hr{font-size:1px;border-bottom: 1px solid red;}\n"  /* hack that works in one way, but shrinks top margin too much */
 
