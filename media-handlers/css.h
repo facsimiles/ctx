@@ -2298,7 +2298,6 @@ void ctx_css_add (Mrg *mrg, const char *css)
   ctx_string_append_str (mrg->style, css);
 }
 
-
 void itk_stylesheet_clear (Mrg *mrg);
 void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
                          int priority,
@@ -2306,7 +2305,6 @@ void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
 
 void ctx_css_set (Mrg *mrg, const char *css);
 void ctx_css_add (Mrg *mrg, const char *css);
-
 
 static inline float mrg_parse_px_x (Mrg *mrg, const char *str, char **endptr)
 {
@@ -3034,7 +3032,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_float:
       switch (val_hash)
       {
-        case CTX_left:  s->float_ = CTX_FLOAT_LEFT; break;
+        case CTX_left:  s->float_ = CTX_FLOAT_LEFT;  break;
         case CTX_right: s->float_ = CTX_FLOAT_RIGHT; break;
         default:        s->float_ = CTX_FLOAT_NONE;
       }
@@ -3043,25 +3041,25 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       switch(val_hash)
       {
         case CTX_visible: s->overflow = CTX_OVERFLOW_VISIBLE; break;
-        case CTX_hidden:  s->overflow = CTX_OVERFLOW_HIDDEN; break;
-        case CTX_scroll:  s->overflow = CTX_OVERFLOW_SCROLL; break;
-        case CTX_auto:    s->overflow = CTX_OVERFLOW_AUTO; break;
+        case CTX_hidden:  s->overflow = CTX_OVERFLOW_HIDDEN;  break;
+        case CTX_scroll:  s->overflow = CTX_OVERFLOW_SCROLL;  break;
+        case CTX_auto:    s->overflow = CTX_OVERFLOW_AUTO;    break;
         default:          s->overflow = CTX_OVERFLOW_VISIBLE; break;
       }
       break;
     case CTX_clear:
       switch(val_hash)
       {
-        case CTX_left:  s->clear = CTX_CLEAR_LEFT; break;
+        case CTX_left:  s->clear = CTX_CLEAR_LEFT;  break;
         case CTX_right: s->clear = CTX_CLEAR_RIGHT; break;
-        case CTX_both:  s->clear = CTX_CLEAR_BOTH; break;
-        default:        s->clear = CTX_CLEAR_NONE; break;
+        case CTX_both:  s->clear = CTX_CLEAR_BOTH;  break;
+        default:        s->clear = CTX_CLEAR_NONE;  break;
       }
       break;
     case CTX_font_style:
       switch(val_hash)
       {
-        case CTX_italic:  s->font_style = CTX_FONT_STYLE_ITALIC; break;
+        case CTX_italic:  s->font_style = CTX_FONT_STYLE_ITALIC;  break;
         case CTX_oblique: s->font_style = CTX_FONT_STYLE_OBLIQUE; break;
         default:          s->font_style = CTX_FONT_STYLE_NORMAL;
   #if 0 // XXX
@@ -3086,7 +3084,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       { 
         default:
         case  CTX_evenodd: s->fill_rule = CTX_FILL_RULE_EVEN_ODD; break;
-        case  CTX_nonzero: s->fill_rule = CTX_FILL_RULE_WINDING; break;
+        case  CTX_nonzero: s->fill_rule = CTX_FILL_RULE_WINDING;  break;
       }
       if (s->fill_rule == CTX_FILL_RULE_EVEN_ODD)
         ctx_fill_rule (mrg_ctx (mrg), CTX_FILL_RULE_EVEN_ODD);
@@ -3106,8 +3104,8 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_stroke_linecap:
       switch (val_hash)
       { 
-        case  CTX_butt:   s->stroke_linecap = CTX_CAP_NONE; break;
-        case  CTX_round:  s->stroke_linecap = CTX_CAP_ROUND;break;
+        case  CTX_butt:   s->stroke_linecap = CTX_CAP_NONE;   break;
+        case  CTX_round:  s->stroke_linecap = CTX_CAP_ROUND;  break;
         case  CTX_square: s->stroke_linecap = CTX_CAP_SQUARE; break;
         default:          s->stroke_linecap = CTX_CAP_NONE;
       }
@@ -3117,9 +3115,9 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       switch (val_hash)
       {
         case CTX_middle: s->vertical_align = CTX_VERTICAL_ALIGN_MIDDLE; break;
-        case CTX_top:    s->vertical_align = CTX_VERTICAL_ALIGN_TOP; break;
-        case CTX_sub:    s->vertical_align = CTX_VERTICAL_ALIGN_SUB;break;
-        case CTX_super:  s->vertical_align = CTX_VERTICAL_ALIGN_SUPER;break;
+        case CTX_top:    s->vertical_align = CTX_VERTICAL_ALIGN_TOP;    break;
+        case CTX_sub:    s->vertical_align = CTX_VERTICAL_ALIGN_SUB;    break;
+        case CTX_super:  s->vertical_align = CTX_VERTICAL_ALIGN_SUPER;  break;
         case CTX_bottom: s->vertical_align = CTX_VERTICAL_ALIGN_BOTTOM; break;
         default:         s->vertical_align = CTX_VERTICAL_ALIGN_BASELINE;
       }
@@ -3128,48 +3126,48 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       switch (val_hash)
       {
         default:
-        case CTX_default:       s->cursor = MRG_CURSOR_DEFAULT;break;
-        case CTX_auto:          s->cursor = MRG_CURSOR_AUTO;break;
-        case CTX_alias:         s->cursor = MRG_CURSOR_ALIAS;break;
-        case CTX_all_scroll:    s->cursor = MRG_CURSOR_ALL_SCROLL;break;
-        case CTX_cell:          s->cursor = MRG_CURSOR_CELL;break;
-        case CTX_context_menu:  s->cursor = MRG_CURSOR_CONTEXT_MENU;break;
-        case CTX_col_resize:    s->cursor = MRG_CURSOR_COL_RESIZE;break;
-        case CTX_copy:          s->cursor = MRG_CURSOR_COPY;break;
-        case CTX_crosshair:     s->cursor = MRG_CURSOR_CROSSHAIR;break;
-        case CTX_e_resize:      s->cursor = MRG_CURSOR_E_RESIZE;break;
-        case CTX_ew_resize:     s->cursor = MRG_CURSOR_EW_RESIZE;break;
-        case CTX_help:          s->cursor = MRG_CURSOR_HELP;break;
-        case CTX_move:          s->cursor = MRG_CURSOR_MOVE;break;
-        case CTX_n_resize:      s->cursor = MRG_CURSOR_N_RESIZE;break;
-        case CTX_ne_resize:     s->cursor = MRG_CURSOR_NE_RESIZE;break;
-        case CTX_nesw_resize:   s->cursor = MRG_CURSOR_NESW_RESIZE;break;
-        case CTX_ns_resize:     s->cursor = MRG_CURSOR_NS_RESIZE;break;
-        case CTX_nw_resize:     s->cursor = MRG_CURSOR_NW_RESIZE;break;
-        case CTX_no_drop:       s->cursor = MRG_CURSOR_NO_DROP;break;
-        case CTX_none:          s->cursor = MRG_CURSOR_NONE;break;
-        case CTX_not_allowed:   s->cursor = MRG_CURSOR_NOT_ALLOWED;break;
-        case CTX_pointer:       s->cursor = MRG_CURSOR_POINTER;break;
-        case CTX_progress:      s->cursor = MRG_CURSOR_PROGRESS;break;
-        case CTX_row_resize:    s->cursor = MRG_CURSOR_ROW_RESIZE;break;
-        case CTX_s_resize:      s->cursor = MRG_CURSOR_S_RESIZE;break;
-        case CTX_se_resize:     s->cursor = MRG_CURSOR_SE_RESIZE;break;
-        case CTX_sw_resize:     s->cursor = MRG_CURSOR_SW_RESIZE;break;
-        case CTX_text:          s->cursor = MRG_CURSOR_TEXT;break;
+        case CTX_default:       s->cursor = MRG_CURSOR_DEFAULT;      break;
+        case CTX_auto:          s->cursor = MRG_CURSOR_AUTO;         break;
+        case CTX_alias:         s->cursor = MRG_CURSOR_ALIAS;        break;
+        case CTX_all_scroll:    s->cursor = MRG_CURSOR_ALL_SCROLL;   break;
+        case CTX_cell:          s->cursor = MRG_CURSOR_CELL;         break;
+        case CTX_context_menu:  s->cursor = MRG_CURSOR_CONTEXT_MENU; break;
+        case CTX_col_resize:    s->cursor = MRG_CURSOR_COL_RESIZE;   break;
+        case CTX_copy:          s->cursor = MRG_CURSOR_COPY;         break;
+        case CTX_crosshair:     s->cursor = MRG_CURSOR_CROSSHAIR;    break;
+        case CTX_e_resize:      s->cursor = MRG_CURSOR_E_RESIZE;     break;
+        case CTX_ew_resize:     s->cursor = MRG_CURSOR_EW_RESIZE;    break;
+        case CTX_help:          s->cursor = MRG_CURSOR_HELP;         break;
+        case CTX_move:          s->cursor = MRG_CURSOR_MOVE;         break;
+        case CTX_n_resize:      s->cursor = MRG_CURSOR_N_RESIZE;     break;
+        case CTX_ne_resize:     s->cursor = MRG_CURSOR_NE_RESIZE;    break;
+        case CTX_nesw_resize:   s->cursor = MRG_CURSOR_NESW_RESIZE;  break;
+        case CTX_ns_resize:     s->cursor = MRG_CURSOR_NS_RESIZE;    break;
+        case CTX_nw_resize:     s->cursor = MRG_CURSOR_NW_RESIZE;    break;
+        case CTX_no_drop:       s->cursor = MRG_CURSOR_NO_DROP;      break;
+        case CTX_none:          s->cursor = MRG_CURSOR_NONE;         break;
+        case CTX_not_allowed:   s->cursor = MRG_CURSOR_NOT_ALLOWED;  break;
+        case CTX_pointer:       s->cursor = MRG_CURSOR_POINTER;      break;
+        case CTX_progress:      s->cursor = MRG_CURSOR_PROGRESS;     break;
+        case CTX_row_resize:    s->cursor = MRG_CURSOR_ROW_RESIZE;   break;
+        case CTX_s_resize:      s->cursor = MRG_CURSOR_S_RESIZE;     break;
+        case CTX_se_resize:     s->cursor = MRG_CURSOR_SE_RESIZE;    break;
+        case CTX_sw_resize:     s->cursor = MRG_CURSOR_SW_RESIZE;    break;
+        case CTX_text:          s->cursor = MRG_CURSOR_TEXT;         break;
         case CTX_vertical_text: s->cursor = MRG_CURSOR_VERTICAL_TEXT;break;
-        case CTX_w_resize:      s->cursor = MRG_CURSOR_W_RESIZE;break;
-        case CTX_cursor_wait:   s->cursor = MRG_CURSOR_WAIT;break;
-        case CTX_zoom_in:       s->cursor = MRG_CURSOR_ZOOM_IN;break;
-        case CTX_zoom_out:      s->cursor = MRG_CURSOR_ZOOM_OUT;break;
+        case CTX_w_resize:      s->cursor = MRG_CURSOR_W_RESIZE;     break;
+        case CTX_cursor_wait:   s->cursor = MRG_CURSOR_WAIT;         break;
+        case CTX_zoom_in:       s->cursor = MRG_CURSOR_ZOOM_IN;      break;
+        case CTX_zoom_out:      s->cursor = MRG_CURSOR_ZOOM_OUT;     break;
       }
       break;
     case CTX_display:
       switch (val_hash)
       {
         case CTX_none:
-        case CTX_hidden:       s->display = CTX_DISPLAY_NONE; break;
-        case CTX_block:        s->display = CTX_DISPLAY_BLOCK; break;
-        case CTX_list_item:    s->display = CTX_DISPLAY_LIST_ITEM; break;
+        case CTX_hidden:       s->display = CTX_DISPLAY_NONE;         break;
+        case CTX_block:        s->display = CTX_DISPLAY_BLOCK;        break;
+        case CTX_list_item:    s->display = CTX_DISPLAY_LIST_ITEM;    break;
         case CTX_inline_block: s->display = CTX_DISPLAY_INLINE_BLOCK; break;
         default:               s->display = CTX_DISPLAY_INLINE;
       }
@@ -3178,9 +3176,9 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       switch (val_hash)
       {
         case CTX_relative:  s->position = CTX_POSITION_RELATIVE; break;
-        case CTX_static:    s->position = CTX_POSITION_STATIC; break;
+        case CTX_static:    s->position = CTX_POSITION_STATIC;   break;
         case CTX_absolute:  s->position = CTX_POSITION_ABSOLUTE; break;
-        case CTX_fixed:     s->position = CTX_POSITION_FIXED; break;
+        case CTX_fixed:     s->position = CTX_POSITION_FIXED;    break;
         default:            s->position = CTX_POSITION_STATIC;
       }
       break;
@@ -3196,7 +3194,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       switch (val_hash)
       {
         case CTX_normal: s->unicode_bidi = CTX_UNICODE_BIDI_NORMAL; break;
-        case CTX_embed:  s->unicode_bidi = CTX_UNICODE_BIDI_EMBED; break;
+        case CTX_embed:  s->unicode_bidi = CTX_UNICODE_BIDI_EMBED;  break;
         case CTX_bidi_override: s->unicode_bidi = CTX_UNICODE_BIDI_BIDI_OVERRIDE; break;
         default:         s->unicode_bidi = CTX_UNICODE_BIDI_NORMAL; break;
       }
@@ -3204,12 +3202,12 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_text_align:
       switch (val_hash)
       {
-        case CTX_start:    s->text_align = CTX_TEXT_ALIGN_START; break;
-        case CTX_end:     s->text_align = CTX_TEXT_ALIGN_END; break;
-        case CTX_left:    s->text_align = CTX_TEXT_ALIGN_LEFT; break;
-        case CTX_right:   s->text_align = CTX_TEXT_ALIGN_RIGHT; break;
+        case CTX_start:    s->text_align = CTX_TEXT_ALIGN_START;  break;
+        case CTX_end:     s->text_align = CTX_TEXT_ALIGN_END;     break;
+        case CTX_left:    s->text_align = CTX_TEXT_ALIGN_LEFT;    break;
+        case CTX_right:   s->text_align = CTX_TEXT_ALIGN_RIGHT;   break;
         case CTX_justify: s->text_align = CTX_TEXT_ALIGN_JUSTIFY; break;
-        case CTX_center:  s->text_align = CTX_TEXT_ALIGN_CENTER; break;
+        case CTX_center:  s->text_align = CTX_TEXT_ALIGN_CENTER;  break;
         default:          s->text_align = CTX_TEXT_ALIGN_LEFT;
       }
       break;
