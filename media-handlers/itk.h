@@ -1903,11 +1903,15 @@ void itk_choice_add (ITK *itk, int value, const char *label)
      UiChoice *choice= calloc (sizeof (UiChoice), 1);
      choice->val = value;
      choice->label = strdup (label);
-     ctx_list_prepend (&itk->choices, choice);
+     ctx_list_append (&itk->choices, choice);
  
-     if (!itk->in_choices)
+     if (itk->choice_active)
      {
-        mrg_start (mrg, "div.choice_menu", NULL);
+       if (!itk->in_choices)
+       {
+          mrg_start (mrg, "div.choice_menu_wrap", NULL);
+          mrg_start (mrg, "div.choice_menu", NULL);
+          itk->in_choices = 1;
      }
      if (((int)control->value) == value)
        mrg_start (mrg, "div.choice:chosen", NULL);
@@ -1915,8 +1919,25 @@ void itk_choice_add (ITK *itk, int value, const char *label)
        mrg_start (mrg, "div.choice", NULL);
      mrg_print (mrg, label);
      mrg_end (mrg, NULL);
-
-     itk->in_choices = 1;
+     }
+     else
+     {
+       if (!itk->in_choices)
+       {
+          mrg_start (mrg, "div.choice_menu_wrap", NULL);
+          mrg_start (mrg, "div", NULL);
+	  itk->in_choices = 1;
+       }
+     }
+  }
+  else
+  {
+       if (!itk->in_choices)
+       {
+          mrg_start (mrg, "div.choice_menu_wrap", NULL);
+          mrg_start (mrg, "div", NULL);
+	  itk->in_choices = 1;
+       }
   }
 }
 
@@ -1924,6 +1945,9 @@ void itk_choices_end (ITK *itk)
 {
   if (itk->in_choices)
   {
+    Mrg *mrg = (Mrg*)itk;
+    mrg_end (mrg, NULL);
+    mrg_end (mrg, NULL);
     itk->in_choices = 0;
   }
 }
@@ -2742,66 +2766,15 @@ void itk_done (ITK *itk)
   if (itk->hovered_no != hovered_no)
   {
     itk->hovered_no = hovered_no;
-    ctx_queue_draw (ctx, 1);
+    ctx_queue_draw (ctx);
   }
 #endif
 
-  float em = itk_em (itk);
   if (!control){
     ctx_restore (ctx);
     return;
   }
 
-  if (control->type == UI_CHOICE && itk->choice_active)
-  {
-    float x = control->x;
-    float y = itk->popup_y;
-
-    if (y + (ctx_list_length (itk->choices) + 0.5) * em > ctx_height (ctx))
-    {
-      y = itk->popup_y - (ctx_list_length (itk->choices) - 0.5) * em;
-    }
-
-    itk_style_color (itk->ctx, "itk-focused-bg");
-    ctx_rectangle (ctx, x,
-                        y,
-                        itk->popup_width,
-                        em * (ctx_list_length (itk->choices) + 0.5));
-    ctx_fill (ctx);
-    itk_style_color (itk->ctx, "itk-fg");
-    ctx_rectangle (ctx, x,
-                        y,
-                        itk->popup_width,
-                        em * (ctx_list_length (itk->choices) + 0.5));
-    ctx_line_width (ctx, 2);
-    ctx_stroke (ctx);
-
-    int no = 0;
-
-    ctx_rectangle (ctx, 0,0,ctx_width(ctx), ctx_height(ctx));
-    ctx_listen (ctx, CTX_CLICK, ctx_event_block, itk, NULL);
-    ctx_begin_path (ctx);
-
-    ctx_list_reverse (&itk->choices);
-    for (CtxList *l = itk->choices; l; l = l->next, no++)
-    {
-      UiChoice *choice = l->data;
-      ctx_rectangle (ctx, x,
-                          y + em * (no),
-                          em * 4,
-                          em * 1.5);
-      ctx_listen (ctx, CTX_CLICK, itk_choice_set, itk, (void*)((size_t)choice->val));
-      ctx_begin_path (ctx);
-      ctx_move_to (ctx, x + em * (0.5),
-                        y + em * (no+1));
-
-      if (choice->val == itk->choice_no)
-        itk_style_color (itk->ctx, "itk-interactive");
-      else
-        itk_style_color (itk->ctx, "itk-fg");
-      ctx_text (ctx, choice->label);
-    }
-  }
   ctx_restore (ctx);
 }
 

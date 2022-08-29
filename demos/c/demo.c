@@ -87,32 +87,6 @@ static void scene_spirals (ITK *itk, int frame_no, float time_delta)
     twist += 0.00001;
     ctx_queue_draw (ctx);
 
-#if 0
-  itk_panel_start (itk, "spiraling things", ctx_width(ctx)*3/4,0,ctx_width(ctx)/4, ctx_height(ctx)/3);
-  //itk_slider_float (itk, "rendertime", &render_time, 0.0, 1000.0, 0.1);
-  itk_slider_float (itk, "fps", &render_fps, 0.0, 1000.0, 0.1);
-  itk_slider_int (itk, "count",          &dot_count, 1,  50000, 10);
-  itk_slider_float (itk, "radius",    &dot_scale, 2.0, 400.0, 4.5);
-  itk_slider_float (itk, "twist amount", &twist, -3.14152, 3.14152, 0.0005);
-  itk_choice (itk, "shape", &shape, NULL, NULL);
-  itk_choice_add (itk, 0, "circle");
-  itk_choice_add (itk, 1, "square");
-
-#if 1
-      if (itk_button (itk, "+0.00001"))
-      {
-        twist += 0.00001;
-      }
-      if (itk_button (itk, "-0.00001"))
-      {
-        twist -= 0.00001;
-      }
-#endif
-
-  itk_ctx_settings (itk);
-  itk_panel_end (itk);
-#endif
-
   twist += time_delta * 0.001;
 }
 
