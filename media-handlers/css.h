@@ -1566,6 +1566,9 @@ const char * html_css =
 "toggle        {border: 1px solid green;border: 1px solid red;color:yellow;display:block;}\n"
 "button        {border: 1px solid green;}\n"
 "choice        {border: 1px solid brown;display:inline-block;}\n"
+".choice_menu  {border: 1px solid red;display:block;position:relative;top:-1em;}\n"
+".choice       {border: 1px solid brown;display:block;background:black}\n"
+".choice:chosen{border: 1px solid brown;display:block;background:red;}\n"
 "button:focused{color:yellow;border: 1px solid yellow;background:blue;}\n"
 "label         {display:inline; color:white;}\n"
 "slider        {display:inline-block; color:white;}\n"
@@ -5723,7 +5726,7 @@ void _mrg_layout_pre (Mrg *mrg)
     mrg->state->block_start_y = mrg_y (mrg);
   }
 
-  /* the list-item is a cheak hack; can be implemented directly
+  /* the list-item is a cheap hack; can be implemented directly
    * in later versions of css
    */
   if (style->display == CTX_DISPLAY_LIST_ITEM)
@@ -5842,10 +5845,18 @@ void _mrg_layout_pre (Mrg *mrg)
       ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
       mrg->state->drawlist_start_offset--;
       {
+	float left = PROP(left);
+	float top = PROP(top);
+
+        if (left == 0.0f) // XXX 0.0 should also be a valid value!
+	  left = mrg->x;
+        if (top == 0.0f)  // XXX 0.0 should also be a valid value!
+	  top = mrg->y;
+
         mrg->state->floats = 0;
-        mrg_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
-        mrg_set_edge_right (mrg, PROP(left) + PROP(width));
-        mrg_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
+        mrg_set_edge_left (mrg, left + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
+        mrg_set_edge_right (mrg, left + PROP(width));
+        mrg_set_edge_top (mrg, top + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
       }

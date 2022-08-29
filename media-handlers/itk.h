@@ -1885,6 +1885,7 @@ int itk_choice (ITK *itk, const char *label, int val)
 void itk_choice_add (ITK *itk, int value, const char *label)
 {
   CtxControl *control = itk->controls->data;
+  Mrg *mrg = (Mrg*)itk;
 #if 0
   {
     if (((int)control->value) == value)
@@ -1903,8 +1904,20 @@ void itk_choice_add (ITK *itk, int value, const char *label)
      choice->val = value;
      choice->label = strdup (label);
      ctx_list_prepend (&itk->choices, choice);
+ 
+     if (!itk->in_choices)
+     {
+        mrg_start (mrg, "div.choice_menu", NULL);
+     }
+     if (((int)control->value) == value)
+       mrg_start (mrg, "div.choice:chosen", NULL);
+     else
+       mrg_start (mrg, "div.choice", NULL);
+     mrg_print (mrg, label);
+     mrg_end (mrg, NULL);
+
+     itk->in_choices = 1;
   }
-  itk->in_choices = 1;
 }
 
 void itk_choices_end (ITK *itk)
