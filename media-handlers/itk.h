@@ -244,6 +244,7 @@ struct _CtxControl{
 
 
 float itk_panel_scroll (ITK *itk);
+void itk_choices_end (ITK *itk);
 
 typedef struct _Mrg          Mrg;
 typedef struct _CtxStyle     CtxStyle;
@@ -423,7 +424,7 @@ struct _ITK{
 
 ////////////////////////////////
 
-
+  int   in_choices;
 
 
 
@@ -445,6 +446,7 @@ void itk_begin_menu_bar (ITK *itk, const char *title)
 void itk_begin_menu (ITK *itk, const char *title)
 {
   char *tmp = malloc (strlen (title) + (itk->menu_path?strlen (itk->menu_path):0) + 2);
+  itk_choices_end (itk);
   sprintf (tmp, "%s/%s", itk->menu_path?itk->menu_path:"", title);
   if (itk->menu_path)
           free (itk->menu_path);
@@ -459,6 +461,7 @@ void itk_begin_menu (ITK *itk, const char *title)
 void itk_menu_item (ITK *itk, const char *title)
 {
   char *tmp = malloc (strlen (title) + (itk->menu_path?strlen (itk->menu_path):0) + 2);
+  itk_choices_end (itk);
   sprintf (tmp, "%s/%s", itk->menu_path?itk->menu_path:"", title);
   //fprintf (stderr, "[%s]\n", tmp);
   free (tmp);
@@ -466,6 +469,7 @@ void itk_menu_item (ITK *itk, const char *title)
 
 void itk_end_menu (ITK *itk)
 {
+  itk_choices_end (itk);
   if (itk->menu_path)
   {
     char *split = strrchr (itk->menu_path, '/');
@@ -475,6 +479,7 @@ void itk_end_menu (ITK *itk)
 
 void itk_end_menu_bar (ITK *itk)
 {
+  itk_choices_end (itk);
   itk_newline (itk);
 }
 
@@ -731,6 +736,7 @@ void itk_reset (ITK *itk)
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)
 {
   ITKPanel *panel;
+  itk_choices_end (itk);
   for (CtxList *l = itk->panels; l; l = l->next)
   {
     ITKPanel *panel = l->data;
@@ -888,6 +894,7 @@ static void itk_base (ITK *itk, const char *label, float x, float y, float width
 
 void itk_newline (ITK *itk)
 {
+  itk_choices_end (itk);
   itk->y += itk_em (itk) * (itk->rel_ver_advance + itk->rel_vgap);
   itk->x = itk->edge_left;
   itk->line_no++;
@@ -896,6 +903,7 @@ void itk_newline (ITK *itk)
 void itk_seperator (ITK *itk)
 {
   Mrg *mrg = (Mrg*)itk;
+  itk_choices_end (itk);
   mrg_start (mrg, "hr", NULL);
   mrg_end (mrg, NULL);
 }
@@ -903,6 +911,7 @@ void itk_seperator (ITK *itk)
 void itk_label (ITK *itk, const char *label)
 {
   Mrg *mrg = (Mrg*)itk;
+  itk_choices_end (itk);
   //mrg_start (mrg, "label", NULL);
   mrg_print (mrg, label);
   //mrg_end (mrg, NULL);
@@ -947,6 +956,7 @@ void itk_titlebar (ITK *itk, const char *label)
 {
   Ctx *ctx = itk->ctx;
   float em = itk_em (itk);
+  itk_choices_end (itk);
 
   //CtxControl *control = itk_add_control (itk, UI_TITLEBAR, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
 
@@ -1063,6 +1073,7 @@ ITKPanel *itk_panel_start (ITK *itk, const char *title,
                       int x, int y, int width, int height)
 {
   Ctx *ctx = itk->ctx;
+  itk_choices_end (itk);
   ITKPanel *panel = add_panel (itk, title, x, y, width, height);
   float em = itk_em (itk);
   itk_set_edge_left (itk, panel->x + em * itk->rel_hmargin);
@@ -1114,6 +1125,7 @@ void itk_panel_end (ITK *itk)
 {
   Ctx *ctx = itk->ctx;
   ITKPanel *panel = itk->panel;
+  itk_choices_end (itk);
   float em = itk_em (itk);
   mrg_end ((Mrg*)itk, NULL);
   itk_scroll_end (itk);
@@ -1183,6 +1195,7 @@ static void itk_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2
 
 float itk_slider (ITK *itk, const char *label, float value, double min, double max, double step)
 {
+  itk_choices_end (itk);
 #if 0
   Ctx *ctx = itk->ctx;
   char buf[100] = "";
@@ -1420,6 +1433,7 @@ char *itk_entry (ITK        *itk,
                  const char *in_val)
 {
   Mrg *mrg = (Mrg*)itk;
+  itk_choices_end (itk);
 #if 1
   if (itk->focus_no == itk->control_no)
     mrg_start (mrg, "propline:focused", NULL);
@@ -1592,6 +1606,7 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
 {
   Ctx *ctx = itk->ctx;
   Mrg *mrg = (Mrg*)itk;
+  itk_choices_end (itk);
   //float em = itk_em (itk);
   //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxFloatRectangle extent;
@@ -1638,6 +1653,7 @@ int itk_radio (ITK *itk, const char *label, int set)
 {
   Ctx *ctx = itk->ctx;
   Mrg *mrg = (Mrg*)itk;
+  itk_choices_end (itk);
   //float em = itk_em (itk);
   //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxFloatRectangle extent;
@@ -1692,6 +1708,7 @@ void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
 int itk_expander (ITK *itk, const char *label, int *val)
 {
   Mrg *mrg = (Mrg*)itk;
+  itk_choices_end (itk);
   CtxFloatRectangle extent;
   if (itk->focus_no == itk->control_no)
     mrg_start (mrg, "propline:focused", NULL);
@@ -1817,6 +1834,7 @@ static void itk_choice_clicked (CtxEvent *event, void *userdata, void *userdata2
 int itk_choice (ITK *itk, const char *label, int val)
 {
   Ctx *ctx = itk->ctx;
+  itk_choices_end (itk);
   Mrg *mrg = (Mrg*)itk;
   //float em = itk_em (itk);
   //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
@@ -1886,8 +1904,16 @@ void itk_choice_add (ITK *itk, int value, const char *label)
      choice->label = strdup (label);
      ctx_list_prepend (&itk->choices, choice);
   }
+  itk->in_choices = 1;
 }
 
+void itk_choices_end (ITK *itk)
+{
+  if (itk->in_choices)
+  {
+    itk->in_choices = 0;
+  }
+}
 
 void itk_set_focus_no (ITK *itk, int pos)
 {
