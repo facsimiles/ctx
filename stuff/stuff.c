@@ -4062,7 +4062,6 @@ static void dir_layout (ITK *itk, Diz *diz)
               diz_dir_set_float (diz, i, "value", new_val);
            }
            c = itk_find_control (itk, itk_control_no (itk)-1);
-           itk_sameline (itk);
         }
         else if (ui && !strcmp (ui, "slider"))
         {
@@ -4074,7 +4073,6 @@ static void dir_layout (ITK *itk, Diz *diz)
            if (new_f != f)
               diz_dir_set_float (diz, i, "value", new_f);
            c = itk_find_control (itk, itk_control_no (itk)-1);
-           itk_sameline (itk);
         }
         else if (ui && !strcmp (ui, "choice"))
         {
@@ -4101,7 +4099,6 @@ static void dir_layout (ITK *itk, Diz *diz)
               free (val);
            }
            c = itk_find_control (itk, itk_control_no (itk)-1);
-           itk_sameline (itk);
         }
         else if (ui && !strcmp (ui, "string"))
         {
@@ -4115,7 +4112,6 @@ static void dir_layout (ITK *itk, Diz *diz)
              free (new_str);
            }
            c = itk_find_control (itk, itk_control_no (itk)-1);
-           itk_sameline (itk);
            if (fallback_str)
              free (fallback_str);
            if (old_str)
@@ -6177,15 +6173,11 @@ static int card_files (ITK *itk_, void *data)
   {
     itk_panel_start (itk, "layout_config", 0,ctx_height(ctx)*0.8, ctx_width(ctx)/2, ctx_height (ctx) * 0.2);
     itk_toggle (itk, "stack horizontal", &layout_config.stack_horizontal);
-    itk_sameline (itk);
     itk_toggle (itk, "stack vertical", &layout_config.stack_vertical);
     itk_toggle (itk, "fill width", &layout_config.fill_width);
-    itk_sameline (itk);
     itk_toggle (itk, "fill height", &layout_config.fill_height);
     itk_toggle (itk, "fixed size", &layout_config.fixed_size);
-    itk_sameline (itk);
     itk_toggle (itk, "fixed pos", &layout_config.fixed_pos);
-    itk_sameline (itk);
     itk_toggle (itk, "show-label", &layout_config.label);
 
     itk_panel_end (itk);

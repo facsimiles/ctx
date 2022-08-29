@@ -28,7 +28,6 @@ ITKPanel *itk_panel_start (ITK *itk, const char *title, int x, int y, int width,
 void      itk_panel_end   (ITK *itk);
 
 void itk_newline    (ITK *itk);
-void itk_sameline   (ITK *itk);
 void itk_seperator  (ITK *itk);
 void itk_titlebar   (ITK *itk, const char *label);
 
@@ -362,9 +361,6 @@ struct _ITK{
   float width;
   float height;
 
-  /// ITK ancestors.. for css
-  float stored_x; // for sameline()
-
   float font_size;
   float rel_hmargin;
   float rel_vmargin;
@@ -457,7 +453,7 @@ void itk_begin_menu (ITK *itk, const char *title)
   {
      if (itk->active_menu_path) free (itk->active_menu_path);
      itk->active_menu_path = strdup (itk->menu_path);
-  }; itk_sameline (itk);
+  }; 
 }
 
 void itk_menu_item (ITK *itk, const char *title)
@@ -893,16 +889,8 @@ static void itk_base (ITK *itk, const char *label, float x, float y, float width
 void itk_newline (ITK *itk)
 {
   itk->y += itk_em (itk) * (itk->rel_ver_advance + itk->rel_vgap);
-  itk->stored_x = itk->x;
   itk->x = itk->edge_left;
   itk->line_no++;
-}
-
-void itk_sameline (ITK *itk)
-{
-  itk->y -= itk_em (itk) * (itk->rel_ver_advance + itk->rel_vgap);
-  itk->x = itk->stored_x;
-  itk->line_no--;
 }
 
 void itk_seperator (ITK *itk)

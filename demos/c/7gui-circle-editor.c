@@ -67,7 +67,6 @@ static int circle_editor_ui (ITK *itk, void *data)
   if (itk_button (itk, "Undo"))
   {
   }
-  itk_sameline (itk);
   if (itk_button (itk, "Redo"))
   {
   }

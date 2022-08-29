@@ -94,7 +94,6 @@ static int crud_ui (ITK *itk, int frame_no)
     selected_name = name_ids;
     name_count++;
   }
-  itk_sameline (itk);
   if (itk_button (itk, "Update"))
   {
     for (int i = 0; i < name_count; i++)
@@ -107,11 +106,9 @@ static int crud_ui (ITK *itk, int frame_no)
        }
     }
   }
-  itk_sameline (itk);
   if (itk_button (itk, "Delete"))
   {
   }
-  itk_sameline (itk);
 
   itk_set_wrap_width (itk, itk_wrap_width(itk)*2);
   itk_panel_end (itk);

@@ -594,7 +594,6 @@ static void card_files (ITK *itk, int frame_no)
       free (newpath);
       itk_add_control (itk, UI_LABEL, "foo", itk_x (itk), itk_y (itk), itk_wrap_width (itk), em * itk_rel_ver_advance (itk));
       itk_labelf (itk, "%s\n", namelist[i]->d_name);
-      itk_sameline (itk);
       itk_set_x (itk, itk_edge_left (itk) + itk_em (itk) * 10);
       itk_labelf (itk, "%i", stat_buf.st_size);
     }
