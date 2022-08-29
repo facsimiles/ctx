@@ -28,28 +28,29 @@
 #define CTX_BRAILLE_TEXT         1
 #define CTX_ENABLE_CMYK          1
 #define CTX_AUDIO                1
-#define CTX_MAX_TEXTURES         1024
-#define CTX_STRINGPOOL_SIZE      10000 // for misc storage with compressed/
-                                       // variable size for each save|restore
-//#define CTX_MIN_JOURNAL_SIZE   512         // ~4kb
-#define CTX_MAX_JOURNAL_SIZE     1024*1024*8 // 72mb
-#define CTX_MIN_EDGE_LIST_SIZE   4096*2
-//#define CTX_PARSER_MAXLEN      1024*1024*64
+#define CTX_MAX_TEXTURES         1024  // default: 32
+				       //
+/* for misc storage with compressed/
+   variable size for each save|restore*/
+#define CTX_STRINGPOOL_SIZE      10000 // default: 2000
+				       //
+#define CTX_MIN_JOURNAL_SIZE     1024 // default: 512 ~4kb
+#define CTX_MAX_JOURNAL_SIZE     1024*1024*8 // default: 1024*1024*8 // 72mb
+#define CTX_MIN_EDGE_LIST_SIZE   1024*8      // default: 1024*4
+//#define CTX_PARSER_MAXLEN      1024*1024*64 // default: 1024*1024*16
+
+#define CTX_HASH_COLS            5 // default: 6
+#define CTX_HASH_ROWS            5 // default: 5
+#define CTX_MAX_KEYDB            128  // default: 64
 
 #define CTX_FONT_ENGINE_CTX_FS   1
-#define CTX_HASH_COLS  5
-#define CTX_HASH_ROWS  5
-
 #define CTX_SCREENSHOT           1 
 #include "stb_image.h"
 #include "stb_image_write.h" // needed in addition to screenshot
                              // to fully enable
 
-
 #define CTX_RASTERIZER           1
-
-#define CTX_ENABLE_CBRLE         1
-
+#define CTX_ENABLE_CBRLE         0
 
 #ifdef CTX_SIMD_X86_64_V2
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v2
@@ -93,16 +94,16 @@
 #include "Tinos-Italic.h"
 #include "Tinos-BoldItalic.h"
 
-#define CTX_FONT_0  CTX_STATIC_FONT(Arimo_Regular)
-#define CTX_FONT_1  CTX_STATIC_FONT(Arimo_Bold)
-#define CTX_FONT_2  CTX_STATIC_FONT(Arimo_Italic)
-#define CTX_FONT_3  CTX_STATIC_FONT(Arimo_BoldItalic)
-#define CTX_FONT_4  CTX_STATIC_FONT(Tinos_Regular)
-#define CTX_FONT_5  CTX_STATIC_FONT(Tinos_Bold)
-#define CTX_FONT_6  CTX_STATIC_FONT(Tinos_Italic)
-#define CTX_FONT_7  CTX_STATIC_FONT(Tinos_BoldItalic)
-#define CTX_FONT_8  CTX_STATIC_FONT(Cousine_Regular)
-#define CTX_FONT_9  CTX_STATIC_FONT(Cousine_Italic)
+#define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
+#define CTX_FONT_1   CTX_STATIC_FONT(Arimo_Bold)
+#define CTX_FONT_2   CTX_STATIC_FONT(Arimo_Italic)
+#define CTX_FONT_3   CTX_STATIC_FONT(Arimo_BoldItalic)
+#define CTX_FONT_4   CTX_STATIC_FONT(Tinos_Regular)
+#define CTX_FONT_5   CTX_STATIC_FONT(Tinos_Bold)
+#define CTX_FONT_6   CTX_STATIC_FONT(Tinos_Italic)
+#define CTX_FONT_7   CTX_STATIC_FONT(Tinos_BoldItalic)
+#define CTX_FONT_8   CTX_STATIC_FONT(Cousine_Regular)
+#define CTX_FONT_9   CTX_STATIC_FONT(Cousine_Italic)
 #define CTX_FONT_10  CTX_STATIC_FONT(Cousine_Bold)
 #define CTX_FONT_11  CTX_STATIC_FONT(Cousine_BoldItalic)
 #define CTX_FONT_12  CTX_STATIC_FONT(Carlito_Regular)
