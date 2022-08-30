@@ -1559,7 +1559,7 @@ const char * html_css =
 "head{display:none;}\n"
 "title{display:none;}\n"
 //"hr{border:1px inset black;margin-bottom: 0.5em;margin-top:0.5em;}\n"
-"hr{font-size:1px;border-bottom: 1px solid red;}\n"  /* hack that works in one way, but shrinks top margin too much */
+"hr{font-size:1px;border-bottom: 1px solid red;}\n"
 
 
 //"h1,h2,h3,h4,h5,h6,p,div,b,span,ul,li,ol,dl,dt,dl,propline,button{border-left-color:gray;border-right-color:gray;}\n"
@@ -7828,12 +7828,19 @@ mrg_get_contents_default (const char  *referer,
     CacheEntry *entry = i->data;
     if (!strcmp (entry->uri, uri))
     {
+      if (!entry->contents)
+	{
+	  *contents = NULL;
+          if (length) *length = 0;
+          return -1;
+	}
+
       *contents = malloc (entry->length + 1);
       memcpy (*contents, entry->contents, entry->length);
       (*contents)[entry->length]=0;
       free (uri);
       if (length) *length = entry->length;
-      if (length)
+      if (*length)
       {
         return 0;
       }
