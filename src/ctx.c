@@ -56,8 +56,9 @@ ctx_current_path (Ctx *ctx)
   drawlist->entries = (CtxEntry*)(&drawlist[1]);
   drawlist->size = drawlist->count = ctx->current_path.count;
   drawlist->flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
-  memcpy (drawlist->entries, ctx->current_path.entries,
-          drawlist->count * 9);
+  if (drawlist->count)
+    memcpy (drawlist->entries, ctx->current_path.entries,
+            drawlist->count * 9);
   return drawlist;
 }
 
