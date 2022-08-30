@@ -1415,6 +1415,8 @@ void _ctx_initial_style (Mrg *mrg)
   SET_PROP(left, 0);
   SET_PROP(right, 0);
   SET_PROP(bottom, 0);
+  SET_PROPS(class,"");
+  SET_PROPS(id,"");
 
   ctx_set_float (mrg->ctx, CTX_stroke_width, 0.2);
 
@@ -7345,6 +7347,7 @@ void mrg_xml_render (Mrg *mrg,
               id?"#":"",
               id?id:"", pseudo);
 
+	  //fprintf (stderr,"[%s]", combined);
           if (klass)
             free (klass);
             /* collect XML attributes and convert into CSS declarations */
