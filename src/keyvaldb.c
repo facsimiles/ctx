@@ -135,11 +135,14 @@ CTX_STATIC void ctx_state_set_string (CtxState *state, uint32_t key, const char 
 static int ctx_state_get_color (CtxState *state, uint32_t key, CtxColor *color)
 {
   CtxColor *stored = (CtxColor*)ctx_state_get_blob (state, key);
+  CtxColor  copy;
   if (stored)
   {
-    if (stored->magic == 127)
+    // we make a copy to ensure alignment
+    memcpy (&copy, stored, sizeof (CtxColor));
+    if (copy.magic == 127)
     {
-      *color = *stored;
+      *color = copy;
       return 0;
     }
   }
