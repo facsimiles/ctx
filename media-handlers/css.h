@@ -1420,6 +1420,7 @@ void _ctx_initial_style (Mrg *mrg)
 
   CtxColor *color = ctx_color_new ();
   ctx_get_color (mrg->ctx, CTX_color, color);
+
   ctx_set_color (mrg->ctx, CTX_border_top_color, color);
   ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
   ctx_set_color (mrg->ctx, CTX_border_left_color, color);
@@ -1506,7 +1507,7 @@ const char * html_css =
 "th{font-weight:bolder;text-align:center}\n"
 "caption{text-align:center}\n"
 "body{margin:8px;}\n" // was 0.5em
-"h1{font-size:2em;margin:.67em 0}\n"
+"h1{font-size:2em;margin:.67em 0;}\n"
 "h2{font-size:1.5em;margin:.75em 0}\n"
 "h3{font-size:1.17em;margin:.83em 0}\n"
 "h4,p,"
@@ -3692,12 +3693,12 @@ static void mrg_path_fill_stroke (Mrg *mrg)
   if (!ctx_color_is_transparent (fill_color))
   {
     mrg_ctx_set_source_color (ctx, fill_color);
-    if (PROP(stroke_width) > 0.001 && !ctx_color_is_transparent (stroke_color))
+    if (PROP(stroke_width) > 0.001f && !ctx_color_is_transparent (stroke_color))
       ctx_preserve (ctx);
     ctx_fill (ctx);
   }
 
-  if (PROP(stroke_width) > 0.001 && !ctx_color_is_transparent (stroke_color))
+  if (PROP(stroke_width) > 0.001f && !ctx_color_is_transparent (stroke_color))
   {
     ctx_line_width (ctx, PROP(stroke_width));
     mrg_ctx_set_source_color (ctx, stroke_color);
@@ -3738,7 +3739,7 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, CTX_border_top_color, color);
 
-  if (PROP(border_bottom_width) > 0.01 &&
+  if (PROP(border_bottom_width) > 0.01f &&
       !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
@@ -3762,7 +3763,7 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
   CtxColor *color = ctx_color_new ();
   ctx_get_color (cr, CTX_border_top_color, color);
 
-  if (PROP(border_top_width) > 0.01 &&
+  if (PROP(border_top_width) > 0.01f &&
       !ctx_color_is_transparent (color))
   {
   ctx_save (cr);
@@ -3808,7 +3809,7 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, CTX_border_top_color, color);
 
-  if (PROP(border_top_width) > 0.01 &&
+  if (PROP(border_top_width) > 0.01f &&
       !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
@@ -3831,7 +3832,7 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, CTX_border_bottom_color, color);
 
-  if (PROP(border_bottom_width) > 0.01 &&
+  if (PROP(border_bottom_width) > 0.01f &&
       !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
@@ -3925,7 +3926,7 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, CTX_border_right_color, color);
 
-  if (PROP(border_right_width) > 0.01 &&
+  if (PROP(border_right_width) > 0.01f &&
       !ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
@@ -7103,6 +7104,7 @@ void mrg_xml_render (Mrg *mrg,
   int in_style        = 0;
   int should_be_empty = 0;
   int tagpos          = 0;
+  itk_stylesheet_clear (mrg);
   CtxString *style = ctx_string_new ("");
   int whitespaces = 0;
   uint32_t att = 0;
