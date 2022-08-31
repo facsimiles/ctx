@@ -257,7 +257,7 @@ void itk_start_with_style (Mrg        *mrg,
 
 void itk_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
                             const char *format, ...);
-void mrg_xml_render (Mrg *mrg,
+void itk_xml_render (Mrg *mrg,
                      char *uri_base,
                      void (*link_cb) (CtxEvent *event, void *href, void *link_data),
                      void *link_data,
@@ -438,7 +438,7 @@ ITK *itk_new (Ctx *ctx)
   itk->width = itk->font_size * 15;
 
   Mrg *mrg = (Mrg*)itk;
-  _mrg_init (mrg, ctx, ctx_width(ctx), ctx_height(ctx));
+  itk_css_init (mrg, ctx, ctx_width(ctx), ctx_height(ctx));
   ctx_style_defaults (mrg);
 
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
@@ -583,7 +583,7 @@ void itk_reset (ITK *itk)
     free (choice);
   }
   itk->control_no = 0;
-  _mrg_init ((Mrg*)itk, ctx, ctx_width (itk->ctx), ctx_height (itk->ctx));
+  itk_css_init ((Mrg*)itk, ctx, ctx_width (itk->ctx), ctx_height (itk->ctx));
   //itk_stylesheet_clear ((Mrg*)itk);
 //  ctx_style_defaults ((Mrg*)itk);
 }

@@ -7171,7 +7171,7 @@ _ctx_str_get_float (const char *string, int no)
   return ret;
 }
 
-void mrg_xml_render (Mrg *mrg,
+void itk_xml_render (Mrg *mrg,
                      char *uri_base,
                      void (*link_cb) (CtxEvent *event, void *href, void *link_data),
                      void *link_data,
@@ -7708,7 +7708,7 @@ void mrg_xml_render (Mrg *mrg,
   }
 }
 
-void mrg_xml_renderf (Mrg *mrg,
+void itk_xml_renderf (Mrg *mrg,
                       char *uri_base,
                       void (*link_cb) (CtxEvent *event, void *href, void *link_data),
                       void *link_data,
@@ -7725,14 +7725,14 @@ void mrg_xml_renderf (Mrg *mrg,
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  mrg_xml_render (mrg, uri_base, link_cb, link_data, NULL, NULL, buffer);
+  itk_xml_render (mrg, uri_base, link_cb, link_data, NULL, NULL, buffer);
   free (buffer);
 }
-void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height);
+void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height);
 
 void itk_print_xml (Mrg *mrg, const char *xml)
 {
-  mrg_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
+  itk_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
 }
 
 void
@@ -7960,7 +7960,7 @@ mrg_get_contents_default (const char  *referer,
   return mrg_get_contents_default (referer, input_uri, contents, length, ignored_user_data);
 }
 
-void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height)
+void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
 {
   //memset (mrg, 0, sizeof (Mrg));
   mrg->do_clip = 1;
@@ -8031,7 +8031,7 @@ Mrg *mrg_new (Ctx *ctx, int width, int height)
 
   mrg = calloc (sizeof (Mrg), 1);
   mrg->do_clip = 1;
-  _mrg_init (mrg, ctx, width, height);
+  itk_css_init (mrg, ctx, width, height);
   ctx_style_defaults (mrg);
 
 #if 0
