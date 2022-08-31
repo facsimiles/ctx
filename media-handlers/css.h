@@ -365,10 +365,9 @@ struct _MrgAbsolute {
 
 struct _Mrg {
   Ctx             *ctx;
-  Ctx             *document_ctx;
-  Ctx             *fixed_ctx;
-  Ctx             *absolute_ctx;
-
+  Ctx            *document_ctx;
+  Ctx            *fixed_ctx;
+  Ctx            *absolute_ctx;
   float            rem;
   float            ddpx;
   CtxList         *absolutes;
@@ -376,15 +375,13 @@ struct _Mrg {
   void            *css_parse_state;
   CtxString       *style;
   CtxString       *style_global;
-  //int          is_press_grabbed;
   int              quit;
   float            x; /* in px */
   float            y; /* in px */
-
   float            relative_x;
   float            relative_y;
-  CtxIntRectangle  dirty;
-  CtxIntRectangle  dirty_during_paint; // queued during painting
+  CtxIntRectangle     dirty;
+  CtxIntRectangle     dirty_during_paint; // queued during painting
   MrgState        *state;
   MrgState         states[CTX_MAX_STATE_DEPTH];
   int              state_no;
@@ -397,8 +394,7 @@ struct _Mrg {
                            void        *get_contents_data);
   void *get_contents_data;
 
-
-
+    /** text editing state follows **/
   int              text_edited;
   int              got_edit;
   CtxString       *edited_str;
@@ -427,6 +423,90 @@ struct _Mrg {
   void      *text_listen_finalize_data[CTX_MAX_TEXT_LISTEN];
   int        text_listen_count;
   int        text_listen_active;
+
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+  //////////////////// end of css ////////////////
+
+  // the following used to be the original ITK struct
+
+  int (*ui_fun)(ITK *itk, void *data);
+  void *ui_data;
+
+  // the following should be removed in favor
+  // of the css|mrg data?
+  float edge_left;
+  float edge_top;
+  float edge_right;
+  float edge_bottom;
+  float width;
+  float height;
+
+  float font_size;
+  float rel_hmargin;
+  float rel_vmargin;
+  float label_width;
+
+  float scale;
+
+  float rel_ver_advance;
+  float rel_hpad;
+  float rel_vgap;
+  float scroll_speed;
+
+  int   return_value; // when set to 1, we return the internally held from the
+                      // defining app state when the widget was drawn/intercations
+                      // started.
+
+  float slider_value; // for reporting back slider value
+
+  int   active;  // 0 not actively editing
+                 // 1 currently in edit-mode of focused widget
+                 // 2 means return edited value
+
+  int   active_entry;
+  int   focus_wraparound;
+
+  int   focus_no;
+  int   focus_x;
+  int   focus_y;
+  int   focus_width;
+  char *focus_label;
+
+  char *entry_copy;
+  int   entry_pos;
+  ITKPanel *panel;
+
+  CtxList *old_controls;
+  CtxList *controls;
+  CtxList *choices;
+  CtxList *panels;
+  int hovered_no;
+  int control_no;
+  int choice_active;
+
+  int choice_no;  // the currenlt active choice if the choice context is visible (or the current control is a choice)
+
+  int popup_x;
+  int popup_y;
+  int popup_width;
+  int popup_height;
+
+  char *active_menu_path;
+  char *menu_path;
+
+  uint64_t next_flags;
+  void    *next_id; // to pre-empt a control and get it a more unique
+                 // identifier than the numeric pos
+  int   line_no;
+  int   lines_drawn;
+  int   light_mode;
+
+////////////////////////////////
+
+  int   in_choices;
+
+
 
 };
 
@@ -7106,7 +7186,7 @@ void mrg_xml_render (Mrg *mrg,
   int in_style        = 0;
   int should_be_empty = 0;
   int tagpos          = 0;
-  itk_stylesheet_clear (mrg);
+
   CtxString *style = ctx_string_new ("");
   int whitespaces = 0;
   uint32_t att = 0;
@@ -7939,6 +8019,9 @@ void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height)
       free (contents);
     }
   }
+
+  itk_stylesheet_clear (mrg);
+  _mrg_clear_text_closures (mrg);
 }
 
 Mrg *mrg_new (Ctx *ctx, int width, int height)

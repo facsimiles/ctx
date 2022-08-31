@@ -16,7 +16,7 @@
  *   - horizontal scroll
  */
 
-typedef struct _ITK ITK;
+typedef struct _Mrg      ITK;
 typedef struct _ITKPanel ITKPanel;
 
 extern int _itk_key_bindings_active;
@@ -288,147 +288,6 @@ void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
 #ifdef ITK_IMPLEMENTATION
 #include "css.h"
 
-struct _ITK{
-  Ctx             *ctx;
-  Ctx            *document_ctx;
-  Ctx            *fixed_ctx;
-  Ctx            *absolute_ctx;
-  float            rem;
-  float            ddpx;
-  CtxList         *absolutes;
-  CtxList         *stylesheet;
-  void            *css_parse_state;
-  CtxString       *style;
-  CtxString       *style_global;
-  int              quit;
-  float            x; /* in px */
-  float            y; /* in px */
-  float            relative_x;
-  float            relative_y;
-  CtxIntRectangle     dirty;
-  CtxIntRectangle     dirty_during_paint; // queued during painting
-  MrgState        *state;
-  MrgState         states[CTX_MAX_STATE_DEPTH];
-  int              state_no;
-  void            *backend_data;
-  int              do_clip;
-  int (*mrg_get_contents) (const char  *referer,
-                           const char  *input_uri,
-                           char       **contents,
-                           long        *length,
-                           void        *get_contents_data);
-  void *get_contents_data;
-
-    /** text editing state follows **/
-  int              text_edited;
-  int              got_edit;
-  CtxString       *edited_str;
-  char           **edited;
-
-  int              text_edit_blocked;
-  MrgNewText       update_string;
-  void            *update_string_user_data;
-
-  CtxDestroyNotify update_string_destroy_notify;
-  void            *update_string_destroy_data;
-
-  int              cursor_pos;
-  float            e_x;
-  float            e_y;
-  float            e_ws;
-  float            e_we;
-  float            e_em;
-
-  CtxEventType     text_listen_types[CTX_MAX_TEXT_LISTEN];
-  CtxCb            text_listen_cb[CTX_MAX_TEXT_LISTEN];
-  void            *text_listen_data1[CTX_MAX_TEXT_LISTEN];
-  void            *text_listen_data2[CTX_MAX_TEXT_LISTEN];
-
-  void     (*text_listen_finalize[CTX_MAX_TEXT_LISTEN])(void *listen_data, void *listen_data2, void *finalize_data);
-  void      *text_listen_finalize_data[CTX_MAX_TEXT_LISTEN];
-  int        text_listen_count;
-  int        text_listen_active;
-
-
-  int (*ui_fun)(ITK *itk, void *data);
-  void *ui_data;
-
-  // the following should be removed in favor
-  // of the css|mrg data?
-  float edge_left;
-  float edge_top;
-  float edge_right;
-  float edge_bottom;
-  float width;
-  float height;
-
-  float font_size;
-  float rel_hmargin;
-  float rel_vmargin;
-  float label_width;
-
-  float scale;
-
-  float rel_ver_advance;
-  float rel_hpad;
-  float rel_vgap;
-  float scroll_speed;
-
-  int   return_value; // when set to 1, we return the internally held from the
-                      // defining app state when the widget was drawn/intercations
-                      // started.
-
-  float slider_value; // for reporting back slider value
-
-  int   active;  // 0 not actively editing
-                 // 1 currently in edit-mode of focused widget
-                 // 2 means return edited value
-
-  int   active_entry;
-  int   focus_wraparound;
-
-  int   focus_no;
-  int   focus_x;
-  int   focus_y;
-  int   focus_width;
-  char *focus_label;
-
-  char *entry_copy;
-  int   entry_pos;
-  ITKPanel *panel;
-
-  CtxList *old_controls;
-  CtxList *controls;
-  CtxList *choices;
-  CtxList *panels;
-  int hovered_no;
-  int control_no;
-  int choice_active;
-
-  int choice_no;  // the currenlt active choice if the choice context is visible (or the current control is a choice)
-
-  int popup_x;
-  int popup_y;
-  int popup_width;
-  int popup_height;
-
-  char *active_menu_path;
-  char *menu_path;
-
-  uint64_t next_flags;
-  void    *next_id; // to pre-empt a control and get it a more unique
-                 // identifier than the numeric pos
-  int   line_no;
-  int   lines_drawn;
-  int   light_mode;
-
-////////////////////////////////
-
-  int   in_choices;
-
-
-
-};
 typedef struct _UiChoice  UiChoice;
 struct _UiChoice
 {
@@ -730,6 +589,7 @@ void itk_reset (ITK *itk)
   }
   itk->control_no = 0;
   _mrg_init ((Mrg*)itk, ctx, ctx_width (itk->ctx), ctx_height (itk->ctx));
+  //itk_stylesheet_clear ((Mrg*)itk);
 //  ctx_style_defaults ((Mrg*)itk);
 }
 
