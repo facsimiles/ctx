@@ -19,7 +19,7 @@ CFLAGS+= $(CFLAGS_warnings) -fPIC
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 
-CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers
+CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers -Iitk
 LIBS  += -lm -lpthread -lz
 
 
@@ -67,7 +67,7 @@ build.conf:
 	@echo "!! now run Make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
-demos/c/%: demos/c/%.c build.conf Makefile build.conf media-handlers/itk.h libctx.a 
+demos/c/%: demos/c/%.c build.conf Makefile build.conf itk/itk.h libctx.a 
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen Makefile
@@ -171,7 +171,7 @@ uninstall:
 tools/%: tools/%.c ctx-nofont.h 
 	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS
 
-ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf media-handlers/itk.h media-handlers/css.h
+ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf itk/itk.h itk/css.h
 	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
@@ -193,7 +193,7 @@ deps.o: deps.c build.conf Makefile
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
-terminal/%.o: terminal/%.c ctx.h terminal/*.h media-handlers/itk.h 
+terminal/%.o: terminal/%.c ctx.h terminal/*.h itk/itk.h 
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c \
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
@@ -267,9 +267,9 @@ src/constants.h: src/*.c Makefile squoze/squoze
 	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][a-zA-Z_0-9]*'|sort | uniq | cut -f 2 -d _`;do echo "#define CTX_$$a `./squoze/squoze -32 $$a`u";done \
 		>> $@
 	echo '#endif' >> $@
-media-handlers/w3c-constants.h: media-handlers/css.h Makefile squoze/squoze
+itk/w3c-constants.h: itk/css.h Makefile squoze/squoze
 	echo '#ifndef __W3C_CONSTANTS' > $@
 	echo '#define __W3C_CONSTANTS' >> $@
-	for a in `cat media-handlers/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -32 $$b`u // \"$$b\"";done \
+	for a in `cat itk/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -32 $$b`u // \"$$b\"";done \
 		>> $@
 	echo '#endif' >> $@
