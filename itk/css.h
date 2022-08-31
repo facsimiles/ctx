@@ -6143,8 +6143,8 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
      + PROP(padding_right) + PROP(border_right_width) + PROP(margin_right);
 
     float_data->height = 
-       mrg_y (mrg) - (mrg->state->block_start_y - mrg_em(mrg))
-         + PROP(margin_bottom) + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width) + PROP(margin_top) + mrg_em (mrg);
+       mrg_y (mrg) - (mrg->state->block_start_y)
+         + PROP(margin_bottom) + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width);
   }
 
 
@@ -7974,7 +7974,7 @@ mrg_get_contents_default (const char  *referer,
 #endif
   }
 
-  return mrg_get_contents_default (referer, input_uri, contents, length, ignored_user_data);
+  return mrg_get_contents_default (referer, uri, contents, length, ignored_user_data);
 }
 
 void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
