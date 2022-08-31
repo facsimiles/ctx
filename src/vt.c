@@ -404,7 +404,6 @@ static int vt_margin_right (VT *vt)
 
 static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence);
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val);
-uint32_t ctx_strhash (const char *utf8);
 
 static void vt_set_title (VT *vt, const char *new_title)
 {

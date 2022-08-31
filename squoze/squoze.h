@@ -7,12 +7,12 @@
 #include <string.h>
 #include <assert.h>
 
-uint32_t    squoze32        (const char *utf8);
-uint64_t    squoze52        (const char *utf8);
-uint64_t    squoze62        (const char *utf8);
-const char *squoze32_decode (uint32_t hash);
-const char *squoze52_decode (uint64_t hash);
-const char *squoze62_decode (uint64_t hash);
+static uint32_t    squoze32        (const char *utf8);
+static uint64_t    squoze52        (const char *utf8);
+static uint64_t    squoze62        (const char *utf8);
+static const char *squoze32_decode (uint32_t hash);
+static const char *squoze52_decode (uint64_t hash);
+static const char *squoze62_decode (uint64_t hash);
 
 //#define SQUOZE_NO_INTERNING  // this disables the interning - providing only a hash (and decode for non-overflowed hashes)
 
@@ -422,22 +422,22 @@ static inline uint64_t squoze (int squoze_dim, const char *utf8)
   return hash;
 }
 
-uint32_t squoze32 (const char *utf8)
+static uint32_t squoze32 (const char *utf8)
 {
   return squoze (32, utf8);
 }
 
-uint64_t squoze52 (const char *utf8)
+static uint64_t squoze52 (const char *utf8)
 {
   return squoze (52, utf8);
 }
 
-uint64_t squoze62 (const char *utf8)
+static uint64_t squoze62 (const char *utf8)
 {
   return squoze (62, utf8);
 }
 
-uint32_t ctx_strhash(const char *str) {
+static uint32_t ctx_strhash(const char *str) {
   return squoze (32, str);
 }
 
@@ -652,17 +652,17 @@ static const char *squoze_decode (int squoze_dim, uint64_t hash)
 #endif
 }
 
-const char *squoze32_decode (uint32_t hash)
+static const char *squoze32_decode (uint32_t hash)
 {
   return squoze_decode (32, hash);
 }
 
-const char *squoze52_decode (uint64_t hash)
+static const char *squoze52_decode (uint64_t hash)
 {
   return squoze_decode (52, hash);
 }
 
-const char *squoze62_decode (uint64_t hash)
+static const char *squoze62_decode (uint64_t hash)
 {
   return squoze_decode (62, hash);
 }

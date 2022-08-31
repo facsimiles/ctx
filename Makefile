@@ -186,6 +186,8 @@ ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_ARM_NEON -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
+itk.o: itk.c build.conf Makefile 
+	$(CCC) itk.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
@@ -199,10 +201,10 @@ media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/m
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-libctx.a: deps.o $(CTX_OBJS) build.conf Makefile
-	$(AR) rcs $@ $(CTX_OBJS) deps.o 
-libctx.so: $(CTX_OBJS) deps.o
-	$(LD) -shared $(LIBS) $(CTX_OBJS) deps.o $(CTX_LIBS) -o $@
+libctx.a: itk.o deps.o $(CTX_OBJS) build.conf Makefile
+	$(AR) rcs $@ $(CTX_OBJS) deps.o itk.o
+libctx.so: $(CTX_OBJS) deps.o itk.o
+	$(LD) -shared $(LIBS) $(CTX_OBJS) deps.o itk.o $(CTX_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a

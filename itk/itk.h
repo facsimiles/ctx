@@ -2690,12 +2690,12 @@ itk_ctx_settings (ITK *itk)
   }
   if (itk_expander (itk, "CTX settings", &ctx_settings))
   {
-
+#if 0
     hash_cache_enabled = itk_toggle (itk, "hash cache", hash_cache_enabled);
     if (hash_cache_enabled != ctx_get_hash_cache (ctx)){
       ctx_set_hash_cache (ctx, hash_cache_enabled);
     }
-    
+#endif
     
 #if CTX_SDL
     ctx_show_fps = itk_toggle (itk, "fps debug", ctx_show_fps);
@@ -2705,18 +2705,6 @@ itk_ctx_settings (ITK *itk)
     {
       ctx_set_render_threads (ctx, threads);
     }
-
-    static int choice = -1;
-    int set = ctx_get_antialias (ctx);
-    if (choice < 0)
-      choice = set;
-    choice = itk_choice (itk, "Antialiasing", choice);
-    itk_choice_add (itk, CTX_ANTIALIAS_NONE,    "none");
-    itk_choice_add (itk, CTX_ANTIALIAS_FAST,    "fast = 3");
-    itk_choice_add (itk, CTX_ANTIALIAS_GOOD,    "good = 5");
-    itk_choice_add (itk, CTX_ANTIALIAS_DEFAULT, "default");
-    if (set != choice)
-      ctx_set_antialias (ctx, choice);
   }
 #endif
 }
