@@ -4694,10 +4694,25 @@ void mrg_set_wrap_max_lines  (Mrg *mrg, int max_lines)
 
 //#define SNAP
 
+
+#if 0
+    if (mrg->state->got_text)
+    {
+      float val = mrg->state->line_max_height * ascent;
+      ctx_resolve (mrg->ctx, "line", set_line_height, &val);
+      //fprintf (stderr, "%f\n", mrg->state->line_max_height);
+      mrg->y += mrg->state->line_max_height * style->line_height;
+    r
+#endif
+
 static void _mrg_nl (Mrg *mrg)
 {
+  float ascent, descent;
+  ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
+  mrg->y += mrg->state->line_max_height * mrg->state->style.line_height;
+      float val = mrg->state->line_max_height * ascent;
+      ctx_resolve (mrg->ctx, "line", set_line_height, &val);
   mrg->x = _mrg_dynamic_edge_left(mrg);
-  mrg->y += mrg->state->style.line_height * mrg_em (mrg);
 #ifdef SNAP
   float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
                                snap is better grid design */
@@ -4711,8 +4726,8 @@ static void _mrg_nl (Mrg *mrg)
     mrg->state->overflowed=1;
   }
 
-  if (mrg->state->post_nl)
-    mrg->state->post_nl (mrg, mrg->state->post_nl_data, 0);
+  //if (mrg->state->post_nl)
+  //  mrg->state->post_nl (mrg, mrg->state->post_nl_data, 0);
 }
 
 static void _mrg_spaces (Mrg *mrg, int count)
@@ -6110,14 +6125,8 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
   if (is_block_item (style))
   {
-    //MrgHtml *html = &mrg->html;
     if (mrg->state->got_text)
-    {
-      float val = mrg->state->line_max_height * ascent;
-      ctx_resolve (mrg->ctx, "line", set_line_height, &val);
-      //fprintf (stderr, "%f\n", mrg->state->line_max_height);
-      mrg->y += mrg->state->line_max_height * style->line_height;
-    }
+      _mrg_nl (mrg);
   }
 
   /* remember data to store about float, XXX: perhaps better to store
