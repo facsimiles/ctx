@@ -5687,7 +5687,7 @@ static int card_files (ITK *itk_, void *data)
         if (contents)
         {
            ctx_save (ctx);
-           mrg_print_xml (mrg, (char*)contents);
+           itk_print_xml (mrg, (char*)contents);
            ctx_restore (ctx);
            free (contents);
         }

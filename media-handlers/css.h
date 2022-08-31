@@ -1391,12 +1391,12 @@ float mrg_rem (Mrg *mrg)
 }
 
 
-void mrg_start            (Mrg *mrg, const char *class_name, void *id_ptr);
-void mrg_start_with_style (Mrg        *mrg,
+void itk_start            (Mrg *mrg, const char *class_name, void *id_ptr);
+void itk_start_with_style (Mrg        *mrg,
                            const char *style_id,
                            void       *id_ptr,
                            const char *style);
-void mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
+void itk_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
                             const char *format, ...);
 
 static void ctx_parse_style_id (Mrg          *mrg,
@@ -3661,7 +3661,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect);
 
 void mrg_set_style (Mrg *mrg, const char *style);
 
-void mrg_start_with_style (Mrg        *mrg,
+void itk_start_with_style (Mrg        *mrg,
                            const char *style_id,
                            void       *id_ptr,
                            const char *style)
@@ -3700,7 +3700,7 @@ void mrg_start_with_style (Mrg        *mrg,
 }
 
 void
-mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
+itk_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
                        const char *format, ...)
 {
   va_list ap;
@@ -3713,13 +3713,13 @@ mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  mrg_start_with_style (mrg, style_id, id_ptr, buffer);
+  itk_start_with_style (mrg, style_id, id_ptr, buffer);
   free (buffer);
 }
 
-void mrg_start (Mrg *mrg, const char *style_id, void *id_ptr)
+void itk_start (Mrg *mrg, const char *style_id, void *id_ptr)
 {
-  mrg_start_with_style (mrg, style_id, id_ptr, NULL);
+  itk_start_with_style (mrg, style_id, id_ptr, NULL);
 }
 
 static int compare_zindex (const void *a, const void *b, void *d)
@@ -3730,7 +3730,7 @@ static int compare_zindex (const void *a, const void *b, void *d)
 }
 
 // XXX can we return the geometry here?
-void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
+void itk_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
 {
   _mrg_layout_post (mrg, ret_rect);
   if (mrg->state_no == 0)
@@ -4738,10 +4738,10 @@ static void _mrg_spaces (Mrg *mrg, int count)
              _mrg_spaces (mrg, 1);\
          if (cursor_start == pos -1 && cursor_start>0 && mrg->text_edited)\
            {\
-             mrg_start (mrg, ".cursor", NULL);\
+             itk_start (mrg, ".cursor", NULL);\
              _mrg_spaces (mrg, 1);\
              _mrg_nl (mrg);\
-             mrg_end (mrg, NULL);\
+             itk_end (mrg, NULL);\
            }\
          else\
            _mrg_nl (mrg);\
@@ -4758,10 +4758,10 @@ static void _mrg_spaces (Mrg *mrg, int count)
              _mrg_spaces (mrg, 1);\
          if (cursor_start == *pos -1 && cursor_start>0 && mrg->text_edited)\
            {\
-             mrg_start (mrg, ".cursor", NULL);\
+             itk_start (mrg, ".cursor", NULL);\
              _mrg_spaces (mrg, 1);\
              _mrg_nl (mrg);\
-             mrg_end (mrg, NULL);\
+             itk_end (mrg, NULL);\
            }\
          else\
            _mrg_nl (mrg);\
@@ -4814,9 +4814,9 @@ static void emit_word (Mrg *mrg,
             if (cursor_start == *pos-1 && cursor_start>=0 && mrg->text_edited)
             { 
               if (print) { 
-               mrg_start (mrg, ".cursor", NULL);
+               itk_start (mrg, ".cursor", NULL);
                _mrg_spaces (mrg, 1); 
-               mrg_end (mrg, NULL);
+               itk_end (mrg, NULL);
               } else { 
                mrg->x += measure_word_width (mrg, " ");
               }
@@ -4826,9 +4826,9 @@ static void emit_word (Mrg *mrg,
                 if (print){
                   if (mrg->state->style.print_symbols)
                     {
-                      mrg_start (mrg, "dim", NULL);
+                      itk_start (mrg, "dim", NULL);
                       mrg->x += mrg_addstr (mrg, "␣", -1);
-                      mrg_end (mrg, NULL);
+                      itk_end (mrg, NULL);
                     }
                   else
                     _mrg_spaces (mrg, 1);
@@ -4850,9 +4850,9 @@ static void emit_word (Mrg *mrg,
         { 
 #if 0  // XXX: there is a bug in mrg_addstr it doesn't respect the length argument 
           mrg->x += mrg_addstr (mrg,  word, cursor_start - *pos);
-          mrg_start (mrg, ".cursor", NULL);
+          itk_start (mrg, ".cursor", NULL);
           mrg->x += mrg_addstr (mrg,  mrg_utf8_skip (word, cursor_start - *pos), 1);
-          mrg_end (mrg, NULL);
+          itk_end (mrg, NULL);
           mrg->x += mrg_addstr (mrg,  mrg_utf8_skip (word, cursor_start - *pos + 1), len - (cursor_start - *pos) - 1);
 #else
 
@@ -4865,9 +4865,9 @@ static void emit_word (Mrg *mrg,
           *((char*)ctx_utf8_skip (dup2, 1)) = 0;
 
           mrg->x += mrg_addstr (mrg,  dup, -1);
-          mrg_start (mrg, ".cursor", NULL);
+          itk_start (mrg, ".cursor", NULL);
           mrg->x += mrg_addstr (mrg,  dup2, -1);
-          mrg_end (mrg, NULL);
+          itk_end (mrg, NULL);
           mrg->x += mrg_addstr (mrg,  dup3, -1);
 
           free (dup);
@@ -4888,7 +4888,7 @@ static void emit_word (Mrg *mrg,
 
 }
 
-static int mrg_print_wrap (Mrg        *mrg,
+static int itk_print_wrap (Mrg        *mrg,
                            int         print,
                            const char *data, int length,
                            int         max_lines,
@@ -4942,9 +4942,9 @@ static int mrg_print_wrap (Mrg        *mrg,
 
           if (mrg->state->style.print_symbols && print)
           {
-            mrg_start (mrg, "dim", NULL);
+            itk_start (mrg, "dim", NULL);
             mrg->x+=mrg_addstr (mrg,  "¶", -1);\
-            mrg_end (mrg, NULL);
+            itk_end (mrg, NULL);
           }
           EMIT_NL();
           gotspace = 0;
@@ -4957,9 +4957,9 @@ static int mrg_print_wrap (Mrg        *mrg,
                 {
                   if (print)
                   {
-                    mrg_start (mrg, ".cursor", NULL);
+                    itk_start (mrg, ".cursor", NULL);
                     _mrg_spaces (mrg, 1);
-                    mrg_end (mrg, NULL);
+                    itk_end (mrg, NULL);
                   }
                   else
                     mrg->x+=mrg_addstr (mrg,  " ", -1);
@@ -4968,9 +4968,9 @@ static int mrg_print_wrap (Mrg        *mrg,
                 {
                   if (mrg->state->style.print_symbols)
                     {
-                      mrg_start (mrg, "dim", NULL);
+                      itk_start (mrg, "dim", NULL);
                       mrg->x+=mrg_addstr (mrg,  "␣", -1);
-                      mrg_end (mrg, NULL);
+                      itk_end (mrg, NULL);
                     }
                   else
                     {
@@ -5022,9 +5022,9 @@ static int mrg_print_wrap (Mrg        *mrg,
       {
         if (c && data[c-1]==' ')
           mrg->x += measure_word_width (mrg, " ");
-        mrg_start (mrg, ".cursor", NULL);
+        itk_start (mrg, ".cursor", NULL);
         _mrg_spaces (mrg, 1);
-        mrg_end (mrg, NULL);
+        itk_end (mrg, NULL);
       }
       else
         mrg->x += measure_word_width (mrg, " ");
@@ -5038,7 +5038,7 @@ static int mrg_print_wrap (Mrg        *mrg,
   return wraps;
 }
 
-int mrg_print_get_xy (Mrg *mrg, const char *string, int no, float *x, float *y)
+int itk_print_get_xy (Mrg *mrg, const char *string, int no, float *x, float *y)
 {
   int ret;
   if (!string)
@@ -5049,7 +5049,7 @@ int mrg_print_get_xy (Mrg *mrg, const char *string, int no, float *x, float *y)
       float ox, oy;
       ox = mrg->x;
       oy = mrg->y;
-      ret = mrg_print_wrap (mrg, 0, string, strlen (string), mrg->state->max_lines,
+      ret = itk_print_wrap (mrg, 0, string, strlen (string), mrg->state->max_lines,
                              mrg->state->skip_lines, no, x, y);
       mrg->x = ox;
       mrg->y = oy;
@@ -5073,7 +5073,7 @@ struct _MrgGlyph{
   int   no;
 };
 
-static int mrg_print_wrap2 (Mrg        *mrg,
+static int itk_print_wrap2 (Mrg        *mrg,
                            int         print,
                            const char *data, int length,
                            int         max_lines,
@@ -5138,9 +5138,9 @@ static int mrg_print_wrap2 (Mrg        *mrg,
 
           if (mrg->state->style.print_symbols && print)
           {
-            mrg_start (mrg, "dim", NULL);
+            itk_start (mrg, "dim", NULL);
             mrg->x+=mrg_addstr (mrg,  "¶", -1);\
-            mrg_end (mrg, NULL);
+            itk_end (mrg, NULL);
           }
           EMIT_NL();
           gotspace = 0;
@@ -5152,9 +5152,9 @@ static int mrg_print_wrap2 (Mrg        *mrg,
                 {
                   if (print)
                   {
-                    mrg_start (mrg, ".cursor", NULL);
+                    itk_start (mrg, ".cursor", NULL);
                     _mrg_spaces (mrg, 1);
-                    mrg_end (mrg, NULL);
+                    itk_end (mrg, NULL);
                   }
                   else
                     mrg->x+=mrg_addstr (mrg,  " ", -1);
@@ -5163,9 +5163,9 @@ static int mrg_print_wrap2 (Mrg        *mrg,
                 {
                   if (mrg->state->style.print_symbols)
                     {
-                      mrg_start (mrg, "dim", NULL);
+                      itk_start (mrg, "dim", NULL);
                       mrg->x+=mrg_addstr (mrg,  "␣", -1);
-                      mrg_end (mrg, NULL);
+                      itk_end (mrg, NULL);
                     }
                   else
                     {
@@ -5215,9 +5215,9 @@ static int mrg_print_wrap2 (Mrg        *mrg,
     {
       if (print)
       {
-        mrg_start (mrg, ".cursor", NULL);
+        itk_start (mrg, ".cursor", NULL);
         _mrg_spaces (mrg, 1);
-        mrg_end (mrg, NULL);
+        itk_end (mrg, NULL);
       }
       else
         mrg->x += measure_word_width (mrg, " ");
@@ -5233,7 +5233,7 @@ static int mrg_print_wrap2 (Mrg        *mrg,
   return wraps;
 }
 
-CtxList *mrg_print_get_coords (Mrg *mrg, const char *string)
+CtxList *itk_print_get_coords (Mrg *mrg, const char *string)
 {
   CtxList *ret = NULL;
   if (!string)
@@ -5244,7 +5244,7 @@ CtxList *mrg_print_get_coords (Mrg *mrg, const char *string)
       float ox, oy;
       ox = mrg->x;
       oy = mrg->y;
-      mrg_print_wrap2 (mrg, 0, string, strlen (string), mrg->state->max_lines,
+      itk_print_wrap2 (mrg, 0, string, strlen (string), mrg->state->max_lines,
                        mrg->state->skip_lines, &ret);
       mrg->x = ox;
       mrg->y = oy;
@@ -5256,7 +5256,7 @@ CtxList *mrg_print_get_coords (Mrg *mrg, const char *string)
 
 #include <math.h>
 
-int mrg_print (Mrg *mrg, const char *string)
+int itk_print (Mrg *mrg, const char *string)
 {
   float ret;
   CtxStyle *style = ctx_style (mrg);
@@ -5278,7 +5278,7 @@ int mrg_print (Mrg *mrg, const char *string)
     return 0;
 
   if (mrg_edge_left(mrg) != mrg_edge_right(mrg))
-   return mrg_print_wrap (mrg, 1, string, strlen (string), mrg->state->max_lines, mrg->state->skip_lines, mrg->cursor_pos, NULL, NULL);
+   return itk_print_wrap (mrg, 1, string, strlen (string), mrg->state->max_lines, mrg->state->skip_lines, mrg->cursor_pos, NULL, NULL);
 
   ret  = mrg_addstr (mrg,  string, ctx_utf8_strlen (string));
   mrg->x += ret;
@@ -5409,7 +5409,7 @@ static void cmd_down (CtxEvent *event, void *data1, void *data2)
   mrg_set_edge_left (mrg, e_s - PROP (padding_left));
   mrg_set_edge_right (mrg, e_e + PROP (padding_right));
   mrg_set_xy (mrg, e_x, e_y);
-  mrg_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
+  itk_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
 
   {
     int no;
@@ -5422,7 +5422,7 @@ static void cmd_down (CtxEvent *event, void *data1, void *data2)
       float x = 0, y = 0;
       float attempt_score = 0.0;
       mrg_set_xy (mrg, e_x, e_y);
-      mrg_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
+      itk_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
 
       if (y > cy && best_y == cy)
         best_y = y;
@@ -5469,7 +5469,7 @@ static void cmd_up (CtxEvent *event, void *data1, void *data2)
   mrg_set_edge_right (mrg, e_e + PROP(padding_right));
 
   mrg_set_xy (mrg, e_x, e_y);
-  mrg_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
+  itk_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
 
   /* XXX: abstract the finding of best cursor pos for x coord to a function */
   {
@@ -5482,7 +5482,7 @@ static void cmd_up (CtxEvent *event, void *data1, void *data2)
       float x = 0, y = 0;
       float attempt_score = 0.0;
       mrg_set_xy (mrg, e_x, e_y);
-      mrg_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
+      itk_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
 
       if (y < cy && best_y == cy)
         best_y = y;
@@ -5683,7 +5683,7 @@ void mrg_edit_string (Mrg *mrg, char **string,
 #endif
 
 void
-mrg_printf (Mrg *mrg, const char *format, ...)
+itk_printf (Mrg *mrg, const char *format, ...)
 {
   va_list ap;
   size_t needed;
@@ -5695,7 +5695,7 @@ mrg_printf (Mrg *mrg, const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  mrg_print (mrg, buffer);
+  itk_print (mrg, buffer);
   free (buffer);
 }
 
@@ -5818,7 +5818,7 @@ void _mrg_layout_pre (Mrg *mrg)
     float x = mrg->x;
     
     mrg->x -= mrg_em (mrg) * 0.5;
-    mrg_print (mrg, "•");
+    itk_print (mrg, "•");
     mrg->x = x;
     mrg->state->got_text = 0;
   }
@@ -6286,7 +6286,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   mrg->state_no--;
   if (mrg->state_no < 0)
   {
-    fprintf (stderr, "unbalanced mrg_start/mrg_end, enderflow %i\n", mrg->state_no);
+    fprintf (stderr, "unbalanced itk_start/itk_end, enderflow %i\n", mrg->state_no);
     mrg->state_no = 0;
   }
   mrg->state = &mrg->states[mrg->state_no];
@@ -7231,7 +7231,7 @@ void mrg_xml_render (Mrg *mrg,
           if (data[0]=='#')
           {
             int c = atoi (&data[1]);
-            mrg_printf (mrg, "%c", c);
+            itk_printf (mrg, "%c", c);
           }
           else
           {
@@ -7239,15 +7239,15 @@ void mrg_xml_render (Mrg *mrg,
           for (i = 0; entities[i].name && !dealt_with; i++)
             if (hash == entities[i].name)
             {
-              mrg_print (mrg, entities[i].value);
+              itk_print (mrg, entities[i].value);
               dealt_with = 1;
             }
           }
 
           if (!dealt_with){
-            mrg_start (mrg, "dim", (void*)((size_t)pos));
-            mrg_print (mrg, data);
-            mrg_end (mrg, NULL);
+            itk_start (mrg, "dim", (void*)((size_t)pos));
+            itk_print (mrg, data);
+            itk_end (mrg, NULL);
           }
         }
         break;
@@ -7258,7 +7258,7 @@ void mrg_xml_render (Mrg *mrg,
         }
         else
         {
-          mrg_print (mrg, data);
+          itk_print (mrg, data);
         }
         whitespaces = 0;
         break;
@@ -7274,7 +7274,7 @@ void mrg_xml_render (Mrg *mrg,
           {
             case CTX_WHITE_SPACE_PRE: /* handles as pre-wrap for now */
             case CTX_WHITE_SPACE_PRE_WRAP:
-              mrg_print (mrg, data);
+              itk_print (mrg, data);
               break;
             case CTX_WHITE_SPACE_PRE_LINE:
               switch (*data)
@@ -7282,7 +7282,7 @@ void mrg_xml_render (Mrg *mrg,
                 case ' ':
                   whitespaces ++;
                   if (whitespaces == 1)
-                    mrg_print (mrg, " ");
+                    itk_print (mrg, " ");
                   break;
                 case '\n':
                   whitespaces = 0;
@@ -7293,7 +7293,7 @@ void mrg_xml_render (Mrg *mrg,
             case CTX_WHITE_SPACE_NORMAL: 
               whitespaces ++;
               if (whitespaces == 1)
-                mrg_print (mrg, " ");
+                itk_print (mrg, " ");
               break;
           }
         }
@@ -7366,19 +7366,19 @@ void mrg_xml_render (Mrg *mrg,
 
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
-          mrg_end (mrg, NULL);
+          itk_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
-          mrg_end (mrg, NULL);
+          itk_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
         }
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
-          mrg_end (mrg, NULL);
+          itk_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
-          mrg_end (mrg, NULL);
+          itk_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
         }
@@ -7390,7 +7390,7 @@ void mrg_xml_render (Mrg *mrg,
                       (data_hash == CTX_dd && tag[depth-1] == CTX_dd) ||
                       (data_hash == CTX_p &&  tag[depth-1] == CTX_p)))
         {
-          mrg_end (mrg, NULL);
+          itk_end (mrg, NULL);
         //ctx_restore (mrg->ctx);
           depth--;
         }
@@ -7432,7 +7432,7 @@ void mrg_xml_render (Mrg *mrg,
             free (klass);
             /* collect XML attributes and convert into CSS declarations */
           ctx_string_append_str (style, PROPS(style));
-          mrg_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
+          itk_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
         if (data_hash == CTX_g)
@@ -7558,7 +7558,7 @@ void mrg_xml_render (Mrg *mrg,
           }
           else
           {
-            mrg_printf (mrg, "![%s]", src);
+            itk_printf (mrg, "![%s]", src);
           }
         }
 #if 1
@@ -7571,7 +7571,7 @@ void mrg_xml_render (Mrg *mrg,
           case CTX_br:
           case CTX_hr:
             should_be_empty = 1;
-            mrg_end (mrg, NULL);
+            itk_end (mrg, NULL);
             //ctx_restore (mrg->ctx);
             depth--;
         }
@@ -7589,7 +7589,7 @@ void mrg_xml_render (Mrg *mrg,
             mrg_text_listen_done (mrg);
           }
           in_style = 0;
-          mrg_end (mrg, NULL);
+          itk_end (mrg, NULL);
           //ctx_restore (mrg->ctx);
           depth--;
 
@@ -7598,13 +7598,13 @@ void mrg_xml_render (Mrg *mrg,
           {
             if (tag[depth] == CTX_p)
             {
-              mrg_end (mrg, NULL);
+              itk_end (mrg, NULL);
               //ctx_restore (mrg->ctx);
               depth --;
             } else 
             if (depth > 0 && tag[depth-1] == data_hash)
             {
-              mrg_end (mrg, NULL);
+              itk_end (mrg, NULL);
               //ctx_restore (mrg->ctx);
               depth --;
             }
@@ -7614,7 +7614,7 @@ void mrg_xml_render (Mrg *mrg,
               for (i = 0; i < 2; i ++)
               {
                 depth --;
-                mrg_end (mrg, NULL);
+                itk_end (mrg, NULL);
                 //nctx_restore (mrg->ctx);
               }
             }
@@ -7627,7 +7627,7 @@ void mrg_xml_render (Mrg *mrg,
               for (i = 0; i < 3; i ++)
               {
                 depth --;
-                mrg_end (mrg, NULL);
+                itk_end (mrg, NULL);
                // ctx_restore (mrg->ctx);
               }
             }
@@ -7639,7 +7639,7 @@ void mrg_xml_render (Mrg *mrg,
               for (i = 0; i < 4; i ++)
               {
                 depth --;
-                mrg_end (mrg, NULL);
+                itk_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
             }
@@ -7651,7 +7651,7 @@ void mrg_xml_render (Mrg *mrg,
               for (i = 0; i < 5; i ++)
               {
                 depth --;
-                mrg_end (mrg, NULL);
+                itk_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
             }
@@ -7661,16 +7661,16 @@ void mrg_xml_render (Mrg *mrg,
               if (data_hash == CTX_table && tag[depth] == CTX_td)
               {
                 depth--;
-                mrg_end (mrg, NULL);
+                itk_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
                 depth--;
-                mrg_end (mrg, NULL);
+                itk_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
               else if (data_hash == CTX_table && tag[depth] == CTX_tr)
               {
                 depth--;
-                mrg_end (mrg, NULL);
+                itk_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
             }
@@ -7687,7 +7687,7 @@ void mrg_xml_render (Mrg *mrg,
     while (depth > 0)
     {
       fprintf (stderr, " %s ", squoze32_decode (tag[depth-1]));
-      mrg_end (mrg, NULL);
+      itk_end (mrg, NULL);
       depth--;
     }
     fprintf (stderr, "\n");
@@ -7729,13 +7729,13 @@ void mrg_xml_renderf (Mrg *mrg,
 }
 void _mrg_init (Mrg *mrg, Ctx *ctx, int width, int height);
 
-void mrg_print_xml (Mrg *mrg, const char *xml)
+void itk_print_xml (Mrg *mrg, const char *xml)
 {
   mrg_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
 }
 
 void
-mrg_printf_xml (Mrg *mrg, const char *format, ...)
+itk_printf_xml (Mrg *mrg, const char *format, ...)
 {
   va_list ap;
   size_t needed;
@@ -7747,7 +7747,7 @@ mrg_printf_xml (Mrg *mrg, const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  mrg_print_xml (mrg, buffer);
+  itk_print_xml (mrg, buffer);
   free (buffer);
 }
 

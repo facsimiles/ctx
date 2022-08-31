@@ -8,7 +8,7 @@
 
 typedef struct _Mrg Mrg;
 Mrg *mrg_new (Ctx *ctx, int width, int height);
-void mrg_print_xml (Mrg *mrg, const char *str);
+void itk_print_xml (Mrg *mrg, const char *str);
 
 int ctx_terminal_rows (void);
 int ctx_terminal_cols (void);
@@ -730,7 +730,7 @@ again:
       unsigned char *contents = NULL;
       long length;
       _file_get_contents (source_path, &contents, &length);
-      mrg_print_xml (mrg, (char *) contents);
+      itk_print_xml (mrg, (char *) contents);
     }
   else if (!strcmp (get_suffix (source_path), ".ctxf"))
     {

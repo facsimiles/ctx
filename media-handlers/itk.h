@@ -249,13 +249,13 @@ void itk_choices_end (ITK *itk);
 typedef struct _Mrg          Mrg;
 typedef struct _CtxStyle     CtxStyle;
 
-void mrg_start            (Mrg *mrg, const char *class_name, void *id_ptr);
-void mrg_start_with_style (Mrg        *mrg,
+void itk_start            (Mrg *mrg, const char *class_name, void *id_ptr);
+void itk_start_with_style (Mrg        *mrg,
                            const char *style_id,
                            void       *id_ptr,
                            const char *style);
 
-void mrg_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
+void itk_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
                             const char *format, ...);
 void mrg_xml_render (Mrg *mrg,
                      char *uri_base,
@@ -266,15 +266,15 @@ void mrg_xml_render (Mrg *mrg,
                      char *html_);
 
 void
-mrg_printf (Mrg *mrg, const char *format, ...);
+itk_printf (Mrg *mrg, const char *format, ...);
 
-void mrg_print_xml (Mrg *mrg, const char *xml);
-
-void
-mrg_printf_xml (Mrg *mrg, const char *format, ...);
+void itk_print_xml (Mrg *mrg, const char *xml);
 
 void
-mrg_print_xml (Mrg *mrg, const char *utf8);
+itk_printf_xml (Mrg *mrg, const char *format, ...);
+
+void
+itk_print_xml (Mrg *mrg, const char *utf8);
 
 // returns width added horizontally
 float mrg_addstr (Mrg *mrg, const char *string, int utf8_length);
@@ -283,7 +283,7 @@ void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
                          int priority, char **error);
 CtxStyle *ctx_style (Mrg *mrg);
 
-void mrg_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
+void itk_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
 
 #ifdef ITK_IMPLEMENTATION
 #include "css.h"
@@ -764,17 +764,17 @@ void itk_seperator (ITK *itk)
 {
   Mrg *mrg = (Mrg*)itk;
   itk_choices_end (itk);
-  mrg_start (mrg, "hr", NULL);
-  mrg_end (mrg, NULL);
+  itk_start (mrg, "hr", NULL);
+  itk_end (mrg, NULL);
 }
 
 void itk_label (ITK *itk, const char *label)
 {
   Mrg *mrg = (Mrg*)itk;
   itk_choices_end (itk);
-  //mrg_start (mrg, "label", NULL);
-  mrg_print (mrg, label);
-  //mrg_end (mrg, NULL);
+  //itk_start (mrg, "label", NULL);
+  itk_print (mrg, label);
+  //itk_end (mrg, NULL);
 }
 
 void itk_labelf (ITK *itk, const char *format, ...)
@@ -968,7 +968,7 @@ ITKPanel *itk_panel_start (ITK *itk, const char *title,
     itk_titlebar (itk, title);
 
   itk_scroll_start (itk, panel->height - (itk->y - panel->y));
-  mrg_start ((Mrg*)itk, "div", NULL);
+  itk_start (itk, "div", NULL);
   return panel;
 }
 
@@ -987,7 +987,7 @@ void itk_panel_end (ITK *itk)
   ITKPanel *panel = itk->panel;
   itk_choices_end (itk);
   float em = itk_em (itk);
-  mrg_end ((Mrg*)itk, NULL);
+  itk_end ((Mrg*)itk, NULL);
   itk_scroll_end (itk);
 
   ctx_rectangle (ctx, panel->x + panel->width - em,
@@ -1118,22 +1118,22 @@ float itk_slider (ITK *itk, const char *label, float value, double min, double m
   Ctx *ctx = itk->ctx;
 
   if (itk->focus_no == itk->control_no)
-    mrg_start (mrg, "propline:focused", NULL);
+    itk_start (mrg, "propline:focused", NULL);
   else
-    mrg_start (mrg, "propline", NULL);
+    itk_start (mrg, "propline", NULL);
   itk_label (itk, label);
 
   CtxFloatRectangle extent;
-  mrg_start (mrg, "slider", NULL);
-  mrg_printf (mrg, "%f", value);
-  mrg_end (mrg, &extent);
+  itk_start (mrg, "slider", NULL);
+  itk_printf (mrg, "%f", value);
+  itk_end (mrg, &extent);
   CtxControl *control = itk_add_control (itk, UI_SLIDER, label,
                                          extent.x, extent.y, extent.width, extent.height);
   control->value  = value;
   control->min  = min;
   control->max  = max;
   control->step = step;
-  mrg_end (mrg, NULL);
+  itk_end (mrg, NULL);
 
   if (control->no == itk->focus_no && itk->return_value)
   {
@@ -1296,9 +1296,9 @@ char *itk_entry (ITK        *itk,
   itk_choices_end (itk);
 #if 1
   if (itk->focus_no == itk->control_no)
-    mrg_start (mrg, "propline:focused", NULL);
+    itk_start (mrg, "propline:focused", NULL);
   else
-    mrg_start (mrg, "propline", NULL);
+    itk_start (mrg, "propline", NULL);
   itk_label (itk, label);
 
   if (itk->active &&
@@ -1334,7 +1334,7 @@ char *itk_entry (ITK        *itk,
   }
 
   CtxFloatRectangle extent;
-  mrg_end (mrg, &extent);
+  itk_end (mrg, &extent);
   CtxControl *control = itk_add_control (itk, UI_ENTRY, label,
                   extent.x, extent.y, extent.width, extent.height);
   control->entry_value = strdup (in_val);
@@ -1472,24 +1472,24 @@ int itk_toggle (ITK *itk, const char *label, int input_val)
   CtxFloatRectangle extent;
   
   if (itk->focus_no == itk->control_no)
-    mrg_start (mrg, "propline:focused", NULL);
+    itk_start (mrg, "propline:focused", NULL);
   else
-    mrg_start (mrg, "propline", NULL);
-  mrg_start (mrg, "toggle", NULL);
+    itk_start (mrg, "propline", NULL);
+  itk_start (mrg, "toggle", NULL);
 
-  mrg_print (mrg, label);
+  itk_print (mrg, label);
 
   if (input_val)
   {
-      mrg_print (mrg, "[x]");
+      itk_print (mrg, "[x]");
   }
   else
   {
-      mrg_print (mrg, "[ ]");
+      itk_print (mrg, "[ ]");
   }
 
-  mrg_end (mrg, &extent);
-  mrg_end (mrg, NULL);
+  itk_end (mrg, &extent);
+  itk_end (mrg, NULL);
   CtxControl *control = itk_add_control (itk, UI_TOGGLE, label,
                   extent.x, extent.y, extent.width, extent.height);
 
@@ -1519,24 +1519,24 @@ int itk_radio (ITK *itk, const char *label, int set)
   CtxFloatRectangle extent;
   
   if (itk->focus_no == itk->control_no)
-    mrg_start (mrg, "propline:focused", NULL);
+    itk_start (mrg, "propline:focused", NULL);
   else
-    mrg_start (mrg, "propline", NULL);
-  mrg_start (mrg, "toggle", NULL);
+    itk_start (mrg, "propline", NULL);
+  itk_start (mrg, "toggle", NULL);
 
-  mrg_print (mrg, label);
+  itk_print (mrg, label);
 
   if (set)
   {
-      mrg_print (mrg, "(x)");
+      itk_print (mrg, "(x)");
   }
   else
   {
-      mrg_print (mrg, "( )");
+      itk_print (mrg, "( )");
   }
 
-  mrg_end (mrg, &extent);
-  mrg_end (mrg, NULL);
+  itk_end (mrg, &extent);
+  itk_end (mrg, NULL);
   CtxControl *control = itk_add_control (itk, UI_TOGGLE, label,
                   extent.x, extent.y, extent.width, extent.height);
 
@@ -1571,13 +1571,13 @@ int itk_expander (ITK *itk, const char *label, int *val)
   itk_choices_end (itk);
   CtxFloatRectangle extent;
   if (itk->focus_no == itk->control_no)
-    mrg_start (mrg, "propline:focused", NULL);
+    itk_start (mrg, "propline:focused", NULL);
   else
-    mrg_start (mrg, "propline", NULL);
+    itk_start (mrg, "propline", NULL);
 
   itk_labelf (itk, "%s %s", *val?"V":">", label);
 
-  mrg_end (mrg, &extent);
+  itk_end (mrg, &extent);
   CtxControl *control = itk_add_control (itk, UI_EXPANDER, label,
                   extent.x, extent.y, extent.width, extent.height);
   control->val = val;
@@ -1594,13 +1594,13 @@ int itk_button (ITK *itk, const char *label)
   //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
   CtxFloatRectangle extent;
    
-  mrg_start (mrg, itk->focus_no == itk->control_no ? "button:focused" : "button", NULL);
+  itk_start (mrg, itk->focus_no == itk->control_no ? "button:focused" : "button", NULL);
 
 //  itk_label (itk, label);
-  mrg_print (mrg, label);
+  itk_print (mrg, label);
 
 
-  mrg_end (mrg, &extent);
+  itk_end (mrg, &extent);
   CtxControl *control = itk_add_control (itk, UI_BUTTON, label,
                   extent.x, extent.y, extent.width, extent.height);
                              //itk->x, itk->y, width, em * itk->rel_ver_advance);
@@ -1701,15 +1701,15 @@ int itk_choice (ITK *itk, const char *label, int val)
   CtxFloatRectangle extent;
   
   if (itk->focus_no == itk->control_no)
-    mrg_start (mrg, "propline:focused", NULL);
+    itk_start (mrg, "propline:focused", NULL);
   else
-    mrg_start (mrg, "propline", NULL);
-  //mrg_start (mrg, "choice", NULL);
+    itk_start (mrg, "propline", NULL);
+  //itk_start (mrg, "choice", NULL);
 
-  mrg_printf (mrg, "%s %i", label, val);
+  itk_printf (mrg, "%s %i", label, val);
 
-  //mrg_end (mrg, NULL);
-  mrg_end (mrg, &extent);
+  //itk_end (mrg, NULL);
+  itk_end (mrg, &extent);
   CtxControl *control = itk_add_control (itk, UI_CHOICE, label,
                   extent.x, extent.y, extent.width, extent.height);
   control->value = val;
@@ -1769,23 +1769,23 @@ void itk_choice_add (ITK *itk, int value, const char *label)
      {
        if (!itk->in_choices)
        {
-          mrg_start (mrg, "div.choice_menu_wrap", NULL);
-          mrg_start (mrg, "div.choice_menu", NULL);
+          itk_start (mrg, "div.choice_menu_wrap", NULL);
+          itk_start (mrg, "div.choice_menu", NULL);
           itk->in_choices = 1;
      }
      if (((int)control->value) == value)
-       mrg_start (mrg, "div.choice:chosen", NULL);
+       itk_start (mrg, "div.choice:chosen", NULL);
      else
-       mrg_start (mrg, "div.choice", NULL);
-     mrg_print (mrg, label);
-     mrg_end (mrg, NULL);
+       itk_start (mrg, "div.choice", NULL);
+     itk_print (mrg, label);
+     itk_end (mrg, NULL);
      }
      else
      {
        if (!itk->in_choices)
        {
-          mrg_start (mrg, "div.choice_menu_wrap", NULL);
-          mrg_start (mrg, "div", NULL);
+          itk_start (mrg, "div.choice_menu_wrap", NULL);
+          itk_start (mrg, "div", NULL);
 	  itk->in_choices = 1;
        }
      }
@@ -1794,8 +1794,8 @@ void itk_choice_add (ITK *itk, int value, const char *label)
   {
        if (!itk->in_choices)
        {
-          mrg_start (mrg, "div.choice_menu_wrap", NULL);
-          mrg_start (mrg, "div", NULL);
+          itk_start (mrg, "div.choice_menu_wrap", NULL);
+          itk_start (mrg, "div", NULL);
 	  itk->in_choices = 1;
        }
   }
@@ -1806,8 +1806,8 @@ void itk_choices_end (ITK *itk)
   if (itk->in_choices)
   {
     Mrg *mrg = (Mrg*)itk;
-    mrg_end (mrg, NULL);
-    mrg_end (mrg, NULL);
+    itk_end (mrg, NULL);
+    itk_end (mrg, NULL);
     itk->in_choices = 0;
   }
 }
@@ -2879,15 +2879,15 @@ Ctx *itk_ctx (ITK *itk)
   return itk->ctx;
 }
 
-void        itk_set_scale (ITK *itk, float scale)
+void itk_set_scale (ITK *itk, float scale)
 {
   itk->scale = scale;
   ctx_queue_draw (itk->ctx);
 }
 
-float       itk_scale (ITK *itk)
+float itk_scale (ITK *itk)
 {
-        return itk->scale;
+  return itk->scale;
 }
 
 int itk_focus_no (ITK *itk)
@@ -2895,7 +2895,7 @@ int itk_focus_no (ITK *itk)
   return itk->focus_no;
 }
 
-int         itk_is_editing_entry (ITK *itk)
+int itk_is_editing_entry (ITK *itk)
 {
   return itk->entry_copy != NULL;
 }
