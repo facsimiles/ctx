@@ -1148,10 +1148,10 @@ void mrg_clear (Mrg *mrg)
   _mrg_clear_text_closures (mrg);
 }
 
-void mrg_set_edge_right (Mrg *mrg, float val);
-void mrg_set_edge_left (Mrg *mrg, float val);
-void mrg_set_edge_top (Mrg *mrg, float val);
-void mrg_set_edge_bottom (Mrg *mrg, float val);
+void itk_set_edge_right (Mrg *mrg, float val);
+void itk_set_edge_left (Mrg *mrg, float val);
+void itk_set_edge_top (Mrg *mrg, float val);
+void itk_set_edge_bottom (Mrg *mrg, float val);
 float mrg_edge_right (Mrg *mrg);
 float mrg_edge_left (Mrg *mrg);
 float mrg_y (Mrg *mrg);
@@ -1359,30 +1359,42 @@ float mrg_edge_right (Mrg *mrg)
 float _mrg_dynamic_edge_right (Mrg *mrg);
 float _mrg_dynamic_edge_left (Mrg *mrg);
 
-void  mrg_set_edge_top (Mrg *mrg, float val)
+void itk_set_edge_top (ITK *itk, float edge)
 {
-  mrg->state->edge_top = val;
+  Mrg *mrg = itk;
+  itk->state->edge_top = edge;
 
   // we always set top last, since it causes the
   // reset of line handling
   //
   mrg_set_xy (mrg, _mrg_dynamic_edge_left (mrg) + ctx_get_float (mrg_ctx(mrg), CTX_text_indent)
       , mrg->state->edge_top);// + mrg_em (mrg));
+
+
+   itk->edge_top = edge;
+   itk->edge_bottom = itk->height + itk->edge_top;
 }
 
-void  mrg_set_edge_left (Mrg *mrg, float val)
+void  itk_set_edge_left (Mrg *itk, float val)
 {
-  mrg->state->edge_left = val;
+  itk->state->edge_left = val;
+  itk->edge_left = val;
+  itk->edge_right = itk->width + itk->edge_left;
 }
 
-void  mrg_set_edge_bottom (Mrg *mrg, float val)
+
+void itk_set_edge_bottom (ITK *itk, float edge)
 {
-  mrg->state->edge_bottom = val;
+   itk->state->edge_bottom = edge;
+   itk->edge_bottom = edge;
+   itk->height = itk->edge_bottom - itk->edge_top;
 }
 
-void  mrg_set_edge_right (Mrg *mrg, float val)
+void itk_set_edge_right (ITK *itk, float edge)
 {
-  mrg->state->edge_right = val;
+   itk->state->edge_right = edge;
+   itk->edge_right = edge;
+   itk->width      = itk->edge_right - itk->edge_left;
 }
 
 float mrg_rem (Mrg *mrg)
@@ -3583,10 +3595,10 @@ void ctx_style_defaults (Mrg *mrg)
   float em = 32;
   mrg_set_em (mrg,  em);
   mrg_set_rem (mrg, em);
-  mrg_set_edge_left (mrg, 0);
-  mrg_set_edge_right (mrg, mrg_width (mrg));
-  mrg_set_edge_bottom (mrg, mrg_height (mrg));
-  mrg_set_edge_top (mrg, 0);
+  itk_set_edge_left (mrg, 0);
+  itk_set_edge_right (mrg, mrg_width (mrg));
+  itk_set_edge_bottom (mrg, mrg_height (mrg));
+  itk_set_edge_top (mrg, 0);
   mrg_set_line_height (mrg, 1.2);
 
   SET_PROP(stroke_width, 1.0f);
@@ -5406,8 +5418,8 @@ static void cmd_down (CtxEvent *event, void *data1, void *data2)
   cx = cy = 0;
  
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
-  mrg_set_edge_left (mrg, e_s - PROP (padding_left));
-  mrg_set_edge_right (mrg, e_e + PROP (padding_right));
+  itk_set_edge_left (mrg, e_s - PROP (padding_left));
+  itk_set_edge_right (mrg, e_e + PROP (padding_right));
   mrg_set_xy (mrg, e_x, e_y);
   itk_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
 
@@ -5465,8 +5477,8 @@ static void cmd_up (CtxEvent *event, void *data1, void *data2)
   float cx = 0.0f, cy = 0.0f;
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
 
-  mrg_set_edge_left  (mrg, e_s - PROP(padding_left));
-  mrg_set_edge_right (mrg, e_e + PROP(padding_right));
+  itk_set_edge_left  (mrg, e_s - PROP(padding_left));
+  itk_set_edge_right (mrg, e_e + PROP(padding_right));
 
   mrg_set_xy (mrg, e_x, e_y);
   itk_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
@@ -5787,13 +5799,13 @@ void _mrg_layout_pre (Mrg *mrg)
     if (PROP(padding_left) + PROP(margin_left) + PROP(border_left_width)
         != 0)
     {
-      mrg_set_edge_left (mrg, mrg_edge_left (mrg) +
+      itk_set_edge_left (mrg, mrg_edge_left (mrg) +
         PROP(padding_left) + PROP(margin_left) + PROP(border_left_width));
     }
     if (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)
         != 0)
     {
-      mrg_set_edge_right (mrg, mrg_edge_right (mrg) -
+      itk_set_edge_right (mrg, mrg_edge_right (mrg) -
         (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)));
     }
 
@@ -5805,7 +5817,7 @@ void _mrg_layout_pre (Mrg *mrg)
     else
       actual_top = 0;
 
-    mrg_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + actual_top);
+    itk_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + actual_top);
 
     mrg->state->block_start_x = mrg_edge_left (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
@@ -5851,8 +5863,8 @@ void _mrg_layout_pre (Mrg *mrg)
             mrg_edge_right(mrg)-mrg_edge_left(mrg))
         {
           clear_both (mrg);
-          mrg_set_edge_left (mrg, mrg_edge_right (mrg) - width);
-          mrg_set_edge_right (mrg, mrg_edge_right (mrg) - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
+          itk_set_edge_left (mrg, mrg_edge_right (mrg) - width);
+          itk_set_edge_right (mrg, mrg_edge_right (mrg) - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
 
         }
         else
@@ -5864,12 +5876,12 @@ void _mrg_layout_pre (Mrg *mrg)
           dynamic_edge_left = _mrg_parent_dynamic_edge_left(mrg);
         }
 
-        mrg_set_edge_left (mrg, dynamic_edge_right - width);
-        mrg_set_edge_right (mrg, dynamic_edge_right - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
+        itk_set_edge_left (mrg, dynamic_edge_right - width);
+        itk_set_edge_right (mrg, dynamic_edge_right - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
 
         }
 
-        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top))); // - mrg->state->vmarg));
+        itk_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top))); // - mrg->state->vmarg));
 
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
@@ -5904,10 +5916,10 @@ void _mrg_layout_pre (Mrg *mrg)
           left = dynamic_edge_left + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
         }
 
-        mrg_set_edge_left (mrg, left);
-        mrg_set_edge_right (mrg,  left + width +
+        itk_set_edge_left (mrg, left);
+        itk_set_edge_right (mrg,  left + width +
             PROP(padding_left) /* + PROP(border_right_width)*/);
-        mrg_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top)));// - mrg->state->vmarg));
+        itk_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top)));// - mrg->state->vmarg));
                         //));//- mrg->state->vmarg));
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);// + PROP(padding_top) + PROP(border_top_width);
@@ -5923,7 +5935,7 @@ void _mrg_layout_pre (Mrg *mrg)
       {
          float width = PROP(width);
          if (width)
-           mrg_set_edge_right (mrg, mrg->state->block_start_x  + width);
+           itk_set_edge_right (mrg, mrg->state->block_start_x  + width);
       }
       break;
     case CTX_POSITION_ABSOLUTE:
@@ -5939,9 +5951,9 @@ void _mrg_layout_pre (Mrg *mrg)
 	  top = mrg->y;
 
         mrg->state->floats = 0;
-        mrg_set_edge_left (mrg, left + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
-        mrg_set_edge_right (mrg, left + PROP(width));
-        mrg_set_edge_top (mrg, top + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
+        itk_set_edge_left (mrg, left + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
+        itk_set_edge_right (mrg, left + PROP(width));
+        itk_set_edge_top (mrg, top + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
       }
@@ -5961,9 +5973,9 @@ void _mrg_layout_pre (Mrg *mrg)
         ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
         mrg->state->floats = 0;
 
-        mrg_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
-        mrg_set_edge_right (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left) + width);//mrg_width (mrg) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right)); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
-        mrg_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
+        itk_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
+        itk_set_edge_right (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left) + width);//mrg_width (mrg) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right)); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
+        itk_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
       }

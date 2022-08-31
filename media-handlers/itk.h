@@ -2807,35 +2807,10 @@ void itk_set_height (ITK *itk, float height)
 {
    itk->height = height;
    itk->edge_bottom = itk->edge_top + height;
-   mrg_set_edge_top ((Mrg*)itk, itk->edge_top);
-   mrg_set_edge_bottom ((Mrg*)itk, itk->edge_bottom);
+   itk_set_edge_top ((Mrg*)itk, itk->edge_top);
+   itk_set_edge_bottom ((Mrg*)itk, itk->edge_bottom);
 }
 
-void itk_set_edge_bottom (ITK *itk, float edge)
-{
-   mrg_set_edge_bottom ((Mrg*)itk, edge);
-   itk->edge_bottom = edge;
-   itk->height = itk->edge_bottom - itk->edge_top;
-}
-void itk_set_edge_top (ITK *itk, float edge)
-{
-   mrg_set_edge_top ((Mrg*)itk, edge);
-   itk->edge_top = edge;
-   itk->edge_bottom = itk->height + itk->edge_top;
-}
-void itk_set_edge_left (ITK *itk, float edge)
-{
-   mrg_set_edge_left ((Mrg*)itk, edge);
-   itk->edge_left = edge;
-   itk->edge_right = itk->width + itk->edge_left;
-
-}
-void itk_set_edge_right (ITK *itk, float edge)
-{
-   mrg_set_edge_right ((Mrg*)itk, edge);
-   itk->edge_right = edge;
-   itk->width      = itk->edge_right - itk->edge_left;
-}
 float itk_edge_bottom (ITK *itk)
 {
    return itk->edge_bottom ;
@@ -2860,8 +2835,8 @@ void itk_set_wrap_width (ITK *itk, float wwidth)
 {
     itk->width = wwidth;
     itk->edge_right = itk->edge_left + wwidth;
-    mrg_set_edge_right ((Mrg*)itk, itk->edge_right);
-    mrg_set_edge_left ((Mrg*)itk, itk->edge_left);
+    itk_set_edge_right ((Mrg*)itk, itk->edge_right);
+    itk_set_edge_left ((Mrg*)itk, itk->edge_left);
 }
 
 float itk_edge_right (ITK *itk)
