@@ -3494,7 +3494,7 @@ static float deco_width (Mrg *mrg)
   return PROP (padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width);
 }
 
-void mrg_set_style (Mrg *mrg, const char *style)
+void itk_set_style (Mrg *mrg, const char *style)
 {
   CtxStyle *s;
 
@@ -3550,18 +3550,18 @@ void mrg_set_style (Mrg *mrg, const char *style)
   css_parse_properties (mrg, style, ctx_css_handle_property_pass2);
 }
 
-void _mrg_set_style_properties (Mrg *mrg, const char *style_properties)
+void _itk_set_style_properties (Mrg *mrg, const char *style_properties)
 {
   _ctx_initial_style (mrg);
 
   if (style_properties)
   {
-    mrg_set_style (mrg, style_properties);
+    itk_set_style (mrg, style_properties);
   }
 }
 
 void
-mrg_set_stylef (Mrg *mrg, const char *format, ...)
+itk_set_stylef (Mrg *mrg, const char *format, ...)
 {
   va_list ap;
   size_t needed;
@@ -3573,7 +3573,7 @@ mrg_set_stylef (Mrg *mrg, const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  mrg_set_style (mrg, buffer);
+  itk_set_style (mrg, buffer);
   free (buffer);
 }
 
@@ -3659,7 +3659,7 @@ mrg_get_contents (Mrg         *mrg,
 void _mrg_layout_pre (Mrg *mrg);
 void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect);
 
-void mrg_set_style (Mrg *mrg, const char *style);
+void itk_set_style (Mrg *mrg, const char *style);
 
 void itk_start_with_style (Mrg        *mrg,
                            const char *style_id,
@@ -3688,13 +3688,13 @@ void itk_start_with_style (Mrg        *mrg,
     char *collated_style = _ctx_stylesheet_collate_style (mrg);
     if (collated_style)
     {
-      mrg_set_style (mrg, collated_style);
+      itk_set_style (mrg, collated_style);
       free (collated_style);
     }
   }
   if (style)
   {
-    mrg_set_style (mrg, style);
+    itk_set_style (mrg, style);
   }
   _mrg_layout_pre (mrg);
 }
@@ -5699,9 +5699,10 @@ itk_printf (Mrg *mrg, const char *format, ...)
   free (buffer);
 }
 
-void  mrg_set_font_size   (Mrg *mrg, float size)
+void  itk_set_font_size (Mrg *mrg, float font_size)
 {
-    mrg_set_stylef (mrg, "font-size:%fpx;", size);
+  mrg->font_size = font_size;
+  itk_set_stylef (mrg, "font-size:%fpx;", font_size);
 }
 
 void _mrg_block_edit (Mrg *mrg)

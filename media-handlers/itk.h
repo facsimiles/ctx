@@ -277,7 +277,7 @@ void
 itk_print_xml (Mrg *mrg, const char *utf8);
 
 // returns width added horizontally
-float mrg_addstr (Mrg *mrg, const char *string, int utf8_length);
+float itk_addstr (Mrg *mrg, const char *string, int utf8_length);
 
 void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
                          int priority, char **error);
@@ -403,11 +403,6 @@ void itk_style_color (Ctx *ctx, const char *name)
    }
 }
 
-void itk_set_font_size (ITK *itk, float font_size)
-{
-  mrg_set_font_size ((Mrg*)itk, font_size);
-  itk->font_size = font_size;
-}
 
 float itk_rel_ver_advance (ITK *itk)
 {
