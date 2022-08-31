@@ -647,7 +647,7 @@ int terminal_main (int argc, char **argv)
       {
         itk_reset (itk);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
-        itk_style_color (ctx, "wallpaper");
+        itk_style_bg (itk, "wallpaper");
         ctx_fill (ctx);
         ctx_font_size (ctx, itk_em (itk));
         ctx_clients_draw (ctx, 0);

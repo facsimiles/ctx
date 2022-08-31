@@ -1653,8 +1653,12 @@ const char * html_css =
 //"hr{border:1px inset black;margin-bottom: 0.5em;margin-top:0.5em;}\n"
 "hr{font-size:1px;border-bottom: 1px solid red;}\n"
 
+".scroll{background:blue;}\n"
+".wallpaper, .itk{background:#124;color:#f43}\n"
+".focused{background:#fff;color:#000}\n"
 
 //"h1,h2,h3,h4,h5,h6,p,div,b,span,ul,li,ol,dl,dt,dl,propline,button{border-left-color:gray;border-right-color:gray;}\n"
+
 
 
 //// itk defaults stylesheet
@@ -4014,6 +4018,7 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
 
   ctx_color_free (color);
 }
+
 void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);

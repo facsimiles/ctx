@@ -103,6 +103,9 @@ void itk_lost_focus (ITK *itk);
 //void itk_choice_add (ITK *itk, int value, const char *label);
 void        itk_done         (ITK *itk);
 void        itk_style_color  (Ctx *ctx, const char *name);
+//void        itk_style_color2  (ITK *itk, const char *klass, const char*attr);
+void        itk_style_bg      (ITK *itk, const char *klass);
+void        itk_style_fg      (ITK *itk, const char *klass);
 const char *itk_style_string (const char *name);
 float       itk_style_float  (char *name);
 float       itk_em           (ITK *itk);
@@ -386,6 +389,7 @@ float itk_style_float (char *name)
    return 0.0f;
 }
 
+#if 1
 void itk_style_color (Ctx *ctx, const char *name)
 {
    const char *str = itk_style_string (name);
@@ -402,7 +406,36 @@ void itk_style_color (Ctx *ctx, const char *name)
      //ctx_rgb_stroke (ctx, 1, 0, 1);
    }
 }
+#endif
 
+static void itk_style_color3 (ITK *itk, const char *klass, uint32_t attr)
+{           
+   Ctx *ctx = itk->ctx;
+   CtxStyleNode ancestor;
+   CtxStyleNode *ancestry[2] = {&ancestor, NULL};
+   memset(&ancestor, 0, sizeof (CtxStyleNode));
+   ancestry[0]->element_hash = ctx_strhash ("div");
+   ancestry[0]->classes_hash[0] = ctx_strhash (klass);
+   char *collated = _ctx_css_compute_style (itk, ancestry, 1);
+   ctx_save (itk->ctx);
+   itk_set_style (itk, collated);
+   CtxColor *color = ctx_color_new ();
+   ctx_get_color (ctx, attr, color);
+   ctx_restore (itk->ctx);
+   mrg_ctx_set_source_color (ctx, color);
+   ctx_color_free (color);
+   free (collated);
+}
+
+void itk_style_bg (ITK *itk, const char *klass)
+{
+  itk_style_color3 (itk, klass, CTX_background_color);
+}
+
+void itk_style_fg (ITK *itk, const char *klass)
+{
+  itk_style_color3 (itk, klass, CTX_color);
+}
 
 float itk_rel_ver_advance (ITK *itk)
 {
@@ -689,7 +722,7 @@ CtxControl *itk_add_control (ITK *itk,
       control->type == UI_LABEL)   // own-bg
   {
 #if 1
-    itk_style_color (itk->ctx, "itk-focused-bg");
+    itk_style_bg (itk, "focused");
     ctx_fill (itk->ctx);
 #if 0
     ctx_rectangle (itk->ctx, x, y, width, height);
@@ -705,7 +738,7 @@ CtxControl *itk_add_control (ITK *itk,
     if (control->type != UI_LABEL && // no-bg
         control->type != UI_BUTTON)  // own-bg
     {
-      itk_style_color (itk->ctx, "itk-interactive-bg");
+      itk_style_bg (itk, "interactive");
       ctx_fill (itk->ctx);
     }
   }
@@ -902,7 +935,7 @@ void itk_scroll_end (ITK *itk)
                       scrollbar_width,
                       scrollbar_height);
   ctx_listen (ctx, CTX_DRAG, itk_scroll_drag, itk, panel);
-  itk_style_color (itk->ctx, "itk-scroll-bg");
+  itk_style_bg (itk, "scroll");
   ctx_fill (ctx);
 #endif
 
@@ -918,7 +951,7 @@ void itk_scroll_end (ITK *itk)
                       
                       );
 
-  itk_style_color (itk->ctx, "itk-scroll-fg");
+  itk_style_fg (itk, "scroll");
   ctx_fill (ctx);
 
 
@@ -949,13 +982,13 @@ ITKPanel *itk_panel_start (ITK *itk, const char *title,
 
   itk->panel = panel;
 
-  itk_style_color (itk->ctx, "itk-fg");
+  itk_style_fg (itk, "itk");
   ctx_begin_path (ctx);
   ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
   ctx_line_width (ctx, 2);
   ctx_stroke (ctx);
 
-  itk_style_color (itk->ctx, "itk-bg");
+  itk_style_bg (itk, "wallpaper");
   ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
   ctx_fill (ctx);
 
@@ -990,7 +1023,7 @@ void itk_panel_end (ITK *itk)
                       em,
                       em);
   ctx_listen (ctx, CTX_DRAG, itk_panel_resize_drag, panel, itk);
-  itk_style_color (itk->ctx, "itk-button-fg");
+  itk_style_fg (itk, "wallpaper");
   ctx_begin_path (ctx);
   ctx_move_to (ctx, panel->x + panel->width,
                     panel->y + panel->height);

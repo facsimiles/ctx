@@ -4426,7 +4426,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 
           if (c->no == itk_focus_no (itk) && layout_find_item < 0)
           {
-            itk_style_color (ctx, "itk-focused-fg");
+            itk_style_fg (itk, "focused");
             layout_text (ctx, itk_x(itk) + padding_left * em, itk_y (itk), d_name,
                          space_width, width - em * level * layout_config.level_indent, em,
                          text_edit,text_edit,
@@ -4901,16 +4901,16 @@ static void dir_layout (ITK *itk, Diz *diz)
       ctx_fill (ctx);
       ctx_move_to (ctx, itk_edge_left (itk), 1 * em);
       ctx_rgba (ctx, 1,1,1, 1);
-      itk_style_color (ctx, "itk-focused-fg");
+      itk_style_fg (itk, "focused");
       ctx_text (ctx, commandline->str);
     }
   }
   else
   {
     if (itk_focus_no (itk))
-      itk_style_color (ctx, "itk-focused-fg");
+      itk_style_fg (itk, "focused");
     else
-      itk_style_color (ctx, "itk-fg");
+      itk_style_fg (itk, "itk");
     ctx_move_to (ctx, itk_edge_left (itk), 1 * em);
 
     char *title = diz_dir_get_string (diz, -1, "title");
