@@ -2189,16 +2189,16 @@ ctx_bezier_sample_fixed (int x0, int y0,
 
 static inline void
 ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
-                              int ox, int oy,
-                              int x0, int y0,
-                              int x1, int y1,
-                              int x2, int y2,
-                              int sx, int sy,
-                              int ex, int ey,
-                              int s,
-                              int e,
-                              int iteration,
-                              int tolerance)
+                                    int ox, int oy,
+                                    int x0, int y0,
+                                    int x1, int y1,
+                                    int x2, int y2,
+                                    int sx, int sy,
+                                    int ex, int ey,
+                                    int s,
+                                    int e,
+                                    int iteration,
+                                    int tolerance)
 {
   int t = (s + e) / 2;
   int x, y;
@@ -2210,12 +2210,13 @@ ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
   dy = ly - y;
   if (iteration < 6 && ((dx*dx+dy*dy))  > tolerance)
   {
+    iteration++;
     ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                  sx, sy, x, y, s, t, iteration + 1,
+                                  sx, sy, x, y, s, t, iteration,
                                   tolerance);
     ctx_rasterizer_line_to_fixed (rasterizer, x, y);
     ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                  x, y, ex, ey, t, e, iteration + 1,
+                                  x, y, ex, ey, t, e, iteration,
                                   tolerance);
   }
 }
