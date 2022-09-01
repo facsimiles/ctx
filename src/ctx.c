@@ -320,10 +320,10 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
     //FILE  *f  = fopen ("/tmp/l", "a");
     //fprintf (f, "%i client removing %s\n", getpid(), eid_info->eid);
     //fclose (f);
-    ctx_free (eid_info->eid);
-    ctx_free (eid_info);
     ctx_list_remove (&ctx->eid_db, eid_info);
     ctx_list_remove (&to_remove, eid_info);
+    ctx_free (eid_info->eid);
+    ctx_free (eid_info);
   }
   return ret;
 }
@@ -343,10 +343,10 @@ void ctx_drop_eid (Ctx *ctx, const char *eid)
   while (to_remove)
   {
     CtxEidInfo *eid_info = (CtxEidInfo*)to_remove->data;
-    ctx_free (eid_info->eid);
-    ctx_free (eid_info);
     ctx_list_remove (&ctx->eid_db, eid_info);
     ctx_list_remove (&to_remove, eid_info);
+    ctx_free (eid_info->eid);
+    ctx_free (eid_info);
   }
 
   for (int i = 0; i <  CTX_MAX_TEXTURES; i++)

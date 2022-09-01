@@ -6206,7 +6206,6 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
        returned_dim = 1;
     }
 
-
     {
       CtxMatrix transform;
       ctx_get_matrix (mrg_ctx (mrg), &transform);
