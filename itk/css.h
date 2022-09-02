@@ -327,8 +327,6 @@ typedef struct MrgState {
   float      (*wrap_edge_left)  (Mrg *mrg, void *data);
   float      (*wrap_edge_right) (Mrg *mrg, void *data);
   void        *wrap_edge_data;
-  void       (*post_nl)  (Mrg *mrg, void *post_nl_data, int last);
-  void        *post_nl_data;
   float        edge_top;
   float        edge_left;
   float        edge_right;
@@ -4738,9 +4736,6 @@ static void _mrg_nl (Mrg *mrg)
   {
     mrg->state->overflowed=1;
   }
-
-  //if (mrg->state->post_nl)
-  //  mrg->state->post_nl (mrg, mrg->state->post_nl_data, 0);
 }
 
 static void _mrg_spaces (Mrg *mrg, int count)
@@ -6105,15 +6100,6 @@ void _mrg_set_wrap_edge_vfuncs (Mrg *mrg,
   mrg->state->wrap_edge_data = wrap_edge_data;
 }
 
-void _mrg_set_post_nl (Mrg *mrg,
-    void (*post_nl)  (Mrg *mrg, void *post_nl_data, int last),
-    void *post_nl_data
-    )
-{
-  mrg->state->post_nl = post_nl;
-  mrg->state->post_nl_data = post_nl_data;
-}
-
 static void update_rect_geo (Ctx *ctx, void *userdata, const char *name, int count,
                              float *x, float *y, float *w, float *h)
 {
@@ -6802,11 +6788,6 @@ void _mrg_set_wrap_edge_vfuncs (Mrg *mrg,
     float (*wrap_edge_right) (Mrg *mrg, void *wrap_edge_data),
     void *wrap_edge_data);
 
-void _mrg_set_post_nl (Mrg *mrg,
-    void (*post_nl)  (Mrg *mrg, void *post_nl_data, int last),
-    void *post_nl_data);
-
-
 int mrg_get_contents (Mrg         *mrg,
                       const char  *referer,
                       const char  *input_uri,
@@ -7242,7 +7223,6 @@ void itk_xml_render (Mrg *mrg,
   }
 
   _mrg_set_wrap_edge_vfuncs (mrg, wrap_edge_left, wrap_edge_right, mrg);
-  _mrg_set_post_nl (mrg, _mrg_resolve_line_height, mrg);
   mrg->state = &mrg->states[0];
 
   while (type != t_eof)
