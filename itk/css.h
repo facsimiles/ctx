@@ -4104,7 +4104,11 @@ _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
   ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
 
   float val = mrg->state->line_max_height * ascent;
-  ctx_resolve (mrg->ctx, "line", set_line_height, &val);
+
+  char name[10]="lin_";
+  name[3]=mrg->state_no+2;
+
+  ctx_resolve (mrg->ctx, name, set_line_height, &val);
 
   mrg->state->line_max_height = style->font_size;
   state->got_text = 0;
@@ -4624,7 +4628,11 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
     mrg->state->line_max_height = ctx_maxf (mrg->state->line_max_height,
                                             style->font_size);
     ctx_move_to (mrg->ctx,  mrg->x + left_pad, mrg->y);
-    ctx_deferred_rel_move_to (mrg->ctx, "line", 0.0, 0.0);//mrg_em (mrg));
+
+    char name[10]="lin_";
+    name[3]=mrg->state_no+2;
+
+    ctx_deferred_rel_move_to (mrg->ctx, name, 0.0, 0.0);//mrg_em (mrg));
     mrg->state->got_text = 1;
   }
 
@@ -4711,7 +4719,12 @@ static void _mrg_nl (Mrg *mrg)
   ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
   mrg->y += mrg->state->line_max_height * mrg->state->style.line_height;
       float val = mrg->state->line_max_height * ascent;
-      ctx_resolve (mrg->ctx, "line", set_line_height, &val);
+  char name[10]="lin_";
+  name[3]=mrg->state_no+2;
+
+      ctx_resolve (mrg->ctx, name, set_line_height, &val);
+
+
   mrg->x = _mrg_dynamic_edge_left(mrg);
 #ifdef SNAP
   float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
