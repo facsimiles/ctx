@@ -2678,7 +2678,7 @@ itk_ctx_settings (ITK *itk)
   static int ctx_settings = 0;
   static int inited = 0;
   static int threads;
-  static int hash_cache_enabled;
+  //static int hash_cache_enabled;
   Ctx *ctx = itk->ctx;
 
   if (!inited){
@@ -2686,7 +2686,7 @@ itk_ctx_settings (ITK *itk)
        return;
     inited = 1;
     threads = ctx_get_render_threads (ctx);
-    hash_cache_enabled = ctx_get_hash_cache (ctx);
+    //hash_cache_enabled = ctx_get_hash_cache (ctx);
   }
   if (itk_expander (itk, "CTX settings", &ctx_settings))
   {
