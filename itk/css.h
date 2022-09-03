@@ -337,9 +337,8 @@ typedef struct MrgState {
 
   int          children;
   int          overflowed:1;
-  unsigned int got_text:1;
   int          span_bg_started:1;
-  float        line_max_height;
+  //float        line_max_height;
 
   int          drawlist_start_offset;
 } MrgState;
@@ -418,8 +417,9 @@ struct _Mrg {
   int        text_listen_count;
   int        text_listen_active;
 
-  int        line_level; // nesting level for active-line ids
-
+  int        line_level; // nesting level for active-line 
+			 //
+  float      line_max_height[CTX_MAX_STATES];
   ////////////////////////////////////////////////
   ////////////////////////////////////////////////
   //////////////////// end of css ////////////////
@@ -3761,7 +3761,7 @@ void _mrg_layout_pre (Mrg *mrg)
     mrg->x -= mrg_em (mrg) * 0.5;
     itk_print (mrg, "•");
     mrg->x = x;
-    mrg->state->got_text = 0;
+    mrg->line_max_height[mrg->line_level] = 0.0f;
   }
 
   switch (style->position)
@@ -3916,9 +3916,8 @@ void _mrg_layout_pre (Mrg *mrg)
      float width = PROP(width);
      
      mrg->line_level++;
-
-     mrg->state->got_text = 0;
-     mrg->state->line_max_height = style->font_size;
+     mrg->line_max_height[mrg->line_level] = 0.0f;//style->font_size;//0.0f;
+     //mrg->state->line_max_height = style->font_size;
 
      if (!height)
        {
@@ -4388,20 +4387,19 @@ static void set_line_height (Ctx *ctx, void *userdata, const char *name, int cou
 static void
 _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
 {
-  MrgState *state = &mrg->states[mrg->state_no];
-  CtxStyle *style = &state->style;
+  //MrgState *state = &mrg->states[mrg->state_no];
+  //CtxStyle *style = &state->style;
   float ascent, descent;
   ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
 
-  float val = mrg->state->line_max_height * ascent;
+  float val = mrg->line_max_height[mrg->line_level] * ascent;
 
   char name[10]="lin_";
   name[3]=mrg->line_level+2;
 
   ctx_resolve (mrg->ctx, name, set_line_height, &val);
 
-  mrg->state->line_max_height = style->font_size;
-  state->got_text = 0;
+  mrg->line_max_height[mrg->line_level] = 0.0f;//style->font_size;//0.0f;
 }
 
 /* mrg - MicroRaptor Gui
@@ -4908,18 +4906,18 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
   float left_pad;
   left_pad = paint_span_bg (mrg, x, y, wwidth);
 
-  //if (!mrg->state->got_text)
+  if (mrg->line_max_height[mrg->line_level] == 0.0f)
   {
-    mrg->state->line_max_height = ctx_maxf (mrg->state->line_max_height,
-                                            style->font_size);
     ctx_move_to (mrg->ctx,  mrg->x + left_pad, mrg->y);
 
     char name[10]="lin_";
     name[3]=mrg->line_level+2;
 
     ctx_deferred_rel_move_to (mrg->ctx, name, 0.0, 0.0);//mrg_em (mrg));
-    mrg->state->got_text = 1;
   }
+  mrg->line_max_height[mrg->line_level] =
+      ctx_maxf (mrg->line_max_height[mrg->line_level],
+                style->font_size);
 
   {
     float tx = x;
@@ -5002,13 +5000,15 @@ static void _mrg_nl (Mrg *mrg)
 {
   float ascent, descent;
   ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
-  mrg->y += mrg->state->line_max_height * mrg->state->style.line_height;
-      float val = mrg->state->line_max_height * ascent;
+  mrg->y += mrg->line_max_height[mrg->line_level] * mrg->state->style.line_height;
+  float val = mrg->line_max_height[mrg->line_level]* ascent;
   char name[10]="lin_";
   name[3]=mrg->line_level+2;
 
-      ctx_resolve (mrg->ctx, name, set_line_height, &val);
-
+  ctx_resolve (mrg->ctx, name, set_line_height, &val);
+  //mrg->state->got_text = 0;
+  //mrg->got_text_bitfield &= ~(1<<mrg->line_level);
+  mrg->line_max_height[mrg->line_level]=0.0f;
 
   mrg->x = _mrg_dynamic_edge_left(mrg);
 #ifdef SNAP
@@ -6125,7 +6125,8 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
   if (is_block_item (style))
   {
-    if (mrg->state->got_text)
+    //if ((mrg->got_text_bitfield & (1<<mrg->line_level))!=0)
+    if (mrg->line_max_height[mrg->line_level] != 0.0f)
       _mrg_nl (mrg);
   }
   if (is_block_item (style))
@@ -6293,7 +6294,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     int start_offset = mrg->state->drawlist_start_offset;
     int end_offset;
     const CtxEntry *entries = ctx_get_drawlist (mrg->ctx, &end_offset);
-    int count = end_offset - start_offset + 1;
+    int count = end_offset - start_offset;
 
     MrgAbsolute *absolute = calloc (sizeof (MrgAbsolute) + count * 9, 1);
     absolute->z_index = style->z_index;
@@ -7992,6 +7993,9 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
   mrg->ctx = mrg->document_ctx = ctx;
   _ctx_events_init (mrg->ctx);
   mrg->state_no = 0;
+  mrg->line_level=0;
+  //mrg->got_text_bitfield = 0;
+  mrg->line_max_height[0]=0.0f;
   mrg->state = &mrg->states[mrg->state_no];
 
   mrg->state->floats = 0;
