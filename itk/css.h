@@ -86,15 +86,15 @@ typedef struct _CtxStyleNode CtxStyleNode;
 
 struct _CtxStyleNode
 {
-  int         is_direct_parent; /* for use in selector chains with > */
-  const char *id;
-  uint32_t    id_hash;
   uint32_t    element_hash;
   uint32_t    classes_hash[CTX_STYLE_MAX_CLASSES];
+  uint32_t    id_hash;
   const char *pseudo[CTX_STYLE_MAX_PSEUDO];
+  uint32_t    pseudo_hash[CTX_STYLE_MAX_PSEUDO];
               // TODO : to hash pseudos we need to store
               //   argument (like for nth-child)
-  uint32_t    pseudo_hash[CTX_STYLE_MAX_PSEUDO];
+  int         is_direct_parent; /* for use in selector chains with > */
+  const char *id;
 };
  
 typedef enum {
@@ -310,6 +310,8 @@ struct _CtxStyle {
 typedef struct _CtxStyle CtxStyle;
 
 typedef struct MrgState {
+  CtxStyleNode style_node;
+
   float        original_x;
   float        original_y;
   float        block_start_x;
@@ -332,7 +334,6 @@ typedef struct MrgState {
   int          max_lines;   /* better with max-y in ems? ? */
 
   char        *style_id;
-  CtxStyleNode style_node;
   CtxStyle     style;
 
   int          children;
@@ -3693,6 +3694,39 @@ mrg_ctx_set_source_color (Ctx *ctx, CtxColor *color)
    ctx_rgba (ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
+static void set_line_height (Ctx *ctx, void *userdata, const char *name, int count, float *x, float *y, float *w, float *h)
+{
+  float *fptr = (float*)userdata;
+  *y = fptr[0];
+}
+
+static void _mrg_nl (Mrg *mrg)
+{
+  float ascent, descent;
+  ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
+  mrg->y += mrg->line_max_height[mrg->line_level] * mrg->state->style.line_height;
+  float val = mrg->line_max_height[mrg->line_level]* ascent;
+  char name[10]="lin_";
+  name[3]=mrg->line_level+2;
+
+  ctx_resolve (mrg->ctx, name, set_line_height, &val);
+  mrg->line_max_height[mrg->line_level]=0.0f;
+
+  mrg->x = _mrg_dynamic_edge_left(mrg);
+#ifdef SNAP
+  float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
+                               snap is better grid design */
+  mrg->x = ceil (mrg->x / em) * em;
+  mrg->y = ceil (mrg->y / em) * em;
+#endif
+
+  if (mrg->y >= 
+      mrg->state->edge_bottom - PROP(padding_bottom))
+  {
+    mrg->state->overflowed=1;
+  }
+}
+
 void _mrg_layout_pre (Mrg *mrg)
 {
   CtxStyle *style;
@@ -3706,6 +3740,13 @@ void _mrg_layout_pre (Mrg *mrg)
 
   mrg->state->original_x = mrg_x (mrg);
   mrg->state->original_y = mrg_y (mrg);
+
+  if (//style->display == CTX_DISPLAY_BLOCK && // why this hack?
+      mrg->state->style_node.element_hash == CTX_br)
+  {
+    _mrg_nl (mrg);
+  }
+
 
   if (mrg->state_no)
   {
@@ -4380,11 +4421,6 @@ static void mrg_box_fill (Mrg *mrg, CtxStyle *style, float x, float y, float wid
  *
  */
 
-static void set_line_height (Ctx *ctx, void *userdata, const char *name, int count, float *x, float *y, float *w, float *h)
-{
-  float *fptr = (float*)userdata;
-  *y = fptr[0];
-}
 
 static void
 _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
@@ -4998,34 +5034,6 @@ void mrg_set_wrap_max_lines  (Mrg *mrg, int max_lines)
     r
 #endif
 
-static void _mrg_nl (Mrg *mrg)
-{
-  float ascent, descent;
-  ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
-  mrg->y += mrg->line_max_height[mrg->line_level] * mrg->state->style.line_height;
-  float val = mrg->line_max_height[mrg->line_level]* ascent;
-  char name[10]="lin_";
-  name[3]=mrg->line_level+2;
-
-  ctx_resolve (mrg->ctx, name, set_line_height, &val);
-  //mrg->state->got_text = 0;
-  //mrg->got_text_bitfield &= ~(1<<mrg->line_level);
-  mrg->line_max_height[mrg->line_level]=0.0f;
-
-  mrg->x = _mrg_dynamic_edge_left(mrg);
-#ifdef SNAP
-  float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
-                               snap is better grid design */
-  mrg->x = ceil (mrg->x / em) * em;
-  mrg->y = ceil (mrg->y / em) * em;
-#endif
-
-  if (mrg->y >= 
-      mrg->state->edge_bottom - PROP(padding_bottom))
-  {
-    mrg->state->overflowed=1;
-  }
-}
 
 static void _mrg_spaces (Mrg *mrg, int count)
 {
@@ -6127,13 +6135,9 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
   if (is_block_item (style))
   {
-    //if ((mrg->got_text_bitfield & (1<<mrg->line_level))!=0)
     if (mrg->line_max_height[mrg->line_level] != 0.0f)
       _mrg_nl (mrg);
-  }
-  if (is_block_item (style))
-  {
-     mrg->line_level--;
+    mrg->line_level--;
   }
 
   /* remember data to store about float, XXX: perhaps better to store
@@ -6164,7 +6168,64 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   }
 
 
-  if (is_block_item (style))
+  if (style->display == CTX_DISPLAY_INLINE_BLOCK)
+  {
+    CtxFloatRectangle _geo;
+    CtxFloatRectangle *geo = &_geo;
+    memset (geo, 0, sizeof (_geo));
+
+    geo->width = width;
+    if (width == 0)
+    {
+      geo->width = mrg_x (mrg) - (mrg->state->block_start_x);
+    }
+
+    geo->height = height;
+    if (height == 0)
+      geo->height = mrg_y (mrg) - (mrg->state->block_start_y);
+
+    char name[10]="ele_";
+    name[3]=mrg->state_no+2;
+
+    ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
+
+
+    mrg_box (mrg,
+        mrg->state->block_start_x,
+        mrg->state->block_start_y,
+        geo->width,
+        geo->height);
+    if (ret_rect)
+    {
+       ret_rect->x = mrg->state->block_start_x;
+       ret_rect->y = mrg->state->block_start_y;
+       ret_rect->width = geo->width;
+       ret_rect->height = geo->height;
+       returned_dim = 1;
+    }
+
+    {
+      CtxMatrix transform;
+      ctx_get_matrix (mrg_ctx (mrg), &transform);
+      float x = ctx_pointer_x (ctx);
+      float y = ctx_pointer_y (ctx);
+      ctx_matrix_invert (&transform);
+      ctx_matrix_apply_transform (&transform, &x, &y);
+    }
+
+    //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (mrg->state->block_start_y - mrg_em(mrg)));
+
+    if (!style->float_ && (style->display == CTX_DISPLAY_BLOCK ||
+		           style->display == CTX_DISPLAY_LIST_ITEM))
+    {
+      vmarg = PROP(margin_bottom);
+
+      mrg_set_xy (mrg, 
+          mrg_edge_left (mrg),
+          mrg_y (mrg) + vmarg + PROP(border_bottom_width));
+    }
+  }
+  else if (is_block_item (style))
   {
     CtxFloatRectangle _geo;
     CtxFloatRectangle *geo = &_geo;
@@ -6224,7 +6285,8 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
     //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (mrg->state->block_start_y - mrg_em(mrg)));
 
-    if (!style->float_ && style->display == CTX_DISPLAY_BLOCK)
+    if (!style->float_ && (style->display == CTX_DISPLAY_BLOCK ||
+		           style->display == CTX_DISPLAY_LIST_ITEM))
     {
       vmarg = PROP(margin_bottom);
 
@@ -6233,8 +6295,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
           mrg_y (mrg) + vmarg + PROP(border_bottom_width));
     }
   }
-  else if (style->display == CTX_DISPLAY_INLINE ||
-           style->display == CTX_DISPLAY_INLINE_BLOCK)
+  else if (style->display == CTX_DISPLAY_INLINE)
   {
     float x0     = mrg->state->original_x;
     float y0     = mrg->state->original_y;
