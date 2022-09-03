@@ -25,15 +25,11 @@
 
 #if CTX_XML
 
-#ifndef TOKENHASH
-#define TOKENHASH(a) (uint32_t)(a)
-#endif
-
-#define CTX_1 TOKENHASH(374)
-#define CTX_Aelig TOKENHASH(2540544426)
-#define CTX_AElig TOKENHASH(2622343083)
-#define CTX_Aring TOKENHASH(3473872814)
-#define CTX_Oslash TOKENHASH(3911734189)
+#define CTX_1      374u
+#define CTX_Aelig  2540544426u
+#define CTX_AElig  2622343083u
+#define CTX_Aring  3473872814u
+#define CTX_Oslash 3911734189u
 
 /*
  *  extra hashed strings to be picked up
@@ -1489,21 +1485,21 @@ void _ctx_initial_style (Mrg *mrg)
   s->overflow = CTX_OVERFLOW_VISIBLE;
   s->position = CTX_POSITION_STATIC;
 
-  SET_PROP(border_top_width, 0);
-  SET_PROP(border_left_width, 0);
-  SET_PROP(border_right_width, 0);
+  SET_PROP(border_top_width,    0);
+  SET_PROP(border_left_width,   0);
+  SET_PROP(border_right_width,  0);
   SET_PROP(border_bottom_width, 0);
-  SET_PROP(margin_top, 0);
-  SET_PROP(margin_left, 0);
-  SET_PROP(margin_right, 0);
+  SET_PROP(margin_top,    0);
+  SET_PROP(margin_left,   0);
+  SET_PROP(margin_right,  0);
   SET_PROP(margin_bottom, 0);
-  SET_PROP(padding_top, 0);
-  SET_PROP(padding_left, 0);
-  SET_PROP(padding_right, 0);
+  SET_PROP(padding_top,    0);
+  SET_PROP(padding_left,   0);
+  SET_PROP(padding_right,  0);
   SET_PROP(padding_bottom, 0);
-  SET_PROP(top, 0);
-  SET_PROP(left, 0);
-  SET_PROP(right, 0);
+  SET_PROP(top,    0);
+  SET_PROP(left,   0);
+  SET_PROP(right,  0);
   SET_PROP(bottom, 0);
   SET_PROPS(class,"");
   SET_PROPS(id,"");
@@ -1649,7 +1645,7 @@ const char * html_css =
 "head{display:none;}\n"
 "title{display:none;}\n"
 //"hr{border:1px inset black;margin-bottom: 0.5em;margin-top:0.5em;}\n"
-"hr{font-size:1px;border-bottom: 1px solid red;}\n"
+"hr{font-size:1px;border-bottom: 1px solid red;display:block;}\n"
 
 ".scroll{background:blue;}\n"
 ".wallpaper, .itk{background:#124;color:#f43}\n"
@@ -3670,7 +3666,306 @@ mrg_get_contents (Mrg         *mrg,
   }
 }
 
-void _mrg_layout_pre (Mrg *mrg);
+int itk_print (Mrg *mrg, const char *string);
+static int is_block_item (CtxStyle *style)
+{
+  return ((style->display == CTX_DISPLAY_BLOCK || style->float_
+      ||style->display == CTX_DISPLAY_LIST_ITEM ));
+}
+
+float mrg_ddpx (Mrg *mrg)
+{
+  return mrg->ddpx;
+}
+
+static void
+mrg_ctx_set_source_color (Ctx *ctx, CtxColor *color)
+{
+   float rgba[4];
+   ctx_color_get_rgba (ctx_get_state (ctx), color, rgba);
+   ctx_rgba (ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
+}
+
+void _mrg_layout_pre (Mrg *mrg)
+{
+  CtxStyle *style;
+  float dynamic_edge_left, dynamic_edge_right;
+
+  //mrg->state_no++;
+  //mrg->state = &mrg->states[mrg->state_no];
+  //*mrg->state = mrg->states[mrg->state_no-1];
+
+  style = ctx_style (mrg);
+
+  mrg->state->original_x = mrg_x (mrg);
+  mrg->state->original_y = mrg_y (mrg);
+
+  if (mrg->state_no)
+  {
+    dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
+    dynamic_edge_left  = _mrg_parent_dynamic_edge_left(mrg);
+  }
+  else
+  {
+    dynamic_edge_right = mrg_edge_right(mrg);
+    dynamic_edge_left  = mrg_edge_left(mrg);
+  }
+
+  if (style->clear & CTX_CLEAR_RIGHT)
+    clear_right (mrg);
+  if (style->clear & CTX_CLEAR_LEFT)
+    clear_left (mrg);
+
+  if (style->display == CTX_DISPLAY_BLOCK ||
+      style->display == CTX_DISPLAY_LIST_ITEM)
+  {
+    if (PROP(padding_left) + PROP(margin_left) + PROP(border_left_width)
+        != 0)
+    {
+      itk_set_edge_left (mrg, mrg_edge_left (mrg) +
+        PROP(padding_left) + PROP(margin_left) + PROP(border_left_width));
+    }
+    if (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)
+        != 0)
+    {
+      itk_set_edge_right (mrg, mrg_edge_right (mrg) -
+        (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)));
+    }
+
+
+    /* collapsing of vertical margins */
+    float actual_top = PROP(margin_top) ;
+    if (actual_top >= mrg->state->vmarg)
+      actual_top = actual_top - mrg->state->vmarg;
+    else
+      actual_top = 0;
+
+    itk_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + actual_top);
+
+    mrg->state->block_start_x = mrg_edge_left (mrg);
+    mrg->state->block_start_y = mrg_y (mrg);
+  }
+
+  /* the list-item is a cheap hack; can be implemented directly
+   * in later versions of css
+   */
+  if (style->display == CTX_DISPLAY_LIST_ITEM)
+  {
+    float x = mrg->x;
+    
+    mrg->x -= mrg_em (mrg) * 0.5;
+    itk_print (mrg, "•");
+    mrg->x = x;
+    mrg->state->got_text = 0;
+  }
+
+  switch (style->position)
+  {
+    case CTX_POSITION_RELATIVE:
+      /* XXX: deal with style->right and style->bottom */
+      ctx_translate (mrg_ctx (mrg), PROP(left), PROP(top));
+      mrg->relative_x += PROP(left);
+      mrg->relative_y += PROP(top);
+      /* fallthrough */
+
+    case CTX_POSITION_STATIC:
+
+      if (style->float_ == CTX_FLOAT_RIGHT)
+      {
+        float width = PROP(width);
+
+        if (width == 0.0)
+        {
+          width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
+        }
+
+        width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
+
+
+        if (width + PROP(margin_left) + PROP(margin_right) >
+            mrg_edge_right(mrg)-mrg_edge_left(mrg))
+        {
+          clear_both (mrg);
+          itk_set_edge_left (mrg, mrg_edge_right (mrg) - width);
+          itk_set_edge_right (mrg, mrg_edge_right (mrg) - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
+
+        }
+        else
+        {
+        while (dynamic_edge_right - dynamic_edge_left < width + PROP(margin_left) + PROP(margin_right))
+        {
+          mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
+          dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
+          dynamic_edge_left = _mrg_parent_dynamic_edge_left(mrg);
+        }
+
+        itk_set_edge_left (mrg, dynamic_edge_right - width);
+        itk_set_edge_right (mrg, dynamic_edge_right - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
+
+        }
+
+        itk_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top))); // - mrg->state->vmarg));
+
+        mrg->state->block_start_x = mrg_x (mrg);
+        mrg->state->block_start_y = mrg_y (mrg);
+        mrg->state->floats = 0;
+
+      } else if (style->float_ == CTX_FLOAT_LEFT)
+      {
+        float left;
+        float width = PROP(width);
+
+        if (width == 0.0)
+        {
+          width = 4 * mrg_em (mrg);//mrg_edge_right (mrg) - mrg_edge_left (mrg);
+        }
+
+        width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
+
+        if (width + PROP(margin_left) + PROP(margin_right) >
+            mrg_edge_right(mrg)-mrg_edge_left(mrg))
+        {
+          clear_both (mrg);
+          left = mrg_edge_left (mrg) + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
+        }
+        else
+        {
+        while (dynamic_edge_right - dynamic_edge_left < width + PROP(margin_left) + PROP(margin_right))
+        {
+          mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
+          dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
+          dynamic_edge_left = _mrg_parent_dynamic_edge_left(mrg);
+        }
+          left = dynamic_edge_left + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
+        }
+
+        itk_set_edge_left (mrg, left);
+        itk_set_edge_right (mrg,  left + width +
+            PROP(padding_left) /* + PROP(border_right_width)*/);
+        itk_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top)));// - mrg->state->vmarg));
+                        //));//- mrg->state->vmarg));
+        mrg->state->block_start_x = mrg_x (mrg);
+        mrg->state->block_start_y = mrg_y (mrg);// + PROP(padding_top) + PROP(border_top_width);
+        mrg->state->floats = 0;
+
+        /* change cursor point after floating something left; if pushed far
+         * down, the new correct
+         */
+        //mrg_set_xy (mrg, mrg->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
+            //mrg_y (mrg) + PROP(padding_top) + PROP(border_top_width);
+      } /* XXX: maybe spot for */
+      else if (1)
+      {
+         float width = PROP(width);
+         if (width)
+           itk_set_edge_right (mrg, mrg->state->block_start_x  + width);
+      }
+      break;
+    case CTX_POSITION_ABSOLUTE:
+      ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
+      mrg->state->drawlist_start_offset--;
+      {
+	float left = PROP(left);
+	float top = PROP(top);
+
+        if (left == 0.0f) // XXX 0.0 should also be a valid value!
+	  left = mrg->x;
+        if (top == 0.0f)  // XXX 0.0 should also be a valid value!
+	  top = mrg->y;
+
+        mrg->state->floats = 0;
+        itk_set_edge_left (mrg, left + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
+        itk_set_edge_right (mrg, left + PROP(width));
+        itk_set_edge_top (mrg, top + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
+        mrg->state->block_start_x = mrg_x (mrg);
+        mrg->state->block_start_y = mrg_y (mrg);
+      }
+      break;
+    case CTX_POSITION_FIXED:
+      ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
+      mrg->state->drawlist_start_offset--;
+      {
+        int width = PROP(width);
+
+        if (!width)
+        {
+          width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
+        }
+
+        ctx_identity (mrg_ctx (mrg)); // XXX should be dropped
+        ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
+        mrg->state->floats = 0;
+
+        itk_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
+        itk_set_edge_right (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left) + width);//mrg_width (mrg) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right)); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
+        itk_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
+        mrg->state->block_start_x = mrg_x (mrg);
+        mrg->state->block_start_y = mrg_y (mrg);
+      }
+      break;
+  }
+
+  if (style->display == CTX_DISPLAY_BLOCK ||
+      style->display == CTX_DISPLAY_LIST_ITEM ||
+      style->display == CTX_DISPLAY_INLINE_BLOCK ||
+      style->float_)
+  {
+     float height = PROP(height);
+     float width = PROP(width);
+
+     mrg->state->got_text = 0;
+     mrg->state->line_max_height = style->font_size;
+
+     if (!height)
+       {
+         height = mrg_em (mrg) * 4;
+       }
+     if (!width)
+       {
+         width = mrg_em (mrg) * 4;
+       }
+
+    if (height  /* XXX: if we knew height of dynamic elements
+                        from previous frame, we could use it here */
+       && style->overflow == CTX_OVERFLOW_HIDDEN)
+       {
+         ctx_rectangle (mrg_ctx(mrg),
+            mrg->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
+            mrg->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width),
+            width + PROP(border_right_width) + PROP(border_left_width) + PROP(padding_left) + PROP(padding_right), //mrg_edge_right (mrg) - mrg_edge_left (mrg) + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width),
+            height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width));
+         ctx_clip (mrg_ctx(mrg));
+       }
+
+    mrg->state->ptly = 0;
+    char name[10]="ele_";
+    name[3]=mrg->state_no+2;
+
+  CtxColor *background_color = ctx_color_new ();
+  ctx_get_color (mrg->ctx, CTX_background_color, background_color);
+  if (!ctx_color_is_transparent (background_color))
+  {
+    mrg_ctx_set_source_color (mrg->ctx, background_color);
+    if (is_block_item (style))
+    {
+      ctx_deferred_rectangle (mrg->ctx, name,
+         mrg->state->block_start_x - PROP(padding_left),
+         mrg->state->block_start_y - PROP(padding_top),
+         width + PROP(padding_left) + PROP(padding_right),
+         height + PROP(padding_top) + PROP(padding_bottom));
+    }
+    else
+    {
+      ctx_deferred_rectangle (mrg->ctx, name,
+         mrg_x (mrg), mrg_y (mrg),
+         width + PROP(padding_left) + PROP(padding_right),
+         height + PROP(padding_top) + PROP(padding_bottom));
+    }
+    ctx_fill (mrg->ctx);
+  }
+  ctx_color_free (background_color);
+  }
+}
 void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect);
 
 void itk_set_style (Mrg *mrg, const char *style);
@@ -3769,13 +4064,6 @@ void itk_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
 void  mrg_set_line_height (Mrg *mrg, float line_height);
 float mrg_line_height (Mrg *mrg);
 
-static void
-mrg_ctx_set_source_color (Ctx *ctx, CtxColor *color)
-{
-   float rgba[4];
-   ctx_color_get_rgba (ctx_get_state (ctx), color, rgba);
-   ctx_rgba (ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
-}
 
 static void mrg_path_fill_stroke (Mrg *mrg)
 {
@@ -4110,11 +4398,6 @@ _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
 
   mrg->state->line_max_height = style->font_size;
   state->got_text = 0;
-}
-
-float mrg_ddpx (Mrg *mrg)
-{
-  return mrg->ddpx;
 }
 
 /* mrg - MicroRaptor Gui
@@ -5785,292 +6068,6 @@ void  mrg_edit_end (Mrg *mrg)
   mrg_text_edit_bindings (mrg);
 }
 
-static int is_block_item (CtxStyle *style)
-{
-  return ((style->display == CTX_DISPLAY_BLOCK || style->float_
-      ||style->display == CTX_DISPLAY_LIST_ITEM ));
-}
-
-void _mrg_layout_pre (Mrg *mrg)
-{
-  CtxStyle *style;
-  float dynamic_edge_left, dynamic_edge_right;
-
-  //mrg->state_no++;
-  //mrg->state = &mrg->states[mrg->state_no];
-  //*mrg->state = mrg->states[mrg->state_no-1];
-
-  style = ctx_style (mrg);
-
-  mrg->state->original_x = mrg_x (mrg);
-  mrg->state->original_y = mrg_y (mrg);
-
-  if (mrg->state_no)
-  {
-    dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
-    dynamic_edge_left  = _mrg_parent_dynamic_edge_left(mrg);
-  }
-  else
-  {
-    dynamic_edge_right = mrg_edge_right(mrg);
-    dynamic_edge_left  = mrg_edge_left(mrg);
-  }
-
-  if (style->clear & CTX_CLEAR_RIGHT)
-    clear_right (mrg);
-  if (style->clear & CTX_CLEAR_LEFT)
-    clear_left (mrg);
-
-  if (style->display == CTX_DISPLAY_BLOCK ||
-      style->display == CTX_DISPLAY_LIST_ITEM)
-  {
-    if (PROP(padding_left) + PROP(margin_left) + PROP(border_left_width)
-        != 0)
-    {
-      itk_set_edge_left (mrg, mrg_edge_left (mrg) +
-        PROP(padding_left) + PROP(margin_left) + PROP(border_left_width));
-    }
-    if (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)
-        != 0)
-    {
-      itk_set_edge_right (mrg, mrg_edge_right (mrg) -
-        (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)));
-    }
-
-
-    /* collapsing of vertical margins */
-    float actual_top = PROP(margin_top) ;
-    if (actual_top >= mrg->state->vmarg)
-      actual_top = actual_top - mrg->state->vmarg;
-    else
-      actual_top = 0;
-
-    itk_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + actual_top);
-
-    mrg->state->block_start_x = mrg_edge_left (mrg);
-    mrg->state->block_start_y = mrg_y (mrg);
-  }
-
-  /* the list-item is a cheap hack; can be implemented directly
-   * in later versions of css
-   */
-  if (style->display == CTX_DISPLAY_LIST_ITEM)
-  {
-    float x = mrg->x;
-    
-    mrg->x -= mrg_em (mrg) * 0.5;
-    itk_print (mrg, "•");
-    mrg->x = x;
-    mrg->state->got_text = 0;
-  }
-
-  switch (style->position)
-  {
-    case CTX_POSITION_RELATIVE:
-      /* XXX: deal with style->right and style->bottom */
-      ctx_translate (mrg_ctx (mrg), PROP(left), PROP(top));
-      mrg->relative_x += PROP(left);
-      mrg->relative_y += PROP(top);
-      /* fallthrough */
-
-    case CTX_POSITION_STATIC:
-
-      if (style->float_ == CTX_FLOAT_RIGHT)
-      {
-        float width = PROP(width);
-
-        if (width == 0.0)
-        {
-          width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
-        }
-
-        width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
-
-
-        if (width + PROP(margin_left) + PROP(margin_right) >
-            mrg_edge_right(mrg)-mrg_edge_left(mrg))
-        {
-          clear_both (mrg);
-          itk_set_edge_left (mrg, mrg_edge_right (mrg) - width);
-          itk_set_edge_right (mrg, mrg_edge_right (mrg) - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
-
-        }
-        else
-        {
-        while (dynamic_edge_right - dynamic_edge_left < width + PROP(margin_left) + PROP(margin_right))
-        {
-          mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
-          dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
-          dynamic_edge_left = _mrg_parent_dynamic_edge_left(mrg);
-        }
-
-        itk_set_edge_left (mrg, dynamic_edge_right - width);
-        itk_set_edge_right (mrg, dynamic_edge_right - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
-
-        }
-
-        itk_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top))); // - mrg->state->vmarg));
-
-        mrg->state->block_start_x = mrg_x (mrg);
-        mrg->state->block_start_y = mrg_y (mrg);
-        mrg->state->floats = 0;
-
-      } else if (style->float_ == CTX_FLOAT_LEFT)
-      {
-        float left;
-        float width = PROP(width);
-
-        if (width == 0.0)
-        {
-          width = 4 * mrg_em (mrg);//mrg_edge_right (mrg) - mrg_edge_left (mrg);
-        }
-
-        width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
-
-        if (width + PROP(margin_left) + PROP(margin_right) >
-            mrg_edge_right(mrg)-mrg_edge_left(mrg))
-        {
-          clear_both (mrg);
-          left = mrg_edge_left (mrg) + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
-        }
-        else
-        {
-        while (dynamic_edge_right - dynamic_edge_left < width + PROP(margin_left) + PROP(margin_right))
-        {
-          mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
-          dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
-          dynamic_edge_left = _mrg_parent_dynamic_edge_left(mrg);
-        }
-          left = dynamic_edge_left + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
-        }
-
-        itk_set_edge_left (mrg, left);
-        itk_set_edge_right (mrg,  left + width +
-            PROP(padding_left) /* + PROP(border_right_width)*/);
-        itk_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top)));// - mrg->state->vmarg));
-                        //));//- mrg->state->vmarg));
-        mrg->state->block_start_x = mrg_x (mrg);
-        mrg->state->block_start_y = mrg_y (mrg);// + PROP(padding_top) + PROP(border_top_width);
-        mrg->state->floats = 0;
-
-        /* change cursor point after floating something left; if pushed far
-         * down, the new correct
-         */
-        //mrg_set_xy (mrg, mrg->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
-            //mrg_y (mrg) + PROP(padding_top) + PROP(border_top_width);
-      } /* XXX: maybe spot for */
-      else if (1)
-      {
-         float width = PROP(width);
-         if (width)
-           itk_set_edge_right (mrg, mrg->state->block_start_x  + width);
-      }
-      break;
-    case CTX_POSITION_ABSOLUTE:
-      ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
-      mrg->state->drawlist_start_offset--;
-      {
-	float left = PROP(left);
-	float top = PROP(top);
-
-        if (left == 0.0f) // XXX 0.0 should also be a valid value!
-	  left = mrg->x;
-        if (top == 0.0f)  // XXX 0.0 should also be a valid value!
-	  top = mrg->y;
-
-        mrg->state->floats = 0;
-        itk_set_edge_left (mrg, left + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
-        itk_set_edge_right (mrg, left + PROP(width));
-        itk_set_edge_top (mrg, top + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
-        mrg->state->block_start_x = mrg_x (mrg);
-        mrg->state->block_start_y = mrg_y (mrg);
-      }
-      break;
-    case CTX_POSITION_FIXED:
-      ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
-      mrg->state->drawlist_start_offset--;
-      {
-        int width = PROP(width);
-
-        if (!width)
-        {
-          width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
-        }
-
-        ctx_identity (mrg_ctx (mrg)); // XXX should be dropped
-        ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
-        mrg->state->floats = 0;
-
-        itk_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
-        itk_set_edge_right (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left) + width);//mrg_width (mrg) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right)); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
-        itk_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
-        mrg->state->block_start_x = mrg_x (mrg);
-        mrg->state->block_start_y = mrg_y (mrg);
-      }
-      break;
-  }
-
-  if (style->display == CTX_DISPLAY_BLOCK ||
-      style->display == CTX_DISPLAY_LIST_ITEM ||
-      style->display == CTX_DISPLAY_INLINE_BLOCK ||
-      style->float_)
-  {
-     float height = PROP(height);
-     float width = PROP(width);
-
-     mrg->state->got_text = 0;
-     mrg->state->line_max_height = style->font_size;
-
-     if (!height)
-       {
-         height = mrg_em (mrg) * 4;
-       }
-     if (!width)
-       {
-         width = mrg_em (mrg) * 4;
-       }
-
-    if (height  /* XXX: if we knew height of dynamic elements
-                        from previous frame, we could use it here */
-       && style->overflow == CTX_OVERFLOW_HIDDEN)
-       {
-         ctx_rectangle (mrg_ctx(mrg),
-            mrg->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
-            mrg->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width),
-            width + PROP(border_right_width) + PROP(border_left_width) + PROP(padding_left) + PROP(padding_right), //mrg_edge_right (mrg) - mrg_edge_left (mrg) + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width),
-            height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width));
-         ctx_clip (mrg_ctx(mrg));
-       }
-
-    mrg->state->ptly = 0;
-    char name[10]="ele_";
-    name[3]=mrg->state_no+2;
-
-  CtxColor *background_color = ctx_color_new ();
-  ctx_get_color (mrg->ctx, CTX_background_color, background_color);
-  if (!ctx_color_is_transparent (background_color))
-  {
-    mrg_ctx_set_source_color (mrg->ctx, background_color);
-    if (is_block_item (style))
-    {
-      ctx_deferred_rectangle (mrg->ctx, name,
-         mrg->state->block_start_x - PROP(padding_left),
-         mrg->state->block_start_y - PROP(padding_top),
-         width + PROP(padding_left) + PROP(padding_right),
-         height + PROP(padding_top) + PROP(padding_bottom));
-    }
-    else
-    {
-      ctx_deferred_rectangle (mrg->ctx, name,
-         mrg_x (mrg), mrg_y (mrg),
-         width + PROP(padding_left) + PROP(padding_right),
-         height + PROP(padding_top) + PROP(padding_bottom));
-    }
-    ctx_fill (mrg->ctx);
-  }
-  ctx_color_free (background_color);
-  }
-}
 
 #if 0
 static void ctx_css_add_class (Mrg *mrg, const char *class_name)
@@ -6818,6 +6815,7 @@ MrgImage *mrg_query_image (Mrg        *mrg,
                            int        *width,
                            int        *height)
 {
+  fprintf (stderr, "%s\n", path);
   return NULL;
 }
 
@@ -7551,7 +7549,7 @@ void itk_xml_render (Mrg *mrg,
 
           if (mrg_query_image (mrg, src, &img_width, &img_height))
           {
-            float width =  PROP(width);
+            float width  = PROP(width);
             float height = PROP(height);
 
             if (width < 1)
@@ -7782,8 +7780,8 @@ void mrg_set_size (Mrg *mrg, int width, int height)
 
 int
 _mrg_file_get_contents (const char  *path,
-                   char       **contents,
-                   long        *length)
+                        char       **contents,
+                        long        *length)
 {
   FILE *file;
   long  size;
@@ -7921,6 +7919,7 @@ mrg_get_contents_default (const char  *referer,
 
   /* should resolve before mrg_get_contents  */
   char *uri = _mrg_resolve_uri (referer, input_uri);
+  //fprintf (stderr, "%s %s\n", uri, input_uri);
 
   for (i = cache; i; i = i->next)
   {
