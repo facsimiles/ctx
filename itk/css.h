@@ -418,6 +418,8 @@ struct _Mrg {
   int        text_listen_count;
   int        text_listen_active;
 
+  int        line_level; // nesting level for active-line ids
+
   ////////////////////////////////////////////////
   ////////////////////////////////////////////////
   //////////////////// end of css ////////////////
@@ -3669,8 +3671,11 @@ mrg_get_contents (Mrg         *mrg,
 int itk_print (Mrg *mrg, const char *string);
 static int is_block_item (CtxStyle *style)
 {
-  return ((style->display == CTX_DISPLAY_BLOCK || style->float_
-      ||style->display == CTX_DISPLAY_LIST_ITEM ));
+  return ((style->display == CTX_DISPLAY_BLOCK
+           ||style->float_
+           ||style->display == CTX_DISPLAY_LIST_ITEM
+           ||style->display == CTX_DISPLAY_INLINE_BLOCK
+	   ));
 }
 
 float mrg_ddpx (Mrg *mrg)
@@ -3905,13 +3910,12 @@ void _mrg_layout_pre (Mrg *mrg)
       break;
   }
 
-  if (style->display == CTX_DISPLAY_BLOCK ||
-      style->display == CTX_DISPLAY_LIST_ITEM ||
-      style->display == CTX_DISPLAY_INLINE_BLOCK ||
-      style->float_)
+  if (is_block_item (style))
   {
      float height = PROP(height);
      float width = PROP(width);
+     
+     mrg->line_level++;
 
      mrg->state->got_text = 0;
      mrg->state->line_max_height = style->font_size;
@@ -3958,7 +3962,7 @@ void _mrg_layout_pre (Mrg *mrg)
     {
       ctx_deferred_rectangle (mrg->ctx, name,
          mrg_x (mrg), mrg_y (mrg),
-         width + PROP(padding_left) + PROP(padding_right),
+         width  + PROP(padding_left) + PROP(padding_right),
          height + PROP(padding_top) + PROP(padding_bottom));
     }
     ctx_fill (mrg->ctx);
@@ -4392,7 +4396,7 @@ _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
   float val = mrg->state->line_max_height * ascent;
 
   char name[10]="lin_";
-  name[3]=mrg->state_no+2;
+  name[3]=mrg->line_level+2;
 
   ctx_resolve (mrg->ctx, name, set_line_height, &val);
 
@@ -4911,7 +4915,7 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
     ctx_move_to (mrg->ctx,  mrg->x + left_pad, mrg->y);
 
     char name[10]="lin_";
-    name[3]=mrg->state_no+2;
+    name[3]=mrg->line_level+2;
 
     ctx_deferred_rel_move_to (mrg->ctx, name, 0.0, 0.0);//mrg_em (mrg));
     mrg->state->got_text = 1;
@@ -5001,7 +5005,7 @@ static void _mrg_nl (Mrg *mrg)
   mrg->y += mrg->state->line_max_height * mrg->state->style.line_height;
       float val = mrg->state->line_max_height * ascent;
   char name[10]="lin_";
-  name[3]=mrg->state_no+2;
+  name[3]=mrg->line_level+2;
 
       ctx_resolve (mrg->ctx, name, set_line_height, &val);
 
@@ -6123,6 +6127,10 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   {
     if (mrg->state->got_text)
       _mrg_nl (mrg);
+  }
+  if (is_block_item (style))
+  {
+     mrg->line_level--;
   }
 
   /* remember data to store about float, XXX: perhaps better to store
