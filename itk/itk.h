@@ -538,8 +538,6 @@ void itk_reset (ITK *itk)
   else
   {
     itk_style = strdup (
-"wallpaper: #111\n"
-//"wallpaper: #677\n"
 "\n"
 "itk-font-size: 32.0;\n"
 
@@ -556,39 +554,8 @@ void itk_reset (ITK *itk)
 "terminal-active-bg-reverse: #dddb;\n"
 "\n"
 "itk-bg:             rgba(30,40,50, 1.0);\n"
-"itk-focused-bg:     rgba(0,0,0,1.0);\n"
-"itk-focused-fg:     rgb(255,255,255,1.0);\n"
 "itk-fg:             rgb(225,225,225);\n"
-"itk-interactive:    rgb(255,5,5);\n"
-"itk-interactive-bg: rgba(50,40,50,0.45);\n"
-"itk-entry-cursor:   rgb(225,245,140);\n"
-"itk-entry-fallback: rgb(225,245,140);\n"
-"itk-button-focused-bg: rgb(60,60,160);\n"
-"itk-button-shadow:  rgba(0,0,0,0.4);\n"
-"itk-button-bg:      rgb(0,0,0);\n"
-"itk-button-fg:      rgb(255,255,255);\n"
-"itk-scroll-bg:      rgba(0,0,0,0.3),\n"
-"itk-scroll-fg:      rgba(255,255,255,0.3);\n"
-"itk-slider-cursor:  rgb(255,0,0);\n"
-"itk-slider-text:    rgba(255,255,255,0.5);\n"
 "\n"
-"# light mode follows\n"
-"\n"
-"itk-bg: rgb(230,230,230);\n"
-"itk-focused-bg: rgb(255,255,255);\n"
-"itk-interactive: rgb(255,5,5);\n"
-"itk-interactive-bg: rgba(255,245,230,0.5);\n"
-"itk-fg: rgb(30,40,50:\n"
-"itk-entry-cursor: rgb(0,0,0);\n"
-"itk-entry-fallback: rgb(225,245,140);\n"
-"itk-button-bg: rgb(235,235,235);\n"
-"itk-button-shadow: rgba(0,0,0,0.44);\n"
-"itk-button-focused-bg: rgb(255,255,25);\n"
-"itk-button-fg: rgb(0,0,0);\n"
-"itk-scroll-bg: rgba(0,0,0,0.1);\n"
-"itk-scroll-fg: rgba(0,0,0,0.44);\n"
-"itk-slider-cursor: rgb(255,0,0);\n"
-"itk-slider-text: rgba(0,0,0,0.5);\n"
     );
 
   }
