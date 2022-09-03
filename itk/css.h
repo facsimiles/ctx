@@ -506,6 +506,8 @@ struct _Mrg {
 
 };
 
+float itk_panel_scroll (ITK *itk);
+
 static Ctx *mrg_ctx (Mrg *mrg)
 {
   return mrg->ctx;
@@ -3897,7 +3899,7 @@ void _mrg_layout_pre (Mrg *mrg)
           width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-        ctx_identity (mrg_ctx (mrg)); // XXX should be dropped
+	ctx_translate (mrg_ctx(mrg), 0, itk_panel_scroll (mrg));
         ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
         mrg->state->floats = 0;
 
