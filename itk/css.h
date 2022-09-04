@@ -339,7 +339,6 @@ typedef struct MrgState {
   int          children;
   int          overflowed:1;
   int          span_bg_started:1;
-  //float        line_max_height;
 
   int          drawlist_start_offset;
 } MrgState;
@@ -421,6 +420,11 @@ struct _Mrg {
   int        line_level; // nesting level for active-line 
 			 //
   float      line_max_height[CTX_MAX_STATES];
+  int        line_got_baseline[CTX_MAX_STATES]; // whether the current mrg position of
+						// baseline is correctly configured
+						// for relative drawing.
+						//
+						// XXX refactor into a bitfield
   ////////////////////////////////////////////////
   ////////////////////////////////////////////////
   //////////////////// end of css ////////////////
@@ -1644,6 +1648,7 @@ const char * html_css =
 ".cursor{color:white;background: black;} \n"
 "br{display:block;}\n"
 "html{color:black;font-weight:normal;background-color:white;}\n"
+"document{color:black;font-weight:normal;background-color:white;}\n"
 "body{background-color:transparent;color:black;}\n"
 "a{color:blue;text-decoration: underline;}\n"
 "a:hover{background:black;color:white;text-decoration:underline; }\n"
@@ -3711,6 +3716,7 @@ static void _mrg_nl (Mrg *mrg)
 
   ctx_resolve (mrg->ctx, name, set_line_height, &val);
   mrg->line_max_height[mrg->line_level]=0.0f;
+  mrg->line_got_baseline[mrg->line_level]=0;
 
   mrg->x = _mrg_dynamic_edge_left(mrg);
 #ifdef SNAP
@@ -3838,6 +3844,7 @@ void _mrg_layout_pre (Mrg *mrg)
     itk_print (mrg, "•");
     mrg->x = x;
     mrg->line_max_height[mrg->line_level] = 0.0f;
+    mrg->line_got_baseline[mrg->line_level]=0;
   }
 
   switch (style->position)
@@ -3993,7 +4000,7 @@ void _mrg_layout_pre (Mrg *mrg)
      
      mrg->line_level++;
      mrg->line_max_height[mrg->line_level] = 0.0f;//style->font_size;//0.0f;
-     //mrg->state->line_max_height = style->font_size;
+     mrg->line_got_baseline[mrg->line_level]=0;
 
      if (!height)
        {
@@ -4471,6 +4478,7 @@ _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
   ctx_resolve (mrg->ctx, name, set_line_height, &val);
 
   mrg->line_max_height[mrg->line_level] = 0.0f;//style->font_size;//0.0f;
+  mrg->line_got_baseline[mrg->line_level]=0;
 }
 
 /* mrg - MicroRaptor Gui
@@ -4977,7 +4985,7 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
   float left_pad;
   left_pad = paint_span_bg (mrg, x, y, wwidth);
 
-  if (mrg->line_max_height[mrg->line_level] == 0.0f)
+  if (mrg->line_got_baseline[mrg->line_level] == 0)
   {
     ctx_move_to (mrg->ctx,  mrg->x + left_pad, mrg->y);
 
@@ -4985,6 +4993,7 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
     name[3]=mrg->line_level+2;
 
     ctx_deferred_rel_move_to (mrg->ctx, name, 0.0, 0.0);//mrg_em (mrg));
+    mrg->line_got_baseline[mrg->line_level] = 1;
   }
   mrg->line_max_height[mrg->line_level] =
       ctx_maxf (mrg->line_max_height[mrg->line_level],
@@ -5053,20 +5062,6 @@ void mrg_set_wrap_max_lines  (Mrg *mrg, int max_lines)
 {
     mrg->state->max_lines = max_lines;
 }
-
-//#define SNAP
-
-
-#if 0
-    if (mrg->state->got_text)
-    {
-      float val = mrg->state->line_max_height * ascent;
-      ctx_resolve (mrg->ctx, "line", set_line_height, &val);
-      //fprintf (stderr, "%f\n", mrg->state->line_max_height);
-      mrg->y += mrg->state->line_max_height * style->line_height;
-    r
-#endif
-
 
 static void _mrg_spaces (Mrg *mrg, int count)
 {
@@ -6170,12 +6165,19 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   {
     if (style->display == CTX_DISPLAY_INLINE_BLOCK)
     {
+      if (height == 0)
+        height = mrg_y (mrg) - (mrg->state->block_start_y);
        
+      mrg->line_got_baseline[mrg->line_level-1]=0;
+      mrg->line_max_height[mrg->line_level-1] =
+        ctx_maxf (mrg->line_max_height[mrg->line_level-1],
+                  height);
+      
     }
     else
     {
-    if (mrg->line_max_height[mrg->line_level] != 0.0f)
-      _mrg_nl (mrg);
+      if (mrg->line_max_height[mrg->line_level] != 0.0f)
+        _mrg_nl (mrg);
     }
     mrg->line_level--;
   }
@@ -6217,12 +6219,12 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     geo->width = width;
     if (width == 0)
     {
-      geo->width = mrg_x (mrg) - (mrg->state->block_start_x);
+      width = mrg_x (mrg) - (mrg->state->block_start_x);
     }
 
     geo->height = height;
     if (height == 0)
-      geo->height = mrg_y (mrg) - (mrg->state->block_start_y);
+      height = mrg_y (mrg) - (mrg->state->block_start_y);
 
     char name[10]="ele_";
     name[3]=mrg->state_no+2;
@@ -8091,7 +8093,6 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
   _ctx_events_init (mrg->ctx);
   mrg->state_no = 0;
   mrg->line_level=0;
-  //mrg->got_text_bitfield = 0;
   mrg->line_max_height[0]=0.0f;
   mrg->state = &mrg->states[mrg->state_no];
 
