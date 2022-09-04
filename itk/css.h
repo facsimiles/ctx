@@ -2250,13 +2250,13 @@ static inline int match_nodes (Mrg *mrg, CtxStyleNode *sel_node, CtxStyleNode *s
 
 static int ctx_selector_vs_ancestry (Mrg *mrg,
                                      CtxStyleEntry *entry,
-                                     CtxStyleNode **ancestry,
+                                     MrgState      *ancestry,
                                      int a_depth)
 {
   int s = entry->sel_len - 1;
 
   /* right most part of selector must match */
-  if (!match_nodes (mrg, &entry->parsed[s], ancestry[a_depth-1]))
+  if (!match_nodes (mrg, &entry->parsed[s], &ancestry[a_depth-1].style_node))
     return 0;
 
   s--;
@@ -2274,7 +2274,7 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
     // if (entry->parsed[s].direct_ancestor) //
     for (ai = a_depth-1; ai >= 0 && !found_node; ai--)
     {
-      if (match_nodes (mrg, &entry->parsed[s], ancestry[ai]))
+      if (match_nodes (mrg, &entry->parsed[s], &ancestry[ai].style_node))
         found_node = 1;
     }
     if (found_node)
@@ -2291,7 +2291,7 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
   return 1;
 }
 
-static int ctx_css_selector_match (Mrg *mrg, CtxStyleEntry *entry, CtxStyleNode **ancestry, int a_depth)
+static int ctx_css_selector_match (Mrg *mrg, CtxStyleEntry *entry, MrgState *ancestry, int a_depth)
 {
   if (entry->selector[0] == '*' &&
       entry->selector[1] == 0)
@@ -2306,7 +2306,7 @@ static int ctx_css_selector_match (Mrg *mrg, CtxStyleEntry *entry, CtxStyleNode 
   return 0;
 }
 
-static char *_ctx_css_compute_style (Mrg *mrg, CtxStyleNode **ancestry, int a_depth)
+static char *_ctx_css_compute_style (Mrg *mrg, MrgState *ancestry, int a_depth)
 {
   CtxList *l;
   CtxList *matches = NULL;
@@ -2350,23 +2350,9 @@ static char *_ctx_css_compute_style (Mrg *mrg, CtxStyleNode **ancestry, int a_de
   return ret;
 }
 
-static int _ctx_get_ancestry (Mrg *mrg, CtxStyleNode **ancestry)
-{
-  int i, j;
-  for (i = 0, j = 0; i <= mrg->state_no; i++)
-    if (mrg->states[i].style_id)
-    {
-      ancestry[j++] = &(mrg->states[i].style_node);
-    }
-  ancestry[j] = NULL;
-  return j;
-}
-
 char *_ctx_stylesheet_collate_style (Mrg *mrg)
 {
-  CtxStyleNode *ancestry[CTX_MAX_STYLE_DEPTH];
-  int ancestors = _ctx_get_ancestry (mrg, ancestry);
-  char *ret = _ctx_css_compute_style (mrg, ancestry, ancestors);
+  char *ret = _ctx_css_compute_style (mrg, &mrg->states[1], mrg->state_no);
   return ret;
 }
 
