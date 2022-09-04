@@ -638,6 +638,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
  */
 static const char *squoze_decode (int squoze_dim, uint64_t hash)
 {
+  if (hash == 0) return "";
 #if CTX_THREADS
 #define THREAD __thread  // use thread local storage
   static THREAD int no = 0;
