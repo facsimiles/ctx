@@ -1523,7 +1523,6 @@ void _ctx_initial_style (Mrg *mrg)
   ctx_set_color (mrg->ctx, CTX_border_left_color, color);
   ctx_set_color (mrg->ctx, CTX_border_right_color, color);
 
-  ctx_color_free (color);
 #if 0
   s->stroke_color.red = 1;
   s->stroke_color.green = 0;
@@ -1558,6 +1557,9 @@ void _ctx_initial_style (Mrg *mrg)
   //s->background_color.green = 1;
   //s->background_color.blue = 1;
   //s->background_color.alpha = 0;
+    ctx_color_set_from_string (mrg->ctx, color, "transparent");
+    ctx_set_color (mrg->ctx, CTX_background_color, color);
+    ctx_color_free (color);
 }
 
 
