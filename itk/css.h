@@ -3793,6 +3793,39 @@ void _mrg_layout_pre (Mrg *mrg)
     mrg->state->block_start_x = mrg_edge_left (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
   }
+  else if (style->display == CTX_DISPLAY_INLINE_BLOCK)
+  {
+
+
+    float left_margin_pad_and_border = PROP(padding_left) + PROP(margin_left) + PROP(border_left_width);
+    float right_margin_pad_and_border = PROP(padding_right) + PROP(margin_right) + PROP(border_right_width);
+
+    if (mrg_x (mrg) + PROP(width) + left_margin_pad_and_border + right_margin_pad_and_border
+		    >= dynamic_edge_right)
+       _mrg_nl (mrg);
+
+    if (left_margin_pad_and_border != 0.0f)
+    {
+      itk_set_edge_left (mrg, mrg_x (mrg) +
+        PROP(padding_left) + PROP(margin_left) + PROP(border_left_width));
+    }
+
+
+#if 0
+    if (right_margin_pad_and_border != 0.0f)
+    {
+      itk_set_edge_right (mrg, mrg_edge_right (mrg) - right_margin_pad_and_border);
+    }
+#else
+      itk_set_edge_right (mrg, mrg_x (mrg) + PROP(width));
+#endif
+
+    itk_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width));// + actual_top);
+
+    mrg->state->block_start_x = mrg_x (mrg);
+    mrg->state->block_start_y = mrg_y (mrg);
+  }
+	  
 
   /* the list-item is a cheap hack; can be implemented directly
    * in later versions of css
@@ -6135,8 +6168,15 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
   if (is_block_item (style))
   {
+    if (style->display == CTX_DISPLAY_INLINE_BLOCK)
+    {
+       
+    }
+    else
+    {
     if (mrg->line_max_height[mrg->line_level] != 0.0f)
       _mrg_nl (mrg);
+    }
     mrg->line_level--;
   }
 
@@ -6215,15 +6255,9 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
     //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (mrg->state->block_start_y - mrg_em(mrg)));
 
-    if (!style->float_ && (style->display == CTX_DISPLAY_BLOCK ||
-		           style->display == CTX_DISPLAY_LIST_ITEM))
-    {
-      vmarg = PROP(margin_bottom);
-
       mrg_set_xy (mrg, 
-          mrg_edge_left (mrg),
-          mrg_y (mrg) + vmarg + PROP(border_bottom_width));
-    }
+          mrg_x (mrg) + width,
+          mrg_y (mrg));
   }
   else if (is_block_item (style))
   {
