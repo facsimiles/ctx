@@ -2290,7 +2290,7 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
   /* right most part of selector must match */
   if (entry->parsed[s].direct_descendant == 0)
   {
-    if (!match_nodes (mrg, &entry->parsed[s], &ancestry[a_depth-1].style_node))
+    if (!match_nodes (mrg, &entry->parsed[s], ancestry[a_depth-1]))
       return 0;
 
     s--;
@@ -2310,8 +2310,8 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
     {  // s>0 should always be true when direct_descendant is true
       ai = a_depth-1;
       {
-        if (match_nodes (mrg, &entry->parsed[s], &ancestry[ai].style_node) &&
-            match_nodes (mrg, &entry->parsed[s-1], &ancestry[ai-1].style_node))
+        if (match_nodes (mrg, &entry->parsed[s], ancestry[ai]) &&
+            match_nodes (mrg, &entry->parsed[s-1], ancestry[ai-1]))
           found_node = 1;
       }
       ai--;
@@ -2321,7 +2321,7 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
     {
       for (ai = a_depth-1; ai >= 0 && !found_node; ai--)
       {
-        if (match_nodes (mrg, &entry->parsed[s], &ancestry[ai].style_node))
+        if (match_nodes (mrg, &entry->parsed[s], &ancestry[ai]))
           found_node = 1;
       }
       s--;
