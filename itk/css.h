@@ -6216,11 +6216,11 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     CtxFloatRectangle *geo = &_geo;
     memset (geo, 0, sizeof (_geo));
 
-    geo->width = width;
     if (width == 0)
     {
-      width = mrg_x (mrg) - (mrg->state->block_start_x);
+      width = mrg_x (mrg) - (mrg->state->block_start_x) + PROP(padding_right);
     }
+    geo->width = width;
 
     geo->height = height;
     if (height == 0)
@@ -6294,13 +6294,16 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     char name[10]="ele_";
     name[3]=mrg->state_no+2;
 
-    ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
 
     mrg_box (mrg,
         mrg->state->block_start_x,
         mrg->state->block_start_y,
         geo->width,
         geo->height);
+
+    geo->width += PROP(padding_right) + PROP(padding_left);
+    geo->height += PROP(padding_top) + PROP(padding_bottom);
+    ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
     if (ret_rect)
     {
        ret_rect->x = mrg->state->block_start_x;
