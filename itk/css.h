@@ -1533,30 +1533,7 @@ void _ctx_initial_style (Mrg *mrg)
   s->fill_color.blue = 0;
   s->fill_color.alpha = 1;
 #endif
-#if 0
-  CtxColor *color = ctx_color_new ();
-  ctx_color_set_from_string (mrg->ctx, color, "black");
-  ctx_set_color (mrg->ctx, CTX_color, color);
-  ctx_set_color (mrg->ctx, CTX_border_top_color, color);
-  ctx_set_color (mrg->ctx, CTX_border_left_color, color);
-  ctx_set_color (mrg->ctx, CTX_border_right_color, color);
-  ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
-#endif
-#if 0
-  s->border_top_color.alpha = 0;
-  s->border_left_color.alpha = 0;
-  s->border_right_color.alpha = 0;
-  s->border_bottom_color.alpha = 0;
-#endif
 
-  //ctx_color_set_rgba (&mrg->ctx->state, &s->color, 1, 0, 1, 0);
-  //ctx_color_set_rgba (&mrg->ctx->state, &s->stroke_color, 1, 1, 0, 0);
-  //ctx_color_set_rgba (&mrg->ctx->state, &s->background_color, 1, 1, 1, 0);
-  /* this shouldn't be inherited? */
-  //s->background_color.red = 1;
-  //s->background_color.green = 1;
-  //s->background_color.blue = 1;
-  //s->background_color.alpha = 0;
     ctx_color_set_from_string (mrg->ctx, color, "transparent");
     ctx_set_color (mrg->ctx, CTX_background_color, color);
     ctx_color_free (color);
