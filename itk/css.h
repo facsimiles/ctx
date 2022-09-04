@@ -93,7 +93,7 @@ struct _CtxStyleNode
   uint32_t    pseudo_hash[CTX_STYLE_MAX_PSEUDO];
               // TODO : to hash pseudos we need to store
               //   argument (like for nth-child)
-  int         is_direct_parent; /* for use in selector chains with > */
+  int         direct_descendant; /* for use in selector chains with > */
   const char *id;
 };
  
@@ -1743,21 +1743,26 @@ static void ctx_css_parse_selector (Mrg *mrg, const char *selector, CtxStyleEntr
 
   char type = ' ';
 
+  int direct_descendant = 0;
   for (p = selector; ; p++)
   {
     switch (*p)
     {
-      case '.': case ':': case '#': case ' ': case 0:
+	case '.': case ':': case '#': case ' ': case 0: case '>':
         if (sec_l)
         {
           switch (type)
           {
             case ' ':
               entry->parsed[entry->sel_len].element_hash = ctx_strhash (section);
+	      entry->parsed[entry->sel_len].direct_descendant = direct_descendant;
+	      direct_descendant = 0;
               break;
             case '#':
               entry->parsed[entry->sel_len].id = mrg_intern_string (section);
               entry->parsed[entry->sel_len].id_hash = ctx_strhash (section);
+	      entry->parsed[entry->sel_len].direct_descendant = direct_descendant;
+	      direct_descendant = 0;
               break;
             case '.':
               {
@@ -1765,6 +1770,8 @@ static void ctx_css_parse_selector (Mrg *mrg, const char *selector, CtxStyleEntr
                 for (i = 0; entry->parsed[entry->sel_len].classes_hash[i]; i++);
                 entry->parsed[entry->sel_len].classes_hash[i] = ctx_strhash (section);
               }
+	      entry->parsed[entry->sel_len].direct_descendant = direct_descendant;
+	      direct_descendant = 0;
               break;
             case ':':
               {
@@ -1773,18 +1780,41 @@ static void ctx_css_parse_selector (Mrg *mrg, const char *selector, CtxStyleEntr
                 entry->parsed[entry->sel_len].pseudo[i] = mrg_intern_string (section);
                 for (i = 0; entry->parsed[entry->sel_len].pseudo_hash[i]; i++);
                 entry->parsed[entry->sel_len].pseudo_hash[i] = ctx_strhash (section);
+  	        entry->parsed[entry->sel_len].direct_descendant = direct_descendant;
+	        direct_descendant = 0;
               }
               break;
           }
-        if (*p == ' ' || *p == 0)
-        entry->sel_len ++;
+        if (*p == ' ' || *p == 0 || *p == '>')
+	{
+          entry->sel_len ++;
+	}
         }
+        type = *p;
+	if (*p == '>')
+	{
+          direct_descendant = 1;
+	  type = ' ';
+	}
         if (*p == 0)
         {
+
+#if 0
+  fprintf (stderr, "%s: ", selector);
+  for (int i = 0; i < entry->sel_len; i++)
+  {
+    if (entry->parsed[i].direct_descendant)
+	    fprintf (stderr, "DP ");
+    fprintf (stderr, "e: %s ", squoze32_decode (entry->parsed[i].element_hash));
+    for (int j = 0; entry->parsed[i].classes_hash[j]; j++)
+      fprintf (stderr, "c: %s ", squoze32_decode (entry->parsed[i].classes_hash[j]));
+  }
+  fprintf (stderr, "\n");
+#endif
+
           return;
         }
         section[(sec_l=0)] = 0;
-        type = *p;
         break;
       default:
         section[sec_l++] = *p;
@@ -1792,6 +1822,8 @@ static void ctx_css_parse_selector (Mrg *mrg, const char *selector, CtxStyleEntr
         break;
     }
   }
+
+  // not reached
 }
 
 static void ctx_stylesheet_add_selector (Mrg *mrg, const char *selector, const char *css, int priority)
@@ -2254,28 +2286,45 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
                                      int a_depth)
 {
   int s = entry->sel_len - 1;
-
+#if 1
   /* right most part of selector must match */
-  if (!match_nodes (mrg, &entry->parsed[s], &ancestry[a_depth-1].style_node))
-    return 0;
+  if (entry->parsed[s].direct_descendant == 0)
+  {
+    if (!match_nodes (mrg, &entry->parsed[s], &ancestry[a_depth-1].style_node))
+      return 0;
 
-  s--;
-  a_depth--;
+    s--;
+    a_depth--;
+  }
 
   if (s < 0)
     return 1;
+#endif
 
   while (s >= 0)
   {
     int ai;
     int found_node = 0;
 
-  /* XXX: deal with '>' */
-    // if (entry->parsed[s].direct_ancestor) //
-    for (ai = a_depth-1; ai >= 0 && !found_node; ai--)
+    if (entry->parsed[s].direct_descendant && s > 0)
+    {  // s>0 should always be true when direct_descendant is true
+      ai = a_depth-1;
+      {
+        if (match_nodes (mrg, &entry->parsed[s], &ancestry[ai].style_node) &&
+            match_nodes (mrg, &entry->parsed[s-1], &ancestry[ai-1].style_node))
+          found_node = 1;
+      }
+      ai--;
+      s-=2;
+    }
+    else
     {
-      if (match_nodes (mrg, &entry->parsed[s], &ancestry[ai].style_node))
-        found_node = 1;
+      for (ai = a_depth-1; ai >= 0 && !found_node; ai--)
+      {
+        if (match_nodes (mrg, &entry->parsed[s], &ancestry[ai].style_node))
+          found_node = 1;
+      }
+      s--;
     }
     if (found_node)
     {
@@ -2285,7 +2334,6 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
     {
       return 0;
     }
-    s--;
   }
 
   return 1;

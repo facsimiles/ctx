@@ -416,7 +416,8 @@ static void itk_style_color3 (ITK *itk, const char *klass, uint32_t attr)
    memset(&ancestor, 0, sizeof (CtxStyleNode));
    ancestry[0]->element_hash = ctx_strhash ("div");
    ancestry[0]->classes_hash[0] = ctx_strhash (klass);
-   char *collated = _ctx_css_compute_style (itk, ancestry, 1);
+   // XXX : fix this casting hack, some stack waste is better then type mismatch?
+   char *collated = _ctx_css_compute_style (itk, (MrgState*)ancestry, 1);
    ctx_save (itk->ctx);
    itk_set_style (itk, collated);
    CtxColor *color = ctx_color_new ();
