@@ -124,6 +124,7 @@ typedef enum {
   CTX_DISPLAY_LIST_ITEM,
   CTX_DISPLAY_NONE,
   CTX_DISPLAY_INLINE_BLOCK,
+  CTX_DISPLAY_FLOW_ROOT,
   CTX_DISPLAY_FLEX,
   CTX_DISPLAY_GRID,
   CTX_DISPLAY_INLINE_FLEX,
@@ -190,9 +191,9 @@ typedef enum {
 
 typedef enum {
   CTX_CLEAR_NONE = 0,
-  CTX_CLEAR_LEFT,
-  CTX_CLEAR_RIGHT,
-  CTX_CLEAR_BOTH
+  CTX_CLEAR_LEFT,  // 1
+  CTX_CLEAR_RIGHT, // 2
+  CTX_CLEAR_BOTH   // 3   ( LEFT | RIGHT )
 } CtxClear;
 
 
@@ -1262,6 +1263,7 @@ static void clear_left (Mrg *mrg)
   float y = mrg_y (mrg);
   int i;
 
+  //fprintf (stderr, "{l%i %f ", y, mrg->state->floats);
   if (mrg->state->floats)
   {
     for (i = 0; i < mrg->state->floats; i++)
@@ -1276,6 +1278,7 @@ static void clear_left (Mrg *mrg)
         }
       }
   }
+  //fprintf (stderr, "%f]", y);
   mrg_set_xy (mrg, mrg_x (mrg), y);
 }
 
@@ -1284,6 +1287,7 @@ static void clear_right (Mrg *mrg)
   float y = mrg_y (mrg);
   int i;
 
+  //fprintf (stderr, "{r%i %f ", y, mrg->state->floats);
   if (mrg->state->floats)
   {
     for (i = 0; i < mrg->state->floats; i++)
@@ -1298,6 +1302,7 @@ static void clear_right (Mrg *mrg)
         }
       }
   }
+  //fprintf (stderr, "%f}", y);
   mrg_set_xy (mrg, mrg_x (mrg), y);
 }
 
@@ -2300,7 +2305,7 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
     {
       for (ai = a_depth-1; ai >= 0 && !found_node; ai--)
       {
-        if (match_nodes (mrg, &entry->parsed[s], &ancestry[ai]))
+        if (match_nodes (mrg, &entry->parsed[s], ancestry[ai]))
           found_node = 1;
       }
       s--;
@@ -3190,6 +3195,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         case CTX_block:        s->display = CTX_DISPLAY_BLOCK;        break;
         case CTX_list_item:    s->display = CTX_DISPLAY_LIST_ITEM;    break;
         case CTX_inline_block: s->display = CTX_DISPLAY_INLINE_BLOCK; break;
+	case CTX_flow_root:    s->display = CTX_DISPLAY_FLOW_ROOT;    break;
         default:               s->display = CTX_DISPLAY_INLINE;
       }
       break;
@@ -3712,6 +3718,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
     mrg->state->block_start_x = mrg_edge_left (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
+    mrg->state->floats = 0;
   }
   else if (style->display == CTX_DISPLAY_INLINE_BLOCK)
   {
@@ -3744,6 +3751,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
     mrg->state->block_start_x = mrg_x (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
+    mrg->state->floats = 0;
   }
 	  
 

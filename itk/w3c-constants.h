@@ -75,6 +75,7 @@
 #define CTX_first_child 2425578013u // "first-child"
 #define CTX_fixed 8766028u // "fixed"
 #define CTX_float 42040076u // "float"
+#define CTX_flow_root 3713984225u // "flow-root"
 #define CTX_font_family 4070664293u // "font-family"
 #define CTX_font_size 3284437902u // "font-size"
 #define CTX_font_style 2270174179u // "font-style"
