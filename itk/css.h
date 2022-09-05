@@ -3602,6 +3602,7 @@ static int is_block_item (CtxStyle *style)
   return ((style->display == CTX_DISPLAY_BLOCK
            ||style->float_
            ||style->display == CTX_DISPLAY_LIST_ITEM
+           ||style->display == CTX_DISPLAY_FLOW_ROOT
            ||style->display == CTX_DISPLAY_INLINE_BLOCK
 	   ));
 }
@@ -3667,9 +3668,9 @@ void _mrg_layout_pre (Mrg *mrg)
   mrg->state->original_x = mrg_x (mrg);
   mrg->state->original_y = mrg_y (mrg);
 
-  if (//style->display == CTX_DISPLAY_BLOCK && // why this hack?
-      mrg->state->style_node.element_hash == CTX_br)
+  if (mrg->state->style_node.element_hash == CTX_br)
   {
+		  // why this hack?
     _mrg_nl (mrg);
   }
 
@@ -3691,6 +3692,7 @@ void _mrg_layout_pre (Mrg *mrg)
     clear_left (mrg);
 
   if (style->display == CTX_DISPLAY_BLOCK ||
+      style->display == CTX_DISPLAY_FLOW_ROOT ||
       style->display == CTX_DISPLAY_LIST_ITEM)
   {
     if (PROP(padding_left) + PROP(margin_left) + PROP(border_left_width)
@@ -6247,6 +6249,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     //mrg_edge_right (mrg) - mrg_edge_left (mrg), mrg_y (mrg) - (mrg->state->block_start_y - mrg_em(mrg)));
 
     if (!style->float_ && (style->display == CTX_DISPLAY_BLOCK ||
+                           style->display == CTX_DISPLAY_FLOW_ROOT ||
 		           style->display == CTX_DISPLAY_LIST_ITEM))
     {
       vmarg = PROP(margin_bottom);
