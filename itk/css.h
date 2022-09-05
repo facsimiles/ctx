@@ -2902,50 +2902,9 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         }
       }
       break;
+    case CTX_border_bottom:
+    case CTX_border_left:
     case CTX_border_right:
-      {
-        char word[64];
-        int w = 0;
-        const char *p;
-        for (p = value; ; p++)
-        {
-          switch (*p)
-          {
-            case ' ':
-            case '\n':
-            case '\r':
-            case '\t':
-            case '\0':
-              if (w)
-              {
-                uint32_t word_hash = ctx_strhash (word);
-                if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
-                {
-                  float valf = mrg_parse_px_x (mrg, word, NULL);
-                  SET_PROP(border_right_width, valf);
-                } else if (word_hash == CTX_solid ||
-                           word_hash == CTX_dotted ||
-                           word_hash == CTX_inset) {
-                } else {
-                  CtxColor *color = ctx_color_new ();
-                  ctx_color_set_from_string (mrg->ctx, color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_right_color, color);
-                  ctx_color_free (color);
-                }
-                word[0]=0;
-                w=0;
-              }
-              break;
-            default:
-              word[w++]=*p;
-              word[w]=0;
-              break;
-          }
-          if (!*p)
-            break;
-        }
-      }
-      break;
     case CTX_border_top:
       {
         char word[64];
@@ -2966,102 +2925,28 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
-                  SET_PROP(border_top_width, valf);
+		  if (key == CTX_border_bottom)
+                    SET_PROP(border_bottom_width, valf);
+		  else if (key == CTX_border_left)
+                    SET_PROP(border_left_width, valf);
+		  else if (key == CTX_border_right)
+                    SET_PROP(border_right_width, valf);
+		  else
+                    SET_PROP(border_top_width, valf);
                 } else if (word_hash == CTX_solid ||
                            word_hash == CTX_dotted ||
                            word_hash == CTX_inset) {
                 } else {
                   CtxColor *color = ctx_color_new ();
                   ctx_color_set_from_string (mrg->ctx, color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_top_color, color);
-                  ctx_color_free (color);
-                }
-                word[0]=0;
-                w=0;
-              }
-              break;
-            default:
-              word[w++]=*p;
-              word[w]=0;
-              break;
-          }
-          if (!*p)
-            break;
-        }
-      }
-      break;
-    case CTX_border_left:
-      {
-        char word[64];
-        int w = 0;
-        const char *p;
-        for (p = value; ; p++)
-        {
-          switch (*p)
-          {
-            case ' ':
-            case '\n':
-            case '\r':
-            case '\t':
-            case '\0':
-              if (w)
-              {
-                uint32_t word_hash = ctx_strhash (word);
-                if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
-                {
-                  float valf = mrg_parse_px_x (mrg, word, NULL);
-                  SET_PROP(border_left_width, valf);
-                } else if (word_hash == CTX_solid ||
-                           word_hash == CTX_dotted ||
-                           word_hash == CTX_inset) {
-                } else {
-                  CtxColor *color = ctx_color_new ();
-                  ctx_color_set_from_string (mrg->ctx, color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_left_color, color);
-                  ctx_color_free (color);
-                }
-                word[0]=0;
-                w=0;
-              }
-              break;
-            default:
-              word[w++]=*p;
-              word[w]=0;
-              break;
-          }
-          if (!*p)
-            break;
-        }
-      }
-      break;
-    case CTX_border_bottom:
-      {
-        char word[64];
-        int w = 0;
-        const char *p;
-        for (p = value; ; p++)
-        {
-          switch (*p)
-          {
-            case ' ':
-            case '\n':
-            case '\r':
-            case '\t':
-            case '\0':
-              if (w)
-              {
-                uint32_t word_hash = ctx_strhash (word);
-                if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
-                {
-                  float valf = mrg_parse_px_x (mrg, word, NULL);
-                  SET_PROP(border_bottom_width, valf);
-                } else if (word_hash == CTX_solid ||
-                           word_hash == CTX_dotted ||
-                           word_hash == CTX_inset) {
-                } else {
-                  CtxColor *color = ctx_color_new ();
-                  ctx_color_set_from_string (mrg->ctx, color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+		  if (key == CTX_border_bottom)
+                    ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+		  else if (key == CTX_border_top)
+                    ctx_set_color (mrg->ctx, CTX_border_top_color, color);
+		  else if (key == CTX_border_left)
+                    ctx_set_color (mrg->ctx, CTX_border_left_color, color);
+		  else if (key == CTX_border_right)
+                    ctx_set_color (mrg->ctx, CTX_border_right_color, color);
                   ctx_color_free (color);
                 }
                 word[0]=0;
