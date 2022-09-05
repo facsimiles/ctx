@@ -319,7 +319,8 @@ typedef struct MrgState {
   float        block_start_y;
   float        ptly;
   float        vmarg;
-  int          flow_root;
+  int          flow_root; // is
+  int          float_base;
 
   float      (*wrap_edge_left)  (Mrg *mrg, void *data);
   float      (*wrap_edge_right) (Mrg *mrg, void *data);
@@ -1173,7 +1174,7 @@ static float _mrg_dynamic_edge_right2 (Mrg *mrg, MrgState *state)
   int i;
 
   if (mrg->floats)
-    for (i = 0; i < mrg->floats; i++)
+    for (i = state->float_base; i < mrg->floats; i++)
     {
       CtxFloatData *f = &mrg->float_data[i];
       if (f->type == CTX_FLOAT_RIGHT &&
@@ -1194,7 +1195,7 @@ static float _mrg_dynamic_edge_left2 (Mrg *mrg, MrgState *state)
   int i;
 
   if (mrg->floats)
-    for (i = 0; i < mrg->floats; i++)
+    for (i = state->float_base; i < mrg->floats; i++)
     {
       CtxFloatData *f = &mrg->float_data[i];
       if (f->type == CTX_FLOAT_LEFT &&
@@ -1267,7 +1268,7 @@ static void clear_left (Mrg *mrg)
   //fprintf (stderr, "{l%i %f ", y, mrg->floats);
   if (mrg->floats)
   {
-    for (i = 0; i < mrg->floats; i++)
+    for (i = mrg->state->float_base; i < mrg->floats; i++)
       {
         CtxFloatData *f = &mrg->float_data[i];
         {
@@ -1291,7 +1292,7 @@ static void clear_right (Mrg *mrg)
   //fprintf (stderr, "{r%i %f ", y, mrg->floats);
   if (mrg->floats)
   {
-    for (i = 0; i < mrg->floats; i++)
+    for (i = mrg->state->float_base; i < mrg->floats; i++)
       {
         CtxFloatData *f = &mrg->float_data[i];
         {
@@ -1331,7 +1332,7 @@ static void clear_both (Mrg *mrg)
   if (!mrg->state)return;
   if (mrg->floats)
   {
-    for (i = 0; i < mrg->floats; i++)
+    for (i = mrg->state->float_base; i < mrg->floats; i++)
       {
         CtxFloatData *f = &mrg->float_data[i];
         {
@@ -1376,7 +1377,8 @@ void itk_set_edge_top (ITK *itk, float edge)
   // we always set top last, since it causes the
   // reset of line handling
   //
-  mrg_set_xy (mrg, _mrg_dynamic_edge_left (mrg) + ctx_get_float (mrg_ctx(mrg), CTX_text_indent)
+  mrg_set_xy (mrg, _mrg_dynamic_edge_left (mrg) +
+		  ctx_get_float (mrg_ctx(mrg), CTX_text_indent)
       , mrg->state->edge_top);// + mrg_em (mrg));
 
 
@@ -1390,7 +1392,6 @@ void  itk_set_edge_left (Mrg *itk, float val)
   itk->edge_left = val;
   itk->edge_right = itk->width + itk->edge_left;
 }
-
 
 void itk_set_edge_bottom (ITK *itk, float edge)
 {
@@ -3673,6 +3674,8 @@ void _mrg_layout_pre (Mrg *mrg)
                             style->float_ != CTX_FLOAT_NONE ||
                            style->display == CTX_DISPLAY_INLINE_BLOCK ||
                           style->overflow != CTX_OVERFLOW_VISIBLE);
+  if (mrg->state->flow_root)
+    mrg->state->float_base = mrg->floats;
 
   if (mrg->state->style_node.element_hash == CTX_br)
   {
@@ -6089,7 +6092,8 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   float ascent, descent;
   ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
   
-  /* adjust cursor back to before display */
+  if (mrg->state->flow_root)
+    clear_both (mrg);
 
   if (is_block_item (style))
   {
@@ -6358,6 +6362,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
   if (ret_rect && !returned_dim)
     fprintf (stderr, "didnt return dim!\n");
+
 
 
 }
@@ -8028,6 +8033,7 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
   mrg->line_level=0;
   mrg->line_max_height[0]=0.0f;
   mrg->state = &mrg->states[mrg->state_no];
+  mrg->state->float_base = 0;
 
   mrg->floats = 0;
 #if 0
