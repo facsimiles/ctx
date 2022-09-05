@@ -2806,12 +2806,39 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   
     case CTX_border_width:
       {
-        float valf = mrg_parse_px_y (mrg, value, NULL);
+        float vals[10];
+        int   n_vals;
+        n_vals = mrg_parse_pxs (mrg, value, vals);
   
-        SET_PROP(border_top_width, valf);
-        SET_PROP(border_bottom_width, valf);
-        SET_PROP(border_right_width, valf);
-        SET_PROP(border_left_width, valf);
+        switch (n_vals)
+        {
+          case 1:
+            SET_PROP(border_top_width,    vals[0]);
+            SET_PROP(border_right_width,  vals[0]);
+            SET_PROP(border_bottom_width, vals[0]);
+            SET_PROP(border_left_width,   vals[0]);
+            break;
+          case 2:
+            SET_PROP(border_top_width,    vals[0]);
+            SET_PROP(border_right_width,  vals[1]);
+            SET_PROP(border_bottom_width, vals[0]);
+            SET_PROP(border_left_width,   vals[1]);
+            break;
+          case 3:
+            SET_PROP(border_top_width,    vals[0]);
+            SET_PROP(border_right_width,  vals[1]);
+            SET_PROP(border_bottom_width, vals[2]);
+            SET_PROP(border_left_width,   vals[1]);
+            break;
+          case 4:
+            SET_PROP(border_top_width,    vals[0]);
+            SET_PROP(border_right_width,  vals[1]);
+            SET_PROP(border_bottom_width, vals[2]);
+            SET_PROP(border_left_width,   vals[3]);
+            break;
+	  default:
+	    fprintf (stderr, "ow\n");
+        }
       }
       break;
     case CTX_border_color:
