@@ -1542,8 +1542,6 @@ void _ctx_initial_style (Mrg *mrg)
     ctx_color_set_from_string (mrg->ctx, color, "transparent");
     ctx_set_color (mrg->ctx, CTX_background_color, color);
     ctx_color_free (color);
-  
-    mrg->state->flow_root = 0;
 }
 
 
@@ -3670,13 +3668,10 @@ void _mrg_layout_pre (Mrg *mrg)
   mrg->state->original_x = mrg_x (mrg);
   mrg->state->original_y = mrg_y (mrg);
 
-  if (style->display == CTX_DISPLAY_FLOW_ROOT ||
-      style->float_ != CTX_FLOAT_NONE ||
-      style->display == CTX_DISPLAY_INLINE_BLOCK ||
-      style->overflow != CTX_OVERFLOW_VISIBLE)
-  {
-     mrg->state->flow_root = 1;
-  }
+  mrg->state->flow_root = (style->display == CTX_DISPLAY_FLOW_ROOT ||
+                            style->float_ != CTX_FLOAT_NONE ||
+                           style->display == CTX_DISPLAY_INLINE_BLOCK ||
+                          style->overflow != CTX_OVERFLOW_VISIBLE);
 
   if (mrg->state->style_node.element_hash == CTX_br)
   {
