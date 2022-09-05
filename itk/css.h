@@ -2703,36 +2703,28 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case CTX_margin:
       {
         float vals[10];
-        int    n_vals;
-  
+        int   n_vals;
         n_vals = mrg_parse_pxs (mrg, value, vals);
+	float res[4] = {0.0f,0.0f,0.0f,0.0f};
         switch (n_vals)
         {
           case 1:
-            SET_PROP(margin_top,    vals[0]);
-            SET_PROP(margin_right,  vals[0]);
-            SET_PROP(margin_bottom, vals[0]);
-            SET_PROP(margin_left,   vals[0]);
+            res[0] = res[1] = res[2] = res[3] = vals[0];
             break;
           case 2:
-            SET_PROP(margin_top,    vals[0]);
-            SET_PROP(margin_right,  vals[1]);
-            SET_PROP(margin_bottom, vals[0]);
-            SET_PROP(margin_left,   vals[1]);
+            res[0] = vals[0]; res[1] = vals[1]; res[0] = vals[0]; res[1] = vals[1];
             break;
           case 3:
-            SET_PROP(margin_top,    vals[0]);
-            SET_PROP(margin_right,  vals[1]);
-            SET_PROP(margin_bottom, vals[2]);
-            SET_PROP(margin_left,   vals[1]);
+            res[0] = vals[0]; res[1] = vals[1]; res[2] = vals[2]; res[3] = vals[1];
             break;
           case 4:
-            SET_PROP(margin_top,    vals[0]);
-            SET_PROP(margin_right,  vals[1]);
-            SET_PROP(margin_bottom, vals[2]);
-            SET_PROP(margin_left,   vals[3]);
+            res[0] = vals[0]; res[1] = vals[1]; res[2] = vals[2]; res[3] = vals[3];
             break;
         }
+        SET_PROP(margin_top,    res[0]);
+        SET_PROP(margin_right,  res[1]);
+        SET_PROP(margin_bottom, res[2]);
+        SET_PROP(margin_left,   res[3]);
       }
       break;
     case CTX_margin_left:
@@ -2767,33 +2759,26 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         float vals[10];
         int   n_vals;
         n_vals = mrg_parse_pxs (mrg, value, vals);
+	float res[4] = {0.0f,0.0f,0.0f,0.0f};
         switch (n_vals)
         {
           case 1:
-            SET_PROP(padding_top,    vals[0]);
-            SET_PROP(padding_right,  vals[0]);
-            SET_PROP(padding_bottom, vals[0]);
-            SET_PROP(padding_left,   vals[0]);
+            res[0] = res[1] = res[2] = res[3] = vals[0];
             break;
           case 2:
-            SET_PROP(padding_top,    vals[0]);
-            SET_PROP(padding_right,  vals[1]);
-            SET_PROP(padding_bottom, vals[0]);
-            SET_PROP(padding_left,   vals[1]);
+            res[0] = vals[0]; res[1] = vals[1]; res[0] = vals[0]; res[1] = vals[1];
             break;
           case 3:
-            SET_PROP(padding_top,    vals[0]);
-            SET_PROP(padding_right,  vals[1]);
-            SET_PROP(padding_bottom, vals[2]);
-            SET_PROP(padding_left,   vals[1]);
+            res[0] = vals[0]; res[1] = vals[1]; res[2] = vals[2]; res[3] = vals[1];
             break;
           case 4:
-            SET_PROP(padding_top,    vals[0]);
-            SET_PROP(padding_right,  vals[1]);
-            SET_PROP(padding_bottom, vals[2]);
-            SET_PROP(padding_left,   vals[3]);
+            res[0] = vals[0]; res[1] = vals[1]; res[2] = vals[2]; res[3] = vals[3];
             break;
         }
+        SET_PROP(padding_top,    res[0]);
+        SET_PROP(padding_right,  res[1]);
+        SET_PROP(padding_bottom, res[2]);
+        SET_PROP(padding_left,   res[3]);
       }
       break;
     case CTX_visibility:
@@ -2809,36 +2794,26 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         float vals[10];
         int   n_vals;
         n_vals = mrg_parse_pxs (mrg, value, vals);
-  
+	float res[4] = {0.0f,0.0f,0.0f,0.0f};
         switch (n_vals)
         {
           case 1:
-            SET_PROP(border_top_width,    vals[0]);
-            SET_PROP(border_right_width,  vals[0]);
-            SET_PROP(border_bottom_width, vals[0]);
-            SET_PROP(border_left_width,   vals[0]);
+            res[0] = res[1] = res[2] = res[3] = vals[0];
             break;
           case 2:
-            SET_PROP(border_top_width,    vals[0]);
-            SET_PROP(border_right_width,  vals[1]);
-            SET_PROP(border_bottom_width, vals[0]);
-            SET_PROP(border_left_width,   vals[1]);
+            res[0] = vals[0]; res[1] = vals[1]; res[0] = vals[0]; res[1] = vals[1];
             break;
           case 3:
-            SET_PROP(border_top_width,    vals[0]);
-            SET_PROP(border_right_width,  vals[1]);
-            SET_PROP(border_bottom_width, vals[2]);
-            SET_PROP(border_left_width,   vals[1]);
+            res[0] = vals[0]; res[1] = vals[1]; res[2] = vals[2]; res[3] = vals[1];
             break;
           case 4:
-            SET_PROP(border_top_width,    vals[0]);
-            SET_PROP(border_right_width,  vals[1]);
-            SET_PROP(border_bottom_width, vals[2]);
-            SET_PROP(border_left_width,   vals[3]);
+            res[0] = vals[0]; res[1] = vals[1]; res[2] = vals[2]; res[3] = vals[3];
             break;
-	  default:
-	    fprintf (stderr, "ow\n");
         }
+        SET_PROP(border_top_width,    res[0]);
+        SET_PROP(border_right_width,  res[1]);
+        SET_PROP(border_bottom_width, res[2]);
+        SET_PROP(border_left_width,   res[3]);
       }
       break;
     case CTX_border_color:
