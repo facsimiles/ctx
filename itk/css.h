@@ -319,8 +319,6 @@ typedef struct MrgState {
   float        block_start_y;
   float        ptly;
   float        vmarg;
-  CtxFloatData float_data[CTX_MAX_FLOATS];
-  int          floats;
   int          flow_root;
 
   float      (*wrap_edge_left)  (Mrg *mrg, void *data);
@@ -387,6 +385,9 @@ struct _Mrg {
                            long        *length,
                            void        *get_contents_data);
   void *get_contents_data;
+
+  CtxFloatData float_data[CTX_MAX_FLOATS];
+  int          floats;
 
     /** text editing state follows **/
   int              text_edited;
@@ -1171,10 +1172,10 @@ static float _mrg_dynamic_edge_right2 (Mrg *mrg, MrgState *state)
   float em  = mrg_em (mrg);
   int i;
 
-  if (state->floats)
-    for (i = 0; i < state->floats; i++)
+  if (mrg->floats)
+    for (i = 0; i < mrg->floats; i++)
     {
-      CtxFloatData *f = &state->float_data[i];
+      CtxFloatData *f = &mrg->float_data[i];
       if (f->type == CTX_FLOAT_RIGHT &&
           y >= f->y  &&
           y - em < f->y + f->height &&
@@ -1192,10 +1193,10 @@ static float _mrg_dynamic_edge_left2 (Mrg *mrg, MrgState *state)
   float em  = mrg_em (mrg);
   int i;
 
-  if (state->floats)
-    for (i = 0; i < state->floats; i++)
+  if (mrg->floats)
+    for (i = 0; i < mrg->floats; i++)
     {
-      CtxFloatData *f = &state->float_data[i];
+      CtxFloatData *f = &mrg->float_data[i];
       if (f->type == CTX_FLOAT_LEFT &&
           y >= f->y &&
           y - em < f->y + f->height &&
@@ -1263,12 +1264,12 @@ static void clear_left (Mrg *mrg)
   float y = mrg_y (mrg);
   int i;
 
-  //fprintf (stderr, "{l%i %f ", y, mrg->state->floats);
-  if (mrg->state->floats)
+  //fprintf (stderr, "{l%i %f ", y, mrg->floats);
+  if (mrg->floats)
   {
-    for (i = 0; i < mrg->state->floats; i++)
+    for (i = 0; i < mrg->floats; i++)
       {
-        CtxFloatData *f = &mrg->state->float_data[i];
+        CtxFloatData *f = &mrg->float_data[i];
         {
           if (f->type == CTX_FLOAT_LEFT)
           {
@@ -1287,12 +1288,12 @@ static void clear_right (Mrg *mrg)
   float y = mrg_y (mrg);
   int i;
 
-  //fprintf (stderr, "{r%i %f ", y, mrg->state->floats);
-  if (mrg->state->floats)
+  //fprintf (stderr, "{r%i %f ", y, mrg->floats);
+  if (mrg->floats)
   {
-    for (i = 0; i < mrg->state->floats; i++)
+    for (i = 0; i < mrg->floats; i++)
       {
-        CtxFloatData *f = &mrg->state->float_data[i];
+        CtxFloatData *f = &mrg->float_data[i];
         {
           if (f->type == CTX_FLOAT_RIGHT)
           {
@@ -1328,11 +1329,11 @@ static void clear_both (Mrg *mrg)
   int i;
 
   if (!mrg->state)return;
-  if (mrg->state->floats)
+  if (mrg->floats)
   {
-    for (i = 0; i < mrg->state->floats; i++)
+    for (i = 0; i < mrg->floats; i++)
       {
-        CtxFloatData *f = &mrg->state->float_data[i];
+        CtxFloatData *f = &mrg->float_data[i];
         {
           if (f->y + f->height > y)
             y = f->y + f->height;
@@ -3725,7 +3726,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
     mrg->state->block_start_x = mrg_edge_left (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
-    mrg->state->floats = 0;
+ // mrg->floats = 0;
   }
   else if (style->display == CTX_DISPLAY_INLINE_BLOCK)
   {
@@ -3758,7 +3759,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
     mrg->state->block_start_x = mrg_x (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
-    mrg->state->floats = 0;
+ //   mrg->floats = 0;
   }
 	  
 
@@ -3825,7 +3826,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
-        mrg->state->floats = 0;
+        //mrg->floats = 0;
 
       } else if (style->float_ == CTX_FLOAT_LEFT)
       {
@@ -3863,7 +3864,7 @@ void _mrg_layout_pre (Mrg *mrg)
                         //));//- mrg->state->vmarg));
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);// + PROP(padding_top) + PROP(border_top_width);
-        mrg->state->floats = 0;
+        //mrg->floats = 0;
 
         /* change cursor point after floating something left; if pushed far
          * down, the new correct
@@ -3890,7 +3891,7 @@ void _mrg_layout_pre (Mrg *mrg)
         if (top == 0.0f)  // XXX 0.0 should also be a valid value!
 	  top = mrg->y;
 
-        mrg->state->floats = 0;
+        //mrg->floats = 0;
         itk_set_edge_left (mrg, left + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
         itk_set_edge_right (mrg, left + PROP(width));
         itk_set_edge_top (mrg, top + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
@@ -3911,7 +3912,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
 	ctx_translate (mrg_ctx(mrg), 0, itk_panel_scroll (mrg));
         ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
-        mrg->state->floats = 0;
+        //mrg->floats = 0;
 
         itk_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
         itk_set_edge_right (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left) + width);//mrg_width (mrg) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right)); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
@@ -6116,10 +6117,9 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
    */
   if (style->float_)
   {
-    CtxFloatData *float_data = 
-     &mrg->states[mrg->state_no-1].float_data[mrg->states[mrg->state_no-1].floats];
+    CtxFloatData *float_data = &mrg->float_data[mrg->floats];
     // XXX protect against overflow
-    mrg->states[mrg->state_no-1].floats++;
+    mrg->floats++;
 
     float_data->type = style->float_;
     float_data->x = 
@@ -8029,7 +8029,7 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
   mrg->line_max_height[0]=0.0f;
   mrg->state = &mrg->states[mrg->state_no];
 
-  mrg->state->floats = 0;
+  mrg->floats = 0;
 #if 0
   mrg->state->children = 0;
   mrg->state->overflowed = 0;
