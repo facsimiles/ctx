@@ -510,7 +510,7 @@ struct _Mrg {
 
   int   in_choices;
 
-
+  int   unresolved_line;
 
 };
 
@@ -3654,7 +3654,6 @@ static void _mrg_nl (Mrg *mrg)
   {
     mrg->state->overflowed=1;
   }
-  mrg->line_got_baseline [mrg->line_level] = 0;
 }
 
 void _mrg_layout_pre (Mrg *mrg)
@@ -3680,7 +3679,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
   // newline hacks
   if (mrg->state->style_node.element_hash == CTX_br
-      //|| ( mrg->line_got_baseline [mrg->line_level] && is_block_item (style))
+      || ( mrg->unresolved_line && is_block_item (style))
 		  )
   {
     _mrg_nl (mrg);
@@ -3691,7 +3690,10 @@ void _mrg_layout_pre (Mrg *mrg)
      mrg->line_level++;
      mrg->line_max_height[mrg->line_level] = 0.0f;
      mrg->line_got_baseline[mrg->line_level]=0;
+
+
   }
+     mrg->unresolved_line = 0;
 
 
 
@@ -4065,7 +4067,6 @@ static int compare_zindex (const void *a, const void *b, void *d)
   return mb->z_index- ma->z_index;
 }
 
-// XXX can we return the geometry here?
 void itk_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
 {
   _mrg_layout_post (mrg, ret_rect);
@@ -4403,6 +4404,7 @@ static void mrg_box_fill (Mrg *mrg, CtxStyle *style, float x, float y, float wid
  */
 
 
+#if 0
 static void
 _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
 {
@@ -4421,6 +4423,7 @@ _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
   mrg->line_max_height[mrg->line_level] = 0.0f;//style->font_size;//0.0f;
   mrg->line_got_baseline[mrg->line_level]=0;
 }
+#endif
 
 /* mrg - MicroRaptor Gui
  * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>
@@ -5566,6 +5569,7 @@ int itk_print (Mrg *mrg, const char *string)
 {
   float ret;
   CtxStyle *style = ctx_style (mrg);
+  mrg->unresolved_line = 1;
 
 #ifdef SNAP
   float em = mrg_em (mrg);  /* XXX: a global body-line spacing 
@@ -6372,8 +6376,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   if (ret_rect && !returned_dim)
     fprintf (stderr, "didnt return dim!\n");
 
-
-
+  mrg->unresolved_line = 0;
 }
 
 enum {
@@ -7365,7 +7368,11 @@ void itk_xml_render (Mrg *mrg,
             case CTX_WHITE_SPACE_NORMAL: 
               whitespaces ++;
               if (whitespaces == 1)
+	      {
+		int save = mrg->unresolved_line;
                 itk_print (mrg, " ");
+		mrg->unresolved_line = save;
+	      }
               break;
           }
         }
