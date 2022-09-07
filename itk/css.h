@@ -3654,6 +3654,7 @@ static void _mrg_nl (Mrg *mrg)
   {
     mrg->state->overflowed=1;
   }
+  mrg->line_got_baseline [mrg->line_level] = 0;
 }
 
 void _mrg_layout_pre (Mrg *mrg)
@@ -3677,11 +3678,21 @@ void _mrg_layout_pre (Mrg *mrg)
   if (mrg->state->flow_root)
     mrg->state->float_base = mrg->floats;
 
-  if (mrg->state->style_node.element_hash == CTX_br)
+  // newline hacks
+  if (mrg->state->style_node.element_hash == CTX_br
+      //|| ( mrg->line_got_baseline [mrg->line_level] && is_block_item (style))
+		  )
   {
-		  // why this hack?
     _mrg_nl (mrg);
   }
+
+  if (is_block_item (style))
+  {
+     mrg->line_level++;
+     mrg->line_max_height[mrg->line_level] = 0.0f;
+     mrg->line_got_baseline[mrg->line_level]=0;
+  }
+
 
 
   if (mrg->state_no)
@@ -3931,9 +3942,6 @@ void _mrg_layout_pre (Mrg *mrg)
      float height = PROP(height);
      float width = PROP(width);
      
-     mrg->line_level++;
-     mrg->line_max_height[mrg->line_level] = 0.0f;//style->font_size;//0.0f;
-     mrg->line_got_baseline[mrg->line_level]=0;
 
      if (!height)
        {
@@ -6101,8 +6109,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     {
       if (height == 0)
         height = mrg_y (mrg) - (mrg->state->block_start_y);
-       
-      mrg->line_got_baseline[mrg->line_level-1]=0;
+      
       mrg->line_max_height[mrg->line_level-1] =
         ctx_maxf (mrg->line_max_height[mrg->line_level-1],
                   height);
@@ -6110,10 +6117,11 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     }
     else
     {
-      if (mrg->line_max_height[mrg->line_level] != 0.0f)
+      if (mrg->line_got_baseline[mrg->line_level])
         _mrg_nl (mrg);
     }
     mrg->line_level--;
+    //mrg->line_got_baseline [mrg->line_level] = 0;
   }
 
   /* remember data to store about float, XXX: perhaps better to store
@@ -6348,6 +6356,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
     ctx_drawlist_force_count (mrg->ctx, mrg->state->drawlist_start_offset);
   }
+
 
 
   mrg->state_no--;
@@ -7430,19 +7439,15 @@ void itk_xml_render (Mrg *mrg,
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
           itk_end (mrg, NULL);
-        //ctx_restore (mrg->ctx);
           depth--;
           itk_end (mrg, NULL);
-        //ctx_restore (mrg->ctx);
           depth--;
         }
         if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
         {
           itk_end (mrg, NULL);
-        //ctx_restore (mrg->ctx);
           depth--;
           itk_end (mrg, NULL);
-        //ctx_restore (mrg->ctx);
           depth--;
         }
         else if (depth && ((data_hash == CTX_dd && tag[depth-1] == CTX_dt) ||
@@ -7454,7 +7459,6 @@ void itk_xml_render (Mrg *mrg,
                       (data_hash == CTX_p &&  tag[depth-1] == CTX_p)))
         {
           itk_end (mrg, NULL);
-        //ctx_restore (mrg->ctx);
           depth--;
         }
 
@@ -7482,7 +7486,6 @@ void itk_xml_render (Mrg *mrg,
             }
           }
 
-          //if (ctx_style(mrg)->id_ptr)
           sprintf (combined, "%s%s%s%s%s%s",
               data,
               klass?".":"",
@@ -7635,7 +7638,6 @@ void itk_xml_render (Mrg *mrg,
           case CTX_hr:
             should_be_empty = 1;
             itk_end (mrg, NULL);
-            //ctx_restore (mrg->ctx);
             depth--;
         }
 #endif
@@ -7662,13 +7664,11 @@ void itk_xml_render (Mrg *mrg,
             if (tag[depth] == CTX_p)
             {
               itk_end (mrg, NULL);
-              //ctx_restore (mrg->ctx);
               depth --;
             } else 
             if (depth > 0 && tag[depth-1] == data_hash)
             {
               itk_end (mrg, NULL);
-              //ctx_restore (mrg->ctx);
               depth --;
             }
             else if (depth > 1 && tag[depth-2] == data_hash)
@@ -7715,7 +7715,6 @@ void itk_xml_render (Mrg *mrg,
               {
                 depth --;
                 itk_end (mrg, NULL);
-                //ctx_restore (mrg->ctx);
               }
             }
 #endif
@@ -7725,16 +7724,13 @@ void itk_xml_render (Mrg *mrg,
               {
                 depth--;
                 itk_end (mrg, NULL);
-                //ctx_restore (mrg->ctx);
                 depth--;
                 itk_end (mrg, NULL);
-                //ctx_restore (mrg->ctx);
               }
               else if (data_hash == CTX_table && tag[depth] == CTX_tr)
               {
                 depth--;
                 itk_end (mrg, NULL);
-                //ctx_restore (mrg->ctx);
               }
             }
           }
