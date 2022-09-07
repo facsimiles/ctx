@@ -34,7 +34,6 @@ int ctx_gif_main (int argc, char **argv);
 int stuff_main (int argc, char **argv);
 int stuffcmd_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
-int ctx_tcp_main (int argc, char **argv);
 int ctx_hexview_main (int argc, char **argv);
 
 int launch_main (int argc, char **argv)
@@ -330,10 +329,10 @@ int main (int argc, char **argv)
       output_path = argv[i+1];
       i++;
     }
-    else if (!strcmp (a, "-p"))
-    {
-       return ctx_tcp_main (argc, argv);
-    }
+    //else if (!strcmp (a, "-p"))
+    //{
+    //   return ctx_tcp_main (argc, argv);
+    //}
     else if (!strcmp (a, "-e"))
     {
       commandline = argv[i+1];
