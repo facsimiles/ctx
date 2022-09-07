@@ -1,3 +1,5 @@
+#if CTX_STB_IMAGE
+
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
 #endif
@@ -304,3 +306,5 @@ int ctx_img_main(int argc, char *argv[])
   return 0;
 }
 
+
+#endif

@@ -1,7 +1,7 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
-CCACHE=`command -v ccache`
+#CCACHE=`command -v ccache`
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
@@ -168,7 +168,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/graphics.ctx.terminal.svg
 
 tools/%: tools/%.c ctx-nofont.h 
-	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS
+	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS -DCTX_STB_TT=1
 
 ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
@@ -189,14 +189,14 @@ itk.o: itk/itk.c itk/css.h itk/itk.h build.conf Makefile
 	$(CCC) itk/itk.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 deps.o: deps.c build.conf Makefile 
-	$(CCC) deps.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
+	$(CCC) deps.c -c -o $@ $(CTX_CFLAGS) $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
 terminal/%.o: terminal/%.c ctx.h terminal/*.h itk/itk.h 
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-media-handlers/%.o: media-handlers/%.c ctx.h media-handlers/*.h media-handlers/metadata/*.c \
+media-handlers/%.o: media-handlers/%.c ctx.h itk/itk.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 

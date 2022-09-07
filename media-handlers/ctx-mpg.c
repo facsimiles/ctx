@@ -1,3 +1,5 @@
+#if CTX_PL_MPEG
+
 /*
 PL_MPEG Example - Video player using SDL2/OpenGL for rendering
 refactored to use ctx for audio output/rendering by Øyvind Kolås, 2020
@@ -392,3 +394,5 @@ int ctx_mpg_main(int argc, char *argv[]) {
 	
 	return EXIT_SUCCESS;
 }
+
+#endif

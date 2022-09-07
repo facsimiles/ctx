@@ -254,7 +254,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 
 void ctx_screenshot (Ctx *ctx, const char *output_path)
 {
-#ifdef INCLUDE_STB_IMAGE_WRITE_H
+#if CTX_STB_IMAGE_WRITE
   uint32_t width = ctx_width (ctx);
   uint32_t height = ctx_height (ctx);
   uint8_t *buf = ctx_malloc (width * height * 4);
@@ -584,7 +584,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
      return;
   }
 
-#ifdef STBI_INCLUDE_STB_IMAGE_H
+#if CTX_STB_IMAGE
   CtxPixelFormat pixel_format = CTX_FORMAT_RGBA8;
   int w, h, components;
   unsigned char *pixels = NULL;

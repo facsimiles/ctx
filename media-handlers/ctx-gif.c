@@ -7,6 +7,8 @@
  *
  */
 
+#if CTX_STB_IMAGE
+
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
 #endif
@@ -317,3 +319,5 @@ int ctx_gif_main (int argc, char *argv[])
   ctx_destroy (ctx);
   return 0;
 }
+
+#endif

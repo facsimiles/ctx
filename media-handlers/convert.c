@@ -27,7 +27,9 @@ ctx_332_unpack (uint8_t pixel,
 }
 
 
+#if CTX_STB_IMAGE_WRITE
 #include "stb_image_write.h"
+#endif
 
 // ctx should be a busy box like wrapper
 // for mmm-terminal, ctx ascii-to-ctx converter
@@ -1174,6 +1176,7 @@ again:
                             CTX_FORMAT_CMYK8,
                             width, height, stride, reverse);
     }
+#if CTX_STB_IMAGE_WRITE
   else if (!strcmp (get_suffix (dest_path), ".png") )
     {
       int stride = width * 4;
@@ -1186,6 +1189,7 @@ again:
         stbi_write_png (dest_path, width, height, 4, pixels, stride);
       free (pixels);
     }
+#endif
   else if (!strcmp (get_suffix (dest_path), ".pdf") )
     {
       Ctx *dctx = ctx_new_pdf (dest_path, width, height);

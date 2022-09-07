@@ -128,6 +128,9 @@ int launch_main (int argc, char **argv)
   return 0;
 }
 
+
+#if CTX_STB_IMAGE_WRITE
+
 #include "stb_image.h"
 #include "stb_image_write.h"
 
@@ -250,6 +253,8 @@ int thumb_main (int argc, char **argv)
   return 0;
 }
 
+#endif
+
 static char *output_path = NULL;
 static char *commandline = NULL;
 
@@ -348,8 +353,10 @@ int main (int argc, char **argv)
 
   if (argv[1] && !strcmp (argv[1], "file"))
     return file_main (argc-1, argv+1);
+#if CTX_STB_IMAGE_WRITE
   if (argv[1] && !strcmp (argv[1], "thumb"))
     return thumb_main (argc-1, argv+1);
+#endif
   if (argv[1] && !strcmp (argv[1], "launch"))
     return launch_main (argc-1, argv+1);
 
@@ -367,25 +374,28 @@ int main (int argc, char **argv)
     const char *media_type = ctx_path_get_media_type (input_path);
     CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
 
-    if (!strcmp (media_type, "image/gif"))
-    {
-      return ctx_gif_main (argc, argv);
-    }
     if (!strcmp (media_type, "image/tinyvg"))
     {
       return ctx_tinyvg_main (argc, argv);
     }
-
+#if CTX_STB_IMAGE
+    if (!strcmp (media_type, "image/gif"))
+    {
+      return ctx_gif_main (argc, argv);
+    }
     if (!strcmp (media_type, "image/jpeg") ||
         !strcmp (media_type, "image/exr") ||
         !strcmp (media_type, "image/png"))
     {
       return ctx_img_main (argc, argv);
     }
+#endif
+#if CTX_PL_MPEG
     if (!strcmp (media_type, "video/mpeg"))
     {
       return ctx_mpg_main (argc, argv);
     }
+#endif
     if (!strcmp (media_type, "inode/directory"))
     {
       char *argv[]={"stuff", input_path, NULL};
