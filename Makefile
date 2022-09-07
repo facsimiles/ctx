@@ -39,8 +39,7 @@ MEDIA_HANDLERS_OBJS = \
   media-handlers/ctx-mpg.o \
   media-handlers/ctx-tinyvg.o \
   media-handlers/ctx-hexview.o \
-  media-handlers/convert.o \
-  media-handlers/tcp.o
+  media-handlers/convert.o
 
 
 SRC_CFILES = $(wildcard src/*.c)
