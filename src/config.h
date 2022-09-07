@@ -831,6 +831,8 @@
 #define CTX_RAW_KB_EVENTS 1
 #endif
 
+#define SQUOZE_IMPLEMENTATION_32 1
+
 #ifndef CTX_BAREMETAL
 #define CTX_BAREMETAL 0
 #endif

@@ -1,7 +1,7 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
-#CCACHE=`command -v ccache`
+CCACHE=`command -v ccache`
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
@@ -221,7 +221,7 @@ docs/ctx.h.html: ctx.h Makefile build.conf
 
 foo: ctx
 updateweb: all ctx.static test docs/ctx.h.html
-	make -C docs/uctx
+	#make -C docs/uctx
 	git repack
 	(cd docs ; stagit .. )
 	cat tests/index.html | sed 's/.*script.*//' > tmp

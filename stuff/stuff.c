@@ -5630,7 +5630,7 @@ static int card_files (ITK *itk_, void *data)
       BIND_KEY ("control-+", "font-size up", "larger text");
       BIND_KEY ("control-=", "font-size up", "larger text");
       BIND_KEY ("control--", "font-size down", "smaller text");
-      BIND_KEY ("control-0", "font-size 14.0", "reset text size");
+      BIND_KEY ("control-0", "font-size 10.0", "reset text size");
 
 #if 0
       ctx_add_key_binding (ctx, "shift-control-+", NULL, "increase font size",

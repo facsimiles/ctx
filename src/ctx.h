@@ -2507,6 +2507,8 @@ float ctx_term_get_cell_height (Ctx *ctx);
 
 Ctx * ctx_new_pdf (const char *path, float width, float height);
 void ctx_render_pdf (Ctx *ctx, const char *path);
+const char *ctx_str_decode (uint32_t number);
+uint32_t    ctx_strhash (const char *str);
 
 #ifndef CTX_CODEC_CHAR
 //#define CTX_CODEC_CHAR '\035'

@@ -1,18 +1,36 @@
 #ifndef SQUOZE_H
 #define SQUOZE_H
 
+#ifndef SQUOZE_IMPLEMENTATION_32
+#define SQUOZE_IMPLEMENTATION_32 0
+#endif
+#ifndef SQUOZE_IMPLEMENTATION_32
+#define SQUOZE_IMPLEMENTATION_52 0
+#endif
+#ifndef SQUOZE_IMPLEMENTATION_32
+#define SQUOZE_IMPLEMENTATION_62 0
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
 
+#if SQUOZE_IMPLEMENTATION_32
 static uint32_t    squoze32        (const char *utf8);
-static uint64_t    squoze52        (const char *utf8);
-static uint64_t    squoze62        (const char *utf8);
 static const char *squoze32_decode (uint32_t hash);
+#endif
+
+#if SQUOZE_IMPLEMENTATION_52
+static uint64_t    squoze52        (const char *utf8);
 static const char *squoze52_decode (uint64_t hash);
+#endif
+
+#if SQUOZE_IMPLEMENTATION_62
+static uint64_t    squoze62        (const char *utf8);
 static const char *squoze62_decode (uint64_t hash);
+#endif
 
 //#define SQUOZE_NO_INTERNING  // this disables the interning - providing only a hash (and decode for non-overflowed hashes)
 
@@ -172,7 +190,6 @@ static int squoze_compute_cost_squeezed (int offset, int val, int next_val)
 
   return cost;
 }
-
 
 static void squoze5_encode (const char *input, int inlen,
                             char *output, int *r_outlen,
@@ -422,24 +439,27 @@ static inline uint64_t squoze (int squoze_dim, const char *utf8)
   return hash;
 }
 
+#if SQUOZE_IMPLEMENTATION_32
 static uint32_t squoze32 (const char *utf8)
 {
   return squoze (32, utf8);
 }
+#endif
 
+#if SQUOZE_IMPLEMENTATION_52
 static uint64_t squoze52 (const char *utf8)
 {
   return squoze (52, utf8);
 }
+#endif
 
+#if SQUOZE_IMPLEMENTATION_62
 static uint64_t squoze62 (const char *utf8)
 {
   return squoze (62, utf8);
 }
+#endif
 
-static uint32_t ctx_strhash(const char *str) {
-  return squoze (32, str);
-}
 
 typedef struct CashUtf5Dec {
   int       is_utf5;
@@ -636,7 +656,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
 /* copy the value as soon as possible, some mitigation is in place
  * for more than one value in use and cross-thread interactions.
  */
-static const char *squoze_decode (int squoze_dim, uint64_t hash)
+static inline const char *squoze_decode (int squoze_dim, uint64_t hash)
 {
   if (hash == 0) return "";
 #if CTX_THREADS
@@ -653,20 +673,26 @@ static const char *squoze_decode (int squoze_dim, uint64_t hash)
 #endif
 }
 
+#if SQUOZE_IMPLEMENTATION_32
 static const char *squoze32_decode (uint32_t hash)
 {
   return squoze_decode (32, hash);
 }
+#endif
 
+#if SQUOZE_IMPLEMENTATION_52
 static const char *squoze52_decode (uint64_t hash)
 {
   return squoze_decode (52, hash);
 }
+#endif
 
+#if SQUOZE_IMPLEMENTATION_62
 static const char *squoze62_decode (uint64_t hash)
 {
   return squoze_decode (62, hash);
 }
+#endif
 
 static inline uint32_t
 squoze_utf8_to_unichar (const char *input)

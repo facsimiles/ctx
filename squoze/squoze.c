@@ -1,4 +1,7 @@
 #include <stdio.h>
+#define SQUOZE_IMPLEMENTATION_32 1
+#define SQUOZE_IMPLEMENTATION_62 1
+#define SQUOZE_IMPLEMENTATION_52 1
 #include "squoze.h"
 
 static int squoze_is_number (const char *str)

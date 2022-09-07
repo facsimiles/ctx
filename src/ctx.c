@@ -3196,3 +3196,13 @@ void ctx_resolve (Ctx *ctx, const char *name,
   }
 }
 
+const char *
+ctx_str_decode (uint32_t number)
+{
+  return squoze32_decode (number);
+}
+
+uint32_t ctx_strhash(const char *str)
+{
+  return squoze32 (str);
+}

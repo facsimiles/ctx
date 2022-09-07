@@ -1633,7 +1633,7 @@ const char * html_css =
 ":focus{outline:thin dotted invert}\n"
 ".cursor{color:white;background: black;} \n"
 "br{display:block;}\n"
-"html{color:black;font-weight:normal;background-color:white;}\n"
+"html{font-weight:normal;background-color:white;}\n"
 "document{color:black;font-weight:normal;background-color:white;}\n"
 "body{background-color:transparent;color:black;}\n"
 "a{color:blue;text-decoration: underline;}\n"
@@ -1649,7 +1649,7 @@ const char * html_css =
 
 //"h1,h2,h3,h4,h5,h6,p,div,b,span,ul,li,ol,dl,dt,dl,propline,button{border-left-color:gray;border-right-color:gray;}\n"
 
-
+//"html{font-size:10.0px;color:white;}\n" // from ACID1 - not parsed right
 
 //// itk defaults stylesheet
 "toggle        {border: 1px solid green;border: 1px solid red;color:yellow;display:block;}\n"
@@ -1791,9 +1791,9 @@ static void ctx_css_parse_selector (Mrg *mrg, const char *selector, CtxStyleEntr
   {
     if (entry->parsed[i].direct_descendant)
 	    fprintf (stderr, "DP ");
-    fprintf (stderr, "e: %s ", squoze32_decode (entry->parsed[i].element_hash));
+    fprintf (stderr, "e: %s ", ctx_str_decode (entry->parsed[i].element_hash));
     for (int j = 0; entry->parsed[i].classes_hash[j]; j++)
-      fprintf (stderr, "c: %s ", squoze32_decode (entry->parsed[i].classes_hash[j]));
+      fprintf (stderr, "c: %s ", ctx_str_decode (entry->parsed[i].classes_hash[j]));
   }
   fprintf (stderr, "\n");
 #endif
@@ -6000,7 +6000,7 @@ itk_printf (Mrg *mrg, const char *format, ...)
 void  itk_set_font_size (Mrg *mrg, float font_size)
 {
   mrg->font_size = font_size;
-  itk_set_stylef (mrg, "font-size:%fpx;", font_size);
+  //itk_set_stylef (mrg, "font-size:%fpx;", font_size);
 }
 
 void _mrg_block_edit (Mrg *mrg)
@@ -7749,7 +7749,7 @@ void itk_xml_render (Mrg *mrg,
     fprintf (stderr, "html parsing unbalanced, %i open tags.. \n", depth);
     while (depth > 0)
     {
-      fprintf (stderr, " %s ", squoze32_decode (tag[depth-1]));
+      fprintf (stderr, " %s ", ctx_str_decode (tag[depth-1]));
       itk_end (mrg, NULL);
       depth--;
     }
