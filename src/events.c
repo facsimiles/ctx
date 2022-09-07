@@ -3403,7 +3403,7 @@ int ctx_in_fill (Ctx *ctx, float x, float y)
        return 1;
      return 0;
 #else
-     return 1
+     return 1;
 #endif
   }
   return 0;
@@ -3449,7 +3449,7 @@ int ctx_in_stroke (Ctx *ctx, float x, float y)
        return 1;
      return 0;
 #else
-     return 1
+     return 1;
 #endif
   }
   return 0;
