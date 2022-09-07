@@ -1,3 +1,4 @@
+#if CTX_VT
 
 #if !__COSMOPOLITAN__
 #include <unistd.h>
@@ -685,3 +686,5 @@ int terminal_main (int argc, char **argv)
 
   return 0;
 }
+
+#endif

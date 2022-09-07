@@ -422,5 +422,10 @@ int main (int argc, char **argv)
     return js_main (argc, argv);
 #endif
 
+#if CTX_VT
   return terminal_main (argc, argv);
+#else
+  fprintf (stderr, "ctx built without terminal support\n");
+  return 0;
+#endif
 }

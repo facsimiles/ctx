@@ -22,6 +22,7 @@ HAVE_STB_TT=1
 HAVE_STB_IMAGE=1
 HAVE_STB_IMAGE_WRITE=1
 
+ENABLE_VT=1
 
 ARCH=`uname -m`
 
@@ -54,6 +55,8 @@ do
      "--enable-harfbuzz") HAVE_HARFBUZZ=1 ;;
      "--disable-kms") HAVE_KMS=0 ;;
      "--enable-fb") ENABLE_FB=1 ;;
+     "--enable-vt") ENABLE_VT=1 ;;
+     "--disable-vt") ENABLE_VT=0 ;;
      "--disable-pl-mpeg") HAVE_PL_MPEG=0 ;;
      "--disable-stb_tt") HAVE_STB_TT=0 ;;
      "--disable-stb_image") HAVE_STB_IMAGE=0 ;;
@@ -71,6 +74,7 @@ do
         HAVE_KMS=0
         HAVE_SIMD=0 
         ENABLE_FB=0 
+        ENABLE_VT=0 
         HAVE_BABL=0 
         HAVE_SDL=0 
         HAVE_CAIRO=0 
@@ -124,6 +128,13 @@ if [ $HAVE_PL_MPEG = 1 ];then
 else
   echo "CTX_CFLAGS+= -DCTX_PL_MPEG=0" >> build.conf
 fi
+
+if [ $ENABLE_VT = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_VT=1" >> build.conf
+else
+  echo "CTX_CFLAGS+= -DCTX_VT=0" >> build.conf
+fi
+
 
 if [ $HAVE_STB_TT = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_STB_TT=1" >> build.conf
@@ -242,6 +253,8 @@ echo -n " kms      "; [ $HAVE_KMS = 1 ]     && echo "yes" || echo "no (libdrm-de
 echo -n " fb       "; [ $ENABLE_FB = 1 ]    && echo "yes" || echo "no"
 echo -n " pl_mpeg  "; [ $HAVE_PL_MPEG = 1 ] && echo "yes" || echo "no"
 echo -n " stb_tt   "; [ $HAVE_STB_TT  = 1 ] && echo "yes" || echo "no"
+
+echo -n " vt       "; [ $ENABLE_VT = 1 ] && echo "yes" || echo "no"
 
 
 
