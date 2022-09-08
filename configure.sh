@@ -26,6 +26,7 @@ ENABLE_VT=1
 ENABLE_STUFF=1
 ENABLE_TINYVG=1
 ENABLE_PDF=1
+ENABLE_TERM=1
 
 ARCH=`uname -m`
 
@@ -56,21 +57,23 @@ do
      "--enable-alsa") HAVE_ALSA=1 ;;
      "--enable-libcurl") HAVE_LIBCURL=1 ;;
      "--enable-harfbuzz") HAVE_HARFBUZZ=1 ;;
-     "--disable-kms") HAVE_KMS=0 ;;
      "--enable-fb") ENABLE_FB=1 ;;
      "--enable-vt") ENABLE_VT=1 ;;
      "--enable-stuff") ENABLE_STUFF=1 ;;
-     "--disable-stuff") ENABLE_STUFF=1 ;;
      "--enable-tinyvg") ENABLE_TINYVG=1 ;;
-     "--disable-tinyvg") ENABLE_TINYVG=1 ;;
      "--enable-pdf") ENABLE_PDF=1 ;;
-     "--disable-pdf") ENABLE_PDF=1 ;;
-     "--disable-vt") ENABLE_VT=0 ;;
+     "--enable-term") ENABLE_TERM=1 ;;
+     "--enable-simd") HAVE_SIMD=1 ;;
+     "--disable-term") ENABLE_TERM=0 ;;
      "--disable-pl-mpeg") HAVE_PL_MPEG=0 ;;
      "--disable-stb_tt") HAVE_STB_TT=0 ;;
      "--disable-stb_image") HAVE_STB_IMAGE=0 ;;
      "--disable-stb_image_write") HAVE_STB_IMAGE_WRITE=0 ;;
-     "--enable-simd") HAVE_SIMD=1 ;;
+     "--disable-pdf") ENABLE_PDF=0 ;;
+     "--disable-kms") HAVE_KMS=0 ;;
+     "--disable-vt") ENABLE_VT=0 ;;
+     "--disable-stuff") ENABLE_STUFF=0 ;;
+     "--disable-tinyvg") ENABLE_TINYVG=0 ;;
      "--disable-simd") HAVE_SIMD=0 ;;
      "--disable-fb") ENABLE_FB=0 ;;
      "--disable-babl") HAVE_BABL=0 ;;
@@ -87,6 +90,7 @@ do
         ENABLE_STUFF=0 
         ENABLE_TINYVG=0 
         ENABLE_PDF=0 
+        ENABLE_TERM=0 
         HAVE_BABL=0 
         HAVE_SDL=0 
         HAVE_CAIRO=0 
@@ -159,6 +163,11 @@ else
   echo "CTX_CFLAGS+= -DCTX_PDF=0" >> build.conf
 fi
 
+if [ $ENABLE_TERM = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_TERM=1" >> build.conf
+else
+  echo "CTX_CFLAGS+= -DCTX_TERM=0" >> build.conf
+fi
 
 if [ $ENABLE_STUFF = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_STUFF=1" >> build.conf
@@ -288,6 +297,7 @@ echo -n " vt       "; [ $ENABLE_VT = 1 ] && echo "yes" || echo "no"
 echo -n " stuff    "; [ $ENABLE_STUFF = 1 ] && echo "yes" || echo "no"
 echo -n " tinyvg   "; [ $ENABLE_TINYVG = 1 ] && echo "yes" || echo "no"
 echo -n " pdf      "; [ $ENABLE_PDF = 1 ] && echo "yes" || echo "no"
+echo -n " term     "; [ $ENABLE_TERM = 1 ] && echo "yes" || echo "no"
 
 
 

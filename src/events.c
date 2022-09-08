@@ -301,11 +301,13 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_TERMINAL_EVENTS
 #if CTX_RASTERIZER
   // braille in terminal
+#if CTX_TERM
   if (!ret)
   {
     if ((backend==NULL) || (!ctx_strcmp (backend, "term")))
     ret = ctx_new_term (width, height);
   }
+#endif
   if (!ret)
   {
     if ((backend==NULL) || (!ctx_strcmp (backend, "termimg")))

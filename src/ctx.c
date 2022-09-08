@@ -2811,7 +2811,9 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 #endif
 #endif
 #if CTX_TERMINAL_EVENTS
+#if CTX_TERM
   else if (backend->destroy == (void*) ctx_term_destroy) return CTX_BACKEND_TERM;
+#endif
 #endif
 #if CTX_RASTERIZER
   else if (backend->process == (void*) ctx_hasher_process) return CTX_BACKEND_HASHER;

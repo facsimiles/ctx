@@ -2715,6 +2715,7 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
       ty  > rasterizer->blit_y + rasterizer->blit_height)
           return;
 
+#if CTX_TERM
 #if CTX_BRAILLE_TEXT
   float font_size = 0;
   int ch = 1;
@@ -2748,6 +2749,7 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   }
   else
 #endif
+#endif
   _ctx_glyph (rasterizer->backend.ctx, unichar, stroke);
 }
 
@@ -2759,6 +2761,7 @@ _ctx_text (Ctx        *ctx,
 static void
 ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
 {
+#if CTX_TERM
 #if CTX_BRAILLE_TEXT
   float font_size = 0;
   if (rasterizer->term_glyphs)
@@ -2791,6 +2794,7 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
     }
   }
   else
+#endif
 #endif
   {
     _ctx_text (rasterizer->backend.ctx, string, stroke, 1);

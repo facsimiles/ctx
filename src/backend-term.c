@@ -1,5 +1,5 @@
 #include "ctx-split.h"
-
+#if CTX_TERM
 #if CTX_TERMINAL_EVENTS
 
 #if !__COSMOPOLITAN__
@@ -968,4 +968,5 @@ Ctx *ctx_new_term (int width, int height)
   return ctx;
 }
 
+#endif
 #endif
