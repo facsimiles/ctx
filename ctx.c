@@ -14,7 +14,6 @@
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
-#define CTX_CLIENTS              1
 #define CTX_FONTS_FROM_FILE      1
 
 #define CTX_HEADLESS             1

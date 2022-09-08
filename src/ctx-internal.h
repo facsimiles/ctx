@@ -502,7 +502,7 @@ struct _CtxEvents
   CtxList         *items;
   CtxItem         *last_item;
   float            tap_hysteresis;
-#if CTX_CLIENTS
+#if CTX_VT
   CtxList         *clients;
   CtxClient *active;
   CtxClient *active_tab;

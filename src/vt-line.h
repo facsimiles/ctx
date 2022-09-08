@@ -1,4 +1,4 @@
-#if CTX_CLIENTS
+#if CTX_VT
 
 /* mrg - MicroRaptor Gui
  * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>

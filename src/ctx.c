@@ -2160,7 +2160,7 @@ ctx_destroy (Ctx *ctx)
   if (!ctx)
     { return; }
 
-#if CTX_CLIENTS
+#if CTX_VT
   while (ctx_clients (ctx))
     ctx_client_remove (ctx, ctx_clients(ctx)->data);
 #endif
@@ -2261,7 +2261,7 @@ ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx)
 
 void ctx_quit (Ctx *ctx)
 {
-#if CTX_CLIENTS
+#if CTX_VT
   while (ctx_clients (ctx))
     ctx_client_remove (ctx, ctx_clients(ctx)->data);
 #endif

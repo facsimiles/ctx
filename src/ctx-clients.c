@@ -4,7 +4,7 @@ float ctx_target_fps = 100.0; /* this might end up being the resolution of our
                                  idle callback firing
                                */
 
-#if CTX_CLIENTS
+#if CTX_VT
 
 
 #ifndef _DEFAULT_SOURCE
@@ -62,6 +62,7 @@ const char *ctx_client_get_title (Ctx *ctx, int id)
 
 int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 {
+#if CTX_VT
 #if 1
   switch (key_hash)
   {
@@ -123,6 +124,7 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
   }
   ct->rev++;
 #endif
+#endif
   return 0;
 }
 
@@ -134,12 +136,14 @@ void ctx_client_maximize (Ctx *ctx, int id);
 
 CtxClient *vt_get_client (VT *vt)
 {
+#if CTX_VT
   for (CtxList *l = ctx_clients (vt->root_ctx); l; l =l->next)
   {
     CtxClient *client = l->data;
     if (client->vt == vt)
             return client;
   }
+#endif
   return NULL;
 }
 
@@ -1398,12 +1402,12 @@ CtxList *ctx_clients (Ctx *ctx)
   return ctx?ctx->events.clients:NULL;
 }
 
-#endif /* CTX_CLIENTS */
+#endif /* CTX_VT */
 
 int ctx_clients_handle_events (Ctx *ctx)
 {
   //int n_clients = ctx_list_length (clients);
-#if CTX_CLIENTS
+#if CTX_VT
   int pending_data = 0;
   long time_start = ctx_ticks ();
   int sleep_time = 1000000/ctx_target_fps;
@@ -1504,13 +1508,13 @@ long ctx_client_rev (CtxClient *client)
 void
 ctx_client_feed_keystring (CtxClient *client, CtxEvent *event, const char *str)
 {
-#if CTX_CLIENTS
+#if CTX_VT
   if (!client || !client->vt) return;
   vt_feed_keystring (client->vt, event, str);
 #endif
 }
 
-#if CTX_CLIENTS
+#if CTX_VT
 int ctx_client_id (CtxClient *client)
 {
   return client?client->id:-1;

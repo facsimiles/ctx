@@ -45,7 +45,7 @@
 #define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */
 #define CTX_AUDIO               0
-#define CTX_CLIENTS             0
+#define CTX_VT                  0
 
 #define CTX_MAX_KEYBINDINGS  16
 #define CTX_MAX_DEVICES 1

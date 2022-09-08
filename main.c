@@ -216,6 +216,7 @@ int make_thumb (const char *src_path, const char *dst_path)
   return 0;
 }
 
+#if CTX_STUFF
 char *ctx_get_thumb_path (const char *path);
 char *ctx_thumb_path (const char *path)
 {
@@ -252,6 +253,7 @@ int thumb_main (int argc, char **argv)
 
   return 0;
 }
+#endif
 
 #endif
 
@@ -354,9 +356,11 @@ int main (int argc, char **argv)
 
   if (argv[1] && !strcmp (argv[1], "file"))
     return file_main (argc-1, argv+1);
+#if CTX_STUFF
 #if CTX_STB_IMAGE_WRITE
   if (argv[1] && !strcmp (argv[1], "thumb"))
     return thumb_main (argc-1, argv+1);
+#endif
 #endif
   if (argv[1] && !strcmp (argv[1], "launch"))
     return launch_main (argc-1, argv+1);

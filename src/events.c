@@ -2329,7 +2329,7 @@ int ctx_get_hash_cache (Ctx *ctx)
 int ctx_need_redraw (Ctx *ctx)
 {
   return (ctx->dirty != 0)
-#if CTX_CLIENTS
+#if CTX_VT
     || ctx_clients_need_redraw (ctx)
 #endif
     ;
@@ -2405,7 +2405,7 @@ int ctx_input_pending (Ctx *ctx, int timeout)
 
 void ctx_handle_events (Ctx *ctx)
 {
-#if CTX_CLIENTS
+#if CTX_VT
   ctx_clients_handle_events (ctx);
 #endif
   while (ctx_get_event (ctx)){}

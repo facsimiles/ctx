@@ -178,13 +178,8 @@
 #define CTX_XML             1
 #endif
 
-#ifndef CTX_CLIENTS
-#define CTX_CLIENTS              0
-#endif
-
-#if CTX_VT==0
-#undef CTX_CLIENTS
-#define CTX_CLIENTS 0
+#ifndef CTX_VT
+#define CTX_VT              0
 #endif
 
 /* when ctx_math is defined, which it is by default, we use ctx' own
