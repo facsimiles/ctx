@@ -210,7 +210,7 @@ ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) l
 	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS)
 
 ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_OBJS) itk.o ctx.o deps.o terminal/*.[ch] 
-	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) $(CTX_CFLAGS) ctx.o $(CTX_SIMD_OBJS) itk.o deps.o $(LIBS) -DCTX_BABL=0 -DCTX_SDL=0 -DCTX_FB=1 -DCTX_CURL=0 -static 
+	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) $(CTX_CFLAGS) ctx.o $(CTX_SIMD_OBJS) itk.o deps.o $(LIBS) -static 
 	strip -s -x $@
 
 docs/ctx.h.html: ctx.h Makefile build.conf

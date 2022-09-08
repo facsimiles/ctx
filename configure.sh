@@ -25,6 +25,7 @@ HAVE_STB_IMAGE_WRITE=1
 ENABLE_VT=1
 ENABLE_STUFF=1
 ENABLE_TINYVG=1
+ENABLE_PDF=1
 
 ARCH=`uname -m`
 
@@ -62,6 +63,8 @@ do
      "--disable-stuff") ENABLE_STUFF=1 ;;
      "--enable-tinyvg") ENABLE_TINYVG=1 ;;
      "--disable-tinyvg") ENABLE_TINYVG=1 ;;
+     "--enable-pdf") ENABLE_PDF=1 ;;
+     "--disable-pdf") ENABLE_PDF=1 ;;
      "--disable-vt") ENABLE_VT=0 ;;
      "--disable-pl-mpeg") HAVE_PL_MPEG=0 ;;
      "--disable-stb_tt") HAVE_STB_TT=0 ;;
@@ -83,6 +86,7 @@ do
         ENABLE_VT=0 
         ENABLE_STUFF=0 
         ENABLE_TINYVG=0 
+        ENABLE_PDF=0 
         HAVE_BABL=0 
         HAVE_SDL=0 
         HAVE_CAIRO=0 
@@ -147,6 +151,12 @@ if [ $ENABLE_TINYVG = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_TINYVG=1" >> build.conf
 else
   echo "CTX_CFLAGS+= -DCTX_TINYVG=0" >> build.conf
+fi
+
+if [ $ENABLE_PDF = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_PDF=1" >> build.conf
+else
+  echo "CTX_CFLAGS+= -DCTX_PDF=0" >> build.conf
 fi
 
 
@@ -277,6 +287,7 @@ echo -n " stb_tt   "; [ $HAVE_STB_TT  = 1 ] && echo "yes" || echo "no"
 echo -n " vt       "; [ $ENABLE_VT = 1 ] && echo "yes" || echo "no"
 echo -n " stuff    "; [ $ENABLE_STUFF = 1 ] && echo "yes" || echo "no"
 echo -n " tinyvg   "; [ $ENABLE_TINYVG = 1 ] && echo "yes" || echo "no"
+echo -n " pdf      "; [ $ENABLE_PDF = 1 ] && echo "yes" || echo "no"
 
 
 

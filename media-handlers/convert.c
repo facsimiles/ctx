@@ -1190,12 +1190,14 @@ again:
       free (pixels);
     }
 #endif
+#if CTX_PDF
   else if (!strcmp (get_suffix (dest_path), ".pdf") )
     {
       Ctx *dctx = ctx_new_pdf (dest_path, width, height);
       ctx_render_ctx (ctx, dctx);
       ctx_destroy (dctx);
     }
+#endif
   else if (!strcmp (get_suffix (dest_path), ".ctx") )
     {
       FILE *f = fopen (dest_path, "w");

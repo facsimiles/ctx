@@ -182,6 +182,11 @@
 #define CTX_CLIENTS              0
 #endif
 
+#if CTX_VT==0
+#undef CTX_CLIENTS
+#define CTX_CLIENTS 0
+#endif
+
 /* when ctx_math is defined, which it is by default, we use ctx' own
  * implementations of math functions, instead of relying on math.h
  * the possible inlining gives us a slight speed-gain, and on

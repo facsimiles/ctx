@@ -19,8 +19,6 @@
 
 #define CTX_HEADLESS             1
 
-#define CTX_PDF                  1
-
 #define CTX_SHAPE_CACHE          1
 
 #define CTX_DITHER               0 //

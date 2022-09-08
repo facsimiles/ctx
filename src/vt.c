@@ -1,3 +1,5 @@
+#if CTX_VT
+
 /* DEC terminals/xterm family terminal with ANSI, utf8, vector graphics and
  * audio.
  *
@@ -8958,4 +8960,5 @@ void vt_set_ctx (VT *vt, Ctx *ctx)
   vt->root_ctx = ctx;
 }
 
+#endif
 #endif
