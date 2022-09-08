@@ -24,6 +24,7 @@ HAVE_STB_IMAGE_WRITE=1
 
 ENABLE_VT=1
 ENABLE_STUFF=1
+ENABLE_TINYVG=1
 
 ARCH=`uname -m`
 
@@ -59,6 +60,8 @@ do
      "--enable-vt") ENABLE_VT=1 ;;
      "--enable-stuff") ENABLE_STUFF=1 ;;
      "--disable-stuff") ENABLE_STUFF=1 ;;
+     "--enable-tinyvg") ENABLE_TINYVG=1 ;;
+     "--disable-tinyvg") ENABLE_TINYVG=1 ;;
      "--disable-vt") ENABLE_VT=0 ;;
      "--disable-pl-mpeg") HAVE_PL_MPEG=0 ;;
      "--disable-stb_tt") HAVE_STB_TT=0 ;;
@@ -79,6 +82,7 @@ do
         ENABLE_FB=0 
         ENABLE_VT=0 
         ENABLE_STUFF=0 
+        ENABLE_TINYVG=0 
         HAVE_BABL=0 
         HAVE_SDL=0 
         HAVE_CAIRO=0 
@@ -138,6 +142,13 @@ if [ $ENABLE_VT = 1 ];then
 else
   echo "CTX_CFLAGS+= -DCTX_VT=0" >> build.conf
 fi
+
+if [ $ENABLE_TINYVG = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_TINYVG=1" >> build.conf
+else
+  echo "CTX_CFLAGS+= -DCTX_TINYVG=0" >> build.conf
+fi
+
 
 if [ $ENABLE_STUFF = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_STUFF=1" >> build.conf
@@ -265,6 +276,7 @@ echo -n " stb_tt   "; [ $HAVE_STB_TT  = 1 ] && echo "yes" || echo "no"
 
 echo -n " vt       "; [ $ENABLE_VT = 1 ] && echo "yes" || echo "no"
 echo -n " stuff    "; [ $ENABLE_STUFF = 1 ] && echo "yes" || echo "no"
+echo -n " tinyvg   "; [ $ENABLE_TINYVG = 1 ] && echo "yes" || echo "no"
 
 
 

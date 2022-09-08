@@ -377,10 +377,12 @@ int main (int argc, char **argv)
 
     if (media_type_class){};
 
+#if CTX_TINYVG
     if (!strcmp (media_type, "image/tinyvg"))
     {
       return ctx_tinyvg_main (argc, argv);
     }
+#endif
 #if CTX_STB_IMAGE
     if (!strcmp (media_type, "image/gif"))
     {
