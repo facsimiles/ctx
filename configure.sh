@@ -18,6 +18,7 @@ ENABLE_VT=1
 ENABLE_SCREENSHOT=1
 ENABLE_BRAILLE_TEXT=1
 ENABLE_PDF=1
+ENABLE_STATIC_FONTS=1
 ENABLE_SHAPE_CACHE=0
 ENABLE_HEADLESS=1
 ENABLE_FONTS_FROM_FILE=1
@@ -89,6 +90,7 @@ do
      "--enable-stuff") ENABLE_STUFF=1 ;;
      "--enable-tinyvg") ENABLE_TINYVG=1 ;;
      "--enable-pdf") ENABLE_PDF=1 ;;
+     "--enable-static_fonts") ENABLE_STATIC_FONTS=1 ;;
      "--enable-fragment_specialize") ENABLE_FRAGMENT_SPECIALIZE=1 ;;
      "--enable-fast_fill_rect") ENABLE_FAST_FILL_RECT=1 ;;
      "--enable-only_rgba8") ENABLE_ONLY_RGBA8=1 ;;
@@ -111,6 +113,7 @@ do
      "--disable-stb_image") HAVE_STB_IMAGE=0 ;;
      "--disable-stb_image_write") HAVE_STB_IMAGE_WRITE=0 ;;
      "--disable-pdf") ENABLE_PDF=0 ;;
+     "--disable-static_fonts") ENABLE_STATIC_FONTS=0 ;;
      "--disable-fragment_specialize") ENABLE_FRAGMENT_SPECIALIZE=0 ;;
      "--disable-fast_fill_rect") ENABLE_FAST_FILL_RECT=0 ;;
      "--disable-only_rgba8") ENABLE_ONLY_RGBA8=0 ;;
@@ -152,6 +155,7 @@ do
         ENABLE_STUFF=0 
         ENABLE_TINYVG=0 
         ENABLE_PDF=0 
+        ENABLE_STATIC_FONTS=0 
         ENABLE_FRAGMENT_SPECIALIZE=0 
         ENABLE_FAST_FILL_RECT=0 
 	ENABLE_SWITCH_DISPATCH=0 
@@ -226,6 +230,7 @@ echo -n "#define CTX_BRAILLE_TEXT " >> local.conf; if [ $ENABLE_BRAILLE_TEXT = 1
 echo -n "#define CTX_ENABLE_CMYK " >> local.conf; if [ $ENABLE_CMYK = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_TINYVG " >> local.conf; if [ $ENABLE_TINYVG = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_PDF " >> local.conf; if [ $ENABLE_PDF = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_STATIC_FONTS " >> local.conf; if [ $ENABLE_STATIC_FONTS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_FRAGMENT_SPECIALIZE " >> local.conf; if [ $ENABLE_FRAGMENT_SPECIALIZE = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_FAST_FILL_RECT " >> local.conf; if [ $ENABLE_FAST_FILL_RECT = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_RASTERIZER_SWITCH_DISPATCH " >> local.conf; if [ $ENABLE_SWITCH_DISPATCH = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
@@ -393,6 +398,7 @@ echo -n " only_rgba8      "; [ $ENABLE_ONLY_RGBA8  = 1 ] && echo "yes" || echo "
 echo -n " fragment_specialize"; [ $ENABLE_FRAGMENT_SPECIALIZE = 1 ] && echo "yes" || echo "no"
 echo -n " fast_fill_rect  "; [ $ENABLE_FAST_FILL_RECT = 1 ] && echo "yes" || echo "no"
 echo -n " switch_dispatch "; [ $ENABLE_SWITCH_DISPATCH = 1 ] && echo "yes" || echo "no"
+echo -n " static_fonts"; [ $ENABLE_STATIC_FONTS = 1 ] && echo "yes" || echo "no"
 
 
 echo

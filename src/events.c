@@ -250,6 +250,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   }
 
   Ctx *ret = NULL;
+#if CTX_FORMATTER
 #if CTX_TERMINAL_EVENTS
   /* we do the query on auto but not on directly set ctx
    *
@@ -263,6 +264,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
       ret = ctx_new_ctx (width, height);
     }
   }
+#endif
 #endif
 
 #if CTX_TERMINAL_EVENTS

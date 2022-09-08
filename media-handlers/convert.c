@@ -2,6 +2,7 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "local.conf"
 #include "ctx.h"
 
 #define CTX_SVG 1
@@ -746,6 +747,7 @@ again:
     }
   else
 #endif
+#if CTX_PARSER
     if (!strcmp (get_suffix (source_path), ".ctx") ||
         !strcmp (get_suffix (source_path), ".ctxc") ||
         0)
@@ -761,6 +763,7 @@ again:
           free (contents);
         }
     }
+#endif
 #if 0
   else
     {
@@ -855,6 +858,7 @@ again:
     exit(0);
   }
 
+#if CTX_FORMATTER
   if (outputmode == CTX_OUTPUT_MODE_CTX)
     {
       // determine terminal size
@@ -870,6 +874,7 @@ again:
       fprintf (stdout, "\nX\n\[e?25h");
       exit (0);
     }
+#endif
 
   if (dest_path == NULL || !strcmp (dest_path, "RGBA8") )
     {
@@ -1198,6 +1203,7 @@ again:
       ctx_destroy (dctx);
     }
 #endif
+#if CTX_FORMATTER
   else if (!strcmp (get_suffix (dest_path), ".ctx") )
     {
       FILE *f = fopen (dest_path, "w");
@@ -1210,6 +1216,7 @@ again:
       ctx_render_stream (ctx, f, 0);
       fclose (f);
     }
+#endif
   ctx_destroy (ctx);
   return 0;
 }

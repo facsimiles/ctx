@@ -222,6 +222,7 @@ static void *launch_client_thread (void *data)
   return NULL;
 }
 
+#if 0
 CtxClient *ctx_client_new_thread (Ctx *ctx, void (*start_routine)(Ctx *ctx, void *user_data),
                                   int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {
@@ -240,6 +241,7 @@ CtxClient *ctx_client_new_thread (Ctx *ctx, void (*start_routine)(Ctx *ctx, void
     client->vt->client = client;
   return client;
 }
+#endif
 #endif
 
 #if CTX_SHAPE_CACHE

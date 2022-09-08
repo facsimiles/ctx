@@ -13,9 +13,6 @@
 #include "local.conf"
 
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl backends
-#define CTX_PARSER               1
-#define CTX_FORMATTER            1
-#define CTX_EVENTS               1
 
 
 #define CTX_MAX_TEXTURES         1024  // default: 32
@@ -64,6 +61,7 @@
                     ctx_font_##font,       \
                     sizeof (ctx_font_##font))
 
+#if CTX_STATIC_FONTS
 #include "Carlito-Regular.h"
 #include "Carlito-Bold.h"
 #include "Carlito-Italic.h"
@@ -97,6 +95,7 @@
 #define CTX_FONT_13  CTX_STATIC_FONT(Carlito_Bold)
 #define CTX_FONT_14  CTX_STATIC_FONT(Carlito_Italic)
 #define CTX_FONT_15  CTX_STATIC_FONT(Carlito_BoldItalic)
+#endif
 
 #define CTX_IMPLEMENTATION 1
 

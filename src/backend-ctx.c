@@ -1,6 +1,8 @@
 #include "ctx-split.h"
 
 #if CTX_TERMINAL_EVENTS
+int ctx_frame_ack = -1;
+#if CTX_FORMATTER
 
 #if 0
 static int ctx_find_largest_matching_substring
@@ -301,7 +303,6 @@ static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int
 #define CTX_END_STRING   "\nX"  // or "\ndone"
 #define CTX_END_STRING2  "\n"
 
-int ctx_frame_ack = -1;
 static char *prev_frame_contents = NULL;
 static int   prev_frame_len = 0;
 
@@ -527,4 +528,5 @@ Ctx *ctx_new_ctx (int width, int height)
 void ctx_ctx_pcm (Ctx *ctx);
 
 
+#endif
 #endif

@@ -113,7 +113,9 @@ static void vt_state_sixel        (VT *vt, int byte);
 static void vt_state_esc_sequence (VT *vt, int byte);
 static void vt_state_esc_foo      (VT *vt, int byte);
 static void vt_state_swallow      (VT *vt, int byte);
+#if CTX_PARSER
 static void vt_state_ctx          (VT *vt, int byte);
+#endif
 static void vt_state_vt52         (VT *vt, int byte);
 
 #if 0
@@ -1131,6 +1133,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   if (vt->rows == irows && vt->cols == icols)
     return;
 
+#if CTX_PARSER
   if (vt->state == vt_state_ctx)
   {
     // we should queue a pending resize instead,
@@ -1138,6 +1141,7 @@ void vt_set_term_size (VT *vt, int icols, int irows)
     // rendered frame is discarded?
     return;
   }
+#endif
 
   if(1)vt_rewrap (vt, icols);
 
@@ -1173,8 +1177,10 @@ void vt_set_term_size (VT *vt, int icols, int irows)
   _vt_move_to (vt, vt->cursor_y, vt->cursor_x);
   ctx_client_rev_inc (vt->client);
   VT_info ("resize %i %i", irows, icols);
+#if CTX_PARSER
   if (vt->ctxp)
     ctx_parser_destroy (vt->ctxp);
+#endif
   vt->ctxp = NULL;
 }
 
@@ -2540,7 +2546,8 @@ qagain:
           case 201:/*MODE;;ctx-events;on;off;*/
             vt->ctx_events = set;
             break;
-          
+         
+#if CTX_PARSER 
           case 200:/*MODE;;ctx vector graphics mode;on;;*/
             if (set)
               {
@@ -2569,6 +2576,7 @@ qagain:
                 vt->state = vt_state_ctx;
               }
             break;
+#endif
           default:
             VT_warning ("unhandled CSI ? %i%s", qval, set?"h":"l");
             return;
@@ -2717,9 +2725,11 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
             is_set = vt->in_alt_screen;
             break;
             break;
+#if CTX_PARSER
           case 200:/*ctx protocol;On;;*/
             is_set = (vt->state == vt_state_ctx);
             break;
+#endif
           case 80:/* DECSDM Sixel scrolling */
           case 30: // from rxvt - show/hide scrollbar
           case 34: // DECRLM - right to left mode
@@ -4227,6 +4237,7 @@ static void vt_sixels (VT *vt, const char *sixels)
   ctx_client_rev_inc (vt->client);
 }
 
+#if CTX_PARSER
 static inline void vt_ctx_unrled (VT *vt, char byte)
 {
 #if CTX_VT_USE_FRAMEDIFF
@@ -4234,7 +4245,9 @@ static inline void vt_ctx_unrled (VT *vt, char byte)
 #endif
   ctx_parser_feed_byte (vt->ctxp, byte);
 }
+#endif
 
+#if CTX_PARSER
 static void vt_state_ctx (VT *vt, int byte)
 {
 #if 0
@@ -4301,6 +4314,7 @@ static void vt_state_ctx (VT *vt, int byte)
       vt_ctx_unrled (vt, byte);
 #endif
 }
+#endif
 
 static int vt_decoder_feed (VT *vt, int byte)
 {
@@ -5145,7 +5159,12 @@ int vt_poll (VT *vt, int timeout)
   int first = 1;
   while (remaining_chars > 0 &&
          vt_waitdata (vt, first?0:1000*5) &&
-         ( ticks - start_ticks < timeout ||  vt->state == vt_state_ctx))
+         ( ticks - start_ticks < timeout
+#if CTX_PARSER
+	   ||  vt->state == vt_state_ctx
+#endif
+	   
+	   ))
     {
       first = 0;
 #if CTX_AUDIO
@@ -5168,12 +5187,14 @@ int vt_poll (VT *vt, int timeout)
       // XXX allow state to break out in ctx mode on flush
       got_data+=len;
       remaining_chars -= len;
+#if CTX_PARSER
       if (vt->state == vt_state_ctx) {
          if (remaining_chars < read_size)
          {
            remaining_chars = read_size * 2;
          }
       }
+#endif
       ticks = ctx_ticks ();
     }
   if (got_data < 0)
@@ -5746,8 +5767,10 @@ void vt_destroy (VT *vt)
       vt_line_free (vt->scrollback->data, 1);
       ctx_list_remove (&vt->scrollback, vt->scrollback->data);
     }
+#if CTX_PARSER
   if (vt->ctxp)
     ctx_parser_destroy (vt->ctxp);
+#endif
   //if (vt->ctx)
   //  { ctx_destroy (vt->ctx); }
   free (vt->argument_buf);
