@@ -18,7 +18,6 @@
 #define CTX_MAX_TEXTURES    1
 #define CTX_U8_TO_FLOAT_LUT 0
 #define CTX_EVENTS          0
-#define CTX_RENDER_CTX      0
 #define CTX_DITHER          0 
 #define CTX_FORMATTER       0
 #define CTX_CURRENT_PATH    0
