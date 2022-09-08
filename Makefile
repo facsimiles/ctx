@@ -194,15 +194,15 @@ deps.o: deps.c build.conf Makefile
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
-terminal/%.o: terminal/%.c ctx.h terminal/*.h itk/itk.h 
+terminal/%.o: terminal/%.c ctx.h terminal/*.h itk/itk.h Makefile build.conf
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-media-handlers/%.o: media-handlers/%.c ctx.h itk/itk.h
+media-handlers/%.o: media-handlers/%.c ctx.h itk/itk.h Makefile build.conf
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc
+stuff/%.o: stuff/%.c ctx.h stuff/*.h stuff/*.inc Makefile build.conf
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: itk.o deps.o $(CTX_OBJS) build.conf Makefile
 	$(AR) rcs $@ $(CTX_OBJS) deps.o itk.o
-libctx.so: $(CTX_OBJS) deps.o itk.o
+libctx.so: $(CTX_OBJS) deps.o itk.o build.conf Makefile
 	$(LD) -shared $(LIBS) $(CTX_OBJS) deps.o itk.o $(CTX_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 

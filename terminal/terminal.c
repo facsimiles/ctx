@@ -593,10 +593,12 @@ int terminal_main (int argc, char **argv)
   width = ctx_width (ctx);
   height = ctx_height (ctx);
 
+#if CTX_TERM
   if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && font_size <= 0)
   {
     font_size = ctx_term_get_cell_height (ctx);
   }
+#endif
 
   if (cols <= 0)
   {
