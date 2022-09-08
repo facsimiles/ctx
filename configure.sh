@@ -1,33 +1,35 @@
 #!/bin/sh
 
 HAVE_SDL=0
-pkg-config sdl2 && HAVE_SDL=1
 HAVE_BABL=0
-pkg-config babl && HAVE_BABL=1
 HAVE_CAIRO=0
-pkg-config cairo && HAVE_CAIRO=1
 HAVE_HARFBUZZ=0
-# commented out to not auto-detect
-#pkg-config harfbuzz && HAVE_HARFBUZZ=1
 HAVE_LIBCURL=0
-pkg-config libcurl && HAVE_LIBCURL=1
 HAVE_ALSA=0
-pkg-config alsa && HAVE_ALSA=1
 HAVE_KMS=0
-pkg-config libdrm && HAVE_KMS=1
-
 
 HAVE_PL_MPEG=1
 HAVE_STB_TT=1
 HAVE_STB_IMAGE=1
 HAVE_STB_IMAGE_WRITE=1
 
+ENABLE_FB=1
 ENABLE_VT=1
-ENABLE_STUFF=1
-ENABLE_TINYVG=1
 ENABLE_PDF=1
+ENABLE_TINYVG=1
 ENABLE_TERM=1
 ENABLE_TERMIMG=1
+ENABLE_STUFF=1
+
+pkg-config sdl2    && HAVE_SDL=1
+pkg-config babl    && HAVE_BABL=1
+pkg-config cairo   && HAVE_CAIRO=1
+pkg-config libcurl && HAVE_LIBCURL=1
+pkg-config alsa    && HAVE_ALSA=1
+pkg-config libdrm  && HAVE_KMS=1
+#pkg-config harfbuzz && HAVE_HARFBUZZ=1
+
+
 
 ARCH=`uname -m`
 
@@ -37,7 +39,6 @@ case "$ARCH" in
    *)         HAVE_SIMD=0 ;; 
 esac
 
-ENABLE_FB=1
 
 CFLAGS='-O2 -g '
 
@@ -46,12 +47,14 @@ CFLAGS_BACKEND=''
 while test $# -gt 0
 do
     case "$1" in
-     "--disable-sdl") HAVE_SDL=0    ;;
      "--debug") CFLAGS=' -g ' ; HAVE_SIMD=0   ;;
      "--static") CFLAGS='-Os' HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_CAIRO=0  HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 ;;
      "--asan") CFLAGS=" -fsanitize=address -g";LIBS=' -lasan -g '  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined -g";LIBS=' -lasan -g '  ;;
      "--enable-kms") HAVE_KMS=1 ;;
+     "--disable-sdl") HAVE_SDL=0    ;;
+     "--enable-SDL2") HAVE_SDL=1 ;;
+     "--disable-SDL2") HAVE_SDL=0    ;;
      "--enable-sdl") HAVE_SDL=1 ;;
      "--enable-cairo") HAVE_CAIRO=1 ;;
      "--enable-babl") HAVE_BABL=1 ;;
@@ -111,11 +114,12 @@ do
        if [ "x$1" != "x--help" ]; then echo unrecognized option $1 ; fi
        echo "usage: ./configure [options]"
        echo "Where recognized options are: "
-       echo "  --enable-FEATURE   where FEATURE is one of cairo, harfbuzz"
-       echo "  --disable-FEATURE  fb, kms, sdl, alsa, babl, libcurl and simd"
+       echo "  --enable-FEATURE   where FEATURE is one of the feature names listed in the output summary"
+       echo "  --disable-FEATURE  "
        echo ""
        echo "  --disable-all      disable all features, to be used before enabling"
        echo "                     features individually"
+       echo "  --static           configure for a static build (for use with the ctx.static build target)"
        echo "  --asan             do an asan build"
        echo "  --ubsan            do an ubsan build"
        echo "  --debug            do a debug build (faster)"
@@ -239,28 +243,41 @@ echo "LIBS=$LIBS" >> build.conf
 #echo "Generating build.deps"
 #make build.deps 2>/dev/null
 
-echo "configuration summary, architecture $(arch):"
-echo -n " SIMD     "; [ $HAVE_SIMD = 1 ]  && echo "yes" || echo "no"
-echo -n " SDL2     "; [ $HAVE_SDL = 1 ]   && echo "yes" || echo "no (libsdl2-dev)"
-echo -n " babl     "; [ $HAVE_BABL = 1 ]  && echo "yes" || echo "no (libbabl-dev)"
-echo -n " cairo    "; [ $HAVE_CAIRO = 1 ] && echo "yes" || echo "no (libcairo2-dev)"
-
-echo -n " harfbuzz "; [ $HAVE_HARFBUZZ = 1 ] && echo "yes" || echo "no (libharfbuzz-dev)"
-echo -n " alsa     "; [ $HAVE_ALSA = 1 ]     && echo "yes" || echo "no (libasound-dev)"
-echo -n " libcurl  "; [ $HAVE_LIBCURL = 1 ]  && echo "yes" || echo "no (libcurl-4-openssl-dev)"
-echo -n " kms      "; [ $HAVE_KMS = 1 ]     && echo "yes" || echo "no (libdrm-dev)"
-
-echo -n " fb       "; [ $ENABLE_FB = 1 ]    && echo "yes" || echo "no"
-echo -n " pl_mpeg  "; [ $HAVE_PL_MPEG = 1 ] && echo "yes" || echo "no"
-echo -n " stb_tt   "; [ $HAVE_STB_TT  = 1 ] && echo "yes" || echo "no"
-
-echo -n " vt       "; [ $ENABLE_VT = 1 ] && echo "yes" || echo "no"
-echo -n " stuff    "; [ $ENABLE_STUFF = 1 ] && echo "yes" || echo "no"
-echo -n " tinyvg   "; [ $ENABLE_TINYVG = 1 ] && echo "yes" || echo "no"
-echo -n " pdf      "; [ $ENABLE_PDF = 1 ] && echo "yes" || echo "no"
-echo -n " term     "; [ $ENABLE_TERM = 1 ] && echo "yes" || echo "no"
-echo -n " termimg  "; [ $ENABLE_TERMIMG = 1 ] && echo "yes" || echo "no"
-
+echo -n "configuration summary, architecture $(arch)"
+[ $HAVE_SIMD = 1 ]  && echo "SIMD multi-pass" || echo ""
+echo ""
+echo "Backends:"
+echo -n " kms     "; [ $HAVE_KMS = 1 ]     && echo "yes" || echo "no (libdrm-dev)"
+echo -n " fb      "; [ $ENABLE_FB = 1 ]    && echo "yes" || echo "no"
+echo -n " SDL2    "; [ $HAVE_SDL = 1 ]   && echo "yes" || echo "no (libsdl2-dev)"
+echo -n " pdf     "; [ $ENABLE_PDF = 1 ] && echo "yes" || echo "no"
+echo -n " term    "; [ $ENABLE_TERM = 1 ] && echo "yes" || echo "no"
+echo -n " termimg "; [ $ENABLE_TERMIMG = 1 ] && echo "yes" || echo "no"
+echo -n " cairo   "; [ $HAVE_CAIRO = 1 ] && echo "yes" || echo "no (libcairo2-dev)"
+echo ""
+echo "External libraries:"
+echo -n " babl            "; [ $HAVE_BABL = 1 ]  && echo "yes" || echo "no (libbabl-dev)"
+echo -n " harfbuzz        "; [ $HAVE_HARFBUZZ = 1 ] && echo "yes" || echo "no (libharfbuzz-dev, currently unused)"
+echo -n " alsa            "; [ $HAVE_ALSA = 1 ]     && echo "yes" || echo "no (libasound-dev)"
+echo -n " libcurl         "; [ $HAVE_LIBCURL = 1 ]  && echo "yes" || echo "no (libcurl-4-openssl-dev)"
+echo ""
+echo "Built-in/vendored libraries"
+echo -n " pl_mpeg         "; [ $HAVE_PL_MPEG = 1 ] && echo "yes" || echo "no"
+echo "   mpeg1 video player, works well as top-level but not as client due to lack of SHM"
+echo -n " stb_tt          "; [ $HAVE_STB_TT  = 1 ] && echo "yes" || echo "no"
+echo "   optional support for using TTF/OTF fonts"
+echo -n " stb_image       "; [ $HAVE_STB_IMAGE  = 1 ] && echo -n "yes" || echo -n "no"
+echo "   support for loading jpg,png,gif"
+echo -n " stb_image_write "; [ $HAVE_STB_IMAGE_WRITE  = 1 ] && echo -n "yes" || echo -n "no"
+echo "   support for writing PNG files/screenshots/thumbnails"
+echo ""
+echo "Features"
+echo -n " vt              "; [ $ENABLE_VT = 1 ] && echo -n "yes" || echo -n "no" ; 
+echo "   DEC+ctx terminal engine"
+echo -n " stuff           "; [ $ENABLE_STUFF = 1 ] && echo -n "yes" || echo -n "no"
+echo "   media creation and curation editor"
+echo -n " tinyvg          "; [ $ENABLE_TINYVG = 1 ] && echo -n "yes" || echo -n "no"
+echo "   tinyvg viewer"
 
 
 echo
