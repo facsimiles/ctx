@@ -15,6 +15,7 @@ HAVE_STB_IMAGE_WRITE=1
 
 ENABLE_FB=1
 ENABLE_VT=1
+ENABLE_BRAILLE_TEXT=1
 ENABLE_PDF=1
 ENABLE_TINYVG=1
 ENABLE_TERM=1
@@ -65,6 +66,7 @@ do
      "--enable-harfbuzz") HAVE_HARFBUZZ=1 ;;
      "--enable-fb") ENABLE_FB=1 ;;
      "--enable-vt") ENABLE_VT=1 ;;
+     "--enable-braille_text") ENABLE_BRAILLE_TEXT=1 ;;
      "--enable-audio") ENABLE_AUDIO=1 ;;
      "--enable-cmyk") ENABLE_CMYK=1 ;;
      "--enable-CMYK") ENABLE_CMYK=1 ;;
@@ -83,6 +85,7 @@ do
      "--disable-pdf") ENABLE_PDF=0 ;;
      "--disable-kms") HAVE_KMS=0 ;;
      "--disable-vt") ENABLE_VT=0 ;;
+     "--disable-braille_text") ENABLE_BRAILLE_TEXT=0 ;;
      "--disable-audio") ENABLE_AUDIO=0 ;;
      "--disable-cmyk") ENABLE_CMYK=0 ;;
      "--disable-CMYK") ENABLE_CMYK=0 ;;
@@ -101,6 +104,7 @@ do
         HAVE_SIMD=0 
         ENABLE_FB=0 
         ENABLE_VT=0 
+        ENABLE_BRAILLE_TEXT=0 
         ENABLE_AUDIO=0 
         ENABLE_CMYK=0 
         ENABLE_STUFF=0 
@@ -159,6 +163,7 @@ fi
 
 echo -n "CTX_CFLAGS+= -DCTX_AUDIO=" >> build.conf; if [ $ENABLE_AUDIO = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_VT=" >> build.conf; if [ $ENABLE_VT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_BRAILLE_TEXT=" >> build.conf; if [ $ENABLE_BRAILLE_TEXT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_ENABLE_CMYK=" >> build.conf; if [ $ENABLE_CMYK = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_TINYVG=" >> build.conf; if [ $ENABLE_TINYVG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_PDF=" >> build.conf; if [ $ENABLE_PDF = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
@@ -274,18 +279,20 @@ echo -n " alsa            "; [ $HAVE_ALSA = 1 ]     && echo "yes" || echo "no (l
 echo -n " libcurl         "; [ $HAVE_LIBCURL = 1 ]  && echo "yes" || echo "no (libcurl-4-openssl-dev)"
 echo ""
 echo "Built-in/vendored libraries"
-echo -n " pl_mpeg         "; [ $HAVE_PL_MPEG = 1 ] && echo "yes" || echo "no"
-echo "   mpeg1 video player, works well as top-level but not as client due to lack of SHM"
-echo -n " stb_tt          "; [ $HAVE_STB_TT  = 1 ] && echo "yes" || echo "no"
+echo -n " pl_mpeg         "; [ $HAVE_PL_MPEG = 1 ] && echo -n "yes" || echo -n "no"
+echo "    mpeg1 video player, works well as top-level but not as client due to lack of SHM"
+echo -n " stb_tt          "; [ $HAVE_STB_TT  = 1 ] && echo -n "yes" || echo -n "no"
 echo "   optional support for using TTF/OTF fonts"
 echo -n " stb_image       "; [ $HAVE_STB_IMAGE  = 1 ] && echo -n "yes" || echo -n "no"
-echo "   support for loading jpg,png,gif"
+echo "    support for loading jpg,png,gif"
 echo -n " stb_image_write "; [ $HAVE_STB_IMAGE_WRITE  = 1 ] && echo -n "yes" || echo -n "no"
-echo "   support for writing PNG files/screenshots/thumbnails"
+echo "    support for writing PNG files/screenshots/thumbnails"
 echo ""
 echo "Features"
 echo -n " vt              "; [ $ENABLE_VT = 1 ] && echo -n "yes" || echo -n "no" ; 
 echo "   DEC+ctx terminal engine"
+echo -n " braille_text    "; [ $ENABLE_BRAILLE_TEXT = 1 ] && echo -n "yes" || echo -n "no" ; 
+echo "    use of text overrides in unicode graphics backend"
 echo -n " audio           "; [ $ENABLE_AUDIO = 1 ] && echo -n "yes" || echo -n "no" ; 
 echo "    audio handling (both alsa and ctx backend)"
 echo -n " stuff           "; [ $ENABLE_STUFF = 1 ] && echo -n "yes" || echo -n "no"
