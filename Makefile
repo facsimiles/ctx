@@ -20,7 +20,7 @@ CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 
 CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers -Iitk
-LIBS  += -lm -lpthread 
+LIBS  += -lm -lpthread -lz
 
 
 #TERMINAL_CFILES = $(wildcard terminal/*.c)

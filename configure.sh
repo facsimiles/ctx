@@ -143,65 +143,16 @@ else
   echo "CTX_CFLAGS+= -DCTX_BABL=0" >> build.conf
 fi
 
-if [ $HAVE_PL_MPEG = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_PL_MPEG=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_PL_MPEG=0" >> build.conf
-fi
-
-if [ $ENABLE_VT = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_VT=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_VT=0" >> build.conf
-fi
-
-if [ $ENABLE_TINYVG = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_TINYVG=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_TINYVG=0" >> build.conf
-fi
-
-if [ $ENABLE_PDF = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_PDF=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_PDF=0" >> build.conf
-fi
-
-if [ $ENABLE_TERM = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_TERM=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_TERM=0" >> build.conf
-fi
-
-if [ $ENABLE_TERMIMG = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_TERMIMG=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_TERMIMG=0" >> build.conf
-fi
-
-if [ $ENABLE_STUFF = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_STUFF=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_STUFF=0" >> build.conf
-fi
-
-if [ $HAVE_STB_TT = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_STB_TT=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_STB_TT=0" >> build.conf
-fi
-
-if [ $HAVE_STB_IMAGE = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_STB_IMAGE=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_STB_IMAGE=0" >> build.conf
-fi
-
-if [ $HAVE_STB_IMAGE_WRITE = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_STB_IMAGE_WRITE=1" >> build.conf
-else
-  echo "CTX_CFLAGS+= -DCTX_STB_IMAGE_WRITE=0" >> build.conf
-fi
+echo -n "CTX_CFLAGS+= -DCTX_VT=" >> build.conf; if [ $ENABLE_VT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_TINYVG=" >> build.conf; if [ $ENABLE_TINYVG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_PDF=" >> build.conf; if [ $ENABLE_PDF = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_TERM=" >> build.conf; if [ $ENABLE_TERM = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_TERMIMG=" >> build.conf; if [ $ENABLE_TERMIMG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_STUFF=" >> build.conf; if [ $ENABLE_STUFF = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_PL_MPEG=" >> build.conf; if [ $HAVE_PL_MPEG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_STB_TT=" >> build.conf; if [ $HAVE_STB_TT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_STB_IMAGE=" >> build.conf; if [ $HAVE_STB_IMAGE = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_STB_IMAGE_WRITE=" >> build.conf; if [ $HAVE_STB_IMAGE_WRITE = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 
 echo >> build.conf
 if [ $HAVE_HARFBUZZ = 1 ];then
