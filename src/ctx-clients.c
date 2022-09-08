@@ -208,6 +208,7 @@ CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, 
 }
 
 #ifndef EMSCRIPTEN
+#if 0
 static void *launch_client_thread (void *data)
 {
   CtxClient *client = data;
@@ -222,7 +223,6 @@ static void *launch_client_thread (void *data)
   return NULL;
 }
 
-#if 0
 CtxClient *ctx_client_new_thread (Ctx *ctx, void (*start_routine)(Ctx *ctx, void *user_data),
                                   int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {

@@ -376,7 +376,7 @@ static void card_clock1 (ITK *itk, int frame_no)
   ctx_queue_draw (ctx);
 }
 
-static void card_clock2 (ITK *itk, int frame_no)
+void card_clock2 (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk_ctx (itk);
   uint64_t ms64 = ctx_ticks()/ 1000;
@@ -386,7 +386,7 @@ static void card_clock2 (ITK *itk, int frame_no)
   ctx_queue_draw (ctx);
 }
 
-static void card_fill_rule (ITK *itk, int frame_no)
+void card_fill_rule (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk_ctx (itk);
 
@@ -422,7 +422,7 @@ static void card_fill_rule (ITK *itk, int frame_no)
   ctx_restore (ctx);
 }
 
-static void card_curve_to (ITK *itk, int frame_no)
+void card_curve_to (ITK *itk, int frame_no)
 {
   Ctx *ctx = itk_ctx (itk);
   ctx_save (ctx);
@@ -466,6 +466,7 @@ typedef struct DragObject
 } DragObject;
 
 
+#if 0
 static void rect_drag (CtxEvent *event, void *data1, void *data2)
 {
   float *x = data1;
@@ -474,6 +475,7 @@ static void rect_drag (CtxEvent *event, void *data1, void *data2)
   *y += event->delta_y;
   event->stop_propagate=1;
 }
+#endif
 
 static void object_drag (CtxEvent *event, void *data1, void *data2)
 {
@@ -730,16 +732,18 @@ static void ctx_spacer_set_y (Ctx *ctx, const char *name, float space)
   ctx_resolve (ctx, name, set_y_cb, &space);
 }
 
-static void set_x_cb (Ctx *ctx, void *userdata, const char *name, int count, float *x, float *y, float *w, float *h)
+void set_x_cb (Ctx *ctx, void *userdata, const char *name, int count, float *x, float *y, float *w, float *h)
 {
   float *fptr = (float*)userdata;
   *x = fptr[0];
 }
 
+#if 0
 static void ctx_spacer_set_x (Ctx *ctx, const char *name, float space)
 {
   ctx_resolve (ctx, name, set_x_cb, &space);
 }
+#endif
 
 static void card_deferred (ITK *itk, int frame_no)
 {

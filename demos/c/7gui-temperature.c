@@ -3,14 +3,6 @@
 static char celcius_val[20]="";
 static char fahrenheit_val[20]="";
 
-static void commit_celcius (ITK *itk, void *data)
-{
-}
-
-static void commit_fahrenheit (ITK *itk, void *data)
-{
-}
-
 static int temperature_ui (ITK *itk, void *data)
 {
   Ctx *ctx = itk_ctx (itk);

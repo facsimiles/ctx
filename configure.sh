@@ -97,6 +97,7 @@ do
      "--enable-static_fonts") ENABLE_STATIC_FONTS=1 ;;
      "--enable-fragment_specialize") ENABLE_FRAGMENT_SPECIALIZE=1 ;;
      "--enable-fast_fill_rect") ENABLE_FAST_FILL_RECT=1 ;;
+     "--enable-switch_dispatch") ENABLE_SWITCH_DISPATCH=1 ;;
      "--enable-only_rgba8") ENABLE_ONLY_RGBA8=1 ;;
      "--enable-rasterizer") ENABLE_RASTERIZER=1 ;;
      "--enable-parser") ENABLE_PARSER=1 ;;
@@ -122,6 +123,7 @@ do
      "--disable-static_fonts") ENABLE_STATIC_FONTS=0 ;;
      "--disable-fragment_specialize") ENABLE_FRAGMENT_SPECIALIZE=0 ;;
      "--disable-fast_fill_rect") ENABLE_FAST_FILL_RECT=0 ;;
+     "--disable-switch_dispatch") ENABLE_SWITCH_DISPATCH=0 ;;
      "--disable-only_rgba8") ENABLE_ONLY_RGBA8=0 ;;
      "--disable-rasterizer") ENABLE_RASTERIZER=0 ;;
      "--disable-parser") ENABLE_PARSER=0 ;;
@@ -171,7 +173,7 @@ do
         ENABLE_HEADLESS=0 
         ENABLE_SHAPE_CACHE=0 
         ENABLE_FORMATTER=0 
-        ENABLE_PARSER=0 
+        ENABLE_PARSER=1 
         #ENABLE_RASTERIZER=0 
         #ENABLE_FONTS_FROM_FILE=0 
         ENABLE_FONT_CTX_FS=0 
@@ -407,12 +409,12 @@ echo -n " parser          "; [ $ENABLE_PARSER = 1 ] && echo "yes" || echo "no"
 echo -n " formatter       "; [ $ENABLE_FORMATTER = 1 ] && echo "yes" || echo "no"
 echo -n " shape_cache     "; [ $ENABLE_SHAPE_CACHE = 1 ] && echo "yes" || echo "no"
 echo -n " only_rgba8      "; [ $ENABLE_ONLY_RGBA8  = 1 ] && echo "yes" || echo "no"
-echo -n " fragment_specialize"; [ $ENABLE_FRAGMENT_SPECIALIZE = 1 ] && echo "yes" || echo "no"
-echo -n " fast_fill_rect  "; [ $ENABLE_FAST_FILL_RECT = 1 ] && echo "yes" || echo "no"
-echo -n " switch_dispatch "; [ $ENABLE_SWITCH_DISPATCH = 1 ] && echo "yes" || echo "no"
-echo -n " static_fonts"; [ $ENABLE_STATIC_FONTS = 1 ] && echo "yes" || echo "no"
-echo -n " inlined_normal     "; [ $ENABLE_INLINED_NORMAL = 1 ] && echo "yes" || echo "no"
-echo -n " bloaty_fast_paths "; [ $ENABLE_BLOATY_FAST_PATHS = 1 ] && echo "yes" || echo "no"
+echo -n " fragment_specialize "; [ $ENABLE_FRAGMENT_SPECIALIZE = 1 ] && echo "yes" || echo "no"
+echo -n " fast_fill_rect      "; [ $ENABLE_FAST_FILL_RECT = 1 ] && echo "yes" || echo "no"
+echo -n " switch_dispatch     "; [ $ENABLE_SWITCH_DISPATCH = 1 ] && echo "yes" || echo "no"
+echo -n " static_fonts        "; [ $ENABLE_STATIC_FONTS = 1 ] && echo "yes" || echo "no"
+echo -n " inlined_normal      "; [ $ENABLE_INLINED_NORMAL = 1 ] && echo "yes" || echo "no"
+echo -n " bloaty_fast_paths   "; [ $ENABLE_BLOATY_FAST_PATHS = 1 ] && echo "yes" || echo "no"
 
 
 echo

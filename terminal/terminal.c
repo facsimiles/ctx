@@ -1,3 +1,5 @@
+
+#include "local.conf"
 #if CTX_VT
 
 #if !__COSMOPOLITAN__
@@ -161,6 +163,7 @@ static void settings_thread (Ctx *ctx, void *user_data)
 
 int add_settings_tab (const char *commandline, int can_launch)
 {
+#if 0
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = ctx_client_is_maximized (ctx, ctx_clients_active (ctx));
   int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
@@ -186,6 +189,8 @@ int add_settings_tab (const char *commandline, int can_launch)
   }
   ctx_queue_draw (ctx);
   return ctx_client_id (active);
+#endif
+  return 0;
 }
 
 static void add_tab_cb (CtxEvent *event, void *data, void *data2)
@@ -633,9 +638,11 @@ int terminal_main (int argc, char **argv)
 
   //int sleep_time = 1000000/10;
 
+#if 0
   int print_shape_cache_rate = 0;
   if (getenv ("CTX_DEBUG_SHAPE_CACHE"))
     print_shape_cache_rate = 1;
+#endif
 
   while (ctx_clients (ctx) && !ctx_has_quit (ctx))
     {
@@ -643,9 +650,10 @@ int terminal_main (int argc, char **argv)
       int n_clients = ctx_list_length (ctx_clients (ctx));
       //ensure_layout (ctx);
 
+#if 0
       if (print_shape_cache_rate)
         fprintf (stderr, "\r%f ", ctx_shape_cache_rate);
-
+#endif
       if (ctx_need_redraw(ctx))
       {
         itk_reset (itk);

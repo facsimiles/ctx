@@ -1,3 +1,4 @@
+#include "local.conf"
 #if CTX_TINYVG
 
 #ifndef _DEFAULT_SOURCE

@@ -1,4 +1,5 @@
 #include <string.h>
+#include "local.conf"
 #include "ctx.h"
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -262,6 +263,7 @@ static char *commandline = NULL;
 
 static char *input_path = NULL;
 
+#if 0
 static const char *get_suffix (const char *path)
 {
   if (!path)
@@ -277,6 +279,7 @@ static const char *get_suffix (const char *path)
       return "";
     }
 }
+#endif
 
 int ctx_path_is_dir (const char *path);
 
