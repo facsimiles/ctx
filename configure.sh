@@ -15,6 +15,7 @@ HAVE_STB_IMAGE_WRITE=1
 
 ENABLE_FB=1
 ENABLE_VT=1
+ENABLE_SCREENSHOT=1
 ENABLE_BRAILLE_TEXT=1
 ENABLE_PDF=1
 ENABLE_TINYVG=1
@@ -66,6 +67,7 @@ do
      "--enable-harfbuzz") HAVE_HARFBUZZ=1 ;;
      "--enable-fb") ENABLE_FB=1 ;;
      "--enable-vt") ENABLE_VT=1 ;;
+     "--enable-screenshot") ENABLE_SCREENSHOT=1 ;;
      "--enable-braille_text") ENABLE_BRAILLE_TEXT=1 ;;
      "--enable-audio") ENABLE_AUDIO=1 ;;
      "--enable-cmyk") ENABLE_CMYK=1 ;;
@@ -85,6 +87,7 @@ do
      "--disable-pdf") ENABLE_PDF=0 ;;
      "--disable-kms") HAVE_KMS=0 ;;
      "--disable-vt") ENABLE_VT=0 ;;
+     "--disable-screenshot") ENABLE_SCREENSHOT=0 ;;
      "--disable-braille_text") ENABLE_BRAILLE_TEXT=0 ;;
      "--disable-audio") ENABLE_AUDIO=0 ;;
      "--disable-cmyk") ENABLE_CMYK=0 ;;
@@ -104,6 +107,7 @@ do
         HAVE_SIMD=0 
         ENABLE_FB=0 
         ENABLE_VT=0 
+        ENABLE_SCREENSHOT=0 
         ENABLE_BRAILLE_TEXT=0 
         ENABLE_AUDIO=0 
         ENABLE_CMYK=0 
@@ -163,6 +167,7 @@ fi
 
 echo -n "CTX_CFLAGS+= -DCTX_AUDIO=" >> build.conf; if [ $ENABLE_AUDIO = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_VT=" >> build.conf; if [ $ENABLE_VT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_SCREENSHOT=" >> build.conf; if [ $ENABLE_SCREENSHOT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_BRAILLE_TEXT=" >> build.conf; if [ $ENABLE_BRAILLE_TEXT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_ENABLE_CMYK=" >> build.conf; if [ $ENABLE_CMYK = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_TINYVG=" >> build.conf; if [ $ENABLE_TINYVG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
@@ -295,6 +300,8 @@ echo -n " braille_text    "; [ $ENABLE_BRAILLE_TEXT = 1 ] && echo -n "yes" || ec
 echo "    use of text overrides in unicode graphics backend"
 echo -n " audio           "; [ $ENABLE_AUDIO = 1 ] && echo -n "yes" || echo -n "no" ; 
 echo "    audio handling (both alsa and ctx backend)"
+echo -n " screenshot      "; [ $ENABLE_SCREENSHOT = 1 ] && echo -n "yes" || echo -n "no" ; 
+echo "    code for saving PNG"
 echo -n " stuff           "; [ $ENABLE_STUFF = 1 ] && echo -n "yes" || echo -n "no"
 echo "   media creation and curation editor"
 echo -n " tinyvg          "; [ $ENABLE_TINYVG = 1 ] && echo -n "yes" || echo -n "no"

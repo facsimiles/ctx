@@ -37,7 +37,6 @@
 #define CTX_MAX_KEYDB            128  // default: 64
 
 #define CTX_FONT_ENGINE_CTX_FS   1
-#define CTX_SCREENSHOT           1 
 #include "stb_image.h"
 #include "stb_image_write.h" // needed in addition to screenshot
                              // to fully enable
@@ -138,8 +137,6 @@ void ctx_simd_setup (void)
 #include <babl/babl.h>
 #endif
 
-
-#define CTX_BRAILLE_TEXT         1
 
 #ifdef CTX_SIMD_X86_64_V2
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v2

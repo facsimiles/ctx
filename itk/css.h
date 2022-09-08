@@ -23,8 +23,6 @@
 #define SET_PROPS(a,v)   (ctx_set_string(mrg->ctx, CTX_##a, v))
 #define SET_PROPSh(a,v)  (ctx_set_string(mrg->ctx, a, v))
 
-#if CTX_XML
-
 #define CTX_1      374u
 #define CTX_Aelig  2540544426u
 #define CTX_AElig  2622343083u
@@ -48,7 +46,6 @@
 #define FALSE 0
 #endif
 
-#endif
 
 /* mrg - MicroRaptor Gui
  * Copyright (c) 2014 Øyvind Kolås <pippin@hodefoting.com>

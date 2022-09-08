@@ -174,10 +174,6 @@
 #define CTX_CURRENT_PATH    1
 #endif
 
-#ifndef CTX_XML
-#define CTX_XML             1
-#endif
-
 #ifndef CTX_VT
 #define CTX_VT              0
 #endif
