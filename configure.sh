@@ -27,6 +27,7 @@ ENABLE_STUFF=1
 ENABLE_TINYVG=1
 ENABLE_PDF=1
 ENABLE_TERM=1
+ENABLE_TERMIMG=1
 
 ARCH=`uname -m`
 
@@ -63,8 +64,10 @@ do
      "--enable-tinyvg") ENABLE_TINYVG=1 ;;
      "--enable-pdf") ENABLE_PDF=1 ;;
      "--enable-term") ENABLE_TERM=1 ;;
+     "--enable-termimg") ENABLE_TERMIMG=1 ;;
      "--enable-simd") HAVE_SIMD=1 ;;
      "--disable-term") ENABLE_TERM=0 ;;
+     "--disable-termimg") ENABLE_TERMIMG=0 ;;
      "--disable-pl-mpeg") HAVE_PL_MPEG=0 ;;
      "--disable-stb_tt") HAVE_STB_TT=0 ;;
      "--disable-stb_image") HAVE_STB_IMAGE=0 ;;
@@ -91,6 +94,7 @@ do
         ENABLE_TINYVG=0 
         ENABLE_PDF=0 
         ENABLE_TERM=0 
+        ENABLE_TERMIMG=0 
         HAVE_BABL=0 
         HAVE_SDL=0 
         HAVE_CAIRO=0 
@@ -167,6 +171,12 @@ if [ $ENABLE_TERM = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_TERM=1" >> build.conf
 else
   echo "CTX_CFLAGS+= -DCTX_TERM=0" >> build.conf
+fi
+
+if [ $ENABLE_TERMIMG = 1 ];then
+  echo "CTX_CFLAGS+= -DCTX_TERMIMG=1" >> build.conf
+else
+  echo "CTX_CFLAGS+= -DCTX_TERMIMG=0" >> build.conf
 fi
 
 if [ $ENABLE_STUFF = 1 ];then
@@ -298,6 +308,7 @@ echo -n " stuff    "; [ $ENABLE_STUFF = 1 ] && echo "yes" || echo "no"
 echo -n " tinyvg   "; [ $ENABLE_TINYVG = 1 ] && echo "yes" || echo "no"
 echo -n " pdf      "; [ $ENABLE_PDF = 1 ] && echo "yes" || echo "no"
 echo -n " term     "; [ $ENABLE_TERM = 1 ] && echo "yes" || echo "no"
+echo -n " termimg  "; [ $ENABLE_TERMIMG = 1 ] && echo "yes" || echo "no"
 
 
 

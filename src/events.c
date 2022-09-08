@@ -308,11 +308,13 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     ret = ctx_new_term (width, height);
   }
 #endif
+#if CTX_TERMIMG
   if (!ret)
   {
     if ((backend==NULL) || (!ctx_strcmp (backend, "termimg")))
     ret = ctx_new_termimg (width, height);
   }
+#endif
 #endif
 #endif
   if (!ret)

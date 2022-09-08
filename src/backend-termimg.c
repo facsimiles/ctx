@@ -1,5 +1,5 @@
 #include "ctx-split.h"
-
+#if CTX_TERMIMG
 #if CTX_TERMINAL_EVENTS
 
 #if !__COSMOPOLITAN__
@@ -132,4 +132,5 @@ Ctx *ctx_new_termimg (int width, int height)
   return ctx;
 }
 
+#endif
 #endif
