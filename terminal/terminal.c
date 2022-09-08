@@ -22,7 +22,7 @@
 #include "terminal.h"
 #include "itk.h"
 
-Ctx *ctx = NULL; // initialized in main
+static Ctx *ctx = NULL; // initialized in main
 
 int ctx_renderer_is_sdl  (Ctx *ctx);
 int ctx_renderer_is_fb   (Ctx *ctx);

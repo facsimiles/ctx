@@ -107,7 +107,7 @@ void ctx_sha1_free    (CtxSHA1 *sha1);
 int  ctx_sha1_process (CtxSHA1 *sha1, const unsigned char * msg, unsigned long len);
 int  ctx_sha1_done    (CtxSHA1 *sha1, unsigned char *out);
 
-extern Ctx *ctx;
+static Ctx *ctx;
 
 #include "diz.h"
 
@@ -5003,7 +5003,7 @@ static int thumb_monitor (Ctx *ctx, void *data)
   return 1;
 }
 
-extern float font_size;
+//extern float font_size;
 
 int viewer_pre_next (Ctx *ctx, void *data1)
 {
@@ -5274,7 +5274,8 @@ static void dir_run_commandline (CtxEvent *e, void *d1, void *d2)
 
     int terminal_height = 24;
 
-    ctx_client_new (ctx, commandline->str, 10, ctx_height(ctx)-font_size*(terminal_height+1), font_size*42, font_size*terminal_height,
+    float fs = itk_em (itk);//ctx_get_font_size (ctx);
+    ctx_client_new (ctx, commandline->str, 10, ctx_height(ctx)-fs*(terminal_height+1), fs*42, fs*terminal_height,
                     itk_em (itk),
                     ITK_CLIENT_LAYER2|ITK_CLIENT_KEEP_ALIVE|ITK_CLIENT_TITLEBAR, strdup("stdout"), user_data_free);
 
@@ -5587,7 +5588,7 @@ static int card_files (ITK *itk_, void *data)
     ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
 #endif
     ctx_add_timeout (ctx, 125, thumb_monitor, NULL);
-    font_size = itk_em (itk);
+    //fs = itk_em (itk);
     first = 0;
 
 #if 1
