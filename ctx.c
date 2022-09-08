@@ -23,7 +23,6 @@
 
 #define CTX_DITHER               0 //
 #define CTX_BRAILLE_TEXT         1
-#define CTX_AUDIO                1
 #define CTX_MAX_TEXTURES         1024  // default: 32
 				       //
 /* for misc storage with compressed/

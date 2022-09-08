@@ -21,6 +21,7 @@
 #include <zlib.h>
 #endif
 
+#if CTX_AUDIO
 #if CTX_SDL
 #include <SDL.h>
 
@@ -1550,4 +1551,5 @@ void vt_audio (VT *vt, const char *command)
     audio->data = NULL;
     audio->data_size=0;
 }
+#endif
 #endif

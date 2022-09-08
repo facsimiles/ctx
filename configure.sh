@@ -21,6 +21,7 @@ ENABLE_TERM=1
 ENABLE_TERMIMG=1
 ENABLE_STUFF=1
 ENABLE_CMYK=1
+ENABLE_AUDIO=1
 
 pkg-config sdl2    && HAVE_SDL=1
 pkg-config babl    && HAVE_BABL=1
@@ -64,6 +65,7 @@ do
      "--enable-harfbuzz") HAVE_HARFBUZZ=1 ;;
      "--enable-fb") ENABLE_FB=1 ;;
      "--enable-vt") ENABLE_VT=1 ;;
+     "--enable-audio") ENABLE_AUDIO=1 ;;
      "--enable-cmyk") ENABLE_CMYK=1 ;;
      "--enable-CMYK") ENABLE_CMYK=1 ;;
      "--enable-stuff") ENABLE_STUFF=1 ;;
@@ -81,6 +83,7 @@ do
      "--disable-pdf") ENABLE_PDF=0 ;;
      "--disable-kms") HAVE_KMS=0 ;;
      "--disable-vt") ENABLE_VT=0 ;;
+     "--disable-audio") ENABLE_AUDIO=0 ;;
      "--disable-cmyk") ENABLE_CMYK=0 ;;
      "--disable-CMYK") ENABLE_CMYK=0 ;;
      "--disable-stuff") ENABLE_STUFF=0 ;;
@@ -98,6 +101,7 @@ do
         HAVE_SIMD=0 
         ENABLE_FB=0 
         ENABLE_VT=0 
+        ENABLE_AUDIO=0 
         ENABLE_CMYK=0 
         ENABLE_STUFF=0 
         ENABLE_TINYVG=0 
@@ -153,6 +157,7 @@ else
   echo "CTX_CFLAGS+= -DCTX_BABL=0" >> build.conf
 fi
 
+echo -n "CTX_CFLAGS+= -DCTX_AUDIO=" >> build.conf; if [ $ENABLE_AUDIO = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_VT=" >> build.conf; if [ $ENABLE_VT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_ENABLE_CMYK=" >> build.conf; if [ $ENABLE_CMYK = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_TINYVG=" >> build.conf; if [ $ENABLE_TINYVG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
@@ -281,6 +286,8 @@ echo ""
 echo "Features"
 echo -n " vt              "; [ $ENABLE_VT = 1 ] && echo -n "yes" || echo -n "no" ; 
 echo "   DEC+ctx terminal engine"
+echo -n " audio           "; [ $ENABLE_AUDIO = 1 ] && echo -n "yes" || echo -n "no" ; 
+echo "    audio handling (both alsa and ctx backend)"
 echo -n " stuff           "; [ $ENABLE_STUFF = 1 ] && echo -n "yes" || echo -n "no"
 echo "   media creation and curation editor"
 echo -n " tinyvg          "; [ $ENABLE_TINYVG = 1 ] && echo -n "yes" || echo -n "no"

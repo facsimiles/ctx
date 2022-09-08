@@ -1441,11 +1441,13 @@ done:
   }
   else
   {
+#if CTX_AUDIO
     for (CtxList *l = clients; l; l = l->next)
     {
       CtxClient *client = l->data;
       vt_audio_task (client->vt, 0);
     }
+#endif
   }
 
   //int got_events = 0;

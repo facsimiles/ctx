@@ -3456,7 +3456,9 @@ static void vt_state_apc_audio (VT *vt, int byte)
 {
   if ( (byte < 32) && ( (byte < 8) || (byte > 13) ) )
     {
+#if CTX_AUDIO
       vt_audio (vt, vt->argument_buf);
+#endif
       vt->state = ( (byte == 27) ?  vt_state_swallow : vt_state_neutral);
     }
   else
@@ -3554,7 +3556,9 @@ static int _vt_handle_control (VT *vt, int byte)
         }
         return 1;
       case '\a': /* BELl */
+#if CTX_AUDIO
         vt_bell (vt);
+#endif
         return 1;
       case '\b': /* BS */
         _vt_backspace (vt);
@@ -5144,7 +5148,9 @@ int vt_poll (VT *vt, int timeout)
          ( ticks - start_ticks < timeout ||  vt->state == vt_state_ctx))
     {
       first = 0;
+#if CTX_AUDIO
       vt_audio_task (vt, 0);
+#endif
   if (vt->in_smooth_scroll)
     {
       remaining_chars = 1;
