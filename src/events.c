@@ -112,8 +112,10 @@ void ctx_list_backends(void)
 #if CTX_FB
     fprintf (stderr, " fb");
 #endif
-#if CTX_TERMINAL_EVENTS
+#if CTX_TERM
     fprintf (stderr, " term");
+#endif
+#if CTX_TERMIMG
     fprintf (stderr, " termimg");
 #endif
     fprintf (stderr, "\n");
