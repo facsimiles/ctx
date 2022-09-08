@@ -23,7 +23,6 @@
 
 #define CTX_DITHER               0 //
 #define CTX_BRAILLE_TEXT         1
-#define CTX_ENABLE_CMYK          1
 #define CTX_AUDIO                1
 #define CTX_MAX_TEXTURES         1024  // default: 32
 				       //
@@ -144,7 +143,6 @@ void ctx_simd_setup (void)
 
 
 #define CTX_BRAILLE_TEXT         1
-#define CTX_ENABLE_CMYK          1
 
 #ifdef CTX_SIMD_X86_64_V2
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v2
