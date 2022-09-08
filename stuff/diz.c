@@ -1,3 +1,5 @@
+#if CTX_STUFF
+
 #include "diz.h"
 #include "ctx.h"
 #include <sys/stat.h>
@@ -1557,3 +1559,4 @@ void diz_dir_remove_children (Diz *diz, int no)
     diz_dir_remove (diz, no+1);
 }
 
+#endif

@@ -1,3 +1,4 @@
+#if CTX_STUFF
 // todo
 //   custom order , size / time orders
 //   layout view
@@ -6710,3 +6711,5 @@ int stuff_make_thumb (const char *src_path, const char *dst_path)
 
    return 0;
 }
+
+#endif

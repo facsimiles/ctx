@@ -1,3 +1,5 @@
+#if CTX_STUFF
+
 /* todo: make ; splitting work better
  *
  * argvs - argv - shell
@@ -546,4 +548,5 @@ int main (int argc, char **argv)
   cmd_argvs (argc, argv, NULL);
   return 0;
 }
+#endif
 #endif

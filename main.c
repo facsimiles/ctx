@@ -311,13 +311,14 @@ int main (int argc, char **argv)
 {
   if (!strcmp (basename(argv[1]), "lsfonts"))
     return lsfonts_main (argc-1, argv+1);
+#if CTX_STUFF
   if (!strcmp (basename(argv[1]), "stuffcmd"))
     return stuffcmd_main (argc-1, argv+1);
-
   if (!strcmp (basename(argv[1]), "ls"))
     return stuff_ls_main (argc-1, argv+1);
   if (!strcmp (basename(argv[1]), "realpath"))
     return stuff_realpath_main (argc-1, argv+1);
+#endif
 //  if (!strcmp (basename(argv[1]), "stuff"))
 //    return stuff_main (argc-1, argv+1);
 //  if (!strcmp (basename(argv[0]), "stuff"))
@@ -374,6 +375,8 @@ int main (int argc, char **argv)
     const char *media_type = ctx_path_get_media_type (input_path);
     CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
 
+    if (media_type_class){};
+
     if (!strcmp (media_type, "image/tinyvg"))
     {
       return ctx_tinyvg_main (argc, argv);
@@ -396,6 +399,8 @@ int main (int argc, char **argv)
       return ctx_mpg_main (argc, argv);
     }
 #endif
+
+#if CTX_STUFF
     if (!strcmp (media_type, "inode/directory"))
     {
       char *argv[]={"stuff", input_path, NULL};
@@ -410,6 +415,7 @@ int main (int argc, char **argv)
 
   //  return ctx_text_main (argc, argv);
     }
+#endif
 
     return -1;
   }
