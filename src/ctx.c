@@ -254,14 +254,14 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
 
 void ctx_screenshot (Ctx *ctx, const char *output_path)
 {
-#if CTX_STB_IMAGE_WRITE
+#if CTX_IMAGE_WRITE
   uint32_t width = ctx_width (ctx);
   uint32_t height = ctx_height (ctx);
   uint8_t *buf = ctx_malloc (width * height * 4);
   ctx_get_image_data (ctx, 0, 0, width, height,
                       CTX_FORMAT_RGBA8, width *4,
                       buf);
-  stbi_write_png (output_path, width, height, 4, buf, width * 4);
+  _ctx_write_png (output_path, width, height, 4, buf);
   ctx_free (buf);
 #endif
 }
@@ -3198,6 +3198,21 @@ void ctx_resolve (Ctx *ctx, const char *name,
   }
 }
 
+void _ctx_write_png (const char *dst_path, int w, int h, int num_chans, void *data)
+{
+#if CTX_IMAGE_WRITE
+  size_t len = 0;
+  char *buf = tdefl_write_image_to_png_file_in_memory (data, w, h, num_chans, &len);
+  if (buf)
+  {
+    FILE *f = fopen (dst_path, "w");
+    fwrite (buf, len, 1, f);
+    fclose (f);
+    mz_free (buf);
+  }
+#endif
+}
+
 const char *
 ctx_str_decode (uint32_t number)
 {
@@ -3208,3 +3223,5 @@ uint32_t ctx_strhash(const char *str)
 {
   return squoze32 (str);
 }
+
+

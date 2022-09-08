@@ -28,10 +28,6 @@ ctx_332_unpack (uint8_t pixel,
 }
 
 
-#if CTX_STB_IMAGE_WRITE
-#include "stb_image_write.h"
-#endif
-
 // ctx should be a busy box like wrapper
 // for mmm-terminal, ctx ascii-to-ctx converter
 // ctx-to-ascii converter
@@ -1181,7 +1177,7 @@ again:
                             CTX_FORMAT_CMYK8,
                             width, height, stride, reverse);
     }
-#if CTX_STB_IMAGE_WRITE
+#if CTX_IMAGE_WRITE
   else if (!strcmp (get_suffix (dest_path), ".png") )
     {
       int stride = width * 4;
@@ -1191,7 +1187,7 @@ again:
       ctx_render_ctx (ctx, dctx);
       ctx_destroy (dctx);
       if(!strstr(dest_path, "skip-save"))
-        stbi_write_png (dest_path, width, height, 4, pixels, stride);
+        _ctx_write_png (dest_path, width, height, 4, pixels);
       free (pixels);
     }
 #endif

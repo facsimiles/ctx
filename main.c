@@ -129,11 +129,9 @@ int launch_main (int argc, char **argv)
   return 0;
 }
 
-
-#if CTX_STB_IMAGE_WRITE
+#if CTX_IMAGE_WRITE
 
 #include "stb_image.h"
-#include "stb_image_write.h"
 
 typedef struct _CtxSHA1 CtxSHA1;
 CtxSHA1 *ctx_sha1_new (void);
@@ -168,15 +166,15 @@ int make_thumb (const char *src_path, const char *dst_path)
   int idim = 256; // largest width or height
   stride = width * 4;
   float dim = idim;
-  int was_jpg = ctx_strstr(src_path, "jpg")?1:0;
+  //int was_jpg = ctx_strstr(src_path, "jpg")?1:0;
   if (!data)
      return -1;
   if (dim > width && dim > height)
   {
-    if (was_jpg)
-      stbi_write_jpg (dst_path, width, height, 4, data, stride);
-    else
-      stbi_write_png (dst_path, width, height, 4, data, stride);
+    //if (was_jpg)
+    //  stbi_write_jpg (dst_path, width, height, 4, data, stride);
+    //else
+      _ctx_write_png (dst_path, width, height, 4, data);
     return 0;
   }
   uint8_t *tdata = calloc (idim * idim, 4);
@@ -209,10 +207,10 @@ int make_thumb (const char *src_path, const char *dst_path)
       tdata[i+c] = data[v * stride + u * 4 + c];
     }
   }
-  if (was_jpg)
-    stbi_write_jpg (dst_path, outw, outh, 4, tdata, outw * 4);
-  else
-    stbi_write_png (dst_path, outw, outh, 4, tdata, outw * 4);
+  //if (was_jpg)
+  //  stbi_write_jpg (dst_path, outw, outh, 4, tdata, outw * 4);
+  //else
+    _ctx_write_png (dst_path, outw, outh, 4, tdata);
   free (tdata);
   return 0;
 }
@@ -360,7 +358,7 @@ int main (int argc, char **argv)
   if (argv[1] && !strcmp (argv[1], "file"))
     return file_main (argc-1, argv+1);
 #if CTX_STUFF
-#if CTX_STB_IMAGE_WRITE
+#if CTX_IMAGE_WRITE
   if (argv[1] && !strcmp (argv[1], "thumb"))
     return thumb_main (argc-1, argv+1);
 #endif

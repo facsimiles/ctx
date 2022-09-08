@@ -55,12 +55,6 @@ backend-wasm.c
 text.c
 formatter.c
 ctx.c
-tinf/tinf.h
-tinf/adler32.c
-tinf/crc32.c
-tinf/tinflate.c
-tinf/tinfgzip.c
-tinf/tinfzlib.c
 vt-utf8.h
 vt-line.h
 vt-line.c

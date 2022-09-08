@@ -2521,6 +2521,9 @@ uint32_t    ctx_strhash (const char *str);
 #define assert(a)
 #endif
 
+void _ctx_write_png (const char *dst_path, int w, int h, int num_chans, void *data);
+
+
 #ifdef __cplusplus
 }
 #endif

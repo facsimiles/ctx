@@ -11,7 +11,7 @@ HAVE_KMS=0
 HAVE_PL_MPEG=1
 HAVE_STB_TT=1
 HAVE_STB_IMAGE=1
-HAVE_STB_IMAGE_WRITE=1
+ENABLE_IMAGE_WRITE=1
 
 ENABLE_FB=1
 ENABLE_VT=1
@@ -110,13 +110,16 @@ do
      "--enable-events") ENABLE_EVENTS=1 ;;
      "--enable-term") ENABLE_TERM=1 ;;
      "--enable-termimg") ENABLE_TERMIMG=1 ;;
+     "--enable-stb_image") HAVE_STB_IMAGE=1 ;;
+     "--enable-stb_tt") HAVE_STB_TT=1 ;;
+     "--enable-image_write") ENABLE_IMAGE_WRITE=1 ;;
      "--enable-simd") HAVE_SIMD=1 ;;
      "--disable-term") ENABLE_TERM=0 ;;
      "--disable-termimg") ENABLE_TERMIMG=0 ;;
      "--disable-pl-mpeg") HAVE_PL_MPEG=0 ;;
      "--disable-stb_tt") HAVE_STB_TT=0 ;;
      "--disable-stb_image") HAVE_STB_IMAGE=0 ;;
-     "--disable-stb_image_write") HAVE_STB_IMAGE_WRITE=0 ;;
+     "--disable-image_write") ENABLE_IMAGE_WRITE=0 ;;
      "--disable-pdf") ENABLE_PDF=0 ;;
      "--disable-bloaty_fast_paths") ENABLE_BLOATY_FAST_PATHS=0 ;;
      "--disable-inlined_normal") ENABLE_INLINED_NORMAL=0 ;;
@@ -190,7 +193,7 @@ do
         HAVE_PL_MPEG=0
         HAVE_STB_TT=0
         HAVE_STB_IMAGE=0
-        HAVE_STB_IMAGE_WRITE=0
+        ENABLE_IMAGE_WRITE=0
              ;;
      *|"--help") 
        if [ "x$1" != "x--help" ]; then echo unrecognized option $1 ; fi
@@ -256,14 +259,14 @@ echo -n "#define CTX_RASTERIZER " >> local.conf; if [ $ENABLE_RASTERIZER = 1 ];t
 echo -n "#define CTX_PARSER " >> local.conf; if [ $ENABLE_PARSER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_FORMATTER " >> local.conf; if [ $ENABLE_FORMATTER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_HEADLESS " >> local.conf; if [ $ENABLE_HEADLESS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
-echo -n "#define CTX_SHAPE_CACHE" >> local.conf; if [ $ENABLE_SHAPE_CACHE = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_SHAPE_CACHE " >> local.conf; if [ $ENABLE_SHAPE_CACHE = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 
 
 echo -n "CTX_CFLAGS+= -DCTX_STUFF=" >> build.conf; if [ $ENABLE_STUFF = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_PL_MPEG=" >> build.conf; if [ $HAVE_PL_MPEG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_STB_TT=" >> build.conf; if [ $HAVE_STB_TT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_STB_IMAGE=" >> build.conf; if [ $HAVE_STB_IMAGE = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_STB_IMAGE_WRITE=" >> build.conf; if [ $HAVE_STB_IMAGE_WRITE = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "CTX_CFLAGS+= -DCTX_IMAGE_WRITE=" >> build.conf; if [ $ENABLE_IMAGE_WRITE = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 
 
 if [ $ENABLE_ONLY_RGBA8 = 1 ];then
@@ -273,7 +276,6 @@ if [ $ENABLE_ONLY_RGBA8 = 1 ];then
   echo "#define CTX_U8_TO_FLOAT_LUT 0 " >> local.conf
 fi
 
-echo >> build.conf
 if [ $HAVE_HARFBUZZ = 1 ];then
   echo "#define CTX_HARFBUZZ 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config harfbuzz --cflags`" >> build.conf
@@ -282,7 +284,6 @@ else
   echo "#define CTX_HARFBUZZ 0 " >> local.conf
 fi
 
-echo >> build.conf
 if [ $HAVE_CAIRO = 1 ];then
   echo "#define CTX_CAIRO 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config cairo --cflags`" >> build.conf
@@ -291,7 +292,6 @@ else
   echo "#define CTX_CAIRO 0 " >> local.conf
 fi
 
-echo >> build.conf
 if [ $HAVE_LIBCURL = 1 ];then
   echo "#define CTX_CURL 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config libcurl --cflags`" >> build.conf
@@ -300,7 +300,6 @@ else
   echo "#define CTX_CURL 0 " >> local.conf
 fi
 
-echo >> build.conf
 if [ $HAVE_ALSA = 1 ];then
   echo "#define CTX_ALSA 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config alsa --cflags`" >> build.conf
@@ -309,7 +308,6 @@ else
   echo "#define CTX_ALSA 0 " >> local.conf
 fi
 
-echo >> build.conf
 if [ $HAVE_KMS = 1 ];then
   echo "#define CTX_KMS 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config libdrm --cflags`" >> build.conf
@@ -317,13 +315,11 @@ else
   echo "#define CTX_KMS 0 " >> local.conf
 fi
 
-echo >> build.conf
 if [ $ENABLE_FB = 1 ];then
   echo "#define CTX_FB 1 " >> local.conf
 else
   echo "#define CTX_FB 0 " >> local.conf
 fi
-echo >> build.conf
 
 case "$ARCH" in
    "x86_64")  
@@ -335,7 +331,6 @@ case "$ARCH" in
    *)         ;;
 esac
 
-echo >> build.conf
 if [ $HAVE_SIMD = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_SIMD=1 " >> build.conf
   echo "CTX_SIMD=1" >>  build.conf
@@ -344,9 +339,6 @@ else
   echo "CTX_SIMD=0" >>  build.conf
 fi
 echo "CTX_ARCH=$ARCH" >>  build.conf
-
-
-echo >> build.conf
 echo "CFLAGS=$CFLAGS" >> build.conf
 echo "LIBS=$LIBS" >> build.conf
 
@@ -360,32 +352,32 @@ echo -n "configuration summary, architecture $(arch)"
 [ $HAVE_SIMD = 1 ]  && echo "SIMD multi-pass" || echo ""
 echo ""
 echo "Backends:"
-echo -n " kms      "; [ $HAVE_KMS = 1 ]     && echo "yes" || echo "no (libdrm-dev)"
-echo -n " fb       "; [ $ENABLE_FB = 1 ]    && echo "yes" || echo "no"
-echo -n " SDL2     "; [ $HAVE_SDL = 1 ]   && echo "yes" || echo "no (libsdl2-dev)"
-echo -n " pdf      "; [ $ENABLE_PDF = 1 ] && echo "yes" || echo "no"
-echo -n " term     "; [ $ENABLE_TERM = 1 ] && echo "yes" || echo "no"
-echo -n " termimg  "; [ $ENABLE_TERMIMG = 1 ] && echo "yes" || echo "no"
-echo -n " cairo    "; [ $HAVE_CAIRO = 1 ] && echo "yes" || echo "no (libcairo2-dev)"
+echo -n " kms      "; [ $HAVE_KMS = 1 ]        && echo "yes" || echo "no (libdrm-dev)"
+echo -n " fb       "; [ $ENABLE_FB = 1 ]       && echo "yes" || echo "no"
+echo -n " SDL2     "; [ $HAVE_SDL = 1 ]        && echo "yes" || echo "no (libsdl2-dev)"
+echo -n " pdf      "; [ $ENABLE_PDF = 1 ]      && echo "yes" || echo "no"
+echo -n " term     "; [ $ENABLE_TERM = 1 ]     && echo "yes" || echo "no"
+echo -n " termimg  "; [ $ENABLE_TERMIMG = 1 ]  && echo "yes" || echo "no"
+echo -n " cairo    "; [ $HAVE_CAIRO = 1 ]      && echo "yes" || echo "no (libcairo2-dev)"
 echo -n " headless "; [ $ENABLE_HEADLESS = 1 ] && echo "yes" || echo "no"
 echo ""
 echo "External libraries:"
-echo -n " babl            "; [ $HAVE_BABL = 1 ]  && echo "yes" || echo "no (libbabl-dev)"
+echo -n " babl            "; [ $HAVE_BABL = 1 ]     && echo "yes" || echo "no (libbabl-dev)"
 echo -n " harfbuzz        "; [ $HAVE_HARFBUZZ = 1 ] && echo "yes" || echo "no (libharfbuzz-dev, currently unused)"
 echo -n " alsa            "; [ $HAVE_ALSA = 1 ]     && echo "yes" || echo "no (libasound-dev)"
 echo -n " libcurl         "; [ $HAVE_LIBCURL = 1 ]  && echo "yes" || echo "no (libcurl-4-openssl-dev)"
 echo ""
 echo "Built-in/vendored libraries"
-echo -n " pl_mpeg         "; [ $HAVE_PL_MPEG = 1 ] && echo -n "yes" || echo -n "no"
+echo -n " pl_mpeg         "; [ $HAVE_PL_MPEG = 1 ]    && echo -n "yes" || echo -n "no"
 echo "    mpeg1 video player, works well as top-level but not as client due to lack of SHM"
-echo -n " stb_tt          "; [ $HAVE_STB_TT  = 1 ] && echo -n "yes" || echo -n "no"
+echo -n " stb_tt          "; [ $HAVE_STB_TT  = 1 ]    && echo -n "yes" || echo -n "no"
 echo "   optional support for using TTF/OTF fonts"
 echo -n " stb_image       "; [ $HAVE_STB_IMAGE  = 1 ] && echo -n "yes" || echo -n "no"
 echo "    support for loading jpg,png,gif"
-echo -n " stb_image_write "; [ $HAVE_STB_IMAGE_WRITE  = 1 ] && echo -n "yes" || echo -n "no"
-echo "    support for writing PNG files/screenshots/thumbnails"
 echo ""
 echo "Features"
+echo -n " image_write "; [ $ENABLE_IMAGE_WRITE  = 1 ] && echo -n "yes" || echo -n "no"
+echo "    support for writing PNG files/screenshots/thumbnails, using miniz - and lots of heap"
 echo -n " vt              "; [ $ENABLE_VT = 1 ] && echo -n "yes" || echo -n "no" ; 
 echo "   DEC+ctx terminal engine"
 echo -n " braille_text    "; [ $ENABLE_BRAILLE_TEXT = 1 ] && echo -n "yes" || echo -n "no" ; 

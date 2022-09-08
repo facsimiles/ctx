@@ -31,8 +31,6 @@
 #define CTX_MAX_KEYDB            128  // default: 64
 
 #include "stb_image.h"
-#include "stb_image_write.h" // needed in addition to screenshot
-                             // to fully enable
 
 #define CTX_ENABLE_CBRLE         0
 
