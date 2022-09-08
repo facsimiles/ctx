@@ -18,12 +18,26 @@ ENABLE_VT=1
 ENABLE_SCREENSHOT=1
 ENABLE_BRAILLE_TEXT=1
 ENABLE_PDF=1
+ENABLE_SHAPE_CACHE=0
+ENABLE_HEADLESS=1
+ENABLE_FONTS_FROM_FILE=1
+ENABLE_FONT_CTX_FS=0
 ENABLE_TINYVG=1
 ENABLE_TERM=1
 ENABLE_TERMIMG=1
 ENABLE_STUFF=1
-ENABLE_CMYK=1
 ENABLE_AUDIO=1
+
+ENABLE_RASTERIZER=1
+ENABLE_PARSER=1
+ENABLE_FORMATTER=1
+ENABLE_CMYK=1
+ENABLE_ONLY_RGBA8=0
+ENABLE_DITHER=0
+ENABLE_EVENTS=1
+ENABLE_FRAGMENT_SPECIALIZE=1
+ENABLE_FAST_FILL_RECT=1
+ENABLE_SWITCH_DISPATCH=1
 
 pkg-config sdl2    && HAVE_SDL=1
 pkg-config babl    && HAVE_BABL=1
@@ -75,6 +89,18 @@ do
      "--enable-stuff") ENABLE_STUFF=1 ;;
      "--enable-tinyvg") ENABLE_TINYVG=1 ;;
      "--enable-pdf") ENABLE_PDF=1 ;;
+     "--enable-fragment_specialize") ENABLE_FRAGMENT_SPECIALIZE=1 ;;
+     "--enable-fast_fill_rect") ENABLE_FAST_FILL_RECT=1 ;;
+     "--enable-only_rgba8") ENABLE_ONLY_RGBA8=1 ;;
+     "--enable-rasterizer") ENABLE_RASTERIZER=1 ;;
+     "--enable-parser") ENABLE_PARSER=1 ;;
+     "--enable-formatter") ENABLE_FORMATTER=1 ;;
+     "--enable-headless") ENABLE_HEADLESS=1 ;;
+     "--enable-shape_cache") ENABLE_SHAPE_CACHE=1 ;;
+     "--enable-fonts_from_file") ENABLE_FONTS_FROM_FILE=1 ;;
+     "--enable-font_ctx_fs") ENABLE_FONT_CTX_FS=1 ;;
+     "--enable-dither") ENABLE_DITHER=1 ;;
+     "--enable-events") ENABLE_EVENTS=1 ;;
      "--enable-term") ENABLE_TERM=1 ;;
      "--enable-termimg") ENABLE_TERMIMG=1 ;;
      "--enable-simd") HAVE_SIMD=1 ;;
@@ -85,6 +111,18 @@ do
      "--disable-stb_image") HAVE_STB_IMAGE=0 ;;
      "--disable-stb_image_write") HAVE_STB_IMAGE_WRITE=0 ;;
      "--disable-pdf") ENABLE_PDF=0 ;;
+     "--disable-fragment_specialize") ENABLE_FRAGMENT_SPECIALIZE=0 ;;
+     "--disable-fast_fill_rect") ENABLE_FAST_FILL_RECT=0 ;;
+     "--disable-only_rgba8") ENABLE_ONLY_RGBA8=0 ;;
+     "--disable-rasterizer") ENABLE_RASTERIZER=0 ;;
+     "--disable-parser") ENABLE_PARSER=0 ;;
+     "--disable-formatter") ENABLE_FORMATTER=0 ;;
+     "--disable-headless") ENABLE_HEADLESS=0 ;;
+     "--disable-shape_cache") ENABLE_SHAPE_CACHE=0 ;;
+     "--disable-fonts_from_file") ENABLE_FONTS_FROM_FILE=0 ;;
+     "--disable-font-ctx-fs") ENABLE_FONT_CTX_FS=0 ;;
+     "--disable-dither") ENABLE_DITHER=0 ;;
+     "--disable-events") ENABLE_EVENTS=0 ;;
      "--disable-kms") HAVE_KMS=0 ;;
      "--disable-vt") ENABLE_VT=0 ;;
      "--disable-screenshot") ENABLE_SCREENSHOT=0 ;;
@@ -114,6 +152,18 @@ do
         ENABLE_STUFF=0 
         ENABLE_TINYVG=0 
         ENABLE_PDF=0 
+        ENABLE_FRAGMENT_SPECIALIZE=0 
+        ENABLE_FAST_FILL_RECT=0 
+	ENABLE_SWITCH_DISPATCH=0 
+        ENABLE_ONLY_RGBA8=1 
+        ENABLE_HEADLESS=0 
+        ENABLE_SHAPE_CACHE=0 
+        ENABLE_FORMATTER=0 
+        ENABLE_PARSER=0 
+        #ENABLE_RASTERIZER=0 
+        #ENABLE_FONTS_FROM_FILE=0 
+        ENABLE_FONT_CTX_FS=0 
+        ENABLE_DITHER=0 
         ENABLE_TERM=0 
         ENABLE_TERMIMG=0 
         HAVE_BABL=0 
@@ -148,91 +198,113 @@ do
 done
 
 echo > build.conf
+echo > local.conf
+
 if [ $HAVE_SDL = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_SDL=1 " >> build.conf
+  echo "#define CTX_SDL 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config sdl2 --cflags` " >> build.conf
   echo "CTX_LIBS+= `pkg-config sdl2 --libs`" >> build.conf
 else
-  echo "CTX_CFLAGS+= -DCTX_SDL=0 " >> build.conf
+  echo "#define CTX_SDL 0 " >> local.conf
 fi
 
 echo >> build.conf
 if [ $HAVE_BABL  = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_BABL=1" >> build.conf
+  echo "#define CTX_BABL 1 " >> local.conf
+  echo "#define CTX_ENABLE_CM 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config babl  --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config babl  --libs` " >> build.conf
 else
-  echo "CTX_CFLAGS+= -DCTX_BABL=0" >> build.conf
+  echo "#define CTX_BABL 0 " >> local.conf
+  echo "#define CTX_ENABLE_CM 0 " >> local.conf
 fi
 
-echo -n "CTX_CFLAGS+= -DCTX_AUDIO=" >> build.conf; if [ $ENABLE_AUDIO = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_VT=" >> build.conf; if [ $ENABLE_VT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_SCREENSHOT=" >> build.conf; if [ $ENABLE_SCREENSHOT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_BRAILLE_TEXT=" >> build.conf; if [ $ENABLE_BRAILLE_TEXT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_ENABLE_CMYK=" >> build.conf; if [ $ENABLE_CMYK = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_TINYVG=" >> build.conf; if [ $ENABLE_TINYVG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_PDF=" >> build.conf; if [ $ENABLE_PDF = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_TERM=" >> build.conf; if [ $ENABLE_TERM = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
-echo -n "CTX_CFLAGS+= -DCTX_TERMIMG=" >> build.conf; if [ $ENABLE_TERMIMG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
+echo -n "#define CTX_AUDIO " >> local.conf; if [ $ENABLE_AUDIO = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_VT " >> local.conf; if [ $ENABLE_VT = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_SCREENSHOT " >> local.conf; if [ $ENABLE_SCREENSHOT = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_BRAILLE_TEXT " >> local.conf; if [ $ENABLE_BRAILLE_TEXT = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_ENABLE_CMYK " >> local.conf; if [ $ENABLE_CMYK = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_TINYVG " >> local.conf; if [ $ENABLE_TINYVG = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_PDF " >> local.conf; if [ $ENABLE_PDF = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_FRAGMENT_SPECIALIZE " >> local.conf; if [ $ENABLE_FRAGMENT_SPECIALIZE = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_FAST_FILL_RECT " >> local.conf; if [ $ENABLE_FAST_FILL_RECT = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_RASTERIZER_SWITCH_DISPATCH " >> local.conf; if [ $ENABLE_SWITCH_DISPATCH = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_FONTS_FROM_FILE " >> local.conf; if [ $ENABLE_FONTS_FROM_FILE = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_FONT_ENGINE_CTX_FS " >> local.conf; if [ $ENABLE_FONT_CTX_FS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_TERM " >> local.conf; if [ $ENABLE_TERM = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_TERMIMG " >> local.conf; if [ $ENABLE_TERMIMG = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_DITHER " >> local.conf; if [ $ENABLE_DITHER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_EVENTS " >> local.conf; if [ $ENABLE_EVENTS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_RASTERIZER " >> local.conf; if [ $ENABLE_RASTERIZER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_PARSER " >> local.conf; if [ $ENABLE_PARSER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_FORMATTER " >> local.conf; if [ $ENABLE_FORMATTER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_HEADLESS " >> local.conf; if [ $ENABLE_HEADLESS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_SHAPE_CACHE" >> local.conf; if [ $ENABLE_SHAPE_CACHE = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+
+
 echo -n "CTX_CFLAGS+= -DCTX_STUFF=" >> build.conf; if [ $ENABLE_STUFF = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_PL_MPEG=" >> build.conf; if [ $HAVE_PL_MPEG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_STB_TT=" >> build.conf; if [ $HAVE_STB_TT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_STB_IMAGE=" >> build.conf; if [ $HAVE_STB_IMAGE = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_STB_IMAGE_WRITE=" >> build.conf; if [ $HAVE_STB_IMAGE_WRITE = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 
+
+if [ $ENABLE_ONLY_RGBA8 = 1 ];then
+  echo "#define CTX_LIMIT_FORMATS 1 " >> local.conf
+  echo "#define CTX_ENABLE_RGBA8  1 " >> local.conf
+fi
+
 echo >> build.conf
 if [ $HAVE_HARFBUZZ = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=1" >> build.conf
+  echo "#define CTX_HARFBUZZ 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config harfbuzz --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config harfbuzz --libs` " >> build.conf
 else
-  echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=0" >> build.conf
+  echo "#define CTX_HARFBUZZ 0 " >> local.conf
 fi
 
 echo >> build.conf
 if [ $HAVE_CAIRO = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_CAIRO=1" >> build.conf
+  echo "#define CTX_CAIRO 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config cairo --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config cairo --libs` " >> build.conf
 else
-  echo "CTX_CFLAGS+= -DCTX_CAIRO=0" >> build.conf
+  echo "#define CTX_CAIRO 0 " >> local.conf
 fi
 
 echo >> build.conf
 if [ $HAVE_LIBCURL = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_CURL=1" >> build.conf
+  echo "#define CTX_CURL 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config libcurl --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config libcurl --libs` " >> build.conf
 else
-  echo "CTX_CFLAGS+= -DCTX_CURL=0" >> build.conf
+  echo "#define CTX_CURL 0 " >> local.conf
 fi
 
 echo >> build.conf
 if [ $HAVE_ALSA = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_ALSA=1" >> build.conf
+  echo "#define CTX_ALSA 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config alsa --cflags`" >> build.conf
   echo "CTX_LIBS+= `pkg-config alsa --libs` " >> build.conf
 else
-  echo "CTX_CFLAGS+= -DCTX_ALSA=0" >> build.conf
+  echo "#define CTX_ALSA 0 " >> local.conf
 fi
 
 echo >> build.conf
 if [ $HAVE_KMS = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_KMS=1" >> build.conf
+  echo "#define CTX_KMS 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config libdrm --cflags`" >> build.conf
 else
-  echo "CTX_CFLAGS+= -DCTX_KMS=0 " >> build.conf
+  echo "#define CTX_KMS 0 " >> local.conf
 fi
 
 echo >> build.conf
 if [ $ENABLE_FB = 1 ];then
-  echo "CTX_CFLAGS+= -DCTX_FB=1 " >> build.conf
+  echo "#define CTX_FB 1 " >> local.conf
 else
-  echo "CTX_CFLAGS+= -DCTX_FB=0 " >> build.conf
+  echo "#define CTX_FB 0 " >> local.conf
 fi
 echo >> build.conf
-
-if [ x$ARCH = "xx86_64" ]; then echo "CTX_CFLAGS+= -DCTX_X86_64 " >>  build.conf; fi
 
 case "$ARCH" in
    "x86_64")  
@@ -269,13 +341,14 @@ echo -n "configuration summary, architecture $(arch)"
 [ $HAVE_SIMD = 1 ]  && echo "SIMD multi-pass" || echo ""
 echo ""
 echo "Backends:"
-echo -n " kms     "; [ $HAVE_KMS = 1 ]     && echo "yes" || echo "no (libdrm-dev)"
-echo -n " fb      "; [ $ENABLE_FB = 1 ]    && echo "yes" || echo "no"
-echo -n " SDL2    "; [ $HAVE_SDL = 1 ]   && echo "yes" || echo "no (libsdl2-dev)"
-echo -n " pdf     "; [ $ENABLE_PDF = 1 ] && echo "yes" || echo "no"
-echo -n " term    "; [ $ENABLE_TERM = 1 ] && echo "yes" || echo "no"
-echo -n " termimg "; [ $ENABLE_TERMIMG = 1 ] && echo "yes" || echo "no"
-echo -n " cairo   "; [ $HAVE_CAIRO = 1 ] && echo "yes" || echo "no (libcairo2-dev)"
+echo -n " kms      "; [ $HAVE_KMS = 1 ]     && echo "yes" || echo "no (libdrm-dev)"
+echo -n " fb       "; [ $ENABLE_FB = 1 ]    && echo "yes" || echo "no"
+echo -n " SDL2     "; [ $HAVE_SDL = 1 ]   && echo "yes" || echo "no (libsdl2-dev)"
+echo -n " pdf      "; [ $ENABLE_PDF = 1 ] && echo "yes" || echo "no"
+echo -n " term     "; [ $ENABLE_TERM = 1 ] && echo "yes" || echo "no"
+echo -n " termimg  "; [ $ENABLE_TERMIMG = 1 ] && echo "yes" || echo "no"
+echo -n " cairo    "; [ $HAVE_CAIRO = 1 ] && echo "yes" || echo "no (libcairo2-dev)"
+echo -n " headless "; [ $ENABLE_HEADLESS = 1 ] && echo "yes" || echo "no"
 echo ""
 echo "External libraries:"
 echo -n " babl            "; [ $HAVE_BABL = 1 ]  && echo "yes" || echo "no (libbabl-dev)"
@@ -308,6 +381,18 @@ echo -n " tinyvg          "; [ $ENABLE_TINYVG = 1 ] && echo -n "yes" || echo -n 
 echo "   tinyvg viewer"
 echo -n " CMYK            "; [ $ENABLE_CMYK = 1 ] && echo -n "yes" || echo -n "no" ; 
 echo "  extra code for handling CMYK color space"
+echo -n " dither          "; [ $ENABLE_DITHER = 1 ] && echo "yes" || echo "no"
+echo -n " events          "; [ $ENABLE_EVENTS = 1 ] && echo "yes" || echo "no"
+echo -n " font_ctx_fs     "; [ $ENABLE_FONT_CTX_FS = 1 ] && echo "yes" || echo "no"
+echo -n " fonts_from_file "; [ $ENABLE_FONTS_FROM_FILE = 1 ] && echo "yes" || echo "no"
+echo -n " rasterizer      "; [ $ENABLE_RASTERIZER = 1 ] && echo "yes" || echo "no"
+echo -n " parser          "; [ $ENABLE_PARSER = 1 ] && echo "yes" || echo "no"
+echo -n " formatter       "; [ $ENABLE_FORMATTER = 1 ] && echo "yes" || echo "no"
+echo -n " shape_cache     "; [ $ENABLE_SHAPE_CACHE = 1 ] && echo "yes" || echo "no"
+echo -n " only_rgba8      "; [ $ENABLE_ONLY_RGBA8  = 1 ] && echo "yes" || echo "no"
+echo -n " fragment_specialize"; [ $ENABLE_FRAGMENT_SPECIALIZE = 1 ] && echo "yes" || echo "no"
+echo -n " fast_fill_rect  "; [ $ENABLE_FAST_FILL_RECT = 1 ] && echo "yes" || echo "no"
+echo -n " switch_dispatch "; [ $ENABLE_SWITCH_DISPATCH = 1 ] && echo "yes" || echo "no"
 
 
 echo

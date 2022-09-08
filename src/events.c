@@ -2316,6 +2316,14 @@ int ctx_get_render_threads   (Ctx *ctx)
 {
   return _ctx_max_threads;
 }
+#else
+void ctx_set_render_threads   (Ctx *ctx, int n_threads)
+{
+}
+int ctx_get_render_threads   (Ctx *ctx)
+{
+  return 1;
+}
 #endif
 void ctx_set_hash_cache (Ctx *ctx, int enable_hash_cache)
 {

@@ -10,17 +10,14 @@
 #include <babl/babl.h>
 #endif
 
+#include "local.conf"
+
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl backends
 #define CTX_PARSER               1
 #define CTX_FORMATTER            1
 #define CTX_EVENTS               1
-#define CTX_FONTS_FROM_FILE      1
 
-#define CTX_HEADLESS             1
 
-#define CTX_SHAPE_CACHE          1
-
-#define CTX_DITHER               0 //
 #define CTX_MAX_TEXTURES         1024  // default: 32
 				       //
 /* for misc storage with compressed/
@@ -36,12 +33,10 @@
 #define CTX_HASH_ROWS            5 // default: 5
 #define CTX_MAX_KEYDB            128  // default: 64
 
-#define CTX_FONT_ENGINE_CTX_FS   1
 #include "stb_image.h"
 #include "stb_image_write.h" // needed in addition to screenshot
                              // to fully enable
 
-#define CTX_RASTERIZER           1
 #define CTX_ENABLE_CBRLE         0
 
 #ifdef CTX_SIMD_X86_64_V2
