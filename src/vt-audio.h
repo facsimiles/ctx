@@ -1392,16 +1392,12 @@ void vt_audio (VT *vt, const char *command)
     {
       case 'z':
     {
-#ifndef EMSCRIPTEN
-      unsigned long
-#else
       unsigned int
-#endif
               actual_uncompressed_size = audio->frames * audio->bits/8 * audio->channels + 512;
       unsigned char *data2 = ctx_malloc (actual_uncompressed_size);
       /* if a buf size is set (rather compression, but
        * this works first..) then */
-      int z_result = uncompress (data2, &actual_uncompressed_size,
+      int z_result = tinf_uncompress (data2, &actual_uncompressed_size,
                                  audio->data,
                                  audio->data_size);
       if (z_result != Z_OK)
