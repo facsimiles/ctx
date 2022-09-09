@@ -93,18 +93,47 @@ char   *diz_dir_get_string_no (Diz *diz, int item_no, const char *key, int value
 CtxAtom diz_dir_type_atom          (Diz *diz, int item_no);
 int     diz_dir_measure_chunk      (Diz *diz, int item_no);
 int     diz_dir_item_get_level     (Diz *diz, int item_no);
-int     diz_dir_get_parent         (Diz *diz, int item_no);
 
-int     diz_dir_ancestor_is_folded (Diz *diz, int item_no);
+
 int     diz_dir_has_children       (Diz *diz, int item_no);
 void    diz_dir_remove_children    (Diz *diz, int item_no);
 
-int     diz_dir_prev               (Diz *diz, int item_no);
-int     diz_dir_next               (Diz *diz, int item_no);
+
+// element-order
+int     diz_dir_get_parent         (Diz *diz, int item_no);
 int     diz_dir_prev_sibling       (Diz *diz, int item_no);
 int     diz_dir_next_sibling       (Diz *diz, int item_no);
 
+// low-level order
+int     diz_dir_prev               (Diz *diz, int item_no);
+int     diz_dir_next               (Diz *diz, int item_no);
+
+
+int     diz_dir_ancestor_is_folded (Diz *diz, int item_no);
 void    diz_dir_dump               (Diz *diz);
+
+
+// get_element_by_id
+// get_elements_by_class_name
+// childElementCount
+// hasChildNodes
+// appendChild
+// var myEl = document.createElement('div')
+// childNodes
+// children
+// appendChild()
+// removeChild - returning the removed element for potential storage..
+// createTextNode ..
+// replaceChild
+// firstElementChild
+// lastElementChildA
+// parentElement
+// previousElementSibling
+// nextElementSibling
+// insertBefore
+
+
+
 
 // should be internal only?
 void diz_dir_dirt (Diz *diz);

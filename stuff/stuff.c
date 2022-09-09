@@ -5698,6 +5698,7 @@ static int card_files (ITK *itk_, void *data)
 
         if (history)
           BIND_KEY("alt-left", "history back", "back");
+        BIND_KEY("alt-up", "go-parent", "go to parent");
       }
     }
 

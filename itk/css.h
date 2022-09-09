@@ -1631,7 +1631,6 @@ const char * html_css =
 ".cursor{color:white;background: black;} \n"
 "br{display:block;}\n"
 "html{font-weight:normal;background-color:white;}\n"
-"document{color:black;font-weight:normal;background-color:white;}\n"
 "body{background-color:transparent;color:black;}\n"
 "a{color:blue;text-decoration: underline;}\n"
 "a:hover{background:black;color:white;text-decoration:underline; }\n"
