@@ -349,7 +349,7 @@ echo "LIBS=$LIBS" >> build.conf
 #make build.deps 2>/dev/null
 
 echo -n "configuration summary, architecture $(arch)"
-[ $HAVE_SIMD = 1 ]  && echo "SIMD multi-pass" || echo ""
+[ $HAVE_SIMD = 1 ]  && echo " SIMD multi-pass"
 echo ""
 echo "Backends:"
 echo -n " kms      "; [ $HAVE_KMS = 1 ]        && echo "yes" || echo "no (libdrm-dev)"
