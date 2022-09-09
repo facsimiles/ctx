@@ -247,6 +247,7 @@ struct _CtxControl{
 
 
 float itk_panel_scroll (ITK *itk);
+void itk_panel_set_scroll (ITK *itk, float scroll);
 
 typedef struct _Mrg          Mrg;
 typedef struct _CtxStyle     CtxStyle;
@@ -2813,6 +2814,22 @@ int  itk_control_no (ITK *itk)
 
 float itk_panel_scroll (ITK *itk)
 {
-  return itk->panel?itk->panel->scroll:0.0f;
+  ITKPanel *panel = itk->panel;
+  if (!panel)
+    panel = itk->panels?itk->panels->data:NULL;
+  if (!panel) return 0.0f;
+  return panel->scroll;
 }
+
+void itk_panel_set_scroll (ITK *itk, float scroll)
+{
+  ITKPanel *panel = itk->panel;
+  if (!panel)
+    panel = itk->panels?itk->panels->data:NULL;
+  if (!panel) return;
+  if (scroll < 0.0) scroll = 0.0f;
+    panel->scroll = scroll;
+  ctx_queue_draw (itk->ctx);
+}
+
 #endif

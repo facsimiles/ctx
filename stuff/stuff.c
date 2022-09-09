@@ -644,6 +644,41 @@ static void _set_location (const char *location)
   }
 }
 
+
+#define CURSOR_SCROLL_LINES  3
+#define PAGE_SCROLL_FRACTION 0.66f
+
+
+int cmd_scroll (COMMAND_ARGS) /* "scroll", 1, "<up|down|page-down|page-up|start>", "scroll view" */
+{
+  if (!strcmp (argv[1], "start"))
+  {
+     itk_panel_set_scroll (itk, 0.0f);
+  }
+  else if (!strcmp (argv[1], "page-up"))
+  {
+     itk_panel_set_scroll (itk, itk_panel_scroll (itk)
+		                 - itk_height (itk) * PAGE_SCROLL_FRACTION);
+  }
+  else if (!strcmp (argv[1], "page-down"))
+  {
+     itk_panel_set_scroll (itk, itk_panel_scroll (itk)
+		                 + itk_height (itk) * PAGE_SCROLL_FRACTION);
+  }
+  else if (!strcmp (argv[1], "up"))
+  {
+     itk_panel_set_scroll (itk, itk_panel_scroll (itk)
+		                 - itk_em (itk) * CURSOR_SCROLL_LINES);
+  }
+  else if (!strcmp (argv[1], "down"))
+  {
+     itk_panel_set_scroll (itk, itk_panel_scroll (itk) 
+		                 + itk_em (itk) * CURSOR_SCROLL_LINES);
+  }
+  return 0;
+}
+
+
 int cmd_history (COMMAND_ARGS) /* "history", 1, "<forward|back>", "moved history forward or back" */
 {
   if (!strcmp (argv[1], "back"))
@@ -5699,6 +5734,11 @@ static int card_files (ITK *itk_, void *data)
         if (history)
           BIND_KEY("alt-left", "history back", "back");
         BIND_KEY("alt-up", "go-parent", "go to parent");
+        BIND_KEY("up", "scroll up", "scroll up");
+        BIND_KEY("down", "scroll down", "scroll down");
+        BIND_KEY("page-up", "scroll page-up", "scroll up");
+        BIND_KEY("page-down", "scroll page-down", "scroll down");
+        BIND_KEY("home", "scroll start", "scroll to top");
       }
     }
 

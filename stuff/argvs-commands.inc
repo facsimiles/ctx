@@ -12,6 +12,7 @@ int cmd_move (COMMAND_ARGS);
 int cmd_page (COMMAND_ARGS);
 int cmd_quit (COMMAND_ARGS);
 int cmd_remove (COMMAND_ARGS);
+int cmd_scroll (COMMAND_ARGS);
 int cmd_show_context (COMMAND_ARGS);
 int cmd_toggle_context (COMMAND_ARGS);
 int dir_dump (COMMAND_ARGS);
@@ -62,6 +63,7 @@ void argvs_register(void) {
  argvs_add (cmd_page ,  "page", 1, "<next|prev|previous|integer>", "" );
  argvs_add (cmd_quit ,  "quit", 0, "", "" );
  argvs_add (cmd_remove ,  "remove", 0, "", "remove item" );
+ argvs_add (cmd_scroll ,  "scroll", 1, "<up|down>", "scroll view" );
  argvs_add (cmd_show_context ,  "context-menu-show", 0, "", "" );
  argvs_add (cmd_toggle_context ,  "toggle-context", 0, "", "" );
  argvs_add (dir_dump ,  "dump", 0, "", "" );
