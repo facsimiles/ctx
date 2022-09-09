@@ -1262,7 +1262,6 @@ static void clear_left (Mrg *mrg)
   float y = mrg_y (mrg);
   int i;
 
-  //fprintf (stderr, "{l%i %f ", y, mrg->floats);
   if (mrg->floats)
   {
     for (i = mrg->state->float_base; i < mrg->floats; i++)
@@ -1277,7 +1276,6 @@ static void clear_left (Mrg *mrg)
         }
       }
   }
-  //fprintf (stderr, "%f]", y);
   mrg_set_xy (mrg, mrg_x (mrg), y);
 }
 
@@ -1286,7 +1284,6 @@ static void clear_right (Mrg *mrg)
   float y = mrg_y (mrg);
   int i;
 
-  //fprintf (stderr, "{r%i %f ", y, mrg->floats);
   if (mrg->floats)
   {
     for (i = mrg->state->float_base; i < mrg->floats; i++)
@@ -3866,7 +3863,7 @@ void _mrg_layout_pre (Mrg *mrg)
           dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
           dynamic_edge_left = _mrg_parent_dynamic_edge_left(mrg);
         }
-          left = dynamic_edge_left + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
+          left = dynamic_edge_left;// + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
         }
 
         itk_set_edge_left (mrg, left);
@@ -3881,8 +3878,11 @@ void _mrg_layout_pre (Mrg *mrg)
         /* change cursor point after floating something left; if pushed far
          * down, the new correct
          */
-        //mrg_set_xy (mrg, mrg->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
-            //mrg_y (mrg) + PROP(padding_top) + PROP(border_top_width);
+#if 0
+        if(0)	
+        mrg_set_xy (mrg, mrg->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
+            mrg_y (mrg) + PROP(padding_top) + PROP(border_top_width));
+#endif
       } /* XXX: maybe spot for */
       else if (1)
       {
@@ -6142,8 +6142,13 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
     float_data->width = 
          mrg_edge_right (mrg) - mrg_edge_left (mrg)
-     + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left)
-     + PROP(padding_right) + PROP(border_right_width) + PROP(margin_right);
+     //+ PROP(border_left_width) 
+     //+ PROP(border_right_width)  
+#if 0
+     /*+ PROP(padding_left) +*/ + PROP(border_left_width) + PROP(margin_left)
+     /*+ PROP(padding_right) +*/ + PROP(border_right_width) + PROP(margin_right)
+#endif
+     ;
 
     float_data->height = 
        mrg_y (mrg) - (mrg->state->block_start_y)
