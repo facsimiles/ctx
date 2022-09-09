@@ -4086,18 +4086,18 @@ static void dir_layout (ITK *itk, Diz *diz)
               char *val = diz_dir_get_string_no (diz, i, "choice", j);
               if (!strcmp (val, old_str))
                 old_val = j;
+              itk_choice_add (itk, j, val);
               free (val);
            }
            int new_val = itk_choice (itk, d_name, old_val);
            for (int j = 0; j < n_choices; j++)
            {
-              char *val = diz_dir_get_string_no (diz, i, "choice", j);
-              itk_choice_add (itk, j, val);
               if (new_val == j && old_val != new_val)
               {
+                char *val = diz_dir_get_string_no (diz, i, "choice", j);
                 diz_dir_set_string (diz, i, "value", val);
+                free (val);
               }
-              free (val);
            }
            c = itk_find_control (itk, itk_control_no (itk)-1);
         }
@@ -5678,7 +5678,9 @@ static int card_files (ITK *itk_, void *data)
       itk_set_edge_left (itk, 0.0);
       itk_set_edge_right (itk, ctx_width (itk_ctx (itk)) - itk_em (itk));
       itk_set_edge_top (itk, 0.0);
-      if (!strstr (diz->path, ".html") && !strstr (diz->path, ".svg"))
+      if (!strstr (diz->path, ".html") &&
+          !strstr (diz->path, ".xhtml") &&
+	  !strstr (diz->path, ".svg"))
         dir_layout (itk, diz);
       else
       {

@@ -9,9 +9,9 @@ static int booker_ui (ITK *itk, void *data)
 
   static int return_flight = 0;
   itk_set_flag (itk, ITK_FLAG_SHOW_LABEL, 0);
-  return_flight = itk_choice (itk, "", return_flight);
   itk_choice_add (itk, 0, "one-way flight");
   itk_choice_add (itk, 1, "return flight");
+  return_flight = itk_choice (itk, "", return_flight);
 
   itk_entry_str_len (itk, "depart", "dd.mm.yyyy", depart_date, 20-1);
 

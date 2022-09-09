@@ -62,9 +62,11 @@ static int spirals_ui (ITK *itk, void *data)
       itk_slider_int (itk, "count",          &dot_count, 1,  50000, 10);
       itk_slider_float (itk, "radius",    &dot_scale, 2.0, 400.0, 4.5);
       itk_slider_float (itk, "twist amount", &twist, -3.14152, 3.14152, 0.0005);
-      shape = itk_choice (itk, "shape", shape);
+
+
       itk_choice_add (itk, 0, "circle");
       itk_choice_add (itk, 1, "square");
+      shape = itk_choice (itk, "shape", shape);
 
 
       itk_ctx_settings (itk);
