@@ -3980,6 +3980,7 @@ void _mrg_layout_pre (Mrg *mrg)
     mrg_ctx_set_source_color (mrg->ctx, background_color);
     if (is_block_item (style))
     {
+      ctx_begin_path (mrg->ctx); // XXX : this should not need be here!
       ctx_deferred_rectangle (mrg->ctx, name,
          mrg->state->block_start_x - PROP(padding_left),
          mrg->state->block_start_y - PROP(padding_top),
@@ -6175,16 +6176,14 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     }
     geo->width = width;
 
-    geo->height = height;
     if (height == 0)
       height = mrg_y (mrg) - (mrg->state->block_start_y);
+    geo->height = height;
 
     char name[10]="ele_";
     name[3]=mrg->state_no+2;
 
     ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
-
-
     mrg_box (mrg,
         mrg->state->block_start_x,
         mrg->state->block_start_y,
@@ -6240,9 +6239,9 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
       }
     }
 
-    geo->height = height;
     if (height == 0)
-      geo->height = mrg_y (mrg) - (mrg->state->block_start_y);
+      height = mrg_y (mrg) - (mrg->state->block_start_y);
+    geo->height = height;
 
     char name[10]="ele_";
     name[3]=mrg->state_no+2;
@@ -6253,10 +6252,6 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
         mrg->state->block_start_y,
         geo->width,
         geo->height);
-
-    geo->width += PROP(padding_right) + PROP(padding_left);
-    geo->height += PROP(padding_top) + PROP(padding_bottom);
-    ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
     if (ret_rect)
     {
        ret_rect->x = mrg->state->block_start_x;
@@ -6265,6 +6260,10 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
        ret_rect->height = geo->height;
        returned_dim = 1;
     }
+
+    geo->width += PROP(padding_right) + PROP(padding_left);
+    geo->height += PROP(padding_top) + PROP(padding_bottom);
+    ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
 
     {
       CtxMatrix transform;
