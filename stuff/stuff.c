@@ -3769,7 +3769,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   if (layout_config.outliner)
      printing = 1;
 
-#if 1
+#if 0 ////// YYY
   for (int i = 0; i < diz_dir_count (diz); i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
@@ -4877,7 +4877,7 @@ static void dir_layout (ITK *itk, Diz *diz)
          {
            layout_show_page = layout_page_no; // change to right page
            ctx_queue_draw (ctx); // queue another redraw
-                                      // of the right page we'll find it then
+                                 // of the right page we'll find it then
          }
          else
          {
@@ -4894,9 +4894,9 @@ static void dir_layout (ITK *itk, Diz *diz)
       }
 
       CtxAtom atom = diz_dir_type_atom (diz, i);
-
       CtxFloatRectangle extent = {0.f,0.f,0.f,0.f};
       CtxControl *c = NULL;
+      int got_control = 0;
       switch (atom)
       {
         case CTX_ATOM_TEXT:
@@ -4904,10 +4904,21 @@ static void dir_layout (ITK *itk, Diz *diz)
 	  if (!is_folded)
 	  {
 	    itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
-	    itk_printf (itk, "%s", d_name);
             if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
+	    {
+	      itk_printf (itk, "%s", d_name);
 	      itk_end (itk, &extent);
+	    }
+	    else
+	    {
+	      itk_start (itk, "div", NULL);
+	      itk_printf (itk, "%s", d_name);
+	      itk_end (itk, NULL);
+	    }
             c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
+	    ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
+            ctx_listen (ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
+	    ctx_begin_path (ctx);
 	  }
           break;
         case CTX_ATOM_FILE:
