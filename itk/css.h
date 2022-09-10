@@ -1640,6 +1640,9 @@ const char * html_css =
 ".wallpaper, .itk{background:#124;color:#f43}\n"
 ".focused{background:#fff;color:#000}\n"
 
+" .selection{background:white; color: red; }\n"
+" :focused {color: yellow; }\n"
+" .fnord { color: green; }\n"
 "   .item { margin-left:2em; border: 1px solid transparent; color: white; }"
 "   .item:focused { margin-left:2em; color: yellow; border: 1px solid blue;}"
  /*  .item>.text::before { content:"-";display:block;position:absolute;margin-left:-1.2em; } */

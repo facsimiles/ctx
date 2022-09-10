@@ -5168,16 +5168,19 @@ static void dir_layout (ITK *itk, Diz *diz)
         case CTX_ATOM_SYMLINK:
 	  if (!is_folded)
 	  {
-	    char *element = diz_dir_get_string (diz, -1, "element");
-	    char *klass   = diz_dir_get_string (diz, -1, "class");
-	    char *id      = diz_dir_get_string (diz, -1, "id");
-	    char *style   = diz_dir_get_string (diz, -1, "style");
+	    char *element = diz_dir_get_string (diz, i, "element");
+	    char *klass   = diz_dir_get_string (diz, i, "class");
+	    char *id      = diz_dir_get_string (diz, i, "id");
+	    char *style   = diz_dir_get_string (diz, i, "style");
 	    const char *pseudo = is_focused?":focused":"";
+
+	    // TODO: handle multiple classes
 
 	    if (!element)element=strdup("div");
 	    if (!klass)klass=strdup("item");
 
-	    char *combined = ctx_strdup_printf ("%s.%s%s%s%s", element, klass, id?"#":"", id?id:"", pseudo);
+	    char *combined = ctx_strdup_printf ("%s.%s%s%s%s",
+                                element, klass, id?"#":"", id?id:"", pseudo);
 
 	    itk_start_with_style (itk, combined, NULL, style);
 	    free (combined);
@@ -5185,9 +5188,46 @@ static void dir_layout (ITK *itk, Diz *diz)
 	    if (id) free (id);
 	    if (klass) free (klass);
 	    if (element) free (element);
+
             if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
 	    {
-	      itk_printf (itk, "%s", d_name);
+	      if (text_edit >=0 && is_focused)
+	      {
+		char *copy = strdup (d_name);
+		char *c = copy;
+		for (int i = 0; i < text_edit && *c; i++)
+		{
+	           c += ctx_utf8_len (*c);
+		}
+		char *tmp = *c;
+		*c='\0';
+#if 0
+		itk_printf (itk, "%s|", copy);
+		*c=tmp;
+		itk_printf (itk, "%s", c);
+#else
+		itk_printf (itk, "%s", copy);
+		//itk_start_with_style (itk, "span.selection", NULL, "background-color:white;color:red;");
+		itk_start(itk, "span.selection", NULL);
+		*c=tmp;
+		if (tmp == ' ')
+	          fprintf (stderr, ":"); // were causing horizontal skew
+		tmp = c[1];
+		c[1]=0;
+		itk_printf (itk, "%s", c);
+		itk_end (itk, NULL);
+		if (tmp == ' ')
+	          fprintf (stderr, "!"); // we're drawing space
+		c[1]=tmp;
+		c++;
+		itk_printf (itk, "%s", c);
+#endif
+		free (copy);
+	      }
+	      else
+	      {
+	        itk_printf (itk, "%s", d_name);
+	      }
 	      itk_end (itk, &extent);
 	    }
 	    else
