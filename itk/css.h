@@ -1640,8 +1640,8 @@ const char * html_css =
 ".wallpaper, .itk{background:#124;color:#f43}\n"
 ".focused{background:#fff;color:#000}\n"
 
-"   .item { margin-left:2em;}"
-"   .item:focused { margin-left:2em; background:#ffffff88; color: black; border: 1px solid blue;}"
+"   .item { margin-left:2em; border: 1px solid transparent; color: white; }"
+"   .item:focused { margin-left:2em; color: yellow; border: 1px solid blue;}"
  /*  .item>.text::before { content:"-";display:block;position:absolute;margin-left:-1.2em; } */
 
 " .file { border: 1px solid green; margin-left:0;margin-right:0.2em; width: 3em; margin-bottom: 0.2em; height: 3em; display: inline-block;  }"

@@ -4930,29 +4930,25 @@ static void dir_layout (ITK *itk, Diz *diz)
         case CTX_ATOM_LAYOUTBOX:
           break;
         case CTX_ATOM_STARTGROUP:
-#if 0
-          hidden = 1;
           level ++;
+#if 1
           {
             int folded = diz_dir_get_int (diz, i-1, "folded", 0);
-
             if (folded && ! is_folded) is_folded = level;
           }
 #endif
           break;
         case CTX_ATOM_ENDGROUP:
 	    itk_end (itk, &extent);
-#if 0
+#if 1
           if (is_folded == level)
           {
             is_folded = 0;
           }
-          hidden = 1;
-          level --;
 #endif
+          level --;
           break;
         case CTX_ATOM_STARTPAGE:
-//        hidden = 1;
           /*FALLTHROUGH*/
         case CTX_ATOM_NEWPAGE:
           layout_box_count = 0;
@@ -5797,6 +5793,7 @@ static int card_files (ITK *itk_, void *data)
       add_context_binding (location_active, "windowed", "toggle-fullscreen", "F11");
     else
       add_context_binding (location_active, "fullscreen", "toggle-fullscreen", "F11");
+#if 0
     if (!is_text_editing() &&
          !text_editor
         && !item_context_active)
@@ -5806,6 +5803,7 @@ static int card_files (ITK *itk_, void *data)
       add_context_binding (location_active, "folder view", "view grid", "control-3");
       add_context_binding (location_active, "text-edit view", "view text-edit", "control-4");
     }
+#endif
 #endif
 
     if (!viewer)
