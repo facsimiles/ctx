@@ -680,7 +680,7 @@ CtxControl *itk_add_control (ITK *itk,
 
   }
 
-  ctx_rectangle (itk->ctx, x, y, width, height);
+  //ctx_rectangle (itk->ctx, x, y, width, height);
   if (itk->focus_no == control->no &&
       control->type == UI_LABEL)   // own-bg
   {
@@ -1748,7 +1748,6 @@ int itk_choice (ITK *itk, const char *label, int val)
 
 void itk_choice_add (ITK *itk, int value, const char *label)
 {
-  CtxControl *control = itk->controls->data;
   UiChoice *choice= calloc (sizeof (UiChoice), 1);
   choice->val = value;
   choice->label = strdup (label);

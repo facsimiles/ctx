@@ -3769,7 +3769,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   if (layout_config.outliner)
      printing = 1;
 
-#if 0
+#if 1
   for (int i = 0; i < diz_dir_count (diz); i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
@@ -4901,28 +4901,24 @@ static void dir_layout (ITK *itk, Diz *diz)
       {
         case CTX_ATOM_TEXT:
         case CTX_ATOM_SYMLINK:
-	  itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
-	  itk_printf (itk, "%s", d_name);
-          if (diz_dir_type_atom (diz, i+1) == CTX_ATOM_STARTGROUP)
+	  if (!is_folded)
 	  {
+	    itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
+	    itk_printf (itk, "%s", d_name);
+            if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
+	      itk_end (itk, &extent);
+            c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
 	  }
-	  else
-	  {
-	    itk_end (itk, &extent);
-	  }
-          c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
           break;
         case CTX_ATOM_FILE:
-	  itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
-	  itk_printf (itk, "%s", d_name);
-          if (diz_dir_type_atom (diz, i+1) == CTX_ATOM_STARTGROUP)
+	  if (!is_folded)
 	  {
+	    itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
+	    itk_printf (itk, "%s", d_name);
+            if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
+              itk_end (itk, &extent);
+            c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
 	  }
-	  else
-	  {
-	    itk_end (itk, &extent);
-	  }
-          c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
 	  break;
         case CTX_ATOM_RECTANGLE:
         case CTX_ATOM_CTX:
@@ -4931,22 +4927,15 @@ static void dir_layout (ITK *itk, Diz *diz)
           break;
         case CTX_ATOM_STARTGROUP:
           level ++;
-#if 1
-          {
-            int folded = diz_dir_get_int (diz, i-1, "folded", 0);
-            if (folded && ! is_folded) is_folded = level;
-          }
-#endif
+          if (diz_dir_get_int (diz, i-1, "folded", 0) && ! is_folded)
+            is_folded = level;
           break;
         case CTX_ATOM_ENDGROUP:
-	    itk_end (itk, &extent);
-#if 1
           if (is_folded == level)
-          {
             is_folded = 0;
-          }
-#endif
           level --;
+	  if (!is_folded)
+	    itk_end (itk, &extent);
           break;
         case CTX_ATOM_STARTPAGE:
           /*FALLTHROUGH*/
