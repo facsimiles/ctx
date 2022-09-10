@@ -5200,27 +5200,37 @@ static void dir_layout (ITK *itk, Diz *diz)
 	           c += ctx_utf8_len (*c);
 		}
 		char *tmp = *c;
-		*c='\0';
 #if 0
 		itk_printf (itk, "%s|", copy);
 		*c=tmp;
 		itk_printf (itk, "%s", c);
 #else
+		int hackpad = (c != copy && c[-1] == ' ');
+		int unskew = 0;
+		*c='\0';
 		itk_printf (itk, "%s", copy);
-		//itk_start_with_style (itk, "span.selection", NULL, "background-color:white;color:red;");
+		if (hackpad)
+		  itk_printf (itk, " ");
 		itk_start(itk, "span.selection", NULL);
+		if (tmp)
+		{
 		*c=tmp;
-		if (tmp == ' ')
-	          fprintf (stderr, ":"); // were causing horizontal skew
-		tmp = c[1];
-		c[1]=0;
+		tmp = c[ctx_utf8_len(*c)];
+		c[ctx_utf8_len(*c)]=0;
 		itk_printf (itk, "%s", c);
+		}
 		itk_end (itk, NULL);
+		if (tmp)
+		{
 		if (tmp == ' ')
-	          fprintf (stderr, "!"); // we're drawing space
-		c[1]=tmp;
-		c++;
-		itk_printf (itk, "%s", c);
+		{
+	          unskew=1;
+		  itk_printf (itk, " ");
+	        }
+		c[ctx_utf8_len(*c)]=tmp;
+		c+=ctx_utf8_len(*c);
+		itk_printf (itk, "%s", c + unskew);
+		}
 #endif
 		free (copy);
 	      }
@@ -6353,13 +6363,13 @@ static int card_files (ITK *itk_, void *data)
                           text_edit_stop,
                           NULL);
 
-          ctx_add_key_binding (ctx, "up", NULL, "previous line",
-                          text_edit_up,
-                          NULL);
+          //ctx_add_key_binding (ctx, "up", NULL, "previous line",
+          //                text_edit_up,
+          //                NULL);
 
-          ctx_add_key_binding (ctx, "down", NULL, "next line",
-                          text_edit_down,
-                          NULL);
+          //ctx_add_key_binding (ctx, "down", NULL, "next line",
+          //                text_edit_down,
+          //                NULL);
           ctx_add_key_binding (ctx, "right", NULL, "next char",
                           text_edit_right,
                           NULL);
