@@ -3528,7 +3528,7 @@ if (bullet != CTX_BULLET_NONE)
 #define BIND_KEY(key, command, help) \
             do {ctx_add_key_binding (ctx, key, NULL, help, ui_run_command, command);} while(0)
 
-#define MAX_CONTEXT_MENU_ITEMS 40
+#define MAX_CONTEXT_MENU_ITEMS 80
 static char *context_menu[MAX_CONTEXT_MENU_ITEMS * 3];
 int context_menu_items = 0;
 
@@ -3544,7 +3544,7 @@ static void add_context_binding (int active_context,
     context_menu[context_menu_items * 3 + 0] = strdup (label);
     context_menu[context_menu_items * 3 + 1] = strdup (command);
     context_menu[context_menu_items * 3 + 2] = strdup (key);
-    if (context_menu_items < MAX_CONTEXT_MENU_ITEMS)
+    if (context_menu_items < MAX_CONTEXT_MENU_ITEMS-1)
       context_menu_items++;
   }
   if (strcmp (key, "escape"))
@@ -3585,8 +3585,6 @@ static void dir_layout (ITK *itk, Diz *diz)
   //printf ("%s\n", diz->path);
 
   float em = itk_em (itk);
-  float prev_height = layout_config.height;
-  float row_max_height = 0;
   int level = 0;
   int is_folded = 0;
 
@@ -3641,7 +3639,6 @@ static void dir_layout (ITK *itk, Diz *diz)
   ctx_save (ctx);
   //if (layout_config.monospace)
   //  ctx_font (ctx, "mono");
-  float space_width = ctx_text_width (ctx, " ");
   ctx_font_size (ctx, em);
       int location_active = (focused_no == -1 && itk_focus_no (itk) == 0);
 
@@ -3757,6 +3754,9 @@ static void dir_layout (ITK *itk, Diz *diz)
      printing = 1;
 
 #if 0 ////// YYY
+  float row_max_height = 0;
+  float prev_height = layout_config.height;
+  float space_width = ctx_text_width (ctx, " ");
   for (int i = 0; i < diz_dir_count (diz); i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
@@ -4878,7 +4878,6 @@ static void dir_layout (ITK *itk, Diz *diz)
       CtxAtom atom = diz_dir_type_atom (diz, i);
       CtxFloatRectangle extent = {0.f,0.f,0.f,0.f};
       CtxControl *c = NULL;
-      int got_control = 0;
 
         char *newpath = malloc (strlen(diz->path)+strlen(d_name) + 2);
         if (!strcmp (diz->path, PATH_SEP))
@@ -5169,7 +5168,23 @@ static void dir_layout (ITK *itk, Diz *diz)
         case CTX_ATOM_SYMLINK:
 	  if (!is_folded)
 	  {
-	    itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
+	    char *element = diz_dir_get_string (diz, -1, "element");
+	    char *klass   = diz_dir_get_string (diz, -1, "class");
+	    char *id      = diz_dir_get_string (diz, -1, "id");
+	    char *style   = diz_dir_get_string (diz, -1, "style");
+	    const char *pseudo = is_focused?":focused":"";
+
+	    if (!element)element=strdup("div");
+	    if (!klass)klass=strdup("item");
+
+	    char *combined = ctx_strdup_printf ("%s.%s%s%s%s", element, klass, id?"#":"", id?id:"", pseudo);
+
+	    itk_start_with_style (itk, combined, NULL, style);
+	    free (combined);
+	    if (style) free (style);
+	    if (id) free (id);
+	    if (klass) free (klass);
+	    if (element) free (element);
             if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
 	    {
 	      itk_printf (itk, "%s", d_name);
@@ -6402,7 +6417,7 @@ static int card_files (ITK *itk_, void *data)
                     NULL);
     if (commandline)
     {
-       if (commandline->str[commandline->length-1]=='=')
+       if (commandline->str[commandline->length?commandline->length-1:0]=='=')
          ctx_add_key_binding (ctx, "return", NULL, "unset key",
                     item_context_make_choice,
                     NULL);
@@ -6443,7 +6458,7 @@ static int card_files (ITK *itk_, void *data)
 
     ctx_fill (ctx);
 
-    for (int i = 0; context_menu[i]; i+=3)
+    for (int i = 0; context_menu[i] && i < 100; i+=3)
     {
       if (i == item_context_choice * 3)
          ctx_rgb(ctx, 1,1,1);
