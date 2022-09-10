@@ -685,8 +685,8 @@ CtxControl *itk_add_control (ITK *itk,
       control->type == UI_LABEL)   // own-bg
   {
 #if 1
-    itk_style_bg (itk, "focused");
-    ctx_fill (itk->ctx);
+    //itk_style_bg (itk, "focused");
+    //ctx_fill (itk->ctx);
 #if 0
     ctx_rectangle (itk->ctx, x, y, width, height);
     itk_style_color (itk->ctx, "itk-fg");
@@ -701,8 +701,8 @@ CtxControl *itk_add_control (ITK *itk,
     if (control->type != UI_LABEL && // no-bg
         control->type != UI_BUTTON)  // own-bg
     {
-      itk_style_bg (itk, "interactive");
-      ctx_fill (itk->ctx);
+     // itk_style_bg (itk, "interactive");
+     // ctx_fill (itk->ctx);
     }
   }
 

@@ -3769,6 +3769,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   if (layout_config.outliner)
      printing = 1;
 
+#if 0
   for (int i = 0; i < diz_dir_count (diz); i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
@@ -4864,6 +4865,105 @@ static void dir_layout (ITK *itk, Diz *diz)
       if (ui)
               free (ui);
   }
+#else
+  for (int i = 0; i < diz_dir_count (diz); i++)
+  {
+      char *d_name = diz_dir_get_data (diz, i);
+      char *ui = diz_dir_get_string (diz, i, "ui");
+      int is_focused = 0;
+      if (layout_find_item == i)
+      {
+         if (!printing)
+         {
+           layout_show_page = layout_page_no; // change to right page
+           ctx_queue_draw (ctx); // queue another redraw
+                                      // of the right page we'll find it then
+         }
+         else
+         {
+           itk_set_focus_no (itk, itk_control_no (itk));
+           focused_no = i;
+           layout_find_item = -1;
+         }
+      }
+
+      if (itk_control_no (itk) == itk_focus_no (itk) && layout_find_item < 0)
+      {
+        focused_no = i;
+	is_focused = 1;
+      }
+
+      CtxAtom atom = diz_dir_type_atom (diz, i);
+
+      CtxFloatRectangle extent = {0.f,0.f,0.f,0.f};
+      CtxControl *c = NULL;
+      switch (atom)
+      {
+        case CTX_ATOM_TEXT:
+        case CTX_ATOM_SYMLINK:
+	  itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
+	  itk_printf (itk, "%s", d_name);
+          if (diz_dir_type_atom (diz, i+1) == CTX_ATOM_STARTGROUP)
+	  {
+	  }
+	  else
+	  {
+	    itk_end (itk, &extent);
+	  }
+          c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
+          break;
+        case CTX_ATOM_FILE:
+	  itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
+	  itk_printf (itk, "%s", d_name);
+          if (diz_dir_type_atom (diz, i+1) == CTX_ATOM_STARTGROUP)
+	  {
+	  }
+	  else
+	  {
+	    itk_end (itk, &extent);
+	  }
+          c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
+	  break;
+        case CTX_ATOM_RECTANGLE:
+        case CTX_ATOM_CTX:
+          break;
+        case CTX_ATOM_LAYOUTBOX:
+          break;
+        case CTX_ATOM_STARTGROUP:
+#if 0
+          hidden = 1;
+          level ++;
+          {
+            int folded = diz_dir_get_int (diz, i-1, "folded", 0);
+
+            if (folded && ! is_folded) is_folded = level;
+          }
+#endif
+          break;
+        case CTX_ATOM_ENDGROUP:
+	    itk_end (itk, &extent);
+#if 0
+          if (is_folded == level)
+          {
+            is_folded = 0;
+          }
+          hidden = 1;
+          level --;
+#endif
+          break;
+        case CTX_ATOM_STARTPAGE:
+//        hidden = 1;
+          /*FALLTHROUGH*/
+        case CTX_ATOM_NEWPAGE:
+          layout_box_count = 0;
+          layout_box_no    = 0;
+          // XXX need better default for new page
+          layout_box_defaults(&layout_box[0]);
+          break;
+      }
+
+  }
+#endif
   layout_last_page = last_page;
 
   if (diz_dir_count (diz) <= 0)

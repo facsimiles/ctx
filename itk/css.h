@@ -1640,6 +1640,13 @@ const char * html_css =
 ".wallpaper, .itk{background:#124;color:#f43}\n"
 ".focused{background:#fff;color:#000}\n"
 
+"   .item { margin-left:2em;}"
+"   .item:focused { margin-left:2em; background:#ffffff88; color: black; border: 1px solid blue;}"
+ /*  .item>.text::before { content:"-";display:block;position:absolute;margin-left:-1.2em; } */
+
+" .file { border: 1px solid green; margin-left:0;margin-right:0.2em; width: 3em; margin-bottom: 0.2em; height: 3em; display: inline-block;  }"
+
+
 //"h1,h2,h3,h4,h5,h6,p,div,b,span,ul,li,ol,dl,dt,dl,propline,button{border-left-color:gray;border-right-color:gray;}\n"
 
 //"html{font-size:10.0px;color:white;}\n" // from ACID1 - not parsed right
