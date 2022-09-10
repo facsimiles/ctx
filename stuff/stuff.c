@@ -5199,7 +5199,7 @@ static void dir_layout (ITK *itk, Diz *diz)
 		{
 	           c += ctx_utf8_len (*c);
 		}
-		char *tmp = *c;
+		char tmp = *c;
 #if 0
 		itk_printf (itk, "%s|", copy);
 		*c=tmp;
@@ -5277,7 +5277,7 @@ static void dir_layout (ITK *itk, Diz *diz)
             is_folded = 0;
           level --;
 	  if (!is_folded)
-	    itk_end (itk, &extent);
+	    itk_end (itk, NULL);
           break;
         case CTX_ATOM_STARTPAGE:
           /*FALLTHROUGH*/
@@ -5290,6 +5290,8 @@ static void dir_layout (ITK *itk, Diz *diz)
       }
 
       free (newpath);
+      if (is_focused)
+        focused_control = c;
   }
 #endif
   layout_last_page = last_page;
