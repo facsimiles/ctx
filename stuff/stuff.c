@@ -3668,19 +3668,6 @@ static void dir_layout (ITK *itk, Diz *diz)
             
             // as "alt-up",    "go-parent",    "go to parent");
 
-  if (!layout_config.outliner)
-  {
-#if 0
-  if (tool_no == STUFF_TOOL_RECTANGLE)
-  {
-    ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
-    ctx_listen (ctx, CTX_DRAG, tool_rect_drag, NULL, NULL);
-
-    ctx_begin_path (ctx);
-  }
-#endif
-  }
-
   if (y1 < 100) y1 = itk_height (itk);
 
   int last_page = 0;
@@ -3764,7 +3751,7 @@ static void dir_layout (ITK *itk, Diz *diz)
       }
     }
   }
-  itk_set_y (itk, 2 * em);
+  itk_set_y (itk, 1.5 * em);
   itk_set_x (itk, itk_edge_left (itk));
   if (layout_config.outliner)
      printing = 1;

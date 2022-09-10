@@ -581,6 +581,8 @@ void itk_reset (ITK *itk)
   }
   itk->control_no = 0;
   itk_css_init ((Mrg*)itk, ctx, ctx_width (itk->ctx), ctx_height (itk->ctx));
+  //mrg_clear (itk);
+  ctx_clear_bindings (itk->ctx);
   //itk_stylesheet_clear ((Mrg*)itk);
 //  ctx_style_defaults ((Mrg*)itk);
 }
