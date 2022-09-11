@@ -3753,7 +3753,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   if (layout_config.outliner)
      printing = 1;
 
-#if 0 ////// YYY
+#if 0 ////// YYY  // still missing to port: multi-page/layoutbox
   float row_max_height = 0;
   float prev_height = layout_config.height;
   float space_width = ctx_text_width (ctx, " ");
@@ -4886,16 +4886,11 @@ static void dir_layout (ITK *itk, Diz *diz)
         else
           sprintf (newpath, "%s%s%s", diz->path, PATH_SEP, d_name);
 
-
-
       if (itk_control_no (itk) == itk_focus_no (itk) && layout_find_item < 0)
       {
         focused_no = i;
 	is_focused = 1;
       }
-
-
-
 
       switch (atom)
       {
@@ -4942,56 +4937,54 @@ static void dir_layout (ITK *itk, Diz *diz)
 	    if (klass) free (klass);
 	    if (element) free (element);
 
+	    if (is_focused && text_edit >=0)
 	    {
-	      if (is_focused && text_edit >=0)
+	      char *copy = strdup (d_name);
+	      char *c = copy;
+	      for (int i = 0; i < text_edit && *c; i++)
 	      {
-		char *copy = strdup (d_name);
-		char *c = copy;
-		for (int i = 0; i < text_edit && *c; i++)
-		{
-	           c += ctx_utf8_len (*c);
-		}
-		char tmp = *c;
+	         c += ctx_utf8_len (*c);
+	      }
+	      char tmp = *c;
 #if 0
-		itk_printf (itk, "%s|", copy);
-		*c=tmp;
-		itk_printf (itk, "%s", c);
+	      itk_printf (itk, "%s|", copy);
+	      *c=tmp;
+	      itk_printf (itk, "%s", c);
 #else
-		int hackpad = (c != copy && c[-1] == ' ');
-		int unskew = 0;
-		*c='\0';
-		itk_printf (itk, "%s", copy);
-		if (hackpad)
-		  itk_printf (itk, " ");
-		itk_start(itk, "span.selection", NULL);
-		if (tmp)
-		{
-		*c=tmp;
-		tmp = c[ctx_utf8_len(*c)];
-		c[ctx_utf8_len(*c)]=0;
-		itk_printf (itk, "%s", c);
-		}
-		itk_end (itk, NULL);
-		if (tmp)
-		{
-		if (tmp == ' ')
-		{
-	          unskew=1;
-		  itk_printf (itk, " ");
-	        }
-		c[ctx_utf8_len(*c)]=tmp;
-		c+=ctx_utf8_len(*c);
-		itk_printf (itk, "%s", c + unskew);
-		}
-#endif
-		free (copy);
-	      }
-	      else
+	      int hackpad = (c != copy && c[-1] == ' ');
+	      int unskew = 0;
+	      *c='\0';
+	      itk_printf (itk, "%s", copy);
+	      if (hackpad)
+	        itk_printf (itk, " ");
+	      itk_start(itk, "span.selection", NULL);
+	      if (tmp)
 	      {
-	        itk_printf (itk, "%s", d_name);
+	      *c=tmp;
+	      tmp = c[ctx_utf8_len(*c)];
+	      c[ctx_utf8_len(*c)]=0;
+	      itk_printf (itk, "%s", c);
 	      }
-	      itk_end (itk, &extent);
+	      itk_end (itk, NULL);
+	      if (tmp)
+	      {
+	      if (tmp == ' ')
+	      {
+	        unskew=1;
+	        itk_printf (itk, " ");
+	      }
+	      c[ctx_utf8_len(*c)]=tmp;
+	      c+=ctx_utf8_len(*c);
+	      itk_printf (itk, "%s", c + unskew);
+	      }
+#endif
+	      free (copy);
 	    }
+	    else
+	    {
+	      itk_printf (itk, "%s", d_name);
+	    }
+	    itk_end (itk, &extent);
 #if 0
 	    else
 	    {
