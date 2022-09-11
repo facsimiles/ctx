@@ -5028,7 +5028,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           level ++;
           if (!is_folded && diz_dir_get_int (diz, i-1, "folded", 0))
             is_folded = level;
-	  if (!is_folded && got_element[level] == 0)
+	  if (!is_folded && got_element[level-1] == 0)
 	    itk_start (itk, "div.children", NULL);
           break;
         case CTX_ATOM_ENDGROUP:
