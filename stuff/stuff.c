@@ -4853,6 +4853,7 @@ static void dir_layout (ITK *itk, Diz *diz)
               free (ui);
   }
 #else
+  int got_element[CTX_MAX_STATES]={0,};
   for (int i = 0; i < diz_dir_count (diz); i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
@@ -5173,11 +5174,21 @@ static void dir_layout (ITK *itk, Diz *diz)
 	    char *id      = diz_dir_get_string (diz, i, "id");
 	    char *style   = diz_dir_get_string (diz, i, "style");
 	    const char *pseudo = is_focused?":focused":"";
-
 	    // TODO: handle multiple classes
 
-	    if (!element)element=strdup("div");
-	    if (!klass)klass=strdup("item");
+
+	    if (element)
+	    {
+	      got_element[level] = 1;
+	    }
+	    else 
+	    {
+	      got_element[level] = 0;
+              element=strdup("div");
+	    }
+
+	    if (!klass)
+	      klass=strdup("item");
 
 	    char *combined = ctx_strdup_printf ("%s.%s%s%s%s",
                                 element, klass, id?"#":"", id?id:"", pseudo);
@@ -5189,9 +5200,9 @@ static void dir_layout (ITK *itk, Diz *diz)
 	    if (klass) free (klass);
 	    if (element) free (element);
 
-            if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
+            //if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
 	    {
-	      if (text_edit >=0 && is_focused)
+	      if (is_focused && text_edit >=0)
 	      {
 		char *copy = strdup (d_name);
 		char *c = copy;
@@ -5240,12 +5251,15 @@ static void dir_layout (ITK *itk, Diz *diz)
 	      }
 	      itk_end (itk, &extent);
 	    }
+#if 0
 	    else
 	    {
-	      itk_start (itk, "div", NULL);
+	      itk_start (itk, "div.text", NULL);
 	      itk_printf (itk, "%s", d_name);
 	      itk_end (itk, &extent);
 	    }
+#endif
+
             c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
 	    ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
             ctx_listen (ctx, CTX_PRESS, dir_select_item, (void*)(size_t)c->no, NULL);
@@ -5257,8 +5271,8 @@ static void dir_layout (ITK *itk, Diz *diz)
 	  {
 	    itk_start (itk, is_focused?"div.item:focused":"div.item", NULL);
 	    itk_printf (itk, "%s", d_name);
-            if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
-              itk_end (itk, &extent);
+            //if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP)
+            itk_end (itk, &extent);
             c = itk_add_control (itk, UI_LABEL, "item", extent.x, extent.y, extent.width, extent.height);
 	  }
 	  break;
@@ -5271,12 +5285,14 @@ static void dir_layout (ITK *itk, Diz *diz)
           level ++;
           if (diz_dir_get_int (diz, i-1, "folded", 0) && ! is_folded)
             is_folded = level;
+	  //if (!is_folded)
+	    itk_start (itk, "div.children", NULL);
           break;
         case CTX_ATOM_ENDGROUP:
           if (is_folded == level)
             is_folded = 0;
           level --;
-	  if (!is_folded)
+	  //if (!is_folded)
 	    itk_end (itk, NULL);
           break;
         case CTX_ATOM_STARTPAGE:
