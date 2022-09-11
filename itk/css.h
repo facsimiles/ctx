@@ -3742,7 +3742,7 @@ void _mrg_layout_pre (Mrg *mrg)
     else
       actual_top = 0;
 
-    itk_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + actual_top);
+    itk_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + PROP(padding_top) + actual_top);
 
     mrg->state->block_start_x = mrg_edge_left (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
@@ -6288,7 +6288,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
       mrg_set_xy (mrg, 
           mrg_edge_left (mrg),
-          mrg_y (mrg) + vmarg + PROP(border_bottom_width));
+          mrg_y (mrg) + vmarg + PROP(border_bottom_width) + PROP(padding_bottom));
     }
   }
   else if (style->display == CTX_DISPLAY_INLINE)
