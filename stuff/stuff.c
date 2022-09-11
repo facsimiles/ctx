@@ -4857,7 +4857,7 @@ static void dir_layout (ITK *itk, Diz *diz)
   for (int i = 0; i < diz_dir_count (diz); i++)
   {
       char *d_name = diz_dir_get_data (diz, i);
-      char *ui = diz_dir_get_string (diz, i, "ui");
+      //char *ui = diz_dir_get_string (diz, i, "ui");
       int is_focused = 0;
       if (layout_find_item == i)
       {
@@ -4894,281 +4894,8 @@ static void dir_layout (ITK *itk, Diz *diz)
 	is_focused = 1;
       }
 
-        const char *media_type = "inline/text";
-	{
-        struct stat stat_buf;
-        if (lstat (newpath, &stat_buf) == 0)
-          media_type = ctx_path_get_media_type (newpath);
-	}
-
-#if 0
-        if (!strcmp (media_type, "inode/directory") &&
-                      !layout_config.list_data &&
-                      !layout_config.outliner)
-        {
-          label = 1;
-        }
-#endif
-
-        if (!strcmp (media_type, "inline/text"))
-        {
-           if (atom == CTX_ATOM_RECTANGLE)
-           {
-             media_type = "rectangle";
-           }
-           else if (atom == CTX_ATOM_CTX)
-           {
-             media_type = "ctx";
-           }
-           else if (atom == CTX_ATOM_TEXT)
-           {
-           }
-           else if (atom == CTX_ATOM_FILE)
-           {
-           }
-           else if (atom == CTX_ATOM_SYMLINK)
-           {
-           }
-        }
 
 
-        if (ui) {} 
-        else
-        if (is_focused)
-        {
-
-          if (dir_item_count_links (focused_no) == 0)
-           layout_focused_link = -1;
-
-          if (d_name[0]=='$')
-          {
-            add_context_binding (1,
-                            "run command",
-                            "run-command",
-                            "control-return");
-          }
-          //focused = 1;
-          //fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
-#if 0
-          ctx_begin_path (ctx);
-          ctx_rectangle (ctx, c->x, c->y, c->width, c->height);
-         
-          //ctx_listen (ctx, CTX_TAP_AND_HOLD, item_activate, NULL);
-          ctx_listen (ctx, CTX_DRAG, item_drag, (void*)(size_t)i, NULL);
-          //ctx_listen (ctx, CTX_TAP_AND_HOLD, item_tap_and_hold, (void*)(size_t)i, NULL);
-#endif
-
-              //BIND_KEY ("insert", "insert-text", "insert text item");
-          add_context_binding (1, "insert text item", "insert-text", "insert");
-          add_context_binding (1, "insert new page", "insert-newpage", "control-insert");
-          ctx_begin_path (ctx);
-          //ctx_rgb(ctx,1,0,0);
-          //ctx_fill(ctx);
-
-          if (!viewer)
-          {
-
-#if 0
-           if (gotpos)
-           {
-              add_context_binding (1, "reflow", "reflow", "control-f");
-           }
-           else
-           {
-              add_context_binding (1, "unflow", "unflow", "control-f");
-           }
-#endif
-
-           add_context_binding (1, "duplicate", "item-duplicate", "control-d");
-           if (!is_text_editing())
-           {
-             add_context_binding (1, "remove", "remove", "delete");
-           }
-
-          if (!is_text_editing()
-              && !item_context_active && !ui)
-          {
-
-            if (!layout_config.outliner)
-            {
-
-               if (layout_focused_link >= 0)
-               {
-                 BIND_KEY ("return", "follow-link", "follow link");
-                 BIND_KEY ("alt-down", "follow-link", "follow link");
-               }
-               else
-              {
-                if (text_editor)
-                  BIND_KEY ("return", "item-edit-text", "edit paragraph");
-                else
-                {
-                  if (atom == CTX_ATOM_SYMLINK)
-                    BIND_KEY ("return", "visit-symlink", "visit");
-                  else
-                    BIND_KEY ("return", "activate", "activate/edit");
-                }
-              }
-
-            if (!text_editor)
-            {
-              int bullet = diz_dir_get_int (diz, i, "bullet", CTX_BULLET_NONE);
-              const char *label = "cycle bullet";
-              switch (bullet)
-              {
-                case CTX_BULLET_NONE:    label = "make bullet"; break;
-                case CTX_BULLET_BULLET:  label = "make numbered"; break;
-                case CTX_BULLET_NUMBERS: label = "make todo"; break;
-                case CTX_BULLET_TODO:    label = "mark done"; break;
-                case CTX_BULLET_DONE:    label = "no bullet"; break;
-              }
-              add_context_binding (1, label, "cycle-bullet", "control-t");
-            }
-
-            if (atom == CTX_ATOM_TEXT)
-              add_context_binding (1, "join with next paragraph", "join-with-next", "control-j");
-
-            if (!text_editor)
-            {
-              const char *label = "make heading";
-              char *klass = diz_dir_get_string (diz, i, "tag");
-              if (klass)
-              {
-                label = "cycle heading";
-                free (klass);
-              }
-              else
-              {
-
-              }
-              if (atom == CTX_ATOM_TEXT)
-                add_context_binding (1, label, "cycle-heading", "control-h");
-            }
-
-              if (text_editor || vim_keys)
-              {
-                BIND_KEY ("i", "item-edit-text", "insert text");
-                BIND_KEY ("A", "item-edit-text-end", "insert text");
-              }
-            }
-          }
-          if (!text_editor && !editing_location
-                           && !is_text_editing () 
-                           && layout_focused_link < 0)
-          {
-            if (item_context_active)
-              BIND_KEY ("alt-return", "context-menu-hide", "item properties");
-            else
-              BIND_KEY ("alt-return", "context-menu-show", "item properties");
-          }
-
-
-          if (!layout_config.outliner
-        //    && !is_text_editing ()
-              && !item_context_active)
-          {
-            add_context_binding (1, "move after next sibling",
-                                    "move-after-next-sibling",
-                                    "control-page-down");
-            add_context_binding (1, "move before previous sibling",
-                                    "move-before-previous-sibling",
-                                    "control-page-up");
-
-            if (!is_text_editing())
-            {
-            ctx_add_key_binding (ctx, "control-down", NULL, "grow height", grow_height, NULL);
-            ctx_add_key_binding (ctx, "control-up", NULL, "shrink height", shrink_height, NULL);
-
-            ctx_add_key_binding (ctx, "control-left", NULL, "shrink width", shrink_width, NULL);
-            ctx_add_key_binding (ctx, "control-right", NULL, "grow width", grow_width, NULL);
-            }
-
-#if 0
-          if (gotpos)
-          {
-          BIND_KEY("shift-control-left", "item-move-pos left", "item-move-pos left");
-          BIND_KEY("shift-control-up", "item-move-pos up", "item-move-pos up");
-          BIND_KEY("shift-control-right", "item-move-pos right", "item-move-pos right");
-          BIND_KEY("shift-control-down", "item-move-pos down", "item-move-pos down");
-
-          }
-          else
-#endif
-          {
-#if 0
-            add_context_binding (1,"move after next sibling",
-                                 "move-after-next-sibling",
-                                 "control-down");
-            add_context_binding (1,"move before previous sibling",
-                                 "move-before-previous-sibling",
-                                 "control-up");
-#endif
-            BIND_KEY ("shift-control-down",
-                      "move-after-next-sibling",
-                      "move after next sibling");
-            BIND_KEY ("shift-control-up",
-                      "move-before-previous-sibling",
-                      "move before previoue sibling");
-
-            if (!text_editor)
-            {
-#if 0
-              BIND_KEY ("control-left", "make-sibling-of-parent", "make sibling of parent");
-
-              BIND_KEY ("control-right", "make-child-of-previous", "make child of previous");
-#else
-              if (!diz_dir_has_children (diz, focused_no))
-              {
-                 BIND_KEY ("control-right", "outline-focus-first-child", "create child item");
-              }
-              add_context_binding (1,
-                              "demote",
-                              "make-sibling-of-parent",
-                              "shift-control-left");
-              add_context_binding (1,
-                              "promote",
-                              "make-child-of-previous",
-                              "shift-control-right");
-#endif
-            }
-
-          }
-
-
-          if (atom == CTX_ATOM_FILE && strcmp (media_type, "inode/directory"))
-           {
-                   // XXX only if executable
-            int runnable = diz_dir_get_int (diz, focused_no, "runnable", 0);
-            if (runnable)
-            {
-              add_context_binding (1,
-                            "make non runnable",
-                            "unset runnable",
-                            "control-r");
-              int live = diz_dir_get_int (diz, focused_no, "live", 0);
-              if (live)
-              add_context_binding (1,
-                            "make unlive",
-                            "unset live",
-                            "control-l");
-              else
-              add_context_binding (1,
-                            "make live",
-                            "set live 1",
-                            "control-l");
-            }
-            else
-            add_context_binding (1,
-                            "make runnable",
-                            "set runnable 1",
-                            "control-r");
-                            
-           }
-          }
-
-          }
-          //itk_labelf (itk, "%s\n", ctx_path_get_media_type (newpath));
-        }
 
       switch (atom)
       {
@@ -5335,7 +5062,301 @@ static void dir_layout (ITK *itk, Diz *diz)
       free (newpath);
       if (is_focused)
         focused_control = c;
+      free (d_name);
   }
+
+  // add key/context bindings for active item
+  if (focused_no>=0){
+          char *d_name = diz_dir_get_data (diz, focused_no);
+      char *ui = diz_dir_get_string (diz, focused_no, "ui");
+      CtxAtom atom = diz_dir_type_atom (diz, focused_no);
+        char *newpath = malloc (strlen(diz->path)+strlen(d_name) + 2);
+        if (!strcmp (diz->path, PATH_SEP))
+          sprintf (newpath, "%s%s", PATH_SEP, d_name);
+        else
+          sprintf (newpath, "%s%s%s", diz->path, PATH_SEP, d_name);
+
+        const char *media_type = "inline/text";
+	{
+          struct stat stat_buf;
+          if (lstat (newpath, &stat_buf) == 0)
+            media_type = ctx_path_get_media_type (newpath);
+	}
+
+#if 0
+        if (!strcmp (media_type, "inode/directory") &&
+                      !layout_config.list_data &&
+                      !layout_config.outliner)
+        {
+          label = 1;
+        }
+#endif
+
+        if (!strcmp (media_type, "inline/text"))
+        {
+           if (atom == CTX_ATOM_RECTANGLE)
+           {
+             media_type = "rectangle";
+           }
+           else if (atom == CTX_ATOM_CTX)
+           {
+             media_type = "ctx";
+           }
+           else if (atom == CTX_ATOM_TEXT)
+           {
+           }
+           else if (atom == CTX_ATOM_FILE)
+           {
+           }
+           else if (atom == CTX_ATOM_SYMLINK)
+           {
+           }
+        }
+
+        if (ui) {
+          free (ui);
+	} 
+        else
+        {
+
+          if (dir_item_count_links (focused_no) == 0)
+           layout_focused_link = -1;
+
+          if (d_name[0]=='$')
+          {
+            add_context_binding (1,
+                            "run command",
+                            "run-command",
+                            "control-return");
+          }
+          //focused = 1;
+          //fprintf (stderr, "\n{%i %i %i}\n", c->no, itk->focus_no, i);
+#if 0
+          ctx_begin_path (ctx);
+          ctx_rectangle (ctx, c->x, c->y, c->width, c->height);
+         
+          //ctx_listen (ctx, CTX_TAP_AND_HOLD, item_activate, NULL);
+          ctx_listen (ctx, CTX_DRAG, item_drag, (void*)(size_t)i, NULL);
+          //ctx_listen (ctx, CTX_TAP_AND_HOLD, item_tap_and_hold, (void*)(size_t)i, NULL);
+#endif
+
+              //BIND_KEY ("insert", "insert-text", "insert text item");
+          add_context_binding (1, "insert text item", "insert-text", "insert");
+          add_context_binding (1, "insert new page", "insert-newpage", "control-insert");
+          ctx_begin_path (ctx);
+          //ctx_rgb(ctx,1,0,0);
+          //ctx_fill(ctx);
+
+          if (!viewer)
+          {
+
+#if 0
+           if (gotpos)
+           {
+              add_context_binding (1, "reflow", "reflow", "control-f");
+           }
+           else
+           {
+              add_context_binding (1, "unflow", "unflow", "control-f");
+           }
+#endif
+
+           add_context_binding (1, "duplicate", "item-duplicate", "control-d");
+           if (!is_text_editing())
+           {
+             add_context_binding (1, "remove", "remove", "delete");
+           }
+
+          if (!is_text_editing()
+              && !item_context_active && !ui)
+          {
+
+            if (!layout_config.outliner)
+            {
+
+               if (layout_focused_link >= 0)
+               {
+                 BIND_KEY ("return", "follow-link", "follow link");
+                 BIND_KEY ("alt-down", "follow-link", "follow link");
+               }
+               else
+              {
+                if (text_editor)
+                  BIND_KEY ("return", "item-edit-text", "edit paragraph");
+                else
+                {
+                  if (atom == CTX_ATOM_SYMLINK)
+                    BIND_KEY ("return", "visit-symlink", "visit");
+                  else
+                    BIND_KEY ("return", "activate", "activate/edit");
+                }
+              }
+
+            if (!text_editor)
+            {
+              int bullet = diz_dir_get_int (diz, focused_no, "bullet", CTX_BULLET_NONE);
+              const char *label = "cycle bullet";
+              switch (bullet)
+              {
+                case CTX_BULLET_NONE:    label = "make bullet"; break;
+                case CTX_BULLET_BULLET:  label = "make numbered"; break;
+                case CTX_BULLET_NUMBERS: label = "make todo"; break;
+                case CTX_BULLET_TODO:    label = "mark done"; break;
+                case CTX_BULLET_DONE:    label = "no bullet"; break;
+              }
+              add_context_binding (1, label, "cycle-bullet", "control-t");
+            }
+
+            if (atom == CTX_ATOM_TEXT)
+              add_context_binding (1, "join with next paragraph", "join-with-next", "control-j");
+
+            if (!text_editor)
+            {
+              const char *label = "make heading";
+              char *klass = diz_dir_get_string (diz, focused_no, "tag");
+              if (klass)
+              {
+                label = "cycle heading";
+                free (klass);
+              }
+              else
+              {
+
+              }
+              if (atom == CTX_ATOM_TEXT)
+                add_context_binding (1, label, "cycle-heading", "control-h");
+            }
+
+              if (text_editor || vim_keys)
+              {
+                BIND_KEY ("i", "item-edit-text", "insert text");
+                BIND_KEY ("A", "item-edit-text-end", "insert text");
+              }
+            }
+          }
+          if (!text_editor && !editing_location
+                           && !is_text_editing () 
+                           && layout_focused_link < 0)
+          {
+            if (item_context_active)
+              BIND_KEY ("alt-return", "context-menu-hide", "item properties");
+            else
+              BIND_KEY ("alt-return", "context-menu-show", "item properties");
+          }
+
+
+          if (!layout_config.outliner
+        //    && !is_text_editing ()
+              && !item_context_active)
+          {
+            add_context_binding (1, "move after next sibling",
+                                    "move-after-next-sibling",
+                                    "control-page-down");
+            add_context_binding (1, "move before previous sibling",
+                                    "move-before-previous-sibling",
+                                    "control-page-up");
+
+            if (!is_text_editing())
+            {
+            ctx_add_key_binding (ctx, "control-down", NULL, "grow height", grow_height, NULL);
+            ctx_add_key_binding (ctx, "control-up", NULL, "shrink height", shrink_height, NULL);
+
+            ctx_add_key_binding (ctx, "control-left", NULL, "shrink width", shrink_width, NULL);
+            ctx_add_key_binding (ctx, "control-right", NULL, "grow width", grow_width, NULL);
+            }
+
+#if 0
+          if (gotpos)
+          {
+          BIND_KEY("shift-control-left", "item-move-pos left", "item-move-pos left");
+          BIND_KEY("shift-control-up", "item-move-pos up", "item-move-pos up");
+          BIND_KEY("shift-control-right", "item-move-pos right", "item-move-pos right");
+          BIND_KEY("shift-control-down", "item-move-pos down", "item-move-pos down");
+
+          }
+          else
+#endif
+          {
+#if 0
+            add_context_binding (1,"move after next sibling",
+                                 "move-after-next-sibling",
+                                 "control-down");
+            add_context_binding (1,"move before previous sibling",
+                                 "move-before-previous-sibling",
+                                 "control-up");
+#endif
+            BIND_KEY ("shift-control-down",
+                      "move-after-next-sibling",
+                      "move after next sibling");
+            BIND_KEY ("shift-control-up",
+                      "move-before-previous-sibling",
+                      "move before previoue sibling");
+
+            if (!text_editor)
+            {
+#if 0
+              BIND_KEY ("control-left", "make-sibling-of-parent", "make sibling of parent");
+
+              BIND_KEY ("control-right", "make-child-of-previous", "make child of previous");
+#else
+              if (!diz_dir_has_children (diz, focused_no))
+              {
+                 BIND_KEY ("control-right", "outline-focus-first-child", "create child item");
+              }
+              add_context_binding (1,
+                              "demote",
+                              "make-sibling-of-parent",
+                              "shift-control-left");
+              add_context_binding (1,
+                              "promote",
+                              "make-child-of-previous",
+                              "shift-control-right");
+#endif
+            }
+
+          }
+
+
+          if (atom == CTX_ATOM_FILE && strcmp (media_type, "inode/directory"))
+           {
+                   // XXX only if executable
+            int runnable = diz_dir_get_int (diz, focused_no, "runnable", 0);
+            if (runnable)
+            {
+              add_context_binding (1,
+                            "make non runnable",
+                            "unset runnable",
+                            "control-r");
+              int live = diz_dir_get_int (diz, focused_no, "live", 0);
+              if (live)
+              add_context_binding (1,
+                            "make unlive",
+                            "unset live",
+                            "control-l");
+              else
+              add_context_binding (1,
+                            "make live",
+                            "set live 1",
+                            "control-l");
+            }
+            else
+            add_context_binding (1,
+                            "make runnable",
+                            "set runnable 1",
+                            "control-r");
+                            
+           }
+          }
+
+          }
+          //itk_labelf (itk, "%s\n", ctx_path_get_media_type (newpath));
+        }
+	free (newpath);
+	free (d_name);
+  }
+
+
+
 #endif
   layout_last_page = last_page;
 
