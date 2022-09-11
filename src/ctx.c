@@ -2404,6 +2404,7 @@ ctx_get_contents2 (const char     *uri,
                    long           *length,
                    long            max_len)
 {
+	fprintf (stderr, "%s\n", uri);
   char *temp_uri = NULL; // XXX XXX breaks with data uri's
   int   success  = -1;
 

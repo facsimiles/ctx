@@ -6217,7 +6217,11 @@ static int card_files (ITK *itk_, void *data)
         if (contents)
         {
            ctx_save (ctx);
-           itk_print_xml (mrg, (char*)contents);
+           if(0)itk_print_xml (mrg, (char*)contents);
+	   itk_xml_render (mrg, diz->path,
+			   NULL, NULL,
+			   NULL, NULL,
+			   contents);
            ctx_restore (ctx);
            free (contents);
         }

@@ -477,6 +477,7 @@ struct _Mrg {
   char *entry_copy;
   int   entry_pos;
   ITKPanel *panel;
+  char *uri_base;
 
   CtxList *old_controls;
   CtxList *controls;
@@ -502,6 +503,7 @@ struct _Mrg {
   int   line_no;
   int   lines_drawn;
   int   light_mode;
+
 
 ////////////////////////////////
 
@@ -6874,22 +6876,79 @@ char *_mrg_resolve_uri (const char *base_uri, const char *uri);
 typedef struct _MrgImage MrgImage;
 struct _MrgImage
 {
+  char *uri;
   char *path;
+  int width;
+  int height;
   CtxBuffer *surface;
 };
 
+static CtxList *images = NULL;
 
-MrgImage *mrg_query_image (Mrg        *mrg,
-                           const char *path,
-                           int        *width,
-                           int        *height)
+static MrgImage *_mrg_image (Mrg *mrg, const char *path)
 {
-  fprintf (stderr, "%s\n", path);
+  char *uri =  _mrg_resolve_uri (mrg->uri_base, path);
+
+  for (CtxList *l = images; l; l = l->next)
+  {
+    MrgImage *image = l->data;
+    if (!strcmp (path, image->uri))
+    {
+       return image;
+    }
+  }
+
+  char *p = strchr (uri, ':');
+  if (p)
+  {
+    if (*p) p++;
+    if (*p) p++;
+    if (*p) p++;
+  }
+  else p = uri;
+
+  int w = 0, h = 0;
+
+  ctx_texture_load (mrg->ctx, p, &w, &h, NULL);
+  if (w)
+  {
+    MrgImage *image = calloc (sizeof (MrgImage), 1);
+    image->width = w;
+    image->height = h;
+    image->uri = strdup (path);
+    image->path = strdup (p);
+    ctx_list_prepend (&images, image);
+    free (uri);
+    return _mrg_image (mrg, path);
+  }
+  free (uri);
   return NULL;
+}
+
+int mrg_query_image (Mrg        *mrg,
+                     const char *path,
+                     int        *width,
+                     int        *height)
+{
+  MrgImage *image = _mrg_image (mrg, path);
+  if (image)
+  {
+    *width = image->width;
+    *height = image->height;
+    return 1;
+  }
+  return 0;
 }
 
 void mrg_image (Mrg *mrg, float x0, float y0, float width, float height, float opacity, const char *path, int *used_width, int *used_height)
 {
+  MrgImage *image = _mrg_image (mrg, path);
+  if (image)
+  {
+    ctx_draw_image (mrg->ctx, image->path, x0, y0, width, height);
+  }
+
+
 }
 
 enum
@@ -7273,6 +7332,10 @@ void itk_xml_render (Mrg *mrg,
   int in_style        = 0;
   int should_be_empty = 0;
   int tagpos          = 0;
+
+  if (mrg->uri_base)
+	  free (mrg->uri_base);
+  mrg->uri_base = strdup (uri_base);
 
   CtxString *style = ctx_string_new ("");
   int whitespaces = 0;
@@ -7975,10 +8038,16 @@ mrg_get_contents_default (const char  *referer,
                           long        *length,
                           void        *ignored_user_data)
 {
+  Mrg *mrg = ignored_user_data;
+  int ret = 0;
+  char *uri =  _mrg_resolve_uri (mrg->uri_base, input_uri);
+  ctx_get_contents (uri, contents, length);
+  free (uri);
+  return ret;
+#if 0
   CtxList *i;
 
   /* should resolve before mrg_get_contents  */
-  char *uri = _mrg_resolve_uri (referer, input_uri);
   //fprintf (stderr, "%s %s\n", uri, input_uri);
 
   for (i = cache; i; i = i->next)
@@ -8035,6 +8104,7 @@ mrg_get_contents_default (const char  *referer,
   }
 
   return mrg_get_contents_default (referer, uri, contents, length, ignored_user_data);
+#endif
 }
 
 void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
@@ -8081,11 +8151,11 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
 
   mrg->style = ctx_string_new ("");
 
-  mrg_set_mrg_get_contents (mrg, mrg_get_contents_default, NULL);
+  mrg_set_mrg_get_contents (mrg, mrg_get_contents_default, mrg);
   mrg->style_global = ctx_string_new ("");
 
 
-  {
+  if(0){
     const char *global_css_uri = "mrg:theme.css";
 
     if (getenv ("MRG_CSS"))
