@@ -4922,14 +4922,15 @@ static void dir_layout (ITK *itk, Diz *diz)
 	    char *combined = ctx_strdup_printf ("%s.%s%s%s%s",
                                 element, klass, id?"#":"", id?id:"", pseudo);
 
-	    if (got_element[level] == 0)
+	    if (got_element[level])
 	    {
-	      itk_start_with_style (itk, combined, NULL, NULL);
-	      itk_start_with_style (itk, "div.text", NULL, style);
+	      itk_start_with_style (itk, combined, NULL, style);
+	      itk_start (itk, "div.text", NULL);
 	    }
 	    else
 	    {
-	      itk_start_with_style (itk, combined, NULL, style);
+	      itk_start_with_style (itk, combined, NULL, NULL);
+	      itk_start_with_style (itk, "div.text", NULL, style);
 	    }
 	    free (combined);
 	    if (style) free (style);
@@ -5000,10 +5001,11 @@ static void dir_layout (ITK *itk, Diz *diz)
 	    ctx_begin_path (ctx);
 
 
-            if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP &&
-	        got_element[level] == 0)
+            if (diz_dir_type_atom (diz, i+1) != CTX_ATOM_STARTGROUP 
+			    //&& got_element[level] == 0
+			    )
 	    {
-	      itk_end (itk, &extent);
+	      itk_end (itk, NULL);
 	    }
 
 	  }
@@ -5028,7 +5030,7 @@ static void dir_layout (ITK *itk, Diz *diz)
           level ++;
           if (!is_folded && diz_dir_get_int (diz, i-1, "folded", 0))
             is_folded = level;
-	  if (!is_folded && got_element[level] == 0)
+	  if (!is_folded && got_element[level-1] == 0)
 	    itk_start (itk, "div.children", NULL);
           break;
         case CTX_ATOM_ENDGROUP:
