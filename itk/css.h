@@ -1640,7 +1640,7 @@ const char * html_css =
 ".wallpaper, .itk{background:#124;color:#f43}\n"
 ".focused{background:#fff;color:#000}\n"
 
-" .children{ padding-left:3em; }\n"
+" .children{ border:1px solid green;padding-left:3em; }\n"
 " .selection{background:white; color: red; }\n"
 " :focused {color: yellow; }\n"
 " .fnord { color: green; }\n"
