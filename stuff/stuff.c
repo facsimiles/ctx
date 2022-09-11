@@ -570,7 +570,13 @@ static void _set_location (const char *location)
   }
 
 
-  if (location[0] == '/' || location[0] == '.')
+  if (!strncmp (location, "itk:", 4))
+  {
+      diz_dir_set_path_bare (diz, location);
+      drop_item_renderers (ctx);
+      layout_config.monospace = 0;
+  }
+  else if (location[0] == '/' || location[0] == '.')
   {
     char *loc = (char*)location;
     if (location[0] == '.' && location[1] == '/')
@@ -7122,13 +7128,16 @@ int stuff_main (int argc, char **argv)
     exit(1);
   }
 
+#if 0
   if (path && strchr (path, ':'))
   {
     path = strchr (path, ':') + 1;
     if (path[1] == '/') path++;
     if (path[1] == '/') path++;
   }
+#endif
   commandline = ctx_string_new ("");
+
 
   if (text_editor)
   {
@@ -7159,7 +7168,7 @@ int stuff_main (int argc, char **argv)
     }
     else
     {
-      name = NULL;
+      name = dir;
     }
     set_location (dir);
     focused_no = diz_dir_name_to_no (diz, name);
@@ -7174,11 +7183,6 @@ int stuff_main (int argc, char **argv)
   }
 
   itk_main (card_files, NULL);
-
-
-  //fprintf (stderr, "parents: %i\n",
-  //                diz_dir_value_count (diz, -1, "parent"));
-
   save_metadata ();
 
   ctx_string_free (commandline, 1);
@@ -7188,7 +7192,7 @@ int stuff_main (int argc, char **argv)
 }
 
 
-#include <libgen.h>
+//#include <libgen.h>
 
 
 void ctx_screenshot (Ctx *ctx, const char *path);

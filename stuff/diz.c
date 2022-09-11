@@ -1169,6 +1169,19 @@ diz_dir_update_files (Diz *diz)
 
 
 void
+diz_dir_set_path_bare (Diz *diz,
+                           const char *path)
+{
+  if (diz->title) { free (diz->title); diz->title = NULL; }
+
+  if (diz->path)
+    free (diz->path);
+  diz->path = strdup (path);
+  diz->count = 0;
+  diz->is_text_editor = 0;
+}
+
+void
 diz_dir_set_path_text_editor  (Diz *diz,
                            const char *path)
 {

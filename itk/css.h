@@ -8040,11 +8040,29 @@ _mr_get_contents (const char  *referer,
 
 typedef struct _CacheEntry {
   char *uri;
-  char *contents;
   long  length;
+  char *contents;
 } CacheEntry;
 
 static CtxList *cache = NULL;
+
+
+#ifdef ITK_HAVE_FS
+
+static int itk_static_get_contents (const char *path, char **contents, long *length)
+{
+   for (int i = 0; itk_fs[i].uri; i++)
+   {
+     if (!strcmp (path, itk_fs[i].uri))
+     {
+	*contents = strdup(itk_fs[i].data); /// XXX: eeek why need a copy?
+	*length = itk_fs[i].length;
+        return 0;
+     }
+   }
+   return -1;
+}
+#endif
 
 /* caching uri fetcher
  */
@@ -8102,7 +8120,15 @@ mrg_get_contents_default (const char  *referer,
     long  l = 0;
 
     entry->uri = uri;
-    ctx_get_contents (uri, &c, &l);
+
+    if (!strncmp (uri, "itk:", 4))
+    {
+      itk_static_get_contents (uri + 4, &c, &l);
+    }
+    else
+    {
+      ctx_get_contents (uri, &c, &l);
+    }
     if (c){
       entry->contents = c;
       entry->length = l;

@@ -2404,7 +2404,6 @@ ctx_get_contents2 (const char     *uri,
                    long           *length,
                    long            max_len)
 {
-	fprintf (stderr, "%s\n", uri);
   char *temp_uri = NULL; // XXX XXX breaks with data uri's
   int   success  = -1;
 
@@ -2416,7 +2415,11 @@ ctx_get_contents2 (const char     *uri,
   }
 
   if (strchr (uri, '#'))
+  {
+    if (temp_uri == NULL)
+      uri = temp_uri = strdup (uri);
    strchr (uri, '#')[0]=0;
+  }
 
   for (CtxList *l = registered_contents; l; l = l->next)
   {

@@ -2491,6 +2491,7 @@ const char *ctx_path_get_media_type (const char *path);
 typedef enum {
   CTX_MEDIA_TYPE_NONE=0,
   CTX_MEDIA_TYPE_TEXT,
+  CTX_MEDIA_TYPE_HTML,
   CTX_MEDIA_TYPE_IMAGE,
   CTX_MEDIA_TYPE_VIDEO,
   CTX_MEDIA_TYPE_AUDIO,

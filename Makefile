@@ -185,7 +185,7 @@ ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_ARM_NEON -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
-itk.o: itk/itk.c itk/css.h itk/itk.h build.conf Makefile 
+itk.o: itk/itk.c itk/css.h itk/itk.h build.conf Makefile static.inc
 	$(CCC) itk/itk.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 deps.o: deps.c build.conf Makefile 
@@ -274,3 +274,5 @@ itk/w3c-constants.h: itk/css.h Makefile squoze/squoze
 	for a in `cat itk/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'CTX_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -32 $$b`u // \"$$b\"";done \
 		>> $@
 	echo '#endif' >> $@
+static.inc: static/* static/*/* tools/gen_fs.sh
+	./tools/gen_fs.sh static > $@

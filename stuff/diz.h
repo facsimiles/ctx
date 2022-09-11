@@ -43,6 +43,9 @@ void diz_dir_save     (Diz *diz);
 Diz *diz_dir_new      (void);
 void diz_dir_destroy  (Diz *diz);
 void diz_dir_set_path (Diz *diz, const char *path);
+void
+diz_dir_set_path_bare (Diz *diz,
+                           const char *path);
 
 void
 diz_dir_set_path_text_editor  (Diz *diz, const char *path);

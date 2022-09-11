@@ -368,6 +368,7 @@ int main (int argc, char **argv)
 
   if (input_path && !commandline)
   {
+    const char*orig_path = input_path;
     if (strchr (input_path, ':'))
     {
       input_path = strchr (input_path, ':') + 1;
@@ -419,9 +420,16 @@ int main (int argc, char **argv)
     {
       char *new_argc[] = {argv[0], "-E", input_path, NULL};
 
+	    fprintf (stderr, "u1p1\n");
       return stuff_main (3, new_argc);
 
   //  return ctx_text_main (argc, argv);
+    }
+
+    if (!strncmp (orig_path, "itk:", 4))
+    {
+      char *argv[]={"stuff", orig_path, NULL};
+      return stuff_main (2, argv);
     }
 #endif
 
