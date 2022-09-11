@@ -377,7 +377,8 @@ int main (int argc, char **argv)
 
     input_path = realpath (input_path, NULL);
 
-    const char *media_type = ctx_path_get_media_type (input_path);
+    const char *media_type = input_path?ctx_path_get_media_type (input_path):
+	    "file/octet-stream";
     CtxMediaTypeClass media_type_class = ctx_media_type_class (media_type);
 
     if (media_type_class){};

@@ -526,7 +526,7 @@ void itk_reset (ITK *itk)
     free (itk_style);
   unsigned char *style = NULL;
 #if CTX_FONTS_FROM_FILE
-  ctx_get_contents ("/tmp/itk-style", &style, NULL);
+  //ctx_get_contents ("/tmp/itk-style", &style, NULL);
 #endif
   if (style)
   {

@@ -28,7 +28,7 @@
           #perf td { text-align: right;}
           #perf td:first-child { text-align: left;}
           body {
-            font-family: 'Sans'; font-size: 12pt;
+            font-family: 'Sans'; font-size: 20px;
           }
           dl dt {
                   font-weight: bold;

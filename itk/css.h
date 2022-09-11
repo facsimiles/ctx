@@ -353,6 +353,7 @@ struct _MrgAbsolute {
   int       count; 
 };
 
+
 struct _Mrg {
   Ctx             *ctx;
   Ctx            *document_ctx;
@@ -554,6 +555,13 @@ const char * mrg_intern_string (const char *str)
   ctx_list_append (&interns, (void*)str);
   return str;
 }
+
+int
+mrg_get_contents (Mrg         *mrg,
+                  const char  *referer,
+                  const char  *input_uri,
+                  char       **contents,
+                  long        *length);
 
 /*
  * Copyright (c) 2002, 2003, Øyvind Kolås <pippin@hodefoting.com>
@@ -758,6 +766,7 @@ enum
   c_eat = 1,                    /* request that another char be used for the next state */
   c_store = 2                   /* store the current char in the output buffer */
 };
+
 
 typedef struct
 {
@@ -1974,7 +1983,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
             ps->val[ps->val_l]=0;
 
             if(mrg->mrg_get_contents){
-              char *contents;
+              char *contents = NULL;
               long length;
               char *uri = ps->val;
 
@@ -1988,13 +1997,17 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
                * really include this file
                */
 
-              ctx_get_contents (uri, (uint8_t**)&contents, &length);
+              mrg_get_contents (mrg, mrg->uri_base, uri, &contents, &length);
               if (contents)
               {
                 CtxCssParseState child_parser = {0,};
                 _ctx_stylesheet_add (&child_parser, mrg, contents, uri, priority, error);
                 free (contents);
               }
+	      else
+	      {
+		 fprintf (stderr, "404 - %s\n", uri);
+	      }
             }
 
             for (no = 0; no < ps->rule_no+1; no ++)
@@ -3589,6 +3602,7 @@ mrg_get_contents (Mrg         *mrg,
                   char       **contents,
                   long        *length)
 {
+  if (!referer) referer = mrg->uri_base;
   if (mrg->mrg_get_contents)
   {
     int ret;
@@ -7280,7 +7294,7 @@ char *_mrg_resolve_uri (const char *base_uri, const char *uri)
   else
   {
     if (uri[0] == '/')
-      sprintf (ret, "%s", path);
+      sprintf (ret, "/%s", path);
     else
     {
       if (strrchr (base_path, '/'))
@@ -7335,7 +7349,9 @@ void itk_xml_render (Mrg *mrg,
 
   if (mrg->uri_base)
 	  free (mrg->uri_base);
-  mrg->uri_base = strdup (uri_base);
+  mrg->uri_base = NULL;
+  if (uri_base)
+    mrg->uri_base = strdup (uri_base);
 
   CtxString *style = ctx_string_new ("");
   int whitespaces = 0;
@@ -7951,7 +7967,7 @@ _mrg_file_get_contents (const char  *path,
   return 0;
 }
 
-
+#if 0
 static int
 _mr_get_contents (const char  *referer,
                  const char  *uri,
@@ -8019,15 +8035,16 @@ _mr_get_contents (const char  *referer,
 
   return -1;
 }
+#endif
 
-
-static CtxList *cache = NULL;
 
 typedef struct _CacheEntry {
   char *uri;
   char *contents;
   long  length;
 } CacheEntry;
+
+static CtxList *cache = NULL;
 
 /* caching uri fetcher
  */
@@ -8039,18 +8056,17 @@ mrg_get_contents_default (const char  *referer,
                           void        *ignored_user_data)
 {
   Mrg *mrg = ignored_user_data;
-  int ret = 0;
   char *uri =  _mrg_resolve_uri (mrg->uri_base, input_uri);
-  ctx_get_contents (uri, contents, length);
+#if 0 // without caching
+  int ret = 0;
+  ctx_get_contents (uri, (uint8_t**)contents, length);
   free (uri);
-  return ret;
-#if 0
-  CtxList *i;
-
+  return *contents!=NULL;
+#else
   /* should resolve before mrg_get_contents  */
   //fprintf (stderr, "%s %s\n", uri, input_uri);
 
-  for (i = cache; i; i = i->next)
+  for (CtxList *i = cache; i; i = i->next)
   {
     CacheEntry *entry = i->data;
     if (!strcmp (entry->uri, uri))
@@ -8059,6 +8075,7 @@ mrg_get_contents_default (const char  *referer,
 	{
 	  *contents = NULL;
           if (length) *length = 0;
+  free (uri);
           return -1;
 	}
 
@@ -8066,7 +8083,8 @@ mrg_get_contents_default (const char  *referer,
       memcpy (*contents, entry->contents, entry->length);
       (*contents)[entry->length]=0;
       free (uri);
-      if (length) *length = entry->length;
+      if (length)
+	*length = entry->length;
       if (*length)
       {
         return 0;
@@ -8084,7 +8102,7 @@ mrg_get_contents_default (const char  *referer,
     long  l = 0;
 
     entry->uri = uri;
-    _mr_get_contents (referer, uri, &c, &l);
+    ctx_get_contents (uri, &c, &l);
     if (c){
       entry->contents = c;
       entry->length = l;
@@ -8103,7 +8121,8 @@ mrg_get_contents_default (const char  *referer,
 #endif
   }
 
-  return mrg_get_contents_default (referer, uri, contents, length, ignored_user_data);
+  int ret = mrg_get_contents_default (referer, uri, contents, length, ignored_user_data);
+  return ret;
 #endif
 }
 
