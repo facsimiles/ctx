@@ -68,6 +68,8 @@ void print_sep (void)
   count ++;
 }
 
+#include <libgen.h>
+
 int main (int argc, char **argv)
 {
   int dim = 52;

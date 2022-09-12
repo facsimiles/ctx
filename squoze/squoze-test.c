@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#define SQUOZE_IMPLEMENTATION_32 1
+#define SQUOZE_IMPLEMENTATION_62 1
+#define SQUOZE_IMPLEMENTATION_52 1
+
 #include "squoze.h"
 
 const char *strings[]={"0",
@@ -155,7 +159,7 @@ const char *strings[]={"0",
 int main (int argc, char **argv)
 {
   int wrong = 0;
-  int dim = 6;
+  int dim = 52;
 
   for (int i = 0; strings[i]; i++)
   {
@@ -163,7 +167,7 @@ int main (int argc, char **argv)
     const char *decoded;
 
     char input[4096];
-    for (int j = 0; j < 100; j++)
+    for (int j = 0; j < 10400; j++)
     {
       if (j)
         sprintf (input, "%s-%i", strings[i], j);
@@ -172,15 +176,15 @@ int main (int argc, char **argv)
 
     switch (dim)
     {
-       case 6:
+       case 32:
         hash = squoze32 (input);
         decoded = squoze32_decode (hash);
         break;
-       case 12:
+       case 62:
         hash = squoze62 (input);
         decoded = squoze62_decode (hash);
         break;
-       case 10:
+       case 52:
        default:
         hash = squoze52 (input);
         decoded = squoze52_decode (hash);

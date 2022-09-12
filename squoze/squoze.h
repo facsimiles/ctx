@@ -323,13 +323,13 @@ static inline uint64_t _squoze (int squoze_dim, const char *utf8)
   squoze5_encode (utf8, strlen (utf8), encoded, &encoded_len, 1, 1);
   uint64_t hash = 0;
   int  utf5 = (encoded[0] != SQUOZE_ENTER_SQUEEZE);
-  uint64_t multiplier = ((squoze_dim == 32) ? 0x25bd1e975
-                                           : 0x98173415bd1e975);
+  uint64_t multiplier = ((squoze_dim == 32) ? 0x123456789
+                                           : 0x123456789abcdef);
 
   uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
   uint64_t all_bits        = overflowed_mask - 1;
 
-  int rshift = (squoze_dim == 32) ? 8 : 16;
+  int rshift = (squoze_dim == 32) ? 6 : 13;
   int words = squoze_words_for_dim (squoze_dim);
 
   if (encoded_len - (!utf5) <= words)
@@ -340,6 +340,7 @@ static inline uint64_t _squoze (int squoze_dim, const char *utf8)
       hash = hash | (val << (5*(i-(!utf5))));
     }
     hash <<= 1; // make room for the bit that encodes utf5 or squeeze
+    hash |= utf5;
   }
   else
   {
@@ -349,11 +350,11 @@ static inline uint64_t _squoze (int squoze_dim, const char *utf8)
       hash = hash ^ val;
       hash = hash * multiplier;
       hash = hash & all_bits;
-      hash = hash ^ ((hash >> rshift));
+      hash = hash ^ (hash >> rshift);
     }
     hash |= overflowed_mask;
   }
-  return hash | utf5;
+  return hash;
 }
 
 typedef struct _CashInterned CashInterned;
