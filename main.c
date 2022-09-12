@@ -426,7 +426,9 @@ int main (int argc, char **argv)
   //  return ctx_text_main (argc, argv);
     }
 
-    if (!strncmp (orig_path, "itk:", 4))
+    if (!strncmp (orig_path, "itk:", 4) ||
+        !strncmp (orig_path, "http:", 5) ||
+        !strncmp (orig_path, "https:", 6))
     {
       char *argv[]={"stuff", orig_path, NULL};
       return stuff_main (2, argv);

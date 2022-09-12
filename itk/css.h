@@ -6912,6 +6912,8 @@ static MrgImage *_mrg_image (Mrg *mrg, const char *path)
     }
   }
 
+  int w = 0, h = 0;
+#if 0
   char *p = strchr (uri, ':');
   if (p)
   {
@@ -6920,17 +6922,18 @@ static MrgImage *_mrg_image (Mrg *mrg, const char *path)
     if (*p) p++;
   }
   else p = uri;
-
-  int w = 0, h = 0;
-
   ctx_texture_load (mrg->ctx, p, &w, &h, NULL);
+#else
+  ctx_texture_load (mrg->ctx, uri, &w, &h, NULL);
+#endif
+
   if (w)
   {
     MrgImage *image = calloc (sizeof (MrgImage), 1);
     image->width = w;
     image->height = h;
     image->uri = strdup (path);
-    image->path = strdup (p);
+    image->path = strdup (uri);
     ctx_list_prepend (&images, image);
     free (uri);
     return _mrg_image (mrg, path);
@@ -8049,13 +8052,20 @@ static CtxList *cache = NULL;
 
 #ifdef ITK_HAVE_FS
 
-static int itk_static_get_contents (const char *path, char **contents, long *length)
+/* we define it here, but it is actually only used from within ctx
+ * when ITK_HAVE_FS is also defined for that compilation
+ */
+int itk_static_get_contents (const char *path, char **contents, long *length)
 {
+   if (!strncmp (path, "itk:", 4)) path += 4;
+   if (path[0] == '/') path++;
    for (int i = 0; itk_fs[i].uri; i++)
    {
      if (!strcmp (path, itk_fs[i].uri))
      {
-	*contents = strdup(itk_fs[i].data); /// XXX: eeek why need a copy?
+	*contents = malloc(itk_fs[i].length);
+	memcpy (*contents, itk_fs[i].data, itk_fs[i].length);
+	/// XXX: eeek why need a copy?
 	*length = itk_fs[i].length;
         return 0;
      }
@@ -8121,14 +8131,8 @@ mrg_get_contents_default (const char  *referer,
 
     entry->uri = uri;
 
-    if (!strncmp (uri, "itk:", 4))
-    {
-      itk_static_get_contents (uri + 4, &c, &l);
-    }
-    else
-    {
-      ctx_get_contents (uri, &c, &l);
-    }
+    ctx_get_contents (uri, &c, &l);
+   
     if (c){
       entry->contents = c;
       entry->length = l;

@@ -570,7 +570,9 @@ static void _set_location (const char *location)
   }
 
 
-  if (!strncmp (location, "itk:", 4))
+  if (!strncmp (location, "https:", 6) ||
+      !strncmp (location, "http:", 5) ||
+      !strncmp (location, "itk:", 4))
   {
       diz_dir_set_path_bare (diz, location);
       drop_item_renderers (ctx);
@@ -612,7 +614,7 @@ static void _set_location (const char *location)
 
     if (path_is_dir (loc))
     {
-      //fprintf (stderr, "%i:%s\n", __LINE__, loc);
+      fprintf (stderr, "%i:%s\n", __LINE__, loc);
       if (strlen (loc) > 1 && loc[strlen(loc)-1]=='/')
         loc[strlen(loc)-1]='\0';
       diz_dir_set_path (diz, loc);
@@ -4173,7 +4175,7 @@ static void dir_layout (ITK *itk, Diz *diz)
         int focused = 0;
 
         const char *media_type = "inline/text";
-        
+       
         if (lstat (newpath, &stat_buf) == 0)
           media_type = ctx_path_get_media_type (newpath);
 
@@ -6212,7 +6214,7 @@ static int card_files (ITK *itk_, void *data)
       itk_set_edge_top (itk, 0.0);
       if (!strstr (diz->path, ".html") &&
           !strstr (diz->path, ".xhtml") &&
-	  !strstr (diz->path, ".svg"))
+	  !strstr (diz->path, ".svg") && !strchr(diz->path, ':'))
         dir_layout (itk, diz);
       else
       {
@@ -7138,7 +7140,6 @@ int stuff_main (int argc, char **argv)
 #endif
   commandline = ctx_string_new ("");
 
-
   if (text_editor)
   {
     set_text_edit (NULL, NULL, NULL);
@@ -7155,6 +7156,12 @@ int stuff_main (int argc, char **argv)
       set_location (path);
       focused_no = -1;
       set_find_item (itk, focused_no);
+    }
+    else if (strchr (path, ':'))
+    {
+      set_location (path);
+      focused_no = -1;
+      set_find_item (itk, 0);
     }
     else
     {

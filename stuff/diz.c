@@ -207,6 +207,8 @@ static char *diz_dir_get_data_escaped (Diz *diz, int no)
 static char *diz_dir_find_no (Diz *diz, int no)
 {
   char *m = diz->metadata;
+  if (!m)
+	  return NULL;
   int count = 0;
 
   if (no == -1)
@@ -1179,6 +1181,16 @@ diz_dir_set_path_bare (Diz *diz,
   diz->path = strdup (path);
   diz->count = 0;
   diz->is_text_editor = 0;
+
+  diz->metadata_cache_no = -3;
+  diz->metadata_cache = NULL;
+  if (diz->metadata_path) free (diz->metadata_path);
+  diz->metadata_path = malloc (strlen (path) + 20);
+  if (diz->metadata)
+    free (diz->metadata);
+  diz->metadata = NULL;
+  diz->metadata_len = 0;
+  diz->metadata_size = 0;
 }
 
 void

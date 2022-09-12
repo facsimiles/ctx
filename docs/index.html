@@ -1,5 +1,5 @@
 <html>
-    <head><title>ctx - 2d vector graphics stack</title>
+  <head><title>ctx - 2d vector graphics stack</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <link rel="icon" type="image/svg+xml" href="/graphics.ctx.terminal.svg"/>
     <style type='text/css'>
@@ -12,6 +12,9 @@
 
   <body lang='en'>
      <div id='menu'>
+
+
+
               <a href='https://ctx.graphics/'>
       <img style='max-width:6em' src='graphics.ctx.terminal.svg' alt='ctx'/>
               </a>
@@ -46,39 +49,6 @@
       multi-threaded rendering.
       </p>
 
-<!--
-      <h3>drawing interfaces</h3>
-      <p>The ctx protocol, both in C API, text and binary form also known in
-      ctx as drawlists are the primary means of driving CTX. The ctx parser can
-      text directly to API calls, which also allows using a backend that builds
-      up a drawlist. For conversion purposes ctx has inherited the SVG parser
-      from mrg, this permits doing some conversion.
-      </p>
-
-
-      <h3>backends</h3>
-      <p>
-
-      </p>
-      <dl>
-          <dt>drawlist</dt>
-          <dd>This backend creates a binary ctx protocol drawlist of
-          the drawing commands.</dd>
-
-          <dt>rasterizer</dt>
-          <dd>the core ctx rasterizer</dd>
-
-          <dt>SDL2</dt>
-          <dd></dd>
-
-          <dt>DRM/KMS/framebuffer</dt>
-          <dd>Using DRM dumb buffers or directly mmaping a framebuffer device,
-          multi threaded.</dd>
-
-          
-      </dl>
--->
-
       <p> The <a href='rasterizer/'>ctx rasterizer</a> is
       fast, portable and compact with a wide range of supported pixel encodings
       from 1bit to 32bit per pixel, in grayscale, RGB and CMYK.
@@ -95,6 +65,7 @@
       method callback both absolute and local (At time of callback registration)
       coordinates are provided.
       </p>
+      <p>
       The same API can also be used for writing applications that run inside
       the <a href='terminal/'>ctx terminal</a>, which provides escape sequences
               that enable drawing 2D vector graphics both inline, and for
@@ -107,7 +78,7 @@
       -->
 
 
-      <a href='mcu/'><img style='max-width:100%' src='esp32.jpg'/></a>
+      <img style='max-width:100%' src='esp32.jpg'/>
 
       <p>The ctx renderer is written in portable C, without
       inline assembly or SIMD intrinsics - but is still fast (and can
@@ -123,141 +94,6 @@
       </p>
       <canvas style='max-width:100%' width='640' height='480' id='c'>
       </canvas>
-
-
-      <!--
-good reference https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
-      -->
-      <!--
-      <p>ctx is a configurable and <a href='mcu/'>lightweight</a> 2D vector
-      graphics stack with focus on remote and deferred rendering building on
-      top of the HTML5 canvas 2D context
-      specification. The project provides as single header library
-      which implements both a binary and textual <a
-      href='protocol/'>drawlist protocol</a>. The ctx single-header
-      library provides APIs for registering keybindings and pointer events
-      with callbacks in user-relative coordinates. Events and rendering are
-      abstracted for linux framebuffer, SDL2, braille in terminal and running
-      in the ctx terminal. The ctx terminal is the binary built in the
-      toplevel of a <a href='/.git/'>ctx git</a> checkout. This terminal
-      serves as a demanding example for app-development with ctx, it used to
-      be faster - but peformance of minimal framebuffer touching has been
-      replaced with well-formed vector output - for /dev/fb0 usage fbterm is
-      a *lot* faster - but lacks the richer media of ctx, which permits the terminal to
-      run inside itself with minimal overhead. From within the terminal even
-      <a href='https://ctx.graphics/file/demos/clock.sh.html'>shell
-      scripts</a> get the ability to render vector graphics.
-      </p>
-
-      <p>There are extensions for sending raster graphics with terminals,
-      ranging from sixels through iterm2 base64 upload to kitty - that permit
-      uploading buffers. With the increased pixel density of modern displays
-      sending full framebuffers over the wire is too expensive for updating a
-      buffer. <b>WARNING:</b> ctx is a work in progress, some terminal
-      interactions are wonky - and display latency is good only for localized
-      changes like text editing - global scrolling works less well, ctx is also
-      relying on stb_image for image decoding support and providing
-      in-band access to your microphone.
-      </p>
-
-      <img style='max-width:100%' src='terminal.png'/>
-
-      <p>When programming in DOS or with SVGAlib the mono-spaced text
-      rectangle can be upgraded to graphics mode. Similarly terminals have
-      also not only provided a grid of monospaced text. Examples are DECs VTs
-      with ReGIS, tektronix, BBSs with RIPscript and in some ways Display
-      PostScript and NEWS.</p>
-
-      <p>The ctx terminal adds an escape code <tt>\e[?200h</tt>which opens a
-      2D vector drawing context with coordinate origin at the start of the
-      current line. After this command has been issued, the terminal is no
-      longer in ANSI/VT mode but in ctx mode, and commands according to the
-      <a href='protocol/'>ctx protocol</a> are accepted. This protocol
-      is a superset of the SVG path data format, which includes an encoding
-      of the 2D canvas context API. Commands have a long form in additon to
-      the short, so for verbosity (and ease of prototyping), 
-      <tt>moveTo</tt>,<tt>curveTo</tt> can be used in place of <tt>m</tt>
-      and <tt>l</tt> in addition <tt>(</tt>,<tt>,</tt>,<tt>)</tt> and
-      <tt>;</tt> are as a bonus treated as whitespace making
-      some snippets almost copy pastable with javascript bits of code
-      the parser for this format also supports suffixes, the
-      <a href='https://ctx.graphics/file/demos/clock.sh.html'>clock.sh</a>
-      example uses this to create a clock proportional to the size
-      of the terminal.
-      </p>
-      <img style='max-width:100%' src='clock.sh.png'/>
-
-      <p>The ctx parser in the terminal that clock.sh creates a
-      binary in-memory dawlist.
-
-      This drawlist is played back
-      in-place during the drawing commands used to draw the terminal
-      with ctx. The terminal and its clients are thus merged into
-      a single drawlist - which can include multiple tabs/windows.</p>
-
-      <p>The single drawlist is used for read-only access by independent
-      worker-threads.  The framebuffer to update is split into a grid (of at
-      least 4 by 4) where each cell is a render job. Hashes of the drawlist
-      are computed in parallel for all cells - and the cells where the hash
-      differs from the last update are spread among the render threads.
-      This permits for low latency updates for small changes, it is less
-      optimal for fullscreen scrolling of large buffers. A cache that captures
-      the rasterization of smallish shapes is currently disabled, since it
-      glitches under threading - disabling it has the advantage of the threads
-      being fully independent.
-      </p>
-
-      <p>One of ctx' backends in addition to SDL2 and linux framebuffer
-      is the ctx backend which outputs the ctx
-      protocol on stdout and accepts keyboard/pointer input either as
-      standard terminal escape sequences or in a passthrough mode of ctx' own
-      event format, inherited - among other bits - from <a
-              href='https://github.com/hodefoting/mrg'>microraptor gui</a>.
-
-      Pointer events can be handled as global events like the ones
-      delivered to the canvas element in HTML. But a better abstraction
-      can be event callbacks registered for the active path under the
-      current transform. Ctx maintains a list of these in draw order
-      and examines them from to back for bounding box (and NYI inPath)
-      and delivers events - with the ability to stop propagation when
-      a later registered handler wants to override earlier registered
-      ones.
-      </p>
-
-      <p>Successive frames become a long string of rendering commands, instead
-      of sending the full frames ctx transmits a detailed diff about how to construct the frame from literal text spans and copies form the previous decoded frame.
-      </p>
-      -->
-
-      <!--
-      <p>ctx has some <a href='#bugs'>known bugs</a>/shortcoming, on one
-      important ergonomic measure, in this regard ctx seem to already be
-      competetive with GPU accelerated terminals.  Due to how framebuffer
-      caching is done latency is higher with large updates and scrolling than
-      without. It still is almost nice enough for the main author to be
-      configured as his systems default terminal - but not quite.
-      </p>
-
-      <img src='latency-openbox.png' style='width:48%;float:right;padding-left:1em'/>
-
-      <p>The benchmarks to the right are shown in <a href='https://github.com/pavelfatin/typometer'>typometer</a>, a utility to measure time from
-      keyboard event to display update. The benchmarks have been done under
-      the Xorg session with openbox on a debian system. ctx is using the SDL2
-      backend and is thus having higher overhead than should be neccesary
-      using a more dedicated backend.</p>
-
-      <br style='clear:both;'/>
-
-      <img src='latency.png' style='width:48%;float:right;padding-left:1em;'/>
-
-      <p>The measurements to the right are done under an xorg session of
-      GNOME, the extra steps of compositing does increase latency somewhat.</p>
-
-      <br style='clear:both;'/>
-      -->
-
-      <!--<h3>Features and references</h3>-->
-
 
 <h2 id='license'>license and funding</h2>
 <p> The terminal is available under <a
@@ -277,90 +113,8 @@ willing to offer a 2 month stint for 25000 USD; that would result in patches
 significantly improving the performance of cairo's rasterizer or maybe adding a
 ctx based alternative image surface inside cairo.</p>
 
-<!--
-        <h3 id='example'>example code</h3>
-<pre>
 
-#include &lt;stdint.h&gt;
 
-#define CTX_IMPLEMENTATION
-
-#include "<a href='ctx.h'>ctx.h</a>"
-
-#define WIDTH    72
-#define HEIGHT   24
-
-uint8_t pixels[WIDTH*HEIGHT*4];
-
-int main (int argc, char **argv)
-{
-  char *utf8 = "hello\nctx\n";
-  Ctx *ctx = ctx_new_for_framebuffer (
-    pixels, WIDTH, HEIGHT, WIDTH*4,
-    CTX_FORMAT_RGBA8);
-
-  ctx_rgba        (ctx, 0.5, 0.5, 0.5, 1);
-  ctx_rectangle   (ctx, 0, 0, 80, 24);
-  ctx_fill        (ctx);
-  ctx_move_to     (ctx, 10, 9);
-  ctx_font_size   (ctx, 12);
-  ctx_line_width  (ctx, 2);
-  ctx_rgba        (ctx, 0, 0, 0, 1);
-  ctx_text_stroke (ctx, utf8);
-  ctx_rgba        (ctx, 1,0, 1.0, 1.0, 1.0);
-  ctx_move_to     (ctx, 10, 9);
-  ctx_text        (ctx, utf8);
-  ctx_free        (ctx);
-
-  static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};
-  int no=0;
-  for (int y= 0; y &lt; HEIGHT; y++)
-  {
-    for (int x = 0; x &lt; WIDTH; x++, no+=4)
-      printf ("%s", utf8_gray_scale[5-(int)CTX_CLAMP(pixels[no+1]/255.0*6.0, 0, 5)]);
-    printf ("\n");
-  }
-
-  return 0;
-}
-</pre>
-which outputs (the rightmost column of pixels is a bug):
-<pre>
-~/src/ctx/tests$ ./test-size 
-▓▓▓▓▓▓▓▓▓▓▓█▓▓▓█▓▓▓▓▓▓▓▓▓▓▓▓▓▓██▓▓▓▓▓▓▓▓▓▓▓▓▓▓█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓██▓▓█ █▓▓▓▓▓▓▓▓▓▓▓▓███▓▓▓▓▓▓▓▓▓▓▓▓▓███▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓██ ██████████▓██▓▓▓██▓▓██▓████▓▓█████▒███▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓█░  ░█ ██░░ ░██ █▓█ █   ▓█▒  ███   ▓▓   █▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓██ ███ ██ ▓█░██░███░█▓▓██▓░██░██░████▒███▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓█ █▓█ ██░██▓▓█▓▒█▒▓█▓▒██░▓██░▓█ ▓███▒██▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓█ █▓█ ██░██▓▓██ █ ██▓▓██░▒▓▓▓███▒░▒█▒█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓█ ███ ██░██▓▓██▒░▒██▓▓██▒▒████████░█▒███▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓█▒░▒█ ██░██▓▓██▓ █▓██░░██░░▒░█▓░▒░▓██░░█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓▓█████▓██▓▓██▓██ █▓▓████▓██████████▓████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█▓ █▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓███▓▓▓▓▓▓▓▓▓▓▓▓▓▓███▓▓▓▓▓▓▓▓▓▓▓▓▓██▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█ █▓▓▓▓▓▓▓▓▓▓▓▓▓██░░█▓▓▓▓▓▓▓▓▓▓▓█▒▓█▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓▓████▓▓▓█████ ███▓▓▓████▓▓▓▓█░███████▓▓████▓█▒▓███▓▓████▓▓████
-▓▓▓▓▓▓▓▓▓▓██▒▒▓███   ▓█ ▒ ░█▓█▒  ██▓▓█▒  ░█▓  ████  ▒██▒░  ███   ▓██   █
-▓▓▓▓▓▓▓▓▓██░██▒██▒▓████ ▓█▒▓█▓▒██░█▓▓██░███░██░██░██▒▓█▒░██░█████░██████
-▓▓▓▓▓▓▓▓▓█▓▒██▓▒█ █▓▓▓█ ███▒█░███░█▓▓▓█░██▓▓██▓▓█ ███░█▒▓██▒███▓▓░▓███░█
-▓▓▓▓▓▓▓▓▓█▓▒█████ █▓▓▓█ ███▒█░█▓█░█▓▓▓█░██▒▓██▓▓█░███░█▒▓██▒▓█ ██▒▓██░▓█
-▓▓▓▓▓▓▓▓▓█▓░█████░█████ ███▒█░▓██ █▓▓▓█░██▓░██░██ ██▓░█▒▒██░██░██░▓█▒▒██
-▓▓▓▓▓▓▓▓▓▓█▓░▒░▓██ ▒░██ ███▒██░░ ▓█▓▓▓█░█▓█▒  ▒██▓ ░░██▒░▒░▒██░░░▒▓█ ▒▒█
-▓▓▓▓▓▓▓▓▓▓▓█████▓███████▓▓██▓▓████▓▓▓▓▓██▓▓████▓▓████▓██████▓▓██████████
-▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
-</pre>
-
-<p>To fetch, build, and run ctx, and an example similar to the above
-run the following:
-
-<pre>
-mkdir foo;cd foo;wget http://ctx.graphics/{ctx.h,ctx-font-regular.h,hello.c};make hello &amp;&amp; ./hello</pre>
-</p>
-
-  -->
               </div>
       </body>
 </html>
