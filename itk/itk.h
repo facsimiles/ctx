@@ -471,7 +471,7 @@ ITK *itk_new (Ctx *ctx)
   itk_css_init (mrg, ctx, ctx_width(ctx), ctx_height(ctx));
   ctx_style_defaults (mrg);
 
-  printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
+  //printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
 
   return itk;
 }

@@ -598,8 +598,6 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     unsigned char *data = NULL;
     long length = 0;
     ctx_get_contents (path, &data, &length);
-
-    fprintf (stderr, "%p %li\n", data, length);
     if (data)
     {
        pixels = stbi_load_from_memory (data, length, &w, &h, &components, 0);
