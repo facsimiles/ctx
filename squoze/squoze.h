@@ -82,9 +82,8 @@ typedef struct _SquozePool SquozePool;
 
 
 
-static SquozePool        *squoze_pool_new    (SquozePool *fallback);
-static void               squoze_pool_unref  (SquozePool *pool);
-static void               squoze_pool_ref    (SquozePool *pool);
+static SquozePool        *squoze_pool_new     (SquozePool *fallback);
+static void               squoze_pool_destroy (SquozePool *pool);
 
 
 static Squoze            *squoze_pool_add   (SquozePool *pool, const char *str);
@@ -440,10 +439,10 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
     for (int i = 0; i < encoded_len; i++)
     {
       uint64_t val = encoded[i];
+      hash = hash ^ val;
       hash = hash * multiplier;
       hash = hash & all_bits;
       hash = hash ^ (hash >> rshift);
-      hash = hash ^ val;
     }
     hash |= overflowed_mask;
   }
@@ -457,37 +456,33 @@ static inline SquozeString *squoze_str_to_struct (const char *str)
   return (SquozeString*)(str - sizeof (SquozeString));
 }
 
-
-
-
 #ifdef __CTX_H__
 #define strdup ctx_strdup
 #define strstr ctx_strstr
 #endif
 
-#if 1
-
 struct _SquozePool
 {
-  SquozeString **interned;
-  int count;
-  int size;
+  SquozePool    *fallback;
+  SquozeString **hashtable;
+  int            count;
+  int            size;
 };
 
-SquozePool global_pool = {NULL, 0,0};
+SquozePool global_pool = {NULL, NULL, 0,0};
 
 static int squoze_pool_find (SquozePool *pool, uint64_t hash)
 {
   if (pool->size == 0)
     return -1;
   int pos = hash & (pool->size-1);
-  if (!pool->interned[pos])
+  if (!pool->hashtable[pos])
     return -1;
-  while (pool->interned[pos]->hash != hash)
+  while (pool->hashtable[pos]->hash != hash)
   {
     pos++;
     pos &= (pool->size-1);
-    if (!pool->interned[pos])
+    if (!pool->hashtable[pos])
       return -1;
   }
   return pos;
@@ -496,13 +491,13 @@ static int squoze_pool_add_entry (SquozePool *pool, SquozeString *str)
 {
   if (pool->count + 1 >= pool->size / 2)
   {
-     SquozeString **old = pool->interned;
+     SquozeString **old = pool->hashtable;
      int old_size = pool->size;
      if (old_size == 0)
        pool->size = 256;
      else
        pool->size *= 2;
-     pool->interned = calloc (pool->size * sizeof (void*), 1);
+     pool->hashtable = calloc (pool->size * sizeof (void*), 1);
      if (old)
      {
        for (int i = 0; i < old_size; i++)
@@ -514,83 +509,43 @@ static int squoze_pool_add_entry (SquozePool *pool, SquozeString *str)
   pool->count++;
 
   int pos = str->hash & (pool->size-1);
-  while (pool->interned[pos])
+  while (pool->hashtable[pos])
   {
     pos++;
     pos &= (pool->size-1);
   }
-  pool->interned[pos]=str;
+  pool->hashtable[pos]=str;
   return pos;
 }
 
-static void squoze_pool_remove (SquozePool *pool, Squoze *squozed)
+static void squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
 {
   SquozeString *str = squoze_str_to_struct (squozed);
-#if 0
   int no = squoze_pool_find (pool, str->hash);
-  memmove (&pool->interned[no], &pool->interned[no+1], (pool->count-no) * sizeof (SquozeString*));
-  pool->count--;
-  free (str);
-#endif
-}
-
-static SquozeString *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id)
-{
-  int pos = squoze_pool_find (pool, id);
-  if (pos >= 0)
-   return pool->interned[pos];
-  return NULL;
-}
-
-#else
-
-struct _SquozePool
-{
-  SquozeString **interned;
-  int count;
-  int size;
-};
-
-SquozePool global_pool = {NULL, 0,0};
-
-static int squoze_pool_find (SquozePool *pool, uint64_t hash)
-{
-  for (int i = 0; i < pool->count; i++)
-    if (pool->interned[i]->hash == hash)
-      return i;
-  return -1;
-}
-static int squoze_pool_add_entry (SquozePool *pool, SquozeString *str)
-{
-  if (pool->count + 1 >= pool->size)
+  if (do_free)
+    free (str);
+  pool->hashtable[no]=0;
+  for (int i = no+1; pool->hashtable[i]; i = (i+1)&(pool->size-1))
   {
-     pool->size = (pool->size + 128)*2;
-     pool->interned = (SquozeString**)realloc (pool->interned, pool->size * sizeof (void*));
+    if ((pool->hashtable[i]->hash & (pool->size-1)) == no)
+    {
+      SquozeString *for_upgrade = pool->hashtable[i];
+      squoze_pool_remove (pool, for_upgrade->string, 0);
+      squoze_pool_add_entry (pool, for_upgrade);
+    }
   }
-  int pos = pool->count;
-  pool->count++;
-  pool->interned[pos]=str;
-  return pos;
-}
-
-static void squoze_pool_remove (SquozePool *pool, Squoze *squozed)
-{
-  SquozeString *str = squoze_str_to_struct (squozed);
-  int no = squoze_pool_find (pool, str->hash);
-  memmove (&pool->interned[no], &pool->interned[no+1], (pool->count-no) * sizeof (SquozeString*));
-  pool->count--;
-  free (str);
 }
 
 static SquozeString *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id)
 {
   int pos = squoze_pool_find (pool, id);
   if (pos >= 0)
-   return pool->interned[pos];
+    return pool->hashtable[pos];
+  if (pool->fallback)
+    return squoze_lookup_struct_by_id (pool->fallback, id);
   return NULL;
 }
 
-#endif
 
 
 static Squoze *squoze_lookup_id (SquozePool *pool, squoze_id_t id)
@@ -618,19 +573,6 @@ static Squoze *squoze_pool_add (SquozePool *pool, const char *str)
   else
     return (void*)(hash*2+1);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -709,7 +651,7 @@ static void squoze_gen_unref (SquozePool *pool, int squoze_dim, const char *squo
 	  fprintf (stderr, "double unref for \"%s\"\n", str->string);
         str->ref_count--;
 #else
-	squoze_pool_remove (pool, str->string);
+	squoze_pool_remove (pool, str->string, 1);
 #endif
       }
       else
@@ -1001,6 +943,23 @@ static inline const char *squoze_decode (SquozePool *pool, int squoze_dim, uint6
   return squoze_decode_r (pool, squoze_dim, hash, ret[no], 16);
 }
 
+static SquozePool *squoze_pool_new     (SquozePool *fallback)
+{
+  SquozePool *pool = calloc (sizeof (SquozePool), 1);
+  pool->fallback = fallback;
+  return pool;
+}
+
+static void squoze_pool_destroy (SquozePool *pool)
+{
+  for (int i = 0; i < pool->size; i++)
+  {
+    if (pool->hashtable[i])
+      free (pool->hashtable[i]);
+  }
+  free (pool);
+}
+
 #if SQUOZE_IMPLEMENTATION_32
 static const char *squoze32_decode (uint32_t hash)
 {
@@ -1021,6 +980,10 @@ static const char *squoze62_decode (uint64_t hash)
   return squoze_decode (&global_pool, 62, hash);
 }
 #endif
+
+
+
+
 
 static inline uint32_t
 squoze_utf8_to_unichar (const char *input)
