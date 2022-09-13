@@ -41,9 +41,9 @@ int usage (const char *base)
 "Usage: %s [options] <string|encoded> [string|encoded]\n", base);
   fprintf (stderr,
 "\nwhere options are:\n"
-"  --squoze32 -32 32 bit content adressed string hash\n"
-"  --squoze52 -52 52 bit content adressed string hash (default)\n"
-"  --squoze62 -62 62 bit content adressed string hash\n"
+"  --squoze32 -32 32 bit content adressed string hash up to 6 chars long (default)\n"
+"  --squoze52 -52 52 bit content adressed string hash up to 10 chars long\n"
+"  --squoze62 -62 62 bit content adressed string hash up to 12 chars long\n"
 "  --squoze5 -v   squoze-5 encoding, with [0-9][A-V] alphabet\n"
 "  --utf-5 -5     UTF-5 encoding, with [0-9][A-V] alphabet\n"
 "\n"
@@ -72,7 +72,7 @@ void print_sep (void)
 
 int main (int argc, char **argv)
 {
-  int dim = 52;
+  int dim = 32;
   int use_base64 = 0;
   int arg = 0;
   int force_encode = 0;

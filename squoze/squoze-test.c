@@ -159,7 +159,27 @@ const char *strings[]={"0",
 int main (int argc, char **argv)
 {
   int wrong = 0;
-  int dim = 52;
+  int dim = 32;
+
+  {
+     char *strs[] = {"foo", "abcdefghijklmnopqrst",
+	                    "abcdefghijklmnopqrst", "foo", "bar", "baz", "boo", "", NULL};
+     for (int i =0; strs[i+2]; i++)
+     {
+       const char *str= strs[i];
+       Squoze *intern = squoze (str);
+       //Squoze *intern2 = squoze (strs[i+1]);
+       //Squoze *intern3 = squoze (strs[i+2]);
+       printf ("%p %s -> %p\n", str, str, intern);
+       printf ("%p -> %s\n", intern, squoze_peek (intern));
+       squoze_unref(NULL, intern);
+       printf ("%p -> %s\n", intern, squoze_peek (intern));
+       //squoze_unref(intern);
+       //printf ("%p -> %s\n", intern, squoze_peek (intern));
+       //printf ("[%s %s %s]\n", squoze_peek (intern), squoze_peek(intern2), squoze_peek (intern3));
+       printf ("\n");
+     }
+  }
 
   for (int i = 0; strings[i]; i++)
   {
@@ -167,7 +187,7 @@ int main (int argc, char **argv)
     const char *decoded;
 
     char input[4096];
-    for (int j = 0; j < 10400; j++)
+    for (int j = 0; j < 5000; j++)
     {
       if (j)
         sprintf (input, "%s-%i", strings[i], j);

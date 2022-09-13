@@ -4,7 +4,7 @@ clean:
 squoze: squoze.c squoze.h Makefile
 	gcc -Wall squoze.c -o squoze -O2 -g
 squoze-test: squoze-test.c squoze.h Makefile
-	gcc -Wall squoze-test.c -O2 -o squoze-test
+	gcc -Wall squoze-test.c -o squoze-test -g
 report.txt: squoze gen-report.sh
 	./gen-report.sh > report.txt
 test: report.txt squoze-test
