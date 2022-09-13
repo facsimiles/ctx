@@ -478,20 +478,47 @@ SquozePool global_pool = {NULL, 0,0};
 
 static int squoze_pool_find (SquozePool *pool, uint64_t hash)
 {
-  for (int i = 0; i < pool->count; i++)
-    if (pool->interned[i]->hash == hash)
-      return i;
-  return -1;
+  if (pool->size == 0)
+    return -1;
+  int pos = hash & (pool->size-1);
+  if (!pool->interned[pos])
+    return -1;
+  while (pool->interned[pos]->hash != hash)
+  {
+    pos++;
+    pos &= (pool->size-1);
+    if (!pool->interned[pos])
+      return -1;
+  }
+  return pos;
 }
 static int squoze_pool_add_entry (SquozePool *pool, SquozeString *str)
 {
-  if (pool->count + 1 >= pool->size)
+  if (pool->count + 1 >= pool->size / 2)
   {
-     pool->size = (pool->size + 128)*2;
-     pool->interned = (SquozeString**)realloc (pool->interned, pool->size * sizeof (void*));
+     SquozeString **old = pool->interned;
+     int old_size = pool->size;
+     if (old_size == 0)
+       pool->size = 256;
+     else
+       pool->size *= 2;
+     pool->interned = calloc (pool->size * sizeof (void*), 1);
+     if (old)
+     {
+       for (int i = 0; i < old_size; i++)
+         if (old[i])
+           squoze_pool_add_entry (pool, old[i]);
+       free (old);
+     }
   }
-  int pos = pool->count;
   pool->count++;
+
+  int pos = str->hash & (pool->size-1);
+  while (pool->interned[pos])
+  {
+    pos++;
+    pos &= (pool->size-1);
+  }
   pool->interned[pos]=str;
   return pos;
 }
@@ -499,10 +526,12 @@ static int squoze_pool_add_entry (SquozePool *pool, SquozeString *str)
 static void squoze_pool_remove (SquozePool *pool, Squoze *squozed)
 {
   SquozeString *str = squoze_str_to_struct (squozed);
+#if 0
   int no = squoze_pool_find (pool, str->hash);
   memmove (&pool->interned[no], &pool->interned[no+1], (pool->count-no) * sizeof (SquozeString*));
   pool->count--;
   free (str);
+#endif
 }
 
 static SquozeString *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id)

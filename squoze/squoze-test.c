@@ -187,7 +187,7 @@ int main (int argc, char **argv)
     const char *decoded;
 
     char input[4096];
-    for (int j = 0; j < 5000; j++)
+    for (int j = 0; j < 3000; j++)
     {
       if (j)
         sprintf (input, "%s-%i", strings[i], j);
