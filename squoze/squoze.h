@@ -36,6 +36,13 @@
 #define SQUOZE_ID_BITS 32
 #endif
 
+
+// for debugging
+#ifndef SQUOZE_ALLOW_COLLISIONS
+#define SQUOZE_ALLOW_COLLISIONS 0
+#endif
+
+
 #if SQUOZE_ID_BITS==32
 #define squoze_id_t uint32_t
 #else
@@ -599,7 +606,11 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
   if (hash & overflowed_mask)
   {
     SquozeString *str = squoze_lookup_struct_by_id (pool, hash);
-    if (str)
+    if (str
+#if SQUOZE_ALLOW_COLLISIONS==0
+		    && !strcmp (str->string, utf8)
+#endif
+		    )
     {
 #if SQUOZE_REF_COUNTING
       str->ref_count++;
