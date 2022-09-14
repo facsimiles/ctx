@@ -97,7 +97,6 @@
 #define CTX_lineTo 1002888192u
 #define CTX_lineWidth 3943753256u
 #define CTX_lower 76249009u
-#define CTX_lower 76249009u
 #define CTX_lowerBottom 3551802690u
 #define CTX_magenta 1574714704u
 #define CTX_maroon 1944002741u
@@ -119,7 +118,6 @@
 #define CTX_purple 723593921u
 #define CTX_quadTo 2797894190u
 #define CTX_radialGradient 834166258u
-#define CTX_raise 23498953u
 #define CTX_raise 23498953u
 #define CTX_raiseTop 1643841916u
 #define CTX_rect 2634441u
@@ -172,7 +170,6 @@
 #define CTX_strokeSource 2900283260u
 #define CTX_strokeText 845108786u
 #define CTX_teal 1577681u
-#define CTX_terminate 4223370700u
 #define CTX_text 2720465u
 #define CTX_textAlign 2916818596u
 #define CTX_textBaseline 3606029094u
