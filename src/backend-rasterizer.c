@@ -3542,7 +3542,7 @@ ctx_rasterizer_clip (CtxRasterizer *rasterizer)
     { memcpy (temp + 1, rasterizer->edge_list.entries, sizeof (temp) - sizeof (temp[0]));
       temp[0].code = CTX_NOP;
       temp[0].data.u32[0] = count;
-      ctx_state_set_blob (rasterizer->state, CTX_clip, (uint8_t*)temp, sizeof(temp));
+      ctx_state_set_blob (rasterizer->state, SQZ_clip, (uint8_t*)temp, sizeof(temp));
     }
   ctx_rasterizer_clip_apply (rasterizer, temp);
   ctx_rasterizer_reset (rasterizer);
@@ -3791,7 +3791,7 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
   Ctx *ctx = rasterizer->backend.ctx;
 
   float rgba[4] = {0, 0, 0, 1.0};
-  if (ctx_get_color (rasterizer->backend.ctx, CTX_shadowColor, &color) == 0)
+  if (ctx_get_color (rasterizer->backend.ctx, SQZ_shadowColor, &color) == 0)
     ctx_color_get_rgba (rasterizer->state, &color, rgba);
 
   CtxEntry set_color_command [3]=
@@ -3840,7 +3840,7 @@ ctx_rasterizer_shadow_text (CtxRasterizer *rasterizer, const char *str)
   Ctx *ctx = rasterizer->backend.ctx;
 
   float rgba[4] = {0, 0, 0, 1.0};
-  if (ctx_get_color (rasterizer->backend.ctx, CTX_shadowColor, &color) == 0)
+  if (ctx_get_color (rasterizer->backend.ctx, SQZ_shadowColor, &color) == 0)
     ctx_color_get_rgba (rasterizer->state, &color, rgba);
 
   CtxEntry set_color_command [3]=
@@ -3887,7 +3887,7 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
   CtxEntry save_command = ctx_void(CTX_SAVE);
 
   float rgba[4] = {0, 0, 0, 1.0};
-  if (ctx_get_color (rasterizer->backend.ctx, CTX_shadowColor, &color) == 0)
+  if (ctx_get_color (rasterizer->backend.ctx, SQZ_shadowColor, &color) == 0)
     ctx_color_get_rgba (rasterizer->state, &color, rgba);
 
   CtxEntry set_color_command [3]=
@@ -3993,7 +3993,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
                 ctx_color_set_graya (state, color, c->graya.g, 1.0f);
                 break;
             }
-          ctx_set_color (rasterizer->backend.ctx, CTX_shadowColor, color);
+          ctx_set_color (rasterizer->backend.ctx, SQZ_shadowColor, color);
         }
         break;
 #endif
@@ -4143,7 +4143,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
         for (unsigned int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
              i < state->gstate.keydb_pos; i++)
         {
-          if (state->keydb[i].key == CTX_clip)
+          if (state->keydb[i].key == SQZ_clip)
           {
             clear_clip = 1;
           }
@@ -4164,7 +4164,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
           for (unsigned int i = state->gstate_no?state->gstate_stack[state->gstate_no-1].keydb_pos:0;
              i < state->gstate.keydb_pos; i++)
         {
-          if (state->keydb[i].key == CTX_clip)
+          if (state->keydb[i].key == SQZ_clip)
           {
             int idx = ctx_float_to_string_index (state->keydb[i].value);
             if (idx >=0)

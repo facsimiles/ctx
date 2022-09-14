@@ -66,7 +66,7 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 #if 1
   switch (key_hash)
   {
-    case CTX_title:  
+    case SQZ_title:  
      {
        CtxClient *client = vt_get_client (vt);
        if (client)
@@ -105,20 +105,20 @@ int vt_set_prop (VT *vt, uint32_t key_hash, const char *val)
 
   switch (key_hash)
   {
-    case CTX_title:  ctx_client_set_title (ct->id, val); break;
-    case CTX_x:      client->x = fval; break;
-    case CTX_y:      client->y = fval; break;
-    case CTX_width:  ctx_client_resize (ct->id, fval, client->height); break;
-    case CTX_height: ctx_client_resize (ct->id, client->width, fval); break;
-    case CTX_action:
+    case SQZ_title:  ctx_client_set_title (ct->id, val); break;
+    case SQZ_x:      client->x = fval; break;
+    case SQZ_y:      client->y = fval; break;
+    case SQZ_width:  ctx_client_resize (ct->id, fval, client->height); break;
+    case SQZ_height: ctx_client_resize (ct->id, client->width, fval); break;
+    case SQZ_action:
       switch (val_hash)
       {
-        case CTX_maximize:     ctx_client_maximize (client); break;
-        case CTX_unmaximize:   ctx_client_unmaximize (client); break;
-        case CTX_lower:        ctx_client_lower (client); break;
-        case CTX_lowerBottom:  ctx_client_lower_bottom (client);  break;
-        case CTX_raise:        ctx_client_raise (client); break;
-        case CTX_raiseTop:     ctx_client_raise_top (client); break;
+        case SQZ_maximize:     ctx_client_maximize (client); break;
+        case SQZ_unmaximize:   ctx_client_unmaximize (client); break;
+        case SQZ_lower:        ctx_client_lower (client); break;
+        case SQZ_lowerBottom:  ctx_client_lower_bottom (client);  break;
+        case SQZ_raise:        ctx_client_raise (client); break;
+        case SQZ_raiseTop:     ctx_client_raise_top (client); break;
       }
       break;
   }

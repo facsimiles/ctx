@@ -818,7 +818,7 @@ _ctx_text (Ctx        *ctx,
   CtxFont *font = &ctx_fonts[state->gstate.font];
   float x = ctx->state.x;
   word[word_len]=0;
-  switch ( (int) ctx_state_get (state, CTX_textAlign) )
+  switch ( (int) ctx_state_get (state, SQZ_textAlign) )
     //switch (state->gstate.text_align)
     {
       case CTX_TEXT_ALIGN_START:
@@ -834,7 +834,7 @@ _ctx_text (Ctx        *ctx,
     }
   float y = ctx->state.y;
   float baseline_offset = 0.0f;
-  switch ( (int) ctx_state_get (state, CTX_textBaseline) )
+  switch ( (int) ctx_state_get (state, SQZ_textBaseline) )
     {
       case CTX_TEXT_BASELINE_HANGING:
         /* XXX : crude */

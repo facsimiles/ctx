@@ -426,12 +426,12 @@ static void itk_style_color3 (ITK *itk, const char *klass, uint32_t attr)
 
 void itk_style_bg (ITK *itk, const char *klass)
 {
-  itk_style_color3 (itk, klass, CTX_background_color);
+  itk_style_color3 (itk, klass, SQZ_background_color);
 }
 
 void itk_style_fg (ITK *itk, const char *klass)
 {
-  itk_style_color3 (itk, klass, CTX_color);
+  itk_style_color3 (itk, klass, SQZ_color);
 }
 
 float itk_rel_ver_advance (ITK *itk)

@@ -2355,19 +2355,19 @@ static int vt_get_prop (VT *vt, const char *key, const char **val, int *len)
     return 0;
   switch (key_hash)
   {
-    case CTX_title:
+    case SQZ_title:
       sprintf (str, "setkey %s %s\n", key, client->title);
       break;
-    case CTX_x:      
+    case SQZ_x:      
       sprintf (str, "setkey %s %i\n", key, client->x);
       break;
-    case CTX_y:    
+    case SQZ_y:    
       sprintf (str, "setkey %s %i\n", key, client->y);
       break;
-    case CTX_width:
+    case SQZ_width:
       sprintf (str, "setkey %s %i\n", key, client->width);
       break;
-    case CTX_height:
+    case SQZ_height:
       sprintf (str, "setkey %s %i\n", key, client->width);
       break;
     default:

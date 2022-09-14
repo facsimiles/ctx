@@ -441,271 +441,271 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           /* first a list of mappings to one_char hashes, handled in a
            * separate fast path switch without hashing
            */
-          case CTX_arcTo:          ret = CTX_ARC_TO; break;
-          case CTX_arc:            ret = CTX_ARC; break;
-          case CTX_curveTo:        ret = CTX_CURVE_TO; break;
-          case CTX_restore:        ret = CTX_RESTORE; break;
-          case CTX_stroke:         ret = CTX_STROKE; break;
-          case CTX_fill:           ret = CTX_FILL; break;
-          case CTX_paint:          ret = CTX_PAINT; break;
-          case CTX_endFrame:       ret = CTX_END_FRAME; break;
-          case CTX_horLineTo:      ret = CTX_HOR_LINE_TO; break;
-          case CTX_rotate:         ret = CTX_ROTATE; break;
-          case CTX_color:          ret = CTX_COLOR; break;
-          case CTX_lineTo:         ret = CTX_LINE_TO; break;
-          case CTX_moveTo:         ret = CTX_MOVE_TO; break;
-          case CTX_scale:          ret = CTX_SCALE; break;
-          case CTX_newPage:        ret = CTX_NEW_PAGE; break;
-          case CTX_quadTo:         ret = CTX_QUAD_TO; break;
-          case CTX_viewBox:        ret = CTX_VIEW_BOX; break;
-          case CTX_smoothTo:       ret = CTX_SMOOTH_TO; break;
-          case CTX_smoothQuadTo:   ret = CTX_SMOOTHQ_TO; break;
-          case CTX_clear:          ret = CTX_COMPOSITE_CLEAR; break;
-          case CTX_copy:           ret = CTX_COMPOSITE_COPY; break;
-          case CTX_destinationOver:  ret = CTX_COMPOSITE_DESTINATION_OVER; break;
-          case CTX_destinationIn:    ret = CTX_COMPOSITE_DESTINATION_IN; break;
-          case CTX_destinationOut:   ret = CTX_COMPOSITE_DESTINATION_OUT; break;
-          case CTX_sourceOver:       ret = CTX_COMPOSITE_SOURCE_OVER; break;
-          case CTX_sourceAtop:       ret = CTX_COMPOSITE_SOURCE_ATOP; break;
-          case CTX_destinationAtop:  ret = CTX_COMPOSITE_DESTINATION_ATOP; break;
-          case CTX_sourceOut:        ret = CTX_COMPOSITE_SOURCE_OUT; break;
-          case CTX_sourceIn:         ret = CTX_COMPOSITE_SOURCE_IN; break;
-          case CTX_xor:              ret = CTX_COMPOSITE_XOR; break;
-          case CTX_darken:           ret = CTX_BLEND_DARKEN; break;
-          case CTX_lighten:          ret = CTX_BLEND_LIGHTEN; break;
-          //case CTX_color:          ret = CTX_BLEND_COLOR; break;
+          case SQZ_arcTo:          ret = CTX_ARC_TO; break;
+          case SQZ_arc:            ret = CTX_ARC; break;
+          case SQZ_curveTo:        ret = CTX_CURVE_TO; break;
+          case SQZ_restore:        ret = CTX_RESTORE; break;
+          case SQZ_stroke:         ret = CTX_STROKE; break;
+          case SQZ_fill:           ret = CTX_FILL; break;
+          case SQZ_paint:          ret = CTX_PAINT; break;
+          case SQZ_endFrame:       ret = CTX_END_FRAME; break;
+          case SQZ_horLineTo:      ret = CTX_HOR_LINE_TO; break;
+          case SQZ_rotate:         ret = CTX_ROTATE; break;
+          case SQZ_color:          ret = CTX_COLOR; break;
+          case SQZ_lineTo:         ret = CTX_LINE_TO; break;
+          case SQZ_moveTo:         ret = CTX_MOVE_TO; break;
+          case SQZ_scale:          ret = CTX_SCALE; break;
+          case SQZ_newPage:        ret = CTX_NEW_PAGE; break;
+          case SQZ_quadTo:         ret = CTX_QUAD_TO; break;
+          case SQZ_viewBox:        ret = CTX_VIEW_BOX; break;
+          case SQZ_smoothTo:       ret = CTX_SMOOTH_TO; break;
+          case SQZ_smoothQuadTo:   ret = CTX_SMOOTHQ_TO; break;
+          case SQZ_clear:          ret = CTX_COMPOSITE_CLEAR; break;
+          case SQZ_copy:           ret = CTX_COMPOSITE_COPY; break;
+          case SQZ_destinationOver:  ret = CTX_COMPOSITE_DESTINATION_OVER; break;
+          case SQZ_destinationIn:    ret = CTX_COMPOSITE_DESTINATION_IN; break;
+          case SQZ_destinationOut:   ret = CTX_COMPOSITE_DESTINATION_OUT; break;
+          case SQZ_sourceOver:       ret = CTX_COMPOSITE_SOURCE_OVER; break;
+          case SQZ_sourceAtop:       ret = CTX_COMPOSITE_SOURCE_ATOP; break;
+          case SQZ_destinationAtop:  ret = CTX_COMPOSITE_DESTINATION_ATOP; break;
+          case SQZ_sourceOut:        ret = CTX_COMPOSITE_SOURCE_OUT; break;
+          case SQZ_sourceIn:         ret = CTX_COMPOSITE_SOURCE_IN; break;
+          case SQZ_xor:              ret = CTX_COMPOSITE_XOR; break;
+          case SQZ_darken:           ret = CTX_BLEND_DARKEN; break;
+          case SQZ_lighten:          ret = CTX_BLEND_LIGHTEN; break;
+          //case SQZ_color:          ret = CTX_BLEND_COLOR; break;
           //
           //  XXX check that he special casing for color works
           //      it is the first collision and it is due to our own
           //      color, not w3c for now unique use of it
           //
-          case CTX_hue:            ret = CTX_BLEND_HUE; break;
-          case CTX_multiply:       ret = CTX_BLEND_MULTIPLY; break;
-          case CTX_normal:         ret = CTX_BLEND_NORMAL;break;
-          case CTX_screen:         ret = CTX_BLEND_SCREEN;break;
-          case CTX_difference:     ret = CTX_BLEND_DIFFERENCE; break;
-          case CTX_startFrame:     ret = CTX_START_FRAME; break;
-          case CTX_verLineTo:      ret = CTX_VER_LINE_TO; break;
-          case CTX_exit:
-          case CTX_done:           ret = CTX_EXIT; break;
-          case CTX_closePath:      ret = CTX_CLOSE_PATH; break;
-          case CTX_beginPath:
-          case CTX_newPath:        ret = CTX_BEGIN_PATH; break;
-          case CTX_relArcTo:       ret = CTX_REL_ARC_TO; break;
-          case CTX_clip:           ret = CTX_CLIP; break;
-          case CTX_relCurveTo:     ret = CTX_REL_CURVE_TO; break;
-          case CTX_startGroup:     ret = CTX_START_GROUP; break;
-          case CTX_endGroup:       ret = CTX_END_GROUP; break;
-          case CTX_save:           ret = CTX_SAVE; break;
-          case CTX_translate:      ret = CTX_TRANSLATE; break;
-          case CTX_linearGradient: ret = CTX_LINEAR_GRADIENT; break;
-          case CTX_relHorLineTo:   ret = CTX_REL_HOR_LINE_TO; break;
-          case CTX_relLineTo:      ret = CTX_REL_LINE_TO; break;
-          case CTX_relMoveTo:      ret = CTX_REL_MOVE_TO; break;
-          case CTX_font:           ret = CTX_FONT; break;
-          case CTX_radialGradient:ret = CTX_RADIAL_GRADIENT; break;
-          case CTX_gradientAddStop:
-          case CTX_addStop:        ret = CTX_GRADIENT_STOP; break;
-          case CTX_relQuadTo:      ret = CTX_REL_QUAD_TO; break;
-          case CTX_rectangle:
-          case CTX_rect:           ret = CTX_RECTANGLE; break;
-          case CTX_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
-          case CTX_relSmoothTo:    ret = CTX_REL_SMOOTH_TO; break;
-          case CTX_relSmoothqTo:   ret = CTX_REL_SMOOTHQ_TO; break;
-          case CTX_strokeText:     ret = CTX_STROKE_TEXT; break;
-          case CTX_strokeRect:     ret = CTX_STROKE_RECT; break;
-          case CTX_fillRect:       ret = CTX_FILL_RECT; break;
-          case CTX_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
-          case CTX_text:           ret = CTX_TEXT; break;
-          case CTX_identity:       ret = CTX_IDENTITY; break;
-          case CTX_transform:      ret = CTX_APPLY_TRANSFORM; break;
-          case CTX_sourceTransform: ret = CTX_SOURCE_TRANSFORM; break;
-          case CTX_texture:        ret = CTX_TEXTURE; break;
-          case CTX_defineTexture:  ret = CTX_DEFINE_TEXTURE; break;
+          case SQZ_hue:            ret = CTX_BLEND_HUE; break;
+          case SQZ_multiply:       ret = CTX_BLEND_MULTIPLY; break;
+          case SQZ_normal:         ret = CTX_BLEND_NORMAL;break;
+          case SQZ_screen:         ret = CTX_BLEND_SCREEN;break;
+          case SQZ_difference:     ret = CTX_BLEND_DIFFERENCE; break;
+          case SQZ_startFrame:     ret = CTX_START_FRAME; break;
+          case SQZ_verLineTo:      ret = CTX_VER_LINE_TO; break;
+          case SQZ_exit:
+          case SQZ_done:           ret = CTX_EXIT; break;
+          case SQZ_closePath:      ret = CTX_CLOSE_PATH; break;
+          case SQZ_beginPath:
+          case SQZ_newPath:        ret = CTX_BEGIN_PATH; break;
+          case SQZ_relArcTo:       ret = CTX_REL_ARC_TO; break;
+          case SQZ_clip:           ret = CTX_CLIP; break;
+          case SQZ_relCurveTo:     ret = CTX_REL_CURVE_TO; break;
+          case SQZ_startGroup:     ret = CTX_START_GROUP; break;
+          case SQZ_endGroup:       ret = CTX_END_GROUP; break;
+          case SQZ_save:           ret = CTX_SAVE; break;
+          case SQZ_translate:      ret = CTX_TRANSLATE; break;
+          case SQZ_linearGradient: ret = CTX_LINEAR_GRADIENT; break;
+          case SQZ_relHorLineTo:   ret = CTX_REL_HOR_LINE_TO; break;
+          case SQZ_relLineTo:      ret = CTX_REL_LINE_TO; break;
+          case SQZ_relMoveTo:      ret = CTX_REL_MOVE_TO; break;
+          case SQZ_font:           ret = CTX_FONT; break;
+          case SQZ_radialGradient:ret = CTX_RADIAL_GRADIENT; break;
+          case SQZ_gradientAddStop:
+          case SQZ_addStop:        ret = CTX_GRADIENT_STOP; break;
+          case SQZ_relQuadTo:      ret = CTX_REL_QUAD_TO; break;
+          case SQZ_rectangle:
+          case SQZ_rect:           ret = CTX_RECTANGLE; break;
+          case SQZ_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
+          case SQZ_relSmoothTo:    ret = CTX_REL_SMOOTH_TO; break;
+          case SQZ_relSmoothqTo:   ret = CTX_REL_SMOOTHQ_TO; break;
+          case SQZ_strokeText:     ret = CTX_STROKE_TEXT; break;
+          case SQZ_strokeRect:     ret = CTX_STROKE_RECT; break;
+          case SQZ_fillRect:       ret = CTX_FILL_RECT; break;
+          case SQZ_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
+          case SQZ_text:           ret = CTX_TEXT; break;
+          case SQZ_identity:       ret = CTX_IDENTITY; break;
+          case SQZ_transform:      ret = CTX_APPLY_TRANSFORM; break;
+          case SQZ_sourceTransform: ret = CTX_SOURCE_TRANSFORM; break;
+          case SQZ_texture:        ret = CTX_TEXTURE; break;
+          case SQZ_defineTexture:  ret = CTX_DEFINE_TEXTURE; break;
 #if 0
-          case CTX_rgbSpace:
+          case SQZ_rgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_RGB_SPACE);
-          case CTX_cmykSpace:
+          case SQZ_cmykSpace:
             return ctx_parser_set_command (parser, CTX_SET_CMYK_SPACE);
-          case CTX_drgbSpace:
+          case SQZ_drgbSpace:
             return ctx_parser_set_command (parser, CTX_SET_DRGB_SPACE);
 #endif
-          case CTX_defineFont:
+          case SQZ_defineFont:
             return ctx_parser_set_command (parser, CTX_DEFINE_FONT);
-          case CTX_defineGlyph:
+          case SQZ_defineGlyph:
             return ctx_parser_set_command (parser, CTX_DEFINE_GLYPH);
-          case CTX_kerningPair:
+          case SQZ_kerningPair:
             return ctx_parser_set_command (parser, CTX_KERNING_PAIR);
 
-          case CTX_colorSpace:
+          case SQZ_colorSpace:
             return ctx_parser_set_command (parser, CTX_COLOR_SPACE);
-          case CTX_fillRule:
+          case SQZ_fillRule:
             return ctx_parser_set_command (parser, CTX_FILL_RULE);
-          case CTX_fontSize:
-          case CTX_setFontSize:
+          case SQZ_fontSize:
+          case SQZ_setFontSize:
             return ctx_parser_set_command (parser, CTX_FONT_SIZE);
-          case CTX_compositingMode:
+          case SQZ_compositingMode:
             return ctx_parser_set_command (parser, CTX_COMPOSITING_MODE);
 
-          case CTX_extend:
+          case SQZ_extend:
             return ctx_parser_set_command (parser, CTX_EXTEND);
 
-          case CTX_blend:
-          case CTX_blending:
-          case CTX_blendMode:
+          case SQZ_blend:
+          case SQZ_blending:
+          case SQZ_blendMode:
             return ctx_parser_set_command (parser, CTX_BLEND_MODE);
 
-          case CTX_miterLimit:
+          case SQZ_miterLimit:
             return ctx_parser_set_command (parser, CTX_MITER_LIMIT);
-          case CTX_textAlign:
+          case SQZ_textAlign:
             return ctx_parser_set_command (parser, CTX_TEXT_ALIGN);
-          case CTX_textBaseline:
+          case SQZ_textBaseline:
             return ctx_parser_set_command (parser, CTX_TEXT_BASELINE);
-          case CTX_textDirection:
+          case SQZ_textDirection:
             return ctx_parser_set_command (parser, CTX_TEXT_DIRECTION);
-          case CTX_join:
-          case CTX_lineJoin:
-          case CTX_setLineJoin:
+          case SQZ_join:
+          case SQZ_lineJoin:
+          case SQZ_setLineJoin:
             return ctx_parser_set_command (parser, CTX_LINE_JOIN);
-          case CTX_glyph:
+          case SQZ_glyph:
             return ctx_parser_set_command (parser, CTX_GLYPH);
-          case CTX_cap:
-          case CTX_lineCap:
-          case CTX_setLineCap:
+          case SQZ_cap:
+          case SQZ_lineCap:
+          case SQZ_setLineCap:
             return ctx_parser_set_command (parser, CTX_LINE_CAP);
-          case CTX_lineDash:
+          case SQZ_lineDash:
             return ctx_parser_set_command (parser, CTX_LINE_DASH);
-          case CTX_lineWidth:
-          case CTX_setLineWidth:
+          case SQZ_lineWidth:
+          case SQZ_setLineWidth:
             return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
-          case CTX_lineDashOffset:
+          case SQZ_lineDashOffset:
             return ctx_parser_set_command (parser, CTX_LINE_DASH_OFFSET);
-          case CTX_lineHeight:
+          case SQZ_lineHeight:
             return ctx_parser_set_command (parser, CTX_LINE_HEIGHT);
-          case CTX_wrapLeft:
+          case SQZ_wrapLeft:
             return ctx_parser_set_command (parser, CTX_WRAP_LEFT);
-          case CTX_wrapRight:
+          case SQZ_wrapRight:
             return ctx_parser_set_command (parser, CTX_WRAP_RIGHT);
-          case CTX_imageSmoothing:
+          case SQZ_imageSmoothing:
             return ctx_parser_set_command (parser, CTX_IMAGE_SMOOTHING);
-          case CTX_shadowColor:
+          case SQZ_shadowColor:
             return ctx_parser_set_command (parser, CTX_SHADOW_COLOR);
-          case CTX_shadowBlur:
+          case SQZ_shadowBlur:
             return ctx_parser_set_command (parser, CTX_SHADOW_BLUR);
-          case CTX_shadowOffsetX:
+          case SQZ_shadowOffsetX:
             return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_X);
-          case CTX_shadowOffsetY:
+          case SQZ_shadowOffsetY:
             return ctx_parser_set_command (parser, CTX_SHADOW_OFFSET_Y);
-          case CTX_globalAlpha:
+          case SQZ_globalAlpha:
             return ctx_parser_set_command (parser, CTX_GLOBAL_ALPHA);
 
-          case CTX_strokeSource:
+          case SQZ_strokeSource:
             return ctx_parser_set_command (parser, CTX_STROKE_SOURCE);
 
           /* strings are handled directly here,
            * instead of in the one-char handler, using return instead of break
            */
-          case CTX_gray:
+          case SQZ_gray:
             ctx_parser_set_color_model (parser, CTX_GRAY, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_graya:
+          case SQZ_graya:
             ctx_parser_set_color_model (parser, CTX_GRAYA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_rgb:
+          case SQZ_rgb:
             ctx_parser_set_color_model (parser, CTX_RGB, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_drgb:
+          case SQZ_drgb:
             ctx_parser_set_color_model (parser, CTX_DRGB, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_rgba:
+          case SQZ_rgba:
             ctx_parser_set_color_model (parser, CTX_RGBA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_drgba:
+          case SQZ_drgba:
             ctx_parser_set_color_model (parser, CTX_DRGBA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_cmyk:
+          case SQZ_cmyk:
             ctx_parser_set_color_model (parser, CTX_CMYK, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_cmyka:
+          case SQZ_cmyka:
             ctx_parser_set_color_model (parser, CTX_CMYKA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_lab:
+          case SQZ_lab:
             ctx_parser_set_color_model (parser, CTX_LAB, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_laba:
+          case SQZ_laba:
             ctx_parser_set_color_model (parser, CTX_LABA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_lch:
+          case SQZ_lch:
             ctx_parser_set_color_model (parser, CTX_LCH, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_lcha:
+          case SQZ_lcha:
             ctx_parser_set_color_model (parser, CTX_LCHA, 0);
             return ctx_parser_set_command (parser, CTX_COLOR);
 
           /* and a full repeat of the above, with S for Stroke suffix */
-          case CTX_grayS:
+          case SQZ_grayS:
             ctx_parser_set_color_model (parser, CTX_GRAY, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_grayaS:
+          case SQZ_grayaS:
             ctx_parser_set_color_model (parser, CTX_GRAYA, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_rgbS:
+          case SQZ_rgbS:
             ctx_parser_set_color_model (parser, CTX_RGB, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_drgbS:
+          case SQZ_drgbS:
             ctx_parser_set_color_model (parser, CTX_DRGB, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_rgbaS:
+          case SQZ_rgbaS:
             ctx_parser_set_color_model (parser, CTX_RGBA, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_drgbaS:
+          case SQZ_drgbaS:
             ctx_parser_set_color_model (parser, CTX_DRGBA, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_cmykS:
+          case SQZ_cmykS:
             ctx_parser_set_color_model (parser, CTX_CMYK, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_cmykaS:
+          case SQZ_cmykaS:
             ctx_parser_set_color_model (parser, CTX_CMYKA, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_labS:
+          case SQZ_labS:
             ctx_parser_set_color_model (parser, CTX_LAB, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_labaS:
+          case SQZ_labaS:
             ctx_parser_set_color_model (parser, CTX_LABA, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_lchS:
+          case SQZ_lchS:
             ctx_parser_set_color_model (parser, CTX_LCH, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
-          case CTX_lchaS:
+          case SQZ_lchaS:
             ctx_parser_set_color_model (parser, CTX_LCHA, 1);
             return ctx_parser_set_command (parser, CTX_COLOR);
 
           /* words that correspond to low integer constants
           */
-          case CTX_nonzero:     return CTX_FILL_RULE_WINDING;
-          case CTX_winding:     return CTX_FILL_RULE_WINDING;
-          case CTX_evenOdd:     return CTX_FILL_RULE_EVEN_ODD;
-          case CTX_bevel:       return CTX_JOIN_BEVEL;
-          case CTX_round:       return CTX_JOIN_ROUND;
-          case CTX_miter:       return CTX_JOIN_MITER;
-          case CTX_none:        return CTX_CAP_NONE;
-          case CTX_square:      return CTX_CAP_SQUARE;
-          case CTX_start:       return CTX_TEXT_ALIGN_START;
-          case CTX_end:         return CTX_TEXT_ALIGN_END;
-          case CTX_left:        return CTX_TEXT_ALIGN_LEFT;
-          case CTX_right:       return CTX_TEXT_ALIGN_RIGHT;
-          case CTX_center:      return CTX_TEXT_ALIGN_CENTER;
-          case CTX_top:         return CTX_TEXT_BASELINE_TOP;
-          case CTX_bottom :     return CTX_TEXT_BASELINE_BOTTOM;
-          case CTX_middle:      return CTX_TEXT_BASELINE_MIDDLE;
-          case CTX_alphabetic:  return CTX_TEXT_BASELINE_ALPHABETIC;
-          case CTX_hanging:     return CTX_TEXT_BASELINE_HANGING;
-          case CTX_ideographic: return CTX_TEXT_BASELINE_IDEOGRAPHIC;
+          case SQZ_nonzero:     return CTX_FILL_RULE_WINDING;
+          case SQZ_winding:     return CTX_FILL_RULE_WINDING;
+          case SQZ_evenOdd:     return CTX_FILL_RULE_EVEN_ODD;
+          case SQZ_bevel:       return CTX_JOIN_BEVEL;
+          case SQZ_round:       return CTX_JOIN_ROUND;
+          case SQZ_miter:       return CTX_JOIN_MITER;
+          case SQZ_none:        return CTX_CAP_NONE;
+          case SQZ_square:      return CTX_CAP_SQUARE;
+          case SQZ_start:       return CTX_TEXT_ALIGN_START;
+          case SQZ_end:         return CTX_TEXT_ALIGN_END;
+          case SQZ_left:        return CTX_TEXT_ALIGN_LEFT;
+          case SQZ_right:       return CTX_TEXT_ALIGN_RIGHT;
+          case SQZ_center:      return CTX_TEXT_ALIGN_CENTER;
+          case SQZ_top:         return CTX_TEXT_BASELINE_TOP;
+          case SQZ_bottom :     return CTX_TEXT_BASELINE_BOTTOM;
+          case SQZ_middle:      return CTX_TEXT_BASELINE_MIDDLE;
+          case SQZ_alphabetic:  return CTX_TEXT_BASELINE_ALPHABETIC;
+          case SQZ_hanging:     return CTX_TEXT_BASELINE_HANGING;
+          case SQZ_ideographic: return CTX_TEXT_BASELINE_IDEOGRAPHIC;
 
-          case CTX_userRGB:     return CTX_COLOR_SPACE_USER_RGB;
-          case CTX_deviceRGB:   return CTX_COLOR_SPACE_DEVICE_RGB;
-          case CTX_userCMYK:    return CTX_COLOR_SPACE_USER_CMYK;
-          case CTX_deviceCMYK:  return CTX_COLOR_SPACE_DEVICE_CMYK;
+          case SQZ_userRGB:     return CTX_COLOR_SPACE_USER_RGB;
+          case SQZ_deviceRGB:   return CTX_COLOR_SPACE_DEVICE_RGB;
+          case SQZ_userCMYK:    return CTX_COLOR_SPACE_USER_CMYK;
+          case SQZ_deviceCMYK:  return CTX_COLOR_SPACE_DEVICE_CMYK;
 #undef STR
 #undef LOWER
           default:

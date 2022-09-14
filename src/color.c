@@ -692,50 +692,28 @@ typedef struct ColorDef {
   float a;
 } ColorDef;
 
-#if 0
-#define CTX_silver 	CTX_STRH('s','i','l','v','e','r',0,0,0,0,0,0,0,0)
-#define CTX_fuchsia 	CTX_STRH('f','u','c','h','s','i','a',0,0,0,0,0,0,0)
-#define CTX_gray 	CTX_STRH('g','r','a','y',0,0,0,0,0,0,0,0,0,0)
-#define CTX_yellow 	CTX_STRH('y','e','l','l','o','w',0,0,0,0,0,0,0,0)
-#define CTX_white 	CTX_STRH('w','h','i','t','e',0,0,0,0,0,0,0,0,0)
-#define CTX_maroon 	CTX_STRH('m','a','r','o','o','n',0,0,0,0,0,0,0,0)
-#define CTX_magenta 	CTX_STRH('m','a','g','e','n','t','a',0,0,0,0,0,0,0)
-#define CTX_blue 	CTX_STRH('b','l','u','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_green 	CTX_STRH('g','r','e','e','n',0,0,0,0,0,0,0,0,0)
-#define CTX_red 	CTX_STRH('r','e','d',0,0,0,0,0,0,0,0,0,0,0)
-#define CTX_purple 	CTX_STRH('p','u','r','p','l','e',0,0,0,0,0,0,0,0)
-#define CTX_olive 	CTX_STRH('o','l','i','v','e',0,0,0,0,0,0,0,0,0)
-#define CTX_teal        CTX_STRH('t','e','a','l',0,0,0,0,0,0,0,0,0,0)
-#define CTX_black 	CTX_STRH('b','l','a','c','k',0,0,0,0,0,0,0,0,0)
-#define CTX_cyan 	CTX_STRH('c','y','a','n',0,0,0,0,0,0,0,0,0,0)
-#define CTX_navy 	CTX_STRH('n','a','v','y',0,0,0,0,0,0,0,0,0,0)
-#define CTX_lime 	CTX_STRH('l','i','m','e',0,0,0,0,0,0,0,0,0,0)
-#define CTX_aqua 	CTX_STRH('a','q','u','a',0,0,0,0,0,0,0,0,0,0)
-#define CTX_transparent CTX_STRH('t','r','a','n','s','p','a','r','e','n','t',0,0,0)
-#endif
-
 static ColorDef _ctx_colors[]={
-  {CTX_black,    0, 0, 0, 1},
-  {CTX_red,      1, 0, 0, 1},
-  {CTX_green,    0, 1, 0, 1},
-  {CTX_yellow,   1, 1, 0, 1},
-  {CTX_blue,     0, 0, 1, 1},
-  {CTX_fuchsia,  1, 0, 1, 1},
-  {CTX_cyan,     0, 1, 1, 1},
-  {CTX_white,    1, 1, 1, 1},
-  {CTX_silver,   0.75294f, 0.75294f, 0.75294f, 1},
-  {CTX_gray,     0.50196f, 0.50196f, 0.50196f, 1},
-  {CTX_magenta,  0.50196f, 0, 0.50196f, 1},
-  {CTX_maroon,   0.50196f, 0, 0, 1},
-  {CTX_purple,   0.50196f, 0, 0.50196f, 1},
-  {CTX_green,    0, 0.50196f, 0, 1},
-  {CTX_lime,     0, 1, 0, 1},
-  {CTX_olive,    0.50196f, 0.50196f, 0, 1},
-  {CTX_navy,     0, 0,      0.50196f, 1},
-  {CTX_teal,     0, 0.50196f, 0.50196f, 1},
-  {CTX_aqua,     0, 1, 1, 1},
-  {CTX_transparent, 0, 0, 0, 0},
-  {CTX_none,     0, 0, 0, 0},
+  {SQZ_black,    0, 0, 0, 1},
+  {SQZ_red,      1, 0, 0, 1},
+  {SQZ_green,    0, 1, 0, 1},
+  {SQZ_yellow,   1, 1, 0, 1},
+  {SQZ_blue,     0, 0, 1, 1},
+  {SQZ_fuchsia,  1, 0, 1, 1},
+  {SQZ_cyan,     0, 1, 1, 1},
+  {SQZ_white,    1, 1, 1, 1},
+  {SQZ_silver,   0.75294f, 0.75294f, 0.75294f, 1},
+  {SQZ_gray,     0.50196f, 0.50196f, 0.50196f, 1},
+  {SQZ_magenta,  0.50196f, 0, 0.50196f, 1},
+  {SQZ_maroon,   0.50196f, 0, 0, 1},
+  {SQZ_purple,   0.50196f, 0, 0.50196f, 1},
+  {SQZ_green,    0, 0.50196f, 0, 1},
+  {SQZ_lime,     0, 1, 0, 1},
+  {SQZ_olive,    0.50196f, 0.50196f, 0, 1},
+  {SQZ_navy,     0, 0,      0.50196f, 1},
+  {SQZ_teal,     0, 0.50196f, 0.50196f, 1},
+  {SQZ_aqua,     0, 1, 1, 1},
+  {SQZ_transparent, 0, 0, 0, 0},
+  {SQZ_none,     0, 0, 0, 0},
 };
 
 static int xdigit_value(const char xdigit)
@@ -860,12 +838,12 @@ int ctx_color_set_from_string (Ctx *ctx, CtxColor *color, const char *string)
 //  return 0;
     //rgba[0], rgba[1], rgba[2], rgba[3]);
 
-  if (hash == CTX_currentColor)
+  if (hash == SQZ_currentColor)
   {
     float rgba[4];
     CtxColor ccolor;
     bzero (&ccolor, sizeof (CtxColor));
-    ctx_get_color (ctx, CTX_color, &ccolor);
+    ctx_get_color (ctx, SQZ_color, &ccolor);
     ctx_color_get_rgba (&(ctx->state), &ccolor, rgba);
     ctx_color_set_rgba (&(ctx->state), color, rgba[0], rgba[1], rgba[2], rgba[3]);
     return 0;

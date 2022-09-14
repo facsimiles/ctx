@@ -16,23 +16,23 @@
 #define CTX_MAX_TEXT_LISTEN      256
 #define CTX_XML_INBUF_SIZE       1024
 
-#define PROP(a)          (ctx_get_float(mrg->ctx, CTX_##a))
-#define PROPS(a)         (ctx_get_string(mrg->ctx, CTX_##a))
+#define PROP(a)          (ctx_get_float(mrg->ctx, SQZ_##a))
+#define PROPS(a)         (ctx_get_string(mrg->ctx, SQZ_##a))
 #define SET_PROPh(a,v)   (ctx_set_float(mrg->ctx, a, v))
-#define SET_PROP(a,v)    SET_PROPh(CTX_##a, v)
-#define SET_PROPS(a,v)   (ctx_set_string(mrg->ctx, CTX_##a, v))
+#define SET_PROP(a,v)    SET_PROPh(SQZ_##a, v)
+#define SET_PROPS(a,v)   (ctx_set_string(mrg->ctx, SQZ_##a, v))
 #define SET_PROPSh(a,v)  (ctx_set_string(mrg->ctx, a, v))
 
-#define CTX_1      374u
-#define CTX_Aelig  2540544426u
-#define CTX_AElig  2622343083u
-#define CTX_Aring  3473872814u
-#define CTX_Oslash 3911734189u
+#define SQZ_1      374u
+#define SQZ_Aelig  2540544426u
+#define SQZ_AElig  2622343083u
+#define SQZ_Aring  3473872814u
+#define SQZ_Oslash 3911734189u
 
 /*
  *  extra hashed strings to be picked up
  *
- *  CTX_id  CTX_class  CTX_d CTX_rel    CTX_viewbox
+ *  SQZ_id  SQZ_class  SQZ_d SQZ_rel    SQZ_viewbox
  *
  */
 
@@ -1383,7 +1383,7 @@ void itk_set_edge_top (ITK *itk, float edge)
   // reset of line handling
   //
   mrg_set_xy (mrg, _mrg_dynamic_edge_left (mrg) +
-		  ctx_get_float (mrg_ctx(mrg), CTX_text_indent)
+		  ctx_get_float (mrg_ctx(mrg), SQZ_text_indent)
       , mrg->state->edge_top);// + mrg_em (mrg));
 
 
@@ -1525,15 +1525,15 @@ void _ctx_initial_style (Mrg *mrg)
   SET_PROPS(class,"");
   SET_PROPS(id,"");
 
-  ctx_set_float (mrg->ctx, CTX_stroke_width, 0.2);
+  ctx_set_float (mrg->ctx, SQZ_stroke_width, 0.2);
 
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (mrg->ctx, CTX_color, color);
+  ctx_get_color (mrg->ctx, SQZ_color, color);
 
-  ctx_set_color (mrg->ctx, CTX_border_top_color, color);
-  ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
-  ctx_set_color (mrg->ctx, CTX_border_left_color, color);
-  ctx_set_color (mrg->ctx, CTX_border_right_color, color);
+  ctx_set_color (mrg->ctx, SQZ_border_top_color, color);
+  ctx_set_color (mrg->ctx, SQZ_border_bottom_color, color);
+  ctx_set_color (mrg->ctx, SQZ_border_left_color, color);
+  ctx_set_color (mrg->ctx, SQZ_border_right_color, color);
 
 #if 0
   s->stroke_color.red = 1;
@@ -1547,7 +1547,7 @@ void _ctx_initial_style (Mrg *mrg)
 #endif
 
     ctx_color_set_from_string (mrg->ctx, color, "transparent");
-    ctx_set_color (mrg->ctx, CTX_background_color, color);
+    ctx_set_color (mrg->ctx, SQZ_background_color, color);
     ctx_color_free (color);
 }
 
@@ -2259,7 +2259,7 @@ static inline int match_nodes (Mrg *mrg, CtxStyleNode *sel_node, CtxStyleNode *s
   }
   for (j = 0; sel_node->pseudo[j]; j++)
   {
-    if (ctx_strhash (sel_node->pseudo[j]) == CTX_first_child)
+    if (ctx_strhash (sel_node->pseudo[j]) == SQZ_first_child)
     {
       if (!(_ctx_child_no (mrg) == 1))
         return 0;
@@ -2655,7 +2655,7 @@ static inline void ctx_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
 {
   /* pass0 deals with properties that parsing of many other property
    * definitions rely on */
-  if (key == CTX_font_size)
+  if (key == SQZ_font_size)
   {
     float parsed;
     
@@ -2671,11 +2671,11 @@ static inline void ctx_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
     }
     mrg_set_em (mrg, parsed);
   }
-  else if (key == CTX_color)
+  else if (key == SQZ_color)
   {
     CtxColor *color = ctx_color_new ();
     ctx_color_set_from_string (mrg->ctx, color, value);
-    ctx_set_color (mrg->ctx, CTX_color, color);
+    ctx_set_color (mrg->ctx, SQZ_color, color);
     ctx_color_free (color);
   }
 }
@@ -2691,42 +2691,42 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     default:
       SET_PROPSh(key, value);
       break;
-    case CTX_right:
-    case CTX_bottom:
-    case CTX_width:     // handled in pass1m
-    case CTX_color:     // handled in pass0
-    case CTX_font_size: // handled in pass0
+    case SQZ_right:
+    case SQZ_bottom:
+    case SQZ_width:     // handled in pass1m
+    case SQZ_color:     // handled in pass0
+    case SQZ_font_size: // handled in pass0
       break;
-    case CTX_top:
-    case CTX_height:
-    case CTX_line_width:
-    case CTX_text_indent:
-    case CTX_letter_spacing:
-    case CTX_word_spacing:
-    case CTX_stroke_width:
-    case CTX_text_stroke_width:
-    case CTX_line_height:
-    case CTX_border_top_width:
-    case CTX_border_bottom_width:
-    case CTX_margin_top:
-    case CTX_margin_bottom:
-    case CTX_padding_bottom:
-    case CTX_padding_top:
-    case CTX_min_height:
-    case CTX_max_height:
+    case SQZ_top:
+    case SQZ_height:
+    case SQZ_line_width:
+    case SQZ_text_indent:
+    case SQZ_letter_spacing:
+    case SQZ_word_spacing:
+    case SQZ_stroke_width:
+    case SQZ_text_stroke_width:
+    case SQZ_line_height:
+    case SQZ_border_top_width:
+    case SQZ_border_bottom_width:
+    case SQZ_margin_top:
+    case SQZ_margin_bottom:
+    case SQZ_padding_bottom:
+    case SQZ_padding_top:
+    case SQZ_min_height:
+    case SQZ_max_height:
       SET_PROPh(key, mrg_parse_px_y (mrg, value, NULL));
       break;
-    case CTX_border_right_width:
-    case CTX_border_left_width:
-    case CTX_left:
-    case CTX_tab_size:
-    case CTX_min_width:
-    case CTX_max_width:
-    case CTX_padding_left:
-    case CTX_padding_right:
+    case SQZ_border_right_width:
+    case SQZ_border_left_width:
+    case SQZ_left:
+    case SQZ_tab_size:
+    case SQZ_min_width:
+    case SQZ_max_width:
+    case SQZ_padding_left:
+    case SQZ_padding_right:
       SET_PROPh(key, mrg_parse_px_x (mrg, value, NULL));
       break;
-    case CTX_margin:
+    case SQZ_margin:
       {
         float vals[10];
         int   n_vals;
@@ -2753,9 +2753,9 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         SET_PROP(margin_left,   res[3]);
       }
       break;
-    case CTX_margin_left:
+    case SQZ_margin_left:
     {
-      if (val_hash == CTX_auto)
+      if (val_hash == SQZ_auto)
       {
         s->margin_left_auto = 1;
       }
@@ -2766,9 +2766,9 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       }
     }
       break;
-    case CTX_margin_right:
+    case SQZ_margin_right:
     {
-      if (val_hash == CTX_auto)
+      if (val_hash == SQZ_auto)
       {
         s->margin_right_auto = 1;
       }
@@ -2780,7 +2780,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     }
       break;
   
-    case CTX_padding:
+    case SQZ_padding:
       {
         float vals[10];
         int   n_vals;
@@ -2807,15 +2807,15 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         SET_PROP(padding_left,   res[3]);
       }
       break;
-    case CTX_visibility:
+    case SQZ_visibility:
     {
-      if      (val_hash == CTX_visible) s->visibility = CTX_VISIBILITY_VISIBLE;
-      else if (val_hash == CTX_hidden)  s->visibility = CTX_VISIBILITY_HIDDEN;
+      if      (val_hash == SQZ_visible) s->visibility = CTX_VISIBILITY_VISIBLE;
+      else if (val_hash == SQZ_hidden)  s->visibility = CTX_VISIBILITY_HIDDEN;
       else                              s->visibility = CTX_VISIBILITY_VISIBLE;
     }
     break;
   
-    case CTX_border_width:
+    case SQZ_border_width:
       {
         float vals[10];
         int   n_vals;
@@ -2842,18 +2842,18 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         SET_PROP(border_left_width,   res[3]);
       }
       break;
-    case CTX_border_color:
+    case SQZ_border_color:
       {
         CtxColor *color = ctx_color_new ();
         ctx_color_set_from_string (mrg->ctx, color, value);
-        ctx_set_color (mrg->ctx, CTX_border_top_color, color);
-        ctx_set_color (mrg->ctx, CTX_border_left_color, color);
-        ctx_set_color (mrg->ctx, CTX_border_right_color, color);
-        ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+        ctx_set_color (mrg->ctx, SQZ_border_top_color, color);
+        ctx_set_color (mrg->ctx, SQZ_border_left_color, color);
+        ctx_set_color (mrg->ctx, SQZ_border_right_color, color);
+        ctx_set_color (mrg->ctx, SQZ_border_bottom_color, color);
         ctx_color_free (color);
       }
       break;
-    case CTX_border:
+    case SQZ_border:
       {
         char word[64];
         int w = 0;
@@ -2877,16 +2877,16 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                   SET_PROP(border_bottom_width, valf);
                   SET_PROP(border_right_width, valf);
                   SET_PROP(border_left_width, valf);
-                } else if (word_hash == CTX_solid ||
-                           word_hash == CTX_dotted ||
-                           word_hash == CTX_inset) {
+                } else if (word_hash == SQZ_solid ||
+                           word_hash == SQZ_dotted ||
+                           word_hash == SQZ_inset) {
                 } else {
                   CtxColor *color = ctx_color_new ();
                   ctx_color_set_from_string (mrg->ctx, color, word);
-                  ctx_set_color (mrg->ctx, CTX_border_top_color, color);
-                  ctx_set_color (mrg->ctx, CTX_border_left_color, color);
-                  ctx_set_color (mrg->ctx, CTX_border_right_color, color);
-                  ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
+                  ctx_set_color (mrg->ctx, SQZ_border_top_color, color);
+                  ctx_set_color (mrg->ctx, SQZ_border_left_color, color);
+                  ctx_set_color (mrg->ctx, SQZ_border_right_color, color);
+                  ctx_set_color (mrg->ctx, SQZ_border_bottom_color, color);
                   ctx_color_free (color);
                 }
                 word[0]=0;
@@ -2903,10 +2903,10 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         }
       }
       break;
-    case CTX_border_bottom:
-    case CTX_border_left:
-    case CTX_border_right:
-    case CTX_border_top:
+    case SQZ_border_bottom:
+    case SQZ_border_left:
+    case SQZ_border_right:
+    case SQZ_border_top:
       {
         char word[64];
         int w = 0;
@@ -2926,28 +2926,28 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
                 if ((word[0] >= '0' && word[0]<='9') || (word[0] == '.'))
                 {
                   float valf = mrg_parse_px_x (mrg, word, NULL);
-		  if (key == CTX_border_bottom)
+		  if (key == SQZ_border_bottom)
                     SET_PROP(border_bottom_width, valf);
-		  else if (key == CTX_border_left)
+		  else if (key == SQZ_border_left)
                     SET_PROP(border_left_width, valf);
-		  else if (key == CTX_border_right)
+		  else if (key == SQZ_border_right)
                     SET_PROP(border_right_width, valf);
 		  else
                     SET_PROP(border_top_width, valf);
-                } else if (word_hash == CTX_solid ||
-                           word_hash == CTX_dotted ||
-                           word_hash == CTX_inset) {
+                } else if (word_hash == SQZ_solid ||
+                           word_hash == SQZ_dotted ||
+                           word_hash == SQZ_inset) {
                 } else {
                   CtxColor *color = ctx_color_new ();
                   ctx_color_set_from_string (mrg->ctx, color, word);
-		  if (key == CTX_border_bottom)
-                    ctx_set_color (mrg->ctx, CTX_border_bottom_color, color);
-		  else if (key == CTX_border_top)
-                    ctx_set_color (mrg->ctx, CTX_border_top_color, color);
-		  else if (key == CTX_border_left)
-                    ctx_set_color (mrg->ctx, CTX_border_left_color, color);
-		  else if (key == CTX_border_right)
-                    ctx_set_color (mrg->ctx, CTX_border_right_color, color);
+		  if (key == SQZ_border_bottom)
+                    ctx_set_color (mrg->ctx, SQZ_border_bottom_color, color);
+		  else if (key == SQZ_border_top)
+                    ctx_set_color (mrg->ctx, SQZ_border_top_color, color);
+		  else if (key == SQZ_border_left)
+                    ctx_set_color (mrg->ctx, SQZ_border_left_color, color);
+		  else if (key == SQZ_border_right)
+                    ctx_set_color (mrg->ctx, SQZ_border_right_color, color);
                   ctx_color_free (color);
                 }
                 word[0]=0;
@@ -2965,42 +2965,42 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       }
       break;
   
-    case CTX_background_color:
-    case CTX_background:
+    case SQZ_background_color:
+    case SQZ_background:
     {
       CtxColor *color = ctx_color_new ();
       ctx_color_set_from_string (mrg->ctx, color, value);
-      ctx_set_color (mrg->ctx, CTX_background_color, color);
+      ctx_set_color (mrg->ctx, SQZ_background_color, color);
       ctx_color_free (color);
     }
       break;
-    case CTX_fill_color:
-    case CTX_fill:
+    case SQZ_fill_color:
+    case SQZ_fill:
     {
       CtxColor *color = ctx_color_new ();
       ctx_color_set_from_string (mrg->ctx, color, value);
-      ctx_set_color (mrg->ctx, CTX_fill_color, color);
+      ctx_set_color (mrg->ctx, SQZ_fill_color, color);
       ctx_color_free (color);
     }
       break;
-    case CTX_stroke_color:
-    case CTX_stroke:
+    case SQZ_stroke_color:
+    case SQZ_stroke:
     {
       CtxColor *color = ctx_color_new ();
       ctx_color_set_from_string (mrg->ctx, color, value);
-      ctx_set_color (mrg->ctx, CTX_stroke_color, color);
+      ctx_set_color (mrg->ctx, SQZ_stroke_color, color);
       ctx_color_free (color);
     }
       break;
-    case CTX_text_stroke_color:
+    case SQZ_text_stroke_color:
     {
       CtxColor *color = ctx_color_new ();
       ctx_color_set_from_string (mrg->ctx, color, value);
-      ctx_set_color (mrg->ctx, CTX_text_stroke_color, color);
+      ctx_set_color (mrg->ctx, SQZ_text_stroke_color, color);
       ctx_color_free (color);
     }
       break;
-    case CTX_text_stroke:
+    case SQZ_text_stroke:
     {
       char *col = NULL;
       SET_PROP(text_stroke_width, mrg_parse_px_y (mrg, value, &col));
@@ -3009,37 +3009,37 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       {
         CtxColor *color = ctx_color_new ();
         ctx_color_set_from_string (mrg->ctx, color, col + 1);
-        ctx_set_color (mrg->ctx, CTX_text_stroke_color, color);
+        ctx_set_color (mrg->ctx, SQZ_text_stroke_color, color);
         ctx_color_free (color);
       }
     }
       break;
-    case CTX_opacity:
+    case SQZ_opacity:
     {
       ctx_global_alpha (mrg->ctx, _ctx_parse_float (value, NULL));
       SET_PROP(opacity, _ctx_parse_float (value, NULL));
     }
     break;
-    case CTX_z_index:
+    case SQZ_z_index:
       s->z_index = _ctx_parse_float (value, NULL);
     break;
-    case CTX_print_symbols:
+    case SQZ_print_symbols:
     switch (val_hash)
     {
-        case CTX_true:
-        case CTX_1:
-        case CTX_yes:
+        case SQZ_true:
+        case SQZ_1:
+        case SQZ_yes:
           s->print_symbols = 1;
           break;
         default:
           s->print_symbols = 0;
     }
       break;
-    case CTX_font_weight:
+    case SQZ_font_weight:
       switch (val_hash)
       {
-        case CTX_bold:
-        case CTX_bolder:
+        case SQZ_bold:
+        case SQZ_bolder:
           s->text_decoration |= CTX_TEXT_DECORATION_BOLD;
           s->font_weight = CTX_FONT_WEIGHT_BOLD;
           break;
@@ -3054,60 +3054,60 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
             s->font_weight);
   #endif
       break;
-    case CTX_white_space:
+    case SQZ_white_space:
       {
         switch (val_hash)
         {
           default:
-          case CTX_normal:   s->white_space = CTX_WHITE_SPACE_NORMAL; break;
-          case CTX_nowrap:   s->white_space = CTX_WHITE_SPACE_NOWRAP; break;
-          case CTX_pre:      s->white_space = CTX_WHITE_SPACE_PRE; break;
-          case CTX_pre_line: s->white_space = CTX_WHITE_SPACE_PRE_LINE; break;
-          case CTX_pre_wrap: s->white_space = CTX_WHITE_SPACE_PRE_WRAP; break;
+          case SQZ_normal:   s->white_space = CTX_WHITE_SPACE_NORMAL; break;
+          case SQZ_nowrap:   s->white_space = CTX_WHITE_SPACE_NOWRAP; break;
+          case SQZ_pre:      s->white_space = CTX_WHITE_SPACE_PRE; break;
+          case SQZ_pre_line: s->white_space = CTX_WHITE_SPACE_PRE_LINE; break;
+          case SQZ_pre_wrap: s->white_space = CTX_WHITE_SPACE_PRE_WRAP; break;
         }
       }
       break;
-    case CTX_box_sizing:
+    case SQZ_box_sizing:
       {
-        if (val_hash == CTX_border_box)
+        if (val_hash == SQZ_border_box)
         {
           s->box_sizing = CTX_BOX_SIZING_BORDER_BOX;
           s->box_sizing = CTX_BOX_SIZING_CONTENT_BOX;
         }
       }
       break;
-    case CTX_float:
+    case SQZ_float:
       switch (val_hash)
       {
-        case CTX_left:  s->float_ = CTX_FLOAT_LEFT;  break;
-        case CTX_right: s->float_ = CTX_FLOAT_RIGHT; break;
+        case SQZ_left:  s->float_ = CTX_FLOAT_LEFT;  break;
+        case SQZ_right: s->float_ = CTX_FLOAT_RIGHT; break;
         default:        s->float_ = CTX_FLOAT_NONE;
       }
       break;
-    case CTX_overflow:
+    case SQZ_overflow:
       switch(val_hash)
       {
-        case CTX_visible: s->overflow = CTX_OVERFLOW_VISIBLE; break;
-        case CTX_hidden:  s->overflow = CTX_OVERFLOW_HIDDEN;  break;
-        case CTX_scroll:  s->overflow = CTX_OVERFLOW_SCROLL;  break;
-        case CTX_auto:    s->overflow = CTX_OVERFLOW_AUTO;    break;
+        case SQZ_visible: s->overflow = CTX_OVERFLOW_VISIBLE; break;
+        case SQZ_hidden:  s->overflow = CTX_OVERFLOW_HIDDEN;  break;
+        case SQZ_scroll:  s->overflow = CTX_OVERFLOW_SCROLL;  break;
+        case SQZ_auto:    s->overflow = CTX_OVERFLOW_AUTO;    break;
         default:          s->overflow = CTX_OVERFLOW_VISIBLE; break;
       }
       break;
-    case CTX_clear:
+    case SQZ_clear:
       switch(val_hash)
       {
-        case CTX_left:  s->clear = CTX_CLEAR_LEFT;  break;
-        case CTX_right: s->clear = CTX_CLEAR_RIGHT; break;
-        case CTX_both:  s->clear = CTX_CLEAR_BOTH;  break;
+        case SQZ_left:  s->clear = CTX_CLEAR_LEFT;  break;
+        case SQZ_right: s->clear = CTX_CLEAR_RIGHT; break;
+        case SQZ_both:  s->clear = CTX_CLEAR_BOTH;  break;
         default:        s->clear = CTX_CLEAR_NONE;  break;
       }
       break;
-    case CTX_font_style:
+    case SQZ_font_style:
       switch(val_hash)
       {
-        case CTX_italic:  s->font_style = CTX_FONT_STYLE_ITALIC;  break;
-        case CTX_oblique: s->font_style = CTX_FONT_STYLE_OBLIQUE; break;
+        case SQZ_italic:  s->font_style = CTX_FONT_STYLE_ITALIC;  break;
+        case SQZ_oblique: s->font_style = CTX_FONT_STYLE_OBLIQUE; break;
         default:          s->font_style = CTX_FONT_STYLE_NORMAL;
   #if 0 // XXX
         cairo_select_font_face (mrg_ctx (mrg),
@@ -3117,157 +3117,157 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   #endif
       }
       break;
-    case CTX_font_family:
+    case SQZ_font_family:
       {
         SET_PROPS(font_family, value);
         ctx_font (mrg_ctx (mrg), value);
       }
       break;
-    case CTX_syntax_highlight:
+    case SQZ_syntax_highlight:
       SET_PROPS(syntax_highlight, value);
       break;
-    case CTX_fill_rule:
+    case SQZ_fill_rule:
       switch (val_hash)
       { 
         default:
-        case  CTX_evenodd: s->fill_rule = CTX_FILL_RULE_EVEN_ODD; break;
-        case  CTX_nonzero: s->fill_rule = CTX_FILL_RULE_WINDING;  break;
+        case  SQZ_evenodd: s->fill_rule = CTX_FILL_RULE_EVEN_ODD; break;
+        case  SQZ_nonzero: s->fill_rule = CTX_FILL_RULE_WINDING;  break;
       }
       if (s->fill_rule == CTX_FILL_RULE_EVEN_ODD)
         ctx_fill_rule (mrg_ctx (mrg), CTX_FILL_RULE_EVEN_ODD);
       else
         ctx_fill_rule (mrg_ctx (mrg), CTX_FILL_RULE_WINDING);
       break;
-    case CTX_stroke_linejoin:
+    case SQZ_stroke_linejoin:
       switch (val_hash)
       { 
-        case CTX_miter: s->stroke_linejoin = CTX_JOIN_MITER; break;
-        case CTX_round: s->stroke_linejoin = CTX_JOIN_ROUND; break;
-        case CTX_bevel: s->stroke_linejoin = CTX_JOIN_BEVEL; break;
+        case SQZ_miter: s->stroke_linejoin = CTX_JOIN_MITER; break;
+        case SQZ_round: s->stroke_linejoin = CTX_JOIN_ROUND; break;
+        case SQZ_bevel: s->stroke_linejoin = CTX_JOIN_BEVEL; break;
         default:        s->stroke_linejoin = CTX_JOIN_MITER;
       }
       ctx_line_join (mrg_ctx (mrg), (CtxLineJoin)s->stroke_linejoin);
       break;
-    case CTX_stroke_linecap:
+    case SQZ_stroke_linecap:
       switch (val_hash)
       { 
-        case  CTX_butt:   s->stroke_linecap = CTX_CAP_NONE;   break;
-        case  CTX_round:  s->stroke_linecap = CTX_CAP_ROUND;  break;
-        case  CTX_square: s->stroke_linecap = CTX_CAP_SQUARE; break;
+        case  SQZ_butt:   s->stroke_linecap = CTX_CAP_NONE;   break;
+        case  SQZ_round:  s->stroke_linecap = CTX_CAP_ROUND;  break;
+        case  SQZ_square: s->stroke_linecap = CTX_CAP_SQUARE; break;
         default:          s->stroke_linecap = CTX_CAP_NONE;
       }
       ctx_line_cap (mrg_ctx (mrg), s->stroke_linecap);
       break;
-    case CTX_vertical_align:
+    case SQZ_vertical_align:
       switch (val_hash)
       {
-        case CTX_middle: s->vertical_align = CTX_VERTICAL_ALIGN_MIDDLE; break;
-        case CTX_top:    s->vertical_align = CTX_VERTICAL_ALIGN_TOP;    break;
-        case CTX_sub:    s->vertical_align = CTX_VERTICAL_ALIGN_SUB;    break;
-        case CTX_super:  s->vertical_align = CTX_VERTICAL_ALIGN_SUPER;  break;
-        case CTX_bottom: s->vertical_align = CTX_VERTICAL_ALIGN_BOTTOM; break;
+        case SQZ_middle: s->vertical_align = CTX_VERTICAL_ALIGN_MIDDLE; break;
+        case SQZ_top:    s->vertical_align = CTX_VERTICAL_ALIGN_TOP;    break;
+        case SQZ_sub:    s->vertical_align = CTX_VERTICAL_ALIGN_SUB;    break;
+        case SQZ_super:  s->vertical_align = CTX_VERTICAL_ALIGN_SUPER;  break;
+        case SQZ_bottom: s->vertical_align = CTX_VERTICAL_ALIGN_BOTTOM; break;
         default:         s->vertical_align = CTX_VERTICAL_ALIGN_BASELINE;
       }
       break;
-    case CTX_cursor:
+    case SQZ_cursor:
       switch (val_hash)
       {
         default:
-        case CTX_default:       s->cursor = MRG_CURSOR_DEFAULT;      break;
-        case CTX_auto:          s->cursor = MRG_CURSOR_AUTO;         break;
-        case CTX_alias:         s->cursor = MRG_CURSOR_ALIAS;        break;
-        case CTX_all_scroll:    s->cursor = MRG_CURSOR_ALL_SCROLL;   break;
-        case CTX_cell:          s->cursor = MRG_CURSOR_CELL;         break;
-        case CTX_context_menu:  s->cursor = MRG_CURSOR_CONTEXT_MENU; break;
-        case CTX_col_resize:    s->cursor = MRG_CURSOR_COL_RESIZE;   break;
-        case CTX_copy:          s->cursor = MRG_CURSOR_COPY;         break;
-        case CTX_crosshair:     s->cursor = MRG_CURSOR_CROSSHAIR;    break;
-        case CTX_e_resize:      s->cursor = MRG_CURSOR_E_RESIZE;     break;
-        case CTX_ew_resize:     s->cursor = MRG_CURSOR_EW_RESIZE;    break;
-        case CTX_help:          s->cursor = MRG_CURSOR_HELP;         break;
-        case CTX_move:          s->cursor = MRG_CURSOR_MOVE;         break;
-        case CTX_n_resize:      s->cursor = MRG_CURSOR_N_RESIZE;     break;
-        case CTX_ne_resize:     s->cursor = MRG_CURSOR_NE_RESIZE;    break;
-        case CTX_nesw_resize:   s->cursor = MRG_CURSOR_NESW_RESIZE;  break;
-        case CTX_ns_resize:     s->cursor = MRG_CURSOR_NS_RESIZE;    break;
-        case CTX_nw_resize:     s->cursor = MRG_CURSOR_NW_RESIZE;    break;
-        case CTX_no_drop:       s->cursor = MRG_CURSOR_NO_DROP;      break;
-        case CTX_none:          s->cursor = MRG_CURSOR_NONE;         break;
-        case CTX_not_allowed:   s->cursor = MRG_CURSOR_NOT_ALLOWED;  break;
-        case CTX_pointer:       s->cursor = MRG_CURSOR_POINTER;      break;
-        case CTX_progress:      s->cursor = MRG_CURSOR_PROGRESS;     break;
-        case CTX_row_resize:    s->cursor = MRG_CURSOR_ROW_RESIZE;   break;
-        case CTX_s_resize:      s->cursor = MRG_CURSOR_S_RESIZE;     break;
-        case CTX_se_resize:     s->cursor = MRG_CURSOR_SE_RESIZE;    break;
-        case CTX_sw_resize:     s->cursor = MRG_CURSOR_SW_RESIZE;    break;
-        case CTX_text:          s->cursor = MRG_CURSOR_TEXT;         break;
-        case CTX_vertical_text: s->cursor = MRG_CURSOR_VERTICAL_TEXT;break;
-        case CTX_w_resize:      s->cursor = MRG_CURSOR_W_RESIZE;     break;
-        case CTX_cursor_wait:   s->cursor = MRG_CURSOR_WAIT;         break;
-        case CTX_zoom_in:       s->cursor = MRG_CURSOR_ZOOM_IN;      break;
-        case CTX_zoom_out:      s->cursor = MRG_CURSOR_ZOOM_OUT;     break;
+        case SQZ_default:       s->cursor = MRG_CURSOR_DEFAULT;      break;
+        case SQZ_auto:          s->cursor = MRG_CURSOR_AUTO;         break;
+        case SQZ_alias:         s->cursor = MRG_CURSOR_ALIAS;        break;
+        case SQZ_all_scroll:    s->cursor = MRG_CURSOR_ALL_SCROLL;   break;
+        case SQZ_cell:          s->cursor = MRG_CURSOR_CELL;         break;
+        case SQZ_context_menu:  s->cursor = MRG_CURSOR_CONTEXT_MENU; break;
+        case SQZ_col_resize:    s->cursor = MRG_CURSOR_COL_RESIZE;   break;
+        case SQZ_copy:          s->cursor = MRG_CURSOR_COPY;         break;
+        case SQZ_crosshair:     s->cursor = MRG_CURSOR_CROSSHAIR;    break;
+        case SQZ_e_resize:      s->cursor = MRG_CURSOR_E_RESIZE;     break;
+        case SQZ_ew_resize:     s->cursor = MRG_CURSOR_EW_RESIZE;    break;
+        case SQZ_help:          s->cursor = MRG_CURSOR_HELP;         break;
+        case SQZ_move:          s->cursor = MRG_CURSOR_MOVE;         break;
+        case SQZ_n_resize:      s->cursor = MRG_CURSOR_N_RESIZE;     break;
+        case SQZ_ne_resize:     s->cursor = MRG_CURSOR_NE_RESIZE;    break;
+        case SQZ_nesw_resize:   s->cursor = MRG_CURSOR_NESW_RESIZE;  break;
+        case SQZ_ns_resize:     s->cursor = MRG_CURSOR_NS_RESIZE;    break;
+        case SQZ_nw_resize:     s->cursor = MRG_CURSOR_NW_RESIZE;    break;
+        case SQZ_no_drop:       s->cursor = MRG_CURSOR_NO_DROP;      break;
+        case SQZ_none:          s->cursor = MRG_CURSOR_NONE;         break;
+        case SQZ_not_allowed:   s->cursor = MRG_CURSOR_NOT_ALLOWED;  break;
+        case SQZ_pointer:       s->cursor = MRG_CURSOR_POINTER;      break;
+        case SQZ_progress:      s->cursor = MRG_CURSOR_PROGRESS;     break;
+        case SQZ_row_resize:    s->cursor = MRG_CURSOR_ROW_RESIZE;   break;
+        case SQZ_s_resize:      s->cursor = MRG_CURSOR_S_RESIZE;     break;
+        case SQZ_se_resize:     s->cursor = MRG_CURSOR_SE_RESIZE;    break;
+        case SQZ_sw_resize:     s->cursor = MRG_CURSOR_SW_RESIZE;    break;
+        case SQZ_text:          s->cursor = MRG_CURSOR_TEXT;         break;
+        case SQZ_vertical_text: s->cursor = MRG_CURSOR_VERTICAL_TEXT;break;
+        case SQZ_w_resize:      s->cursor = MRG_CURSOR_W_RESIZE;     break;
+        case SQZ_cursor_wait:   s->cursor = MRG_CURSOR_WAIT;         break;
+        case SQZ_zoom_in:       s->cursor = MRG_CURSOR_ZOOM_IN;      break;
+        case SQZ_zoom_out:      s->cursor = MRG_CURSOR_ZOOM_OUT;     break;
       }
       break;
-    case CTX_display:
+    case SQZ_display:
       switch (val_hash)
       {
-        case CTX_none:
-        case CTX_hidden:       s->display = CTX_DISPLAY_NONE;         break;
-        case CTX_block:        s->display = CTX_DISPLAY_BLOCK;        break;
-        case CTX_list_item:    s->display = CTX_DISPLAY_LIST_ITEM;    break;
-        case CTX_inline_block: s->display = CTX_DISPLAY_INLINE_BLOCK; break;
-	case CTX_flow_root:    s->display = CTX_DISPLAY_FLOW_ROOT;    break;
+        case SQZ_none:
+        case SQZ_hidden:       s->display = CTX_DISPLAY_NONE;         break;
+        case SQZ_block:        s->display = CTX_DISPLAY_BLOCK;        break;
+        case SQZ_list_item:    s->display = CTX_DISPLAY_LIST_ITEM;    break;
+        case SQZ_inline_block: s->display = CTX_DISPLAY_INLINE_BLOCK; break;
+	case SQZ_flow_root:    s->display = CTX_DISPLAY_FLOW_ROOT;    break;
         default:               s->display = CTX_DISPLAY_INLINE;
       }
       break;
-    case CTX_position:
+    case SQZ_position:
       switch (val_hash)
       {
-        case CTX_relative:  s->position = CTX_POSITION_RELATIVE; break;
-        case CTX_static:    s->position = CTX_POSITION_STATIC;   break;
-        case CTX_absolute:  s->position = CTX_POSITION_ABSOLUTE; break;
-        case CTX_fixed:     s->position = CTX_POSITION_FIXED;    break;
+        case SQZ_relative:  s->position = CTX_POSITION_RELATIVE; break;
+        case SQZ_static:    s->position = CTX_POSITION_STATIC;   break;
+        case SQZ_absolute:  s->position = CTX_POSITION_ABSOLUTE; break;
+        case SQZ_fixed:     s->position = CTX_POSITION_FIXED;    break;
         default:            s->position = CTX_POSITION_STATIC;
       }
       break;
-    case CTX_direction:
+    case SQZ_direction:
       switch (val_hash)
       {
-        case CTX_rtl: s->direction = CTX_TEXT_DIRECTION_RTL; break;
-        case CTX_ltr: s->direction = CTX_TEXT_DIRECTION_LTR; break;
+        case SQZ_rtl: s->direction = CTX_TEXT_DIRECTION_RTL; break;
+        case SQZ_ltr: s->direction = CTX_TEXT_DIRECTION_LTR; break;
         default:      s->direction = CTX_TEXT_DIRECTION_LTR;
       }
       break;
-    case CTX_unicode_bidi:
+    case SQZ_unicode_bidi:
       switch (val_hash)
       {
-        case CTX_normal: s->unicode_bidi = CTX_UNICODE_BIDI_NORMAL; break;
-        case CTX_embed:  s->unicode_bidi = CTX_UNICODE_BIDI_EMBED;  break;
-        case CTX_bidi_override: s->unicode_bidi = CTX_UNICODE_BIDI_BIDI_OVERRIDE; break;
+        case SQZ_normal: s->unicode_bidi = CTX_UNICODE_BIDI_NORMAL; break;
+        case SQZ_embed:  s->unicode_bidi = CTX_UNICODE_BIDI_EMBED;  break;
+        case SQZ_bidi_override: s->unicode_bidi = CTX_UNICODE_BIDI_BIDI_OVERRIDE; break;
         default:         s->unicode_bidi = CTX_UNICODE_BIDI_NORMAL; break;
       }
       break;
-    case CTX_text_align:
+    case SQZ_text_align:
       switch (val_hash)
       {
-        case CTX_start:    s->text_align = CTX_TEXT_ALIGN_START;  break;
-        case CTX_end:     s->text_align = CTX_TEXT_ALIGN_END;     break;
-        case CTX_left:    s->text_align = CTX_TEXT_ALIGN_LEFT;    break;
-        case CTX_right:   s->text_align = CTX_TEXT_ALIGN_RIGHT;   break;
-        case CTX_justify: s->text_align = CTX_TEXT_ALIGN_JUSTIFY; break;
-        case CTX_center:  s->text_align = CTX_TEXT_ALIGN_CENTER;  break;
+        case SQZ_start:    s->text_align = CTX_TEXT_ALIGN_START;  break;
+        case SQZ_end:     s->text_align = CTX_TEXT_ALIGN_END;     break;
+        case SQZ_left:    s->text_align = CTX_TEXT_ALIGN_LEFT;    break;
+        case SQZ_right:   s->text_align = CTX_TEXT_ALIGN_RIGHT;   break;
+        case SQZ_justify: s->text_align = CTX_TEXT_ALIGN_JUSTIFY; break;
+        case SQZ_center:  s->text_align = CTX_TEXT_ALIGN_CENTER;  break;
         default:          s->text_align = CTX_TEXT_ALIGN_LEFT;
       }
       break;
-    case CTX_text_decoration:
+    case SQZ_text_decoration:
       switch (val_hash)
       {
-        case CTX_reverse:     s->text_decoration|= CTX_TEXT_DECORATION_REVERSE; break;
-        case CTX_underline:   s->text_decoration|= CTX_TEXT_DECORATION_UNDERLINE; break;
-        case CTX_overline:    s->text_decoration|= CTX_TEXT_DECORATION_OVERLINE; break;
-        case CTX_linethrough: s->text_decoration|= CTX_TEXT_DECORATION_LINETHROUGH; break;
-        case CTX_blink:       s->text_decoration|= CTX_TEXT_DECORATION_BLINK; break;
-        case CTX_none:
+        case SQZ_reverse:     s->text_decoration|= CTX_TEXT_DECORATION_REVERSE; break;
+        case SQZ_underline:   s->text_decoration|= CTX_TEXT_DECORATION_UNDERLINE; break;
+        case SQZ_overline:    s->text_decoration|= CTX_TEXT_DECORATION_OVERLINE; break;
+        case SQZ_linethrough: s->text_decoration|= CTX_TEXT_DECORATION_LINETHROUGH; break;
+        case SQZ_blink:       s->text_decoration|= CTX_TEXT_DECORATION_BLINK; break;
+        case SQZ_none:
           s->text_decoration ^= (s->text_decoration &
         (CTX_TEXT_DECORATION_UNDERLINE|CTX_TEXT_DECORATION_REVERSE|CTX_TEXT_DECORATION_OVERLINE|CTX_TEXT_DECORATION_LINETHROUGH|CTX_TEXT_DECORATION_BLINK));
         break;
@@ -3281,9 +3281,9 @@ static void ctx_css_handle_property_pass1med (Mrg *mrg, uint32_t key,
 {
   CtxStyle *s = ctx_style (mrg);
 
-  if (key == CTX_width)
+  if (key == SQZ_width)
   {
-    if (ctx_strhash (value) == CTX_auto)
+    if (ctx_strhash (value) == SQZ_auto)
     {
       s->width_auto = 1;
       SET_PROP(width, 42);
@@ -3417,7 +3417,7 @@ static void ctx_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
    */
   CtxStyle *s = ctx_style (mrg);
 
-  if (key == CTX_right)
+  if (key == SQZ_right)
   {
     float width = PROP(width);
     float right = mrg_parse_px_x (mrg, value, NULL);
@@ -3433,7 +3433,7 @@ static void ctx_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
     SET_PROP(left,
          (mrg_width(mrg)-right) - width - PROP(border_left_width) - PROP(padding_left) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right));
   }
-  else if (key == CTX_bottom)
+  else if (key == SQZ_bottom)
   {
     float height = PROP(height);
 
@@ -3554,19 +3554,19 @@ void ctx_style_defaults (Mrg *mrg)
   {
     CtxColor *color = ctx_color_new ();
     ctx_color_set_from_string (mrg->ctx, color, "transparent");
-    ctx_set_color (ctx, CTX_stroke_color, color);
+    ctx_set_color (ctx, SQZ_stroke_color, color);
     ctx_color_free (color);
   }
   {
     CtxColor *color = ctx_color_new ();
     ctx_color_set_from_string (mrg->ctx, color, "black");
-    ctx_set_color (ctx, CTX_fill_color, color);
+    ctx_set_color (ctx, SQZ_fill_color, color);
     ctx_color_free (color);
   }
   {
     CtxColor *color = ctx_color_new ();
     ctx_color_set_from_string (mrg->ctx, color, "green");
-    ctx_set_color (ctx, CTX_color, color);
+    ctx_set_color (ctx, SQZ_color, color);
     ctx_color_free (color);
   }
 
@@ -3698,7 +3698,7 @@ void _mrg_layout_pre (Mrg *mrg)
     mrg->state->float_base = mrg->floats;
 
   // newline hacks
-  if (mrg->state->style_node.element_hash == CTX_br
+  if (mrg->state->style_node.element_hash == SQZ_br
       || ( mrg->unresolved_line && is_block_item (style))
 		  )
   {
@@ -3994,7 +3994,7 @@ void _mrg_layout_pre (Mrg *mrg)
     name[3]=mrg->state_no+2;
 
   CtxColor *background_color = ctx_color_new ();
-  ctx_get_color (mrg->ctx, CTX_background_color, background_color);
+  ctx_get_color (mrg->ctx, SQZ_background_color, background_color);
   if (!ctx_color_is_transparent (background_color))
   {
     mrg_ctx_set_source_color (mrg->ctx, background_color);
@@ -4123,8 +4123,8 @@ static void mrg_path_fill_stroke (Mrg *mrg)
   CtxColor *fill_color = ctx_color_new ();
   CtxColor *stroke_color = ctx_color_new ();
 
-  ctx_get_color (ctx, CTX_fill_color, fill_color);
-  ctx_get_color (ctx, CTX_stroke_color, stroke_color);
+  ctx_get_color (ctx, SQZ_fill_color, fill_color);
+  ctx_get_color (ctx, SQZ_stroke_color, stroke_color);
 
   if (!ctx_color_is_transparent (fill_color))
   {
@@ -4149,7 +4149,7 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
   Ctx *ctx = mrg_ctx (mrg);
 
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_top_color, color);
+  ctx_get_color (ctx, SQZ_border_top_color, color);
 
   if (PROP(border_top_width) > 0.01f &&
       !ctx_color_is_transparent (color))
@@ -4173,7 +4173,7 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_top_color, color);
+  ctx_get_color (ctx, SQZ_border_top_color, color);
 
   if (PROP(border_bottom_width) > 0.01f &&
       !ctx_color_is_transparent (color))
@@ -4197,7 +4197,7 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *cr = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (cr, CTX_border_top_color, color);
+  ctx_get_color (cr, SQZ_border_top_color, color);
 
   if (PROP(border_top_width) > 0.01f &&
       !ctx_color_is_transparent (color))
@@ -4219,7 +4219,7 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_bottom_color, color);
+  ctx_get_color (ctx, SQZ_border_bottom_color, color);
 
   if (PROP(border_bottom_width) &&
       !ctx_color_is_transparent (color))
@@ -4243,7 +4243,7 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_top_color, color);
+  ctx_get_color (ctx, SQZ_border_top_color, color);
 
   if (PROP(border_top_width) > 0.01f &&
       !ctx_color_is_transparent (color))
@@ -4266,7 +4266,7 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_bottom_color, color);
+  ctx_get_color (ctx, SQZ_border_bottom_color, color);
 
   if (PROP(border_bottom_width) > 0.01f &&
       !ctx_color_is_transparent (color))
@@ -4291,7 +4291,7 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_top_color, color);
+  ctx_get_color (ctx, SQZ_border_top_color, color);
 
   if (PROP(border_top_width) &&
       !ctx_color_is_transparent (color))
@@ -4314,7 +4314,7 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_bottom_color, color);
+  ctx_get_color (ctx, SQZ_border_bottom_color, color);
 
   if (PROP(border_bottom_width) &&
       !ctx_color_is_transparent (color))
@@ -4337,7 +4337,7 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_left_color, color);
+  ctx_get_color (ctx, SQZ_border_left_color, color);
 
   if (PROP(border_left_width) &&
       !ctx_color_is_transparent (color))
@@ -4361,7 +4361,7 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_border_right_color, color);
+  ctx_get_color (ctx, SQZ_border_right_color, color);
 
   if (PROP(border_right_width) > 0.01f &&
       !ctx_color_is_transparent (color))
@@ -4393,7 +4393,7 @@ static void mrg_box_fill (Mrg *mrg, CtxStyle *style, float x, float y, float wid
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *background_color = ctx_color_new ();
-  ctx_get_color (ctx, CTX_background_color, background_color);
+  ctx_get_color (ctx, SQZ_background_color, background_color);
   if (ctx_color_is_transparent (background_color))
   {
     ctx_color_free (background_color);
@@ -4772,7 +4772,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
     if (PROP(text_stroke_width) > 0.01)
     {
       CtxColor *color = ctx_color_new ();
-      ctx_get_color (cr, CTX_text_stroke_color, color);
+      ctx_get_color (cr, SQZ_text_stroke_color, color);
       mrg_ctx_set_source_color (cr, color);
       ctx_begin_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
@@ -4785,7 +4785,7 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
 
     {
     CtxColor *color = ctx_color_new ();
-    ctx_get_color (cr, CTX_color, color);
+    ctx_get_color (cr, SQZ_color, color);
     mrg_ctx_set_source_color (cr, color);
     ctx_color_free (color);
     }
@@ -4872,7 +4872,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
   if (style->display != CTX_DISPLAY_INLINE)
     return 0.0;
   CtxColor *background_color = ctx_color_new ();
-  ctx_get_color (cr, CTX_background_color, background_color);
+  ctx_get_color (cr, SQZ_background_color, background_color);
 
   if (!ctx_color_is_transparent (background_color))
   {
@@ -4906,7 +4906,7 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
     return 0.0;
 
   CtxColor *background_color = ctx_color_new ();
-  ctx_get_color (cr, CTX_background_color, background_color);
+  ctx_get_color (cr, SQZ_background_color, background_color);
 
   if (!mrg->state->span_bg_started)
   {
@@ -6422,51 +6422,51 @@ typedef struct MrgEntity {
 } MrgEntity;
 
 static MrgEntity entities[]={
-  {CTX_shy,    ""},   // soft hyphen,. should be made use of in wrapping..
-  {CTX_nbsp,   " "},  //
-  {CTX_lt,     "<"},
-  {CTX_gt,     ">"},
-  {CTX_trade,  "™"},
-  {CTX_copy,   "©"},
-  {CTX_middot, "·"},
-  {CTX_bull,   "•"},
-  {CTX_Oslash, "Ø"},
-  {CTX_oslash, "ø"},
-  {CTX_hellip, "…"},
-  {CTX_aring,  "å"},
-  {CTX_Aring,  "Å"},
-  {CTX_aelig,  "æ"},
-  {CTX_AElig,  "Æ"},
-  {CTX_Aelig,  "Æ"},
-  {CTX_laquo,  "«"},
-  {CTX_raquo,  "»"},
+  {SQZ_shy,    ""},   // soft hyphen,. should be made use of in wrapping..
+  {SQZ_nbsp,   " "},  //
+  {SQZ_lt,     "<"},
+  {SQZ_gt,     ">"},
+  {SQZ_trade,  "™"},
+  {SQZ_copy,   "©"},
+  {SQZ_middot, "·"},
+  {SQZ_bull,   "•"},
+  {SQZ_Oslash, "Ø"},
+  {SQZ_oslash, "ø"},
+  {SQZ_hellip, "…"},
+  {SQZ_aring,  "å"},
+  {SQZ_Aring,  "Å"},
+  {SQZ_aelig,  "æ"},
+  {SQZ_AElig,  "Æ"},
+  {SQZ_Aelig,  "Æ"},
+  {SQZ_laquo,  "«"},
+  {SQZ_raquo,  "»"},
 
   /*the above were added as encountered, the rest in anticipation  */
 
-  {CTX_reg,    "®"},
-  {CTX_deg,    "°"},
-  {CTX_plusmn, "±"},
-  {CTX_sup2,   "²"},
-  {CTX_sup3,   "³"},
-  {CTX_sup1,   "¹"},
-  {CTX_ordm,   "º"},
-  {CTX_para,   "¶"},
-  {CTX_cedil,  "¸"},
-  {CTX_bull,   "·"},
-  {CTX_amp,    "&"},
-  {CTX_mdash,  "–"},
-  {CTX_apos,   "'"},
-  {CTX_quot,   "\""},
-  {CTX_iexcl,  "¡"},
-  {CTX_cent,   "¢"},
-  {CTX_pound,  "£"},
-  {CTX_euro,   "€"},
-  {CTX_yen,    "¥"},
-  {CTX_curren, "¤"},
-  {CTX_sect,   "§"},
-  {CTX_phi,    "Φ"},
-  {CTX_omega,  "Ω"},
-  {CTX_alpha,  "α"},
+  {SQZ_reg,    "®"},
+  {SQZ_deg,    "°"},
+  {SQZ_plusmn, "±"},
+  {SQZ_sup2,   "²"},
+  {SQZ_sup3,   "³"},
+  {SQZ_sup1,   "¹"},
+  {SQZ_ordm,   "º"},
+  {SQZ_para,   "¶"},
+  {SQZ_cedil,  "¸"},
+  {SQZ_bull,   "·"},
+  {SQZ_amp,    "&"},
+  {SQZ_mdash,  "–"},
+  {SQZ_apos,   "'"},
+  {SQZ_quot,   "\""},
+  {SQZ_iexcl,  "¡"},
+  {SQZ_cent,   "¢"},
+  {SQZ_pound,  "£"},
+  {SQZ_euro,   "€"},
+  {SQZ_yen,    "¥"},
+  {SQZ_curren, "¤"},
+  {SQZ_sect,   "§"},
+  {SQZ_phi,    "Φ"},
+  {SQZ_omega,  "Ω"},
+  {SQZ_alpha,  "α"},
 
   /* XXX: incomplete */
 
@@ -7475,7 +7475,7 @@ void itk_xml_render (Mrg *mrg,
         //ctx_save (mrg->ctx);
         tagpos = pos;
         ctx_string_clear (style);
-        ctx_set_string (mrg->ctx, CTX_style, "");
+        ctx_set_string (mrg->ctx, SQZ_style, "");
         break;
       case t_att:
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
@@ -7488,21 +7488,21 @@ void itk_xml_render (Mrg *mrg,
         ctx_set_string (mrg->ctx, att, data);
         {
             uint32_t style_attribute[] ={
-              CTX_fill_rule,
-              CTX_font_size,
-              CTX_font_family,
-              CTX_fill_color,
-              CTX_fill,
-              CTX_stroke_width,
-              CTX_stroke_color,
-              CTX_stroke_linecap,
-              CTX_stroke_miterlimit,
-              CTX_stroke_linejoin,
-              CTX_stroke,
-              // CTX_viewBox,  // CTX_version
-              CTX_color,
-              CTX_background_color,
-              CTX_background,
+              SQZ_fill_rule,
+              SQZ_font_size,
+              SQZ_font_family,
+              SQZ_fill_color,
+              SQZ_fill,
+              SQZ_stroke_width,
+              SQZ_stroke_color,
+              SQZ_stroke_linecap,
+              SQZ_stroke_miterlimit,
+              SQZ_stroke_linejoin,
+              SQZ_stroke,
+              // SQZ_viewBox,  // SQZ_version
+              SQZ_color,
+              SQZ_background_color,
+              SQZ_background,
               0};
             char *style_attribute_names[] ={
               "fill_rule",
@@ -7536,27 +7536,27 @@ void itk_xml_render (Mrg *mrg,
         {
           uint32_t data_hash = ctx_strhash (data);
 
-        if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
+        if (depth && (data_hash == SQZ_tr && tag[depth-1] == SQZ_td))
         {
           itk_end (mrg, NULL);
           depth--;
           itk_end (mrg, NULL);
           depth--;
         }
-        if (depth && (data_hash == CTX_tr && tag[depth-1] == CTX_td))
+        if (depth && (data_hash == SQZ_tr && tag[depth-1] == SQZ_td))
         {
           itk_end (mrg, NULL);
           depth--;
           itk_end (mrg, NULL);
           depth--;
         }
-        else if (depth && ((data_hash == CTX_dd && tag[depth-1] == CTX_dt) ||
-                      (data_hash == CTX_li && tag[depth-1] == CTX_li) ||
-                      (data_hash == CTX_dt && tag[depth-1] == CTX_dd) ||
-                      (data_hash == CTX_td && tag[depth-1] == CTX_td) ||
-                      (data_hash == CTX_tr && tag[depth-1] == CTX_tr) ||
-                      (data_hash == CTX_dd && tag[depth-1] == CTX_dd) ||
-                      (data_hash == CTX_p &&  tag[depth-1] == CTX_p)))
+        else if (depth && ((data_hash == SQZ_dd && tag[depth-1] == SQZ_dt) ||
+                      (data_hash == SQZ_li && tag[depth-1] == SQZ_li) ||
+                      (data_hash == SQZ_dt && tag[depth-1] == SQZ_dd) ||
+                      (data_hash == SQZ_td && tag[depth-1] == SQZ_td) ||
+                      (data_hash == SQZ_tr && tag[depth-1] == SQZ_tr) ||
+                      (data_hash == SQZ_dd && tag[depth-1] == SQZ_dd) ||
+                      (data_hash == SQZ_p &&  tag[depth-1] == SQZ_p)))
         {
           itk_end (mrg, NULL);
           depth--;
@@ -7601,7 +7601,7 @@ void itk_xml_render (Mrg *mrg,
           itk_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
-        if (data_hash == CTX_g)
+        if (data_hash == SQZ_g)
         {
           const char *transform;
           if ((transform = PROPS(transform)))
@@ -7612,7 +7612,7 @@ void itk_xml_render (Mrg *mrg,
             }
         }
 
-        else if (data_hash == CTX_svg)
+        else if (data_hash == SQZ_svg)
         {
           const char *vbox = PROPS(viewbox);
           if (vbox)
@@ -7626,19 +7626,19 @@ void itk_xml_render (Mrg *mrg,
           }
         }
 
-        else if (data_hash == CTX_polygon)
+        else if (data_hash == SQZ_polygon)
         {
           mrg_parse_polygon (mrg, PROPS(d));
           mrg_path_fill_stroke (mrg);
         }
 
-        else if (data_hash == CTX_path)
+        else if (data_hash == SQZ_path)
         {
           mrg_parse_svg_path (mrg, PROPS(d));
           mrg_path_fill_stroke (mrg);
         }
 
-        else if (data_hash == CTX_rect)
+        else if (data_hash == SQZ_rect)
         {
           float width  = PROP(width);
           float height = PROP(height);
@@ -7649,19 +7649,19 @@ void itk_xml_render (Mrg *mrg,
           mrg_path_fill_stroke (mrg);
         }
 
-        else if (data_hash == CTX_text)
+        else if (data_hash == SQZ_text)
         {
           mrg->x = PROP(x);
           mrg->y = PROP(y);
         }
 
-        if (data_hash == CTX_a)
+        if (data_hash == SQZ_a)
         {
-          if (link_cb && ctx_is_set_now (mrg->ctx, CTX_href))
-            mrg_text_listen_full (mrg, CTX_CLICK, link_cb, _mrg_resolve_uri (uri_base, ctx_get_string (mrg->ctx, CTX_href)), link_data, (void*)free, NULL); //XXX: free is not invoked according to valgrind
+          if (link_cb && ctx_is_set_now (mrg->ctx, SQZ_href))
+            mrg_text_listen_full (mrg, CTX_CLICK, link_cb, _mrg_resolve_uri (uri_base, ctx_get_string (mrg->ctx, SQZ_href)), link_data, (void*)free, NULL); //XXX: free is not invoked according to valgrind
         }
 
-        else if (data_hash == CTX_style)
+        else if (data_hash == SQZ_style)
         {
           in_style = 1;
 #if 0
@@ -7675,14 +7675,14 @@ void itk_xml_render (Mrg *mrg,
 
         should_be_empty = 0;
 
-        if (data_hash == CTX_link)
+        if (data_hash == SQZ_link)
         {
           const char *rel;
-          if ((rel=PROPS(rel)) && !strcmp (rel, "stylesheet") && ctx_is_set_now (mrg->ctx, CTX_href))
+          if ((rel=PROPS(rel)) && !strcmp (rel, "stylesheet") && ctx_is_set_now (mrg->ctx, SQZ_href))
           {
             char *contents;
             long length;
-            mrg_get_contents (mrg, uri_base, ctx_get_string (mrg->ctx, CTX_href), &contents, &length);
+            mrg_get_contents (mrg, uri_base, ctx_get_string (mrg->ctx, SQZ_href), &contents, &length);
             if (contents)
             {
               ctx_stylesheet_add (mrg, contents, uri_base, CTX_STYLE_XML, NULL);
@@ -7691,10 +7691,10 @@ void itk_xml_render (Mrg *mrg,
           }
         }
 
-        if (data_hash == CTX_img && ctx_is_set_now (mrg->ctx, CTX_src))
+        if (data_hash == SQZ_img && ctx_is_set_now (mrg->ctx, SQZ_src))
         {
           int img_width, img_height;
-          const char *src = ctx_get_string (mrg->ctx, CTX_src);
+          const char *src = ctx_get_string (mrg->ctx, SQZ_src);
 
           if (mrg_query_image (mrg, src, &img_width, &img_height))
           {
@@ -7730,12 +7730,12 @@ void itk_xml_render (Mrg *mrg,
 #if 1
         switch (data_hash)
         {
-          case CTX_link:
-          case CTX_meta:
-          case CTX_input:
-          case CTX_img:
-          case CTX_br:
-          case CTX_hr:
+          case SQZ_link:
+          case SQZ_meta:
+          case SQZ_input:
+          case SQZ_img:
+          case SQZ_br:
+          case SQZ_hr:
             should_be_empty = 1;
             itk_end (mrg, NULL);
             depth--;
@@ -7761,7 +7761,7 @@ void itk_xml_render (Mrg *mrg,
           if (depth<0)depth=0; // XXX
           if (tag[depth] != data_hash)
           {
-            if (tag[depth] == CTX_p)
+            if (tag[depth] == SQZ_p)
             {
               itk_end (mrg, NULL);
               depth --;
@@ -7820,14 +7820,14 @@ void itk_xml_render (Mrg *mrg,
 #endif
             else
             {
-              if (data_hash == CTX_table && tag[depth] == CTX_td)
+              if (data_hash == SQZ_table && tag[depth] == SQZ_td)
               {
                 depth--;
                 itk_end (mrg, NULL);
                 depth--;
                 itk_end (mrg, NULL);
               }
-              else if (data_hash == CTX_table && tag[depth] == CTX_tr)
+              else if (data_hash == SQZ_table && tag[depth] == SQZ_tr)
               {
                 depth--;
                 itk_end (mrg, NULL);
@@ -7995,7 +7995,7 @@ _mr_get_contents (const char  *referer,
   split_uri (uri_dup, &protocol, &host, &port, &path, &fragment);
   protocol_hash = protocol?ctx_strhash (protocol):0;
 #if 0
-  if (protocol && protocol_hash == CTX_http)
+  if (protocol && protocol_hash == SQZ_http)
   {
     int len;
     char *pathdup = malloc (strlen (path) + 2);
@@ -8012,7 +8012,7 @@ _mr_get_contents (const char  *referer,
     return 0;
   } else
 #endif
-  if (protocol && protocol_hash == CTX_file)
+  if (protocol && protocol_hash == SQZ_file)
   {
     char *path2 = malloc (strlen (path) + 2);
     int ret;
@@ -8186,7 +8186,7 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
   if(1){
     CtxColor *color = ctx_color_new ();
     ctx_color_set_rgba (ctx_get_state (mrg->ctx), color, 1, 1, 1, 1);
-    ctx_set_color (mrg->ctx, CTX_color, color);
+    ctx_set_color (mrg->ctx, SQZ_color, color);
     ctx_color_free (color);
   }
 

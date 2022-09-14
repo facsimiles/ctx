@@ -622,10 +622,10 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         _ctx_print_name (formatter, entry->code);
         switch (c->set.key_hash)
         {
-           case CTX_x: ctx_formatter_addstrf (formatter, " 'x' "); break;
-           case CTX_y: ctx_formatter_addstrf (formatter, " 'y' "); break;
-           case CTX_width: ctx_formatter_addstrf (formatter, " width "); break;
-           case CTX_height: ctx_formatter_addstrf (formatter, " height "); break;
+           case SQZ_x: ctx_formatter_addstrf (formatter, " 'x' "); break;
+           case SQZ_y: ctx_formatter_addstrf (formatter, " 'y' "); break;
+           case SQZ_width: ctx_formatter_addstrf (formatter, " width "); break;
+           case SQZ_height: ctx_formatter_addstrf (formatter, " height "); break;
            default:
              ctx_formatter_addstrf (formatter, " %d ", c->set.key_hash);
         }

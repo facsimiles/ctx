@@ -182,7 +182,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
            float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5f);
 
            ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
-          switch ((int)ctx_state_get (rasterizer->state, CTX_textAlign))
+          switch ((int)ctx_state_get (rasterizer->state, SQZ_textAlign))
           {
           case CTX_TEXT_ALIGN_LEFT:
           case CTX_TEXT_ALIGN_START:
