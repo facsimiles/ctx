@@ -480,9 +480,9 @@ struct _SquozePool
   SquozePool    *next;
 };
 
-SquozePool global_pool = {0, NULL, NULL, 0,0};
+static SquozePool global_pool = {0, NULL, NULL, 0,0};
 
-SquozePool *squoze_pools = NULL;
+static SquozePool *squoze_pools = NULL;
 
 static int squoze_pool_find (SquozePool *pool, uint64_t hash)
 {

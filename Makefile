@@ -185,7 +185,7 @@ ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_ARM_NEON -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
-itk.o: itk/itk.c itk/css.h itk/itk.h build.conf Makefile static.inc
+itk.o: itk/itk.c itk/css.h itk/itk.h build.conf Makefile static.inc itk/w3c-constants.h
 	$(CCC) itk/itk.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 deps.o: deps.c build.conf Makefile 
@@ -253,7 +253,7 @@ flatpak:
 flatpak-install:
 	rm -rf build-dir;flatpak-builder --install --user build-dir meta/graphics.ctx.terminal.yml
 
-ctx.h: src/*.[ch] src/index $(FONT_STAMP) tools/ctx-fontgen
+ctx.h: src/*.[ch] src/index $(FONT_STAMP) tools/ctx-fontgen src/constants.h
 	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@)
 
 ctx-nofont.h: src/*.c src/*.h src/index
