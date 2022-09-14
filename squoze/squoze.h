@@ -638,14 +638,14 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
   return hash;
 }
 
-static inline int squoze_is_inline (Squoze *squozed)
-{
-  return ((((size_t)(squozed))&1) == 1);
-}
-
 static inline int squoze_is_interned (Squoze *squozed)
 {
-  return !squoze_is_inline (squozed);
+  return ((((size_t)(squozed))&1) == 0);
+}
+
+static inline int squoze_is_inline (Squoze *squozed)
+{
+  return !squoze_is_interned (squozed);
 }
 
 static inline const char *squoze_decode (int squoze_dim, uint64_t hash);
@@ -698,7 +698,6 @@ static inline void squoze_unref (Squoze *squozed)
         SquozePool *pool = &global_pool;
 	if (squoze_pool_remove (pool, str->string, 1))
 	{
-		fprintf (stderr, "removed from global pool\n");
 	  return;
 	}
 	pool = squoze_pools;
@@ -706,12 +705,10 @@ static inline void squoze_unref (Squoze *squozed)
 	do {
 	  if (squoze_pool_remove (pool, str->string, 1))
 	  {
-		fprintf (stderr, "removed from a pool\n");
 	    return;
 	  }
 	  pool = pool->next;
 	} while (pool);
-        fprintf (stderr, "not found in pools\n");
 #endif
       }
       else
@@ -969,7 +966,8 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
  */
 static inline const char *squoze_decode (int squoze_dim, uint64_t hash)
 {
-  if (hash == 0 || hash == 1) return "";
+  if (hash == 0) return "NIL";
+  if (hash == 3) return "";
 #if SQUOZE_THREADS
   static __thread int no = 0;
   static __thread char ret[SQUOZE_PEEK_STRINGS][16];
@@ -999,11 +997,8 @@ static void squoze_pool_ref (SquozePool *pool)
   pool->ref_count--;
 }
 
-static void squoze_pool_unref (SquozePool *pool)
+static void squoze_pool_destroy (SquozePool *pool)
 {
-  if (!pool) return;
-  if (pool->ref_count == 0)
-  {
     for (int i = 0; i < pool->size; i++)
     {
       if (pool->hashtable[i])
@@ -1028,6 +1023,14 @@ static void squoze_pool_unref (SquozePool *pool)
       if (prev) // XXX not needed
         prev->next = pool->next;
     }
+}
+
+static void squoze_pool_unref (SquozePool *pool)
+{
+  if (!pool) return;
+  if (pool->ref_count == 0)
+  {
+    squoze_pool_destroy (pool);
     free (pool);
   }
   else

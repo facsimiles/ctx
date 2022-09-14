@@ -170,6 +170,8 @@ int main (int argc, char **argv)
        printf ("%p -> %s\n", intern, squoze_peek (intern));
        squoze_unref(intern);
        printf ("%p -> %s\n", intern, squoze_peek (intern));
+       intern = NULL;
+       printf ("%p -> %s\n", intern, squoze_peek (intern));
        printf ("\n");
      }
   }
