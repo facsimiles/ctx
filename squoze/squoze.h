@@ -222,13 +222,6 @@ static inline int squoze_words_for_dim (int squoze_dim)
   return squoze_dim / 5;
 }
 
-static inline uint64_t
-squoze_overflow_mask_for_dim (int squoze_dim)
-{
-  int words = squoze_words_for_dim (squoze_dim);
-  return ((uint64_t)1<<(words * 5 + 1));
-}
-
 static int squoze_compute_cost_utf5 (int offset, int val, int next_val)
 {
   int cost = 0; 
@@ -612,7 +605,6 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
 #ifdef SQUOZE_NO_INTERNING
   return hash;
 #endif
-  //uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
   if ((hash & 1)==0)
   {
     SquozeString *str = squoze_lookup_struct_by_id (pool, hash);
@@ -944,23 +936,12 @@ static void squoze_decode_utf5_bytes (int is_utf5,
 
 static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retlen)
 {
-  uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
-
-#if 0
-  if (pool && (hash & overflowed_mask))
-  {
-    SquozeString *str = squoze_lookup_struct_by_id (pool, hash);
-    if (str) return str->string;
-    return NULL;
-  }
-#endif
-
+  int is_overflowed = (hash & 1)!=0;
+  int is_utf5       = (hash & 2)!=0;
   uint8_t utf5[140]=""; // we newer go really high since there isnt room
                         // in the integers
-  uint64_t tmp = hash & (overflowed_mask-1);
+  uint64_t tmp = hash;
   int len = 0;
-  int is_overflowed = (tmp & 1)!=0;
-  int is_utf5       = (tmp & 2);
   tmp /= 4;
   int in_utf5 = is_utf5;
   utf5[len]=0;
