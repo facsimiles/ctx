@@ -36,6 +36,10 @@
 #define SQUOZE_ID_BITS 32
 #endif
 
+#ifndef SQUOZE_STORE_LENGTH
+#define SQUOZE_STORE_LENGTH 1
+#endif
+
 
 // for debugging
 #ifndef SQUOZE_ALLOW_COLLISIONS
@@ -98,17 +102,18 @@ static Squoze            *squoze_pool_add     (SquozePool *pool, const char *str
 static Squoze            *squoze              (const char *str);
 
 
-static Squoze            *squoze_lookup_id    (SquozePool *pool, squoze_id_t id);
 
 static inline const char *squoze_peek         (Squoze *squozed);
 static inline squoze_id_t squoze_id           (Squoze *squozed);
+static inline int         squoze_length       (Squoze *squozed);
 
 #if SQUOZE_REF_COUNTING
 static inline void        squoze_ref          (Squoze *squozed);
 static inline void        squoze_unref        (Squoze *squozed);
 #endif
 
-//#define SQUOZE_NO_INTERNING  // this disables the interning - providing only a hash (and decode for non-overflowed hashes)
+
+//static Squoze            *squoze_lookup_id    (SquozePool *pool, squoze_id_t id);
 
 // extra value meaning in UTF5 mode
 #define SQUOZE_ENTER_SQUEEZE    16
@@ -128,6 +133,9 @@ struct _SquozeString {
 #if SQUOZE_REF_COUNTING
     int32_t       ref_count; // set to magic value for ROM strings?
 #endif
+#if SQUOZE_STORE_LENGTH
+    int32_t       length;
+#endif
     squoze_id_t   hash;
     char          string[];
 };
@@ -135,6 +143,9 @@ struct _SquozeString {
 static SquozeString squoze_empty_string = {65535,
 #if SQUOZE_REF_COUNTING
 	1, 
+#endif
+#if SQUOZE_STORE_LENGTH
+	0, 
 #endif
 	""};
 
@@ -598,6 +609,7 @@ static SquozeString *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t i
 static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, Squoze **interned_ref)
 {
   if (pool == NULL) pool = &global_pool;
+  uint32_t length = strlen (utf8);
   uint64_t hash = squoze_encode_no_intern (squoze_dim, utf8);
 #ifdef SQUOZE_NO_INTERNING
   return hash;
@@ -608,6 +620,9 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
     SquozeString *str = squoze_lookup_struct_by_id (pool, hash);
     if (str
 #if SQUOZE_ALLOW_COLLISIONS==0
+#if SQUOZE_STORE_LENGTH
+		    && str->length == length
+#endif
 		    && !strcmp (str->string, utf8)
 #endif
 		    )
@@ -620,9 +635,11 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
     }
 
     {
-      uint32_t length = strlen (utf8);
       SquozeString *entry = calloc (length + 1 + sizeof(SquozeString), 1);
       entry->hash = hash;
+#if SQUOZE_STORE_LENGTH
+      entry->length = length;
+#endif
       strcpy (entry->string, utf8);
       if (interned_ref) *interned_ref = entry->string;
       squoze_pool_add_entry (pool, entry);
@@ -717,6 +734,8 @@ static inline void squoze_unref (Squoze *squozed)
 
 #endif
 
+
+
 static inline squoze_id_t squoze_id (Squoze *squozed)
 {
   if (squoze_is_inline (squozed))
@@ -729,6 +748,25 @@ static inline squoze_id_t squoze_id (Squoze *squozed)
     if (str) return str->hash;
     return 0;
   }
+}
+
+static inline int squoze_length       (Squoze *squozed)
+{
+#if SQUOZE_STORE_LENGTH
+  if (squoze_is_inline (squozed))
+#endif
+  {
+    return strlen (squoze_peek (squozed));
+  }
+#if SQUOZE_STORE_LENGTH
+  else
+  {
+    SquozeString *str = squoze_str_to_struct (squozed);
+    if (str) return str->length;
+    return 0;
+  }
+#endif
+  return 0;
 }
 
 #if SQUOZE_REF_COUNTING
