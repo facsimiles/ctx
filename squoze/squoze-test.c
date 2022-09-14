@@ -159,7 +159,6 @@ const char *strings[]={"0",
 int main (int argc, char **argv)
 {
   int wrong = 0;
-  int dim = 32;
   {
      char *strs[] = {"foo", "abcdefghijklmnopqrst",
 	                    "abcdefghijklmnopqrst", "foo", "bar", "baz", "boo", "", NULL};
@@ -169,7 +168,7 @@ int main (int argc, char **argv)
        Squoze *intern = squoze (str);
        printf ("%p %s -> %p\n", str, str, intern);
        printf ("%p -> %s\n", intern, squoze_peek (intern));
-       squoze_unref(NULL, intern);
+       squoze_unref(intern);
        printf ("%p -> %s\n", intern, squoze_peek (intern));
        printf ("\n");
      }

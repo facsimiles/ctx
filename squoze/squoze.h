@@ -98,7 +98,7 @@ static inline squoze_id_t squoze_id           (Squoze *squozed);
 
 #if SQUOZE_REF_COUNTING
 static inline void        squoze_ref          (Squoze *squozed);
-static inline void        squoze_unref        (SquozePool *pool, Squoze *squozed);
+static inline void        squoze_unref        (Squoze *squozed);
 #endif
 
 //#define SQUOZE_NO_INTERNING  // this disables the interning - providing only a hash (and decode for non-overflowed hashes)
@@ -468,9 +468,12 @@ struct _SquozePool
   SquozeString **hashtable;
   int            count;
   int            size;
+  SquozePool    *next;
 };
 
 SquozePool global_pool = {0, NULL, NULL, 0,0};
+
+SquozePool *squoze_pools = NULL;
 
 static int squoze_pool_find (SquozePool *pool, uint64_t hash)
 {
@@ -519,22 +522,31 @@ static int squoze_pool_add_entry (SquozePool *pool, SquozeString *str)
   return pos;
 }
 
-static void squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
+static int squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
 {
   SquozeString *str = squoze_str_to_struct (squozed);
   int no = squoze_pool_find (pool, str->hash);
+  if (no < 0)
+    return 0;
   if (do_free)
     free (str);
+#ifdef assert
+  assert (pool->hashtable[no] == squozed);
+#endif
   pool->hashtable[no]=0;
+  
+  // check if there is another one to promote now
   for (int i = no+1; pool->hashtable[i]; i = (i+1)&(pool->size-1))
   {
-    if ((pool->hashtable[i]->hash & (pool->size-1)) == no)
+    if ((pool->hashtable[i]->hash & (pool->size-1)) == (unsigned)no)
     {
       SquozeString *for_upgrade = pool->hashtable[i];
       squoze_pool_remove (pool, for_upgrade->string, 0);
       squoze_pool_add_entry (pool, for_upgrade);
+      break;
     }
   }
+  return 1;
 }
 
 static SquozeString *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id)
@@ -572,8 +584,6 @@ static Squoze *squoze_pool_add (SquozePool *pool, const char *str)
   else
     return (void*)(hash*2+1);
 }
-
-
 
 static SquozeString *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id);
 // encodes utf8 to a squoze id of squoze_dim bits - if interned_ret is provided overflowed ids
@@ -620,52 +630,7 @@ static inline int squoze_is_interned (Squoze *squozed)
   return !squoze_is_inline (squozed);
 }
 
-#if SQUOZE_REF_COUNTING
-
-static void squoze_gen_ref (int squoze_dim, const char *squozed)
-{
-  if (squoze_is_interned (squozed))
-  {
-    SquozeString *str = squoze_str_to_struct (squozed);
-    if (str)
-       str->ref_count ++;
-  }
-}
-
-static void squoze_gen_unref (SquozePool *pool, int squoze_dim, const char *squozed)
-{
-  if (!pool) pool = &global_pool;
-  if (squoze_is_interned (squozed))
-  {
-    SquozeString *str = squoze_str_to_struct (squozed);
-    if (str)
-    {
-      if (str->ref_count <= 0)
-      {
-#if SQUOZE_CLOBBER_ON_FREE
-	str->string[-str->ref_count]='#';
-#endif
-#if SQUOZE_REF_SANITY
-	if (str->ref_count < 0)
-	  fprintf (stderr, "double unref for \"%s\"\n", str->string);
-        str->ref_count--;
-#else
-	squoze_pool_remove (pool, str->string, 1);
-#endif
-      }
-      else
-      {
-        str->ref_count--;
-      }
-    }
-  }
-}
-
-#endif
-
-
 static inline const char *squoze_decode (int squoze_dim, uint64_t hash);
-
 
 static Squoze *squoze (const char *str)
 {
@@ -687,12 +652,56 @@ static const char *squoze_peek (Squoze *squozed)
 #if SQUOZE_REF_COUNTING
 static inline void squoze_ref (Squoze *squozed)
 {
-  squoze_gen_ref (SQUOZE_ID_BITS, squozed);
+  if (squoze_is_interned (squozed))
+  {
+    SquozeString *str = squoze_str_to_struct (squozed);
+    if (str)
+       str->ref_count ++;
+  }
 }
 
-static inline void squoze_unref (SquozePool *pool, Squoze *squozed)
+static inline void squoze_unref (Squoze *squozed)
 {
-  squoze_gen_unref (pool, SQUOZE_ID_BITS, squozed);
+  if (squoze_is_interned (squozed))
+  {
+    SquozeString *str = squoze_str_to_struct (squozed);
+    if (str)
+    {
+      if (str->ref_count <= 0)
+      {
+#if SQUOZE_CLOBBER_ON_FREE
+	str->string[-str->ref_count]='#';
+#endif
+#if SQUOZE_REF_SANITY
+	if (str->ref_count < 0)
+	  fprintf (stderr, "double unref for \"%s\"\n", str->string);
+        str->ref_count--;
+#else
+        SquozePool *pool = &global_pool;
+	if (squoze_pool_remove (pool, str->string, 1))
+	{
+		fprintf (stderr, "removed from global pool\n");
+	  return;
+	}
+	pool = squoze_pools;
+	if (pool)
+	do {
+	  if (squoze_pool_remove (pool, str->string, 1))
+	  {
+		fprintf (stderr, "removed from a pool\n");
+	    return;
+	  }
+	  pool = pool->next;
+	} while (pool);
+        fprintf (stderr, "not found in pools\n");
+#endif
+      }
+      else
+      {
+        str->ref_count--;
+      }
+    }
+  }
 }
 
 #endif
@@ -948,6 +957,8 @@ static SquozePool *squoze_pool_new     (SquozePool *fallback)
 {
   SquozePool *pool = calloc (sizeof (SquozePool), 1);
   pool->fallback = fallback;
+  pool->next = squoze_pools;
+  squoze_pools = pool;
   if (fallback)
     squoze_pool_ref (fallback);
   return pool;
@@ -955,11 +966,13 @@ static SquozePool *squoze_pool_new     (SquozePool *fallback)
 
 static void squoze_pool_ref (SquozePool *pool)
 {
+  if (!pool) return;
   pool->ref_count--;
 }
 
 static void squoze_pool_unref (SquozePool *pool)
 {
+  if (!pool) return;
   if (pool->ref_count == 0)
   {
     for (int i = 0; i < pool->size; i++)
@@ -969,6 +982,23 @@ static void squoze_pool_unref (SquozePool *pool)
     }
     if (pool->fallback)
       squoze_pool_unref (pool->fallback);
+
+    if (pool == squoze_pools)
+    {
+       squoze_pools = pool->next;
+    }
+    else
+    {
+      SquozePool *prev = NULL;
+      SquozePool *iter = squoze_pools;
+      while (iter && iter != pool)
+      {
+         prev = iter;
+         iter = iter->next;
+      }
+      if (prev) // XXX not needed
+        prev->next = pool->next;
+    }
     free (pool);
   }
   else
