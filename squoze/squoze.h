@@ -40,7 +40,6 @@
 #define SQUOZE_STORE_LENGTH 1
 #endif
 
-
 // for debugging
 #ifndef SQUOZE_ALLOW_COLLISIONS
 #define SQUOZE_ALLOW_COLLISIONS 0
@@ -91,25 +90,23 @@ typedef const char        Squoze;
 
 typedef struct _SquozePool SquozePool;
 
+static SquozePool         *squoze_pool_new     (SquozePool *fallback);
+static void                squoze_pool_ref     (SquozePool *pool);
+static void                squoze_pool_unref   (SquozePool *pool);
 
 
-static SquozePool        *squoze_pool_new     (SquozePool *fallback);
-static void               squoze_pool_ref     (SquozePool *pool);
-static void               squoze_pool_unref   (SquozePool *pool);
-
-
-static Squoze            *squoze_pool_add     (SquozePool *pool, const char *str);
-static Squoze            *squoze              (const char *str);
+static Squoze             *squoze_pool_add     (SquozePool *pool, const char *str);
+static Squoze             *squoze              (const char *str);
 
 
 
-static inline const char *squoze_peek         (Squoze *squozed);
-static inline squoze_id_t squoze_id           (Squoze *squozed);
-static inline int         squoze_length       (Squoze *squozed);
+static inline const char  *squoze_peek         (Squoze *squozed);
+static inline squoze_id_t  squoze_id           (Squoze *squozed);
+static inline int          squoze_length       (Squoze *squozed);
 
 #if SQUOZE_REF_COUNTING
-static inline void        squoze_ref          (Squoze *squozed);
-static inline void        squoze_unref        (Squoze *squozed);
+static inline void         squoze_ref          (Squoze *squozed);
+static inline void         squoze_unref        (Squoze *squozed);
 #endif
 
 
@@ -148,7 +145,6 @@ static SquozeString squoze_empty_string = {65535,
 	0, 
 #endif
 	""};
-
 
 static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, Squoze **interned_ref);
 
@@ -436,8 +432,7 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
   uint64_t multiplier = ((squoze_dim == 32) ? 0x123456789
                                            : 0x123456789abcdef);
 
-  uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
-  uint64_t all_bits        = overflowed_mask - 1;
+  uint64_t all_bits        = (1<<(squoze_dim-1))-1;
 
   int rshift = (squoze_dim == 32) ? 6 : 13;
   int words = squoze_words_for_dim (squoze_dim);
@@ -451,6 +446,8 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
     }
     hash <<= 1; // make room for the bit that encodes utf5 or squeeze
     hash |= utf5;
+    hash <<= 1;
+    hash |= 1; // mark as directly encoded
   }
   else
   {
@@ -462,7 +459,8 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
       hash = hash & all_bits;
       hash = hash ^ (hash >> rshift);
     }
-    hash |= overflowed_mask;
+    hash <<= 1;
+    // no marking
   }
   return hash;
 }
@@ -600,7 +598,7 @@ static Squoze *squoze_pool_add (SquozePool *pool, const char *str)
     return interned;
   }
   else
-    return (void*)(hash*2+1);
+    return (void*)(hash);
 }
 
 static SquozeString *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id);
@@ -614,8 +612,8 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
 #ifdef SQUOZE_NO_INTERNING
   return hash;
 #endif
-  uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
-  if (hash & overflowed_mask)
+  //uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
+  if ((hash & 1)==0)
   {
     SquozeString *str = squoze_lookup_struct_by_id (pool, hash);
     if (str
@@ -671,7 +669,7 @@ static const char *squoze_peek (Squoze *squozed)
     // we pass NULL as pool since we know it should not be in the pool
     // and we can always decode as 62bit - since we know we didnt overflow the
     // below type.
-    return squoze_decode (62, ((size_t)squozed)/2);
+    return squoze_decode (62, ((size_t)squozed));
   }
   else
     return squozed;//->string;
@@ -961,8 +959,9 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
                         // in the integers
   uint64_t tmp = hash & (overflowed_mask-1);
   int len = 0;
-  int is_utf5 = tmp & 1;
-  tmp /= 2;
+  int is_overflowed = (tmp & 1)!=0;
+  int is_utf5       = (tmp & 2);
+  tmp /= 4;
   int in_utf5 = is_utf5;
   utf5[len]=0;
   while (tmp > 0)
@@ -1076,10 +1075,6 @@ static const char *squoze62_decode (uint64_t hash)
   return squoze_decode (62, hash);
 }
 #endif
-
-
-
-
 
 static inline uint32_t
 squoze_utf8_to_unichar (const char *input)
