@@ -83,22 +83,22 @@ typedef struct _SquozePool SquozePool;
 
 
 static SquozePool        *squoze_pool_new     (SquozePool *fallback);
-static void               squoze_pool_destroy (SquozePool *pool);
+static void               squoze_pool_ref     (SquozePool *pool);
+static void               squoze_pool_unref   (SquozePool *pool);
 
 
-static Squoze            *squoze_pool_add   (SquozePool *pool, const char *str);
-static Squoze            *squoze            (const char *str);
-static Squoze            *squoze_lookup_id  (SquozePool *pool, squoze_id_t id);
+static Squoze            *squoze_pool_add     (SquozePool *pool, const char *str);
+static Squoze            *squoze              (const char *str);
 
 
+static Squoze            *squoze_lookup_id    (SquozePool *pool, squoze_id_t id);
 
-
-static inline const char *squoze_peek       (Squoze *squozed);
-static inline squoze_id_t squoze_id         (Squoze *squozed);
+static inline const char *squoze_peek         (Squoze *squozed);
+static inline squoze_id_t squoze_id           (Squoze *squozed);
 
 #if SQUOZE_REF_COUNTING
-static inline void        squoze_ref        (Squoze *squozed);
-static inline void        squoze_unref      (SquozePool *pool, Squoze *squozed);
+static inline void        squoze_ref          (Squoze *squozed);
+static inline void        squoze_unref        (SquozePool *pool, Squoze *squozed);
 #endif
 
 //#define SQUOZE_NO_INTERNING  // this disables the interning - providing only a hash (and decode for non-overflowed hashes)
@@ -463,13 +463,14 @@ static inline SquozeString *squoze_str_to_struct (const char *str)
 
 struct _SquozePool
 {
+  int32_t        ref_count;
   SquozePool    *fallback;
   SquozeString **hashtable;
   int            count;
   int            size;
 };
 
-SquozePool global_pool = {NULL, NULL, 0,0};
+SquozePool global_pool = {0, NULL, NULL, 0,0};
 
 static int squoze_pool_find (SquozePool *pool, uint64_t hash)
 {
@@ -545,8 +546,6 @@ static SquozeString *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t i
     return squoze_lookup_struct_by_id (pool->fallback, id);
   return NULL;
 }
-
-
 
 static Squoze *squoze_lookup_id (SquozePool *pool, squoze_id_t id)
 {
@@ -665,7 +664,7 @@ static void squoze_gen_unref (SquozePool *pool, int squoze_dim, const char *squo
 #endif
 
 
-static inline const char *squoze_decode (SquozePool *pool, int squoze_dim, uint64_t hash);
+static inline const char *squoze_decode (int squoze_dim, uint64_t hash);
 
 
 static Squoze *squoze (const char *str)
@@ -679,10 +678,10 @@ static const char *squoze_peek (Squoze *squozed)
     // we pass NULL as pool since we know it should not be in the pool
     // and we can always decode as 62bit - since we know we didnt overflow the
     // below type.
-    return squoze_decode (NULL, 62, ((size_t)squozed)/2);
+    return squoze_decode (62, ((size_t)squozed)/2);
   }
   else
-    return squozed;
+    return squozed;//->string;
 }
 
 #if SQUOZE_REF_COUNTING
@@ -887,16 +886,18 @@ static void squoze_decode_utf5_bytes (int is_utf5,
     *r_outlen = append_data.length;
 }
 
-static const char *squoze_decode_r (SquozePool *pool, int squoze_dim, uint64_t hash, char *ret, int retlen)
+static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retlen)
 {
   uint64_t overflowed_mask = squoze_overflow_mask_for_dim (squoze_dim);
 
+#if 0
   if (pool && (hash & overflowed_mask))
   {
     SquozeString *str = squoze_lookup_struct_by_id (pool, hash);
     if (str) return str->string;
     return NULL;
   }
+#endif
 
   uint8_t utf5[140]=""; // we newer go really high since there isnt room
                         // in the integers
@@ -928,7 +929,7 @@ static const char *squoze_decode_r (SquozePool *pool, int squoze_dim, uint64_t h
 /* copy the value as soon as possible, some mitigation is in place
  * for more than one value in use and cross-thread interactions.
  */
-static inline const char *squoze_decode (SquozePool *pool, int squoze_dim, uint64_t hash)
+static inline const char *squoze_decode (int squoze_dim, uint64_t hash)
 {
   if (hash == 0 || hash == 1) return "";
 #if SQUOZE_THREADS
@@ -940,44 +941,60 @@ static inline const char *squoze_decode (SquozePool *pool, int squoze_dim, uint6
 #endif
   no ++;
   if (no >= SQUOZE_PEEK_STRINGS) no = 0;
-  return squoze_decode_r (pool, squoze_dim, hash, ret[no], 16);
+  return squoze_decode_r (squoze_dim, hash, ret[no], 16);
 }
 
 static SquozePool *squoze_pool_new     (SquozePool *fallback)
 {
   SquozePool *pool = calloc (sizeof (SquozePool), 1);
   pool->fallback = fallback;
+  if (fallback)
+    squoze_pool_ref (fallback);
   return pool;
 }
 
-static void squoze_pool_destroy (SquozePool *pool)
+static void squoze_pool_ref (SquozePool *pool)
 {
-  for (int i = 0; i < pool->size; i++)
+  pool->ref_count--;
+}
+
+static void squoze_pool_unref (SquozePool *pool)
+{
+  if (pool->ref_count == 0)
   {
-    if (pool->hashtable[i])
-      free (pool->hashtable[i]);
+    for (int i = 0; i < pool->size; i++)
+    {
+      if (pool->hashtable[i])
+        free (pool->hashtable[i]);
+    }
+    if (pool->fallback)
+      squoze_pool_unref (pool->fallback);
+    free (pool);
   }
-  free (pool);
+  else
+  {
+    pool->ref_count--;
+  }
 }
 
 #if SQUOZE_IMPLEMENTATION_32
 static const char *squoze32_decode (uint32_t hash)
 {
-  return squoze_decode (&global_pool, 32, hash);
+  return squoze_decode (32, hash);
 }
 #endif
 
 #if SQUOZE_IMPLEMENTATION_52
 static const char *squoze52_decode (uint64_t hash)
 {
-  return squoze_decode (&global_pool, 52, hash);
+  return squoze_decode (52, hash);
 }
 #endif
 
 #if SQUOZE_IMPLEMENTATION_62
 static const char *squoze62_decode (uint64_t hash)
 {
-  return squoze_decode (&global_pool, 62, hash);
+  return squoze_decode (62, hash);
 }
 #endif
 

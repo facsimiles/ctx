@@ -160,7 +160,6 @@ int main (int argc, char **argv)
 {
   int wrong = 0;
   int dim = 32;
-
   {
      char *strs[] = {"foo", "abcdefghijklmnopqrst",
 	                    "abcdefghijklmnopqrst", "foo", "bar", "baz", "boo", "", NULL};
@@ -168,15 +167,10 @@ int main (int argc, char **argv)
      {
        const char *str= strs[i];
        Squoze *intern = squoze (str);
-       //Squoze *intern2 = squoze (strs[i+1]);
-       //Squoze *intern3 = squoze (strs[i+2]);
        printf ("%p %s -> %p\n", str, str, intern);
        printf ("%p -> %s\n", intern, squoze_peek (intern));
        squoze_unref(NULL, intern);
        printf ("%p -> %s\n", intern, squoze_peek (intern));
-       //squoze_unref(intern);
-       //printf ("%p -> %s\n", intern, squoze_peek (intern));
-       //printf ("[%s %s %s]\n", squoze_peek (intern), squoze_peek(intern2), squoze_peek (intern3));
        printf ("\n");
      }
   }
@@ -185,36 +179,24 @@ int main (int argc, char **argv)
   {
     uint64_t hash;
     const char *decoded;
+    Squoze *squozed;
 
     char input[4096];
-    for (int j = 0; j < 3000; j++)
+    for (int j = 0; j < 4000; j++)
     {
       if (j)
         sprintf (input, "%s-%i", strings[i], j);
       else
         sprintf (input, "%s", strings[i]);
 
-    switch (dim)
-    {
-       case 32:
-        hash = squoze32 (input);
-        decoded = squoze32_decode (hash);
-        break;
-       case 62:
-        hash = squoze62 (input);
-        decoded = squoze62_decode (hash);
-        break;
-       case 52:
-       default:
-        hash = squoze52 (input);
-        decoded = squoze52_decode (hash);
-        break;
-    }
-    if (decoded && strcmp (input, decoded))
-    {
-      printf ("%s = %lu = %s\n", input, hash, decoded);
-      wrong ++;
-    }
+      squozed = squoze (input);
+      hash = squoze_id (squozed);
+      decoded = squoze_peek (squozed);
+      if (decoded && strcmp (input, decoded))
+      {
+        printf ("%s = %lu = %s\n", input, hash, decoded);
+        wrong ++;
+      }
     }
     fprintf (stderr, "\r%.1f%% %i ", (100.0*i) / ((sizeof(strings)/sizeof(strings[0]))-1), i);
   }
