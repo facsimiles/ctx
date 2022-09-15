@@ -12,9 +12,11 @@
   // but better to always glitch than silently succeding or failing
 #endif
 
-#define SQUOZE_PEEK_STRINGS 4  // maximum number of concurrent same peeked strings
-			       // in one expression, i.e. printf("%s %s\n", squoze_peek(a), squoze_peek(b));
-			       // needs it to be 2 or higher, consume 16 bytes per entry per thread
+#ifndef SQUOZE_PEEK_STRINGS   // maximum number of concurrent same peeked strings
+#define SQUOZE_PEEK_STRINGS 4 // in one expression, i.e. printf("%s %s\n", squoze_peek(a), squoze_peek(b));
+#endif                        // needs it to be 2 or higher, consume 16 bytes per entry per thread 
+			      
+			       
 #ifndef SQUOZE_THREADS
 #define SQUOZE_THREADS      1  // use thread local storage for strings.
 #endif
@@ -415,9 +417,11 @@ static void squoze5_encode (const char *input, int inlen,
 
 static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8)
 {
-  char encoded[4096]="";
+  char encoded[4096+1]="";
   int  encoded_len=0;
-  squoze5_encode (utf8, strlen (utf8), encoded, &encoded_len, 1, 1);
+  int length = strlen (utf8);
+  if (length > 4096) length = 4096;
+  squoze5_encode (utf8, length, encoded, &encoded_len, 1, 1);
   uint64_t hash = 0;
   int  utf5 = (encoded[0] != SQUOZE_ENTER_SQUEEZE);
   uint64_t multiplier = ((squoze_dim == 32) ? 0x123456789
