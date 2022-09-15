@@ -29,6 +29,10 @@
 #define SQUOZE_STORE_LENGTH 0
 #endif
 
+#ifndef SQUOZE_ALWAYS_INTERN
+#define SQUOZE_ALWAYS_INTERN 1
+#endif
+
 
 #ifndef SQUOZE_IMPLEMENTATION_32
 #define SQUOZE_IMPLEMENTATION_32 0
@@ -450,20 +454,28 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
     hash <<= 1;
     hash |= utf5;
     hash <<= 1;
+#if SQUOZE_ALWAYS_INTERN==0
     hash |= 1; 
+#endif
   }
   else
   {
 just_hash:
+
+#if 1
+    // murmurhash one-at-a-time
+    hash = 3323198485ul;
     for (int i = 0; i < length; i++)
     {
-      uint64_t val = utf8[i];
-      hash = hash ^ val;
-      hash = hash * multiplier;
-      hash = hash & all_bits;
-      hash = hash ^ (hash >> rshift);
+      uint8_t key = utf8[i];
+      hash ^= key;
+      hash *= 0x5bd1e995;
+      hash ^= hash >> 15;
     }
-    hash <<= 1;
+#endif
+
+    //hash <<= 1;
+    hash &= ~1;
   }
 #else
   uint8_t result[10]={0,};
@@ -493,21 +505,25 @@ just_hash:
       hash = *((uint32_t*)&result[0]);
     else
       hash = *((uint64_t*)&result[0]);
+
+#if SQUOZE_ALWAYS_INTERN==1
+    hash &= ~1;
+#endif
   }
   else
   {
-	  // this could be any hash - perhaps
-	  // better to do this on utf8 directly
-	  // also in the utf5 case? XXX
+#if 1
+    // murmurhash one-at-a-time
+    hash = 3323198485ul;
     for (int i = 0; i < length; i++)
     {
-      uint64_t val = utf8[i];
-      hash = hash ^ val;
-      hash = hash * multiplier;
-      hash = hash & all_bits;
-      hash = hash ^ (hash >> rshift);
+      uint8_t key = utf8[i];
+      hash ^= key;
+      hash *= 0x5bd1e995;
+      hash ^= hash >> 15;
     }
-    hash <<= 1;
+#endif
+    hash &= ~1;
   }
 #endif
   if (encoded != encoded_)
