@@ -417,10 +417,19 @@ static void squoze5_encode (const char *input, int inlen,
 
 static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8)
 {
-  char encoded[4096+1]="";
+  char encoded_[1024+1]="";
+  char *encoded = encoded_;
   int  encoded_len=0;
   int length = strlen (utf8);
-  if (length > 4096) length = 4096;
+  if (length > 512) 
+  {
+    encoded = malloc (2 * length + 1);
+    if (encoded == NULL)
+    {
+      length = 1024;
+      encoded = encoded_;
+    }
+  }
   squoze5_encode (utf8, length, encoded, &encoded_len, 1, 1);
   uint64_t hash = 0;
   int  utf5 = (encoded[0] != SQUOZE_ENTER_SQUEEZE);
@@ -439,10 +448,10 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
       uint64_t val = encoded[i];
       hash = hash | (val << (5*(i-(!utf5))));
     }
-    hash <<= 1; // make room for the bit that encodes utf5 or squeeze
+    hash <<= 1;
     hash |= utf5;
     hash <<= 1;
-    hash |= 1; // mark as directly encoded
+    hash |= 1; 
   }
   else
   {
@@ -455,8 +464,9 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
       hash = hash ^ (hash >> rshift);
     }
     hash <<= 1;
-    // no marking
   }
+  if (encoded != encoded_)
+    free (encoded);
   return hash;
 }
 
