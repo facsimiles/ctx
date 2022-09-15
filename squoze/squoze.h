@@ -7,7 +7,7 @@
 #endif
 
 #ifndef SQUOZE_CLOBBER_ON_FREE
-#define SQUOZE_CLOBBER_ON_FREE 1
+#define SQUOZE_CLOBBER_ON_FREE 0
   // clobber strings when freeing, not a full leak report
   // but better to always glitch than silently succeding or failing
 #endif
@@ -22,8 +22,13 @@
 #endif
 
 #ifndef SQUOZE_REF_COUNTING
-#define SQUOZE_REF_COUNTING 1
+#define SQUOZE_REF_COUNTING 0
 #endif
+
+#ifndef SQUOZE_STORE_LENGTH
+#define SQUOZE_STORE_LENGTH 0
+#endif
+
 
 #ifndef SQUOZE_IMPLEMENTATION_32
 #define SQUOZE_IMPLEMENTATION_32 0
@@ -37,11 +42,7 @@
 #endif
 
 #ifndef SQUOZE_INTERNAL_UTF5
-#define SQUOZE_INTERNAL_UTF5 0
-#endif
-
-#ifndef SQUOZE_STORE_LENGTH
-#define SQUOZE_STORE_LENGTH 1
+#define SQUOZE_INTERNAL_UTF5 1
 #endif
 
 #ifndef SQUOZE_INITIAL_POOL_SIZE
@@ -50,7 +51,7 @@
 
 // for debugging
 #ifndef SQUOZE_ALLOW_COLLISIONS
-#define SQUOZE_ALLOW_COLLISIONS 0
+#define SQUOZE_ALLOW_COLLISIONS 1
 #endif
 
 #if SQUOZE_ID_BITS==32
@@ -106,10 +107,8 @@ const char  *squoze_peek         (Squoze *squozed);
 squoze_id_t  squoze_id           (Squoze *squozed);
 int          squoze_length       (Squoze *squozed);
 
-#if SQUOZE_REF_COUNTING
 void         squoze_ref          (Squoze *squozed);
 void         squoze_unref        (Squoze *squozed);
-#endif
 
 void         squoze_atexit (void);
 
@@ -434,10 +433,12 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
 
   int rshift = (squoze_dim == 32) ? 6 : 13;
 #if SQUOZE_INTERNAL_UTF5
+  int words = squoze_words_for_dim (squoze_dim);
+  if (length > words)
+	  goto just_hash;
   int  encoded_len=0;
   squoze5_encode (utf8, length, encoded, &encoded_len, 1, 1);
   int  utf5 = (encoded[0] != SQUOZE_ENTER_SQUEEZE);
-  int words = squoze_words_for_dim (squoze_dim);
 
   if (encoded_len - (!utf5) <= words)
   {
@@ -453,9 +454,10 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
   }
   else
   {
-    for (int i = 0; i < encoded_len; i++)
+just_hash:
+    for (int i = 0; i < length; i++)
     {
-      uint64_t val = encoded[i];
+      uint64_t val = utf8[i];
       hash = hash ^ val;
       hash = hash * multiplier;
       hash = hash & all_bits;
@@ -468,8 +470,10 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
   if (squoze_dim > 32) squoze_dim = 64;
 
   int done = 0;
+  uint8_t first_byte = ((uint8_t*)utf8)[0];
 
-  if ((((uint8_t*)utf8)[0]<126)
+  if (first_byte<128
+      && first_byte != '@'
       && (length <= (squoze_dim/8)))
     {
       for (int i = 0; utf8[i]; i++)
@@ -669,7 +673,7 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
       str->ref_count++;
 #endif
       if (interned_ref) *interned_ref = str;
-      return hash; // XXX: add verification that it is correct in debug mode
+      return hash; 
     }
 
     {
@@ -716,17 +720,19 @@ const char *squoze_peek (Squoze *squozed)
     return squozed->string;
 }
 
-#if SQUOZE_REF_COUNTING
 void squoze_ref (Squoze *squozed)
 {
+#if SQUOZE_REF_COUNTING
   if (squoze_is_interned (squozed))
   {
      squozed->ref_count ++;
   }
+#endif
 }
 
 void squoze_unref (Squoze *squozed)
 {
+#if SQUOZE_REF_COUNTING
   if (squoze_is_interned (squozed))
   {
       if (squozed->ref_count <= 0)
@@ -760,15 +766,15 @@ void squoze_unref (Squoze *squozed)
         squozed->ref_count--;
       }
   }
+#endif
 }
 
-#endif
 
 squoze_id_t squoze_id (Squoze *squozed)
 {
   if (!squozed) return 0;
   if (squoze_is_inline (squozed))
-    return ((size_t)(squozed))/2;
+    return ((size_t)(squozed));
   else
     return squozed->hash;
 }
@@ -997,7 +1003,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
     ((uint32_t*)decode_buf)[0]= hash;
     if (decode_buf[0]==129)
     {
-      memcpy (ret, decode_buf+1, 3);
+      memcpy (ret, decode_buf+1, 4);
     }
     else
     {
@@ -1009,7 +1015,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
   {
     ((uint64_t*)decode_buf)[0]= hash;
     if (decode_buf[0]==129)
-      memcpy (ret, decode_buf+1, 7);
+      memcpy (ret, decode_buf+1, 8);
     else
     {
       decode_buf[0]/=2;

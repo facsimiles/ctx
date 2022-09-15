@@ -37,7 +37,9 @@ ticks (void)
 const char *strings[]={"0",
   "\n",
   "☺",
+  
   "foo", "oof", "bar", "abc" "foo", "bar", "FOO", "Foo", "ooF",
+#if 1
   "lineTo","line_to","moveTo","curveTo","reset",
   "TEST",
   "abc",
@@ -142,7 +144,6 @@ const char *strings[]={"0",
   " ",
   "n ",
   "n",
-  "ø ",
   /*
   " ø",
   " ø ",
@@ -177,6 +178,7 @@ const char *strings[]={"0",
   "Bjørndal",
   "bjørndal",
   "Hi Mom ☺!",
+#endif
   NULL
 };
 
@@ -206,7 +208,7 @@ int main (int argc, char **argv)
     Squoze *squozed;
 
     char input[4096];
-    for (int j = 0; j < 20000; j++)
+    for (int j = 0; j < 3000; j++)
     {
       if (j)
         sprintf (input, "%s-%i", strings[i], j);
@@ -218,7 +220,7 @@ int main (int argc, char **argv)
       decoded = squoze_peek (squozed);
       if (decoded && strcmp (input, decoded))
       {
-        printf ("%s = %lu = %s\n", input, hash, decoded);
+        printf ("!%s = %lu = %s\n", input, hash, decoded);
         wrong ++;
       }
     }
