@@ -233,7 +233,7 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze32_decode (atol(argv[i])));
+          printf ("%s", squoze62_decode (atol(argv[i])));
         else
           printf ("%u", squoze32 (argv[i]));
       }
@@ -243,7 +243,7 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze52_decode (atol(argv[i])));
+          printf ("%s", squoze62_decode (atol(argv[i])));
         else
           printf ("%lu", squoze52 (argv[i]));
       }
