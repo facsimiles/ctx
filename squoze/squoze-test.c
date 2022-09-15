@@ -167,13 +167,11 @@ int main (int argc, char **argv)
      {
        const char *str= strs[i];
        Squoze *intern = squoze (str);
-       printf ("%p %s -> %p\n", str, str, intern);
-       printf ("%p -> %s\n", intern, squoze_peek (intern));
+       printf ("%p %s -> %p ", str, str, intern);
+       printf (" -> %s\n", squoze_peek (intern));
        squoze_unref(intern);
-       printf ("%p -> %s\n", intern, squoze_peek (intern));
+       //printf ("%p -> %s\n", intern, squoze_peek (intern));
        intern = NULL;
-       printf ("%p -> %s\n", intern, squoze_peek (intern));
-       printf ("\n");
      }
   }
 
@@ -208,5 +206,8 @@ int main (int argc, char **argv)
     printf ("%i WRONG\n", wrong);
     return 1;
   }
+  squoze_atexit ();
+
+
   return 0;
 }
