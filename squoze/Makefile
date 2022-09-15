@@ -1,4 +1,4 @@
-all: squoze
+all: squoze squoze-test
 clean:
 	rm -f squoze squoze-test
 squoze: squoze.c squoze.h Makefile

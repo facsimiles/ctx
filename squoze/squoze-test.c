@@ -10,6 +10,29 @@
 #define SQUOZE_IMPLEMENTATION_52 1
 
 #include "squoze.h"
+#define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
+
+
+static struct timeval start_time;
+static void
+init_ticks (void)
+{
+  static int done = 0;
+  if (done)
+    return;
+  done = 1;
+  gettimeofday (&start_time, NULL);
+}
+
+static inline unsigned long
+ticks (void)
+{
+  struct timeval measure_time;
+  init_ticks ();
+  gettimeofday (&measure_time, NULL);
+  return usecs (measure_time) - usecs (start_time);
+}
+
 
 const char *strings[]={"0",
   "\n",
@@ -175,6 +198,7 @@ int main (int argc, char **argv)
      }
   }
 
+  long start = ticks();
   for (int i = 0; strings[i]; i++)
   {
     uint64_t hash;
@@ -182,7 +206,7 @@ int main (int argc, char **argv)
     Squoze *squozed;
 
     char input[4096];
-    for (int j = 0; j < 4000; j++)
+    for (int j = 0; j < 20000; j++)
     {
       if (j)
         sprintf (input, "%s-%i", strings[i], j);
@@ -198,9 +222,11 @@ int main (int argc, char **argv)
         wrong ++;
       }
     }
-    fprintf (stderr, "\r%.1f%% %i ", (100.0*i) / ((sizeof(strings)/sizeof(strings[0]))-1), i);
+    //fprintf (stderr, "\r%.1f%% %i ", (100.0*i) / ((sizeof(strings)/sizeof(strings[0]))-1), i);
   }
+  long end = ticks();
   fprintf (stderr, "\r            ");
+  fprintf (stderr, "%.3f\n", (end-start)/1000000.0);
   if (wrong)
   {
     printf ("%i WRONG\n", wrong);

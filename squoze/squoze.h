@@ -44,6 +44,10 @@
 #define SQUOZE_STORE_LENGTH 1
 #endif
 
+#ifndef SQUOZE_INITIAL_POOL_SIZE
+#define SQUOZE_INITIAL_POOL_SIZE   (1<<24)
+#endif
+
 // for debugging
 #ifndef SQUOZE_ALLOW_COLLISIONS
 #define SQUOZE_ALLOW_COLLISIONS 0
@@ -51,7 +55,7 @@
 
 #if SQUOZE_ID_BITS==32
 #define squoze_id_t uint32_t
-#elif SQUOZE_ID_BITS==64
+#else
 #define squoze_id_t uint64_t
 #endif
 
@@ -477,7 +481,7 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
   {
     for (int i = 0; utf8[i]; i++)
       result[i+1] = utf8[i];
-    result[0] = 255;
+    result[0] = 129;
     done = 1;
   }
   if (done){ 
@@ -549,7 +553,7 @@ static int squoze_pool_add_entry (SquozePool *pool, Squoze *str)
      Squoze **old = pool->hashtable;
      int old_size = pool->size;
      if (old_size == 0)
-       pool->size = 256;
+       pool->size = SQUOZE_INITIAL_POOL_SIZE;
      else
        pool->size *= 2;
      pool->hashtable = calloc (pool->size * sizeof (void*), 1);
@@ -706,7 +710,7 @@ const char *squoze_peek (Squoze *squozed)
     // we pass NULL as pool since we know it should not be in the pool
     // and we can always decode as 62bit - since we know we didnt overflow the
     // below type.
-    return squoze_decode (62, ((size_t)squozed));
+    return squoze_decode (SQUOZE_ID_BITS, ((size_t)squozed));
   }
   else
     return squozed->string;
@@ -988,10 +992,10 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
   return ret;
 #else
   uint8_t decode_buf[10]={0,};
-  if (squoze_dim == 32 || 1)
+  if (squoze_dim == 32)
   {
     ((uint32_t*)decode_buf)[0]= hash;
-    if (decode_buf[0]==255)
+    if (decode_buf[0]==129)
     {
       memcpy (ret, decode_buf+1, 3);
     }
@@ -1004,8 +1008,8 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
   else
   {
     ((uint64_t*)decode_buf)[0]= hash;
-    if (decode_buf[0]==255)
-      memcpy (ret, &decode_buf[1], 7);
+    if (decode_buf[0]==129)
+      memcpy (ret, decode_buf+1, 7);
     else
     {
       decode_buf[0]/=2;
