@@ -423,7 +423,7 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
   int length = strlen (utf8);
   if (length > 512) 
   {
-    encoded = malloc (2 * length + 1);
+    encoded = (char*)malloc (2 * length + 1);
     if (encoded == NULL)
     {
       length = 1024;
@@ -433,12 +433,12 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
   uint64_t hash = 0;
 #if SQUOZE_EMBEDDED_UTF5
   int words = squoze_words_for_dim (squoze_dim);
+  int utf5 = 0;
+  int  encoded_len=0;
   if (length > words)
 	  goto just_hash;
-  int  encoded_len=0;
   squoze5_encode (utf8, length, encoded, &encoded_len, 1, 1);
-  int  utf5 = (encoded[0] != SQUOZE_ENTER_SQUEEZE);
-
+  utf5 = (encoded[0] != SQUOZE_ENTER_SQUEEZE);
   if (encoded_len - (!utf5) <= words)
   {
     for (int i = !utf5; i < encoded_len; i++)
@@ -572,7 +572,7 @@ static int squoze_pool_add_entry (SquozePool *pool, Squoze *str)
        pool->size = SQUOZE_INITIAL_POOL_SIZE;
      else
        pool->size *= 2;
-     pool->hashtable = calloc (pool->size * sizeof (void*), 1);
+     pool->hashtable = (Squoze**)calloc (pool->size, sizeof (void*));
      if (old)
      {
        for (int i = 0; i < old_size; i++)
@@ -657,7 +657,7 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
     return interned;
   }
   else
-    return (void*)(hash);
+    return (Squoze*)(hash);
 }
 
 static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id);
@@ -691,7 +691,7 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
     }
 
     {
-      Squoze *entry = calloc (length + 1 + sizeof(Squoze), 1);
+      Squoze *entry = (Squoze*)calloc (length + 1 + sizeof(Squoze), 1);
       entry->hash = hash;
 #if SQUOZE_STORE_LENGTH
       entry->length = length;
@@ -994,18 +994,18 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
   uint64_t tmp = hash;
   int len = 0;
   tmp /= 4;
-  int in_utf5 = is_utf5;
+  //int in_utf5 = is_utf5;
   utf5[len]=0;
   while (tmp > 0)
   {
-    uint64_t remnant = tmp % 32;
+    uint64_t remnant = tmp & 31;
     uint64_t val = remnant;
-
-    if      ( in_utf5 && val == SQUOZE_ENTER_SQUEEZE) in_utf5 = 0;
-    else if (!in_utf5 && val == SQUOZE_ENTER_UTF5) in_utf5 = 1;
-
+#if 0
+    ///if      ( in_utf5 && val == SQUOZE_ENTER_SQUEEZE) in_utf5 = 0;
+    //else if (!in_utf5 && val == SQUOZE_ENTER_UTF5) in_utf5 = 1;
+#endif
     utf5[len++] = val;
-    tmp -= remnant;
+    //tmp -= remnant;
     tmp /= 32;
   }
   utf5[len]=0;
@@ -1065,7 +1065,7 @@ static inline const char *squoze_decode (int squoze_dim, uint64_t hash)
 
 SquozePool *squoze_pool_new     (SquozePool *fallback)
 {
-  SquozePool *pool = calloc (sizeof (SquozePool), 1);
+  SquozePool *pool = (SquozePool*)calloc (sizeof (SquozePool), 1);
   pool->fallback = fallback;
   pool->next = squoze_pools;
   squoze_pools = pool;
