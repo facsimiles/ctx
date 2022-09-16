@@ -3235,7 +3235,7 @@ ctx_str_decode (uint32_t number)
 
 uint32_t ctx_strhash(const char *str)
 {
-  return squoze32 (str);
+  return squoze32 (str, strlen (str));
 }
 
 

@@ -10,6 +10,7 @@
 #define SQUOZE_IMPLEMENTATION_52 1
 
 #include "squoze.h"
+#include <sys/time.h>
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
 
@@ -36,14 +37,11 @@ ticks (void)
 
 const char *strings[]={"0",
   "\n",
-  "☺",
-  
-  "foo", "oof", "bar", "abc" "foo", "bar", "FOO", "Foo", "ooF",
-#if 1
-  "lineTo","line_to","moveTo","curveTo","reset",
-  "TEST",
-  "abc",
-  "a-_.b",
+  "td","tr","div","html","body","css","lineWidth","border-top",
+  "border-bottom", "border-left", "border-right", "margin",
+  "margin-left", "fill-rule", "fill", "stroke",
+  "p", "img", "http", "https",
+#if 0
   "ᛖᚴ","ᚷᛖᛏ","ᛖᛏᛁ","ᚧᚷ","ᛚᛖᚱ","ᛘᚾᚦ","ᛖᛋᛋᚨ","ᚧᚡᛖ","ᚱᚧᚨ","ᛋᚨᚱ",
 "আ","মি"," ","কাঁচ"," খেতে পারি",", তাতে আ","মার কোনো ক্ষতি হয় না।" ,
 "मी काच खा","ऊ शकतो,","मला ते दुख","त नाही." ,
@@ -208,10 +206,10 @@ int main (int argc, char **argv)
     Squoze *squozed;
 
     char input[4096];
-    for (int j = 0; j < 3000; j++)
+    for (int j = 0; j < 1999; j++)
     {
       if (j)
-        sprintf (input, "%s-%i", strings[i], j);
+        sprintf (input, "%s%i", strings[i], j);
       else
         sprintf (input, "%s", strings[i]);
 
@@ -220,18 +218,36 @@ int main (int argc, char **argv)
       decoded = squoze_peek (squozed);
       if (decoded && strcmp (input, decoded))
       {
-        printf ("!%s = %lu = %s\n", input, hash, decoded);
+ //     printf ("!%s = %lu = %s\n", input, hash, decoded);
         wrong ++;
       }
     }
+
+    for (int j = 0; j < 99; j++)
+    {
+      if (j)
+        sprintf (input, "%s%i", strings[i], j);
+      else
+        sprintf (input, "%s", strings[i]);
+
+      squozed = squoze (input);
+      hash = squoze_id (squozed);
+      decoded = squoze_peek (squozed);
+      if (decoded && strcmp (input, decoded))
+      {
+        printf ("%s = %lu = %s\n", input, hash, decoded);
+      }
+    }
+
     //fprintf (stderr, "\r%.1f%% %i ", (100.0*i) / ((sizeof(strings)/sizeof(strings[0]))-1), i);
   }
   long end = ticks();
   fprintf (stderr, "\r            ");
-  fprintf (stderr, "%.3f\n", (end-start)/1000000.0);
+  fprintf (stderr, "%.3fms\n", (end-start)/1000000.0 * 1000);
   if (wrong)
   {
     printf ("%i WRONG\n", wrong);
+    squoze_atexit ();
     return 1;
   }
   squoze_atexit ();

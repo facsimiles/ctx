@@ -235,7 +235,7 @@ int main (int argc, char **argv)
         if ((!force_encode) && squoze_is_number (argv[i]))
           printf ("%s", squoze62_decode (atol(argv[i])));
         else
-          printf ("%u", squoze32 (argv[i]));
+          printf ("%u", squoze32 (argv[i], strlen (argv[i])));
       }
       break;
     case 52:
@@ -245,7 +245,7 @@ int main (int argc, char **argv)
         if ((!force_encode) && squoze_is_number (argv[i]))
           printf ("%s", squoze62_decode (atol(argv[i])));
         else
-          printf ("%lu", squoze52 (argv[i]));
+          printf ("%lu", squoze52 (argv[i], strlen (argv[i])));
       }
       break;
     case 62:
@@ -255,7 +255,7 @@ int main (int argc, char **argv)
         if ((!force_encode) && squoze_is_number (argv[i]))
           printf ("%s", squoze62_decode (atol(argv[i])));
         else
-          printf ("%lu", squoze62 (argv[i]));
+          printf ("%lu", squoze62 (argv[i], strlen (argv[i])));
       }
       break;
   }

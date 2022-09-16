@@ -2,7 +2,7 @@
 #include "ctx.h"
 
 #if CTX_EVENTS
-#include "squoze/squoze.h"
+//#include "squoze/squoze.h"
 
 #include "static.inc"
 

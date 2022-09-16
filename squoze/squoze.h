@@ -30,12 +30,12 @@
 #endif
 
 #ifndef SQUOZE_ALWAYS_INTERN
-#define SQUOZE_ALWAYS_INTERN 1
+#define SQUOZE_ALWAYS_INTERN 0
 #endif
 
 
 #ifndef SQUOZE_IMPLEMENTATION_32
-#define SQUOZE_IMPLEMENTATION_32 0
+#define SQUOZE_IMPLEMENTATION_32 1
 // include implementation for 32bit ids - this is the default and most versatile
 // for embedded development, where 32bit integer ids and 32bit interned pointers
 // are used.
@@ -45,12 +45,13 @@
 #define SQUOZE_ID_BITS 32
 #endif
 
-#ifndef SQUOZE_INTERNAL_UTF5
-#define SQUOZE_INTERNAL_UTF5 1
+#ifndef SQUOZE_EMBEDDED_UTF5
+#define SQUOZE_EMBEDDED_UTF5 1
 #endif
 
 #ifndef SQUOZE_INITIAL_POOL_SIZE
-#define SQUOZE_INITIAL_POOL_SIZE   (1<<24)
+//#define SQUOZE_INITIAL_POOL_SIZE   (1<<24)
+#define SQUOZE_INITIAL_POOL_SIZE   (1<<8)
 #endif
 
 // for debugging
@@ -83,17 +84,17 @@
 #include <string.h>
 
 #if SQUOZE_IMPLEMENTATION_32
-uint32_t     squoze32        (const char *utf8);
+uint32_t     squoze32        (const char *utf8, size_t len);
 const char  *squoze32_decode (uint32_t    hash);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_52
-uint64_t     squoze52        (const char *utf8);
+uint64_t     squoze52        (const char *utf8, size_t len);
 const char  *squoze52_decode (uint64_t    hash);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_62
-uint64_t     squoze62        (const char *utf8);
+uint64_t     squoze62        (const char *utf8, size_t len);
 const char  *squoze62_decode (uint64_t    hash);
 #endif
 
@@ -146,7 +147,7 @@ struct _Squoze {
 };
 
 
-static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, Squoze **interned_ref);
+static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, size_t len, Squoze **interned_ref);
 
 static inline uint32_t squoze_utf8_to_unichar (const char *input);
 static inline int      squoze_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
@@ -415,7 +416,7 @@ static void squoze5_encode (const char *input, int inlen,
     *r_outlen = len;
 }
 
-static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8)
+static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8, size_t len)
 {
   char encoded_[1024+1]="";
   char *encoded = encoded_;
@@ -430,13 +431,7 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
     }
   }
   uint64_t hash = 0;
-  uint64_t multiplier = ((squoze_dim == 32) ? 0x123456789
-                                           : 0x123456789abcdef);
-
-  uint64_t all_bits        = (1<<(squoze_dim-1))-1;
-
-  int rshift = (squoze_dim == 32) ? 6 : 13;
-#if SQUOZE_INTERNAL_UTF5
+#if SQUOZE_EMBEDDED_UTF5
   int words = squoze_words_for_dim (squoze_dim);
   if (length > words)
 	  goto just_hash;
@@ -543,10 +538,11 @@ struct _SquozePool
   Squoze **hashtable;
   int            count;
   int            size;
+  int            count_embedded;
   SquozePool    *next;
 };
 
-static SquozePool global_pool = {0, NULL, NULL, 0,0};
+static SquozePool global_pool = {0, NULL, NULL, 0,0, 0, NULL};
 
 static SquozePool *squoze_pools = NULL;
 
@@ -597,6 +593,7 @@ static int squoze_pool_add_entry (SquozePool *pool, Squoze *str)
   return pos;
 }
 
+#if SQUOZE_REF_SANITY
 static int squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
 {
   Squoze *str = squozed;
@@ -623,6 +620,7 @@ static int squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
   }
   return 1;
 }
+#endif
 
 static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id)
 {
@@ -649,7 +647,7 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
 {
   if (!pool) pool = &global_pool;
   Squoze *interned = NULL;
-  uint64_t hash = squoze_encode (pool, SQUOZE_ID_BITS, str, &interned);
+  uint64_t hash = squoze_encode (pool, SQUOZE_ID_BITS, str, strlen (str), &interned);
 
   if (interned)
   {
@@ -665,11 +663,11 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
 static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id);
 // encodes utf8 to a squoze id of squoze_dim bits - if interned_ret is provided overflowed ids
 // are interned and a new interned squoze is returned.
-static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, Squoze **interned_ref)
+static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, size_t len, Squoze **interned_ref)
 {
   if (pool == NULL) pool = &global_pool;
   uint32_t length = strlen (utf8);
-  uint64_t hash = squoze_encode_no_intern (squoze_dim, utf8);
+  uint64_t hash = squoze_encode_no_intern (squoze_dim, utf8, len);
 #ifdef SQUOZE_NO_INTERNING
   return hash;
 #endif
@@ -703,6 +701,8 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
       squoze_pool_add_entry (pool, entry);
     }
   }
+  else
+    pool->count_embedded++;
   return hash;
 }
 
@@ -711,7 +711,7 @@ static inline int squoze_is_interned (Squoze *squozed)
   return ((((size_t)(squozed))&1) == 0);
 }
 
-static inline int squoze_is_inline (Squoze *squozed)
+static inline int squoze_is_embedded (Squoze *squozed)
 {
   return !squoze_is_interned (squozed);
 }
@@ -725,7 +725,7 @@ Squoze *squoze (const char *str)
 const char *squoze_peek (Squoze *squozed)
 {
   if (!squozed) return NULL;
-  if (squoze_is_inline (squozed))
+  if (squoze_is_embedded (squozed))
   {
     // we pass NULL as pool since we know it should not be in the pool
     // and we can always decode as 62bit - since we know we didnt overflow the
@@ -789,7 +789,7 @@ void squoze_unref (Squoze *squozed)
 squoze_id_t squoze_id (Squoze *squozed)
 {
   if (!squozed) return 0;
-  if (squoze_is_inline (squozed))
+  if (squoze_is_embedded (squozed))
     return ((size_t)(squozed));
   else
     return squozed->hash;
@@ -799,7 +799,7 @@ int squoze_length       (Squoze *squozed)
 {
   if (!squozed) return 0;
 #if SQUOZE_STORE_LENGTH
-  if (squoze_is_inline (squozed))
+  if (squoze_is_embedded (squozed))
 #endif
     return strlen (squoze_peek (squozed));
 #if SQUOZE_STORE_LENGTH
@@ -812,17 +812,17 @@ int squoze_length       (Squoze *squozed)
 #if SQUOZE_REF_COUNTING
 
 #define SQUOZE_IMPLEMENT(dim, h_t) \
-h_t squoze##dim(const char *utf8)\
+h_t squoze##dim(const char *utf8, size_t len)\
 {\
-  return squoze_encode (NULL, dim, utf8, NULL);\
+  return squoze_encode (NULL, dim, utf8, len, NULL);\
 }
 
 #else
 
 #define SQUOZE_IMPLEMENT(dim, h_t) \
-h_t squoze##dim(const char *utf8)\
+h_t squoze##dim(const char *utf8, size_t len)\
 {\
-  return squoze_encode (NULL, dim, utf8, NULL);\
+  return squoze_encode (NULL, dim, utf8, len, NULL);\
 }
 #endif
 
@@ -986,7 +986,7 @@ static void squoze_decode_utf5_bytes (int is_utf5,
 
 static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retlen)
 {
-#if SQUOZE_INTERNAL_UTF5
+#if SQUOZE_EMBEDDED_UTF5
   //int is_overflowed = (hash & 1)!=0;
   int is_utf5       = (hash & 2)!=0;
   uint8_t utf5[140]=""; // we newer go really high since there isnt room
@@ -1048,6 +1048,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
  */
 static inline const char *squoze_decode (int squoze_dim, uint64_t hash)
 {
+  if (hash == 0 || ((hash & 1) == 0)) return NULL;
   if (hash == 0) return "NIL";
   if (hash == 3) return "";
 #if SQUOZE_THREADS
@@ -1081,6 +1082,8 @@ void squoze_pool_ref (SquozePool *pool)
 
 static void squoze_pool_destroy (SquozePool *pool)
 {
+    fprintf (stderr, "destorying pool: size:%i count:%i embedded:%i\n",
+       pool->size, pool->count, pool->count_embedded);
     for (int i = 0; i < pool->size; i++)
     {
       if (pool->hashtable[i])

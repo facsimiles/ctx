@@ -12,7 +12,10 @@ constants.h
 libc.c
 ctx-decls.h
 audio.h
+../squoze/squoze.h
 start-implementation
+../deps/miniz.h
+../deps/miniz.c
 ctx-clients.h
 ctx-internal.h
 cbrle.c
@@ -20,7 +23,6 @@ drawlist.h
 composite.c
 backend-rasterizer.c
 base64.h
-squoze.h
 drawlist.c
 transform.c
 audio.c

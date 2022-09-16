@@ -813,7 +813,16 @@
 #define CTX_PDF 0
 #endif
 
-#include "miniz.h"
+#if CTX_IMAGE_WRITE
+#else
+#define MINIZ_NO_ARCHIVE_APIS  1
+#define MINIZ_NO_DEFLATE_APIS  1
+#endif
+
+//#define MINIZ_NO_ARCHIVE_WRITING_APIS 1
+#define MINIZ_NO_STDIO                1
+
+
 //#define uncompress tinf_uncompress
 //#define Z_OK TINF_OK
 //#define Z_BUF_ERROR TINF_BUF_ERROR
@@ -828,10 +837,14 @@
 #define CTX_RAW_KB_EVENTS 1
 #endif
 
-#define SQUOZE_IMPLEMENTATION    1
-#define SQUOZE_IMPLEMENTATION_32 1
 
 #ifndef CTX_BAREMETAL
 #define CTX_BAREMETAL 0
 #endif
 
+#if CTX_IMPLEMENTATION
+#ifndef SQUOZE_IMPLEMENTATION
+#define SQUOZE_IMPLEMENTATION    1
+#define SQUOZE_IMPLEMENTATION_32 1
+#endif
+#endif
