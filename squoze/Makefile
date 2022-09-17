@@ -47,7 +47,7 @@ report.txt: squoze gen-report.sh
 report.html: all
 	rm report.html || true
 	./test-head >> report.html
-	for a in 4 6 8 10 20;do export MAX_WORD_LEN=$$a;make report-part.html;done 
+	for a in 4 6 8 10 12 20;do export MAX_WORD_LEN=$$a;make report-part.html;done 
 	./test-foot >> report.html
 report-part.html: all
 	./test-header >> report.html

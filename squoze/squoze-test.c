@@ -73,7 +73,8 @@ int main (int argc, char **argv)
 
 
     printf ("<h1>Squoze - a unicode string hash family.</h2><div style='font-style:italic; text-align:right;'>embedding text in integers</div>");
-    printf ("<p>Squoze is a new family/type of unicode string hashes designed for use in content addressed storage. The hashes trades the least significant bit of digest data for being able to embed digest_size-1 bits of payload data. One important use of content addressed storage is interned strings.</p>");
+    printf ("<p>Squoze is a new family/type of unicode string hashes designed for use in content addressed storage. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of payload data. One important use of content addressed storage is interned strings.</p>");
+
 
 
 
@@ -88,7 +89,95 @@ int main (int argc, char **argv)
     printf ("<dt>squoze256</dt><dd>UTF5+ embed encoding, supporting up to 50 unicode code points</dd>");
     printf ("</dl>\n");
 
-    printf ("<h2>Benchmark</h2\n");
+
+    printf ("<h2>squoze64 implementation</h2>");
+    printf ("<p>the squoze-64 encoding is a small bitmanipulation of UTF-8 in-memory encoding, for strings that will fit only the first byte is manipulated and only if it ascii and not <em>@</em> the value is double and 1 is added. When the first byte does not match our constraints we store 129 - which means the following 7bytes directly encode the value</p>");
+
+    printf (
+"<pre>uint64_t squoze64(const char *utf8, size_t len)\n"
+"{\n"
+"  size_t   squoze_dim = 64;\n"
+"  uint64_t hash       = 0;\n"
+"  uint8_t *encoded    = (uint8_t*)&hash;\n"
+"  uint8_t  first_byte = ((uint8_t*)utf8)[0];\n"
+"\n"
+"  if (first_byte<128\n"
+"      && first_byte != '@'\n"
+"      && (len &lt;= (squoze_dim/8)))\n"
+"  {\n"
+"    for (int i = 0; utf8[i]; i++)\n"
+"      encoded[i] = utf8[i];\n"
+"    encoded[0] = encoded[0]*2+1;\n"
+"    return *((uint64_t*)&encoded[0]);\n"
+"  }\n"
+"  else if (len &lt;= (squoze_dim/8)-1)\n"
+"  {\n"
+"    for (int i = 0; utf8[i]; i++)\n"
+"      encoded[i+1] = utf8[i];\n"
+"    encoded[0] = 129;\n"
+"    return *((uint64_t*)&encoded[0]);\n"
+"  }\n"
+"\n"
+"  // murmurhash one-at-a-time\n"
+"  hash = 3323198485ul;\n"
+"  for (unsigned int i = 0; i &lt; len; i++)\n"
+"  { \n"
+"    uint8_t key = utf8[i];\n"
+"    hash ^= key;\n"
+"    hash *= 0x5bd1e995;\n"
+"    hash ^= hash &gt;&gt; 15;\n"
+"  }\n"
+"  return hash & ~1; // make even\n"
+"}</pre>\n");
+
+
+    printf ("<pre>const char *squoze64_decode (uint64_t hash)\n"
+"{\n"
+"  static uint8_t buf[10];\n"
+"  buf[8] = 0;\n"
+"  ((uint64_t*)buf)[0]= hash; // or memcpy (buf, hash, 8);\n"
+"  if ((buf[0] & 1) == 0)\n"
+"     return NULL;\n"
+"  if (buf[0] == 129)\n"
+"     return buf+1;\n"
+"  buf[0] /= 2;\n"
+"  return buf;\n"
+"}</pre>");
+
+    printf ("<h2>squoze-bignum implementation</h2>\n");
+    printf ("<p>The first stage of this encoding is encoding to UTF5+ which extens <a href='https://archive.ph/20120721050018/http://tools.ietf.org/html/draft-jseng-utf5'>UTF-5</a>. The symbol 'G' with value 16 does not occur in normal UTF-5 and is used to change encoding mode to a sliding window, valid UTF5 strings are correctly decoded by a UTF-5+ decoder.</p>");
+    printf ("<p>In squeeze mode the initial offset is set based on the last encoded unicode codepoint in UTF-5 mode. Start offsets for a code point follow the pattern 19 + 26 * N, which makes a-z fit in one window. In sliding window mode the following quintets have special meaning:</p>");
+    printf ("<table><tr><td>0</td><td>0</td><td>emit SPACE</td></tr>\n");
+    printf ("<tr><td>1</td><td>1</td><td>codepoint at offset + 0</td></tr>\n");
+    printf ("<tr><td>2</td><td>2</td><td>codepoint at offset + 1</td></tr>\n");
+    printf ("<tr><td></td><td>..</td><td></td></tr>\n");
+    printf ("<tr><td>10</td><td>A</td><td>codepoint at offset + 9</td></tr>\n");
+    printf ("<tr><td>11</td><td>B</td><td>codepoint at offset + 10</td></tr>\n");
+    printf ("<tr><td>12</td><td>C</td><td>codepoint at offset + 11</td></tr>\n");
+    printf ("<tr><td></td><td>..</td><td></td></tr>\n");
+    printf ("<tr><td>26</td><td>Q</td><td>codepoint at offset + 25</td></tr>\n");
+    printf ("<tr><td>27</td><td>R</td><td>offset += 26 *1</td></tr>\n");
+    printf ("<tr><td>28</td><td>S</td><td>offset += 26 *1</td></tr>\n");
+    printf ("<tr><td>29</td><td>T</td><td>offset += 26 *1</td></tr>\n");
+    printf ("<tr><td>30</td><td>U</td><td>offset += 26 *1</td></tr>\n");
+    printf ("<tr><td>31</td><td>V</td><td>switch to UTF-5 mode</td></tr></table>\n");
+
+    printf ("<p>For compatibility with UTF-5 we start out in UTF-5 mode rather than window mode.</p>");
+    printf ("<p>The encoder decides if the current mode is kept or not for every codepoint. The cost in output quintets is computed for UTF-5 and windowed is computed for both this and the next codepoint. We switch from UTF-5 to windowed when the cost of switching considering this and the next code points is equal or smaller, in the other direction we only switch if there is a gain to be had.</p>");
+
+    printf ("<p>For example the string <em>Hello World</em> is encoded as follows:</p>");
+    printf ("<pre>H   e  l l o   W  o  r l d                             11 bytes\n"
+"GT2 U5 C C F 0 TH UF I C 4     16 quintets = 80 bits = 10 bytes\n"
+"\n"
+"h  e l l o   w o r l d     11 bytes\n"
+"G8 5 C C F 0 N F I C 4     12 quintets = 60 bits = 7.5bytes padded to 8 bytes</pre>");
+
+    printf ("<p>When transforming a quintet sequence into an integer the initial mode is encoded as a bit of 1 if we are starting out in UTF-5 mode, allowing us to skip the G. To create an integer we start with 0, add the integer value of the first quintet. If there are more quintets, multiply by 32 and continue adding quintets. The resulting value is multipled by 4, the second lowest bit set according to windowed or utf-5 initial mode and the lowest bit set.</p>");
+
+    printf ("<h2>squoze32, squoze52 and squoze62 implementation</h2>\n");
+    printf ("<p>These hashes are just like squoze-bignum if they as utf5+ encode as fewer than 6, 10 or 12 quintets. If this is not the case a murmurhash is computed and the lowest bit stripped.</p>");
+
+    printf ("<h2>benchmarks</h2\n");
     printf ("<p>The below tables shows timings when running my laptop on a stable low frequency. The embed%% column shows how many of the words got embedded instead of needing heap allocation. </p>");
 
     printf ("<p>The <em>nointern</em> variants of squoze here are there to give a comparison point directly with the variant that does embedding. In the current incarnation murmurhash one-at-a time is part of squoze32 and squoze52 - thus within the benchmarking framework provides a common other hash used to implement string interning.</p>");
