@@ -26,7 +26,7 @@
 #endif
 
 #ifndef SQUOZE_STORE_LENGTH
-#define SQUOZE_STORE_LENGTH 0
+#define SQUOZE_STORE_LENGTH 1
 #endif
 
 #ifndef SQUOZE_ALWAYS_INTERN
@@ -36,13 +36,10 @@
 
 #ifndef SQUOZE_IMPLEMENTATION_32
 #define SQUOZE_IMPLEMENTATION_32 1
-// include implementation for 32bit ids - this is the default and most versatile
-// for embedded development, where 32bit integer ids and 32bit interned pointers
-// are used.
 #endif
 
 #ifndef SQUOZE_ID_BITS
-#define SQUOZE_ID_BITS 32
+#define SQUOZE_ID_BITS 62
 #endif
 
 #ifndef SQUOZE_EMBEDDED_UTF5
@@ -56,7 +53,7 @@
 
 // for debugging
 #ifndef SQUOZE_ALLOW_COLLISIONS
-#define SQUOZE_ALLOW_COLLISIONS 1
+#define SQUOZE_ALLOW_COLLISIONS 0
 #endif
 
 #if SQUOZE_ID_BITS==32
@@ -147,8 +144,7 @@ struct _Squoze {
 };
 
 
-static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, size_t len, Squoze **interned_ref);
-
+static inline uint64_t squoze_encode          (SquozePool *pool,int squoze_dim, const char *utf8, size_t len, Squoze **interned_ref);
 static inline uint32_t squoze_utf8_to_unichar (const char *input);
 static inline int      squoze_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 static inline int      squoze_utf8_len        (const unsigned char first_byte);
@@ -289,10 +285,10 @@ static int squoze_compute_cost_squeezed (int offset, int val, int next_val)
   return cost;
 }
 
-static void squoze5_encode (const char *input, int inlen,
-                            char *output, int *r_outlen,
-                            int permit_squeezed,
-                            int escape_endzero)
+static inline void squoze5_encode (const char *input, int inlen,
+                                   char *output, int *r_outlen,
+                                   int permit_squeezed,
+                                   int escape_endzero)
 {
   int offset  = squoze_new_offset('a');
   int is_utf5 = 1;
@@ -418,9 +414,10 @@ static void squoze5_encode (const char *input, int inlen,
 
 static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8, size_t len)
 {
+  //uint8_t *in = (uint8_t*)utf8;
   char encoded_[1024+1]="";
   char *encoded = encoded_;
-  int length = strlen (utf8);
+  int length = len;//strlen (utf8);
   if (length > 512) 
   {
     encoded = (char*)malloc (2 * length + 1);
@@ -435,7 +432,7 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
   int words = squoze_words_for_dim (squoze_dim);
   int utf5 = 0;
   int  encoded_len=0;
-  if (length > words)
+  if (length > words)  //  || (in[0]>127 && in[0]<=0xc0) || in[0]==255 || in[0]==254) // invalid utf8 starting bytes
 	  goto just_hash;
   squoze5_encode (utf8, length, encoded, &encoded_len, 1, 1);
   utf5 = (encoded[0] != SQUOZE_ENTER_SQUEEZE);
@@ -666,7 +663,7 @@ static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id);
 static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, size_t len, Squoze **interned_ref)
 {
   if (pool == NULL) pool = &global_pool;
-  uint32_t length = strlen (utf8);
+  len = strlen (utf8);
   uint64_t hash = squoze_encode_no_intern (squoze_dim, utf8, len);
 #ifdef SQUOZE_NO_INTERNING
   return hash;
@@ -677,7 +674,7 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
     if (str
 #if SQUOZE_ALLOW_COLLISIONS==0
 #if SQUOZE_STORE_LENGTH
-		    && str->length == length
+		    && str->length == len
 #endif
 		    && !strcmp (str->string, utf8)
 #endif
@@ -691,10 +688,10 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
     }
 
     {
-      Squoze *entry = (Squoze*)calloc (length + 1 + sizeof(Squoze), 1);
+      Squoze *entry = (Squoze*)calloc (len + 1 + sizeof(Squoze), 1);
       entry->hash = hash;
 #if SQUOZE_STORE_LENGTH
-      entry->length = length;
+      entry->length = len;
 #endif
       strcpy (entry->string, utf8);
       if (interned_ref) *interned_ref = entry;
@@ -1082,8 +1079,10 @@ void squoze_pool_ref (SquozePool *pool)
 
 static void squoze_pool_destroy (SquozePool *pool)
 {
+#if 0
     fprintf (stderr, "destorying pool: size:%i count:%i embedded:%i\n",
        pool->size, pool->count, pool->count_embedded);
+#endif
     for (int i = 0; i < pool->size; i++)
     {
       if (pool->hashtable[i])
@@ -1111,6 +1110,7 @@ static void squoze_pool_destroy (SquozePool *pool)
     }
     pool->size = 0;
     pool->count = 0;
+    pool->count_embedded = 0;
     if (pool->hashtable)
       free (pool->hashtable);
     pool->hashtable = NULL;
