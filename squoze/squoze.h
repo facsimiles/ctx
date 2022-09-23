@@ -1022,7 +1022,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
   {
   //int is_overflowed = (hash & 1)!=0;
   int is_utf5       = (hash & 2)!=0;
-  uint8_t utf5[140]=""; // we newer go really high since there isnt room
+  uint8_t utf5[20]=""; // we newer go really high since there isnt room
                         // in the integers
   uint64_t tmp = hash;
   int len = 0;
@@ -1031,15 +1031,8 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
   utf5[len]=0;
   while (tmp > 0)
   {
-    uint64_t remnant = tmp & 31;
-    uint64_t val = remnant;
-#if 0
-    ///if      ( in_utf5 && val == SQUOZE_ENTER_SQUEEZE) in_utf5 = 0;
-    //else if (!in_utf5 && val == SQUOZE_ENTER_UTF5) in_utf5 = 1;
-#endif
-    utf5[len++] = val;
-    //tmp -= remnant;
-    tmp /= 32;
+    utf5[len++] = tmp & 31;
+    tmp >>= 5;
   }
   utf5[len]=0;
   squoze_decode_utf5_bytes (is_utf5, utf5, len, ret, &retlen);
@@ -1048,32 +1041,35 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
   }
   else
   {
-  uint8_t decode_buf[10]={0,};
-  if (squoze_dim == 32)
-  {
-    ((uint32_t*)decode_buf)[0]= hash;
-    if (decode_buf[0]==129)
+    if (squoze_dim == 32)
     {
-      memcpy (ret, decode_buf+1, 4);
+      if ((hash & 0xff) == 129)
+      {
+         memcpy (ret, ((char*)&hash)+1, 3);
+	 ret[3] = 0;
+      }
+      else
+      {
+        memcpy (ret, &hash, 4);
+	((unsigned char*)ret)[0]/=2;
+	ret[4] = 0;
+      }
     }
     else
     {
-      decode_buf[0]/=2;
-      memcpy (ret, decode_buf, 4);
+      if ((hash & 0xff) == 129)
+      {
+        memcpy (ret, ((char*)&hash)+1, 7);
+	ret[7] = 0;
+      }
+      else
+      {
+        memcpy (ret, &hash, 8);
+	((unsigned char*)ret)[0]/=2;
+	ret[8] = 0;
+      }
     }
-  }
-  else
-  {
-    ((uint64_t*)decode_buf)[0]= hash;
-    if (decode_buf[0]==129)
-      memcpy (ret, decode_buf+1, 8);
-    else
-    {
-      decode_buf[0]/=2;
-      memcpy (ret, decode_buf, 8);
-    }
-  }
-  return ret;
+    return ret;
   }
 }
 
