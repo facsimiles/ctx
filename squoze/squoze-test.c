@@ -69,26 +69,27 @@ int main (int argc, char **argv)
     }
     fclose(f);
 #ifdef HEAD
-    printf ("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/><title>squoze - embedding unicode in hashes</title><style>th {font-weight:normal;text-align:left;} td { text-align:right;border-right: 1px solid black;border-bottom:1px solid black;}  p{text-align: justify;} h2,h3,table,td,tr,th{font-size:1em;} body{font-family:monospace; max-width:50em;margin-left:auto;margin-right:auto;background:#fff;padding:1em;} html{background:#234;} dt { color: #832} body { hyphens: auto; hyphenate-limit-chars: 6 3 2; }h2 { border-top: 1px solid black; padding-top: 0.5em; } table {margin-left:auto;margin-right:auto;}</style></head>");
+    printf ("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/><title>squoze - family of fast, reversible unicode hashes</title><style>th {font-weight:normal;text-align:left;} td { text-align:right;border-right: 1px solid black;border-bottom:1px solid black;}  p{text-align: justify;} h2,h3,table,td,tr,th{font-size:1em;} body{font-family:monospace; max-width:50em;margin-left:auto;margin-right:auto;background:#fff;padding:1em;} html{background:#234;} dt { color: #832} body { hyphens: auto; hyphenate-limit-chars: 6 3 2; }h2 { border-top: 1px solid black; padding-top: 0.5em; } table {margin-left:auto;margin-right:auto;} h1 { font-size:1.33em;}</style></head>");
 
 
-    printf ("<h1>Squoze - a unicode string hash family.</h2><div style='font-style:italic; text-align:right;'>embedding text in integers</div>");
-    printf ("<p>Squoze is a new family/type of unicode string hashes designed for use in content addressed storage. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of payload data. One important use of content addressed storage is interned strings.</p>");
+    printf ("<h1>Squoze - family of fast, reversible unicode string hashes.</h2><div style='font-style:italic; text-align:right;'>embedding text in integers</div>");
+    printf ("<p>Squoze is a new family/type of unicode string hashes designed for use in content addressed storage. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of payload data in the hash. One important use of content addressed storage is interned strings. And storing short interned strings in registers rather than the heap allows squoze hashes to be faster than traditional string hashes.</p>");
 
 
 
 
     printf ("<dl>");
 
-    printf ("<dt>squoze-bignum</dt><dd>UTF5+ encoding, supporting arbitrary length unicode strings stored in bignums.</dd>");
+    printf ("<dt>squoze-bignum</dt><dd><a href='#utf5'>UTF5+</a> encoding, supporting arbitrary length unicode strings stored in bignums.</dd>");
 
-    printf ("<dt>squoze32</dt><dd>UTF5+ embed encoding, supporting up to 6 lower-case ascii of embedded data</dd>");
-    printf ("<dt>squoze52</dt><dd>UTF5+ embed encoding, supporting up to 10 lower-case ascii of embedded data, 52bit integers can be stored without loss in a double.</dd>");
-    printf ("<dt>squoze62</dt><dd>UTF5+ embed encoding, supporting up to 12 unicode code points.</dd>");
+    printf ("<dt>squoze32</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 6 lower-case ascii of embedded data</dd>");
+    printf ("<dt>squoze52</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 10 lower-case ascii of embedded data, 52bit integers can be stored without loss in a double.</dd>");
+    printf ("<dt>squoze62</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 12 unicode code points.</dd>");
     printf ("<dt>squoze64</dt><dd>UTF-8 embed encoding, supporting up to 8 ASCII chars of embedded data.</dd>");
-    printf ("<dt>squoze256</dt><dd>UTF5+ embed encoding, supporting up to 50 unicode code points</dd>");
+    printf ("<dt>squoze256</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 50 unicode code points</dd>");
     printf ("</dl>\n");
 
+    printf ("<p>squoze is still under development, preliminary variants for <a href='squoze.py'>python3</a> and <a href='squoze.h'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>benchmarks</a>.</p>\n");
 
     printf ("<h2>squoze64 implementation</h2>");
     printf ("<p>the squoze-64 encoding is a small bitmanipulation of UTF-8 in-memory encoding, for strings that will fit only the first byte is manipulated and only if it ascii and not <em>@</em> the value is double and 1 is added. When the first byte does not match our constraints we store 129 - which means the following 7bytes directly encode the value</p>");
@@ -144,9 +145,9 @@ int main (int argc, char **argv)
 "  return buf;\n"
 "}</pre>");
 
-    printf ("<h2>squoze-bignum implementation</h2>\n");
-    printf ("<p>The first stage of this encoding is encoding to UTF5+ which extens <a href='https://archive.ph/20120721050018/http://tools.ietf.org/html/draft-jseng-utf5'>UTF-5</a>. The symbol 'G' with value 16 does not occur in normal UTF-5 and is used to change encoding mode to a sliding window, valid UTF5 strings are correctly decoded by a UTF-5+ decoder.</p>");
-    printf ("<p>In squeeze mode the initial offset is set based on the last encoded unicode codepoint in UTF-5 mode. Start offsets for a code point follow the pattern 19 + 26 * N, which makes a-z fit in one window. In sliding window mode the following quintets have special meaning:</p>");
+    printf ("<h2 id='utf5'>UTF5+ and squoze-bignum implementation</h2>\n");
+    printf ("<p>The first stage of this encoding is encoding to UTF5+ which extends <a href='https://datatracker.ietf.org/doc/html/draft-jseng-utf5-01.txt'>UTF-5</a>. The symbol 'G' with value 16 does not occur in normal UTF-5 and is used to change encoding mode to a sliding window, valid UTF5 strings are correctly decoded by a UTF5+ decoder.</p>");
+    printf ("<p>In squeeze mode the initial offset is set based on the last encoded unicode codepoint in UTF5 mode. Start offsets for a code point follow the pattern 19 + 26 * N, which makes a-z fit in one window. In sliding window mode the following quintets have special meaning:</p>");
     printf ("<table><tr><td>0</td><td>0</td><td>emit SPACE</td></tr>\n");
     printf ("<tr><td>1</td><td>1</td><td>codepoint at offset + 0</td></tr>\n");
     printf ("<tr><td>2</td><td>2</td><td>codepoint at offset + 1</td></tr>\n");
@@ -175,10 +176,10 @@ int main (int argc, char **argv)
     printf ("<p>When transforming a quintet sequence into an integer the initial mode is encoded as a bit of 1 if we are starting out in UTF-5 mode, allowing us to skip the G. To create an integer we start with 0, add the integer value of the first quintet. If there are more quintets, multiply by 32 and continue adding quintets. The resulting value is multipled by 4, the second lowest bit set according to windowed or utf-5 initial mode and the lowest bit set.</p>");
 
     printf ("<h2>squoze32, squoze52 and squoze62 implementation</h2>\n");
-    printf ("<p>These hashes are just like squoze-bignum if they as utf5+ encode as fewer than 6, 10 or 12 quintets. If this is not the case a murmurhash is computed and the lowest bit stripped.</p>");
+    printf ("<p>These hashes are just like squoze-bignum if they as UTF5+ encode as fewer than 6, 10 or 12 quintets. If this is not the case a murmurhash is computed and the lowest bit stripped.</p>");
 
-    printf ("<h2>benchmarks</h2\n");
-    printf ("<p>The below tables shows timings when running my laptop on a stable low frequency. The embed%% column shows how many of the words got embedded instead of needing heap allocation. </p>");
+    printf ("<h2 id='benchmarks'>benchmarks</h2\n");
+    printf ("<p>The below tables shows timings of string interning operations when running my laptop on a stable low frequency. The embed%% column shows how many of the words got embedded instead of needing heap allocation. The implementation benchmarked is an open adressing hashtable storing heap allocated chunks containing both the hash, length and raw byte data for the UTF8 string. Optional reference-counting which only increases heap allocation is available in the implementation - but were disabled for these benchmarks it should have no impact and only increase the heap use for non-embedded strings.</p>");
 
     printf ("<p>The <em>nointern</em> variants of squoze here are there to give a comparison point directly with the variant that does embedding. In the current incarnation murmurhash one-at-a time is part of squoze32 and squoze52 - thus within the benchmarking framework provides a common other hash used to implement string interning.</p>");
     printf ("<p>The large amount of time taken for <em>squoze52 nointern</em> can be attributed to the dataset no longer fitting in caches when using 64bit quantities in the struct backing each interned string. The squoze embedded strings avoids RAM|caches fully and can be considered \"interened to the registers\" making it possible to even win in average decoding time over interned strings stored in pointers.</p><p>The reason <em>squoze32 nointern</em> noembed can beat stand-alone murmur is that we can still decode from the hash without interning - thus avoiding cache misses.</p>");
