@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#define ITERATIONS 10
+
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32 1
 #define SQUOZE_IMPLEMENTATION_62 1
@@ -13,7 +15,6 @@
 #include <sys/time.h>
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
-#define ITERATIONS 1
 
 static struct timeval start_time;
 static void
@@ -45,10 +46,85 @@ struct _StringRef
 
 StringRef *dict = NULL;
 
+#define INNER_ITERATIONS 1
+
+static float do_test_round (int words, int create, int lookup, int decode)
+{
+  Squoze *refs[words];
+  long start = ticks();
+  squoze_atexit ();
+
+  {
+   int i = 0;
+  for (StringRef *str = dict; str; str=str->next,i++)
+  {
+    char input[4096];
+    for (int j = 0; j < INNER_ITERATIONS; j++)
+    {
+      if (j)
+        sprintf (input, "%s%i", str->str, j);
+      else
+        sprintf (input, "%s", str->str);
+      refs [i] = squoze (input);
+    }
+  }
+  }
+
+  if (!create) start = ticks();
+
+  if (lookup)
+  {
+  for (StringRef *str = dict; str; str=str->next)
+  {
+    char input[4096];
+    for (int j = 0; j < INNER_ITERATIONS; j++)
+    {
+      if (j)
+        sprintf (input, "%s%i", str->str, j);
+      else
+        sprintf (input, "%s", str->str);
+      squoze (input);
+    }
+  }
+  }
+
+  long end = ticks();
+
+  {
+  int i = 0;
+  for (StringRef *str = dict; str; str=str->next, i++)
+  {
+    const char *decoded;
+    for (int j = 0; j < INNER_ITERATIONS; j++)
+    {
+      decoded = squoze_peek (refs[i]);
+      if (decoded){}
+    }
+  }
+
+  if (decode) end = ticks ();
+
+  return (end-start)/1000000.0 * 1000;
+  }
+}
+
+static float do_test (int words, int iterations, int create, int lookup, int decode)
+{
+  float best_ms = 10000000.0f;
+  for (int i = 0; i < iterations; i ++)
+  {
+    float ms = do_test_round (words, create, lookup, decode);
+    if (ms < best_ms) best_ms = ms;
+  }
+  return best_ms;
+}
+
+
 int main (int argc, char **argv)
 {
   int wrong = 0;
 
+  int iterations = ITERATIONS;
   FILE* f = fopen("/usr/share/dict/words", "r");
   int words = 0;
     // Read file line by line, calculate hash
@@ -178,17 +254,19 @@ int main (int argc, char **argv)
     printf ("<h2>squoze32, squoze52 and squoze62 implementation</h2>\n");
     printf ("<p>These hashes are just like squoze-bignum if they as UTF5+ encode as fewer than 6, 10 or 12 quintets. If this is not the case a murmurhash is computed and the lowest bit stripped.</p>");
 
-    printf ("<h2 id='benchmarks'>benchmarks</h2\n");
-    printf ("<p>The below tables shows timings of string interning operations when running my laptop on a stable low frequency. The embed%% column shows how many of the words got embedded instead of needing heap allocation. The implementation benchmarked is an open adressing hashtable storing heap allocated chunks containing both the hash, length and raw byte data for the UTF8 string. Optional reference-counting which only increases heap allocation is available in the implementation - but were disabled for these benchmarks it should have no impact and only increase the heap use for non-embedded strings.</p>");
+    printf ("<h2 id='benchmarks'>benchmarks</h2>\n");
+    printf ("<p>The embed%% column shows how many of the words got embedded and thus do not need strlen(word)+9-25 bytes of heap/RAM. The implementation benchmarked is an open adressing hashtable storing heap allocated chunks containing both the hash, length and raw byte data for the UTF8 string.</p>");
 
-    printf ("<p>The <em>nointern</em> variants of squoze here are there to give a comparison point directly with the variant that does embedding. In the current incarnation murmurhash one-at-a time is part of squoze32 and squoze52 - thus within the benchmarking framework provides a common other hash used to implement string interning.</p>");
-    printf ("<p>The large amount of time taken for <em>squoze52 nointern</em> can be attributed to the dataset no longer fitting in caches when using 64bit quantities in the struct backing each interned string. The squoze embedded strings avoids RAM|caches fully and can be considered \"interened to the registers\" making it possible to even win in average decoding time over interned strings stored in pointers.</p><p>The reason <em>squoze32 nointern</em> noembed can beat stand-alone murmur is that we can still decode from the hash without interning - thus avoiding cache misses.</p>");
+    printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability.</p>");
+
+    printf ("<p>The <em>create</em> column is the time taken to intern all the strings in the dictionary, <em>lookup</em> is the time taken the second and subsequent times a string
+		    is referenced. For comparisons the handle/pointer of the interned string would normally be used and be the same for all cases, <em>decode</em> is the time taken for getting back a pointer to a string of the original utf8 data provided.</p>");
 
     return 0;
 #endif
 #ifdef HEADER
     printf ("<h3>%i words, max-word-len: %i</h3>\n", words, max_word_len);
-	printf ("<table><tr><td></td><td>create</td><td>lookup</td><td>create+decode</td><td>decode</td><td>embed%%</td></tr>\n");
+	printf ("<table><tr><td></td><td>create</td><td>lookup</td><!--<td>create+decode</td>--><td>decode</td><td>embed%%</td></tr>\n");
 	return 0;
 #endif
 #ifdef FOOTER
@@ -196,10 +274,13 @@ int main (int argc, char **argv)
 	return 0;
 #endif
 #ifdef FOOT
-    printf ("<h2>Funding</h2\n");
+
+    printf ("<p>The large amount of time taken for <em>squoze52 alwaysintern</em> can be attributed to the dataset no longer fitting in caches when using 64bit quantities in the struct backing each interned string. The squoze embedded strings avoids RAM|caches fully and can be considered \"interened to the registers\" making it possible to even win in average decoding time over interned strings stored in pointers.</p>");
+
+    printf ("<h2>Funding</h2>\n");
     printf ("<p>This work has been done with funding from patrons on <a href='https://patreon.com/pippin'>Patreon</a> and <a href='https://liberapay.com/pippin'>liberapay</a>. To join in to fund similar and unrelated independent research and development.</p>\n");
 
-    printf ("<h2>Licence</h2\n");
+    printf ("<h2>Licence</h2>\n");
     printf ("<p>Copyright (c) 2021-2022 Øyvind Kolås &lt;pippin@gimp.org&gt;</p>");
 
 printf ("<p>Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.</p>\n");
@@ -219,16 +300,16 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
 	if (SQUOZE_EMBEDDED_UTF5)
 	{
           if (SQUOZE_ID_BITS==32)
-		  name = "squoze32 nointern";
+		  name = "squoze32 alwaysintern";
 	  else
-		  name = "squoze52 nointern";
+		  name = "squoze52 alwaysintern";
 	}
 	else
 	{
           if (SQUOZE_ID_BITS==32)
 		  name = "murmurhash OOAT 32bit";
 	  else
-		  name = "squoze64 nointern";
+		  name = "squoze64 alwaysintern";
 	}
 	}
 	else
@@ -307,125 +388,14 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
       }
     }
   }
-    embed_percentage = (100.0f * global_pool.count_embedded) / words;
-  squoze_atexit ();
+    embed_percentage = (100.0f * global_pool.count_embedded) / words / iterations;
   }
 
-
-  {
-  long start = ticks();
-  for (StringRef *str = dict; str; str=str->next)
-  {
-    Squoze *squozed;
-    char input[4096];
-    for (int j = 0; j < ITERATIONS; j++)
-    {
-      if (j)
-        sprintf (input, "%s%i", str->str, j);
-      else
-        strcpy (input, str->str);
-
-      squozed = squoze (input);
-      if (squozed){}
-    }
-  }
-  long end = ticks();
-  fprintf (stdout, "%.1fms", (end-start)/1000000.0 * 1000);
-  }
-	printf ("</td><td>");
-
-  {
-  long start = ticks();
-  for (StringRef *str = dict; str; str=str->next)
-  {
-    Squoze *squozed;
-    char input[4096];
-    for (int j = 0; j < ITERATIONS; j++)
-    {
-      if (j)
-        sprintf (input, "%s%i", str->str, j);
-      else
-        strcpy (input, str->str);
-
-      squozed = squoze (input);
-      if (squozed){}
-    }
-  }
-  long end = ticks();
-  fprintf (stdout, "%.1fms", (end-start)/1000000.0 * 1000);
-  squoze_atexit ();
-  }
-	printf ("</td><td>");
-
-  {
-  long start = ticks();
-  for (StringRef *str = dict; str; str=str->next)
-  {
-    const char *decoded;
-    Squoze *squozed;
-    char input[4096];
-    for (int j = 0; j < ITERATIONS; j++)
-    {
-      if (j)
-        sprintf (input, "%s%i", str->str, j);
-      else
-        sprintf (input, "%s", str->str);
-
-      squozed = squoze (input);
-      decoded = squoze_peek (squozed);
-      if (decoded && strcmp (input, decoded))
-      {
-        uint64_t hash = squoze_id (squozed);
-        printf ("!%s = %lu = %s\n", input, hash, decoded);
-        wrong ++;
-      }
-    }
-  }
-  long end = ticks();
-  fprintf (stdout, "%.1fms", (end-start)/1000000.0 * 1000);
-  }
-	printf ("</td><td>");
-#if 1
-  Squoze *refs[words];
-  {
-   int i = 0;
-  for (StringRef *str = dict; str; str=str->next,i++)
-  {
-    char input[4096];
-    for (int j = 0; j < ITERATIONS; j++)
-    {
-      if (j)
-        sprintf (input, "%s%i", str->str, j);
-      else
-        sprintf (input, "%s", str->str);
-      refs [i] = squoze (input);
-    }
-  }
-  }
-
-  {
-  long start = ticks();
-  int i = 0;
-  for (StringRef *str = dict; str; str=str->next, i++)
-  {
-    const char *decoded;
-    char input[4096]="ASDAS";
-    for (int j = 0; j < ITERATIONS; j++)
-    {
-      decoded = squoze_peek (refs[i]);
-      if (decoded && !strcmp (input, decoded))
-      {
-	      fprintf (stderr, "asdf\n");
-      }
-    }
-  }
-  long end = ticks();
-  fprintf (stdout, "%.1fms", (end-start)/1000000.0 * 1000);
-  }
-	printf ("</td><td>");
-#endif
-
-	printf ("%.0f%%</td>", embed_percentage);
+  printf ("%.1fms</td><td>", do_test (words, iterations, 1, 0, 0));
+  printf ("%.1fms</td><td>", do_test (words, iterations, 0, 1, 0));
+  //printf ("%.1fms</td><td>", do_test (words, iterations, 1, 0, 1));
+  printf ("%.1fms</td><td>", do_test (words, iterations, 0, 0, 1));
+  printf ("%.0f%%</td>", embed_percentage);
   printf ("</tr>\n");
 
   if (wrong)
