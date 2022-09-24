@@ -95,9 +95,11 @@ int main (int argc, char **argv)
      if (!strcmp (argv[arg], "--squoze32"))  dim = 32;
      if (!strcmp (argv[arg], "--squoze52"))  dim = 52;
      if (!strcmp (argv[arg], "--squoze62"))  dim = 62;
+     if (!strcmp (argv[arg], "--squoze64"))  dim = 64;
      if (!strcmp (argv[arg], "--squoze-52")) dim = 32;
      if (!strcmp (argv[arg], "--squoze-62")) dim = 52;
      if (!strcmp (argv[arg], "--squoze-32")) dim = 62;
+     if (!strcmp (argv[arg], "--squoze-34")) dim = 64;
      if (!strcmp (argv[arg], "--utf-5"))     dim = 5;
      if (!strcmp (argv[arg], "--utf5"))      dim = 5;
      if (!strcmp (argv[arg], "--squoze5"))   dim = 4;
@@ -119,6 +121,7 @@ int main (int argc, char **argv)
              default:
              case 52: dim = 52; break;
              case 62: dim = 62; break;
+             case 64: dim = 64; break;
              case 5: dim = 5; break;
              case 4: dim = 4; break;
            }
@@ -256,6 +259,16 @@ int main (int argc, char **argv)
           printf ("%s", squoze62_decode (atol(argv[i])));
         else
           printf ("%lu", squoze62 (argv[i], strlen (argv[i])));
+      }
+      break;
+    case 64:
+      for (int i = arg; argv[i]; i++)
+      {
+        print_sep ();
+        if ((!force_encode) && squoze_is_number (argv[i]))
+          printf ("%s", squoze64_decode (atol(argv[i])));
+        else
+          printf ("%lu", squoze64 (argv[i], strlen (argv[i])));
       }
       break;
   }

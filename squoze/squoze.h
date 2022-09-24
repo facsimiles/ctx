@@ -54,7 +54,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 #ifndef SQUOZE_ID_BITS
-#define SQUOZE_ID_BITS 62
+#define SQUOZE_ID_BITS 52
 #endif
 
 #ifndef SQUOZE_EMBEDDED_UTF5
@@ -429,9 +429,11 @@ static inline void squoze5_encode (const char *input, int inlen,
 static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8, size_t len)
 {
   //uint8_t *in = (uint8_t*)utf8;
+  int length = len;//strlen (utf8);
+  uint64_t hash = 0;
+#if SQUOZE_EMBEDDED_UTF5
   char encoded_[1024+1]="";
   char *encoded = encoded_;
-  int length = len;//strlen (utf8);
   if (length > 512) 
   {
     encoded = (char*)malloc (2 * length + 1);
@@ -441,8 +443,6 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
       encoded = encoded_;
     }
   }
-  uint64_t hash = 0;
-#if SQUOZE_EMBEDDED_UTF5
   int words = squoze_words_for_dim (squoze_dim);
   int utf5 = 0;
   int  encoded_len=0;
@@ -457,11 +457,11 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *utf8
       uint64_t val = encoded[i];
       hash = hash | (val << (5*(i-(!utf5))));
     }
-    hash <<= 1;
-    hash |= utf5;
-    hash <<= 1;
+    hash <<= 2;
 #if SQUOZE_ALWAYS_INTERN==0
-    hash |= 1; 
+    hash |= ((utf5 * 2) | 1); 
+#else
+    hash |= (utf5 * 2);
 #endif
   }
   else
@@ -483,35 +483,38 @@ just_hash:
     //hash <<= 1;
     hash &= ~1;
   }
+  if (encoded != encoded_)
+    free (encoded);
 #else
   uint8_t result[10]={0,};
   if (squoze_dim > 32) squoze_dim = 64;
+  size_t bytes_dim = squoze_dim / 8;
 
   int done = 0;
   uint8_t first_byte = ((uint8_t*)utf8)[0];
 
   if (first_byte<128
       && first_byte != '@'
-      && (length <= (squoze_dim/8)))
+      && (length <= bytes_dim))
     {
       for (int i = 0; utf8[i]; i++)
 	result[i] = utf8[i];
       result[0] = result[0]*2+1;
       done = 1;
     }
-  else if (length <= (squoze_dim/8)-1)
+  else if (length <= bytes_dim-1)
   {
+    result[0] = 129;
     for (int i = 0; utf8[i]; i++)
       result[i+1] = utf8[i];
-    result[0] = 129;
     done = 1;
   }
+
   if (done){ 
     if (squoze_dim==32)
       hash = *((uint32_t*)&result[0]);
     else
       hash = *((uint64_t*)&result[0]);
-
 #if SQUOZE_ALWAYS_INTERN==1
     hash &= ~1;
 #endif
@@ -532,8 +535,6 @@ just_hash:
     hash &= ~1;
   }
 #endif
-  if (encoded != encoded_)
-    free (encoded);
   return hash;
 }
 
@@ -741,7 +742,7 @@ const char *squoze_peek (Squoze *squozed)
     // we pass NULL as pool since we know it should not be in the pool
     // and we can always decode as 62bit - since we know we didnt overflow the
     // below type.
-    return squoze_decode (SQUOZE_ID_BITS, ((size_t)squozed), SQUOZE_EMBEDDED_UTF5);
+    return squoze_decode (62, ((size_t)squozed), SQUOZE_EMBEDDED_UTF5);
   }
   else
     return squozed->string;
@@ -838,20 +839,21 @@ uint64_t squoze62(const char *utf8, size_t len)
 uint64_t squoze64 (const char *utf8, size_t len)
 {
   size_t   squoze_dim = 64;
+  size_t   dim_bytes = squoze_dim / 8;
   uint64_t hash       = 0;
   uint8_t *encoded    = (uint8_t*)&hash;
   uint8_t  first_byte = ((uint8_t*)utf8)[0];
 
-  if (first_byte<128
-      && first_byte != '@'
-      && (len <= (squoze_dim/8)))
+  if (first_byte<128             // first char is ASCII
+      && first_byte != '@'       // and not our reserved marker/2
+      && (len <= dim_bytes))     // and fitting
   {
     for (int i = 0; utf8[i]; i++)
       encoded[i] = utf8[i];
     encoded[0] = encoded[0]*2+1;
     return *((uint64_t*)&encoded[0]);
   }
-  else if (len <= (squoze_dim/8)-1)
+  else if (len <= dim_bytes-1)   // fitting in dim_bytes - 1
   {
     for (int i = 0; utf8[i]; i++)
       encoded[i+1] = utf8[i];
@@ -859,7 +861,8 @@ uint64_t squoze64 (const char *utf8, size_t len)
     return *((uint64_t*)&encoded[0]);
   }
 
-  // murmurhash one-at-a-time
+  // fallback, murmurhash one-at-a-time - can be replaced with
+  // proper murmurhash
   hash = 3323198485ul;
   for (unsigned int i = 0; i < len; i++)
   {

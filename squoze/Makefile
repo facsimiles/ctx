@@ -5,8 +5,10 @@ all: squoze squoze-test \
 	test-32-utf8-intern-embed \
 	test-62-utf5-intern \
 	test-62-utf5-intern-embed \
-	test-62-utf8-intern \
-	test-62-utf8-intern-embed \
+	test-52-utf5-intern \
+	test-52-utf5-intern-embed \
+	test-64-utf8-intern \
+	test-64-utf8-intern-embed \
 	test-head \
 	test-foot \
 	test-header \
@@ -26,46 +28,78 @@ test-header: squoze-test.c squoze.h Makefile squoze-test.c
 test-footer: squoze-test.c squoze.h Makefile squoze-test.c
 	gcc -Wall $< -o $@ -O3 -DFOOTER=1
 
-test-32-utf5-intern: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=1 -DSQUOZE_ID_BITS=32 -DSQUOZE_EMBEDDED_UTF5=1
-test-32-utf5-intern-embed: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=0 -DSQUOZE_ID_BITS=32 -DSQUOZE_EMBEDDED_UTF5=1
-test-32-utf8-intern: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=1 -DSQUOZE_ID_BITS=32 -DSQUOZE_EMBEDDED_UTF5=0
-test-32-utf8-intern-embed: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=0 -DSQUOZE_ID_BITS=32 -DSQUOZE_EMBEDDED_UTF5=0
-test-52-utf5-intern: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=1 -DSQUOZE_ID_BITS=52 -DSQUOZE_EMBEDDED_UTF5=1
-test-52-utf5-intern-embed: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=0 -DSQUOZE_ID_BITS=52 -DSQUOZE_EMBEDDED_UTF5=1
-test-52-utf8-intern: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=1 -DSQUOZE_ID_BITS=52 -DSQUOZE_EMBEDDED_UTF5=0
-test-52-utf8-intern-embed: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=0 -DSQUOZE_ID_BITS=52 -DSQUOZE_EMBEDDED_UTF5=0
+TEST_COMMON_FLAGS=-Wall -O2
 
-test-62-utf8-intern-embed: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=0 -DSQUOZE_ID_BITS=64 -DSQUOZE_EMBEDDED_UTF5=0
+test-32-utf5-intern: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=1 \
+		                          -DSQUOZE_ID_BITS=32 \
+					  -DSQUOZE_EMBEDDED_UTF5=1
+test-32-utf5-intern-embed: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=0 \
+		                          -DSQUOZE_ID_BITS=32 \
+					  -DSQUOZE_EMBEDDED_UTF5=1
+test-32-utf8-intern: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=1 \
+		                          -DSQUOZE_ID_BITS=32 \
+					  -DSQUOZE_EMBEDDED_UTF5=0
+test-32-utf8-intern-embed: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=0 \
+		                          -DSQUOZE_ID_BITS=32 \
+					  -DSQUOZE_EMBEDDED_UTF5=0
+test-52-utf5-intern: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=1 \
+		                          -DSQUOZE_ID_BITS=52 \
+					  -DSQUOZE_EMBEDDED_UTF5=1
+test-52-utf5-intern-embed: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=0 \
+		                          -DSQUOZE_ID_BITS=52 \
+					  -DSQUOZE_EMBEDDED_UTF5=1
+test-52-utf8-intern: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=1 \
+		                          -DSQUOZE_ID_BITS=52 \
+					  -DSQUOZE_EMBEDDED_UTF5=0
+test-52-utf8-intern-embed: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=0 \
+		                          -DSQUOZE_ID_BITS=52 \
+					  -DSQUOZE_EMBEDDED_UTF5=0
+
+test-64-utf8-intern-embed: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=0 \
+		                          -DSQUOZE_ID_BITS=64 \
+					  -DSQUOZE_EMBEDDED_UTF5=0
+test-64-utf8-intern: squoze-test.c squoze.h Makefile
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=1 \
+		                          -DSQUOZE_ID_BITS=64 \
+					  -DSQUOZE_EMBEDDED_UTF5=0
+
 test-62-utf5-intern-embed: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=0 -DSQUOZE_ID_BITS=64 -DSQUOZE_EMBEDDED_UTF5=1
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=0 \
+		                          -DSQUOZE_ID_BITS=62 \
+					  -DSQUOZE_EMBEDDED_UTF5=1
 test-62-utf5-intern: squoze-test.c squoze.h Makefile
-	gcc -Wall $< -o $@ -O3 -DSQUOZE_ALWAYS_INTERN=1 -DSQUOZE_ID_BITS=64 -DSQUOZE_EMBEDDED_UTF5=1
+	gcc $< -o $@ $(TEST_COMMON_FLAGS) -DSQUOZE_ALWAYS_INTERN=1 \
+		                          -DSQUOZE_ID_BITS=62 \
+					  -DSQUOZE_EMBEDDED_UTF5=1
 
 report.txt: squoze gen-report.sh
 	./gen-report.sh > report.txt
 report.html: all
 	rm report.html || true
 	./test-head >> report.html
-	for a in 7 9 12 21;do export MAX_WORD_LEN=$$a;make report-part.html;done 
+	for a in 4 6 8 10 12 23;do export MAX_WORD_LEN=$$a;make report-part.html;done 
 	./test-foot >> report.html
 report-part.html: all
-	./test-header >> report.html
-	./test-62-utf8-intern-embed >> report.html
-	./test-62-utf5-intern-embed  >> report.html
-	./test-32-utf5-intern-embed  >> report.html
-	./test-32-utf8-intern  >>report.html
-	./test-32-utf5-intern  >> report.html
-	./test-62-utf5-intern >> report.html
-	./test-footer >> report.html
+	./test-header               >> report.html
+	./test-32-utf8-intern       >> report.html
+	./test-64-utf8-intern-embed >> report.html
+	./test-32-utf8-intern-embed >> report.html
+	./test-32-utf5-intern-embed >> report.html
+	./test-52-utf5-intern-embed >> report.html
+	./test-62-utf5-intern-embed >> report.html
+	./test-32-utf5-intern       >> report.html
+	./test-52-utf5-intern       >> report.html
+	./test-62-utf5-intern       >> report.html
+	./test-footer               >> report.html
 
 	#sh -c 'diff -u reference.txt report.txt'
 update-reference: report.txt
