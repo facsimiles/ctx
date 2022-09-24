@@ -497,7 +497,7 @@ just_hash:
       && first_byte != '@'
       && (length <= bytes_dim))
     {
-      for (int i = 0; utf8[i]; i++)
+      for (int i = 0; i < length; i++)
 	result[i] = utf8[i];
       result[0] = result[0]*2+1;
       done = 1;
@@ -505,7 +505,7 @@ just_hash:
   else if (length <= bytes_dim-1)
   {
     result[0] = 129;
-    for (int i = 0; utf8[i]; i++)
+    for (int i = 0; i < length; i++)
       result[i+1] = utf8[i];
     done = 1;
   }
@@ -558,14 +558,19 @@ static SquozePool global_pool = {0, NULL, NULL, 0,0, 0, NULL};
 
 static SquozePool *squoze_pools = NULL;
 
-static int squoze_pool_find (SquozePool *pool, uint64_t hash)
+static int squoze_pool_find (SquozePool *pool, uint64_t hash, int length, uint8_t *bytes)
 {
   if (pool->size == 0)
     return -1;
   int pos = hash & (pool->size-1);
   if (!pool->hashtable[pos])
     return -1;
-  while (pool->hashtable[pos]->hash != hash)
+  while (pool->hashtable[pos]->hash != hash
+#if SQUOZE_STORE_LENGTH
+         || pool->hashtable[pos]->length != length
+#endif
+	 || strcmp (pool->hashtable[pos]->string, (char*)bytes)
+	 )
   {
     pos++;
     pos &= (pool->size-1);
@@ -634,13 +639,13 @@ static int squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
 }
 #endif
 
-static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id)
+static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id, int length, uint8_t *bytes)
 {
-  int pos = squoze_pool_find (pool, id);
+  int pos = squoze_pool_find (pool, id, length, bytes);
   if (pos >= 0)
     return pool->hashtable[pos];
   if (pool->fallback)
-    return squoze_lookup_struct_by_id (pool->fallback, id);
+    return squoze_lookup_struct_by_id (pool->fallback, id, length, bytes);
   return NULL;
 }
 
@@ -672,28 +677,21 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
     return (Squoze*)((size_t)hash);
 }
 
-static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id);
+//static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id);
 // encodes utf8 to a squoze id of squoze_dim bits - if interned_ret is provided overflowed ids
 // are interned and a new interned squoze is returned.
 static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf8, size_t len, Squoze **interned_ref)
 {
   if (pool == NULL) pool = &global_pool;
-  len = strlen (utf8);
+  //len = strlen (utf8);
   uint64_t hash = squoze_encode_no_intern (squoze_dim, utf8, len);
 #ifdef SQUOZE_NO_INTERNING
   return hash;
 #endif
   if ((hash & 1)==0)
   {
-    Squoze *str = squoze_lookup_struct_by_id (pool, hash);
-    if (str
-#if SQUOZE_ALLOW_COLLISIONS==0
-#if SQUOZE_STORE_LENGTH
-		    && ((size_t)str->length) == len
-#endif
-		    && !strcmp (str->string, utf8)
-#endif
-		    )
+    Squoze *str = squoze_lookup_struct_by_id (pool, hash, len, utf8);
+    if (str)
     {
 #if SQUOZE_REF_COUNTING
       str->ref_count++;
