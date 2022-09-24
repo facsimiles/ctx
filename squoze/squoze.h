@@ -112,6 +112,11 @@ const char  *squoze62_decode (uint64_t    hash);
 typedef struct _Squoze       Squoze;
 typedef struct _SquozePool   SquozePool;
 
+void squoze_pool_mem_stats (SquozePool *pool,
+		            size_t     *size,
+			    size_t     *slack,
+			    size_t     *intern_alloc);
+
 SquozePool  *squoze_pool_new     (SquozePool *fallback);
 void         squoze_pool_ref     (SquozePool *pool);
 void         squoze_pool_unref   (SquozePool *pool);
@@ -558,7 +563,7 @@ static SquozePool global_pool = {0, NULL, NULL, 0,0, 0, NULL};
 
 static SquozePool *squoze_pools = NULL;
 
-static int squoze_pool_find (SquozePool *pool, uint64_t hash, int length, uint8_t *bytes)
+static int squoze_pool_find (SquozePool *pool, uint64_t hash, int length, const uint8_t *bytes)
 {
   if (pool->size == 0)
     return -1;
@@ -639,7 +644,7 @@ static int squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
 }
 #endif
 
-static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id, int length, uint8_t *bytes)
+static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id, int length, const uint8_t *bytes)
 {
   int pos = squoze_pool_find (pool, id, length, bytes);
   if (pos >= 0)
@@ -658,6 +663,36 @@ static Squoze *squoze_lookup_id (SquozePool *pool, squoze_id_t id)
   return NULL;
 }
 #endif
+
+void squoze_pool_mem_stats (SquozePool *pool,
+		            size_t     *size,
+			    size_t     *slack,
+			    size_t     *intern_alloc)
+{
+  if (!pool) pool = &global_pool;
+  if (size)
+  {
+    *size = sizeof (SquozePool) + pool->size * sizeof (void*);
+  }
+  if (slack)
+  {
+    *slack = (pool->size - pool->count) * sizeof (void*);
+  }
+
+  if (intern_alloc)
+  {
+    size_t sum = 0;
+    for (int i = 0; i < pool->size; i++)
+    {
+      if (pool->hashtable[i])
+      {
+        Squoze *squoze = pool->hashtable[i];
+        sum += strlen (squoze->string) + 1 + sizeof (Squoze);
+      }
+    }
+    *intern_alloc = sum;
+  }
+}
 
  // we do 32bit also for 64bit - we want the same predetermined hashes to match
 Squoze *squoze_pool_add (SquozePool *pool, const char *str)
@@ -690,7 +725,7 @@ static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, const char *utf
 #endif
   if ((hash & 1)==0)
   {
-    Squoze *str = squoze_lookup_struct_by_id (pool, hash, len, utf8);
+    Squoze *str = squoze_lookup_struct_by_id (pool, hash, len, (const uint8_t*)utf8);
     if (str)
     {
 #if SQUOZE_REF_COUNTING

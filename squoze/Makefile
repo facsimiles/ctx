@@ -83,23 +83,36 @@ test-62-utf5-intern: squoze-test.c squoze.h Makefile
 
 report.txt: squoze gen-report.sh
 	./gen-report.sh > report.txt
-report.html: all
-	rm report.html || true
-	./test-head >> report.html
+index.html: all
+	rm index.html || true
+	./test-head >> index.html
 	for a in 4 6 8 10 12 23;do export MAX_WORD_LEN=$$a;make report-part.html;done 
-	./test-foot >> report.html
+	cat extra-index.html >> index.html || true
+	./test-foot >> index.html
 report-part.html: all
-	./test-header               >> report.html
-	./test-32-utf8-intern       >> report.html
-	./test-64-utf8-intern-embed >> report.html
-	./test-32-utf8-intern-embed >> report.html
-	./test-32-utf5-intern-embed >> report.html
-	./test-52-utf5-intern-embed >> report.html
-	./test-62-utf5-intern-embed >> report.html
-	./test-32-utf5-intern       >> report.html
-	./test-52-utf5-intern       >> report.html
-	./test-62-utf5-intern       >> report.html
-	./test-footer               >> report.html
+	./test-header               >> index.html
+	./test-32-utf8-intern       >> index.html
+	./test-64-utf8-intern-embed >> index.html
+	./test-32-utf8-intern-embed >> index.html
+	./test-32-utf5-intern-embed >> index.html
+	./test-52-utf5-intern-embed >> index.html
+	./test-62-utf5-intern-embed >> index.html
+	./test-32-utf5-intern       >> index.html
+	./test-52-utf5-intern       >> index.html
+	./test-62-utf5-intern       >> index.html
+	./test-footer               >> index.html
+report-32bit.html: all
+	rm report-32bit.html || true
+	./test-head >> report-32bit.html
+	for a in 4 6 8 10 12 23;do export MAX_WORD_LEN=$$a;make report-part-32bit.html;done 
+	./test-foot >> report-32bit.html
+report-part-32bit.html: all
+	./test-header               >> report-32bit.html
+	./test-32-utf8-intern       >> report-32bit.html
+	./test-32-utf8-intern-embed >> report-32bit.html
+	./test-32-utf5-intern-embed >> report-32bit.html
+	./test-32-utf5-intern       >> report-32bit.html
+	./test-footer               >> report-32bit.html
 
 	#sh -c 'diff -u reference.txt report.txt'
 update-reference: report.txt

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS 10 
+#define ITERATIONS 10
 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32 1
@@ -107,7 +107,7 @@ static float do_test_round (int words, int create, int lookup, int decode)
      end = ticks ();
 
   }
-  return (end-start)/1000000.0 * 1000 * 1000;
+  return (end-start);
 }
 
 static float do_test (int words, int iterations, int create, int lookup, int decode)
@@ -151,7 +151,9 @@ int main (int argc, char **argv)
 
 
     printf ("<h1>Squoze - reversible unicode string hashes.</h2><div style='font-style:italic; text-align:right;'>embedding text in integers</div>");
-    printf ("<p>Squoze is a type of unicode string hashes designed for use in content addressed storage. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of payload data in the hash. One important use of content addressed storage is interned strings. This embedding of words/tokens that fit in registers directly can speed up many tasks involving text processing like parsing and even runtime dispatch in many programming languages.</p>");
+    printf ("<p>Squoze is a type of unicode string hashes designed for use in content addressed storage. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of payload data in the hash.</p>");
+
+    printf("<p>An important use of content addressed storage is interned strings. This embedding of words/tokens that fit in registers directly can speed up many tasks involving text processing like parsing and even runtime dispatch in many programming languages. On 64bit systems there is enough room in registers to fit 8charater long tokens directly with minimal processing overhead.</p>");
 
     printf ("<dl>");
 
@@ -258,21 +260,9 @@ int main (int argc, char **argv)
 
     printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability.</p>");
 
-    printf ("<p>The <em>create</em> column is the time taken to intern all the strings in the dictionary, <em>lookup</em> is the time taken the second and subsequent times a string is referenced. For comparisons the handle/pointer of the interned string would normally be used and be the same for all cases, <em>decode</em> is the time taken for making a copy of the interned string.</p>");
+    printf ("<p>The <em>create</em> column is the microseconds taken on average to intern a word, <em>lookup</em> is the time taken the second and subsequent times a string is referenced. For comparisons the handle/pointer of the interned string would normally be used and be the same for all cases, <em>decode</em> is the time taken for getting a copy of the interned string.</p>");
     printf ("<p>The embed%% column shows how many of the words got embedded instead of interned.</p>");
-
-    return 0;
-#endif
-#ifdef HEADER
-    printf ("<h3>%i words, max-word-len: %i</h3>\n", words, max_word_len);
-	printf ("<table><tr><td></td><td>create</td><td>lookup</td><!--<td>create+decode</td>--><td>decode</td><td>embed%%</td></tr>\n");
-	return 0;
-#endif
-#ifdef FOOTER
-	printf ("</table>\n");
-	return 0;
-#endif
-#ifdef FOOT
+    printf ("<p>The <em>RAM use</em> column shows the amount of bytes used by the allocations for interned strings as well as the size taken by the hash table used, without the size taken by tempty slots in the hash-table to be comparable with what a more compact optimizing structure used when targeting memory constrained systems.</p>");
 
     printf ("<p>The hashes with the direct UTF8 embedding are the most reliable optimization when only runtime/energy use is considered. The UTF5 embeddings save more RAM and allow more guarantee collision free strings but are more expensive to compute.</p>");
 
@@ -281,6 +271,20 @@ int main (int argc, char **argv)
     /*
     printf ("<p>The large amount of time taken for <em>squoze52 alwaysintern</em> can be attributed to the dataset no longer fitting in caches when using 64bit quantities in the struct backing each interned string.</p>");
     */
+
+    return 0;
+#endif
+#ifdef HEADER
+    printf ("<h3>%i words, max-word-len: %i</h3>\n", words, max_word_len);
+	printf ("<table><tr><td></td><td>create</td><td>lookup</td><!--<td>create+decode</td>--><td>decode</td><td>embed%%</td><td>RAM use</td></tr>\n");
+	return 0;
+#endif
+#ifdef FOOTER
+	printf ("</table>\n");
+	return 0;
+#endif
+#ifdef FOOT
+
 
 
     printf ("<h2>Funding</h2>\n");
@@ -311,7 +315,7 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
 	else
 	{
           if (SQUOZE_ID_BITS==32)
-	    name = "murmurhash OOAT 32bit";
+	    name = "murmurhash OAAT 32bit";
 	  else
 	    name = "squoze64-utf8 alwaysintern";
 	}
@@ -393,10 +397,14 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
     embed_percentage = (100.0f * global_pool.count_embedded) / words;
   }
 
-  printf ("%.2f</td><td>", do_test (words, iterations, 1, 0, 0)/words);
-  printf ("%.2f</td><td>", do_test (words, iterations, 0, 1, 0)/words);
-  printf ("%.2f</td><td>", do_test (words, iterations, 0, 0, 1)/words);
+  printf ("%.3f</td><td>", do_test (words, iterations, 1, 0, 0)/words);
+  printf ("%.3f</td><td>", do_test (words, iterations, 0, 1, 0)/words);
+  printf ("%.3f</td><td>", do_test (words, iterations, 0, 0, 1)/words);
   printf ("%.0f%%</td>", embed_percentage);
+  size_t ht, ht_slack, ht_entries;
+  squoze_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
+  //printf ("<td>%li</td><td>%li</td><td>%li</td>", ht, ht_slack, ht_entries);
+  printf ("<td>%li</td>", ht - ht_slack + ht_entries);
   printf ("</tr>\n");
 
   if (wrong)
