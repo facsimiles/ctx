@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS 10
+#define ITERATIONS 33
 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32 1
@@ -128,6 +128,7 @@ int main (int argc, char **argv)
 
   int iterations = ITERATIONS;
   FILE* f = fopen("/usr/share/dict/words", "r");
+  //FILE* f = fopen("words.txt", "r");
   int words = 0;
     // Read file line by line, calculate hash
     char line[1024];
@@ -147,13 +148,16 @@ int main (int argc, char **argv)
     }
     fclose(f);
 #ifdef HEAD
-    printf ("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/><title>squoze - reversible unicode string hashes</title><style>th {font-weight:normal;text-align:left;} td { text-align:right;border-right: 1px solid gray;border-bottom:1px solid gray;}  p{text-align: justify;} h2,h3,table,td,tr,th{font-size:1em;} body{font-family:monospace; max-width:50em;margin-left:auto;margin-right:auto;background:#fff;padding:1em;} html{background:#234;} dt { color: #832} body { hyphens: auto; hyphenate-limit-chars: 6 3 2; }h2 { border-top: 1px solid black; padding-top: 0.5em; } table {margin-left:auto;margin-right:auto;} h1 { font-size:1.33em;}</style></head>");
+    printf ("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/><title>squoze - reversible unicode string hashes</title><style>th {font-weight:normal;text-align:left;} td { text-align:right;border-right: 1px solid gray;border-bottom:1px solid gray;}  p{text-align: justify;} h2,h3,table,td,tr,th{font-size:1em;} body{font-family:monospace; max-width:50em;margin-left:auto;margin-right:auto;background:#fff;padding:1em;} html{background:#234;font-size:1.2em;} dt { color: #832} body { hyphens: auto; hyphenate-limit-chars: 6 3 2; }h2 { border-top: 1px solid black; padding-top: 0.5em; } table {margin-left:auto;margin-right:auto;} h1 { font-size:1.33em;}</style></head>");
 
 
     printf ("<h1>Squoze - reversible unicode string hashes.</h2><div style='font-style:italic; text-align:right;'>embedding text in integers</div>");
     printf ("<p>Squoze is a type of unicode string hashes designed for use in content addressed storage. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of payload data in the hash.</p>");
 
-    printf("<p>An important use of content addressed storage is interned strings. This embedding of words/tokens that fit in registers directly can speed up many tasks involving text processing like parsing and even runtime dispatch in many programming languages. On 64bit systems there is enough room in registers to fit 8charater long tokens directly with minimal processing overhead.</p>");
+
+    printf("<p>An important use of content addressed storage is interned strings. This embedding of words/tokens that fit in registers directly can speed up many tasks involving text processing like parsing and even runtime dispatch in many programming languages.</p>");
+
+    printf ("<p>squoze64-utf8 achieves <b>7x speedup</b> over murmurhash one-at-a-time used for initial string interning and <b>2.5x speedup</b> for subsequent lookups of the same string when the strings are shorther than 8bytes of utf8, see <a href='#benchmarks'>the benchmarks</a> for details.</p>");
 
     printf ("<dl>");
 
@@ -260,7 +264,7 @@ int main (int argc, char **argv)
 
     printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability.</p>");
 
-    printf ("<p>The <em>create</em> column is the microseconds taken on average to intern a word, <em>lookup</em> is the time taken the second and subsequent times a string is referenced. For comparisons the handle/pointer of the interned string would normally be used and be the same for all cases, <em>decode</em> is the time taken for getting a copy of the interned string.</p>");
+    printf ("<p>The <em>create</em> column is the microseconds taken on average to intern a word, <em>lookup</em> is the time taken the second and subsequent times a string is referenced. For comparisons the handle/pointer of the interned string would normally be used and be the same for all cases, <em>decode</em> is the time taken for getting a copy of the interned string, for interned strings all we need to do is dereference a pointer, in most uses decoding of strings is not where the majority of time is spent.</p>");
     printf ("<p>The embed%% column shows how many of the words got embedded instead of interned.</p>");
     printf ("<p>The <em>RAM use</em> column shows the amount of bytes used by the allocations for interned strings as well as the size taken by the hash table used, without the size taken by tempty slots in the hash-table to be comparable with what a more compact optimizing structure used when targeting memory constrained systems.</p>");
 
