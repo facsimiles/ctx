@@ -2449,7 +2449,7 @@ ctx_get_contents2 (const char     *uri,
 #ifdef ITK_HAVE_FS
   else if (!strncmp (uri, "itk:", 4))
   {
-    success = itk_static_get_contents (uri, contents, length);
+    success = itk_static_get_contents (uri, (char**)contents, length);
   }
 #endif
   else
