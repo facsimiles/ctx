@@ -15,13 +15,13 @@ audio.h
 ../squoze/squoze.h
 start-implementation
 ../deps/miniz.h
-../deps/miniz.c
 ctx-clients.h
 ctx-internal.h
 cbrle.c
 drawlist.h
 composite.c
 backend-rasterizer.c
+../deps/miniz.c
 base64.h
 drawlist.c
 transform.c
