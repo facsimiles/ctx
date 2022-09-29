@@ -312,7 +312,7 @@ static inline void squoze5_encode (const char *input, int inlen,
                                    int permit_squeezed,
                                    int escape_endzero)
 {
-  int offset  = squoze_new_offset('a');
+  int offset  = 97;//squoze_new_offset('a');
   int is_utf5 = 1;
   int len     = 0;
 
@@ -436,7 +436,7 @@ static inline size_t squoze5_encode_int (const char *input, int inlen,
                                          int escape_endzero)
 {
   size_t ret = 0;
-  int offset  = squoze_new_offset('a');
+  int offset  = 97;//squoze_new_offset('a');
   int is_utf5 = 1;
   int len     = 0;
 
@@ -602,12 +602,10 @@ static inline uint64_t MurmurOAAT64 ( const char * key, int len)
 
 static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *stf8, size_t len)
 {
-  //uint8_t *in = (uint8_t*)utf8;
-  int length = len;//strlen (utf8);
+  int length = len;
   uint64_t hash = 0;
 #if SQUOZE_EMBEDDED_UTF5
   int words = squoze_words_for_dim (squoze_dim);
-  //int utf5 = 0;
   if (length > words)  //  || (in[0]>127 && in[0]<=0xc0) || in[0]==255 || in[0]==254) // invalid utf8 starting bytes
 	  goto just_hash;
 
@@ -618,28 +616,13 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *stf8
 #if SQUOZE_ALWAYS_INTERN==1
     hash &= ~1;  // make even - intern marker
 #endif
-	  return hash;
+    return hash;
   }
-  hash = 0;
 
   {
-just_hash:
-
-#if 0
-    // murmurhash one-at-a-time
-    hash = 3323198485ul;
-    for (int i = 0; i < length; i++)
-    {
-      uint8_t key = utf8[i];
-      hash ^= key;
-      hash *= 0x5bd1e995;
-      hash ^= hash >> 15;
-    }
-#else
-  hash = MurmurOAAT32(stf8, length);
-#endif
-
-    //hash <<= 1;
+    just_hash:
+    hash = 0;
+    hash = MurmurOAAT32(stf8, length);
     hash &= ~1;
   }
 #else
@@ -657,36 +640,45 @@ just_hash:
       switch (length)
       {
 #if SQUOZE_UTF8_MANUAL_UNROLL
-	case 0: hash = 1; break;
-	case 1: hash = utf8[0] * 2 + 1; break;
-	case 2: hash = utf8[0] * 2 + 1 + (utf8[1] << (8*1)); break;
+	case 0: hash = 1;
+		break;
+	case 1: hash = utf8[0] * 2 + 1;
+		break;
+	case 2: hash = utf8[0] * 2 + 1 + (utf8[1] << (8*1));
+		break;
 	case 3: hash = utf8[0] * 2 + 1 + (utf8[1] << (8*1))
-	                               + (utf8[2] << (8*2)); break;
+	                               + (utf8[2] << (8*2));
+		break;
 	case 4: hash = utf8[0] * 2 + 1 + (utf8[1] << (8*1))
 	                               + (utf8[2] << (8*2))
-	                               + (utf8[3] << (8*3)); break;
+	                               + (utf8[3] << (8*3));
+		break;
 	case 5: hash = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
 	                               + ((uint64_t)utf8[2] << (8*2))
 	                               + ((uint64_t)utf8[3] << (8*3))
-	                               + ((uint64_t)utf8[4] << (8*4)); break;
+	                               + ((uint64_t)utf8[4] << (8*4));
+		break;
 	case 6: hash = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
 	                               + ((uint64_t)utf8[2] << (8*2))
 	                               + ((uint64_t)utf8[3] << (8*3))
 	                               + ((uint64_t)utf8[4] << (8*4))
-	                               + ((uint64_t)utf8[5] << (8*5)); break;
+	                               + ((uint64_t)utf8[5] << (8*5));
+		break;
 	case 7: hash = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
 	                               + ((uint64_t)utf8[2] << (8*2))
 	                               + ((uint64_t)utf8[3] << (8*3))
 	                               + ((uint64_t)utf8[4] << (8*4))
 	                               + ((uint64_t)utf8[5] << (8*5))
-	                               + ((uint64_t)utf8[6] << (8*6)); break;
+	                               + ((uint64_t)utf8[6] << (8*6));
+		break;
 	case 8: hash = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
 	                               + ((uint64_t)utf8[2] << (8*2))
 	                               + ((uint64_t)utf8[3] << (8*3))
 	                               + ((uint64_t)utf8[4] << (8*4))
 	                               + ((uint64_t)utf8[5] << (8*5))
 	                               + ((uint64_t)utf8[6] << (8*6))
-	                               + ((uint64_t)utf8[7] << (8*7)); break;
+	                               + ((uint64_t)utf8[7] << (8*7));
+		break;
 #endif
 	default:
 	  hash = utf8[0] * 2 + 1;
@@ -694,7 +686,7 @@ just_hash:
             hash += ((uint64_t)utf8[i]<<(8*(i)));
       }
 #if SQUOZE_ALWAYS_INTERN==1
-    hash &= ~1;
+    hash &= ~1; // strip odd bit
 #endif
     return hash;
     }
@@ -1250,7 +1242,7 @@ static void squoze_decode_utf5_bytes (int is_utf5,
 {
   SquozeUtf5DecDefaultData append_data = {(unsigned char*)output, 0};
   SquozeUtf5Dec dec = {is_utf5,
-                     squoze_new_offset('a'),
+                     97,//squoze_new_offset('a'),
                      &append_data,
                      0,
                      squoze_decode_utf5_append_unichar_as_utf8,

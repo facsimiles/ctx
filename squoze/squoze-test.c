@@ -4,12 +4,16 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS 33
+#define ITERATIONS       20
+#define INNER_ITERATIONS 1    // useful for collision testing - and
+			      // going larger than cache sizes
 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32 1
 #define SQUOZE_IMPLEMENTATION_62 1
 #define SQUOZE_IMPLEMENTATION_52 1
+
+#define SQUOZE_INITIAL_POOL_SIZE   (1<<20)
 
 #include "squoze.h"
 #include <sys/time.h>
@@ -46,7 +50,6 @@ struct _StringRef
 
 StringRef *dict = NULL;
 
-#define INNER_ITERATIONS 1
 
 static float do_test_round (int words, int create, int lookup, int decode)
 {
@@ -127,8 +130,8 @@ int main (int argc, char **argv)
   int wrong = 0;
 
   int iterations = ITERATIONS;
-  FILE* f = fopen("/usr/share/dict/words", "r");
-  //FILE* f = fopen("words.txt", "r");
+  //FILE* f = fopen("/usr/share/dict/words", "r");
+  FILE* f = fopen("words.txt", "r");
   int words = 0;
     // Read file line by line, calculate hash
     char line[1024];
@@ -151,13 +154,17 @@ int main (int argc, char **argv)
     printf ("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/><title>squoze - reversible unicode string hashes</title><style>th {font-weight:normal;text-align:left;} td { text-align:right;border-right: 1px solid gray;border-bottom:1px solid gray;}  p{text-align: justify;} h2,h3,table,td,tr,th{font-size:1em;} body{font-family:monospace; max-width:50em;margin-left:auto;margin-right:auto;background:#fff;padding:1em;} html{background:#234;font-size:1.2em;} dt { color: #832} body { hyphens: auto; hyphenate-limit-chars: 6 3 2; }h2 { border-top: 1px solid black; padding-top: 0.5em; } table {margin-left:auto;margin-right:auto;} h1 { font-size:1.33em;}</style></head>");
 
 
-    printf ("<h1>Squoze - reversible unicode string hashes.</h2><div style='font-style:italic; text-align:right;'>embedding text in integers</div>");
-    printf ("<p>Squoze is a type of unicode string hashes designed for use in content addressed storage. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of payload data in the hash.</p>");
+    printf ("<h1>Squoze - reversible unicode string hashes.</h2><div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");
+    printf ("<p>Squoze is a type of unicode string hashes for string interning. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of recoverable data in the hash itself.</p>");
 
+    printf("<p>The embedded data is stored in either UTF8 or transcoded to <a href='#utf5+'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme. The hashes produced by squoze are collision free for strings up to string length, and rely on a regular hash function as fallback when embedding is not possible.</p>");
 
-    printf("<p>An important use of content addressed storage is interned strings. This embedding of words/tokens that fit in registers directly can speed up many tasks involving text processing like parsing and even runtime dispatch in many programming languages.</p>");
+    printf ("<p>The benefits of embedding strings in pointers is also very dataset dependent, if all data fits in caches the added computational overhead might not be worth it, while there still is RAM (and ROM) savings that can be beneficial on embedded platforms.</p>");
 
-    printf ("<p>squoze64-utf8 achieves <b>7x speedup</b> over murmurhash one-at-a-time used for initial string interning and <b>2.5x speedup</b> for subsequent lookups of the same string when the strings are shorther than 8bytes of utf8, see <a href='#benchmarks'>the benchmarks</a> for details.</p>");
+    printf ("<p>On embedded platforms not having the strings consume heap space can be a significant saving, this should however be weighed against the overhead of needing 32bit values to store/pass around sometimes being able to use 16bit references to strings is a more significant overall saving.</p>");
+
+    printf ("<p>A series of subvariants have been specified as part of parameterizing the benchmarks, and definining the encoding: </p>");
+    
 
     printf ("<dl>");
 
@@ -170,7 +177,10 @@ int main (int argc, char **argv)
     printf ("<dt>squoze256</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 50 unicode code points</dd>");
     printf ("</dl>\n");
 
-    printf ("<p>squoze is still under development, preliminary variants for <a href='squoze.py'>python3</a> and <a href='squoze.h'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>benchmarks</a>.</p>\n");
+    printf ("<p>squoze is still under development, preliminary variants for <a href='squoze.py'>python3</a> and <a href='squoze.h'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>string interning benchmarks</a> - it is heavily parameterized with ifdefs to make it configurable and able for a single implementation to cover all the cases.</p>\n");
+
+    printf ("<p>squoze64-utf8 achieves <b>7x speedup</b> over murmurhash one-at-a-time used for initial string interning and <b>2.5x speedup</b> for subsequent lookups of the same string when the strings are shorther than 8bytes of utf8, see <a href='#benchmarks'>the benchmarks</a> for details.</p>");
+
 
     printf ("<h2>squoze64 implementation</h2>");
     printf ("<p>the squoze-64 encoding is a small bitmanipulation of UTF-8 in-memory encoding, for strings that will fit only the first byte is manipulated and only if it ascii and not <em>@</em> the value is double and 1 is added. When the first byte does not match our constraints we store 129 - which means the following 7bytes directly encode the value</p>");
@@ -226,7 +236,7 @@ int main (int argc, char **argv)
 "  return buf;\n"
 "}</pre>");
 
-    printf ("<h2 id='utf5'>UTF5+ and squoze-bignum implementation</h2>\n");
+    printf ("<h2 id='utf5+'>UTF5+ and squoze-bignum implementation</h2>\n");
     printf ("<p>The first stage of this encoding is encoding to UTF5+ which extends <a href='https://datatracker.ietf.org/doc/html/draft-jseng-utf5-01.txt'>UTF-5</a>. The symbol 'G' with value 16 does not occur in normal UTF-5 and is used to change encoding mode to a sliding window, valid UTF5 strings are correctly decoded by a UTF5+ decoder.</p>");
     printf ("<p>In squeeze mode the initial offset is set based on the last encoded unicode codepoint in UTF5 mode. Start offsets for a code point follow the pattern 19 + 26 * N, which makes a-z fit in one window. In sliding window mode the following quintets have special meaning:</p>");
     printf ("<table><tr><td>0</td><td>0</td><td>emit SPACE</td></tr>\n");
@@ -270,7 +280,6 @@ int main (int argc, char **argv)
 
     printf ("<p>The hashes with the direct UTF8 embedding are the most reliable optimization when only runtime/energy use is considered. The UTF5 embeddings save more RAM and allow more guarantee collision free strings but are more expensive to compute.</p>");
 
-    printf ("<p>On embedded platforms not having the strings consume heap space can be a significant saving, this should however be weighed against the overhead of needing 32bit values to store/pass around sometimes being able to use 16bit references to strings is a more significant overall saving.</p>");
 
     /*
     printf ("<p>The large amount of time taken for <em>squoze52 alwaysintern</em> can be attributed to the dataset no longer fitting in caches when using 64bit quantities in the struct backing each interned string.</p>");
@@ -398,12 +407,12 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
       }
     }
   }
-    embed_percentage = (100.0f * global_pool.count_embedded) / words;
+    embed_percentage = (100.0f * global_pool.count_embedded) / (words * INNER_ITERATIONS);
   }
 
-  printf ("%.3f</td><td>", do_test (words, iterations, 1, 0, 0)/words);
-  printf ("%.3f</td><td>", do_test (words, iterations, 0, 1, 0)/words);
-  printf ("%.3f</td><td>", do_test (words, iterations, 0, 0, 1)/words);
+  printf ("%.3f</td><td>", do_test (words, iterations, 1, 0, 0)/(words * INNER_ITERATIONS));
+  printf ("%.3f</td><td>", do_test (words, iterations, 0, 1, 0)/(words * INNER_ITERATIONS));
+  printf ("%.3f</td><td>", do_test (words, iterations, 0, 0, 1)/(words * INNER_ITERATIONS));
   printf ("%.0f%%</td>", embed_percentage);
   size_t ht, ht_slack, ht_entries;
   squoze_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
@@ -418,7 +427,5 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
     return 1;
   }
   squoze_atexit ();
-
-
   return 0;
 }
