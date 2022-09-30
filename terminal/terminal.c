@@ -279,7 +279,7 @@ static void handle_event (Ctx        *ctx,
     {
       pid_t pid;
       if ( (pid=fork() ) ==0)
-        {
+        { 
           unsetenv ("CTX_VERSION");
           unsetenv ("CTX_BACKEND");
           execlp (execute_self, execute_self, NULL);
@@ -317,6 +317,10 @@ static void handle_event (Ctx        *ctx,
           free (sel);
         }
       }
+    }
+  else if (!strncmp (event, "shift-control-", 14))
+    {
+      ctx_client_feed_keystring (active, ctx_event, event + 6);
     }
   else
     {
@@ -659,6 +663,7 @@ int terminal_main (int argc, char **argv)
         itk_reset (itk);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         itk_style_bg (itk, "wallpaper");
+	//ctx_rgb (ctx, 0,0,0);
         ctx_fill (ctx);
         ctx_font_size (ctx, itk_em (itk));
         ctx_clients_draw (ctx, 0);
