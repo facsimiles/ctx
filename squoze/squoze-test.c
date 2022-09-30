@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS       20
+#define ITERATIONS       3
 #define INNER_ITERATIONS 1    // useful for collision testing - and
 			      // going larger than cache sizes
 
@@ -49,7 +49,6 @@ struct _StringRef
 };
 
 StringRef *dict = NULL;
-
 
 static float do_test_round (int words, int create, int lookup, int decode)
 {
@@ -151,7 +150,19 @@ int main (int argc, char **argv)
     }
     fclose(f);
 #ifdef HEAD
-    printf ("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/><title>squoze - reversible unicode string hashes</title><style>th {font-weight:normal;text-align:left;} td { text-align:right;border-right: 1px solid gray;border-bottom:1px solid gray;}  p{text-align: justify;} h2,h3,table,td,tr,th{font-size:1em;} body{font-family:monospace; max-width:50em;margin-left:auto;margin-right:auto;background:#fff;padding:1em;} html{background:#234;font-size:1.2em;} dt { color: #832} body { hyphens: auto; hyphenate-limit-chars: 6 3 2; }h2 { border-top: 1px solid black; padding-top: 0.5em; } table {margin-left:auto;margin-right:auto;} h1 { font-size:1.33em;}</style></head>");
+    printf ("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"/><title>squoze - reversible unicode string hashes</title><style>\n"
+"th {font-weight:normal;text-align:left;}\n"
+"td { text-align:right;border-right: 1px solid gray;border-bottom:1px solid gray;}\n"
+"p{text-align: justify;}\n"
+"h2,h3,table,td,tr,th{font-size:1em;}\n"
+"body{font-family:monospace; width:20em;max-width:50em;margin-left:auto;margin-right:auto;background:#fff;padding:1em; hyphens: auto; hyphenate-limit-chars: 6 3 2; }\n"
+"html{background:#234;font-size:1.2em;}\n"
+"dt { color: #832}\n"
+"h1 { font-size:1.33em;}\n"
+"h2 { border-top: 1px solid black; padding-top: 0.5em; }\n"
+"table {margin-left:auto;margin-right:auto;}\n"
+
+"</style></head><body>");
 
 
     printf ("<h1>Squoze - reversible unicode string hashes.</h2><div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");

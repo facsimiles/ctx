@@ -1,12 +1,12 @@
 all: squoze squoze-test \
 	test-32-utf5-intern \
 	test-32-utf5-intern-embed \
-	test-32-utf8-intern \
-	test-32-utf8-intern-embed \
 	test-62-utf5-intern \
 	test-62-utf5-intern-embed \
 	test-52-utf5-intern \
 	test-52-utf5-intern-embed \
+	test-32-utf8-intern \
+	test-32-utf8-intern-embed \
 	test-64-utf8-intern \
 	test-64-utf8-intern-embed \
 	test-head \
@@ -35,11 +35,14 @@ test-32-utf5-intern: squoze-test.c squoze.h Makefile
 		-DSQUOZE_ID_BITS=32 \
 		-DSQUOZE_ALWAYS_INTERN=1 \
 		-DSQUOZE_EMBEDDED_UTF5=1
+
 test-32-utf5-intern-embed: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
 		-DSQUOZE_ID_BITS=32 \
 		-DSQUOZE_ALWAYS_INTERN=0 \
 		-DSQUOZE_EMBEDDED_UTF5=1
+
+# this is the same as using just fallback/murmurhash
 test-32-utf8-intern: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
 		-DSQUOZE_ID_BITS=32 \
@@ -60,16 +63,6 @@ test-52-utf5-intern-embed: squoze-test.c squoze.h Makefile
 		-DSQUOZE_ALWAYS_INTERN=0 \
 		-DSQUOZE_ID_BITS=52 \
 		-DSQUOZE_EMBEDDED_UTF5=1
-test-52-utf8-intern: squoze-test.c squoze.h Makefile
-	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
-		-DSQUOZE_ID_BITS=52 \
-		-DSQUOZE_ALWAYS_INTERN=1 \
-		-DSQUOZE_EMBEDDED_UTF5=0
-test-52-utf8-intern-embed: squoze-test.c squoze.h Makefile
-	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
-		-DSQUOZE_ID_BITS=52 \
-		-DSQUOZE_ALWAYS_INTERN=0 \
-		-DSQUOZE_EMBEDDED_UTF5=0
 
 test-64-utf8-intern-embed: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
@@ -137,6 +130,11 @@ rpi-get:
 	scp pi@raspberrypi:squoze/report-32bit.html extra-index.html
 README: index.html
 	w3m -dump index.html > README
-updateweb:
-	cp index.html squoze.h ~/squoze.org
+updateweb: ../squoze.tar.xz
+	cp index.html squoze.h ../squoze.tar.xz ~/squoze.org
 	syncsquoze
+../squoze.tar.xz:
+	(cd ..;tar cvf squoze.tar.xz squoze/squoze.[ch]\
+                                     squoze/Makefile \
+                                     squoze/squoze-test \
+                                     squoze/README)
