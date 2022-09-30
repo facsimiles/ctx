@@ -2813,8 +2813,10 @@ float ctx_y (Ctx *ctx)
   return y;
 }
 
-CtxBackendType ctx_backend_type (Ctx *ctx)
+CtxBackendType __ctx_backend_type (Ctx *ctx)
 {
+  if (!ctx)
+    return CTX_BACKEND_NONE;
   CtxBackend *backend = ctx->backend;
   if (backend == NULL)
     return CTX_BACKEND_NONE;
@@ -2851,6 +2853,22 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   else if (backend->destroy == (void*) ctx_termimg_destroy) return CTX_BACKEND_TERMIMG;
 #endif
   return CTX_BACKEND_NONE;
+}
+
+CtxBackendType ctx_backend_type (Ctx *ctx)
+{
+  CtxBackend *backend = ctx->backend;
+  CtxBackendType internal = backend->type;
+
+  if (!internal)
+  {
+    CtxBackendType computed = __ctx_backend_type (ctx);
+    backend->type = computed;
+    fprintf (stderr, "did a caching set of %i\n", computed);
+    return computed;
+  }
+
+  return internal;
 }
 
 

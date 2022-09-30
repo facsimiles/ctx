@@ -382,6 +382,7 @@ ctx_new_for_cairo (cairo_t *cr)
   Ctx *ctx = _ctx_new_drawlist (640, 480);
   CtxCairo *ctx_cairo = ctx_calloc(sizeof(CtxCairo),1);
   CtxBackend *backend  = (CtxBackend*)ctx_cairo;
+  backend->type = CTX_BACKEND_CAIRO;
   backend->destroy = (void*)ctx_cairo_destroy;
   backend->process = ctx_cairo_process;
   backend->ctx = ctx;

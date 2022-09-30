@@ -517,6 +517,7 @@ Ctx *ctx_new_ctx (int width, int height)
   if (!ctx_native_events)
     _ctx_mouse (ctx, NC_MOUSE_DRAG);
   backend->end_frame = ctx_ctx_end_frame;
+  backend->type = CTX_BACKEND_CTX;
   backend->destroy = (void(*)(void *))ctx_ctx_destroy;
   backend->process = (void*)ctx_drawlist_process;
   backend->consume_events = ctx_ctx_consume_events;

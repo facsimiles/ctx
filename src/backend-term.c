@@ -940,6 +940,7 @@ Ctx *ctx_new_term (int width, int height)
   if (width > maxwidth) width = maxwidth;
   if (height > maxheight) height = maxheight;
   backend->ctx = ctx;
+  backend->type = CTX_BACKEND_TERM;
   term->width  = width;
   term->height = height;
 

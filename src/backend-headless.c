@@ -204,6 +204,7 @@ Ctx *ctx_new_headless (int width, int height)
  // not to be done for headless, we want sRGB thumbs - at least not device specific
  // perhaps rec2020 or similar?
 
+  backend->type = CTX_BACKEND_HEADLESS;
   backend->ctx = _ctx_new_drawlist (width, height);
   backend->end_frame = ctx_tiled_end_frame;
   backend->process = (void*)ctx_drawlist_process;

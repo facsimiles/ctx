@@ -1416,6 +1416,7 @@ typedef enum CtxBackendType {
   CTX_BACKEND_CAIRO,
   CTX_BACKEND_SDL,
   CTX_BACKEND_DRAWLIST,
+  CTX_BACKEND_PDF,
 } CtxBackendType;
 
 CtxBackendType ctx_backend_type (Ctx *ctx);
@@ -2274,6 +2275,7 @@ struct _CtxBackend
   void  (*destroy)         (void *backend); /* the free pointers are abused as the differentiatior
                                                between different backends   */
   CtxFlags                  flags;
+  CtxBackendType            type;
   void                     *user_data; // not used by ctx core
 };
 

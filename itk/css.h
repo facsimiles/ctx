@@ -8131,7 +8131,7 @@ mrg_get_contents_default (const char  *referer,
 
     entry->uri = uri;
 
-    ctx_get_contents (uri, &c, &l);
+    ctx_get_contents (uri, (unsigned char**)&c, &l);
    
     if (c){
       entry->contents = c;

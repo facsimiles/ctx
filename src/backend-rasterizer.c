@@ -4476,6 +4476,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   memset (rasterizer, 0, sizeof (CtxRasterizer));
 #endif
   CtxBackend *backend = (CtxBackend*)rasterizer;
+  backend->type = CTX_BACKEND_RASTERIZER;
   backend->process = ctx_rasterizer_process;
   backend->destroy = (CtxDestroyNotify)ctx_rasterizer_destroy;
   backend->ctx     = ctx;

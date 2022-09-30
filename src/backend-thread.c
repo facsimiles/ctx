@@ -144,6 +144,7 @@ Ctx *ctx_new_thread (int width, int height)
     ctx->events.width  = width;
     ctx->events.height = height;
   }
+  //backend->type = CTX_BACKEND_TERMIMG; /// XXX
   backend->process = (void*)ctx_drawlist_process;
   backend->ctx = ctx;
   backend->start_frame = ctx_thread_start_frame;

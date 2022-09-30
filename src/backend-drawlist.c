@@ -72,5 +72,6 @@ static CtxBackend *ctx_drawlist_backend_new (void)
   CtxBackend *backend = (CtxBackend*)ctx_calloc (sizeof (CtxBackend), 1);
   backend->process = (void(*)(Ctx *a, CtxCommand *c))ctx_drawlist_process;
   backend->destroy = (void(*)(void *a))ctx_drawlist_backend_destroy;
+  backend->type = CTX_BACKEND_DRAWLIST;
   return backend;
 }

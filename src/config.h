@@ -150,6 +150,7 @@
 #define CTX_GRADIENT_CACHE        1
 #endif
 
+
 #ifndef CTX_FONTS_FROM_FILE
 #define CTX_FONTS_FROM_FILE  0
 #endif
@@ -407,6 +408,10 @@
                                             // for a ~15% overall performance hit
 #endif
 
+#ifndef CTX_RESOLVED_FONTS
+#define CTX_RESOLVED_FONTS 8   // how many font-strings to cache the resolution for in a static
+			       // hash-table
+#endif
 
 /* by including ctx-font-regular.h, or ctx-font-mono.h the
  * built-in fonts using ctx drawlist encoding is enabled

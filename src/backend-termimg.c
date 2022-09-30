@@ -119,6 +119,7 @@ Ctx *ctx_new_termimg (int width, int height)
   _ctx_mouse (ctx, NC_MOUSE_DRAG);
   ctx_set_backend (ctx, termimg);
 
+  backend->type = CTX_BACKEND_TERMIMG;
   backend->ctx = ctx;
   backend->process = ctx_termimg_process;
   backend->end_frame = ctx_termimg_end_frame;

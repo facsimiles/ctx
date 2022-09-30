@@ -515,6 +515,7 @@ Ctx *ctx_new_kms (int width, int height)
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 #endif
 
+  backend->type = CTX_BACKEND_KMS;
   backend->ctx = _ctx_new_drawlist (width, height);
   tiled->ctx_copy = _ctx_new_drawlist (width, height);
 

@@ -770,6 +770,7 @@ ctx_new_pdf (const char *path, float width, float height)
   pdf->width = width;
   pdf->height = height;
 
+  backend->type = CTX_BACKEND_PDF;
   backend->destroy = (void*)ctx_pdf_destroy;
   backend->process = ctx_pdf_process;
   backend->ctx     = ctx;

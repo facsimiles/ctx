@@ -500,6 +500,7 @@ Ctx *ctx_new_sdl (int width, int height)
   SDL_EnableScreenSaver ();
   SDL_GL_SetSwapInterval (1);
 
+  backend->type = CTX_BACKEND_SDL;
   backend->ctx      = _ctx_new_drawlist (width, height);
   tiled->ctx_copy = _ctx_new_drawlist (width, height);
   tiled->width    = width;

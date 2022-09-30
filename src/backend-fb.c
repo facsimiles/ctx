@@ -531,6 +531,7 @@ Ctx *ctx_new_fb (int width, int height)
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
 #endif
 
+  backend->type   = CTX_BACKEND_FB;
   backend->ctx    = _ctx_new_drawlist (width, height);
   tiled->ctx_copy = _ctx_new_drawlist (width, height);
   tiled->width    = width;

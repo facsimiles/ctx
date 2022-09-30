@@ -1,7 +1,14 @@
 #include "ctx-split.h"
 
+
+
 static CtxFont ctx_fonts[CTX_MAX_FONTS];// = NULL;
 static int     ctx_font_count = 0;
+typedef struct CtxResolvedFont {uint32_t sqstr; int font_no;} CtxResolvedFont;
+
+#if CTX_RESOLVED_FONTS!=0
+static CtxResolvedFont ctx_resolved_fonts[CTX_RESOLVED_FONTS];
+#endif
 
 static void ctx_font_setup (Ctx *ctx);
 
@@ -1107,20 +1114,37 @@ static const char *ctx_font_get_name (CtxFont *font)
 
 static int _ctx_resolve_font (const char *name)
 {
+  int ret = -1;
+#if CTX_RESOLVED_FONTS!=0
+  uint32_t sqstr = ctx_strhash (name);
+  int pos = sqstr % CTX_RESOLVED_FONTS;
+  int tries = 0;
+  while (ctx_resolved_fonts[pos].sqstr && tries < CTX_RESOLVED_FONTS)
+  {
+    if (ctx_resolved_fonts[pos].sqstr == sqstr)
+      return ctx_resolved_fonts[pos].font_no;
+    pos++;
+    pos %= CTX_RESOLVED_FONTS;
+    tries++;
+  }
+#endif
+
   char temp[ctx_strlen (name)+1];
   /* first we look for exact */
-  for (int i = 0; i < ctx_font_count; i ++)
+  for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
     {
       if (!ctx_strcmp (ctx_font_get_name (&ctx_fonts[i]), name) )
-        { return i; }
+        { ret = i; }
     }
   /* ... and substring matches for passed in string */
-  for (int i = 0; i < ctx_font_count; i ++)
+  for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
     {
       if (ctx_strstr (ctx_font_get_name (&ctx_fonts[i]), name) )
-        { return i; }
+        { ret = i; }
     }
 
+  if (ret < 0)
+  {
   /* then we normalize some names */
   if (!strncmp (name, "Helvetica", 9))
   {
@@ -1147,12 +1171,13 @@ static int _ctx_resolve_font (const char *name)
   {
     name = "Courier";
   }
+  }
 
   /* and attempt substring matching with mangled named
    * permitting matches with length and two first chars
    * to be valid
    */
-  {
+  if (ret < 0 ) {
     char *subname = (char*)name;
     int namelen = 0; 
     if (strchr (subname, ' '))
@@ -1161,32 +1186,38 @@ static int _ctx_resolve_font (const char *name)
       namelen = subname - name;
       subname++;
     }
-    for (int i = 0; i < ctx_font_count; i ++)
+    for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
     {
       const char *font_name = ctx_font_get_name (&ctx_fonts[i]);
       if (font_name[0]==name[0] &&
           font_name[1]==name[1] &&
           font_name[namelen] == name[namelen] &&
           (namelen == 0 || ctx_strstr (font_name, subname) ))
-        return i;
+        ret = i;
     }
   }
 
   /* then we look for a match of the substring after the first
    * space
    */
-  if (strchr (name, ' '))
+  if (ret < 0 && strchr (name, ' '))
   {
      char *subname = strchr (name, ' ');
-     for (int i = 0; i < ctx_font_count; i ++)
+     for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
      {
        const char *font_name = ctx_font_get_name (&ctx_fonts[i]);
        if (ctx_strstr (font_name, subname) )
-         { return i; }
+         { ret = i; }
      }
   }
-
-  return -1;
+#if CTX_RESOLVED_FONTS!=0
+  if (ret >=0 && ctx_resolved_fonts[pos].sqstr == 0)
+  {
+    ctx_resolved_fonts[pos].sqstr = sqstr;
+    ctx_resolved_fonts[pos].font_no = ret;
+  }
+#endif
+  return ret;
 }
 
 const char *ctx_get_font_name (Ctx *ctx, int no)

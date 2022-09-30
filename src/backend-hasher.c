@@ -579,6 +579,7 @@ ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width
   CtxHasher *hasher = (CtxHasher*)rasterizer;
   ctx_memset (rasterizer, 0, sizeof (CtxHasher) );
   CtxBackend *backend = (CtxBackend*)hasher;
+  backend->type        = CTX_BACKEND_HASHER;
   backend->ctx         = ctx;
   backend->process = ctx_hasher_process;
   backend->destroy = (CtxDestroyNotify)ctx_rasterizer_destroy;
