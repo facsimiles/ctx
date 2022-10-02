@@ -19,6 +19,7 @@
 typedef struct _Mrg      ITK;
 typedef struct _ITKPanel ITKPanel;
 
+
 extern int _itk_key_bindings_active;
 ITK *itk_new        (Ctx *ctx);
 void itk_free       (ITK *itk);
@@ -287,6 +288,13 @@ void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
 CtxStyle *ctx_style (Mrg *mrg);
 
 void itk_end (Mrg *mrg, CtxFloatRectangle *ret_rect);
+
+int
+mrg_get_contents (Mrg         *mrg,
+                  const char  *referer,
+                  const char  *input_uri,
+                  char       **contents,
+                  long        *length);
 
 #ifdef ITK_IMPLEMENTATION
 #include "css.h"

@@ -6219,7 +6219,7 @@ static int card_files (ITK *itk_, void *data)
       else
       {
         Mrg *mrg = (Mrg*)itk;
-        uint8_t *contents = NULL;
+        char *contents = NULL;
         long length;
         mrg_get_contents (mrg, NULL, diz->path, &contents, &length);
         if (contents)
