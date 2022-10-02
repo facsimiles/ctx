@@ -1522,6 +1522,9 @@ void _ctx_initial_style (Mrg *mrg)
   SET_PROP(left,   0);
   SET_PROP(right,  0);
   SET_PROP(bottom, 0);
+
+  SET_PROP(min_width, 0);
+  SET_PROP(max_width, 0);
   SET_PROPS(class,"");
   SET_PROPS(id,"");
 
@@ -1546,9 +1549,9 @@ void _ctx_initial_style (Mrg *mrg)
   s->fill_color.alpha = 1;
 #endif
 
-    ctx_color_set_from_string (mrg->ctx, color, "transparent");
-    ctx_set_color (mrg->ctx, SQZ_background_color, color);
-    ctx_color_free (color);
+  ctx_color_set_from_string (mrg->ctx, color, "transparent");
+  ctx_set_color (mrg->ctx, SQZ_background_color, color);
+  ctx_color_free (color);
 }
 
 
@@ -3502,10 +3505,28 @@ void itk_set_style (Mrg *mrg, const char *style)
     }
     else if ( s->margin_left_auto && !s->width_auto && s->margin_right_auto)
     {
-      float val = ((mrg->state->edge_right - mrg->state->edge_left)
-        - deco_width (mrg) - PROP(width))/2;
-      SET_PROP (margin_left, val);
-      SET_PROP (margin_right, val);
+      float avail_width = (mrg->state->edge_right - mrg->state->edge_left) - deco_width (mrg);
+      float width = PROP(width);
+      if (width == 0.0f)
+      {
+	 float max_width = PROP(max_width);
+	 float min_width = PROP(min_width);
+	 if (max_width != 0.0f)
+           width = ctx_minf (max_width, avail_width);
+	 else
+	   width = avail_width; // should not happen?
+	 if (min_width != 0.0f)
+	 {
+	   if (width < min_width) width = min_width;
+	 }
+
+      }
+
+      {
+        float val = (avail_width - width)/2;
+        SET_PROP (margin_left, val);
+        SET_PROP (margin_right, val);
+      }
     }
   }
   css_parse_properties (mrg, style, ctx_css_handle_property_pass2);
