@@ -5251,7 +5251,8 @@ static int itk_print_wrap (Mrg        *mrg,
                            float     *retx,
                            float     *rety)
 {
-  char word[400]="";
+#define MAX_WORDL 400
+  char word[MAX_WORDL+1]="";
   int wl = 0;
   int c;
   int wraps = 0;
@@ -5359,6 +5360,7 @@ static int itk_print_wrap (Mrg        *mrg,
           break;
         default:
           word[wl++]= data[c];
+	  wl = ctx_mini (wl, MAX_WORDL-1);
           word[wl]  = '\0';
           break;
       }
@@ -7585,6 +7587,7 @@ void itk_xml_render (Mrg *mrg,
 
         tag[depth] = data_hash;
         depth ++;
+	depth = ctx_mini(depth, CTX_MAX_STATE_DEPTH-1);
 
         {
           char combined[256]="";
@@ -7780,6 +7783,7 @@ void itk_xml_render (Mrg *mrg,
           depth--;
 
           if (depth<0)depth=0; // XXX
+#if 1
           if (tag[depth] != data_hash)
           {
             if (tag[depth] == SQZ_p)
@@ -7855,6 +7859,7 @@ void itk_xml_render (Mrg *mrg,
               }
             }
           }
+#endif
         }
         break;
     }
