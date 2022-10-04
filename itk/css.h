@@ -1590,7 +1590,8 @@ const char * html_css =
 "dir,hr,menu,pre{display:block;unicode-bidi:embed}\n"
 "h1,h2,h3,h4,h5{page-break-after:avoid}\n"
 "li{display:list-item}\n"
-"table{display:table}\n"
+"table{display:block;}\n"
+//"table{display:table}\n"
 //"tr{display:table-row}\n"
 "tr{display:block}\n"
 "thead{display:table-header-group }\n"
@@ -1600,6 +1601,7 @@ const char * html_css =
 "img{display:inline-block}\n"
 "colgroup{display:table-column-group}\n"
 "td,th{display:block-inline}\n"
+//"td,th{display:table-cell}\n"
 "caption{display:table-caption}\n"
 "th{font-weight:bolder;text-align:center}\n"
 "caption{text-align:center}\n"
@@ -3259,7 +3261,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case SQZ_text_align:
       switch (val_hash)
       {
-        case SQZ_start:    s->text_align = CTX_TEXT_ALIGN_START;  break;
+        case SQZ_start:   s->text_align = CTX_TEXT_ALIGN_START;   break;
         case SQZ_end:     s->text_align = CTX_TEXT_ALIGN_END;     break;
         case SQZ_left:    s->text_align = CTX_TEXT_ALIGN_LEFT;    break;
         case SQZ_right:   s->text_align = CTX_TEXT_ALIGN_RIGHT;   break;
@@ -5270,6 +5272,8 @@ static int itk_print_wrap (Mrg        *mrg,
     return 0;
   }
 
+  float space_width = measure_word_width (mrg, " ");
+
   pos = 0;
 
   if (max_lines <= 0)
@@ -5383,13 +5387,13 @@ static int itk_print_wrap (Mrg        *mrg,
       if (print)
       {
         if (c && data[c-1]==' ')
-          mrg->x += measure_word_width (mrg, " ");
+          mrg->x += space_width;
         itk_start (mrg, ".cursor", NULL);
         _mrg_spaces (mrg, 1);
         itk_end (mrg, NULL);
       }
       else
-        mrg->x += measure_word_width (mrg, " ");
+        mrg->x += space_width;
     }
   if (retx && *retx < 0 && pos >= cursor_start)
     {
