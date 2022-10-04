@@ -1525,6 +1525,11 @@ void _ctx_initial_style (Mrg *mrg)
 
   SET_PROP(min_width, 0);
   SET_PROP(max_width, 0);
+  s->width_auto = 1;
+  s->margin_left_auto = 0;
+  s->margin_right_auto = 0;
+  SET_PROP(width, 42);
+
   SET_PROPS(class,"");
   SET_PROPS(id,"");
 
@@ -1586,14 +1591,15 @@ const char * html_css =
 "h1,h2,h3,h4,h5{page-break-after:avoid}\n"
 "li{display:list-item}\n"
 "table{display:table}\n"
-"tr{display:table-row}\n"
+//"tr{display:table-row}\n"
+"tr{display:block}\n"
 "thead{display:table-header-group }\n"
 "tbody{display:table-row-group }\n"
 "tfoot{display:table-footer-group }\n"
 "col{display:table-column}\n"
 "img{display:inline-block}\n"
 "colgroup{display:table-column-group}\n"
-"td,th{display:table-cell}\n"
+"td,th{display:block-inline}\n"
 "caption{display:table-caption}\n"
 "th{font-weight:bolder;text-align:center}\n"
 "caption{text-align:center}\n"
@@ -2318,7 +2324,7 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
     {  // s>0 should always be true when direct_descendant is true
       ai = a_depth-1;
       {
-        if (match_nodes (mrg, &entry->parsed[s], ancestry[ai]) &&
+        if (s >0 && ai >0 && match_nodes (mrg, &entry->parsed[s], ancestry[ai]) &&
             match_nodes (mrg, &entry->parsed[s-1], ancestry[ai-1]))
           found_node = 1;
       }
@@ -5251,7 +5257,7 @@ static int itk_print_wrap (Mrg        *mrg,
                            float     *retx,
                            float     *rety)
 {
-#define MAX_WORDL 400
+#define MAX_WORDL 1024
   char word[MAX_WORDL+1]="";
   int wl = 0;
   int c;
@@ -7383,6 +7389,57 @@ void itk_xml_render (Mrg *mrg,
   int whitespaces = 0;
   uint32_t att = 0;
 
+
+////////////////////////////////////////////////////
+
+  whitespaces = 0;
+  att = 0;
+#if 1
+  xmltok = xmltok_buf_new (html_);
+
+  while (type != t_eof)
+  {
+    char *data = NULL;
+    type = xmltok_get (xmltok, &data, &pos);
+    switch (type)
+    {
+      case t_word:
+      case t_whitespace:
+        if (in_style)
+        {
+          ctx_stylesheet_add (mrg, data, uri_base, CTX_STYLE_XML, NULL);
+        }
+        break;
+      case t_endtag:
+	{
+        int i;
+        for (i = 0; data[i]; i++)
+          data[i] = tolower (data[i]);
+        in_style = !strcmp (data, "style");
+	if (in_style)
+	{
+          if (mrg->css_parse_state)
+                  free (mrg->css_parse_state);
+          mrg->css_parse_state = NULL;
+	}
+	}
+        break;
+      default:
+        break;
+    }
+  }
+
+  xmltok_free (xmltok);
+#endif
+
+
+////////////////////////////////////////////////////
+
+
+  type = t_none;
+  whitespaces = 0;
+  att = 0;
+  in_style = 0;
   xmltok = xmltok_buf_new (html_);
 
   {
@@ -7396,6 +7453,9 @@ void itk_xml_render (Mrg *mrg,
 
   _mrg_set_wrap_edge_vfuncs (mrg, wrap_edge_left, wrap_edge_right, mrg);
   mrg->state = &mrg->states[0];
+
+  //itk_start (mrg, "fjo", NULL);
+  //ctx_stylesheet_add (mrg, style_sheets->str, uri_base, CTX_STYLE_XML, NULL);
 
   while (type != t_eof)
   {
@@ -7445,7 +7505,7 @@ void itk_xml_render (Mrg *mrg,
       case t_word:
         if (in_style)
         {
-          ctx_stylesheet_add (mrg, data, uri_base, CTX_STYLE_XML, NULL);
+          //ctx_stylesheet_add (mrg, data, uri_base, CTX_STYLE_XML, NULL);
         }
         else
         {
@@ -7457,7 +7517,7 @@ void itk_xml_render (Mrg *mrg,
       case t_whitespace:
         if (in_style)
         {
-          ctx_stylesheet_add (mrg, data, uri_base, CTX_STYLE_XML, NULL);
+          //ctx_stylesheet_add (mrg, data, uri_base, CTX_STYLE_XML, NULL);
         }
         else
         {
@@ -7499,6 +7559,10 @@ void itk_xml_render (Mrg *mrg,
         tagpos = pos;
         ctx_string_clear (style);
         ctx_set_string (mrg->ctx, SQZ_style, "");
+
+	if (!strcmp (data, "html"))
+	{
+	}
         break;
       case t_att:
         //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
@@ -7558,6 +7622,48 @@ void itk_xml_render (Mrg *mrg,
       case t_endtag:
         {
           uint32_t data_hash = ctx_strhash (data);
+#if 0
+	  int prev_is_self_closing = 0;
+
+	  if (depth) switch (tag[depth-1])
+	  {
+            case SQZ_p:
+            case SQZ_li:
+            case SQZ_dt:
+            case SQZ_dd:
+            case SQZ_option:
+            case SQZ_thead:
+            case SQZ_tbody:
+            case SQZ_head:
+            case SQZ_tfoot:
+            case SQZ_colgroup:
+            case SQZ_th:
+	      prev_is_self_closing = 1;
+	      break;
+	  }
+
+	  if (prev_is_self_closing)
+	  {
+             int is_block = 0;
+	     switch (data_hash)
+	     {
+	        case SQZ_tr:
+	        case SQZ_li:
+	        case SQZ_p:
+	        case SQZ_div:
+	        //case SQZ_td:
+		  is_block = 1;
+		  break;
+	     }
+	     if (is_block)
+	     {
+               itk_end (mrg, NULL);
+               depth--;
+	     }
+
+	  }
+
+#else
 
         if (depth && (data_hash == SQZ_tr && tag[depth-1] == SQZ_td))
         {
@@ -7584,13 +7690,14 @@ void itk_xml_render (Mrg *mrg,
           itk_end (mrg, NULL);
           depth--;
         }
+#endif
 
         tag[depth] = data_hash;
         depth ++;
 	depth = ctx_mini(depth, CTX_MAX_STATE_DEPTH-1);
 
         {
-          char combined[256]="";
+          char combined[512]="";
           char *klass = (char*)PROPS(class);
           /* XXX: spaces in class should be turned into .s making
            * it possible to use multiple classes
@@ -7610,7 +7717,8 @@ void itk_xml_render (Mrg *mrg,
             }
           }
 
-          sprintf (combined, "%s%s%s%s%s%s",
+	  combined[511]=0;
+          snprintf (combined, 511, "%s%s%s%s%s%s",
               data,
               klass?".":"",
               klass?klass:"",
@@ -7688,7 +7796,7 @@ void itk_xml_render (Mrg *mrg,
         else if (data_hash == SQZ_style)
         {
           in_style = 1;
-#if 0
+#if 1
           if (mrg->css_parse_state)
                   free (mrg->css_parse_state);
           mrg->css_parse_state = NULL;
@@ -7864,6 +7972,7 @@ void itk_xml_render (Mrg *mrg,
         break;
     }
   }
+  //itk_end (mrg,  NULL);
 
   xmltok_free (xmltok);
 

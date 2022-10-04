@@ -1,7 +1,5 @@
 #include "ctx-split.h"
 
-
-
 static CtxFont ctx_fonts[CTX_MAX_FONTS];// = NULL;
 static int     ctx_font_count = 0;
 typedef struct CtxResolvedFont {uint32_t sqstr; int font_no;} CtxResolvedFont;

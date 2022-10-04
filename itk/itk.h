@@ -592,7 +592,7 @@ void itk_reset (ITK *itk)
   //mrg_clear (itk);
   ctx_clear_bindings (itk->ctx);
   //itk_stylesheet_clear ((Mrg*)itk);
-//  ctx_style_defaults ((Mrg*)itk);
+  ctx_style_defaults ((Mrg*)itk);
 }
 
 ITKPanel *add_panel (ITK *itk, const char *label, float x, float y, float width, float height)
