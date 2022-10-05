@@ -3774,6 +3774,11 @@ void _mrg_layout_pre (Mrg *mrg)
   //float margin_bottom = PROP(margin_bottom);
   float border_bottom_width = PROP(border_bottom_width);
 
+  float left = PROP(left);
+  float top = PROP(top);
+  float width = PROP(width);
+  float height = PROP(height);
+
   if (style->display == CTX_DISPLAY_BLOCK ||
       style->display == CTX_DISPLAY_FLOW_ROOT ||
       style->display == CTX_DISPLAY_LIST_ITEM)
@@ -3792,7 +3797,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
 
     /* collapsing of vertical margins */
-    float actual_top = PROP(margin_top) ;
+    float actual_top = margin_top;
     if (actual_top >= mrg->state->vmarg)
       actual_top = actual_top - mrg->state->vmarg;
     else
@@ -3811,7 +3816,7 @@ void _mrg_layout_pre (Mrg *mrg)
     float left_margin_pad_and_border = padding_left + margin_left + border_left_width;
     float right_margin_pad_and_border = padding_right + margin_right + border_right_width;
 
-    if (mrg_x (mrg) + PROP(width) + left_margin_pad_and_border + right_margin_pad_and_border
+    if (mrg_x (mrg) + width + left_margin_pad_and_border + right_margin_pad_and_border
 		    >= dynamic_edge_right)
        _mrg_nl (mrg);
 
@@ -3828,7 +3833,7 @@ void _mrg_layout_pre (Mrg *mrg)
       itk_set_edge_right (mrg, mrg_edge_right (mrg) - right_margin_pad_and_border);
     }
 #else
-      itk_set_edge_right (mrg, mrg_x (mrg) + PROP(width));
+      itk_set_edge_right (mrg, mrg_x (mrg) + width);
 #endif
 
     itk_set_edge_top (mrg, mrg_y (mrg) + border_top_width);// + actual_top);
@@ -3857,17 +3862,15 @@ void _mrg_layout_pre (Mrg *mrg)
   {
     case CTX_POSITION_RELATIVE:
       /* XXX: deal with style->right and style->bottom */
-      ctx_translate (mrg_ctx (mrg), PROP(left), PROP(top));
-      mrg->relative_x += PROP(left);
-      mrg->relative_y += PROP(top);
+      ctx_translate (mrg_ctx (mrg), left, top);
+      mrg->relative_x += left;
+      mrg->relative_y += top;
       /* fallthrough */
 
     case CTX_POSITION_STATIC:
 
       if (style->float_ == CTX_FLOAT_RIGHT)
       {
-        float width = PROP(width);
-
         if (width == 0.0)
         {
           width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
@@ -3907,7 +3910,7 @@ void _mrg_layout_pre (Mrg *mrg)
       } else if (style->float_ == CTX_FLOAT_LEFT)
       {
         float left;
-        float width = PROP(width);
+        float width = width;
 
         if (width == 0.0)
         {
@@ -3953,7 +3956,6 @@ void _mrg_layout_pre (Mrg *mrg)
       } /* XXX: maybe spot for */
       else if (1)
       {
-         float width = PROP(width);
          if (width)
            itk_set_edge_right (mrg, mrg->state->block_start_x  + width);
       }
@@ -3962,9 +3964,6 @@ void _mrg_layout_pre (Mrg *mrg)
       ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
       mrg->state->drawlist_start_offset--;
       {
-	float left = PROP(left);
-	float top = PROP(top);
-
         if (left == 0.0f) // XXX 0.0 should also be a valid value!
 	  left = mrg->x;
         if (top == 0.0f)  // XXX 0.0 should also be a valid value!
@@ -3972,7 +3971,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
         //mrg->floats = 0;
         itk_set_edge_left (mrg, left + margin_left + border_left_width + padding_left);
-        itk_set_edge_right (mrg, left + PROP(width));
+        itk_set_edge_right (mrg, left + width);
         itk_set_edge_top (mrg, top + margin_top + border_top_width + padding_top);
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
@@ -3982,8 +3981,6 @@ void _mrg_layout_pre (Mrg *mrg)
       ctx_get_drawlist (mrg->ctx, &mrg->state->drawlist_start_offset);
       mrg->state->drawlist_start_offset--;
       {
-        int width = PROP(width);
-
         if (!width)
         {
           width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
@@ -3993,9 +3990,9 @@ void _mrg_layout_pre (Mrg *mrg)
         ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
         //mrg->floats = 0;
 
-        itk_set_edge_left (mrg, PROP(left) + margin_left + border_left_width + padding_left);
-        itk_set_edge_right (mrg, PROP(left) + margin_left + border_left_width + padding_left + width);//mrg_width (mrg) - padding_right - border_right_width - margin_right); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
-        itk_set_edge_top (mrg, PROP(top) + margin_top + border_top_width + padding_top);
+        itk_set_edge_left (mrg, left + margin_left + border_left_width + padding_left);
+        itk_set_edge_right (mrg, left + margin_left + border_left_width + padding_left + width);
+        itk_set_edge_top (mrg, top + margin_top + border_top_width + padding_top);
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
       }
@@ -4004,10 +4001,6 @@ void _mrg_layout_pre (Mrg *mrg)
 
   if (is_block_item (style))
   {
-     float height = PROP(height);
-     float width = PROP(width);
-     
-
      if (!height)
        {
          height = mrg_em (mrg) * 4;
