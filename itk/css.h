@@ -2302,18 +2302,44 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
                                      int a_depth)
 {
   int s = entry->sel_len - 1;
+  //a_depth = mrg->state_no + 1;
 #if 1
-  /* right most part of selector must match */
+
+#if 0
+  for (int i = 1; i < a_depth; i++)
+  {
+	  if (ancestry[i] != &mrg->states[i].style_node)
+	  {
+	    fprintf (stderr, "%i %p!=%p %i \n", i, ancestry[i],
+	  		  &mrg->states[i].style_node, a_depth);
+	    fprintf (stderr, "%p\n", &mrg->states[mrg->state_no].style_node);
+	    fprintf (stderr, "%p\n", &mrg->states[mrg->state_no+1].style_node);
+	    fprintf (stderr, "%p\n", &mrg->states[mrg->state_no-1].style_node);
+	  }
+  }
+#endif
+
   if (entry->parsed[s].direct_descendant == 0)
   {
-    if (!match_nodes (mrg, &entry->parsed[s], ancestry[a_depth-1]))
-      return 0;
+    /* right most part of selector must match */
+    if (a_depth == 1)
+    {
+      // XXX it is an oddity how we need to use this instead of mrg->states[0].style_node directly..
+      if (!match_nodes (mrg, &entry->parsed[s], ancestry[a_depth-1]))
+      //if (!match_nodes (mrg, &entry->parsed[s], &mrg->states[0].style_node))
+        return 0;
+    }
+    else
+    {
+      if (!match_nodes (mrg, &entry->parsed[s], &mrg->states[a_depth-1].style_node))
+        return 0;
+    }
 
     s--;
     a_depth--;
   }
 
-  if (s < 0)
+  if (s < 0 || a_depth < 0)
     return 1;
 #endif
 
@@ -2326,8 +2352,8 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
     {  // s>0 should always be true when direct_descendant is true
       ai = a_depth-1;
       {
-        if (s >0 && ai >0 && match_nodes (mrg, &entry->parsed[s], ancestry[ai]) &&
-            match_nodes (mrg, &entry->parsed[s-1], ancestry[ai-1]))
+        if (s >0 && ai >0 && match_nodes (mrg, &entry->parsed[s], &mrg->states[ai].style_node) &&
+            match_nodes (mrg, &entry->parsed[s-1], &mrg->states[ai-1].style_node))
           found_node = 1;
       }
       ai--;
@@ -2337,7 +2363,7 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
     {
       for (ai = a_depth-1; ai >= 0 && !found_node; ai--)
       {
-        if (match_nodes (mrg, &entry->parsed[s], ancestry[ai]))
+        if (match_nodes (mrg, &entry->parsed[s], &mrg->states[ai].style_node))
           found_node = 1;
       }
       s--;
@@ -2380,8 +2406,7 @@ static char *_ctx_css_compute_style (Mrg *mrg, CtxStyleNode **ancestry, int a_de
   for (l = mrg->stylesheet; l; l = l->next)
   {
     CtxStyleEntry *entry = l->data;
-    int score = ctx_css_selector_match (mrg, entry, ancestry, a_depth);
-
+    int score  = ctx_css_selector_match (mrg, entry, ancestry, a_depth);
     if (score)
     {
       CtxStyleMatch *match = malloc (sizeof (CtxStyleMatch));
@@ -2414,23 +2439,17 @@ static char *_ctx_css_compute_style (Mrg *mrg, CtxStyleNode **ancestry, int a_de
   return ret;
 }
 
-static int _ctx_get_ancestry (Mrg *mrg, CtxStyleNode **ancestry)
+static void _ctx_get_ancestry (Mrg *mrg, CtxStyleNode **ancestry)
 {
-  int i, j;
-  for (i = 0, j = 0; i <= mrg->state_no; i++)
-    if (mrg->states[i].style_id)
-    {
-      ancestry[j++] = &(mrg->states[i].style_node);
-    }
-  ancestry[j] = NULL;
-  return j;
+  if (mrg->state_no>0)
+      ancestry[0] = &mrg->states[0].style_node;
 }
 
 char *_ctx_stylesheet_collate_style (Mrg *mrg)
 {
-  CtxStyleNode *ancestry[CTX_MAX_STYLE_DEPTH];
-  int ancestors = _ctx_get_ancestry (mrg, ancestry);
-  char *ret = _ctx_css_compute_style (mrg, ancestry, ancestors);
+  CtxStyleNode *ancestry[1];
+  _ctx_get_ancestry (mrg, ancestry);
+  char *ret = _ctx_css_compute_style (mrg, ancestry, mrg->state_no + 1);
   return ret;
 }
 
@@ -6195,7 +6214,6 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   float padding_bottom = PROP(padding_bottom);
   float margin_bottom = PROP(margin_bottom);
   float border_bottom_width = PROP(border_bottom_width);
-
   float left = PROP(left);
   float top = PROP(top);
 
@@ -6431,7 +6449,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   {
     //ctx_translate (mrg_ctx (mrg), -left, -top); // not really
     //                                            // needed we'll
-    //                                            // restore..
+    //                                                        // restore..
     mrg->relative_x -= left;
     mrg->relative_y -= top;
   }
