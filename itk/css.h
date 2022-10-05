@@ -4978,24 +4978,13 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
   float x = mrg->x;
   float y = mrg->y;
   CtxStyle *style = ctx_style (mrg);
-  float wwidth = measure_word_width (mrg, string); //XXX get rid of some computation here
+  float wwidth = measure_word_width (mrg, string);
   float left_pad;
-  left_pad = paint_span_bg (mrg, x, y, wwidth);
+  left_pad = paint_span_bg (mrg, x, y, wwidth); // TODO avoid doing this for out of bounds
 
-  if (mrg->line_got_baseline[mrg->line_level] == 0)
-  {
-    ctx_move_to (mrg->ctx,  mrg->x + left_pad, mrg->y);
-
-    char name[10]="lin_";
-    name[3]=mrg->line_level+2;
-
-    ctx_deferred_rel_move_to (mrg->ctx, name, 0.0, 0.0);//mrg_em (mrg));
-    mrg->line_got_baseline[mrg->line_level] = 1;
-  }
   mrg->line_max_height[mrg->line_level] =
       ctx_maxf (mrg->line_max_height[mrg->line_level],
                 style->font_size);
-
   {
     float tx = x;
     float ty = y;
@@ -5009,6 +4998,18 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
     }
     else
     {
+
+     if (mrg->line_got_baseline[mrg->line_level] == 0)
+     {
+        ctx_move_to (mrg->ctx, mrg->x, mrg->y);
+
+        char name[10]="lin_";
+        name[3]=mrg->line_level+2;
+
+        ctx_deferred_rel_move_to (mrg->ctx, name, 0.0, 0.0);//mrg_em (mrg));
+        mrg->line_got_baseline[mrg->line_level] = 1;
+      }
+
       if (left_pad != 0.0f)
       {
         ctx_rel_move_to (mrg->ctx, left_pad, 0.0f);
@@ -5340,6 +5341,7 @@ static int itk_print_wrap (Mrg        *mrg,
                   else
                     {
                       mrg->x+=mrg_addstr (mrg,  " ", -1);
+
                     }
                 }
             }
