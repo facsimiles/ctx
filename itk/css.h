@@ -6182,6 +6182,23 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   CtxStyle *style  = ctx_style (mrg);
   float height     = PROP(height);
   float width      = PROP(width);
+
+  float padding_left = PROP(padding_left);
+  float margin_left = PROP(margin_left);
+  float border_left_width = PROP(border_left_width);
+  float padding_right = PROP(padding_right);
+  //float margin_right = PROP(margin_right);
+  //float border_right_width = PROP(border_right_width);
+  float padding_top = PROP(padding_top);
+  float margin_top = PROP(margin_top);
+  float border_top_width = PROP(border_top_width);
+  float padding_bottom = PROP(padding_bottom);
+  float margin_bottom = PROP(margin_bottom);
+  float border_bottom_width = PROP(border_bottom_width);
+
+  float left = PROP(left);
+  float top = PROP(top);
+
   int returned_dim = 0;
   float ascent, descent;
   ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
@@ -6221,24 +6238,24 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
     float_data->type = style->float_;
     float_data->x = 
-       mrg->state->block_start_x - PROP(padding_left) - PROP(border_left_width) - PROP(margin_left);
+       mrg->state->block_start_x - padding_left - border_left_width - margin_left;
     float_data->y = 
-         mrg->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width)
-      - PROP(margin_top);
+         mrg->state->block_start_y - mrg_em(mrg) - padding_top - border_top_width
+      - margin_top;
 
     float_data->width = 
          mrg_edge_right (mrg) - mrg_edge_left (mrg)
-     //+ PROP(border_left_width) 
-     //+ PROP(border_right_width)  
+     //+ border_left_width 
+     //+ border_right_width
 #if 0
-     /*+ PROP(padding_left) +*/ + PROP(border_left_width) + PROP(margin_left)
-     /*+ PROP(padding_right) +*/ + PROP(border_right_width) + margin_right
+     /*+ padding_left +*/ + border_left_width + margin_left
+     /*+ padding_right +*/ + border_right_width + margin_right
 #endif
      ;
 
     float_data->height = 
        mrg_y (mrg) - (mrg->state->block_start_y)
-         + PROP(margin_bottom) + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width);
+         + margin_bottom + padding_top + padding_bottom + border_top_width + border_bottom_width;
   }
 
 
@@ -6250,7 +6267,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
     if (width == 0)
     {
-      width = mrg_x (mrg) - (mrg->state->block_start_x) + PROP(padding_right);
+      width = mrg_x (mrg) - (mrg->state->block_start_x) + padding_right;
     }
     geo->width = width;
 
@@ -6339,8 +6356,8 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
        returned_dim = 1;
     }
 
-    geo->width += PROP(padding_right) + PROP(padding_left);
-    geo->height += PROP(padding_top) + PROP(padding_bottom);
+    geo->width += padding_right + padding_left;
+    geo->height += padding_top + padding_bottom;
     ctx_resolve (mrg->ctx, name, update_rect_geo, geo);
 
     {
@@ -6358,11 +6375,11 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
                            style->display == CTX_DISPLAY_FLOW_ROOT ||
 		           style->display == CTX_DISPLAY_LIST_ITEM))
     {
-      vmarg = PROP(margin_bottom);
+      vmarg = margin_bottom;
 
       mrg_set_xy (mrg, 
           mrg_edge_left (mrg),
-          mrg_y (mrg) + vmarg + PROP(border_bottom_width) + PROP(padding_bottom));
+          mrg_y (mrg) + vmarg + border_bottom_width + padding_bottom);
     }
   }
   else if (style->display == CTX_DISPLAY_INLINE)
@@ -6412,11 +6429,11 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   /* restore relative shift */
   if (style->position == CTX_POSITION_RELATIVE)
   {
-    //ctx_translate (mrg_ctx (mrg), -PROP(left), -PROP(top)); // not really
-    //                                                        // needed we'll
-    //                                                        // restore..
-    mrg->relative_x -= PROP(left);
-    mrg->relative_y -= PROP(top);
+    //ctx_translate (mrg_ctx (mrg), -left, -top); // not really
+    //                                            // needed we'll
+    //                                            // restore..
+    mrg->relative_x -= left;
+    mrg->relative_y -= top;
   }
 
   ctx_restore (mrg_ctx (mrg));
@@ -6431,8 +6448,8 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
 
     MrgAbsolute *absolute = calloc (sizeof (MrgAbsolute) + count * 9, 1);
     absolute->z_index = style->z_index;
-    absolute->top    = PROP(top);
-    absolute->left   = PROP(left);
+    absolute->top    = top;
+    absolute->left   = left;
     if (style->position == CTX_POSITION_FIXED)
       absolute->fixed = 1;
     absolute->relative_x = mrg->relative_x;
