@@ -4177,11 +4177,13 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
 
+  if (PROP(border_top_width) < 0.01f)
+    return;
+
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_top_color, color);
 
-  if (PROP(border_top_width) > 0.01f &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4201,11 +4203,12 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
+  if (PROP(border_bottom_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_top_color, color);
 
-  if (PROP(border_bottom_width) > 0.01f &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4225,11 +4228,12 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *cr = mrg_ctx (mrg);
+  if (PROP(border_top_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (cr, SQZ_border_top_color, color);
 
-  if (PROP(border_top_width) > 0.01f &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (cr);
     ctx_begin_path (cr);
@@ -4247,11 +4251,12 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
+  if (PROP(border_bottom_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_bottom_color, color);
 
-  if (PROP(border_bottom_width) &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4271,11 +4276,12 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
+  if (PROP(border_top_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_top_color, color);
 
-  if (PROP(border_top_width) > 0.01f &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4294,11 +4300,12 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
+  if (PROP(border_bottom_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_bottom_color, color);
 
-  if (PROP(border_bottom_width) > 0.01f &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4319,11 +4326,12 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
+  if (PROP(border_top_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_top_color, color);
 
-  if (PROP(border_top_width) &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4342,22 +4350,24 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
+  float border_bottom_width = PROP(border_bottom_width);
+  if ((border_bottom_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_bottom_color, color);
 
-  if (PROP(border_bottom_width) &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
-  ctx_save (ctx);
+    ctx_save (ctx);
     ctx_begin_path (ctx);
     ctx_move_to (ctx, x + width, y + height + PROP(padding_bottom));
-    ctx_rel_line_to (ctx, 0, PROP(border_bottom_width));
+    ctx_rel_line_to (ctx, 0, (border_bottom_width));
     ctx_rel_line_to (ctx, - width, 0);
-    ctx_rel_line_to (ctx, 0, -PROP(border_bottom_width));
+    ctx_rel_line_to (ctx, 0, -(border_bottom_width));
 
     mrg_ctx_set_source_color (ctx, color);
     ctx_fill (ctx);
-  ctx_restore (ctx);
+    ctx_restore (ctx);
   }
 
   ctx_color_free (color);
@@ -4365,11 +4375,12 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
+  if (PROP(border_left_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_left_color, color);
 
-  if (PROP(border_left_width) &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
@@ -4389,11 +4400,12 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
 void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
 {
   Ctx *ctx = mrg_ctx (mrg);
+  if (PROP(border_right_width) < 0.01f)
+    return;
   CtxColor *color = ctx_color_new ();
   ctx_get_color (ctx, SQZ_border_right_color, color);
 
-  if (PROP(border_right_width) > 0.01f &&
-      !ctx_color_is_transparent (color))
+  if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
     ctx_begin_path (ctx);
