@@ -3710,9 +3710,6 @@ void _mrg_layout_pre (Mrg *mrg)
   CtxStyle *style;
   float dynamic_edge_left, dynamic_edge_right;
 
-  //mrg->state_no++;
-  //mrg->state = &mrg->states[mrg->state_no];
-  //*mrg->state = mrg->states[mrg->state_no-1];
 
   style = ctx_style (mrg);
 
@@ -3762,21 +3759,35 @@ void _mrg_layout_pre (Mrg *mrg)
   if (style->clear & CTX_CLEAR_LEFT)
     clear_left (mrg);
 
+  // extra box dimensions once, reducing overhead of property storage
+  //
+  float padding_left = PROP(padding_left);
+  float margin_left = PROP(margin_left);
+  float border_left_width = PROP(border_left_width);
+  float padding_right = PROP(padding_right);
+  float margin_right = PROP(margin_right);
+  float border_right_width = PROP(border_right_width);
+  float padding_top = PROP(padding_top);
+  float margin_top = PROP(margin_top);
+  float border_top_width = PROP(border_top_width);
+  float padding_bottom = PROP(padding_bottom);
+  //float margin_bottom = PROP(margin_bottom);
+  float border_bottom_width = PROP(border_bottom_width);
+
   if (style->display == CTX_DISPLAY_BLOCK ||
       style->display == CTX_DISPLAY_FLOW_ROOT ||
       style->display == CTX_DISPLAY_LIST_ITEM)
   {
-    if (PROP(padding_left) + PROP(margin_left) + PROP(border_left_width)
-        != 0)
+    if (padding_left + margin_left + border_left_width != 0)
     {
       itk_set_edge_left (mrg, mrg_edge_left (mrg) +
-        PROP(padding_left) + PROP(margin_left) + PROP(border_left_width));
+        padding_left + margin_left + border_left_width);
     }
-    if (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)
+    if (padding_right + margin_right + border_right_width
         != 0)
     {
       itk_set_edge_right (mrg, mrg_edge_right (mrg) -
-        (PROP(padding_right) + PROP(margin_right) + PROP(border_right_width)));
+        (padding_right + margin_right + border_right_width));
     }
 
 
@@ -3787,7 +3798,7 @@ void _mrg_layout_pre (Mrg *mrg)
     else
       actual_top = 0;
 
-    itk_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width) + PROP(padding_top) + actual_top);
+    itk_set_edge_top (mrg, mrg_y (mrg) + border_top_width + padding_top + actual_top);
 
     mrg->state->block_start_x = mrg_edge_left (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
@@ -3797,8 +3808,8 @@ void _mrg_layout_pre (Mrg *mrg)
   {
 
 
-    float left_margin_pad_and_border = PROP(padding_left) + PROP(margin_left) + PROP(border_left_width);
-    float right_margin_pad_and_border = PROP(padding_right) + PROP(margin_right) + PROP(border_right_width);
+    float left_margin_pad_and_border = padding_left + margin_left + border_left_width;
+    float right_margin_pad_and_border = padding_right + margin_right + border_right_width;
 
     if (mrg_x (mrg) + PROP(width) + left_margin_pad_and_border + right_margin_pad_and_border
 		    >= dynamic_edge_right)
@@ -3807,7 +3818,7 @@ void _mrg_layout_pre (Mrg *mrg)
     if (left_margin_pad_and_border != 0.0f)
     {
       itk_set_edge_left (mrg, mrg_x (mrg) +
-        PROP(padding_left) + PROP(margin_left) + PROP(border_left_width));
+        padding_left + margin_left + border_left_width);
     }
 
 
@@ -3820,7 +3831,7 @@ void _mrg_layout_pre (Mrg *mrg)
       itk_set_edge_right (mrg, mrg_x (mrg) + PROP(width));
 #endif
 
-    itk_set_edge_top (mrg, mrg_y (mrg) + PROP(border_top_width));// + actual_top);
+    itk_set_edge_top (mrg, mrg_y (mrg) + border_top_width);// + actual_top);
 
     mrg->state->block_start_x = mrg_x (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
@@ -3862,20 +3873,20 @@ void _mrg_layout_pre (Mrg *mrg)
           width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-        width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
+        width = (width + padding_right + padding_left + border_left_width + border_right_width);
 
 
-        if (width + PROP(margin_left) + PROP(margin_right) >
+        if (width + margin_left + margin_right >
             mrg_edge_right(mrg)-mrg_edge_left(mrg))
         {
           clear_both (mrg);
           itk_set_edge_left (mrg, mrg_edge_right (mrg) - width);
-          itk_set_edge_right (mrg, mrg_edge_right (mrg) - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
+          itk_set_edge_right (mrg, mrg_edge_right (mrg) - (margin_right + padding_right + border_right_width));
 
         }
         else
         {
-        while (dynamic_edge_right - dynamic_edge_left < width + PROP(margin_left) + PROP(margin_right))
+        while (dynamic_edge_right - dynamic_edge_left < width + margin_left + margin_right)
         {
           mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
           dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
@@ -3883,7 +3894,7 @@ void _mrg_layout_pre (Mrg *mrg)
         }
 
         itk_set_edge_left (mrg, dynamic_edge_right - width);
-        itk_set_edge_right (mrg, dynamic_edge_right - (PROP(margin_right) + PROP(padding_right) + PROP(border_right_width)));
+        itk_set_edge_right (mrg, dynamic_edge_right - (margin_right + padding_right + border_right_width));
 
         }
 
@@ -3903,32 +3914,32 @@ void _mrg_layout_pre (Mrg *mrg)
           width = 4 * mrg_em (mrg);//mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-        width = (width + PROP(padding_right) + PROP(padding_left) + PROP(border_left_width) + PROP(border_right_width));
+        width = (width + padding_right + padding_left + border_left_width + border_right_width);
 
-        if (width + PROP(margin_left) + PROP(margin_right) >
+        if (width + margin_left + margin_right >
             mrg_edge_right(mrg)-mrg_edge_left(mrg))
         {
           clear_both (mrg);
-          left = mrg_edge_left (mrg) + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
+          left = mrg_edge_left (mrg) + padding_left + border_left_width + margin_left;
         }
         else
         {
-        while (dynamic_edge_right - dynamic_edge_left < width + PROP(margin_left) + PROP(margin_right))
+        while (dynamic_edge_right - dynamic_edge_left < width + margin_left + margin_right)
         {
           mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
           dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
           dynamic_edge_left = _mrg_parent_dynamic_edge_left(mrg);
         }
-          left = dynamic_edge_left;// + PROP(padding_left) + PROP(border_left_width) + PROP(margin_left);
+          left = dynamic_edge_left;// + padding_left + border_left_width + margin_left;
         }
 
         itk_set_edge_left (mrg, left);
         itk_set_edge_right (mrg,  left + width +
-            PROP(padding_left) /* + PROP(border_right_width)*/);
-        itk_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top)));// - mrg->state->vmarg));
+            padding_left /* + border_right_width*/);
+        itk_set_edge_top (mrg, mrg_y (mrg) + (margin_top));// - mrg->state->vmarg));
                         //));//- mrg->state->vmarg));
         mrg->state->block_start_x = mrg_x (mrg);
-        mrg->state->block_start_y = mrg_y (mrg);// + PROP(padding_top) + PROP(border_top_width);
+        mrg->state->block_start_y = mrg_y (mrg);// + padding_top + border_top_width;
         //mrg->floats = 0;
 
         /* change cursor point after floating something left; if pushed far
@@ -3936,8 +3947,8 @@ void _mrg_layout_pre (Mrg *mrg)
          */
 #if 0
         if(0)	
-        mrg_set_xy (mrg, mrg->state->original_x = left + width + PROP(padding_left) + PROP(border_right_width) + PROP(padding_right) + PROP(margin_right) + PROP(margin_left) + PROP(border_left_width),
-            mrg_y (mrg) + PROP(padding_top) + PROP(border_top_width));
+        mrg_set_xy (mrg, mrg->state->original_x = left + width + padding_left + border_right_width + padding_right + margin_right + margin_left + border_left_width,
+            mrg_y (mrg) + padding_top + border_top_width);
 #endif
       } /* XXX: maybe spot for */
       else if (1)
@@ -3960,9 +3971,9 @@ void _mrg_layout_pre (Mrg *mrg)
 	  top = mrg->y;
 
         //mrg->floats = 0;
-        itk_set_edge_left (mrg, left + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
+        itk_set_edge_left (mrg, left + margin_left + border_left_width + padding_left);
         itk_set_edge_right (mrg, left + PROP(width));
-        itk_set_edge_top (mrg, top + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
+        itk_set_edge_top (mrg, top + margin_top + border_top_width + padding_top);
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
       }
@@ -3982,9 +3993,9 @@ void _mrg_layout_pre (Mrg *mrg)
         ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
         //mrg->floats = 0;
 
-        itk_set_edge_left (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left));
-        itk_set_edge_right (mrg, PROP(left) + PROP(margin_left) + PROP(border_left_width) + PROP(padding_left) + width);//mrg_width (mrg) - PROP(padding_right) - PROP(border_right_width) - PROP(margin_right)); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
-        itk_set_edge_top (mrg, PROP(top) + PROP(margin_top) + PROP(border_top_width) + PROP(padding_top));
+        itk_set_edge_left (mrg, PROP(left) + margin_left + border_left_width + padding_left);
+        itk_set_edge_right (mrg, PROP(left) + margin_left + border_left_width + padding_left + width);//mrg_width (mrg) - padding_right - border_right_width - margin_right); //PROP(left) + PROP(width)); /* why only padding and not also border?  */
+        itk_set_edge_top (mrg, PROP(top) + margin_top + border_top_width + padding_top);
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
       }
@@ -4011,10 +4022,10 @@ void _mrg_layout_pre (Mrg *mrg)
        && style->overflow == CTX_OVERFLOW_HIDDEN)
        {
          ctx_rectangle (mrg_ctx(mrg),
-            mrg->state->block_start_x - PROP(padding_left) - PROP(border_left_width),
-            mrg->state->block_start_y - mrg_em(mrg) - PROP(padding_top) - PROP(border_top_width),
-            width + PROP(border_right_width) + PROP(border_left_width) + PROP(padding_left) + PROP(padding_right), //mrg_edge_right (mrg) - mrg_edge_left (mrg) + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width),
-            height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width));
+            mrg->state->block_start_x - padding_left - border_left_width,
+            mrg->state->block_start_y - mrg_em(mrg) - padding_top - border_top_width,
+            width + border_right_width + border_left_width + padding_left + padding_right, //mrg_edge_right (mrg) - mrg_edge_left (mrg) + padding_left + padding_right + border_left_width + border_right_width,
+            height + padding_top + padding_bottom + border_top_width + border_bottom_width);
          ctx_clip (mrg_ctx(mrg));
        }
 
@@ -4031,17 +4042,17 @@ void _mrg_layout_pre (Mrg *mrg)
     {
       ctx_begin_path (mrg->ctx); // XXX : this should not need be here!
       ctx_deferred_rectangle (mrg->ctx, name,
-         mrg->state->block_start_x - PROP(padding_left),
-         mrg->state->block_start_y - PROP(padding_top),
-         width + PROP(padding_left) + PROP(padding_right),
-         height + PROP(padding_top) + PROP(padding_bottom));
+         mrg->state->block_start_x - padding_left,
+         mrg->state->block_start_y - padding_top,
+         width + padding_left + padding_right,
+         height + padding_top + padding_bottom);
     }
     else
     {
       ctx_deferred_rectangle (mrg->ctx, name,
          mrg_x (mrg), mrg_y (mrg),
-         width  + PROP(padding_left) + PROP(padding_right),
-         height + PROP(padding_top) + PROP(padding_bottom));
+         width  + padding_left + padding_right,
+         height + padding_top + padding_bottom);
     }
     ctx_fill (mrg->ctx);
   }
@@ -6228,7 +6239,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
      //+ PROP(border_right_width)  
 #if 0
      /*+ PROP(padding_left) +*/ + PROP(border_left_width) + PROP(margin_left)
-     /*+ PROP(padding_right) +*/ + PROP(border_right_width) + PROP(margin_right)
+     /*+ PROP(padding_right) +*/ + PROP(border_right_width) + margin_right
 #endif
      ;
 
