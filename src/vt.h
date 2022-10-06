@@ -76,6 +76,7 @@ typedef struct GfxState
 struct _VT
 {
   VtPty      vtpty;
+  int        empty_count;
   int       id;
   unsigned char buf[BUFSIZ]; // need one per vt
   int keyrepeat;

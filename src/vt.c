@@ -4222,81 +4222,9 @@ static void vt_sixels (VT *vt, const char *sixels)
 }
 
 #if CTX_PARSER
-static inline void vt_ctx_unrled (VT *vt, char byte)
-{
-#if CTX_VT_USE_FRAMEDIFF
-  ctx_string_append_byte (vt->current_line->frame, byte);
-#endif
-  ctx_parser_feed_byte (vt->ctxp, byte);
-}
-#endif
-
-#if CTX_PARSER
 static void vt_state_ctx (VT *vt, int byte)
 {
-#if 0
-  //fprintf (stderr, "%c", byte);
-  if (CTX_UNLIKELY(byte == CTX_CODEC_CHAR))
-  {
-    if (CTX_UNLIKELY(vt->in_prev_match))
-    {
-      char *prev = vt->current_line->prev;
-      int prev_length = vt->current_line->prev_length;
-      int start = atoi (vt->reference);
-      int len = 0;
-      if (strchr (vt->reference, ' '))
-        len = atoi (strchr (vt->reference, ' ')+1);
-
-      //fprintf (stderr, "%i-%i:", start, len);
-
-      if (start < 0) start = 0;
-      if (start >= (prev_length))start = prev_length-1;
-      if (len + start > prev_length)
-        len = prev_length - start;
-
-      //fprintf (stderr, "%i-%i\n", start, len);
-
-      if (CTX_UNLIKELY (start == 0 && len == 0))
-      {
-        vt_ctx_unrled (vt, CTX_CODEC_CHAR);
-      }
-      else
-      {
-        if (prev)
-        for (int i = 0; i < len && start + i < prev_length; i++)
-        {
-          vt_ctx_unrled (vt, prev[start + i]);
-        }
-      }
-      vt->ref_len = 0;
-      vt->reference[0]=0;
-      vt->in_prev_match = 0;
-    }
-    else
-    {
-      vt->reference[0]=0;
-      vt->ref_len = 0;
-      vt->in_prev_match = 1;
-    }
-  }
-  else
-  {
-    if (CTX_UNLIKELY(vt->in_prev_match))
-    {
-      if (vt->ref_len < 15)
-      {
-        vt->reference[vt->ref_len++]=byte;
-        vt->reference[vt->ref_len]=0;
-      }
-    }
-    else
-    {
-      vt_ctx_unrled (vt, byte);
-    }
-  }
-#else
-      vt_ctx_unrled (vt, byte);
-#endif
+  ctx_parser_feed_byte (vt->ctxp, byte);
 }
 #endif
 
@@ -5183,11 +5111,18 @@ int vt_poll (VT *vt, int timeout)
     }
   if (got_data < 0)
     {
-      if (kill (vt->vtpty.pid, 0) != 0)
+      vt->empty_count ++;
+      if (vt->empty_count > 256)
+      {
+        if (kill (vt->vtpty.pid, 0) != 0)
         {
           vt->vtpty.done = 1;
         }
+        vt->empty_count = 1;
+      }
     }
+  else
+     vt->empty_count = 0;
   return got_data;
 }
 

@@ -1612,7 +1612,10 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
     }
 #endif
 
-    if (CTX_LIKELY(parser->state == CTX_PARSER_STRING_YENC))
+  switch (parser->state)
+    {
+
+    case CTX_PARSER_STRING_YENC:
     {
         if (CTX_UNLIKELY((parser->prev_byte == '=') && (byte == 'y')))
         {
@@ -1637,7 +1640,8 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
         parser->prev_byte = byte;
         return;
     }
-    else if (parser->state == CTX_PARSER_STRING_A85)
+
+    case CTX_PARSER_STRING_A85:
     {
         /* since these are our largest bulk transfers, minimize
          * overhead for this case. */
@@ -1655,8 +1659,8 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
         }
         return;
     }
-  switch (parser->state)
-    {
+
+
       case CTX_PARSER_NEUTRAL:
         switch (byte)
           {
@@ -1900,6 +1904,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
             ctx_parser_word_done (parser);
           }
         break;
+#if 0
       case CTX_PARSER_STRING_A85:
         if (CTX_LIKELY(byte!='~'))
         {
@@ -1914,6 +1919,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
           ctx_parser_string_done (parser);
         }
         break;
+#endif
       case CTX_PARSER_STRING_APOS:
         switch (byte)
           {
