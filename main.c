@@ -430,7 +430,7 @@ int main (int argc, char **argv)
         !strncmp (orig_path, "http:", 5) ||
         !strncmp (orig_path, "https:", 6))
     {
-      char *argv[]={"stuff", orig_path, NULL};
+      char *argv[]={"stuff", (char*)orig_path, NULL};
       return stuff_main (2, argv);
     }
 #endif
