@@ -18,6 +18,5 @@ for a in `find . -type f`;do
    echo "{\"$b\", `wc -c $a|cut -f 1 -d ' '`,";
    echo "$c},"
 done
-echo "{\"\", 6, \"fnord\"}," ;
 echo "{NULL,0,NULL}};";
 

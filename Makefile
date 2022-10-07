@@ -265,13 +265,13 @@ squoze/squoze: squoze/*.[ch]
 src/constants.h: src/*.c Makefile squoze/squoze
 	echo '#ifndef __CTX_CONSTANTS' > $@
 	echo '#define __CTX_CONSTANTS' >> $@
-	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][a-zA-Z_0-9]*'|sort | uniq | cut -f 2 -d _`;do echo "#define SQZ_$$a `./squoze/squoze -32 $$a`u";done \
+	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][a-zA-Z_0-9]*'|sort | uniq | cut -f 2 -d _`;do echo "#define SQZ_$$a `./squoze/squoze -33 $$a`u";done \
 		>> $@
 	echo '#endif' >> $@
 itk/w3c-constants.h: itk/css.h Makefile squoze/squoze
 	echo '#ifndef __W3C_CONSTANTS' > $@
 	echo '#define __W3C_CONSTANTS' >> $@
-	for a in `cat itk/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -32 $$b`u // \"$$b\"";done \
+	for a in `cat itk/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -33 $$b`u // \"$$b\"";done \
 		>> $@
 	echo '#endif' >> $@
 static.inc: static/* static/*/* tools/gen_fs.sh
