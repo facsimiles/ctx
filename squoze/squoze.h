@@ -105,6 +105,8 @@ uint32_t     squoze32        (const char *utf8, size_t len);
 const char  *squoze32_decode (uint32_t    hash);
 #endif
 
+uint32_t     squoze32_utf8   (const char *utf8, size_t len);
+
 #if SQUOZE_IMPLEMENTATION_52
 uint64_t     squoze52        (const char *utf8, size_t len);
 const char  *squoze52_decode (uint64_t    hash);
@@ -1111,6 +1113,48 @@ uint64_t squoze64 (const char *utf8, size_t len)
   return hash & ~1; // make even
 }
 
+uint32_t squoze32_utf8 (const char *utf8, size_t len)
+{
+  size_t   squoze_dim = 32;
+  size_t   dim_bytes = squoze_dim / 8;
+  uint64_t hash       = 0;
+  uint8_t *encoded    = (uint8_t*)&hash;
+  uint8_t  first_byte = ((uint8_t*)utf8)[0];
+
+  if (first_byte<128             // first char is ASCII
+      && first_byte != '@'       // and not our reserved marker/2
+      && (len <= dim_bytes))     // and fitting
+  {
+    for (int i = 0; utf8[i]; i++)
+      encoded[i] = utf8[i];
+    encoded[0] = encoded[0]*2+1;
+    return *((uint64_t*)&encoded[0]);
+  }
+  else if (len <= dim_bytes-1)   // fitting in dim_bytes - 1
+  {
+    for (int i = 0; utf8[i]; i++)
+      encoded[i+1] = utf8[i];
+    encoded[0] = 129;
+    return *((uint64_t*)&encoded[0]);
+  }
+
+#if 0
+  // fallback, murmurhash one-at-a-time - can be replaced with
+  // proper murmurhash
+  hash = 3323198485ul;
+  for (unsigned int i = 0; i < len; i++)
+  {
+    uint8_t key = utf8[i];
+    hash ^= key;
+    hash *= 0x5bd1e995;
+    hash ^= hash >> 15;
+  }
+#else
+  hash = MurmurOAAT32(utf8, len);
+#endif
+  return hash & ~1; // make even
+}
+
 typedef struct SquozeUtf5Dec {
   int       is_utf5;
   int       offset;
@@ -1429,6 +1473,19 @@ const char *squoze64_decode (uint64_t hash)
   static uint8_t buf[10];
   buf[8] = 0;
   ((uint64_t*)buf)[0]= hash; // or memcpy (buf, hash, 8);
+  if ((buf[0] & 1) == 0) return NULL;
+  if (buf[0]==129)
+     return (char*)buf+1;
+  buf[0]/=2;
+  return (char*)buf;
+}
+
+const char *squoze32_utf8_decode (uint64_t hash)
+{
+  //return squoze_decode (64, hash, 0);
+  static uint8_t buf[10];
+  buf[4] = 0;
+  ((uint32_t*)buf)[0]= hash; // or memcpy (buf, hash, 8);
   if ((buf[0] & 1) == 0) return NULL;
   if (buf[0]==129)
      return (char*)buf+1;

@@ -93,6 +93,7 @@ int main (int argc, char **argv)
      {
      if (!strcmp (argv[arg], "--help")) return usage (base);
      if (!strcmp (argv[arg], "--squoze32"))  dim = 32;
+     if (!strcmp (argv[arg], "--squoze32-utf8"))  dim = 33;
      if (!strcmp (argv[arg], "--squoze52"))  dim = 52;
      if (!strcmp (argv[arg], "--squoze62"))  dim = 62;
      if (!strcmp (argv[arg], "--squoze64"))  dim = 64;
@@ -117,6 +118,7 @@ int main (int argc, char **argv)
            dim = atoi (&argv[arg][i]);
            switch (dim)
            {
+             case 33: dim = 33; break;
              case 32: dim = 32; break;
              default:
              case 52: dim = 52; break;
@@ -269,6 +271,16 @@ int main (int argc, char **argv)
           printf ("%s", squoze64_decode (atol(argv[i])));
         else
           printf ("%lu", squoze64 (argv[i], strlen (argv[i])));
+      }
+      break;
+    case 33:
+      for (int i = arg; argv[i]; i++)
+      {
+        print_sep ();
+        if ((!force_encode) && squoze_is_number (argv[i]))
+          printf ("%s", squoze32_utf8_decode (atol(argv[i])));
+        else
+          printf ("%u", squoze32_utf8 (argv[i], strlen (argv[i])));
       }
       break;
   }
