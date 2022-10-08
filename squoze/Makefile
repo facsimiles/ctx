@@ -91,7 +91,7 @@ report.txt: squoze gen-report.sh
 index.html: all
 	rm index.html || true
 	./test-head >> index.html
-	for a in 6 8 10 12 23;do export MAX_WORD_LEN=$$a;make report-part.html;done 
+	for a in 4 6 8 10 12 23;do export MAX_WORD_LEN=$$a;make report-part.html;done 
 	echo "<h3>32bit ARM benchmarks on a RPI3</h3>" >> index.html
 	echo "<p>As large words do not embed in 32bit, but 4-6 characters still covers many of the most common words in english, as well as many common keyword tokens in programming.</p>" >> index.html
 	cat extra-index.html >> index.html || true

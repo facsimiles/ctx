@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS       3
+#define ITERATIONS       10
 #define INNER_ITERATIONS 1    // useful for collision testing - and
 			      // going larger than cache sizes
 
@@ -165,32 +165,36 @@ int main (int argc, char **argv)
 "</style></head><body>");
 
 
-    printf ("<h1>Squoze - reversible unicode string hashes.</h2><div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");
-    printf ("<p>Squoze is a type of unicode string hashes for string interning. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of recoverable data in the hash itself.</p>");
+    printf ("<h1>Squoze - reversible unicode string hashes.</h2>\n");
+    printf ("<div style='font-style:italic; text-align:right;'>compute more, save energy, parse faster;<br/>with strings squozed to fit in computer words</div>");
+    //printf ("<div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");
+    printf ("<p>Squoze is a type of unicode string hashes for string interning. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of recoverable data in the hash itself. The part of the hash space used for embedding is guaranteed to be collision free - by storing data directly we avoid cache-misses needed for fetching from RAM.</p>");
 
-    printf("<p>The embedded data is stored in either UTF8 or transcoded to <a href='#utf5+'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme. The hashes produced by squoze are collision free for strings up to string length, and rely on a regular hash function as fallback when embedding is not possible.</p>");
+    printf("<p>The embedded data is stored in either UTF8 or transcoded to <a href='#utf5+'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme.</p>");
 
-    printf ("<p>The benefits of embedding strings in pointers is also very dataset dependent, if all data fits in caches the added computational overhead might not be worth it, while there still is RAM (and ROM) savings that can be beneficial on embedded platforms.</p>");
+    //printf ("<p>The benefits of embedding strings in pointers is dataset dependent, if all data fits in caches the added computational overhead might not be worth it, while there still is RAM (and ROM) savings that can be beneficial on embedded platforms.</p>");
 
     printf ("<p>On embedded platforms not having the strings consume heap space can be a significant saving, this should however be weighed against the overhead of needing 32bit values to store/pass around sometimes being able to use 16bit references to strings is a more significant overall saving.</p>");
 
     printf ("<p>A series of subvariants have been specified as part of parameterizing the benchmarks, and definining the encoding: </p>");
     
+    printf ("<p>squoze64-utf8 achieves <b>7x speedup</b> over murmurhash one-at-a-time used for initial string interning and <b>3x speedup</b> for subsequent lookups of the same string when the strings are shorther than 8bytes of utf8, see <a href='#benchmarks'>the benchmarks</a> for details.</p>");
+
+    printf ("<p>The squoze hashes are still under development, preliminary variants for <a href='squoze.py'>python3</a> and <a href='squoze.h'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>string interning benchmarks</a> - it is heavily parameterized with ifdefs to make it configurable and able for a single implementation to cover all the cases for the benchmarking.</p>\n");
 
     printf ("<dl>");
 
-    printf ("<dt>squoze-bignum</dt><dd><a href='#utf5'>UTF5+</a> encoding, supporting arbitrary length unicode strings stored in bignums.</dd>");
+    printf ("<dt>squoze-bignum</dt><dd><a href='#utf5'>UTF5+</a> encoding, supporting arbitrary length unicode strings stored in bignums.</dd>\n");
 
-    printf ("<dt>squoze32</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 6 lower-case ascii of embedded data</dd>");
-    printf ("<dt>squoze52</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 10 lower-case ascii of embedded data, 52bit integers can be stored without loss in a double.</dd>");
-    printf ("<dt>squoze62</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 12 unicode code points.</dd>");
-    printf ("<dt>squoze64</dt><dd>UTF-8 embed encoding, supporting up to 8 ASCII chars of embedded data.</dd>");
-    printf ("<dt>squoze256</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 50 unicode code points</dd>");
+    printf ("<dt>squoze32</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 6 lower-case ascii of embedded data</dd>\n");
+    printf ("<dt>squoze32-utf8</dt><dd>UTF8 embed encoding, supporting up 4 UTF-8 bytes of embedded data</dd>\n");
+    printf ("<dt>squoze52</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 10 lower-case ascii of embedded data, 52bit integers can be stored without loss in a double.</dd>\n");
+    printf ("<dt>squoze62</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 12 unicode code points.</dd>\n");
+    printf ("<dt>squoze64</dt><dd>UTF-8 embed encoding, supporting up 8 UTF-8 bytes of embedded data.</dd>\n");
+    printf ("<dt>squoze256</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 50 unicode code points</dd>\n");
     printf ("</dl>\n");
 
-    printf ("<p>squoze is still under development, preliminary variants for <a href='squoze.py'>python3</a> and <a href='squoze.h'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>string interning benchmarks</a> - it is heavily parameterized with ifdefs to make it configurable and able for a single implementation to cover all the cases.</p>\n");
 
-    printf ("<p>squoze64-utf8 achieves <b>7x speedup</b> over murmurhash one-at-a-time used for initial string interning and <b>2.5x speedup</b> for subsequent lookups of the same string when the strings are shorther than 8bytes of utf8, see <a href='#benchmarks'>the benchmarks</a> for details.</p>");
 
 
     printf ("<h2>squoze64 implementation</h2>");
