@@ -7954,7 +7954,7 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
       (event->type == CTX_DRAG_MOTION ||
       event->type == CTX_DRAG_PRESS ||
       event->type == CTX_DRAG_RELEASE))
-    return scrollbar_drag (event, data, data2);
+    return scrollbar_drag (event, vt, data2);
   switch (event->type)
   {
     case CTX_MOTION:
@@ -8036,7 +8036,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       (event->type == CTX_DRAG_MOTION ||
       event->type == CTX_DRAG_PRESS ||
       event->type == CTX_DRAG_RELEASE))
-    return scrollbar_drag (event, data, data2);
+    return scrollbar_drag (event, vt, data2);
   switch (event->type)
   {
     case CTX_MOTION:
