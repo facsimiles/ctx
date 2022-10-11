@@ -4,10 +4,8 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS       10
-#define INNER_ITERATIONS 1    // useful for collision testing - and
-			      // going larger than cache sizes
-
+#define ITERATIONS               10
+#define INNER_ITERATIONS         1 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32 1
 #define SQUOZE_IMPLEMENTATION_62 1
@@ -129,8 +127,8 @@ int main (int argc, char **argv)
   int wrong = 0;
 
   int iterations = ITERATIONS;
-  //FILE* f = fopen("/usr/share/dict/words", "r");
-  FILE* f = fopen("words.txt", "r");
+  FILE* f = fopen("/usr/share/dict/words", "r");
+  //FILE* f = fopen("words.txt", "r");
   int words = 0;
     // Read file line by line, calculate hash
     char line[1024];
@@ -168,7 +166,7 @@ int main (int argc, char **argv)
     printf ("<h1>Squoze - reversible unicode string hashes.</h2>\n");
     printf ("<div style='font-style:italic; text-align:right;'>compute more, save energy, parse faster;<br/>with strings squozed to fit in computer words</div>");
     //printf ("<div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");
-    printf ("<p>Squoze is a type of unicode string hashes for string interning. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of recoverable data in the hash itself. The part of the hash space used for embedding is guaranteed to be collision free - by storing data directly we avoid cache-misses needed for fetching from RAM.</p>");
+    printf ("<p>Squoze is a type of unicode string hashes for string interning. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of recoverable data in the hash itself. The part of the hash space used for embedding is guaranteed to be collision free - by storing data directly we avoid cache-misses needed for fetching from RAM. Note that the strings that are short enough for embedding are not at all stored in an internal hash-table when used for string interning, the guaranteed to be unique odd values are used directly.</p>");
 
     printf("<p>The embedded data is stored in either UTF8 or transcoded to <a href='#utf5+'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme.</p>");
 
@@ -180,7 +178,7 @@ int main (int argc, char **argv)
     
     printf ("<p>squoze64-utf8 achieves <b>7x speedup</b> over murmurhash one-at-a-time used for initial string interning and <b>3x speedup</b> for subsequent lookups of the same string when the strings are shorther than 8bytes of utf8, see <a href='#benchmarks'>the benchmarks</a> for details.</p>");
 
-    printf ("<p>The squoze hashes are still under development, preliminary variants for <a href='squoze.py'>python3</a> and <a href='squoze.h'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>string interning benchmarks</a> - it is heavily parameterized with ifdefs to make it configurable and able for a single implementation to cover all the cases for the benchmarking.</p>\n");
+    printf ("<p>The squoze hashes are still under development, preliminary variants for <a href='squoze.py'>python3</a> and <a href='squoze.tar.xz'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>string interning benchmarks</a> - it is heavily parameterized with ifdefs to make it configurable and able for a single implementation to cover all the cases for the benchmarking.</p>\n");
 
     printf ("<dl>");
 
@@ -193,7 +191,6 @@ int main (int argc, char **argv)
     printf ("<dt>squoze64</dt><dd>UTF-8 embed encoding, supporting up 8 UTF-8 bytes of embedded data.</dd>\n");
     printf ("<dt>squoze256</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 50 unicode code points</dd>\n");
     printf ("</dl>\n");
-
 
 
 
@@ -225,28 +222,26 @@ int main (int argc, char **argv)
 "    return *((uint64_t*)&amp;encoded[0]);\n"
 "  }\n"
 "\n"
-"  // murmurhash one-at-a-time\n"
-"  hash = 3323198485ul;\n"
-"  for (unsigned int i = 0; i &lt; len; i++)\n"
-"  { \n"
-"    uint8_t key = utf8[i];\n"
-"    hash ^= key;\n"
-"    hash *= 0x5bd1e995;\n"
-"    hash ^= hash &gt;&gt; 15;\n"
-"  }\n"
-"  return hash &amp; ~1; // make even\n"
+"  return (uint64_t)intern_string(utf8); // fall back to\n"
+"                                        // regular interning\n"
+"                                        // and rely on an aligned\n"
+"                                        // pointer for the interned\n"
+"                                        // string\n"
 "}</pre>\n");
 
-
-    printf ("<pre>const char *squoze64_decode (uint64_t hash)\n"
+    printf ("<pre>\n"
+"// example code, not thread safe and the returned string\n"
+"// for embedded strings are overwritten on each call\n"
+"const char *squoze64_decode (uint64_t squozed)\n"
 "{\n"
-"  static uint8_t buf[10];\n"
+"  if ((squozed & 1) == 0)\n"
+"     return (char*)squozed;\n"
+"\n"
+"  static uint8_t buf[10];"
 "  buf[8] = 0;\n"
-"  ((uint64_t*)buf)[0]= hash; // or memcpy (buf, hash, 8);\n"
-"  if ((buf[0] & 1) == 0)\n"
-"     return NULL;\n"
+"  ((uint64_t*)buf)[0] = squozed;\n"
 "  if (buf[0] == 129)\n"
-"     return buf+1;\n"
+"    return buf + 1;\n"
 "  buf[0] /= 2;\n"
 "  return buf;\n"
 "}</pre>");

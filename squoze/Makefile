@@ -1,18 +1,4 @@
-all: squoze squoze-test \
-	test-32-utf5-intern \
-	test-32-utf5-intern-embed \
-	test-62-utf5-intern \
-	test-62-utf5-intern-embed \
-	test-52-utf5-intern \
-	test-52-utf5-intern-embed \
-	test-32-utf8-intern \
-	test-32-utf8-intern-embed \
-	test-64-utf8-intern \
-	test-64-utf8-intern-embed \
-	test-head \
-	test-foot \
-	test-header \
-	test-footer
+all: squoze squoze-test index.html
 clean:
 	rm -f squoze squoze-test test*
 squoze: squoze.c squoze.h Makefile
@@ -88,7 +74,20 @@ test-62-utf5-intern: squoze-test.c squoze.h Makefile
 
 report.txt: squoze gen-report.sh
 	./gen-report.sh > report.txt
-index.html: all
+index.html: test-32-utf5-intern \
+	test-32-utf5-intern-embed \
+	test-62-utf5-intern \
+	test-62-utf5-intern-embed \
+	test-52-utf5-intern \
+	test-52-utf5-intern-embed \
+	test-32-utf8-intern \
+	test-32-utf8-intern-embed \
+	test-64-utf8-intern \
+	test-64-utf8-intern-embed \
+	test-head \
+	test-foot \
+	test-header \
+	test-footer
 	rm index.html || true
 	./test-head >> index.html
 	for a in 4 6 8 10 12 23;do export MAX_WORD_LEN=$$a;make report-part.html;done 
@@ -119,7 +118,6 @@ report-part-32bit.html: all
 	./test-32-utf5-intern       >> report-32bit.html
 	./test-footer               >> report-32bit.html
 
-	#sh -c 'diff -u reference.txt report.txt'
 update-reference: report.txt
 	cp report.txt reference.txt
 rpi-cp:
@@ -133,8 +131,7 @@ README: index.html
 updateweb: ../squoze.tar.xz
 	cp index.html squoze.h ../squoze.tar.xz ~/squoze.org
 	syncsquoze
-../squoze.tar.xz:
+../squoze.tar.xz: squoze.c squoze.h Makefile squoze-test.c
 	(cd ..;tar cvf squoze.tar.xz squoze/squoze.[ch]\
                                      squoze/Makefile \
-                                     squoze/squoze-test \
-                                     squoze/README)
+                                     squoze/squoze-test.c )
