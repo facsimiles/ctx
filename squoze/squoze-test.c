@@ -166,30 +166,28 @@ int main (int argc, char **argv)
     printf ("<h1>Squoze - reversible unicode string hashes.</h2>\n");
     printf ("<div style='font-style:italic; text-align:right;'>compute more, save energy, parse faster;<br/>with strings squozed to fit in computer words</div>");
     //printf ("<div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");
-    printf ("<p>Squoze is a type of unicode string hashes for string interning. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of recoverable data in the hash itself. The part of the hash space used for embedding is guaranteed to be collision free - by storing data directly we avoid cache-misses needed for fetching from RAM. Note that the strings that are short enough for embedding are not at all stored in an internal hash-table when used for string interning, the guaranteed to be unique odd values are used directly.</p>");
+    printf ("<p>Squoze is a type of unicode string hashes for string interning. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of recoverable data in the hash itself. By storing data directly we avoid cache and lock contention involved in using the internal string interning hash-table. The same small string optimization can be used with larger hashes instead of pointers when building content addressed storage data structures like git/IPFS, as well as with smaller fixed vocabularies where the behavior is a perfect hash.</p>");
 
     printf("<p>The embedded data is stored in either UTF8 or transcoded to <a href='#utf5+'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme.</p>");
 
-    //printf ("<p>The benefits of embedding strings in pointers is dataset dependent, if all data fits in caches the added computational overhead might not be worth it, while there still is RAM (and ROM) savings that can be beneficial on embedded platforms.</p>");
+    printf ("<p>The benefits of embedding strings in pointers is dataset dependent - but note that in the english language the average word length is 5. If all data fits in caches the added computational overhead might only slightly reduce cache contention. As I understand it microcontrollers have no L1/L2 cache, but there can still be benefits from RAM savings</p>");
 
-    printf ("<p>On embedded platforms not having the strings consume heap space can be a significant saving, this should however be weighed against the overhead of needing 32bit values to store/pass around sometimes being able to use 16bit references to strings is a more significant overall saving.</p>");
+    //printf ("<p>On embedded platforms not having the strings consume heap space can be a significant saving, this should however be weighed against the overhead of needing 32bit values to store/pass around sometimes being able to use 16bit references to strings is a more significant overall saving. On systems without L1/L2 caches the optimization will not save time.</p>");
 
     printf ("<p>A series of subvariants have been specified as part of parameterizing the benchmarks, and definining the encoding: </p>");
     
     printf ("<p>squoze64-utf8 achieves <b>7x speedup</b> over murmurhash one-at-a-time used for initial string interning and <b>3x speedup</b> for subsequent lookups of the same string when the strings are shorther than 8bytes of utf8, see <a href='#benchmarks'>the benchmarks</a> for details.</p>");
 
-    printf ("<p>The squoze hashes are still under development, preliminary variants for <a href='squoze.py'>python3</a> and <a href='squoze.tar.xz'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>string interning benchmarks</a> - it is heavily parameterized with ifdefs to make it configurable and able for a single implementation to cover all the cases for the benchmarking.</p>\n");
+    printf ("<p>The squoze hashes are still under development, preliminary variants for UTF5 coding for <a href='squoze.py'>python3</a> and <a href='squoze.tar.xz'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>string interning benchmarks</a> - it is heavily parameterized with ifdefs to make it configurable and able for a single implementation to cover all the cases for the benchmarking.</p>\n");
 
     printf ("<dl>");
 
-    printf ("<dt>squoze-bignum</dt><dd><a href='#utf5'>UTF5+</a> encoding, supporting arbitrary length unicode strings stored in bignums.</dd>\n");
-
-    printf ("<dt>squoze32</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 6 lower-case ascii of embedded data</dd>\n");
+    printf ("<dt>squoze64-utf8</dt><dd>UTF-8 embed encoding, supporting up 8 UTF-8 bytes of embedded data.</dd>\n");
+    //printf ("<dt>squoze-bignum-utf5</dt><dd><a href='#utf5'>UTF5+</a> encoding, supporting arbitrary length unicode strings stored in bignums.</dd>\n");
     printf ("<dt>squoze32-utf8</dt><dd>UTF8 embed encoding, supporting up 4 UTF-8 bytes of embedded data</dd>\n");
+    printf ("<dt>squoze32</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 6 lower-case ascii of embedded data</dd>\n");
     printf ("<dt>squoze52</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 10 lower-case ascii of embedded data, 52bit integers can be stored without loss in a double.</dd>\n");
     printf ("<dt>squoze62</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 12 unicode code points.</dd>\n");
-    printf ("<dt>squoze64</dt><dd>UTF-8 embed encoding, supporting up 8 UTF-8 bytes of embedded data.</dd>\n");
-    printf ("<dt>squoze256</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 50 unicode code points</dd>\n");
     printf ("</dl>\n");
 
 
@@ -247,6 +245,9 @@ int main (int argc, char **argv)
 "}</pre>");
 
     printf ("<h2 id='utf5+'>UTF5+ and squoze-bignum implementation</h2>\n");
+
+    printf ("<p>The small bit transformations of the UTF-8 variants takes a lot less time to compute, the UTF5+ encoding saves more RAM and can also be used for other bandwidth/memory constrained string encodings for ROM-embedded strings, LoRA or RTTY.</p>");
+
     printf ("<p>The first stage of this encoding is encoding to UTF5+ which extends <a href='https://datatracker.ietf.org/doc/html/draft-jseng-utf5-01.txt'>UTF-5</a>. The symbol 'G' with value 16 does not occur in normal UTF-5 and is used to change encoding mode to a sliding window, valid UTF5 strings are correctly decoded by a UTF5+ decoder.</p>");
     printf ("<p>In squeeze mode the initial offset is set based on the last encoded unicode codepoint in UTF5 mode. Start offsets for a code point follow the pattern 19 + 26 * N, which makes a-z fit in one window. In sliding window mode the following quintets have special meaning:</p>");
     printf ("<table><tr><td>0</td><td>0</td><td>emit SPACE</td></tr>\n");
