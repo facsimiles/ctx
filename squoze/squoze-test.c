@@ -166,9 +166,10 @@ int main (int argc, char **argv)
     printf ("<h1>Squoze - reversible unicode string hashes.</h2>\n");
     printf ("<div style='font-style:italic; text-align:right;'>compute more, save energy, parse faster;<br/>with strings squozed to fit in computer words</div>");
     //printf ("<div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");
-    printf ("<p>Squoze is a type of unicode string hashes for string interning. The hashes trade the least significant bit of digest data for being able to embed digest_size-1 bits of recoverable data in the hash itself. By storing data directly we avoid cache and lock contention involved in using the internal string interning hash-table. The same small string optimization can be used with larger hashes instead of pointers when building content addressed storage data structures like git/IPFS, as well as with smaller fixed vocabularies where the behavior is a perfect hash.</p>");
+    printf ("<p>The squoze described on this page is an optimization technique for string interning. Short strings are stored directly in computer words rather than using an underlying hash-tabled and associated heap storage of strings. The least significant bit is used to indicate if a string is embedded or not, allowing allocations that have an alignment of at least 2 to be distinguished.  By storing data directly we avoid cache and lock contention involved in using the internal string interning hash-table.</p>\n");
+    printf("<p>Calling it a hash might be a bit of a misnomer, but the same optimization can be used for with larger hashes in content addressed storage systems like git/IPFS, as well as in parsers with a limited vocabulary so the resulting behavior is that of a perfect hash.</p>");
 
-    printf("<p>The embedded data is stored in either UTF8 or transcoded to <a href='#utf5+'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme.</p>");
+    printf("<p>The embedded data is stored in either UTF-8 or transcoded to <a href='utf5+/'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme.</p>");
 
     printf ("<p>The benefits of embedding strings in pointers is dataset dependent - but note that in the english language the average word length is 5. If all data fits in caches the added computational overhead might only slightly reduce cache contention. As I understand it microcontrollers have no L1/L2 cache, but there can still be benefits from RAM savings</p>");
 
@@ -178,22 +179,21 @@ int main (int argc, char **argv)
     
     printf ("<p>squoze64-utf8 achieves <b>7x speedup</b> over murmurhash one-at-a-time used for initial string interning and <b>3x speedup</b> for subsequent lookups of the same string when the strings are shorther than 8bytes of utf8, see <a href='#benchmarks'>the benchmarks</a> for details.</p>");
 
-    printf ("<p>The squoze hashes are still under development, preliminary variants for UTF5 coding for <a href='squoze.py'>python3</a> and <a href='squoze.tar.xz'>C</a> are available, the C code is the hashes tested in the <a href='#benchmarks'>string interning benchmarks</a> - it is heavily parameterized with ifdefs to make it configurable and able for a single implementation to cover all the cases for the benchmarking.</p>\n");
 
     printf ("<dl>");
 
     printf ("<dt>squoze64-utf8</dt><dd>UTF-8 embed encoding, supporting up 8 UTF-8 bytes of embedded data.</dd>\n");
-    //printf ("<dt>squoze-bignum-utf5</dt><dd><a href='#utf5'>UTF5+</a> encoding, supporting arbitrary length unicode strings stored in bignums.</dd>\n");
-    printf ("<dt>squoze32-utf8</dt><dd>UTF8 embed encoding, supporting up 4 UTF-8 bytes of embedded data</dd>\n");
-    printf ("<dt>squoze32</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 6 lower-case ascii of embedded data</dd>\n");
-    printf ("<dt>squoze52</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 10 lower-case ascii of embedded data, 52bit integers can be stored without loss in a double.</dd>\n");
-    printf ("<dt>squoze62</dt><dd><a href='#utf5'>UTF5+</a> embed encoding, supporting up to 12 unicode code points.</dd>\n");
+    //printf ("<dt>squoze-bignum-utf5</dt><dd><a href='utf5+/'>UTF5+</a> encoding, supporting arbitrary length unicode strings stored in bignums.</dd>\n");
+    printf ("<dt>squoze32-utf8</dt><dd>UTF-8 embed encoding, supporting up 4 UTF-8 bytes of embedded data</dd>\n");
+    printf ("<dt>squoze32-utf5</dt><dd><a href='utf5+/'>UTF5+</a> embed encoding, supporting up to 6 lower-case ascii of embedded data</dd>\n");
+    printf ("<dt>squoze52-utf5</dt><dd><a href='utf5+/'>UTF5+</a> embed encoding, supporting up to 10 lower-case ascii of embedded data, 52bit integers can be stored without loss in a double.</dd>\n");
+    printf ("<dt>squoze62-utf5</dt><dd><a href='utf5+/'>UTF5+</a> embed encoding, supporting up to 12 unicode code points.</dd>\n");
     printf ("</dl>\n");
 
 
 
     printf ("<h2>squoze64 implementation</h2>");
-    printf ("<p>the squoze-64 encoding is a small bitmanipulation of UTF-8 in-memory encoding, for strings that will fit only the first byte is manipulated and only if it ascii and not <em>@</em> the value is double and 1 is added. When the first byte does not match our constraints we store 129 - which means the following 7bytes directly encode the value</p>");
+    printf ("<p>the squoze-64 encoding is a small bitmanipulation of UTF-8 in-memory encoding, for strings that will fit only the first byte is manipulated and only if it ascii and not <em>VT (ASCII 11)</em> the value is doubled and 1 is added. When the first byte does not match our constraints we store 23 - which means the following 7bytes directly encode the value</p>");
 
     printf (
 "<pre>uint64_t squoze64(const char *utf8, size_t len)\n"
@@ -204,7 +204,7 @@ int main (int argc, char **argv)
 "  uint8_t  first_byte = ((uint8_t*)utf8)[0];\n"
 "\n"
 "  if (first_byte &lt; 128\n"
-"      &amp;&amp; first_byte != '@'\n"
+"      &amp;&amp; first_byte != 11\n"
 "      &amp;&amp; (len &lt;= (squoze_dim/8)))\n"
 "  {\n"
 "    for (int i = 0; utf8[i]; i++)\n"
@@ -216,7 +216,7 @@ int main (int argc, char **argv)
 "  {\n"
 "    for (int i = 0; utf8[i]; i++)\n"
 "      encoded[i+1] = utf8[i];\n"
-"    encoded[0] = 129;\n"
+"    encoded[0] = 23;\n"
 "    return *((uint64_t*)&amp;encoded[0]);\n"
 "  }\n"
 "\n"
@@ -238,50 +238,17 @@ int main (int argc, char **argv)
 "  static uint8_t buf[10];"
 "  buf[8] = 0;\n"
 "  ((uint64_t*)buf)[0] = squozed;\n"
-"  if (buf[0] == 129)\n"
+"  if (buf[0] == 23)\n"
 "    return buf + 1;\n"
 "  buf[0] /= 2;\n"
 "  return buf;\n"
 "}</pre>");
 
-    printf ("<h2 id='utf5+'>UTF5+ and squoze-bignum implementation</h2>\n");
-
-    printf ("<p>The small bit transformations of the UTF-8 variants takes a lot less time to compute, the UTF5+ encoding saves more RAM and can also be used for other bandwidth/memory constrained string encodings for ROM-embedded strings, LoRA or RTTY.</p>");
-
-    printf ("<p>The first stage of this encoding is encoding to UTF5+ which extends <a href='https://datatracker.ietf.org/doc/html/draft-jseng-utf5-01.txt'>UTF-5</a>. The symbol 'G' with value 16 does not occur in normal UTF-5 and is used to change encoding mode to a sliding window, valid UTF5 strings are correctly decoded by a UTF5+ decoder.</p>");
-    printf ("<p>In squeeze mode the initial offset is set based on the last encoded unicode codepoint in UTF5 mode. Start offsets for a code point follow the pattern 19 + 26 * N, which makes a-z fit in one window. In sliding window mode the following quintets have special meaning:</p>");
-    printf ("<table><tr><td>0</td><td>0</td><td>emit SPACE</td></tr>\n");
-    printf ("<tr><td>1</td><td>1</td><td>codepoint at offset + 0</td></tr>\n");
-    printf ("<tr><td>2</td><td>2</td><td>codepoint at offset + 1</td></tr>\n");
-    printf ("<tr><td></td><td>..</td><td></td></tr>\n");
-    printf ("<tr><td>10</td><td>A</td><td>codepoint at offset + 9</td></tr>\n");
-    printf ("<tr><td>11</td><td>B</td><td>codepoint at offset + 10</td></tr>\n");
-    printf ("<tr><td>12</td><td>C</td><td>codepoint at offset + 11</td></tr>\n");
-    printf ("<tr><td></td><td>..</td><td></td></tr>\n");
-    printf ("<tr><td>26</td><td>Q</td><td>codepoint at offset + 25</td></tr>\n");
-    printf ("<tr><td>27</td><td>R</td><td>offset += 26 *1</td></tr>\n");
-    printf ("<tr><td>28</td><td>S</td><td>offset += 26 *1</td></tr>\n");
-    printf ("<tr><td>29</td><td>T</td><td>offset += 26 *1</td></tr>\n");
-    printf ("<tr><td>30</td><td>U</td><td>offset += 26 *1</td></tr>\n");
-    printf ("<tr><td>31</td><td>V</td><td>switch to UTF-5 mode</td></tr></table>\n");
-
-    printf ("<p>For compatibility with UTF-5 we start out in UTF-5 mode rather than window mode.</p>");
-    printf ("<p>The encoder decides if the current mode is kept or not for every codepoint. The cost in output quintets is computed for UTF-5 and windowed is computed for both this and the next codepoint. We switch from UTF-5 to windowed when the cost of switching considering this and the next code points is equal or smaller, in the other direction we only switch if there is a gain to be had.</p>");
-
-    printf ("<p>For example the string <em>Hello World</em> is encoded as follows:</p>");
-    printf ("<pre>H   e  l l o   W  o  r l d                             11 bytes\n"
-"GT2 U5 C C F 0 TH UF I C 4     16 quintets = 80 bits = 10 bytes\n"
-"\n"
-"h  e l l o   w o r l d     11 bytes\n"
-"G8 5 C C F 0 N F I C 4     12 quintets = 60 bits = 7.5bytes padded to 8 bytes</pre>");
-
-    printf ("<p>When transforming a quintet sequence into an integer the initial mode is encoded as a bit of 1 if we are starting out in UTF-5 mode, allowing us to skip the G. To create an integer we start with 0, add the integer value of the first quintet. If there are more quintets, multiply by 32 and continue adding quintets. The resulting value is multipled by 4, the second lowest bit set according to windowed or utf-5 initial mode and the lowest bit set.</p>");
-
     printf ("<h2>squoze32, squoze52 and squoze62 implementation</h2>\n");
-    printf ("<p>These hashes are just like squoze-bignum if they as UTF5+ encode as fewer than 6, 10 or 12 quintets. If this is not the case a murmurhash is computed and the lowest bit stripped.</p>");
+    printf ("<p>These encodings use <a href='utf5+/'>UTF5+</a> to encode strings of up to 6, 10 or 12 characters.</p>");
 
     printf ("<h2 id='benchmarks'>benchmarks</h2>\n");
-    printf ("<p>The implementation benchmarked is an open adressing hashtable storing heap allocated chunks containing both the hash, length and raw byte data for the UTF8 string.</p>");
+    printf ("<p>The implementation benchmarked is an open adressing hashtable storing heap allocated chunks containing both the hash, length and raw byte data for the UTF-8 string. The benchmarking code can be downloaded here: <a href='squoze.tar.xz'>squoze.tar.xz</a> it is a small C project that should build on a 64bit linux system, with /usr/share/dict/words available.</p>");
 
     printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability.</p>");
 
@@ -289,7 +256,7 @@ int main (int argc, char **argv)
     printf ("<p>The embed%% column shows how many of the words got embedded instead of interned.</p>");
     printf ("<p>The <em>RAM use</em> column shows the amount of bytes used by the allocations for interned strings as well as the size taken by the hash table used, without the size taken by tempty slots in the hash-table to be comparable with what a more compact optimizing structure used when targeting memory constrained systems.</p>");
 
-    printf ("<p>The hashes with the direct UTF8 embedding are the most reliable optimization when only runtime/energy use is considered. The UTF5 embeddings save more RAM and allow more guarantee collision free strings but are more expensive to compute.</p>");
+    printf ("<p>The hashes with the direct UTF-8 embedding are the most reliable optimization when only runtime/energy use is considered. The UTF5 embeddings save more RAM and allow more guarantee collision free strings but are more expensive to compute.</p>");
 
 
     /*
