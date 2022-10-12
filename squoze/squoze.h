@@ -635,7 +635,7 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *stf8
   uint8_t first_byte = ((uint8_t*)utf8)[0];
 
   if (first_byte<128
-      && first_byte != '@'
+      && first_byte != 11
       && (length <= bytes_dim))
     {
 
@@ -697,29 +697,29 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *stf8
       switch (length)
       {
 #if SQUOZE_UTF8_MANUAL_UNROLL
-	case 0: hash = 129; break;
-	case 1: hash = 129 + (utf8[0] << (8*1)); break;
-	case 2: hash = 129 + (utf8[0] << (8*1))
+	case 0: hash = 23; break;
+	case 1: hash = 23 + (utf8[0] << (8*1)); break;
+	case 2: hash = 23 + (utf8[0] << (8*1))
 	                   + (utf8[1] << (8*2)); break;
-	case 3: hash = 129 + (utf8[0] << (8*1))
+	case 3: hash = 23 + (utf8[0] << (8*1))
 	                   + (utf8[1] << (8*2))
 	                   + (utf8[2] << (8*3));break;
-	case 4: hash = 129 + ((uint64_t)utf8[0] << (8*1))
+	case 4: hash = 23 + ((uint64_t)utf8[0] << (8*1))
 	                   + ((uint64_t)utf8[1] << (8*2))
 	                   + ((uint64_t)utf8[2] << (8*3))
 	                   + ((uint64_t)utf8[3] << (8*4)); break;
-	case 5: hash = 129 + ((uint64_t)utf8[0] << (8*1))
+	case 5: hash = 23 + ((uint64_t)utf8[0] << (8*1))
 	                   + ((uint64_t)utf8[1] << (8*2))
 	                   + ((uint64_t)utf8[2] << (8*3))
 	                   + ((uint64_t)utf8[3] << (8*4))
 	                   + ((uint64_t)utf8[4] << (8*5)); break;
-	case 6: hash = 129 + ((uint64_t)utf8[0] << (8*1))
+	case 6: hash = 23 + ((uint64_t)utf8[0] << (8*1))
 	                   + ((uint64_t)utf8[1] << (8*2))
 	                   + ((uint64_t)utf8[2] << (8*3))
 	                   + ((uint64_t)utf8[3] << (8*4))
 	                   + ((uint64_t)utf8[4] << (8*5))
 	                   + ((uint64_t)utf8[5] << (8*6)); break;
-	case 7: hash = 129 + ((uint64_t)utf8[0] << (8*1))
+	case 7: hash = 23 + ((uint64_t)utf8[0] << (8*1))
 	                   + ((uint64_t)utf8[1] << (8*2))
 	                   + ((uint64_t)utf8[2] << (8*3))
 	                   + ((uint64_t)utf8[3] << (8*4))
@@ -728,7 +728,7 @@ static inline uint64_t squoze_encode_no_intern (int squoze_dim, const char *stf8
 	                   + ((uint64_t)utf8[6] << (8*7)); break;
 #endif
 	default:
-          hash = 129;
+          hash = 23;
           for (int i = 0; i < length; i++)
             hash += ((uint64_t)utf8[i]<<(8*(i+1)));
 	  break;
@@ -1080,7 +1080,7 @@ uint64_t squoze64 (const char *utf8, size_t len)
   uint8_t  first_byte = ((uint8_t*)utf8)[0];
 
   if (first_byte<128             // first char is ASCII
-      && first_byte != '@'       // and not our reserved marker/2
+      && first_byte != 11        // and not our reserved marker/2
       && (len <= dim_bytes))     // and fitting
   {
     for (int i = 0; utf8[i]; i++)
@@ -1092,7 +1092,7 @@ uint64_t squoze64 (const char *utf8, size_t len)
   {
     for (int i = 0; utf8[i]; i++)
       encoded[i+1] = utf8[i];
-    encoded[0] = 129;
+    encoded[0] = 23;
     return *((uint64_t*)&encoded[0]);
   }
 
@@ -1122,7 +1122,7 @@ uint32_t squoze32_utf8 (const char *utf8, size_t len)
   uint8_t  first_byte = ((uint8_t*)utf8)[0];
 
   if (first_byte<128             // first char is ASCII
-      && first_byte != '@'       // and not our reserved marker/2
+      && first_byte != 11        // and not our reserved marker/2
       && (len <= dim_bytes))     // and fitting
   {
     for (int i = 0; utf8[i]; i++)
@@ -1134,7 +1134,7 @@ uint32_t squoze32_utf8 (const char *utf8, size_t len)
   {
     for (int i = 0; utf8[i]; i++)
       encoded[i+1] = utf8[i];
-    encoded[0] = 129;
+    encoded[0] = 23;
     return *((uint64_t*)&encoded[0]);
   }
 
@@ -1324,7 +1324,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
   {
     if (squoze_dim == 32)
     {
-      if ((hash & 0xff) == 129)
+      if ((hash & 0xff) == 23)
       {
          memcpy (ret, ((char*)&hash)+1, 3);
 	 ret[3] = 0;
@@ -1338,7 +1338,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
     }
     else
     {
-      if ((hash & 0xff) == 129)
+      if ((hash & 0xff) == 23)
       {
         memcpy (ret, ((char*)&hash)+1, 7);
 	ret[7] = 0;
@@ -1474,7 +1474,7 @@ const char *squoze64_decode (uint64_t hash)
   buf[8] = 0;
   ((uint64_t*)buf)[0]= hash; // or memcpy (buf, hash, 8);
   if ((buf[0] & 1) == 0) return NULL;
-  if (buf[0]==129)
+  if (buf[0]==23)
      return (char*)buf+1;
   buf[0]/=2;
   return (char*)buf;
@@ -1487,7 +1487,7 @@ const char *squoze32_utf8_decode (uint64_t hash)
   buf[4] = 0;
   ((uint32_t*)buf)[0]= hash; // or memcpy (buf, hash, 8);
   if ((buf[0] & 1) == 0) return NULL;
-  if (buf[0]==129)
+  if (buf[0]==23)
      return (char*)buf+1;
   buf[0]/=2;
   return (char*)buf;

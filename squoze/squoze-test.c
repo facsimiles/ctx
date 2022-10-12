@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS               10
+#define ITERATIONS               50
 #define INNER_ITERATIONS         1 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32 1
@@ -155,7 +155,7 @@ int main (int argc, char **argv)
 "h2,h3,table,td,tr,th{font-size:1em;}\n"
 "body{font-family:monospace; max-width:40em;margin-left:auto;margin-right:auto;background:#fff;padding:1em; hyphens: auto; hyphenate-limit-chars: 6 3 2; }\n"
 "html{background:#234;font-size:1.2em;}\n"
-"dt { color: #832}\n"
+"em, dt { color: #832}\n"
 "h1 { font-size:1.33em;}\n"
 "h2 { border-top: 1px solid black; padding-top: 0.5em; }\n"
 "table {margin-left:auto;margin-right:auto;}\n"
@@ -166,7 +166,7 @@ int main (int argc, char **argv)
     printf ("<h1>Squoze - reversible unicode string hashes.</h2>\n");
     printf ("<div style='font-style:italic; text-align:right;'>compute more, save energy, parse faster;<br/>with strings squozed to fit in computer words</div>");
     //printf ("<div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");
-    printf ("<p>The squoze described on this page is an optimization technique for string interning. Short strings are stored directly in computer words rather than using an underlying hash-tabled and associated heap storage of strings. The least significant bit is used to indicate if a string is embedded or not, allowing allocations that have an alignment of at least 2 to be distinguished.  By storing data directly we avoid cache and lock contention involved in using the internal string interning hash-table.</p>\n");
+    printf ("<p>Storing strings in computer words is an <a href='https://en.wikipedia.org/wiki/SQUOZE'>old practice</a>, here this optimization technique is modernized for unicode and combined with string interning. Short strings are stored directly in computer words rather than using an underlying hash-tabled and associated heap storage of strings. The least significant bit is used to indicate if a string is embedded or not, allowing allocations that have an alignment of at least 2 to be distinguished.  By storing data directly we avoid cache and lock contention involved in using the internal string interning hash-table.</p>\n");
     printf("<p>Calling it a hash might be a bit of a misnomer, but the same optimization can be used for with larger hashes in content addressed storage systems like git/IPFS, as well as in parsers with a limited vocabulary so the resulting behavior is that of a perfect hash.</p>");
 
     printf("<p>The embedded data is stored in either UTF-8 or transcoded to <a href='utf5+/'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme.</p>");
@@ -193,7 +193,9 @@ int main (int argc, char **argv)
 
 
     printf ("<h2>squoze64 implementation</h2>");
-    printf ("<p>the squoze-64 encoding is a small bitmanipulation of UTF-8 in-memory encoding, for strings that will fit only the first byte is manipulated and only if it ascii and not <em>VT (ASCII 11)</em> the value is doubled and 1 is added. When the first byte does not match our constraints we store 23 - which means the following 7bytes directly encode the value</p>");
+    printf ("<p>the squoze-64 encoding is a small bitmanipulation of UTF-8 in-memory encoding, for strings that will fit only the first byte is manipulated and only if it ascii and not vertical-tab (ASCII 11) the value is doubled and 1 is added. When the first byte does not match our constraints we store 23 - which means the following 7bytes directly encode the value. </p>");
+
+    printf ("<p>The following example code is an illustration - the benchmarked implementation has been manually unrolled.</p>\n");
 
     printf (
 "<pre>uint64_t squoze64(const char *utf8, size_t len)\n"
@@ -209,7 +211,7 @@ int main (int argc, char **argv)
 "  {\n"
 "    for (int i = 0; utf8[i]; i++)\n"
 "      encoded[i] = utf8[i];\n"
-"    encoded[0] = encoded[0]*2+1;\n"
+"    encoded[0] = encoded[0] * 2 + 1;\n"
 "    return *((uint64_t*)&amp;encoded[0]);\n"
 "  }\n"
 "  else if (len &lt;= (squoze_dim/8)-1)\n"
@@ -250,18 +252,22 @@ int main (int argc, char **argv)
     printf ("<h2 id='benchmarks'>benchmarks</h2>\n");
     printf ("<p>The implementation benchmarked is an open adressing hashtable storing heap allocated chunks containing both the hash, length and raw byte data for the UTF-8 string. The benchmarking code can be downloaded here: <a href='squoze.tar.xz'>squoze.tar.xz</a> it is a small C project that should build on a 64bit linux system, with /usr/share/dict/words available.</p>");
 
-    printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability.</p>");
+    printf ("<p>The benchmark is goes through all the words in /usr/share/dict/words and respectively creating them for the first time, a second time, and finally having an array of IDs get a copy of the string. The benchmark selects the quickest runtimes out of 10 (or more) runs to average out effects of caches and other tasks on the system. For the shorter strings, the whole datastructure fitting in L2 cache and there being no concurrent cache contention has impact on the results.</p>");
 
-    printf ("<p>The <em>create</em> column is the microseconds taken on average to intern a word, <em>lookup</em> is the time taken the second and subsequent times a string is referenced. For comparisons the handle/pointer of the interned string would normally be used and be the same for all cases, <em>decode</em> is the time taken for getting a copy of the interned string, for interned strings all we need to do is dereference a pointer, in most uses decoding of strings is not where the majority of time is spent.</p>");
-    printf ("<p>The embed%% column shows how many of the words got embedded instead of interned.</p>");
-    printf ("<p>The <em>RAM use</em> column shows the amount of bytes used by the allocations for interned strings as well as the size taken by the hash table used, without the size taken by tempty slots in the hash-table to be comparable with what a more compact optimizing structure used when targeting memory constrained systems.</p>");
+    printf ("<p>The <em>create</em> column is the microseconds taken on average to intern a word, <em>lookup</em> is the time taken the second and subsequent times a string is referenced. For comparisons the handle/pointer of the interned string would normally be used and be the same for all cases, <em>decode</em> is the time taken for getting a copy of the interned string, for interned strings all we need to do is dereference a pointer, in most uses decoding of strings is not where the majority of time is spent.");
+    printf (" The <em>embed%%</em> column shows how many of the words got embedded instead of interned. This can also be read as the percentage of possible cache-misses that are avoided for the workload.");
+    printf ("The <em>RAM use</em> column shows the amount of bytes used by the allocations for interned strings as well as the size taken by the hash table used, without the size taken by tempty slots in the hash-table to be comparable with what a more compact optimizing structure used when targeting memory constrained systems.</p>");
 
-    printf ("<p>The hashes with the direct UTF-8 embedding are the most reliable optimization when only runtime/energy use is considered. The UTF5 embeddings save more RAM and allow more guarantee collision free strings but are more expensive to compute.</p>");
+    printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability, as input to the underlying hash-table.</p>");
+
+    //printf ("<p>The hashes with the direct UTF-8 embedding are the most reliable optimization when only runtime/energy use is considered. The UTF5 embeddings save more RAM and allow more guarantee collision free strings but are more expensive to compute.</p>");
 
 
     /*
     printf ("<p>The large amount of time taken for <em>squoze52 alwaysintern</em> can be attributed to the dataset no longer fitting in caches when using 64bit quantities in the struct backing each interned string.</p>");
     */
+
+    printf ("<p>The first line in each set of benchmarks is using the same underlying string interning hash-table as the others, but always interning and using murmurhash as the hash function.</p>\n");
 
     return 0;
 #endif
