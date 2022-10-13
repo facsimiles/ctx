@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS               50
+#define ITERATIONS               30
 #define INNER_ITERATIONS         1 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32 1
@@ -17,6 +17,12 @@
 #include <sys/time.h>
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
+typedef enum {
+	TEST_CREATE,
+	TEST_LOOKUP,
+	TEST_DECODE,
+	TEST_CONCAT,
+} TestType;
 
 static struct timeval start_time;
 static void
@@ -48,12 +54,11 @@ struct _StringRef
 
 StringRef *dict = NULL;
 
-static float do_test_round (int words, int create, int lookup, int decode)
+static float do_test_round (int words, TestType type)
 {
   Squoze *refs[words];
+  squoze_atexit (); // drop existing interned strings
   long start = ticks();
-  squoze_atexit ();
-
   {
    int i = 0;
   for (StringRef *str = dict; str; str=str->next,i++)
@@ -70,52 +75,92 @@ static float do_test_round (int words, int create, int lookup, int decode)
   }
   }
 
-  if (!create) start = ticks();
-
-  if (lookup)
+  switch (type)
   {
-  for (StringRef *str = dict; str; str=str->next)
-  {
-    char input[4096];
-    for (int j = 0; j < INNER_ITERATIONS; j++)
-    {
-      if (j)
-        sprintf (input, "%s%i", str->str, j);
-      else
-        sprintf (input, "%s", str->str);
-      squoze (input);
-    }
-  }
+    case TEST_CREATE:
+      return ticks()-start;
+      break;
+    case TEST_LOOKUP:
+      start = ticks();
+      for (StringRef *str = dict; str; str=str->next)
+      {
+        char input[4096];
+        for (int j = 0; j < INNER_ITERATIONS; j++)
+        {
+          if (j)
+            sprintf (input, "%s%i", str->str, j);
+          else
+            sprintf (input, "%s", str->str);
+          squoze (input);
+        }
+      }
+      return ticks()-start;
+    case TEST_DECODE:
+      start = ticks ();
+      {
+        int i = 0;
+        char temp[1024];
+        for (StringRef *str = dict; str; str=str->next, i++)
+        {
+          const char *decoded;
+          for (int j = 0; j < INNER_ITERATIONS; j++)
+          {
+            decoded = squoze_peek (refs[i]);
+            if (decoded)
+              strcpy (temp, decoded);
+          }
+        }
+      }
+      return ticks ()-start;
+    case TEST_CONCAT:
+      {
+      Squoze *str_b = squoze("s");
+      start = ticks ();
+        int i = 0;
+        for (StringRef *str = dict; str; str=str->next, i++)
+        {
+          for (int j = 0; j < INNER_ITERATIONS; j++)
+          {
+            const char *decodedA = squoze_peek (refs[i]);
+            const char *decodedB = squoze_peek (str_b);
+	    int len_a = strlen (decodedA);
+	    int len_b = strlen (decodedB);
+	    if (len_a + len_b < 128)
+	    {
+              char temp[128];
+	      temp[0]=0;
+              if (decodedA)
+                strcpy (temp, decodedA);
+	      if (decodedB)
+	        strcpy (&temp[strlen(temp)], decodedB);
+	      squoze (temp);
+	    }
+	    else if (len_a + len_b < 256)
+	    {
+              char *temp = malloc (len_a + len_b + 1);
+	      temp[0]=0;
+              if (decodedA)
+                strcpy (temp, decodedA);
+	      if (decodedB)
+	        strcpy (&temp[strlen(temp)], decodedB);
+	      squoze (temp);
+	      free (temp);
+	    }
+          }
+        }
+      return ticks ()-start;
+      }
   }
 
-  long end = ticks();
-
-  if(decode){
-  int i = 0;
-  char temp[1024];
-  for (StringRef *str = dict; str; str=str->next, i++)
-  {
-    const char *decoded;
-    for (int j = 0; j < INNER_ITERATIONS; j++)
-    {
-      decoded = squoze_peek (refs[i]);
-      if (decoded)
-        strcpy (temp, decoded);
-    }
-  }
-
-     end = ticks ();
-
-  }
-  return (end-start);
+  return 0.1;
 }
 
-static float do_test (int words, int iterations, int create, int lookup, int decode)
+static float do_test (int words, int iterations, TestType type)
 {
   float best_ms = 10000000.0f;
   for (int i = 0; i < iterations; i ++)
   {
-    float ms = do_test_round (words, create, lookup, decode);
+    float ms = do_test_round (words, type);
     if (ms < best_ms) best_ms = ms;
   }
   return best_ms;
@@ -255,6 +300,8 @@ int main (int argc, char **argv)
     printf ("<p>The benchmark is goes through all the words in /usr/share/dict/words and respectively creating them for the first time, a second time, and finally having an array of IDs get a copy of the string. The benchmark selects the quickest runtimes out of 10 (or more) runs to average out effects of caches and other tasks on the system. For the shorter strings, the whole datastructure fitting in L2 cache and there being no concurrent cache contention has impact on the results.</p>");
 
     printf ("<p>The <em>create</em> column is the microseconds taken on average to intern a word, <em>lookup</em> is the time taken the second and subsequent times a string is referenced. For comparisons the handle/pointer of the interned string would normally be used and be the same for all cases, <em>decode</em> is the time taken for getting a copy of the interned string, for interned strings all we need to do is dereference a pointer, in most uses decoding of strings is not where the majority of time is spent.");
+    printf (" <em>concat</em> is the time taken to concatenate \"s\" at tje end of each word, getting some matches due to pluralisation.\n");
+
     printf (" The <em>embed%%</em> column shows how many of the words got embedded instead of interned. This can also be read as the percentage of possible cache-misses that are avoided for the workload.");
     printf ("The <em>RAM use</em> column shows the amount of bytes used by the allocations for interned strings as well as the size taken by the hash table used, without the size taken by tempty slots in the hash-table to be comparable with what a more compact optimizing structure used when targeting memory constrained systems.</p>");
 
@@ -273,7 +320,7 @@ int main (int argc, char **argv)
 #endif
 #ifdef HEADER
     printf ("<h3>%i words, max-word-len: %i</h3>\n", words, max_word_len);
-	printf ("<table><tr><td></td><td>create</td><td>lookup</td><!--<td>create+decode</td>--><td>decode</td><td>embed%%</td><td>RAM use</td></tr>\n");
+	printf ("<table><tr><td></td><td>create</td><td>lookup</td><!--<td>create+decode</td>--><td>decode</td><td>concat</td><td>embed%%</td><td>RAM use</td></tr>\n");
 	return 0;
 #endif
 #ifdef FOOTER
@@ -394,13 +441,13 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
     embed_percentage = (100.0f * global_pool.count_embedded) / (words * INNER_ITERATIONS);
   }
 
-  printf ("%.3f</td><td>", do_test (words, iterations, 1, 0, 0)/(words * INNER_ITERATIONS));
-  printf ("%.3f</td><td>", do_test (words, iterations, 0, 1, 0)/(words * INNER_ITERATIONS));
-  printf ("%.3f</td><td>", do_test (words, iterations, 0, 0, 1)/(words * INNER_ITERATIONS));
+  printf ("%.3f</td><td>", do_test (words, iterations, TEST_CREATE)/(words * INNER_ITERATIONS));
+  printf ("%.3f</td><td>", do_test (words, iterations, TEST_LOOKUP)/(words * INNER_ITERATIONS));
+  printf ("%.3f</td><td>", do_test (words, iterations, TEST_DECODE)/(words * INNER_ITERATIONS));
+  printf ("%.3f</td><td>", do_test (words, iterations, TEST_CONCAT)/(words * INNER_ITERATIONS));
   printf ("%.0f%%</td>", embed_percentage);
   size_t ht, ht_slack, ht_entries;
   squoze_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
-  //printf ("<td>%li</td><td>%li</td><td>%li</td>", ht, ht_slack, ht_entries);
   printf ("<td>%li</td>", ht - ht_slack + ht_entries);
   printf ("</tr>\n");
 
