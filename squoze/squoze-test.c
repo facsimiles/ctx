@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS               30
+#define ITERATIONS               15
 #define INNER_ITERATIONS         1 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32 1
@@ -172,8 +172,15 @@ int main (int argc, char **argv)
   int wrong = 0;
 
   int iterations = ITERATIONS;
-  FILE* f = fopen("/usr/share/dict/words", "r");
-  //FILE* f = fopen("words.txt", "r");
+  FILE* f;
+  f  = fopen("words.txt", "r");
+  if (!f)
+    f = fopen("/usr/share/dict/words", "r");
+  if (!f)
+  {
+    fprintf (stderr, "no word list found words.txt in current dir or /usr/share/dict/words expected\n");
+    return -1;
+  }
   int words = 0;
     // Read file line by line, calculate hash
     char line[1024];
@@ -305,7 +312,7 @@ int main (int argc, char **argv)
     printf (" The <em>embed%%</em> column shows how many of the words got embedded instead of interned. This can also be read as the percentage of possible cache-misses that are avoided for the workload.");
     printf ("The <em>RAM use</em> column shows the amount of bytes used by the allocations for interned strings as well as the size taken by the hash table used, without the size taken by tempty slots in the hash-table to be comparable with what a more compact optimizing structure used when targeting memory constrained systems.</p>");
 
-    printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability, as input to the underlying hash-table.</p>");
+    //printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability, as input to the underlying hash-table.</p>");
 
     //printf ("<p>The hashes with the direct UTF-8 embedding are the most reliable optimization when only runtime/energy use is considered. The UTF5 embeddings save more RAM and allow more guarantee collision free strings but are more expensive to compute.</p>");
 

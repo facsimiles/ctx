@@ -103,9 +103,6 @@ report-part.html: all
 	./test-32-utf5-intern-embed >> index.html
 	./test-52-utf5-intern-embed >> index.html
 	./test-62-utf5-intern-embed >> index.html
-	./test-32-utf5-intern       >> index.html
-	./test-52-utf5-intern       >> index.html
-	./test-62-utf5-intern       >> index.html
 	./test-footer               >> index.html
 report-32bit.html: \
 	test-32-utf5-intern \
@@ -129,7 +126,6 @@ report-part-32bit.html:
 	./test-32-utf8-intern       >> report-32bit.html
 	./test-32-utf8-intern-embed >> report-32bit.html
 	./test-32-utf5-intern-embed >> report-32bit.html
-	./test-32-utf5-intern       >> report-32bit.html
 	./test-footer               >> report-32bit.html
 
 update-reference: report.txt
