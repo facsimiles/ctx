@@ -757,7 +757,7 @@ static int squoze_pool_find (SquozePool *pool, uint64_t hash, int length, const 
 {
   if (pool->size == 0)
     return -1;
-  int pos = hash & (pool->size-1);
+  int pos = (hash/2) & (pool->size-1);
   if (!pool->hashtable[pos])
     return -1;
   while (pool->hashtable[pos]->hash != hash
@@ -795,7 +795,7 @@ static int squoze_pool_add_entry (SquozePool *pool, Squoze *str)
   }
   pool->count++;
 
-  int pos = str->hash & (pool->size-1);
+  int pos = (str->hash/2) & (pool->size-1);
   while (pool->hashtable[pos])
   {
     pos++;
@@ -991,40 +991,6 @@ const char *squoze_decode (Squoze *squozed, char *temp)
 #endif
   }
 }
-
-#if 0
-const char *squoze_peek (Squoze *squozed)
-{
-  if (!squozed) return NULL;
-  if (squoze_is_embedded (squozed))
-  {
-#if   SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
-    return squoze32_utf5_decode ((size_t)squozed);
-#elif SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF8
-    return squoze32_utf8_decode ((size_t)squozed);
-#elif SQUOZE_ID_BITS==52 && SQUOZE_ID_UTF5
-    return squoze52_utf5_decode ((size_t)squozed);
-#elif SQUOZE_ID_BITS==62 && SQUOZE_ID_UTF5
-    return squoze62_utf5_decode ((size_t)squozed);
-#elif SQUOZE_ID_BITS==64 && SQUOZE_ID_UTF8
-    return squoze64_utf8_decode ((size_t)squozed);
-#else
-    return squoze_id_decode (SQUOZE_ID_BITS,
-		             ((size_t)squozed),
-			     SQUOZE_ID_UTF5);
-#endif
-  }
-  else
-  {
-#if SQUOZE_INTERN_DIRECT_STRING
-    return (char*)squozed;
-#else
-    return squozed->string;
-#endif
-  }
-}
-#endif
-
 
 void squoze_ref (Squoze *squozed)
 {
@@ -1767,6 +1733,5 @@ static void squoze_decode_utf5_bytes (int is_utf5,
     *r_outlen = append_data.length;
 }
 #endif
-
 
 #endif
