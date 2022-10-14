@@ -426,7 +426,7 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
       }
     }
   }
-    embed_percentage = (100.0f * global_pool.count_embedded) / (words * INNER_ITERATIONS);
+    embed_percentage = (100.0f * (words - global_pool.count)) / (words * INNER_ITERATIONS);
   squoze_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
   }
 

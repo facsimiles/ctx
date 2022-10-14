@@ -25,11 +25,11 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // impact the string interning implementation and not
 // the low-level APIs
 #ifndef SQUOZE_ID_BITS         // number of bits to use for interning API
-#define SQUOZE_ID_BITS 52      // 32 52 62 or 64
+#define SQUOZE_ID_BITS 64      // 32 52 62 or 64
 #endif
 
 #ifndef SQUOZE_ID_UTF5
-#define SQUOZE_ID_UTF5 1
+#define SQUOZE_ID_UTF5 0
 #endif
 
 #ifndef SQUOZE_ID_MURMUR
@@ -728,11 +728,10 @@ struct _SquozePool
   Squoze       **hashtable;
   int            count;
   int            size;
-  int            count_embedded;
   SquozePool    *next;
 };
 
-static SquozePool global_pool = {0, NULL, NULL, 0,0, 0, NULL};
+static SquozePool global_pool = {0, NULL, NULL, 0, 0, NULL};
 
 static SquozePool *squoze_pools = NULL;
 
@@ -931,8 +930,6 @@ static uint64_t squoze_pool_encode (SquozePool *pool, const char *utf8, size_t l
       squoze_pool_add_entry (pool, entry);
     }
   }
-  else
-    pool->count_embedded++;
   return hash;
 }
 
@@ -1573,7 +1570,6 @@ static void squoze_pool_destroy (SquozePool *pool)
     }
     pool->size = 0;
     pool->count = 0;
-    pool->count_embedded = 0;
     if (pool->hashtable)
       free (pool->hashtable);
     pool->hashtable = NULL;
