@@ -1556,26 +1556,19 @@ const char *squoze62_utf5_decode (uint64_t hash)
 #if SQUOZE_IMPLEMENTATION_64_UTF8
 const char *squoze64_utf8_decode (uint64_t hash)
 {
-  //return squoze_decode (64, hash, 0);
-  static uint8_t buf[10];
-  buf[8] = 0;
-  ((uint64_t*)buf)[0]= hash; // or memcpy (buf, hash, 8);
-  if ((buf[0] & 1) == 0) return NULL;
-  if (buf[0]==23)
-     return (char*)buf+1;
-  buf[0]/=2;
-  return (char*)buf;
+  return squoze_decode (64, hash, 0);
 }
 #endif
 
 #if SQUOZE_IMPLEMENTATION_32_UTF8
 const char *squoze32_utf8_decode (uint32_t hash)
 {
-  //return squoze_decode (64, hash, 0);
+  //return squoze_decode (32, hash, 0);
   static uint8_t buf[10];
   buf[4] = 0;
-  ((uint32_t*)buf)[0]= hash; // or memcpy (buf, hash, 8);
-  if ((buf[0] & 1) == 0) return NULL;
+  memcpy (buf, &hash, 4);
+  if ((buf[0] & 1) == 0)
+     return NULL;
   if (buf[0]==23)
      return (char*)buf+1;
   buf[0]/=2;
