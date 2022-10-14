@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS               30
+#define ITERATIONS               20
 #define INNER_ITERATIONS         1 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_IMPLEMENTATION_32_UTF5 1

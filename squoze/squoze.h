@@ -274,7 +274,7 @@ squoze_utf5_length (uint32_t unichar)
 #if SQUOZE_USE_BUILTIN_CLZ
   return __builtin_clz(unichar)/4+1;
 #else
-  int nibbles = 0;
+  int nibbles = 1;
   while (unichar)
   {
     nibbles ++;
