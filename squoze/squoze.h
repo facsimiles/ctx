@@ -198,26 +198,31 @@ void         squoze_atexit       (void);
 #if SQUOZE_IMPLEMENTATION_32_UTF5
 uint32_t     squoze32_utf5        (const char *utf8, size_t len);
 const char  *squoze32_utf5_decode (uint32_t    hash);
+void         squoze32_utf5_decode2 (uint32_t   hash, char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_32_UTF8
 uint32_t     squoze32_utf8        (const char *utf8, size_t len);
 const char  *squoze32_utf8_decode (uint32_t    hash);
+void         squoze32_utf8_decode2 (uint32_t   hash, char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_52_UTF5
 uint64_t     squoze52_utf5        (const char *utf8, size_t len);
 const char  *squoze52_utf5_decode (uint64_t    hash);
+void         squoze52_utf5_decode2 (uint64_t   hash, char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_62_UTF5
 uint64_t     squoze62_utf5        (const char *utf8, size_t len);
 const char  *squoze62_utf5_decode (uint64_t    hash);
+void         squoze62_utf5_decode2 (uint64_t   hash, char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_64_UTF8
 uint64_t     squoze64_utf8        (const char *utf8, size_t len);
 const char  *squoze64_utf8_decode (uint64_t    hash);
+void         squoze62_utf8_decode2 (uint64_t   hash, char *dest);
 #endif
 
 #endif
@@ -592,6 +597,16 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
 }
 
 
+
+
+void squoze_decode2 (int squoze_dim, uint64_t hash, int is_utf5, char *dest)
+{
+  if (hash == 0 || ((hash & 1) == 0)) {dest[0]=0;return; }
+  else if (hash == 3) { dest[0]=0;return;}
+  squoze_decode_r (squoze_dim, hash, dest, 16, is_utf5);
+}
+
+
 /* copy the value as soon as possible, some mitigation is in place
  * for more than one value in use and cross-thread interactions.
  */
@@ -608,14 +623,18 @@ static const char *squoze_decode (int squoze_dim, uint64_t hash, int is_utf5)
 #endif
   no ++;
   if (no >= SQUOZE_PEEK_STRINGS) no = 0;
-  return squoze_decode_r (squoze_dim, hash, ret[no], 16, is_utf5);
+  squoze_decode2 (squoze_dim, hash, is_utf5, ret[no]);
+  return ret[no];
 }
-
 
 #if SQUOZE_IMPLEMENTATION_32_UTF5
 const char *squoze32_utf5_decode (uint32_t hash)
 {
   return squoze_decode (32, hash, 1);
+}
+void squoze32_utf5_decode2 (uint32_t hash, char *dest)
+{
+  return squoze_decode2 (32, hash, 1, dest);
 }
 #endif
 
@@ -624,6 +643,10 @@ const char *squoze52_utf5_decode (uint64_t hash)
 {
   return squoze_decode (52, hash, 1);
 }
+void squoze52_utf5_decode2 (uint64_t hash, char *dest)
+{
+  return squoze_decode2 (52, hash, 1, dest);
+}
 #endif
 
 #if SQUOZE_IMPLEMENTATION_62_UTF5
@@ -631,12 +654,20 @@ const char *squoze62_utf5_decode (uint64_t hash)
 {
   return squoze_decode (62, hash, 1);
 }
+void squoze62_utf5_decode2 (uint64_t hash, char *dest)
+{
+  return squoze_decode2 (62, hash, 1, dest);
+}
 #endif
 
 #if SQUOZE_IMPLEMENTATION_64_UTF8
 const char *squoze64_utf8_decode (uint64_t hash)
 {
   return squoze_decode (64, hash, 0);
+}
+void squoze64_utf8_decode2 (uint64_t hash, char *dest)
+{
+  return squoze_decode2 (64, hash, 0, dest);
 }
 #endif
 
@@ -653,6 +684,11 @@ const char *squoze32_utf8_decode (uint32_t hash)
      return (char*)buf+1;
   buf[0]/=2;
   return (char*)buf;
+}
+
+void squoze32_utf8_decode2 (uint32_t hash, char *dest)
+{
+  return squoze_decode2 (32, hash, 0, dest);
 }
 #endif
 
