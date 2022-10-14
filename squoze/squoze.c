@@ -1,12 +1,6 @@
 #include <stdio.h>
 
 #define SQUOZE_IMPLEMENTATION
-#define SQUOZE_IMPLEMENTATION_32_UTF5 1
-#define SQUOZE_IMPLEMENTATION_62_UTF5 1
-#define SQUOZE_IMPLEMENTATION_52_UTF5 1
-#define SQUOZE_IMPLEMENTATION_64_UTF5 1
-#define SQUOZE_IMPLEMENTATION_64_UTF8 1
-#define SQUOZE_IMPLEMENTATION_32_UTF8 1
 #include "squoze.h"
 
 static int squoze_is_number (const char *str)

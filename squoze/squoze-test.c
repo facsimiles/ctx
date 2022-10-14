@@ -4,15 +4,9 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS               50
-#define INNER_ITERATIONS         1 
+#define ITERATIONS                  16
+#define INNER_ITERATIONS            1 
 #define SQUOZE_IMPLEMENTATION
-#define SQUOZE_IMPLEMENTATION_32_UTF5 1
-#define SQUOZE_IMPLEMENTATION_62_UTF5 1
-#define SQUOZE_IMPLEMENTATION_52_UTF5 1
-#define SQUOZE_IMPLEMENTATION_32_UTF8 1
-#define SQUOZE_IMPLEMENTATION_64_UTF8 1
-
 #define SQUOZE_INITIAL_POOL_SIZE   (1<<20)
 
 #include "squoze.h"
@@ -219,8 +213,8 @@ int main (int argc, char **argv)
 
     printf ("<h1>Squoze - reversible unicode string hashes.</h2>\n");
     printf ("<div style='font-style:italic; text-align:right;'>compute more, save energy, parse faster;<br/>with strings squozed to fit in computer words</div>");
-    printf ("<p>Storing strings in computer words is an <a href='https://en.wikipedia.org/wiki/SQUOZE'>old practice</a>, here this optimization technique is modernized for unicode and combined with string interning. Short strings are stored directly in computer words rather than using an underlying hash-tabled and associated heap storage of strings. The least significant bit is used to indicate if a string is embedded or not, allowing allocations that have an alignment of at least 2 to be distinguished.  By storing data directly we avoid cache and lock contention involved in using the internal string interning hash-table.</p>\n");
-    printf("<p>Calling it a hash might be a bit of a misnomer, but the same optimization can be used for with larger hashes in content addressed storage systems like git/IPFS, as well as in parsers with a limited vocabulary so the resulting behavior is that of a perfect hash.</p>");
+    printf ("<p>Storing strings in computer words is an <a href='https://en.wikipedia.org/wiki/SQUOZE'>old practice</a>, here this optimization technique is modernized for unicode and combined with string interning. The least significant bit of pointers (or hash) is used to indicate if a string is embedded or not - even values are interpreted as embedded strings. By storing short strings directly  we avoid cache and lock contention involved in hash-table and RAM overhead..</p>\n");
+    printf("<p>Calling it a hash might seem like a bit of a misnomer, but the same optimization can be used for with larger hashes in content addressed storage systems like git/IPFS, as well as in parsers with a limited vocabulary so the resulting behavior is that of a perfect hash.</p>");
 
     printf("<p>The embedded data is stored in either UTF-8 or transcoded to <a href='utf5+/'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme.</p>");
 
@@ -246,10 +240,10 @@ int main (int argc, char **argv)
     printf ("<h2>squoze64 implementation</h2>");
     printf ("<p>the squoze-64 encoding is a small bitmanipulation of UTF-8 in-memory encoding, for strings that will fit only the first byte is manipulated and only if it ascii and not vertical-tab (ASCII 11) the value is doubled and 1 is added. When the first byte does not match our constraints we store 23 - which means the following 7bytes directly encode the value. </p>");
 
-    printf ("<p>The following example code is an illustration - the benchmarked implementation has been manually unrolled.</p>\n");
+    printf ("<p>The following example code is an illustration based on the benchmarked code.</p>\n");
 
     printf (
-"<pre>uint64_t squoze64(const char *utf8, size_t len)\n"
+"<pre>void *squoze64(const char *utf8, size_t len)\n"
 "{\n"
 "  size_t   squoze_dim = 64;\n"
 "  uint64_t hash       = 0;\n"
@@ -263,34 +257,35 @@ int main (int argc, char **argv)
 "    for (int i = 0; utf8[i]; i++)\n"
 "      encoded[i] = utf8[i];\n"
 "    encoded[0] = encoded[0] * 2 + 1;\n"
-"    return *((uint64_t*)&amp;encoded[0]);\n"
+"    return (void*)*((uint64_t*)&amp;encoded[0]);\n"
 "  }\n"
 "  else if (len &lt;= (squoze_dim/8)-1)\n"
 "  {\n"
 "    for (int i = 0; utf8[i]; i++)\n"
 "      encoded[i+1] = utf8[i];\n"
 "    encoded[0] = 23;\n"
-"    return *((uint64_t*)&amp;encoded[0]);\n"
+"    return (void*)*((uint64_t*)&amp;encoded[0]);\n"
 "  }\n"
 "\n"
-"  return (uint64_t)intern_string(utf8); // fall back to\n"
-"                                        // regular interning\n"
-"                                        // and rely on an aligned\n"
-"                                        // pointer for the interned\n"
-"                                        // string\n"
+"  return intern_string(utf8); // fall back to\n"
+"                              // regular interning\n"
+"                              // and rely on an aligned\n"
+"                              // pointer for the interned\n"
+"                              // string\n"
 "}</pre>\n");
 
     printf ("<pre>\n"
 "// example code, not thread safe and the returned string\n"
 "// for embedded strings are overwritten on each call\n"
-"const char *squoze64_decode (uint64_t squozed)\n"
+"const char *squoze64_peek (void *squozed)\n"
 "{\n"
-"  if ((squozed & 1) == 0)\n"
+"  uint64_t bits = (uint64_t)squozed;\n"
+"  if ((bits & 1) == 0)\n"
 "     return (char*)squozed;\n"
 "\n"
 "  static uint8_t buf[10];"
 "  buf[8] = 0;\n"
-"  ((uint64_t*)buf)[0] = squozed;\n"
+"  ((uint64_t*)buf)[0] = bits;\n"
 "  if (buf[0] == 23)\n"
 "    return buf + 1;\n"
 "  buf[0] /= 2;\n"
