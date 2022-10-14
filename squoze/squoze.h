@@ -224,7 +224,7 @@ struct _Squoze {
 };
 
 
-static inline uint64_t squoze_pool_encode     (SquozePool *pool,int squoze_dim,int squoze_utf5, const char *utf8, size_t len, Squoze **interned_ref);
+static inline uint64_t squoze_pool_encode     (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref);
 static inline uint32_t squoze_utf8_to_unichar (const char *input);
 static inline int      squoze_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 static inline int      squoze_utf8_len        (const unsigned char first_byte);
@@ -364,8 +364,8 @@ static inline int squoze_compute_cost_squeezed (int offset, int val, int needed_
 
 static inline void squoze5_encode (const char *input, int inlen,
                                    char *output, int *r_outlen,
-                                   int permit_squeezed,
-                                   int escape_endzero)
+                                   int   permit_squeezed,
+                                   int   escape_endzero)
 {
   int offset  = 97;//squoze_new_offset('a');
   int is_utf5 = 1;
@@ -973,7 +973,7 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
 {
   if (!pool) pool = &global_pool;
   Squoze *interned = NULL;
-  uint64_t hash = squoze_pool_encode (pool, SQUOZE_ID_BITS, SQUOZE_ID_UTF5, str, strlen (str), &interned);
+  uint64_t hash = squoze_pool_encode (pool, str, strlen (str), &interned);
 
   if (interned)
   {
@@ -988,15 +988,22 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
 
 // encodes utf8 to a squoze id of squoze_dim bits - if interned_ret is provided overflowed ids
 // are interned and a new interned squoze is returned.
-static uint64_t squoze_pool_encode (SquozePool *pool, int squoze_dim, int squoze_utf5, const char *utf8, size_t len, Squoze **interned_ref)
+static uint64_t squoze_pool_encode (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref)
 {
-  uint64_t hash;
-  if      (squoze_dim == 32 && squoze_utf5==1) hash = squoze32_utf5 (utf8, len);
-  else if (squoze_dim == 32 && squoze_utf5==0) hash = squoze32_utf8 (utf8, len);
-  else if (squoze_dim == 52 && squoze_utf5==1) hash = squoze52_utf5 (utf8, len);
-  else if (squoze_dim == 62 && squoze_utf5==1) hash = squoze62_utf5 (utf8, len);
-  else if (squoze_dim == 64 && squoze_utf5==0) hash = squoze64_utf8 (utf8, len);
-  else hash = squoze_encode_id (squoze_dim, squoze_utf5, utf8, len);
+#if   SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
+   uint64_t hash = squoze32_utf5 (utf8, len);
+#elif SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF8
+   uint64_t hash = squoze32_utf8 (utf8, len);
+#elif SQUOZE_ID_BITS==62 && SQUOZE_ID_UTF5
+   uint64_t hash = squoze62_utf5 (utf8, len);
+#elif SQUOZE_ID_BITS==52 && SQUOZE_ID_UTF5
+   uint64_t hash = squoze62_utf5 (utf8, len);
+#elif SQUOZE_ID_BITS==64 && SQUOZE_ID_UTF8
+   uint64_t hash = squoze64_utf8 (utf8, len);
+#else
+   uint64_t hash = squoze_encode_id (SQUOZE_ID_BITS, SQUOZE_ID_UTF5, utf8, len);
+#endif
+
   if (!interned_ref)
     return hash;
   if (pool == NULL) pool = &global_pool;
@@ -1045,25 +1052,18 @@ const char *squoze_peek (Squoze *squozed)
   if (!squozed) return NULL;
   if (squoze_is_embedded (squozed))
   {
-#if 0
-    // we pass NULL as pool since we know it should not be in the pool
-    // and we can always decode as 62bit - since we know we didnt overflow the
-    // below type.
-    return squoze_decode (62, ((size_t)squozed), SQUOZE_ID_UTF5);
-#else
-
 #if   SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
     return squoze32_utf5_decode ((size_t)squozed);
 #elif SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF8
     return squoze32_utf8_decode ((size_t)squozed);
+#elif SQUOZE_ID_BITS==52 && SQUOZE_ID_UTF5
+    return squoze52_utf5_decode ((size_t)squozed);
 #elif SQUOZE_ID_BITS==62 && SQUOZE_ID_UTF5
     return squoze62_utf5_decode ((size_t)squozed);
 #elif SQUOZE_ID_BITS==64 && SQUOZE_ID_UTF8
     return squoze64_utf8_decode ((size_t)squozed);
 #else
     return squoze_decode (62, ((size_t)squozed), SQUOZE_ID_UTF5);
-#endif
-
 #endif
   }
   else
