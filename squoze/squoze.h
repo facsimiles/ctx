@@ -24,27 +24,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // and implementation uses of squoze.h the values only
 // impact the string interning implementation and not
 // the low-level APIs
-#ifndef SQUOZE_ID_BITS         // number of bits to use for interning API
-#define SQUOZE_ID_BITS 64      // 32 52 62 or 64
-#endif
 
-#ifndef SQUOZE_ID_UTF5
-#define SQUOZE_ID_UTF5 0
-#endif
-
-#ifndef SQUOZE_ID_MURMUR
-#define SQUOZE_ID_MURMUR 0
-#endif
-
-#ifndef SQUOZE_REF_COUNTING    // build the refcounting support, adds
-#define SQUOZE_REF_COUNTING 0  // per-interned-string overhead
-#endif
-#ifndef SQUOZE_STORE_LENGTH    // store byte-lengths as part of
-#define SQUOZE_STORE_LENGTH 1  // per-interned-string data
-#endif
-
-#ifndef SQUOZE_USE_INTERN
-#define SQUOZE_USE_INTERN 1
+#ifndef SQUOZE_USE_INTERN      // enable interning hash-table
+#define SQUOZE_USE_INTERN 1    // without this only a single
+			       // core implementation can be built
 #endif
 
 #ifndef SQUOZE_INTERN_DIRECT_STRING     // when 1 the pointers returned are
@@ -54,6 +37,27 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 					// with garbage collectors that scan
 					// for pointers 0 is preferable.
 #endif
+
+#ifndef SQUOZE_ID_BITS         // number of bits to use for interning API
+#define SQUOZE_ID_BITS 64      // 32 52 62 or 64
+#endif
+
+#ifndef SQUOZE_ID_UTF5         // use UTF5+ as the embed encoding
+#define SQUOZE_ID_UTF5 0       // if not set then UTF8 is used
+#endif
+
+#ifndef SQUOZE_ID_MURMUR       // use murmurhash and no embedding
+#define SQUOZE_ID_MURMUR 0     //
+#endif
+
+#ifndef SQUOZE_REF_COUNTING    // build the refcounting support, adds
+#define SQUOZE_REF_COUNTING 0  // per-interned-string overhead
+#endif
+
+#ifndef SQUOZE_STORE_LENGTH    // store byte-lengths as part of
+#define SQUOZE_STORE_LENGTH 1  // per-interned-string data
+#endif
+
 
 #if SQUOZE_USE_INTERN
 
@@ -87,12 +91,16 @@ void         squoze_pool_unref   (SquozePool *pool);
  */
 Squoze      *squoze_pool_add     (SquozePool *pool, const char *str);
 
-/* squoe a string into default pool
+Squoze      *squoze_concat (Squoze *a, Squoze *b);
+
+/* squoze a string into default pool
  */
 static inline Squoze *squoze     (const char *str)
 {
   return squoze_pool_add (NULL, str);
 }
+
+Squoze *squoze_concat (Squoze *a, Squoze *b);
 
 /* Report stats on interned strings 
  */
@@ -586,9 +594,6 @@ static const char *squoze_id_decode_r (int squoze_dim, uint64_t hash, char *ret,
   }
 }
 
-
-
-
 const char *squoze_id_decode (int squoze_dim, uint64_t id, int is_utf5, char *dest)
 {
   if (id == 0 || ((id & 1) == 0)) {dest[0]=0;return NULL; }
@@ -1046,6 +1051,37 @@ void squoze_unref (Squoze *squozed)
   }
 #endif
 }
+
+Squoze *squoze_concat (Squoze *a, Squoze *b)
+{
+  char tmp_a[16];
+  char tmp_b[16];
+  const char *str_a = squoze_decode (a, tmp_a);
+  const char *str_b = squoze_decode (b, tmp_b);
+  int len_a = strlen (str_a);
+  int len_b = strlen (str_b);
+  if (len_a + len_b < 128)
+  {
+    char temp[128];
+    temp[0]=0;
+    strcpy (temp, str_a);
+    if (str_b)
+      strcpy (&temp[strlen(temp)], str_b);
+    return squoze (temp);
+  }
+  else
+  {
+    char *temp = malloc (len_a + len_b + 1);
+    temp[0]=0;
+    strcpy (temp, str_a);
+    if (str_b)
+      strcpy (&temp[strlen(temp)], str_b);
+    Squoze *ret = squoze (temp);
+    free (temp);
+    return ret;
+  }
+}
+
 
 squoze_id_t squoze_id (Squoze *squozed)
 {

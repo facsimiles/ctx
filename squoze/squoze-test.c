@@ -115,33 +115,8 @@ static float do_test_round (int words, TestType type)
         {
           for (int j = 0; j < INNER_ITERATIONS; j++)
           {
-            char tmp_a[16];
-            char tmp_b[16];
-            const char *decodedA = squoze_decode (refs[i], tmp_a);
-            const char *decodedB = squoze_decode (str_b, tmp_b);
-	    int len_a = strlen (decodedA);
-	    int len_b = strlen (decodedB);
-	    if (len_a + len_b < 128)
-	    {
-              char temp[128];
-	      temp[0]=0;
-              if (decodedA)
-                strcpy (temp, decodedA);
-	      if (decodedB)
-	        strcpy (&temp[strlen(temp)], decodedB);
-	      squoze (temp);
-	    }
-	    else if (len_a + len_b < 256)
-	    {
-              char *temp = malloc (len_a + len_b + 1);
-	      temp[0]=0;
-              if (decodedA)
-                strcpy (temp, decodedA);
-	      if (decodedB)
-	        strcpy (&temp[strlen(temp)], decodedB);
-	      squoze (temp);
-	      free (temp);
-	    }
+	    Squoze *res = squoze_concat (refs[i], str_b);
+	    if (res) {};
           }
         }
       return ticks ()-start;
