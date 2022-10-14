@@ -3248,7 +3248,7 @@ void _ctx_write_png (const char *dst_path, int w, int h, int num_chans, void *da
 const char *
 ctx_str_decode (uint32_t number)
 {
-  return squoze32_decode (number);
+  return squoze32_utf8_decode (number);
 }
 
 uint32_t ctx_strhash(const char *str)
