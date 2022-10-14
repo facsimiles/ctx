@@ -236,7 +236,7 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze62_utf5_decode2 (atol(argv[i]), temp));
+          printf ("%s", squoze62_utf5_decode (atol(argv[i]), temp));
         else
           printf ("%u", squoze32_utf5 (argv[i], strlen (argv[i])));
       }
@@ -246,7 +246,7 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze62_utf5_decode2 (atol(argv[i]), temp));
+          printf ("%s", squoze62_utf5_decode (atol(argv[i]), temp));
         else
           printf ("%lu", squoze52_utf5 (argv[i], strlen (argv[i])));
       }
@@ -256,7 +256,7 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze62_utf5_decode2 (atol(argv[i]), temp));
+          printf ("%s", squoze62_utf5_decode (atol(argv[i]), temp));
         else
           printf ("%lu", squoze62_utf5 (argv[i], strlen (argv[i])));
       }
@@ -266,7 +266,7 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze64_utf8_decode2 (atol(argv[i]), temp));
+          printf ("%s", squoze64_utf8_decode (atol(argv[i]), temp));
         else
           printf ("%lu", squoze64_utf8 (argv[i], strlen (argv[i])));
       }
@@ -276,7 +276,7 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze32_utf8_decode2 (atol(argv[i]), temp));
+          printf ("%s", squoze32_utf8_decode (atol(argv[i]), temp));
         else
           printf ("%u", squoze32_utf8 (argv[i], strlen (argv[i])));
       }

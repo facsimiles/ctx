@@ -101,7 +101,7 @@ static float do_test_round (int words, TestType type)
           for (int j = 0; j < INNER_ITERATIONS; j++)
           {
             char tmp[16];
-	    strcpy (temp, squoze_decode2 (refs[i], tmp));
+	    strcpy (temp, squoze_decode (refs[i], tmp));
           }
         }
       }
@@ -117,8 +117,8 @@ static float do_test_round (int words, TestType type)
           {
             char tmp_a[16];
             char tmp_b[16];
-            const char *decodedA = squoze_decode2 (refs[i], tmp_a);
-            const char *decodedB = squoze_decode2 (str_b, tmp_b);
+            const char *decodedA = squoze_decode (refs[i], tmp_a);
+            const char *decodedB = squoze_decode (str_b, tmp_b);
 	    int len_a = strlen (decodedA);
 	    int len_b = strlen (decodedB);
 	    if (len_a + len_b < 128)
@@ -275,15 +275,13 @@ int main (int argc, char **argv)
 "}</pre>\n");
 
     printf ("<pre>\n"
-"// example code, not thread safe and the returned string\n"
-"// for embedded strings are overwritten on each call\n"
-"const char *squoze64_peek (void *squozed)\n"
+"// caller provides a temporary buffer of at least 9 bytes \n"
+"const char *squoze64_decode (void *squozed, uint8_t *buf)\n"
 "{\n"
 "  uint64_t bits = (uint64_t)squozed;\n"
 "  if ((bits & 1) == 0)\n"
 "     return (char*)squozed;\n"
 "\n"
-"  static uint8_t buf[10];"
 "  buf[8] = 0;\n"
 "  ((uint64_t*)buf)[0] = bits;\n"
 "  if (buf[0] == 23)\n"
@@ -413,7 +411,7 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
 
       squozed = squoze (input);
       char temp[16];
-      decoded = squoze_decode2 (squozed, temp);
+      decoded = squoze_decode (squozed, temp);
       if (decoded && strcmp (input, decoded))
       {
         uint64_t hash = squoze_id (squozed);
