@@ -349,7 +349,7 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
 
 	if (SQUOZE_ALWAYS_INTERN)
 	{
-	if (SQUOZE_EMBEDDED_UTF5)
+	if (SQUOZE_ID_UTF5)
 	{
 	  name = malloc(256);
 	  sprintf (name, "squoze%i-utf5 alwaysintern", SQUOZE_ID_BITS);
@@ -364,7 +364,7 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
 	}
 	else
 	{
-	if (SQUOZE_EMBEDDED_UTF5)
+	if (SQUOZE_ID_UTF5)
 	{
            name = malloc(256);
 	   sprintf (name, "squoze%i-utf5", SQUOZE_ID_BITS);
