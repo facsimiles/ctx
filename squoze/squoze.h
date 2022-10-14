@@ -216,6 +216,7 @@ const char  *squoze64_utf8_decode (uint64_t    hash);
 
 #ifdef SQUOZE_IMPLEMENTATION
 
+#if SQUOZE_USE_UTF5
 
 // extra value meaning in UTF5 mode
 #define SQUOZE_ENTER_SQUEEZE    16
@@ -227,7 +228,6 @@ const char  *squoze64_utf8_decode (uint64_t    hash);
 #define SQUOZE_DEC_OFFSET_B     29
 #define SQUOZE_INC_OFFSET_B     30
 #define SQUOZE_ENTER_UTF5       31
-
 
 
 static inline uint32_t squoze_utf8_to_unichar (const char *input);
@@ -645,6 +645,151 @@ static inline size_t squoze5_encode_int (const char *input, int inlen,
   return (ret<<2) | ((start_utf5*2)|1);
 }
 
+typedef struct SquozeUtf5Dec {
+  int       is_utf5;
+  int       offset;
+  void     *write_data;
+  uint32_t  current;
+  void    (*append_unichar) (uint32_t unichar, void *write_data);
+  int       jumped_amount;
+  int       jump_mode;
+} SquozeUtf5Dec;
+
+typedef struct SquozeUtf5DecDefaultData {
+  uint8_t *buf;
+  int      length;
+} SquozeUtf5DecDefaultData;
+
+static void squoze_decode_utf5_append_unichar_as_utf8 (uint32_t unichar, void *write_data)
+{
+  SquozeUtf5DecDefaultData *data = (SquozeUtf5DecDefaultData*)write_data;
+  int length = squoze_unichar_to_utf8 (unichar, &data->buf[data->length]);
+  data->buf[data->length += length] = 0;
+}
+
+static void squoze_decode_jump (SquozeUtf5Dec *dec, uint8_t in)
+{
+  dec->offset -= SQUOZE_JUMP_STRIDE * dec->jumped_amount;
+  int jump_len = (dec->jump_mode - SQUOZE_DEC_OFFSET_A) * 4 +
+                 (in - SQUOZE_DEC_OFFSET_A);
+  if (jump_len > 7)
+    jump_len = 5 - jump_len;
+  else
+    jump_len += 3;
+  dec->offset += jump_len * SQUOZE_JUMP_STRIDE;
+  dec->jumped_amount = 0;
+}
+
+static void squoze_decode_utf5 (SquozeUtf5Dec *dec, uint8_t in)
+{
+  if (dec->is_utf5)
+  {
+    if (in >= 16)
+    {
+      if (dec->current)
+      {
+        dec->offset = squoze_new_offset (dec->current);
+        dec->append_unichar (dec->current, dec->write_data);
+        dec->current = 0;
+      }
+    }
+    if (in == SQUOZE_ENTER_SQUEEZE)
+    {
+      if (dec->current)
+      {
+        dec->offset = squoze_new_offset (dec->current);
+        dec->append_unichar (dec->current, dec->write_data);
+        dec->current = 0;
+      }
+      dec->is_utf5 = 0;
+    }
+    else
+    {
+      dec->current = dec->current * 16 + (in % 16);
+    }
+  }
+  else
+  {
+    if (dec->jumped_amount)
+    {
+      switch (in)
+      {
+        case SQUOZE_DEC_OFFSET_A:
+        case SQUOZE_DEC_OFFSET_B:
+        case SQUOZE_INC_OFFSET_A:
+        case SQUOZE_INC_OFFSET_B:
+          squoze_decode_jump (dec, in);
+          break;
+        default:
+          dec->append_unichar (dec->offset + (in - 1), dec->write_data);
+          dec->jumped_amount = 0;
+          dec->jump_mode = 0;
+          break;
+      }
+    }
+    else
+    {
+      switch (in)
+      {
+        case SQUOZE_ENTER_UTF5:
+          dec->is_utf5 = 1;
+          dec->jumped_amount = 0;
+          dec->jump_mode = 0;
+          break;
+        case SQUOZE_SPACE: 
+          dec->append_unichar (' ', dec->write_data);
+          dec->jumped_amount = 0;
+          dec->jump_mode = 0;
+          break;
+        case SQUOZE_DEC_OFFSET_A:
+          dec->jumped_amount = -2;
+          dec->jump_mode = in;
+          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
+          break;
+        case SQUOZE_INC_OFFSET_A:
+          dec->jumped_amount = 2;
+          dec->jump_mode = in;
+          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
+          break;
+        case SQUOZE_DEC_OFFSET_B:
+          dec->jumped_amount = -1;
+          dec->jump_mode = in;
+          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
+          break;
+        case SQUOZE_INC_OFFSET_B:
+          dec->jumped_amount = 1;
+          dec->jump_mode = in;
+          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
+          break;
+        default:
+          dec->append_unichar (dec->offset + (in - 1), dec->write_data);
+          dec->jumped_amount = 0;
+          dec->jump_mode = 0;
+      }
+    }
+  }
+}
+
+static void squoze_decode_utf5_bytes (int is_utf5, 
+                                      const unsigned char *input, int inlen,
+                                      char *output, int *r_outlen)
+{
+  SquozeUtf5DecDefaultData append_data = {(unsigned char*)output, 0};
+  SquozeUtf5Dec dec = {is_utf5,
+                     97,//squoze_new_offset('a'),
+                     &append_data,
+                     0,
+                     squoze_decode_utf5_append_unichar_as_utf8,
+                     0, 0
+                    };
+  for (int i = 0; i < inlen; i++)
+    squoze_decode_utf5 (&dec, input[i]);
+  if (dec.current)
+    dec.append_unichar (dec.current, dec.write_data);
+  if (r_outlen)
+    *r_outlen = append_data.length;
+}
+#endif
 
 static inline uint32_t MurmurOAAT32 ( const char * key, int len)
 {
@@ -676,6 +821,7 @@ static inline uint64_t squoze_encode_id (int squoze_dim, int utf5, const char *s
 {
   int length = len;
   uint64_t id = 0;
+#if SQUOZE_USE_UTF5
   if (utf5)
   {
     int max_quintets = squoze_words_for_dim (squoze_dim);
@@ -691,6 +837,7 @@ static inline uint64_t squoze_encode_id (int squoze_dim, int utf5, const char *s
     id &= ~1;
   }
   else
+#endif
   {
     const uint8_t *utf8 = (const uint8_t*)stf8;
     if (squoze_dim > 32)
@@ -942,153 +1089,9 @@ uint32_t squoze32_utf8 (const char *stf8, size_t length)
 #endif
 
 
-typedef struct SquozeUtf5Dec {
-  int       is_utf5;
-  int       offset;
-  void     *write_data;
-  uint32_t  current;
-  void    (*append_unichar) (uint32_t unichar, void *write_data);
-  int       jumped_amount;
-  int       jump_mode;
-} SquozeUtf5Dec;
-
-typedef struct SquozeUtf5DecDefaultData {
-  uint8_t *buf;
-  int      length;
-} SquozeUtf5DecDefaultData;
-
-static void squoze_decode_utf5_append_unichar_as_utf8 (uint32_t unichar, void *write_data)
-{
-  SquozeUtf5DecDefaultData *data = (SquozeUtf5DecDefaultData*)write_data;
-  int length = squoze_unichar_to_utf8 (unichar, &data->buf[data->length]);
-  data->buf[data->length += length] = 0;
-}
-
-static void squoze_decode_jump (SquozeUtf5Dec *dec, uint8_t in)
-{
-  dec->offset -= SQUOZE_JUMP_STRIDE * dec->jumped_amount;
-  int jump_len = (dec->jump_mode - SQUOZE_DEC_OFFSET_A) * 4 +
-                 (in - SQUOZE_DEC_OFFSET_A);
-  if (jump_len > 7)
-    jump_len = 5 - jump_len;
-  else
-    jump_len += 3;
-  dec->offset += jump_len * SQUOZE_JUMP_STRIDE;
-  dec->jumped_amount = 0;
-}
-
-static void squoze_decode_utf5 (SquozeUtf5Dec *dec, uint8_t in)
-{
-  if (dec->is_utf5)
-  {
-    if (in >= 16)
-    {
-      if (dec->current)
-      {
-        dec->offset = squoze_new_offset (dec->current);
-        dec->append_unichar (dec->current, dec->write_data);
-        dec->current = 0;
-      }
-    }
-    if (in == SQUOZE_ENTER_SQUEEZE)
-    {
-      if (dec->current)
-      {
-        dec->offset = squoze_new_offset (dec->current);
-        dec->append_unichar (dec->current, dec->write_data);
-        dec->current = 0;
-      }
-      dec->is_utf5 = 0;
-    }
-    else
-    {
-      dec->current = dec->current * 16 + (in % 16);
-    }
-  }
-  else
-  {
-    if (dec->jumped_amount)
-    {
-      switch (in)
-      {
-        case SQUOZE_DEC_OFFSET_A:
-        case SQUOZE_DEC_OFFSET_B:
-        case SQUOZE_INC_OFFSET_A:
-        case SQUOZE_INC_OFFSET_B:
-          squoze_decode_jump (dec, in);
-          break;
-        default:
-          dec->append_unichar (dec->offset + (in - 1), dec->write_data);
-          dec->jumped_amount = 0;
-          dec->jump_mode = 0;
-          break;
-      }
-    }
-    else
-    {
-      switch (in)
-      {
-        case SQUOZE_ENTER_UTF5:
-          dec->is_utf5 = 1;
-          dec->jumped_amount = 0;
-          dec->jump_mode = 0;
-          break;
-        case SQUOZE_SPACE: 
-          dec->append_unichar (' ', dec->write_data);
-          dec->jumped_amount = 0;
-          dec->jump_mode = 0;
-          break;
-        case SQUOZE_DEC_OFFSET_A:
-          dec->jumped_amount = -2;
-          dec->jump_mode = in;
-          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
-          break;
-        case SQUOZE_INC_OFFSET_A:
-          dec->jumped_amount = 2;
-          dec->jump_mode = in;
-          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
-          break;
-        case SQUOZE_DEC_OFFSET_B:
-          dec->jumped_amount = -1;
-          dec->jump_mode = in;
-          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
-          break;
-        case SQUOZE_INC_OFFSET_B:
-          dec->jumped_amount = 1;
-          dec->jump_mode = in;
-          dec->offset += dec->jumped_amount * SQUOZE_JUMP_STRIDE;
-          break;
-        default:
-          dec->append_unichar (dec->offset + (in - 1), dec->write_data);
-          dec->jumped_amount = 0;
-          dec->jump_mode = 0;
-      }
-    }
-  }
-}
-
-static void squoze_decode_utf5_bytes (int is_utf5, 
-                                      const unsigned char *input, int inlen,
-                                      char *output, int *r_outlen)
-{
-  SquozeUtf5DecDefaultData append_data = {(unsigned char*)output, 0};
-  SquozeUtf5Dec dec = {is_utf5,
-                     97,//squoze_new_offset('a'),
-                     &append_data,
-                     0,
-                     squoze_decode_utf5_append_unichar_as_utf8,
-                     0, 0
-                    };
-  for (int i = 0; i < inlen; i++)
-    squoze_decode_utf5 (&dec, input[i]);
-  if (dec.current)
-    dec.append_unichar (dec.current, dec.write_data);
-  if (r_outlen)
-    *r_outlen = append_data.length;
-}
-
 static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, int retlen, int is_utf5)
 {
+#if SQUOZE_USE_UTF5
   if (is_utf5)
   {
     int is_utf5       = (hash & 2)!=0;
@@ -1108,6 +1111,7 @@ static const char *squoze_decode_r (int squoze_dim, uint64_t hash, char *ret, in
     return ret;
   }
   else
+#endif
   {
     if (squoze_dim == 32)
     {
