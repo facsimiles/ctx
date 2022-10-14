@@ -224,7 +224,7 @@ struct _Squoze {
 };
 
 
-static inline uint64_t squoze_encode          (SquozePool *pool,int squoze_dim,int utf5, const char *utf8, size_t len, Squoze **interned_ref);
+static inline uint64_t squoze_pool_encode     (SquozePool *pool,int squoze_dim,int squoze_utf5, const char *utf8, size_t len, Squoze **interned_ref);
 static inline uint32_t squoze_utf8_to_unichar (const char *input);
 static inline int      squoze_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 static inline int      squoze_utf8_len        (const unsigned char first_byte);
@@ -970,7 +970,7 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
 {
   if (!pool) pool = &global_pool;
   Squoze *interned = NULL;
-  uint64_t hash = squoze_encode (pool, SQUOZE_ID_BITS, SQUOZE_ID_UTF5, str, strlen (str), &interned);
+  uint64_t hash = squoze_pool_encode (pool, SQUOZE_ID_BITS, SQUOZE_ID_UTF5, str, strlen (str), &interned);
 
   if (interned)
   {
@@ -983,16 +983,17 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
     return (Squoze*)((size_t)hash);
 }
 
-//static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id);
 // encodes utf8 to a squoze id of squoze_dim bits - if interned_ret is provided overflowed ids
 // are interned and a new interned squoze is returned.
-static uint64_t squoze_encode (SquozePool *pool, int squoze_dim, int squoze_utf5, const char *utf8, size_t len, Squoze **interned_ref)
+static uint64_t squoze_pool_encode (SquozePool *pool, int squoze_dim, int squoze_utf5, const char *utf8, size_t len, Squoze **interned_ref)
 {
   //len = strlen (utf8);
   uint64_t hash = squoze_encode_no_intern (squoze_dim, squoze_utf5, utf8, len);
 #ifdef SQUOZE_NO_INTERNING
-  return hash;
+  interned_ref = NULL;
 #endif
+  if (!interned_ref)
+    return hash;
   if (pool == NULL) pool = &global_pool;
   if ((hash & 1)==0)
   {
@@ -1139,21 +1140,21 @@ int squoze_length       (Squoze *squozed)
 #if SQUOZE_IMPLEMENTATION_32_UTF5
 uint32_t squoze32_utf5 (const char *utf8, size_t len)
 {
-  return squoze_encode (NULL, 32, 1, utf8, len, NULL);
+  return squoze_pool_encode (NULL, 32, 1, utf8, len, NULL);
 }
 #endif
 
 #if SQUOZE_IMPLEMENTATION_52_UTF5
 uint64_t squoze52_utf5 (const char *utf8, size_t len)
 {
-  return squoze_encode (NULL, 52, 1, utf8, len, NULL);
+  return squoze_pool_encode (NULL, 52, 1, utf8, len, NULL);
 }
 #endif
 
 #if SQUOZE_IMPLEMENTATION_62_UTF5
 uint64_t squoze62_utf5 (const char *utf8, size_t len)
 {
-  return squoze_encode (NULL, 62, 1, utf8, len, NULL);
+  return squoze_pool_encode (NULL, 62, 1, utf8, len, NULL);
 }
 #endif
 
