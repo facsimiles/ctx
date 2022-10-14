@@ -816,25 +816,15 @@ static int squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
 }
 #endif
 
-static Squoze *squoze_lookup_struct_by_id (SquozePool *pool, squoze_id_t id, int length, const uint8_t *bytes)
+static Squoze *squoze_lookup (SquozePool *pool, squoze_id_t id, int length, const uint8_t *bytes)
 {
   int pos = squoze_pool_find (pool, id, length, bytes);
   if (pos >= 0)
     return pool->hashtable[pos];
   if (pool->fallback)
-    return squoze_lookup_struct_by_id (pool->fallback, id, length, bytes);
+    return squoze_lookup (pool->fallback, id, length, bytes);
   return NULL;
 }
-
-#if 0
-static Squoze *squoze_lookup_id (SquozePool *pool, squoze_id_t id)
-{
-  Squoze *str = squoze_lookup_struct_by_id (pool, id);
-  if (str)
-    return str->string;
-  return NULL;
-}
-#endif
 
 void squoze_pool_mem_stats (SquozePool *pool,
 		            size_t     *size,
@@ -909,7 +899,7 @@ static uint64_t squoze_pool_encode (SquozePool *pool, const char *utf8, size_t l
   if (pool == NULL) pool = &global_pool;
   if ((hash & 1)==0)
   {
-    Squoze *str = squoze_lookup_struct_by_id (pool, hash, len, (const uint8_t*)utf8);
+    Squoze *str = squoze_lookup (pool, hash, len, (const uint8_t*)utf8);
     if (str)
     {
 #if SQUOZE_REF_COUNTING
