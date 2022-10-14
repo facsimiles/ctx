@@ -664,56 +664,54 @@ static inline uint64_t MurmurOAAT64 ( const char * key, int len)
   return h;
 }
 
-
+/* this should have the same behavior as the bitwidth and encoding
+ * specific implementations
+ */
 static inline uint64_t squoze_encode_id (int squoze_dim, int utf5, const char *stf8, size_t len)
 {
   int length = len;
   uint64_t id = 0;
   if (utf5)
   {
-    int words = squoze_words_for_dim (squoze_dim);
-    if (length > words)  //  || (in[0]>127 && in[0]<=0xc0) || in[0]==255 || in[0]==254) // invalid utf8 starting bytes
-      goto just_hash;
-
-    int overflow = 0;
-    id = squoze5_encode_int (stf8, length, words, &overflow, 1);
-    if (!overflow)
-      return id;
-
-  {
-    just_hash:
+    int max_quintets = squoze_words_for_dim (squoze_dim);
+    if (length <= max_quintets)
+    {
+      int overflow = 0;
+      id = squoze5_encode_int (stf8, length, max_quintets, &overflow, 1);
+      if (!overflow)
+        return id;
+    }
     id = 0;
     id = MurmurOAAT32(stf8, length);
     id &= ~1;
   }
-  }
   else
   {
-  const uint8_t *utf8 = (const uint8_t*)stf8;
-  if (squoze_dim > 32)
-    squoze_dim = 64;
-  size_t bytes_dim = squoze_dim / 8;
-
-  uint8_t first_byte = ((uint8_t*)utf8)[0];
-  if (first_byte<128
-      && first_byte != 11
-      && (length <= bytes_dim))
-  {
+    const uint8_t *utf8 = (const uint8_t*)stf8;
+    if (squoze_dim > 32)
+      squoze_dim = 64;
+    size_t bytes_dim = squoze_dim / 8;
+  
+    uint8_t first_byte = ((uint8_t*)utf8)[0];
+    if (first_byte<128
+        && first_byte != 11
+        && (length <= bytes_dim))
+    {
       id = utf8[0] * 2 + 1;
       for (int i = 1; i < length; i++)
         id += ((uint64_t)utf8[i]<<(8*(i)));
-    return id;
-  }
-  else if (length <= bytes_dim-1)
-  {
-     id = 23;
-     for (int i = 0; i < length; i++)
-       id += ((uint64_t)utf8[i]<<(8*(i+1)));
-    return id;
-  }
-
-  id = MurmurOAAT32(stf8, len);
-  id &= ~1;  // make even - intern marker
+    }
+    else if (length <= bytes_dim-1)
+    {
+      id = 23;
+      for (int i = 0; i < length; i++)
+        id += ((uint64_t)utf8[i]<<(8*(i+1)));
+    }
+    else
+    {
+      id = MurmurOAAT32(stf8, len);
+      id &= ~1;  // make even - intern marker
+    }
   }
   return id;
 }
