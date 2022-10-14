@@ -43,6 +43,12 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define SQUOZE_STORE_LENGTH 1  // per-interned-string data
 #endif
 
+#ifndef SQUOZE_USE_INTERN
+#define SQUOZE_USE_INTERN 1
+#endif
+
+#if SQUOZE_USE_INTERN
+
 #if SQUOZE_ID_BITS==32
 typedef uint32_t squoze_id_t;
 #else
@@ -114,6 +120,7 @@ void         squoze_unref        (Squoze *squozed);
  */
 void         squoze_atexit (void);
 
+#endif
 
 #ifndef SQUOZE_REF_SANITY
 #define SQUOZE_REF_SANITY 0   // report consistency errors and use more RAM
@@ -175,10 +182,6 @@ void         squoze_atexit (void);
 #define SQUOZE_USE_UTF5 0
 #endif
 
-#ifndef SQUOZE_USE_INTERNING
-#define SQUOZE_USE_INTERNING 0
-#endif
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -226,19 +229,7 @@ const char  *squoze64_utf8_decode (uint64_t    hash);
 #define SQUOZE_ENTER_UTF5       31
 
 
-struct _Squoze {
-#if SQUOZE_REF_COUNTING
-    int32_t       ref_count; // set to magic value for ROM strings?
-#endif
-#if SQUOZE_STORE_LENGTH
-    int32_t       length;
-#endif
-    squoze_id_t   hash;
-    char          string[];
-};
 
-
-static inline uint64_t squoze_pool_encode     (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref);
 static inline uint32_t squoze_utf8_to_unichar (const char *input);
 static inline int      squoze_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 static inline int      squoze_utf8_len        (const unsigned char first_byte);
@@ -735,314 +726,9 @@ static inline uint64_t squoze_encode_id (int squoze_dim, int utf5, const char *s
 #define strstr ctx_strstr
 #endif
 
-struct _SquozePool
-{
-  int32_t        ref_count;
-  SquozePool    *fallback;
-  Squoze       **hashtable;
-  int            count;
-  int            size;
-  SquozePool    *next;
-};
 
-static SquozePool global_pool = {0, NULL, NULL, 0, 0, NULL};
 
-static SquozePool *squoze_pools = NULL;
 
-static int squoze_pool_find (SquozePool *pool, uint64_t hash, int length, const uint8_t *bytes)
-{
-  if (pool->size == 0)
-    return -1;
-  int pos = hash & (pool->size-1);
-  if (!pool->hashtable[pos])
-    return -1;
-  while (pool->hashtable[pos]->hash != hash
-#if SQUOZE_STORE_LENGTH
-         || pool->hashtable[pos]->length != length
-#endif
-	 || strcmp (pool->hashtable[pos]->string, (char*)bytes)
-	 )
-  {
-    pos++;
-    pos &= (pool->size-1);
-    if (!pool->hashtable[pos])
-      return -1;
-  }
-  return pos;
-}
-static int squoze_pool_add_entry (SquozePool *pool, Squoze *str)
-{
-  if (pool->count + 1 >= pool->size / 2)
-  {
-     Squoze **old = pool->hashtable;
-     int old_size = pool->size;
-     if (old_size == 0)
-       pool->size = SQUOZE_INITIAL_POOL_SIZE;
-     else
-       pool->size *= 2;
-     pool->hashtable = (Squoze**)calloc (pool->size, sizeof (void*));
-     if (old)
-     {
-       for (int i = 0; i < old_size; i++)
-         if (old[i])
-           squoze_pool_add_entry (pool, old[i]);
-       free (old);
-     }
-  }
-  pool->count++;
-
-  int pos = str->hash & (pool->size-1);
-  while (pool->hashtable[pos])
-  {
-    pos++;
-    pos &= (pool->size-1);
-  }
-  pool->hashtable[pos]=str;
-  return pos;
-}
-
-#if SQUOZE_REF_SANITY
-static int squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
-{
-  Squoze *str = squozed;
-  int no = squoze_pool_find (pool, str->hash);
-  if (no < 0)
-    return 0;
-  if (do_free)
-    free (str);
-#ifdef assert
-  assert (pool->hashtable[no] == squozed);
-#endif
-  pool->hashtable[no]=0;
-  
-  // check if there is another one to promote now
-  for (int i = no+1; pool->hashtable[i]; i = (i+1)&(pool->size-1))
-  {
-    if ((pool->hashtable[i]->hash & (pool->size-1)) == (unsigned)no)
-    {
-      Squoze *for_upgrade = pool->hashtable[i];
-      squoze_pool_remove (pool, for_upgrade, 0);
-      squoze_pool_add_entry (pool, for_upgrade);
-      break;
-    }
-  }
-  return 1;
-}
-#endif
-
-static Squoze *squoze_lookup (SquozePool *pool, squoze_id_t id, int length, const uint8_t *bytes)
-{
-  int pos = squoze_pool_find (pool, id, length, bytes);
-  if (pos >= 0)
-    return pool->hashtable[pos];
-  if (pool->fallback)
-    return squoze_lookup (pool->fallback, id, length, bytes);
-  return NULL;
-}
-
-void squoze_pool_mem_stats (SquozePool *pool,
-		            size_t     *size,
-			    size_t     *slack,
-			    size_t     *intern_alloc)
-{
-  if (!pool) pool = &global_pool;
-  if (size)
-  {
-    *size = sizeof (SquozePool) + pool->size * sizeof (void*);
-  }
-  if (slack)
-  {
-    *slack = (pool->size - pool->count) * sizeof (void*);
-  }
-
-  if (intern_alloc)
-  {
-    size_t sum = 0;
-    for (int i = 0; i < pool->size; i++)
-    {
-      if (pool->hashtable[i])
-      {
-        Squoze *squoze = pool->hashtable[i];
-        sum += strlen (squoze->string) + 1 + sizeof (Squoze);
-      }
-    }
-    *intern_alloc = sum;
-  }
-}
-
- // we do 32bit also for 64bit - we want the same predetermined hashes to match
-Squoze *squoze_pool_add (SquozePool *pool, const char *str)
-{
-  if (!pool) pool = &global_pool;
-  Squoze *interned = NULL;
-  uint64_t hash = squoze_pool_encode (pool, str, strlen (str), &interned);
-
-  if (interned)
-  {
-#ifdef assert
-    assert ((((size_t)interned)&0x1)==0);
-#endif
-    return interned;
-  }
-  else
-    return (Squoze*)((size_t)hash);
-}
-
-// encodes utf8 to a squoze id of squoze_dim bits - if interned_ret is provided overflowed ids
-// are interned and a new interned squoze is returned.
-static uint64_t squoze_pool_encode (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref)
-{
-#if   SQUOZE_ID_BITS==32 && SQUOZE_ID_MURMUR
-   uint64_t hash = MurmurOAAT32(utf8, len) & ~1;
-#elif  SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
-   uint64_t hash = squoze32_utf5 (utf8, len);
-#elif SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF8
-   uint64_t hash = squoze32_utf8 (utf8, len);
-#elif SQUOZE_ID_BITS==62 && SQUOZE_ID_UTF5
-   uint64_t hash = squoze62_utf5 (utf8, len);
-#elif SQUOZE_ID_BITS==52 && SQUOZE_ID_UTF5
-   uint64_t hash = squoze52_utf5 (utf8, len);
-#elif SQUOZE_ID_BITS==64 && SQUOZE_ID_UTF8
-   uint64_t hash = squoze64_utf8 (utf8, len);
-#else
-   uint64_t hash = squoze_encode_id (SQUOZE_ID_BITS, SQUOZE_ID_UTF5, utf8, len);
-#endif
-
-  if (!interned_ref)
-    return hash;
-  if (pool == NULL) pool = &global_pool;
-  if ((hash & 1)==0)
-  {
-    Squoze *str = squoze_lookup (pool, hash, len, (const uint8_t*)utf8);
-    if (str)
-    {
-#if SQUOZE_REF_COUNTING
-      str->ref_count++;
-#endif
-      if (interned_ref) *interned_ref = str;
-      return hash; 
-    }
-
-    {
-      Squoze *entry = (Squoze*)calloc (len + 1 + sizeof(Squoze), 1);
-      entry->hash = hash;
-#if SQUOZE_STORE_LENGTH
-      entry->length = len;
-#endif
-      strcpy (entry->string, utf8);
-      if (interned_ref) *interned_ref = entry;
-      squoze_pool_add_entry (pool, entry);
-    }
-  }
-  return hash;
-}
-
-static inline int squoze_is_interned (Squoze *squozed)
-{
-  return ((((size_t)(squozed))&1) == 0);
-}
-
-static inline int squoze_is_embedded (Squoze *squozed)
-{
-  return !squoze_is_interned (squozed);
-}
-
-static const char *squoze_decode (int squoze_dim, uint64_t hash, int is_utf5);
-
-const char *squoze_peek (Squoze *squozed)
-{
-  if (!squozed) return NULL;
-  if (squoze_is_embedded (squozed))
-  {
-#if   SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
-    return squoze32_utf5_decode ((size_t)squozed);
-#elif SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF8
-    return squoze32_utf8_decode ((size_t)squozed);
-#elif SQUOZE_ID_BITS==52 && SQUOZE_ID_UTF5
-    return squoze52_utf5_decode ((size_t)squozed);
-#elif SQUOZE_ID_BITS==62 && SQUOZE_ID_UTF5
-    return squoze62_utf5_decode ((size_t)squozed);
-#elif SQUOZE_ID_BITS==64 && SQUOZE_ID_UTF8
-    return squoze64_utf8_decode ((size_t)squozed);
-#else
-    return squoze_decode (62, ((size_t)squozed), SQUOZE_ID_UTF5);
-#endif
-  }
-  else
-    return squozed->string;
-}
-
-void squoze_ref (Squoze *squozed)
-{
-#if SQUOZE_REF_COUNTING
-  if (squoze_is_interned (squozed))
-  {
-     squozed->ref_count ++;
-  }
-#endif
-}
-
-void squoze_unref (Squoze *squozed)
-{
-#if SQUOZE_REF_COUNTING
-  if (squoze_is_interned (squozed))
-  {
-      if (squozed->ref_count <= 0)
-      {
-#if SQUOZE_CLOBBER_ON_FREE
-	squozed->string[-squozed->ref_count]='#';
-#endif
-#if SQUOZE_REF_SANITY
-	if (squozed->ref_count < 0)
-	  fprintf (stderr, "double unref for \"%s\"\n", squozed->string);
-        squozed->ref_count--;
-#else
-        SquozePool *pool = &global_pool;
-	if (squoze_pool_remove (pool, squozed, 1))
-	{
-	  return;
-	}
-	pool = squoze_pools;
-	if (pool)
-	do {
-	  if (squoze_pool_remove (pool, squozed, 1))
-	  {
-	    return;
-	  }
-	  pool = pool->next;
-	} while (pool);
-#endif
-      }
-      else
-      {
-        squozed->ref_count--;
-      }
-  }
-#endif
-}
-
-squoze_id_t squoze_id (Squoze *squozed)
-{
-  if (!squozed) return 0;
-  if (squoze_is_embedded (squozed))
-    return ((size_t)(squozed));
-  else
-    return squozed->hash;
-}
-
-int squoze_length       (Squoze *squozed)
-{
-  if (!squozed) return 0;
-#if SQUOZE_STORE_LENGTH
-  if (squoze_is_embedded (squozed))
-#endif
-    return strlen (squoze_peek (squozed));
-#if SQUOZE_STORE_LENGTH
-  else
-    return squozed->length;
-#endif
-  return 0;
-}
 
 #if SQUOZE_IMPLEMENTATION_32_UTF5
 uint32_t squoze32_utf5 (const char *utf8, size_t len)
@@ -1475,76 +1161,6 @@ static const char *squoze_decode (int squoze_dim, uint64_t hash, int is_utf5)
   return squoze_decode_r (squoze_dim, hash, ret[no], 16, is_utf5);
 }
 
-SquozePool *squoze_pool_new     (SquozePool *fallback)
-{
-  SquozePool *pool = (SquozePool*)calloc (sizeof (SquozePool), 1);
-  pool->fallback = fallback;
-  pool->next = squoze_pools;
-  squoze_pools = pool;
-  if (fallback)
-    squoze_pool_ref (fallback);
-  return pool;
-}
-
-void squoze_pool_ref (SquozePool *pool)
-{
-  if (!pool) return;
-  pool->ref_count--;
-}
-
-static void squoze_pool_destroy (SquozePool *pool)
-{
-#if 0
-    fprintf (stderr, "destorying pool: size:%i count:%i embedded:%i\n",
-       pool->size, pool->count, pool->count_embedded);
-#endif
-    for (int i = 0; i < pool->size; i++)
-    {
-      if (pool->hashtable[i])
-        free (pool->hashtable[i]);
-      pool->hashtable[i] = 0;
-    }
-    if (pool->fallback)
-      squoze_pool_unref (pool->fallback);
-
-    if (pool == squoze_pools)
-    {
-       squoze_pools = pool->next;
-    }
-    else
-    {
-      SquozePool *prev = NULL;
-      SquozePool *iter = squoze_pools;
-      while (iter && iter != pool)
-      {
-         prev = iter;
-         iter = iter->next;
-      }
-      if (prev) // XXX not needed
-        prev->next = pool->next;
-    }
-    pool->size = 0;
-    pool->count = 0;
-    if (pool->hashtable)
-      free (pool->hashtable);
-    pool->hashtable = NULL;
-
-    // XXX report non unreffed items based on config
-}
-
-void squoze_pool_unref (SquozePool *pool)
-{
-  if (!pool) return;
-  if (pool->ref_count == 0)
-  {
-    squoze_pool_destroy (pool);
-    free (pool);
-  }
-  else
-  {
-    pool->ref_count--;
-  }
-}
 
 #if SQUOZE_IMPLEMENTATION_32_UTF5
 const char *squoze32_utf5_decode (uint32_t hash)
@@ -1675,10 +1291,417 @@ squoze_utf8_len (const unsigned char first_byte)
   return 1;
 }
 
-void         squoze_atexit (void)
+
+
+/*  data structures and implementation for string interning, potentially
+ *  with both ref-counting and pools of strings.
+ */
+#if SQUOZE_USE_INTERN
+
+struct _Squoze {
+#if SQUOZE_REF_COUNTING
+    int32_t       ref_count; // set to magic value for ROM strings?
+			     // and store pointer in string data?
+#endif
+#if SQUOZE_STORE_LENGTH
+    int32_t       length;
+#endif
+    squoze_id_t   hash;
+    char          string[];
+};
+
+
+static inline uint64_t squoze_pool_encode     (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref);
+
+struct _SquozePool
+{
+  int32_t        ref_count;
+  SquozePool    *fallback;
+  Squoze       **hashtable;
+  int            count;
+  int            size;
+  SquozePool    *next;
+};
+
+static SquozePool global_pool = {0, NULL, NULL, 0, 0, NULL};
+
+static SquozePool *squoze_pools = NULL;
+
+static int squoze_pool_find (SquozePool *pool, uint64_t hash, int length, const uint8_t *bytes)
+{
+  if (pool->size == 0)
+    return -1;
+  int pos = hash & (pool->size-1);
+  if (!pool->hashtable[pos])
+    return -1;
+  while (pool->hashtable[pos]->hash != hash
+#if SQUOZE_STORE_LENGTH
+         || pool->hashtable[pos]->length != length
+#endif
+	 || strcmp (pool->hashtable[pos]->string, (char*)bytes)
+	 )
+  {
+    pos++;
+    pos &= (pool->size-1);
+    if (!pool->hashtable[pos])
+      return -1;
+  }
+  return pos;
+}
+static int squoze_pool_add_entry (SquozePool *pool, Squoze *str)
+{
+  if (pool->count + 1 >= pool->size / 2)
+  {
+     Squoze **old = pool->hashtable;
+     int old_size = pool->size;
+     if (old_size == 0)
+       pool->size = SQUOZE_INITIAL_POOL_SIZE;
+     else
+       pool->size *= 2;
+     pool->hashtable = (Squoze**)calloc (pool->size, sizeof (void*));
+     if (old)
+     {
+       for (int i = 0; i < old_size; i++)
+         if (old[i])
+           squoze_pool_add_entry (pool, old[i]);
+       free (old);
+     }
+  }
+  pool->count++;
+
+  int pos = str->hash & (pool->size-1);
+  while (pool->hashtable[pos])
+  {
+    pos++;
+    pos &= (pool->size-1);
+  }
+  pool->hashtable[pos]=str;
+  return pos;
+}
+
+#if SQUOZE_REF_SANITY
+static int squoze_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
+{
+  Squoze *str = squozed;
+  int no = squoze_pool_find (pool, str->hash);
+  if (no < 0)
+    return 0;
+  if (do_free)
+    free (str);
+#ifdef assert
+  assert (pool->hashtable[no] == squozed);
+#endif
+  pool->hashtable[no]=0;
+  
+  // check if there is another one to promote now
+  for (int i = no+1; pool->hashtable[i]; i = (i+1)&(pool->size-1))
+  {
+    if ((pool->hashtable[i]->hash & (pool->size-1)) == (unsigned)no)
+    {
+      Squoze *for_upgrade = pool->hashtable[i];
+      squoze_pool_remove (pool, for_upgrade, 0);
+      squoze_pool_add_entry (pool, for_upgrade);
+      break;
+    }
+  }
+  return 1;
+}
+#endif
+
+static Squoze *squoze_lookup (SquozePool *pool, squoze_id_t id, int length, const uint8_t *bytes)
+{
+  int pos = squoze_pool_find (pool, id, length, bytes);
+  if (pos >= 0)
+    return pool->hashtable[pos];
+  if (pool->fallback)
+    return squoze_lookup (pool->fallback, id, length, bytes);
+  return NULL;
+}
+
+void squoze_pool_mem_stats (SquozePool *pool,
+		            size_t     *size,
+			    size_t     *slack,
+			    size_t     *intern_alloc)
+{
+  if (!pool) pool = &global_pool;
+  if (size)
+  {
+    *size = sizeof (SquozePool) + pool->size * sizeof (void*);
+  }
+  if (slack)
+  {
+    *slack = (pool->size - pool->count) * sizeof (void*);
+  }
+
+  if (intern_alloc)
+  {
+    size_t sum = 0;
+    for (int i = 0; i < pool->size; i++)
+    {
+      if (pool->hashtable[i])
+      {
+        Squoze *squoze = pool->hashtable[i];
+        sum += strlen (squoze->string) + 1 + sizeof (Squoze);
+      }
+    }
+    *intern_alloc = sum;
+  }
+}
+
+ // we do 32bit also for 64bit - we want the same predetermined hashes to match
+Squoze *squoze_pool_add (SquozePool *pool, const char *str)
+{
+  if (!pool) pool = &global_pool;
+  Squoze *interned = NULL;
+  uint64_t hash = squoze_pool_encode (pool, str, strlen (str), &interned);
+
+  if (interned)
+  {
+#ifdef assert
+    assert ((((size_t)interned)&0x1)==0);
+#endif
+    return interned;
+  }
+  else
+    return (Squoze*)((size_t)hash);
+}
+
+
+// encodes utf8 to a squoze id of squoze_dim bits - if interned_ret is provided overflowed ids
+// are interned and a new interned squoze is returned.
+static uint64_t squoze_pool_encode (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref)
+{
+#if   SQUOZE_ID_BITS==32 && SQUOZE_ID_MURMUR
+   uint64_t hash = MurmurOAAT32(utf8, len) & ~1;
+#elif  SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
+   uint64_t hash = squoze32_utf5 (utf8, len);
+#elif SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF8
+   uint64_t hash = squoze32_utf8 (utf8, len);
+#elif SQUOZE_ID_BITS==62 && SQUOZE_ID_UTF5
+   uint64_t hash = squoze62_utf5 (utf8, len);
+#elif SQUOZE_ID_BITS==52 && SQUOZE_ID_UTF5
+   uint64_t hash = squoze52_utf5 (utf8, len);
+#elif SQUOZE_ID_BITS==64 && SQUOZE_ID_UTF8
+   uint64_t hash = squoze64_utf8 (utf8, len);
+#else
+   uint64_t hash = squoze_encode_id (SQUOZE_ID_BITS, SQUOZE_ID_UTF5, utf8, len);
+#endif
+
+  if (!interned_ref)
+    return hash;
+  if (pool == NULL) pool = &global_pool;
+  if ((hash & 1)==0)
+  {
+    Squoze *str = squoze_lookup (pool, hash, len, (const uint8_t*)utf8);
+    if (str)
+    {
+#if SQUOZE_REF_COUNTING
+      str->ref_count++;
+#endif
+      if (interned_ref) *interned_ref = str;
+      return hash; 
+    }
+
+    {
+      Squoze *entry = (Squoze*)calloc (len + 1 + sizeof(Squoze), 1);
+      entry->hash = hash;
+#if SQUOZE_STORE_LENGTH
+      entry->length = len;
+#endif
+      strcpy (entry->string, utf8);
+      if (interned_ref) *interned_ref = entry;
+      squoze_pool_add_entry (pool, entry);
+    }
+  }
+  return hash;
+}
+
+static inline int squoze_is_interned (Squoze *squozed)
+{
+  return ((((size_t)(squozed))&1) == 0);
+}
+
+static inline int squoze_is_embedded (Squoze *squozed)
+{
+  return !squoze_is_interned (squozed);
+}
+
+
+static const char *squoze_decode (int squoze_dim, uint64_t hash, int is_utf5);
+
+const char *squoze_peek (Squoze *squozed)
+{
+  if (!squozed) return NULL;
+  if (squoze_is_embedded (squozed))
+  {
+#if   SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
+    return squoze32_utf5_decode ((size_t)squozed);
+#elif SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF8
+    return squoze32_utf8_decode ((size_t)squozed);
+#elif SQUOZE_ID_BITS==52 && SQUOZE_ID_UTF5
+    return squoze52_utf5_decode ((size_t)squozed);
+#elif SQUOZE_ID_BITS==62 && SQUOZE_ID_UTF5
+    return squoze62_utf5_decode ((size_t)squozed);
+#elif SQUOZE_ID_BITS==64 && SQUOZE_ID_UTF8
+    return squoze64_utf8_decode ((size_t)squozed);
+#else
+    return squoze_decode (62, ((size_t)squozed), SQUOZE_ID_UTF5);
+#endif
+  }
+  else
+    return squozed->string;
+}
+
+void squoze_ref (Squoze *squozed)
+{
+#if SQUOZE_REF_COUNTING
+  if (squoze_is_interned (squozed))
+  {
+     squozed->ref_count ++;
+  }
+#endif
+}
+
+void squoze_unref (Squoze *squozed)
+{
+#if SQUOZE_REF_COUNTING
+  if (squoze_is_interned (squozed))
+  {
+      if (squozed->ref_count <= 0)
+      {
+#if SQUOZE_CLOBBER_ON_FREE
+	squozed->string[-squozed->ref_count]='#';
+#endif
+#if SQUOZE_REF_SANITY
+	if (squozed->ref_count < 0)
+	  fprintf (stderr, "double unref for \"%s\"\n", squozed->string);
+        squozed->ref_count--;
+#else
+        SquozePool *pool = &global_pool;
+	if (squoze_pool_remove (pool, squozed, 1))
+	{
+	  return;
+	}
+	pool = squoze_pools;
+	if (pool)
+	do {
+	  if (squoze_pool_remove (pool, squozed, 1))
+	  {
+	    return;
+	  }
+	  pool = pool->next;
+	} while (pool);
+#endif
+      }
+      else
+      {
+        squozed->ref_count--;
+      }
+  }
+#endif
+}
+
+squoze_id_t squoze_id (Squoze *squozed)
+{
+  if (!squozed) return 0;
+  if (squoze_is_embedded (squozed))
+    return ((size_t)(squozed));
+  else
+    return squozed->hash;
+}
+
+int squoze_length       (Squoze *squozed)
+{
+  if (!squozed) return 0;
+#if SQUOZE_STORE_LENGTH
+  if (squoze_is_embedded (squozed))
+#endif
+    return strlen (squoze_peek (squozed));
+#if SQUOZE_STORE_LENGTH
+  else
+    return squozed->length;
+#endif
+  return 0;
+}
+SquozePool *squoze_pool_new     (SquozePool *fallback)
+{
+  SquozePool *pool = (SquozePool*)calloc (sizeof (SquozePool), 1);
+  pool->fallback = fallback;
+  pool->next = squoze_pools;
+  squoze_pools = pool;
+  if (fallback)
+    squoze_pool_ref (fallback);
+  return pool;
+}
+
+void squoze_pool_ref (SquozePool *pool)
+{
+  if (!pool) return;
+  pool->ref_count--;
+}
+
+static void squoze_pool_destroy (SquozePool *pool)
+{
+#if 0
+    fprintf (stderr, "destorying pool: size:%i count:%i embedded:%i\n",
+       pool->size, pool->count, pool->count_embedded);
+#endif
+    for (int i = 0; i < pool->size; i++)
+    {
+      if (pool->hashtable[i])
+        free (pool->hashtable[i]);
+      pool->hashtable[i] = 0;
+    }
+    if (pool->fallback)
+      squoze_pool_unref (pool->fallback);
+
+    if (pool == squoze_pools)
+    {
+       squoze_pools = pool->next;
+    }
+    else
+    {
+      SquozePool *prev = NULL;
+      SquozePool *iter = squoze_pools;
+      while (iter && iter != pool)
+      {
+         prev = iter;
+         iter = iter->next;
+      }
+      if (prev) // XXX not needed
+        prev->next = pool->next;
+    }
+    pool->size = 0;
+    pool->count = 0;
+    if (pool->hashtable)
+      free (pool->hashtable);
+    pool->hashtable = NULL;
+
+    // XXX report non unreffed items based on config
+}
+
+void squoze_pool_unref (SquozePool *pool)
+{
+  if (!pool) return;
+  if (pool->ref_count == 0)
+  {
+    squoze_pool_destroy (pool);
+    free (pool);
+  }
+  else
+  {
+    pool->ref_count--;
+  }
+}
+
+void
+squoze_atexit (void)
 {
   squoze_pool_destroy (&global_pool);
   // XXX : when debugging report leaked pools
 }
+
+#endif
+
 
 #endif
