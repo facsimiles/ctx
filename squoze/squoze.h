@@ -990,11 +990,13 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
 // are interned and a new interned squoze is returned.
 static uint64_t squoze_pool_encode (SquozePool *pool, int squoze_dim, int squoze_utf5, const char *utf8, size_t len, Squoze **interned_ref)
 {
-  //len = strlen (utf8);
-  uint64_t hash = squoze_encode_id (squoze_dim, squoze_utf5, utf8, len);
-#ifdef SQUOZE_NO_INTERNING
-  interned_ref = NULL;
-#endif
+  uint64_t hash;
+  if      (squoze_dim == 32 && squoze_utf5==1) hash = squoze32_utf5 (utf8, len);
+  else if (squoze_dim == 32 && squoze_utf5==0) hash = squoze32_utf8 (utf8, len);
+  else if (squoze_dim == 52 && squoze_utf5==1) hash = squoze52_utf5 (utf8, len);
+  else if (squoze_dim == 62 && squoze_utf5==1) hash = squoze62_utf5 (utf8, len);
+  else if (squoze_dim == 64 && squoze_utf5==0) hash = squoze64_utf8 (utf8, len);
+  else hash = squoze_encode_id (squoze_dim, squoze_utf5, utf8, len);
   if (!interned_ref)
     return hash;
   if (pool == NULL) pool = &global_pool;
