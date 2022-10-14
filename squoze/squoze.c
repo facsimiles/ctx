@@ -1,10 +1,12 @@
 #include <stdio.h>
 
 #define SQUOZE_IMPLEMENTATION
-#define SQUOZE_IMPLEMENTATION_32 1
-#define SQUOZE_IMPLEMENTATION_62 1
-#define SQUOZE_IMPLEMENTATION_52 1
-#define SQUOZE_IMPLEMENTATION_64 1
+#define SQUOZE_IMPLEMENTATION_32_UTF5 1
+#define SQUOZE_IMPLEMENTATION_62_UTF5 1
+#define SQUOZE_IMPLEMENTATION_52_UTF5 1
+#define SQUOZE_IMPLEMENTATION_64_UTF5 1
+#define SQUOZE_IMPLEMENTATION_64_UTF8 1
+#define SQUOZE_IMPLEMENTATION_32_UTF8 1
 #include "squoze.h"
 
 static int squoze_is_number (const char *str)
@@ -239,9 +241,9 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze62_decode (atol(argv[i])));
+          printf ("%s", squoze62_utf5_decode (atol(argv[i])));
         else
-          printf ("%u", squoze32 (argv[i], strlen (argv[i])));
+          printf ("%u", squoze32_utf5 (argv[i], strlen (argv[i])));
       }
       break;
     case 52:
@@ -249,9 +251,9 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze62_decode (atol(argv[i])));
+          printf ("%s", squoze62_utf5_decode (atol(argv[i])));
         else
-          printf ("%lu", squoze52 (argv[i], strlen (argv[i])));
+          printf ("%lu", squoze52_utf5 (argv[i], strlen (argv[i])));
       }
       break;
     case 62:
@@ -259,9 +261,9 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze62_decode (atol(argv[i])));
+          printf ("%s", squoze62_utf5_decode (atol(argv[i])));
         else
-          printf ("%lu", squoze62 (argv[i], strlen (argv[i])));
+          printf ("%lu", squoze62_utf5 (argv[i], strlen (argv[i])));
       }
       break;
     case 64:
@@ -269,9 +271,9 @@ int main (int argc, char **argv)
       {
         print_sep ();
         if ((!force_encode) && squoze_is_number (argv[i]))
-          printf ("%s", squoze64_decode (atol(argv[i])));
+          printf ("%s", squoze64_utf8_decode (atol(argv[i])));
         else
-          printf ("%lu", squoze64 (argv[i], strlen (argv[i])));
+          printf ("%lu", squoze64_utf8 (argv[i], strlen (argv[i])));
       }
       break;
     case 33:
