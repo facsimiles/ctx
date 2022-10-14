@@ -133,7 +133,7 @@ update-reference: report.txt
 rpi-cp:
 	scp squoze*.[ch] Makefile pi@raspberrypi:squoze
 rpi-test:
-	ssh pi@raspberrypi make -C squoze report-32bit.html 
+	ssh pi@raspberrypi make -C squoze report-32bit.html -j5
 rpi-get:
 	scp pi@raspberrypi:squoze/report-32bit.html extra-index.html
 README: index.html

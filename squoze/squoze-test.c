@@ -4,12 +4,14 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS               15
+#define ITERATIONS               30
 #define INNER_ITERATIONS         1 
 #define SQUOZE_IMPLEMENTATION
-#define SQUOZE_IMPLEMENTATION_32 1
-#define SQUOZE_IMPLEMENTATION_62 1
-#define SQUOZE_IMPLEMENTATION_52 1
+#define SQUOZE_IMPLEMENTATION_32_UTF5 1
+#define SQUOZE_IMPLEMENTATION_62_UTF5 1
+#define SQUOZE_IMPLEMENTATION_52_UTF5 1
+#define SQUOZE_IMPLEMENTATION_32_UTF8 1
+#define SQUOZE_IMPLEMENTATION_64_UTF8 1
 
 #define SQUOZE_INITIAL_POOL_SIZE   (1<<20)
 
@@ -61,8 +63,8 @@ static float do_test_round (int words, TestType type)
   long start = ticks();
   {
    int i = 0;
-  for (StringRef *str = dict; str; str=str->next,i++)
-  {
+   for (StringRef *str = dict; str; str=str->next,i++)
+   {
     char input[4096];
     for (int j = 0; j < INNER_ITERATIONS; j++)
     {
@@ -72,7 +74,7 @@ static float do_test_round (int words, TestType type)
         sprintf (input, "%s", str->str);
       refs [i] = squoze (input);
     }
-  }
+   }
   }
 
   switch (type)
@@ -411,6 +413,7 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
 
 
   float embed_percentage = 0.0f;
+  size_t ht, ht_slack, ht_entries;
   { // warumup round
   for (StringRef *str = dict; str; str=str->next)
   {
@@ -435,6 +438,7 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
     }
   }
     embed_percentage = (100.0f * global_pool.count_embedded) / (words * INNER_ITERATIONS);
+  squoze_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
   }
 
   printf ("%.3f</td><td>", do_test (words, iterations, TEST_CREATE)/(words * INNER_ITERATIONS));
@@ -442,8 +446,6 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
   printf ("%.3f</td><td>", do_test (words, iterations, TEST_DECODE)/(words * INNER_ITERATIONS));
   printf ("%.3f</td><td>", do_test (words, iterations, TEST_CONCAT)/(words * INNER_ITERATIONS));
   printf ("%.0f%%</td>", embed_percentage);
-  size_t ht, ht_slack, ht_entries;
-  squoze_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
   printf ("<td>%li</td>", ht - ht_slack + ht_entries);
   printf ("</tr>\n");
 

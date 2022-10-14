@@ -152,17 +152,18 @@ void         squoze_atexit (void);
 #define SQUOZE_UTF8_MANUAL_UNROLL 1 // use manually unrolled UTF8 code
 #endif
 
-
+#ifndef SQUOZE_IMPLEMENTATION_32_UTF8
+#define SQUOZE_IMPLEMENTATION_32_UTF8 0
+#endif
 
 #ifndef SQUOZE_IMPLEMENTATION_32_UTF5
-#define SQUOZE_IMPLEMENTATION_32_UTF5 1
+#define SQUOZE_IMPLEMENTATION_32_UTF5 0
 #endif
 
 #ifndef SQUOZE_IMPLEMENTATION_52_UTF5
 #define SQUOZE_IMPLEMENTATION_52_UTF5 0
 // include implementation for 52bit ids - suitable for storage in doubles
 #endif
-
 
 #ifndef SQUOZE_IMPLEMENTATION_62_UTF5
 // include implementation for 62bit ids - suitable for storage in uint64_t
@@ -178,7 +179,10 @@ uint32_t     squoze32_utf5        (const char *utf8, size_t len);
 const char  *squoze32_utf5_decode (uint32_t    hash);
 #endif
 
+#if SQUOZE_IMPLEMENTATION_32_UTF8
 uint32_t     squoze32_utf8        (const char *utf8, size_t len);
+const char  *squoze32_utf8_decode (uint32_t    hash);
+#endif
 
 #if SQUOZE_IMPLEMENTATION_52_UTF5
 uint64_t     squoze52_utf5        (const char *utf8, size_t len);
@@ -190,6 +194,10 @@ uint64_t     squoze62_utf5        (const char *utf8, size_t len);
 const char  *squoze62_utf5_decode (uint64_t    hash);
 #endif
 
+#if SQUOZE_IMPLEMENTATION_64_UTF8
+uint64_t     squoze64_utf8        (const char *utf8, size_t len);
+const char  *squoze64_utf8_decode (uint64_t    hash);
+#endif
 
 #endif
 
@@ -1037,10 +1045,26 @@ const char *squoze_peek (Squoze *squozed)
   if (!squozed) return NULL;
   if (squoze_is_embedded (squozed))
   {
+#if 0
     // we pass NULL as pool since we know it should not be in the pool
     // and we can always decode as 62bit - since we know we didnt overflow the
     // below type.
     return squoze_decode (62, ((size_t)squozed), SQUOZE_EMBEDDED_UTF5);
+#else
+
+#if   SQUOZE_ID_BITS==32 && SQUOZE_EMBEDDED_UTF5
+    return squoze32_utf5_decode ((size_t)squozed);
+#elif SQUOZE_ID_BITS==32 && SQUOZE_EMBEDDED_UTF8
+    return squoze32_utf8_decode ((size_t)squozed);
+#elif SQUOZE_ID_BITS==62 && SQUOZE_EMBEDDED_UTF5
+    return squoze62_utf5_decode ((size_t)squozed);
+#elif SQUOZE_ID_BITS==64 && SQUOZE_EMBEDDED_UTF8
+    return squoze64_utf8_decode ((size_t)squozed);
+#else
+    return squoze_decode (62, ((size_t)squozed), SQUOZE_EMBEDDED_UTF5);
+#endif
+
+#endif
   }
   else
     return squozed->string;
@@ -1544,7 +1568,7 @@ const char *squoze64_utf8_decode (uint64_t hash)
   return (char*)buf;
 }
 
-const char *squoze32_utf8_decode (uint64_t hash)
+const char *squoze32_utf8_decode (uint32_t hash)
 {
   //return squoze_decode (64, hash, 0);
   static uint8_t buf[10];
