@@ -98,12 +98,10 @@ static float do_test_round (int words, TestType type)
         char temp[1024];
         for (StringRef *str = dict; str; str=str->next, i++)
         {
-          const char *decoded;
           for (int j = 0; j < INNER_ITERATIONS; j++)
           {
-            decoded = squoze_peek (refs[i]);
-            if (decoded)
-              strcpy (temp, decoded);
+            char tmp[16];
+	    strcpy (temp, squoze_decode2 (refs[i], tmp));
           }
         }
       }
@@ -117,8 +115,10 @@ static float do_test_round (int words, TestType type)
         {
           for (int j = 0; j < INNER_ITERATIONS; j++)
           {
-            const char *decodedA = squoze_peek (refs[i]);
-            const char *decodedB = squoze_peek (str_b);
+            char tmp_a[16];
+            char tmp_b[16];
+            const char *decodedA = squoze_decode2 (refs[i], tmp_a);
+            const char *decodedB = squoze_decode2 (str_b, tmp_b);
 	    int len_a = strlen (decodedA);
 	    int len_b = strlen (decodedB);
 	    if (len_a + len_b < 128)
@@ -412,7 +412,8 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
         strcpy (input, str->str);
 
       squozed = squoze (input);
-      decoded = squoze_peek (squozed);
+      char temp[16];
+      decoded = squoze_decode2 (squozed, temp);
       if (decoded && strcmp (input, decoded))
       {
         uint64_t hash = squoze_id (squozed);

@@ -197,31 +197,26 @@ void         squoze_atexit       (void);
 
 #if SQUOZE_IMPLEMENTATION_32_UTF5
 uint32_t     squoze32_utf5         (const char *utf8, size_t len);
-const char  *squoze32_utf5_decode  (uint32_t    hash);
 const char  *squoze32_utf5_decode2 (uint32_t   hash, char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_32_UTF8
 uint32_t     squoze32_utf8         (const char *utf8, size_t len);
-const char  *squoze32_utf8_decode  (uint32_t    hash);
 const char  *squoze32_utf8_decode2 (uint32_t   hash, char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_52_UTF5
 uint64_t     squoze52_utf5         (const char *utf8, size_t len);
-const char  *squoze52_utf5_decode  (uint64_t    hash);
 const char  *squoze52_utf5_decode2 (uint64_t   hash, char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_62_UTF5
 uint64_t     squoze62_utf5         (const char *utf8, size_t len);
-const char  *squoze62_utf5_decode  (uint64_t    hash);
 const char  *squoze62_utf5_decode2 (uint64_t   hash, char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_64_UTF8
 uint64_t     squoze64_utf8         (const char *utf8, size_t len);
-const char  *squoze64_utf8_decode  (uint64_t    hash);
 const char  *squoze62_utf8_decode2 (uint64_t   hash, char *dest);
 #endif
 
@@ -607,31 +602,7 @@ const char *squoze_id_decode2 (int squoze_dim, uint64_t id, int is_utf5, char *d
   return dest;
 }
 
-
-/* copy the value as soon as possible, some mitigation is in place
- * for more than one value in use and cross-thread interactions.
- */
-static const char *squoze_id_decode (int squoze_dim, uint64_t id, int is_utf5)
-{
-  if (id == 0 || ((id & 1) == 0)) return NULL;
-  else if (id == 3) return "";
-#if SQUOZE_THREADS
-  static __thread int no = 0;
-  static __thread char ret[SQUOZE_PEEK_STRINGS][16];
-#else
-  static int  no = 0;
-  static char ret[SQUOZE_PEEK_STRINGS][16];
-#endif
-  no ++;
-  if (no >= SQUOZE_PEEK_STRINGS) no = 0;
-  return squoze_id_decode2 (squoze_dim, id, is_utf5, ret[no]);
-}
-
 #if SQUOZE_IMPLEMENTATION_32_UTF5
-const char *squoze32_utf5_decode (uint32_t id)
-{
-  return squoze_id_decode (32, id, 1);
-}
 const char *squoze32_utf5_decode2 (uint32_t id, char *dest)
 {
   return squoze_id_decode2 (32, id, 1, dest);
@@ -639,10 +610,6 @@ const char *squoze32_utf5_decode2 (uint32_t id, char *dest)
 #endif
 
 #if SQUOZE_IMPLEMENTATION_52_UTF5
-const char *squoze52_utf5_decode (uint64_t id)
-{
-  return squoze_id_decode (52, id, 1);
-}
 const char *squoze52_utf5_decode2 (uint64_t id, char *dest)
 {
   return squoze_id_decode2 (52, id, 1, dest);
@@ -650,10 +617,6 @@ const char *squoze52_utf5_decode2 (uint64_t id, char *dest)
 #endif
 
 #if SQUOZE_IMPLEMENTATION_62_UTF5
-const char *squoze62_utf5_decode (uint64_t id)
-{
-  return squoze_id_decode (62, id, 1);
-}
 const char *squoze62_utf5_decode2 (uint64_t id, char *dest)
 {
   return squoze_id_decode2 (62, id, 1, dest);
@@ -661,10 +624,6 @@ const char *squoze62_utf5_decode2 (uint64_t id, char *dest)
 #endif
 
 #if SQUOZE_IMPLEMENTATION_64_UTF8
-const char *squoze64_utf8_decode (uint64_t id)
-{
-  return squoze_id_decode (64, id, 0);
-}
 const char *squoze64_utf8_decode2 (uint64_t id, char *dest)
 {
   return squoze_id_decode2 (64, id, 0, dest);
@@ -672,20 +631,6 @@ const char *squoze64_utf8_decode2 (uint64_t id, char *dest)
 #endif
 
 #if SQUOZE_IMPLEMENTATION_32_UTF8
-const char *squoze32_utf8_decode (uint32_t id)
-{
-  //return squoze_id_decode (32, hash, 0);
-  static uint8_t buf[10];
-  buf[4] = 0;
-  memcpy (buf, &id, 4);
-  if ((buf[0] & 1) == 0)
-     return NULL;
-  if (buf[0]==23)
-     return (char*)buf+1;
-  buf[0]/=2;
-  return (char*)buf;
-}
-
 const char *squoze32_utf8_decode2 (uint32_t id, char *dest)
 {
   return squoze_id_decode2 (32, id, 0, dest);
@@ -1017,8 +962,6 @@ static inline int squoze_is_embedded (Squoze *squozed)
 }
 
 
-static const char *squoze_id_decode (int squoze_dim, uint64_t hash, int is_utf5);
-
 /* returns either the string or temp with the decode
  * embedded string decoded
  */
@@ -1054,7 +997,7 @@ const char *squoze_decode2 (Squoze *squozed, char *temp)
   }
 }
 
-
+#if 0
 const char *squoze_peek (Squoze *squozed)
 {
   if (!squozed) return NULL;
@@ -1085,6 +1028,7 @@ const char *squoze_peek (Squoze *squozed)
 #endif
   }
 }
+#endif
 
 
 void squoze_ref (Squoze *squozed)
