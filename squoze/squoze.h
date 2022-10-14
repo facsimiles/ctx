@@ -147,23 +147,38 @@ void         squoze_atexit (void);
 #define SQUOZE_UTF8_MANUAL_UNROLL 1    // use manually unrolled UTF8 code
 #endif
 
+#ifndef SQUOZE_LIMIT_IMPLEMENTATIONS
+#define SQUOZE_LIMIT_IMPLEMENTATIONS 0
+#endif
+
 #ifndef SQUOZE_IMPLEMENTATION_32_UTF8
-#define SQUOZE_IMPLEMENTATION_32_UTF8 0
+#define SQUOZE_IMPLEMENTATION_32_UTF8 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
 #endif
-
 #ifndef SQUOZE_IMPLEMENTATION_32_UTF5
-#define SQUOZE_IMPLEMENTATION_32_UTF5 0
+#define SQUOZE_IMPLEMENTATION_32_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
 #endif
-
 #ifndef SQUOZE_IMPLEMENTATION_52_UTF5
-#define SQUOZE_IMPLEMENTATION_52_UTF5 0
-// include implementation for 52bit ids - suitable for storage in doubles
+#define SQUOZE_IMPLEMENTATION_52_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
+#endif
+#ifndef SQUOZE_IMPLEMENTATION_62_UTF5
+#define SQUOZE_IMPLEMENTATION_62_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
+#endif
+#ifndef SQUOZE_IMPLEMENTATION_64_UTF5
+#define SQUOZE_IMPLEMENTATION_64_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
 #endif
 
-#ifndef SQUOZE_IMPLEMENTATION_62_UTF5
-// include implementation for 62bit ids - suitable for storage in uint64_t
-#define SQUOZE_IMPLEMENTATION_62_UTF5 0
+#if SQUOZE_IMPLEMENTATION_32_UTF5 || \
+    SQUOZE_IMPLEMENTATION_52_UTF5 || \
+    SQUOZE_IMPLEMENTATION_62_UTF5
+#define SQUOZE_USE_UTF5 1
+#else
+#define SQUOZE_USE_UTF5 0
 #endif
+
+#ifndef SQUOZE_USE_INTERNING
+#define SQUOZE_USE_INTERNING 0
+#endif
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -198,7 +213,6 @@ const char  *squoze64_utf8_decode (uint64_t    hash);
 
 #ifdef SQUOZE_IMPLEMENTATION
 
-//static Squoze            *squoze_lookup_id    (SquozePool *pool, squoze_id_t id);
 
 // extra value meaning in UTF5 mode
 #define SQUOZE_ENTER_SQUEEZE    16
@@ -690,7 +704,7 @@ static inline uint64_t squoze_encode_id (int squoze_dim, int utf5, const char *s
     const uint8_t *utf8 = (const uint8_t*)stf8;
     if (squoze_dim > 32)
       squoze_dim = 64;
-    size_t bytes_dim = squoze_dim / 8;
+    int bytes_dim = squoze_dim / 8;
   
     uint8_t first_byte = ((uint8_t*)utf8)[0];
     if (first_byte<128
@@ -1106,7 +1120,7 @@ static inline uint64_t squoze_utf8 (size_t bytes_dim, const char *stf8, size_t l
 #endif
 	default:
 	  id = utf8[0] * 2 + 1;
-          for (int i = 1; i < length; i++)
+          for (unsigned int i = 1; i < length; i++)
             id += ((uint64_t)utf8[i]<<(8*(i)));
       }
     return id;
@@ -1156,7 +1170,7 @@ static inline uint64_t squoze_utf8 (size_t bytes_dim, const char *stf8, size_t l
 #endif
 	default:
           id = 23;
-          for (int i = 0; i < length; i++)
+          for (unsigned int i = 0; i < length; i++)
             id += ((uint64_t)utf8[i]<<(8*(i+1)));
       }
     return id;
@@ -1205,7 +1219,7 @@ uint32_t squoze32_utf8 (const char *stf8, size_t length)
 #endif
 	default:
 	  id = utf8[0] * 2 + 1;
-          for (int i = 1; i < length; i++)
+          for (unsigned int i = 1; i < length; i++)
             id += ((uint32_t)utf8[i]<<(8*(i)));
       }
     return id;
@@ -1229,7 +1243,7 @@ uint32_t squoze32_utf8 (const char *stf8, size_t length)
 #endif
 	default:
           id = 23;
-          for (int i = 0; i < length; i++)
+          for (unsigned int i = 0; i < length; i++)
             id += (utf8[i]<<(8*(i+1)));
       }
     return id;
