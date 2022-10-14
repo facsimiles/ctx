@@ -32,6 +32,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define SQUOZE_ID_UTF5 1
 #endif
 
+#ifndef SQUOZE_ID_MURMUR
+#define SQUOZE_ID_MURMUR 0
+#endif
+
 #ifndef SQUOZE_REF_COUNTING    // build the refcounting support, adds
 #define SQUOZE_REF_COUNTING 0  // per-interned-string overhead
 #endif
@@ -111,10 +115,6 @@ void         squoze_unref        (Squoze *squozed);
 void         squoze_atexit (void);
 
 
-#ifndef SQUOZE_ALWAYS_INTERN
-#define SQUOZE_ALWAYS_INTERN 0   // set to 1 to never do embeddings, for benchmarking
-#endif
-
 #ifndef SQUOZE_REF_SANITY
 #define SQUOZE_REF_SANITY 0   // report consistency errors and use more RAM
 #endif
@@ -144,7 +144,7 @@ void         squoze_atexit (void);
 #endif
 
 #ifndef SQUOZE_UTF8_MANUAL_UNROLL
-#define SQUOZE_UTF8_MANUAL_UNROLL 1 // use manually unrolled UTF8 code
+#define SQUOZE_UTF8_MANUAL_UNROLL 1    // use manually unrolled UTF8 code
 #endif
 
 #ifndef SQUOZE_IMPLEMENTATION_32_UTF8
@@ -671,19 +671,14 @@ static inline uint64_t squoze_encode_id (int squoze_dim, int utf5, const char *s
   uint64_t id = 0;
   if (utf5)
   {
-  int words = squoze_words_for_dim (squoze_dim);
-  if (length > words)  //  || (in[0]>127 && in[0]<=0xc0) || in[0]==255 || in[0]==254) // invalid utf8 starting bytes
-	  goto just_hash;
+    int words = squoze_words_for_dim (squoze_dim);
+    if (length > words)  //  || (in[0]>127 && in[0]<=0xc0) || in[0]==255 || in[0]==254) // invalid utf8 starting bytes
+      goto just_hash;
 
-  int overflow = 0;
-  id = squoze5_encode_int (stf8, length, words, &overflow, 1);
-  if (!overflow)
-  {
-#if SQUOZE_ALWAYS_INTERN==1
-    id &= ~1;  // make even - intern marker
-#endif
-    return id;
-  }
+    int overflow = 0;
+    id = squoze5_encode_int (stf8, length, words, &overflow, 1);
+    if (!overflow)
+      return id;
 
   {
     just_hash:
@@ -704,110 +699,16 @@ static inline uint64_t squoze_encode_id (int squoze_dim, int utf5, const char *s
       && first_byte != 11
       && (length <= bytes_dim))
   {
-      switch (length)
-      {
-#if SQUOZE_UTF8_MANUAL_UNROLL
-	case 0: id = 1;
-		break;
-	case 1: id = utf8[0] * 2 + 1;
-		break;
-	case 2: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1));
-		break;
-	case 3: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1))
-	                             + (utf8[2] << (8*2));
-		break;
-	case 4: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1))
-	                             + (utf8[2] << (8*2))
-	                             + (utf8[3] << (8*3));
-		break;
-	case 5: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
-	                             + ((uint64_t)utf8[2] << (8*2))
-	                             + ((uint64_t)utf8[3] << (8*3))
-	                             + ((uint64_t)utf8[4] << (8*4));
-		break;
-	case 6: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
-	                             + ((uint64_t)utf8[2] << (8*2))
-	                             + ((uint64_t)utf8[3] << (8*3))
-	                             + ((uint64_t)utf8[4] << (8*4))
-	                             + ((uint64_t)utf8[5] << (8*5));
-		break;
-	case 7: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
-	                             + ((uint64_t)utf8[2] << (8*2))
-	                             + ((uint64_t)utf8[3] << (8*3))
-	                             + ((uint64_t)utf8[4] << (8*4))
-	                             + ((uint64_t)utf8[5] << (8*5))
-	                             + ((uint64_t)utf8[6] << (8*6));
-		break;
-	case 8: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
-	                             + ((uint64_t)utf8[2] << (8*2))
-	                             + ((uint64_t)utf8[3] << (8*3))
-	                             + ((uint64_t)utf8[4] << (8*4))
-	                             + ((uint64_t)utf8[5] << (8*5))
-	                             + ((uint64_t)utf8[6] << (8*6))
-	                             + ((uint64_t)utf8[7] << (8*7));
-		break;
-#endif
-	default:
-	  id = utf8[0] * 2 + 1;
-          for (int i = 1; i < length; i++)
-            id += ((uint64_t)utf8[i]<<(8*(i)));
-      }
-#if SQUOZE_ALWAYS_INTERN==1
-    id &= ~1; // strip odd bit
-#endif
+      id = utf8[0] * 2 + 1;
+      for (int i = 1; i < length; i++)
+        id += ((uint64_t)utf8[i]<<(8*(i)));
     return id;
   }
   else if (length <= bytes_dim-1)
   {
-      switch (length)
-      {
-#if SQUOZE_UTF8_MANUAL_UNROLL
-	case 0: id = 23;
-          break;
-	case 1: id = 23 + (utf8[0] << (8*1));
-          break;
-	case 2: id = 23 + (utf8[0] << (8*1))
-	                + (utf8[1] << (8*2));
-          break;
-	case 3: id = 23 + (utf8[0] << (8*1))
-	                + (utf8[1] << (8*2))
-	                + (utf8[2] << (8*3));
-          break;
-	case 4: id = 23 + ((uint64_t)utf8[0] << (8*1))
-	                + ((uint64_t)utf8[1] << (8*2))
-	                + ((uint64_t)utf8[2] << (8*3))
-	                + ((uint64_t)utf8[3] << (8*4));
-          break;
-	case 5: id = 23 + ((uint64_t)utf8[0] << (8*1))
-	                + ((uint64_t)utf8[1] << (8*2))
-	                + ((uint64_t)utf8[2] << (8*3))
-	                + ((uint64_t)utf8[3] << (8*4))
-	                + ((uint64_t)utf8[4] << (8*5));
-          break;
-	case 6: id = 23 + ((uint64_t)utf8[0] << (8*1))
-	                + ((uint64_t)utf8[1] << (8*2))
-	                + ((uint64_t)utf8[2] << (8*3))
-	                + ((uint64_t)utf8[3] << (8*4))
-	                + ((uint64_t)utf8[4] << (8*5))
-	                + ((uint64_t)utf8[5] << (8*6));
-          break;
-	case 7: id = 23 + ((uint64_t)utf8[0] << (8*1))
-	                + ((uint64_t)utf8[1] << (8*2))
-	                + ((uint64_t)utf8[2] << (8*3))
-	                + ((uint64_t)utf8[3] << (8*4))
-	                + ((uint64_t)utf8[4] << (8*5))
-	                + ((uint64_t)utf8[5] << (8*6))
-	                + ((uint64_t)utf8[6] << (8*7));
-          break;
-#endif
-	default:
-          id = 23;
-          for (int i = 0; i < length; i++)
-            id += ((uint64_t)utf8[i]<<(8*(i+1)));
-      }
-#if SQUOZE_ALWAYS_INTERN==1
-    id &= ~1;  // make even - intern marker
-#endif
+     id = 23;
+     for (int i = 0; i < length; i++)
+       id += ((uint64_t)utf8[i]<<(8*(i+1)));
     return id;
   }
 
@@ -990,14 +891,16 @@ Squoze *squoze_pool_add (SquozePool *pool, const char *str)
 // are interned and a new interned squoze is returned.
 static uint64_t squoze_pool_encode (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref)
 {
-#if   SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
+#if   SQUOZE_ID_BITS==32 && SQUOZE_ID_MURMUR
+   uint64_t hash = MurmurOAAT32(utf8, len) & ~1;
+#elif  SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF5
    uint64_t hash = squoze32_utf5 (utf8, len);
 #elif SQUOZE_ID_BITS==32 && SQUOZE_ID_UTF8
    uint64_t hash = squoze32_utf8 (utf8, len);
 #elif SQUOZE_ID_BITS==62 && SQUOZE_ID_UTF5
    uint64_t hash = squoze62_utf5 (utf8, len);
 #elif SQUOZE_ID_BITS==52 && SQUOZE_ID_UTF5
-   uint64_t hash = squoze62_utf5 (utf8, len);
+   uint64_t hash = squoze52_utf5 (utf8, len);
 #elif SQUOZE_ID_BITS==64 && SQUOZE_ID_UTF8
    uint64_t hash = squoze64_utf8 (utf8, len);
 #else
@@ -1164,90 +1067,244 @@ uint64_t squoze62_utf5 (const char *utf8, size_t len)
 #endif
 
 #if SQUOZE_IMPLEMENTATION_64_UTF8
-uint64_t squoze64_utf8 (const char *utf8, size_t len)
+uint64_t squoze64_utf8 (const char *stf8, size_t length)
 {
-  size_t   squoze_dim = 64;
-  size_t   dim_bytes = squoze_dim / 8;
-  uint64_t hash       = 0;
-  uint8_t *encoded    = (uint8_t*)&hash;
-  uint8_t  first_byte = ((uint8_t*)utf8)[0];
+  uint64_t id;
+  const uint8_t *utf8 = (const uint8_t*)stf8;
+  size_t bytes_dim = 8;
 
-  if (first_byte<128             // first char is ASCII
-      && first_byte != 11        // and not our reserved marker/2
-      && (len <= dim_bytes))     // and fitting
+  uint8_t first_byte = ((uint8_t*)utf8)[0];
+  if (first_byte<128
+      && first_byte != 11
+      && (length <= bytes_dim))
   {
-    for (int i = 0; utf8[i]; i++)
-      encoded[i] = utf8[i];
-    encoded[0] = encoded[0]*2+1;
-    return *((uint64_t*)&encoded[0]);
-  }
-  else if (len <= dim_bytes-1)   // fitting in dim_bytes - 1
-  {
-    for (int i = 0; utf8[i]; i++)
-      encoded[i+1] = utf8[i];
-    encoded[0] = 23;
-    return *((uint64_t*)&encoded[0]);
-  }
-
-#if 0
-  // fallback, murmurhash one-at-a-time - can be replaced with
-  // proper murmurhash
-  hash = 3323198485ul;
-  for (unsigned int i = 0; i < len; i++)
-  {
-    uint8_t key = utf8[i];
-    hash ^= key;
-    hash *= 0x5bd1e995;
-    hash ^= hash >> 15;
-  }
-#else
-  hash = MurmurOAAT32(utf8, len);
+      switch (length)
+      {
+#if SQUOZE_UTF8_MANUAL_UNROLL
+	case 0: id = 1;
+		break;
+	case 1: id = utf8[0] * 2 + 1;
+		break;
+	case 2: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1));
+		break;
+	case 3: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1))
+	                             + (utf8[2] << (8*2));
+		break;
+	case 4: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1))
+	                             + (utf8[2] << (8*2))
+	                             + (utf8[3] << (8*3));
+		break;
+	case 5: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
+	                             + ((uint64_t)utf8[2] << (8*2))
+	                             + ((uint64_t)utf8[3] << (8*3))
+	                             + ((uint64_t)utf8[4] << (8*4));
+		break;
+	case 6: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
+	                             + ((uint64_t)utf8[2] << (8*2))
+	                             + ((uint64_t)utf8[3] << (8*3))
+	                             + ((uint64_t)utf8[4] << (8*4))
+	                             + ((uint64_t)utf8[5] << (8*5));
+		break;
+	case 7: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
+	                             + ((uint64_t)utf8[2] << (8*2))
+	                             + ((uint64_t)utf8[3] << (8*3))
+	                             + ((uint64_t)utf8[4] << (8*4))
+	                             + ((uint64_t)utf8[5] << (8*5))
+	                             + ((uint64_t)utf8[6] << (8*6));
+		break;
+	case 8: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
+	                             + ((uint64_t)utf8[2] << (8*2))
+	                             + ((uint64_t)utf8[3] << (8*3))
+	                             + ((uint64_t)utf8[4] << (8*4))
+	                             + ((uint64_t)utf8[5] << (8*5))
+	                             + ((uint64_t)utf8[6] << (8*6))
+	                             + ((uint64_t)utf8[7] << (8*7));
+		break;
 #endif
-  return hash & ~1; // make even
+	default:
+	  id = utf8[0] * 2 + 1;
+          for (int i = 1; i < length; i++)
+            id += ((uint64_t)utf8[i]<<(8*(i)));
+      }
+    return id;
+  }
+  else if (length <= bytes_dim-1)
+  {
+      switch (length)
+      {
+#if SQUOZE_UTF8_MANUAL_UNROLL
+	case 0: id = 23;
+          break;
+	case 1: id = 23 + (utf8[0] << (8*1));
+          break;
+	case 2: id = 23 + (utf8[0] << (8*1))
+	                + (utf8[1] << (8*2));
+          break;
+	case 3: id = 23 + (utf8[0] << (8*1))
+	                + (utf8[1] << (8*2))
+	                + (utf8[2] << (8*3));
+          break;
+	case 4: id = 23 + ((uint64_t)utf8[0] << (8*1))
+	                + ((uint64_t)utf8[1] << (8*2))
+	                + ((uint64_t)utf8[2] << (8*3))
+	                + ((uint64_t)utf8[3] << (8*4));
+          break;
+	case 5: id = 23 + ((uint64_t)utf8[0] << (8*1))
+	                + ((uint64_t)utf8[1] << (8*2))
+	                + ((uint64_t)utf8[2] << (8*3))
+	                + ((uint64_t)utf8[3] << (8*4))
+	                + ((uint64_t)utf8[4] << (8*5));
+          break;
+	case 6: id = 23 + ((uint64_t)utf8[0] << (8*1))
+	                + ((uint64_t)utf8[1] << (8*2))
+	                + ((uint64_t)utf8[2] << (8*3))
+	                + ((uint64_t)utf8[3] << (8*4))
+	                + ((uint64_t)utf8[4] << (8*5))
+	                + ((uint64_t)utf8[5] << (8*6));
+          break;
+	case 7: id = 23 + ((uint64_t)utf8[0] << (8*1))
+	                + ((uint64_t)utf8[1] << (8*2))
+	                + ((uint64_t)utf8[2] << (8*3))
+	                + ((uint64_t)utf8[3] << (8*4))
+	                + ((uint64_t)utf8[4] << (8*5))
+	                + ((uint64_t)utf8[5] << (8*6))
+	                + ((uint64_t)utf8[6] << (8*7));
+          break;
+#endif
+	default:
+          id = 23;
+          for (int i = 0; i < length; i++)
+            id += ((uint64_t)utf8[i]<<(8*(i+1)));
+      }
+    return id;
+  }
+
+  id = MurmurOAAT32(stf8, length);
+  id &= ~1;  // make even - intern marker
+  return id;
 }
 #endif
 
-uint32_t squoze32_utf8 (const char *utf8, size_t len)
+
+#if SQUOZE_IMPLEMENTATION_32_UTF8
+uint32_t squoze32_utf8 (const char *stf8, size_t length)
 {
-  size_t   squoze_dim = 32;
-  size_t   dim_bytes = squoze_dim / 8;
-  uint64_t hash       = 0;
-  uint8_t *encoded    = (uint8_t*)&hash;
-  uint8_t  first_byte = ((uint8_t*)utf8)[0];
+  uint64_t id;
+  const uint8_t *utf8 = (const uint8_t*)stf8;
+  size_t bytes_dim = 4;
 
-  if (first_byte<128             // first char is ASCII
-      && first_byte != 11        // and not our reserved marker/2
-      && (len <= dim_bytes))     // and fitting
+  uint8_t first_byte = ((uint8_t*)utf8)[0];
+  if (first_byte<128
+      && first_byte != 11
+      && (length <= bytes_dim))
   {
-    for (int i = 0; utf8[i]; i++)
-      encoded[i] = utf8[i];
-    encoded[0] = encoded[0]*2+1;
-    return *((uint64_t*)&encoded[0]);
-  }
-  else if (len <= dim_bytes-1)   // fitting in dim_bytes - 1
-  {
-    for (int i = 0; utf8[i]; i++)
-      encoded[i+1] = utf8[i];
-    encoded[0] = 23;
-    return *((uint64_t*)&encoded[0]);
-  }
-
-#if 0
-  // fallback, murmurhash one-at-a-time - can be replaced with
-  // proper murmurhash
-  hash = 3323198485ul;
-  for (unsigned int i = 0; i < len; i++)
-  {
-    uint8_t key = utf8[i];
-    hash ^= key;
-    hash *= 0x5bd1e995;
-    hash ^= hash >> 15;
-  }
-#else
-  hash = MurmurOAAT32(utf8, len);
+      switch (length)
+      {
+#if SQUOZE_UTF8_MANUAL_UNROLL
+	case 0: id = 1;
+		break;
+	case 1: id = utf8[0] * 2 + 1;
+		break;
+	case 2: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1));
+		break;
+	case 3: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1))
+	                             + (utf8[2] << (8*2));
+		break;
+	case 4: id = utf8[0] * 2 + 1 + (utf8[1] << (8*1))
+	                             + (utf8[2] << (8*2))
+	                             + (utf8[3] << (8*3));
+		break;
+	case 5: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
+	                             + ((uint64_t)utf8[2] << (8*2))
+	                             + ((uint64_t)utf8[3] << (8*3))
+	                             + ((uint64_t)utf8[4] << (8*4));
+		break;
+	case 6: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
+	                             + ((uint64_t)utf8[2] << (8*2))
+	                             + ((uint64_t)utf8[3] << (8*3))
+	                             + ((uint64_t)utf8[4] << (8*4))
+	                             + ((uint64_t)utf8[5] << (8*5));
+		break;
+	case 7: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
+	                             + ((uint64_t)utf8[2] << (8*2))
+	                             + ((uint64_t)utf8[3] << (8*3))
+	                             + ((uint64_t)utf8[4] << (8*4))
+	                             + ((uint64_t)utf8[5] << (8*5))
+	                             + ((uint64_t)utf8[6] << (8*6));
+		break;
+	case 8: id = utf8[0] * 2 + 1 + ((uint64_t)utf8[1] << (8*1))
+	                             + ((uint64_t)utf8[2] << (8*2))
+	                             + ((uint64_t)utf8[3] << (8*3))
+	                             + ((uint64_t)utf8[4] << (8*4))
+	                             + ((uint64_t)utf8[5] << (8*5))
+	                             + ((uint64_t)utf8[6] << (8*6))
+	                             + ((uint64_t)utf8[7] << (8*7));
+		break;
 #endif
-  return hash & ~1; // make even
+	default:
+	  id = utf8[0] * 2 + 1;
+          for (int i = 1; i < length; i++)
+            id += ((uint64_t)utf8[i]<<(8*(i)));
+      }
+    return id;
+  }
+  else if (length <= bytes_dim-1)
+  {
+      switch (length)
+      {
+#if SQUOZE_UTF8_MANUAL_UNROLL
+	case 0: id = 23;
+          break;
+	case 1: id = 23 + (utf8[0] << (8*1));
+          break;
+	case 2: id = 23 + (utf8[0] << (8*1))
+	                + (utf8[1] << (8*2));
+          break;
+	case 3: id = 23 + (utf8[0] << (8*1))
+	                + (utf8[1] << (8*2))
+	                + (utf8[2] << (8*3));
+          break;
+	case 4: id = 23 + ((uint64_t)utf8[0] << (8*1))
+	                + ((uint64_t)utf8[1] << (8*2))
+	                + ((uint64_t)utf8[2] << (8*3))
+	                + ((uint64_t)utf8[3] << (8*4));
+          break;
+	case 5: id = 23 + ((uint64_t)utf8[0] << (8*1))
+	                + ((uint64_t)utf8[1] << (8*2))
+	                + ((uint64_t)utf8[2] << (8*3))
+	                + ((uint64_t)utf8[3] << (8*4))
+	                + ((uint64_t)utf8[4] << (8*5));
+          break;
+	case 6: id = 23 + ((uint64_t)utf8[0] << (8*1))
+	                + ((uint64_t)utf8[1] << (8*2))
+	                + ((uint64_t)utf8[2] << (8*3))
+	                + ((uint64_t)utf8[3] << (8*4))
+	                + ((uint64_t)utf8[4] << (8*5))
+	                + ((uint64_t)utf8[5] << (8*6));
+          break;
+	case 7: id = 23 + ((uint64_t)utf8[0] << (8*1))
+	                + ((uint64_t)utf8[1] << (8*2))
+	                + ((uint64_t)utf8[2] << (8*3))
+	                + ((uint64_t)utf8[3] << (8*4))
+	                + ((uint64_t)utf8[4] << (8*5))
+	                + ((uint64_t)utf8[5] << (8*6))
+	                + ((uint64_t)utf8[6] << (8*7));
+          break;
+#endif
+	default:
+          id = 23;
+          for (int i = 0; i < length; i++)
+            id += ((uint64_t)utf8[i]<<(8*(i+1)));
+      }
+    return id;
+  }
+
+  id = MurmurOAAT32(stf8, length);
+  id &= ~1;  // make even - intern marker
+  return id;
 }
+#endif
+
 
 typedef struct SquozeUtf5Dec {
   int       is_utf5;

@@ -16,77 +16,48 @@ test-footer: squoze-test.c squoze.h Makefile squoze-test.c
 
 TEST_COMMON_FLAGS=-Wall -O3
 
-test-32-utf5-intern: squoze-test.c squoze.h Makefile
+test-squoze32-utf5: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
 		-DSQUOZE_ID_BITS=32 \
-		-DSQUOZE_ALWAYS_INTERN=1 \
-		-DSQUOZE_ID_UTF5=1
-
-test-32-utf5-intern-embed: squoze-test.c squoze.h Makefile
-	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
-		-DSQUOZE_ID_BITS=32 \
-		-DSQUOZE_ALWAYS_INTERN=0 \
 		-DSQUOZE_ID_UTF5=1
 
 # this is the same as using just fallback/murmurhash
-test-32-utf8-intern: squoze-test.c squoze.h Makefile
+test-murmurhash: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
 		-DSQUOZE_ID_BITS=32 \
-		-DSQUOZE_ALWAYS_INTERN=1 \
-		-DSQUOZE_ID_UTF5=0
-test-32-utf8-intern-embed: squoze-test.c squoze.h Makefile
+		-DSQUOZE_ID_UTF5=0 \
+		-DSQUOZE_ID_MURMUR=1
+test-squoze32-utf8: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
 		-DSQUOZE_ID_BITS=32 \
-		-DSQUOZE_ALWAYS_INTERN=0 \
 		-DSQUOZE_ID_UTF5=0
-test-52-utf5-intern: squoze-test.c squoze.h Makefile
+test-squoze52-utf5: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
-		-DSQUOZE_ID_BITS=52 \
-		-DSQUOZE_ALWAYS_INTERN=1 \
-		-DSQUOZE_ID_UTF5=1
-test-52-utf5-intern-embed: squoze-test.c squoze.h Makefile
-	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
-		-DSQUOZE_ALWAYS_INTERN=0 \
 		-DSQUOZE_ID_BITS=52 \
 		-DSQUOZE_ID_UTF5=1
 
-test-64-utf8-intern-embed: squoze-test.c squoze.h Makefile
+test-squoze64-utf8: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
 		-DSQUOZE_ID_BITS=64 \
-		-DSQUOZE_ALWAYS_INTERN=0 \
-		-DSQUOZE_ID_UTF5=0
-test-64-utf8-intern: squoze-test.c squoze.h Makefile
-	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
-		-DSQUOZE_ID_BITS=64 \
-		-DSQUOZE_ALWAYS_INTERN=1 \
 		-DSQUOZE_ID_UTF5=0
 
-test-62-utf5-intern-embed: squoze-test.c squoze.h Makefile
+test-squoze62-utf5: squoze-test.c squoze.h Makefile
 	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
 		-DSQUOZE_ID_BITS=62 \
-		-DSQUOZE_ALWAYS_INTERN=0 \
-		-DSQUOZE_ID_UTF5=1
-test-62-utf5-intern: squoze-test.c squoze.h Makefile
-	gcc $< -o $@ $(TEST_COMMON_FLAGS) \
-		-DSQUOZE_ID_BITS=62 \
-		-DSQUOZE_ALWAYS_INTERN=1 \
 		-DSQUOZE_ID_UTF5=1
 
 report.txt: squoze gen-report.sh
 	./gen-report.sh > report.txt
-index.html: test-32-utf5-intern \
-	test-32-utf5-intern-embed \
-	test-62-utf5-intern \
-	test-62-utf5-intern-embed \
-	test-52-utf5-intern \
-	test-52-utf5-intern-embed \
-	test-32-utf8-intern \
-	test-32-utf8-intern-embed \
-	test-64-utf8-intern \
-	test-64-utf8-intern-embed \
-	test-head \
-	test-foot \
-	test-header \
+index.html: \
+	test-squoze32-utf5 \
+	test-squoze62-utf5 \
+	test-squoze52-utf5 \
+	test-murmurhash    \
+	test-squoze32-utf8 \
+	test-squoze64-utf8 \
+	test-head          \
+	test-foot          \
+	test-header        \
 	test-footer
 	rm index.html || true
 	./test-head >> index.html
@@ -96,37 +67,30 @@ index.html: test-32-utf5-intern \
 	cat extra-index.html >> index.html || true
 	./test-foot >> index.html
 report-part.html: all
-	./test-header               >> index.html
-	./test-32-utf8-intern       >> index.html
-	./test-64-utf8-intern-embed >> index.html
-	./test-32-utf8-intern-embed >> index.html
-	./test-32-utf5-intern-embed >> index.html
-	./test-52-utf5-intern-embed >> index.html
-	./test-62-utf5-intern-embed >> index.html
-	./test-footer               >> index.html
-report-32bit.html: \
-	test-32-utf5-intern \
-	test-32-utf5-intern-embed \
-	test-62-utf5-intern \
-	test-62-utf5-intern-embed \
-	test-52-utf5-intern \
-	test-52-utf5-intern-embed \
-	test-32-utf8-intern \
-	test-32-utf8-intern-embed \
-	test-64-utf8-intern \
-	test-64-utf8-intern-embed \
-	test-head \
-	test-foot \
-	test-header \
+	./test-header        >> index.html
+	./test-murmurhash    >> index.html
+	./test-squoze64-utf8 >> index.html
+	./test-squoze32-utf8 >> index.html
+	./test-squoze32-utf5 >> index.html
+	./test-squoze52-utf5 >> index.html
+	./test-squoze62-utf5 >> index.html
+	./test-footer        >> index.html
+report-32bit.html:         \
+	test-squoze32-utf5 \
+	test-murmurhash    \
+	test-squoze32-utf8 \
+	test-head          \
+	test-foot          \
+	test-header        \
 	test-footer
 	rm report-32bit.html || true
 	for a in 3 4 8 10 12;do export MAX_WORD_LEN=$$a;make report-part-32bit.html;done 
 report-part-32bit.html:
-	./test-header               >> report-32bit.html
-	./test-32-utf8-intern       >> report-32bit.html
-	./test-32-utf8-intern-embed >> report-32bit.html
-	./test-32-utf5-intern-embed >> report-32bit.html
-	./test-footer               >> report-32bit.html
+	./test-header         >> report-32bit.html
+	./test-murmurhash     >> report-32bit.html
+	./test-squoze32-utf8  >> report-32bit.html
+	./test-squoze32-utf5  >> report-32bit.html
+	./test-footer         >> report-32bit.html
 
 update-reference: report.txt
 	cp report.txt reference.txt

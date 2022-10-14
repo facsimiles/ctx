@@ -347,20 +347,9 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
 #if 1
 	char *name = "squoze32";
 
-	if (SQUOZE_ALWAYS_INTERN)
+	if (SQUOZE_ID_MURMUR)
 	{
-	if (SQUOZE_ID_UTF5)
-	{
-	  name = malloc(256);
-	  sprintf (name, "squoze%i-utf5 alwaysintern", SQUOZE_ID_BITS);
-	}
-	else
-	{
-          if (SQUOZE_ID_BITS==32)
-	    name = "murmurhash OAAT 32bit";
-	  else
-	    name = "squoze64-utf8 alwaysintern";
-	}
+	   name = "murmurhash";
 	}
 	else
 	{
