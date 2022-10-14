@@ -217,15 +217,12 @@ int main (int argc, char **argv)
 
     printf ("<h1>Squoze - reversible unicode string hashes.</h2>\n");
     printf ("<div style='font-style:italic; text-align:right;'>compute more, save energy, parse faster;<br/>with strings squozed to fit in computer words</div>");
-    //printf ("<div style='font-style:italic; text-align:right;'>compact embedding of unicode text in integers</div>");
     printf ("<p>Storing strings in computer words is an <a href='https://en.wikipedia.org/wiki/SQUOZE'>old practice</a>, here this optimization technique is modernized for unicode and combined with string interning. Short strings are stored directly in computer words rather than using an underlying hash-tabled and associated heap storage of strings. The least significant bit is used to indicate if a string is embedded or not, allowing allocations that have an alignment of at least 2 to be distinguished.  By storing data directly we avoid cache and lock contention involved in using the internal string interning hash-table.</p>\n");
     printf("<p>Calling it a hash might be a bit of a misnomer, but the same optimization can be used for with larger hashes in content addressed storage systems like git/IPFS, as well as in parsers with a limited vocabulary so the resulting behavior is that of a perfect hash.</p>");
 
     printf("<p>The embedded data is stored in either UTF-8 or transcoded to <a href='utf5+/'>UTF5+</a>, a 5bit variable length and dynamic window unicode coding scheme.</p>");
 
     printf ("<p>The benefits of embedding strings in pointers is dataset dependent - but note that in the english language the average word length is 5. If all data fits in caches the added computational overhead might only slightly reduce cache contention. As I understand it microcontrollers have no L1/L2 cache, but there can still be benefits from RAM savings</p>");
-
-    //printf ("<p>On embedded platforms not having the strings consume heap space can be a significant saving, this should however be weighed against the overhead of needing 32bit values to store/pass around sometimes being able to use 16bit references to strings is a more significant overall saving. On systems without L1/L2 caches the optimization will not save time.</p>");
 
     printf ("<p>A series of subvariants have been specified as part of parameterizing the benchmarks, and definining the encoding: </p>");
     
@@ -312,16 +309,8 @@ int main (int argc, char **argv)
     printf (" The <em>embed%%</em> column shows how many of the words got embedded instead of interned. This can also be read as the percentage of possible cache-misses that are avoided for the workload.");
     printf ("The <em>RAM use</em> column shows the amount of bytes used by the allocations for interned strings as well as the size taken by the hash table used, without the size taken by tempty slots in the hash-table to be comparable with what a more compact optimizing structure used when targeting memory constrained systems.</p>");
 
-    //printf ("<p>The <em>alwaysintern</em> variants of squoze are using the squoze hashes without their embedding capability, as input to the underlying hash-table.</p>");
 
-    //printf ("<p>The hashes with the direct UTF-8 embedding are the most reliable optimization when only runtime/energy use is considered. The UTF5 embeddings save more RAM and allow more guarantee collision free strings but are more expensive to compute.</p>");
-
-
-    /*
-    printf ("<p>The large amount of time taken for <em>squoze52 alwaysintern</em> can be attributed to the dataset no longer fitting in caches when using 64bit quantities in the struct backing each interned string.</p>");
-    */
-
-    printf ("<p>The first line in each set of benchmarks is using the same underlying string interning hash-table as the others, but always interning and using murmurhash as the hash function.</p>\n");
+    printf ("<p>The first line in each set of benchmarks is a baseline string-interning implementation using the same infrastructure as the others, but without embedding.</p>\n");
 
     return 0;
 #endif
