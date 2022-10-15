@@ -60,7 +60,7 @@ static float do_test_round (int words, TestType type)
    {
     char input[4096];
     sprintf (input, "%s", str->str);
-    refs [i] = sqz (input);
+    refs [i] = sqz_utf8 (input);
    }
   }
 
@@ -73,7 +73,7 @@ static float do_test_round (int words, TestType type)
       start = ticks();
       for (StringRef *str = dict; str; str=str->next)
       {
-        sqz (str->str);
+        sqz_utf8 (str->str);
       }
       return ticks()-start;
     case TEST_DECODE:
@@ -90,7 +90,7 @@ static float do_test_round (int words, TestType type)
       return ticks ()-start;
     case TEST_CONCAT:
       {
-      Sqz *str_b = sqz("s");
+      Sqz *str_b = sqz_utf8 ("s");
       start = ticks ();
         int i = 0;
         for (StringRef *str = dict; str; str=str->next, i++)
@@ -119,7 +119,7 @@ static float do_test (int words, int iterations, TestType type)
 #if 0
 void sqz_test (void)
 {
-  Sqz *a = sqz ("æøådefghi");
+  Sqz *a = sqz_utf8 ("æøådefghi");
   char temp[16];
   printf ("[%s]\n", sqz_decode (a, temp));
 
@@ -350,7 +350,7 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
     Sqz *squozed;
     char input[4096];
     {
-      squozed = sqz (str->str);
+      squozed = sqz_utf8 (str->str);
       char temp[16];
       decoded = sqz_decode (squozed, temp);
       if (decoded && strcmp (str->str, decoded))
