@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define ITERATIONS                  16
+#define ITERATIONS                  20
 #define INNER_ITERATIONS            1 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_INITIAL_POOL_SIZE   (1<<20)
@@ -115,7 +115,7 @@ static float do_test_round (int words, TestType type)
         {
           for (int j = 0; j < INNER_ITERATIONS; j++)
           {
-	    Squoze *res = squoze_concat (refs[i], str_b);
+	    Squoze *res = squoze_cat (refs[i], str_b);
 	    if (res) {};
           }
         }

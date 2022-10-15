@@ -91,7 +91,6 @@ void         squoze_pool_unref   (SquozePool *pool);
  */
 Squoze      *squoze_pool_add     (SquozePool *pool, const char *str);
 
-Squoze      *squoze_concat (Squoze *a, Squoze *b);
 
 /* squoze a string into default pool
  */
@@ -120,21 +119,51 @@ const char  *squoze_peek         (Squoze *squozed);
  */
 squoze_id_t  squoze_id           (Squoze *squozed);
 
-/* get length of interned string (in bytes).
+/* get length of interned string (in unicode codepoints).
  */
 int          squoze_length       (Squoze *squozed);
 
+/* get length of interned string (in bytes).
+ */
+int          squoze_byte_length      (Squoze *squozed);
+
+/* create a new string that is the concatenation of a and b
+ */
+Squoze      *squoze_cat              (Squoze *a, Squoze *b);
+
+/* append tail to the string pointed to by a
+ */
+void         squoze_append           (Squoze **a, Squoze *b);
+
+/* extract a substring - (should specifying a length of 0 mean to end?)
+ */
+Squoze      *squoze_substring        (Squoze *a, int start, int length);
+
+/* pos -1 means last */
+void         squoze_remove_unichar   (Squoze **q, int pos);
+
+/* pos -1 means append */
+void         squoze_insert_unichar   (Squoze **a, int pos, uint32_t unichar);
+/* pos -1 means append */
+void         squoze_replace_unichar  (Squoze **a, int pos, uint32_t unichar);
+
+void         squoze_printf           (const char *format, ...);
+
+void         squoze_set_cstring      (Squoze **a, const char *str);
+
+uint32_t     squoze_unichar_at       (Squoze *a, int pos);
+
 /* increase reference count of string
  */
-void         squoze_ref          (Squoze *squozed);
+void         squoze_ref              (Squoze *squozed);
 
 /* decrement reference count of string
  */
-void         squoze_unref        (Squoze *squozed);
+void         squoze_unref            (Squoze *squozed);
 
 /* empty all pools
  */
-void         squoze_atexit       (void);
+void         squoze_atexit           (void);
 
 #endif
 
@@ -708,6 +737,17 @@ squoze_unichar_to_utf8 (uint32_t  ch,
   return 0;
 }
 
+static inline int squoze_utf8_strlen (const char *s)
+{
+  int count;
+  if (!s)
+    { return 0; }
+  for (count = 0; *s; s++)
+    if ( (*s & 0xC0) != 0x80)
+      { count++; }
+  return count;
+}
+
 static inline int
 squoze_utf8_len (const unsigned char first_byte)
 {
@@ -1052,12 +1092,69 @@ void squoze_unref (Squoze *squozed)
 #endif
 }
 
-Squoze *squoze_concat (Squoze *a, Squoze *b)
+
+void squoze_append (Squoze **squoze, Squoze *tail)
 {
-  char tmp_a[16];
-  char tmp_b[16];
-  const char *str_a = squoze_decode (a, tmp_a);
-  const char *str_b = squoze_decode (b, tmp_b);
+  if (!squoze) return;
+  Squoze *combined = squoze_cat (*squoze, tail);
+  squoze_unref (*squoze);
+  *squoze=combined;
+}
+
+
+squoze_id_t squoze_id (Squoze *squozed)
+{
+  if (!squozed) return 0;
+  if (squoze_is_embedded (squozed))
+    return ((size_t)(squozed));
+  else
+  {
+#if SQUOZE_INTERN_DIRECT_STRING
+    squozed--;
+#endif
+    return squozed->hash;
+  }
+}
+
+int squoze_length (Squoze *squozed)
+{
+  char buf[15];
+  if (!squozed) return 0;
+  return squoze_utf8_strlen(squoze_decode (squozed, buf));
+}
+
+int squoze_byte_length (Squoze *squozed)
+{
+  char buf[15];
+  if (!squozed) return 0;
+#if 0
+  return strlen(squoze_decode (squozed, buf));
+#else
+  if (squoze_is_embedded (squozed))
+  {
+    squoze_decode (squozed, buf);
+    return strlen (buf);
+  }
+  else
+  {
+#if SQUOZE_INTERN_DIRECT_STRING
+    squozed--;
+#endif
+#if SQUOZE_STORE_LENGTH
+    return squozed->length;
+#endif
+    return strlen (squozed->string);
+  }
+#endif
+  return 0;
+}
+
+Squoze *squoze_cat (Squoze *a, Squoze *b)
+{
+  char buf_a[16];
+  char buf_b[16];
+  const char *str_a = squoze_decode (a, buf_a);
+  const char *str_b = squoze_decode (b, buf_b);
   int len_a = strlen (str_a);
   int len_b = strlen (str_b);
   if (len_a + len_b < 128)
@@ -1083,42 +1180,6 @@ Squoze *squoze_concat (Squoze *a, Squoze *b)
 }
 
 
-squoze_id_t squoze_id (Squoze *squozed)
-{
-  if (!squozed) return 0;
-  if (squoze_is_embedded (squozed))
-    return ((size_t)(squozed));
-  else
-  {
-#if SQUOZE_INTERN_DIRECT_STRING
-    squozed--;
-#endif
-    return squozed->hash;
-  }
-}
-
-int squoze_length       (Squoze *squozed)
-{
-  if (!squozed) return 0;
-  if (squoze_is_embedded (squozed))
-  {
-    char buf[16];
-    squoze_decode (squozed, buf);
-    return strlen (buf);
-  }
-  else
-  {
-#if SQUOZE_INTERN_DIRECT_STRING
-    squozed--;
-#endif
-#if SQUOZE_STORE_LENGTH
-    return squozed->length;
-#endif
-    return strlen (squozed->string);
-  }
-#endif
-  return 0;
-}
 SquozePool *squoze_pool_new     (SquozePool *fallback)
 {
   SquozePool *pool = (SquozePool*)calloc (sizeof (SquozePool), 1);
@@ -1196,7 +1257,7 @@ squoze_atexit (void)
   squoze_pool_destroy (&global_pool);
   // XXX : when debugging report leaked pools
 }
-
+#endif
 
 // UTF5 implementation
 
@@ -1217,6 +1278,7 @@ squoze_atexit (void)
 static inline uint32_t squoze_utf8_to_unichar (const char *input);
 static inline int      squoze_unichar_to_utf8 (uint32_t  ch, uint8_t  *dest);
 static inline int      squoze_utf8_len        (const unsigned char first_byte);
+static inline int      squoze_utf8_strlen     (const char *s);
 
 
 /* returns the base-offset of the segment this unichar belongs to,
