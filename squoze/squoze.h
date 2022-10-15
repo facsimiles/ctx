@@ -147,7 +147,7 @@ void         squoze_insert_unichar   (Squoze **a, int pos, uint32_t unichar);
 /* pos -1 means append */
 void         squoze_replace_unichar  (Squoze **a, int pos, uint32_t unichar);
 
-void         squoze_printf           (const char *format, ...);
+Squoze      *squoze_printf           (const char *format, ...);
 
 void         squoze_set_cstring      (Squoze **a, const char *str);
 
@@ -155,7 +155,7 @@ uint32_t     squoze_unichar_at       (Squoze *a, int pos);
 
 /* increase reference count of string
  */
-void         squoze_ref              (Squoze *squozed);
+Squoze      *squoze_ref              (Squoze *squozed);
 
 /* decrement reference count of string
  */
@@ -346,13 +346,10 @@ static inline uint64_t squoze_encode_id (int squoze_dim, int utf5, const char *s
   return id;
 }
 
-#ifdef __CTX_H__
+#ifdef __CTX_H__ // override with ctx variants if included from ctx
 #define strdup ctx_strdup
 #define strstr ctx_strstr
 #endif
-
-
-
 
 
 #if SQUOZE_IMPLEMENTATION_32_UTF5
@@ -768,6 +765,7 @@ squoze_utf8_len (const unsigned char first_byte)
  *  with both ref-counting and pools of strings.
  */
 #if SQUOZE_USE_INTERN
+#include <stdarg.h>
 
 struct _Squoze {
 #if SQUOZE_REF_COUNTING
@@ -1001,7 +999,6 @@ static inline int squoze_is_embedded (Squoze *squozed)
   return !squoze_is_interned (squozed);
 }
 
-
 /* returns either the string or temp with the decode
  * embedded string decoded
  */
@@ -1037,17 +1034,15 @@ const char *squoze_decode (Squoze *squozed, char *temp)
   }
 }
 
-void squoze_ref (Squoze *squozed)
+Squoze *squoze_ref (Squoze *squozed)
 {
 #if SQUOZE_REF_COUNTING
   if (squoze_is_interned (squozed))
   {
-#if SQUOZE_INTERN_DIRECT_STRING
-     squozed--;
-#endif
-     squozed->ref_count ++;
+     (squozed-SQUOZE_INTERN_DIRECT_STRING)->ref_count ++;
   }
 #endif
+  return squozed;
 }
 
 void squoze_unref (Squoze *squozed)
@@ -1101,6 +1096,87 @@ void squoze_append (Squoze **squoze, Squoze *tail)
   *squoze=combined;
 }
 
+uint32_t     squoze_unichar_at       (Squoze *a, int pos)
+{
+  char tmp[16];
+  const char *str = squoze_decode (a, tmp);
+  const char *p = str;
+  int i;
+  for (i = 0; i < pos; i++)
+    p += squoze_utf8_len (*p);
+  return squoze_utf8_to_unichar (p);
+}
+
+/* pos -1 means last */
+void         squoze_remove_unichar   (Squoze **a, int pos)
+{
+  if (!q) return;
+  if (!*q) return;
+  Squoze *pre  = squoze_substring (*a, 0, pos-1);
+  Squoze *post = squoze_substring (*a, pos+1, 10000);
+  squoze_unref (*a);
+  *a = squoze_cat (pre, post);
+  squoze_unref (pre);
+  squoze_unref (post);
+}
+
+/* pos -1 means append */
+void         squoze_insert_unichar   (Squoze **a, int pos, uint32_t unichar)
+{
+  
+}
+/* pos -1 means append */
+void         squoze_replace_unichar  (Squoze **a, int pos, uint32_t unichar)
+{
+  squoze_remove_unichar (a, pos);
+  squoze_insert_unichar (a, pos, unichar);
+}
+
+
+Squoze *squoze_substring (Squoze *a, int start, int length)
+{
+  int src_length = squoze_length (a);
+  if (start > src_length)
+    return squoze ("");
+  char tmp[16];
+  const char *src = squoze_decode (a, tmp);
+  char *end;
+  char *copy = strdup (src); // use alloca?
+  char *p = copy;
+  int i;
+  for (i = 0; i < start; i++)
+    p += squoze_utf8_len (*p);
+  end = p;
+  for (i = 0; i < length && *end; i++)
+    end += squoze_utf8_len (*end);
+  *end = 0;
+
+  Squoze *ret = squoze (p);
+  free (copy);
+  return ret;
+}
+
+Squoze      *squoze_printf           (const char *format, ...)
+{
+  va_list ap;
+  size_t needed;
+  char *buffer;
+  va_start (ap, format);
+  needed = vsnprintf (NULL, 0, format, ap) + 1;
+  buffer = alloca (needed);
+  va_end (ap);
+  va_start (ap, format);
+  vsnprintf (buffer, needed, format, ap);
+  va_end (ap);
+  return squoze (buffer);
+}
+
+void         squoze_set_cstring      (Squoze **a, const char *str)
+{
+  if (*a)
+    squoze_unref (*a);
+  *a = squoze (str);
+}
 
 squoze_id_t squoze_id (Squoze *squozed)
 {
