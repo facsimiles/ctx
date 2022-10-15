@@ -53,7 +53,7 @@ StringRef *dict = NULL;
 static float do_test_round (int words, TestType type)
 {
   Squoze *refs[words];
-  squoze_atexit (); // drop existing interned strings
+  sqz_atexit (); // drop existing interned strings
   long start = ticks();
   {
    int i = 0;
@@ -66,7 +66,7 @@ static float do_test_round (int words, TestType type)
         sprintf (input, "%s%i", str->str, j);
       else
         sprintf (input, "%s", str->str);
-      refs [i] = squoze (input);
+      refs [i] = sqz (input);
     }
    }
   }
@@ -87,7 +87,7 @@ static float do_test_round (int words, TestType type)
             sprintf (input, "%s%i", str->str, j);
           else
             sprintf (input, "%s", str->str);
-          squoze (input);
+          sqz (input);
         }
       }
       return ticks()-start;
@@ -101,21 +101,21 @@ static float do_test_round (int words, TestType type)
           for (int j = 0; j < INNER_ITERATIONS; j++)
           {
             char tmp[16];
-	    strcpy (temp, squoze_decode (refs[i], tmp));
+	    strcpy (temp, sqz_decode (refs[i], tmp));
           }
         }
       }
       return ticks ()-start;
     case TEST_CONCAT:
       {
-      Squoze *str_b = squoze("s");
+      Squoze *str_b = sqz("s");
       start = ticks ();
         int i = 0;
         for (StringRef *str = dict; str; str=str->next, i++)
         {
           for (int j = 0; j < INNER_ITERATIONS; j++)
           {
-	    Squoze *res = squoze_cat (refs[i], str_b);
+	    Squoze *res = sqz_cat (refs[i], str_b);
 	    if (res) {};
           }
         }
@@ -339,36 +339,6 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
 #endif
 
 
-#if 0 
-  {
-    unsigned char str[4]=" ";
-    for (int i = 0; i < 256; i++)
-    {
-	str[0]=i;
-	fprintf (stdout, "%i :", i);
-	fprintf (stdout, "%i\n", squoze32 (str, 1));
-    }
-  }
-#endif
-
-#if 0
-  {
-     char *strs[] = {"foo", "abcdefghijklmnopqrst",
-	                    "abcdefghijklmnopqrst", "foo", "bar", "baz", "boo", "", NULL};
-     for (int i =0; strs[i+2]; i++)
-     {
-       const char *str= strs[i];
-       Squoze *intern = squoze (str);
-       printf ("%p %s -> %p ", str, str, intern);
-       printf (" -> %s\n", squoze_peek (intern));
-       squoze_unref(intern);
-       //printf ("%p -> %s\n", intern, squoze_peek (intern));
-       intern = NULL;
-     }
-  }
-#endif
-
-
   float embed_percentage = 0.0f;
   size_t ht, ht_slack, ht_entries;
   { // warumup round
@@ -384,19 +354,19 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
       else
         strcpy (input, str->str);
 
-      squozed = squoze (input);
+      squozed = sqz (input);
       char temp[16];
-      decoded = squoze_decode (squozed, temp);
+      decoded = sqz_decode (squozed, temp);
       if (decoded && strcmp (input, decoded))
       {
-        uint64_t hash = squoze_id (squozed);
+        uint64_t hash = sqz_id (squozed);
         printf ("!%s = %lu = %s\n", input, hash, decoded);
         wrong ++;
       }
     }
   }
     embed_percentage = (100.0f * (words - global_pool.count)) / (words * INNER_ITERATIONS);
-  squoze_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
+  sqz_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
   }
 
   printf ("%.3f</td><td>", do_test (words, iterations, TEST_CREATE)/(words * INNER_ITERATIONS));
@@ -410,9 +380,9 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
   if (wrong)
   {
     printf ("%i WRONG\n", wrong);
-    squoze_atexit ();
+    sqz_atexit ();
     return 1;
   }
-  squoze_atexit ();
+  sqz_atexit ();
   return 0;
 }
