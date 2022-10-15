@@ -1,8 +1,10 @@
-all: squoze squoze-test index.html
+all: squoze squoze-test sqz-test index.html
 clean:
-	rm -f squoze squoze-test test*
+	rm -f squoze squoze-test sqz-test test*
 squoze: squoze.c squoze.h Makefile
 	gcc -Wall squoze.c -o squoze -O2 -g
+sqz-test: sqz-test.c squoze.h Makefile
+	gcc -Wall sqz-test.c -o sqz-test -g
 squoze-test: squoze-test.c squoze.h Makefile
 	gcc -Wall squoze-test.c -o squoze-test -g
 test-head: squoze-test.c squoze.h Makefile squoze-test.c
@@ -91,6 +93,8 @@ report-part-32bit.html:
 	./test-squoze32-utf8  >> report-32bit.html
 	./test-squoze32-utf5  >> report-32bit.html
 	./test-footer         >> report-32bit.html
+
+
 
 update-reference: report.txt
 	cp report.txt reference.txt

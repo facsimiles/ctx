@@ -1,14 +1,45 @@
 /* Copyright (c) 2021-2022 Øyvind Kolås <pippin@gimp.org>
 
-  License to be determined, the core implementation the snippets on
-  https://squoz.org/ are ISC licensed
+  Fast cache-miss eliminating unicode strings for C.
+
+  All features are optional:
+    optimized 32bit 52bit 62bit and 64bit squoze encodings in UTF5+ and/or UTF-8
+    string interning and APIS (for only getting the core squoze reference
+                               implementation)
+      both utf8, unichar and printf for core APIs
+      embedding of strings (only for debug/profiling)
+      reference counting
+      embedded length
+
+  License to be determined, the core implementation the snippet for
+  squoze64_utf8 on https://squoz.org/ is ISC licensed
+
+
 
 */
+#if 0
+Minimal usage example:
+
+#define SQUOZE_IMPLEMENTATION
+#include "squoze.h"
+
+int main (int argc, char **argv)
+{:q
+  char temp[10];
+  Sqz *string = NULL;
+  
+  sqz_set (&string, "hello");
+
+
+}
+
+#endif
 
 #ifndef SQUOZE_H
 #define SQUOZE_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 // configuration of internal squoze, these
 // are values that must be set before both header
@@ -16,10 +47,6 @@
 // impact the string interning implementation and not
 // the low-level APIs
 
-#ifndef SQUOZE_USE_INTERN      // enable interning hash-table
-#define SQUOZE_USE_INTERN 1    // without this only a single
-                               // core implementation can be built
-#endif
 
 #ifndef SQUOZE_INTERN_DIRECT_STRING     // when 1 the pointers returned are
 #define SQUOZE_INTERN_DIRECT_STRING  1  // directly string pointers
@@ -49,6 +76,56 @@
 #define SQUOZE_STORE_LENGTH 1  // per-interned-string data
 #endif
 
+#ifndef SQUOZE_USE_INTERN      // enable interning hash-table
+#define SQUOZE_USE_INTERN 1    // without this only a single
+                               // core implementation can be built
+			       //
+/*  XXX - you should not need to tweak anything below here,
+ *        though the tweaks are available for tinkering
+ *        and debugging.
+ */
+#ifndef SQUOZE_REF_SANITY
+#define SQUOZE_REF_SANITY      0 // report consistency errors and use more RAM
+#endif
+
+#ifndef SQUOZE_CLOBBER_ON_FREE
+#define SQUOZE_CLOBBER_ON_FREE 0
+  // clobber strings when freeing, not a full leak report
+  // but better to always glitch than silently succeding or failing
+#endif
+
+#ifndef SQUOZE_INITIAL_POOL_SIZE
+#define SQUOZE_INITIAL_POOL_SIZE   (1<<8)  // initial hash-table capacity
+#endif
+
+#ifndef SQUOZE_USE_BUILTIN_CLZ
+#define SQUOZE_USE_BUILTIN_CLZ  1 // use builtin for determining highest bit in unicode char
+#endif
+
+#ifndef SQUOZE_UTF8_MANUAL_UNROLL
+#define SQUOZE_UTF8_MANUAL_UNROLL 1 // use manually unrolled UTF8 code
+#endif
+
+#ifndef SQUOZE_LIMIT_IMPLEMENTATIONS
+#define SQUOZE_LIMIT_IMPLEMENTATIONS 0
+#endif
+
+#ifndef SQUOZE_IMPLEMENTATION_32_UTF8
+#define SQUOZE_IMPLEMENTATION_32_UTF8 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
+#endif
+#ifndef SQUOZE_IMPLEMENTATION_32_UTF5
+#define SQUOZE_IMPLEMENTATION_32_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
+#endif
+#ifndef SQUOZE_IMPLEMENTATION_52_UTF5
+#define SQUOZE_IMPLEMENTATION_52_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
+#endif
+#ifndef SQUOZE_IMPLEMENTATION_62_UTF5
+#define SQUOZE_IMPLEMENTATION_62_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
+#endif
+#ifndef SQUOZE_IMPLEMENTATION_64_UTF8
+#define SQUOZE_IMPLEMENTATION_64_UTF8 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
+#endif
+#endif
 
 #if SQUOZE_USE_INTERN
 
@@ -73,32 +150,39 @@ sqz_id_t     sqz_id               (Sqz *squozed);
 uint32_t     sqz_unichar_at       (Sqz *a, int pos);
 int          sqz_strcmp           (Sqz *a, Sqz *b);
 inline int   sqz_equal            (Sqz *a, Sqz *b) { return a == b; }
+void         sqz_unset            (Sqz **a);
 
 
 Sqz         *sqz_cat              (Sqz *a, Sqz *b);
 Sqz         *sqz_substring        (Sqz *a, int pos, int length);
 
 void         sqz_insert           (Sqz **a, int pos, Sqz *b);
-void         sqz_assign           (Sqz **a, Sqz *b);
+void         sqz_set              (Sqz **a, Sqz *b);
 void         sqz_erase            (Sqz **a, int pos, int length);
 
+#include <stdarg.h>
 Sqz         *sqz_printf           (const char *format, ...);
 Sqz         *sqz_printf_va_list   (const char *format, va_list list);
 Sqz         *sqz_unichar          (uint32_t unichar);
+Sqz         *sqz_double           (double value);
+Sqz         *sqz_int              (int value);
 
 /* the following is APIs mostly implemented in terms of the above */
 
 int          sqz_has_prefix       (Sqz *a, Sqz *prefix);
 int          sqz_has_suffix       (Sqz *a, Sqz *suffix);
 
+void         sqz_insert_double    (Sqz **a, int pos, double value);
+void         sqz_insert_int       (Sqz **a, int pos, int value);
+
 void         sqz_insert_unichar   (Sqz **a, int pos, uint32_t unichar);
 void         sqz_replace_unichar  (Sqz **a, int pos, int length, uint32_t unichar);
 int          sqz_has_prefix_utf8  (Sqz *a, const char *utf8);
 int          sqz_has_suffix_utf8  (Sqz *a, const char *utf8);
 void         sqz_insert_utf8      (Sqz **a, int pos, const char *utf8);
-void         sqz_assign_utf8      (Sqz **a, const char *utf8);
+void         sqz_set_utf8         (Sqz **a, const char *utf8);
 void         sqz_replace_utf8     (Sqz **a, int pos, int length, const char *utf8);
-void         sqz_assign_printf    (Sqz **a, const char *format, ...);
+void         sqz_set_printf       (Sqz **a, const char *format, ...);
 void         sqz_insert_printf    (Sqz **a, int pos, const char *format, ...);
 void         sqz_replace_printf   (Sqz **a, int pos, int length, const char *format, ...);
 /* increase reference count of string */
@@ -141,47 +225,6 @@ void sqz_atexit (void);
 
 #endif
 
-#ifndef SQUOZE_REF_SANITY
-#define SQUOZE_REF_SANITY      0 // report consistency errors and use more RAM
-#endif
-
-#ifndef SQUOZE_CLOBBER_ON_FREE
-#define SQUOZE_CLOBBER_ON_FREE 0
-  // clobber strings when freeing, not a full leak report
-  // but better to always glitch than silently succeding or failing
-#endif
-
-#ifndef SQUOZE_INITIAL_POOL_SIZE
-#define SQUOZE_INITIAL_POOL_SIZE   (1<<8)  // initial hash-table capacity
-#endif
-
-#ifndef SQUOZE_USE_BUILTIN_CLZ
-#define SQUOZE_USE_BUILTIN_CLZ  1 // use builtin for determining highest bit in unicode char
-#endif
-
-#ifndef SQUOZE_UTF8_MANUAL_UNROLL
-#define SQUOZE_UTF8_MANUAL_UNROLL 1 // use manually unrolled UTF8 code
-#endif
-
-#ifndef SQUOZE_LIMIT_IMPLEMENTATIONS
-#define SQUOZE_LIMIT_IMPLEMENTATIONS 0
-#endif
-
-#ifndef SQUOZE_IMPLEMENTATION_32_UTF8
-#define SQUOZE_IMPLEMENTATION_32_UTF8 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
-#endif
-#ifndef SQUOZE_IMPLEMENTATION_32_UTF5
-#define SQUOZE_IMPLEMENTATION_32_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
-#endif
-#ifndef SQUOZE_IMPLEMENTATION_52_UTF5
-#define SQUOZE_IMPLEMENTATION_52_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
-#endif
-#ifndef SQUOZE_IMPLEMENTATION_62_UTF5
-#define SQUOZE_IMPLEMENTATION_62_UTF5 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
-#endif
-#ifndef SQUOZE_IMPLEMENTATION_64_UTF8
-#define SQUOZE_IMPLEMENTATION_64_UTF8 (!SQUOZE_LIMIT_IMPLEMENTATIONS)
-#endif
 
 #if SQUOZE_IMPLEMENTATION_32_UTF5 || \
     SQUOZE_IMPLEMENTATION_52_UTF5 || \
@@ -740,7 +783,6 @@ squoze_utf8_len (const unsigned char first_byte)
  *  with both ref-counting and pools of strings.
  */
 #if SQUOZE_USE_INTERN
-#include <stdarg.h>
 
 struct _Sqz {
 #if SQUOZE_REF_COUNTING
@@ -1227,9 +1269,41 @@ Sqz *sqz_unichar (uint32_t unichar)
   return sqz (temp);
 }
 
+Sqz *sqz_int (int value)
+{
+  char temp[40];
+  sprintf (temp, "%i", value);
+  if (strchr (temp, ','))
+    *strchr (temp, ',')='.';
+  return sqz (temp);
+}
+
+Sqz *sqz_double (double value)
+{
+  char temp[40];
+  sprintf (temp, "%f", value);
+  if (strchr (temp, ','))
+    *strchr (temp, ',')='.';
+  return sqz (temp);
+}
+
 void sqz_insert_unichar (Sqz **a, int pos, uint32_t unichar)
 {
   Sqz *b = sqz_unichar (unichar);
+  sqz_insert (a, pos, b);
+  sqz_unref (b);
+}
+
+void sqz_insert_double (Sqz **a, int pos, double value)
+{
+  Sqz *b = sqz_double (value);
+  sqz_insert (a, pos, b);
+  sqz_unref (b);
+}
+
+void sqz_insert_int (Sqz **a, int pos, int value)
+{
+  Sqz *b = sqz_int (value);
   sqz_insert (a, pos, b);
   sqz_unref (b);
 }
@@ -1322,22 +1396,29 @@ static void _sqz_steal (Sqz **a, Sqz *b)
   *a = b;
 }
 
-void sqz_assign (Sqz **a, Sqz *b)
+void sqz_set (Sqz **a, Sqz *b)
 {
   if (*a)
     sqz_unref (*a);
   *a = sqz_ref (b);
 }
 
-void sqz_assign_utf8 (Sqz **a, const char *str)
+void sqz_set_utf8 (Sqz **a, const char *str)
 {
   _sqz_steal (a, sqz (str));
 }
 
-void sqz_assign_printf (Sqz **a, const char *format, ...)
+void sqz_set_printf (Sqz **a, const char *format, ...)
 {
   SQZ_EXPAND_PRINTF;
   _sqz_steal (a, b);
+}
+
+void sqz_unset (Sqz **a)
+{
+  if (*a == NULL) return;
+  sqz_unref (*a);
+  *a = NULL;
 }
 
 sqz_id_t sqz_id (Sqz *squozed)
