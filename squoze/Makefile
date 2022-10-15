@@ -1,5 +1,7 @@
 all: squoze squoze-test sqz-test index.html
-clean:
+test: sqz-test
+	./sqz-test
+clean: 
 	rm -f squoze squoze-test sqz-test test*
 squoze: squoze.c squoze.h Makefile
 	gcc -Wall squoze.c -o squoze -O2 -g

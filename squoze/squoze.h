@@ -175,18 +175,23 @@ int          sqz_has_suffix       (Sqz *a, Sqz *suffix);
 void         sqz_insert_double    (Sqz **a, int pos, double value);
 void         sqz_insert_int       (Sqz **a, int pos, int value);
 
+
 void         sqz_insert_unichar   (Sqz **a, int pos, uint32_t unichar);
 void         sqz_replace_unichar  (Sqz **a, int pos, int length, uint32_t unichar);
-int          sqz_has_prefix_utf8  (Sqz *a, const char *utf8);
-int          sqz_has_suffix_utf8  (Sqz *a, const char *utf8);
+void         sqz_append_unichar   (Sqz **a, uint32_t unichar);
+void         sqz_append_utf8      (Sqz **a, const char *utf8);
+int          sqz_has_prefix_utf8  (Sqz  *a, const char *utf8);
+int          sqz_has_suffix_utf8  (Sqz  *a, const char *utf8);
 void         sqz_insert_utf8      (Sqz **a, int pos, const char *utf8);
 void         sqz_set_utf8         (Sqz **a, const char *utf8);
 void         sqz_replace_utf8     (Sqz **a, int pos, int length, const char *utf8);
 void         sqz_set_printf       (Sqz **a, const char *format, ...);
+void         sqz_append_printf    (Sqz **a, const char *format, ...);
 void         sqz_insert_printf    (Sqz **a, int pos, const char *format, ...);
 void         sqz_replace_printf   (Sqz **a, int pos, int length, const char *format, ...);
 /* increase reference count of string */
 Sqz         *sqz_ref              (Sqz *squozed);
+Sqz         *sqz_dup              (Sqz *squozed);
 /* decrement reference count of string */
 void         sqz_unref            (Sqz *squozed);
 typedef struct _SqzPool  SqzPool;  /* a pool for grouping allocated strings */
@@ -195,7 +200,7 @@ typedef struct _SqzPool  SqzPool;  /* a pool for grouping allocated strings */
 /* create a new string pool, with fallback to another pool -
  * or NULL for fallback to default pool, takes a reference on fallback.
  */
-SqzPool  *sqz_pool_new            (SqzPool *fallback);
+SqzPool    *sqz_pool_new          (SqzPool *fallback);
 
 /* increase reference count of pool
  */
@@ -221,7 +226,7 @@ void sqz_pool_mem_stats (SqzPool *pool,
 
 /* empty all pools
  */
-void sqz_atexit (void);
+void sqz_cleanup (void);
 
 #endif
 
@@ -869,7 +874,7 @@ static int sqz_pool_add_entry (SqzPool *pool, Sqz *str)
 static int sqz_pool_remove (SqzPool *pool, Sqz *squozed, int do_free)
 {
   Sqz *str = squozed;
-  int no = sqz_pool_find (pool, str->hash);
+  int no = sqz_pool_find (pool, str->hash, strlen (str->string), (uint8_t*)str->string);
   if (no < 0)
     return 0;
   if (do_free)
@@ -1070,6 +1075,10 @@ Sqz *sqz_ref (Sqz *squozed)
 #endif
   return squozed;
 }
+Sqz *sqz_dup (Sqz *squozed)
+{
+  return sqz_ref;
+}
 
 void sqz_unref (Sqz *squozed)
 {
@@ -1216,7 +1225,7 @@ void sqz_erase (Sqz **a, int pos, int length)
     return;
   if (pos < 0)
   {
-    pos = sqz_length (*a) + pos + 1;
+    pos = sqz_length (*a) + pos;
   }
 
   Sqz *pre  = sqz_substring (*a, 0, pos);
@@ -1343,6 +1352,16 @@ void sqz_replace_utf8  (Sqz **a, int pos, int length, const char *utf8)
   sqz_insert_utf8 (a, pos, utf8);
 }
 
+void sqz_append_utf8 (Sqz **a, const char *utf8)
+{
+  sqz_insert_utf8 (a, -1, utf8);
+}
+
+void sqz_append_unichar (Sqz **a, uint32_t unichar)
+{
+  sqz_insert_unichar (a, -1, unichar);
+}
+
 #define SQZ_EXPAND_PRINTF \
   va_list ap; \
   size_t needed; \
@@ -1378,6 +1397,13 @@ void sqz_replace_printf (Sqz **a, int pos, int length, const char *format, ...)
 {
   SQZ_EXPAND_PRINTF;
   sqz_replace (a, pos, length, b);
+  sqz_unref (b);
+}
+
+void sqz_append_printf (Sqz **a, const char *format, ...)
+{
+  SQZ_EXPAND_PRINTF;
+  sqz_insert (a, -1, b);
   sqz_unref (b);
 }
 
@@ -1572,7 +1598,7 @@ void sqz_pool_unref (SqzPool *pool)
 }
 
 void
-sqz_atexit (void)
+sqz_cleanup (void)
 {
   sqz_pool_destroy (&global_pool);
   // also destory other known pools

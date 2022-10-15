@@ -52,7 +52,7 @@ StringRef *dict = NULL;
 static float do_test_round (int words, TestType type)
 {
   Sqz *refs[words];
-  sqz_atexit (); // drop existing interned strings
+  sqz_cleanup (); // drop existing interned strings
   long start = ticks();
   {
    int i = 0;
@@ -376,9 +376,9 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
   if (wrong)
   {
     printf ("%i WRONG\n", wrong);
-    sqz_atexit ();
+    sqz_cleanup ();
     return 1;
   }
-  sqz_atexit ();
+  sqz_cleanup ();
   return 0;
 }
