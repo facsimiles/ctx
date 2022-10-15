@@ -1,23 +1,14 @@
 /* Copyright (c) 2021-2022 Øyvind Kolås <pippin@gimp.org>
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
+  License to be determined, the core implementation the snippets on
+  https://squoz.org/ are ISC licensed
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
 #ifndef SQUOZE_H
 #define SQUOZE_H
 
 #include <stdint.h>
-
 
 // configuration of internal squoze, these
 // are values that must be set before both header
@@ -71,72 +62,69 @@ typedef uint64_t sqz_id_t;
 typedef struct _Sqz      Sqz;      /* handle representing a squozed string  */
 
 
-/* get length of interned string (in unicode codepoints).
- */
-
-
 /* create a new string that is the concatenation of a and b
  */
 Sqz         *sqz                  (const char *str);
 const char  *sqz_decode           (Sqz *squozed, char *temp);
+
+
 int          sqz_length           (Sqz *squozed);
-/* get the id of a squozed string, for embedded strings this is
- * the string value itself - for interned strings it is a hash
- * of the string.
- */
-sqz_id_t     sqz_id           (Sqz *squozed);
+sqz_id_t     sqz_id               (Sqz *squozed);
+uint32_t     sqz_unichar_at       (Sqz *a, int pos);
+int          sqz_strcmp           (Sqz *a, Sqz *b);
+inline int   sqz_equal            (Sqz *a, Sqz *b) { return a == b; }
 
 
 Sqz         *sqz_cat              (Sqz *a, Sqz *b);
-Sqz         *sqz_substring        (Sqz *a, int start, int length);
+Sqz         *sqz_substring        (Sqz *a, int pos, int length);
+
+void         sqz_insert           (Sqz **a, int pos, Sqz *b);
+void         sqz_assign           (Sqz **a, Sqz *b);
+void         sqz_erase            (Sqz **a, int pos, int length);
+
 Sqz         *sqz_printf           (const char *format, ...);
-uint32_t     sqz_char_at          (Sqz *a, int pos);
+Sqz         *sqz_printf_va_list   (const char *format, va_list list);
+Sqz         *sqz_unichar          (uint32_t unichar);
+
+/* the following is APIs mostly implemented in terms of the above */
 
 int          sqz_has_prefix       (Sqz *a, Sqz *prefix);
 int          sqz_has_suffix       (Sqz *a, Sqz *suffix);
 
-void         sqz_prepend          (Sqz **a, Sqz *head);
-void         sqz_append           (Sqz **a, Sqz *tail);
-void         sqz_insert           (Sqz **a, int pos, Sqz *b);
-void         sqz_remove_span      (Sqz **a, int pos, int length);
-void         sqz_set_cstring      (Sqz **a, const char *utf8_str);
-/* pos -1 means last */
-void         sqz_remove_char   (Sqz **q, int pos);
-void         sqz_insert_char   (Sqz **a, int pos, uint32_t unichar);
-void         sqz_replace_char  (Sqz **a, int pos, uint32_t unichar);
-
-
-
-
+void         sqz_insert_unichar   (Sqz **a, int pos, uint32_t unichar);
+void         sqz_replace_unichar  (Sqz **a, int pos, int length, uint32_t unichar);
+int          sqz_has_prefix_utf8  (Sqz *a, const char *utf8);
+int          sqz_has_suffix_utf8  (Sqz *a, const char *utf8);
+void         sqz_insert_utf8      (Sqz **a, int pos, const char *utf8);
+void         sqz_assign_utf8      (Sqz **a, const char *utf8);
+void         sqz_replace_utf8     (Sqz **a, int pos, int length, const char *utf8);
+void         sqz_assign_printf    (Sqz **a, const char *format, ...);
+void         sqz_insert_printf    (Sqz **a, int pos, const char *format, ...);
+void         sqz_replace_printf   (Sqz **a, int pos, int length, const char *format, ...);
 /* increase reference count of string */
 Sqz         *sqz_ref              (Sqz *squozed);
-
 /* decrement reference count of string */
 void         sqz_unref            (Sqz *squozed);
-
-
 typedef struct _SqzPool  SqzPool;  /* a pool for grouping allocated strings */
 
 
 /* create a new string pool, with fallback to another pool -
  * or NULL for fallback to default pool, takes a reference on fallback.
  */
-SqzPool  *sqz_pool_new     (SqzPool *fallback);
+SqzPool  *sqz_pool_new            (SqzPool *fallback);
 
 /* increase reference count of pool
  */
-void         sqz_pool_ref     (SqzPool *pool);
+void         sqz_pool_ref         (SqzPool *pool);
 
 /* decrease reference point of pool, when matching _new() + _ref() calls
  * the pool is destoryed.
  */
-void         sqz_pool_unref   (SqzPool *pool);
+void         sqz_pool_unref       (SqzPool *pool);
 
 /* add a string to a squoze pool
  */
-Sqz      *sqz_pool_add     (SqzPool *pool, const char *str);
-
-
+Sqz         *sqz_pool_add         (SqzPool *pool, const char *str);
 
 Sqz *sqz_concat (Sqz *a, Sqz *b);
 
@@ -149,7 +137,7 @@ void sqz_pool_mem_stats (SqzPool *pool,
 
 /* empty all pools
  */
-void         sqz_atexit           (void);
+void sqz_atexit (void);
 
 #endif
 
@@ -771,11 +759,11 @@ static inline uint64_t sqz_pool_encode     (SqzPool *pool, const char *utf8, siz
 
 struct _SqzPool
 {
-  int32_t        ref_count;
+  int32_t     ref_count;
   SqzPool    *fallback;
   Sqz       **hashtable;
-  int            count;
-  int            size;
+  int         count;
+  int         size;
   SqzPool    *next;
 };
 
@@ -1092,6 +1080,22 @@ int sqz_has_prefix (Sqz *a, Sqz *prefix)
   return !strncmp (a_str, prefix_str, strlen (prefix_str));
 }
 
+int sqz_has_prefix_utf8 (Sqz *a, const char *utf8)
+{
+  Sqz *b = sqz (utf8);
+  int ret = sqz_has_prefix (a, b);
+  sqz_unref (b);
+  return ret;
+}
+
+int sqz_has_suffix_utf8 (Sqz *a, const char *utf8)
+{
+  Sqz *b = sqz (utf8);
+  int ret = sqz_has_suffix (a, b);
+  sqz_unref (b);
+  return ret;
+}
+
 int sqz_has_suffix (Sqz *a, Sqz *suffix)
 {
   char        tmp_a[16];
@@ -1106,7 +1110,8 @@ int sqz_has_suffix (Sqz *a, Sqz *suffix)
   return strcmp (a_str + a_len - suffix_len, suffix_str);
 }
 
-void sqz_prepend (Sqz **squoze, Sqz *head)
+
+static void _sqz_prepend (Sqz **squoze, Sqz *head)
 {
   if (!squoze) return;
   Sqz *combined = sqz_cat (head, *squoze);
@@ -1114,7 +1119,7 @@ void sqz_prepend (Sqz **squoze, Sqz *head)
   *squoze=combined;
 }
 
-void sqz_append (Sqz **squoze, Sqz *tail)
+static void _sqz_append (Sqz **squoze, Sqz *tail)
 {
   if (!squoze) return;
   Sqz *combined = sqz_cat (*squoze, tail);
@@ -1160,7 +1165,7 @@ Sqz *sqz_substring (Sqz *a, int pos, int length)
   return ret;
 }
 
-void sqz_remove_span (Sqz **a, int pos, int length)
+void sqz_erase (Sqz **a, int pos, int length)
 {
   if (!a) return;
   if (!*a) return;
@@ -1184,12 +1189,12 @@ void sqz_insert (Sqz **a, int pos, Sqz *b)
 {
   if (pos == 0)
   {
-    sqz_prepend (a, b);
+    _sqz_prepend (a, b);
     return;
   }
   if (pos == -1)
   {
-    sqz_append (a, b);
+    _sqz_append (a, b);
     return;
   }
   if (!a) return;
@@ -1203,12 +1208,33 @@ void sqz_insert (Sqz **a, int pos, Sqz *b)
   sqz_unref (*a);
 
   *a = sqz_cat (pre, b);
-  sqz_append (a, post);
+  _sqz_append (a, post);
   sqz_unref (pre);
   sqz_unref (post);
 }
 
-uint32_t     sqz_char_at (Sqz *a, int pos)
+void sqz_insert_utf8 (Sqz **a, int pos, const char *utf8)
+{
+  Sqz *b = sqz (utf8);
+  sqz_insert (a, pos, b);
+  sqz_unref (b);
+}
+
+Sqz *sqz_unichar (uint32_t unichar)
+{
+  char temp[5];
+  temp[squoze_unichar_to_utf8 (unichar, (uint8_t*)temp)]=0;
+  return sqz (temp);
+}
+
+void sqz_insert_unichar (Sqz **a, int pos, uint32_t unichar)
+{
+  Sqz *b = sqz_unichar (unichar);
+  sqz_insert (a, pos, b);
+  sqz_unref (b);
+}
+
+uint32_t sqz_unichar_at (Sqz *a, int pos)
 {
   char tmp[16];
   const char *str = sqz_decode (a, tmp);
@@ -1223,54 +1249,95 @@ uint32_t     sqz_char_at (Sqz *a, int pos)
   return squoze_utf8_to_unichar (p);
 }
 
-/* pos -1 means last */
-void sqz_remove_char (Sqz **a, int pos)
+void sqz_replace (Sqz **a, int pos, int length, Sqz *b)
 {
-  sqz_remove_span (a, pos, 1);
+  sqz_erase (a, pos, length);
+  sqz_insert (a, pos, b);
 }
 
-void sqz_insert_char (Sqz **a, int pos, uint32_t unichar)
+void sqz_replace_unichar  (Sqz **a, int pos, int length, uint32_t unichar)
 {
-  char temp[5];
-  temp[squoze_unichar_to_utf8 (unichar, (uint8_t*)temp)]=0;
-  Sqz *b = sqz (temp);
+  Sqz *b = sqz_unichar (unichar);
+  sqz_erase (a, pos, length);
   sqz_insert (a, pos, b);
   sqz_unref (b);
 }
 
-void sqz_replace_char  (Sqz **a, int pos, uint32_t unichar)
+void sqz_replace_utf8  (Sqz **a, int pos, int length, const char *utf8)
 {
-  sqz_remove_char (a, pos);
-  sqz_insert_char (a, pos, unichar);
+  sqz_erase (a, pos, length);
+  sqz_insert_utf8 (a, pos, utf8);
 }
+
+#define SQZ_EXPAND_PRINTF \
+  va_list ap; \
+  size_t needed; \
+  char *buffer; \
+  va_start (ap, format); \
+  needed = vsnprintf (NULL, 0, format, ap) + 1; \
+  if (needed < 256) \
+    buffer = alloca (needed);\
+  else\
+    buffer = malloc (needed);\
+  va_end (ap);\
+  va_start (ap, format);\
+  vsnprintf (buffer, needed, format, ap);\
+  va_end (ap);\
+  Sqz *b = sqz (buffer);\
+  if (needed >= 256)\
+    free (buffer);
 
 Sqz      *sqz_printf (const char *format, ...)
 {
-  va_list ap;
-  size_t needed;
-  char *buffer;
-
-  va_start (ap, format);
-  needed = vsnprintf (NULL, 0, format, ap) + 1;
-  if (needed < 256)
-    buffer = alloca (needed);
-  else
-    buffer = malloc (needed);
-  va_end (ap);
-  va_start (ap, format);
-  vsnprintf (buffer, needed, format, ap);
-  va_end (ap);
-  Sqz *ret = sqz (buffer);
-  if (needed >= 256)
-    free (buffer);
-  return ret;
+  SQZ_EXPAND_PRINTF;
+  return b;
 }
-        
-void sqz_set_cstring      (Sqz **a, const char *str)
+
+void sqz_insert_printf (Sqz **a, int pos, const char *format, ...)
+{
+  SQZ_EXPAND_PRINTF;
+  sqz_insert (a, pos, b);
+  sqz_unref (b);
+}
+
+void sqz_replace_printf (Sqz **a, int pos, int length, const char *format, ...)
+{
+  SQZ_EXPAND_PRINTF;
+  sqz_replace (a, pos, length, b);
+  sqz_unref (b);
+}
+
+int sqz_strcmp (Sqz *a, Sqz *b)
+{
+  if (a == b) return 0;
+  char tmp_a[16];
+  char tmp_b[16];
+  return strcmp (sqz_decode (a, tmp_a), sqz_decode (b, tmp_b));
+}
+
+static void _sqz_steal (Sqz **a, Sqz *b)
 {
   if (*a)
     sqz_unref (*a);
-  *a = sqz (str);
+  *a = b;
+}
+
+void sqz_assign (Sqz **a, Sqz *b)
+{
+  if (*a)
+    sqz_unref (*a);
+  *a = sqz_ref (b);
+}
+
+void sqz_assign_utf8 (Sqz **a, const char *str)
+{
+  _sqz_steal (a, sqz (str));
+}
+
+void sqz_assign_printf (Sqz **a, const char *format, ...)
+{
+  SQZ_EXPAND_PRINTF;
+  _sqz_steal (a, b);
 }
 
 sqz_id_t sqz_id (Sqz *squozed)
