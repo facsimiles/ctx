@@ -5,7 +5,6 @@
 #include <ctype.h>
 
 #define ITERATIONS                  20
-#define INNER_ITERATIONS            1 
 #define SQUOZE_IMPLEMENTATION
 #define SQUOZE_INITIAL_POOL_SIZE   (1<<20)
 
@@ -52,7 +51,7 @@ StringRef *dict = NULL;
 
 static float do_test_round (int words, TestType type)
 {
-  Squoze *refs[words];
+  Sqz *refs[words];
   sqz_atexit (); // drop existing interned strings
   long start = ticks();
   {
@@ -60,14 +59,8 @@ static float do_test_round (int words, TestType type)
    for (StringRef *str = dict; str; str=str->next,i++)
    {
     char input[4096];
-    for (int j = 0; j < INNER_ITERATIONS; j++)
-    {
-      if (j)
-        sprintf (input, "%s%i", str->str, j);
-      else
-        sprintf (input, "%s", str->str);
-      refs [i] = sqz (input);
-    }
+    sprintf (input, "%s", str->str);
+    refs [i] = sqz (input);
    }
   }
 
@@ -80,15 +73,7 @@ static float do_test_round (int words, TestType type)
       start = ticks();
       for (StringRef *str = dict; str; str=str->next)
       {
-        char input[4096];
-        for (int j = 0; j < INNER_ITERATIONS; j++)
-        {
-          if (j)
-            sprintf (input, "%s%i", str->str, j);
-          else
-            sprintf (input, "%s", str->str);
-          sqz (input);
-        }
+        sqz (str->str);
       }
       return ticks()-start;
     case TEST_DECODE:
@@ -98,26 +83,20 @@ static float do_test_round (int words, TestType type)
         char temp[1024];
         for (StringRef *str = dict; str; str=str->next, i++)
         {
-          for (int j = 0; j < INNER_ITERATIONS; j++)
-          {
-            char tmp[16];
-	    strcpy (temp, sqz_decode (refs[i], tmp));
-          }
+          char tmp[16];
+	  strcpy (temp, sqz_decode (refs[i], tmp));
         }
       }
       return ticks ()-start;
     case TEST_CONCAT:
       {
-      Squoze *str_b = sqz("s");
+      Sqz *str_b = sqz("s");
       start = ticks ();
         int i = 0;
         for (StringRef *str = dict; str; str=str->next, i++)
         {
-          for (int j = 0; j < INNER_ITERATIONS; j++)
-          {
-	    Squoze *res = sqz_cat (refs[i], str_b);
-	    if (res) {};
-          }
+	  Sqz *res = sqz_cat (refs[i], str_b);
+	  if (res) {};
         }
       return ticks ()-start;
       }
@@ -137,11 +116,34 @@ static float do_test (int words, int iterations, TestType type)
   return best_ms;
 }
 
+#if 0
+void sqz_test (void)
+{
+  Sqz *a = sqz ("æøådefghi");
+  char temp[16];
+  printf ("[%s]\n", sqz_decode (a, temp));
+
+  for (int i = -1; i < 8;i ++)
+    printf ("unichar at %i:%u\n", i, sqz_char_at (a, i));
+
+  printf ("substring(2, 3) [%s]\n",  sqz_decode (sqz_substring (a, 2, 3), temp));
+  printf ("substring(2, 13) [%s]\n", sqz_decode (sqz_substring (a, 2, 13), temp));
+
+  sqz_append(&a, sqz("!"));
+  printf ("[%s]\n",   sqz_decode (a, temp));
+  sqz_remove_char (&a, 2);
+  printf ("[%s]\n",   sqz_decode (a, temp));
+  sqz_insert_char (&a, 3, 'd');
+  printf ("[%s]\n",   sqz_decode (a, temp));
+
+}
+#endif
 
 int main (int argc, char **argv)
 {
   int wrong = 0;
-
+  //sqz_test();
+  //return 0;
   int iterations = ITERATIONS;
   FILE* f;
   f  = fopen("words.txt", "r");
@@ -345,19 +347,13 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
   for (StringRef *str = dict; str; str=str->next)
   {
     const char *decoded;
-    Squoze *squozed;
+    Sqz *squozed;
     char input[4096];
-    for (int j = 0; j < INNER_ITERATIONS; j++)
     {
-      if (j)
-        sprintf (input, "%s%i", str->str, j);
-      else
-        strcpy (input, str->str);
-
-      squozed = sqz (input);
+      squozed = sqz (str->str);
       char temp[16];
       decoded = sqz_decode (squozed, temp);
-      if (decoded && strcmp (input, decoded))
+      if (decoded && strcmp (str->str, decoded))
       {
         uint64_t hash = sqz_id (squozed);
         printf ("!%s = %lu = %s\n", input, hash, decoded);
@@ -365,14 +361,14 @@ printf ("<p>THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARR
       }
     }
   }
-    embed_percentage = (100.0f * (words - global_pool.count)) / (words * INNER_ITERATIONS);
+    embed_percentage = (100.0f * (words - global_pool.count)) / (words);
   sqz_pool_mem_stats (NULL, &ht, &ht_slack, &ht_entries);
   }
 
-  printf ("%.3f</td><td>", do_test (words, iterations, TEST_CREATE)/(words * INNER_ITERATIONS));
-  printf ("%.3f</td><td>", do_test (words, iterations, TEST_LOOKUP)/(words * INNER_ITERATIONS));
-  printf ("%.3f</td><td>", do_test (words, iterations, TEST_DECODE)/(words * INNER_ITERATIONS));
-  printf ("%.3f</td><td>", do_test (words, iterations, TEST_CONCAT)/(words * INNER_ITERATIONS));
+  printf ("%.3f</td><td>", do_test (words, iterations, TEST_CREATE)/(words));
+  printf ("%.3f</td><td>", do_test (words, iterations, TEST_LOOKUP)/(words));
+  printf ("%.3f</td><td>", do_test (words, iterations, TEST_DECODE)/(words));
+  printf ("%.3f</td><td>", do_test (words, iterations, TEST_CONCAT)/(words));
   printf ("%.0f%%</td>", embed_percentage);
   printf ("<td>%li</td>", ht - ht_slack + ht_entries);
   printf ("</tr>\n");

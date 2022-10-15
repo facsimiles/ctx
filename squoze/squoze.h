@@ -68,93 +68,84 @@ typedef uint64_t sqz_id_t;
 #endif
 
 
-typedef struct _Squoze      Squoze;      /* handle representing a squozed string  */
-typedef struct _SquozePool  SquozePool;  /* a pool for grouping allocated strings */
+typedef struct _Sqz      Sqz;      /* handle representing a squozed string  */
 
+
+/* get length of interned string (in unicode codepoints).
+ */
+
+
+/* create a new string that is the concatenation of a and b
+ */
+Sqz         *sqz                  (const char *str);
+const char  *sqz_decode           (Sqz *squozed, char *temp);
+int          sqz_length           (Sqz *squozed);
+/* get the id of a squozed string, for embedded strings this is
+ * the string value itself - for interned strings it is a hash
+ * of the string.
+ */
+sqz_id_t     sqz_id           (Sqz *squozed);
+
+
+Sqz         *sqz_cat              (Sqz *a, Sqz *b);
+Sqz         *sqz_substring        (Sqz *a, int start, int length);
+Sqz         *sqz_printf           (const char *format, ...);
+uint32_t     sqz_char_at          (Sqz *a, int pos);
+
+int          sqz_has_prefix       (Sqz *a, Sqz *prefix);
+int          sqz_has_suffix       (Sqz *a, Sqz *suffix);
+
+void         sqz_prepend          (Sqz **a, Sqz *head);
+void         sqz_append           (Sqz **a, Sqz *tail);
+void         sqz_insert           (Sqz **a, int pos, Sqz *b);
+void         sqz_remove_span      (Sqz **a, int pos, int length);
+void         sqz_set_cstring      (Sqz **a, const char *utf8_str);
+/* pos -1 means last */
+void         sqz_remove_char   (Sqz **q, int pos);
+void         sqz_insert_char   (Sqz **a, int pos, uint32_t unichar);
+void         sqz_replace_char  (Sqz **a, int pos, uint32_t unichar);
+
+
+
+
+/* increase reference count of string */
+Sqz         *sqz_ref              (Sqz *squozed);
+
+/* decrement reference count of string */
+void         sqz_unref            (Sqz *squozed);
+
+
+typedef struct _SqzPool  SqzPool;  /* a pool for grouping allocated strings */
 
 
 /* create a new string pool, with fallback to another pool -
  * or NULL for fallback to default pool, takes a reference on fallback.
  */
-SquozePool  *sqz_pool_new     (SquozePool *fallback);
+SqzPool  *sqz_pool_new     (SqzPool *fallback);
 
 /* increase reference count of pool
  */
-void         sqz_pool_ref     (SquozePool *pool);
+void         sqz_pool_ref     (SqzPool *pool);
 
 /* decrease reference point of pool, when matching _new() + _ref() calls
  * the pool is destoryed.
  */
-void         sqz_pool_unref   (SquozePool *pool);
+void         sqz_pool_unref   (SqzPool *pool);
 
 /* add a string to a squoze pool
  */
-Squoze      *sqz_pool_add     (SquozePool *pool, const char *str);
+Sqz      *sqz_pool_add     (SqzPool *pool, const char *str);
 
 
-/* squoze a string into default pool
- */
-static inline Squoze *sqz     (const char *str)
-{
-  return sqz_pool_add (NULL, str);
-}
 
-Squoze *sqz_concat (Squoze *a, Squoze *b);
+Sqz *sqz_concat (Sqz *a, Sqz *b);
 
 /* Report stats on interned strings 
  */
-void sqz_pool_mem_stats (SquozePool *pool,
+void sqz_pool_mem_stats (SqzPool *pool,
                          size_t     *size,
                          size_t     *slack,
                          size_t     *intern_alloc);
-
-/* get the id of a squozed string, for embedded strings this is
- * the string value itself - for interned strings it is a hash
- * of the string.
- */
-sqz_id_t     sqz_id           (Squoze *squozed);
-
-/* get length of interned string (in unicode codepoints).
- */
-int          sqz_length       (Squoze *squozed);
-
-/* get length of interned string (in bytes).
- */
-int          sqz_byte_length      (Squoze *squozed);
-
-/* create a new string that is the concatenation of a and b
- */
-Squoze      *sqz_cat              (Squoze *a, Squoze *b);
-
-/* append tail to the string pointed to by a
- */
-void         sqz_append           (Squoze **a, Squoze *b);
-
-/* extract a substring - (should specifying a length of 0 mean to end?)
- */
-Squoze      *sqz_substring        (Squoze *a, int start, int length);
-
-/* pos -1 means last */
-void         sqz_remove_unichar   (Squoze **q, int pos);
-
-/* pos -1 means append */
-void         sqz_insert_unichar   (Squoze **a, int pos, uint32_t unichar);
-/* pos -1 means append */
-void         sqz_replace_unichar  (Squoze **a, int pos, uint32_t unichar);
-
-Squoze      *sqz_printf           (const char *format, ...);
-
-void         sqz_set_cstring      (Squoze **a, const char *str);
-
-uint32_t     sqz_unichar_at       (Squoze *a, int pos);
-
-/* increase reference count of string
- */
-Squoze      *sqz_ref              (Squoze *squozed);
-
-/* decrement reference count of string
- */
-void         sqz_unref            (Squoze *squozed);
 
 /* empty all pools
  */
@@ -177,11 +168,11 @@ void         sqz_atexit           (void);
 #endif
 
 #ifndef SQUOZE_USE_BUILTIN_CLZ
-#define SQUOZE_USE_BUILTIN_CLZ  1 // use built_ins for determining highest bit in unicode char
+#define SQUOZE_USE_BUILTIN_CLZ  1 // use builtin for determining highest bit in unicode char
 #endif
 
 #ifndef SQUOZE_UTF8_MANUAL_UNROLL
-#define SQUOZE_UTF8_MANUAL_UNROLL 1    // use manually unrolled UTF8 code
+#define SQUOZE_UTF8_MANUAL_UNROLL 1 // use manually unrolled UTF8 code
 #endif
 
 #ifndef SQUOZE_LIMIT_IMPLEMENTATIONS
@@ -219,27 +210,27 @@ void         sqz_atexit           (void);
 
 #if SQUOZE_IMPLEMENTATION_32_UTF5
 uint32_t     squoze32_utf5        (const char *utf8, size_t len);
-const char  *squoze32_utf5_decode (uint32_t   hash,  char *dest);
+const char  *squoze32_utf5_decode (uint32_t    id,   char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_32_UTF8
 uint32_t     squoze32_utf8        (const char *utf8, size_t len);
-const char  *squoze32_utf8_decode (uint32_t   hash,  char *dest);
+const char  *squoze32_utf8_decode (uint32_t    id,   char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_52_UTF5
 uint64_t     squoze52_utf5        (const char *utf8, size_t len);
-const char  *squoze52_utf5_decode (uint64_t   hash,  char *dest);
+const char  *squoze52_utf5_decode (uint64_t    id,   char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_62_UTF5
 uint64_t     squoze62_utf5        (const char *utf8, size_t len);
-const char  *squoze62_utf5_decode (uint64_t   hash,  char *dest);
+const char  *squoze62_utf5_decode (uint64_t    id,   char *dest);
 #endif
 
 #if SQUOZE_IMPLEMENTATION_64_UTF8
 uint64_t     squoze64_utf8        (const char *utf8, size_t len);
-const char  *squoze62_utf8_decode (uint64_t   hash,  char *dest);
+const char  *squoze62_utf8_decode (uint64_t    id,   char *dest);
 #endif
 
 #endif
@@ -247,7 +238,7 @@ const char  *squoze62_utf8_decode (uint64_t   hash,  char *dest);
 #ifdef SQUOZE_IMPLEMENTATION
 
 
-static inline uint32_t MurmurOAAT32 ( const char * key, int len)
+static inline uint32_t MurmurOAAT32 (const char * key, int len)
 {
   size_t h = 3323198485ul;
   for (int i = 0;i < len;i++) {
@@ -272,12 +263,18 @@ static inline uint64_t MurmurOAAT64 ( const char * key, int len)
 
 #if SQUOZE_USE_UTF5 // YYY
 
-static inline size_t squoze5_encode_int (const char *input, int inlen,
-                                         int maxlen, int *overflow,
-                                         int escape_endzero);
+// TODO:  UTF5+ should operate directly on bits instead of
+//        going via bytes
+static inline void squoze5_encode (const char *input, int inlen,
+                                   char *output, int *r_outlen,
+                                   int   permit_squeezed,
+                                   int   escape_endzero);
 static void squoze_decode_utf5_bytes (int is_utf5, 
                                       const unsigned char *input, int inlen,
                                       char *output, int *r_outlen);
+static inline size_t squoze5_encode_int (const char *input, int inlen,
+                                         int maxlen, int *overflow,
+                                         int escape_endzero);
 
 #endif
 
@@ -757,7 +754,7 @@ squoze_utf8_len (const unsigned char first_byte)
 #if SQUOZE_USE_INTERN
 #include <stdarg.h>
 
-struct _Squoze {
+struct _Sqz {
 #if SQUOZE_REF_COUNTING
     int32_t       ref_count; // set to magic value for ROM strings?
                              // and store pointer in string data?
@@ -770,23 +767,23 @@ struct _Squoze {
 };
 
 
-static inline uint64_t sqz_pool_encode     (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref);
+static inline uint64_t sqz_pool_encode     (SqzPool *pool, const char *utf8, size_t len, Sqz **interned_ref);
 
-struct _SquozePool
+struct _SqzPool
 {
   int32_t        ref_count;
-  SquozePool    *fallback;
-  Squoze       **hashtable;
+  SqzPool    *fallback;
+  Sqz       **hashtable;
   int            count;
   int            size;
-  SquozePool    *next;
+  SqzPool    *next;
 };
 
-static SquozePool global_pool = {0, NULL, NULL, 0, 0, NULL};
+static SqzPool global_pool = {0, NULL, NULL, 0, 0, NULL};
 
-static SquozePool *sqz_pools = NULL;
+static SqzPool *sqz_pools = NULL;
 
-static int sqz_pool_find (SquozePool *pool, uint64_t hash, int length, const uint8_t *bytes)
+static int sqz_pool_find (SqzPool *pool, uint64_t hash, int length, const uint8_t *bytes)
 {
   if (pool->size == 0)
     return -1;
@@ -807,17 +804,17 @@ static int sqz_pool_find (SquozePool *pool, uint64_t hash, int length, const uin
   }
   return pos;
 }
-static int sqz_pool_add_entry (SquozePool *pool, Squoze *str)
+static int sqz_pool_add_entry (SqzPool *pool, Sqz *str)
 {
   if (pool->count + 1 >= pool->size / 2)
   {
-     Squoze **old = pool->hashtable;
+     Sqz **old = pool->hashtable;
      int old_size = pool->size;
      if (old_size == 0)
        pool->size = SQUOZE_INITIAL_POOL_SIZE;
      else
        pool->size *= 2;
-     pool->hashtable = (Squoze**)calloc (pool->size, sizeof (void*));
+     pool->hashtable = (Sqz**)calloc (pool->size, sizeof (void*));
      if (old)
      {
        for (int i = 0; i < old_size; i++)
@@ -839,9 +836,9 @@ static int sqz_pool_add_entry (SquozePool *pool, Squoze *str)
 }
 
 #if SQUOZE_REF_SANITY
-static int sqz_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
+static int sqz_pool_remove (SqzPool *pool, Sqz *squozed, int do_free)
 {
-  Squoze *str = squozed;
+  Sqz *str = squozed;
   int no = sqz_pool_find (pool, str->hash);
   if (no < 0)
     return 0;
@@ -857,7 +854,7 @@ static int sqz_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
   {
     if ((pool->hashtable[i]->hash & (pool->size-1)) == (unsigned)no)
     {
-      Squoze *for_upgrade = pool->hashtable[i];
+      Sqz *for_upgrade = pool->hashtable[i];
       sqz_pool_remove (pool, for_upgrade, 0);
       sqz_pool_add_entry (pool, for_upgrade);
       break;
@@ -867,7 +864,7 @@ static int sqz_pool_remove (SquozePool *pool, Squoze *squozed, int do_free)
 }
 #endif
 
-static Squoze *sqz_lookup (SquozePool *pool, sqz_id_t id, int length, const uint8_t *bytes)
+static Sqz *sqz_lookup (SqzPool *pool, sqz_id_t id, int length, const uint8_t *bytes)
 {
   int pos = sqz_pool_find (pool, id, length, bytes);
   if (pos >= 0)
@@ -877,7 +874,7 @@ static Squoze *sqz_lookup (SquozePool *pool, sqz_id_t id, int length, const uint
   return NULL;
 }
 
-void sqz_pool_mem_stats (SquozePool *pool,
+void sqz_pool_mem_stats (SqzPool *pool,
                          size_t     *size,
                             size_t     *slack,
                             size_t     *intern_alloc)
@@ -885,7 +882,7 @@ void sqz_pool_mem_stats (SquozePool *pool,
   if (!pool) pool = &global_pool;
   if (size)
   {
-    *size = sizeof (SquozePool) + pool->size * sizeof (void*);
+    *size = sizeof (SqzPool) + pool->size * sizeof (void*);
   }
   if (slack)
   {
@@ -899,8 +896,8 @@ void sqz_pool_mem_stats (SquozePool *pool,
     {
       if (pool->hashtable[i])
       {
-        Squoze *squoze = pool->hashtable[i];
-        sum += strlen (squoze->string) + 1 + sizeof (Squoze);
+        Sqz *squoze = pool->hashtable[i];
+        sum += strlen (squoze->string) + 1 + sizeof (Sqz);
       }
     }
     *intern_alloc = sum;
@@ -908,10 +905,10 @@ void sqz_pool_mem_stats (SquozePool *pool,
 }
 
  // we do 32bit also for 64bit - we want the same predetermined hashes to match
-Squoze *sqz_pool_add (SquozePool *pool, const char *str)
+static inline Sqz *_sqz_pool_add (SqzPool *pool, const char *str)
 {
   if (!pool) pool = &global_pool;
-  Squoze *interned = NULL;
+  Sqz *interned = NULL;
   uint64_t hash = sqz_pool_encode (pool, str, strlen (str), &interned);
 
   if (interned)
@@ -926,13 +923,22 @@ Squoze *sqz_pool_add (SquozePool *pool, const char *str)
 #endif
   }
   else
-    return (Squoze*)((size_t)hash);
+    return (Sqz*)((size_t)hash);
 }
 
+Sqz *sqz_pool_add (SqzPool *pool, const char *str)
+{
+  return _sqz_pool_add (pool, str);
+}
+
+Sqz *sqz     (const char *str)
+{
+  return _sqz_pool_add (NULL, str);
+}
 
 // encodes utf8 to a squoze id of squoze_dim bits - if interned_ret is provided overflowed ids
 // are interned and a new interned squoze is returned.
-static uint64_t sqz_pool_encode (SquozePool *pool, const char *utf8, size_t len, Squoze **interned_ref)
+static uint64_t sqz_pool_encode (SqzPool *pool, const char *utf8, size_t len, Sqz **interned_ref)
 {
 #if   SQUOZE_ID_BITS==32 && SQUOZE_ID_MURMUR
    uint64_t hash = MurmurOAAT32(utf8, len) & ~1;
@@ -955,7 +961,7 @@ static uint64_t sqz_pool_encode (SquozePool *pool, const char *utf8, size_t len,
   if (pool == NULL) pool = &global_pool;
   if ((hash & 1)==0)
   {
-    Squoze *str = sqz_lookup (pool, hash, len, (const uint8_t*)utf8);
+    Sqz *str = sqz_lookup (pool, hash, len, (const uint8_t*)utf8);
     if (str)
     {
 #if SQUOZE_REF_COUNTING
@@ -966,7 +972,7 @@ static uint64_t sqz_pool_encode (SquozePool *pool, const char *utf8, size_t len,
     }
 
     {
-      Squoze *entry = (Squoze*)calloc (len + 1 + sizeof(Squoze), 1);
+      Sqz *entry = (Sqz*)calloc (len + 1 + sizeof(Sqz), 1);
       entry->hash = hash;
 #if SQUOZE_STORE_LENGTH
       entry->length = len;
@@ -979,12 +985,12 @@ static uint64_t sqz_pool_encode (SquozePool *pool, const char *utf8, size_t len,
   return hash;
 }
 
-static inline int sqz_is_interned (Squoze *squozed)
+static inline int sqz_is_interned (Sqz *squozed)
 {
   return ((((size_t)(squozed))&1) == 0);
 }
 
-static inline int sqz_is_embedded (Squoze *squozed)
+static inline int sqz_is_embedded (Sqz *squozed)
 {
   return !sqz_is_interned (squozed);
 }
@@ -992,7 +998,7 @@ static inline int sqz_is_embedded (Squoze *squozed)
 /* returns either the string or temp with the decode
  * embedded string decoded
  */
-const char *sqz_decode (Squoze *squozed, char *temp)
+const char *sqz_decode (Sqz *squozed, char *temp)
 {
   if (!squozed) return NULL;
   if (sqz_is_embedded (squozed))
@@ -1024,7 +1030,7 @@ const char *sqz_decode (Squoze *squozed, char *temp)
   }
 }
 
-Squoze *sqz_ref (Squoze *squozed)
+Sqz *sqz_ref (Sqz *squozed)
 {
 #if SQUOZE_REF_COUNTING
   if (sqz_is_interned (squozed))
@@ -1035,7 +1041,7 @@ Squoze *sqz_ref (Squoze *squozed)
   return squozed;
 }
 
-void sqz_unref (Squoze *squozed)
+void sqz_unref (Sqz *squozed)
 {
 #if SQUOZE_REF_COUNTING
   if (sqz_is_interned (squozed))
@@ -1053,7 +1059,7 @@ void sqz_unref (Squoze *squozed)
           fprintf (stderr, "double unref for \"%s\"\n", squozed->string);
         squozed->ref_count--;
 #else
-        SquozePool *pool = &global_pool;
+        SqzPool *pool = &global_pool;
         if (sqz_pool_remove (pool, squozed, 1))
         {
           return;
@@ -1077,98 +1083,197 @@ void sqz_unref (Squoze *squozed)
 #endif
 }
 
+int sqz_has_prefix (Sqz *a, Sqz *prefix)
+{
+  char tmp_a[16];
+  char tmp_prefix[16];
+  const char *a_str = sqz_decode (a, tmp_a);
+  const char *prefix_str = sqz_decode (prefix, tmp_prefix);
+  return !strncmp (a_str, prefix_str, strlen (prefix_str));
+}
 
-void sqz_append (Squoze **squoze, Squoze *tail)
+int sqz_has_suffix (Sqz *a, Sqz *suffix)
+{
+  char        tmp_a[16];
+  const char *a_str = sqz_decode (a, tmp_a);
+  int         a_len = strlen (a_str);
+  char        tmp_suffix[16];
+  const char *suffix_str = sqz_decode (suffix, tmp_suffix);
+  int         suffix_len = strlen (suffix_str);
+  
+  if (a_len < suffix_len)
+    return 0;
+  return strcmp (a_str + a_len - suffix_len, suffix_str);
+}
+
+void sqz_prepend (Sqz **squoze, Sqz *head)
 {
   if (!squoze) return;
-  Squoze *combined = sqz_cat (*squoze, tail);
+  Sqz *combined = sqz_cat (head, *squoze);
   sqz_unref (*squoze);
   *squoze=combined;
 }
 
-uint32_t     sqz_unichar_at       (Squoze *a, int pos)
+void sqz_append (Sqz **squoze, Sqz *tail)
 {
-  char tmp[16];
-  const char *str = sqz_decode (a, tmp);
-  const char *p = str;
-  int i;
-  for (i = 0; i < pos; i++)
-    p += squoze_utf8_len (*p);
-  return squoze_utf8_to_unichar (p);
+  if (!squoze) return;
+  Sqz *combined = sqz_cat (*squoze, tail);
+  sqz_unref (*squoze);
+  *squoze=combined;
 }
 
-/* pos -1 means last */
-void         sqz_remove_unichar   (Squoze **a, int pos)
-{
-  if (!a) return;
-  if (!*a) return;
-  Squoze *pre  = sqz_substring (*a, 0, pos-1);
-  Squoze *post = sqz_substring (*a, pos+1, 10000);
-  sqz_unref (*a);
-  *a = sqz_cat (pre, post);
-  sqz_unref (pre);
-  sqz_unref (post);
-}
-
-/* pos -1 means append */
-void         sqz_insert_unichar   (Squoze **a, int pos, uint32_t unichar)
-{
-  
-}
-/* pos -1 means append */
-void         sqz_replace_unichar  (Squoze **a, int pos, uint32_t unichar)
-{
-  sqz_remove_unichar (a, pos);
-  sqz_insert_unichar (a, pos, unichar);
-}
-
-
-Squoze *sqz_substring (Squoze *a, int start, int length)
+Sqz *sqz_substring (Sqz *a, int pos, int length)
 {
   int src_length = sqz_length (a);
-  if (start > src_length)
+  if (pos > src_length)
     return sqz ("");
+  if (pos < 0)
+    pos = src_length + pos + 1;
   char tmp[16];
   const char *src = sqz_decode (a, tmp);
   char *end;
-  char *copy = strdup (src); // use alloca?
+  int allocated = 0;
+
+  char *copy;
+  if (src_length < 256)
+  {
+    copy = alloca (strlen (src) + 1);
+    strcpy (copy, src);
+  }
+  else
+  {
+    copy  = strdup (src);
+    allocated = 1;
+  }
   char *p = copy;
   int i;
-  for (i = 0; i < start; i++)
+  for (i = 0; i < pos; i++)
     p += squoze_utf8_len (*p);
   end = p;
   for (i = 0; i < length && *end; i++)
     end += squoze_utf8_len (*end);
   *end = 0;
 
-  Squoze *ret = sqz (p);
-  free (copy);
+  Sqz *ret = sqz (p);
+  if (allocated)
+    free (copy);
   return ret;
 }
 
-Squoze      *sqz_printf           (const char *format, ...)
+void sqz_remove_span (Sqz **a, int pos, int length)
+{
+  if (!a) return;
+  if (!*a) return;
+
+  if (length < 1)
+    return;
+  if (pos < 0)
+  {
+    pos = sqz_length (*a) + pos + 1;
+  }
+
+  Sqz *pre  = sqz_substring (*a, 0, pos);
+  Sqz *post = sqz_substring (*a, pos+length, 10000);
+  sqz_unref (*a);
+  *a = sqz_cat (pre, post);
+  sqz_unref (pre);
+  sqz_unref (post);
+}
+
+void sqz_insert (Sqz **a, int pos, Sqz *b)
+{
+  if (pos == 0)
+  {
+    sqz_prepend (a, b);
+    return;
+  }
+  if (pos == -1)
+  {
+    sqz_append (a, b);
+    return;
+  }
+  if (!a) return;
+  if (!*a) return;
+  if (pos < 0)
+  {
+    pos = sqz_length (*a) + pos + 1;
+  }
+  Sqz *pre  = sqz_substring (*a, 0, pos);
+  Sqz *post = sqz_substring (*a, pos, 10000);
+  sqz_unref (*a);
+
+  *a = sqz_cat (pre, b);
+  sqz_append (a, post);
+  sqz_unref (pre);
+  sqz_unref (post);
+}
+
+uint32_t     sqz_char_at (Sqz *a, int pos)
+{
+  char tmp[16];
+  const char *str = sqz_decode (a, tmp);
+  const char *p = str;
+  int i;
+  if (pos < 0)
+  {
+    pos = sqz_length (a) + pos;
+  }
+  for (i = 0; i < pos; i++)
+    p += squoze_utf8_len (*p);
+  return squoze_utf8_to_unichar (p);
+}
+
+/* pos -1 means last */
+void sqz_remove_char (Sqz **a, int pos)
+{
+  sqz_remove_span (a, pos, 1);
+}
+
+void sqz_insert_char (Sqz **a, int pos, uint32_t unichar)
+{
+  char temp[5];
+  temp[squoze_unichar_to_utf8 (unichar, (uint8_t*)temp)]=0;
+  Sqz *b = sqz (temp);
+  sqz_insert (a, pos, b);
+  sqz_unref (b);
+}
+
+void sqz_replace_char  (Sqz **a, int pos, uint32_t unichar)
+{
+  sqz_remove_char (a, pos);
+  sqz_insert_char (a, pos, unichar);
+}
+
+Sqz      *sqz_printf (const char *format, ...)
 {
   va_list ap;
   size_t needed;
   char *buffer;
+
   va_start (ap, format);
   needed = vsnprintf (NULL, 0, format, ap) + 1;
-  buffer = alloca (needed);
+  if (needed < 256)
+    buffer = alloca (needed);
+  else
+    buffer = malloc (needed);
   va_end (ap);
   va_start (ap, format);
   vsnprintf (buffer, needed, format, ap);
   va_end (ap);
-  return sqz (buffer);
+  Sqz *ret = sqz (buffer);
+  if (needed >= 256)
+    free (buffer);
+  return ret;
 }
         
-void         sqz_set_cstring      (Squoze **a, const char *str)
+void sqz_set_cstring      (Sqz **a, const char *str)
 {
   if (*a)
     sqz_unref (*a);
   *a = sqz (str);
 }
 
-sqz_id_t sqz_id (Squoze *squozed)
+sqz_id_t sqz_id (Sqz *squozed)
 {
   if (!squozed) return 0;
   if (sqz_is_embedded (squozed))
@@ -1182,14 +1287,15 @@ sqz_id_t sqz_id (Squoze *squozed)
   }
 }
 
-int sqz_length (Squoze *squozed)
+int sqz_length (Sqz *squozed)
 {
   char buf[15];
   if (!squozed) return 0;
   return squoze_utf8_strlen(sqz_decode (squozed, buf));
 }
 
-int sqz_byte_length (Squoze *squozed)
+// XXX : not used - remove it, and be unicode native?
+int sqz_byte_length (Sqz *squozed)
 {
   char buf[15];
   if (!squozed) return 0;
@@ -1215,7 +1321,7 @@ int sqz_byte_length (Squoze *squozed)
   return 0;
 }
 
-Squoze *sqz_cat (Squoze *a, Squoze *b)
+Sqz *sqz_cat (Sqz *a, Sqz *b)
 {
   char buf_a[16];
   char buf_b[16];
@@ -1239,16 +1345,16 @@ Squoze *sqz_cat (Squoze *a, Squoze *b)
     strcpy (temp, str_a);
     if (str_b)
       strcpy (&temp[strlen(temp)], str_b);
-    Squoze *ret = sqz (temp);
+    Sqz *ret = sqz (temp);
     free (temp);
     return ret;
   }
 }
 
 
-SquozePool *sqz_pool_new     (SquozePool *fallback)
+SqzPool *sqz_pool_new     (SqzPool *fallback)
 {
-  SquozePool *pool = (SquozePool*)calloc (sizeof (SquozePool), 1);
+  SqzPool *pool = (SqzPool*)calloc (sizeof (SqzPool), 1);
   pool->fallback = fallback;
   pool->next = sqz_pools;
   sqz_pools = pool;
@@ -1257,13 +1363,13 @@ SquozePool *sqz_pool_new     (SquozePool *fallback)
   return pool;
 }
 
-void sqz_pool_ref (SquozePool *pool)
+void sqz_pool_ref (SqzPool *pool)
 {
   if (!pool) return;
   pool->ref_count--;
 }
 
-static void sqz_pool_destroy (SquozePool *pool)
+static void sqz_pool_destroy (SqzPool *pool)
 {
 #if 0
     fprintf (stderr, "destorying pool: size:%i count:%i embedded:%i\n",
@@ -1284,8 +1390,8 @@ static void sqz_pool_destroy (SquozePool *pool)
     }
     else
     {
-      SquozePool *prev = NULL;
-      SquozePool *iter = sqz_pools;
+      SqzPool *prev = NULL;
+      SqzPool *iter = sqz_pools;
       while (iter && iter != pool)
       {
          prev = iter;
@@ -1303,7 +1409,7 @@ static void sqz_pool_destroy (SquozePool *pool)
     // XXX report non unreffed items based on config
 }
 
-void sqz_pool_unref (SquozePool *pool)
+void sqz_pool_unref (SqzPool *pool)
 {
   if (!pool) return;
   if (pool->ref_count == 0)
