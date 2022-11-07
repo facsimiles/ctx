@@ -8890,7 +8890,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
  if (buf[0])
    {
      vt_write (vt, buf, strlen (buf) );
-     fflush (NULL);
+     fsync (vt->vtpty.pty);
    }
 }
 
