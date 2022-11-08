@@ -275,7 +275,7 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
     }
   }
 #else
-  int start = 0;
+  int start = -1;
   int end = ctx_font_get_length (font);
   int max_iter = 10;
     uint32_t start_glyph = ctx_glyph_find_next (font, ctx, start);
