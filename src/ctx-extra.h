@@ -259,7 +259,7 @@ int _ctx_is_rasterizer (Ctx *ctx);
 
 int ctx_color (Ctx *ctx, const char *string);
 typedef struct _CtxState CtxState;
-CtxColor *ctx_color_new ();
+CtxColor *ctx_color_new (void);
 CtxState *ctx_get_state (Ctx *ctx);
 void ctx_color_get_rgba (CtxState *state, CtxColor *color, float *out);
 void ctx_color_set_rgba (CtxState *state, CtxColor *color, float r, float g, float b, float a);

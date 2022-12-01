@@ -971,7 +971,7 @@ CTX_STATIC void
 ctx_matrix_set (CtxMatrix *matrix, float a, float b, float c, float d, float e, float f, float g, float h, float i);
 
 
-CTX_STATIC void ctx_font_setup ();
+CTX_STATIC void ctx_font_setup (Ctx *ctx);
 static float ctx_state_get (CtxState *state, uint32_t hash);
 
 #if CTX_RASTERIZER

@@ -2445,9 +2445,9 @@ static void ctx_events_deinit (Ctx *ctx)
 #if CTX_TERMINAL_EVENTS
 
 
-static int mice_has_event ();
-static char *mice_get_event ();
-static void mice_destroy ();
+static int mice_has_event (void);
+static char *mice_get_event (void);
+static void mice_destroy (void);
 static int mice_get_fd (EvSource *ev_source);
 static void mice_set_coord (EvSource *ev_source, double x, double y);
 
@@ -2496,13 +2496,13 @@ static int mmm_evsource_mice_init ()
   return 0;
 }
 
-static void mice_destroy ()
+static void mice_destroy (void)
 {
   if (mrg_mice_this->fd != -1)
     close (mrg_mice_this->fd);
 }
 
-static int mice_has_event ()
+static int mice_has_event (void)
 {
   struct timeval tv;
   int retval;
@@ -2520,7 +2520,7 @@ static int mice_has_event ()
   return 0;
 }
 
-static char *mice_get_event ()
+static char *mice_get_event (void)
 {
   const char *ret = "pm";
   double relx, rely;
