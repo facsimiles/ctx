@@ -154,6 +154,131 @@ static inline bool find_key_in_report(hid_keyboard_report_t const *report, uint8
 
 void buffer_add_byte (const char byte);
 
+static int translate_key (int key)
+{
+  switch (key)
+  {
+   case HID_KEY_A: return 'A';
+   case HID_KEY_B: return 'B';
+   case HID_KEY_C: return 'C';
+   case HID_KEY_D: return 'D';
+   case HID_KEY_E: return 'E';
+   case HID_KEY_F: return 'F';
+   case HID_KEY_G: return 'G';
+   case HID_KEY_H: return 'H';
+   case HID_KEY_I: return 'I';
+   case HID_KEY_J: return 'J';
+   case HID_KEY_K: return 'K';
+   case HID_KEY_L: return 'L';
+   case HID_KEY_M: return 'M';
+   case HID_KEY_N: return 'N';
+   case HID_KEY_O: return 'O';
+   case HID_KEY_P: return 'P';
+   case HID_KEY_Q: return 'Q';
+   case HID_KEY_R: return 'R';
+   case HID_KEY_S: return 'S';
+   case HID_KEY_T: return 'T';
+   case HID_KEY_U: return 'U';
+   case HID_KEY_V: return 'V';
+   case HID_KEY_W: return 'W';
+   case HID_KEY_X: return 'X';
+   case HID_KEY_Y: return 'Y';
+   case HID_KEY_Z: return 'Z';
+   case HID_KEY_1: return '1';
+   case HID_KEY_2: return '2';
+   case HID_KEY_3: return '3';
+   case HID_KEY_4: return '4';
+   case HID_KEY_5: return '5';
+   case HID_KEY_6: return '6';
+   case HID_KEY_7: return '7';
+   case HID_KEY_8: return '8';
+   case HID_KEY_9: return '9';
+   case HID_KEY_0: return '0';
+   case HID_KEY_ENTER: return 13;
+   case HID_KEY_ESCAPE: return 27;
+   case HID_KEY_BACKSPACE: return 8;
+   case HID_KEY_TAB: return 9;
+   case HID_KEY_SPACE: return 32;
+   case HID_KEY_MINUS: return 189;
+   case HID_KEY_EQUAL: return 61;
+   case HID_KEY_BRACKET_LEFT: return 219;
+   case HID_KEY_BRACKET_RIGHT: return 221;
+   case HID_KEY_BACKSLASH: return 220;
+   //case HID_KEY_EUROPE_1: return ;
+   case HID_KEY_SEMICOLON: return 59;
+   case HID_KEY_APOSTROPHE: return 222;
+   case HID_KEY_GRAVE: return 192;
+   case HID_KEY_COMMA: return 188;
+   case HID_KEY_PERIOD: return 190;
+   case HID_KEY_SLASH: return 191;
+   //case HID_KEY_CAPS_LOCK: return ;
+   case HID_KEY_F1: return 112;
+   case HID_KEY_F2: return 113;
+   case HID_KEY_F3: return 114;
+   case HID_KEY_F4: return 115;
+   case HID_KEY_F5: return 116;
+   case HID_KEY_F6: return 117;
+   case HID_KEY_F7: return 118;
+   case HID_KEY_F8: return 119;
+   case HID_KEY_F9: return 120;
+   case HID_KEY_F10: return 121;
+   case HID_KEY_F11: return 122;
+   case HID_KEY_F12: return 123;
+   //case HID_KEY_PRINT_SCREEN: return ;
+   //case HID_KEY_SCROLL_LOCK: return ;
+   //case HID_KEY_PAUSE: return ;
+   case HID_KEY_INSERT: return 45;
+   case HID_KEY_HOME: return 36;
+   case HID_KEY_PAGE_UP: return 33;
+   case HID_KEY_DELETE: return 46;
+   case HID_KEY_END: return 35;
+   case HID_KEY_PAGE_DOWN: return 34;
+   case HID_KEY_ARROW_RIGHT: return 39;
+   case HID_KEY_ARROW_LEFT: return 37;
+   case HID_KEY_ARROW_DOWN: return 40;
+   case HID_KEY_ARROW_UP: return 38;
+   //case HID_KEY_NUM_LOCK: return ;
+#if 0
+   case HID_KEY_KEYPAD_DIVIDE: return ;
+   case HID_KEY_KEYPAD_MULTIPLY: return ;
+   case HID_KEY_KEYPAD_SUBTRACT: return ;
+   case HID_KEY_KEYPAD_ADD: return ;
+   case HID_KEY_KEYPAD_ENTER: return ;
+   case HID_KEY_KEYPAD_1: return ;
+   case HID_KEY_KEYPAD_2: return ;
+   case HID_KEY_KEYPAD_3: return ;
+   case HID_KEY_KEYPAD_4: return ;
+   case HID_KEY_KEYPAD_5: return ;
+   case HID_KEY_KEYPAD_6: return ;
+   case HID_KEY_KEYPAD_7: return ;
+   case HID_KEY_KEYPAD_8: return ;
+   case HID_KEY_KEYPAD_9: return ;
+   case HID_KEY_KEYPAD_0: return ;
+   case HID_KEY_KEYPAD_DECIMAL: return ;
+   case HID_KEY_EUROPE_2: return ;
+   case HID_KEY_APPLICATION: return ;
+   case HID_KEY_POWER: return ;
+   case HID_KEY_KEYPAD_EQUAL: return ;
+   case HID_KEY_F13: return ;
+   case HID_KEY_F14: return ;
+   case HID_KEY_F15: return ;
+   case HID_KEY_F16: return ;
+   case HID_KEY_F17: return ;
+   case HID_KEY_F18: return ;
+#endif
+   case HID_KEY_RETURN: return 13;
+   case HID_KEY_CONTROL_LEFT: return 17;
+   case HID_KEY_SHIFT_LEFT: return 16;
+   case HID_KEY_ALT_LEFT: return 18;
+   //case HID_KEY_GUI_LEFT: return ;
+   case HID_KEY_CONTROL_RIGHT: return 17;
+   case HID_KEY_SHIFT_RIGHT: return 16;
+   case HID_KEY_ALT_RIGHT: return 18;
+   //case HID_KEY_GUI_RIGHT: return ;
+   default: return -1;
+  }
+}
+
 static void process_kbd_report(hid_keyboard_report_t const *report)
 {
   static hid_keyboard_report_t prev_report = { 0, 0, {0} }; // previous report to check key released
@@ -174,7 +299,7 @@ static void process_kbd_report(hid_keyboard_report_t const *report)
         //putchar(ch);
         buffer_add_byte(ch);
         uart_putc(uart0, ch);
-        ctx_key_down(ctx, report->keycode[i], NULL, 0);
+        ctx_key_down(ctx, translate_key(report->keycode[i]), NULL, 0);
         if ( ch == '\r' ) {
           buffer_add_byte('\n');
           uart_putc(uart0,'\n');
@@ -196,7 +321,7 @@ static void process_kbd_report(hid_keyboard_report_t const *report)
       }
       else
       {
-        ctx_key_up(ctx, prev_report.keycode[i], NULL, 0);
+        ctx_key_up(ctx, translate_key(prev_report.keycode[i]), NULL, 0);
       }
     }
   }

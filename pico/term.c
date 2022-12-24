@@ -418,16 +418,34 @@ int main(int argc, char **argv) {
     board_init();
     tusb_init();
     int skipper = 0;
-    while(true)
+    while(true && !ctx_has_quit(ctx))
     {
       tuh_task();
       //cdc_task();
       hid_app_task();
-      if (skipper % 511  == 0)
+      if (skipper % 32  == 0)
          draw_text_buffer (ctx);
       skipper++;
-    while (uart_is_readable(uart0))
-      buffer_add_byte (uart_getc(uart0));
+      while (uart_is_readable(uart0))
+        buffer_add_byte (uart_getc(uart0));
+      CtxEvent *event;
+      while((event = ctx_get_event (ctx)))
+      {
+        char buf[128];
+        if (event->type == CTX_KEY_PRESS && !strcmp (event->string, "q"))
+          ctx_quit (ctx);
+        switch (event->type)
+        {
+          default:
+           sprintf(buf, "type: %i", event->type);
+           break;
+          case CTX_KEY_DOWN: sprintf(buf, "down: %s\n", event->string);break;
+          case CTX_KEY_PRESS: sprintf(buf, "press: %s\n", event->string);break;
+          case CTX_KEY_UP: sprintf(buf, "up: %s\n", event->string);break;
+        }
+        buffer_add_str(buf);
+      }
+
     }
     //ctx_destroy (ctx);
 }
