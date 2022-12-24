@@ -2380,6 +2380,9 @@ void _ctx_remove_listen_fd (int fd)
 #ifdef EMSCRIPTEN
 extern int em_in_len;
 #endif
+#if CTX_VT
+extern int ctx_dummy_in_len;
+#endif
 
 int ctx_input_pending (Ctx *ctx, int timeout)
 {
@@ -2411,6 +2414,9 @@ int ctx_input_pending (Ctx *ctx, int timeout)
   }
 #ifdef EMSCRIPTEN
   retval += em_in_len;
+#endif
+#if CTX_VT
+  retval += ctx_dummy_in_len;
 #endif
   return retval;
 }

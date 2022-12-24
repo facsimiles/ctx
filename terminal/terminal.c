@@ -601,6 +601,7 @@ int terminal_main (int argc, char **argv)
   ctx  = ctx_new (width, height, NULL);
   width = ctx_width (ctx);
   height = ctx_height (ctx);
+  
 
 #if CTX_TERM
   if (ctx_backend_type (ctx) == CTX_BACKEND_TERM && font_size <= 0)
@@ -638,7 +639,7 @@ int terminal_main (int argc, char **argv)
     ctx_client_maximize (ctx, add_tab (ctx, commandline, 1));
   }
 
-  ctx_add_timeout (ctx, 1000 * 200, malloc_trim_cb, NULL);
+  ctx_add_timeout (ctx, 1000 * 20, malloc_trim_cb, NULL);
 
   //int sleep_time = 1000000/10;
 

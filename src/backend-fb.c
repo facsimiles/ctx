@@ -19,8 +19,10 @@ static int ctx_fb_single_buffer = 0;  // used with the framebuffer this
 
 static int ctx_fb_get_mice_fd (Ctx *ctx)
 {
+#if CTX_PTY
   //CtxFb *fb = (void*)ctx->backend;
   return _ctx_mice_fd;
+#endif
 }
 
 static void ctx_fb_get_event_fds (Ctx *ctx, int *fd, int *count)
@@ -606,7 +608,10 @@ Ctx *ctx_new_fb (int width, int height)
     tiled->evsource[tiled->evsource_count++] = kb;
     kb->priv = fb;
   }
-  EvSource *mice  = evsource_mice_new ();
+  EvSource *mice  = NULL;
+#if CTX_PTY
+  mice = evsource_mice_new ();
+#endif
   if (mice)
   {
     tiled->evsource[tiled->evsource_count++] = mice;

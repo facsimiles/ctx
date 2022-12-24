@@ -31,6 +31,7 @@
  *
  */
 
+int ctx_dummy_in_len = 0;
 #if CTX_TERMINAL_EVENTS
 
 #include <sys/stat.h>
@@ -830,13 +831,91 @@ ssize_t em_read    (void *serial_obj, void *buf, size_t count)
   return em_in_len;
 }
 
-  void    em_resize  (void *serial_obj, int cols, int rows, int px_width, int px_height)
-{
-}
 
 
 #endif
 
+#define CTX_DUMMY_BUFSIZE 64
+
+static char ctx_dummy_inbuf[CTX_DUMMY_BUFSIZE]="";
+static char ctx_dummy_outbuf[CTX_DUMMY_BUFSIZE]="";
+static int ctx_dummy_in_pos = 0;
+static int ctx_dummy_in_read_pos = 0;
+static int ctx_dummy_out_len = 0;
+static int ctx_dummy_out_pos = 0;
+static int ctx_dummy_out_read_pos = 0;
+
+void ctx_vt_write (Ctx *ctx, uint8_t byte)
+{
+  if (ctx_dummy_in_len < CTX_DUMMY_BUFSIZE)
+  {
+    ctx_dummy_inbuf[ctx_dummy_in_pos++] = byte;
+    ctx_dummy_in_len++;
+    if (ctx_dummy_in_pos >= CTX_DUMMY_BUFSIZE)ctx_dummy_in_pos = 0;
+  }
+  else
+  {
+    fprintf (stderr, "ctx uart overflow\n");
+  }
+}
+
+int ctx_vt_has_data (Ctx *ctx)
+{
+  return ctx_dummy_out_len;
+}
+
+int ctx_vt_read (Ctx *ctx, uint8_t byte)
+{
+  int ret = -1;
+  if (ctx_dummy_out_len)
+  {
+    ret = ctx_dummy_outbuf[ctx_dummy_out_read_pos++];
+    --ctx_dummy_out_len;
+    if (ctx_dummy_out_read_pos>=CTX_DUMMY_BUFSIZE)ctx_dummy_out_read_pos = 0;
+  }
+  return ret;
+}
+
+
+static ssize_t ctx_dummy_write (void *s, const void *buf, size_t count)
+{
+  const char *src = (const char*)buf;
+  int i;
+  for (i = 0; i < count && ctx_dummy_out_len < CTX_DUMMY_BUFSIZE; i ++)
+  {
+    ctx_dummy_outbuf[ctx_dummy_out_pos++] = src[i];
+    ctx_dummy_out_len++;
+    if (ctx_dummy_out_pos >= CTX_DUMMY_BUFSIZE)ctx_dummy_out_pos = 0;
+  }
+  if (ctx_dummy_out_len >= CTX_DUMMY_BUFSIZE)
+    printf ("ctx_dummy_outbuf overflow\n");
+
+  return i;
+}
+
+static ssize_t ctx_dummy_read    (void *serial_obj, void *buf, size_t count)
+{
+  char *dst = (char*)buf;
+printf ("readin\n");
+  if (ctx_dummy_in_len)
+  {
+    *dst = ctx_dummy_inbuf[ctx_dummy_in_read_pos++];
+    --ctx_dummy_in_len;
+    if (ctx_dummy_in_read_pos>=CTX_DUMMY_BUFSIZE)ctx_dummy_in_read_pos = 0;
+    return 1;
+  }
+  return 0;
+}
+
+static int ctx_dummy_waitdata (void *serial_obj, int timeout)
+{
+printf ("has dat: %i\n", ctx_dummy_in_len);
+  return ctx_dummy_in_len;
+}
+
+void ctx_dummy_resize  (void *serial_obj, int cols, int rows, int px_width, int px_height)
+{
+}
 
 static void vt_run_argv (VT *vt, char **argv, const char *term)
 {
@@ -844,9 +923,7 @@ static void vt_run_argv (VT *vt, char **argv, const char *term)
         vt->read = em_read;
         vt->write = em_write;
         vt->waitdata = em_waitdata;
-        vt->resize = em_resize;
-
-        printf ("aaa?\n");
+        vt->resize = dummy_resize;
 #else
 
 #if 0
@@ -855,6 +932,19 @@ static void vt_run_argv (VT *vt, char **argv, const char *term)
   int was_pidone = 0; // do no special treatment, all child processes belong
                       // to root
 #endif
+
+#if CTX_PTY==1
+  if (!argv)
+#endif
+  {
+    vt->read = ctx_dummy_read;
+    vt->write = ctx_dummy_write;
+    vt->waitdata = ctx_dummy_waitdata;
+    vt->resize = ctx_dummy_resize;
+    return;
+  }
+
+
 #if CTX_PTY
 
   struct winsize ws;
@@ -890,7 +980,7 @@ VT *vt_new_argv (char **argv, int width, int height, float font_size, float line
   vt_init (vt, width, height, font_size, line_spacing, id, can_launch);
   vt_set_font_size (vt, font_size);
   vt_set_line_spacing (vt, line_spacing);
-  if (argv)
+  //if (argv)
     {
       vt_run_argv (vt, argv, NULL);
     }
@@ -963,6 +1053,8 @@ static char *string_chop_head (char *orig) /* return pointer to reset after arg 
 
 VT *vt_new (const char *command, int width, int height, float font_size, float line_spacing, int id, int can_launch)
 {
+  if (!command)
+    return vt_new_argv (NULL, width, height, font_size, line_spacing, id, can_launch);
   char *cargv[32];
   int   cargc;
   char *rest, *copy;
@@ -5644,6 +5736,8 @@ const char *ctx_find_shell_command (void)
     }
   return command;
 #endif
+#else
+  return NULL;
 #endif
 }
 

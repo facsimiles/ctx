@@ -483,8 +483,10 @@ static void vt_switch_cb (int sig)
 
 static int ctx_kms_get_mice_fd (Ctx *ctx)
 {
+#if CTX_PTY
   //CtxKMS *fb = (void*)ctx->backend;
   return _ctx_mice_fd;
+#endif
 }
 
 Ctx *ctx_new_kms (int width, int height)
@@ -584,7 +586,10 @@ Ctx *ctx_new_kms (int width, int height)
     tiled->evsource[tiled->evsource_count++] = kb;
     kb->priv = fb;
   }
-  EvSource *mice  = evsource_mice_new ();
+  EvSource *mice  = NULL;
+#if CTX_PTY
+  mice = evsource_mice_new ();
+#endif
   if (mice)
   {
     tiled->evsource[tiled->evsource_count++] = mice;

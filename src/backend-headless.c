@@ -27,8 +27,10 @@ static char *ctx_headless_get_clipboard (Ctx *ctx)
 
 static inline int ctx_headless_get_mice_fd (Ctx *ctx)
 {
+#if CTX_PTY
   //CtxHeadless *fb = (void*)ctx->backend;
   return _ctx_mice_fd;
+#endif
 }
 
 typedef struct _CtxHeadless CtxHeadless;
