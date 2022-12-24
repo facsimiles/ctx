@@ -20,7 +20,7 @@ float ctx_target_fps = 100.0; /* this might end up being the resolution of our
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/ioctl.h>
+//#include <sys/ioctl.h>
 #include <signal.h>
 #include <math.h>
 #include <sys/time.h>

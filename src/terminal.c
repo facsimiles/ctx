@@ -2,10 +2,12 @@
 
 #include "ctx-split.h"
 #if !__COSMOPOLITAN__
-#include <termios.h>
 
 #include <fcntl.h>
+#if CTX_PTY
+#include <termios.h>
 #include <sys/ioctl.h>
+#endif
 #endif
 
 #if 0
@@ -110,36 +112,52 @@ int ctx_terminal_height (void)
 
 int ctx_terminal_width (void)
 {
+#if CTX_PTY
   struct winsize ws; 
   if (ioctl(0,TIOCGWINSZ,&ws)!=0)
     return 640;
   return ws.ws_xpixel;
+#else
+  return 240;
+#endif
 } 
 
 int ctx_terminal_height (void)
 {
+#if CTX_PTY
   struct winsize ws; 
   if (ioctl(0,TIOCGWINSZ,&ws)!=0)
     return 450;
   return ws.ws_ypixel;
+#else
+  return 240;
+#endif
 }
 
 #endif
 
 int ctx_terminal_cols (void)
 {
+#if CTX_PTY
   struct winsize ws; 
   if (ioctl(0,TIOCGWINSZ,&ws)!=0)
     return 80;
   return ws.ws_col;
+#else
+  return 40;
+#endif
 } 
 
 int ctx_terminal_rows (void)
 {
+#if CTX_PTY
   struct winsize ws; 
   if (ioctl(0,TIOCGWINSZ,&ws)!=0)
     return 25;
   return ws.ws_row;
+#else
+  return 16;
+#endif
 }
 
 
@@ -158,7 +176,9 @@ int ctx_terminal_rows (void)
 /*************************** input handling *************************/
 
 #if !__COSMOPOLITAN__
+#if CTX_PTY
 #include <termios.h>
+#endif
 #include <errno.h>
 #include <signal.h>
 #endif
@@ -354,16 +374,19 @@ static const NcKeyCode keycodes[]={
   {"ok",        "",     "\033[0n"},
   {NULL, }
 };
-
+#if CTX_PTY
 static struct termios orig_attr;    /* in order to restore at exit */
+#endif
 static int    nc_is_raw = 0;
 static int    atexit_registered = 0;
 static int    mouse_mode = NC_MOUSE_NONE;
 
 static void _nc_noraw (void)
 {
+#if CTX_PTY
   if (nc_is_raw && tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr) != -1)
     nc_is_raw = 0;
+#endif
 }
 
 void
@@ -492,7 +515,7 @@ static int mouse_has_event (Ctx *n)
   return retval != 0;
 }
 
-
+#if CTX_PTY
 static int _nc_raw (void)
 {
   struct termios raw;
@@ -519,6 +542,7 @@ static int _nc_raw (void)
 #endif
   return 0;
 }
+#endif
 
 static int match_keycode (const char *buf, int length, const NcKeyCode **ret)
 {
@@ -576,7 +600,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
 
   if (x) *x = -1;
   if (y) *y = -1;
-
+#if CTX_PTY
   if (!ctx_term_signal_installed)
     {
       _nc_raw ();
@@ -738,6 +762,9 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
     else
       return "key read eek";
   return "fail";
+#else
+  return "NYI.";
+#endif
 }
 
 void ctx_nct_consume_events (Ctx *ctx)
@@ -823,6 +850,7 @@ void ctx_nct_consume_events (Ctx *ctx)
 
 const char *ctx_native_get_event (Ctx *n, int timeoutms)
 {
+#if CTX_PTY
   static unsigned char buf[256];
   int length;
 
@@ -880,6 +908,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
       }
       got_event = ctx_nct_has_event (n, 5);
     }
+#endif
   return NULL;
 }
 

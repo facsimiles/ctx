@@ -2813,7 +2813,7 @@ float ctx_y (Ctx *ctx)
   return y;
 }
 
-CtxBackendType __ctx_backend_type (Ctx *ctx)
+static CtxBackendType __ctx_backend_type (Ctx *ctx)
 {
   if (!ctx)
     return CTX_BACKEND_NONE;
@@ -2864,7 +2864,7 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
   {
     CtxBackendType computed = __ctx_backend_type (ctx);
     backend->type = computed;
-    fprintf (stderr, "did a caching set of %i\n", computed);
+    //fprintf (stderr, "did a caching set of %i\n", computed);
     return computed;
   }
 

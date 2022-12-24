@@ -48,8 +48,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#if CTX_PTY
 #include <sys/ioctl.h>
 #include <termios.h>
+#endif
 
 #include "ctx.h"
 
@@ -303,6 +305,7 @@ static Image *image_add (int width,
 
 void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
 {
+#if CTX_PTY
   VtPty *vtpty = data;
   struct winsize ws;
   ws.ws_row = rows;
@@ -310,6 +313,7 @@ void vtpty_resize (void *data, int cols, int rows, int px_width, int px_height)
   ws.ws_xpixel = px_width;
   ws.ws_ypixel = px_height;
   ioctl (vtpty->pty, TIOCSWINSZ, &ws);
+#endif
 }
 
 ssize_t vtpty_write (void *data, const void *buf, size_t count)
@@ -667,6 +671,7 @@ static void vt_init (VT *vt, int width, int height, float font_size, float line_
   vt->bg_color[2] = 0;
 }
 
+#if CTX_PTY
 static pid_t
 vt_forkpty (int  *amaster,
             char *aname,
@@ -718,6 +723,7 @@ vt_forkpty (int  *amaster,
   *amaster = master;
   return pid;
 }
+#endif
 
 static void
 ctx_child_prepare_env (int was_pidone, const char *term)
@@ -842,20 +848,24 @@ static void vt_run_argv (VT *vt, char **argv, const char *term)
 
         printf ("aaa?\n");
 #else
-  struct winsize ws;
-  //signal (SIGCHLD,signal_child);
+
 #if 0
   int was_pidone = (getpid () == 1);
 #else
   int was_pidone = 0; // do no special treatment, all child processes belong
                       // to root
 #endif
+#if CTX_PTY
+
+  struct winsize ws;
+  //signal (SIGCHLD,signal_child);
   signal (SIGINT,SIG_DFL);
   ws.ws_row = vt->rows;
   ws.ws_col = vt->cols;
   ws.ws_xpixel = ws.ws_col * vt->cw;
   ws.ws_ypixel = ws.ws_row * vt->ch;
   vt->vtpty.pid = vt_forkpty (&vt->vtpty.pty, NULL, NULL, &ws);
+#endif
   if (vt->vtpty.pid == 0)
     {
       ctx_child_prepare_env (was_pidone, term);
@@ -5589,6 +5599,7 @@ void vt_paste (VT *vt, const char *str)
 
 const char *ctx_find_shell_command (void)
 {
+#if CTX_PTY
 #ifdef EMSCRIPTEN
   return NULL;  
 #else
@@ -5633,6 +5644,7 @@ const char *ctx_find_shell_command (void)
     }
   return command;
 #endif
+#endif
 }
 
 
@@ -5640,6 +5652,7 @@ const char *ctx_find_shell_command (void)
 
 static void vt_run_command (VT *vt, const char *command, const char *term)
 {
+#if CTX_PTY
 #ifdef EMSCRIPTEN
         printf ("run command %s\n", command);
 #else
@@ -5669,6 +5682,7 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
     }
   fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
   _ctx_add_listen_fd (vt->vtpty.pty);
+#endif
 #endif
 }
 

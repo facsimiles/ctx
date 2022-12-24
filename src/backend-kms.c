@@ -4,7 +4,9 @@
 
 #if !__COSMOPOLITAN__
 #include <fcntl.h>
+#if CTX_PTY
 #include <sys/ioctl.h>
+#endif
 #include <signal.h>
 #endif
 

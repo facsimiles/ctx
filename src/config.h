@@ -855,3 +855,7 @@
 #define SQUOZE_USE_INTERN             0
 #endif
 #endif
+
+#ifndef CTX_PTY
+#define CTX_PTY 1
+#endif

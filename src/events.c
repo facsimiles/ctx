@@ -131,6 +131,7 @@ static uint32_t ctx_ms (Ctx *ctx)
 
 static int is_in_ctx (void)
 {
+#if CTX_PTY
   char buf[1024];
   struct termios orig_attr;
   struct termios raw;
@@ -173,6 +174,7 @@ static int is_in_ctx (void)
   {
     return 1;
   }
+#endif
   return 0;
 }
 #endif
@@ -2444,7 +2446,7 @@ static void ctx_events_deinit (Ctx *ctx)
 
 #if CTX_TERMINAL_EVENTS
 
-
+#if CTX_PTY
 static int mice_has_event (void);
 static char *mice_get_event (void);
 static void mice_destroy (void);
@@ -2668,6 +2670,7 @@ static inline EvSource *evsource_mice_new (void)
     }
   return NULL;
 }
+#endif
 
 static int evsource_kb_term_has_event (void);
 static char *evsource_kb_term_get_event (void);
@@ -2684,10 +2687,13 @@ static EvSource ctx_ev_src_kb_term = {
   NULL
 };
 
+#if CTX_PTY
 static struct termios orig_attr;
+#endif
 
 static void real_evsource_kb_term_destroy (int sign)
 {
+#if CTX_PTY
   static int done = 0;
 
   if (sign == 0)
@@ -2712,6 +2718,7 @@ static void real_evsource_kb_term_destroy (int sign)
   }
   tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
   //fprintf (stderr, "evsource kb destroy\n");
+#endif
 }
 
 static void evsource_kb_term_destroy (int sign)
@@ -2721,6 +2728,7 @@ static void evsource_kb_term_destroy (int sign)
 
 static int evsource_kb_term_init ()
 {
+#if CTX_PTY
 //  ioctl(STDIN_FILENO, KDSKBMODE, K_RAW);
   //atexit ((void*) real_evsource_kb_term_destroy);
   signal (SIGSEGV, (void*) real_evsource_kb_term_destroy);
@@ -2744,19 +2752,20 @@ static int evsource_kb_term_init ()
   raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
   if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
     return 0; // XXX? return other value?
-
+#endif
   return 0;
 }
 static int evsource_kb_term_has_event (void)
 {
   struct timeval tv;
-  int retval;
-
+  int retval = 0;
+#if CTX_PTY
   fd_set rfds;
   FD_ZERO (&rfds);
   FD_SET(STDIN_FILENO, &rfds);
   tv.tv_sec = 0; tv.tv_usec = 0;
   retval = select (STDIN_FILENO+1, &rfds, NULL, NULL, &tv);
+#endif
   return retval == 1;
 }
 
