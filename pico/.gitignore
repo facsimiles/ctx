@@ -1,0 +1,14 @@
+*.bin
+*.uf2
+*.elf
+*.map
+*.hex
+*.dis
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+elf2uf2
+generated
+pico-sdk
+pioasm
