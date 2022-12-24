@@ -282,7 +282,7 @@ static int translate_key (int key)
 static void process_kbd_report(hid_keyboard_report_t const *report)
 {
   static hid_keyboard_report_t prev_report = { 0, 0, {0} }; // previous report to check key released
-  uint8_t prev_modifier = 0;
+  static uint8_t prev_modifier = 0;
 
   if (  ((prev_modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT))!=0) &&
        !((report->modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT))!=0))

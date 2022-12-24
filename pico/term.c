@@ -295,9 +295,9 @@ void draw_text_buffer (Ctx *ctx)
       ctx_wrap_right (ctx, SCREEN_WIDTH-em);
       ctx_line_height (ctx, 0.9);
       ctx_font_size (ctx, em);
-      ctx_move_to (ctx, 1, em);
-      char buf[64];sprintf(buf, "frame: %i\n",frame);
-      ctx_text (ctx, buf);
+     // ctx_move_to (ctx, 1, em);
+     // char buf[64];sprintf(buf, "frame: %i\n",frame);
+     // ctx_text (ctx, buf);
 
       float y = SCREEN_HEIGHT - em * 0.2;
       BufferedLine *line = scrollback;
@@ -417,15 +417,12 @@ int main(int argc, char **argv) {
 
     board_init();
     tusb_init();
-    int skipper = 0;
     while(true && !ctx_has_quit(ctx))
     {
       tuh_task();
       //cdc_task();
       hid_app_task();
-      if (skipper % 32  == 0)
-         draw_text_buffer (ctx);
-      skipper++;
+      draw_text_buffer (ctx);
       while (uart_is_readable(uart0))
         buffer_add_byte (uart_getc(uart0));
       CtxEvent *event;
