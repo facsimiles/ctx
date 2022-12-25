@@ -9,8 +9,8 @@
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 36
 #define CTX_MIN_EDGE_LIST_SIZE 256
 #define CTX_MAX_EDGE_LIST_SIZE 512
-#define CTX_MIN_JOURNAL_SIZE   512
-#define CTX_MAX_JOURNAL_SIZE   512
+#define CTX_MIN_JOURNAL_SIZE   8192
+#define CTX_MAX_JOURNAL_SIZE   8192
 
 #define CTX_LIMIT_FORMATS       1
 #define CTX_DITHER              1
@@ -34,4 +34,22 @@
 #define CTX_TERMINAL_EVENTS 1
 #define CTX_FONTS_FROM_FILE 0
 #define CTX_IMPLEMENTATION 1
+
+#define CTX_STATIC_FONT(font) \
+  ctx_load_font_ctx(ctx_font_##font##_name, \
+                    ctx_font_##font,       \
+                    sizeof (ctx_font_##font))
+#include <stdint.h>
+#include "Arimo-Regular.h"
+#include "Cousine-Regular.h"
+#include "Cousine-Bold.h"
+#include "Cousine-Italic.h"
+
+#define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
+#define CTX_FONT_8   CTX_STATIC_FONT(Cousine_Regular)
+#define CTX_FONT_9   CTX_STATIC_FONT(Cousine_Italic)
+#define CTX_FONT_10  CTX_STATIC_FONT(Cousine_Bold)
+
+
+
 #include "ctx.h"

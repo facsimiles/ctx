@@ -331,13 +331,14 @@ static void process_kbd_report(hid_keyboard_report_t const *report)
         bool const is_shift = report->modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT);
         uint8_t ch = keycode2ascii[report->keycode[i]][is_shift ? 1 : 0];
         //putchar(ch);
-        buffer_add_byte(ch);
-        uart_putc(uart0, ch);
+        //buffer_add_byte(ch);
+        //uart_putc(uart0, ch);
         ctx_key_down(ctx, translate_key(report->keycode[i]), NULL, 0);
-        if ( ch == '\r' ) {
-          buffer_add_byte('\n');
-          uart_putc(uart0,'\n');
-        }
+        ctx_key_press(ctx, translate_key(report->keycode[i]), NULL, 0);
+        //if ( ch == '\r' ) {
+          //buffer_add_byte('\n');
+          //uart_putc(uart0,'\n');
+        //}
 
         //fflush(stdout); // flush right away, else nanolib will wait for newline
       }

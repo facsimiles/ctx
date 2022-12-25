@@ -20,10 +20,11 @@
 #include "bsp/board.h"
 #include "tusb.h"
 
-uint8_t scratch[320*240*2]; // this is much larger than we should be comfortable with
-
+uint8_t scratch[24*1024]; // perhaps too small, but for a flexible terminal
+                          // we need all the memory possible for terminal
+                          // and its scrollback
 #define SCREEN_WIDTH  240
-#define SCREEN_HEIGHT 240
+#define SCREEN_HEIGHT 320
 #define IMAGE_SIZE 256
 #define LOG_IMAGE_SIZE 8
 
@@ -368,14 +369,55 @@ static void ghostbuster(Ctx *ctx)
 }
 
 Ctx *ctx = NULL;
+    CtxClient *client = NULL;
+
+
+
+static void handle_event (Ctx        *ctx,
+                          CtxEvent   *ctx_event,  
+                          const char *event)
+{
+  ctx_client_feed_keystring (client, ctx_event, event);
+}
+
+static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)  
+{ 
+  {  
+    switch (event->type)
+    {  
+      case CTX_KEY_PRESS:
+        handle_event (ctx, event, event->string);  
+        break;  
+      case CTX_KEY_UP:  
+        { char buf[1024];  
+          snprintf (buf, sizeof(buf)-1, "keyup %i %i", event->unicode, event->state);  
+          handle_event (ctx, event, buf);  
+        }  
+        break;  
+      case CTX_KEY_DOWN:  
+        { char buf[1024];  
+          snprintf (buf, sizeof(buf)-1, "keydown %i %i", event->unicode, event->state);  
+          handle_event (ctx, event, buf);  
+        }  
+        break;  
+      default:  
+        break;  
+    }  
+  }  
+}  
+
+void on_uart_rx()
+{
+  while (uart_is_readable(uart0))
+    ctx_vt_write (ctx, uart_getc(uart0));
+  ctx_clients_handle_events (ctx);
+  ctx_handle_events (ctx);
+}
 
 int main(int argc, char **argv) {
   set_sys_clock_khz(270000, true);
   //  stdio_init_all();
 
-    uart_init(UART_ID, BAUD_RATE);
-    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 
     fb_init();
 
@@ -417,17 +459,62 @@ int main(int argc, char **argv) {
 
     board_init();
     tusb_init();
+
+    int flags = 0;
+    float start_font_size = 16.0;
+
+    client = 
+    ctx_client_new_argv (ctx, NULL, 0,0, SCREEN_WIDTH, SCREEN_HEIGHT,
+      start_font_size, flags, NULL, NULL);
+
+    ctx_client_maximize(ctx, ctx_client_id(client));
+
+
+    uart_init(UART_ID, BAUD_RATE);
+    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+    uart_set_hw_flow(UART_ID, false, false);
+    uart_set_fifo_enabled(UART_ID, false);
+    int UART_IRQ = UART_ID == uart0 ? UART0_IRQ : UART1_IRQ;
+    irq_set_exclusive_handler(UART_IRQ, on_uart_rx);
+    irq_set_enabled(UART_IRQ, true);
+
+    // Now enable the UART to send interrupts - RX only
+    uart_set_irq_enables(UART_ID, true, false);
+
+
+
     while(true && !ctx_has_quit(ctx))
     {
       tuh_task();
       //cdc_task();
       hid_app_task();
-      draw_text_buffer (ctx);
-      while (uart_is_readable(uart0))
-        buffer_add_byte (uart_getc(uart0));
+
+      if (ctx_need_redraw(ctx))
+      {
+        ctx_start_frame (ctx);
+        ctx_clients_draw (ctx, 0);
+        ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);  
+        ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);  
+        ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);  
+        ctx_end_frame (ctx);
+      }
+      ctx_clients_handle_events (ctx);
+
+      //draw_text_buffer (ctx);
+      //while (uart_is_readable(uart0))
+      //  ctx_vt_write (ctx, uart_getc(uart0));
+
+      while (ctx_vt_has_data (ctx))
+        uart_putc (uart0, ctx_vt_read (ctx));
+
+      ctx_handle_events (ctx);
+
+#if 0
       CtxEvent *event;
       while((event = ctx_get_event (ctx)))
       {
+#if 0
         char buf[128];
         if (event->type == CTX_KEY_PRESS && !strcmp (event->string, "q"))
           ctx_quit (ctx);
@@ -441,7 +528,9 @@ int main(int argc, char **argv) {
           case CTX_KEY_UP: sprintf(buf, "up: %s\n", event->string);break;
         }
         buffer_add_str(buf);
+#endif
       }
+#endif
 
     }
     //ctx_destroy (ctx);
