@@ -158,24 +158,6 @@ static inline void st7789_start_pixels(PIO pio, uint sm) {
     uint sm = 0;
 void fb_init (void)
 {
-    uint offset = pio_add_program(pio, &st7789_lcd_program);
-    st7789_lcd_program_init(pio, sm, offset, PIN_DIN, PIN_CLK, SERIAL_CLK_DIV);
-
-    gpio_init(PIN_CS);
-    gpio_init(PIN_DC);
-    gpio_init(PIN_RESET);
-    gpio_init(PIN_BL);
-    gpio_set_dir(PIN_CS, GPIO_OUT);
-    gpio_set_dir(PIN_DC, GPIO_OUT);
-    gpio_set_dir(PIN_RESET, GPIO_OUT);
-    gpio_set_dir(PIN_BL, GPIO_OUT);
-
-    gpio_put(PIN_CS, 1);
-    gpio_put(PIN_RESET, 1);
-
-
-    spi_run_commands (pio, sm, st7789_init_seq);
-    gpio_put(PIN_BL, 1);
 }
 
 static void fb_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf, int buf_size)
@@ -406,6 +388,14 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
   }  
 }  
 
+static int ctx_usb_task (Ctx *ctx, void *data)
+{
+  tuh_task();
+  //cdc_task();
+  hid_app_task();
+  return 1;
+}
+
 void on_uart_rx()
 {
   while (uart_is_readable(uart0))
@@ -415,10 +405,40 @@ void on_uart_rx()
 }
 
 
-
-void ctx_pico_st7789_init (int pin_din, int pin_clk, int pin_cs, int pin_dc,
+Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
+                           int pin_din, int pin_clk, int pin_cs, int pin_dc,
                            int pin_reset, int pin_backlight)
 {
+    uint offset = pio_add_program(pio, &st7789_lcd_program);
+    st7789_lcd_program_init(pio, sm, offset, pin_din, pin_clk, SERIAL_CLK_DIV);
+
+    gpio_init(pin_cs);
+    gpio_init(pin_dc);
+    gpio_init(pin_reset);
+    gpio_init(pin_backlight);
+    gpio_set_dir(pin_cs, GPIO_OUT);
+    gpio_set_dir(pin_dc, GPIO_OUT);
+    gpio_set_dir(pin_reset, GPIO_OUT);
+    gpio_set_dir(pin_backlight, GPIO_OUT);
+
+    gpio_put(pin_cs, 1);
+    gpio_put(pin_reset, 1);
+
+    spi_run_commands (pio, sm, st7789_init_seq);
+    gpio_put(pin_backlight, 1);
+
+    Ctx *ctx = ctx_new_cb(fb_width, fb_height, CTX_FORMAT_RGB565_BYTESWAPPED,
+                          fb_set_pixels,
+                          NULL,
+                          NULL, // update_fb
+                          NULL,
+                          sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE);
+    ghostbuster(ctx);
+
+    board_init();
+    tusb_init();
+    ctx_add_timeout (ctx, 0, ctx_usb_task, ctx); 
+    return ctx;
 }
 
 
@@ -426,26 +446,21 @@ void ctx_pico_st7789_init (int pin_din, int pin_clk, int pin_cs, int pin_dc,
 
 int main(int argc, char **argv) {
   set_sys_clock_khz(270000, true);
-  //  stdio_init_all();
 
+  ctx = ctx_pico_st7789_init (SCREEN_WIDTH, SCREEN_HEIGHT,
+                              PIN_DIN,
+                              PIN_CLK,
+                              PIN_CS,
+                              PIN_DC,
+                              PIN_RESET,
+                              PIN_BL);
 
-    fb_init();
-
-    ctx = ctx_new_cb(SCREEN_WIDTH, SCREEN_HEIGHT, CTX_FORMAT_RGB565_BYTESWAPPED,
-                          fb_set_pixels,
-                          NULL,
-                          NULL, // update_fb
-                          NULL,
-                          sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE);
-
-    ghostbuster(ctx);
 
 #if 1
+    float width = ctx_width (ctx);
+    float height = ctx_height (ctx);
     for (float scale = 10; scale < SCREEN_WIDTH; scale*=1.04)
     {
-      tuh_task();
-      //cdc_task();
-      hid_app_task();
       ctx_start_frame (ctx);
       ctx_logo (ctx, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.45, scale);
       ctx_end_frame (ctx);
@@ -453,8 +468,6 @@ int main(int argc, char **argv) {
 
     for (float opacity = 0.0f; opacity < 1.0f; opacity +=0.04)
     {
-      tuh_task();
-      hid_app_task();
       ctx_start_frame (ctx);
       float em = SCREEN_WIDTH/8.0;
       ctx_font_size (ctx, em);
@@ -467,8 +480,6 @@ int main(int argc, char **argv) {
     sleep_us(1000 * 1.5);
 #endif
 
-    board_init();
-    tusb_init();
 
     int flags = 0;
     float start_font_size = 16.0;
@@ -493,9 +504,6 @@ int main(int argc, char **argv) {
 
     while(true) // && !ctx_has_quit(ctx))
     {
-      tuh_task();
-      hid_app_task();
-
       if (ctx_need_redraw(ctx))
       {
         ctx_start_frame (ctx);
