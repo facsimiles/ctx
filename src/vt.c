@@ -1111,7 +1111,7 @@ static int vt_trimlines (VT *vt, int max)
       ctx_list_remove (&chop_point, chop_point->data);
       vt->line_count--;
     }
-  if (vt->scrollback_count > vt->scrollback_limit + 1024)
+  if (vt->scrollback_count > vt->scrollback_limit)
     {
       CtxList *l = vt->scrollback;
       int no = 0;
