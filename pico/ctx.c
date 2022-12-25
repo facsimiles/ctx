@@ -277,7 +277,7 @@ Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
 
     board_init();
     tusb_init();
-    ctx_add_timeout (ctx, 0, ctx_usb_task, ctx); 
+    ctx_add_idle (ctx, ctx_usb_task, ctx); 
     return ctx;
 }
 
