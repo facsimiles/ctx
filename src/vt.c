@@ -2651,6 +2651,10 @@ qagain:
                     vt->current_line->frame = ctx_string_new ("");
 #endif
                   }
+
+                if (!vt->ctxp)
+                {
+
                 if (vt->ctxp)
                   ctx_parser_destroy (vt->ctxp);
 
@@ -2658,6 +2662,7 @@ qagain:
                                            vt->cols * vt->cw, vt->rows * vt->ch,
                                            vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
                                            (void*)vt_set_prop, (void*)vt_get_prop, vt, vt_ctx_exit, vt);
+                }
                 vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
                 vt->state = vt_state_ctx;
               }
