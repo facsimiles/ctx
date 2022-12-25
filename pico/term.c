@@ -23,9 +23,9 @@
 uint8_t scratch[24*1024]; // perhaps too small, but for a flexible terminal
                           // we need all the memory possible for terminal
                           // and its scrollback
-#define SCREEN_WIDTH  240
-#define SCREEN_HEIGHT 320
-#define IMAGE_SIZE 256
+#define SCREEN_WIDTH   240
+#define SCREEN_HEIGHT  320
+#define IMAGE_SIZE     256
 #define LOG_IMAGE_SIZE 8
 
 #if 0
@@ -117,39 +117,6 @@ static inline void st7789_start_pixels(PIO pio, uint sm) {
     lcd_set_dc_cs(1, 0);
 }
 
-#define CTX_1BIT_CLIP           1
-#define CTX_RASTERIZER_AA       15
-#define CTX_RASTERIZER_FORCE_AA 0
-#define CTX_SHAPE_CACHE         0
-#define CTX_SHAPE_CACHE_DIM     16*18
-#define CTX_SHAPE_CACHE_ENTRIES 128
-#define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 36
-#define CTX_MIN_EDGE_LIST_SIZE 256
-#define CTX_MAX_EDGE_LIST_SIZE 512
-#define CTX_MIN_JOURNAL_SIZE   512
-#define CTX_MAX_JOURNAL_SIZE   512
-
-#define CTX_LIMIT_FORMATS       1
-#define CTX_DITHER              1
-#define CTX_32BIT_SEGMENTS      0
-#define CTX_ENABLE_RGB565       1
-#define CTX_ENABLE_RGB565_BYTESWAPPED 1
-#define CTX_BITPACK_PACKER      0
-#define CTX_COMPOSITING_GROUPS  0
-#define CTX_RENDERSTREAM_STATIC 0
-#define CTX_GRADIENT_CACHE      1
-#define CTX_ENABLE_CLIP         1
-#define CTX_BLOATY_FAST_PATHS   0
-
-#define CTX_VT         1
-#define CTX_PARSER     1
-#define CTX_RASTERIZER 1
-#define CTX_EVENTS     1
-#define CTX_RAW_KB_EVENTS 0
-#define CTX_STRINGPOOL_SIZE 512
-#define CTX_FORMATTER 0
-#define CTX_TERMINAL_EVENTS 1
-#define CTX_FONTS_FROM_FILE 0
 #include "ctx.h"
 
 
@@ -171,6 +138,113 @@ static void fb_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h
       st7789_lcd_put(pio, sm, pixels[i+1]);
     }
 }
+extern void hid_app_task(void);
+void cdc_task(void)
+{
+}
+
+#if 0
+void tuh_mount_cb(uint8_t dev_addr)
+{
+  char buf[400];
+  // application set-up
+  sprintf(buf, "A device with address %d is mounted\r\n", dev_addr);
+  buffer_add_str(buf);
+  tuh_cdc_receive(dev_addr, serial_in_buffer, sizeof(serial_in_buffer), true); // schedule first transfer
+}
+
+void tuh_umount_cb(uint8_t dev_addr)
+{
+  char buf[400];
+  // application tear-down
+  sprintf(buf, "A device with address %d is unmounted \r\n", dev_addr);
+  buffer_add_str(buf);
+}
+
+// invoked ISR context
+#endif
+CFG_TUSB_MEM_SECTION static char serial_in_buffer[64] = { 0 };
+void tuh_cdc_xfer_isr(uint8_t dev_addr, xfer_result_t event, cdc_pipeid_t pipe_id, uint32_t xferred_bytes)
+{ 
+  (void) event;
+  (void) pipe_id;
+  (void) xferred_bytes;
+  
+  printf(serial_in_buffer);
+  tu_memclr(serial_in_buffer, sizeof(serial_in_buffer));
+  
+  tuh_cdc_receive(dev_addr, serial_in_buffer, sizeof(serial_in_buffer), true); // waiting for next data
+}
+static void ghostbuster(Ctx *ctx)
+{
+    float width = ctx_width (ctx);
+    float height = ctx_height (ctx);
+    ctx_start_frame(ctx);
+    ctx_rectangle(ctx,0,0,width, height);
+    ctx_rgb(ctx,0,0,0);ctx_fill(ctx);
+    ctx_end_frame(ctx);
+    ctx_start_frame(ctx);
+    ctx_rectangle(ctx,0,0,width, height);
+    ctx_rgb(ctx,1,1,1);ctx_fill(ctx);
+    ctx_end_frame(ctx);
+    ctx_start_frame(ctx);
+    ctx_rectangle(ctx,0,0,width, height);
+    ctx_rgb(ctx,0,0,0);ctx_fill(ctx);
+    ctx_end_frame(ctx);
+}
+
+
+static int ctx_usb_task (Ctx *ctx, void *data)
+{
+  tuh_task();
+  //cdc_task();
+  hid_app_task();
+  return 1;
+}
+
+
+Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
+                           int pin_din, int pin_clk, int pin_cs, int pin_dc,
+                           int pin_reset, int pin_backlight, float clk_div)
+{
+    uint offset = pio_add_program(pio, &st7789_lcd_program);
+    st7789_lcd_program_init(pio, sm, offset, pin_din, pin_clk, clk_div);
+
+    gpio_init(pin_cs);
+    gpio_init(pin_dc);
+    gpio_init(pin_reset);
+    gpio_init(pin_backlight);
+    gpio_set_dir(pin_cs, GPIO_OUT);
+    gpio_set_dir(pin_dc, GPIO_OUT);
+    gpio_set_dir(pin_reset, GPIO_OUT);
+    gpio_set_dir(pin_backlight, GPIO_OUT);
+
+    gpio_put(pin_cs, 1);
+    gpio_put(pin_reset, 1);
+
+    spi_run_commands (pio, sm, st7789_init_seq);
+    gpio_put(pin_backlight, 1);
+
+    Ctx *ctx = ctx_new_cb(fb_width, fb_height, CTX_FORMAT_RGB565_BYTESWAPPED,
+                          fb_set_pixels,
+                          NULL,
+                          NULL, // update_fb
+                          NULL,
+                          sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE);
+    ghostbuster(ctx);
+
+    board_init();
+    tusb_init();
+    ctx_add_timeout (ctx, 0, ctx_usb_task, ctx); 
+    return ctx;
+}
+
+
+Ctx *ctx = NULL;
+
+
+    CtxClient *client = NULL;
+
 
 #define UART_ID uart0
 #define BAUD_RATE 115200
@@ -199,8 +273,6 @@ int scrollback_count ()
 
 void trim_scrollback (int maxlines)
 {
-  BufferedLine *line = scrollback;
-
   int count = scrollback_count ();
   while (maxlines < count)
   {
@@ -215,12 +287,10 @@ void trim_scrollback (int maxlines)
       free (line->str);
       BufferedLine *tmp=line;
       line=line->prev;
-      free(line);
+      free(tmp);
     }
     count = scrollback_count ();
   }
-  
-
 }
 
 
@@ -269,20 +339,17 @@ void buffer_add_str (const char *str)
     buffer_add_byte (str[i]);
 }
 
-static int frame = 0;
-
 void draw_text_buffer (Ctx *ctx)
 {
       ctx_start_frame (ctx);
       float em = 18;
-      ctx_wrap_right (ctx, SCREEN_WIDTH-em);
+      float width = ctx_width (ctx);
+      float height = ctx_height (ctx);
+      ctx_wrap_right (ctx, width-em);
       ctx_line_height (ctx, 0.9);
       ctx_font_size (ctx, em);
-     // ctx_move_to (ctx, 1, em);
-     // char buf[64];sprintf(buf, "frame: %i\n",frame);
-     // ctx_text (ctx, buf);
 
-      float y = SCREEN_HEIGHT - em * 0.2;
+      float y = height - em * 0.2;
       BufferedLine *line = scrollback;
       while (line && y > 0)
       {
@@ -293,66 +360,7 @@ void draw_text_buffer (Ctx *ctx)
       }
  
       ctx_end_frame (ctx);
-      frame++;
-
 }
-extern void hid_app_task(void);
-void cdc_task(void)
-{
-}
-
-#if 1
-CFG_TUSB_MEM_SECTION static char serial_in_buffer[64] = { 0 };
-void tuh_mount_cb(uint8_t dev_addr)
-{
-  char buf[400];
-  // application set-up
-  sprintf(buf, "A device with address %d is mounted\r\n", dev_addr);
-  buffer_add_str(buf);
-  tuh_cdc_receive(dev_addr, serial_in_buffer, sizeof(serial_in_buffer), true); // schedule first transfer
-}
-
-void tuh_umount_cb(uint8_t dev_addr)
-{
-  char buf[400];
-  // application tear-down
-  sprintf(buf, "A device with address %d is unmounted \r\n", dev_addr);
-  buffer_add_str(buf);
-}
-
-// invoked ISR context
-void tuh_cdc_xfer_isr(uint8_t dev_addr, xfer_result_t event, cdc_pipeid_t pipe_id, uint32_t xferred_bytes)
-{ 
-  (void) event;
-  (void) pipe_id;
-  (void) xferred_bytes;
-  
-  printf(serial_in_buffer);
-  tu_memclr(serial_in_buffer, sizeof(serial_in_buffer));
-  
-  tuh_cdc_receive(dev_addr, serial_in_buffer, sizeof(serial_in_buffer), true); // waiting for next data
-}
-#endif
-
-static void ghostbuster(Ctx *ctx)
-{
-    ctx_start_frame(ctx);
-    ctx_rectangle(ctx,0,0,SCREEN_WIDTH, SCREEN_HEIGHT);
-    ctx_rgb(ctx,0,0,0);ctx_fill(ctx);
-    ctx_end_frame(ctx);
-    ctx_start_frame(ctx);
-    ctx_rectangle(ctx,0,0,SCREEN_WIDTH, SCREEN_HEIGHT);
-    ctx_rgb(ctx,1,1,1);ctx_fill(ctx);
-    ctx_end_frame(ctx);
-    ctx_start_frame(ctx);
-    ctx_rectangle(ctx,0,0,SCREEN_WIDTH, SCREEN_HEIGHT);
-    ctx_rgb(ctx,0,0,0);ctx_fill(ctx);
-    ctx_end_frame(ctx);
-}
-
-Ctx *ctx = NULL;
-    CtxClient *client = NULL;
-
 
 
 static void handle_event (Ctx        *ctx,
@@ -388,13 +396,6 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
   }  
 }  
 
-static int ctx_usb_task (Ctx *ctx, void *data)
-{
-  tuh_task();
-  //cdc_task();
-  hid_app_task();
-  return 1;
-}
 
 void on_uart_rx()
 {
@@ -403,44 +404,6 @@ void on_uart_rx()
   ctx_clients_handle_events (ctx);
   ctx_handle_events (ctx);
 }
-
-
-Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
-                           int pin_din, int pin_clk, int pin_cs, int pin_dc,
-                           int pin_reset, int pin_backlight)
-{
-    uint offset = pio_add_program(pio, &st7789_lcd_program);
-    st7789_lcd_program_init(pio, sm, offset, pin_din, pin_clk, SERIAL_CLK_DIV);
-
-    gpio_init(pin_cs);
-    gpio_init(pin_dc);
-    gpio_init(pin_reset);
-    gpio_init(pin_backlight);
-    gpio_set_dir(pin_cs, GPIO_OUT);
-    gpio_set_dir(pin_dc, GPIO_OUT);
-    gpio_set_dir(pin_reset, GPIO_OUT);
-    gpio_set_dir(pin_backlight, GPIO_OUT);
-
-    gpio_put(pin_cs, 1);
-    gpio_put(pin_reset, 1);
-
-    spi_run_commands (pio, sm, st7789_init_seq);
-    gpio_put(pin_backlight, 1);
-
-    Ctx *ctx = ctx_new_cb(fb_width, fb_height, CTX_FORMAT_RGB565_BYTESWAPPED,
-                          fb_set_pixels,
-                          NULL,
-                          NULL, // update_fb
-                          NULL,
-                          sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE);
-    ghostbuster(ctx);
-
-    board_init();
-    tusb_init();
-    ctx_add_timeout (ctx, 0, ctx_usb_task, ctx); 
-    return ctx;
-}
-
 
 
 
@@ -453,27 +416,28 @@ int main(int argc, char **argv) {
                               PIN_CS,
                               PIN_DC,
                               PIN_RESET,
-                              PIN_BL);
+                              PIN_BL,
+                              SERIAL_CLK_DIV);
 
 
 #if 1
     float width = ctx_width (ctx);
     float height = ctx_height (ctx);
-    for (float scale = 10; scale < SCREEN_WIDTH; scale*=1.04)
+    for (float scale = 10; scale < width; scale*=1.04)
     {
       ctx_start_frame (ctx);
-      ctx_logo (ctx, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.45, scale);
+      ctx_logo (ctx, width/2, height*0.45, scale);
       ctx_end_frame (ctx);
     }
 
     for (float opacity = 0.0f; opacity < 1.0f; opacity +=0.04)
     {
       ctx_start_frame (ctx);
-      float em = SCREEN_WIDTH/8.0;
+      float em = width/8.0;
       ctx_font_size (ctx, em);
-      ctx_logo (ctx, SCREEN_WIDTH/2, SCREEN_HEIGHT*0.45, SCREEN_WIDTH);
+      ctx_logo (ctx, width/2, height*0.45, width);
       ctx_rgba (ctx, 1.0, 1.0, 1.0, opacity);
-      ctx_move_to (ctx, 1, SCREEN_HEIGHT-em*0.2);
+      ctx_move_to (ctx, 1, height-em*0.2);
       ctx_text (ctx, "ctx vector graphics");
       ctx_end_frame (ctx);
     }
@@ -485,7 +449,7 @@ int main(int argc, char **argv) {
     float start_font_size = 16.0;
 
     client = 
-    ctx_client_new_argv (ctx, NULL, 0,0, SCREEN_WIDTH, SCREEN_HEIGHT,
+    ctx_client_new_argv (ctx, NULL, 0,0, width, height,
       start_font_size, flags, NULL, NULL);
 
     ctx_client_maximize(ctx, ctx_client_id(client));
