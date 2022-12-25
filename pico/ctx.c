@@ -67,27 +67,46 @@
 uint8_t scratch[24*1024]; // perhaps too small, but for a flexible terminal
                           // we need all the memory possible for terminal
                           // and its scrollback
-#define SCREEN_WIDTH   240
-#define SCREEN_HEIGHT  320
 
 #if 0
 #define PIN_DIN 11
 #define PIN_CLK 10
 #define PIN_CS 9
 #define PIN_DC 8
-#define PIN_RESET 14
+#define PIN_RESET 12
 #define PIN_BL 13
+#define ORIENTATION 0
+#define SCREEN_WIDTH   240
+#define SCREEN_HEIGHT  240
 #else
 #define PIN_DIN 11
 #define PIN_CLK 10
 #define PIN_CS 9
 #define PIN_DC 8
-#define PIN_RESET 12
+#define PIN_RESET 14
 #define PIN_BL 13
+#define ORIENTATION 2
+#define SCREEN_WIDTH   320
+#define SCREEN_HEIGHT  240
 
 #endif
 
 #define SERIAL_CLK_DIV 2.0f
+
+#define ST7789_MADCTL     0x36
+#define ST7789_PORTRAIT   0x00
+#define ST7789_LANDSCAPE1 0x60
+#define ST7789_LANDSCAPE2 0xa0
+
+#if ORIENTATION==0
+#define ST7789_ORIENTATION ST7789_PORTRAIT
+#elif ORIENTATION==1
+#define ST7789_ORIENTATION ST7789_LANDSCAPE1
+#elif ORIENTATION==2
+#define ST7789_ORIENTATION ST7789_LANDSCAPE2
+#else
+#define ST7789_ORIENTATION 0
+#endif
 
 // Format: cmd length (including cmd byte), post delay in units of 5 ms, then cmd payload
 // Note the delays have been shortened a little
@@ -95,7 +114,9 @@ static const uint8_t st7789_init_seq[] = {
         1, 20, 0x01,                         // Software reset
         1, 10, 0x11,                         // Exit sleep mode
         2, 2, 0x3a, 0x55,                   // Set colour mode to 16 bit
-        2, 0, 0x36, 0x00,                   // Set MADCTL: row then column, refresh is bottom to top ????
+        2, 0, ST7789_MADCTL, ST7789_ORIENTATION,      
+        
+        // row then column, refresh is bottom to top ????
         5, 0, 0x2a, 0x00, 0x00, 0x00, 0xf0, // CASET: column addresses from 0 to 240 (f0)
         5, 0, 0x2b, 0x00, 0x00, 0x01, 0x40, // RASET: row addresses from 0 to 240 (f0)
         1, 2, 0x21,                         // Inversion on, then 10 ms delay (supposedly a hack?)
@@ -133,6 +154,21 @@ static inline void spi_run_commands(PIO pio, uint sm, const uint8_t *init_seq) {
     }
 }
 
+
+static inline void st7789_start_pixels(PIO pio, uint sm) {
+    uint8_t cmd = 0x2c; // RAMWR
+    lcd_write_cmd(pio, sm, &cmd, 1);
+    lcd_set_dc_cs(1, 0);
+}
+
+#include "ctx.h"
+
+
+
+    PIO pio = pio0;
+    uint sm = 0;
+
+
 static inline void st7789_set_window(PIO pio, uint sm, int x0, int y0, int x1, int y1) {
    uint8_t caset_cmd[] =
        {5, 0, 0x2a, 0x00, 0x00, 0x00, 0xf0, 0};
@@ -151,22 +187,6 @@ static inline void st7789_set_window(PIO pio, uint sm, int x0, int y0, int x1, i
 
    spi_run_commands(pio,sm, caset_cmd);
    spi_run_commands(pio,sm, raset_cmd);
-}
-
-static inline void st7789_start_pixels(PIO pio, uint sm) {
-    uint8_t cmd = 0x2c; // RAMWR
-    lcd_write_cmd(pio, sm, &cmd, 1);
-    lcd_set_dc_cs(1, 0);
-}
-
-#include "ctx.h"
-
-
-
-    PIO pio = pio0;
-    uint sm = 0;
-void fb_init (void)
-{
 }
 
 static void fb_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf, int buf_size)
@@ -265,7 +285,10 @@ Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
     gpio_put(pin_reset, 1);
 
     spi_run_commands (pio, sm, st7789_init_seq);
+
+
     gpio_put(pin_backlight, 1);
+
 
     Ctx *ctx = ctx_new_cb(fb_width, fb_height, CTX_FORMAT_RGB565_BYTESWAPPED,
                           fb_set_pixels,

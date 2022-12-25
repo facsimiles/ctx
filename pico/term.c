@@ -191,7 +191,9 @@ int main(int argc, char **argv) {
 #if 1
     float width = ctx_width (ctx);
     float height = ctx_height (ctx);
-    for (float scale = 10; scale < width; scale*=1.04)
+    float mindim = width;
+    if (mindim > height) mindim = height;
+    for (float scale = 10; scale < mindim; scale*=1.04)
     {
       ctx_start_frame (ctx);
       ctx_logo (ctx, width/2, height*0.45, scale);
@@ -203,7 +205,7 @@ int main(int argc, char **argv) {
       ctx_start_frame (ctx);
       float em = width/8.0;
       ctx_font_size (ctx, em);
-      ctx_logo (ctx, width/2, height*0.45, width);
+      ctx_logo (ctx, width/2, height*0.45, mindim);
       ctx_rgba (ctx, 1.0, 1.0, 1.0, opacity);
       ctx_move_to (ctx, 1, height-em*0.2);
       ctx_text (ctx, "ctx vector graphics");
@@ -214,7 +216,7 @@ int main(int argc, char **argv) {
 
 
     int flags = 0;
-    float start_font_size = 16.0;
+    float start_font_size = 14.0;
 
     client = 
     ctx_client_new_argv (ctx, NULL, 0,0, width, height,
