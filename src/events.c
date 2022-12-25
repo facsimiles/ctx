@@ -1827,6 +1827,7 @@ static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,
        temp[0]=keycode-65+'A';
      else
        temp[0]=keycode-65+'a';
+     temp[1]=0;
    }
    else if (keycode >= 112 && keycode <= 123)
    {
@@ -1909,6 +1910,7 @@ static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,
            if (keycode >= 48 && keycode <=66)
            {
              temp[0]=keycode-48+'0';
+             temp[1]=0;
            }
            else
            {

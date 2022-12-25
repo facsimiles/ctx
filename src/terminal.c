@@ -190,7 +190,9 @@ int ctx_terminal_rows (void)
 #endif
 
 static int  size_changed = 0;       /* XXX: global state */
+#if CTX_PTY
 static int  ctx_term_signal_installed = 0;   /* XXX: global state */
+#endif
 
 static const char *mouse_modes[]=
 {TERMINAL_MOUSE_OFF,
@@ -376,9 +378,9 @@ static const NcKeyCode keycodes[]={
 };
 #if CTX_PTY
 static struct termios orig_attr;    /* in order to restore at exit */
-#endif
 static int    nc_is_raw = 0;
 static int    atexit_registered = 0;
+#endif
 static int    mouse_mode = NC_MOUSE_NONE;
 
 static void _nc_noraw (void)
