@@ -414,6 +414,16 @@ void on_uart_rx()
   ctx_handle_events (ctx);
 }
 
+
+
+void ctx_pico_st7789_init (int pin_din, int pin_clk, int pin_cs, int pin_dc,
+                           int pin_reset, int pin_backlight)
+{
+}
+
+
+
+
 int main(int argc, char **argv) {
   set_sys_clock_khz(270000, true);
   //  stdio_init_all();
@@ -469,7 +479,6 @@ int main(int argc, char **argv) {
 
     ctx_client_maximize(ctx, ctx_client_id(client));
 
-
     uart_init(UART_ID, BAUD_RATE);
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
@@ -482,12 +491,9 @@ int main(int argc, char **argv) {
     // Now enable the UART to send interrupts - RX only
     uart_set_irq_enables(UART_ID, true, false);
 
-
-
-    while(true && !ctx_has_quit(ctx))
+    while(true) // && !ctx_has_quit(ctx))
     {
       tuh_task();
-      //cdc_task();
       hid_app_task();
 
       if (ctx_need_redraw(ctx))
@@ -499,16 +505,14 @@ int main(int argc, char **argv) {
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);  
         ctx_end_frame (ctx);
       }
-      ctx_clients_handle_events (ctx);
-
       //draw_text_buffer (ctx);
       //while (uart_is_readable(uart0))
       //  ctx_vt_write (ctx, uart_getc(uart0));
 
-      while (ctx_vt_has_data (ctx))
-        uart_putc (uart0, ctx_vt_read (ctx));
 
       ctx_handle_events (ctx);
+      while (ctx_vt_has_data (ctx))
+        uart_putc (uart0, ctx_vt_read (ctx));
 
 #if 0
       CtxEvent *event;
