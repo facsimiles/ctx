@@ -608,6 +608,7 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
 
 static void ctx_clients_signal_child (int signum)
 {
+#if CTX_PTY
   pid_t pid;
   int   status;
   if ( (pid = waitpid (-1, &status, WNOHANG) ) != -1)
@@ -625,6 +626,7 @@ static void ctx_clients_signal_child (int signum)
             }
         }
     }
+#endif
 }
 
 static void vt_init (VT *vt, int width, int height, float font_size, float line_spacing, int id, int can_launch)
@@ -826,19 +828,19 @@ ssize_t em_read    (void *serial_obj, void *buf, size_t count)
   }
   return 0;
 }
-  int     em_waitdata (void *serial_obj, int timeout)
+
+int     em_waitdata (void *serial_obj, int timeout)
 {
   return em_in_len;
 }
 
-
-
 #endif
 
-#define CTX_DUMMY_BUFSIZE 64
+#define CTX_VT_INBUFSIZE  128
+#define CTX_VT_OUTBUFSIZE 128
 
-static char ctx_dummy_inbuf[CTX_DUMMY_BUFSIZE]="";
-static char ctx_dummy_outbuf[CTX_DUMMY_BUFSIZE]="";
+static char ctx_dummy_inbuf[CTX_VT_INBUFSIZE]="";
+static char ctx_dummy_outbuf[CTX_VT_OUTBUFSIZE]="";
 static int ctx_dummy_in_pos = 0;
 static int ctx_dummy_in_read_pos = 0;
 static int ctx_dummy_out_len = 0;
@@ -847,11 +849,11 @@ static int ctx_dummy_out_read_pos = 0;
 
 void ctx_vt_write (Ctx *ctx, uint8_t byte)
 {
-  if (ctx_dummy_in_len < CTX_DUMMY_BUFSIZE)
+  if (ctx_dummy_in_len < CTX_VT_INBUFSIZE)
   {
     ctx_dummy_inbuf[ctx_dummy_in_pos++] = byte;
     ctx_dummy_in_len++;
-    if (ctx_dummy_in_pos >= CTX_DUMMY_BUFSIZE)ctx_dummy_in_pos = 0;
+    if (ctx_dummy_in_pos >= CTX_VT_INBUFSIZE)ctx_dummy_in_pos = 0;
   }
   else
   {
@@ -864,14 +866,14 @@ int ctx_vt_has_data (Ctx *ctx)
   return ctx_dummy_out_len;
 }
 
-int ctx_vt_read (Ctx *ctx, uint8_t byte)
+int ctx_vt_read (Ctx *ctx)
 {
   int ret = -1;
   if (ctx_dummy_out_len)
   {
     ret = ctx_dummy_outbuf[ctx_dummy_out_read_pos++];
     --ctx_dummy_out_len;
-    if (ctx_dummy_out_read_pos>=CTX_DUMMY_BUFSIZE)ctx_dummy_out_read_pos = 0;
+    if (ctx_dummy_out_read_pos>=CTX_VT_OUTBUFSIZE)ctx_dummy_out_read_pos = 0;
   }
   return ret;
 }
@@ -881,13 +883,13 @@ static ssize_t ctx_dummy_write (void *s, const void *buf, size_t count)
 {
   const char *src = (const char*)buf;
   int i;
-  for (i = 0; i < count && ctx_dummy_out_len < CTX_DUMMY_BUFSIZE; i ++)
+  for (i = 0; i < count && ctx_dummy_out_len < CTX_VT_OUTBUFSIZE; i ++)
   {
     ctx_dummy_outbuf[ctx_dummy_out_pos++] = src[i];
     ctx_dummy_out_len++;
-    if (ctx_dummy_out_pos >= CTX_DUMMY_BUFSIZE)ctx_dummy_out_pos = 0;
+    if (ctx_dummy_out_pos >= CTX_VT_OUTBUFSIZE)ctx_dummy_out_pos = 0;
   }
-  if (ctx_dummy_out_len >= CTX_DUMMY_BUFSIZE)
+  if (ctx_dummy_out_len >= CTX_VT_OUTBUFSIZE)
     printf ("ctx_dummy_outbuf overflow\n");
 
   return i;
@@ -896,12 +898,11 @@ static ssize_t ctx_dummy_write (void *s, const void *buf, size_t count)
 static ssize_t ctx_dummy_read    (void *serial_obj, void *buf, size_t count)
 {
   char *dst = (char*)buf;
-printf ("readin\n");
   if (ctx_dummy_in_len)
   {
     *dst = ctx_dummy_inbuf[ctx_dummy_in_read_pos++];
     --ctx_dummy_in_len;
-    if (ctx_dummy_in_read_pos>=CTX_DUMMY_BUFSIZE)ctx_dummy_in_read_pos = 0;
+    if (ctx_dummy_in_read_pos>=CTX_VT_INBUFSIZE)ctx_dummy_in_read_pos = 0;
     return 1;
   }
   return 0;
@@ -909,7 +910,6 @@ printf ("readin\n");
 
 static int ctx_dummy_waitdata (void *serial_obj, int timeout)
 {
-printf ("has dat: %i\n", ctx_dummy_in_len);
   return ctx_dummy_in_len;
 }
 
@@ -8377,7 +8377,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   //if (vt->scroll || full)
     {
       ctx_begin_path (ctx);
-#if 1
+#if CTX_PTY
       ctx_rectangle (ctx, 0, 0, vt->width, //(vt->cols) * vt->cw,
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
@@ -8391,6 +8391,9 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
           //ctx_rgba (ctx,0,0,0,1.0f);
           ctx_fill  (ctx);
         }
+#else
+          //ctx_rgba (ctx,0,0,0,1.0f);
+          ctx_fill  (ctx);
 #endif
       if (vt->scroll != 0.0f)
         ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
@@ -8784,6 +8787,7 @@ static int single_tap (Ctx *ctx, void *data)
 
 void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, int y, int px_x, int px_y)
 {
+#if CTX_PTY
  char buf[64]="";
  int button_state = 0;
  ctx_client_rev_inc (vt->client);
@@ -9000,6 +9004,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
      vt_write (vt, buf, strlen (buf) );
      fsync (vt->vtpty.pty);
    }
+#endif
 }
 
 pid_t vt_get_pid (VT *vt)

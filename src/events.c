@@ -2386,6 +2386,8 @@ extern int ctx_dummy_in_len;
 
 int ctx_input_pending (Ctx *ctx, int timeout)
 {
+  int retval = 0;
+#if CTX_PTY
   struct timeval tv;
   fd_set fdset;
   FD_ZERO (&fdset);
@@ -2404,7 +2406,7 @@ int ctx_input_pending (Ctx *ctx, int timeout)
   tv.tv_usec = timeout;
   tv.tv_sec = timeout / 1000000;
   tv.tv_usec = timeout % 1000000;
-  int retval = select (_ctx_listen_max_fd + 1, &fdset, NULL, NULL, &tv);
+  retval = select (_ctx_listen_max_fd + 1, &fdset, NULL, NULL, &tv);
   if (retval == -1)
   {
 #if CTX_BAREMETAL==0
@@ -2412,6 +2414,7 @@ int ctx_input_pending (Ctx *ctx, int timeout)
 #endif
     return 0;
   }
+#endif
 #ifdef EMSCRIPTEN
   retval += em_in_len;
 #endif

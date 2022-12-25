@@ -226,7 +226,10 @@ static void handle_event (Ctx        *ctx,
   int active_id = ctx_clients_active (ctx);
   CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
   if (!active)
+  {
+     printf("no active client\n");
     return;
+  }
   //if (active->internal)
   //  return;
   VT *vt = ctx_client_vt (active);

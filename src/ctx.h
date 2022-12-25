@@ -2529,7 +2529,7 @@ void _ctx_write_png (const char *dst_path, int w, int h, int num_chans, void *da
 
 void ctx_vt_write (Ctx *ctx, uint8_t byte);
 int ctx_vt_has_data (Ctx *ctx);
-int ctx_vt_read (Ctx *ctx, uint8_t byte);
+int ctx_vt_read (Ctx *ctx);
 
 #ifdef __cplusplus
 }

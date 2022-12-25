@@ -1085,8 +1085,8 @@ float ctx_client_max_y_pos (Ctx *ctx)
 void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
                                float x, float y, float width, float titlebar_height)
 {
-#if 0
-  ctx_move_to (ctx, x, y + height * 0.8);
+#if CTX_PTY==0
+  ctx_move_to (ctx, x, y + titlebar_height * 0.8);
   if (client == ctx->events.active)
     ctx_rgba (ctx, 1, 1,0.4, 1.0);
   else
@@ -1224,7 +1224,11 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
          !flag_is_set(client->flags, ITK_CLIENT_MAXIMIZED) &&
          flag_is_set(client->flags, ITK_CLIENT_UI_RESIZABLE))
       {
+#if CTX_PTY
         itk_style_color (ctx, "titlebar-focused-bg");
+#else
+        ctx_rgb(ctx,0.1,0.2,0.3);
+#endif
 
         ctx_rectangle (ctx,
                        client->x,
