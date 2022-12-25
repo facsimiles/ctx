@@ -30,9 +30,6 @@
 
 extern Ctx *ctx;
 
-void buffer_add_byte (const char byte);
-void buffer_add_str (const char *str);
-
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM DECLARATION
 //--------------------------------------------------------------------+
@@ -43,7 +40,7 @@ void buffer_add_str (const char *str);
 
 #define MAX_REPORT  4
 
-static uint8_t const keycode2ascii[128][2] =  { HID_KEYCODE_TO_ASCII };
+//static uint8_t const keycode2ascii[128][2] =  { HID_KEYCODE_TO_ASCII };
 
 // Each HID instance can has multiple reports
 static struct
@@ -73,39 +70,39 @@ void hid_app_task(void)
 // therefore report_desc = NULL, desc_len = 0
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
 {
-  sprintf(buf, "HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
-  buffer_add_str(buf);
+  //sprintf(buf, "HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
+  //buffer_add_str(buf);
 
   // Interface protocol (hid_interface_protocol_enum_t)
-  const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
+  //const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
   uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
 
-  sprintf(buf, "HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
-  buffer_add_str(buf);
+  //sprintf(buf, "HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
+  //buffer_add_str(buf);
 
   // By default host stack will use activate boot protocol on supported interface.
   // Therefore for this simple example, we only need to parse generic report descriptor (with built-in parser)
   if ( itf_protocol == HID_ITF_PROTOCOL_NONE )
   {
     hid_info[instance].report_count = tuh_hid_parse_report_descriptor(hid_info[instance].report_info, MAX_REPORT, desc_report, desc_len);
-    sprintf(buf, "HID has %u reports \r\n", hid_info[instance].report_count);
-    buffer_add_str(buf);
+    //sprintf(buf, "HID has %u reports \r\n", hid_info[instance].report_count);
+    //buffer_add_str(buf);
   }
 
   // request to receive report
   // tuh_hid_report_received_cb() will be invoked when report is available
   if ( !tuh_hid_receive_report(dev_addr, instance) )
   {
-    sprintf(buf, "Error: cannot request to receive report\r\n");
-    buffer_add_str(buf);
+    //sprintf(buf, "Error: cannot request to receive report\r\n");
+    //buffer_add_str(buf);
   }
 }
 
 // Invoked when device with hid interface is un-mounted
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 {
-  sprintf(buf, "HID device address = %d, instance = %d is unmounted\r\n", dev_addr, instance);
-    buffer_add_str(buf);
+  //sprintf(buf, "HID device address = %d, instance = %d is unmounted\r\n", dev_addr, instance);
+  //buffer_add_str(buf);
 }
 
 // Invoked when received report from device via interrupt endpoint
@@ -133,7 +130,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
   // continue to request to receive report
   if ( !tuh_hid_receive_report(dev_addr, instance) )
   {
-    buffer_add_str("Error: cannot request to receive report\r\n");
+   // buffer_add_str("Error: cannot request to receive report\r\n");
   }
 }
 
@@ -194,13 +191,13 @@ static int translate_key (int key)
    case HID_KEY_8: return '8';
    case HID_KEY_9: return '9';
    case HID_KEY_0: return '0';
-   case HID_KEY_ENTER: return 13;
+   case HID_KEY_ENTER: return '\r';
    case HID_KEY_ESCAPE: return 27;
-   case HID_KEY_BACKSPACE: return 8;
-   case HID_KEY_TAB: return 9;
-   case HID_KEY_SPACE: return 32;
+   case HID_KEY_BACKSPACE: return '\b';
+   case HID_KEY_TAB: return '\t';
+   case HID_KEY_SPACE: return ' ';
    case HID_KEY_MINUS: return 189;
-   case HID_KEY_EQUAL: return 61;
+   case HID_KEY_EQUAL: return '=';
    case HID_KEY_BRACKET_LEFT: return 219;
    case HID_KEY_BRACKET_RIGHT: return 221;
    case HID_KEY_BACKSLASH: return 220;
@@ -211,7 +208,7 @@ static int translate_key (int key)
    case HID_KEY_COMMA: return 188;
    case HID_KEY_PERIOD: return 190;
    case HID_KEY_SLASH: return 191;
-   //case HID_KEY_CAPS_LOCK: return ;
+   case HID_KEY_CAPS_LOCK: return '\a'; // bell on caps-lock..
    case HID_KEY_F1: return 112;
    case HID_KEY_F2: return 113;
    case HID_KEY_F3: return 114;
@@ -270,91 +267,62 @@ static int translate_key (int key)
    case HID_KEY_CONTROL_LEFT: return 17;
    case HID_KEY_SHIFT_LEFT: return 16;
    case HID_KEY_ALT_LEFT: return 18;
-   //case HID_KEY_GUI_LEFT: return ;
+   case HID_KEY_GUI_LEFT: return 19; // extrapolated guess of value
    case HID_KEY_CONTROL_RIGHT: return 17;
    case HID_KEY_SHIFT_RIGHT: return 16;
    case HID_KEY_ALT_RIGHT: return 18;
-   //case HID_KEY_GUI_RIGHT: return ;
+   case HID_KEY_GUI_RIGHT: return 19; // extrapolated guess of value
    default: return -1;
   }
 }
 
 static void process_kbd_report(hid_keyboard_report_t const *report)
 {
-  static hid_keyboard_report_t prev_report = { 0, 0, {0} }; // previous report to check key released
+  static hid_keyboard_report_t prev_report = { 0, 0, {0} };
   static uint8_t prev_modifier = 0;
 
+  // handle modifiers, we treat left and right shift/alt/ctrl the same
   if (  ((prev_modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT))!=0) &&
        !((report->modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT))!=0))
-  {
     ctx_key_up(ctx, 16, NULL, 0);
-  }
   if ( !((prev_modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT))!=0) &&
         ((report->modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT))!=0))
-  {
     ctx_key_down(ctx, 16, NULL, 0);
-  }
   if ( !((prev_modifier & (KEYBOARD_MODIFIER_LEFTCTRL| KEYBOARD_MODIFIER_RIGHTCTRL))!=0) &&
         ((report->modifier & (KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTCTRL))!=0))
-  {
     ctx_key_down(ctx, 17, NULL, 0);
-  }
   if (  ((prev_modifier & (KEYBOARD_MODIFIER_LEFTCTRL| KEYBOARD_MODIFIER_RIGHTCTRL))!=0) &&
        !((report->modifier & (KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_RIGHTCTRL))!=0))
-  {
     ctx_key_up(ctx, 17, NULL, 0);
-  }
 
   if ( !((prev_modifier & (KEYBOARD_MODIFIER_LEFTALT| KEYBOARD_MODIFIER_RIGHTALT))!=0) &&
         ((report->modifier & (KEYBOARD_MODIFIER_LEFTALT | KEYBOARD_MODIFIER_RIGHTALT))!=0))
-  {
     ctx_key_down(ctx, 18, NULL, 0);
-  }
   if (  ((prev_modifier & (KEYBOARD_MODIFIER_LEFTALT| KEYBOARD_MODIFIER_RIGHTALT))!=0) &&
        !((report->modifier & (KEYBOARD_MODIFIER_LEFTALT | KEYBOARD_MODIFIER_RIGHTALT))!=0))
-  {
     ctx_key_up(ctx, 18, NULL, 0);
-  }
   prev_modifier = report->modifier;
 
-  //------------- example code ignore control (non-printable) key affects -------------//
+  // handle other keys presses
   for(uint8_t i=0; i<6; i++)
   {
     if ( report->keycode[i] )
     {
-      if ( find_key_in_report(&prev_report, report->keycode[i]) )
+      if (!find_key_in_report(&prev_report, report->keycode[i]) )
       {
-        // exist in previous report means the current key is holding
-      }else
-      {
-        // not existed in previous report means the current key is pressed
-        bool const is_shift = report->modifier & (KEYBOARD_MODIFIER_LEFTSHIFT | KEYBOARD_MODIFIER_RIGHTSHIFT);
-        uint8_t ch = keycode2ascii[report->keycode[i]][is_shift ? 1 : 0];
-        //putchar(ch);
-        //buffer_add_byte(ch);
-        //uart_putc(uart0, ch);
-        ctx_key_down(ctx, translate_key(report->keycode[i]), NULL, 0);
-        ctx_key_press(ctx, translate_key(report->keycode[i]), NULL, 0);
-        //if ( ch == '\r' ) {
-          //buffer_add_byte('\n');
-          //uart_putc(uart0,'\n');
-        //}
-
-        //fflush(stdout); // flush right away, else nanolib will wait for newline
+        int translated_code = translate_key(report->keycode[i]);
+        ctx_key_down(ctx, translated_code, NULL, 0);
+        ctx_key_press(ctx, translated_code, NULL, 0);
       }
     }
-    // TODO example skips key released
   }
 
+  // handle other keys releases
   for(uint8_t i=0; i<6; i++)
   {
     if (prev_report.keycode[i])
     {
-      if ( find_key_in_report(report, prev_report.keycode[i]))
-      {
-         // still exist, being held
-      }
-      else
+      if (!find_key_in_report(report, prev_report.keycode[i]))
       {
         ctx_key_up(ctx, translate_key(prev_report.keycode[i]), NULL, 0);
       }
@@ -458,7 +426,7 @@ static void process_generic_report(uint8_t dev_addr, uint8_t instance, uint8_t c
 
   if (!rpt_info)
   {
-    buffer_add_str ("Couldn't find the report info for this report !\r\n");
+    //buffer_add_str ("Couldn't find the report info for this report !\r\n");
     return;
   }
 

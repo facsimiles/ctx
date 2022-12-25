@@ -9,7 +9,6 @@
 #include "hardware/gpio.h"
 #include "hardware/uart.h"
 
-
 #include <stdio.h>
 #include <math.h>
 
@@ -20,122 +19,11 @@ Ctx *ctx_pico_init (void);
 Ctx *ctx = NULL;
 CtxClient *client = NULL;
 
-
 #define UART_ID uart0
 #define BAUD_RATE 115200
 
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
-
-typedef struct _BufferedLine BufferedLine;
-struct _BufferedLine {
-  char *str;
-  BufferedLine *prev;
-};
-
-BufferedLine *scrollback = NULL;
-
-int scrollback_count ()
-{
-  BufferedLine *line = scrollback;
-  int count = 0;
-  while (line)
-  {
-    count++; line = line->prev;
-  }
-  return count;
-}
-
-void trim_scrollback (int maxlines)
-{
-  int count = scrollback_count ();
-  while (maxlines < count)
-  {
-    int no = 0;
-    BufferedLine *line = scrollback;
-    BufferedLine *next = NULL;
-    for (;no < maxlines; no++) { next=line;line = line->prev; }
-    
-    next->prev = NULL;
-    while (line)
-    {
-      free (line->str);
-      BufferedLine *tmp=line;
-      line=line->prev;
-      free(tmp);
-    }
-    count = scrollback_count ();
-  }
-}
-
-
-void buffer_add_byte (const char byte)
-{
-  BufferedLine *line = scrollback;
-
-  if (!line)
-  {
-    line = calloc (sizeof (BufferedLine), 1);
-    line->str = strdup("");
-    scrollback = line;
-  }
-
-  if (byte == '\n')
-  {
-    line = calloc (sizeof (BufferedLine), 1);
-    line->str = strdup("");
-    line->prev = scrollback;
-    scrollback = line;
-    trim_scrollback (12);
-  }
-  else
-  {
-    int oldlen = strlen (line->str);
-    char *copy = malloc (oldlen+2);
-    strcpy(copy, line->str);
-    copy[oldlen] = byte;
-    copy[oldlen+1] = 0;
-    free (line->str);
-    line->str = copy;
-  }
-}
-
-void buffer_add_str (const char *str)
-{
-  if (str[strlen(str)]=='\n')
-  {
-    BufferedLine *line = calloc (sizeof (BufferedLine), 1);
-    line->str = strdup(str);
-    line->prev = scrollback;
-  }
-  else
-  if (str)
-  for (int i = 0; str[i]; i++)
-    buffer_add_byte (str[i]);
-}
-
-void draw_text_buffer (Ctx *ctx)
-{
-      ctx_start_frame (ctx);
-      float em = 18;
-      float width = ctx_width (ctx);
-      float height = ctx_height (ctx);
-      ctx_wrap_right (ctx, width-em);
-      ctx_line_height (ctx, 0.9);
-      ctx_font_size (ctx, em);
-
-      float y = height - em * 0.2;
-      BufferedLine *line = scrollback;
-      while (line && y > 0)
-      {
-        ctx_move_to (ctx, 1, y);
-        ctx_text (ctx, line->str);
-        line = line->prev;
-        y -= em * 1.5;
-      }
- 
-      ctx_end_frame (ctx);
-}
 
 
 static void handle_event (Ctx        *ctx,
