@@ -236,26 +236,9 @@ static int translate_key (int key)
    case HID_KEY_ARROW_UP: return 38;
    //case HID_KEY_NUM_LOCK: return ;
 #if 0
-   case HID_KEY_KEYPAD_DIVIDE: return ;
-   case HID_KEY_KEYPAD_MULTIPLY: return ;
-   case HID_KEY_KEYPAD_SUBTRACT: return ;
-   case HID_KEY_KEYPAD_ADD: return ;
-   case HID_KEY_KEYPAD_ENTER: return ;
-   case HID_KEY_KEYPAD_1: return ;
-   case HID_KEY_KEYPAD_2: return ;
-   case HID_KEY_KEYPAD_3: return ;
-   case HID_KEY_KEYPAD_4: return ;
-   case HID_KEY_KEYPAD_5: return ;
-   case HID_KEY_KEYPAD_6: return ;
-   case HID_KEY_KEYPAD_7: return ;
-   case HID_KEY_KEYPAD_8: return ;
-   case HID_KEY_KEYPAD_9: return ;
-   case HID_KEY_KEYPAD_0: return ;
-   case HID_KEY_KEYPAD_DECIMAL: return ;
    case HID_KEY_EUROPE_2: return ;
    case HID_KEY_APPLICATION: return ;
    case HID_KEY_POWER: return ;
-   case HID_KEY_KEYPAD_EQUAL: return ;
    case HID_KEY_F13: return ;
    case HID_KEY_F14: return ;
    case HID_KEY_F15: return ;
@@ -263,6 +246,27 @@ static int translate_key (int key)
    case HID_KEY_F17: return ;
    case HID_KEY_F18: return ;
 #endif
+
+// wrong - but aliasing makes more things work as expected for now
+   //case HID_KEY_KEYPAD_MULTIPLY: return ; // XXX inexpressible with aliasing
+   //case HID_KEY_KEYPAD_ADD: return ; // XXX
+   case HID_KEY_KEYPAD_DIVIDE: return 191;
+   case HID_KEY_KEYPAD_SUBTRACT: return 189;
+   case HID_KEY_KEYPAD_ENTER: return '\r';
+   case HID_KEY_KEYPAD_DECIMAL: return 190;
+   case HID_KEY_KEYPAD_EQUAL: return '=';
+   case HID_KEY_KEYPAD_1: return '1';
+   case HID_KEY_KEYPAD_2: return '2';
+   case HID_KEY_KEYPAD_3: return '3';
+   case HID_KEY_KEYPAD_4: return '4';
+   case HID_KEY_KEYPAD_5: return '5';
+   case HID_KEY_KEYPAD_6: return '6';
+   case HID_KEY_KEYPAD_7: return '7';
+   case HID_KEY_KEYPAD_8: return '8';
+   case HID_KEY_KEYPAD_9: return '9';
+   case HID_KEY_KEYPAD_0: return '0';
+
+
    case HID_KEY_RETURN: return 13;
    case HID_KEY_CONTROL_LEFT: return 17;
    case HID_KEY_SHIFT_LEFT: return 16;
