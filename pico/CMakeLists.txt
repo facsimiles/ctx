@@ -28,8 +28,7 @@ add_executable(ctxterm
         )
 
 target_include_directories(ctxterm PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR})
-
+        ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../fonts)
 # pull in common dependencies
 target_link_libraries(ctxterm
                       pico_stdlib
@@ -37,7 +36,44 @@ target_link_libraries(ctxterm
                       hardware_uart
                       tinyusb_host
                       tinyusb_board)
-
 # create map/bin/hex file etc.
 pico_add_extra_outputs(ctxterm)
+
+
+add_executable(demo
+        talk.c
+        ctx.h
+        ctx.c
+        tusb_keyboard.c
+        tusb_config.h
+        itk.h
+        )
+target_include_directories(demo PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../fonts)
+target_link_libraries(demo
+                      pico_stdlib
+                      hardware_pio
+                      tinyusb_host
+                      tinyusb_board)
+# create map/bin/hex file etc.
+pico_add_extra_outputs(demo)
+
+
+add_executable(itk-demo
+        itk-demo.c
+        ctx.h
+        ctx.c
+        tusb_keyboard.c
+        tusb_config.h
+        itk.h
+        )
+target_include_directories(itk-demo PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../fonts)
+target_link_libraries(itk-demo
+                      pico_stdlib
+                      hardware_pio
+                      tinyusb_host
+                      tinyusb_board)
+# create map/bin/hex file etc.
+pico_add_extra_outputs(itk-demo)
 
