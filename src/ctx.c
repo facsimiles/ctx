@@ -2104,9 +2104,17 @@ ctx_new_drawlist (int width, int height)
 static Ctx *ctx_new_ui (int width, int height, const char *backend);
 #endif
 
+#if CTX_PTY==0
+Ctx *ctx_pico_init (void);
+#endif
+
 CTX_EXPORT Ctx *
 ctx_new (int width, int height, const char *backend)
 {
+#if CTX_PTY==0
+  return ctx_pico_init ();
+#endif
+
 #if CTX_EVENTS
   if (backend && !ctx_strcmp (backend, "drawlist"))
 #endif
@@ -2765,6 +2773,18 @@ CtxMediaTypeClass ctx_media_type_class (const char *media_type)
     if (media_type[4]!='e')ret = 0;*/
   }
   return ret;
+}
+
+#else
+int
+ctx_get_contents (const char     *uri,
+                  unsigned char **contents,
+                  long           *length)
+{
+  *contents = NULL;
+  *length = -1;
+  return -1;
+//ctx_get_contents2 (uri, contents, length, 1024*1024*1024);
 }
 
 #endif

@@ -2260,7 +2260,10 @@ void ctx_windowtitle (Ctx *ctx, const char *text);
 struct _CtxBackend
 {
   Ctx                      *ctx;
+
   void  (*process)         (Ctx *ctx, CtxCommand *entry);
+
+  /* for interactive/event-handling backends */
   void  (*start_frame)     (Ctx *ctx);
   void  (*end_frame)       (Ctx *ctx);
 

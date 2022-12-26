@@ -11,8 +11,20 @@
 #define usecs(time)    ((uint64_t)(time.tv_sec - start_time.tv_sec) * 1000000 + time.     tv_usec)
 
 #if !__COSMOPOLITAN__
-static struct timeval start_time;
 
+#if CTX_PTY==0
+#include "pico/stdlib.h"
+#include "hardware/timer.h"
+static uint64_t pico_get_time(void) {
+    // Reading low latches the high value
+    uint32_t lo = timer_hw->timelr;
+    uint32_t hi = timer_hw->timehr;
+    return ((uint64_t) hi << 32u) | lo;
+}
+static uint64_t start_time;
+#else
+static struct timeval start_time;
+#endif
 static void
 _ctx_init_ticks (void)
 {
@@ -20,15 +32,24 @@ _ctx_init_ticks (void)
   if (done)
     return;
   done = 1;
+#if CTX_PTY==0
+  start_time = pico_get_time();
+#else
   gettimeofday (&start_time, NULL);
+#endif
 }
 
 static inline unsigned long
 _ctx_ticks (void)
 {
+#if CTX_PTY==0
+  uint64_t measure_time =  pico_get_time();
+  return measure_time - start_time;
+#else
   struct timeval measure_time;
   gettimeofday (&measure_time, NULL);
   return usecs (measure_time) - usecs (start_time);
+#endif
 }
 
 CTX_EXPORT unsigned long
@@ -2768,9 +2789,9 @@ static int evsource_kb_term_init ()
 }
 static int evsource_kb_term_has_event (void)
 {
-  struct timeval tv;
   int retval = 0;
 #if CTX_PTY
+  struct timeval tv;
   fd_set rfds;
   FD_ZERO (&rfds);
   FD_SET(STDIN_FILENO, &rfds);

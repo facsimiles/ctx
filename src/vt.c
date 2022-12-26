@@ -8767,9 +8767,10 @@ void vt_set_local (VT *vt, int local)
   vt->local_editing = local;
 }
 
+#if CTX_PTY
 static unsigned long prev_press_time = 0;
 static int short_count = 0;
-
+#endif
 
 void terminal_set_primary (const char *text)
 {
@@ -8779,7 +8780,9 @@ void terminal_set_primary (const char *text)
 }
 
 void terminal_long_tap (Ctx *ctx, VT *vt);
+#if CTX_PTY
 static int long_tap_cb_id = 0;
+#endif
 static int single_tap (Ctx *ctx, void *data)
 {
 #if 0 // XXX

@@ -596,13 +596,11 @@ int ctx_nct_has_event (Ctx  *n, int delay_ms)
 
 const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
 {
-  unsigned char buf[20];
-  int length;
-
-
   if (x) *x = -1;
   if (y) *y = -1;
 #if CTX_PTY
+  unsigned char buf[20];
+  int length;
   if (!ctx_term_signal_installed)
     {
       _nc_raw ();
