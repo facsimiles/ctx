@@ -1489,7 +1489,7 @@ static void vtcmd_set_left_and_right_margins (VT *vt, const char *sequence)
 
 static inline int parse_int (const char *arg, int def_val)
 {
-  if (!isdigit (arg[1]) || strlen (arg) == 2)
+  if (!((arg[1]>='0' && arg[1]<='9')) || strlen (arg) == 2)
     { return def_val; }
   return atoi (arg+1);
 }
