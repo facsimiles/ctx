@@ -18,7 +18,7 @@ static uint64_t prev_ticks = 0;
   static float dot_scale = 42.0;
   static int shape = 0;
 static int scene_no = 0;
-
+static int bouncy = 0;
 
 typedef void (*SceneFun)(Ctx *ctx, const char *title, int frame_no, float time_delta);
 typedef struct Scene{
@@ -1128,6 +1128,7 @@ int n_scenes = sizeof (scenes)/sizeof(scenes[0]);
 
 static void reset_scene (Ctx *ctx)
 {
+  bouncy = 0;
   scene_frames = 0;
   scene_elapsed_time = 0.0f;
   auto_advance = 0;
@@ -1178,6 +1179,10 @@ static void action_fullscreen (CtxEvent *event, void *data1, void *data2)
     ctx_set_fullscreen (ctx, 1);
 }
 
+static void action_bouncy (CtxEvent *event, void *data1, void *data2)
+{
+  bouncy = 1;
+}
 
 static void action_quit (CtxEvent *event, void *data1, void *data2)
 {
@@ -1188,6 +1193,11 @@ static void action_quit (CtxEvent *event, void *data1, void *data2)
 static int ui_scenes (Ctx *ctx, void *data)
 {
   uint64_t ticks = ctx_ticks ();
+  static float bx = 11.0;
+  static float by = 23.0;
+  static float bvx = 4;
+  static float bvy = 2.4;
+ 
 
   render_time = (ticks - prev_ticks) / 1000.0f/ 1000.0f / 10.0f;
   render_fps = 1.0 / render_time;
@@ -1201,8 +1211,19 @@ static int ui_scenes (Ctx *ctx, void *data)
     if ((unsigned)scene_no >= sizeof (scenes)/sizeof(scenes[0]))
       scene_no = 0;//sizeof (scenes)/sizeof(scenes[0])-1;
 
+  ctx_save (ctx);
   scenes[scene_no].fun (ctx, scenes[scene_no].title, scene_frames, render_time);
+  ctx_restore (ctx);
  
+  if (bouncy)
+  {
+    ctx_logo (ctx, bx, by, ctx_height(ctx) * 0.1f);
+    bx += bvx;
+    by += bvy;
+    if (bx < 0 || bx > ctx_width(ctx)) bvx *= -1;
+    if (by < 0 || by > ctx_height(ctx)) bvy *= -1;
+  }
+
   ctx_add_key_binding (ctx, "up", NULL, "foo",  action_scroll_up, NULL);
   ctx_add_key_binding (ctx, "down", NULL, "foo",  action_scroll_down, NULL);
   ctx_add_key_binding (ctx, "home", NULL, "foo",  action_first, NULL);
@@ -1211,6 +1232,7 @@ static int ui_scenes (Ctx *ctx, void *data)
   ctx_add_key_binding (ctx, "q", NULL, "foo",     action_quit, NULL);
   ctx_add_key_binding (ctx, "F11", NULL, "foo",   action_fullscreen, NULL);
   ctx_add_key_binding (ctx, "f", NULL, "foo",   action_fullscreen, NULL);
+  ctx_add_key_binding (ctx, "b", NULL, "foo",   action_bouncy, NULL);
   ctx_end_frame (ctx);
 
   if(auto_advance)
