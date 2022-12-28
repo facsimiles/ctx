@@ -7,10 +7,10 @@
 #define CTX_SHAPE_CACHE_DIM     16*18
 #define CTX_SHAPE_CACHE_ENTRIES 128
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 36
-#define CTX_MIN_EDGE_LIST_SIZE 256
-#define CTX_MAX_EDGE_LIST_SIZE 512
-#define CTX_MIN_JOURNAL_SIZE   8192
-#define CTX_MAX_JOURNAL_SIZE   8192
+#define CTX_MIN_EDGE_LIST_SIZE 800
+#define CTX_MAX_EDGE_LIST_SIZE 800
+#define CTX_MIN_JOURNAL_SIZE   6000
+#define CTX_MAX_JOURNAL_SIZE   6000
 
 #define CTX_LIMIT_FORMATS       1
 #define CTX_DITHER              1
@@ -26,6 +26,7 @@
 
 #define CTX_VT         1
 #define CTX_PARSER     1
+#define CTX_PARSER_MAXLEN   (8 *1024)
 #define CTX_RASTERIZER 1
 #define CTX_EVENTS     1
 #define CTX_RAW_KB_EVENTS 0
@@ -64,7 +65,7 @@
 #include "bsp/board.h"
 #include "tusb.h"
 
-uint8_t scratch[24*1024]; // perhaps too small, but for a flexible terminal
+uint8_t scratch[64*1024]; // perhaps too small, but for a flexible terminal
                           // we need all the memory possible for terminal
                           // and its scrollback
 
@@ -91,7 +92,6 @@ uint8_t scratch[24*1024]; // perhaps too small, but for a flexible terminal
 
 #endif
 
-#define SERIAL_CLK_DIV 2.0f
 
 #define ST7789_MADCTL     0x36
 #define ST7789_PORTRAIT   0x00
@@ -304,15 +304,20 @@ Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
     return ctx;
 }
 
+Ctx *pico_ctx = NULL;
 
 Ctx *ctx_pico_init (void)
 {
-  return ctx_pico_st7789_init (SCREEN_WIDTH, SCREEN_HEIGHT,
+  if (!pico_ctx){
+     set_sys_clock_khz(270000, true); // overclock by default
+     pico_ctx = ctx_pico_st7789_init (SCREEN_WIDTH, SCREEN_HEIGHT,
                                PIN_DIN,
                                PIN_CLK,
                                PIN_CS,
                                PIN_DC,
                                PIN_RESET,
                                PIN_BL,
-                               SERIAL_CLK_DIV);
+                               2.0f); // 1.0 without overclock
+  }
+  return pico_ctx;
 }
