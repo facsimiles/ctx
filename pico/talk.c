@@ -209,8 +209,8 @@ static void scene_drag (Ctx *ctx, const char *title, int frame_no, float time_de
   if (first_run)
   for (int i = 0; i <  8; i++)
   {
-    objects[i].x = (i+1) * 10;
-    objects[i].y = (i+1) * 10;
+    objects[i].x = (i+1) * 8;
+    objects[i].y = (i+1) * 8;
     objects[i].width = 20;
     objects[i].height = 20;
     objects[i].red = 0.5;
@@ -226,9 +226,8 @@ static void scene_drag (Ctx *ctx, const char *title, int frame_no, float time_de
   ctx_rectangle (ctx, 0, 0, width, height);
   ctx_gray (ctx, 0);
   ctx_fill (ctx);
-  frame_no %= 400;
 
-  ctx_rotate (ctx, 0.2);
+  ctx_rotate (ctx, 0.2 + frame_no * 0.001);
   ctx_scale (ctx, width/100, height/100);
   ctx_scale (ctx, 0.9, 0.9);
 
@@ -446,19 +445,19 @@ char *slide_intro0[]=
 {
   "https://ctx.graphics/\n",
   "native","vectors","from","microcontrollers","to","4k\n",
+  "used","by:","ctx terminal","GEGL","(GIMP)","card10\n",
   "float", "1/2/4bit", "grayscale","RGB565","RGB","CMYK","PDF\n",
   "single header", "70-300kb","compiled\n",
+  "change","detection","+","sub-region-render\n",
   "event","handling\n",
-  "change","detection\n",
-  "sub-region-render\n",
-  "multi","threaded\n",
+  "multi","threading\n",
   "LGPLv3+\n",
 };
 
 char *slide_terminal[]=
 {
   "ctx","terminal\n",
-  "modern","DEC,","xterm","workalike\n",
+  "DEC term/","xterm","workalike\n",
   "  tabs/MDI\n",
   "  mouse\n",
   "  keyboard\n",
@@ -466,13 +465,13 @@ char *slide_terminal[]=
   "  kitty+iterm","rasters\n",
   "  atty","PCM\n",
   "  ctx","graphics\n",
-  "  a bit bit-rotted, keep away from untrusted data\n",
+  "  somewhat bit-rotted, keep away from untrusted data\n",
   NULL
 };
 
 char *slide_intro1[]=
 {
-  "native", "vectors", "means","rasterized","as","late","as","possible",
+  "native", "vectors", "are","rasterized","as","late","as","possible",
   "ideally","on","the","GPU",
   NULL
 };
@@ -500,14 +499,29 @@ char *slide_protocol[]=
   "  L 10 10\n",
   "  lineTo 10 10\n",
   "  ctx_line_to (ctx, 10, 10);\n",
+  "\n",
   "  'L', {10.0f, 10.0f}\n",
   NULL};
 
+char *slide_protocol1[]=
+{
+  "protocol/API\n",
+  "  C 10 10 30 30 40 40\n",
+  "  curveTo 10 10 30 30 40 40\n",
+  "  ctx_curve_to (ctx, 10, 10, 30, 30, 40, 40);\n",
+  "\n",
+  "  'L', {10.0f, 10.0f}\n",
+  "  0,   {30.0f, 30.0f}\n",
+  "  0,   {40.0f, 40.0f}\n",
+  NULL};
+
 char *slide_protocol2[]={
-  "  beziers\n",
+  "  polylines, curves\n",
   "  fill","and","stroke\n",
+  "  transforms\n",
+  "    scale,translate,rotate,perspective\n",
   "  clipping\n",
-  "  text\n",
+  "  fonts/text\n",
   "  transparency\n",
   "  gradients\n",
   "  textures\n",
@@ -624,6 +638,8 @@ char *slide_backend_ctx[]=
 {
   "backend:ctx\n",
   "interactive backend\n",
+  "ctx in terminal\n",
+  "ctxevents for terminal\n",
   NULL
 };
 
@@ -632,11 +648,11 @@ char *slide_backend_ctx[]=
 
 char *slide_parser[]=
 {
-  "ctx_parse(Ctx *ctx, const char *string);"
-  "parser\n",
+  "ctx_parse(Ctx *ctx, const char *string);\n"
+  "\n",
   "  parses the text version of the protocol\n",
-  "  and calls another backend\n",
-  "  also interprets some unit suffixes\n",
+  "  interprets some unit suffixes\n",
+  "  and calls another backend for each command\n",
   NULL
 };
 
@@ -654,16 +670,13 @@ char *slide_rasterizer[]=
 char *slide_encodings[]=
 {
   "compositing","code","target","pixel","encodings\n",
-  "leans","on","autovectorization\n"
   "\n",
-  "graycale\n",
+  "grayscale:",
   "1bit/2bit/4bit/8bit/float\n",
-  "RGB",
-  "\n",
-  "8bit sRGB, better color managed float, RGBA, BGR565 RGB332\n",
-  "CMYK\n",
+  "RGB:",
+  "8bit","sRGB,","float,","RGBA,","BGR565","RGB332\n",
+  "CMYK:",
   "8bit, float",
-  "\n",
   NULL
 };
 char *slide_backend_displaylist[]=
@@ -672,9 +685,6 @@ char *slide_backend_displaylist[]=
   "stores 9byte chunks of commands in a (resizable) array",
   NULL
 };
-
-
-
 
 char *slide_backend_hashcache[]=
 {
@@ -705,7 +715,8 @@ char *slide_backend_headless[]=
 
 char *slide_license[]=
 {
-  "with","funding","equal","took","100kEUR/year","for","the","time","I","have","invested","in","ctx","the","license","can","be","changed","from","LGPL","to","BSD,",
+  //"with","funding","equal","took","100kEUR/year","for","the","time","I","have","invested","in","ctx","the","license","can","be","changed","from","LGPL","to","BSD,",
+  "lgplv3+",
   NULL
 };
 
@@ -713,11 +724,11 @@ char *slide_license[]=
 
 char *slide_backend_cb[]=
 {
-  "backend:cb",
+  "backend:cb\n",
   "multi strategy backend\n",
   "can use hash cache\n",
   "can use lowfi res/bitdepth\n",
-  "refactor fb/SDL to be tiledcb",
+  "userfun for subregion update\n",
   NULL
 };
 
@@ -762,19 +773,46 @@ char *slide_fonts[]=
 char *slide_mcu[]=
 {
   "card10\n",
-  "  ARM Cortex-M4f","96mhz,","512kb","RAM\n","fpu",
+  "  ARM Cortex-M4f","96mhz,","512kb","RAM\n",
   "esp32\n",
-  "  lx7 240mhz","320kb","RAM\n","fpu",
+  "  lx7 240mhz","320kb","RAM\n",
   "rp2030\n",
   "  ARM Cortex-M0","133mhz (OC 270mhz)\n",
   NULL
 };
 
+char *slide_events2[]=
+{
+  " .. make path ..\n",
+  "ctx_listen","(ctx,","CTX_DRAG,","object_drag,","&objects[i],","NULL);",
+  NULL
+};
+
+char *slide_events3[]=
+{
+"static void action_fullscreen (CtxEvent *event, void *data1, void *data2)\n",
+"{\n",
+" Ctx *ctx = event->ctx;\n",
+" if (ctx_get_fullscreen (ctx))\n",
+"    ctx_set_fullscreen (ctx, 0);\n",
+"  else\n",
+"    ctx_set_fullscreen (ctx, 1);\n",
+"}\n",
+"\n",
+"ctx_add_key_binding","(ctx, \"up\", NULL, \"foo\",","action_scroll_up, NULL);\n",
+"ctx_add_key_binding","(ctx, \"down\", NULL, \"foo\",","action_scroll_down, NULL);\n",
+"ctx_add_key_binding","(ctx, \"home\", NULL, \"foo\",","action_first, NULL);\n",
+"ctx_add_key_binding","(ctx, \"left\", NULL, \"foo\",","action_prev, NULL);\n",
+"ctx_add_key_binding","(ctx, \"right\", NULL, \"foo\",","action_next, NULL);\n",
+"ctx_add_key_binding","(ctx, \"q\", NULL, \"foo\",","action_quit, NULL);\n",
+"ctx_add_key_binding","(ctx, \"F11\", NULL, \"foo\",","action_fullscreen, NULL);\n",
+"ctx_add_key_binding","(ctx, \"f\", NULL, \"foo\",","action_fullscreen, NULL);\n",
+  NULL
+};
+
 char *slide_simd[]=
 {
-  "compilers have gotten real good at SIMD\n",
-  "for x86_64 the terminal build of ctx builds\n",
-  "3 different microarchitexture of x86_64\n"
+  "auto-vectorize!\n",
 };
 
 
@@ -784,6 +822,11 @@ static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_de
   if (!strcmp (title, "rasterizer"))   words = slide_rasterizer;
   else if (!strcmp (title, "parser"))  words = slide_parser;
   else if (!strcmp (title, "encodings"))   words = slide_encodings;
+  else if (!strcmp (title, "simd"))               words = slide_simd;
+
+
+  else if (!strcmp (title, "events2"))    words = slide_events2;
+  else if (!strcmp (title, "events3"))    words = slide_events3;
   else if (!strcmp (title, "protocol"))    words = slide_protocol;
   else if (!strcmp (title, "backends"))    words = slide_backends;
   else if (!strcmp (title, "backend-cb"))  words = slide_backend_cb;
@@ -801,7 +844,6 @@ static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_de
   else if (!strcmp (title, "backend-sdl"))       words = slide_backend_sdl;
   else if (!strcmp (title, "terminal"))          words = slide_terminal;
   else if (!strcmp (title, "mcu"))               words = slide_mcu;
-  else if (!strcmp (title, "simd"))               words = slide_simd;
   else if (!strcmp (title, "fonts"))             words = slide_fonts;
   else if (!strcmp (title, "intro"))     words = slide_intro;
   else if (!strcmp (title, "intro0"))    words = slide_intro0;
@@ -810,6 +852,7 @@ static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_de
   else if (!strcmp (title, "intro3"))    words = slide_intro3;
   else if (!strcmp (title, "intro4"))    words = slide_intro4;
   else if (!strcmp (title, "license"))    words = slide_license;
+  else if (!strcmp (title, "protocol1"))    words = slide_protocol1;
   else if (!strcmp (title, "protocol2"))    words = slide_protocol2;
 
   float width = ctx_width (ctx);
@@ -817,8 +860,6 @@ static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_de
   float alpha = 0.0;
   float beta = 0.0;
   static int last_lines = 0;
-
-  static float scroll = 0.0;
 
   beta = scene_elapsed_time/6.0;
   beta = ctx_minf (beta, 1.0);
@@ -860,13 +901,15 @@ static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_de
   y = (int) y;
 
   ctx_save (ctx);
-  //ctx_translate (ctx, 0.0, -scroll);
+
+  static float scrolled = 0.0;
+  scrolled = scrolled * 0.8 + scroll * 0.2;
+
+  ctx_translate (ctx, 0.0, scrolled * ctx_height (ctx));
 
   srandom (0);
 
-  int iscroll = scroll;
-
-  ctx_move_to (ctx, 0, (int)(font_size - iscroll));
+  ctx_move_to (ctx, 0, (int)(font_size) * 0.7);
 
 
   for (int i = 0; i < count && words[i]; i++)
@@ -946,7 +989,7 @@ static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_de
   ctx_restore (ctx);
   last_lines ++;
 
-  if (y > height- font_size) scroll = scroll * 0.95 + 0.05 * (y -height + font_size)  ; else scroll = 0;
+  //if (y > height- font_size) scroll = scroll * 0.95 + 0.05 * (y -height + font_size)  ; else scroll = 0;
 }
 
 static void scene_text_50 (Ctx *ctx, const char *title, int frame_no, float time_delta)
@@ -977,6 +1020,14 @@ static void scene_text_15 (Ctx *ctx, const char *title, int frame_no, float time
 {
    scene_text (ctx, title, frame_no, time_delta, 1.0/15.0f);
 }
+static void scene_text_14 (Ctx *ctx, const char *title, int frame_no, float time_delta)
+{
+   scene_text (ctx, title, frame_no, time_delta, 1.0/14.0f);
+}
+static void scene_text_13 (Ctx *ctx, const char *title, int frame_no, float time_delta)
+{
+   scene_text (ctx, title, frame_no, time_delta, 1.0/13.0f);
+}
 static void scene_text_12 (Ctx *ctx, const char *title, int frame_no, float time_delta)
 {
    scene_text (ctx, title, frame_no, time_delta, 1.0/12.0f);
@@ -985,6 +1036,11 @@ static void scene_text_12 (Ctx *ctx, const char *title, int frame_no, float time
 static void scene_text_10 (Ctx *ctx, const char *title, int frame_no, float time_delta)
 {
    scene_text (ctx, title, frame_no, time_delta, 0.1);
+}
+
+static void scene_text_7 (Ctx *ctx, const char *title, int frame_no, float time_delta)
+{
+   scene_text (ctx, title, frame_no, time_delta, 1.0/7.0f);
 }
 
 static void scene_text_5 (Ctx *ctx, const char *title, int frame_no, float time_delta)
@@ -1004,32 +1060,35 @@ Scene scenes[]=
   {"circles",    scene_circles, 120},
 #endif
   {"intro0",      scene_text_12, 120},
-  {"terminal",    scene_text_12, 120},
-  {"intro1",      scene_text_12, 120},
+  {"terminal",    scene_text_13, 120},
+  {"intro1",      scene_text_7, 120},
   //{"intro2",      scene_text_12, 120},
   //{"intro3",      scene_text_12, 120},
   {"protocol",    scene_text_12, 120},
+  {"protocol1",    scene_text_12, 120},
   {"protocol2",    scene_text_12, 120},
-  {"backends",    scene_text_12, 120},
+  {"events",        scene_drag, 120},
+  {"events2",        scene_text_15, 120},
+  {"events3",        scene_text_20, 120},
+  {"backends",    scene_text_10, 120},
 
-  {"backend-internals",    scene_text_30, 120},
-  {"backend-internals2",    scene_text_30, 120},
-  {"backend-formatter",    scene_text_10, 120},
+  {"backend-internals",    scene_text_20, 120},
+  {"backend-internals2",    scene_text_20, 120},
+  //{"backend-formatter",    scene_text_10, 120},
   {"backend-ctx",          scene_text_10, 120},
   {"parser",  scene_text_10, 120},
   {"rasterizer",  scene_text_10, 120},
   {"encodings",   scene_text_10, 120},
-  {"backend-displaylist",  scene_text_10, 120},
+  {"simd",    scene_text_10, 120},
+  //{"backend-displaylist",  scene_text_10, 120},
   {"backend-hashcache",    scene_text_10, 120},
-  {"backend-tiled",        scene_text_10, 120},
-  {"backend-headless",     scene_text_10, 120},
-  {"events",        scene_drag, 120},
-  {"backend-cb",           scene_text_10, 120},
-  {"backend-fb",           scene_text_10, 120},
+  //{"backend-tiled",        scene_text_10, 120},
+  //{"backend-headless",     scene_text_10, 120},
   {"backend-sdl",          scene_text_10, 120},
+  {"backend-fb",           scene_text_10, 120},
+  {"backend-cb",           scene_text_10, 120},
   {"fonts",  scene_text_10, 120},
   {"mcu",    scene_text_10, 120},
-  {"simd",    scene_text_10, 120},
   {"backend-term",         scene_text_10, 120},
   {"backend-pdf",          scene_text_10, 120},
   {"license", scene_text_10, 120},
@@ -1066,13 +1125,16 @@ static void reset_scene (Ctx *ctx)
 
 static void action_scroll_up (CtxEvent *event, void *data1, void *data2)
 {
-  printf("sup\n");
+  scroll += 0.333333;
+  ctx_queue_draw (event->ctx);
 }
 
 static void action_scroll_down (CtxEvent *event, void *data1, void *data2)
 {
-  printf("sdn\n");
+  scroll -= 0.333333;
+  ctx_queue_draw (event->ctx);
 }
+
 static void action_first (CtxEvent *event, void *data1, void *data2)
 {
   scene_no = 0;
@@ -1136,6 +1198,7 @@ static int ui_scenes (Ctx *ctx, void *data)
   ctx_add_key_binding (ctx, "right", NULL, "foo", action_next, NULL);
   ctx_add_key_binding (ctx, "q", NULL, "foo",     action_quit, NULL);
   ctx_add_key_binding (ctx, "F11", NULL, "foo",   action_fullscreen, NULL);
+  ctx_add_key_binding (ctx, "f", NULL, "foo",   action_fullscreen, NULL);
   ctx_end_frame (ctx);
 
   if(auto_advance)
