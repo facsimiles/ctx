@@ -157,8 +157,8 @@ static void scene_curve_to (Ctx *ctx, const char *title, int frame_no, float tim
   clear (ctx);
   ctx_rgb (ctx, 1,1,1);
   float scale_factor = ctx_height(ctx)/240.0;
+  ctx_translate (ctx, (ctx_width(ctx)-ctx_height(ctx))/2, 0);
   ctx_scale (ctx, scale_factor, scale_factor);
-  ctx_translate (ctx, 90.0, 0);
   float x=25.6,  y=128.0;
   float x1=102.4 + ((frame_no % 60) - 52), y1=230.4,
         x2=153.6, y2=25.6 + (frame_no % 60),
@@ -452,6 +452,7 @@ char *slide_intro0[]=
   "event","handling\n",
   "multi","threading\n",
   "LGPLv3+\n",
+  NULL,
 };
 
 char *slide_terminal[]=
@@ -465,7 +466,7 @@ char *slide_terminal[]=
   "  kitty+iterm","rasters\n",
   "  atty","PCM\n",
   "  ctx","graphics\n",
-  "  somewhat bit-rotted, keep away from untrusted data\n",
+  "  GPLv3+,","somewhat","bit-rotted,","keep","away","from","untrustable","data\n",
   NULL
 };
 
@@ -650,9 +651,9 @@ char *slide_parser[]=
 {
   "ctx_parse(Ctx *ctx, const char *string);\n"
   "\n",
-  "  parses the text version of the protocol\n",
-  "  interprets some unit suffixes\n",
-  "  and calls another backend for each command\n",
+  "  parses","the","text","version","of","the","protocol\n",
+  "  interprets","some","unit","suffixes\n",
+  "  and","calls","another","backend","for","each","command\n",
   NULL
 };
 
@@ -734,7 +735,9 @@ char *slide_backend_cb[]=
 
 char *slide_backend_fb[]=
 {
-  "backend:kms","backend:fb",
+  "backend:kms","backend:fb\n",
+  "\n",
+  "even","pid=1","is","possible!",
   NULL
 };
 
@@ -816,6 +819,16 @@ char *slide_simd[]=
 };
 
 
+char *slide_pippin[]=
+{
+  "Øyvind Kolås\n",
+  "https://pippin.gimp.org/\n",
+  "@pippin@mastodon.xyz\n",
+  "\n",
+  "GIMP","GEGL","babl","cairo","hnb","hal91","rcairo","Clutter",
+  NULL
+};
+
 static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_delta, float font_scale)
 {
   char **words = slide_default;
@@ -854,6 +867,7 @@ static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_de
   else if (!strcmp (title, "license"))    words = slide_license;
   else if (!strcmp (title, "protocol1"))    words = slide_protocol1;
   else if (!strcmp (title, "protocol2"))    words = slide_protocol2;
+  else if (!strcmp (title, "pippin"))    words = slide_pippin;
 
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
@@ -1051,14 +1065,12 @@ static void scene_text_5 (Ctx *ctx, const char *title, int frame_no, float time_
 Scene scenes[]=
 {
   {"logo",        scene_logo, 120},
-  {"logo",        scene_clock, 120},
-  {"logo",        scene_curve_to, 120},
-#if 1
+  {"pippin",        scene_text_12, 120},
   {"spiral dots", scene_spirals, 120},
   {"spiral boxes", scene_spirals2, 120},
   {"spiral boxes", scene_spirals3, 120},
   {"circles",    scene_circles, 120},
-#endif
+  {"logo",        scene_curve_to, 120},
   {"intro0",      scene_text_12, 120},
   {"terminal",    scene_text_13, 120},
   {"intro1",      scene_text_7, 120},
@@ -1072,8 +1084,8 @@ Scene scenes[]=
   {"events3",        scene_text_20, 120},
   {"backends",    scene_text_10, 120},
 
-  {"backend-internals",    scene_text_20, 120},
-  {"backend-internals2",    scene_text_20, 120},
+  {"backend-internals",    scene_text_15, 120},
+  {"backend-internals2",    scene_text_15, 120},
   //{"backend-formatter",    scene_text_10, 120},
   {"backend-ctx",          scene_text_10, 120},
   {"parser",  scene_text_10, 120},
@@ -1082,16 +1094,16 @@ Scene scenes[]=
   {"simd",    scene_text_10, 120},
   //{"backend-displaylist",  scene_text_10, 120},
   {"backend-hashcache",    scene_text_10, 120},
+  {"fonts",  scene_text_10, 120},
   //{"backend-tiled",        scene_text_10, 120},
   //{"backend-headless",     scene_text_10, 120},
   {"backend-sdl",          scene_text_10, 120},
   {"backend-fb",           scene_text_10, 120},
   {"backend-cb",           scene_text_10, 120},
-  {"fonts",  scene_text_10, 120},
   {"mcu",    scene_text_10, 120},
   {"backend-term",         scene_text_10, 120},
   {"backend-pdf",          scene_text_10, 120},
-  {"license", scene_text_10, 120},
+  {"logo",        scene_clock, 120},
 
 };
 
