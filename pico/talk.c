@@ -444,8 +444,8 @@ char *slide_intro[]=
 char *slide_intro0[]=
 {
   "https://ctx.graphics/\n",
-  "native","vectors","from","microcontrollers","to","4k\n",
-  "used","by:","ctx terminal","GEGL","(GIMP)","card10\n",
+  "native","vectors","from","microcontrollers","to","4k displays\n",
+  "used","by:", "card10", "ctx terminal,","GEGL","&","(GIMP)\n",
   "float", "1/2/4bit", "grayscale","RGB565","RGB","CMYK","PDF\n",
   "single header", "70-300kb","compiled\n",
   "change","detection","+","sub-region-render\n",
@@ -460,13 +460,12 @@ char *slide_terminal[]=
   "ctx","terminal\n",
   "DEC term/","xterm","workalike\n",
   "  tabs/MDI\n",
-  "  mouse\n",
-  "  keyboard\n",
-  "  sixels\n",
-  "  kitty+iterm","rasters\n",
+  "  mouse","keyboard\n",
+  "  sixels", "kitty","iterm","rastergraphics\n",
   "  atty","PCM\n",
   "  ctx","graphics\n",
-  "  GPLv3+,","somewhat","bit-rotted,","keep","away","from","untrustable","data\n",
+  "  GPLv3+,\n",
+  "needs","refuzzing\n",
   NULL
 };
 
@@ -674,9 +673,9 @@ char *slide_encodings[]=
   "\n",
   "grayscale:",
   "1bit/2bit/4bit/8bit/float\n",
-  "RGB:",
+  "RGB",
   "8bit","sRGB,","float,","RGBA,","BGR565","RGB332\n",
-  "CMYK:",
+  "CMYK",
   "8bit, float",
   NULL
 };
@@ -779,15 +778,16 @@ char *slide_mcu[]=
   "  ARM Cortex-M4f","96mhz,","512kb","RAM\n",
   "esp32\n",
   "  lx7 240mhz","320kb","RAM\n",
-  "rp2030\n",
+  "rp2040\n",
   "  ARM Cortex-M0","133mhz (OC 270mhz)\n",
   NULL
 };
 
 char *slide_events2[]=
 {
-  " .. make path ..\n",
+  " // make path .. ctx_move_to,","_line_to,","_close_path ();\n",
   "ctx_listen","(ctx,","CTX_DRAG,","object_drag,","&objects[i],","NULL);",
+  "ctx_fill","(ctx);",
   NULL
 };
 
@@ -1062,50 +1062,6 @@ static void scene_text_5 (Ctx *ctx, const char *title, int frame_no, float time_
    scene_text (ctx, title, frame_no, time_delta, 0.2);
 }
 
-Scene scenes[]=
-{
-  {"logo",        scene_logo, 120},
-  {"pippin",        scene_text_12, 120},
-  {"spiral dots", scene_spirals, 120},
-  {"spiral boxes", scene_spirals2, 120},
-  {"spiral boxes", scene_spirals3, 120},
-  {"circles",    scene_circles, 120},
-  {"logo",        scene_curve_to, 120},
-  {"intro0",      scene_text_12, 120},
-  {"terminal",    scene_text_13, 120},
-  {"intro1",      scene_text_7, 120},
-  //{"intro2",      scene_text_12, 120},
-  //{"intro3",      scene_text_12, 120},
-  {"protocol",    scene_text_12, 120},
-  {"protocol1",    scene_text_12, 120},
-  {"protocol2",    scene_text_12, 120},
-  {"events",        scene_drag, 120},
-  {"events2",        scene_text_15, 120},
-  {"events3",        scene_text_20, 120},
-  {"backends",    scene_text_10, 120},
-
-  {"backend-internals",    scene_text_15, 120},
-  {"backend-internals2",    scene_text_15, 120},
-  //{"backend-formatter",    scene_text_10, 120},
-  {"backend-ctx",          scene_text_10, 120},
-  {"parser",  scene_text_10, 120},
-  {"rasterizer",  scene_text_10, 120},
-  {"encodings",   scene_text_10, 120},
-  {"simd",    scene_text_10, 120},
-  //{"backend-displaylist",  scene_text_10, 120},
-  {"backend-hashcache",    scene_text_10, 120},
-  {"fonts",  scene_text_10, 120},
-  //{"backend-tiled",        scene_text_10, 120},
-  //{"backend-headless",     scene_text_10, 120},
-  {"backend-sdl",          scene_text_10, 120},
-  {"backend-fb",           scene_text_10, 120},
-  {"backend-cb",           scene_text_10, 120},
-  {"mcu",    scene_text_10, 120},
-  {"backend-term",         scene_text_10, 120},
-  {"backend-pdf",          scene_text_10, 120},
-  {"logo",        scene_clock, 120},
-
-};
 
 void reset_time(void)
 {
@@ -1124,7 +1080,6 @@ float _ctx_pause = 0.0;
 
 void ctx_parse2 (Ctx *ctx, const char *str, float *scene_time, int *scene_no);
 
-int n_scenes = sizeof (scenes)/sizeof(scenes[0]);
 
 static void reset_scene (Ctx *ctx)
 {
@@ -1148,6 +1103,50 @@ static void action_scroll_down (CtxEvent *event, void *data1, void *data2)
   ctx_queue_draw (event->ctx);
 }
 
+Scene scenes[]=
+{
+  {"logo",        scene_logo, 120},
+  {"pippin",        scene_text_12, 120},
+  {"spiral dots", scene_spirals, 120},
+  {"spiral boxes", scene_spirals2, 120},
+  {"spiral boxes", scene_spirals3, 120},
+  {"circles",    scene_circles, 120},
+  //{"curve_to",    scene_curve_to, 120},
+  {"intro0",      scene_text_12, 120},
+  {"terminal",    scene_text_13, 120},
+  {"intro1",      scene_text_7, 120},
+  //{"intro2",      scene_text_12, 120},
+  //{"intro3",      scene_text_12, 120},
+  {"protocol",    scene_text_12, 120},
+  {"protocol1",    scene_text_12, 120},
+  {"protocol2",    scene_text_12, 120},
+  {"events2",        scene_text_15, 120},
+  {"events",        scene_drag, 120},
+  {"events3",        scene_text_20, 120},
+  {"backends",    scene_text_10, 120},
+
+  {"backend-internals",    scene_text_15, 120},
+  {"backend-internals2",    scene_text_15, 120},
+  //{"backend-formatter",    scene_text_10, 120},
+  {"backend-ctx",          scene_text_10, 120},
+  {"parser",  scene_text_10, 120},
+  {"rasterizer",  scene_text_10, 120},
+  {"encodings",   scene_text_10, 120},
+  {"simd",    scene_text_10, 120},
+  //{"backend-displaylist",  scene_text_10, 120},
+  {"backend-hashcache",    scene_text_10, 120},
+  {"fonts",  scene_text_10, 120},
+  //{"backend-tiled",        scene_text_10, 120},
+  //{"backend-headless",     scene_text_10, 120},
+  {"backend-sdl",          scene_text_10, 120},
+  {"backend-fb",           scene_text_10, 120},
+  {"backend-cb",           scene_text_10, 120},
+  {"mcu",    scene_text_10, 120},
+  {"backend-term",         scene_text_10, 120},
+  {"backend-pdf",          scene_text_10, 120},
+  {"logo",        scene_clock, 120},
+};
+int n_scenes = sizeof (scenes)/sizeof(scenes[0]);
 static void action_first (CtxEvent *event, void *data1, void *data2)
 {
   scene_no = 0;
@@ -1181,7 +1180,7 @@ static void action_fullscreen (CtxEvent *event, void *data1, void *data2)
 
 static void action_bouncy (CtxEvent *event, void *data1, void *data2)
 {
-  bouncy = 1;
+  bouncy = !bouncy;
 }
 
 static void action_quit (CtxEvent *event, void *data1, void *data2)
@@ -1189,6 +1188,7 @@ static void action_quit (CtxEvent *event, void *data1, void *data2)
   ctx_quit (event->ctx);
   ctx_queue_draw (event->ctx);
 }
+
 
 static int ui_scenes (Ctx *ctx, void *data)
 {
