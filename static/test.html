@@ -1,0 +1,128 @@
+<html style='background:white;color:black;'>
+<head>
+    <style>
+      @import url(style.css);
+      h1,p,a {border:1px solid red;}
+      h2 { padding:0;margin:0;}
+      body, html { color:black;background:transparent;}
+      a { background: green; }
+    </style>
+    </head>
+    <body>
+      <h1>MicroRaptor Gui</h1>
+      <img src='tig.png'/>
+      <p>fnord</p>
+      <div>
+      <h2 style='color:rgb(123,144,30);margin:0;border:3px solid black;width:4em;float:left;background:yellow;'>boo boo bar baz bux thing</h2
+      ><h2 style='color:rgb(123,144,30);margin:0;border:3px solid black;width:4em;float:left;background:yellow;'>boo boo bar baz bux thing</h2
+      ><h2 style='color:rgb(123,144,30);margin:0;background:red;border:3px solid blue;float:right;width:4em;'>boo ascd ckd mkc d bos ossoso o</h2
+      ><h2 style='color:rgb(123,144,30);margin:0;background:red;border:3px solid blue;float:right;width:4em;'>boo ascd ckd mkc d bos ossoso o</h2
+      ><h2 style='border: 1px solid blue;'>boo</h2
+      >
+
+      <p style='padding-left:1em;padding-right:1em;'>MicroRaptor Gui provides pointer interaction, keyboard interaction
+      using cairo; as well as cairo augmented with <a href='css.html'>CSS
+        based styling.</a></p>
+      <hr/>
+
+      </div>
+      <h2 style='clear:both;'>todo</h2>
+
+      <div>foo bar baz</div>
+
+  <div id='hor2'>b</div>
+  <div id='hor3'>c</div>
+  <div id='hor4'>d</div>
+  <div id='hor5'>e</div>
+  <div id='hor6'>f</div>
+
+      <p>fnord bar baz</p>
+      <h2>Features</h2>
+      <p>foo bar baz</p>
+      <div>foo bar baz</div>
+
+
+      <div>foo bar baz</div>
+      <ul>
+        <li>access to <a href='http://cairographics.org'>cairo</a>s drawing API</li>
+        <li>theming capable canvas, with text-layout and styling based on CSS</li>
+        <li>per-frame retained callbacks for pointer interaction</li>
+        <li>per-frame bindings of keyboard actions; interoperable with
+        pointer callbacks</li>
+      </ul>
+      <h3>Backends</h3>
+      <dl>
+        <dt>SDL</dt><dd>Through this backend, microraptor application can run
+        on many devices; ranging from linux framebuffer, X11, wayland,
+        windows, macos, raspberry pi and probably more.</dd>
+
+        <dt>GTK</dt><dd>Lower frame-rate, but tighter integration at least on
+        X11</dd>
+
+        <dt>nchanterm</dt><dd>nchanterm is a single file ANSI/vt100 + mouse
+        UTF-8 terminal abstraction library. Graphics is retained during
+        drawing of vectors, and re-applied as text. The graphics resolution of
+        the cairo surface drawn on is 2x2px per character.</dd>
+
+        <dt>Mrg</dt><dd>
+        applications.</dd>
+
+        <dt>GtkWidget</dt><dd>Using an mrg canvas as a custom widget in a GTK+
+        application works nicely.</dd>
+      </dl>
+
+      <p>
+      <b>bold</b> <em>emphasis</em>
+      <strong>strong</strong>
+      </p>
+
+      <p>foo</p>
+      <p>bar</p>
+      
+      <blockquote>This is a block quote, needs margins implemented to work</blockquote>
+
+      <p>baz</p>
+
+      <div class='bax'>
+        bax bax bax bax bax bax bax
+        bax bax bax bax bax bax bax
+        bax bax bax bax bax bax bax
+      </div>
+      <p>baz</p>
+      
+      <pre
+>int main (int argc, char **argv)
+{
+  int i;
+  for (i = 0; i &lt; 23; i++)
+  {
+    if (i&gt;42)
+      return 7;
+  }
+  return 0;
+}
+</pre>
+
+      <div class='foo'> position=absolute </div>
+      <div class='bar'>
+        <div class='barbar'>
+        position=static
+        ipsum dolor sic amet foo bar baz qux fnord
+      </div>
+      </div>
+      <div class='bax'>
+        bax bax bax bax bax bax bax
+        bax bax bax bax bax bax bax
+        bax bax bax bax bax bax bax
+      </div>
+      <div class='qux'>
+        bax bax bax bax bax bax bax
+        bax bax bax bax bax bax bax
+        bax bax bax bax bax bax bax
+      </div>
+      <p>why?</p>
+
+</body>
+</html>
+
+
