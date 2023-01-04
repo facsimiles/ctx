@@ -26,7 +26,7 @@
 
 #define CTX_VT         1
 #define CTX_PARSER     1
-#define CTX_PARSER_MAXLEN   (8 *1024)
+#define CTX_PARSER_MAXLEN   (3 *1024)
 #define CTX_RASTERIZER 1
 #define CTX_EVENTS     1
 #define CTX_RAW_KB_EVENTS 0
@@ -84,7 +84,7 @@ uint8_t scratch[64*1024]; // perhaps too small, but for a flexible terminal
 #define PIN_CLK 10
 #define PIN_CS 9
 #define PIN_DC 8
-#define PIN_RESET 14
+#define PIN_RESET 12
 #define PIN_BL 13
 #define ORIENTATION 2
 #define SCREEN_WIDTH   320
@@ -306,6 +306,15 @@ Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
 
 Ctx *pico_ctx = NULL;
 
+typedef struct PushKey
+{
+  int gpio;
+  uint64_t last_time;
+  const char *name;
+} PushKey;
+
+PushKey keys[8];
+
 Ctx *ctx_pico_init (void)
 {
   if (!pico_ctx){
@@ -318,6 +327,20 @@ Ctx *ctx_pico_init (void)
                                PIN_RESET,
                                PIN_BL,
                                2.0f); // 1.0 without overclock
+     keys[0].gpio=2;keys[0].name="up";
+     keys[1].gpio=18;keys[1].name="down";
+     keys[2].gpio=16;keys[2].name="left";
+     keys[3].gpio=20;keys[3].name="right";
+     keys[4].gpio=3;keys[4].name="enter";
+     keys[5].gpio=15;keys[5].name="a";
+     keys[6].gpio=19;keys[6].name="x";
+     keys[7].gpio=21;keys[7].name="y";
+     for (int i = 0; i <8;i++)
+     {
+       gpio_init(keys[i].gpio);
+       gpio_set_dir(keys[i].gpio, GPIO_IN);
+       gpio_pull_up(keys[i].gpio);
+     }
   }
   return pico_ctx;
 }

@@ -298,7 +298,7 @@ void        vt_paste              (VT *vt, const char *str);
 #if CTX_PTY
 #define DEFAULT_SCROLLBACK   (1<<13)
 #else
-#define DEFAULT_SCROLLBACK   (32)
+#define DEFAULT_SCROLLBACK   (2)
 #endif
 #define DEFAULT_ROWS         24
 #define DEFAULT_COLS         80
