@@ -882,7 +882,7 @@ int ctx_vt_read (Ctx *ctx)
 static ssize_t ctx_dummy_write (void *s, const void *buf, size_t count)
 {
   const char *src = (const char*)buf;
-  int i;
+  unsigned int i;
   for (i = 0; i < count && ctx_dummy_out_len < CTX_VT_OUTBUFSIZE; i ++)
   {
     ctx_dummy_outbuf[ctx_dummy_out_pos++] = src[i];
