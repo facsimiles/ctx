@@ -124,6 +124,7 @@ ctx_cairo_process (Ctx *ctx, CtxCommand *c)
         break;
 
       case CTX_COLOR:
+      {
         int space =  ((int) ctx_arg_float (0)) & 511;
         switch (space) // XXX remove 511 after stroke source is complete
         {
@@ -147,6 +148,7 @@ ctx_cairo_process (Ctx *ctx, CtxCommand *c)
              cairo_set_source_rgba (cr, c->graya.g, c->graya.g, c->graya.g, 1.0f);
              break;
             }
+        }
         break;
 
 #if 0

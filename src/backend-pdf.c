@@ -470,6 +470,7 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         break;
 
       case CTX_COLOR:
+        {
         int space =  ((int) ctx_arg_float (0)) & 511;
         switch (space) // XXX remove 511 after stroke source is complete
         {
@@ -510,6 +511,7 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
               ctx_pdf_print("G\n");
               break;
             }
+        }
         break;
 
       case CTX_SET_RGBA_U8:
