@@ -334,8 +334,8 @@ typedef struct MrgState {
   CtxStyle     style;
 
   int          children;
-  int          overflowed:1;
-  int          span_bg_started:1;
+  unsigned int overflowed:1;
+  unsigned int span_bg_started:1;
 
   int          drawlist_start_offset;
 } MrgState;
@@ -3929,16 +3929,16 @@ void _mrg_layout_pre (Mrg *mrg)
       } else if (style->float_ == CTX_FLOAT_LEFT)
       {
         float left;
-        float width = width;
+        float widt = width;
 
-        if (width == 0.0)
+        if (widt == 0.0)
         {
-          width = 4 * mrg_em (mrg);//mrg_edge_right (mrg) - mrg_edge_left (mrg);
+          widt = 4 * mrg_em (mrg);//mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-        width = (width + padding_right + padding_left + border_left_width + border_right_width);
+        widt = (widt + padding_right + padding_left + border_left_width + border_right_width);
 
-        if (width + margin_left + margin_right >
+        if (widt + margin_left + margin_right >
             mrg_edge_right(mrg)-mrg_edge_left(mrg))
         {
           clear_both (mrg);
@@ -3946,7 +3946,7 @@ void _mrg_layout_pre (Mrg *mrg)
         }
         else
         {
-        while (dynamic_edge_right - dynamic_edge_left < width + margin_left + margin_right)
+        while (dynamic_edge_right - dynamic_edge_left < widt + margin_left + margin_right)
         {
           mrg_set_xy (mrg, mrg_x (mrg), mrg_y (mrg) + 1.0);
           dynamic_edge_right = _mrg_parent_dynamic_edge_right(mrg);
@@ -3956,7 +3956,7 @@ void _mrg_layout_pre (Mrg *mrg)
         }
 
         itk_set_edge_left (mrg, left);
-        itk_set_edge_right (mrg,  left + width +
+        itk_set_edge_right (mrg,  left + widt +
             padding_left /* + border_right_width*/);
         itk_set_edge_top (mrg, mrg_y (mrg) + (margin_top));// - mrg->state->vmarg));
                         //));//- mrg->state->vmarg));
