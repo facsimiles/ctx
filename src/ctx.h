@@ -46,6 +46,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <string.h>
+#include <strings.h>
 #include <stdio.h>
 
 typedef struct _Ctx            Ctx;
