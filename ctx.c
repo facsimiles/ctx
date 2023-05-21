@@ -62,11 +62,12 @@
                     sizeof (ctx_font_##font))
 
 #if CTX_STATIC_FONTS
+#include "Cousine-Regular.h"
+#if 0
 #include "Carlito-Regular.h"
 #include "Carlito-Bold.h"
 #include "Carlito-Italic.h"
 #include "Carlito-BoldItalic.h"
-#include "Cousine-Regular.h"
 #include "Cousine-Bold.h"
 #include "Cousine-Italic.h"
 #include "Cousine-BoldItalic.h"
@@ -78,7 +79,9 @@
 #include "Tinos-Bold.h"
 #include "Tinos-Italic.h"
 #include "Tinos-BoldItalic.h"
+#endif
 
+#if 0
 #define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
 #define CTX_FONT_1   CTX_STATIC_FONT(Arimo_Bold)
 #define CTX_FONT_2   CTX_STATIC_FONT(Arimo_Italic)
@@ -87,7 +90,10 @@
 #define CTX_FONT_5   CTX_STATIC_FONT(Tinos_Bold)
 #define CTX_FONT_6   CTX_STATIC_FONT(Tinos_Italic)
 #define CTX_FONT_7   CTX_STATIC_FONT(Tinos_BoldItalic)
+#endif
+
 #define CTX_FONT_8   CTX_STATIC_FONT(Cousine_Regular)
+#if 0
 #define CTX_FONT_9   CTX_STATIC_FONT(Cousine_Italic)
 #define CTX_FONT_10  CTX_STATIC_FONT(Cousine_Bold)
 #define CTX_FONT_11  CTX_STATIC_FONT(Cousine_BoldItalic)
@@ -95,6 +101,7 @@
 #define CTX_FONT_13  CTX_STATIC_FONT(Carlito_Bold)
 #define CTX_FONT_14  CTX_STATIC_FONT(Carlito_Italic)
 #define CTX_FONT_15  CTX_STATIC_FONT(Carlito_BoldItalic)
+#endif
 #endif
 
 #define CTX_IMPLEMENTATION 1
