@@ -643,6 +643,7 @@ static const char *squoze_id_decode_r (int squoze_dim, uint64_t hash, char *ret,
   }
 }
 
+const char *squoze_id_decode (int squoze_dim, uint64_t id, int is_utf5, char *dest);
 const char *squoze_id_decode (int squoze_dim, uint64_t id, int is_utf5, char *dest)
 {
   if (id == 0 || ((id & 1) == 0)) {dest[0]=0;return NULL; }

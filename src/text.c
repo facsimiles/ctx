@@ -1029,6 +1029,14 @@ ctx_stroke_text (Ctx *ctx, const char *string,
   ctx_text_stroke (ctx, string);
 }
 
+
+int
+ctx_font_get_vmetrics (Ctx *ctx,
+                       CtxFont *font,
+                       float   *ascent,
+                       float   *descent,
+                       float   *linegap);
+
 int
 ctx_font_get_vmetrics (Ctx *ctx,
                        CtxFont *font,
