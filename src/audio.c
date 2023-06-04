@@ -321,7 +321,7 @@ void ctx_ctx_pcm (Ctx *ctx)
     int encoded_len = ctx_a85enc (data, encoded, i);
     fprintf (stdout, "\033_Af=%i;", i);
     fwrite (encoded, 1, encoded_len, stdout);
-    fwrite ("\e\\", 1, 2, stdout);
+    fwrite ("\033\\", 1, 2, stdout);
     fflush (stdout);
     }
 }

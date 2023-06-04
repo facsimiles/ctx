@@ -67,7 +67,7 @@ static int ctx_ydec (const char *tmp_src, char *dst, int count)
         dst[out_len++] = o;
         break;
       case '\n':
-      case '\e':
+      case '\033':
       case '\r':
       case '\0':
         break;

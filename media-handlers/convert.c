@@ -177,8 +177,8 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 // colors in set.. and threshold between them..
                 // even better dither between them.
                 //
-  printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
-  printf ("\e[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
+  printf ("\033[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
+  printf ("\033[48;2;%i;%i;%im", rgba2[0], rgba2[1], rgba2[2]);
 
                 int bits_set=0;
 
@@ -200,8 +200,8 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 printf ("%s", unicode_quarters[bits_set]);
        //         printf ("%i ", bits_set);
               }
-            printf ("\e[38;2;%i;%i;%im", 255,255,255);
-            printf ("\e[48;2;%i;%i;%im", 0,0,0);
+            printf ("\033[38;2;%i;%i;%im", 255,255,255);
+            printf ("\033[48;2;%i;%i;%im", 0,0,0);
             printf ("\n");
           }
         }
@@ -246,7 +246,7 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 // colors in set.. and threshold between them..
                 // even better dither between them.
                 //
-  printf ("\e[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
+  printf ("\033[38;2;%i;%i;%im", rgba1[0], rgba1[1], rgba1[2]);
 
                 for (int x = 0; x < 2; x++)
                   for (int y = 0; y < 3; y++)
@@ -286,8 +286,8 @@ void ctx_utf8_output_buf (uint8_t *pixels,
                 }
               }
             printf ("\n");
-  printf ("\e[38;2;%i;%i;%im", 255,255,255);
-  printf ("\e[48;2;%i;%i;%im", 0,0,0);
+  printf ("\033[38;2;%i;%i;%im", 255,255,255);
+  printf ("\033[48;2;%i;%i;%im", 0,0,0);
           }
         }
         break;
@@ -858,16 +858,16 @@ again:
   if (outputmode == CTX_OUTPUT_MODE_CTX)
     {
       // determine terminal size
-      fprintf (stdout, "\e[H\e[?25l\e[?200h\nreset\n");
+      fprintf (stdout, "\033[H\033[?25l\033[?200h\nreset\n");
       ctx_render_stream (ctx, stdout, 1);
-      fprintf (stdout, "\nX\n\e[?25h");
+      fprintf (stdout, "\nX\n\033[?25h");
       exit (0);
     }
   if (outputmode == CTX_OUTPUT_MODE_CTX_COMPACT)
     {
-      fprintf (stdout, "\e[H\e[?25l\e[?200h\nreset\n");
+      fprintf (stdout, "\033[H\033[?25l\033[?200h\nreset\n");
       ctx_render_stream (ctx, stdout, 0);
-      fprintf (stdout, "\nX\n\[e?25h");
+      fprintf (stdout, "\nX\033[e?25h");
       exit (0);
     }
 #endif

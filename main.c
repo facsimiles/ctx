@@ -114,7 +114,7 @@ int launch_main (int argc, char **argv)
     }
   }
 
-  fprintf (stdout, "\e_C");
+  fprintf (stdout, "\033_C");
   if (layer == -1) fprintf (stdout, "z=-1,");
   if (layer ==  1) fprintf (stdout, "z=1,");
   if (can_launch)  fprintf (stdout, "can_launch=1,");
@@ -125,7 +125,7 @@ int launch_main (int argc, char **argv)
   if (no_title)    fprintf (stdout, "no_title=1,");
   if (no_move)     fprintf (stdout, "no_move=1,");
   if (no_resize)   fprintf (stdout, "no_resize=1,");
-  fprintf (stdout, ";%s\e\\", argv[no]);
+  fprintf (stdout, ";%s\033\\", argv[no]);
   return 0;
 }
 

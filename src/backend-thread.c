@@ -96,7 +96,7 @@ void ctx_thread_consume_events (Ctx *ctx)
         ctx_incoming_message (ctx, event + strlen ("message"), 0);
       } else if (!strcmp (event, "size-changed"))
       {
-        //fprintf (stdout, "\e[H\e[2J\e[?25l");
+        //fprintf (stdout, "\033[H\033[2J\033[?25l");
         //ctxctx->cols = ctx_terminal_cols ();
         //ctxctx->rows = ctx_terminal_rows ();
 

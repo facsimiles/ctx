@@ -2886,7 +2886,7 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
 
 static void vtcmd_set_t (VT *vt, const char *sequence)
 {
-  /* \e[21y is request title - allows inserting keychars */
+  /* \033[21y is request title - allows inserting keychars */
   if      (!strcmp (sequence,  "[1t")) { ctx_client_unshade (vt->root_ctx, vt->id); }
   else if (!strcmp (sequence,  "[2t")) { ctx_client_shade (vt->root_ctx, vt->id); } 
   else if (!strncmp (sequence, "[3;", 3)) {
@@ -3171,7 +3171,7 @@ static void vtcmd_report (VT *vt, const char *sequence)
       sprintf (buf, "\033[?21n"); // locked
     }
 #if 0
-  {"[6n", 0, },  /* id:DSR  cursor position report, yields a reply <tt>\e[Pl;PcR</tt> */
+  {"[6n", 0, },  /* id:DSR  cursor position report, yields a reply <tt>\033[Pl;PcR</tt> */
 #endif
   else if (!strcmp (sequence, "[6n") ) // DSR cursor position report
     {
@@ -3180,7 +3180,7 @@ static void vtcmd_report (VT *vt, const char *sequence)
   else if (!strcmp (sequence, "[?6n") ) // DECXPR extended cursor position report
     {
 #if 0
-  {"[?6n", 0, },  /* id:DEXCPR  extended cursor position report, yields a reply <tt>\e[Pl;PcR</tt> */
+  {"[?6n", 0, },  /* id:DEXCPR  extended cursor position report, yields a reply <tt>\033[Pl;PcR</tt> */
 #endif
       sprintf (buf, "\033[?%i;%i;1R", vt->cursor_y - (vt->origin? (vt->margin_top - 1) :0), (int) vt->cursor_x - (vt->origin? (VT_MARGIN_LEFT-1) :0) );
     }
@@ -4606,7 +4606,7 @@ static void vt_state_osc (VT *vt, int byte)
           case 1:
           case 2:
 #if 0
-    {"]0;New_title\e\",  0, , }, /* id: set window title */ "
+    {"]0;New_title\033\",  0, , }, /* id: set window title */ "
 #endif
             vt_set_title (vt, vt->argument_buf + 3);
             break;
@@ -4975,9 +4975,9 @@ static void vt_state_apc_generic (VT *vt, int byte)
 }
 
 #if 0
-    {"_G..\e\", 0, vtcmd_delete_n_chars, VT102}, /* ref:none id: <a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a> */ "
-    {"_A..\e\", 0, vtcmd_delete_n_chars, VT102}, /* id:  <a href='https://github.com/hodefoting/atty/'>atty</a> audio input/output */ "
-    {"_C..\e\", 0, vtcmd_delete_n_chars, VT102}, /* id:  run command */ "
+    {"_G..\033\", 0, vtcmd_delete_n_chars, VT102}, /* ref:none id: <a href='https://sw.kovidgoyal.net/kitty/graphics-protocol.html'>kitty graphics</a> */ "
+    {"_A..\033\", 0, vtcmd_delete_n_chars, VT102}, /* id:  <a href='https://github.com/hodefoting/atty/'>atty</a> audio input/output */ "
+    {"_C..\033\", 0, vtcmd_delete_n_chars, VT102}, /* id:  run command */ "
 #endif
 static void vt_state_apc (VT *vt, int byte)
 {
@@ -5052,7 +5052,7 @@ static void vt_state_esc (VT *vt, int byte)
           break;
 
 #if 0
-    {"Psixel_data\e\",  0, , }, /* id: sixels */ "
+    {"Psixel_data\033\",  0, , }, /* id: sixels */ "
 #endif
 
         case 'P':
@@ -8067,7 +8067,10 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
       (event->type == CTX_DRAG_MOTION ||
       event->type == CTX_DRAG_PRESS ||
       event->type == CTX_DRAG_RELEASE))
-    return scrollbar_drag (event, vt, data2);
+  {
+    scrollbar_drag (event, vt, data2);
+    return;
+  }
   switch (event->type)
   {
     case CTX_MOTION:
@@ -8149,7 +8152,9 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
       (event->type == CTX_DRAG_MOTION ||
       event->type == CTX_DRAG_PRESS ||
       event->type == CTX_DRAG_RELEASE))
-    return scrollbar_drag (event, vt, data2);
+   {
+    scrollbar_drag (event, vt, data2);return;
+   }
   switch (event->type)
   {
     case CTX_MOTION:

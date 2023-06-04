@@ -24,7 +24,7 @@ int ctx_terminal_width (void)
   raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
   if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
     return 0;
-  fprintf (stderr, "\e[14t");
+  fprintf (stderr, "\033[14t");
   //tcflush(STDIN_FILENO, 1);
 #if __COSMOPOLITAN__
   /// XXX ?
@@ -74,7 +74,7 @@ int ctx_terminal_height (void)
   raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
   if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
     return 0;
-  fprintf (stderr, "\e[14t");
+  fprintf (stderr, "\033[14t");
   //tcflush(STDIN_FILENO, 1);
 #if !__COSMOPOLITAN__
   tcdrain(STDIN_FILENO);
@@ -397,10 +397,10 @@ nc_at_exit (void)
   printf (TERMINAL_MOUSE_OFF);
   printf (XTERM_ALTSCREEN_OFF);
   _nc_noraw();
-  fprintf (stdout, "\e[?25h");
+  fprintf (stdout, "\033[?25h");
   //if (ctx_native_events)
-  fprintf (stdout, "\e[?201l");
-  fprintf (stdout, "\e[?1049l");
+  fprintf (stdout, "\033[?201l");
+  fprintf (stdout, "\033[?1049l");
 }
 
 static const char *mouse_get_event_int (Ctx *n, int *x, int *y)
@@ -895,7 +895,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
     if (read (STDIN_FILENO, &buf[length], 1) != -1)
       {
          buf[length+1] = 0;
-         if (!strcmp ((char*)buf, "\e[0n"))
+         if (!strcmp ((char*)buf, "\033[0n"))
          {
            ctx_frame_ack = 1;
            return NULL;

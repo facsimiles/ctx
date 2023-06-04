@@ -47,24 +47,24 @@ inline static void ctx_termimg_end_frame (Ctx *ctx)
 
   int i = 0;
 
-  printf ("\e[H");
-  printf ("\e_Gf=24,s=%i,v=%i,t=d,a=T,m=1;\e\\", width, height);
+  printf ("\033[H");
+  printf ("\033_Gf=24,s=%i,v=%i,t=d,a=T,m=1;\033\\", width, height);
   while (i <  encoded_len)
   {
      if (i + 4096 <  encoded_len)
      {
-       printf  ("\e_Gm=1;");
+       printf  ("\033_Gm=1;");
      }
      else
      {
-       printf  ("\e_Gm=0;");
+       printf  ("\033_Gm=0;");
      }
      for (int n = 0; n < 4000 && i < encoded_len; n++)
      {
        printf ("%c", encoded[i]);
        i++;
      }
-     printf ("\e\\");
+     printf ("\033\\");
   }
   ctx_free (encoded);
   
@@ -78,7 +78,7 @@ void ctx_termimg_destroy (CtxTermImg *termimg)
     ctx_free (termimg->lines->data);
     ctx_list_remove (&termimg->lines, termimg->lines->data);
   }
-  printf ("\e[?25h"); // cursor on
+  printf ("\033[?25h"); // cursor on
   nc_at_exit ();
   ctx_free (termimg->pixels);
   ctx_destroy (termimg->host);
@@ -90,8 +90,8 @@ Ctx *ctx_new_termimg (int width, int height)
 {
   Ctx *ctx = _ctx_new_drawlist (width, height);
 #if CTX_RASTERIZER
-  fprintf (stdout, "\e[?1049h");
-  fprintf (stdout, "\e[?25l"); // cursor off
+  fprintf (stdout, "\033[?1049h");
+  fprintf (stdout, "\033[?25l"); // cursor off
   CtxTermImg *termimg = (CtxTermImg*)ctx_calloc (sizeof (CtxTermImg), 1);
   CtxBackend *backend = (void*)termimg;
 

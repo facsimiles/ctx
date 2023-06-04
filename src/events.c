@@ -164,7 +164,7 @@ static int is_in_ctx (void)
   raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
   if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
     return 0;
-  fprintf (stderr, "\e[?200$p");
+  fprintf (stderr, "\033[?200$p");
   //tcflush(STDIN_FILENO, 1);
 #if !__COSMOPOLITAN__
   tcdrain(STDIN_FILENO);
@@ -943,7 +943,7 @@ void ctx_listen (Ctx          *ctx,
 
   if (types == CTX_DRAG_MOTION)
     types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
-  return ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, NULL, NULL);
+  ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, NULL, NULL);
 }
 
 void  ctx_listen_with_finalize (Ctx          *ctx,
@@ -976,7 +976,7 @@ void  ctx_listen_with_finalize (Ctx          *ctx,
 
   if (types == CTX_DRAG_MOTION)
     types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
-  return ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, finalize, finalize_data);
+  ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, finalize, finalize_data);
 }
 
 
@@ -1006,9 +1006,9 @@ void ctx_add_hit_region (Ctx *ctx, const char *id)
      height = ey2 - ey1;
   }
   
-  return ctx_listen_full (ctx, x, y, width, height,
-                          CTX_POINTER, ctx_report_hit_region,
-                          id_copy, NULL, (void*)ctx_free, NULL);
+  ctx_listen_full (ctx, x, y, width, height,
+                   CTX_POINTER, ctx_report_hit_region,
+                   id_copy, NULL, (void*)ctx_free, NULL);
 }
 
 typedef struct _CtxGrab CtxGrab;
@@ -2811,93 +2811,93 @@ typedef struct MmmKeyCode {
   char  sequence[10];  /* terminal sequence */
 } MmmKeyCode;
 static const MmmKeyCode ufb_keycodes[]={
-  {"up",                  "\e[A"},
-  {"down",                "\e[B"},
-  {"right",               "\e[C"},
-  {"left",                "\e[D"},
+  {"up",                  "\033[A"},
+  {"down",                "\033[B"},
+  {"right",               "\033[C"},
+  {"left",                "\033[D"},
 
-  {"shift-up",            "\e[1;2A"},
-  {"shift-down",          "\e[1;2B"},
-  {"shift-right",         "\e[1;2C"},
-  {"shift-left",          "\e[1;2D"},
+  {"shift-up",            "\033[1;2A"},
+  {"shift-down",          "\033[1;2B"},
+  {"shift-right",         "\033[1;2C"},
+  {"shift-left",          "\033[1;2D"},
 
-  {"alt-up",              "\e[1;3A"},
-  {"alt-down",            "\e[1;3B"},
-  {"alt-right",           "\e[1;3C"},
-  {"alt-left",            "\e[1;3D"},
-  {"alt-shift-up",         "\e[1;4A"},
-  {"alt-shift-down",       "\e[1;4B"},
-  {"alt-shift-right",      "\e[1;4C"},
-  {"alt-shift-left",       "\e[1;4D"},
+  {"alt-up",              "\033[1;3A"},
+  {"alt-down",            "\033[1;3B"},
+  {"alt-right",           "\033[1;3C"},
+  {"alt-left",            "\033[1;3D"},
+  {"alt-shift-up",         "\033[1;4A"},
+  {"alt-shift-down",       "\033[1;4B"},
+  {"alt-shift-right",      "\033[1;4C"},
+  {"alt-shift-left",       "\033[1;4D"},
 
-  {"control-up",          "\e[1;5A"},
-  {"control-down",        "\e[1;5B"},
-  {"control-right",       "\e[1;5C"},
-  {"control-left",        "\e[1;5D"},
+  {"control-up",          "\033[1;5A"},
+  {"control-down",        "\033[1;5B"},
+  {"control-right",       "\033[1;5C"},
+  {"control-left",        "\033[1;5D"},
 
   /* putty */
-  {"control-up",          "\eOA"},
-  {"control-down",        "\eOB"},
-  {"control-right",       "\eOC"},
-  {"control-left",        "\eOD"},
+  {"control-up",          "\033OA"},
+  {"control-down",        "\033OB"},
+  {"control-right",       "\033OC"},
+  {"control-left",        "\033OD"},
 
-  {"control-shift-up",    "\e[1;6A"},
-  {"control-shift-down",  "\e[1;6B"},
-  {"control-shift-right", "\e[1;6C"},
-  {"control-shift-left",  "\e[1;6D"},
+  {"control-shift-up",    "\033[1;6A"},
+  {"control-shift-down",  "\033[1;6B"},
+  {"control-shift-right", "\033[1;6C"},
+  {"control-shift-left",  "\033[1;6D"},
 
-  {"control-up",          "\eOa"},
-  {"control-down",        "\eOb"},
-  {"control-right",       "\eOc"},
-  {"control-left",        "\eOd"},
+  {"control-up",          "\033Oa"},
+  {"control-down",        "\033Ob"},
+  {"control-right",       "\033Oc"},
+  {"control-left",        "\033Od"},
 
-  {"shift-up",            "\e[a"},
-  {"shift-down",          "\e[b"},
-  {"shift-right",         "\e[c"},
-  {"shift-left",          "\e[d"},
+  {"shift-up",            "\033[a"},
+  {"shift-down",          "\033[b"},
+  {"shift-right",         "\033[c"},
+  {"shift-left",          "\033[d"},
 
-  {"insert",              "\e[2~"},
-  {"delete",              "\e[3~"},
-  {"page-up",             "\e[5~"},
-  {"page-down",           "\e[6~"},
-  {"home",                "\eOH"},
-  {"end",                 "\eOF"},
-  {"home",                "\e[H"},
-  {"end",                 "\e[F"},
- {"control-delete",       "\e[3;5~"},
-  {"shift-delete",        "\e[3;2~"},
-  {"control-shift-delete","\e[3;6~"},
+  {"insert",              "\033[2~"},
+  {"delete",              "\033[3~"},
+  {"page-up",             "\033[5~"},
+  {"page-down",           "\033[6~"},
+  {"home",                "\033OH"},
+  {"end",                 "\033OF"},
+  {"home",                "\033[H"},
+  {"end",                 "\033[F"},
+ {"control-delete",       "\033[3;5~"},
+  {"shift-delete",        "\033[3;2~"},
+  {"control-shift-delete","\033[3;6~"},
 
-  {"F1",         "\e[25~"},
-  {"F2",         "\e[26~"},
-  {"F3",         "\e[27~"},
-  {"F4",         "\e[26~"},
+  {"F1",         "\033[25~"},
+  {"F2",         "\033[26~"},
+  {"F3",         "\033[27~"},
+  {"F4",         "\033[26~"},
 
 
-  {"F1",         "\e[11~"},
-  {"F2",         "\e[12~"},
-  {"F3",         "\e[13~"},
-  {"F4",         "\e[14~"},
-  {"F1",         "\eOP"},
-  {"F2",         "\eOQ"},
-  {"F3",         "\eOR"},
-  {"F4",         "\eOS"},
-  {"F5",         "\e[15~"},
-  {"F6",         "\e[16~"},
-  {"F7",         "\e[17~"},
-  {"F8",         "\e[18~"},
-  {"F9",         "\e[19~"},
-  {"F9",         "\e[20~"},
-  {"F10",        "\e[21~"},
-  {"F11",        "\e[22~"},
-  {"F12",        "\e[23~"},
+  {"F1",         "\033[11~"},
+  {"F2",         "\033[12~"},
+  {"F3",         "\033[13~"},
+  {"F4",         "\033[14~"},
+  {"F1",         "\033OP"},
+  {"F2",         "\033OQ"},
+  {"F3",         "\033OR"},
+  {"F4",         "\033OS"},
+  {"F5",         "\033[15~"},
+  {"F6",         "\033[16~"},
+  {"F7",         "\033[17~"},
+  {"F8",         "\033[18~"},
+  {"F9",         "\033[19~"},
+  {"F9",         "\033[20~"},
+  {"F10",        "\033[21~"},
+  {"F11",        "\033[22~"},
+  {"F12",        "\033[23~"},
   {"tab",         {9, '\0'}},
   {"shift-tab",   {27, 9, '\0'}}, // also generated by alt-tab in linux console
   {"alt-space",   {27, ' ', '\0'}},
-  {"shift-tab",   "\e[Z"},
+  {"shift-tab",   "\033[Z"},
   {"backspace",   {127, '\0'}},
   {"space",       " "},
-  {"\e",          "\e"},
+  {"\033",          "\033"},
   {"return",      {10,0}},
   {"return",      {13,0}},
   /* this section could be autogenerated by code */
@@ -2926,61 +2926,61 @@ static const MmmKeyCode ufb_keycodes[]={
   {"control-x",   {24,0}},
   {"control-y",   {25,0}},
   {"control-z",   {26,0}},
-  {"alt-`",       "\e`"},
-  {"alt-0",       "\e0"},
-  {"alt-1",       "\e1"},
-  {"alt-2",       "\e2"},
-  {"alt-3",       "\e3"},
-  {"alt-4",       "\e4"},
-  {"alt-5",       "\e5"},
-  {"alt-6",       "\e6"},
-  {"alt-7",       "\e7"}, /* backspace? */
-  {"alt-8",       "\e8"},
-  {"alt-9",       "\e9"},
-  {"alt-+",       "\e+"},
-  {"alt--",       "\e-"},
-  {"alt-/",       "\e/"},
-  {"alt-a",       "\ea"},
-  {"alt-b",       "\eb"},
-  {"alt-c",       "\ec"},
-  {"alt-d",       "\ed"},
-  {"alt-e",       "\ee"},
-  {"alt-f",       "\ef"},
-  {"alt-g",       "\eg"},
-  {"alt-h",       "\eh"}, /* backspace? */
-  {"alt-i",       "\ei"},
-  {"alt-j",       "\ej"},
-  {"alt-k",       "\ek"},
-  {"alt-l",       "\el"},
-  {"alt-n",       "\em"},
-  {"alt-n",       "\en"},
-  {"alt-o",       "\eo"},
-  {"alt-p",       "\ep"},
-  {"alt-q",       "\eq"},
-  {"alt-r",       "\er"},
-  {"alt-s",       "\es"},
-  {"alt-t",       "\et"},
-  {"alt-u",       "\eu"},
-  {"alt-v",       "\ev"},
-  {"alt-w",       "\ew"},
-  {"alt-x",       "\ex"},
-  {"alt-y",       "\ey"},
-  {"alt-z",       "\ez"},
+  {"alt-`",       "\033`"},
+  {"alt-0",       "\0330"},
+  {"alt-1",       "\0331"},
+  {"alt-2",       "\0332"},
+  {"alt-3",       "\0333"},
+  {"alt-4",       "\0334"},
+  {"alt-5",       "\0335"},
+  {"alt-6",       "\0336"},
+  {"alt-7",       "\0337"}, /* backspace? */
+  {"alt-8",       "\0338"},
+  {"alt-9",       "\0339"},
+  {"alt-+",       "\033+"},
+  {"alt--",       "\033-"},
+  {"alt-/",       "\033/"},
+  {"alt-a",       "\033a"},
+  {"alt-b",       "\033b"},
+  {"alt-c",       "\033c"},
+  {"alt-d",       "\033d"},
+  {"alt-e",       "\033e"},
+  {"alt-f",       "\033f"},
+  {"alt-g",       "\033g"},
+  {"alt-h",       "\033h"}, /* backspace? */
+  {"alt-i",       "\033i"},
+  {"alt-j",       "\033j"},
+  {"alt-k",       "\033k"},
+  {"alt-l",       "\033l"},
+  {"alt-n",       "\033m"},
+  {"alt-n",       "\033n"},
+  {"alt-o",       "\033o"},
+  {"alt-p",       "\033p"},
+  {"alt-q",       "\033q"},
+  {"alt-r",       "\033r"},
+  {"alt-s",       "\033s"},
+  {"alt-t",       "\033t"},
+  {"alt-u",       "\033u"},
+  {"alt-v",       "\033v"},
+  {"alt-w",       "\033w"},
+  {"alt-x",       "\033x"},
+  {"alt-y",       "\033y"},
+  {"alt-z",       "\033z"},
   /* Linux Console  */
-  {"home",       "\e[1~"},
-  {"end",        "\e[4~"},
-  {"F1",         "\e[[A"},
-  {"F2",         "\e[[B"},
-  {"F3",         "\e[[C"},
-  {"F4",         "\e[[D"},
-  {"F5",         "\e[[E"},
-  {"F6",         "\e[[F"},
-  {"F7",         "\e[[G"},
-  {"F8",         "\e[[H"},
-  {"F9",         "\e[[I"},
-  {"F10",        "\e[[J"},
-  {"F11",        "\e[[K"},
-  {"F12",        "\e[[L"},
+  {"home",       "\033[1~"},
+  {"end",        "\033[4~"},
+  {"F1",         "\033[[A"},
+  {"F2",         "\033[[B"},
+  {"F3",         "\033[[C"},
+  {"F4",         "\033[[D"},
+  {"F5",         "\033[[E"},
+  {"F6",         "\033[[F"},
+  {"F7",         "\033[[G"},
+  {"F8",         "\033[[H"},
+  {"F9",         "\033[[I"},
+  {"F10",        "\033[[J"},
+  {"F11",        "\033[[K"},
+  {"F12",        "\033[[L"},
   {NULL, }
 };
 static int fb_keyboard_match_keycode (const char *buf, int length, const MmmKeyCode **ret)
@@ -2988,7 +2988,7 @@ static int fb_keyboard_match_keycode (const char *buf, int length, const MmmKeyC
   int i;
   int matches = 0;
 
-  if (!strncmp (buf, "\e[M", MIN(length,3)))
+  if (!strncmp (buf, "\033[M", MIN(length,3)))
     {
       if (length >= 6)
         return 9001;

@@ -185,10 +185,10 @@ static inline type ctx_tvg_##nick (CtxTinyVG *tvg)\
   return ret;\
 }
 
-CTX_TVG_DEFINE_ACCESOR(u8, uint8_t);
-CTX_TVG_DEFINE_ACCESOR(u16, uint16_t);
-CTX_TVG_DEFINE_ACCESOR(u32, uint32_t);
-CTX_TVG_DEFINE_ACCESOR(float, float);
+CTX_TVG_DEFINE_ACCESOR(u8, uint8_t)
+CTX_TVG_DEFINE_ACCESOR(u16, uint16_t)
+CTX_TVG_DEFINE_ACCESOR(u32, uint32_t)
+CTX_TVG_DEFINE_ACCESOR(float, float)
 
 #undef CTX_TVG_DEFINE_ACCESSOR
 

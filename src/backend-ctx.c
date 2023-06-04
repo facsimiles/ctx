@@ -317,8 +317,8 @@ static void ctx_ctx_end_frame (Ctx *ctx)
 #endif
 
   if (ctx_native_events)
-    fprintf (stdout, "\e[?201h");
-  fprintf (stdout, "\e[H\e[?25l\e[?200h");
+    fprintf (stdout, "\033[?201h");
+  fprintf (stdout, "\033[H\033[?25l\033[?200h");
 #if 1
   fprintf (stdout, CTX_START_STRING);
   ctx_render_stream (ctxctx->backend.ctx, stdout, 0);
@@ -375,7 +375,7 @@ static void ctx_ctx_end_frame (Ctx *ctx)
 #endif
 
 #if CTX_SYNC_FRAMES
-  fprintf (stdout, "\e[5n");
+  fprintf (stdout, "\033[5n");
   fflush (stdout);
 
   ctx_frame_ack = 0;
@@ -452,7 +452,7 @@ void ctx_ctx_consume_events (Ctx *ctx)
         ctx_incoming_message (ctx, event + strlen ("message"), 0);
       } else if (!strcmp (event, "size-changed"))
       {
-        fprintf (stdout, "\e[H\e[2J\e[?25l");
+        fprintf (stdout, "\033[H\033[2J\033[?25l");
         ctxctx->cols = ctx_terminal_cols ();
         ctxctx->rows = ctx_terminal_rows ();
 
@@ -492,10 +492,10 @@ Ctx *ctx_new_ctx (int width, int height)
   Ctx *ctx = _ctx_new_drawlist (width, height);
   CtxCtx *ctxctx = (CtxCtx*)ctx_calloc (sizeof (CtxCtx), 1);
   CtxBackend *backend = (CtxBackend*)ctxctx;
-  fprintf (stdout, "\e[?1049h");
+  fprintf (stdout, "\033[?1049h");
   fflush (stdout);
-  //fprintf (stderr, "\e[H");
-  //fprintf (stderr, "\e[2J");
+  //fprintf (stderr, "\033[H");
+  //fprintf (stderr, "\033[2J");
   ctx_native_events = 1;
   if (width <= 0 || height <= 0)
   {
