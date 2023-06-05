@@ -12,7 +12,6 @@ include build.conf
 CFLAGS_warnings= -Wall \
                  -Wextra \
 		 -Wno-unused-but-set-parameter \
-		 -Wno-unused-but-set-variable \
 		 -Wno-unused-parameter \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
