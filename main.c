@@ -368,7 +368,9 @@ int main (int argc, char **argv)
 
   if (input_path && !commandline)
   {
+#if CTX_STUFF
     const char*orig_path = input_path;
+#endif
     if (strchr (input_path, ':'))
     {
       input_path = strchr (input_path, ':') + 1;

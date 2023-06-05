@@ -69,7 +69,12 @@ ctx_drawlist_process (Ctx *ctx, CtxEntry *entry)
 
 static CtxBackend *ctx_drawlist_backend_new (void)
 {
-  CtxBackend *backend = (CtxBackend*)ctx_calloc (sizeof (CtxBackend), 1);
+  CtxBackend *backend = (CtxBackend*)ctx_calloc (sizeof (CtxCtx), 1);
+                       // the sizeof(CtxCtx) should actually be sizeof(CtxBackend)
+                       // but static analysis complains about event code
+                       // initializing the extra members - which might most
+                       // often be a false report - we ass slack since it is
+                       // "only" ~ 40 bytes per instance.
   backend->process = (void(*)(Ctx *a, CtxCommand *c))ctx_drawlist_process;
   backend->destroy = (void(*)(void *a))ctx_drawlist_backend_destroy;
   backend->type = CTX_BACKEND_DRAWLIST;
