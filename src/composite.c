@@ -6985,9 +6985,14 @@ y1, 0);
   {
     uint8_t coverage[width];
     memset (coverage, cov, sizeof (coverage) );
+    uint8_t *rasterizer_src = rasterizer->color;
+    void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
+                         int x, uint8_t *coverage, unsigned int count) =
+      rasterizer->apply_coverage;
+
     for (unsigned int y = y0; y <= (unsigned)y1; y++)
     {
-      rasterizer->apply_coverage (rasterizer, &dst[0], rasterizer->color, x0, coverage, width);
+      apply_coverage (rasterizer, &dst[0], rasterizer_src, x0, coverage, width);
       rasterizer->scanline += CTX_FULL_AA;
       dst += blit_stride;
     }
@@ -7025,6 +7030,10 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   int blit_stride = rasterizer->blit_stride;
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
+  uint8_t *rasterizer_src = rasterizer->color;
+  void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
+                       int x, uint8_t *coverage, unsigned int count) =
+    rasterizer->apply_coverage;
 
   x0 = ctx_maxf (x0, blit_x);
   y0 = ctx_maxf (y0, blit_y);
@@ -7074,7 +7083,7 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
        if (has_right)
          coverage[i++]= (top * right + 255) >> 8;
 
-       rasterizer->apply_coverage (rasterizer, dst, rasterizer->color, (int)x0, coverage, width);
+       apply_coverage (rasterizer, dst, rasterizer_src, (int)x0, coverage, width);
        dst += blit_stride;
      }
 
@@ -7102,7 +7111,7 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
         coverage[i++] = bottom;
       coverage[i++]= (bottom * right + 255) >> 8;
 
-      rasterizer->apply_coverage (rasterizer,dst, rasterizer->color, (int)x0, coverage, width);
+      apply_coverage (rasterizer,dst, rasterizer_src, (int)x0, coverage, width);
     }
   }
 }
