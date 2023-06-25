@@ -7,7 +7,7 @@ rgba 1 1 1 0.9
 rectangle 0 0 80@ 10@
 fill
 
-lineWidth 0.1@
+lineWidth 0.0
 moveTo 1@ 1@
 lineTo 1@ 9@
 moveTo 1@ 5@
@@ -35,7 +35,7 @@ lineTo 1 0.5
        14  0.125
        16  0.0
 restore
-lineWidth 0.1@
+lineWidth 0.0
 _ rgb 1 0 0
 stroke
 done ";

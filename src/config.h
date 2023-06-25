@@ -859,3 +859,8 @@
 #ifndef CTX_PTY
 #define CTX_PTY 1
 #endif
+
+#ifndef CTX_STROKE_1PX   
+#define CTX_STROKE_1PX    1
+#endif
+

@@ -2924,6 +2924,200 @@ ctx_rasterizer_rectangle_reverse (CtxRasterizer *rasterizer,
                                   float width,
                                   float height);
 
+#if CTX_STROKE_1PX
+
+static void
+ctx_rasterizer_pset (CtxRasterizer *rasterizer, int x, int y, uint8_t cov)
+{
+  if (x <= 0 || y < 0 || x >= rasterizer->blit_width ||
+      y >= rasterizer->blit_height)
+    { return; }
+  uint8_t fg_color[4];
+  ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color,
+fg_color);
+
+  int blit_stride = rasterizer->blit_stride;
+  int pitch = rasterizer->format->bpp / 8;
+
+  uint8_t *dst = ( (uint8_t *) rasterizer->buf) + y * blit_stride + x * pitch;
+  rasterizer->apply_coverage (rasterizer, dst, rasterizer->color, x, &cov, 1);
+}
+
+
+static inline void
+ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
+                                   float x0, float y0,
+                                   float x1, float y1)
+{
+  void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
+                         int x, uint8_t *coverage, unsigned int count) =
+      rasterizer->apply_coverage;
+  uint8_t *rasterizer_src = rasterizer->color;
+  int pitch = rasterizer->format->bpp / 8;
+  int blit_stride = rasterizer->blit_stride;
+
+  x1 += 0.5f;
+  y1 += 0.5f;
+  x0 += 0.5f;
+  y0 += 0.5f;
+
+  float dxf = (x1 - x0);
+  float dyf = (y1 - y0);
+  int tx = (x0)* 65536;
+  int ty = (y0)* 65536;
+
+  int blit_width = rasterizer->blit_width;
+  int blit_height = rasterizer->blit_height;
+
+  if (dxf*dxf>dyf*dyf)
+  {
+    int length = abs((int)dxf);
+    int dy = (dyf * 65536)/(length);
+    int x = tx >> 16;
+
+    if (dxf < 0.0f)
+    {
+      ty = (y1)* 65536;
+      x = (x1); 
+      dy *= -1;
+    }
+    int i = 0;
+    int sblit_height = blit_height << 16;
+
+    for (; i < length && x < 0; ++i, ++x, ty += dy);
+    for (; i < length && x < blit_width && (ty<0 || (ty>=sblit_height+1))
+         ; ++i, ++x, ty += dy);
+
+    for (; i < length && x < blit_width && (ty<65536 || (ty>=sblit_height))
+         ; ++i, ++x, ty += dy)
+    {
+      int y = ty>>16;
+      int ypos = (ty >> 8) & 0xff;
+
+      ctx_rasterizer_pset (rasterizer, x, y-1, 255-ypos);
+      ctx_rasterizer_pset (rasterizer, x, y, ypos);
+    }
+
+      {
+       for (; i < length && x < blit_width && (ty>65536 && (ty<sblit_height))
+            ; ++i, ++x, ty += dy)
+       {
+         uint8_t *dst = ( (uint8_t *) rasterizer->buf)
+                        + ((ty>>16)-1) * blit_stride + x * pitch;
+         uint8_t ypos = (ty >> 8) & 0xff;
+         uint8_t rcov=255-ypos;
+         apply_coverage (rasterizer, dst, rasterizer_src, x, &rcov, 1);
+         dst += blit_stride;
+         apply_coverage (rasterizer, dst, rasterizer_src, x, &ypos, 1);
+       }
+      }
+
+    for (; i < length; ++i, ++x, ty += dy)
+    {
+      int y = ty>>16;
+      int ypos = (ty >> 8) & 0xff;
+      ctx_rasterizer_pset (rasterizer, x, y-1, 255-ypos);
+      ctx_rasterizer_pset (rasterizer, x, y, ypos);
+    }
+
+  }
+  else
+  {
+    int length = abs((int)dyf);
+    int dx = (dxf * 65536)/(length);
+    int y = ty >> 16;
+
+    if (dyf < 0.0f)
+    {
+      tx = (x1)* 65536;
+      y = (y1); 
+      dx *= -1;
+    }
+    int i = 0;
+
+    int sblit_width = blit_width << 16;
+
+    for (; i < length && y < 0; ++i, ++y, tx += dx);
+
+    for (; i < length && y < blit_height && (tx<0 || (tx>=sblit_width+1))
+         ; ++i, ++y, tx += dx);
+    for (; i < length && y < blit_height && (tx<65536 || (tx>=sblit_width))
+         ; ++i, ++y, tx += dx)
+    {
+      int x = tx>>16;
+      int xpos = (tx >> 8) & 0xff;
+      ctx_rasterizer_pset (rasterizer, x-1, y, 255-xpos);
+      ctx_rasterizer_pset (rasterizer, x, y, xpos);
+    }
+
+      {
+       for (; i < length && y < blit_height && (tx>65536 && (tx<sblit_width))
+            ; ++i, ++y, tx += dx)
+       {
+         int x = tx>>16;
+         uint8_t *dst = ( (uint8_t *) rasterizer->buf)
+                       + y * blit_stride + (x-1) * pitch;
+         int xpos = (tx >> 8) & 0xff;
+         uint8_t cov[2]={255-xpos, xpos};
+         apply_coverage (rasterizer, dst, rasterizer_src, x, cov, 2);
+       }
+      }
+    for (; i < length; ++i, ++y, tx += dx)
+    {
+      int x = tx>>16;
+      int xpos = (tx >> 8) & 0xff;
+      ctx_rasterizer_pset (rasterizer, x-1, y, 255-xpos);
+      ctx_rasterizer_pset (rasterizer, x, y, xpos);
+    }
+  }
+}
+
+static inline void
+ctx_rasterizer_stroke_1px (CtxRasterizer *rasterizer)
+{
+  int count = rasterizer->edge_list.count;
+  CtxSegment *temp = (CtxSegment*)rasterizer->edge_list.entries;
+  float prev_x = 0.0f;
+  float prev_y = 0.0f;
+  int start = 0;
+  int end = 0;
+
+  while (start < count)
+    {
+      int started = 0;
+      int i;
+      for (i = start; i < count; i++)
+        {
+          CtxSegment *entry = &temp[i];
+          float x, y;
+          if (entry->code == CTX_NEW_EDGE)
+            {
+              if (started)
+                {
+                  end = i - 1;
+                  goto foo;
+                }
+              prev_x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
+              prev_y = entry->data.s16[1] * 1.0f / CTX_FULL_AA;
+              started = 1;
+              start = i;
+            }
+          x = entry->data.s16[2] * 1.0f / CTX_SUBDIV;
+          y = entry->data.s16[3] * 1.0f / CTX_FULL_AA;
+          
+          ctx_rasterizer_stroke_1px_segment (rasterizer, prev_x, prev_y, x, y);
+          prev_x = x;
+          prev_y = y;
+        }
+      end = i-1;
+foo:
+      start = end+1;
+    }
+  ctx_rasterizer_reset (rasterizer);
+}
+
+#endif
+
 static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
@@ -2932,17 +3126,43 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int count = rasterizer->edge_list.count;
   if (count == 0)
     return;
+  int preserved = rasterizer->preserve;
+  float factor = ctx_matrix_get_scale (&gstate->transform);
+  float line_width = gstate->line_width * factor;
   if (gstate->source_stroke.type != CTX_SOURCE_INHERIT_FILL)
   {
     source_backup = gstate->source_fill;
     gstate->source_fill = rasterizer->state->gstate.source_stroke;
   }
-  int preserved = rasterizer->preserve;
-  float factor = ctx_matrix_get_scale (&gstate->transform);
-  float line_width = gstate->line_width * factor;
 
   rasterizer->comp_op = NULL;
   ctx_composite_setup (rasterizer);
+
+#if CTX_STROKE_1PX
+  if ((gstate->line_width * factor <= 0.0f &&
+       gstate->line_width * factor > -10.0f)
+
+     ||(    gstate->line_width * factor >= 0.99f 
+         && gstate->line_width * factor <= 1.01f 
+         && gstate->n_dashes  == 0
+        )
+     )
+  {
+    ctx_rasterizer_stroke_1px (rasterizer);
+    if (preserved)
+    {
+      rasterizer->preserve = 0;
+    }
+    else
+    {
+      rasterizer->edge_list.count = 0;
+    }
+    if (gstate->source_stroke.type != CTX_SOURCE_INHERIT_FILL)
+      gstate->source_fill = source_backup;
+
+    return;
+  }
+#endif
 
   CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
@@ -2974,8 +3194,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         ctx_composite_stroke_rect (rasterizer, x0, y0, x1, y1, line_width);
 
         goto done;
-
-
        }
     }
 #endif
@@ -3001,7 +3219,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       float half_width_y = half_width_x;
 
       if (CTX_UNLIKELY(line_width <= 0.0f))
-        { // makes 0 width be hairline
+        { // makes 0 width be 1px in user-space; hairline
           half_width_x = .5f;
           half_width_y = .5f;
         }

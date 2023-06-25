@@ -2,7 +2,7 @@ DESTDIR ?=
 PREFIX  ?= /usr/local
 
 #CC=musl-gcc
-#CCACHE=`command -v ccache`
+CCACHE=`command -v ccache`
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
