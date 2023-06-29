@@ -2992,7 +2992,7 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
        }
       }
 
-    for (; i < length; ++i, ++x, ty += dy)
+    //for (; i < length; ++i, ++x, ty += dy)
     {
       int y = ty>>16;
       int ypos = (ty >> 8) & 0xff;
@@ -3042,8 +3042,8 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
          apply_coverage (rasterizer, dst, rasterizer_src, x, cov, 2);
        }
       }
-    for (; i < length; ++i, ++y, tx += dx)
-    {
+    //for (; i <= length; ++i, ++y, tx += dx)
+    { // better do one too many than one too little
       int x = tx>>16;
       int xpos = (tx >> 8) & 0xff;
       ctx_rasterizer_pset (rasterizer, x-1, y, 255-xpos);
