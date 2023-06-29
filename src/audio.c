@@ -146,13 +146,13 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
     if (c > 0)
     {
       int i;
+      uint16_t left = 0, right = 0;
       for (i = 0; i < c && ctx_pcm_cur_left; i ++)
       {
         if (ctx_pcm_list && ctx_pcm_cur_left)  //  XXX  this line can be removed
         {
           uint32_t *packet_sizep = (ctx_pcm_list->data);
           uint32_t packet_size = *packet_sizep;
-          uint16_t left = 0, right = 0;
 
           if (is_float)
           {
@@ -193,6 +193,13 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
           }
         }
       }
+      for (;i < c; i ++)
+      {
+         /* slight click protection in case we were not left at dc */
+         data[i * 2 + 0] = (left *= 0.5f);
+         data[i * 2 + 1] = (right *= 0.5f);
+      }
+
 
     c = snd_pcm_writei(h, data, c);
     if (c < 0)
