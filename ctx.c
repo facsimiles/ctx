@@ -32,8 +32,6 @@
 
 #include "stb_image.h"
 
-#define CTX_ENABLE_CBRLE         0
-
 #ifdef CTX_SIMD_X86_64_V2
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v2
 #endif

@@ -192,14 +192,11 @@ void ctx_tiled_render_fun (void **data)
 #endif
             int swap_red_green = rasterizer->swap_red_green;
             int compressed_scanlines = 0;
-#if CTX_ENABLE_CBRLE
-            // compressed_scanlines = 1;
-#endif
             ctx_rasterizer_init (rasterizer,
                                  host, tiled->backend.ctx, &host->state,
                                  &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 tiled->width*4, compressed_scanlines?CTX_FORMAT_CBRLE_32:CTX_FORMAT_BGRA8,
+                                 tiled->width*4, CTX_FORMAT_BGRA8,
                                  tiled->antialias);
             ((CtxRasterizer*)(host->backend))->swap_red_green = swap_red_green;
             if (sdl_icc_length)
@@ -208,18 +205,6 @@ void ctx_tiled_render_fun (void **data)
             ctx_translate (host, -x0, -y0);
             ctx_render_ctx_masked (tiled->ctx_copy, host, active_mask);
 
-#if CTX_ENABLE_CBRLE
-            if (compressed_scanlines)
-            for (int i = 0; i < height; i ++)
-            {
-              uint8_t temp[width*4];
-              _ctx_CBRLE_decompress (&tiled->pixels[tiled->width * 4 * (y0+i) + x0 * 4],
-                                      temp,
-                                      width,
-                                      width * 4, 0, width);
-              memcpy (&tiled->pixels[tiled->width * 4 * (y0+i) + x0 * 4], temp, sizeof (temp));
-            }
-#endif
           }
         }
       tiled->rendered_frame[no] = tiled->render_frame;

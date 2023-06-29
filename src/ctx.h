@@ -658,32 +658,6 @@ enum _CtxPixelFormat
   CTX_FORMAT_GRAY2,  // 16 // matching flags
   CTX_FORMAT_YUV420, // 17
   CTX_FORMAT_GRAY4=32, // to match flags
-  CTX_FORMAT_CBRLE_1,   // CBRLE constant bitrate runlength encoded 1 bpp
-  CTX_FORMAT_CBRLE_2,   // these formats are used internally with the CBRLE
-  CTX_FORMAT_CBRLE_3,   // flag passed to the cb backend. (should be exteneded
-  CTX_FORMAT_CBRLE_4,   // to also apply to the tiled backends).
-  CTX_FORMAT_CBRLE_5,   //
-  CTX_FORMAT_CBRLE_6,   // When used in other backends they determine automatically
-  CTX_FORMAT_CBRLE_7,   // which specific CBRLE format to use, based on available
-  CTX_FORMAT_CBRLE_8,   // memory budget.
-  CTX_FORMAT_CBRLE_9,   // 
-  CTX_FORMAT_CBRLE_10,  // The specific formats are also used for testing and
-  CTX_FORMAT_CBRLE_11,  // improving the visual quality vs performance loss
-  CTX_FORMAT_CBRLE_12,  // when lossy.
-  CTX_FORMAT_CBRLE_13,  //
-  CTX_FORMAT_CBRLE_14,  // 
-  CTX_FORMAT_CBRLE_15,  //
-  CTX_FORMAT_CBRLE_16,  // 
-  CTX_FORMAT_CBRLE_17,  //  
-  CTX_FORMAT_CBRLE_18,  //  
-  CTX_FORMAT_CBRLE_19,  //  
-  CTX_FORMAT_CBRLE_20,  //  
-  CTX_FORMAT_CBRLE_21,  //  
-  CTX_FORMAT_CBRLE_22,  //  
-  CTX_FORMAT_CBRLE_23,  //  
-  CTX_FORMAT_CBRLE_24,  //  
-  CTX_FORMAT_CBRLE_32,  //  
-  CTX_FORMAT_CBRLE,     // 
   CTX_FORMAT_BGRA8Z,    // 
   CTX_FORMAT_RGBA8_SEPARATE_ALPHA, //
 };
@@ -850,7 +824,6 @@ typedef enum CtxFlags {
   CTX_FLAG_KEEP_DATA    = 1 << 8, // keep existing fb-data instead of doing an initial clear
   CTX_FLAG_INTRA_UPDATE = 1 << 9,
   CTX_FLAG_STAY_LOW     = 1 << 10,  // stay with the color fidelity drop in lowfi
-  CTX_FLAG_CBRLE        = 1 << 11   // use possibly lossy RLE encoded scanlines with constant bitrate
 } CtxFlags;
 
 

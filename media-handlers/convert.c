@@ -512,9 +512,6 @@ _file_get_contents (const char     *path,
   return 0;
 }
 
-void
-ctx_CBRLE_decompress (const uint8_t *rgba8z, uint8_t *rgba8, int width, int size);
-
 int ctx_rgba8z_format_bits (int format);
 
 
@@ -947,86 +944,6 @@ again:
          pixels[i*4 + 3] = 255;
       }
 
-
-      ctx_utf8_output_buf ( (uint8_t *) pixels,
-                            CTX_FORMAT_RGBA8,
-                            width, height, stride, reverse);
-    }
-  else if (!strcmp (dest_path, "CBRLE") ||
-           !strcmp (dest_path, "CBRLE_1")||
-           !strcmp (dest_path, "CBRLE_2")||
-           !strcmp (dest_path, "CBRLE_3")||
-           !strcmp (dest_path, "CBRLE_4")||
-           !strcmp (dest_path, "CBRLE_5")||
-           !strcmp (dest_path, "CBRLE_6")||
-           !strcmp (dest_path, "CBRLE_7")||
-           !strcmp (dest_path, "CBRLE_8")||
-           !strcmp (dest_path, "CBRLE_9")||
-           !strcmp (dest_path, "CBRLE_10")||
-           !strcmp (dest_path, "CBRLE_11")||
-           !strcmp (dest_path, "CBRLE_12")||
-           !strcmp (dest_path, "CBRLE_13")||
-           !strcmp (dest_path, "CBRLE_14")||
-           !strcmp (dest_path, "CBRLE_15")||
-           !strcmp (dest_path, "CBRLE_16")||
-           !strcmp (dest_path, "CBRLE_17")||
-           !strcmp (dest_path, "CBRLE_18")||
-           !strcmp (dest_path, "CBRLE_19")||
-           !strcmp (dest_path, "CBRLE_20")||
-           !strcmp (dest_path, "CBRLE_21")||
-           !strcmp (dest_path, "CBRLE_22")||
-           !strcmp (dest_path, "CBRLE_23")||
-           !strcmp (dest_path, "CBRLE_24")||
-           !strcmp (dest_path, "CBRLE_32"))
-    {
-      int format = CTX_FORMAT_CBRLE_8;
-
-      if      (!strcmp (dest_path, "CBRLE_1")) format = CTX_FORMAT_CBRLE_1;
-      else if (!strcmp (dest_path, "CBRLE_2")) format = CTX_FORMAT_CBRLE_2;
-      else if (!strcmp (dest_path, "CBRLE_3")) format = CTX_FORMAT_CBRLE_3;
-      else if (!strcmp (dest_path, "CBRLE_4")) format = CTX_FORMAT_CBRLE_4;
-      else if (!strcmp (dest_path, "CBRLE_5")) format = CTX_FORMAT_CBRLE_5;
-      else if (!strcmp (dest_path, "CBRLE_6")) format = CTX_FORMAT_CBRLE_6;
-      else if (!strcmp (dest_path, "CBRLE_7")) format = CTX_FORMAT_CBRLE_7;
-      else if (!strcmp (dest_path, "CBRLE_8")) format = CTX_FORMAT_CBRLE_8;
-      else if (!strcmp (dest_path, "CBRLE_9")) format = CTX_FORMAT_CBRLE_9;
-      else if (!strcmp (dest_path, "CBRLE_10")) format = CTX_FORMAT_CBRLE_10;
-      else if (!strcmp (dest_path, "CBRLE_11")) format = CTX_FORMAT_CBRLE_11;
-      else if (!strcmp (dest_path, "CBRLE_12")) format = CTX_FORMAT_CBRLE_12;
-      else if (!strcmp (dest_path, "CBRLE_13")) format = CTX_FORMAT_CBRLE_13;
-      else if (!strcmp (dest_path, "CBRLE_14")) format = CTX_FORMAT_CBRLE_14;
-      else if (!strcmp (dest_path, "CBRLE_15")) format = CTX_FORMAT_CBRLE_15;
-      else if (!strcmp (dest_path, "CBRLE_16")) format = CTX_FORMAT_CBRLE_16;
-      else if (!strcmp (dest_path, "CBRLE_17")) format = CTX_FORMAT_CBRLE_17;
-      else if (!strcmp (dest_path, "CBRLE_18")) format = CTX_FORMAT_CBRLE_18;
-      else if (!strcmp (dest_path, "CBRLE_19")) format = CTX_FORMAT_CBRLE_19;
-      else if (!strcmp (dest_path, "CBRLE_20")) format = CTX_FORMAT_CBRLE_20;
-      else if (!strcmp (dest_path, "CBRLE_21")) format = CTX_FORMAT_CBRLE_21;
-      else if (!strcmp (dest_path, "CBRLE_22")) format = CTX_FORMAT_CBRLE_22;
-      else if (!strcmp (dest_path, "CBRLE_23")) format = CTX_FORMAT_CBRLE_23;
-      else if (!strcmp (dest_path, "CBRLE_24")) format = CTX_FORMAT_CBRLE_24;
-      else if (!strcmp (dest_path, "CBRLE_32")) format = CTX_FORMAT_CBRLE_32;
-      int reverse = 0;
-      int stride = width * 4;
-      int stride_CBRLE = width * ctx_pixel_format_bits_per_pixel (format) / 8;
-      uint8_t pixels_CBRLE[stride_CBRLE*height];
-      uint8_t pixels[stride*height];
-      Ctx *dctx = ctx_new_for_framebuffer (&pixels_CBRLE[0],
-                      width, height, stride_CBRLE, format);
-      memset (pixels, 0, sizeof (pixels) );
-      memset (pixels_CBRLE, 0, sizeof (pixels_CBRLE) );
-      ctx_render_ctx (ctx, dctx);
-      ctx_destroy (dctx);
-
-   //if(1)
-      for (int i = 0; i < height; i++)
-      {
-         //printf ("%i %i\n", i, pixels_CBRLE[i * stride_CBRLE+2]);
-         ctx_CBRLE_decompress (&pixels_CBRLE[i*stride_CBRLE], 
-                                &pixels[i*stride],
-                                width,
-                                stride_CBRLE);
-      }
 
       ctx_utf8_output_buf ( (uint8_t *) pixels,
                             CTX_FORMAT_RGBA8,

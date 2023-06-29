@@ -3031,16 +3031,6 @@ ctx_logo (Ctx *ctx, float x, float y, float dim)
 }
 
 void
-ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size);
-void
-ctx_CBRLE_decompress (const uint8_t *cbrle, uint8_t *rgba8, int width, int size)
-{
-#if CTX_ENABLE_CBRLE
-  _ctx_CBRLE_decompress (cbrle, rgba8, width, size, 0, width);
-#endif
-}
-
-void
 ctx_clip_extents (Ctx *ctx, float *x0, float *y0,
                            float *x1, float *y1)
 {

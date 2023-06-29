@@ -516,24 +516,6 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 ctx_span_set_colorb (dst_pix, src_pix, last - first - 1);
               }
               break;
-#if CTX_ENABLE_CBRLE
-              case CTX_COV_PATH_CBRLE_COPY:
-              {
-              uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
-              uint8_t  startcov = graystart;
-              apply_coverage (rasterizer, (uint8_t*)dsts, rasterizer_src, first, &startcov, 1);
-
-              if (last-(first+1) > 0)
-              ctx_CBRLE_compress (rasterizer->color,
-                                   dst,
-                                   rasterizer->blit_width,
-                                   rasterizer->blit_stride,
-                                   first+1, last-(first+1), 
-                                   CBRLE_MODE_SET_COLOR, NULL, 1);
-
-              }
-              break;
-#endif
             case CTX_COV_PATH_RGB8_COPY:
             case CTX_COV_PATH_RGBAF_COPY:
             case CTX_COV_PATH_RGB565_COPY:
@@ -1289,21 +1271,6 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                }
              }
              break;
-#if CTX_ENABLE_CBRLE
-            case CTX_COV_PATH_CBRLE_COPY:
-              {
-              int count = (last - post) - (first+pre) + 1;
-              if (count>0)
-              ctx_CBRLE_compress (rasterizer->color,
-                                   dst,
-                                   rasterizer->blit_width,
-                                   rasterizer->blit_stride,
-                                   pre, count,
-                                   CBRLE_MODE_SET_COLOR, NULL, 1);
-
-              }
-              break;
-#endif
 
             case CTX_COV_PATH_RGBA8_COPY:
             {
