@@ -191,7 +191,6 @@ void ctx_tiled_render_fun (void **data)
             }
 #endif
             int swap_red_green = rasterizer->swap_red_green;
-            int compressed_scanlines = 0;
             ctx_rasterizer_init (rasterizer,
                                  host, tiled->backend.ctx, &host->state,
                                  &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],

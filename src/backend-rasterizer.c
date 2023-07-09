@@ -2679,6 +2679,30 @@ struct _CtxTermGlyph
   uint8_t  rgba_fg[4];
 };
 
+#if CTX_BRAILLE_TEXT
+static CtxTermGlyph *
+ctx_rasterizer_find_term_glyph (CtxRasterizer *rasterizer, int col, int row)
+{
+    CtxTermGlyph *glyph = NULL;
+    
+    for (CtxList *l = rasterizer->glyphs; l; l=l->next)
+    {
+      glyph = l->data;
+      if (glyph->col == col &&
+          glyph->row == row)
+      {
+        return glyph;
+      }
+    }
+
+    glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
+    ctx_list_append (&rasterizer->glyphs, glyph);
+    glyph->col = col;
+    glyph->row = row;
+    return glyph;
+}
+#endif
+
 static int _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke);
 static void
 ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
@@ -2719,11 +2743,9 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
     _ctx_user_to_device (rasterizer->state, &tx, &ty);
     int col = (int)(tx / cw + 1);
     int row = (int)(ty / ch + 1);
-    CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
-    ctx_list_append (&rasterizer->glyphs, glyph);
+    CtxTermGlyph *glyph = ctx_rasterizer_find_term_glyph (rasterizer, col, row);
+
     glyph->unichar = unichar;
-    glyph->col = col;
-    glyph->row = row;
     ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color,
                          &glyph->rgba_fg[0]);
   }
@@ -2764,11 +2786,9 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
 
     for (int i = 0; string[i]; i++, col++)
     {
-      CtxTermGlyph *glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
-      ctx_list_prepend (&rasterizer->glyphs, glyph);
+      CtxTermGlyph *glyph = ctx_rasterizer_find_term_glyph (rasterizer, col, row);
+
       glyph->unichar = string[i];
-      glyph->col = col;
-      glyph->row = row;
       ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color,
                       glyph->rgba_fg);
     }
@@ -3165,7 +3185,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
          )
        {
-
         float x0 = entry3->data.s16[2] * 1.0f / CTX_SUBDIV;
         float y0 = entry3->data.s16[3] * 1.0f / CTX_FULL_AA;
         float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;

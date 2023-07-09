@@ -726,38 +726,42 @@ inline static void ctx_term_process (Ctx *ctx,
 {
   CtxTerm *term = (void*)ctx->backend;
 
-#if CTX_CURRENT_PATH
-  ctx_update_current_path (ctx, &command->entry);
-#endif
-
 
 #if CTX_BRAILLE_TEXT
   if (command->code == CTX_FILL)
   {
      CtxRasterizer *rasterizer = (CtxRasterizer*)term->host->backend;
 
-     if (ctx_is_half_opaque (rasterizer))
+     if (0 && ctx_is_half_opaque (rasterizer))
      {
         CtxIntRectangle shape_rect = {
-          ((int)(rasterizer->col_min / CTX_SUBDIV - 2))/2,
-          ((int)(rasterizer->scan_min / 15 - 2))/3,
-          ((int)(3+((int)rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV))/2,
-          ((int)(3+((int)rasterizer->scan_max - rasterizer->scan_min + 1) / 15))/3
+          ((int)(rasterizer->col_min))/ (CTX_SUBDIV * 2),
+          ((int)(rasterizer->scan_min))/ (CTX_FULL_AA * 3),
+          ((int)(((int)rasterizer->col_max - rasterizer->col_min + 1))) / (CTX_SUBDIV * 2),
+          ((int)(((int)rasterizer->scan_max - rasterizer->scan_min + 1)) / (CTX_FULL_AA *3) )
         };
 #if 0
   CtxGState *gstate = &rasterizer->state->gstate;
-       fprintf (stderr, "{%i,%i %ix%i %.2f %i}",
+       fprintf (stderr, "{%i,%i %ix%i %.2f}",
                        shape_rect.x, shape_rect.y,
                        shape_rect.width, shape_rect.height,
 
-                       gstate->global_alpha_f,
-                       ga[1]
-                       
+                       gstate->global_alpha_f
                        );
-   //  sleep(1);
+//   sleep(1);
 #endif
 
-       if (shape_rect.y > 0) // XXX : workaround 
+       if (shape_rect.y > 0)
+       {
+       if (0){ // XXXX :
+               // disabled - offset is wrong (or offset of cursor in stuff is wrong
+               // trying to use ink coverage yield yet other problems..
+         again:
+         for (CtxList *l = rasterizer->glyphs; l; l=l?l->next:NULL)
+         {
+           CtxTermGlyph *glyph = l->data;
+
+
        for (int row = shape_rect.y;
             row < (shape_rect.y+(int)shape_rect.height);
             row++)
@@ -765,21 +769,23 @@ inline static void ctx_term_process (Ctx *ctx,
             col < (shape_rect.x+(int)shape_rect.width);
             col++)
 
-       if (0){ // disabled - offset is wrong (or offset of cursor in stuff is wrong
-         for (CtxList *l = rasterizer->glyphs; l; l=l?l->next:NULL)
-         {
-           CtxTermGlyph *glyph = l->data;
-           if ((glyph->row == row+1) &&
-               (glyph->col == col+1))
+           if ((glyph->row == row) &&
+               (glyph->col == col))
            {
               ctx_list_remove (&rasterizer->glyphs, glyph);
               ctx_free (glyph);
-              l = NULL;
+              l = NULL;goto again;
            }
          }
        }
+
+       }
      }
   }
+#endif
+
+#if CTX_CURRENT_PATH
+  ctx_update_current_path (ctx, &command->entry);
 #endif
 
   /* we need to interpret state related things ourself to be able to respond to
