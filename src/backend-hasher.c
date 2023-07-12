@@ -174,7 +174,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 
 
           float height = ctx_get_font_size (rasterizer->backend.ctx);
-           CtxIntRectangle shape_rect;
+           CtxIntRectangle shape_rect = {0,0,0,0};
 
            float tx = rasterizer->x;
            float ty = rasterizer->y - height * 1.2f;
@@ -307,7 +307,6 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
            * since it is also used in the small shapes rasterization
            * cache
            */
-        //uint64_t hash = ctx_rasterizer_poly_to_hash2 (rasterizer); // + hasher->salt;
         CtxIntRectangle shape_rect = {
           (int)(rasterizer->col_min / CTX_SUBDIV - 3),
           (int)(rasterizer->scan_min / aa - 3),
@@ -354,6 +353,8 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           (int)((rasterizer->col_max - rasterizer->col_min + 1) / CTX_SUBDIV + rasterizer->state->gstate.line_width),
           (int)((rasterizer->scan_max - rasterizer->scan_min + 1) / aa + rasterizer->state->gstate.line_width)
         };
+        //printf ("%ix%i %i %i\n", shape_rect.width, shape_rect.height, shape_rect.x, shape_rect.y);
+        // XXX the height and y coordinates seem off!
 
         shape_rect.width += (int)(rasterizer->state->gstate.line_width * 2);
         shape_rect.height += (int)(rasterizer->state->gstate.line_width * 2);
@@ -375,7 +376,8 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
 
         uint32_t color;
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_stroke.color, (uint8_t*)(&color));
-
+          murmur3_32_process(&murmur, (unsigned char*)&color, 4);
+        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
           murmur3_32_process(&murmur, (unsigned char*)&color, 4);
 
           _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
