@@ -183,7 +183,7 @@ int ctx_terminal_rows (void)
 #include <signal.h>
 #endif
 
-#define DELAY_MS  100  
+#define DELAY_MS  20  
 
 #ifndef MIN
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -772,7 +772,7 @@ void ctx_nct_consume_events (Ctx *ctx)
   int ix, iy;
   CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
   const char *event = NULL;
-
+  int max_events = 4; 
   do {
     float x, y;
     event = ctx_nct_get_event (ctx, 50, &ix, &iy);
@@ -845,7 +845,8 @@ void ctx_nct_consume_events (Ctx *ctx)
       else
       ctx_key_press (ctx, 0, event, 0);
     }
-  }  while (event);
+    max_events --;
+  }  while (event && max_events > 0);
 }
 
 const char *ctx_native_get_event (Ctx *n, int timeoutms)
