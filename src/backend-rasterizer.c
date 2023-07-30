@@ -2963,8 +2963,8 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
 
   float dxf = (x1 - x0);
   float dyf = (y1 - y0);
-  int tx = (x0)* 65536;
-  int ty = (y0)* 65536;
+  int tx = (int)((x0)* 65536);
+  int ty = (int)((y0)* 65536);
 
   int blit_width = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
@@ -2972,13 +2972,13 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
   if (dxf*dxf>dyf*dyf)
   {
     int length = abs((int)dxf);
-    int dy = (dyf * 65536)/(length);
+    int dy = (int)((dyf * 65536)/(length));
     int x = tx >> 16;
 
     if (dxf < 0.0f)
     {
-      ty = (y1)* 65536;
-      x = (x1); 
+      ty = (int)((y1)* 65536);
+      x = (int)x1; 
       dy *= -1;
     }
     int i = 0;
@@ -3024,13 +3024,13 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
   else
   {
     int length = abs((int)dyf);
-    int dx = (dxf * 65536)/(length);
+    int dx = (int)((dxf * 65536)/(length));
     int y = ty >> 16;
 
     if (dyf < 0.0f)
     {
-      tx = (x1)* 65536;
-      y = (y1); 
+      tx = (int)((x1)* 65536);
+      y = (int)y1; 
       dx *= -1;
     }
     int i = 0;
