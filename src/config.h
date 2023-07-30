@@ -819,13 +819,22 @@
 #endif
 
 #if CTX_IMAGE_WRITE
-#else
-#define MINIZ_NO_ARCHIVE_APIS  1
-#define MINIZ_NO_DEFLATE_APIS  1
+
+#if CTX_AUDIO==0
+#define MINIZ_NO_INFLATE_APIS
 #endif
 
-//#define MINIZ_NO_ARCHIVE_WRITING_APIS 1
-#define MINIZ_NO_STDIO                1
+#else
+
+#if CTX_AUDIO==0
+#define MINIZ_NO_DEFLATE_APIS
+#define MINIZ_NO_INFLATE_APIS
+#endif
+
+#endif
+
+#define MINIZ_NO_ARCHIVE_APIS
+#define MINIZ_NO_STDIO
 
 
 //#define uncompress tinf_uncompress
