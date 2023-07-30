@@ -63,7 +63,7 @@
 #if CTX_STATIC_FONTS
 #include "Cousine-Regular.h"
 #include "Arimo-Regular.h"
-#if 0
+#if 0  // build more static fonts and uncomment these..
 #include "Carlito-Regular.h"
 #include "Carlito-Bold.h"
 #include "Carlito-Italic.h"
@@ -80,8 +80,8 @@
 #include "Tinos-BoldItalic.h"
 #endif
 
-#if 0
 #define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
+#if 0
 #define CTX_FONT_1   CTX_STATIC_FONT(Arimo_Bold)
 #define CTX_FONT_2   CTX_STATIC_FONT(Arimo_Italic)
 #define CTX_FONT_3   CTX_STATIC_FONT(Arimo_BoldItalic)

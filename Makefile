@@ -72,6 +72,7 @@ demos/c/%: demos/c/%.c build.conf Makefile build.conf itk/itk.h libctx.a
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen Makefile
 	make -C fonts ctx-font-ascii.h \
+		Arimo-Regular.h \
 		Cousine-Regular.h 
 # \
 		Roboto-Regular.h \
