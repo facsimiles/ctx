@@ -1135,7 +1135,7 @@ static int _ctx_resolve_font (const char *name)
   }
 #endif
 
-  char temp[ctx_strlen (name)+1];
+  char temp[ctx_strlen (name)+8];
   /* first we look for exact */
   for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
     {
@@ -1156,7 +1156,7 @@ static int _ctx_resolve_font (const char *name)
   {
      memset(temp,0,sizeof(temp));
      strncpy (temp, name + 4, sizeof(temp)-1);
-     memcpy (temp, "Arrrr", 5);  // we should match Arial and Arimo
+     memcpy (temp, "Arrrr", 5);  // this matches Arial and Arimo
      name = temp;
   }
   else if (!strncmp (name, "Monospace", 9))
@@ -1169,7 +1169,7 @@ static int _ctx_resolve_font (const char *name)
   else if (!strncmp (name, "Mono ", 5))
   {
     memset(temp,0,sizeof(temp));
-    strncpy (temp + 3, name, sizeof(temp)-1-3);
+    strncpy (temp+ 3, name, sizeof(temp)-1-3);
     memcpy (temp, "Courier ", 8); 
     name = temp;
   }
@@ -1179,9 +1179,20 @@ static int _ctx_resolve_font (const char *name)
   }
   }
 
-  /* and attempt substring matching with mangled named
-   * permitting matches with length and two first chars
-   * to be valid
+  /* first we look for exact of mangled */
+  for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
+    {
+      if (!ctx_strcmp (ctx_font_get_name (&ctx_fonts[i]), name) )
+        { ret = i; }
+    }
+  /* ... and substring matches for passed in string */
+  for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
+    {
+      if (ctx_strstr (ctx_font_get_name (&ctx_fonts[i]), name) )
+        { ret = i; }
+    }
+
+  /* then attempt more fuzzy matching
    */
   if (ret < 0 ) {
     char *subname = (char*)name;
@@ -1195,10 +1206,10 @@ static int _ctx_resolve_font (const char *name)
     for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
     {
       const char *font_name = ctx_font_get_name (&ctx_fonts[i]);
-      if (font_name[0]==name[0] &&
+      if ((font_name[0]==name[0] &&
           font_name[1]==name[1] &&
-          font_name[namelen] == name[namelen] &&
-          (namelen == 0 || ctx_strstr (font_name, subname) ))
+          font_name[namelen] == name[namelen])
+          || (namelen == 0 && ctx_strstr (font_name, subname)))
         ret = i;
     }
   }
