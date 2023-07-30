@@ -59,8 +59,10 @@
                     ctx_font_##font,       \
                     sizeof (ctx_font_##font))
 
+//#define CTX_FONT0 CTX_STATIC_FONT("sans-ctx", ascii)
 #if CTX_STATIC_FONTS
 #include "Cousine-Regular.h"
+#include "Arimo-Regular.h"
 #if 0
 #include "Carlito-Regular.h"
 #include "Carlito-Bold.h"
@@ -69,7 +71,6 @@
 #include "Cousine-Bold.h"
 #include "Cousine-Italic.h"
 #include "Cousine-BoldItalic.h"
-#include "Arimo-Regular.h"
 #include "Arimo-Bold.h"
 #include "Arimo-Italic.h"
 #include "Arimo-BoldItalic.h"

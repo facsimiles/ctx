@@ -1271,9 +1271,9 @@ int ctx_resolve_font (const char *name)
        defined(CTX_FONT_19) ||\
        defined(CTX_FONT_20) ||\
        defined(CTX_FONT_21))
-#define CTX_STATIC_FONT(font_string, font_data) \
-  ctx_load_font_ctx(font_string, ctx_font_##font_data, sizeof (ctx_font_##font_data))
-#define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx", ascii)
+  #define CTX_STATIC_FONT(font_string, font_data) \
+    ctx_load_font_ctx(font_string, ctx_font_##font_data, sizeof (ctx_font_##font_data))
+  #define CTX_FONT_0 CTX_STATIC_FONT("sans-ctx", ascii)
 #endif
 
 
