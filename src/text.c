@@ -252,50 +252,16 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
           return ctx->glyph_index_cache[hash].offset;
   }
 #endif
-#if 1
-  int length = ctx_font_get_length (font);
-  for (int i = 0; i < length; i++)
-  {
-    CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
-    if (entry->code == CTX_DEFINE_GLYPH &&
-        entry->data.u32[0] == unichar)
-    {
-#if CTX_GLYPH_CACHE
-       if (ctx)
-       {
-         ctx->glyph_index_cache[hash].font    = font;
-         ctx->glyph_index_cache[hash].unichar = unichar;
-         ctx->glyph_index_cache[hash].offset  = i;
-       }
-#endif
-       return i;
-       // XXX this could be prone to insertion of valid header
-       // data in included bitmaps.. is that an issue?
-       //   
-    }
-  }
-#else
-  int start = -1;
+
+  int start = 0;
   int end = ctx_font_get_length (font);
-  int max_iter = 10;
-    uint32_t start_glyph = ctx_glyph_find_next (font, ctx, start);
-    if (unichar  == start_glyph)
-    {
-#if CTX_GLYPH_CACHE
-       if (ctx)
-       {
-         ctx->glyph_index_cache[hash].font    = font;
-         ctx->glyph_index_cache[hash].unichar = unichar;
-         ctx->glyph_index_cache[hash].offset  = start;
-       }
-#endif
-       return start;
-    }
+  int max_iter = 14;
 
   do {
     int middle = (start + end) / 2;
 
     uint32_t middle_glyph = ctx_glyph_find_next (font, ctx, middle);
+
     if (unichar  == middle_glyph)
     {
 #if CTX_GLYPH_CACHE
@@ -319,7 +285,7 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
     if (start == end)
       return -1;
   } while (max_iter -- > 0);
-#endif
+
   return -1;
 }
 
