@@ -273,14 +273,13 @@ const char  *squoze62_utf8_decode (uint64_t    id,   char *dest);
 
 #ifdef SQUOZE_IMPLEMENTATION
 
-
 static inline uint32_t MurmurOAAT32 (const char * key, int len)
 {
   size_t h = 3323198485ul;
   for (int i = 0;i < len;i++) {
     h ^= key[i];
     h *= 0x5bd1e995;
-    //h &= 0xffffffff;
+    h &= 0xffffffff;
     h ^= h >> 15;
   }
   return h;
