@@ -183,7 +183,7 @@ int ctx_terminal_rows (void)
 #include <signal.h>
 #endif
 
-#define DELAY_MS  20  
+#define CTX_DELAY_MS  20
 
 #ifndef MIN
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -622,7 +622,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
         }
       got_event = mouse_has_event (n);
       if (!got_event)
-        got_event = ctx_nct_has_event (n, MIN(DELAY_MS, timeoutms-elapsed));
+        got_event = ctx_nct_has_event (n, MIN(CTX_DELAY_MS, timeoutms-elapsed));
       if (size_changed)
         {
           size_changed = 0;
@@ -631,7 +631,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
       /* only do this if the client has asked for idle events,
        * and perhaps programmed the ms timer?
        */
-      elapsed += MIN(DELAY_MS, timeoutms-elapsed);
+      elapsed += MIN(CTX_DELAY_MS, timeoutms-elapsed);
       if (!got_event && timeoutms && elapsed >= timeoutms)
         return "idle";
     } while (!got_event);
@@ -653,7 +653,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
             FD_ZERO (&rfds);
             FD_SET (STDIN_FILENO, &rfds);
             tv.tv_sec = 0;
-            tv.tv_usec = 1000 * DELAY_MS;
+            tv.tv_usec = 1000 * CTX_DELAY_MS;
             if (select (1, &rfds, NULL, NULL, &tv) == 0)
               return "esc";
           }
@@ -772,7 +772,7 @@ void ctx_nct_consume_events (Ctx *ctx)
   int ix, iy;
   CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
   const char *event = NULL;
-  int max_events = 4; 
+  int max_events = 4;
   do {
     float x, y;
     event = ctx_nct_get_event (ctx, 50, &ix, &iy);
@@ -874,7 +874,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
           size_changed = 0;
           return "size-changed";
         }
-      got_event = ctx_nct_has_event (n, MIN(DELAY_MS, timeoutms-elapsed));
+      got_event = ctx_nct_has_event (n, MIN(CTX_DELAY_MS, timeoutms-elapsed));
       if (size_changed)
         {
           size_changed = 0;
@@ -883,7 +883,7 @@ const char *ctx_native_get_event (Ctx *n, int timeoutms)
       /* only do this if the client has asked for idle events,
        * and perhaps programmed the ms timer?
        */
-      elapsed += MIN(DELAY_MS, timeoutms-elapsed);
+      elapsed += MIN(CTX_DELAY_MS, timeoutms-elapsed);
       if (!got_event && timeoutms && elapsed >= timeoutms)
       {
         return "idle";
