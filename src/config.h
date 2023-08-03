@@ -744,6 +744,20 @@
 #define cnd_broadcast pthread_cond_broadcast
 #define thrd_create(tid, tiled_render_fun, args) pthread_create(tid, NULL, tiled_render_fun, args)
 #define thrd_t pthread_t
+#else
+
+#define mtx_lock(a)
+#define mtx_unlock(a)
+#define mtx_t size_t
+#define cnd_t size_t
+#define mtx_plain 0
+#define mtx_init(a,b)
+#define cnd_init(a)
+#define cnd_wait(a,b)
+#define cnd_broadcast(c)
+#define thrd_create(tid, tiled_render_fun, args) 0
+#define thrd_t size_t
+
 #endif
 
 #ifndef CTX_SIMD_SUFFIX

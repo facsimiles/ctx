@@ -66,9 +66,9 @@ int _ctx_enable_hash_cache = 1;
 extern int _ctx_shape_cache_enabled;
 #endif
 
+int _ctx_max_threads = 1;
 #if CTX_THREADS
 static mtx_t _ctx_texture_mtx;
-int _ctx_max_threads = 1;
 #endif
 
 void _ctx_texture_lock (void)
