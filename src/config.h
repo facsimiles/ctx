@@ -567,7 +567,7 @@
 #endif
 
 #ifndef CTX_GLYPH_CACHE_SIZE
-#define CTX_GLYPH_CACHE_SIZE     256
+#define CTX_GLYPH_CACHE_SIZE     128
 #endif
 
 #ifndef CTX_MAX_STATES
