@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with ctx; if not, see <https://www.gnu.org/licenses/>.
  *
- * 2012, 2015, 2019, 2020, 2021, 2022 Øyvind Kolås <pippin@gimp.org>
+ * 2012, 2015, 2019, 2020, 2021, 2022, 2023 Øyvind Kolås <pippin@gimp.org>
  *
  * ctx is a 2D vector graphics processing processing framework.
  *
