@@ -2333,6 +2333,16 @@ int ctx_pixel_format_components (CtxPixelFormat format)
   return -1;
 }
 
+void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source)
+{
+  ((CtxRasterizer*)ctx->backend)->texture_source = texture_source;
+}
+
+void ctx_set_texture_cache (Ctx *ctx, Ctx *texture_cache)
+{
+  ctx->texture_cache = texture_cache;
+}
+
 #if CTX_EVENTS
 void         ctx_set_cursor (Ctx *ctx, CtxCursor cursor)
 {
@@ -2374,15 +2384,6 @@ char *ctx_get_clipboard (Ctx *ctx)
   return ctx_strdup ("");
 }
 
-void ctx_set_texture_source (Ctx *ctx, Ctx *texture_source)
-{
-  ((CtxRasterizer*)ctx->backend)->texture_source = texture_source;
-}
-
-void ctx_set_texture_cache (Ctx *ctx, Ctx *texture_cache)
-{
-  ctx->texture_cache = texture_cache;
-}
 
 void ctx_set_transform (Ctx *ctx, float a, float b, float c, float d, float e, float f, float g, float h, float i)
 {

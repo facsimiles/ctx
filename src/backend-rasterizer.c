@@ -4744,7 +4744,7 @@ ctx_new_for_buffer (CtxBuffer *buffer)
 {
   Ctx *ctx = _ctx_new_drawlist (buffer->width, buffer->height);
   ctx_set_backend (ctx,
-                    ctx_rasterizer_init ( (CtxRasterizer *) ctx_malloc (sizeof (CtxRasterizer) ),
+                    ctx_rasterizer_init ( (CtxRasterizer *) ctx_calloc (sizeof (CtxRasterizer), 1),
                                           ctx, NULL, &ctx->state,
                                           buffer->data, 0, 0, buffer->width, buffer->height,
                                           buffer->stride, buffer->format->pixel_format,
