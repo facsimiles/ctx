@@ -589,9 +589,9 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
   int w, h, components;
   unsigned char *pixels = NULL;
 
-  if (!strncmp (path, "file://", 7))
+  if (path[0] == '/' || !strncmp (path, "file://", 7))
   {
-    pixels = stbi_load (path + 7, &w, &h, &components, 0);
+    pixels = stbi_load (path + (path[0]=='/'?0:7), &w, &h, &components, 0);
   }
   else
   {
@@ -643,39 +643,27 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
   int tex_height = 0;
   if (ctx_eid_valid (ctx, eid , &tex_width, &tex_height))
   {
-    if (width > 0.0f && height > 0.0f)
+    if (width < 0 && height > 0)
     {
-#if 0
-      if (clip_width > 0.0f)
-      {
-        ctx_rectangle (ctx, clip_x, clip_y, clip_width, clip_height);
-        ctx_clip (ctx);
-      }
-#endif
+      width = height * (tex_width / tex_height);
+    }
+    else if (height <0 && height > 0)
+    {
+      height = width * (tex_height / tex_width);
+    }
+    else if (width <0 && height <0)
+    {
+      width = tex_width;
+      height = tex_height;
+    }
+
+    {
       ctx_rectangle (ctx, x, y, width, height);
-      CtxMatrix matrix;
-      ctx_matrix_identity (&matrix);
-      
-      ctx_texture (ctx, eid, 0, 0);// / (width/tex_width), y / (height/tex_height));
-      //ctx_rgba (ctx, 1, 0,0,0.5);
-#if 1
-      if (clip_width > 0.0f)
-      {
-              // XXX scale is not yet determined to be correct
-              // in relation to the translate!
-        ctx_matrix_scale (&matrix, clip_width/width, clip_height/height);
-        ctx_matrix_translate (&matrix, -clip_x, -clip_y);
-      }
-      else
-      {
-        ctx_matrix_scale (&matrix, tex_width/width, tex_height/height);
-      }
-      ctx_matrix_translate (&matrix, x, y);
-#endif
-      //ctx_matrix_invert (&matrix);
-      ctx_source_transform_matrix (ctx, &matrix);
-      //ctx_texture (ctx, eid, x / (width/tex_width), y / (height/tex_height));
+      ctx_save (ctx);
+      ctx_texture (ctx, eid, -x, -y);// / 
+      ctx_scale (ctx, (width/tex_width), (height/tex_height));
       ctx_fill (ctx);
+      ctx_restore (ctx);
     }
   }
 }
