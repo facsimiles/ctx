@@ -111,6 +111,10 @@
                                     a ~15-20% performance win can be seen. */
 #endif
 
+#ifndef CTX_FAST_STROKE_RECT
+#define CTX_FAST_STROKE_RECT 0 
+#endif
+
 
 #ifndef CTX_COMPOSITING_GROUPS
 #define CTX_COMPOSITING_GROUPS   1
@@ -879,6 +883,6 @@
 #endif
 
 #ifndef CTX_STROKE_1PX   
-#define CTX_STROKE_1PX    1
+#define CTX_STROKE_1PX    0
 #endif
 

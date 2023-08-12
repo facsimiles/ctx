@@ -7015,6 +7015,8 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   }
 }
 
+#endif
+#if CTX_FAST_STROKE_RECT
 void
 CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
                            float          x0,
@@ -7119,9 +7121,9 @@ CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
                                  x0+hw, y1+hw, 255);
       }
 }
-
-
 #endif
+
+
 
 static void
 CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)

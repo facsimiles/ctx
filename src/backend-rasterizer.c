@@ -1789,6 +1789,8 @@ void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
   ctx_rasterizer_rasterize_edges = CTX_SIMD_SUFFIX(ctx_rasterizer_rasterize_edges);
 #if CTX_FAST_FILL_RECT
   ctx_composite_fill_rect   = CTX_SIMD_SUFFIX(ctx_composite_fill_rect);
+#endif
+#if CTX_FAST_STROKE_RECT
   ctx_composite_stroke_rect = CTX_SIMD_SUFFIX(ctx_composite_stroke_rect);
 #endif
 }
@@ -3166,7 +3168,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 
   CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
-
+#if 0
 #if CTX_FAST_FILL_RECT
   if (rasterizer->edge_list.count == 5)
     {
@@ -3195,6 +3197,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         goto done;
        }
     }
+#endif
 #endif
   
     {
@@ -3415,7 +3418,7 @@ foo:
     }
   }
 #if CTX_FAST_FILL_RECT
-done:
+//done:
 #endif
   if (preserved)
     {
