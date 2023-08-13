@@ -2435,8 +2435,8 @@ static void vt_ctx_exit (void *data)
   vt->current_line->ctx = vt->current_line->ctx_copy;
   vt->current_line->ctx_copy = tmp;
 
-  _ctx_set_frame (vt->current_line->ctx, _ctx_frame (vt->current_line->ctx) + 1);
-  _ctx_set_frame (vt->current_line->ctx_copy, _ctx_frame (vt->current_line->ctx));
+  ctx_set_textureclock (vt->current_line->ctx, ctx_textureclock (vt->current_line->ctx) + 1);
+  ctx_set_textureclock (vt->current_line->ctx_copy, ctx_textureclock (vt->current_line->ctx));
 #if 1
   if (vt->ctxp) // XXX: ugly hack to aid double buffering
     ((void**)vt->ctxp)[0]= vt->current_line->ctx;
@@ -8581,7 +8581,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 
             if (line->ctx_copy)
               {
-                //fprintf (stderr, " [%i]\n", _ctx_frame (ctx));
+                //fprintf (stderr, " [%i]\n", ctx_textureclock (ctx));
                 //ctx_render_stream (line->ctx_copy, stderr, 1);
 
                 ctx_begin_path (ctx);

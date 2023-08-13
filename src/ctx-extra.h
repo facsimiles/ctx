@@ -321,8 +321,7 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
                           void (*freefunc) (void *pixels, void *user_data),
                           void *user_data);
 
-int _ctx_set_frame (Ctx *ctx, int frame);
-int _ctx_frame (Ctx *ctx);
+int ctx_textureclock (Ctx *ctx);
 
 
 void ctx_exit (Ctx *ctx);

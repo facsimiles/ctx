@@ -2508,6 +2508,10 @@ void ctx_vt_write (Ctx *ctx, uint8_t byte);
 int ctx_vt_has_data (Ctx *ctx);
 int ctx_vt_read (Ctx *ctx);
 
+
+void ctx_set_textureclock (Ctx *ctx, int frame);
+int  ctx_textureclock (Ctx *ctx);
+
 #ifdef __cplusplus
 }
 #endif

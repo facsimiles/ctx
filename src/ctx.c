@@ -396,14 +396,15 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
     //fclose (f);
 }
 int
-_ctx_frame (Ctx *ctx)
+ctx_textureclock (Ctx *ctx)
 {
    return ctx->frame;
 }
-int
-_ctx_set_frame (Ctx *ctx, int frame)
+
+void
+ctx_set_textureclock (Ctx *ctx, int textureclock)
 {
-   return ctx->frame = frame;
+   ctx->frame = textureclock;
 }
 
 void ctx_define_texture (Ctx *ctx,
