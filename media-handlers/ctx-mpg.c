@@ -266,18 +266,18 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
 
   if (yuv420)
   {
-     int data_len = frame->width *  frame->height +
-                 2 *((frame->width/2) * (frame->height/2));
+     int data_len = frame->y.width *  frame->y.height +
+                 2 *((frame->y.width/2) * (frame->y.height/2));
      uint8_t *data=malloc (data_len);
-     memcpy (data, frame->y.data, frame->width *  frame->height);
-     memcpy (data + frame->width *  frame->height, frame->cb.data, (frame->width/2) * (frame->height/2));
-     memcpy (data + frame->width *  frame->height + (frame->width/2)*(frame->height/2), frame->cr.data, (frame->width/2) * (frame->height/2));
+     memcpy (data, frame->y.data, frame->y.width *  frame->y.height);
+     memcpy (data + frame->y.width *  frame->y.height, frame->cb.data, (frame->y.width/2) * (frame->y.height/2));
+     memcpy (data + frame->y.width *  frame->y.height + (frame->y.width/2)*(frame->y.height/2), frame->cr.data, (frame->y.width/2) * (frame->y.height/2));
 
   ctx_define_texture (self->ctx,
                       eid, // by passing in a unique eid
                            // we avoid having to hash
-                      frame->width, frame->height,
-                      frame->width,
+                      frame->y.width, frame->y.height,
+                      frame->y.width,
                       CTX_FORMAT_YUV420,
                       data,
                       NULL);

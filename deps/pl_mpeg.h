@@ -859,7 +859,6 @@ plm_t *plm_create_with_memory(uint8_t *bytes, size_t length, int free_when_done)
 
 plm_t *plm_create_with_buffer(plm_buffer_t *buffer, int destroy_when_done) {
 	plm_t *self = (plm_t *)malloc(sizeof(plm_t));
-        printf ("malloc: %i\n", sizeof (plm_t));
 	memset(self, 0, sizeof(plm_t));
 
 	self->demux = plm_demux_create(buffer, destroy_when_done);
@@ -1385,7 +1384,6 @@ plm_buffer_t *plm_buffer_create_with_file(FILE *fh, int close_when_done) {
 
 plm_buffer_t *plm_buffer_create_with_memory(uint8_t *bytes, size_t length, int free_when_done) {
 	plm_buffer_t *self = (plm_buffer_t *)malloc(sizeof(plm_buffer_t));
-        printf ("mallox: %i\n", sizeof (plm_buffer_t));
 	memset(self, 0, sizeof(plm_buffer_t));
 	self->capacity = length;
 	self->length = length;
@@ -1399,12 +1397,10 @@ plm_buffer_t *plm_buffer_create_with_memory(uint8_t *bytes, size_t length, int f
 
 plm_buffer_t *plm_buffer_create_with_capacity(size_t capacity) {
 	plm_buffer_t *self = (plm_buffer_t *)malloc(sizeof(plm_buffer_t));
-        printf ("malloc: %i\n", sizeof(plm_buffer_t));
 	memset(self, 0, sizeof(plm_buffer_t));
 	self->capacity = capacity;
 	self->free_when_done = TRUE;
 	self->bytes = (uint8_t *)malloc(capacity);
-        printf ("malloc: %i\n", capacity);
 	self->mode = PLM_BUFFER_MODE_RING;
 	self->discard_read_bytes = TRUE;
 	return self;
@@ -1461,7 +1457,6 @@ size_t plm_buffer_write(plm_buffer_t *self, uint8_t *bytes, size_t length) {
 			new_size *= 2;
 		} while (new_size - self->length < length);
 		self->bytes = (uint8_t *)realloc(self->bytes, new_size);
-                printf ("realloced to %li\n", new_size);
 		self->capacity = new_size;
 	}
 
@@ -1711,7 +1706,6 @@ plm_packet_t *plm_demux_get_packet(plm_demux_t *self);
 
 plm_demux_t *plm_demux_create(plm_buffer_t *buffer, int destroy_when_done) {
 	plm_demux_t *self = (plm_demux_t *)malloc(sizeof(plm_demux_t));
-        printf("malloc:%i\n",sizeof(plm_demux_t));
 	memset(self, 0, sizeof(plm_demux_t));
 
 	self->buffer = buffer;
@@ -2632,7 +2626,6 @@ void plm_video_idct(int *block);
 
 plm_video_t * plm_video_create_with_buffer(plm_buffer_t *buffer, int destroy_when_done) {
 	plm_video_t *self = (plm_video_t *)malloc(sizeof(plm_video_t));
-        printf("malloc:%i\n",sizeof(plm_video_t));
 	memset(self, 0, sizeof(plm_video_t));
 	
 	self->buffer = buffer;
@@ -2845,7 +2838,6 @@ int plm_video_decode_sequence_header(plm_video_t *self) {
 	size_t frame_data_size = (luma_plane_size + 2 * chroma_plane_size);
 
 	self->frames_data = (uint8_t*)malloc(frame_data_size * 3);
-        printf("malloc: %i\n", frame_data_size * 3);
 	plm_video_init_frame(self, &self->frame_current, self->frames_data + frame_data_size * 0);
 	plm_video_init_frame(self, &self->frame_forward, self->frames_data + frame_data_size * 1);
 	plm_video_init_frame(self, &self->frame_backward, self->frames_data + frame_data_size * 2);
@@ -3725,7 +3717,6 @@ void plm_audio_matrix_transform(int s[32][3], int ss, float *d, int dp);
 
 plm_audio_t *plm_audio_create_with_buffer(plm_buffer_t *buffer, int destroy_when_done) {
 	plm_audio_t *self = (plm_audio_t *)malloc(sizeof(plm_audio_t));
-        printf ("malloc: %i\n", sizeof (plm_audio_t));
 	memset(self, 0, sizeof(plm_audio_t));
 
 	self->samples.count = PLM_AUDIO_SAMPLES_PER_FRAME;
