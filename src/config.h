@@ -886,3 +886,6 @@
 #define CTX_STROKE_1PX    0
 #endif
 
+#ifndef CTX_PICO
+#define CTX_PICO 0
+#endif

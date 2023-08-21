@@ -1,6 +1,5 @@
 #include "ctx-split.h"
 
-#if CTX_TERMINAL_EVENTS
 int ctx_frame_ack = -1;
 #if CTX_FORMATTER
 
@@ -378,10 +377,13 @@ static void ctx_ctx_end_frame (Ctx *ctx)
   fprintf (stdout, "\033[5n");
   fflush (stdout);
 
+#if CTX_EVENTS
   ctx_frame_ack = 0;
   do {
      ctx_consume_events (ctxctx->backend.ctx);
   } while (ctx_frame_ack != 1);
+#endif
+
 #else
   fflush (stdout);
 #endif
@@ -389,7 +391,9 @@ static void ctx_ctx_end_frame (Ctx *ctx)
 
 void ctx_ctx_destroy (CtxCtx *ctx)
 {
+#if CTX_TERMINAL_EVENTS
   nc_at_exit ();
+#endif
   ctx_free (ctx);
   /* we're not destoring the ctx member, this is function is called in ctx' teardown */
 }
@@ -404,7 +408,7 @@ void ctx_ctx_consume_events (Ctx *ctx)
 #endif
   assert (ctx_native_events);
 
-#if 1
+#if CTX_TERMINAL_EVENTS
     { /* XXX : this is a work-around for signals not working properly, we are polling the
          size with an ioctl per consume-events
          */
@@ -529,5 +533,4 @@ Ctx *ctx_new_ctx (int width, int height)
 void ctx_ctx_pcm (Ctx *ctx);
 
 
-#endif
 #endif

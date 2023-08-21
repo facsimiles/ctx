@@ -2083,14 +2083,14 @@ ctx_new_drawlist (int width, int height)
 static Ctx *ctx_new_ui (int width, int height, const char *backend);
 #endif
 
-#if CTX_PTY==0
+#if CTX_PICO
 Ctx *ctx_pico_init (void);
 #endif
 
 CTX_EXPORT Ctx *
 ctx_new (int width, int height, const char *backend)
 {
-#if CTX_PTY==0
+#if CTX_PICO
   return ctx_pico_init ();
 #endif
 

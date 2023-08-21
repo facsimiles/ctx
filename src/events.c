@@ -12,7 +12,7 @@
 
 #if !__COSMOPOLITAN__
 
-#if CTX_PTY==0
+#if CTX_PICO
 #include "pico/stdlib.h"
 #include "hardware/timer.h"
 static uint64_t pico_get_time(void) {
@@ -32,7 +32,7 @@ _ctx_init_ticks (void)
   if (done)
     return;
   done = 1;
-#if CTX_PTY==0
+#if CTX_PICO
   start_time = pico_get_time();
 #else
   gettimeofday (&start_time, NULL);
@@ -42,7 +42,7 @@ _ctx_init_ticks (void)
 static inline unsigned long
 _ctx_ticks (void)
 {
-#if CTX_PTY==0
+#if CTX_PICO
   uint64_t measure_time =  pico_get_time();
   return measure_time - start_time;
 #else
