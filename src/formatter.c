@@ -105,6 +105,17 @@ static void _ctx_stream_addstr (CtxFormatter *formatter, const char *str, int le
   fwrite (str, len, 1, (FILE*)formatter->target);
 }
 
+static void _ctx_fd_addstr (CtxFormatter *formatter, const char *str, int len)
+{
+  if (!str || len == 0)
+  {
+    return;
+  }
+  if (len < 0) len = ctx_strlen (str);
+  write ((size_t)formatter->target, str, len);
+}
+
+
 void _ctx_string_addstr (CtxFormatter *formatter, const char *str, int len)
 {
   if (!str || len == 0)
@@ -929,6 +940,23 @@ ctx_render_stream (Ctx *ctx, FILE *stream, int longform)
   while ( (command = ctx_iterator_next (&iterator) ) )
     { ctx_formatter_process (&formatter, command); }
   fwrite ("\n", 1, 1, stream);
+}
+
+void
+ctx_render_fd (Ctx *ctx, int fd, int longform)
+{
+  CtxIterator iterator;
+  CtxFormatter formatter;
+  formatter.target   = (void*)((size_t)fd);
+  formatter.longform = longform;
+  formatter.indent   = 0;
+  formatter.add_str  = _ctx_fd_addstr;
+  CtxCommand *command;
+  ctx_iterator_init (&iterator, &ctx->drawlist, 0,
+                     CTX_ITERATOR_EXPAND_BITPACK);
+  while ( (command = ctx_iterator_next (&iterator) ) )
+    { ctx_formatter_process (&formatter, command); }
+  write (fd, "\n", 1);
 }
 
 char *

@@ -416,26 +416,25 @@ ctx_cb_end_frame (Ctx *ctx)
 
   if (cb_backend->flags & CTX_FLAG_SHOW_FPS)
   {
-   
-  float em = ctx_height (ctx) * 0.08f;
-  float y = em;
-  ctx_font_size (ctx, em);
-  ctx_rectangle (ctx, ctx_width(ctx)-(em*4), 0, em *4, em * 1.1f);
-  ctx_rgba (ctx, 0, 0, 0, 0.7f);
-  ctx_fill (ctx);
-
-  ctx_rgba (ctx, 1, 1, 0, 1);
-
-  if (prev_time)
-  {
-    char buf[22];
-    float fps = 1.0f/((cur_time-prev_time)/1000.0f);
-    ctx_move_to (ctx, width - (em * 3.8f), y);
-    sprintf (buf, "%2.1f fps", (double)fps);
-    ctx_text (ctx, buf);
-    ctx_begin_path (ctx);
-  }
-  prev_time = cur_time;
+    float em = ctx_height (ctx) * 0.08f;
+    float y = em;
+    ctx_font_size (ctx, em);
+    ctx_rectangle (ctx, ctx_width(ctx)-(em*4), 0, em *4, em * 1.1f);
+    ctx_rgba (ctx, 0, 0, 0, 0.7f);
+    ctx_fill (ctx);
+  
+    ctx_rgba (ctx, 1, 1, 0, 1);
+  
+    if (prev_time)
+    {
+      char buf[22];
+      float fps = 1.0f/((cur_time-prev_time)/1000.0f);
+      ctx_move_to (ctx, width - (em * 3.8f), y);
+      sprintf (buf, "%2.1f fps", (double)fps);
+      ctx_text (ctx, buf);
+      ctx_begin_path (ctx);
+    }
+    prev_time = cur_time;
   }
 
 

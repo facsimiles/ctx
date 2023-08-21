@@ -365,7 +365,6 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
 {
   int eid_len = ctx_strlen (eid);
   char ascii[41]="";
-  //fprintf (stderr, "tx %s\n", eid);
   if (eid_len > 50)
   {
     CtxSHA1 *sha1 = ctx_sha1_new ();
@@ -383,17 +382,8 @@ void ctx_texture (Ctx *ctx, const char *eid, float x, float y)
     eid=ascii;
   }
 
-    //FILE  *f = fopen ("/tmp/l", "a");
   if (ctx_eid_valid (ctx, eid, 0, 0))
-  {
     ctx_process_cmd_str_float (ctx, CTX_TEXTURE, eid, x, y);
-    //fprintf (stderr, "setting texture eid %s\n", eid);
-  }
-  else
-  {
-    //fprintf (stderr, "tried setting invalid texture eid %s\n", eid);
-  }
-    //fclose (f);
 }
 int
 ctx_textureclock (Ctx *ctx)

@@ -867,7 +867,9 @@ Ctx * ctx_new_for_cairo (cairo_t *cr);
 
 char *ctx_render_string (Ctx *ctx, int longform, int *retlen);
 
-void ctx_render_stream  (Ctx *ctx, FILE *stream, int formatter);
+void ctx_render_stream  (Ctx *ctx, FILE *stream, int longform);
+
+void ctx_render_fd      (Ctx *ctx, int fd, int longform);
 
 void ctx_render_ctx     (Ctx *ctx, Ctx *d_ctx);
 void ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx); /* cycles through all
