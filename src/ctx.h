@@ -2511,6 +2511,20 @@ int ctx_vt_has_data (Ctx *ctx);
 int ctx_vt_read (Ctx *ctx);
 
 
+
+#if CTX_GSTATE_PROTECT
+/* sets the current gstate stack (number of unpaired ctx_save calls) as a
+ * limit that can not be restored beyond. For now can not be used recursively.
+ */
+void ctx_gstate_protect   (Ctx *ctx);
+
+/* removes the limit set by ctx_gstate_protect, if insufficient ctx_restore
+ * calls have been made, 
+ */
+void ctx_gstate_unprotect (Ctx *ctx);
+#endif
+
+/* set the logical clock used for the texture eviction policy */
 void ctx_set_textureclock (Ctx *ctx, int frame);
 int  ctx_textureclock (Ctx *ctx);
 

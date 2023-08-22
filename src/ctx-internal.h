@@ -341,8 +341,10 @@ struct _CtxState
   int           ink_min_y;
   int           ink_max_x;
   int           ink_max_y;
+#if CTX_GSTATE_PROTECT
+  int           gstate_waterlevel;
+#endif
   CtxGState     gstate;
-  CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 #if CTX_GRADIENTS
   CtxGradient   gradient; /* we keep only one gradient,
                              this goes icky with multiple
@@ -354,6 +356,7 @@ struct _CtxState
 #endif
   CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
   char          stringpool[CTX_STRINGPOOL_SIZE];
+  CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
 };
 
 
@@ -883,6 +886,7 @@ int ctx_terminal_cols   (void);
 int ctx_terminal_rows   (void);
 extern int ctx_frame_ack;
 
+
 typedef struct _CtxCtx CtxCtx;
 struct _CtxCtx
 {
@@ -893,7 +897,6 @@ struct _CtxCtx
    int  rows;
    int  was_down;
 };
-
 
 extern int _ctx_max_threads;
 extern int _ctx_enable_hash_cache;

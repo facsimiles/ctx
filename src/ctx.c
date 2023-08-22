@@ -835,10 +835,12 @@ void ctx_save (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_SAVE);
 }
+
 void ctx_restore (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_RESTORE);
 }
+
 void ctx_new_page (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_NEW_PAGE);
@@ -1626,6 +1628,12 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
         ctx_gstate_push (state);
         break;
       case CTX_RESTORE:
+#if CTX_GSTATE_PROTECT
+        if (state->gstate_no <= state->gstate_waterlevel)
+        {
+          fprintf (stderr, "ctx: restore without corresponding save\n");
+        }
+#endif
         ctx_gstate_pop (state);
         break;
       case CTX_IDENTITY:
@@ -3249,4 +3257,29 @@ uint32_t ctx_strhash(const char *str)
   return squoze32_utf8 (str, strlen (str));
 }
 
+#if CTX_GSTATE_PROTECT
+void ctx_gstate_protect   (Ctx *ctx)
+{
+    if (ctx->state.gstate_waterlevel)
+    {
+      fprintf (stderr, "ctx: save restore limit already set (%i)\n", ctx->state.gstate_waterlevel);
+      return;
+    }
+    ctx->state.gstate_waterlevel = ctx->state.gstate_no;
+}
 
+void ctx_gstate_unprotect (Ctx *ctx)
+{
+  if (ctx->state.gstate_waterlevel != ctx->state.gstate_no)
+  {
+    unsigned int count = ctx->state.gstate_waterlevel - ctx->state.gstate_no;
+    fprintf (stderr, "ctx: %i missing restores\n", count);
+    while (count)
+    {
+      ctx_restore (ctx);
+      count --;
+    }
+  }
+  ctx->state.gstate_waterlevel = 0;
+}
+#endif
