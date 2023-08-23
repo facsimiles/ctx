@@ -890,5 +890,8 @@
 #define CTX_PICO 0
 #endif
 
+
+#ifndef CTX_GSTATE_PROTECT
 #define CTX_GSTATE_PROTECT  1
+#endif
 
