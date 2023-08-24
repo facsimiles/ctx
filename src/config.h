@@ -892,6 +892,6 @@
 
 
 #ifndef CTX_GSTATE_PROTECT
-#define CTX_GSTATE_PROTECT  1
+#define CTX_GSTATE_PROTECT  0
 #endif
 
