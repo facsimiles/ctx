@@ -651,7 +651,7 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
     {
       ctx_rectangle (ctx, x, y, width, height);
       ctx_save (ctx);
-      ctx_texture (ctx, eid, -x, -y);// / 
+      ctx_texture (ctx, eid, x, y); 
       ctx_scale (ctx, (width/tex_width), (height/tex_height));
       ctx_fill (ctx);
       ctx_restore (ctx);
