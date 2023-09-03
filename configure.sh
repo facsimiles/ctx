@@ -2,7 +2,6 @@
 
 HAVE_SDL=0
 HAVE_BABL=0
-HAVE_CAIRO=0
 HAVE_HARFBUZZ=0
 HAVE_LIBCURL=0
 HAVE_ALSA=0
@@ -44,7 +43,6 @@ ENABLE_SWITCH_DISPATCH=1
 
 pkg-config sdl2    && HAVE_SDL=1
 pkg-config babl    && HAVE_BABL=1
-pkg-config cairo   && HAVE_CAIRO=1
 pkg-config libcurl && HAVE_LIBCURL=1
 pkg-config alsa    && HAVE_ALSA=1
 pkg-config libdrm  && HAVE_KMS=1
@@ -69,7 +67,7 @@ while test $# -gt 0
 do
     case "$1" in
      "--debug") CFLAGS=' -g ' ; HAVE_SIMD=0   ;;
-     "--static") CFLAGS='-Os' HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_CAIRO=0  HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 ;;
+     "--static") CFLAGS='-Os' HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 ;;
      "--asan") CFLAGS=" -fsanitize=address -g";LIBS=' -lasan -g '  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined -g";LIBS=' -lasan -g '  ;;
      "--enable-kms") HAVE_KMS=1 ;;
@@ -77,7 +75,6 @@ do
      "--enable-SDL2") HAVE_SDL=1 ;;
      "--disable-SDL2") HAVE_SDL=0    ;;
      "--enable-sdl") HAVE_SDL=1 ;;
-     "--enable-cairo") HAVE_CAIRO=1 ;;
      "--enable-babl") HAVE_BABL=1 ;;
      "--enable-alsa") HAVE_ALSA=1 ;;
      "--enable-libcurl") HAVE_LIBCURL=1 ;;
@@ -149,7 +146,6 @@ do
      "--disable-simd") HAVE_SIMD=0 ;;
      "--disable-fb") ENABLE_FB=0 ;;
      "--disable-babl") HAVE_BABL=0 ;;
-     "--disable-cairo") HAVE_CAIRO=0 ;;
      "--disable-harfbuzz") HAVE_HARFBUZZ=0 ;;
      "--disable-alsa") HAVE_ALSA=0 ;;
      "--disable-libcurl") HAVE_LIBCURL=0 ;;
@@ -185,7 +181,6 @@ do
         ENABLE_TERMIMG=0 
         HAVE_BABL=0 
         HAVE_SDL=0 
-        HAVE_CAIRO=0 
         HAVE_HARFBUZZ=0 
         HAVE_ALSA=0 
         HAVE_LIBCURL=0 
@@ -284,14 +279,6 @@ else
   echo "#define CTX_HARFBUZZ 0 " >> local.conf
 fi
 
-if [ $HAVE_CAIRO = 1 ];then
-  echo "#define CTX_CAIRO 1 " >> local.conf
-  echo "CTX_CFLAGS+= `pkg-config cairo --cflags`" >> build.conf
-  echo "CTX_LIBS+= `pkg-config cairo --libs` " >> build.conf
-else
-  echo "#define CTX_CAIRO 0 " >> local.conf
-fi
-
 if [ $HAVE_LIBCURL = 1 ];then
   echo "#define CTX_CURL 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config libcurl --cflags`" >> build.conf
@@ -358,7 +345,6 @@ echo -n " SDL2     "; [ $HAVE_SDL = 1 ]        && echo "yes" || echo "no (libsdl
 echo -n " pdf      "; [ $ENABLE_PDF = 1 ]      && echo "yes" || echo "no"
 echo -n " term     "; [ $ENABLE_TERM = 1 ]     && echo "yes" || echo "no"
 echo -n " termimg  "; [ $ENABLE_TERMIMG = 1 ]  && echo "yes" || echo "no"
-echo -n " cairo    "; [ $HAVE_CAIRO = 1 ]      && echo "yes" || echo "no (libcairo2-dev)"
 echo -n " headless "; [ $ENABLE_HEADLESS = 1 ] && echo "yes" || echo "no"
 echo ""
 echo "External libraries:"

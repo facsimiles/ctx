@@ -42,7 +42,6 @@ ctx-string.c
 backend-drawlist.c
 backend-hasher.c
 backend-pdf.c
-backend-cairo.c
 backend-ctx.c
 backend-tiled.c
 backend-headless.c
