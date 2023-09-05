@@ -649,9 +649,12 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
     }
 
     {
+      if (clip_width>0) tex_width = clip_width;
+      if (clip_height>0) tex_height = clip_height;
       ctx_rectangle (ctx, x, y, width, height);
       ctx_save (ctx);
-      ctx_texture (ctx, eid, x, y); 
+      ctx_texture (ctx, eid, x-(clip_x) * (width/tex_width), y-clip_y * (height
+/tex_height));
       ctx_scale (ctx, (width/tex_width), (height/tex_height));
       ctx_fill (ctx);
       ctx_restore (ctx);
@@ -1958,7 +1961,7 @@ ctx_state_init (CtxState *state)
   state->ink_max_x              = -8192;
   state->ink_max_y              = -8192;
   _ctx_matrix_identity (&state->gstate.transform);
-#if CTX_CM
+#if CTX_ENABLE_CM
 #if CTX_BABL
   //ctx_colorspace_babl (state, CTX_COLOR_SPACE_USER_RGB,   babl_space ("sRGB"));
   //ctx_colorspace_babl (state, CTX_COLOR_SPACE_DEVICE_RGB, babl_space ("ACEScg"));
