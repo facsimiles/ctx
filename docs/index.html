@@ -13,8 +13,6 @@
   <body lang='en'>
      <div id='menu'>
 
-
-
               <a href='https://ctx.graphics/'>
       <img style='max-width:6em' src='graphics.ctx.terminal.svg' alt='ctx'/>
               </a>
@@ -84,11 +82,12 @@
 
       <p>The ctx renderer is written in portable C, without
       inline assembly or SIMD intrinsics - but is still fast (and can
-      make good use of cpu capabilities known by the C compiler.  The single
-      threaded rendering performance
-      <a href='performance/'>rendering performance</a> is often better
-      than engines with more dedicated/manual SIMD handling.
-      </p>
+      make good use of cpu capabilities known by the C compiler, thus making
+      the same code work across x86 32 and 64bit, ARM on MCUs and
+      SBCs, tensilica, RISC-V and other compilers with a modern toolchain.
+      The single threaded rendering performance <a
+      href='performance/'>rendering performance</a> is often better than engines with
+      more dedicated/manual SIMD handling.  </p>
 
 
       <p>Below is ctx compiled to WASM with emscripten (without SIMD support).
@@ -98,20 +97,16 @@
       </canvas>
 
 <h2 id='license'>license and funding</h2>
-<p> The terminal is available under <a
-        href='https://www.gnu.org/licenses/gpl-3.0.en.html'>GPLv3+</a>, and
-ctx.h is available under <a
+<p> ctx is available under <a
         href='https://www.gnu.org/licenses/lgpl-3.0.en.html'>LGPLv3+</a> you
 can encourage continued development of ctx and dissimilar technologies by
 financially supporting me, <a href='https://pippin.gimp.org'>Øyvind Kolås</a> who is doing independent pro-bono R&amp;D through
        <a href='https://pippin.gimp.org/funding/'>patreon</a> and
-       similar. If my income through such sources is above 4000USD per
-               month for a year, or if someone does a one time payment of the equivalent amount for the years I have invested in ctx, I want to 
-               relicense the rasterizer and protocol parts of ctx
-          under the <a
+       similar. If my income through such sources is above 4000USD per month
+for a year, or if someone does a one time payment of the equivalent amount for
+the time I invested in ctx over the last few years, ctx could become available
+under under the <a
 href='https://opensource.org/licenses/ISC'>ISC license</a>.</p>
-
-
 
               </div>
       </body>
