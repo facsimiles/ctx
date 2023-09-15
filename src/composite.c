@@ -1,5 +1,6 @@
 #include "ctx-split.h"
 
+#ifndef __clang__
 #if CTX_COMPOSITE_O3
 #pragma GCC push_options
 #pragma GCC optimize("O3")
@@ -7,6 +8,7 @@
 #if CTX_COMPOSITE_O2
 #pragma GCC push_options
 #pragma GCC optimize("O2")
+#endif
 #endif
 
 #if CTX_COMPOSITE
@@ -7319,16 +7321,15 @@ CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
   }
 };
 
-
-
-
 #endif // CTX_COMPOSITE
 
+#ifndef __clang__
 #if CTX_COMPOSITE_O3
 #pragma GCC pop_options
 #endif
 #if CTX_COMPOSITE_O2
 #pragma GCC pop_options
+#endif
 #endif
 
 #endif // CTX_IMPLEMENTATION
