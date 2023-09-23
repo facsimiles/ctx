@@ -4742,6 +4742,49 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   return rasterizer;
 }
 
+void
+ctx_rasterizer_reinit (Ctx *ctx,
+                       void *fb,
+                       int x,
+                       int y,
+                       int width,
+                       int height,
+                       int stride,
+                       CtxPixelFormat pixel_format)
+{
+  CtxBackend *backend = ctx_get_backend (ctx);
+  CtxRasterizer *rasterizer = (CtxRasterizer*)backend;
+  if (!backend) return;
+#if 0
+  // this is a more proper reinit than the below, which should be a lot faster..
+  ctx_rasterizer_init (rasterizer, ctx, rasterizer->texture_source, &ctx->state, fb, x, y, width, height, stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
+#else
+
+  ctx_state_init (rasterizer->state);
+  rasterizer->buf         = fb;
+  rasterizer->blit_x      = x;
+  rasterizer->blit_y      = y;
+  rasterizer->blit_width  = width;
+  rasterizer->blit_height = height;
+  rasterizer->state->gstate.clip_min_x  = x;
+  rasterizer->state->gstate.clip_min_y  = y;
+  rasterizer->state->gstate.clip_max_x  = x + width - 1;
+  rasterizer->state->gstate.clip_max_y  = y + height - 1;
+  rasterizer->blit_stride = stride;
+  rasterizer->scan_min    = 5000;
+  rasterizer->scan_max    = -5000;
+  rasterizer->gradient_cache_valid = 0;
+
+  if (pixel_format == CTX_FORMAT_BGRA8)
+  {
+    pixel_format = CTX_FORMAT_RGBA8;
+    rasterizer->swap_red_green = 1;
+  }
+
+  rasterizer->format = ctx_pixel_format_info (pixel_format);
+#endif
+}
+
 Ctx *
 ctx_new_for_buffer (CtxBuffer *buffer)
 {
@@ -4754,6 +4797,7 @@ ctx_new_for_buffer (CtxBuffer *buffer)
                                           CTX_ANTIALIAS_DEFAULT));
   return ctx;
 }
+
 
 Ctx *
 ctx_new_for_framebuffer (void *data, int width, int height,

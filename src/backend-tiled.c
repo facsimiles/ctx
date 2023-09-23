@@ -191,12 +191,10 @@ void ctx_tiled_render_fun (void **data)
             }
 #endif
             int swap_red_green = rasterizer->swap_red_green;
-            ctx_rasterizer_init (rasterizer,
-                                 host, tiled->backend.ctx, &host->state,
+            ctx_rasterizer_reinit (host,
                                  &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
                                  0, 0, width, height,
-                                 tiled->width*4, CTX_FORMAT_BGRA8,
-                                 tiled->antialias);
+                                 tiled->width*4, CTX_FORMAT_BGRA8);
             ((CtxRasterizer*)(host->backend))->swap_red_green = swap_red_green;
             if (sdl_icc_length)
               ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);

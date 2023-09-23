@@ -536,6 +536,7 @@ typedef struct _CtxGlyphEntry CtxGlyphEntry;
 struct _Ctx
 {
   CtxBackend       *backend;
+  CtxState          state;        /**/
   CtxDrawlist       drawlist;
   int               transformation;
   int               width;
@@ -544,7 +545,6 @@ struct _Ctx
   Ctx              *texture_cache;
   CtxList          *deferred;
   CtxList          *eid_db;
-  CtxState          state;        /**/
   int               frame; /* used for texture lifetime */
   uint32_t          bail;
   CtxBackend       *backend_pushed;

@@ -2528,6 +2528,16 @@ void ctx_gstate_unprotect (Ctx *ctx);
 void ctx_set_textureclock (Ctx *ctx, int frame);
 int  ctx_textureclock (Ctx *ctx);
 
+void
+ctx_rasterizer_reinit (Ctx *ctx,
+                       void *fb,
+                       int x0,
+                       int y0,
+                       int width,
+                       int height,
+                       int stride,
+                       CtxPixelFormat pixel_format);
+
 #ifdef __cplusplus
 }
 #endif
