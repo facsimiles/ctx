@@ -1884,6 +1884,10 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   x += 0.5f;
   y += 0.5f;
 
+#if CTX_DITHER
+  int scan = rasterizer->scanline / CTX_FULL_AA;
+#endif
+
   if (!src)
           return;
 
@@ -1951,11 +1955,9 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       {
         *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y+u],
                         src[u_offset+uv+u/2], src[v_offset+uv+u/2]);
-#if 0
 #if CTX_DITHER
-       ctx_dither_rgba_u8 (rgba, x, y, rasterizer->format->dither_red_blue,
+       ctx_dither_rgba_u8 (rgba, x+i, scan, rasterizer->format->dither_red_blue,
                            rasterizer->format->dither_green);
-#endif
 #endif
 
         ix += ideltax;
@@ -1976,11 +1978,9 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
 
         *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y],
                         src[u_offset+uv], src[v_offset+uv]);
-#if 0
 #if CTX_DITHER
-       ctx_dither_rgba_u8 (rgba, x+i, y, rasterizer->format->dither_red_blue,
+       ctx_dither_rgba_u8 (rgba, x+i, scan, rasterizer->format->dither_red_blue,
                            rasterizer->format->dither_green);
-#endif
 #endif
 
         ix += ideltax;
