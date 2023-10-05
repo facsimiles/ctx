@@ -136,6 +136,10 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
   }
   fb = backend_cb->fb;
 
+  void (*set_pixels) (Ctx *ctx, void *user_data, 
+                      int x, int y, int w, int h, void *buf, int buf_size) =
+    backend_cb->set_pixels;
+
   if (flags & CTX_FLAG_LOWFI)
   {
     int scale_factor  = 1;
@@ -305,9 +309,9 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
            y++;
         }
       }
-      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
-                              x0, y0, width, render_height, (uint16_t*)scaled,
-                              width * render_height * bpp);
+      set_pixels (ctx, backend_cb->set_pixels_user_data, 
+                  x0, y0, width, render_height, (uint16_t*)scaled,
+                  width * render_height * bpp);
       y0 += render_height;
       yo += render_height;
     } while (y0 < y1);
@@ -329,14 +333,17 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
     ctx_push_backend (ctx, r);
 
+    int do_intra = (((flags & CTX_FLAG_INTRA_UPDATE) != 0) && backend_cb->update_fb);
+    int keep_data = ((flags & CTX_FLAG_KEEP_DATA) != 0);
+    void *set_pixels_user_data = backend_cb->set_pixels_user_data;
     do
     {
       render_height = ctx_mini (render_height, y1-y0+1);
       ctx_rasterizer_init (r, ctx, NULL, &ctx->state, fb, 0, 0, width,
                    render_height, width * bpp, format, CTX_ANTIALIAS_DEFAULT);
-    ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
+      ((CtxBackend*)r)->destroy = (CtxDestroyNotify)ctx_rasterizer_deinit;
 
-      if ((flags & CTX_FLAG_KEEP_DATA) == 0)
+      if (!keep_data)
         memset (fb, 0, width * bpp * render_height);
 
       ctx_translate (ctx, -1.0f * x0, -1.0f * y0);
@@ -345,11 +352,11 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
       else
         ctx_render_ctx (ctx, ctx);
 
-      backend_cb->set_pixels (ctx, backend_cb->set_pixels_user_data, 
-                              x0, y0, width, render_height, (uint16_t*)fb,
-                              width * render_height * bpp);
+      set_pixels (ctx, set_pixels_user_data, 
+                  x0, y0, width, render_height, (uint16_t*)fb,
+                  width * render_height * bpp);
 
-      if ((flags & CTX_FLAG_INTRA_UPDATE) && backend_cb->update_fb)
+      if (do_intra)
         abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
 
       y0 += render_height;

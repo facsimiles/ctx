@@ -258,7 +258,7 @@
 #define CTX_DITHER 0
 #endif
 
-/*  only source-over clear and copy will work, the API still
+/*  with 0 only source-over clear and copy will work, the API still
  *  through - but the backend is limited, for use to measure
  *  size and possibly in severely constrained ROMs.
  */
