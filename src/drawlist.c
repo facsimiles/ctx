@@ -83,7 +83,7 @@ ctx_iterator_init (CtxIterator      *iterator,
   iterator->pos            = start_pos;
   iterator->end_pos        = drawlist->count;
   iterator->first_run      = 1; // -1 is a marker used for first run
-  ctx_memset (iterator->bitpack_command, 0, sizeof (iterator->bitpack_command) );
+  memset (iterator->bitpack_command, 0, sizeof (iterator->bitpack_command) );
 }
 
 int ctx_iterator_pos (CtxIterator *iterator)
@@ -690,7 +690,7 @@ CTX_STATIC void
 ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1, int len)
 {
   CtxEntry commands[1 + 2 + (len+1+1)/9];
-  ctx_memset (commands, 0, sizeof (commands) );
+  memset (commands, 0, sizeof (commands) );
   commands[0] = ctx_u32 (code, arg0, arg1);
   commands[1].code = CTX_DATA;
   commands[1].data.u32[0] = len;

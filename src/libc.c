@@ -5,19 +5,6 @@
 #include <stddef.h>
 #endif
 
-#if 0
-static inline void
-ctx_memset (void *ptr, uint8_t val, int length)
-{
-  uint8_t *p = (uint8_t *) ptr;
-  for (int i = 0; i < length; i ++)
-    { p[i] = val; }
-}
-#else
-#define ctx_memset memset
-#endif
-
-
 static inline void ctx_strcpy (char *dst, const char *src)
 {
   int i = 0;

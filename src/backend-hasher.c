@@ -579,7 +579,7 @@ static CtxRasterizer *
 ctx_hasher_init (CtxRasterizer *rasterizer, Ctx *ctx, CtxState *state, int width, int height, int cols, int rows, CtxDrawlist *drawlist)
 {
   CtxHasher *hasher = (CtxHasher*)rasterizer;
-  ctx_memset (rasterizer, 0, sizeof (CtxHasher) );
+  memset (rasterizer, 0, sizeof (CtxHasher) );
   CtxBackend *backend = (CtxBackend*)hasher;
   backend->type        = CTX_BACKEND_HASHER;
   backend->ctx         = ctx;

@@ -186,7 +186,7 @@ ctx_parser_init (CtxParser *parser,
                  void *exit_data
                 )
 {
-  ctx_memset (parser, 0, sizeof (CtxParser) );
+  memset (parser, 0, sizeof (CtxParser) );
 #if CTX_REPORT_COL_ROW
   parser->line             = 1;
 #endif

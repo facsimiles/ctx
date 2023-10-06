@@ -1942,7 +1942,7 @@ void ctx_colorspace_babl (CtxState   *state,
 CTX_STATIC void
 ctx_state_init (CtxState *state)
 {
-  ctx_memset (state, 0, sizeof (CtxState) );
+  memset (state, 0, sizeof (CtxState) );
   state->gstate.global_alpha_u8 = 255;
   state->gstate.global_alpha_f  = 1.0;
   state->gstate.font_size       = 32; // default HTML canvas is 10px sans
@@ -2076,7 +2076,7 @@ _ctx_new_drawlist (int width, int height)
 #else
   Ctx *ctx = (Ctx *) ctx_malloc (sizeof (Ctx) );
 #endif
-  ctx_memset (ctx, 0, sizeof (Ctx) );
+  memset (ctx, 0, sizeof (Ctx) );
   _ctx_init (ctx);
 
   ctx_set_backend (ctx, ctx_drawlist_backend_new ());

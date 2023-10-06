@@ -656,7 +656,7 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
 #if CTX_BACKEND_TEXT
   CtxEntry commands[3]; // 3 to silence incorrect warning from static analysis
-  ctx_memset (commands, 0, sizeof (commands) );
+  memset (commands, 0, sizeof (commands) );
   if (stroke)
     unichar = unichar | (1<<31);
   commands[0] = ctx_u32 (CTX_GLYPH, unichar, 0);
