@@ -1840,7 +1840,7 @@ static int ctx_str_has_prefix (const char *string, const char *prefix)
 static const char *ctx_keycode_to_keyname (CtxModifierState modifier_state,
                                            int keycode)
 {
-   static char temp[6]=" ";
+   static char temp[16]=" ";
    const char *str = &temp[0];
    if (keycode >= 65 && keycode <= 90)
    {

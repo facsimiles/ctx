@@ -349,7 +349,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                               x0, y0, width, render_height, (uint16_t*)fb,
                               width * render_height * bpp);
 
-      if (backend_cb->update_fb && (flags & CTX_FLAG_INTRA_UPDATE))
+      if ((flags & CTX_FLAG_INTRA_UPDATE) && backend_cb->update_fb)
         abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
 
       y0 += render_height;
@@ -418,8 +418,9 @@ ctx_cb_end_frame (Ctx *ctx)
   {
     float em = ctx_height (ctx) * 0.08f;
     float y = em;
+    ctx_save (ctx);
     ctx_font_size (ctx, em);
-    ctx_rectangle (ctx, ctx_width(ctx)-(em*4), 0, em *4, em * 1.1f);
+    ctx_rectangle (ctx, ctx_width(ctx)/2-(em*2), 0, em *4, em * 1.1f);
     ctx_rgba (ctx, 0, 0, 0, 0.7f);
     ctx_fill (ctx);
   
@@ -429,11 +430,13 @@ ctx_cb_end_frame (Ctx *ctx)
     {
       char buf[22];
       float fps = 1.0f/((cur_time-prev_time)/1000.0f);
-      ctx_move_to (ctx, width - (em * 3.8f), y);
-      sprintf (buf, "%2.1f fps", (double)fps);
+      ctx_move_to (ctx, width * 0.5, y);
+      ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+      sprintf (buf, "%2.1ffps", (double)fps);
       ctx_text (ctx, buf);
       ctx_begin_path (ctx);
     }
+    ctx_restore(ctx);
     prev_time = cur_time;
   }
 
