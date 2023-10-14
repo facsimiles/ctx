@@ -329,10 +329,6 @@
 #define CTX_EVENTS              1
 #endif
 
-#ifndef CTX_AVOID_CLIPPED_SUBDIVISION
-#define CTX_AVOID_CLIPPED_SUBDIVISION 0
-#endif
-
 #ifndef CTX_MAX_DEVICES
 #define CTX_MAX_DEVICES 16
 #endif

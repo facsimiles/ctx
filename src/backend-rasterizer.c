@@ -2215,66 +2215,19 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
 
   tolerance = tolerance * tolerance;
 
-  if(1){
-
-#if CTX_AVOID_CLIPPED_SUBDIVISION
-          // XXX need sporting to fixed point
-  float maxx = ctx_maxf (x1,x2);
-  maxx = ctx_maxf (maxx, ox);
-  maxx = ctx_maxf (maxx, x0);
-  float maxy = ctx_maxf (y1,y2);
-  maxy = ctx_maxf (maxy, oy);
-  maxy = ctx_maxf (maxy, y0);
-  float minx = ctx_minf (x1,x2);
-  minx = ctx_minf (minx, ox);
-  minx = ctx_minf (minx, x0);
-  float miny = ctx_minf (y1,y2);
-  miny = ctx_minf (miny, oy);
-  miny = ctx_minf (miny, y0);
-  
-  float coords[4][2]={{minx,miny},
-                      {maxx,miny},
-                      {maxx,maxy},
-                      {minx,maxy}};
-  for (int i = 0; i < 4; i++)
-  {
-    _ctx_user_to_device (rasterizer->state, &coords[i][0], &coords[i][1]);
-  }
-  minx = maxx = coords[0][0];
-  miny = maxy = coords[0][1];
-  for (int i = 1; i < 4; i++)
-  {
-    minx = ctx_minf (minx, coords[i][0]);
-    miny = ctx_minf (miny, coords[i][1]);
-    maxx = ctx_maxf (minx, coords[i][0]);
-    maxy = ctx_maxf (miny, coords[i][1]);
-  }
-
-    if( (maxx-minx) + (maxy-miny) < 0.66f ||
-        (minx > rasterizer->blit_x + rasterizer->blit_width) ||
-        (miny > rasterizer->blit_y + rasterizer->blit_height) ||
-        (maxx < rasterizer->blit_x) ||
-        (maxy < rasterizer->blit_y) )
-    {
-    }
-    else
-#endif
-    {
 #if 1
-        ctx_rasterizer_bezier_divide_fixed (rasterizer,
+  ctx_rasterizer_bezier_divide_fixed (rasterizer,
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x0 * CTX_FIX_SCALE), (int)(y0 * CTX_FIX_SCALE),
             (int)(x1 * CTX_FIX_SCALE), (int)(y1 * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE),
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE),
             0, CTX_FIX_SCALE, 0, (int)(tolerance * CTX_FIX_SCALE * CTX_FIX_SCALE));
 #else
-        ctx_rasterizer_bezier_divide (rasterizer,
-                                      ox, oy, x0, y0,
-                                      x1, y1, x2, y2,
-                                      ox, oy, x2, y2,
-                                      0.0f, 1.0f, 0, tolerance);
+  ctx_rasterizer_bezier_divide (rasterizer,
+                                ox, oy, x0, y0,
+                                x1, y1, x2, y2,
+                                ox, oy, x2, y2,
+                                0.0f, 1.0f, 0, tolerance);
 #endif
-    }
-  }
   ctx_rasterizer_line_to (rasterizer, x2, y2);
 }
 
