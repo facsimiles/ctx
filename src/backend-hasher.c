@@ -142,6 +142,14 @@ ctx_device_corners_to_user_rect (CtxState *state,
   itx2 /= CTX_SUBDIV;
   ity /= CTX_FULL_AA;
   ity2 /= CTX_FULL_AA;
+  if (itx2 < itx)
+  {
+    int tmp = itx2;itx2=itx;itx=tmp;
+  }
+  if (ity2 < ity)
+  {
+    int tmp = ity2;ity2=ity;ity=tmp;
+  }
   itw = itx2-itx;
   ith = ity2-ity;
   shape_rect->x=itx;
@@ -181,7 +189,6 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
            float tx2 = tx+width;
            float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5f);
 
-           ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
           switch ((int)ctx_state_get (rasterizer->state, SQZ_textAlign))
           {
           case CTX_TEXT_ALIGN_LEFT:
@@ -189,13 +196,16 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
                   break;
           case CTX_TEXT_ALIGN_END:
           case CTX_TEXT_ALIGN_RIGHT:
-           shape_rect.x -= shape_rect.width;
+           tx -= width;
+           tx2 -= width;
            break;
           case CTX_TEXT_ALIGN_CENTER:
-           shape_rect.x -= shape_rect.width/2;
+           tx -= width/2;
+           tx2 -= width/2;
            break;
                    // XXX : doesn't take all text-alignments into account
           }
+           ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
 
           murmur3_32_process(&murmur, (const unsigned char*)ctx_arg_string(), ctx_strlen  (ctx_arg_string()));
 #if 1
@@ -262,15 +272,13 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           shape_rect.y-=shape_rect.height/2;
 
 
-#if 0
-          uint32_t color;
-          ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
-#endif
+        {
+        uint32_t color;
+        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
+          murmur3_32_process(&murmur, (unsigned char*)&color, 4);
+        }
           murmur3_32_process(&murmur, string, ctx_strlen ((const char*)string));
           murmur3_32_process(&murmur, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
-#if 0
-          murmur3_32_process(&murmur, (unsigned char*)&color, 4);
-#endif
           murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
           _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
 
@@ -328,6 +336,11 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         {
           int e = rasterizer->state->gstate.extend;
           murmur3_32_process(&murmur, (uint8_t*)&e, sizeof(int));
+        }
+        {
+        uint32_t color;
+        ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
+          murmur3_32_process(&murmur, (unsigned char*)&color, 4);
         }
 
           _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
