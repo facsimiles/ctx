@@ -7318,7 +7318,7 @@ CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
   },
 #endif
   {
-    CTX_FORMAT_NONE
+    CTX_FORMAT_NONE, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL,
   }
 };
 
