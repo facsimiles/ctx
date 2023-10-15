@@ -459,9 +459,34 @@ void ctx_define_texture (Ctx *ctx,
     eid_len = 40;
   }
 
-  // we now have eid
+  if (ret_eid)
+  {
+    strcpy (ret_eid, eid);
+    ret_eid[64]=0;
+  }
 
-  if (ctx_eid_valid (ctx, eid, 0, 0))
+  int redefine = 0;
+  int valid = ctx_eid_valid (ctx, eid, 0, 0); // marks it as valid
+  if (valid && (eid[0] == '!') && ctx->texture_cache)
+  {
+    for (int i = 0; i < CTX_MAX_TEXTURES; i++)
+      if (ctx->texture_cache->texture[i].data &&
+          ctx->texture_cache->texture[i].eid &&
+          (!strcmp (eid, ctx->texture_cache->texture[i].eid)) &&
+          (ctx->texture_cache->texture[i].width == width) &&
+          (ctx->texture_cache->texture[i].height == height) &&
+          (ctx->texture_cache->texture[i].stride == stride) &&
+          (ctx->texture_cache->texture[i].format->pixel_format == format))
+      {
+        memcpy (ctx->texture_cache->texture[i].data, data, data_len);
+        ctx_texture (ctx, eid, 0.0f, 0.0f);
+        return;
+      }
+     ctx_drop_eid (ctx, eid);
+     redefine = 1;
+   }
+
+  if ((!redefine) && valid)
   {
     ctx_texture (ctx, eid, 0.0f, 0.0f);
   }
@@ -535,11 +560,6 @@ void ctx_define_texture (Ctx *ctx,
     ctx_list_prepend (&ctx->texture_cache->eid_db, eid_info);
   }
 
-  if (ret_eid)
-  {
-    strcpy (ret_eid, eid);
-    ret_eid[64]=0;
-  }
 }
 
 void
