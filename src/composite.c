@@ -1885,6 +1885,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   y += 0.5f;
 
 #if CTX_DITHER
+  int bits = rasterizer->format->bpp;
   int scan = rasterizer->scanline / CTX_FULL_AA;
   int dither_red_blue = rasterizer->format->dither_red_blue;
   int dither_green  = rasterizer->format->dither_green;
@@ -1953,18 +1954,34 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       uint32_t uv = (v / 2) * bwidth_div_2;
 
       if (v >= 0 && v < bheight)
-      while (i < count)// && u >= 0 && u+1 < bwidth)
       {
-        *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y+u],
-                        src[u_offset+uv+u/2], src[v_offset+uv+u/2]);
 #if CTX_DITHER
-       ctx_dither_rgba_u8 (rgba, x+i, scan, dither_red_blue, dither_green);
-#endif
+       if (bits < 24)
+       {
+         while (i < count)// && u >= 0 && u+1 < bwidth)
+         {
+           *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y+u],
+                        src[u_offset+uv+u/2], src[v_offset+uv+u/2]);
 
-        ix += ideltax;
-        rgba += 4;
-        u = ix >> 16;
-        i++;
+           ctx_dither_rgba_u8 (rgba, i, scan, dither_red_blue, dither_green);
+           ix += ideltax;
+           rgba += 4;
+           u = ix >> 16;
+           i++;
+         }
+        }
+        else
+#endif
+        while (i < count)// && u >= 0 && u+1 < bwidth)
+        {
+          *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y+u],
+                          src[u_offset+uv+u/2], src[v_offset+uv+u/2]);
+  
+          ix += ideltax;
+          rgba += 4;
+          u = ix >> 16;
+          i++;
+        }
       }
     }
     else
@@ -1972,24 +1989,42 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       int u = ix >> 16;
       int v = iy >> 16;
 
-      while (i < count)// && u >= 0 && v >= 0 && u < bwidth && v < bheight)
-      {
-        uint32_t y  = v * bwidth + u;
-        uint32_t uv = (v / 2) * bwidth_div_2 + (u / 2);
-
-        *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y],
-                        src[u_offset+uv], src[v_offset+uv]);
 #if CTX_DITHER
-       ctx_dither_rgba_u8 (rgba, x+i, scan, dither_red_blue, dither_green);
-#endif
+       if (bits < 24)
+       {
+         while (i < count)// && u >= 0 && v >= 0 && u < bwidth && v < bheight)
+         {
+           uint32_t y  = v * bwidth + u;
+           uint32_t uv = (v / 2) * bwidth_div_2 + (u / 2);
 
-        ix += ideltax;
-        iy += ideltay;
-        rgba += 4;
-        u = ix >> 16;
-        v = iy >> 16;
-        i++;
-      }
+           *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y],
+                        src[u_offset+uv], src[v_offset+uv]);
+
+           ctx_dither_rgba_u8 (rgba, i, scan, dither_red_blue, dither_green);
+           ix += ideltax;
+           iy += ideltay;
+           rgba += 4;
+           u = ix >> 16;
+           v = iy >> 16;
+           i++;
+         }
+       } else
+#endif
+       while (i < count)// && u >= 0 && v >= 0 && u < bwidth && v < bheight)
+       {
+          uint32_t y  = v * bwidth + u;
+          uint32_t uv = (v / 2) * bwidth_div_2 + (u / 2);
+
+          *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y],
+                        src[u_offset+uv], src[v_offset+uv]);
+
+          ix += ideltax;
+          iy += ideltay;
+          rgba += 4;
+          u = ix >> 16;
+          v = iy >> 16;
+          i++;
+       }
     }
 
     for (; i < count; i++)
