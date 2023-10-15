@@ -1886,6 +1886,8 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
 
 #if CTX_DITHER
   int scan = rasterizer->scanline / CTX_FULL_AA;
+  int dither_red_blue = rasterizer->format->dither_red_blue;
+  int dither_green  = rasterizer->format->dither_green;
 #endif
 
   if (!src)
@@ -1956,8 +1958,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
         *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y+u],
                         src[u_offset+uv+u/2], src[v_offset+uv+u/2]);
 #if CTX_DITHER
-       ctx_dither_rgba_u8 (rgba, x+i, scan, rasterizer->format->dither_red_blue,
-                           rasterizer->format->dither_green);
+       ctx_dither_rgba_u8 (rgba, x+i, scan, dither_red_blue, dither_green);
 #endif
 
         ix += ideltax;
@@ -1979,8 +1980,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
         *((uint32_t*)(rgba))= ctx_yuv_to_rgba32 (src[y],
                         src[u_offset+uv], src[v_offset+uv]);
 #if CTX_DITHER
-       ctx_dither_rgba_u8 (rgba, x+i, scan, rasterizer->format->dither_red_blue,
-                           rasterizer->format->dither_green);
+       ctx_dither_rgba_u8 (rgba, x+i, scan, dither_red_blue, dither_green);
 #endif
 
         ix += ideltax;
@@ -2117,6 +2117,8 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   CtxSource *g = &rasterizer->state->gstate.source_fill;
 #if CTX_DITHER
   int scan = rasterizer->scanline / CTX_FULL_AA;
+  int dither_red_blue = rasterizer->format->dither_red_blue;
+  int dither_green  = rasterizer->format->dither_green;
   int ox = (int)x;
 #endif
   for (int i = 0; i <  count; i ++)
@@ -2131,8 +2133,7 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 #endif
 #
 #if CTX_DITHER
-    ctx_dither_rgba_u8 (rgba, ox+i, scan, rasterizer->format->dither_red_blue,
-                        rasterizer->format->dither_green);
+    ctx_dither_rgba_u8 (rgba, ox+i, scan, dither_red_blue, dither_green);
 #endif
     rgba += 4;
     x += dx;
