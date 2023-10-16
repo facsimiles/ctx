@@ -566,7 +566,7 @@ void
 ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
 {
   const char *eid = path;
-  if (strstr (path, "svg"))return;
+  if (strstr (path, ".svg") == strrchr(path, '.'))return;
   char ascii[41]="";
   int eid_len = ctx_strlen (eid);
   if (eid_len > 50)
