@@ -134,7 +134,7 @@ const char* ctx_texture_init (Ctx           *ctx,
         return ctx->texture[i].eid;
       }
       if (ctx->texture[i].data == NULL 
-          ||   (ctx->texture_cache->frame - ctx->texture[i].frame >= 2))
+          ||   (ctx->texture_cache->frame - ctx->texture[i].frame >= 1))
         id = i;
     }
   } else
@@ -142,7 +142,7 @@ const char* ctx_texture_init (Ctx           *ctx,
     for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
     {
       if (ctx->texture[i].data == NULL 
-          || (ctx->texture_cache->frame - ctx->texture[i].frame > 2))
+          || (ctx->texture_cache->frame - ctx->texture[i].frame > 1))
         id = i;
     }
   }
