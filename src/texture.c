@@ -142,8 +142,12 @@ const char* ctx_texture_init (Ctx           *ctx,
     for (int i = 0; i <  CTX_MAX_TEXTURES; i++)
     {
       if (ctx->texture[i].data == NULL 
-          || (ctx->texture_cache->frame - ctx->texture[i].frame > 1))
+          || (ctx->texture_cache->frame - ctx->texture[i].frame > 1) ||
+          ctx->texture[i].eid[0]=='?')
+      {
         id = i;
+        break;
+      }
     }
   }
   //int bpp = ctx_pixel_format_bits_per_pixel (format);

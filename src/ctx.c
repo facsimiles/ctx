@@ -355,7 +355,7 @@ void ctx_drop_eid (Ctx *ctx, const char *eid)
         ctx->texture[i].eid  &&
         !ctx_strcmp (ctx->texture[i].eid, eid))
     {
-      ctx->texture[i].eid[0]++;
+      ctx->texture[i].eid[0]='?';
     }
   }
 }
