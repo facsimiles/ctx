@@ -224,9 +224,6 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     rasterizer->pending_edges = pending_edges;
     rasterizer->edge_pos = edge_pos;
     ctx_rasterizer_discard_edges (rasterizer);
-    //if (apply2_sort)
-    //  ctx_edge2_insertion_sort2 ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
-    //else
 }
 #undef CTX_CMPSWP
 
@@ -1453,7 +1450,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
 
   minx = ctx_maxi (rasterizer->state->gstate.clip_min_x, minx);
   maxx = ctx_mini (rasterizer->state->gstate.clip_max_x, maxx);
-  minx = ctx_maxi (0, minx); // redundant?
+  minx *= (minx>0);
   if (CTX_UNLIKELY (minx >= maxx))
     {
       return;
@@ -1631,7 +1628,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule
       }
     }
 
+#if CTX_ENABLE_SHADOW_BLUR
   ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx, NULL, NULL);
+#endif
 #if CTX_SHAPE_CACHE
   if (shape == NULL)
 #endif
