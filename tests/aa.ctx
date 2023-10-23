@@ -18,6 +18,7 @@ fill
 rectangle 12 30 2 2
 fill
 
+rgb 0 1 0
 rectangle 16 30 3 3
 fill
 
@@ -154,6 +155,7 @@ relLineTo 1   0
 relLineTo 0 -10
 fill
 
+rgb 1 0 0
 lineWidth 1
 
 rectangle 10.5 50.5 1 1
@@ -183,13 +185,12 @@ rectangle 25 70 4 4
 stroke
 
 lineWidth 2.5
-rgb 0 0 0
 rectangle 110 50 10 10
 stroke
 
 lineWidth 2
 
-rgb 0 0 0
+rgb 0 1 1
 moveTo 10 40
 lineTo 20 40
 stroke
@@ -209,7 +210,7 @@ stroke
 translate 0 20.0
 
 lineWidth 1
-rgb 0 0 0
+rgb 0 0 1
 
 moveTo 10 40.5
 lineTo 20 40.5
@@ -218,7 +219,7 @@ stroke
 moveTo 45.5 30
 lineTo 45.5 40
 stroke
-gray 0
+rgb 1 0 1
 
 moveTo 75 30.5
 lineTo 75 40.5
