@@ -23,7 +23,6 @@
 #define CTX_ALWAYS_USE_NEAREST_FOR_SCALE1  1
 #define CTX_EVENTS                         1
 #define CTX_FORCE_INLINES                  0
-#define CTX_RAW_KB_EVENTS                  0
 #define CTX_THREADS                        0
 #define CTX_TILED                          0
 #define CTX_BAREMETAL                      1

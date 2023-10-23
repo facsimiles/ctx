@@ -30,6 +30,7 @@
 #define CTX_HASH_ROWS            5 // default: 5
 #define CTX_MAX_KEYDB            128  // default: 64
 
+
 #include "stb_image.h"
 
 #ifdef CTX_SIMD_X86_64_V2

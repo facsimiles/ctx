@@ -857,7 +857,7 @@
 //#define Z_DATA_ERROR TINF_DATA_ERROR
 
 #ifndef CTX_RAW_KB_EVENTS
-#define CTX_RAW_KB_EVENTS 1
+#define CTX_RAW_KB_EVENTS 0
 #endif
 
 
@@ -898,3 +898,9 @@
 #ifndef CTX_COMPOSITE_O2
 #define CTX_COMPOSITE_O2 0
 #endif
+
+#if CTX_KMS || CTX_FB
+#undef CTX_RAW_KB_EVENTS
+#define CTX_RAW_KB_EVENTS 1
+#endif
+
