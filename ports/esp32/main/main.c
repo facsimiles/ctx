@@ -251,28 +251,16 @@ void screen_clock (Ctx *ctx, uint32_t delta_ms)
   ctx_line_width (ctx, radius * 0.01f);
   ctx_line_cap (ctx, CTX_CAP_ROUND);
 
-#if 0
-    for (int markm = 0; markm < 60; markm++)
-    {
-      r = markm * CTX_PI * 2 / 60.0 - CTX_PI / 2;
-
-      ctx_move_to (ctx, x + cosf(r) * radius * 0.75f, y + sinf (r) * radius * 0.75f);
-      ctx_line_to (ctx, x + cosf(r) * radius * 0.8f, y + sinf (r) * radius * 0.8f);
-      ctx_stroke (ctx);
-    }
-#endif
-
-  
   ctx_line_width (ctx, radius * 0.075f);
   ctx_line_cap (ctx, CTX_CAP_ROUND);
   
   r = m * CTX_PI * 2 / 60.0 - CTX_PI / 2;
   ;
-#if 1
+
   ctx_move_to (ctx, x, y);
   ctx_line_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.7f);
   ctx_stroke (ctx);
-#endif
+
   
   r = (h + m/60.0) * CTX_PI * 2 / 12.0 - CTX_PI / 2;
   ctx_move_to (ctx, x, y);

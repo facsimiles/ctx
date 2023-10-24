@@ -10,7 +10,7 @@
 #define CTX_LIMIT_FORMATS                  1
 #define CTX_32BIT_SEGMENTS                 0
 #define CTX_RASTERIZER                     1
-#define CTX_RASTERIZER_AA                  5
+#define CTX_RASTERIZER_AA                  3
 #define CTX_ENABLE_GRAY1                   1
 #define CTX_ENABLE_GRAY2                   1
 #define CTX_ENABLE_GRAY4                   1
@@ -19,7 +19,6 @@
 #define CTX_ENABLE_RGB565                  1
 #define CTX_ENABLE_RGB565_BYTESWAPPED      1
 #define CTX_COMPOSITING_GROUPS             0
-#define CTX_ENABLE_CM                      0
 #define CTX_ALWAYS_USE_NEAREST_FOR_SCALE1  1
 #define CTX_EVENTS                         1
 #define CTX_FORCE_INLINES                  0
@@ -177,8 +176,8 @@ Ctx *esp_ctx(void)
                    NULL,
                    frame_done_ctx,
                    NULL, 
-                   sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE|CTX_FLAG_LOWFI);
-//                   sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE|CTX_FLAG_KEEP_DATA);
+//                 sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE|CTX_FLAG_LOWFI);
+                   sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE|CTX_FLAG_KEEP_DATA);
 
   
   return ctx;
