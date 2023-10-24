@@ -2017,17 +2017,6 @@ _ctx_init (Ctx *ctx)
     for (int i = 0; i <256;i++)
       ctx_u8_float[i] = i/255.0f;
 #endif
-#if CTX_SHAPE_CACHE
-    if (getenv ("CTX_SHAPE_CACHE"))
-    {
-      const char * val = getenv ("CTX_SHAPE_CACHE");
-      if (!ctx_strcmp (val, "0") ||
-          !ctx_strcmp (val, "off"))
-        _ctx_shape_cache_enabled = 0;
-      else
-        _ctx_shape_cache_enabled = 1;
-    }
-#endif
   }
 
   ctx_state_init (&ctx->state);
@@ -2950,11 +2939,7 @@ ctx_pixel_format_info (CtxPixelFormat format)
 #if CTX_RASTERIZER
 
 
-void (*ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule
-#if CTX_SHAPE_CACHE
-                ,CtxShapeEntry *shape
-#endif
-                ) =
+void (*ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule) =
       ctx_rasterizer_rasterize_edges_generic;
 
 void (*ctx_composite_setup) (CtxRasterizer *rasterizer) =

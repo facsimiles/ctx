@@ -59,37 +59,6 @@
 #define CTX_BITPACK           1
 #endif
 
-/* whether we have a shape-cache where we keep pre-rasterized bitmaps of
- * commonly occuring small shapes, disabled by default since it has some
- * glitches (and potential hangs with multi threading).
- */
-#ifndef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE        0
-#endif
-
-
-#ifndef CTX_SHAPE_CACHE_DEFAULT // the default set runtime value
-                                // when enabled
-#define CTX_SHAPE_CACHE_DEFAULT   0
-#endif
-
-/* size (in pixels, w*h) that we cache rasterization for
- */
-#ifndef CTX_SHAPE_CACHE_DIM
-#define CTX_SHAPE_CACHE_DIM      (64*64)
-#endif
-
-#ifndef CTX_SHAPE_CACHE_MAX_DIM
-#define CTX_SHAPE_CACHE_MAX_DIM  256
-#endif
-
-/* maximum number of entries in shape cache
- */
-#ifndef CTX_SHAPE_CACHE_ENTRIES
-#define CTX_SHAPE_CACHE_ENTRIES  1024
-#endif
-
-
 #ifndef CTX_PARSER_FIXED_TEMP
 #define CTX_PARSER_FIXED_TEMP 0
          // when 1  CTX_PARSER_MAXLEN is the fixed max stringlen
@@ -459,14 +428,6 @@
 #define CTX_ALWAYS_USE_NEAREST_FOR_SCALE1 0
 #endif
 
-/* force add format if we have shape cache */
-#if CTX_SHAPE_CACHE
-#ifdef CTX_ENABLE_GRAY8
-#undef CTX_ENABLE_GRAY8
-#endif
-#define CTX_ENABLE_GRAY8  1
-#endif
-
 /* include the bitpack packer, can be opted out of to decrease code size
  */
 #ifndef CTX_BITPACK_PACKER
@@ -820,8 +781,6 @@
 #define CTX_PARSER 1
 #undef CTX_RASTERIZER
 #define CTX_RASTERIZER 1
-#undef CTX_SHAPE_CACHE
-#define CTX_SHAPE_CACHE 0
 #endif
 
 #ifndef CTX_TINYVG

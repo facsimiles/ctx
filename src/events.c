@@ -62,9 +62,6 @@ ctx_ticks (void)
 
 
 int _ctx_enable_hash_cache = 1;
-#if CTX_SHAPE_CACHE
-extern int _ctx_shape_cache_enabled;
-#endif
 
 int _ctx_max_threads = 1;
 #if CTX_THREADS

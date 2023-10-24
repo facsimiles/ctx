@@ -645,25 +645,7 @@ extern void (*ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
 extern void (*ctx_composite_setup) (CtxRasterizer *rasterizer);
 
 
-struct _CtxShapeEntry
-{
-  uint32_t hash;
-  uint16_t width;
-  uint16_t height;
-  int      last_frame; // xxx
-  uint32_t uses;  // instrumented for longer keep-alive
-  uint8_t  data[];
-};
-
-typedef struct _CtxShapeEntry CtxShapeEntry;
-
-extern void (*ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule
-#if CTX_SHAPE_CACHE
-                ,CtxShapeEntry *shape
-#endif
-                );
-
-
+extern void (*ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule);
 
 extern void (*ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                            float        x0,
@@ -688,16 +670,6 @@ typedef struct _CtxHasher CtxHasher;
 typedef void (*CtxFragment) (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz);
 
 #define CTX_MAX_GAUSSIAN_KERNEL_DIM    512
-
-
-
-struct _CtxShapeCache
-{
-  CtxShapeEntry *entries[CTX_SHAPE_CACHE_ENTRIES];
-  long size;
-};
-
-typedef struct _CtxShapeCache CtxShapeCache;
 
 typedef enum {
    CTX_COV_PATH_FALLBACK =0,
@@ -818,11 +790,6 @@ struct _CtxRasterizer
 
 #if CTX_STATIC_OPAQUE
   uint8_t opaque[CTX_MAX_SCANLINE_LENGTH];
-#endif
-
-#if CTX_SHAPE_CACHE
-  CtxShapeCache shape_cache; /* needs to be at end of struct, it
-                                is excluded from clearing */
 #endif
 };
 
