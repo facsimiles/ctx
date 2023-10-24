@@ -287,12 +287,10 @@
 #define CTX_ENABLE_CMYK         1
 #endif
 
-/* enable color management, slightly increases CtxColor struct size, can
+/* enable color management, slightly increases CtxColor struct size, should
  * be disabled for microcontrollers.
  */
-#ifndef CTX_ENABLE_CM
-#define CTX_ENABLE_CM           1
-#endif
+
 
 #ifndef CTX_EVENTS
 #define CTX_EVENTS              1
@@ -822,6 +820,14 @@
 
 #ifndef CTX_BAREMETAL
 #define CTX_BAREMETAL 0
+#endif
+
+#ifndef CTX_ENABLE_CM
+#if CTX_BAREMETAL
+#define CTX_ENABLE_CM           0
+#else
+#define CTX_ENABLE_CM           1
+#endif
 #endif
 
 #if CTX_IMPLEMENTATION

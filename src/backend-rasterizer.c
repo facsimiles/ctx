@@ -1783,13 +1783,10 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
   return ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 }
 
-static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
+static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
   unsigned int count = rasterizer->edge_list.count;
-  if (CTX_UNLIKELY (count == 0))
-     return 0;
   CtxSegment *entry = (CtxSegment*)&rasterizer->edge_list.entries[0];
-  //CtxSegment *entry = &(((CtxSegment*)(rasterizer->edge_list.entries)))[0];
   for (unsigned int i = 0; i < count; i++)
     {
       if (entry->data.s16[3] < entry->data.s16[1])
@@ -1800,7 +1797,6 @@ static uint32_t ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
         }
       entry++;
     }
-  return 0;
 }
 
 static inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
@@ -2255,8 +2251,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
     ctx_rasterizer_finish_shape (rasterizer);
 
-    uint32_t hash = ctx_rasterizer_poly_to_edges (rasterizer);
-    if (hash){};
+    ctx_rasterizer_poly_to_edges (rasterizer);
 
     {
     ctx_rasterizer_rasterize_edges (rasterizer, rasterizer->state->gstate.fill_rule);
