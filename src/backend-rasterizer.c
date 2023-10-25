@@ -106,6 +106,7 @@ inline static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries,
    }
 }
 
+#if 0
 inline static int ctx_edge2_compare2 (CtxSegment *segments, int a, int b)
 {
   CtxSegment *seg_a = &segments[a];
@@ -129,10 +130,10 @@ inline static void ctx_edge2_insertion_sort2 (CtxSegment *segments, int *entries
      entries[j+1] = temp;
    }
 }
+#endif
 
 inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
-  int miny;
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
   unsigned int pending_edges   = rasterizer->pending_edges;
@@ -1538,7 +1539,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
 
       if (rasterizer->active_edges + rasterizer->pending_edges == 0)
       { /* no edges */
-        ctx_rasterizer_increment_edges (rasterizer, CTX_FULL_AA);
+        rasterizer->scanline += CTX_FULL_AA;
         dst += blit_stride;
         continue;
       } else
@@ -1548,7 +1549,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
         { /* the scanline transitions does not contain multiple intersections - each aa segment is a linear ramp */
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
           ctx_rasterizer_feed_edges (rasterizer);
-          ctx_edge2_insertion_sort2 ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
+          ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
     
           memset (coverage, 0, pixs);
           if (!avoid_direct)
@@ -1561,11 +1562,14 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           }
           ctx_rasterizer_generate_coverage_set2 (rasterizer, minx, maxx, coverage, is_winding);
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
+#if 0
+          /// XXX : is missing from other cases
           if (real_aa == 1)
           {
             for (int x = minx; x <= maxx; x ++)
               coverage[x] = coverage[x] > 127?255:0;
           }
+#endif
         }
         else if (aa == 1) // marginal improvement on esp32
         {

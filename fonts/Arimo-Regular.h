@@ -5,7 +5,7 @@
   ÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŁπ“”•…€™←↑→↓−≈▼♠♣♥♦ﬁﬂﬃﬄ  */
 static const struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}
 ctx_font_Arimo_Regular[]={
-{15, 0x0000a008, 0x0000146e},/* length:5230 CTX_SUBDIV:8 CTX_BAKE_FONT_SIZE:160 */
+{15, 0x2f2fa008, 0x0000146e},/* length:5230 CTX_SUBDIV:8 CTX_BAKE_FONT_SIZE:160 */
 {'(', 0x0000000f, 0x00000002},/* Arimo Regular*/
 {32, 0x6d697241, 0x6552206f},
 {'g', 0x72616c75, 0x00000000},
