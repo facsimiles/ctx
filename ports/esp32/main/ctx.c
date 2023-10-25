@@ -3,7 +3,7 @@
 #define DISPLAY_WIDTH  240
 #define DISPLAY_HEIGHT 240
 
-#define SCRATCH_BUF_BYTES (40*1024)
+#define SCRATCH_BUF_BYTES (240*240*2+2*1024)
 
 #define CTX_DITHER                         1
 #define CTX_PROTOCOL_U8_COLOR              1
@@ -34,8 +34,8 @@
 // of paths that can be filled
 #define CTX_MIN_EDGE_LIST_SIZE             512
 
-#define CTX_HASH_COLS                      8
-#define CTX_HASH_ROWS                      3
+#define CTX_HASH_COLS                      6
+#define CTX_HASH_ROWS                      5
 
 #define CTX_MAX_DASHES                     32
 #define CTX_MAX_GRADIENT_STOPS             10

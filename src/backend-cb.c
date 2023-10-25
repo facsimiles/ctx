@@ -564,8 +564,8 @@ ctx_cb_end_frame (Ctx *ctx)
          }
 #endif
 
-         //int width = x1 - x0 + 1;
-         //int height = y1 - y0 + 1;
+         int width = x1 - x0 + 1;
+         int height = y1 - y0 + 1;
          int abort = 0;
          int abortable = 1;
 
@@ -598,6 +598,26 @@ ctx_cb_end_frame (Ctx *ctx)
          {
            tile_no = 0;
 
+           if (width * height * bpp <= cb_backend->memory_budget)
+           {
+             // we have enough memory to render all
+             active_mask = 0;
+             for (int row = cb_backend->min_row; row <= cb_backend->max_row; row++)
+               for (int col = cb_backend->min_col; col <= cb_backend->max_col; col++)
+               {
+                 int tile_no = row * CTX_HASH_COLS + col;
+                 cb_backend->res[tile_no]=0;
+                 cb_backend->hashes[tile_no] = hashes[tile_no];
+                 active_mask |= (1<<tile_no);
+               }
+              abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
+              if (!abortable)
+                abort = 0;
+           }
+           else
+           {
+              // render row-by-row (no merging of rows)
+
            for (int row = 0; row < CTX_HASH_ROWS; row++)
            {
              for (int col = 0; col < CTX_HASH_COLS; col++)
@@ -611,10 +631,10 @@ ctx_cb_end_frame (Ctx *ctx)
                if ((new_hash != cb_backend->hashes[tile_no]) ||
                    cb_backend->res[tile_no])
                {
-                    int x0 = col * tile_width;
-                    int y0 = row * tile_height;
-                    int x1 = x0 +  tile_width-1;
-                    int y1 = y0 +  tile_height-1;
+                    int tx0 = col * tile_width;
+                    int ty0 = row * tile_height;
+                    int tx1 = tx0 +  tile_width-1;
+                    int ty1 = ty0 +  tile_height-1;
 
 #if 1
              int max_tiles = (cb_backend->memory_budget / tile_dim);
@@ -627,7 +647,7 @@ ctx_cb_end_frame (Ctx *ctx)
                       {
                         active_mask |= (1 << (tile_no+used_tiles));
                         used_tiles ++;
-                        x1 += (ctx_width (ctx)/CTX_HASH_COLS);
+                        tx1 += (ctx_width (ctx)/CTX_HASH_COLS);
                       }
                       else
                       {
@@ -637,7 +657,7 @@ ctx_cb_end_frame (Ctx *ctx)
 #endif
 
 
-                    abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
+                    abort = ctx_render_cb (cb_backend, tx0, ty0, tx1, ty1, active_mask);
                     {
                       for (int i = 0; i < used_tiles; i ++)
                       {
@@ -651,6 +671,8 @@ ctx_cb_end_frame (Ctx *ctx)
                   }
                }
            }
+           }
+
              }
            }
       cb_backend->flags = old_flags;
