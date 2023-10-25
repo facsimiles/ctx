@@ -153,8 +153,22 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
           i--;
         }
     }
-  int next_scanline = scanline + CTX_FULL_AA;
+    rasterizer->pending_edges = pending_edges;
+    ctx_rasterizer_discard_edges (rasterizer);
+}
+
+inline static void ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
+{
+  int miny;
+  ctx_rasterizer_feed_edges (rasterizer);
+  CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
+  int *edges = rasterizer->edges;
+  unsigned int pending_edges   = rasterizer->pending_edges;
+  rasterizer->horizontal_edges = 0;
+  rasterizer->ending_edges     = 0;
+  int scanline = rasterizer->scanline + 1;
   unsigned int edge_pos = rasterizer->edge_pos;
+  int next_scanline = scanline + CTX_FULL_AA;
   unsigned int edge_count = rasterizer->edge_list.count;
   while ((edge_pos < edge_count &&
          (miny=entries[edge_pos].data.s16[1])  <= next_scanline))
@@ -194,10 +208,10 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
         }
       edge_pos++;
     }
-    rasterizer->pending_edges = pending_edges;
     rasterizer->edge_pos = edge_pos;
-    ctx_rasterizer_discard_edges (rasterizer);
+    rasterizer->pending_edges = pending_edges;
 }
+
 #undef CTX_CMPSWP
 
 static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, unsigned int minx, unsigned int maxx, uint8_t *coverage, int *first_col, int *last_col)
@@ -1520,7 +1534,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
 
   for (; rasterizer->scanline <= scan_end;)
     {
-      ctx_rasterizer_feed_edges (rasterizer);
+      ctx_rasterizer_feed_edges_full (rasterizer);
 
       if (rasterizer->active_edges + rasterizer->pending_edges == 0)
       { /* no edges */
@@ -1533,7 +1547,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
         if (aa==0)
         { /* the scanline transitions does not contain multiple intersections - each aa segment is a linear ramp */
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
-          //ctx_rasterizer_feed_edges (rasterizer);
+          ctx_rasterizer_feed_edges (rasterizer);
           ctx_edge2_insertion_sort2 ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
     
           memset (coverage, 0, pixs);
@@ -1577,7 +1591,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           }
         }
         else
-        { /* determine level of oversampling based on lowest steepness edges */
+        { /* level of oversampling based on lowest steepness edges */
           if (aa > real_aa) aa = real_aa;
           int scanline_increment = 15/aa;
     
@@ -1585,10 +1599,10 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           uint8_t fraction = 255/aa;
           for (int i = 0; i < CTX_FULL_AA; i+= scanline_increment)
           {
+            if (i) ctx_rasterizer_feed_edges (rasterizer);
             ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
             ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
             ctx_rasterizer_increment_edges (rasterizer, scanline_increment);
-            ctx_rasterizer_feed_edges (rasterizer);
           }
         }
       }
