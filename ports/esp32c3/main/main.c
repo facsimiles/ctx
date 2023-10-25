@@ -725,7 +725,7 @@ static void screen_next(void)
 {
   screen_load_no (screen_no + 1);
   if (screen_no == 0 && demo_mode) {
-       switch (demo_rounds)
+       if(0)switch (demo_rounds)
        {
          case 0: gradient_bg = !gradient_bg; break;
          //case 1: font_size = height/6; break;
@@ -750,7 +750,10 @@ void app_main(void)
     float width = ctx_width (ctx);
     float height = ctx_height (ctx);
 
-    font_size = height * 0.09f;
+    if (height >= width)
+      font_size = height * 0.09f;
+    else
+      font_size = width * 0.09f;
     demo_screen_remaining_ms = demo_timeout_ms;
 
     for (;;) {
