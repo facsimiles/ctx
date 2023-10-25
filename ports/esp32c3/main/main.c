@@ -7,11 +7,14 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <math.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "ctx.h"
+
+#define TITLE    "esp32c3"
+#define SUBTITLE "RISC-V 160mhz"
+
 Ctx *esp_ctx(void);
 void esp_backlight(int percent);
+void esp_restart(void);
 
 int        demo_mode = 1;
 static int demo_rounds = 0; // used for recording different fps measurement
@@ -167,118 +170,6 @@ static void bg_motion (CtxEvent *event, void *data1, void *data2)
   }
 }
 
-void screen_bouncy (Ctx *ctx, uint32_t delta_ms)
-{
-    float width = ctx_width (ctx);
-    float height = ctx_height (ctx);
-    static float dim = 100;
-    if (frame_no == 0)
-    {
-      x = 120.0;
-      y = 120.0;
-      vx = 2.0;
-      vy = 2.33;
-    }
-
-    ctx_rectangle(ctx,0,0,width, height);
-    ctx_listen (ctx, CTX_DRAG, bg_motion, NULL, NULL);
-    ctx_begin_path (ctx); // clear the path, listen doesnt
-    draw_bg (ctx);
-
-    ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
-    ctx_text_baseline(ctx, CTX_TEXT_BASELINE_MIDDLE);
-    ctx_move_to(ctx, width/2, height/2);ctx_text(ctx,"esp32c3");
-
-    if (!is_down)
-    {
-      ctx_logo (ctx, x, y, dim);
-    }
-    else
-    {
-      ctx_rgb (ctx, 0.5, 0.5, 1);
-      ctx_rectangle(ctx, (int)x, 0, 1, height);ctx_fill(ctx);
-      ctx_rectangle(ctx, 0, (int)y, width, 1);ctx_fill(ctx);
-    }
-    x += vx;
-    y += vy;
-
-    if (x <= dim/2 || x >= width - dim/2)
-      vx *= -1;
-    if (y <= dim/2 || y >= height - dim/2)
-      vy *= -1;
-}
-//////////////////////////////////////////////
-
-void screen_clock (Ctx *ctx, uint32_t delta_ms)
-{
-  uint32_t ms = ctx_ticks ()/1000;
-  uint32_t s = ms / 1000;
-  uint32_t m = s / 60;
-  uint32_t h = m / 60;
-  float radius = ctx_width(ctx)/2;
-  int smoothstep = 1;
-  float x = ctx_width (ctx)/ 2;
-  float y = ctx_height (ctx)/ 2;
-  if (radius > ctx_height (ctx)/2) radius = ctx_height (ctx)/2;
-
-  ms = ((uint32_t)(ms)) % 1000;
-  s %= 60;
-  m %= 60;
-  h %= 12;
-  
-  draw_bg (ctx);
-  float r; 
-  
-  ctx_line_width (ctx, radius * 0.02f);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-  
-  for (int markh = 0; markh < 12; markh++)
-  { 
-    r = markh * CTX_PI * 2 / 12.0 - CTX_PI / 2;
-    
-    if (markh == 0)
-    {
-    ctx_move_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.65f); 
-    ctx_line_to (ctx, x + cosf(r) * radius * 0.8f, y + sinf (r) * radius * 0.85f);   
-    }
-    else
-    {
-    ctx_move_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.7f);   
-    ctx_line_to (ctx, x + cosf(r) * radius * 0.8f, y + sinf (r) * radius * 0.8f);   
-    }
-    ctx_stroke (ctx);
-  }
-  ctx_line_width (ctx, radius * 0.01f);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-
-  ctx_line_width (ctx, radius * 0.075f);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-  
-  r = m * CTX_PI * 2 / 60.0 - CTX_PI / 2;
-  ;
-
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.7f);
-  ctx_stroke (ctx);
-
-  
-  r = (h + m/60.0) * CTX_PI * 2 / 12.0 - CTX_PI / 2;
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.4f, y + sinf (r) * radius * 0.4f);
-  ctx_stroke (ctx);
-  
-  
-  ctx_line_width (ctx, radius * 0.02f);
-  ctx_line_cap (ctx, CTX_CAP_NONE);
-  
-  if (smoothstep && frame_no > 2) 
-    r = (s + ms / 1000.0f) * CTX_PI * 2 / 60 - CTX_PI / 2;
-  else
-    r = (s ) * CTX_PI * 2 / 60 - CTX_PI / 2;
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.78f, y + sinf (r) * radius * 0.78f);
-  ctx_stroke (ctx);
-}
 
 Widget *widget_by_id(void *id)
 {
@@ -498,11 +389,11 @@ button (Ctx *ctx, float x, float y, float width, float height, const char *label
    ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);\
    float y = (int)(scroll_offset + height * 0.15); \
 
+#define BUTTON(label) \
+   y += line_height, button(ctx, width * 0.15, y-line_height, 0, 0, label, 0, (void*)(__LINE__ * 4))
 
 static void screen_load(const char *name);
 
-#define BUTTON(label) \
-   y += line_height, button(ctx, width * 0.15, y-line_height, 0, 0, label, 0, (void*)(__LINE__ * 4))
 
 void screen_menu (Ctx *ctx, uint32_t delta_ms)
 {
@@ -593,6 +484,122 @@ void screen_settings (Ctx *ctx, uint32_t delta_ms)
    color_interactive[3] = interactive_debug ? 0.3f : 0.0f;
 }
 
+////////
+
+void screen_bouncy (Ctx *ctx, uint32_t delta_ms)
+{
+    float width = ctx_width (ctx);
+    float height = ctx_height (ctx);
+    static float dim = 100;
+    if (frame_no == 0)
+    {
+      x = 120.0;
+      y = 120.0;
+      vx = 2.0;
+      vy = 2.33;
+    }
+
+    ctx_rectangle(ctx,0,0,width, height);
+    ctx_listen (ctx, CTX_DRAG, bg_motion, NULL, NULL);
+    ctx_begin_path (ctx); // clear the path, listen doesnt
+    draw_bg (ctx);
+
+    ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
+    ctx_text_baseline(ctx, CTX_TEXT_BASELINE_MIDDLE);
+    ctx_move_to(ctx, width/2, height/2);ctx_text(ctx, TITLE);
+
+
+    if (!is_down)
+    {
+      ctx_logo (ctx, x, y, dim);
+    }
+    else
+    {
+      ctx_rgb (ctx, 0.5, 0.5, 1);
+      ctx_rectangle(ctx, (int)x, 0, 1, height);ctx_fill(ctx);
+      ctx_rectangle(ctx, 0, (int)y, width, 1);ctx_fill(ctx);
+    }
+    x += vx;
+    y += vy;
+
+    if (x <= dim/2 || x >= width - dim/2)
+      vx *= -1;
+    if (y <= dim/2 || y >= height - dim/2)
+      vy *= -1;
+}
+//////////////////////////////////////////////
+
+void screen_clock (Ctx *ctx, uint32_t delta_ms)
+{
+  uint32_t ms = ctx_ticks ()/1000;
+  uint32_t s = ms / 1000;
+  uint32_t m = s / 60;
+  uint32_t h = m / 60;
+  float radius = ctx_width(ctx)/2;
+  int smoothstep = 1;
+  float x = ctx_width (ctx)/ 2;
+  float y = ctx_height (ctx)/ 2;
+  if (radius > ctx_height (ctx)/2) radius = ctx_height (ctx)/2;
+
+  ms = ((uint32_t)(ms)) % 1000;
+  s %= 60;
+  m %= 60;
+  h %= 12;
+  
+  draw_bg (ctx);
+  float r; 
+  
+  ctx_line_width (ctx, radius * 0.02f);
+  ctx_line_cap (ctx, CTX_CAP_ROUND);
+  
+  for (int markh = 0; markh < 12; markh++)
+  { 
+    r = markh * CTX_PI * 2 / 12.0 - CTX_PI / 2;
+    
+    if (markh == 0)
+    {
+    ctx_move_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.65f); 
+    ctx_line_to (ctx, x + cosf(r) * radius * 0.8f, y + sinf (r) * radius * 0.85f);   
+    }
+    else
+    {
+    ctx_move_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.7f);   
+    ctx_line_to (ctx, x + cosf(r) * radius * 0.8f, y + sinf (r) * radius * 0.8f);   
+    }
+    ctx_stroke (ctx);
+  }
+  ctx_line_width (ctx, radius * 0.01f);
+  ctx_line_cap (ctx, CTX_CAP_ROUND);
+
+  ctx_line_width (ctx, radius * 0.075f);
+  ctx_line_cap (ctx, CTX_CAP_ROUND);
+  
+  r = m * CTX_PI * 2 / 60.0 - CTX_PI / 2;
+  ;
+
+  ctx_move_to (ctx, x, y);
+  ctx_line_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.7f);
+  ctx_stroke (ctx);
+
+  
+  r = (h + m/60.0) * CTX_PI * 2 / 12.0 - CTX_PI / 2;
+  ctx_move_to (ctx, x, y);
+  ctx_line_to (ctx, x + cosf(r) * radius * 0.4f, y + sinf (r) * radius * 0.4f);
+  ctx_stroke (ctx);
+  
+  
+  ctx_line_width (ctx, radius * 0.02f);
+  ctx_line_cap (ctx, CTX_CAP_NONE);
+  
+  if (smoothstep && frame_no > 2) 
+    r = (s + ms / 1000.0f) * CTX_PI * 2 / 60 - CTX_PI / 2;
+  else
+    r = (s ) * CTX_PI * 2 / 60 - CTX_PI / 2;
+  ctx_move_to (ctx, x, y);
+  ctx_line_to (ctx, x + cosf(r) * radius * 0.78f, y + sinf (r) * radius * 0.78f);
+  ctx_stroke (ctx);
+}
+
 
 static void screen_spirals (Ctx *ctx, uint32_t delta_ms)
 {
@@ -668,7 +675,7 @@ void screen_title (Ctx *ctx, uint32_t delta_ms)
   {
   ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,"esp32c3");
   ty+=font_size;
-  ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,"RISC-V 160mhz");
+  ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,SUBTITLE);
   ty+=font_size;
   sprintf(buf, "%.0fx%.0f", width, height);
   ctx_move_to(ctx, width * 0.2,ty);
@@ -725,14 +732,9 @@ static void screen_next(void)
 {
   screen_load_no (screen_no + 1);
   if (screen_no == 0 && demo_mode) {
-       if(0)switch (demo_rounds)
-       {
-         case 0: gradient_bg = !gradient_bg; break;
-         //case 1: font_size = height/6; break;
-         //case 2: font_size = height/10; break;
-         default: 
-       }
-    demo_rounds++;}
+    gradient_bg = !gradient_bg;
+    demo_rounds++;
+  }
 }
 
 void menu_press (CtxEvent *event, void *data1, void *data2)
@@ -750,7 +752,7 @@ void app_main(void)
     float width = ctx_width (ctx);
     float height = ctx_height (ctx);
 
-    if (height >= width)
+    if (height <= width)
       font_size = height * 0.09f;
     else
       font_size = width * 0.09f;
@@ -764,10 +766,6 @@ void app_main(void)
       prev_ticks = ticks;
 
       ctx_save (ctx);
-
-      ctx_rectangle(ctx, 0.0 * width, 0.0 * height, width, 0.12 * height);
-      ctx_listen (ctx, CTX_PRESS, menu_press, NULL, NULL);
-      ctx_begin_path(ctx);
 
       if (screen_no >= 0 && screen_no < sizeof(screens)/sizeof(screens[0]))
         screens[screen_no].fun(ctx, ticks_delta/1000);
@@ -786,6 +784,11 @@ void app_main(void)
       }
  
       ctx_restore (ctx);
+
+      ctx_rectangle(ctx, 0.0 * width, 0.0 * height, width, 0.12 * height);
+      ctx_listen (ctx, CTX_PRESS, menu_press, NULL, NULL);
+      ctx_begin_path(ctx);
+
       if (show_fps)
       {
          char buf[32];
@@ -806,6 +809,5 @@ void app_main(void)
       }
 
       ctx_end_frame (ctx);
-      vTaskDelay(1);
     }
 }

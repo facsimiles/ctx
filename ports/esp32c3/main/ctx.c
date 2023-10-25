@@ -3,8 +3,9 @@
 #define DISPLAY_WIDTH  240
 #define DISPLAY_HEIGHT 240
 
-//#define SCRATCH_BUF_BYTES (240*240*2+2*1024)
-#define SCRATCH_BUF_BYTES (42*1024)
+#define SCRATCH_BUF_BYTES                  (48*1024)
+#define CTX_HASH_COLS                      5
+#define CTX_HASH_ROWS                      5
 
 #define CTX_DITHER                         1
 #define CTX_PROTOCOL_U8_COLOR              1
@@ -12,11 +13,13 @@
 #define CTX_32BIT_SEGMENTS                 0
 #define CTX_RASTERIZER                     1
 #define CTX_RASTERIZER_AA                  3
+#if 0
 #define CTX_ENABLE_GRAY1                   1
 #define CTX_ENABLE_GRAY2                   1
 #define CTX_ENABLE_GRAY4                   1
 #define CTX_ENABLE_GRAY8                   1
 #define CTX_ENABLE_RGB332                  1
+#endif
 #define CTX_ENABLE_RGB565                  1
 #define CTX_ENABLE_RGB565_BYTESWAPPED      1
 #define CTX_COMPOSITING_GROUPS             0
@@ -35,8 +38,6 @@
 // of paths that can be filled
 #define CTX_MIN_EDGE_LIST_SIZE             512
 
-#define CTX_HASH_COLS                      4
-#define CTX_HASH_ROWS                      4
 
 #define CTX_MAX_DASHES                     32
 #define CTX_MAX_GRADIENT_STOPS             10
@@ -60,7 +61,7 @@
 #define CTX_GSTATE_PROTECT                 1
 #define CTX_COMPOSITE_O2                   1
 #define CTX_RASTERIZER_SWITCH_DISPATCH     0
-#define CTX_NATIVE_GRAYA8                  1
+#define CTX_NATIVE_GRAYA8                  0
 #define CTX_AVOID_CLIPPED_SUBDIVISION      1
 
 #define CTX_IMPLEMENTATION
@@ -143,6 +144,9 @@ static int frame_done_ctx (Ctx *ctx, void *user_data)
     else if (was_pressed)
         ctx_pointer_release (ctx, x, y, 0, 0);
     was_pressed = touchpad_pressed;
+
+    vTaskDelay(1);
+
     return 0;
 }
 
