@@ -864,6 +864,14 @@
 #define CTX_COMPOSITE_O2 0
 #endif
 
+#ifndef CTX_RASTERIZER_O3
+#define CTX_RASTERIZER_O3 0
+#endif
+
+#ifndef CTX_RASTERIZER_O2
+#define CTX_RASTERIZER_O2 0
+#endif
+
 #if CTX_KMS || CTX_FB
 #undef CTX_RAW_KB_EVENTS
 #define CTX_RAW_KB_EVENTS 1

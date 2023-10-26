@@ -1,9 +1,21 @@
+#ifndef __clang__
+#if CTX_RASTERIZER_O3
+#pragma GCC push_options
+#pragma GCC optimize("O3")
+#endif
+#if CTX_RASTERIZER_O2
+#pragma GCC push_options
+#pragma GCC optimize("O2")
+#endif
+#endif
+
 #if CTX_IMPLEMENTATION || CTX_SIMD_BUILD
 #if CTX_COMPOSITE 
 
 #include "ctx-split.h"
 #define CTX_AA_HALFSTEP2   (CTX_FULL_AA/2)
 #define CTX_AA_HALFSTEP    ((CTX_FULL_AA/2)+1)
+
 
 CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
 {
@@ -171,18 +183,19 @@ inline static void ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
   unsigned int edge_pos = rasterizer->edge_pos;
   int next_scanline = scanline + CTX_FULL_AA;
   unsigned int edge_count = rasterizer->edge_list.count;
+  int active_edges = rasterizer->active_edges;
   while ((edge_pos < edge_count &&
          (miny=entries[edge_pos].data.s16[1])  <= next_scanline))
     {
-      if (rasterizer->active_edges < CTX_MAX_EDGES-2 &&
+      if (active_edges < CTX_MAX_EDGES-2 &&
       entries[edge_pos].data.s16[3] /* (maxy) */  >= scanline)
         {
           int dy = (entries[edge_pos].data.s16[3] - miny);
           if (dy)
             {
               int yd = scanline - miny;
-              unsigned int no = rasterizer->active_edges;
-              rasterizer->active_edges++;
+              unsigned int no = active_edges;
+              active_edges++;
               unsigned int index = edges[no] = edge_pos;
               int x0 = entries[index].data.s16[0];
               int x1 = entries[index].data.s16[2];
@@ -201,7 +214,7 @@ inline static void ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
                     edges[CTX_MAX_EDGES-1-pending_edges] =
                     rasterizer->edges[no];
                     pending_edges++;
-                    rasterizer->active_edges--;
+                    active_edges--;
               }
             }
           else
@@ -209,6 +222,7 @@ inline static void ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
         }
       edge_pos++;
     }
+    rasterizer->active_edges = active_edges;
     rasterizer->edge_pos = edge_pos;
     rasterizer->pending_edges = pending_edges;
 }
@@ -389,12 +403,10 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                         int            maxx,
                //                       uint8_t* __restrict__ coverage,
                                         int            is_winding,
-                                        CtxCovPath     comp)
+                                        CtxCovPath     comp,
+                                        ctx_apply_coverage_fun apply_coverage)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
-  void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
-                         int x, uint8_t *coverage, unsigned int count) =
-      rasterizer->apply_coverage;
   uint8_t *rasterizer_src = rasterizer->color;
   int *edges          = rasterizer->edges;
   int scanline        = rasterizer->scanline;
@@ -936,16 +948,14 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                                          int            maxx,
                                          uint8_t       *coverage,
                                          int            is_winding,
-                                         CtxCovPath     comp)
+                                         CtxCovPath     comp,
+                                         ctx_apply_coverage_fun apply_coverage)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int *edges          = rasterizer->edges;
   int  scanline       = rasterizer->scanline;
   const int  bpp      = rasterizer->format->bpp;
   int  active_edges   = rasterizer->active_edges;
-  void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
-                         int x, uint8_t *coverage, unsigned int count) =
-      rasterizer->apply_coverage;
   uint8_t *rasterizer_src = rasterizer->color;
   int  parity         = 0;
 
@@ -1474,9 +1484,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
                           rasterizer->blit_x;
   const int blit_stride = rasterizer->blit_stride;
   //int       increment   = CTX_FULL_AA/real_aa;
-  void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
-                         int x, uint8_t *coverage, unsigned int count) =
-      rasterizer->apply_coverage;
+  ctx_apply_coverage_fun apply_coverage = rasterizer->apply_coverage;
   uint8_t *rasterizer_src = rasterizer->color;
 
   if (maxx > blit_max_x - 1)
@@ -1554,7 +1562,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           memset (coverage, 0, pixs);
           if (!avoid_direct)
           {
-            ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, is_winding, comp);
+            ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, is_winding, comp, apply_coverage);
             ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
     
             dst += blit_stride;
@@ -1580,7 +1588,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           if (! avoid_direct)
           { /* can generate with direct rendering to target (we're not using shape cache) */
     
-            ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, is_winding, comp);
+            ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, is_winding, comp, apply_coverage);
             ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
     
             dst += blit_stride;
@@ -1598,7 +1606,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
         { /* level of oversampling based on lowest steepness edges */
           if (aa > real_aa) aa = real_aa;
           int scanline_increment = 15/aa;
-    
           memset (coverage, 0, pixs);
           uint8_t fraction = 255/aa;
           for (int i = 0; i < CTX_FULL_AA; i+= scanline_increment)
@@ -4472,4 +4479,12 @@ ctx_state_gradient_clear_stops (CtxState *state)
 }
 
 
+#ifndef __clang__
+#if CTX_RASTERIZER_O3
+#pragma GCC pop_options
+#endif
+#if CTX_RASTERIZER_O2
+#pragma GCC pop_options
+#endif
+#endif
 /****  end of engine ****/
