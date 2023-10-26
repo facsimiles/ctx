@@ -6033,13 +6033,12 @@ ctx_RGBA8_source_copy_normal_color (CTX_COMPOSITE_ARGUMENTS);
 static void
 ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 {
-#if 1
+#if 0 // code is OK - but less code is better
   if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color))
   {
     uint32_t si_ga = ((uint32_t*)rasterizer->color)[1];
     uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
     uint32_t si_a  = si_ga >> 16;
-
     while (count--)
     {
         uint32_t cov   = *coverage++;
@@ -6103,13 +6102,13 @@ ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, v
 static void
 ctx_composite_RGB565_BS (CTX_COMPOSITE_ARGUMENTS)
 {
-#if 1
-  if (CTX_LIKELY(rasterizer->comp_op == ctx_RGBA8_source_over_normal_color))
+#if 0 // code is OK - but not faster - at least no on risc-V
+  if ((rasterizer->comp_op == ctx_RGBA8_source_over_normal_color)
+      ||(rasterizer->comp_op == ctx_RGBA8_source_copy_normal_color))
   {
     uint32_t si_ga = ((uint32_t*)rasterizer->color)[1];
     uint32_t si_rb = ((uint32_t*)rasterizer->color)[2];
     uint32_t si_a  = si_ga >> 16;
-
     while (count--)
     {
       uint32_t cov   = *coverage++;
