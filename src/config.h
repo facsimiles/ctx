@@ -877,3 +877,6 @@
 #define CTX_RAW_KB_EVENTS 1
 #endif
 
+#ifndef CTX_YUV_LUTS
+#define  CTX_YUV_LUTS 0
+#endif
