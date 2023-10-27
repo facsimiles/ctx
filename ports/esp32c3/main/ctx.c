@@ -3,7 +3,7 @@
 #define DISPLAY_WIDTH  240
 #define DISPLAY_HEIGHT 240
 
-#define SCRATCH_BUF_BYTES                  (48*1024)
+#define SCRATCH_BUF_BYTES                  (96*1024)
 #define CTX_HASH_COLS                      5
 #define CTX_HASH_ROWS                      5
 
@@ -58,12 +58,13 @@
 #define CTX_MAX_LISTEN_FDS                 1
 #define CTX_TERMINAL_EVENTS                0
 #define CTX_FRAGMENT_SPECIALIZE            1
-#define CTX_GSTATE_PROTECT                 1
+#define CTX_BLENDING_AND_COMPOSITING       0
+#define CTX_GSTATE_PROTECT                 0
 #define CTX_COMPOSITE_O2                   1
 //#define CTX_RASTERIZER_O3                1
 #define CTX_RASTERIZER_SWITCH_DISPATCH     0
 #define CTX_NATIVE_GRAYA8                  0
-#define CTX_AVOID_CLIPPED_SUBDIVISION      0
+#define CTX_AVOID_CLIPPED_SUBDIVISION      1
 
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
