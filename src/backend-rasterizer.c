@@ -159,8 +159,8 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
       rasterizer->pending_edges)
    return CTX_RASTERIZER_AA;
 
-  int *edges  = rasterizer->edges;
-  CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
+  const int *edges  = rasterizer->edges;
+  const CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
 
   int active_edges = rasterizer->active_edges;
 
@@ -175,8 +175,8 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
 
   for (int t = 0; t < active_edges -1;t++)
     {
-      CtxSegment *segment0 = segments + edges[t];
-      CtxSegment *segment1 = segments + edges[t+1];
+      const CtxSegment *segment0 = segments + edges[t];
+      const CtxSegment *segment1 = segments + edges[t+1];
       const int delta0    = segment0->delta;
       const int delta1    = segment1->delta;
       const int x0        = segment0->val;
@@ -189,10 +189,11 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
       needs_aa5 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
 #endif
       needs_aa3 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
-      int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
-      int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
-      int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
-      int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
+
+      const int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
+      const int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
+      const int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
+      const int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
       if (x1_end < x0_end   ||
           x1_start < x0_end ||
           x1_end < x0_start
@@ -233,7 +234,6 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
   unsigned int pending_edges   = rasterizer->pending_edges;
-  rasterizer->ending_edges     = 0;
   int scanline = rasterizer->scanline + 1;
   unsigned int edge_pos = rasterizer->edge_pos;
   int next_scanline = scanline + CTX_FULL_AA;
@@ -1113,7 +1113,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               coverage[us + count] += ((u - u0 + mod) * recip)>>16;
               count++;
             }
-            pre = (us+count-1)-first+1;
+            pre = us+count-first;
 
             accumulated_x0 = ctx_mini (accumulated_x0, us);
             accumulated_x1 = us + count - 1;

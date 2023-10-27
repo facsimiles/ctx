@@ -65,7 +65,7 @@
 //#define CTX_RASTERIZER_O3                1
 #define CTX_RASTERIZER_SWITCH_DISPATCH     0
 #define CTX_NATIVE_GRAYA8                  0
-#define CTX_AVOID_CLIPPED_SUBDIVISION      1
+#define CTX_AVOID_CLIPPED_SUBDIVISION      0
 
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
