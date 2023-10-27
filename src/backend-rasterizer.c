@@ -1359,7 +1359,7 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 
 inline static int analyze_scanline (CtxRasterizer *rasterizer)
 {
-  if (rasterizer->fast_aa == 0 ||
+  if ((rasterizer->fast_aa == 0) ||
       rasterizer->ending_edges ||
       rasterizer->pending_edges)
    return CTX_RASTERIZER_AA;

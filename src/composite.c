@@ -3724,7 +3724,7 @@ ctx_setup_RGB8 (CtxRasterizer *rasterizer)
 }
 #endif
 
-static void
+static inline void
 ctx_composite_convert (CTX_COMPOSITE_ARGUMENTS)
 {
   uint8_t pixels[count * rasterizer->format->ebpp];
