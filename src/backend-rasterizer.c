@@ -1384,7 +1384,6 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
 #endif
   int needs_aa3 =0;
 
-  // XX : include pending?
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment *segment0 = segments + edges[t];
@@ -1415,16 +1414,17 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
          crossings++;
 #if CTX_RASTERIZER_AA==3
          if (needs_aa3)
-            break;
+            return 3;
 #elif CTX_RASTERIZER_AA==5
          if (needs_aa5)
-            break;
+            return 5;
 #elif CTX_RASTERIZER_AA==15
          if (needs_aa15)
-            break;
+            return 15;
 #endif
       }
     }
+
   if (crossings)
   {
 #if CTX_RASTERIZER_AA>5
