@@ -99,14 +99,10 @@ void draw_bg (Ctx *ctx)
   static float prev_red = 0;
   static float prev_green = 0;
   static float prev_blue = 0;
-  static int rect_fuzz = 1; // XXX partial redraw hack
-                            // geometry changing is picked up, but not the color XXX
   if (color_bg[0] != prev_red ||
       color_bg[1] != prev_green ||
       color_bg[2] != prev_blue)
   {
-    rect_fuzz = !rect_fuzz;
-
     if (color_bg[0] +
         color_bg[1] +
         color_bg[2] > 1.8)
@@ -130,7 +126,7 @@ void draw_bg (Ctx *ctx)
   }
 
 
-  ctx_rectangle(ctx,rect_fuzz,0,width,height);
+  ctx_rectangle(ctx,0,0,width,height);
 
   if (gradient_bg)
   {
