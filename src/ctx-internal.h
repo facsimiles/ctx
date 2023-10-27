@@ -720,7 +720,6 @@ struct _CtxRasterizer
   unsigned int pending_edges;
   unsigned int ending_edges;
   unsigned int edge_pos;         // where we're at in iterating all edges
-  unsigned int horizontal_edges;
 
   int        scanline;
   int        scan_min;

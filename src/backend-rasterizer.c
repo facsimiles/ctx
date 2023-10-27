@@ -131,7 +131,6 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
   unsigned int pending_edges   = rasterizer->pending_edges;
-  rasterizer->horizontal_edges = 0;
   rasterizer->ending_edges     = 0;
   int scanline = rasterizer->scanline + 1;
   for (unsigned int i = 0; i < pending_edges; i++)
@@ -159,7 +158,6 @@ inline static void ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
   unsigned int pending_edges   = rasterizer->pending_edges;
-  rasterizer->horizontal_edges = 0;
   rasterizer->ending_edges     = 0;
   int scanline = rasterizer->scanline + 1;
   unsigned int edge_pos = rasterizer->edge_pos;
@@ -199,8 +197,6 @@ inline static void ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
                     active_edges--;
               }
             }
-          else
-            rasterizer->horizontal_edges ++;
         }
       edge_pos++;
     }
@@ -208,8 +204,6 @@ inline static void ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
     rasterizer->edge_pos = edge_pos;
     rasterizer->pending_edges = pending_edges;
 }
-
-#undef CTX_CMPSWP
 
 static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, unsigned int minx, unsigned int maxx, uint8_t *coverage, int *first_col, int *last_col)
 {
@@ -1395,8 +1389,6 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
 
 #if CTX_RASTERIZER_AA>5
       needs_aa15 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
-      if (crossings)
-        break;
 #endif
 #if CTX_RASTERIZER_AA>3
       needs_aa5 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
@@ -1469,10 +1461,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
   minx *= (minx>0);
  
 
-  if (CTX_UNLIKELY (minx >= maxx))
-    {
-      return;
-    }
   int pixs = maxx - minx + 1;
   uint8_t _coverage[pixs];
   uint8_t *coverage = &_coverage[0];
@@ -1493,15 +1481,13 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
        scan_start = rasterizer->state->gstate.clip_min_y * CTX_FULL_AA; 
     }
   scan_end = ctx_mini (rasterizer->state->gstate.clip_max_y * CTX_FULL_AA, scan_end);
-  if (CTX_UNLIKELY(scan_start > scan_end ||
+  if (CTX_UNLIKELY((minx >= maxx) || (scan_start > scan_end) ||
       (scan_start > (rasterizer->blit_y + (rasterizer->blit_height-1)) * CTX_FULL_AA) ||
       (scan_end < (rasterizer->blit_y) * CTX_FULL_AA)))
   { 
     /* not affecting this rasterizers scanlines */
     return;
   }
-
-  rasterizer->horizontal_edges = 0;
 
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
   rasterizer->scanline = scan_start;
