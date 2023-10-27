@@ -58,8 +58,8 @@
 #define CTX_MAX_CBS                        8
 #define CTX_MAX_LISTEN_FDS                 1
 #define CTX_TERMINAL_EVENTS                0
-#define CTX_FRAGMENT_SPECIALIZE            1
-#define CTX_BLENDING_AND_COMPOSITING       0
+#define CTX_FRAGMENT_SPECIALIZE            1 // more optimize texture|gradients
+#define CTX_BLENDING_AND_COMPOSITING       0 // only support normal/over/copy
 #define CTX_GSTATE_PROTECT                 0
 #define CTX_COMPOSITE_O2                   1
 //#define CTX_RASTERIZER_O3                1
