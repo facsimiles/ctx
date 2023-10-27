@@ -17,14 +17,14 @@
 #define CTX_AA_HALFSTEP    ((CTX_FULL_AA/2)+1)
 
 
-CTX_INLINE static int ctx_compare_edges (const void *ap, const void *bp)
+static inline int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxSegment *a = (const CtxSegment *) ap;
   const CtxSegment *b = (const CtxSegment *) bp;
   return a->data.s16[1] - b->data.s16[1];
 }
 
-CTX_INLINE static int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
+static inline int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
 {
   CtxSegment pivot = A[ (high+low) /2];
   int i = low;
@@ -45,6 +45,14 @@ CTX_INLINE static int ctx_edge_qsort_partition (CtxSegment *A, int low, int high
   return i;
 }
 
+static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
+{
+  int p = ctx_edge_qsort_partition (entries, low, high);
+  if (low < p -1 )
+    { ctx_edge_qsort (entries, low, p - 1); }
+  if (low < high)
+    { ctx_edge_qsort (entries, p, high); }
+}
 
 static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
@@ -117,32 +125,6 @@ inline static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries,
      entries[j+1] = temp;
    }
 }
-
-#if 0
-inline static int ctx_edge2_compare2 (CtxSegment *segments, int a, int b)
-{
-  CtxSegment *seg_a = &segments[a];
-  CtxSegment *seg_b = &segments[b];
-  int minval_a = ctx_mini (seg_a->val - seg_a->delta * CTX_AA_HALFSTEP2, seg_a->val + seg_a->delta * CTX_AA_HALFSTEP);
-  int minval_b = ctx_mini (seg_b->val - seg_b->delta * CTX_AA_HALFSTEP2, seg_b->val + seg_b->delta * CTX_AA_HALFSTEP);
-  return minval_a - minval_b;
-}
-
-inline static void ctx_edge2_insertion_sort2 (CtxSegment *segments, int *entries, unsigned int count)
-{
-  for(unsigned int i=1; i<count; i++)
-   {
-     int temp = entries[i];
-     int j = i-1;
-     while (j >= 0 && ctx_edge2_compare2 (segments, temp, entries[j]) < 0)
-     {
-       entries[j+1] = entries[j];
-       j--;
-     }
-     entries[j+1] = temp;
-   }
-}
-#endif
 
 inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
@@ -1457,14 +1439,6 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
   return 0;
 }
 
-static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
-{
-  int p = ctx_edge_qsort_partition (entries, low, high);
-  if (low < p -1 )
-    { ctx_edge_qsort (entries, low, p - 1); }
-  if (low < high)
-    { ctx_edge_qsort (entries, p, high); }
-}
 
 static void
 ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
@@ -1532,7 +1506,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
   rasterizer->scanline = scan_start;
 
-  int avoid_direct = (0 
+  int allow_direct = !(0 
 #if CTX_ENABLE_CLIP
          || rasterizer->clip_buffer
 #endif
@@ -1560,7 +1534,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
     
           memset (coverage, 0, pixs);
-          if (!avoid_direct)
+          if (allow_direct)
           {
             ctx_rasterizer_generate_coverage_apply2 (rasterizer, minx, maxx, coverage, is_winding, comp, apply_coverage);
             ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
@@ -1585,7 +1559,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           ctx_rasterizer_feed_edges (rasterizer);
           ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
     
-          if (! avoid_direct)
+          if (allow_direct)
           { /* can generate with direct rendering to target (we're not using shape cache) */
     
             ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, is_winding, comp, apply_coverage);
