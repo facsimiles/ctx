@@ -148,7 +148,7 @@ static int frame_done_ctx (Ctx *ctx, void *user_data)
         ctx_pointer_release (ctx, x, y, 0, 0);
     was_pressed = touchpad_pressed;
 
-    vTaskDelay(1);
+    vTaskDelay(0);
 
     return 0;
 }
@@ -187,7 +187,6 @@ Ctx *esp_ctx(void)
                    sizeof(scratch), scratch,
                    //CTX_FLAG_HASH_CACHE|CTX_FLAG_LOWFI
                    CTX_FLAG_HASH_CACHE|CTX_FLAG_KEEP_DATA
-                   //0
                    );
 
   

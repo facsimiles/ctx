@@ -128,16 +128,12 @@ void draw_bg (Ctx *ctx)
 
   ctx_rectangle(ctx,0,0,width,height);
 
+  set_color (ctx, color_bg);
   if (gradient_bg)
   {
-    set_color (ctx, color_bg); // XXX bug - without this bright color not working?
     ctx_linear_gradient (ctx,0,0,0,height);
     ctx_gradient_add_stop (ctx, 0.0, color_bg[0], color_bg[1], color_bg[2], 1.0f);
     ctx_gradient_add_stop (ctx, 1.0, color_bg2[0], color_bg2[1], color_bg2[2], 1.0f);
-  }
-  else
-  {
-    set_color (ctx, color_bg);
   }
   ctx_fill(ctx);
   ctx_font_size(ctx,font_size);
