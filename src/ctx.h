@@ -829,8 +829,7 @@ typedef enum CtxFlags {
 
 Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  void (*set_pixels) (Ctx *ctx, void *user_data, 
-                                     int x, int y, int w, int h, void *buf,
-                                     int buf_size),
+                                     int x, int y, int w, int h, void *buf),
                  void *set_pixels_user_data,
                  int (*update_fb) (Ctx *ctx, void *user_data),
                  void *update_fb_user_data,

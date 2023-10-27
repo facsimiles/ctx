@@ -25,7 +25,7 @@
 #define CTX_COMPOSITING_GROUPS             0
 #define CTX_ALWAYS_USE_NEAREST_FOR_SCALE1  1
 #define CTX_EVENTS                         1
-#define CTX_FORCE_INLINES                  0
+#define CTX_FORCE_INLINES                  1
 #define CTX_THREADS                        0
 #define CTX_TILED                          0
 #define CTX_BAREMETAL                      1
@@ -60,9 +60,10 @@
 #define CTX_FRAGMENT_SPECIALIZE            1
 #define CTX_GSTATE_PROTECT                 1
 #define CTX_COMPOSITE_O2                   1
+//#define CTX_RASTERIZER_O3                1
 #define CTX_RASTERIZER_SWITCH_DISPATCH     0
 #define CTX_NATIVE_GRAYA8                  0
-#define CTX_AVOID_CLIPPED_SUBDIVISION      1
+#define CTX_AVOID_CLIPPED_SUBDIVISION      0
 
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
@@ -162,7 +163,7 @@ static void lcd_init (void)
   esp_backlight(30);
 }
 
-static void set_pixels_ctx (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf, int buf_size)
+static void set_pixels_ctx (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
 {   
     uint8_t *pixels = (uint8_t*)buf; 
     GC9A01_SetWindow(x,y,x+w-1,y+h-1);
@@ -181,8 +182,11 @@ Ctx *esp_ctx(void)
                    NULL,
                    frame_done_ctx,
                    NULL, 
-//                 sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE|CTX_FLAG_LOWFI);
-                   sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE|CTX_FLAG_KEEP_DATA);
+                   sizeof(scratch), scratch,
+                   //CTX_FLAG_HASH_CACHE|CTX_FLAG_LOWFI
+                   CTX_FLAG_HASH_CACHE|CTX_FLAG_KEEP_DATA
+                   //0
+                   );
 
   
   return ctx;

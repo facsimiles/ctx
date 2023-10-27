@@ -596,6 +596,10 @@ struct _CtxInternalFsEntry
   char *data;
 };
 
+
+typedef void (*ctx_apply_coverage_fun) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage,
+                          unsigned int count);
+
 struct _CtxPixelFormatInfo
 {
   CtxPixelFormat pixel_format:8;
@@ -614,8 +618,7 @@ struct _CtxPixelFormatInfo
                            int x, const void * __restrict__ src, uint8_t * __restrict__ comp, int count);
   void         (*from_comp) (CtxRasterizer *r,
                              int x, const uint8_t * __restrict__ comp, void *__restrict__ dst, int count);
-  void         (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage,
-                          unsigned int count);
+  ctx_apply_coverage_fun apply_coverage;
   void         (*setup) (CtxRasterizer *r);
 };
 

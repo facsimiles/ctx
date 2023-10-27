@@ -188,7 +188,7 @@ static inline void st7789_set_window(PIO pio, uint sm, int x0, int y0, int x1, i
    spi_run_commands(pio,sm, raset_cmd);
 }
 
-static void fb_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf, int buf_size)
+static void fb_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
 {
     uint8_t *pixels = (uint8_t*)buf;
     st7789_set_window(pio, sm, x,y,x+w-1,y+h-1);

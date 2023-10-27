@@ -14,7 +14,7 @@ typedef struct CtxCbBackend
   Ctx           *ctx;
 
   void (*set_pixels) (Ctx *ctx, void *user_data, 
-                      int x, int y, int w, int h, void *buf, int buf_size);
+                      int x, int y, int w, int h, void *buf);
   void   *set_pixels_user_data;
   int  (*update_fb) (Ctx *ctx, void *user_data);
   void   *update_fb_user_data;
@@ -104,7 +104,7 @@ ctx_memdebug (CtxCbBackend *cb_backend, int line_no)
                         
 #define CTX_VERIFY_MEM()  do{ctx_memdebug(backend_cb, __LINE__);}while(0)
 #else
-#define CTX_SCRATCH_PAD   1024
+#define CTX_SCRATCH_PAD   0
 #define CTX_VERIFY_MEM()  do{}while(0)
 #endif
 
@@ -137,7 +137,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
   fb = backend_cb->fb;
 
   void (*set_pixels) (Ctx *ctx, void *user_data, 
-                      int x, int y, int w, int h, void *buf, int buf_size) =
+                      int x, int y, int w, int h, void *buf) =
     backend_cb->set_pixels;
 
   if (flags & CTX_FLAG_LOWFI)
@@ -310,8 +310,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
         }
       }
       set_pixels (ctx, backend_cb->set_pixels_user_data, 
-                  x0, y0, width, render_height, (uint16_t*)scaled,
-                  width * render_height * bpp);
+                  x0, y0, width, render_height, (uint16_t*)scaled);
       y0 += render_height;
       yo += render_height;
     } while (y0 < y1);
@@ -353,8 +352,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
         ctx_render_ctx (ctx, ctx);
 
       set_pixels (ctx, set_pixels_user_data, 
-                  x0, y0, width, render_height, (uint16_t*)fb,
-                  width * render_height * bpp);
+                  x0, y0, width, render_height, (uint16_t*)fb);
 
       if (do_intra)
         abort = backend_cb->update_fb (ctx, backend_cb->update_fb_user_data);
@@ -687,8 +685,7 @@ ctx_cb_end_frame (Ctx *ctx)
 
 Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  void (*set_pixels) (Ctx *ctx, void *user_data, 
-                                     int x, int y, int w, int h, void *buf,
-                                     int buf_size),
+                                     int x, int y, int w, int h, void *buf),
                  void *set_pixels_user_data,
                  int (*update_fb) (Ctx *ctx, void *user_data),
                  void *update_fb_user_data,
@@ -723,7 +720,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
 
 #if CTX_TFT_ESPI
 
-static void ctx_tft_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf, int buf_size)
+static void ctx_tft_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
 {
   TFT_eSPI *tft = (TFT_eSPI*)user_data;
   tft->pushRect (x, y, w, h, (uint16_t*)buf);
