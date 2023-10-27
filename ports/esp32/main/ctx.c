@@ -1,7 +1,8 @@
 #pragma GCC optimize("jump-tables,tree-switch-conversion")
 
-#define LCD_GC9A01  0
-#define LCD_ILI9341 1
+#define LCD_GC9A01    0
+#define LCD_ILI9341   1
+#define TOUCH_CST816S 0
 
 #define DISPLAY_WIDTH  240
 #if LCD_GC9A01
@@ -74,13 +75,41 @@
 #include "ctx.h"
 
 #include "driver/i2c.h"
-//#include "esp_lcd_touch_cst816s.h"
 
+
+#if TOUCH_CST816S 
+#include "esp_lcd_touch_cst816s.h"
+#endif
 
 #if LCD_GC9A01
-#include "gc9a01.h"
+
+#define LCD_PIN_SCLK        6
+#define LCD_PIN_MOSI        7
+#define LCD_PIN_MISO        GPIO_NUM_NC
+#define LCD_PIN_DC          2
+#define LCD_PIN_CS          10
+#define LCD_PIN_BACKLIGHT   3
+#define LCD_MHZ             80
+#include "driver/spi_master.h"
+
+#include "driver/gpio.h"
+#include "esp_lcd_panel_io.h"
+#include "esp_lcd_panel_vendor.h"
+#include "esp_lcd_panel_ops.h"
+#include "esp_lcd_gc9a01.h"
+#include "esp_err.h"
+#include "esp_log.h"
 #endif
 #if LCD_ILI9341
+#define TOUCH_CS            33
+#define TOUCH_MHZ           25
+#define LCD_PIN_SCLK        14
+#define LCD_PIN_MOSI        13
+#define LCD_PIN_MISO        12
+#define LCD_PIN_DC          2
+#define LCD_PIN_CS          15
+#define LCD_PIN_BACKLIGHT   27
+#define LCD_MHZ             55
 
 #include "driver/spi_master.h"
 
@@ -97,13 +126,13 @@
 static const char *TAG = "example";
 
 static uint8_t scratch[SCRATCH_BUF_BYTES];
-#if 0
+#if TOUCH_CST816S 
 static esp_lcd_touch_handle_t tp = NULL;
 #endif
 
 static void touch_init()
 {
-#if 0
+#if TOUCH_CST816S 
     esp_lcd_panel_io_handle_t tp_io_handle = NULL;
 
     i2c_config_t i2c_conf = {
@@ -144,7 +173,7 @@ static void touch_init()
 
 static int frame_done_ctx (Ctx *ctx, void *user_data)
 {
-#if 0
+#if TOUCH_CST816S 
     esp_lcd_touch_read_data(tp);
     static uint16_t touch_x[1];
     static uint16_t touch_y[1];
@@ -180,67 +209,60 @@ static int frame_done_ctx (Ctx *ctx, void *user_data)
 
 void esp_backlight(int percent)
 {
-#if LCD_GC9A01
+#if LCD_GC9A01XX
   if (percent < 7)percent = 7;
   GC9A01_SetBL(percent);
 #endif
 }
 
 
-#if LCD_ILI9341
+#if LCD_ILI9341 | LCD_GC9A01
     esp_lcd_panel_handle_t panel_handle = NULL;
 #endif
 
 static int fb_ready = 1;
 
-static bool example_notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
+static bool lcd_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
 {
     fb_ready = 1;
     return false;
 }
 
-#define TOUCH_CS  33
-#define TOUCH_HZ  2500000
 
 static void lcd_init (void)
 {
-#if LCD_GC9A01
-  GC9A01_Init();
-  esp_backlight(30);
-#endif
-#if LCD_ILI9341
+#if LCD_ILI9341 | LCD_GC9A01
 
-#define EXAMPLE_PIN_NUM_BK_LIGHT 27
 #define EXAMPLE_LCD_BK_LIGHT_ON_LEVEL 1
 gpio_config_t bk_gpio_config = {
         .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = 1ULL << EXAMPLE_PIN_NUM_BK_LIGHT
+        .pin_bit_mask = 1ULL << LCD_PIN_BACKLIGHT
     };
     ESP_ERROR_CHECK(gpio_config(&bk_gpio_config));
-  gpio_set_level(EXAMPLE_PIN_NUM_BK_LIGHT, EXAMPLE_LCD_BK_LIGHT_ON_LEVEL);
+  gpio_set_level(LCD_PIN_BACKLIGHT, EXAMPLE_LCD_BK_LIGHT_ON_LEVEL);
 
 
  spi_bus_config_t buscfg = {
-        .sclk_io_num = 14,
-        .mosi_io_num = 13,
-        .miso_io_num = 12,
+        .sclk_io_num = LCD_PIN_SCLK,
+        .mosi_io_num = LCD_PIN_MOSI,
+        .miso_io_num = LCD_PIN_MISO,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
-        .max_transfer_sz = DISPLAY_WIDTH * 320 * sizeof(uint16_t),
+        .max_transfer_sz = DISPLAY_WIDTH * DISPLAY_HEIGHT * sizeof(uint16_t),
     };
     ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
     ESP_LOGI(TAG, "Install panel IO");
     esp_lcd_panel_io_handle_t io_handle = NULL;
     esp_lcd_panel_io_spi_config_t io_config = {
-        .dc_gpio_num = 2,
-        .cs_gpio_num = 15,
-        .pclk_hz = 55000000,
+        .dc_gpio_num = LCD_PIN_DC,
+        .cs_gpio_num = LCD_PIN_CS,
+        .pclk_hz = LCD_MHZ * 1000000,
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
         .spi_mode = 0,
         .trans_queue_depth = 10,
-        .on_color_trans_done = example_notify_lvgl_flush_ready,
+        .on_color_trans_done = lcd_flush_ready,
         //.user_ctx = &disp_drv,
     };
     // Attach the LCD to the SPI bus
@@ -254,7 +276,7 @@ gpio_config_t bk_gpio_config = {
 #if LCD_ILI9341
     ESP_LOGI(TAG, "Install ILI9341 panel driver");
     ESP_ERROR_CHECK(esp_lcd_new_panel_ili9341(io_handle, &panel_config, &panel_handle));
-#elif CONFIG_EXAMPLE_LCD_CONTROLLER_GC9A01
+#elif LCD_GC9A01
     ESP_LOGI(TAG, "Install GC9A01 panel driver");
     ESP_ERROR_CHECK(esp_lcd_new_panel_gc9a01(io_handle, &panel_config, &panel_handle));
 #endif
@@ -269,15 +291,10 @@ gpio_config_t bk_gpio_config = {
 
 static void set_pixels_ctx (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
 {   
-#if LCD_GC9A01
-    uint8_t *pixels = (uint8_t*)buf; 
-    GC9A01_SetWindow(x,y,x+w-1,y+h-1);
-    lcd_data(pixels,w*h*2);
-#endif
-#if LCD_ILI9341
-    fb_ready = 0;
+#if LCD_ILI9341 || LCD_GC9A01
+    //fb_ready = 0;
     esp_lcd_panel_draw_bitmap(panel_handle, x, y, x+w, y+h, buf);
-    while(!fb_ready) vTaskDelay(pdMS_TO_TICKS(1));
+    //while(!fb_ready) vTaskDelay(1);
 #endif
 }
 

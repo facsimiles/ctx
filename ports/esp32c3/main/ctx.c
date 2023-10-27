@@ -3,7 +3,8 @@
 #define DISPLAY_WIDTH  240
 #define DISPLAY_HEIGHT 240
 
-#define SCRATCH_BUF_BYTES                  (96*1024)
+//#define SCRATCH_BUF_BYTES                  (46*1024)
+#define SCRATCH_BUF_BYTES                  (55*1024)
 #define CTX_HASH_COLS                      5
 #define CTX_HASH_ROWS                      5
 

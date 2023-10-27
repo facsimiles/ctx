@@ -220,7 +220,7 @@ void lcd_cmd(uint8_t cmd)
     assert(ret==ESP_OK);            //Should have had no issues.
 }
 
-#define MAX_DMA_LEN  (SPI_MAX_DMA_LEN  * 4)
+#define MAX_DMA_LEN  (SPI_MAX_DMA_LEN*8)
 
 /* Send data to the LCD. Uses spi_device_polling_transmit, which waits until the
  * transfer is complete.
@@ -236,7 +236,8 @@ void lcd_data(const uint8_t *data, int len)
     if (len==0) return;             //no need to send anything
 
 
-#if 1
+    if (len > MAX_DMA_LEN)
+    {
     /*
     On certain MC's the max SPI DMA transfer length might be smaller than the buffer. We then have to split the transmissions.
     */
@@ -256,9 +257,10 @@ void lcd_data(const uint8_t *data, int len)
         offset += tx_len;                          // Add the transmission length to the offset
     }
     while (offset < len);
-    //spi_device_release_bus(spi);
-#else
+    }
+    else
     {
+    //spi_device_release_bus(spi);
         spi_transaction_t t;
         memset(&t, 0, sizeof(t));          //Zero out the transaction
         t.length=len * 8;                  //Len is in bytes, transaction length is in bits.
@@ -267,7 +269,6 @@ void lcd_data(const uint8_t *data, int len)
         ret=spi_device_transmit(spi, &t);  //Transmit!
         assert(ret==ESP_OK);               //Should have had no issues.
     }
-#endif
 }
 
 void lcd_send_byte(uint8_t Data)
