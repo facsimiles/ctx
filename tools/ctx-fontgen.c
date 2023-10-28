@@ -309,7 +309,14 @@ char* string =
   for (unsigned int i = 0; i < output_font.count; i++)
   {
     CtxEntry *entry = &output_font.entries[i];
-    if (entry->code > 32 && entry->code < 127)
+        
+    if (entry->code == 15)
+    {
+      printf ("{%i, 0x%08x, 0x%08x},", entry->code,
+                                       0, // XXX : why did it contain garbage?
+                                       entry->data.u32[1]);
+    }
+    else if (entry->code > 32 && entry->code < 127)
     {
       printf ("{'%c', 0x%08x, 0x%08x},", entry->code,
                                          entry->data.u32[0],
