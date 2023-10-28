@@ -3,10 +3,9 @@
 #define DISPLAY_WIDTH  240
 #define DISPLAY_HEIGHT 240
 
-//#define SCRATCH_BUF_BYTES                  (46*1024)
-#define SCRATCH_BUF_BYTES                  (55*1024)
-#define CTX_HASH_COLS                      5
-#define CTX_HASH_ROWS                      5
+#define SCRATCH_BUF_BYTES                  (44*1024)
+#define CTX_HASH_COLS                      7
+#define CTX_HASH_ROWS                      3
 
 #define CTX_DITHER                         1
 #define CTX_PROTOCOL_U8_COLOR              1
@@ -61,9 +60,8 @@
 #define CTX_FRAGMENT_SPECIALIZE            1 // more optimize texture|gradients
 #define CTX_BLENDING_AND_COMPOSITING       0 // only support normal/over/copy
 #define CTX_GSTATE_PROTECT                 0
-#define CTX_COMPOSITE_O2                   1
-//#define CTX_RASTERIZER_O3                1
-#define CTX_RASTERIZER_SWITCH_DISPATCH     0
+#define CTX_COMPOSITE_O3                   1
+//#define CTX_RASTERIZER_O2                  1
 #define CTX_NATIVE_GRAYA8                  0
 #define CTX_AVOID_CLIPPED_SUBDIVISION      0
 

@@ -18,7 +18,7 @@ void esp_restart(void);
 
 int        demo_mode = 1;
 static int demo_rounds = 0; // used for recording different fps measurement
-static int demo_timeout_ms = 5 * 1000 ; // 5 seconds per test
+static int demo_timeout_ms = 10 * 1000 ; // 5 seconds per test
 static int demo_screen_remaining_ms = 0;
 
 int        screen_no = 0;
@@ -217,15 +217,15 @@ slider_float (Ctx *ctx, float x, float y, float width, float height, float *val,
    ctx_save(ctx); 
 
 
-   ctx_line_width(ctx,3.0);
-   set_color_a(ctx, color_fg, 0.2f);
+   ctx_line_width(ctx,2.0);
+   set_color(ctx, color_fg);
    ctx_move_to (ctx, x, y + height/2);
    ctx_line_to (ctx, x + width, y + height/2);
    ctx_stroke (ctx);
 
    set_color(ctx, color_fg);
-   ctx_arc (ctx, x + rel_value * width, y + height/2, height*0.3, 0, 2*3.1415, 0);
-   ctx_stroke (ctx);
+   ctx_arc (ctx, x + rel_value * width, y + height/2, height*0.34, 0, 2*3.1415, 0);
+   ctx_fill (ctx);
    set_color(ctx, color_bg);
    ctx_arc (ctx, x + rel_value * width, y + height/2, height*0.3, 0.0, 3.1415*2, 0);
    ctx_fill (ctx);
@@ -397,7 +397,7 @@ void screen_menu (Ctx *ctx, uint32_t delta_ms)
        scroll_offset -= 0.0;
      }
      else {
-       scroll_offset -= 0.03 * delta_ms;
+       scroll_offset -= 0.020 * delta_ms;
      }
    }
 
