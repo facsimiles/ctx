@@ -60,28 +60,31 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
   int next_scanline = scanline + CTX_FULL_AA;
   CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
   int *edges = rasterizer->edges;
-  for (unsigned int i = 0; i < rasterizer->active_edges; i++)
+  int ending_edges = 0;
+  int active_edges = rasterizer->active_edges;
+  for (unsigned int i = 0; i < active_edges; i++)
     {
       CtxSegment *segment = segments + edges[i];
       int edge_end = segment->data.s16[3];
       if (edge_end < scanline)
         {
-          rasterizer->edges[i] = rasterizer->edges[rasterizer->active_edges-1];
-          rasterizer->active_edges--;
+          rasterizer->edges[i] = rasterizer->edges[active_edges-1];
+          active_edges--;
           i--;
         }
       else if (edge_end < next_scanline)
-        rasterizer->ending_edges++;
+        ending_edges++;
     }
-#if 0
-  // perhaps we should - but for 99% of the cases we do not need to, so we skip it
-  for (int i = 0; i < rasterizer->pending_edges; i++)
+  rasterizer->active_edges = active_edges;
+
+  int pending_edges = rasterizer->pending_edges;
+  for (unsigned int i = 0; i < pending_edges; i++)
     {
       int edge_end = ((CtxSegment*)(rasterizer->edge_list.entries))[rasterizer->edges[CTX_MAX_EDGES-1-i]].data.s16[3]-1;
-      if (edge_end < scanline + CTX_FULL_AA)
-        rasterizer->ending_edges++;
+      if (edge_end < next_scanline)
+        ending_edges++;
     }
-#endif
+  rasterizer->ending_edges = ending_edges;
 }
 
 inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
@@ -131,7 +134,6 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
   unsigned int pending_edges   = rasterizer->pending_edges;
-  rasterizer->ending_edges     = 0;
   int scanline = rasterizer->scanline + 1;
   int active_edges = rasterizer->active_edges;
   for (unsigned int i = 0; i < pending_edges; i++)
