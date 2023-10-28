@@ -175,25 +175,34 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
 #endif
   int needs_aa3 =0;
 
+  const CtxSegment *segment0 = segments + edges[0];
+  const int delta0    = segment0->delta;
+  const int x0        = segment0->val;
+  int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
+  int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
+
+#if CTX_RASTERIZER_AA>5
+  needs_aa15 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
+#endif
+#if CTX_RASTERIZER_AA>3
+  needs_aa5 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
+#endif
+  needs_aa3 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
+
   for (int t = 0; t < active_edges -1;t++)
     {
-      const CtxSegment *segment0 = segments + edges[t];
       const CtxSegment *segment1 = segments + edges[t+1];
-      const int delta0    = segment0->delta;
       const int delta1    = segment1->delta;
-      const int x0        = segment0->val;
       const int x1        = segment1->val;
 
 #if CTX_RASTERIZER_AA>5
-      needs_aa15 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
+      needs_aa15 += (abs(delta1) > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
 #endif
 #if CTX_RASTERIZER_AA>3
-      needs_aa5 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
+      needs_aa5 += (abs(delta1) > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
 #endif
-      needs_aa3 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
+      needs_aa3 += (abs(delta1) > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
 
-      const int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
-      const int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
       const int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
       const int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
       if (x1_end < x0_end   ||
@@ -213,6 +222,8 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
             return 15;
 #endif
       }
+      x0_end = x1_end;
+      x0_start = x1_start;
     }
 
   if (crossings)
