@@ -61,7 +61,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
   CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
   int *edges = rasterizer->edges;
   int ending_edges = 0;
-  int active_edges = rasterizer->active_edges;
+  unsigned int active_edges = rasterizer->active_edges;
   for (unsigned int i = 0; i < active_edges; i++)
     {
       CtxSegment *segment = segments + edges[i];
@@ -77,7 +77,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
     }
   rasterizer->active_edges = active_edges;
 
-  int pending_edges = rasterizer->pending_edges;
+  unsigned int pending_edges = rasterizer->pending_edges;
   for (unsigned int i = 0; i < pending_edges; i++)
     {
       int edge_end = ((CtxSegment*)(rasterizer->edge_list.entries))[rasterizer->edges[CTX_MAX_EDGES-1-i]].data.s16[3]-1;
@@ -1509,13 +1509,12 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
 
   int allow_direct = !(0 
 #if CTX_ENABLE_CLIP
-         || rasterizer->clip_buffer
+         || (rasterizer->clip_buffer && (!rasterizer->clip_rectangle))
 #endif
 #if CTX_ENABLE_SHADOW_BLUR
          || rasterizer->in_shadow
 #endif
          );
-
   for (; rasterizer->scanline <= scan_end;)
     {
       int aa = ctx_rasterizer_feed_edges_full (rasterizer);
