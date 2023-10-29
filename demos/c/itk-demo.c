@@ -172,7 +172,6 @@ int main (int argc, char **argv)
 
       ctx_end_frame (ctx);
     }
-    ctx_handle_events (ctx);
   }
   ctx_destroy (ctx);
   return 0;

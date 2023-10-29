@@ -7,16 +7,15 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <math.h>
+#include "port_config.h"
 #include "ctx.h"
-
-#define TITLE    "esp32c3"
-#define SUBTITLE "RISC-V 160mhz"
 
 #if CTX_ESP
 void esp_backlight(int percent);
 void esp_restart(void);
 #endif
 
+int  ctx_osk_mode = 1;
 void ctx_osk_draw (Ctx *ctx);
 
 int        demo_mode = 1;
@@ -40,6 +39,7 @@ static float color_bg[4]          = {0.1, 0.2, 0.3, 1.0};
 static float color_bg2[4]         = {0.8, 0.9, 1.0, 1.0};
 static float color_fg[4]; // black or white automatically based on bg
 
+static float overlay_fade = 1.0;
 
 static void
 set_color (Ctx *ctx, float *rgba)
@@ -55,8 +55,8 @@ set_color_a (Ctx *ctx, float *rgba, float alpha)
 
 /////////////////////////////////////////////
 
-float x = 120.0;
-float y = 180.0;
+float x = DISPLAY_WIDTH/2;
+float y = DISPLAY_HEIGHT/2;
 
 typedef struct _Widget Widget;
 struct _Widget {
@@ -387,7 +387,7 @@ button (Ctx *ctx, float x, float y, float width, float height, const char *label
 #define BUTTON(label) \
    y += line_height, button(ctx, width * 0.15, y-line_height, 0, 0, label, 0, (void*)(__LINE__ * 4))
 
-static void screen_load(const char *name);
+static void go(const char *name);
 
 
 void screen_menu (Ctx *ctx, uint32_t delta_ms)
@@ -404,16 +404,25 @@ void screen_menu (Ctx *ctx, uint32_t delta_ms)
      }
    }
 
-   if (BUTTON("title"))    screen_load ("title");
-   if (BUTTON("clock"))    screen_load ("clock");
-   if (BUTTON("settings")) screen_load ("settings");
-   if (BUTTON("spirals"))  screen_load ("spirals");
-   if (BUTTON("bouncy"))   screen_load ("bouncy");
+   if (BUTTON("title"))    go("title");
+   if (BUTTON("clock"))    go("clock");
+   if (BUTTON("settings")) go("settings");
+   if (BUTTON("spirals"))  go("spirals");
+   if (BUTTON("bouncy"))   go("bouncy");
+   if (BUTTON("todo"))     go("todo");
 #if CTX_ESP
    if (BUTTON("reboot"))   esp_restart();
 #endif
 
    y+= line_height;
+}
+
+static void screen_todo (Ctx *ctx, uint32_t delta_ms)
+{
+   UI_START();
+   TEXT("animated fades");
+   TEXT("file system browser");
+   TEXT("text editor");
 }
 
 void screen_settings (Ctx *ctx, uint32_t delta_ms)
@@ -492,8 +501,8 @@ void screen_bouncy (Ctx *ctx, uint32_t delta_ms)
     static float dim = 100;
     if (frame_no == 0)
     {
-      x = 120.0;
-      y = 120.0;
+      x = width /2;
+      y = height/2;
       vx = 2.0;
       vy = 2.33;
     }
@@ -659,6 +668,7 @@ static Screen screens[]={
   {"clock",    screen_clock,   {0,}},
   {"bouncy",   screen_bouncy,  {0,}},
   {"spirals",  screen_spirals, {0,}},
+  {"todo",     screen_todo,    {0,}},
 };
 
 void screen_title (Ctx *ctx, uint32_t delta_ms)
@@ -731,42 +741,83 @@ static void screen_prev(void)
     screen_load_no (screen_no - 1);
 }
 
-static void screen_load(const char *name)
+static void
+go(const char *target)
 {
-  if (!strcmp (name, "next"))
+  printf ("screen-load: %s\n", target);
+  overlay_fade = 0.7;
+  if (!strcmp (target, "kb-collapse"))
+  {
+    ctx_osk_mode = 1;
+  }
+  else if (!strcmp (target, "kb-show"))
+  {
+    ctx_osk_mode = 2;
+  }
+  else if (!strcmp (target, "kb-hide"))
+  {
+    ctx_osk_mode = 0;
+  }
+  else if (!strcmp (target, "next"))
   {
     screen_next ();
-    return;
   }
-  if (!strcmp (name, "prev"))
+  else if (!strcmp (target, "prev"))
   {
     screen_prev ();
-    return;
   }
-  int n_screens = sizeof(screens)/sizeof(screens[0]);
-  for (int i = 0; i < n_screens; i++)
-    if (!strcmp (screens[i].name, name))
+  else
+  {
+    int n_screens = sizeof(screens)/sizeof(screens[0]);
+    for (int i = 0; i < n_screens; i++)
+    if (!strcmp (screens[i].name, target))
       {
         screen_load_no(i);
         return;
       }
+  }
 }
 
-void shell_go (CtxEvent *event, void *data1, void *data2)
+static void go_cb (CtxEvent *event, void *data1, void *data2)
 {
   const char *target = data1;
   if (!strcmp (target, "quit"))
     ctx_quit (event->ctx);
   else
-    screen_load (target);
+    go (target);
   demo_mode = 0;
+}
+
+void overlay_button (Ctx *ctx, float x, float y, float w, float h, const char *label, char *action)
+{
+      ctx_save(ctx);
+       ctx_rectangle (ctx, x,y,w,h);
+       ctx_listen (ctx, CTX_PRESS, go_cb, action, NULL);
+      if (overlay_fade <= 0.0f)
+      {
+        ctx_begin_path(ctx);
+      }
+      else
+      {
+        ctx_rgba(ctx,0,0,0,overlay_fade);
+        ctx_fill(ctx);
+        if (overlay_fade > 0.5)
+        {
+          ctx_rgba(ctx,1,1,1,overlay_fade);
+          ctx_move_to (ctx, x+0.5 * w, y + 0.98 * h);
+          ctx_font_size (ctx, 0.8 * h);
+          ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+          ctx_text (ctx, label);
+        }
+          
+      }
+      ctx_restore (ctx);
 }
 
 
 void app_main(void)
 {
-    //Ctx *ctx = ctx_new(240,240,NULL);
-    Ctx *ctx = ctx_new(480,480,NULL);
+    Ctx *ctx = ctx_new(DISPLAY_WIDTH,DISPLAY_HEIGHT,NULL);
 
     long int prev_ticks = ctx_ticks();
 
@@ -779,7 +830,7 @@ void app_main(void)
       font_size = width * 0.09f;
     demo_screen_remaining_ms = demo_timeout_ms;
 
-//  ctx_get_event (ctx);
+    //ctx_get_event(ctx);
     while (!ctx_has_quit (ctx))
     {
       ctx_start_frame (ctx);
@@ -808,9 +859,12 @@ void app_main(void)
  
       ctx_restore (ctx);
 
-      ctx_rectangle(ctx, 0.0 * width, 0.0 * height, width, 0.12 * height);
-      ctx_listen (ctx, CTX_PRESS, shell_go, "menu", NULL);
-      ctx_begin_path(ctx);
+
+      if (screen_no != 2)
+      {
+        overlay_button (ctx, 0,0,width,height*0.12, "menu", "menu");
+      }
+      ctx_osk_draw (ctx);
 
       if (show_fps)
       {
@@ -830,27 +884,26 @@ void app_main(void)
          ctx_text (ctx, buf);
          ctx_restore (ctx);
       }
-      ctx_osk_draw (ctx);
 
       float min_dim = ctx_width(ctx);
       if (ctx_height (ctx) < min_dim) min_dim = ctx_height (ctx);
 
-#ifndef CTX_ESP
+#if CTX_ESP==0
       ctx_save (ctx);
       ctx_rectangle (ctx, 0,0,ctx_width(ctx),ctx_height(ctx));
       ctx_arc (ctx, ctx_width(ctx)/2, ctx_height(ctx)/2, min_dim/2, 0, 3.1415*2, 1);
-      ctx_rgba (ctx, 0,0,0,0.5);
+      ctx_rgba (ctx, 0,0,0,0.9);
       ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
       ctx_fill (ctx);
       ctx_restore (ctx);
 #endif
-      ctx_add_key_binding (ctx, "escape", NULL, "foo",    shell_go, "menu");
-      ctx_add_key_binding (ctx, "left", NULL, "foo",      shell_go, "prev");
-      ctx_add_key_binding (ctx, "right", NULL, "foo",     shell_go, "next");
-      ctx_add_key_binding (ctx, "control-q", NULL, "foo", shell_go, "quit");
+      ctx_add_key_binding (ctx, "escape", NULL, "foo",    go_cb, "menu");
+      ctx_add_key_binding (ctx, "left", NULL, "foo",      go_cb, "prev");
+      ctx_add_key_binding (ctx, "right", NULL, "foo",     go_cb, "next");
+      ctx_add_key_binding (ctx, "control-q", NULL, "foo", go_cb, "quit");
  
       ctx_end_frame (ctx);
-      ctx_handle_events (ctx);
+      //ctx_handle_events (ctx); // could this be dealt with in tiled end_Frame?
     }
 }
 
@@ -909,12 +962,6 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
     {
       KeyCap *cap = &(kb->keys[row][col]);
       float y = row * c + y0;
-#if 0
-      ctx_round_rectangle (ctx, x, y,
-                                c * (cap->wfactor-0.1),
-                                c * 0.9,
-                                c * 0.1);
-#endif
       if (event->x >= x &&
           event->x < x + c * cap->wfactor-0.1 &&
           event->y >= y &&
@@ -984,7 +1031,11 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
       }
       else
       {
-        if (kb->control || kb->alt)
+        if (!strcmp (key->sequence, "kb-collapse"))
+        {
+          go ("kb-collapse");
+        }
+        else if (kb->control || kb->alt)
         {
           char combined[200]="";
           if (kb->shifted)
@@ -1028,7 +1079,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
   }
 }
 
-KeyBoard en_intl = {
+KeyBoard kb_round = {
    {  
 #if 1
      { 
@@ -1038,10 +1089,11 @@ KeyBoard en_intl = {
        {"Ctrl","Ctrl",NULL,NULL,1.3f,"","",NULL,NULL,1},
        {"Alt","Alt",NULL,NULL,1.3f,"","",NULL,NULL,1,},
        {"Esc","Esc",NULL,NULL,1.3f,"escape","escape",NULL,NULL,0},
+       {"\\/","\\/",NULL,NULL,1.0f,"kb-collapse","kb-collapse",NULL,NULL,0,},
    //  {"↑","↑","PgUp","PgUp",1.0f,"up","up","page-up","page-up",0,},
    //  {"↓","↓","PgDn","PgDn",1.0f,"down","down","page-down","page-down",0,},
-       {"←","←","Home","Home",1.0f,"left","left","home","home",0,},
-       {"→","→","End","End",1.0f,"right","right","end","end",0,},
+   //  {"←","←","Home","Home",1.0f,"left","left","home","home",0,},
+   //  {"→","→","End","End",1.0f,"right","right","end","end",0,},
        //{"⏎","⏎",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
        //{"⌫","⌫",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0},
        {"bs","bs",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0,},
@@ -1120,40 +1172,54 @@ KeyBoard en_intl = {
    }
 };
 
-  // 0.0 = full tilt
-  // 0.5 = balanced
-  // 1.0 = full saving
 
 void ctx_osk_draw (Ctx *ctx)
 {
   static float fade = 0.0;
-  KeyBoard *kb = &en_intl;
+  KeyBoard *kb = &kb_round;
+  static long prev_ticks = -1;
+  long ticks = ctx_ticks ();
+  float elapsed_ms = 0;
+  if (prev_ticks > 0)
+  {
+    elapsed_ms = (ticks - prev_ticks) / 1000.0f;
+  }
+  prev_ticks = ticks; 
 
-  fade = 0.8;
-  if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
-     fade = 0.8;
+  //printf ("%f\n", elapsed_ms);
+  overlay_fade -= 0.3 * elapsed_ms/1000.0f;
+  
 
   float h = ctx_height (ctx);
   float w = ctx_width (ctx);
   float m = h;
+  if (w < h)
+    m = w;
+
+  switch (ctx_osk_mode)
+  {
+    case 2:
+
+  fade = 0.6;
+  if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
+     fade = 0.8;
+
   int rows = 0;
   for (int row = 0; kb->keys[row][0].label; row++)
     rows = row+1;
 
   float c = w / osk_rows; // keycell
   float y0 = h * osk_pos - c * rows;
-  if (w < h)
-    m = w;
       
   ctx_save (ctx);
   ctx_rectangle (ctx, 0,
                       y0,
                       w,
                       c * rows);
-  ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, &en_intl);
+  ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, kb);
   ctx_rgba (ctx, 0,0,0, 0.8 * fade);
   //if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
-    ctx_fill (ctx);
+  ctx_fill (ctx);
   //else
 //ctx_line_width (ctx, m * 0.01);
   //ctx_begin_path (ctx);
@@ -1269,4 +1335,9 @@ void ctx_osk_draw (Ctx *ctx)
     }
   }
   ctx_restore (ctx);
+     break;
+     case 1:
+       overlay_button (ctx, 0, h - h * 0.14, w, h * 0.14, "kb", "kb-show");
+       break;
+  }
 }

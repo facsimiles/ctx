@@ -2684,7 +2684,6 @@ itk_iteration (double time, void *data)
       ctx_end_frame (ctx);
     }
 
-    ctx_handle_events (ctx);
     return ret_val;
 }
 

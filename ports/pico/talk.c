@@ -1246,7 +1246,6 @@ static int ui_scenes (Ctx *ctx, void *data)
   }
 
   }
-  ctx_handle_events (ctx);
 
   return 1;
 }

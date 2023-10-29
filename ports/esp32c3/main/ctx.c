@@ -1,7 +1,7 @@
 #pragma GCC optimize("jump-tables,tree-switch-conversion")
 
-#define DISPLAY_WIDTH  240
-#define DISPLAY_HEIGHT 240
+#include "port_config.h"
+
 
 //#define SCRATCH_BUF_BYTES                  (DISPLAY_WIDTH*DISPLAY_HEIGHT*2)
 // a little faster - no mid-rasterization tearing - but uses more memory
@@ -57,7 +57,7 @@
 #define CTX_STRINGPOOL_SIZE                256
 #define CTX_MAX_DEVICES                    1
 #define CTX_MAX_KEYBINDINGS                16
-#define CTX_MAX_CBS                        8
+#define CTX_MAX_CBS                        16
 #define CTX_MAX_LISTEN_FDS                 1
 #define CTX_TERMINAL_EVENTS                0
 #define CTX_FRAGMENT_SPECIALIZE            1 // more optimize texture|gradients
