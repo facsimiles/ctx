@@ -12,9 +12,12 @@
 #define TITLE    "esp32c3"
 #define SUBTITLE "RISC-V 160mhz"
 
-Ctx *esp_ctx(void);
+#if CTX_ESP
 void esp_backlight(int percent);
 void esp_restart(void);
+#endif
+
+void ctx_osk_draw (Ctx *ctx);
 
 int        demo_mode = 1;
 static int demo_rounds = 0; // used for recording different fps measurement
@@ -33,10 +36,8 @@ static float font_size = 16.0; // dynamically set on start
 #define em font_size
 
 static float color_interactive[4] = {1,0,0,0.0}; 
-
 static float color_bg[4]          = {0.1, 0.2, 0.3, 1.0};
 static float color_bg2[4]         = {0.8, 0.9, 1.0, 1.0};
-
 static float color_fg[4]; // black or white automatically based on bg
 
 
@@ -81,14 +82,17 @@ typedef enum
 static Widget widgets[MAX_WIDGETS];
 static int widget_no = 0;
 
-
 static void screen_pan (CtxEvent *event, void *data1, void *data2)
 {
   float *fptr = data2;
-  *fptr += event->delta_y;
-  demo_mode = 0;
-  if (*fptr > 0)
-    *fptr = 0;
+
+//if ((event->type == CTX_DRAG_MOTION))
+  {
+    *fptr += event->delta_y;
+    demo_mode = 0;
+    if (*fptr > 0)
+      *fptr = 0;
+  }
 }
 
 void draw_bg (Ctx *ctx)
@@ -124,7 +128,6 @@ void draw_bg (Ctx *ctx)
     prev_green = color_bg[1];
     prev_blue = color_bg[2];
   }
-
 
   ctx_rectangle(ctx,0,0,width,height);
 
@@ -253,13 +256,13 @@ static void button_drag (CtxEvent *event, void *data1, void *data2)
   if (event->type == CTX_DRAG_PRESS)
   {
     widget->state = ui_state_hot;
-    event->stop_propagate = 1;
+    event->stop_propagate = 0;
   }
   else if (event->type == CTX_DRAG_RELEASE)
   {
     if (widget->state == ui_state_hot)
       widget->data = (void*)1;
-    event->stop_propagate = 1;
+    event->stop_propagate = 0;
   }
   else
   {
@@ -376,7 +379,7 @@ button (Ctx *ctx, float x, float y, float width, float height, const char *label
      scroll_offset = 0;\
    }\
    ctx_rectangle(ctx,0,0,width, height);\
-   ctx_listen (ctx, CTX_MOTION, screen_pan, NULL, &scroll_offset);\
+   ctx_listen (ctx, CTX_DRAG, screen_pan, NULL, &scroll_offset);\
    ctx_begin_path (ctx); \
    ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);\
    float y = (int)(scroll_offset + height * 0.15); \
@@ -406,7 +409,9 @@ void screen_menu (Ctx *ctx, uint32_t delta_ms)
    if (BUTTON("settings")) screen_load ("settings");
    if (BUTTON("spirals"))  screen_load ("spirals");
    if (BUTTON("bouncy"))   screen_load ("bouncy");
+#if CTX_ESP
    if (BUTTON("reboot"))   esp_restart();
+#endif
 
    y+= line_height;
 }
@@ -435,7 +440,9 @@ void screen_settings (Ctx *ctx, uint32_t delta_ms)
    static float prev_backlight = 0.0f;
    if (prev_backlight != backlight)
    {
+#if CTX_ESP
      esp_backlight (backlight);
+#endif
      prev_backlight = backlight;
    }
 
@@ -645,13 +652,13 @@ typedef struct Screen
 } Screen;
 
 void screen_title (Ctx *ctx, uint32_t delta_ms);
-Screen screens[]={
-  {"title",    screen_title,{0,}},
+static Screen screens[]={
+  {"title",    screen_title,   {0,}},
   {"settings", screen_settings,{0,}},
-  {"menu",     screen_menu,{0,}},
-  {"clock",    screen_clock,{0,}},
-  {"bouncy",   screen_bouncy,{0,}},
-  {"spirals",  screen_spirals,{0,}},
+  {"menu",     screen_menu,    {0,}},
+  {"clock",    screen_clock,   {0,}},
+  {"bouncy",   screen_bouncy,  {0,}},
+  {"spirals",  screen_spirals, {0,}},
 };
 
 void screen_title (Ctx *ctx, uint32_t delta_ms)
@@ -665,14 +672,13 @@ void screen_title (Ctx *ctx, uint32_t delta_ms)
 
   if (demo_rounds == 0)
   {
-  ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,"esp32c3");
-  ty+=font_size;
-  ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,SUBTITLE);
-  ty+=font_size;
-  sprintf(buf, "%.0fx%.0f", width, height);
-  ctx_move_to(ctx, width * 0.2,ty);
-  ctx_text(ctx,buf);
-
+    ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,TITLE);
+    ty+=font_size;
+    ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,SUBTITLE);
+    ty+=font_size;
+    sprintf(buf, "%.0fx%.0f", width, height);
+    ctx_move_to(ctx, width * 0.2,ty);
+    ctx_text(ctx,buf);
   }
   else
   {
@@ -695,7 +701,7 @@ void screen_title (Ctx *ctx, uint32_t delta_ms)
     }
   }
  
-  ctx_logo (ctx, 120,50,80);
+  ctx_logo (ctx, width/2,height/5,height/3);
 }
 
 static void screen_load_no(int no)
@@ -709,16 +715,6 @@ static void screen_load_no(int no)
   screen_elapsed = 0; 
 }
 
-static void screen_load(const char *name)
-{
-  int n_screens = sizeof(screens)/sizeof(screens[0]);
-  for (int i = 0; i < n_screens; i++)
-    if (!strcmp (screens[i].name, name))
-      {
-        screen_load_no(i);
-        return;
-      }
-}
 
 static void screen_next(void)
 {
@@ -729,15 +725,48 @@ static void screen_next(void)
   }
 }
 
-void menu_press (CtxEvent *event, void *data1, void *data2)
+static void screen_prev(void)
 {
-  screen_load ("menu");
+  if (screen_no)
+    screen_load_no (screen_no - 1);
+}
+
+static void screen_load(const char *name)
+{
+  if (!strcmp (name, "next"))
+  {
+    screen_next ();
+    return;
+  }
+  if (!strcmp (name, "prev"))
+  {
+    screen_prev ();
+    return;
+  }
+  int n_screens = sizeof(screens)/sizeof(screens[0]);
+  for (int i = 0; i < n_screens; i++)
+    if (!strcmp (screens[i].name, name))
+      {
+        screen_load_no(i);
+        return;
+      }
+}
+
+void shell_go (CtxEvent *event, void *data1, void *data2)
+{
+  const char *target = data1;
+  if (!strcmp (target, "quit"))
+    ctx_quit (event->ctx);
+  else
+    screen_load (target);
   demo_mode = 0;
 }
 
+
 void app_main(void)
 {
-    Ctx *ctx = esp_ctx();
+    //Ctx *ctx = ctx_new(240,240,NULL);
+    Ctx *ctx = ctx_new(480,480,NULL);
 
     long int prev_ticks = ctx_ticks();
 
@@ -750,7 +779,9 @@ void app_main(void)
       font_size = width * 0.09f;
     demo_screen_remaining_ms = demo_timeout_ms;
 
-    for (;;) {
+//  ctx_get_event (ctx);
+    while (!ctx_has_quit (ctx))
+    {
       ctx_start_frame (ctx);
       long int ticks = ctx_ticks ();
       long int ticks_delta = ticks - prev_ticks;
@@ -778,7 +809,7 @@ void app_main(void)
       ctx_restore (ctx);
 
       ctx_rectangle(ctx, 0.0 * width, 0.0 * height, width, 0.12 * height);
-      ctx_listen (ctx, CTX_PRESS, menu_press, NULL, NULL);
+      ctx_listen (ctx, CTX_PRESS, shell_go, "menu", NULL);
       ctx_begin_path(ctx);
 
       if (show_fps)
@@ -799,7 +830,443 @@ void app_main(void)
          ctx_text (ctx, buf);
          ctx_restore (ctx);
       }
+      ctx_osk_draw (ctx);
 
+      float min_dim = ctx_width(ctx);
+      if (ctx_height (ctx) < min_dim) min_dim = ctx_height (ctx);
+
+#ifndef CTX_ESP
+      ctx_save (ctx);
+      ctx_rectangle (ctx, 0,0,ctx_width(ctx),ctx_height(ctx));
+      ctx_arc (ctx, ctx_width(ctx)/2, ctx_height(ctx)/2, min_dim/2, 0, 3.1415*2, 1);
+      ctx_rgba (ctx, 0,0,0,0.5);
+      ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
+      ctx_fill (ctx);
+      ctx_restore (ctx);
+#endif
+      ctx_add_key_binding (ctx, "escape", NULL, "foo",    shell_go, "menu");
+      ctx_add_key_binding (ctx, "left", NULL, "foo",      shell_go, "prev");
+      ctx_add_key_binding (ctx, "right", NULL, "foo",     shell_go, "next");
+      ctx_add_key_binding (ctx, "control-q", NULL, "foo", shell_go, "quit");
+ 
       ctx_end_frame (ctx);
+      ctx_handle_events (ctx);
     }
+}
+
+/////////////////////////// keyboard
+
+typedef struct KeyCap {
+  char *label;
+  char *label_shifted;
+  char *label_fn;
+  char *label_fn_shifted;
+  float wfactor; // 1.0 is regular, tab is 1.5
+  char *sequence;
+  char *sequence_shifted;
+  char *sequence_fn;
+  char *sequence_fn_shifted;
+  int   sticky;
+  int   down;
+  int   hovered;
+} KeyCap;
+
+typedef struct KeyBoard {
+  KeyCap keys[9][30];
+  int shifted;
+  int control;
+  int alt;
+  int fn;
+  int down;
+} KeyBoard;
+
+static float osk_pos = 1.0f;
+
+static float osk_rows = 11.5f;
+
+static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
+{
+  KeyCap *key = data1;
+  KeyBoard *kb = data2;
+  float h = ctx_height (event->ctx);
+  float w = ctx_width (event->ctx);
+  int rows = 0;
+  for (int row = 0; kb->keys[row][0].label; row++)
+    rows = row+1;
+
+  float c = w / osk_rows; // keycell
+  float y0 = h * osk_pos - c * rows;
+
+  //if (event->y < y0)
+  //  return;
+
+  key = NULL;
+
+  for (int row = 0; kb->keys[row][0].label; row++)
+  {
+    float x = c * 0.0;
+    for (int col = 0; kb->keys[row][col].label; col++)
+    {
+      KeyCap *cap = &(kb->keys[row][col]);
+      float y = row * c + y0;
+#if 0
+      ctx_round_rectangle (ctx, x, y,
+                                c * (cap->wfactor-0.1),
+                                c * 0.9,
+                                c * 0.1);
+#endif
+      if (event->x >= x &&
+          event->x < x + c * cap->wfactor-0.1 &&
+          event->y >= y &&
+          event->y < y + c * 0.9)
+       {
+         key = cap;
+         if (cap->hovered != 1)
+         {
+           ctx_queue_draw (event->ctx);
+         }
+         cap->hovered = 1;
+       }
+      else
+       {
+         cap->hovered = 0;
+       }
+
+      x += cap->wfactor * c;
+    }
+  }
+
+  event->stop_propagate = 1;
+  switch (event->type)
+  {
+     default:
+       break;
+     case CTX_MOTION:
+         ctx_queue_draw (event->ctx);
+       break;
+     case CTX_DRAG_MOTION:
+       if (!key)
+         ctx_queue_draw (event->ctx);
+       break;
+     case CTX_DRAG_PRESS:
+       kb->down = 1;
+       ctx_queue_draw (event->ctx);
+       break;
+     case CTX_DRAG_RELEASE:
+       kb->down = 0;
+        ctx_queue_draw (event->ctx);
+       if (!key)
+         return;
+
+      if (key->sticky)
+      {
+        if (key->down)
+          key->down = 0;
+        else
+          key->down = 1;
+
+        if (!strcmp (key->label, "Shift"))
+        {
+          kb->shifted = key->down;
+        }
+        else if (!strcmp (key->label, "Ctrl"))
+        {
+          kb->control = key->down;
+        }
+        else if (!strcmp (key->label, "Alt"))
+        {
+          kb->alt = key->down;
+        }
+        else if (!strcmp (key->label, "Fn"))
+        {
+          kb->fn = key->down;
+        }
+      }
+      else
+      {
+        if (kb->control || kb->alt)
+        {
+          char combined[200]="";
+          if (kb->shifted)
+          {
+            sprintf (&combined[strlen(combined)], "shift-");
+          }
+          if (kb->control)
+          {
+            sprintf (&combined[strlen(combined)], "control-");
+          }
+          if (kb->alt)
+          {
+            sprintf (&combined[strlen(combined)], "alt-");
+          }
+          if (kb->fn)
+            sprintf (&combined[strlen(combined)], "%s", key->sequence_fn);
+          else
+            sprintf (&combined[strlen(combined)], "%s", key->sequence);
+          ctx_key_press (event->ctx, 0, combined, 0);
+        }
+        else
+        {
+          const char *sequence = key->sequence;
+
+          if (kb->fn && kb->shifted && key->sequence_fn_shifted)
+          {
+            sequence = key->sequence_fn_shifted;
+          }
+          else if (kb->fn && key->sequence_fn)
+          {
+            sequence = key->sequence_fn;
+          }
+          else if (kb->shifted && key->sequence_shifted)
+          {
+            sequence = key->sequence_shifted;
+          }
+          ctx_key_press (event->ctx, 0, sequence, 0);
+        }
+      }
+      break;
+  }
+}
+
+KeyBoard en_intl = {
+   {  
+#if 1
+     { 
+       {" "," ",NULL,NULL,0.0f,"","",NULL,NULL,0,},
+       {"Shift","Shift",NULL,NULL,1.4f,"","",NULL,NULL,1,},
+       {"Fn","Fn",NULL,NULL,1.0f," "," ",NULL,NULL,1,},
+       {"Ctrl","Ctrl",NULL,NULL,1.3f,"","",NULL,NULL,1},
+       {"Alt","Alt",NULL,NULL,1.3f,"","",NULL,NULL,1,},
+       {"Esc","Esc",NULL,NULL,1.3f,"escape","escape",NULL,NULL,0},
+   //  {"↑","↑","PgUp","PgUp",1.0f,"up","up","page-up","page-up",0,},
+   //  {"↓","↓","PgDn","PgDn",1.0f,"down","down","page-down","page-down",0,},
+       {"←","←","Home","Home",1.0f,"left","left","home","home",0,},
+       {"→","→","End","End",1.0f,"right","right","end","end",0,},
+       //{"⏎","⏎",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
+       //{"⌫","⌫",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0},
+       {"bs","bs",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0,},
+       {"ret","ret",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
+       {"1","!","F1","F1",1.0f,"1","!","F1","F1",0},
+       {"2","@","F2","F2",1.0f,"2","@","F2","F2",0},
+       {"3","#","F3","F3",1.0f,"3","#","F3","F3",0},
+       {"4","$","F4","F4",1.0f,"4","$","F4","F4",0},
+       {"5","%","F5","F5",1.0f,"5","%","F5","F5",0},
+       {"6","^","F6","F6",1.0f,"6","^","F6","F6",0},
+       {"7","&","F7","F7",1.0f,"7","&","F7","F7",0},
+       {"8","*","F8","F8",1.0f,"8","*","F8","F8",0},
+       {"9","(","F9","F9",1.0f,"9","(","F9","F9",0},
+       {"0",")","F10","F10",1.0f,"0",")","F10","F10",0},
+       {"-","_","F11","F11",1.0f,"-","_","F11","F11",0},
+       {"=","+","F12","F12",1.0f,"=","+","F12","F12",0},
+       {NULL}},
+#endif
+     //⌨
+     {
+       {" "," ",NULL,NULL,0.8f,"","",NULL,NULL,0,},
+       //{"Fn","Fn",NULL,NULL,1.0f," "," ",NULL,NULL,1,},
+       {"q","Q","1","Esc",  1.0f,"q","Q","1","escape",0,},
+       {"w","W","2","Tab",  1.0f,"w","W","2","tab",0,},
+       {"e","E","3","ret",  1.0f,"e","E","3","return",0,},
+       {"r","R","4","",  1.0f,"r","R","4","",0,},
+       {"t","T","5","",  1.0f,"t","T","5","",0,},
+       {"y","Y","6","",  1.0f,"y","Y","6","",0,},
+       {"u","U","7","",  1.0f,"u","U","7","",0,},
+       {"i","I","8","",  1.0f,"i","I","8","",0,},
+       {"o","O","9","",  1.0f,"o","O","9","",0,},
+       {"p","P","0","",1.0f,"p","P","0","",0,},
+
+
+       {NULL} },
+     { 
+       {" "," ",NULL,NULL,1.2f,"","",NULL,NULL,0,},
+       {"a","A","!","`",1.0f,"a","A","!","`",0,},
+       {"s","S","@","~",1.0f,"s","S","@","~",0,},
+       {"d","D","#","",1.0f,"d","D","#","",0,},
+       {"f","F","$","",1.0f,"f","F","$","",0,},
+       {"g","G","%","",1.0f,"g","G","%","",0,},
+       {"h","H","^","",1.0f,"h","H","^","",0,},
+       {"j","J","&","",1.0f,"j","J","&","",0,},
+       {"k","K","*","",1.0f,"k","K","*","",0,},
+       {"l","L","(","",1.0f,"l","L","(","",0,},
+       {"!","!",")","",1.0f,"!","!",")","",0,},
+//     {"ret","ret",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
+
+//     {";",":",")","",1.0f,";",":",")","",0,},
+
+       {NULL} },
+
+     {
+       {" "," ",NULL,NULL,1.6f,"","",NULL,NULL,0,},
+       {"z","Z","/","[",1.0f,"z","Z","/","[",0,},
+       {"x","X","?","]",1.0f,"x","X","?","]",0,},
+       {"c","C","'","{",1.0f,"c","C","'","{",0,},
+       {"v","V","\"","}",1.0f,"v","V","\"","}",0,},
+       {"b","B","+","\\",1.0f,"b","B","+","\\",0,},
+       {"n","N","-","Ø",1.0f,"n","N","-","Ø",0,},
+       {"m","M","=","å",1.0f,"m","M","=","å",0,},
+//     {",","<","_",NULL,1.0f,",","<","_",NULL,0,},
+//     {".",">","|",NULL,1.0f,".",">","|",NULL,0,},
+
+       {NULL} },
+     { {"","",NULL,NULL,3.0f,"","",NULL,NULL,0,},
+       {"","",NULL,NULL,5.1f,"space","space",NULL,NULL,0,},
+
+
+/*
+*/
+       {NULL} },
+
+     { {NULL}},
+   }
+};
+
+  // 0.0 = full tilt
+  // 0.5 = balanced
+  // 1.0 = full saving
+
+void ctx_osk_draw (Ctx *ctx)
+{
+  static float fade = 0.0;
+  KeyBoard *kb = &en_intl;
+
+  fade = 0.8;
+  if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
+     fade = 0.8;
+
+  float h = ctx_height (ctx);
+  float w = ctx_width (ctx);
+  float m = h;
+  int rows = 0;
+  for (int row = 0; kb->keys[row][0].label; row++)
+    rows = row+1;
+
+  float c = w / osk_rows; // keycell
+  float y0 = h * osk_pos - c * rows;
+  if (w < h)
+    m = w;
+      
+  ctx_save (ctx);
+  ctx_rectangle (ctx, 0,
+                      y0,
+                      w,
+                      c * rows);
+  ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, &en_intl);
+  ctx_rgba (ctx, 0,0,0, 0.8 * fade);
+  //if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
+    ctx_fill (ctx);
+  //else
+//ctx_line_width (ctx, m * 0.01);
+  //ctx_begin_path (ctx);
+#if 0
+  ctx_rgba (ctx, 1,1,1, 0.5);
+  ctx_stroke (ctx);
+#endif
+
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+  ctx_line_width (ctx, m * 0.01);
+
+  float font_size = c * 0.9;
+  ctx_font_size (ctx, font_size);
+
+  for (int row = 0; kb->keys[row][0].label; row++)
+  {
+    float x = c * 0.0;
+    for (int col = 0; kb->keys[row][col].label; col++)
+    {
+      KeyCap *cap = &(kb->keys[row][col]);
+      float y = row * c + y0;
+  
+      const char *label = cap->label;
+
+      if ((kb->fn && kb->shifted && cap->label_fn_shifted))
+      {
+        label = cap->label_fn_shifted;
+      }
+      else if (kb->fn && cap->label_fn)
+      {
+        label = cap->label_fn;
+      }
+      else if (kb->shifted && cap->label_shifted)
+      {
+        label = cap->label_shifted;
+      }
+
+      if (ctx_utf8_strlen (label) > 1)
+      {
+        if (font_size != c * 0.66)
+        {
+          font_size = c * 0.66;
+          ctx_font_size (ctx, font_size);
+        }
+      }
+      else
+      {
+        if (font_size != c * 0.95)
+        {
+          font_size = c * 0.95;
+          ctx_font_size (ctx, font_size);
+        }
+      }
+
+      ctx_begin_path (ctx);
+      ctx_rectangle (ctx, x, y,
+                                c * (cap->wfactor-0.1),
+                                c * 0.9);
+                                //,c * 0.1);
+      
+      if (cap->down || (cap->hovered && kb->down))
+      {
+        ctx_rgba (ctx, 1,1,1, fade);
+#if 1
+      ctx_fill (ctx);
+#else
+      ctx_preserve (ctx);
+      ctx_fill (ctx);
+
+      ctx_rgba (ctx, 0,0,0, fade);
+#endif
+      }
+      else ctx_begin_path (ctx);
+
+      if (cap->down || (cap->hovered && kb->down))
+        ctx_rgba (ctx, 1,1,1, fade);
+      else
+        ctx_rgba (ctx, 0,0,0, fade);
+
+      ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+      ctx_text_baseline (ctx, CTX_TEXT_BASELINE_MIDDLE);
+
+#if 0
+      ctx_move_to (ctx, x + cap->wfactor * c*0.5, y + c * 0.5);
+      ctx_text_stroke (ctx, label);
+#endif
+
+      ctx_move_to (ctx, x + cap->wfactor * c*0.5, y + c * 0.5);
+
+
+
+      if (cap->down || (cap->hovered && kb->down))
+        ctx_rgba (ctx, 0,0,0, fade);
+      else
+        ctx_rgba (ctx, 1,1,0.8, fade);
+
+      ctx_text (ctx, label);
+
+      if (cap->hovered && kb->down)
+      {
+         ctx_save (ctx);
+         ctx_rgba (ctx, 0,0,0.0, 0.7*fade);
+         ctx_rectangle (ctx, x - c * 0.5 * cap->wfactor, y - c * 4, c * 2 * cap->wfactor, c * 3);
+         ctx_fill (ctx);
+         ctx_rgba (ctx, 1,1,0.8, fade);
+         ctx_move_to (ctx, x+ c * 0.5 * cap->wfactor, y - c * 3);
+         ctx_font_size (ctx, c * 2);
+         ctx_text (ctx, label);
+         ctx_restore (ctx);
+      }
+
+      x += cap->wfactor * c;
+    }
+  }
+  ctx_restore (ctx);
 }

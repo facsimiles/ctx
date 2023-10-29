@@ -13,7 +13,7 @@
 #endif
 
 #define SCRATCH_BUF_BYTES (42*1024)
-
+#define CTX_ESP                            1
 #define CTX_DITHER                         1
 #define CTX_PROTOCOL_U8_COLOR              1
 #define CTX_LIMIT_FORMATS                  1

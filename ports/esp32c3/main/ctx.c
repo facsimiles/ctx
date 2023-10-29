@@ -3,10 +3,13 @@
 #define DISPLAY_WIDTH  240
 #define DISPLAY_HEIGHT 240
 
+//#define SCRATCH_BUF_BYTES                  (DISPLAY_WIDTH*DISPLAY_HEIGHT*2)
+// a little faster - no mid-rasterization tearing - but uses more memory
+
 #define SCRATCH_BUF_BYTES                  (44*1024)
 #define CTX_HASH_COLS                      7
 #define CTX_HASH_ROWS                      3
-
+#define CTX_ESP                            1
 #define CTX_DITHER                         1
 #define CTX_PROTOCOL_U8_COLOR              1
 #define CTX_LIMIT_FORMATS                  1
@@ -18,8 +21,8 @@
 #define CTX_ENABLE_GRAY2                   1
 #define CTX_ENABLE_GRAY4                   1
 #define CTX_ENABLE_GRAY8                   1
-#define CTX_ENABLE_RGB332                  1
 #endif
+#define CTX_ENABLE_RGB332                  1
 #define CTX_ENABLE_RGB565                  1
 #define CTX_ENABLE_RGB565_BYTESWAPPED      1
 #define CTX_COMPOSITING_GROUPS             0
@@ -143,7 +146,9 @@ static int frame_done_ctx (Ctx *ctx, void *user_data)
         ctx_pointer_motion (ctx, x, y, 0, 0);
     }
     else if (was_pressed)
+    {
         ctx_pointer_release (ctx, x, y, 0, 0);
+    }
     was_pressed = touchpad_pressed;
 
     vTaskDelay(0);
