@@ -147,6 +147,7 @@ static void ctx_tiled_end_frame (Ctx *ctx)
   }
   mtx_unlock (&tiled->mtx);
   ctx_drawlist_clear (ctx);
+  ctx_handle_events (ctx);
 }
 
 static
