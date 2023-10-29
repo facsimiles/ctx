@@ -880,3 +880,8 @@
 #ifndef CTX_YUV_LUTS
 #define  CTX_YUV_LUTS 0
 #endif
+
+
+#ifndef CTX_CB_ENABLE_LOW_FI
+#define CTX_CB_ENABLE_LOW_FI 1
+#endif

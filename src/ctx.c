@@ -2106,12 +2106,18 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend);
 #if CTX_PICO
 Ctx *ctx_pico_init (void);
 #endif
+#if CTX_ESP
+Ctx *esp_ctx (void);
+#endif
 
 CTX_EXPORT Ctx *
 ctx_new (int width, int height, const char *backend)
 {
 #if CTX_PICO
   return ctx_pico_init ();
+#endif
+#if CTX_ESP
+  return esp_ctx();
 #endif
 
 #if CTX_EVENTS

@@ -28,6 +28,8 @@ typedef struct CtxCbBackend
 void ctx_cb_set_flags (Ctx *ctx, int flags)
 {
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
+
+#if CTX_CB_ENABLE_LOW_FI
   if (flags & CTX_FLAG_GRAY2)
     flags |= CTX_FLAG_LOWFI;
   if (flags & CTX_FLAG_GRAY4)
@@ -39,6 +41,7 @@ void ctx_cb_set_flags (Ctx *ctx, int flags)
 
   if (flags & CTX_FLAG_LOWFI)
     flags |= CTX_FLAG_HASH_CACHE;
+#endif
   backend_cb->flags = flags;
 }
 
@@ -123,8 +126,10 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
   
   int width          = x1 - x0 + 1;
   int height         = y1 - y0 + 1;
+#if CTX_CB_ENABLE_LOW_FI
   int byteswap;
   byteswap = (format == CTX_FORMAT_RGB565_BYTESWAPPED);
+#endif
 
   if (!backend_cb->fb)
   {
@@ -140,6 +145,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
                       int x, int y, int w, int h, void *buf) =
     backend_cb->set_pixels;
 
+#if CTX_CB_ENABLE_LOW_FI
   if (flags & CTX_FLAG_LOWFI)
   {
     int scale_factor  = 1;
@@ -320,6 +326,7 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
     // abort does not happen for low-res update
   }
   else
+#endif
   {
     int render_height = height;
     if (width * render_height > memory_budget / bpp)
@@ -416,8 +423,10 @@ ctx_cb_end_frame (Ctx *ctx)
 
   int tile_width = width / CTX_HASH_COLS;
   int tile_height = height / CTX_HASH_ROWS;
+#if CTX_CB_ENABLE_LOW_FI
   if (cb_backend->flags & (CTX_FLAG_GRAY2|CTX_FLAG_GRAY4|CTX_FLAG_GRAY8|CTX_FLAG_RGB332))
       cb_backend->flags|=CTX_FLAG_LOWFI;
+#endif
 
   if (cb_backend->flags & CTX_FLAG_SHOW_FPS)
   {
@@ -495,6 +504,7 @@ ctx_cb_end_frame (Ctx *ctx)
 
       int in_low_res = 0;
       int old_flags = cb_backend->flags;
+#if CTX_CB_ENABLE_LOW_FI
       if (cb_backend->flags & CTX_FLAG_LOWFI)
       {
         in_low_res = 1; // default to assume we're in low res
@@ -542,6 +552,7 @@ ctx_cb_end_frame (Ctx *ctx)
             }
         }
       }
+#endif
 
       ctx_pop_backend (ctx); // done with hasher
       if (dirty_tiles)
@@ -598,7 +609,7 @@ ctx_cb_end_frame (Ctx *ctx)
 
            if (width * height * bpp <= cb_backend->memory_budget)
            {
-             // we have enough memory to render all
+             // we have enough memory to render all in one go
              active_mask = 0;
              for (int row = cb_backend->min_row; row <= cb_backend->max_row; row++)
                for (int col = cb_backend->min_col; col <= cb_backend->max_col; col++)
