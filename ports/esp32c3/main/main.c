@@ -75,12 +75,14 @@ typedef enum
 {
   ui_state_default = 0,
   ui_state_hot,
-  ui_state_lost_focus
+  ui_state_lost_focus,
+  ui_state_focused
 } ui_state;
 
 #define MAX_WIDGETS 32
 static Widget widgets[MAX_WIDGETS];
 static int widget_no = 0;
+static int focused_widget = -1;
 
 static void screen_pan (CtxEvent *event, void *data1, void *data2)
 {
@@ -340,36 +342,8 @@ button (Ctx *ctx, float x, float y, float width, float height, const char *label
    return 0;
 }
 
-
-#define SLIDER_FLOAT(label,min,max,ptr) \
-   ctx_save(ctx);ctx_text_align(ctx,CTX_TEXT_ALIGN_START);\
-   ctx_move_to (ctx, width * 0.1, y+font_size);\
-   ctx_text (ctx, label);\
-   ctx_text_align(ctx,CTX_TEXT_ALIGN_END);\
-   {char buf[256];sprintf(buf, "%.1f", *ptr);\
-    ctx_move_to (ctx, width * 0.9, y+font_size);\
-   ctx_text (ctx, buf);}\
-   y += font_size;\
-   slider_float (ctx, width * 0.1, y, width * 0.8, line_height, ptr, min, max);\
-   y += line_height;ctx_restore(ctx);
-
-#define TOGGLE(label, ptr) \
-   ctx_move_to (ctx, width * 0.5, y+font_size);\
-   ctx_text (ctx, label);\
-   y += line_height;\
-   if (button(ctx, width * 0.15, y, 0, 0, "off", *ptr==0, (void*)(__LINE__ * 4)))\
-      {*ptr=0;};\
-   if (button(ctx, width * 0.50, y, 0, 0, "on", *ptr==1, (void*)(__LINE__ * 4 + 1)))\
-      {*ptr=1;};\
-   y += line_height;
-
-#define TEXT(string) \
-   ctx_move_to (ctx, width * 0.5, y+font_size);\
-   ctx_text (ctx, string);\
-   y += line_height;
-
 #define UI_START() \
-   float width = ctx_width (ctx);\
+   float width  = ctx_width (ctx);\
    float height = ctx_height (ctx);\
    draw_bg (ctx);\
    float line_height = font_size * 1.7;\
@@ -383,6 +357,34 @@ button (Ctx *ctx, float x, float y, float width, float height, const char *label
    ctx_begin_path (ctx); \
    ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);\
    float y = (int)(scroll_offset + height * 0.15); \
+
+#define SLIDER_FLOAT(label,min,max,ptr) \
+   do { ctx_save(ctx);ctx_text_align(ctx,CTX_TEXT_ALIGN_START);\
+   ctx_move_to (ctx, width * 0.1, y+font_size);\
+   ctx_text (ctx, label);\
+   ctx_text_align(ctx,CTX_TEXT_ALIGN_END);\
+   {char buf[256];sprintf(buf, "%.1f", *ptr);\
+    ctx_move_to (ctx, width * 0.9, y+font_size);\
+   ctx_text (ctx, buf);}\
+   y += font_size;\
+   slider_float (ctx, width * 0.1, y, width * 0.8, line_height, ptr, min, max);\
+   y += line_height;ctx_restore(ctx);}while(0)
+
+#define TOGGLE(label, ptr) \
+   do { ctx_move_to (ctx, width * 0.5, y+font_size);\
+   ctx_text (ctx, label);\
+   y += line_height;\
+   if (button(ctx, width * 0.15, y, 0, 0, "off", *ptr==0, (void*)(__LINE__ * 4)))\
+      {*ptr=0;};\
+   if (button(ctx, width * 0.50, y, 0, 0, "on", *ptr==1, (void*)(__LINE__ * 4 + 1)))\
+      {*ptr=1;};\
+   y += line_height;}while(0)
+
+#define TEXT(string) do{\
+   ctx_move_to (ctx, width * 0.5, y+font_size);\
+   ctx_text (ctx, string);\
+   y += line_height;}while(0)
+
 
 #define BUTTON(label) \
    y += line_height, button(ctx, width * 0.15, y-line_height, 0, 0, label, 0, (void*)(__LINE__ * 4))
@@ -420,15 +422,21 @@ void screen_menu (Ctx *ctx, uint32_t delta_ms)
 static void screen_todo (Ctx *ctx, uint32_t delta_ms)
 {
    UI_START();
-   TEXT("animated fades");
    TEXT("file system browser");
    TEXT("text editor");
+   TEXT("terminal");
+   TEXT("espnow-chat");
+   TEXT("micropython");
+   TEXT("flow3r port");
+   TEXT("drag down to hide kb");
 }
+
+static float prev_backlight = 100.0f;
 
 void screen_settings (Ctx *ctx, uint32_t delta_ms)
 {
    UI_START();
-   static float backlight  = 30.0;
+   static float backlight  = 50.0;
 
    if (demo_mode && frame_no > 1)
    {
@@ -439,14 +447,13 @@ void screen_settings (Ctx *ctx, uint32_t delta_ms)
          backlight = 90.0;
      }
      else {
-       backlight = 30;
+       backlight = 50;
        scroll_offset -= 0.05 * delta_ms;
      }
    }
 
-   SLIDER_FLOAT("font size", 11.0f, 37.0f, &font_size);
+   SLIDER_FLOAT("font size", 20.0f, 45.0f, &font_size);
 
-   static float prev_backlight = 0.0f;
    if (prev_backlight != backlight)
    {
 #if CTX_ESP
@@ -461,10 +468,9 @@ void screen_settings (Ctx *ctx, uint32_t delta_ms)
 
    ctx_move_to (ctx, width * 0.5f, y+font_size);
    if (gradient_bg)
-   ctx_text (ctx, "bg start gradient RGB");
+     TEXT("bg start gradient RGB");
    else
-   ctx_text (ctx, "Background RGB");
-   y += font_size;
+     TEXT("Background RGB");
    slider_float (ctx, width * 0.1f, y, width * 0.8f, line_height, &color_bg[0], 0,1);
    y += line_height;
    slider_float (ctx, width * 0.1f, y, width * 0.8f, line_height, &color_bg[1], 0,1);
@@ -719,6 +725,7 @@ static void screen_load_no(int no)
   int n_screens = sizeof(screens)/sizeof(screens[0]);
   if (no < 0) no = n_screens - 1;
   else if (no >= n_screens) no = 0;
+  focused_widget = -1;
 
   screen_no = no;
   frame_no = 0;
@@ -758,11 +765,11 @@ go(const char *target)
   {
     ctx_osk_mode = 0;
   }
-  else if (!strcmp (target, "next"))
+  else if (!strcmp (target, "screen-next"))
   {
     screen_next ();
   }
-  else if (!strcmp (target, "prev"))
+  else if (!strcmp (target, "screen-prev"))
   {
     screen_prev ();
   }
@@ -790,6 +797,8 @@ static void go_cb (CtxEvent *event, void *data1, void *data2)
 
 void overlay_button (Ctx *ctx, float x, float y, float w, float h, const char *label, char *action)
 {
+  float m = w;
+  if (m > h) m = h;
       ctx_save(ctx);
        ctx_rectangle (ctx, x,y,w,h);
        ctx_listen (ctx, CTX_PRESS, go_cb, action, NULL);
@@ -801,11 +810,11 @@ void overlay_button (Ctx *ctx, float x, float y, float w, float h, const char *l
       {
         ctx_rgba(ctx,0,0,0,overlay_fade);
         ctx_fill(ctx);
-        if (overlay_fade > 0.5)
+        if (overlay_fade > 0.2)
         {
           ctx_rgba(ctx,1,1,1,overlay_fade);
-          ctx_move_to (ctx, x+0.5 * w, y + 0.98 * h);
-          ctx_font_size (ctx, 0.8 * h);
+          ctx_move_to (ctx, x+0.5 * w, y + 0.8 * h);
+          ctx_font_size (ctx, 0.8 * m);
           ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
           ctx_text (ctx, label);
         }
@@ -859,7 +868,6 @@ void app_main(void)
  
       ctx_restore (ctx);
 
-
       if (screen_no != 2)
       {
         overlay_button (ctx, 0,0,width,height*0.12, "menu", "menu");
@@ -895,11 +903,18 @@ void app_main(void)
       ctx_rgba (ctx, 0,0,0,0.9);
       ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
       ctx_fill (ctx);
+      if (prev_backlight <= 99.0f)
+      {
+      ctx_rectangle (ctx, 0,0,ctx_width(ctx),ctx_height(ctx));
+      float alpha = 1.0f-(prev_backlight/100.0f * 0.8 + 0.2);
+      ctx_rgba (ctx, 0.0f,0.0f,0.0f, alpha);
+      ctx_fill (ctx);
+      }
       ctx_restore (ctx);
 #endif
       ctx_add_key_binding (ctx, "escape", NULL, "foo",    go_cb, "menu");
-      ctx_add_key_binding (ctx, "left", NULL, "foo",      go_cb, "prev");
-      ctx_add_key_binding (ctx, "right", NULL, "foo",     go_cb, "next");
+      //ctx_add_key_binding (ctx, "left", NULL, "foo",      go_cb, "prev");
+      //ctx_add_key_binding (ctx, "right", NULL, "foo",     go_cb, "next");
       ctx_add_key_binding (ctx, "control-q", NULL, "foo", go_cb, "quit");
  
       ctx_end_frame (ctx);
@@ -1096,8 +1111,12 @@ KeyBoard kb_round = {
    //  {"→","→","End","End",1.0f,"right","right","end","end",0,},
        //{"⏎","⏎",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
        //{"⌫","⌫",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0},
-       {"bs","bs",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0,},
        {"ret","ret",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
+       {NULL}},
+#endif
+
+     { 
+       {" "," ",NULL,NULL,0.0f,"","",NULL,NULL,0,},
        {"1","!","F1","F1",1.0f,"1","!","F1","F1",0},
        {"2","@","F2","F2",1.0f,"2","@","F2","F2",0},
        {"3","#","F3","F3",1.0f,"3","#","F3","F3",0},
@@ -1108,10 +1127,10 @@ KeyBoard kb_round = {
        {"8","*","F8","F8",1.0f,"8","*","F8","F8",0},
        {"9","(","F9","F9",1.0f,"9","(","F9","F9",0},
        {"0",")","F10","F10",1.0f,"0",")","F10","F10",0},
-       {"-","_","F11","F11",1.0f,"-","_","F11","F11",0},
-       {"=","+","F12","F12",1.0f,"=","+","F12","F12",0},
+       {"bs","bs",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0,},
+       //{"-","_","F11","F11",1.0f,"-","_","F11","F11",0},
+       //{"=","+","F12","F12",1.0f,"=","+","F12","F12",0},
        {NULL}},
-#endif
      //⌨
      {
        {" "," ",NULL,NULL,0.8f,"","",NULL,NULL,0,},
@@ -1200,9 +1219,9 @@ void ctx_osk_draw (Ctx *ctx)
   {
     case 2:
 
-  fade = 0.6;
+  fade = 0.9;
   if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
-     fade = 0.8;
+     fade = 0.9;
 
   int rows = 0;
   for (int row = 0; kb->keys[row][0].label; row++)

@@ -5,9 +5,6 @@
 #ifndef _GC9A01_H
 #define _GC9A01_H
 
-#define GC9A01_Width	CONFIG_GC9A01_Width
-#define GC9A01_Height 	CONFIG_GC9A01_Height
-
 uint16_t GC9A01_GetWidth();
 uint16_t GC9A01_GetHeight();
 

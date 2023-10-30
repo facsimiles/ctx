@@ -45,31 +45,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "driver/spi_master.h"
 #include "driver/ledc.h"
 
+#include "port_config.h"
 #include "gc9a01.h"
 
-// instead of using sdkconfig we hard-code the relevant parts
-#define CONFIG_GC9A01_CONTROL_BACK_LIGHT_USED 1
-#define CONFIG_GC9A01_CONTROL_BACK_LIGHT_MODE 1
-#define CONFIG_GC9A01_CONTROL_RESET_USED      0
-#define CONFIG_GC9A01_PIN_NUM_BCKL            3
-#define CONFIG_GC9A01_PIN_NUM_DC              2
-#define CONFIG_GC9A01_PIN_NUM_CS              10
-#define CONFIG_GC9A01_PIN_NUM_MOSI            7 
-#define CONFIG_GC9A01_PIN_NUM_SCK             6
-#define CONFIG_GC9A01_Height                  240
-#define CONFIG_GC9A01_Width                   240
-#define CONFIG_GC9A01_SPI_HOST                1
-#define CONFIG_GC9A01_SPI_SCK_FREQ_M          80
-
-
-#if (CONFIG_GC9A01_RESET_USED)
-#define RESET_HIGH()           gpio_set_level(CONFIG_GC9A01_PIN_NUM_RST,1)
-#define RESET_LOW()            gpio_set_level(CONFIG_GC9A01_PIN_NUM_RST,0)
+#if (RESET_USED)
+#define RESET_HIGH()           gpio_set_level(PIN_NUM_RST,1)
+#define RESET_LOW()            gpio_set_level(PIN_NUM_RST,0)
 #endif
 
-#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_USED)
-#define BLK_HIGH()             gpio_set_level(CONFIG_GC9A01_PIN_NUM_BCKL,1)
-#define BLK_LOW()              gpio_set_level(CONFIG_GC9A01_PIN_NUM_BCKL,0)
+#if(CONTROL_BACK_LIGHT_USED)
+#define BLK_HIGH()             gpio_set_level(PIN_NUM_BCKL,1)
+#define BLK_LOW()              gpio_set_level(PIN_NUM_BCKL,0)
 #endif
 
 #define Cmd_SLPIN       0x10
@@ -116,17 +102,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 uint8_t GC9A01_X_Start = 0, GC9A01_Y_Start = 0;
 
-#if (CONFIG_GC9A01_BUFFER_MODE)
-DMA_ATTR uint16_t ScreenBuff[GC9A01_Height * GC9A01_Width];
+#if (BUFFER_MODE)
+DMA_ATTR uint16_t ScreenBuff[DISPLAY_HEIGHT * DISPLAY_WIDTH];
 #endif
 
 //SPI Config
 spi_device_handle_t spi;
-spi_host_device_t LCD_HOST=CONFIG_GC9A01_SPI_HOST;
+spi_host_device_t LCD_HOST=SPI_HOST;
 
 //LEDC Config
-#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_USED)
-#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_MODE)
+#if(CONTROL_BACK_LIGHT_USED)
+#if(CONTROL_BACK_LIGHT_MODE)
 ledc_channel_config_t  ledc_cConfig;
 ledc_timer_config_t    ledc_tConfig;
 void LEDC_PWM_Duty_Set(uint8_t DutyP);
@@ -198,7 +184,7 @@ static const lcd_init_cmd_t lcd_init_cmds[]={
 static IRAM_ATTR void lcd_spi_pre_transfer_callback(spi_transaction_t *t)
 {
     int dc=(int)t->user;
-    gpio_set_level(CONFIG_GC9A01_PIN_NUM_DC, dc);
+    gpio_set_level(PIN_NUM_DC, dc);
 }
 
 /* Send a command to the LCD. Uses spi_device_polling_transmit, which waits
@@ -282,15 +268,15 @@ void delay_ms (uint32_t Delay_ms)
 }
 
 uint16_t GC9A01_GetWidth() {
-	return GC9A01_Width;
+	return DISPLAY_WIDTH;
 }
 
 uint16_t GC9A01_GetHeight() {
-	return GC9A01_Height;
+	return DISPLAY_HEIGHT;
 }
 
 void GC9A01_HardReset(void) {
-	#if (CONFIG_GC9A01_RESET_USED)
+	#if (RESET_USED)
 	RESET_LOW();
 	delay_ms(10);
 	RESET_HIGH();
@@ -324,7 +310,7 @@ void GC9A01_DisplayPower(uint8_t On) {
 static void ColumnSet(uint16_t ColumnStart, uint16_t ColumnEnd) {
 	if (ColumnStart > ColumnEnd)
 		return;
-	if (ColumnEnd > GC9A01_Width)
+	if (ColumnEnd > DISPLAY_WIDTH)
 		return;
 
 	ColumnStart += GC9A01_X_Start;
@@ -340,7 +326,7 @@ static void ColumnSet(uint16_t ColumnStart, uint16_t ColumnEnd) {
 static void RowSet(uint16_t RowStart, uint16_t RowEnd) {
 	if (RowStart > RowEnd)
 		return;
-	if (RowEnd > GC9A01_Height)
+	if (RowEnd > DISPLAY_HEIGHT)
 		return;
 
 	RowStart += GC9A01_Y_Start;
@@ -413,8 +399,8 @@ static void MemAccessModeSet(uint8_t Rotation, uint8_t VertMirror,
 void GC9A01_SetBL(uint8_t Value)
 {
 	if (Value > 100) Value = 100;
-	#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_USED)
-		#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_MODE)
+	#if(CONTROL_BACK_LIGHT_USED)
+		#if(CONTROL_BACK_LIGHT_MODE)
 		LEDC_PWM_Duty_Set(Value);
 		#else
 		if (Value) BLK_HIGH();
@@ -424,7 +410,7 @@ void GC9A01_SetBL(uint8_t Value)
 }
 
 //Direct Mode
-#if (!CONFIG_GC9A01_BUFFER_MODE)
+#if (!BUFFER_MODE)
 
 	void GC9A01_RamWrite(uint16_t *pBuff, uint16_t Len)
 	{
@@ -437,7 +423,7 @@ void GC9A01_SetBL(uint8_t Value)
 
 	void GC9A01_DrawPixel(int16_t x, int16_t y, uint16_t color)
 	{
-	if ((x < 0) ||(x >= GC9A01_Width) || (y < 0) || (y >= GC9A01_Height))
+	if ((x < 0) ||(x >= DISPLAY_WIDTH) || (y < 0) || (y >= DISPLAY_HEIGHT))
 		return;
 
 	GC9A01_SetWindow(x, y, x, y);
@@ -446,14 +432,14 @@ void GC9A01_SetBL(uint8_t Value)
 
 	void GC9A01_FillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
 	{
-	if ((x >= GC9A01_Width) || (y >= GC9A01_Height))
+	if ((x >= DISPLAY_WIDTH) || (y >= DISPLAY_HEIGHT))
 		return;
 
-	if ((x + w) > GC9A01_Width)
-		w = GC9A01_Width - x;
+	if ((x + w) > DISPLAY_WIDTH)
+		w = DISPLAY_WIDTH - x;
 
-	if ((y + h) > GC9A01_Height)
-		h = GC9A01_Height - y;
+	if ((y + h) > DISPLAY_HEIGHT)
+		h = DISPLAY_HEIGHT - y;
 
 	GC9A01_SetWindow(x, y, x + w - 1, y + h - 1);
 
@@ -470,26 +456,26 @@ void GC9A01_SetBL(uint8_t Value)
 	}
 
 	void GC9A01_DrawPixel(int16_t x, int16_t y, uint16_t color) {
-		if ((x < 0) || (x >= GC9A01_Width) || (y < 0) || (y >= GC9A01_Height))
+		if ((x < 0) || (x >= DISPLAY_WIDTH) || (y < 0) || (y >= DISPLAY_HEIGHT))
 			return;
 
 		SwapBytes(&color);
 
-		ScreenBuff[y * GC9A01_Width + x] = color;
+		ScreenBuff[y * DISPLAY_WIDTH + x] = color;
 	}
 
 	uint16_t GC9A01_GetPixel(int16_t x, int16_t y) {
-		if ((x < 0) || (x >= GC9A01_Width) || (y < 0) || (y >= GC9A01_Height))
+		if ((x < 0) || (x >= DISPLAY_WIDTH) || (y < 0) || (y >= DISPLAY_HEIGHT))
 			return 0;
 
-		uint16_t color = ScreenBuff[y * GC9A01_Width + x];
+		uint16_t color = ScreenBuff[y * DISPLAY_WIDTH + x];
 		SwapBytes(&color);
 		return color;
 	}
 
 	void GC9A01_FillRect(int16_t x, int16_t y, int16_t w, int16_t h,
 			uint16_t color) {
-		if ((w <= 0) || (h <= 0) || (x >= GC9A01_Width) || (y >= GC9A01_Height))
+		if ((w <= 0) || (h <= 0) || (x >= DISPLAY_WIDTH) || (y >= DISPLAY_HEIGHT))
 			return;
 
 		if (x < 0) {
@@ -504,30 +490,30 @@ void GC9A01_SetBL(uint8_t Value)
 		if ((w <= 0) || (h <= 0))
 			return;
 
-		if ((x + w) > GC9A01_Width)
-			w = GC9A01_Width - x;
-		if ((y + h) > GC9A01_Height)
-			h = GC9A01_Height - y;
+		if ((x + w) > DISPLAY_WIDTH)
+			w = DISPLAY_WIDTH - x;
+		if ((y + h) > DISPLAY_HEIGHT)
+			h = DISPLAY_HEIGHT - y;
 
 		SwapBytes(&color);
 
 		for (uint16_t row = 0; row < h; row++) {
 			for (uint16_t col = 0; col < w; col++)
 				//GC9A01_DrawPixel(col, row, color);
-				ScreenBuff[(y + row) * GC9A01_Width + x + col] = color;
+				ScreenBuff[(y + row) * DISPLAY_WIDTH + x + col] = color;
 		}
 	}
 
 	void GC9A01_Update()
 	{
-		int len = GC9A01_Width * GC9A01_Height;
-		GC9A01_SetWindow(0, 0, GC9A01_Width - 1, GC9A01_Height - 1);
+		int len = DISPLAY_WIDTH * DISPLAY_HEIGHT;
+		GC9A01_SetWindow(0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
 		lcd_data((uint8_t*) &ScreenBuff[0], len*2);
 	}
 
 	void GC9A01_Clear(void)
 	{
-		GC9A01_FillRect(0, 0, GC9A01_Width, GC9A01_Height, 0x0000);
+		GC9A01_FillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0x0000);
 	}
 
 #endif
@@ -535,7 +521,7 @@ void GC9A01_SetBL(uint8_t Value)
 static void gc9a01_GPIO_init(void)
 {
 	gpio_config_t gpiocfg={
-		.pin_bit_mask= ((uint64_t)1UL<<CONFIG_GC9A01_PIN_NUM_DC),
+		.pin_bit_mask= ((uint64_t)1UL<<PIN_NUM_DC),
 		.mode=GPIO_MODE_OUTPUT,
 		.pull_up_en=GPIO_PULLUP_DISABLE,
 		.pull_down_en=GPIO_PULLDOWN_DISABLE,
@@ -543,19 +529,19 @@ static void gc9a01_GPIO_init(void)
 	};
 
 	gpio_config(&gpiocfg);
-	gpio_set_level(CONFIG_GC9A01_PIN_NUM_DC,0);
+	gpio_set_level(PIN_NUM_DC,0);
 
-	#if(CONFIG_GC9A01_RESET_USED)
-	gpiocfg.pin_bit_mask|=((uint64_t)1UL<<CONFIG_GC9A01_PIN_NUM_RST);
+	#if(RESET_USED)
+	gpiocfg.pin_bit_mask|=((uint64_t)1UL<<PIN_NUM_RST);
 	gpio_config(&gpiocfg);
-	gpio_set_level(CONFIG_GC9A01_PIN_NUM_RST,1);
+	gpio_set_level(PIN_NUM_RST,1);
 	#endif
 
-	#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_USED)
-	#if(!CONFIG_GC9A01_CONTROL_BACK_LIGHT_MODE)
-	gpiocfg.pin_bit_mask|=((uint64_t)1UL<<CONFIG_GC9A01_PIN_NUM_BCKL);
+	#if(CONTROL_BACK_LIGHT_USED)
+	#if(!CONTROL_BACK_LIGHT_MODE)
+	gpiocfg.pin_bit_mask|=((uint64_t)1UL<<PIN_NUM_BCKL);
 	gpio_config(&gpiocfg);
-	gpio_set_level(CONFIG_GC9A01_PIN_NUM_BCKL,0);
+	gpio_set_level(PIN_NUM_BCKL,0);
 	#endif
 	#endif
 
@@ -565,17 +551,17 @@ void gc9a01_SPI_init(void)
 {
 	esp_err_t ret;
     spi_bus_config_t buscfg={
-        .mosi_io_num=CONFIG_GC9A01_PIN_NUM_MOSI,
+        .mosi_io_num=PIN_NUM_MOSI,
         .miso_io_num=GPIO_NUM_NC,
-        .sclk_io_num=CONFIG_GC9A01_PIN_NUM_SCK,
+        .sclk_io_num=PIN_NUM_SCK,
         .quadwp_io_num=-1,
         .quadhd_io_num=-1,
         .max_transfer_sz=250*250*2,
     };
     spi_device_interface_config_t devcfg={
-        .clock_speed_hz=CONFIG_GC9A01_SPI_SCK_FREQ_M*1000*1000,
+        .clock_speed_hz=SPI_SCK_FREQ_M*1000*1000,
         .mode=0,
-        .spics_io_num=CONFIG_GC9A01_PIN_NUM_CS,
+        .spics_io_num=PIN_NUM_CS,
         .queue_size=10,
         .pre_cb=lcd_spi_pre_transfer_callback,
     };
@@ -587,8 +573,8 @@ void gc9a01_SPI_init(void)
     ESP_ERROR_CHECK(ret);
 }
 
-#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_USED)
-#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_MODE)
+#if(CONTROL_BACK_LIGHT_USED)
+#if(CONTROL_BACK_LIGHT_MODE)
 void LEDC_PWM_Duty_Set(uint8_t DutyP)
 {
 	uint16_t Duty,MaxD;
@@ -607,7 +593,7 @@ void LEDC_PWM_Duty_Set(uint8_t DutyP)
 
 void LEDC_Channel_Config(void)
 {
-	ledc_cConfig.gpio_num=CONFIG_GC9A01_PIN_NUM_BCKL;
+	ledc_cConfig.gpio_num=PIN_NUM_BCKL;
 	ledc_cConfig.speed_mode=LEDC_LOW_SPEED_MODE;
 	ledc_cConfig.channel=LEDC_CHANNEL_0;
 	ledc_cConfig.intr_type=LEDC_INTR_DISABLE;
@@ -640,14 +626,14 @@ void GC9A01_Init()
 	gc9a01_GPIO_init();
 	gc9a01_SPI_init();
 
-	#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_USED)
-	#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_MODE)
+	#if(CONTROL_BACK_LIGHT_USED)
+	#if(CONTROL_BACK_LIGHT_MODE)
 	LEDC_Timer_Config();
 	LEDC_Channel_Config();
 	#endif
 	#endif
 
-	#if(CONFIG_GC9A01_RESET_USED)
+	#if(RESET_USED)
 	GC9A01_HardReset();
 	#endif
 
@@ -673,18 +659,18 @@ void GC9A01_Init()
 	GC9A01_DisplayPower(1);
 	delay_ms(20);
 
-	#if(CONFIG_GC9A01_BUFFER_MODE)
+	#if(BUFFER_MODE)
 	GC9A01_Clear();
 	GC9A01_Update();
 	delay_ms(30);
 	#endif
 
-	#if(CONFIG_GC9A01_CONTROL_BACK_LIGHT_USED)
+	#if(CONTROL_BACK_LIGHT_USED)
 	GC9A01_SetBL(100);
 	#endif
 }
 
-#if(CONFIG_GC9A01_BUFFER_MODE)
+#if(BUFFER_MODE)
 void GC9A01_Screen_Shot(uint16_t x,uint16_t y,uint16_t width ,uint16_t height,uint16_t * Buffer)
 {
 	uint16_t i,j;
@@ -692,10 +678,10 @@ void GC9A01_Screen_Shot(uint16_t x,uint16_t y,uint16_t width ,uint16_t height,ui
 	{
 		for(j=0;j<width;j++)
 		{
-			#if(!CONFIG_GC9A01_BUFFER_SCREEN_FAST_MODE)
+			#if(!BUFFER_SCREEN_FAST_MODE)
 			Buffer[i*width+j]=GC9A01_GetPixel(x+j,y+i);
 			#else
-			Buffer[i*width+j]=ScreenBuff[((y+i) * GC9A01_Width )+ (x+j)];
+			Buffer[i*width+j]=ScreenBuff[((y+i) * DISPLAY_WIDTH )+ (x+j)];
 			#endif
 		}
 	}
@@ -707,10 +693,10 @@ void GC9A01_Screen_Load(uint16_t x,uint16_t y,uint16_t width ,uint16_t height,ui
 	{
 		for(j=0;j<width;j++)
 		{
-			#if(!CONFIG_GC9A01_BUFFER_SCREEN_FAST_MODE)
+			#if(!BUFFER_SCREEN_FAST_MODE)
 			GC9A01_DrawPixel(x+j,y+i,Buffer[i*width+j]);
 			#else
-			ScreenBuff[((y+i) * GC9A01_Width )+ (x+j)] = Buffer[i*width+j];
+			ScreenBuff[((y+i) * DISPLAY_WIDTH )+ (x+j)] = Buffer[i*width+j];
 			#endif
 		}
 	}
