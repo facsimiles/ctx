@@ -32,7 +32,7 @@
  */
 
 int ctx_dummy_in_len = 0;
-#if CTX_TERMINAL_EVENTS
+//#if CTX_TERMINAL_EVENTS
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -66,7 +66,6 @@ int ctx_dummy_in_len = 0;
 //#include "vt-line.h"
 //#include "vt.h"
 //#include "ctx-clients.h"
-
 
 
 #define VT_LOG_INFO     (1<<0)
@@ -3885,6 +3884,7 @@ void vt_gfx (VT *vt, const char *command)
           vt->gfx.buf_size = vt->gfx.buf_width * vt->gfx.buf_height *
                              (vt->gfx.format == 24 ? 3 : 4);
         }
+#if 0
       if (vt->gfx.compression == 'z')
         {
           //vt->gfx.buf_size)
@@ -3907,6 +3907,7 @@ void vt_gfx (VT *vt, const char *command)
           vt->gfx.data_size = actual_uncompressed_size;
           vt->gfx.compression = 0;
         }
+#endif
 #if CTX_STB_IMAGE
       if (vt->gfx.format == 100)
         {
@@ -8392,13 +8393,14 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
         {
-          itk_style_color (ctx, "terminal-bg-reverse");
+          //itk_style_color (ctx, "terminal-bg-reverse");
+          ctx_rgba (ctx, 1.0,1.0,1.0,1.0f);
           ctx_fill  (ctx);
         }
       else
         {
-          itk_style_color (ctx, "terminal-bg");
-          //ctx_rgba (ctx,0,0,0,1.0f);
+          //itk_style_color (ctx, "terminal-bg");
+          ctx_rgba (ctx,0,0,0,1.0f);
           ctx_fill  (ctx);
         }
 #else
@@ -9030,5 +9032,5 @@ void vt_set_ctx (VT *vt, Ctx *ctx)
   vt->root_ctx = ctx;
 }
 
-#endif
+//#endif
 #endif

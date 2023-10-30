@@ -54,5 +54,7 @@ struct _CtxClient {
 };
 
 
+void ctx_client_lock (CtxClient *client);
+void ctx_client_unlock (CtxClient *client);
 
 #endif
