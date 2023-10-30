@@ -633,7 +633,9 @@ static void vt_init (VT *vt, int width, int height, float font_size, float line_
   static int signal_installed = 0;
   if (!signal_installed)
   {
+#if CTX_PTY
     signal (SIGCHLD,ctx_clients_signal_child);
+#endif
     signal_installed = 1;
   }
   vt->id                 = id;
@@ -3347,15 +3349,15 @@ ESC [ 2 0 0 ~,
 #define VT2020  (XTERM|COMPAT_FLAG_GRAPHICS|COMPAT_FLAG_AUDIO)
 
 
-            static Sequence sequences[]=
+static const Sequence sequences[]=
   {
     /*
       prefix suffix  command */
     //{"B",  0,  vtcmd_break_permitted},
     //{"C",  0,  vtcmd_nobreak_here},
     {"D", 0,    vtcmd_index, VT100}, /* args: id:IND Index  */
-    {"E",  0,   vtcmd_next_line}, /* ref:none id:  Next line */
-    {"_", 'G',  vtcmd_graphics},
+    {"E",  0,   vtcmd_next_line, 0}, /* ref:none id:  Next line */
+    {"_", 'G',  vtcmd_graphics, 0},
     {"H",   0,  vtcmd_horizontal_tab_set, VT100}, /* id:HTS Horizontal Tab Set */
 
     //{"I",  0,  vtcmd_char_tabulation_with_justification},
@@ -3373,13 +3375,13 @@ ESC [ 2 0 0 ~,
     /* these need to occur before vtcmd_preceding_line to have precedence */
     {"[0 F", 0, vtcmd_justify, ANSI},
     {"[1 F", 0, vtcmd_justify, ANSI},
-    {"[2 F", 0, vtcmd_justify},
-    {"[3 F", 0, vtcmd_justify},
-    {"[4 F", 0, vtcmd_justify},
-    {"[5 F", 0, vtcmd_justify},
-    {"[6 F", 0, vtcmd_justify},
-    {"[7 F", 0, vtcmd_justify},
-    {"[8 F", 0, vtcmd_justify},
+    {"[2 F", 0, vtcmd_justify, 0},
+    {"[3 F", 0, vtcmd_justify, 0},
+    {"[4 F", 0, vtcmd_justify, 0},
+    {"[5 F", 0, vtcmd_justify, 0},
+    {"[6 F", 0, vtcmd_justify, 0},
+    {"[7 F", 0, vtcmd_justify, 0},
+    {"[8 F", 0, vtcmd_justify, 0},
 // XXX missing DECIC DECDC  insert and delete column
     {"[", 'A', vtcmd_cursor_up, VT100},   /* args:Pn    id:CUU Cursor Up */
     {"[",  'B', vtcmd_cursor_down, VT100}, /* args:Pn    id:CUD Cursor Down */
@@ -3391,7 +3393,7 @@ ESC [ 2 0 0 ~,
     {"[",  'F', vtcmd_cursor_preceding_line, VT100}, /* args:Pn id:CPL Cursor Preceding Line */
     {"[",  'G', vtcmd_horizontal_position_absolute}, /* args:Pn id:CHA Cursor Horizontal Absolute */
     {"[",  'H', vtcmd_cursor_position, VT100}, /* args:Pl;Pc id:CUP Cursor Position */
-    {"[",  'I', vtcmd_insert_n_tabs}, /* args:Pn id:CHT Cursor Horizontal Forward Tabulation */
+    {"[",  'I', vtcmd_insert_n_tabs, 0}, /* args:Pn id:CHT Cursor Horizontal Forward Tabulation */
     {"[",  'J', vtcmd_erase_in_display, VT100}, /* args:Ps id:ED Erase in Display */
     {"[",  'K', vtcmd_erase_in_line, VT100}, /* args:Ps id:EL Erase in Line */
     {"[",  'L', vtcmd_insert_blank_lines, VT102}, /* args:Pn id:IL Insert Line */
@@ -3401,7 +3403,7 @@ ESC [ 2 0 0 ~,
     {"[",  'P', vtcmd_delete_n_chars, VT102}, /* args:Pn id:DCH Delete Character */
     // [ Q is SEE - Set editing extent
     // [ R is CPR - active cursor position report
-    {"[?", 'S', vtcmd_sixel_related_req},
+    {"[?", 'S', vtcmd_sixel_related_req, 0},
     {"[",  'S', vtcmd_scroll_up, VT100},   /* args:Pn id:SU Scroll Up */
     {"[",  'T', vtcmd_scroll_down, VT100}, /* args:Pn id:SD Scroll Down */
     {"[",/*SP*/'U', vtcmd_set_line_home, ANSI}, /* args:PnSP id=SLH Set Line Home */
@@ -3409,16 +3411,16 @@ ESC [ 2 0 0 ~,
     // [ W is cursor tabulation control
     // [ Pn Y  - cursor line tabulation
     //
-    {"[",  'X', vtcmd_erase_n_chars}, /* args:Pn id:ECH Erase Character */
-    {"[",  'Z', vtcmd_rev_n_tabs},    /* args:Pn id:CBT Cursor Backward Tabulation */
-    {"[",  '^', vtcmd_scroll_down}  , /* muphry alternate from ECMA */
+    {"[",  'X', vtcmd_erase_n_chars, 0}, /* args:Pn id:ECH Erase Character */
+    {"[",  'Z', vtcmd_rev_n_tabs, 0},    /* args:Pn id:CBT Cursor Backward Tabulation */
+    {"[",  '^', vtcmd_scroll_down, 0}  , /* muphry alternate from ECMA */
     {"[",  '@', vtcmd_insert_character, VT102}, /* args:Pn id:ICH Insert Character */
 
     {"[",  'a', vtcmd_cursor_forward, ANSI}, /* args:Pn id:HPR Horizontal Position Relative */
     {"[",  'b', vtcmd_cursor_forward, ANSI}, /* REP previous char XXX incomplete */
-    {"[",  'c', vtcmd_report}, /* ref:none id:DA args:... Device Attributes */
-    {"[",  'd', vtcmd_goto_row},       /* args:Pn id:VPA Vertical Position Absolute  */
-    {"[",  'e', vtcmd_cursor_down},    /* args:Pn id:VPR Vertical Position Relative */
+    {"[",  'c', vtcmd_report, 0}, /* ref:none id:DA args:... Device Attributes */
+    {"[",  'd', vtcmd_goto_row, 0},       /* args:Pn id:VPA Vertical Position Absolute  */
+    {"[",  'e', vtcmd_cursor_down, 0},    /* args:Pn id:VPR Vertical Position Relative */
     {"[",  'f', vtcmd_cursor_position, VT100}, /* args:Pl;Pc id:HVP Cursor Position */
     {"[g", 0,   vtcmd_clear_current_tab, VT100}, /* id:TBC clear current tab */
     {"[0g", 0,  vtcmd_clear_current_tab, VT100}, /* id:TBC clear current tab */
@@ -3436,10 +3438,10 @@ ESC [ 2 0 0 ~,
 
     {"[",  'h', vtcmd_set_mode, VT100},   /* args:Pn[;...] id:SM Set Mode */
     {"[",  'l', vtcmd_set_mode, VT100}, /* args:Pn[;...]  id:RM Reset Mode */
-    {"[",  't', vtcmd_set_t},
+    {"[",  't', vtcmd_set_t, 0},
     {"[",  'q', vtcmd_set_led, VT100}, /* args:Ps id:DECLL Load LEDs */
-    {"[",  'x', vtcmd_report}, /* ref:none id:DECREQTPARM */
-    {"[",  'z', vtcmd_DECELR}, /* ref:none id:DECELR set locator res  */
+    {"[",  'x', vtcmd_report, 0}, /* ref:none id:DECREQTPARM */
+    {"[",  'z', vtcmd_DECELR, 0}, /* ref:none id:DECELR set locator res  */
 
     {"5",   0,  vtcmd_char_at_cursor, VT300}, /* ref:none id:DECXMIT */
     {"6",   0,  vtcmd_back_index, VT400}, /* id:DECBI Back index (hor. scroll) */
@@ -3451,17 +3453,17 @@ ESC [ 2 0 0 ~,
     //{"%G",0,  vtcmd_set_default_font}, // set_alternate_font
 
 
-    {"(0",  0,   vtcmd_set_charmap},
-    {"(1",  0,   vtcmd_set_charmap},
-    {"(2",  0,   vtcmd_set_charmap},
-    {"(A",  0,   vtcmd_set_charmap},
-    {"(B",  0,   vtcmd_set_charmap},
-    {")0",  0,   vtcmd_set_charmap},
-    {")1",  0,   vtcmd_set_charmap},
-    {")2",  0,   vtcmd_set_charmap},
-    {")A",  0,   vtcmd_set_charmap},
-    {")B",  0,   vtcmd_set_charmap},
-    {"%G",  0,   vtcmd_set_charmap},
+    {"(0",  0,   vtcmd_set_charmap, 0},
+    {"(1",  0,   vtcmd_set_charmap, 0},
+    {"(2",  0,   vtcmd_set_charmap,0},
+    {"(A",  0,   vtcmd_set_charmap,0},
+    {"(B",  0,   vtcmd_set_charmap,0},
+    {")0",  0,   vtcmd_set_charmap,0},
+    {")1",  0,   vtcmd_set_charmap,0},
+    {")2",  0,   vtcmd_set_charmap,0},
+    {")A",  0,   vtcmd_set_charmap,0},
+    {")B",  0,   vtcmd_set_charmap,0},
+    {"%G",  0,   vtcmd_set_charmap,0},
 
     {"#3",  0,   vtcmd_set_double_width_double_height_top_line, VT100}, /*id:DECDHL Top half of double-width, double-height line */
     {"#4",  0,   vtcmd_set_double_width_double_height_bottom_line, VT100}, /*id:DECDHL Bottom half of double-width, double-height line */
@@ -3469,13 +3471,13 @@ ESC [ 2 0 0 ~,
     {"#6",  0,   vtcmd_set_double_width_single_height_line, VT100}, /* id:DECDWL Double-width line */
 
     {"#8",  0,   vtcmd_screen_alignment_display, VT100}, /* id:DECALN Screen Alignment Pattern */
-    {"=",   0,   vtcmd_ignore},  // keypad mode change
-    {">",   0,   vtcmd_ignore},  // keypad mode change
+    {"=",   0,   vtcmd_ignore,0},  // keypad mode change
+    {">",   0,   vtcmd_ignore,0},  // keypad mode change
     {"c",   0,   vtcmd_reset_to_initial_state, VT100}, /* id:RIS Reset to Initial State */
-    {"[!", 'p',  vtcmd_ignore},       // soft reset?
-    {"[",  'p',  vtcmd_request_mode}, /* args:Pa$ id:DECRQM Request ANSI Mode */
+    {"[!", 'p',  vtcmd_ignore,0},       // soft reset?
+    {"[",  'p',  vtcmd_request_mode,0}, /* args:Pa$ id:DECRQM Request ANSI Mode */
 #if 0
-    {"[?",  'p',  vtcmd_request_mode}, /* args:Pd$ id:DECRQM Request DEC Mode */
+    {"[?",  'p',  vtcmd_request_mode,0}, /* args:Pd$ id:DECRQM Request DEC Mode */
 #endif
 
     {NULL, 0, NULL}
