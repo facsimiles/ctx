@@ -1,0 +1,56 @@
+<html>
+        <head>
+         <title>file</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <script src="./file.js"></script>
+        <script>
+                function windowToCanvas(canvas, x, y) {
+   var bbox = canvas.getBoundingClientRect();
+
+   return { x: (x - bbox.left) * (canvas.width  / bbox.width),
+            y: (y - bbox.top)  * (canvas.height / bbox.height)
+          };
+}
+         function setDim(dim)
+         {
+            var canvas = document.getElementById('c');
+            var w = parseInt(dim.split('x')[0]);
+            var h = parseInt(dim.split('x')[1]);
+            _ctx_pause=1;
+            setTimeout(function(){
+            c.width=w;
+            c.height=h;
+            if (dim.split(':')[1] == 'sharp')
+              c.style='image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges; width: 50%;'
+            else
+              c.style='width:50%;';
+            _ctx_pause=0;
+                            }, 100);
+         }
+        </script>
+        </head>
+        <body>
+                <div>
+                <!--
+                <select id='dim' onchange='setDim(this.value);'>
+                    <option value='160x80:sharp'>160x80</a>
+                    <option value='128x128:sharp'>128x128</a>
+                    <option value='160x120:sharp'>160x120</a>
+                    <option value='320x240:sharp'>320x240</a>
+                    <option value='640x480:sharp' selected>640x480</a>
+                    <option value='640x480'>640x480 smoothed</a>
+                    <option value='800x600:sharp'>800x600</a>
+                    <option value='800x600'>800x600 smoothed</a>
+                    <option value='1920x1080:sharp'>1920x1080</a>
+                    <option value='1920x1080'>1920x1080 smoothed</a>
+                </select>
+                -->
+                <br/>
+           </div>
+          <canvas 
+              style="image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges; height: 100%;"
+                  id='c' width='240' height='240' tabindex='0'></canvas>
+          </p>
+        </body>
+
+</html>

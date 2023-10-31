@@ -204,7 +204,7 @@ ctx_wasm_get_context (int flags);
 
 static Ctx *ctx_new_ui (int width, int height, const char *backend)
 {
-   return ctx_wasm_get_context (CTX_FLAG_HASH_CACHE);
+   return ctx_wasm_get_context (64*1024);//CTX_FLAG_HASH_CACHE);
 }
 #else
 

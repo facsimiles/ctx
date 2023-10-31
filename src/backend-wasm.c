@@ -109,9 +109,9 @@ int update_fb (Ctx *ctx, void *user_data)
   );
 
 #ifdef EMSCRIPTEN
-#ifdef ASYNCIFY
+//#ifdef ASYNCIFY
    emscripten_sleep(0);
-#endif
+//#endif
 #endif
 
    int ret = 0;
@@ -179,6 +179,8 @@ static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
     ctx_RGB565_BS_to_RGBA8 (NULL, x0, src + i * in_w * 2,
                     wasm_scratch + i * w * 4, w);
   }
+  if (w <= 0 || h <= 0)
+    return;
 
   EM_ASM(
     var x0 = $0;
