@@ -3391,7 +3391,7 @@ static const Sequence sequences[]=
     {"[",  'k', vtcmd_cursor_up, ANSI}, /* args:Pn ref:none id:VPB Vertical Position Backward */
     {"[",  'E', vtcmd_next_line, VT100}, /* args:Pn id:CNL Cursor Next Line */
     {"[",  'F', vtcmd_cursor_preceding_line, VT100}, /* args:Pn id:CPL Cursor Preceding Line */
-    {"[",  'G', vtcmd_horizontal_position_absolute}, /* args:Pn id:CHA Cursor Horizontal Absolute */
+    {"[",  'G', vtcmd_horizontal_position_absolute, 0}, /* args:Pn id:CHA Cursor Horizontal Absolute */
     {"[",  'H', vtcmd_cursor_position, VT100}, /* args:Pl;Pc id:CUP Cursor Position */
     {"[",  'I', vtcmd_insert_n_tabs, 0}, /* args:Pn id:CHT Cursor Horizontal Forward Tabulation */
     {"[",  'J', vtcmd_erase_in_display, VT100}, /* args:Ps id:ED Erase in Display */
@@ -3480,7 +3480,7 @@ static const Sequence sequences[]=
     {"[?",  'p',  vtcmd_request_mode,0}, /* args:Pd$ id:DECRQM Request DEC Mode */
 #endif
 
-    {NULL, 0, NULL}
+    {NULL, 0, NULL, 0}
   };
 
   static void handle_sequence (VT *vt, const char *sequence)
@@ -8390,7 +8390,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   //if (vt->scroll || full)
     {
       ctx_begin_path (ctx);
-#if CTX_PTY
+//#if CTX_PTY
       ctx_rectangle (ctx, 0, 0, vt->width, //(vt->cols) * vt->cw,
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
@@ -8405,10 +8405,10 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
           ctx_rgba (ctx,0,0,0,1.0f);
           ctx_fill  (ctx);
         }
-#else
-          //ctx_rgba (ctx,0,0,0,1.0f);
-          ctx_fill  (ctx);
-#endif
+//#else
+//          ctx_rgba (ctx,0,0,0,1.0f);
+//          ctx_fill  (ctx);
+//#endif
       if (vt->scroll != 0.0f)
         ctx_translate (ctx, 0.0, vt->ch * vt->scroll);
     }
@@ -8776,10 +8776,8 @@ void vt_set_local (VT *vt, int local)
   vt->local_editing = local;
 }
 
-#if CTX_PTY
 static unsigned long prev_press_time = 0;
 static int short_count = 0;
-#endif
 
 void terminal_set_primary (const char *text)
 {
@@ -8789,9 +8787,7 @@ void terminal_set_primary (const char *text)
 }
 
 void terminal_long_tap (Ctx *ctx, VT *vt);
-#if CTX_PTY
 static int long_tap_cb_id = 0;
-#endif
 static int single_tap (Ctx *ctx, void *data)
 {
 #if 0 // XXX
@@ -8804,7 +8800,7 @@ static int single_tap (Ctx *ctx, void *data)
 
 void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, int y, int px_x, int px_y)
 {
-#if CTX_PTY
+//#if CTX_PTY
  char buf[64]="";
  int button_state = 0;
  ctx_client_rev_inc (vt->client);
@@ -9021,7 +9017,7 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
      vt_write (vt, buf, strlen (buf) );
      fsync (vt->vtpty.pty);
    }
-#endif
+//#endif
 }
 
 pid_t vt_get_pid (VT *vt)

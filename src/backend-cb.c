@@ -444,7 +444,7 @@ ctx_cb_end_frame (Ctx *ctx)
     {
       char buf[22];
       float fps = 1.0f/((cur_time-prev_time)/1000.0f);
-      ctx_move_to (ctx, width * 0.5, y);
+      ctx_move_to (ctx, width * 0.5f, y);
       ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
       sprintf (buf, "%2.1ffps", (double)fps);
       ctx_text (ctx, buf);

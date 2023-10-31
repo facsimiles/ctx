@@ -669,8 +669,8 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
     }
 
     {
-      if (clip_width>0) tex_width = clip_width;
-      if (clip_height>0) tex_height = clip_height;
+      if (clip_width>0) tex_width = (int)clip_width;
+      if (clip_height>0) tex_height = (int)clip_height;
       ctx_rectangle (ctx, x, y, width, height);
       ctx_save (ctx);
       ctx_texture (ctx, eid, x-(clip_x) * (width/tex_width), y-clip_y * (height

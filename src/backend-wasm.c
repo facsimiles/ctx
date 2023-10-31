@@ -158,7 +158,7 @@ int update_fb (Ctx *ctx, void *user_data)
 EMSCRIPTEN_KEEPALIVE
 uint8_t wasm_scratch[1024*1024*4];
 
-static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf, int buf_size)
+static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf)
 {
   uint8_t *src = (uint8_t*)buf;
   int in_w = w;
