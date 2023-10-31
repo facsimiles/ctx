@@ -885,3 +885,7 @@
 #ifndef CTX_CB_ENABLE_LOW_FI
 #define CTX_CB_ENABLE_LOW_FI 1
 #endif
+
+#ifndef CTX_VT_STYLE_SIZE
+#define CTX_VT_STYLE_SIZE 32
+#endif

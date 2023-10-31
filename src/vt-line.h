@@ -32,12 +32,18 @@
 
 typedef struct _VtLine   VtLine;
 
+#if CTX_VT_STYLE_SIZE==32
+typedef uint32_t vt_style_t;
+#else
+typedef uint64_t vt_style_t;
+#endif
+
 struct _VtLine
 {
   CtxString string;
   /* line extends string, permitting string ops to operate on it  */
 
-  uint64_t *style;
+  vt_style_t *style;
 
   void     *ctx; // each line can have an attached ctx context;
   char     *prev;

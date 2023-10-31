@@ -38,7 +38,7 @@ VtLine *vt_line_new_with_size (const char *initial, int initial_size)
   ctx_string_init (string, initial_size);
   if (initial)
     { ctx_string_append_str (string, initial); }
-  line->style = ctx_calloc (sizeof (uint64_t), initial_size);
+  line->style = ctx_calloc (sizeof (vt_style_t), initial_size);
   line->style_size = initial_size;
   string->is_line = 1;
   return line;
