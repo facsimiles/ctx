@@ -24,6 +24,7 @@
 #define CTX_ENABLE_CLIP         1
 #define CTX_BLOATY_FAST_PATHS   0
 
+#define CTX_CLIENTS    1
 #define CTX_VT         1
 #define CTX_PARSER     1
 #define CTX_PARSER_MAXLEN   (3 *1024)

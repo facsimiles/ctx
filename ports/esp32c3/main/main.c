@@ -408,6 +408,7 @@ void screen_menu (Ctx *ctx, uint32_t delta_ms)
 
    if (BUTTON("title"))    go("title");
    if (BUTTON("clock"))    go("clock");
+   if (BUTTON("term"))     go("term");
    if (BUTTON("settings")) go("settings");
    if (BUTTON("spirals"))  go("spirals");
    if (BUTTON("bouncy"))   go("bouncy");
@@ -419,14 +420,106 @@ void screen_menu (Ctx *ctx, uint32_t delta_ms)
    y+= line_height;
 }
 
+////// term
+
+CtxClient *term_client = NULL;
+
+static void term_handle_event (Ctx        *ctx,
+                               CtxEvent   *ctx_event,
+                               const char *event)
+{
+  ctx_client_feed_keystring (term_client, ctx_event, event);
+}
+
+static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)  
+{
+  {
+    switch (event->type)
+    {
+      case CTX_KEY_PRESS:
+        term_handle_event (event->ctx, event, event->string);
+        break;
+      case CTX_KEY_UP:
+        { char buf[1024];
+          snprintf (buf, sizeof(buf)-1, "keyup %i %i", event->unicode, event->state);
+          term_handle_event (event->ctx, event, buf);
+        }
+        break;
+      case CTX_KEY_DOWN:
+        { char buf[1024];
+          snprintf (buf, sizeof(buf)-1, "keydown %i %i", event->unicode, event->state);
+          term_handle_event (event->ctx, event, buf);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+void on_uart_rx()
+{
+#if 0
+  while (uart_is_readable(uart0))
+    ctx_vt_write (ctx, uart_getc(uart0));
+  ctx_clients_handle_events (ctx);
+  ctx_handle_events (ctx);
+#endif
+}
+
+static void screen_term (Ctx *ctx, uint32_t delta_ms)
+{
+   draw_bg (ctx);
+   if (!term_client)
+   {
+      int flags = 0;
+      float font_size = ctx_height(ctx)/16;
+      term_client = ctx_client_new_argv (ctx, NULL, 0,0,ctx_width(ctx),ctx_height(ctx), font_size,flags, NULL, NULL);
+    
+
+      //ctx_client_raise_top(ctx, ctx_client_id(term_client));
+      ctx_client_maximize(ctx, ctx_client_id(term_client));
+      ctx_client_resize (ctx, ctx_client_id(term_client), ctx_width(ctx)*180/250, ctx_height(ctx)*180/240);
+      //ctx_client_move (ctx, ctx_client_id(term_client), 60, 0);
+      char message[256];
+      sprintf (message, "hai %li  \r\n", ctx_ticks());
+      for (int i = 0; message[i]; i++)
+       ctx_vt_write (ctx, message[i]);
+   }
+   char message[256];
+   sprintf (message, "ticks: %li\r\n", ctx_ticks());
+   if (ctx_ticks() < 1000 * 1000 * 10)
+     for (int i = 0; message[i]; i++)
+       ctx_vt_write (ctx, message[i]);
+   ctx_clients_handle_events (ctx);
+   ctx_save(ctx);
+   ctx_gray(ctx,0);
+   if (ctx_osk_mode > 1)
+   ctx_translate (ctx, ctx_width(ctx) * 35/240, -ctx_height(ctx)/3.6);
+   else
+   ctx_translate (ctx, ctx_width(ctx) * 35/240, ctx_height(ctx)*35/240);
+   ctx_clients_draw (ctx, 0);
+   ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
+   ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
+   ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
+
+   ctx_restore(ctx);
+
+   while (ctx_vt_has_data (ctx))
+   {
+     printf ("%c\n", ctx_vt_read (ctx));
+   }
+   ctx_clients_handle_events (ctx);
+}
+
 static void screen_todo (Ctx *ctx, uint32_t delta_ms)
 {
    UI_START();
    TEXT("file system browser");
    TEXT("text editor");
-   TEXT("terminal");
    TEXT("espnow-chat");
    TEXT("micropython");
+   TEXT("ssh");
    TEXT("flow3r port");
    TEXT("drag down to hide kb");
 }
@@ -674,6 +767,7 @@ static Screen screens[]={
   {"clock",    screen_clock,   {0,}},
   {"bouncy",   screen_bouncy,  {0,}},
   {"spirals",  screen_spirals, {0,}},
+  {"term",     screen_term,    {0,}},
   {"todo",     screen_todo,    {0,}},
 };
 
@@ -751,6 +845,7 @@ static void screen_prev(void)
 static void
 go(const char *target)
 {
+  demo_mode = 0;
   printf ("screen-load: %s\n", target);
   overlay_fade = 0.7;
   if (!strcmp (target, "kb-collapse"))
@@ -792,7 +887,6 @@ static void go_cb (CtxEvent *event, void *data1, void *data2)
     ctx_quit (event->ctx);
   else
     go (target);
-  demo_mode = 0;
 }
 
 void overlay_button (Ctx *ctx, float x, float y, float w, float h, const char *label, char *action)
@@ -839,6 +933,7 @@ void app_main(void)
       font_size = width * 0.09f;
     demo_screen_remaining_ms = demo_timeout_ms;
 
+    go("term");
     //ctx_get_event(ctx);
     while (!ctx_has_quit (ctx))
     {
@@ -965,11 +1060,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
   float c = w / osk_rows; // keycell
   float y0 = h * osk_pos - c * rows;
 
-  //if (event->y < y0)
-  //  return;
-
   key = NULL;
-
   for (int row = 0; kb->keys[row][0].label; row++)
   {
     float x = c * 0.0;
@@ -1022,27 +1113,16 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
 
       if (key->sticky)
       {
-        if (key->down)
-          key->down = 0;
-        else
-          key->down = 1;
+        key->down = !key->down;
 
         if (!strcmp (key->label, "Shift"))
-        {
           kb->shifted = key->down;
-        }
         else if (!strcmp (key->label, "Ctrl"))
-        {
           kb->control = key->down;
-        }
         else if (!strcmp (key->label, "Alt"))
-        {
           kb->alt = key->down;
-        }
         else if (!strcmp (key->label, "Fn"))
-        {
           kb->fn = key->down;
-        }
       }
       else
       {
@@ -1054,17 +1134,11 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
         {
           char combined[200]="";
           if (kb->shifted)
-          {
             sprintf (&combined[strlen(combined)], "shift-");
-          }
           if (kb->control)
-          {
             sprintf (&combined[strlen(combined)], "control-");
-          }
           if (kb->alt)
-          {
             sprintf (&combined[strlen(combined)], "alt-");
-          }
           if (kb->fn)
             sprintf (&combined[strlen(combined)], "%s", key->sequence_fn);
           else
@@ -1219,9 +1293,9 @@ void ctx_osk_draw (Ctx *ctx)
   {
     case 2:
 
-  fade = 0.9;
-  if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
-     fade = 0.9;
+  fade = 1.0f;
+  //if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
+  //   fade = 0.9;
 
   int rows = 0;
   for (int row = 0; kb->keys[row][0].label; row++)
