@@ -8066,7 +8066,7 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
   if (vt)
   {
   if ((!vt->in_alt_screen) &&
-      (event->x > vt->width - vt->cw * 1.5 || scrollbar_down) &&
+      (event->x > vt->width - vt->cw * 3.5 || scrollbar_down) &&
       (event->type == CTX_DRAG_MOTION ||
       event->type == CTX_DRAG_PRESS ||
       event->type == CTX_DRAG_RELEASE))
@@ -8151,7 +8151,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   int device_no = event->device_no;
   char buf[128]="";
   if ((!vt->in_alt_screen) &&
-      (event->x > vt->width - vt->cw * 1.5 || scrollbar_down) &&
+      (event->x > vt->width - vt->cw * 3.5 || scrollbar_down) &&
       (event->type == CTX_DRAG_MOTION ||
       event->type == CTX_DRAG_PRESS ||
       event->type == CTX_DRAG_RELEASE))

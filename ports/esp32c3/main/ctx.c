@@ -6,12 +6,13 @@
 //#define SCRATCH_BUF_BYTES                  (DISPLAY_WIDTH*DISPLAY_HEIGHT*2)
 // a little faster - no mid-rasterization tearing - but uses more memory
 
-#define SCRATCH_BUF_BYTES                  (44*1024)
+#define SCRATCH_BUF_BYTES                  (240*240*2+1024)
+//#define SCRATCH_BUF_BYTES                  (44*1024)
 #define CTX_VT                             1
 #define CTX_PTY                            0
 #define CTX_THREAD                         1
-#define CTX_HASH_COLS                      7
-#define CTX_HASH_ROWS                      3
+#define CTX_HASH_COLS                      5
+#define CTX_HASH_ROWS                      5
 #define CTX_ESP                            1
 #define CTX_DITHER                         1
 #define CTX_PARSER                         1

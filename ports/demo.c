@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2023 Øyvind Kolås
- *
- * SPDX-License-Identifier: CC0-1.0
- */
-
 #include <stdio.h>
 #include <inttypes.h>
 #include <math.h>
@@ -41,6 +35,7 @@ static float color_fg[4]; // black or white automatically based on bg
 
 static float overlay_fade = 1.0;
 
+
 static void
 set_color (Ctx *ctx, float *rgba)
 {
@@ -69,6 +64,8 @@ struct _Widget {
   float max_val;
   void *data;
   int   state;
+  int   focusable:1;
+  int   focused:1;
 };
 
 typedef enum
@@ -76,13 +73,25 @@ typedef enum
   ui_state_default = 0,
   ui_state_hot,
   ui_state_lost_focus,
-  ui_state_focused
 } ui_state;
 
 #define MAX_WIDGETS 32
 static Widget widgets[MAX_WIDGETS];
 static int widget_no = 0;
 static int focused_widget = -1;
+
+static void focus_next(void)
+{
+  focused_widget++;
+}
+
+static void focus_prev(void)
+{
+  focused_widget--;
+  if (focused_widget < -1)
+    focused_widget = -1;
+}
+
 
 static void screen_pan (CtxEvent *event, void *data1, void *data2)
 {
@@ -166,7 +175,6 @@ static void bg_motion (CtxEvent *event, void *data1, void *data2)
     vy = event->delta_y;
   }
 }
-
 
 Widget *widget_by_id(void *id)
 {
@@ -359,7 +367,9 @@ button (Ctx *ctx, float x, float y, float width, float height, const char *label
    float y = (int)(scroll_offset + height * 0.15); \
 
 #define SLIDER_FLOAT(label,min,max,ptr) \
-   do { ctx_save(ctx);ctx_text_align(ctx,CTX_TEXT_ALIGN_START);\
+   do { \
+   if (y>-font_size && y < height) {\
+  ctx_save(ctx);ctx_text_align(ctx,CTX_TEXT_ALIGN_START);\
    ctx_move_to (ctx, width * 0.1, y+font_size);\
    ctx_text (ctx, label);\
    ctx_text_align(ctx,CTX_TEXT_ALIGN_END);\
@@ -368,21 +378,27 @@ button (Ctx *ctx, float x, float y, float width, float height, const char *label
    ctx_text (ctx, buf);}\
    y += font_size;\
    slider_float (ctx, width * 0.1, y, width * 0.8, line_height, ptr, min, max);\
-   y += line_height;ctx_restore(ctx);}while(0)
+   y += line_height;ctx_restore(ctx);}else{\
+   y += font_size;\
+   y += line_height;\
+   }}while(0)
 
 #define TOGGLE(label, ptr) \
-   do { ctx_move_to (ctx, width * 0.5, y+font_size);\
+   do { \
+   if (y>-font_size*2 && y < height) { \
+   ctx_move_to (ctx, width * 0.5, y+font_size);\
    ctx_text (ctx, label);\
    y += line_height;\
    if (button(ctx, width * 0.15, y, 0, 0, "off", *ptr==0, (void*)(__LINE__ * 4)))\
       {*ptr=0;};\
    if (button(ctx, width * 0.50, y, 0, 0, "on", *ptr==1, (void*)(__LINE__ * 4 + 1)))\
       {*ptr=1;};\
-   y += line_height;}while(0)
+   y += line_height;}\
+  else { y += line_height * 2; } } while(0)
 
 #define TEXT(string) do{\
-   ctx_move_to (ctx, width * 0.5, y+font_size);\
-   ctx_text (ctx, string);\
+   if (y>-font_size && y < height) { ctx_move_to (ctx, width * 0.5, y+font_size);\
+   ctx_text (ctx, string); }; \
    y += line_height;}while(0)
 
 
@@ -435,27 +451,25 @@ static void term_handle_event (Ctx        *ctx,
 
 static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)  
 {
+  switch (event->type)
   {
-    switch (event->type)
-    {
-      case CTX_KEY_PRESS:
-        term_handle_event (event->ctx, event, event->string);
-        break;
-      case CTX_KEY_UP:
-        { char buf[1024];
-          snprintf (buf, sizeof(buf)-1, "keyup %i %i", event->unicode, event->state);
-          term_handle_event (event->ctx, event, buf);
-        }
-        break;
-      case CTX_KEY_DOWN:
-        { char buf[1024];
-          snprintf (buf, sizeof(buf)-1, "keydown %i %i", event->unicode, event->state);
-          term_handle_event (event->ctx, event, buf);
-        }
-        break;
-      default:
-        break;
-    }
+    case CTX_KEY_PRESS:
+      term_handle_event (event->ctx, event, event->string);
+      break;
+    case CTX_KEY_UP:
+      { char buf[1024];
+        snprintf (buf, sizeof(buf)-1, "keyup %i %i", event->unicode, event->state);
+        term_handle_event (event->ctx, event, buf);
+      }
+      break;
+    case CTX_KEY_DOWN:
+      { char buf[1024];
+        snprintf (buf, sizeof(buf)-1, "keydown %i %i", event->unicode, event->state);
+        term_handle_event (event->ctx, event, buf);
+      }
+      break;
+    default:
+      break;
   }
 }
 
@@ -477,17 +491,14 @@ static void screen_term (Ctx *ctx, uint32_t delta_ms)
    {
       int flags = 0;
       float font_size = ctx_height(ctx)/16;
-      term_client = ctx_client_new_argv (ctx, NULL, 0,0,ctx_width(ctx),ctx_height(ctx), font_size,flags, NULL, NULL);
+      term_client = ctx_client_new_argv (ctx, NULL, 0,0,ctx_width(ctx),
+                                  ctx_height(ctx), font_size,flags, NULL, NULL);
     
-
-      //ctx_client_raise_top(ctx, ctx_client_id(term_client));
       ctx_client_maximize(ctx, ctx_client_id(term_client));
       ctx_client_resize (ctx, ctx_client_id(term_client), ctx_width(ctx)*180/250, ctx_height(ctx)*180/240);
-      //ctx_client_move (ctx, ctx_client_id(term_client), 60, 0);
-      char message[256];
-      sprintf (message, "hai %li  \r\n", ctx_ticks());
-      for (int i = 0; message[i]; i++)
-       ctx_vt_write (ctx, message[i]);
+#
+      for (int i = 0; i<40; i++)
+       ctx_vt_write (ctx, '\n');
    }
    char message[256];
    sprintf (message, "ticks: %li\r\n", ctx_ticks());
@@ -521,11 +532,11 @@ static void screen_todo (Ctx *ctx, uint32_t delta_ms)
    UI_START();
    TEXT("file system browser");
    TEXT("text editor");
+   TEXT("top-panel");
    TEXT("espnow-chat");
    TEXT("micropython");
    TEXT("ssh");
    TEXT("flow3r port");
-   TEXT("drag down to hide kb");
 }
 
 static float prev_backlight = 100.0f;
@@ -533,7 +544,7 @@ static float prev_backlight = 100.0f;
 void screen_settings (Ctx *ctx, uint32_t delta_ms)
 {
    UI_START();
-   static float backlight  = 50.0;
+   static float backlight  = 100.0;
 
    if (demo_mode && frame_no > 1)
    {
@@ -619,7 +630,6 @@ void screen_bouncy (Ctx *ctx, uint32_t delta_ms)
     ctx_text_baseline(ctx, CTX_TEXT_BASELINE_MIDDLE);
     ctx_move_to(ctx, width/2, height/2);ctx_text(ctx, TITLE);
 
-
     if (!is_down)
     {
       ctx_logo (ctx, x, y, dim);
@@ -669,13 +679,17 @@ void screen_clock (Ctx *ctx, uint32_t delta_ms)
     
     if (markh == 0)
     {
-    ctx_move_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.65f); 
-    ctx_line_to (ctx, x + cosf(r) * radius * 0.8f, y + sinf (r) * radius * 0.85f);   
+      ctx_move_to (ctx, x + cosf(r) * radius * 0.7f,
+                        y + sinf (r) * radius * 0.65f); 
+      ctx_line_to (ctx, x + cosf(r) * radius * 0.8f,
+                        y + sinf (r) * radius * 0.85f);   
     }
     else
     {
-    ctx_move_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.7f);   
-    ctx_line_to (ctx, x + cosf(r) * radius * 0.8f, y + sinf (r) * radius * 0.8f);   
+      ctx_move_to (ctx, x + cosf(r) * radius * 0.7f,
+                        y + sinf (r) * radius * 0.7f);   
+      ctx_line_to (ctx, x + cosf(r) * radius * 0.8f,
+                        y + sinf (r) * radius * 0.8f);   
     }
     ctx_stroke (ctx);
   }
@@ -689,13 +703,15 @@ void screen_clock (Ctx *ctx, uint32_t delta_ms)
   ;
 
   ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.7f, y + sinf (r) * radius * 0.7f);
+  ctx_line_to (ctx, x + cosf(r) * radius * 0.7f,
+                    y + sinf(r) * radius * 0.7f);
   ctx_stroke (ctx);
 
   
   r = (h + m/60.0) * CTX_PI * 2 / 12.0 - CTX_PI / 2;
   ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.4f, y + sinf (r) * radius * 0.4f);
+  ctx_line_to (ctx, x + cosf(r) * radius * 0.4f,
+                    y + sinf(r) * radius * 0.4f);
   ctx_stroke (ctx);
   
   
@@ -707,10 +723,10 @@ void screen_clock (Ctx *ctx, uint32_t delta_ms)
   else
     r = (s ) * CTX_PI * 2 / 60 - CTX_PI / 2;
   ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.78f, y + sinf (r) * radius * 0.78f);
+  ctx_line_to (ctx, x + cosf(r) * radius * 0.78f,
+                    y + sinf(r) * radius * 0.78f);
   ctx_stroke (ctx);
 }
-
 
 static void screen_spirals (Ctx *ctx, uint32_t delta_ms)
 {
@@ -832,7 +848,6 @@ static void screen_load_no(int no)
   screen_elapsed = 0; 
 }
 
-
 static void screen_next(void)
 {
   screen_load_no (screen_no + 1);
@@ -865,6 +880,14 @@ go(const char *target)
   else if (!strcmp (target, "kb-hide"))
   {
     ctx_osk_mode = 0;
+  }
+  else if (!strcmp (target, "focus-next"))
+  {
+    focus_next();
+  }
+  else if (!strcmp (target, "focus-prev"))
+  {
+    focus_prev();
   }
   else if (!strcmp (target, "screen-next"))
   {
@@ -1017,8 +1040,8 @@ int main (int argc, char **argv)
       ctx_restore (ctx);
 #endif
       ctx_add_key_binding (ctx, "escape", NULL, "foo",    go_cb, "menu");
-      //ctx_add_key_binding (ctx, "left", NULL, "foo",      go_cb, "prev");
-      //ctx_add_key_binding (ctx, "right", NULL, "foo",     go_cb, "next");
+      ctx_add_key_binding (ctx, "left", NULL, "foo",      go_cb, "focus-prev");
+      ctx_add_key_binding (ctx, "right", NULL, "foo",     go_cb, "focus-next");
       ctx_add_key_binding (ctx, "control-q", NULL, "foo", go_cb, "quit");
  
       ctx_end_frame (ctx);
@@ -1039,12 +1062,21 @@ typedef struct KeyCap {
   char *sequence_fn;
   char *sequence_fn_shifted;
   int   sticky;
-  int   down;
-  int   hovered;
 } KeyCap;
 
-typedef struct KeyBoard {
+typedef struct KeyCapState {
+  uint8_t down;
+  uint8_t hovered;
+} KeyCapState;
+
+
+static KeyCapState kb_cap_state[9][30];
+typedef struct KeyBoardLayout {
   KeyCap keys[9][30];
+} KeyBoardLayout;
+
+typedef struct KeyBoard {
+  const KeyBoardLayout *layout;
   int shifted;
   int control;
   int alt;
@@ -1052,30 +1084,47 @@ typedef struct KeyBoard {
   int down;
 } KeyBoard;
 
+
 static float osk_pos = 1.0f;
 
 static float osk_rows = 11.5f;
 
 static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
 {
-  KeyCap *key = data1;
+  const KeyCap *key = data1;
+  KeyCapState *key_state = data1;
   KeyBoard *kb = data2;
   float h = ctx_height (event->ctx);
   float w = ctx_width (event->ctx);
   int rows = 0;
-  for (int row = 0; kb->keys[row][0].label; row++)
+  for (int row = 0; kb->layout->keys[row][0].label; row++)
     rows = row+1;
 
   float c = w / osk_rows; // keycell
   float y0 = h * osk_pos - c * rows;
 
+  event->stop_propagate = 1;
+  if (//(event->y - event->start_y > c * rows / 2) || 
+     (event->y - event->start_y > c * 2 && event->y > h * 0.9))
+  {
+    go ("kb-collapse");
+    for (int row = 0; kb->layout->keys[row][0].label; row++)
+    for (int col = 0; kb->layout->keys[row][col].label; col++)
+    { 
+      kb_cap_state[row][col].hovered = 0;
+    }
+    return;
+  }
+
   key = NULL;
-  for (int row = 0; kb->keys[row][0].label; row++)
+  key_state = NULL;
+  for (int row = 0; kb->layout->keys[row][0].label; row++)
   {
     float x = c * 0.0;
-    for (int col = 0; kb->keys[row][col].label; col++)
+    for (int col = 0; kb->layout->keys[row][col].label; col++)
     {
-      KeyCap *cap = &(kb->keys[row][col]);
+      const KeyCap *cap = &(kb->layout->keys[row][col]);
+      KeyCapState *cap_state = &kb_cap_state[row][col];
       float y = row * c + y0;
       if (event->x >= x &&
           event->x < x + c * cap->wfactor-0.1 &&
@@ -1083,22 +1132,22 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
           event->y < y + c * 0.9)
        {
          key = cap;
-         if (cap->hovered != 1)
+         key_state = cap_state;
+         if (cap_state->hovered != 1)
          {
            ctx_queue_draw (event->ctx);
          }
-         cap->hovered = 1;
+         cap_state->hovered = 1;
        }
       else
        {
-         cap->hovered = 0;
+         cap_state->hovered = 0;
        }
 
       x += cap->wfactor * c;
     }
   }
 
-  event->stop_propagate = 1;
   switch (event->type)
   {
      default:
@@ -1122,16 +1171,16 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
 
       if (key->sticky)
       {
-        key->down = !key->down;
+        key_state->down = !key_state->down;
 
         if (!strcmp (key->label, "Shift"))
-          kb->shifted = key->down;
+          kb->shifted = key_state->down;
         else if (!strcmp (key->label, "Ctrl"))
-          kb->control = key->down;
+          kb->control = key_state->down;
         else if (!strcmp (key->label, "Alt"))
-          kb->alt = key->down;
+          kb->alt = key_state->down;
         else if (!strcmp (key->label, "Fn"))
-          kb->fn = key->down;
+          kb->fn = key_state->down;
       }
       else
       {
@@ -1177,7 +1226,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
   }
 }
 
-KeyBoard kb_round = {
+static const KeyBoardLayout kb_round = {
    {  
 #if 1
      { 
@@ -1187,14 +1236,13 @@ KeyBoard kb_round = {
        {"Ctrl","Ctrl",NULL,NULL,1.3f,"","",NULL,NULL,1},
        {"Alt","Alt",NULL,NULL,1.3f,"","",NULL,NULL,1,},
        {"Esc","Esc",NULL,NULL,1.3f,"escape","escape",NULL,NULL,0},
-       {"\\/","\\/",NULL,NULL,1.0f,"kb-collapse","kb-collapse",NULL,NULL,0,},
+   //  {"\\/","\\/",NULL,NULL,1.0f,"kb-collapse","kb-collapse",NULL,NULL,0,},
    //  {"↑","↑","PgUp","PgUp",1.0f,"up","up","page-up","page-up",0,},
    //  {"↓","↓","PgDn","PgDn",1.0f,"down","down","page-down","page-down",0,},
    //  {"←","←","Home","Home",1.0f,"left","left","home","home",0,},
    //  {"→","→","End","End",1.0f,"right","right","end","end",0,},
-       //{"⏎","⏎",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
-       //{"⌫","⌫",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0},
-       {"ret","ret",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
+       {"⏎","⏎",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
+       //{"ret","ret",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
        {NULL}},
 #endif
 
@@ -1210,7 +1258,8 @@ KeyBoard kb_round = {
        {"8","*","F8","F8",1.0f,"8","*","F8","F8",0},
        {"9","(","F9","F9",1.0f,"9","(","F9","F9",0},
        {"0",")","F10","F10",1.0f,"0",")","F10","F10",0},
-       {"bs","bs",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0,},
+       {"⌫","⌫",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0},
+       //{"bs","bs",NULL,NULL,1.2f,"backspace","backspace",NULL,NULL,0,},
        //{"-","_","F11","F11",1.0f,"-","_","F11","F11",0},
        //{"=","+","F12","F12",1.0f,"=","+","F12","F12",0},
        {NULL}},
@@ -1274,11 +1323,12 @@ KeyBoard kb_round = {
    }
 };
 
+static KeyBoard keyboard = {&kb_round, 0, 0, 0, 0};
 
 void ctx_osk_draw (Ctx *ctx)
 {
   static float fade = 0.0;
-  KeyBoard *kb = &kb_round;
+  const KeyBoard *kb = &keyboard;
   static long prev_ticks = -1;
   long ticks = ctx_ticks ();
   float elapsed_ms = 0;
@@ -1307,7 +1357,7 @@ void ctx_osk_draw (Ctx *ctx)
   //   fade = 0.9;
 
   int rows = 0;
-  for (int row = 0; kb->keys[row][0].label; row++)
+  for (int row = 0; kb->layout->keys[row][0].label; row++)
     rows = row+1;
 
   float c = w / osk_rows; // keycell
@@ -1318,17 +1368,9 @@ void ctx_osk_draw (Ctx *ctx)
                       y0,
                       w,
                       c * rows);
-  ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, kb);
+  ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, (void*)kb);
   ctx_rgba (ctx, 0,0,0, 0.8 * fade);
-  //if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
   ctx_fill (ctx);
-  //else
-//ctx_line_width (ctx, m * 0.01);
-  //ctx_begin_path (ctx);
-#if 0
-  ctx_rgba (ctx, 1,1,1, 0.5);
-  ctx_stroke (ctx);
-#endif
 
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_line_width (ctx, m * 0.01);
@@ -1336,12 +1378,13 @@ void ctx_osk_draw (Ctx *ctx)
   float font_size = c * 0.9;
   ctx_font_size (ctx, font_size);
 
-  for (int row = 0; kb->keys[row][0].label; row++)
+  for (int row = 0; kb->layout->keys[row][0].label; row++)
   {
     float x = c * 0.0;
-    for (int col = 0; kb->keys[row][col].label; col++)
+    for (int col = 0; kb->layout->keys[row][col].label; col++)
     {
-      KeyCap *cap = &(kb->keys[row][col]);
+      const KeyCap *cap = &(kb->layout->keys[row][col]);
+      KeyCapState *cap_state = &(kb_cap_state[row][col]);
       float y = row * c + y0;
   
       const char *label = cap->label;
@@ -1382,7 +1425,7 @@ void ctx_osk_draw (Ctx *ctx)
                                 c * 0.9);
                                 //,c * 0.1);
       
-      if (cap->down || (cap->hovered && kb->down))
+      if (cap_state->down || (cap_state->hovered && kb->down))
       {
         ctx_rgba (ctx, 1,1,1, fade);
 #if 1
@@ -1396,7 +1439,7 @@ void ctx_osk_draw (Ctx *ctx)
       }
       else ctx_begin_path (ctx);
 
-      if (cap->down || (cap->hovered && kb->down))
+      if (cap_state->down || (cap_state->hovered && kb->down))
         ctx_rgba (ctx, 1,1,1, fade);
       else
         ctx_rgba (ctx, 0,0,0, fade);
@@ -1413,14 +1456,14 @@ void ctx_osk_draw (Ctx *ctx)
 
 
 
-      if (cap->down || (cap->hovered && kb->down))
+      if (cap_state->down || (cap_state->hovered && kb->down))
         ctx_rgba (ctx, 0,0,0, fade);
       else
         ctx_rgba (ctx, 1,1,0.8, fade);
 
       ctx_text (ctx, label);
 
-      if (cap->hovered && kb->down)
+      if (cap_state->hovered && kb->down)
       {
          ctx_save (ctx);
          ctx_rgba (ctx, 0,0,0.0, 0.7*fade);
