@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include <inttypes.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <math.h>
 #include "port_config.h"
 #include "ctx.h"
@@ -21,13 +22,14 @@ int        screen_no = 0;
 int        frame_no = 0;
 float      screen_elapsed = 0;
 
-int        show_fps = 0;   // < boolean ui setting toggles
-int        gradient_bg = 0;
-int        interactive_debug = 0;
+bool       show_fps = false;   // < boolean ui setting toggles
+bool       gradient_bg = false;
+bool       interactive_debug = false;
 
-static float font_size = 16.0; // dynamically set on start
-#define em font_size
+#define em (ui->font_size)
 
+static float color_focused_fg[4]  = {1,0,0,0.8};
+//static float color_focused_bg[4]  = {1,1,0,0.8};
 static float color_interactive[4] = {1,0,0,0.0}; 
 static float color_bg[4]          = {0.1, 0.2, 0.3, 1.0};
 static float color_bg2[4]         = {0.8, 0.9, 1.0, 1.0};
@@ -35,26 +37,25 @@ static float color_fg[4]; // black or white automatically based on bg
 
 static float overlay_fade = 1.0;
 
-
 static void
-set_color (Ctx *ctx, float *rgba)
+ui_set_color (Ctx *ctx, float *rgba)
 {
-  ctx_rgba(ctx, rgba[0],rgba[1],rgba[2],rgba[3]);
+  ctx_rgba(ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
 static void
-set_color_a (Ctx *ctx, float *rgba, float alpha)
+ui_set_color_a (Ctx *ctx, float *rgba, float alpha)
 {
-  ctx_rgba(ctx, rgba[0],rgba[1],rgba[2],rgba[3]*alpha);
+  ctx_rgba(ctx, rgba[0], rgba[1], rgba[2], rgba[3] * alpha);
 }
 
 /////////////////////////////////////////////
 
-float x = DISPLAY_WIDTH/2;
-float y = DISPLAY_HEIGHT/2;
+float bx = DISPLAY_WIDTH/2;
+float by = DISPLAY_HEIGHT/2;
 
-typedef struct _Widget Widget;
-struct _Widget {
+typedef struct _UiWidget UiWidget;
+struct _UiWidget {
   void *id;
   float x;
   float y;
@@ -62,10 +63,15 @@ struct _Widget {
   float height;
   float min_val;
   float max_val;
+  float step;
+  int   focus_no;
   void *data;
+  float float_data;
   int   state;
-  int   focusable:1;
-  int   focused:1;
+  bool active:1;
+  bool fresh:1;
+  bool focusable:1;
+  bool focused:1;
 };
 
 typedef enum
@@ -73,40 +79,189 @@ typedef enum
   ui_state_default = 0,
   ui_state_hot,
   ui_state_lost_focus,
+  ui_state_commit,
 } ui_state;
 
 #define MAX_WIDGETS 32
-static Widget widgets[MAX_WIDGETS];
-static int widget_no = 0;
-static int focused_widget = -1;
+
+typedef struct Ui {
+  Ctx *ctx;
+  float font_size;
+  int widget_no;
+  void *focused_widget_id;
+  void *active_widget_id;
+  int activate;
+  int   delta_ms;
+  float width;
+  float height;
+  float line_height;
+  float scroll_offset;
+  float y;
+  int cursor_pos;
+
+  UiWidget widgets[MAX_WIDGETS];
+  char temp_text[128];
+} Ui;
+
+static Ui *ui = NULL;
+
+UiWidget *ui_widget_by_id(Ui *ui, void *id)
+{
+  for (int i = 0; i < ui->widget_no; i++)
+  {
+    if (ui->widgets[i].id == id)
+      return &ui->widgets[i];
+  }
+  return NULL;
+}
+
+static void ui_do(Ui *ui, const char *name);
+#define UI_DO(command) ui_do(ui, command)
+
+static void ui_set_focus (UiWidget *widget)
+{
+  for (int i = 0; i < ui->widget_no; i++)
+  if (ui->focused_widget_id)
+  {
+    UiWidget *old_widget = ui_widget_by_id (ui, ui->focused_widget_id);
+    if (old_widget)
+    {
+      old_widget->state = ui_state_lost_focus;
+      old_widget->active = 0;
+    }
+    if (ui->active_widget_id)
+    {
+      printf("text commit?\n");
+      old_widget->state = ui_state_commit;
+      ui->active_widget_id = NULL;
+      ui_do(ui, "kb-collapse");
+    }
+    ui->focused_widget_id = NULL;
+  }
+  if (widget)
+  {
+    ui->focused_widget_id = widget->id;
+    widget->state = ui_state_hot;
+  }
+}
 
 static void focus_next(void)
 {
-  focused_widget++;
+  int found = 0;
+  for (int i = 0; i < ui->widget_no; i++)
+  {
+    if (ui->widgets[i].focusable)
+    {
+    if (found || !ui->focused_widget_id)
+    {
+      ui->focused_widget_id = ui->widgets[i].id;
+      return;
+    }
+    if (ui->widgets[i].id == ui->focused_widget_id)
+    {
+      found = 1;
+    }
+    }
+  }
+  ui->focused_widget_id = NULL;
 }
 
 static void focus_prev(void)
 {
-  focused_widget--;
-  if (focused_widget < -1)
-    focused_widget = -1;
+  int found = 0;
+  for (int i=ui->widget_no-1;i>=0; i--)
+  {
+    if (ui->widgets[i].focusable)
+    {
+    if (found || !ui->focused_widget_id)
+    {
+      ui->focused_widget_id = ui->widgets[i].id;
+      return;
+    }
+    if (ui->widgets[i].id == ui->focused_widget_id)
+    {
+      found = 1;
+    }
+    }
+  }
+  ui->focused_widget_id = NULL;
 }
 
-
-static void screen_pan (CtxEvent *event, void *data1, void *data2)
+static void ui_entry_key_press (CtxEvent *event, void *userdata, void *userdata2)
 {
-  float *fptr = data2;
+  Ui *ui = userdata;
+  const char *string = event->string;
 
-//if ((event->type == CTX_DRAG_MOTION))
+  if (!strcmp (string, "space"))
+    string = " ";
+  if (!strcmp (string, "backspace"))
   {
-    *fptr += event->delta_y;
-    demo_mode = 0;
-    if (*fptr > 0)
-      *fptr = 0;
+    int old_cursor_pos = ui->cursor_pos;
+    ui->cursor_pos--;
+    while ((ui->temp_text[ui->cursor_pos] & 192) == 128)
+      ui->cursor_pos--;
+    if (ui->cursor_pos < 0) ui->cursor_pos = 0;
+    memmove (&ui->temp_text[ui->cursor_pos],
+             &ui->temp_text[old_cursor_pos], strlen (&ui->temp_text[old_cursor_pos])+1);
+  }
+  else if (!strcmp (string, "return"))
+  {
+     UiWidget *widget = ui_widget_by_id(ui, ui->active_widget_id);
+     if (widget){
+        widget->state = ui_state_commit;
+        widget->active = 0;
+     }
+     ui->active_widget_id = NULL;
+  }
+  else if (!strcmp (string, "escape"))
+  {
+     UiWidget *widget = ui_widget_by_id(ui, ui->active_widget_id);
+     if (widget)
+        {
+          widget->active = 0;
+        }
+     ui->active_widget_id = NULL;
+     printf ("deactivated\n");
+  }
+  else if (!strcmp (string, "left"))
+  {
+    ui->cursor_pos--;
+    while ((ui->temp_text[ui->cursor_pos] & 192) == 128)
+      ui->cursor_pos--;
+    if (ui->cursor_pos < 0) ui->cursor_pos = 0;
+  }
+  else if (!strcmp (string, "right"))
+  {
+    ui->cursor_pos++;
+    while ((ui->temp_text[ui->cursor_pos] & 192) == 128)
+      ui->cursor_pos++;
+    if (strlen (ui->temp_text) < ui->cursor_pos) ui->cursor_pos = strlen (ui->temp_text);
+  }
+  else if (strlen (string) < 4)
+  {
+    int insert_len = strlen (string);
+    if (strlen (ui->temp_text) + insert_len + 1 < sizeof (ui->temp_text))
+    {
+      memmove (&ui->temp_text[ui->cursor_pos+insert_len],
+               &ui->temp_text[ui->cursor_pos], strlen (&ui->temp_text[ui->cursor_pos]) + 1);
+      memcpy (&ui->temp_text[ui->cursor_pos], string, insert_len);
+      ui->cursor_pos += insert_len;
+    }
   }
 }
 
-void draw_bg (Ctx *ctx)
+static void ui_pan (CtxEvent *event, void *data1, void *data2)
+{
+  float *fptr = data2;
+  if (fabs (event->start_y - event->y) > 8.0f)
+    ui_set_focus (NULL);
+  *fptr += event->delta_y;
+  demo_mode = 0;
+  if (*fptr > 0)
+    *fptr = 0;
+}
+
+void ui_bg (Ctx *ctx)
 {
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
@@ -142,7 +297,7 @@ void draw_bg (Ctx *ctx)
 
   ctx_rectangle(ctx,0,0,width,height);
 
-  set_color (ctx, color_bg);
+  ui_set_color (ctx, color_bg);
   if (gradient_bg)
   {
     ctx_linear_gradient (ctx,0,0,0,height);
@@ -150,9 +305,8 @@ void draw_bg (Ctx *ctx)
     ctx_gradient_add_stop (ctx, 1.0, color_bg2[0], color_bg2[1], color_bg2[2], 1.0f);
   }
   ctx_fill(ctx);
-  ctx_font_size(ctx,font_size);
-  set_color(ctx,color_fg);
-  widget_no = 0;
+  ctx_font_size(ctx,ui->font_size);
+  ui_set_color(ctx,color_fg);
 }
 
 
@@ -162,8 +316,8 @@ float vx = 2.0;
 float vy = 2.33;
 static void bg_motion (CtxEvent *event, void *data1, void *data2)
 {
-  x = event->x;
-  y = event->y;
+  bx = event->x;
+  by = event->y;
   vx = 0;
   vy = 0;
   if (event->type != CTX_DRAG_MOTION) is_down = 0;
@@ -176,79 +330,102 @@ static void bg_motion (CtxEvent *event, void *data1, void *data2)
   }
 }
 
-Widget *widget_by_id(void *id)
+static void ui_slider_drag_float (CtxEvent *event, void *data1, void *data2)
 {
-  for (int i = 0; i < widget_no; i++)
-  {
-    if (widgets[i].id == id)
-      return &widgets[i];
-  }
-  return NULL;
-}
-
-static void slider_drag_float (CtxEvent *event, void *data1, void *data2)
-{
-   Widget *widget = widget_by_id (data2);
+   Ui *ui = data1;
+   UiWidget *widget = ui_widget_by_id (ui, data2);
    if (!widget) return;
-   float *value_ptr = widget->data;
    float new_val = ((event->x - widget->x) / widget->width) * (widget->max_val-widget->min_val) + widget->min_val;
    if (new_val < widget->min_val) new_val = widget->min_val;
    if (new_val > widget->max_val) new_val = widget->max_val;
-   *value_ptr = new_val;
+   widget->float_data = new_val;
    event->stop_propagate = 1;
 }
 
-static Widget *
-widget_register (Ctx *ctx, float x, float y, float width, float height, void *id)
+static UiWidget *
+widget_register (Ui *ui, float x, float y, float width, float height, void *id)
 {
-   if (widget_no+1 >= MAX_WIDGETS) { printf("too many widgets\n");return &widgets[widget_no]; }
+   Ctx *ctx = ui->ctx;
+   if (ui->widget_no+1 >= MAX_WIDGETS) { printf("too many widgets\n");return &ui->widgets[ui->widget_no]; }
 
-   Widget *widget  = &widgets[widget_no++];
+   UiWidget *widget  = &ui->widgets[ui->widget_no++];
+  
    if (widget->id != id)
    {
      widget->id = id;
      widget->data = NULL; // data is by kept the same from run to run when id is stable
      widget->state = ui_state_default;
+     widget->active = 0;
+     widget->fresh = 1;
    }
-   widget->x = x;
-   widget->y = y;
-   widget->width = width;
+   else
+   {
+     widget->fresh = 0;
+   }
+   widget->x      = x;
+   widget->y      = y;
+   widget->width  = width;
    widget->height = height;
+   widget->focusable = 1;
+   widget->focused = 0;
+   if (widget->focusable)
+   {
+      widget->focused = (id == ui->focused_widget_id);
+      if (widget->focused)
+      {
+        if (!widget->active)
+        {
+        ctx_save(ctx);
+        ui_set_color(ctx, color_focused_fg);
+        ctx_rectangle (ctx, x - ui->font_size/2, y-ui->font_size*0.2, width + ui->font_size, height + ui->font_size * 0.4);
+        ctx_stroke (ctx);
+        ctx_restore(ctx);
+        }
+      }
+      else
+      {
+         widget->active = 0;
+      }
+   }
    return widget;
 }
 
-
-static void
-slider_float (Ctx *ctx, float x, float y, float width, float height, float *val, float min_val, float max_val)
+static float
+ui_slider (Ui *ui, void *id, float x, float y, float width, float height, float min_val, float max_val, float step, float value)
 {
-   Widget *widget  = widget_register(ctx,x,y,width,height,val);
-   widget->data = val;
+   Ctx *ctx = ui->ctx;
+   UiWidget *widget = widget_register(ui,x,y,width,height,id);
+   if (widget->fresh)
+     widget->float_data = value;
    widget->min_val = min_val;
    widget->max_val = max_val;
+   widget->step = step;
 
-   float rel_value = ((*val) - widget->min_val) / (widget->max_val-widget->min_val);
+   float rel_value = ((value) - widget->min_val) / (widget->max_val-widget->min_val);
+
+   if (y + height > 0 && y < ui->height)
+   {
+
    ctx_save(ctx); 
 
-
    ctx_line_width(ctx,2.0);
-   set_color(ctx, color_fg);
+   ui_set_color(ctx, color_fg);
    ctx_move_to (ctx, x, y + height/2);
    ctx_line_to (ctx, x + width, y + height/2);
    ctx_stroke (ctx);
 
-   set_color(ctx, color_fg);
+   ui_set_color(ctx, color_fg);
    ctx_arc (ctx, x + rel_value * width, y + height/2, height*0.34, 0, 2*3.1415, 0);
    ctx_fill (ctx);
-   set_color(ctx, color_bg);
+   ui_set_color(ctx, color_bg);
    ctx_arc (ctx, x + rel_value * width, y + height/2, height*0.3, 0.0, 3.1415*2, 0);
    ctx_fill (ctx);
 
-
    ctx_rectangle (ctx, x + rel_value * width - height * 0.75, y, height * 1.5, height);
-   ctx_listen (ctx, CTX_DRAG, slider_drag_float, NULL, widget->id);
+   ctx_listen (ctx, CTX_DRAG, ui_slider_drag_float, ui, widget->id);
    if (color_interactive[3]>0.0)
    {
-     set_color(ctx, color_interactive);
+     ui_set_color(ctx, color_interactive);
      ctx_fill(ctx);
    }
    else
@@ -256,23 +433,224 @@ slider_float (Ctx *ctx, float x, float y, float width, float height, float *val,
      ctx_begin_path (ctx);
    }
    ctx_restore (ctx);
+   }
+
+   return widget->float_data;
 }
 
-static void button_drag (CtxEvent *event, void *data1, void *data2)
-{
-   Widget *widget = widget_by_id (data2);
-   if (!widget) return;
 
+static void ui_button_drag (CtxEvent *event, void *data1, void *data2)
+{
+  Ui *ui = data1;
+  UiWidget *widget = ui_widget_by_id (ui, data2);
+  if (!widget) return;
+
+  //int widget_no = (widget - &widgets[0]);
   if (event->type == CTX_DRAG_PRESS)
   {
-    widget->state = ui_state_hot;
-    event->stop_propagate = 0;
+    ui_set_focus (widget);
   }
   else if (event->type == CTX_DRAG_RELEASE)
   {
+    if (widget->id == ui->focused_widget_id)
+    {
     if (widget->state == ui_state_hot)
       widget->data = (void*)1;
+    }
+  }
+  else
+  {
+   if ((event->y < widget->y) ||
+       (event->x < widget->x) ||
+       (event->y > widget->y + widget->height) ||
+       (event->x > widget->x + widget->width))
+   {
+     widget->state = ui_state_lost_focus;
+   }
+   else
+   {
+     widget->state = ui_state_hot;
+   }
+  }
+}
+
+static int
+ui_button_coords (Ui *ui, float x, float y, float width, float height,
+                  const char *label, int active, void *id)
+{
+   Ctx *ctx = ui->ctx;
+   if (width <= 0) width = ctx_text_width (ctx, label);
+   if (height <= 0) height = em * 1.4;
+   width += 2 * em;
+
+   UiWidget *widget  = widget_register(ui,x,y,width,height,id);
+   if (y + height > 0 && y < ui->height)
+   {
+   ctx_save(ctx); 
+
+   ctx_text_align(ctx, CTX_TEXT_ALIGN_START);
+
+   ui_set_color(ctx, color_fg);
+
+   if (active)
+   {
+     ctx_rectangle (ctx, x, y, width, height);
+     ctx_stroke (ctx);
+   }
+
+   ctx_move_to (ctx, x + 1 * em, y+em);
+   ctx_text (ctx, label);
+
+   ctx_begin_path (ctx);
+   ctx_rectangle (ctx, x, y, width, height);
+   ctx_listen (ctx, CTX_DRAG, ui_button_drag, ui, widget->id);
+   if (color_interactive[3]>0.0)
+   {
+     ui_set_color(ctx, color_interactive);
+     ctx_fill(ctx);
+   }
+   else
+   {
+     ctx_begin_path (ctx);
+   }
+   ctx_restore (ctx);
+   }
+
+   if (widget->data || (widget->focused && ui->activate))
+   {
+     ui->activate = 0;
+     widget->data = NULL;
+     widget->state = ui_state_default;
+     return 1;
+   }
+   return 0;
+}
+
+static void ui_end (Ui *ui)
+{
+   if (ui->focused_widget_id)
+   {
+    UiWidget *focused = ui_widget_by_id (ui, ui->focused_widget_id);
+
+    if (focused) {
+      if (ctx_osk_mode == 2)
+      {
+          if (fabs(ui->height * 0.18 - focused->y) > 2)
+            ui->scroll_offset += ui->height * 0.18 - focused->y;
+      }
+      else
+      {
+      if (focused->y > ui->height * 0.6)
+        ui->scroll_offset -= ui->height / 2 * ui->delta_ms/1000.0;
+       else if (focused->y < ui->height * 0.15) 
+      {
+        ui->scroll_offset += ui->height/2* ui->delta_ms/1000.0;
+       }
+      }
+    }
+   }
+}
+
+void ui_start (Ui *ui)
+{
+   Ctx *ctx = ui->ctx;
+   ui->width = ctx_width (ctx);\
+   ui->height = ctx_height (ctx);\
+   ui_bg(ctx);\
+   ui->widget_no = 0;\
+   ui->line_height = ui->font_size * 1.7;\
+   if (frame_no == 0 && demo_mode) \
+   {\
+     ui->scroll_offset = 0;\
+   }\
+   ctx_rectangle(ctx,0,0,ui->width, ui->height);\
+   ctx_listen (ctx, CTX_DRAG, ui_pan, NULL, &ui->scroll_offset);\
+   ctx_begin_path (ctx); \
+   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);\
+   ui->y = (int)(ui->scroll_offset + ui->height * 0.15); \
+}
+
+float slider_float (Ui *ui, void *id, const char *label, float min, float max, float step, float value)
+{ Ctx *ctx = ui->ctx;
+  ctx_save(ctx);ctx_text_align(ctx,CTX_TEXT_ALIGN_START);\
+   ctx_move_to (ctx, ui->width * 0.1, ui->y+em);\
+   ctx_text (ctx, label);\
+   ctx_text_align(ctx,CTX_TEXT_ALIGN_END);\
+   {char buf[256];sprintf(buf, "%.1f", value);
+    ctx_move_to (ctx, ui->width * 0.9, ui->y+em);\
+   ctx_text (ctx, buf);}\
+   ui->y += em;\
+   float ret = ui_slider (ui, id, ui->width * 0.1, ui->y, ui->width * 0.8, ui->line_height, min, max, step, value);
+   ui->y += ui->line_height;ctx_restore(ctx);
+   return ret;
+}
+
+bool ui_toggle(Ui *ui, void *id, const char *label, bool value)
+{ 
+   Ctx *ctx = ui->ctx;
+   if (ui->y>-2 * em && ui->y < ui->height - em)
+   {
+     ctx_move_to (ctx, ui->width * 0.5, ui->y+em);
+     ctx_text (ctx, label);
+   }
+   ui->y += ui->line_height;
+   if (ui_button_coords(ui, ui->width * 0.15, ui->y, 0, 0, "off", value==0, id))
+      {value=false;;};
+   if (ui_button_coords(ui, ui->width * 0.50, ui->y, 0, 0, "on", value==1, id+1))
+      {value=true;;};
+   ui->y += ui->line_height;
+   return value;
+}
+
+void ui_text(Ui *ui, const char *string) {
+   Ctx *ctx = ui->ctx;
+   if (ui->y>-ui->font_size && ui->y < ui->height) { ctx_move_to (ctx, ui->width * 0.5, ui->y+em);\
+   ctx_text (ctx, string); }; \
+   ui->y += ui->line_height;
+}
+
+static int ui_button(Ui *ui, const char *label, void *id)
+{
+   if (id == NULL) id = (void*)label;
+   return ui->y += ui->line_height, ui_button_coords(ui, ui->width * 0.15, ui->y-ui->line_height, 0, 0, label, 0, id);
+}
+
+#define UI_ID                    ((void*)(__LINE__*4))
+#define UI_TEXT(string)          ui_text(ui, string)
+#define UI_TOGGLE(label, value)  ui_toggle(ui, UI_ID, label, value)
+#define UI_BUTTON(label)         ui_button(ui, label, UI_ID)
+#define UI_SLIDER(label,min,max,step,value) \
+   slider_float(ui,UI_ID,label,min,max,step,value)
+#define UI_ENTRY(label, fallback, strptr) do{\
+   char *ret = NULL;\
+   if ((ret = ui_entry(ui, UI_ID, ui->width * 0.15, ui->y, ui->width * 0.8, ui->line_height, label, fallback, *strptr)))\
+   {\
+     if (*strptr) free (*strptr);\
+     *strptr = ret;\
+   }\
+   ui->y += ui->line_height;}while(0)
+
+
+static void ui_entry_drag (CtxEvent *event, void *data1, void *data2)
+{
+  Ui *ui = data1;
+  UiWidget *widget = ui_widget_by_id (ui, data2);
+  if (!widget) return;
+
+  if (event->type == CTX_DRAG_PRESS)
+  {
+    ui_set_focus (widget);
     event->stop_propagate = 0;
+    widget->state = ui_state_default;
+  }
+  else if (event->type == CTX_DRAG_RELEASE)
+  {
+    event->stop_propagate = 0;
+    if (widget->state != ui_state_lost_focus)
+    {
+      ui_do(ui, "kb-show");
+      ui_do(ui, "activate");
+    }
   }
   else
   {
@@ -286,156 +664,125 @@ static void button_drag (CtxEvent *event, void *data1, void *data2)
   }
 }
 
-static int
-button (Ctx *ctx, float x, float y, float width, float height, const char *label, int active, void *id)
+char *
+ui_entry(Ui *ui,
+         void *id,
+         float x, float y, float w, float h,
+         const char *label, const char *fallback,
+         const char *value)
 {
-   if (width <= 0) width = ctx_text_width (ctx, label);
-   if (height <= 0) height = em * 1.4;
-   width += 2 * em;
-
-   Widget *widget  = widget_register(ctx,x,y,width,height,id);
-   ctx_save(ctx); 
-
-   ctx_text_align(ctx, CTX_TEXT_ALIGN_START);
-
-   if (widget->state == ui_state_hot)
-   {
-     set_color_a(ctx, color_fg, 0.33);
-     ctx_rectangle (ctx, x - em, y - em/2, width + 2*em, height + em);
-     ctx_fill (ctx);
-   }
-
-   set_color(ctx, color_fg);
-
-   if (active)
-   {
-     ctx_rectangle (ctx, x, y, width, height);
-     ctx_stroke (ctx);
-   }
-#if 0
-   else
-   {
-     ctx_gray(ctx,0.5);
-     ctx_rectangle (ctx, x, y, width, height);
-     ctx_fill (ctx);
-   }
-#endif
-
-   set_color(ctx, color_fg);
-
-   ctx_move_to (ctx, x + 1 * em, y+em);
+  Ctx *ctx = ui->ctx;
+   UiWidget *widget  = widget_register(ui,x,y,w,h,
+                              id);
+   ctx_save (ctx);
+   ctx_text_align (ctx, CTX_TEXT_ALIGN_START);
+   ctx_move_to (ctx, x, y + ui->font_size);
    ctx_text (ctx, label);
+   ctx_move_to (ctx, x + w/2, y + ui->font_size);
+
+   if (widget->focused && ui->activate)
+   {
+     if (value)
+       strcpy (ui->temp_text, value);
+     else {
+       ui->temp_text[0] = 0;
+     }
+     ui->cursor_pos = strlen (ui->temp_text);
+     printf ("!activating\n");
+     widget->active = 1;
+     ui->active_widget_id = widget->id;
+     ui->activate = 0;
+   }
+   const char *to_show = value;
+   if (widget->active)
+      to_show = &ui->temp_text[0];
+
+   if (!(to_show && to_show[0]))
+     to_show = fallback;
+
+   if (to_show && to_show[0])
+   { 
+     if (to_show == fallback)
+       ui_set_color_a (ctx, color_fg, 0.5);
+     ctx_text (ctx, to_show);
+   }
+   ctx_restore (ctx);
+
+   if (ui->active_widget_id == widget->id)
+//widget->active)
+   {
+      char temp = ui->temp_text[ui->cursor_pos];
+      ui->temp_text[ui->cursor_pos]=0;
+      float tw = ctx_text_width (ctx, ui->temp_text);
+      ui->temp_text[ui->cursor_pos]=temp;
+      ctx_rectangle (ctx, x + w/2 + tw, y + ui->font_size * 0.1, 2, ui->font_size);
+      ctx_save (ctx);
+      ui_set_color(ctx, color_focused_fg);
+      ctx_fill (ctx);
+      ctx_restore (ctx);
+   }
+
+   if (widget->state == ui_state_commit)
+   {
+     widget->state = ui_state_default;
+     return strdup (ui->temp_text);
+   }
 
    ctx_begin_path (ctx);
-   ctx_rectangle (ctx, x, y, width, height);
-   ctx_listen (ctx, CTX_DRAG, button_drag, NULL, widget->id);
+   ctx_rectangle (ctx, x, y, w, h);
+   ctx_listen (ctx, CTX_DRAG, ui_entry_drag, ui, widget->id);
    if (color_interactive[3]>0.0)
    {
-     set_color(ctx, color_interactive);
+     ui_set_color(ctx, color_interactive);
      ctx_fill(ctx);
    }
    else
    {
      ctx_begin_path (ctx);
    }
-   ctx_restore (ctx);
-   widget_no ++;
 
-   if (widget->data)
-   {
-     widget->data = NULL;
-     widget->state = ui_state_default;
-     return 1;
-   }
-   return 0;
+   return NULL;
 }
 
-#define UI_START() \
-   float width  = ctx_width (ctx);\
-   float height = ctx_height (ctx);\
-   draw_bg (ctx);\
-   float line_height = font_size * 1.7;\
-   static float scroll_offset = 0;\
-   if (frame_no == 0 && demo_mode) \
-   {\
-     scroll_offset = 0;\
-   }\
-   ctx_rectangle(ctx,0,0,width, height);\
-   ctx_listen (ctx, CTX_DRAG, screen_pan, NULL, &scroll_offset);\
-   ctx_begin_path (ctx); \
-   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);\
-   float y = (int)(scroll_offset + height * 0.15); \
-
-#define SLIDER_FLOAT(label,min,max,ptr) \
-   do { \
-   if (y>-font_size && y < height) {\
-  ctx_save(ctx);ctx_text_align(ctx,CTX_TEXT_ALIGN_START);\
-   ctx_move_to (ctx, width * 0.1, y+font_size);\
-   ctx_text (ctx, label);\
-   ctx_text_align(ctx,CTX_TEXT_ALIGN_END);\
-   {char buf[256];sprintf(buf, "%.1f", *ptr);\
-    ctx_move_to (ctx, width * 0.9, y+font_size);\
-   ctx_text (ctx, buf);}\
-   y += font_size;\
-   slider_float (ctx, width * 0.1, y, width * 0.8, line_height, ptr, min, max);\
-   y += line_height;ctx_restore(ctx);}else{\
-   y += font_size;\
-   y += line_height;\
-   }}while(0)
-
-#define TOGGLE(label, ptr) \
-   do { \
-   if (y>-font_size*2 && y < height) { \
-   ctx_move_to (ctx, width * 0.5, y+font_size);\
-   ctx_text (ctx, label);\
-   y += line_height;\
-   if (button(ctx, width * 0.15, y, 0, 0, "off", *ptr==0, (void*)(__LINE__ * 4)))\
-      {*ptr=0;};\
-   if (button(ctx, width * 0.50, y, 0, 0, "on", *ptr==1, (void*)(__LINE__ * 4 + 1)))\
-      {*ptr=1;};\
-   y += line_height;}\
-  else { y += line_height * 2; } } while(0)
-
-#define TEXT(string) do{\
-   if (y>-font_size && y < height) { ctx_move_to (ctx, width * 0.5, y+font_size);\
-   ctx_text (ctx, string); }; \
-   y += line_height;}while(0)
+char *string = NULL;
+char *password = NULL;
 
 
-#define BUTTON(label) \
-   y += line_height, button(ctx, width * 0.15, y-line_height, 0, 0, label, 0, (void*)(__LINE__ * 4))
-
-static void go(const char *name);
-
-
-void screen_menu (Ctx *ctx, uint32_t delta_ms)
+void screen_menu (Ui *ui)
 {
-   UI_START();
+   ui_start (ui);
+
    if (demo_mode)
    {
      if (frame_no == 0)
      {
-       scroll_offset -= 0.0;
+       ui->scroll_offset -= 0.0;
      }
      else {
-       scroll_offset -= 0.020 * delta_ms;
+       ui->scroll_offset -= 0.020 * ui->delta_ms;
      }
    }
 
-   if (BUTTON("title"))    go("title");
-   if (BUTTON("clock"))    go("clock");
+
+   if (UI_BUTTON("title"))    UI_DO("title");
+   if (UI_BUTTON("clock"))    UI_DO("clock");
+
+   UI_ENTRY("essid", "wifi name", &string);
+   UI_ENTRY("password", "joshua", &password);
+
 #ifndef DEMO_NO_TERMINAL
-   if (BUTTON("term"))     go("term");
+   if (UI_BUTTON("term"))     UI_DO("term");
 #endif
-   if (BUTTON("settings")) go("settings");
-   if (BUTTON("spirals"))  go("spirals");
-   if (BUTTON("bouncy"))   go("bouncy");
-   if (BUTTON("todo"))     go("todo");
+   if (UI_BUTTON("settings")) UI_DO("settings");
+   if (UI_BUTTON("spirals"))  UI_DO("spirals");
+   if (UI_BUTTON("bouncy"))   UI_DO("bouncy");
+   if (UI_BUTTON("todo"))     UI_DO("todo");
 #if CTX_ESP
-   if (BUTTON("reboot"))   esp_restart();
+   if (UI_BUTTON("reboot"))   esp_restart();
 #endif
 
-   y+= line_height;
+   ui->y += ui->line_height;
+   ui_end(ui);
 }
 
 ////// term
@@ -451,6 +798,7 @@ static void term_handle_event (Ctx        *ctx,
 
 static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)  
 {
+  Ui *ui = userdata;
   switch (event->type)
   {
     case CTX_KEY_PRESS:
@@ -464,6 +812,7 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
       break;
     case CTX_KEY_DOWN:
       { char buf[1024];
+      if (!strcmp (event->string, "escape")){ ui_do(ui, "menu"); return;}
         snprintf (buf, sizeof(buf)-1, "keydown %i %i", event->unicode, event->state);
         term_handle_event (event->ctx, event, buf);
       }
@@ -484,9 +833,10 @@ void on_uart_rx()
 }
 
 #ifndef DEMO_NO_TERMINAL
-static void screen_term (Ctx *ctx, uint32_t delta_ms)
+static void screen_term (Ui *ui)
 {
-   draw_bg (ctx);
+   Ctx *ctx = ui->ctx;
+   ui_bg (ctx);
    if (!term_client)
    {
       int flags = 0;
@@ -513,9 +863,9 @@ static void screen_term (Ctx *ctx, uint32_t delta_ms)
    else
    ctx_translate (ctx, ctx_width(ctx) * 35/240, ctx_height(ctx)*35/240);
    ctx_clients_draw (ctx, 0);
-   ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
-   ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
-   ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
+   ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, ui, NULL);
+   ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, ui, NULL);
+   ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, ui, NULL);
 
    ctx_restore(ctx);
 
@@ -527,40 +877,46 @@ static void screen_term (Ctx *ctx, uint32_t delta_ms)
 }
 #endif
 
-static void screen_todo (Ctx *ctx, uint32_t delta_ms)
+static void screen_todo (Ui *ui)
 {
-   UI_START();
-   TEXT("file system browser");
-   TEXT("text editor");
-   TEXT("top-panel");
-   TEXT("espnow-chat");
-   TEXT("micropython");
-   TEXT("ssh");
-   TEXT("flow3r port");
+   ui_start (ui);
+   UI_TEXT("keybindings for sliders");
+   UI_TEXT("ssh");
+   UI_TEXT("scrolling/clipping/different positioning of text");
+   UI_TEXT("espnow-chat");
+   UI_TEXT("top-panel");
+   UI_TEXT("file system browser");
+   UI_TEXT("selection in text entry");
+   UI_TEXT("micropython");
+   UI_TEXT("text editor");
+   UI_TEXT("flow3r port");
+   ui_end(ui);
 }
 
 static float prev_backlight = 100.0f;
 
-void screen_settings (Ctx *ctx, uint32_t delta_ms)
+void screen_settings (Ui *ui)
 {
-   UI_START();
+   Ctx *ctx = ui->ctx;
+   ui_start (ui);
    static float backlight  = 100.0;
-
+   float line_height = ui->line_height;
    if (demo_mode && frame_no > 1)
    {
      if (screen_elapsed < 3.0f)
      {
-       backlight = backlight + 0.01 * delta_ms;
+       backlight = backlight + 0.01 * ui->delta_ms;
        if (backlight>=90.0)
          backlight = 90.0;
      }
      else {
        backlight = 50;
-       scroll_offset -= 0.05 * delta_ms;
+       ui->scroll_offset -= 0.05 * ui->delta_ms;
      }
    }
 
-   SLIDER_FLOAT("font size", 20.0f, 45.0f, &font_size);
+
+   ui->font_size=UI_SLIDER("font size", 20,45,0.5,ui->font_size);
 
    if (prev_backlight != backlight)
    {
@@ -570,53 +926,57 @@ void screen_settings (Ctx *ctx, uint32_t delta_ms)
      prev_backlight = backlight;
    }
 
-   SLIDER_FLOAT("backlight", 0.0f, 100.0f, &backlight);
-   TOGGLE("show fps", &show_fps);
+   static uint8_t byte = 11;
+   static int8_t sbyte = 11;
+   byte      = UI_SLIDER("uint8_t", 0, 255, 1.0, byte);
+   sbyte     = UI_SLIDER("int8_t", -128, 127, 1.0, sbyte);
+   backlight = UI_SLIDER("backlight", 0.0f, 100.0f, 5.0, backlight);
+   show_fps  = UI_TOGGLE("show fps", show_fps);
 
-
-   ctx_move_to (ctx, width * 0.5f, y+font_size);
+   ctx_move_to (ctx, ui->width * 0.5f, ui->y+em);
    if (gradient_bg)
-     TEXT("bg start gradient RGB");
+     UI_TEXT("bg start gradient RGB");
    else
-     TEXT("Background RGB");
-   slider_float (ctx, width * 0.1f, y, width * 0.8f, line_height, &color_bg[0], 0,1);
-   y += line_height;
-   slider_float (ctx, width * 0.1f, y, width * 0.8f, line_height, &color_bg[1], 0,1);
-   y += line_height;
-   slider_float (ctx, width * 0.1f, y, width * 0.8f, line_height, &color_bg[2], 0,1);
-   y += line_height;
+     UI_TEXT("Background RGB");
+   color_bg[0] = ui_slider (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8, color_bg[0]);
+   ui->y += line_height;
+   color_bg[1] = ui_slider (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8, color_bg[1]);
+   ui->y += line_height;
+   color_bg[2] = ui_slider (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8, color_bg[2]);
+   ui->y += line_height;
 
-   TOGGLE("gradient bg", &gradient_bg);
+   gradient_bg = UI_TOGGLE("gradient bg", gradient_bg);
 
    if (gradient_bg)
    {
-     ctx_move_to (ctx, width * 0.5f, y+font_size);
+     ctx_move_to (ctx, ui->width * 0.5f, ui->y+em);
      ctx_text (ctx, "bg end gradient RGB");
-     y += font_size;
-     slider_float (ctx, width * 0.1f, y, width * 0.8f, line_height, &color_bg2[0], 0,1);
-     y += line_height;
-     slider_float (ctx, width * 0.1f, y, width * 0.8f, line_height, &color_bg2[1], 0,1);
-     y += line_height;
-     slider_float (ctx, width * 0.1f, y, width * 0.8f, line_height, &color_bg2[2], 0,1);
-     y += line_height;
+     ui->y += em;
+   color_bg2[0] = ui_slider (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8, color_bg2[0]);
+     ui->y += line_height;
+   color_bg2[1] = ui_slider (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8, color_bg2[1]);
+     ui->y += line_height;
+   color_bg2[2] = ui_slider (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8, color_bg2[2]);
+     ui->y += line_height;
    }
  
-   static int interactive_debug = 0;
-   TOGGLE("show interaction zones", &interactive_debug);
+   interactive_debug = UI_TOGGLE("show interaction zones", interactive_debug);
    color_interactive[3] = interactive_debug ? 0.3f : 0.0f;
+   ui_end(ui);
 }
 
 ////////
 
-void screen_bouncy (Ctx *ctx, uint32_t delta_ms)
+void screen_bouncy (Ui *ui)
 {
+    Ctx *ctx = ui->ctx;
     float width = ctx_width (ctx);
     float height = ctx_height (ctx);
     static float dim = 100;
     if (frame_no == 0)
     {
-      x = width /2;
-      y = height/2;
+      bx = width /2;
+      by = height/2;
       vx = 2.0;
       vy = 2.33;
     }
@@ -624,7 +984,7 @@ void screen_bouncy (Ctx *ctx, uint32_t delta_ms)
     ctx_rectangle(ctx,0,0,width, height);
     ctx_listen (ctx, CTX_DRAG, bg_motion, NULL, NULL);
     ctx_begin_path (ctx); // clear the path, listen doesnt
-    draw_bg (ctx);
+    ui_bg (ctx);
 
     ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
     ctx_text_baseline(ctx, CTX_TEXT_BASELINE_MIDDLE);
@@ -632,26 +992,27 @@ void screen_bouncy (Ctx *ctx, uint32_t delta_ms)
 
     if (!is_down)
     {
-      ctx_logo (ctx, x, y, dim);
+      ctx_logo (ctx, bx, by, dim);
     }
     else
     {
       ctx_rgb (ctx, 0.5, 0.5, 1);
-      ctx_rectangle(ctx, (int)x, 0, 1, height);ctx_fill(ctx);
-      ctx_rectangle(ctx, 0, (int)y, width, 1);ctx_fill(ctx);
+      ctx_rectangle(ctx, (int)bx, 0, 1, height);ctx_fill(ctx);
+      ctx_rectangle(ctx, 0, (int)by, width, 1);ctx_fill(ctx);
     }
-    x += vx;
-    y += vy;
+    bx += vx;
+    by += vy;
 
-    if (x <= dim/2 || x >= width - dim/2)
+    if (bx <= dim/2 || bx >= width - dim/2)
       vx *= -1;
-    if (y <= dim/2 || y >= height - dim/2)
+    if (by <= dim/2 || by >= height - dim/2)
       vy *= -1;
 }
 //////////////////////////////////////////////
 
-void screen_clock (Ctx *ctx, uint32_t delta_ms)
+void screen_clock (Ui *ui)
 {
+  Ctx *ctx = ui->ctx;
   uint32_t ms = ctx_ticks ()/1000;
   uint32_t s = ms / 1000;
   uint32_t m = s / 60;
@@ -667,7 +1028,7 @@ void screen_clock (Ctx *ctx, uint32_t delta_ms)
   m %= 60;
   h %= 12;
   
-  draw_bg (ctx);
+  ui_bg (ctx);
   float r; 
   
   ctx_line_width (ctx, radius * 0.02f);
@@ -728,8 +1089,9 @@ void screen_clock (Ctx *ctx, uint32_t delta_ms)
   ctx_stroke (ctx);
 }
 
-static void screen_spirals (Ctx *ctx, uint32_t delta_ms)
+static void screen_spirals (Ui *ui)
 {
+  Ctx *ctx = ui->ctx;
   static int dot_count = 0;
   static int shape = 0;
   float dot_scale = 42;
@@ -743,7 +1105,7 @@ static void screen_spirals (Ctx *ctx, uint32_t delta_ms)
     dot_count = 27;
   }
 
-  draw_bg(ctx);
+  ui_bg(ctx);
   for (int i = 0; i < dot_count; i ++)
   {
     float x = ctx_width (ctx)/ 2;
@@ -770,7 +1132,7 @@ static void screen_spirals (Ctx *ctx, uint32_t delta_ms)
 
 }
 
-typedef void (*screen_fun)(Ctx *ctx, uint32_t delta_ms);
+typedef void (*screen_fun)(Ui *ui);
 
 typedef struct Screen
 {
@@ -779,7 +1141,7 @@ typedef struct Screen
   float       fps[4];
 } Screen;
 
-void screen_title (Ctx *ctx, uint32_t delta_ms);
+void screen_title (Ui *ui);
 static Screen screens[]={
   {"title",    screen_title,   {0,}},
   {"settings", screen_settings,{0,}},
@@ -793,21 +1155,21 @@ static Screen screens[]={
   {"todo",     screen_todo,    {0,}},
 };
 
-void screen_title (Ctx *ctx, uint32_t delta_ms)
+void screen_title (Ui *ui)
 {
+  Ctx *ctx = ui->ctx;
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
-
-  draw_bg (ctx);
+  ui_bg (ctx);
   float ty = height/2;
   char buf[256];
 
   if (demo_rounds == 0)
   {
     ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,TITLE);
-    ty+=font_size;
+    ty+=em;
     ctx_move_to(ctx, width * 0.2f,ty);ctx_text(ctx,SUBTITLE);
-    ty+=font_size;
+    ty+=em;
     sprintf(buf, "%.0fx%.0f", width, height);
     ctx_move_to(ctx, width * 0.2,ty);
     ctx_text(ctx,buf);
@@ -824,7 +1186,7 @@ void screen_title (Ctx *ctx, uint32_t delta_ms)
       ctx_move_to(ctx, width * 0.5f,ty);ctx_text(ctx,buf);
       sprintf (buf, "%.1f", screens[i].fps[1]);
       ctx_move_to(ctx, width * 0.7f,ty);ctx_text(ctx,buf);
-      ty+=font_size;
+      ty+=em;
 
       if (frame_no == 0)
       {
@@ -836,12 +1198,12 @@ void screen_title (Ctx *ctx, uint32_t delta_ms)
   ctx_logo (ctx, width/2,height/5,height/3);
 }
 
-static void screen_load_no(int no)
+static void ui_load_screen_no(Ui *ui, int no)
 {
   int n_screens = sizeof(screens)/sizeof(screens[0]);
   if (no < 0) no = n_screens - 1;
   else if (no >= n_screens) no = 0;
-  focused_widget = -1;
+  ui->focused_widget_id = NULL;
 
   screen_no = no;
   frame_no = 0;
@@ -850,7 +1212,7 @@ static void screen_load_no(int no)
 
 static void screen_next(void)
 {
-  screen_load_no (screen_no + 1);
+  ui_load_screen_no (ui, screen_no + 1);
   if (screen_no == 0 && demo_mode) {
     gradient_bg = !gradient_bg;
     demo_rounds++;
@@ -860,14 +1222,15 @@ static void screen_next(void)
 static void screen_prev(void)
 {
   if (screen_no)
-    screen_load_no (screen_no - 1);
+    ui_load_screen_no (ui, screen_no - 1);
 }
 
+
 static void
-go(const char *target)
+ui_do(Ui *ui, const char *target)
 {
   demo_mode = 0;
-  printf ("screen-load: %s\n", target);
+  printf ("ui_do: %s\n", target);
   overlay_fade = 0.7;
   if (!strcmp (target, "kb-collapse"))
   {
@@ -880,6 +1243,11 @@ go(const char *target)
   else if (!strcmp (target, "kb-hide"))
   {
     ctx_osk_mode = 0;
+  }
+  else if (!strcmp (target, "activate"))
+  {
+    if (ui->focused_widget_id)
+      ui->activate = 1;
   }
   else if (!strcmp (target, "focus-next"))
   {
@@ -903,19 +1271,21 @@ go(const char *target)
     for (int i = 0; i < n_screens; i++)
     if (!strcmp (screens[i].name, target))
       {
-        screen_load_no(i);
+        ui_load_screen_no (ui, i);
         return;
       }
+    printf ("unhandled!\n");
   }
 }
 
-static void go_cb (CtxEvent *event, void *data1, void *data2)
+static void ui_cb (CtxEvent *event, void *data1, void *data2)
 {
   const char *target = data1;
+  event->stop_propagate=1;
   if (!strcmp (target, "quit"))
     ctx_quit (event->ctx);
   else
-    go (target);
+    ui_do (ui, target);
 }
 
 void overlay_button (Ctx *ctx, float x, float y, float w, float h, const char *label, char *action)
@@ -924,7 +1294,7 @@ void overlay_button (Ctx *ctx, float x, float y, float w, float h, const char *l
   if (m > h) m = h;
       ctx_save(ctx);
        ctx_rectangle (ctx, x,y,w,h);
-       ctx_listen (ctx, CTX_PRESS, go_cb, action, NULL);
+       ctx_listen (ctx, CTX_PRESS, ui_cb, action, NULL);
       if (overlay_fade <= 0.0f)
       {
         ctx_begin_path(ctx);
@@ -953,20 +1323,19 @@ int main (int argc, char **argv)
 #endif
 {
     Ctx *ctx = ctx_new(DISPLAY_WIDTH,DISPLAY_HEIGHT,NULL);
+    if (!ui) ui = calloc (1, sizeof (Ui));
  
     long int prev_ticks = ctx_ticks();
 
     float width = ctx_width (ctx);
     float height = ctx_height (ctx);
-    printf ("foo!\n");
     if (height <= width)
-      font_size = height * 0.09f;
+      ui->font_size = height * 0.09f;
     else
-      font_size = width * 0.09f;
+      ui->font_size = width * 0.09f;
     demo_screen_remaining_ms = demo_timeout_ms;
 
-    //go("term");
-    //ctx_get_event(ctx);
+    //ui_do(ui, "menu");
     while (!ctx_has_quit (ctx))
     {
       ctx_start_frame (ctx);
@@ -978,7 +1347,11 @@ int main (int argc, char **argv)
       ctx_save (ctx);
 
       if (screen_no >= 0 && screen_no < sizeof(screens)/sizeof(screens[0]))
-        screens[screen_no].fun(ctx, ticks_delta/1000);
+      {
+        ui->delta_ms = ticks_delta/1000;
+        ui->ctx = ctx;
+        screens[screen_no].fun(ui);
+      }
 
       frame_no++;
       demo_screen_remaining_ms-= ticks_delta/1000;
@@ -1009,7 +1382,7 @@ int main (int argc, char **argv)
          ctx_rgba(ctx,color_bg[0], color_bg[1], color_bg[2], 0.66f);
          ctx_rectangle(ctx,0,0,width, 17);
          ctx_fill(ctx);
-         set_color(ctx,color_fg);
+         ui_set_color(ctx,color_fg);
          ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
          ctx_move_to (ctx, ctx_width(ctx)/2, 13);
          static float fps = 0.0f;
@@ -1039,10 +1412,21 @@ int main (int argc, char **argv)
       }
       ctx_restore (ctx);
 #endif
-      ctx_add_key_binding (ctx, "escape", NULL, "foo",    go_cb, "menu");
-      ctx_add_key_binding (ctx, "left", NULL, "foo",      go_cb, "focus-prev");
-      ctx_add_key_binding (ctx, "right", NULL, "foo",     go_cb, "focus-next");
-      ctx_add_key_binding (ctx, "control-q", NULL, "foo", go_cb, "quit");
+
+      if (ui->active_widget_id)
+      {
+        ctx_listen (ctx, CTX_KEY_PRESS, ui_entry_key_press, ui, NULL);
+      }
+      else
+      {
+        ctx_add_key_binding (ctx, "escape", NULL, "foo",    ui_cb, "menu");
+        ctx_add_key_binding (ctx, "up", NULL, "foo",      ui_cb, "focus-prev");
+        ctx_add_key_binding (ctx, "left", NULL, "foo",      ui_cb, "focus-prev");
+        ctx_add_key_binding (ctx, "right", NULL, "foo",     ui_cb, "focus-next");
+        ctx_add_key_binding (ctx, "down", NULL, "foo",     ui_cb, "focus-next");
+        ctx_add_key_binding (ctx, "return", NULL, "foo",    ui_cb, "activate");
+      }
+      ctx_add_key_binding (ctx, "control-q", NULL, "foo", ui_cb, "quit");
  
       ctx_end_frame (ctx);
       //ctx_handle_events (ctx); // could this be dealt with in tiled end_Frame?
@@ -1092,6 +1476,7 @@ static float osk_rows = 11.5f;
 static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
 {
   const KeyCap *key = data1;
+  Ui *ui = data1;
   KeyCapState *key_state = data1;
   KeyBoard *kb = data2;
   float h = ctx_height (event->ctx);
@@ -1107,7 +1492,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
   if (//(event->y - event->start_y > c * rows / 2) || 
      (event->y - event->start_y > c * 2 && event->y > h * 0.9))
   {
-    go ("kb-collapse");
+    ui_do (ui, "kb-collapse");
     for (int row = 0; kb->layout->keys[row][0].label; row++)
     for (int col = 0; kb->layout->keys[row][col].label; col++)
     { 
@@ -1186,7 +1571,7 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
       {
         if (!strcmp (key->sequence, "kb-collapse"))
         {
-          go ("kb-collapse");
+          ui_do (ui, "kb-collapse");
         }
         else if (kb->control || kb->alt)
         {
@@ -1239,8 +1624,8 @@ static const KeyBoardLayout kb_round = {
    //  {"\\/","\\/",NULL,NULL,1.0f,"kb-collapse","kb-collapse",NULL,NULL,0,},
    //  {"↑","↑","PgUp","PgUp",1.0f,"up","up","page-up","page-up",0,},
    //  {"↓","↓","PgDn","PgDn",1.0f,"down","down","page-down","page-down",0,},
-   //  {"←","←","Home","Home",1.0f,"left","left","home","home",0,},
-   //  {"→","→","End","End",1.0f,"right","right","end","end",0,},
+       {"←","←","Home","Home",1.0f,"left","left","home","home",0,},
+       {"→","→","End","End",1.0f,"right","right","end","end",0,},
        {"⏎","⏎",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
        //{"ret","ret",NULL,NULL,1.5f,"return","return",NULL,NULL,0},
        {NULL}},
@@ -1323,7 +1708,7 @@ static const KeyBoardLayout kb_round = {
    }
 };
 
-static KeyBoard keyboard = {&kb_round, 0, 0, 0, 0};
+static KeyBoard keyboard = {&kb_round, 0, 0, 0, 0, 0};
 
 void ctx_osk_draw (Ctx *ctx)
 {
@@ -1368,7 +1753,7 @@ void ctx_osk_draw (Ctx *ctx)
                       y0,
                       w,
                       c * rows);
-  ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, (void*)kb);
+  ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, ui, (void*)kb);
   ctx_rgba (ctx, 0,0,0, 0.8 * fade);
   ctx_fill (ctx);
 
@@ -1482,7 +1867,7 @@ void ctx_osk_draw (Ctx *ctx)
   ctx_restore (ctx);
      break;
      case 1:
-       overlay_button (ctx, 0, h - h * 0.14, w, h * 0.14, "kb", "kb-show");
+       if(0)overlay_button (ctx, 0, h - h * 0.14, w, h * 0.14, "kb", "kb-show");
        break;
   }
 }
