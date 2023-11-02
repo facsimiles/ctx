@@ -72,9 +72,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           active_edges--;
           i--;
         }
-      else {
-        ending_edges+= (edge_end < next_scanline);
-      }
+      else ending_edges += (edge_end < next_scanline);
     }
   rasterizer->active_edges = active_edges;
 
@@ -157,8 +155,12 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 inline static int analyze_scanline (CtxRasterizer *rasterizer)
 {
   if ((rasterizer->fast_aa == 0) ||
-      (rasterizer->ending_edges != rasterizer->pending_edges))
+      (rasterizer->ending_edges != rasterizer->pending_edges) ||
+      (rasterizer->prev_active_edges != rasterizer->active_edges) 
+
+      )
   {
+    rasterizer->prev_active_edges = rasterizer->active_edges;
     return CTX_RASTERIZER_AA;
   }
 
@@ -211,7 +213,7 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
           x1_end < x0_start
          )
       {
-         crossings |= 1;
+         crossings++;
 #if CTX_RASTERIZER_AA==3
          if (needs_aa3)
             break;
@@ -227,15 +229,16 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
       x0_start = x1_start;
     }
 
+    rasterizer->prev_active_edges = rasterizer->active_edges;
   if (crossings)
   {
 #if CTX_RASTERIZER_AA>5
-    if (needs_aa15) return 15 * crossings;
+    if (needs_aa15) return 15;
 #endif
 #if CTX_RASTERIZER_AA>3
-    if (needs_aa5) return 5 * crossings;
+    if (needs_aa5) return 5;
 #endif
-    if (needs_aa3) return 3 * crossings;
+    if (needs_aa3) return 3;
     return 1;
   }
   return 0;
@@ -1520,7 +1523,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
     {
       int aa = ctx_rasterizer_feed_edges_full (rasterizer);
 
-      if (rasterizer->active_edges + rasterizer->pending_edges == 0)
+      if (rasterizer->active_edges + rasterizer->pending_edges == 0
+          //|| (aa <= 1)
+          )
       { /* no edges */
         rasterizer->scanline += CTX_FULL_AA;
         dst += blit_stride;
