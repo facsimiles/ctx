@@ -72,17 +72,17 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
           active_edges--;
           i--;
         }
-      else if (edge_end < next_scanline)
-        ending_edges++;
+      else {
+        ending_edges+= (edge_end < next_scanline);
+      }
     }
   rasterizer->active_edges = active_edges;
 
   unsigned int pending_edges = rasterizer->pending_edges;
   for (unsigned int i = 0; i < pending_edges; i++)
     {
-      int edge_end = ((CtxSegment*)(rasterizer->edge_list.entries))[rasterizer->edges[CTX_MAX_EDGES-1-i]].data.s16[3]-1;
-      if (edge_end < next_scanline)
-        ending_edges++;
+      int edge_end = ((CtxSegment*)(rasterizer->edge_list.entries))[rasterizer->edges[CTX_MAX_EDGES-1-i]].data.s16[3];
+      ending_edges += (edge_end < next_scanline);
     }
   rasterizer->ending_edges = ending_edges;
 }
@@ -157,9 +157,10 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 inline static int analyze_scanline (CtxRasterizer *rasterizer)
 {
   if ((rasterizer->fast_aa == 0) ||
-      rasterizer->ending_edges ||
-      rasterizer->pending_edges)
-   return CTX_RASTERIZER_AA;
+      (rasterizer->ending_edges != rasterizer->pending_edges))
+  {
+    return CTX_RASTERIZER_AA;
+  }
 
   const int *edges  = rasterizer->edges;
   const CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
@@ -210,16 +211,16 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
           x1_end < x0_start
          )
       {
-         crossings++;
+         crossings |= 1;
 #if CTX_RASTERIZER_AA==3
          if (needs_aa3)
-            return 3;
+            break;
 #elif CTX_RASTERIZER_AA==5
          if (needs_aa5)
-            return 5;
+            break;
 #elif CTX_RASTERIZER_AA==15
          if (needs_aa15)
-            return 15;
+            break;
 #endif
       }
       x0_end = x1_end;
@@ -229,12 +230,12 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
   if (crossings)
   {
 #if CTX_RASTERIZER_AA>5
-    if (needs_aa15) return 15;
+    if (needs_aa15) return 15 * crossings;
 #endif
 #if CTX_RASTERIZER_AA>3
-    if (needs_aa5) return 5;
+    if (needs_aa5) return 5 * crossings;
 #endif
-    if (needs_aa3) return 3;
+    if (needs_aa3) return 3 * crossings;
     return 1;
   }
   return 0;
