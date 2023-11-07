@@ -197,14 +197,14 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
       const CtxSegment *segment1 = segments + edges[t+1];
       const int delta1    = segment1->delta;
       const int x1        = segment1->val;
-
+      const int abs_delta1 = abs(delta1);
 #if CTX_RASTERIZER_AA>5
-      needs_aa15 += (abs(delta1) > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
+      needs_aa15 += (abs_delta1 > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
 #endif
 #if CTX_RASTERIZER_AA>3
-      needs_aa5 += (abs(delta1) > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
+      needs_aa5 += (abs_delta1 > CTX_RASTERIZER_AA_SLOPE_LIMIT5);
 #endif
-      needs_aa3 += (abs(delta1) > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
+      needs_aa3 += (abs_delta1 > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
 
       const int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
       const int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
@@ -216,7 +216,8 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
          crossings++;
 #if CTX_RASTERIZER_AA==3
          if (needs_aa3)
-            break;
+            return 3;
+         return 1;
 #elif CTX_RASTERIZER_AA==5
          if (needs_aa5)
             break;
@@ -2430,7 +2431,7 @@ _ctx_font (Ctx *ctx, const char *name);
 static void
 ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name)
 {
-  //_ctx_font (rasterizer->backend.ctx, font_name);
+  _ctx_font (rasterizer->backend.ctx, font_name);
 }
 
 static void
