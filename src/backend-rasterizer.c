@@ -156,14 +156,11 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
 {
   if (rasterizer->active_edges + rasterizer->pending_edges == 0)
     return -1;
-  if ((rasterizer->fast_aa == 0) ||
-      (rasterizer->horizontal_edges) ||
-      (rasterizer->ending_edges != rasterizer->pending_edges) ||
-      (rasterizer->prev_active_edges != rasterizer->active_edges) 
-
-      )
+  if ((rasterizer->fast_aa == 0) |
+      rasterizer->horizontal_edges|
+      rasterizer->ending_edges|
+      rasterizer->pending_edges)
   {
-    rasterizer->prev_active_edges = rasterizer->active_edges;
     return CTX_RASTERIZER_AA;
   }
 
@@ -232,7 +229,6 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
       x0_start = x1_start;
     }
 
-    rasterizer->prev_active_edges = rasterizer->active_edges;
   if (crossings)
   {
 #if CTX_RASTERIZER_AA>5
