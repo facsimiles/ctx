@@ -837,8 +837,8 @@ int     em_waitdata (void *serial_obj, int timeout)
 
 #endif
 
-#define CTX_VT_INBUFSIZE  128
-#define CTX_VT_OUTBUFSIZE 128
+#define CTX_VT_INBUFSIZE  400
+#define CTX_VT_OUTBUFSIZE 32
 
 static char ctx_dummy_inbuf[CTX_VT_INBUFSIZE]="";
 static char ctx_dummy_outbuf[CTX_VT_OUTBUFSIZE]="";
@@ -848,8 +848,18 @@ static int ctx_dummy_out_len = 0;
 static int ctx_dummy_out_pos = 0;
 static int ctx_dummy_out_read_pos = 0;
 
+int ctx_vt_available (Ctx *ctx)
+{
+  return CTX_VT_INBUFSIZE - ctx_dummy_in_len - 1;
+}
+
 void ctx_vt_write (Ctx *ctx, uint8_t byte)
 {
+#if 0
+  while (ctx_dummy_in_len > CTX_VT_INBUFSIZE/2)
+  {
+  }
+#endif
   if (ctx_dummy_in_len < CTX_VT_INBUFSIZE)
   {
     ctx_dummy_inbuf[ctx_dummy_in_pos++] = byte;
@@ -879,6 +889,13 @@ int ctx_vt_read (Ctx *ctx)
   return ret;
 }
 
+int ctx_vt_cursor_y (CtxClient *client)
+{
+  if (!client) return 0;
+  VT *vt = ctx_client_vt (client);
+  if (!vt) return 0;
+  return vt_get_cursor_y (vt);
+}
 
 static ssize_t ctx_dummy_write (void *s, const void *buf, size_t count)
 {

@@ -57,7 +57,7 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
     {
       char *old = string->str;
       int old_len = string->allocated_length;
-      string->allocated_length = CTX_MAX (string->allocated_length * 2, string->length + 2);
+      string->allocated_length = CTX_MAX (string->allocated_length * 1.5, string->length + 2);
       string->str = (char*)ctx_realloc (old, old_len, string->allocated_length);
     }
   string->str[string->length++] = val;

@@ -1914,7 +1914,7 @@ static const int16_t ctx_v_to_cr[256]={
 
 #endif
 
-CTX_INLINE uint32_t ctx_yuv_to_rgba32 (uint8_t y, uint8_t u, uint8_t v)
+static inline uint32_t ctx_yuv_to_rgba32 (uint8_t y, uint8_t u, uint8_t v)
 {
 #if CTX_YUV_LUTS
   int cy  = ctx_y_to_cy[y];

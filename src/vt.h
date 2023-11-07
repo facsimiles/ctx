@@ -144,11 +144,14 @@ struct _VT
   int mouse_all;
   int mouse_decimal;
 
-
-  uint8_t    utf8_holding[64]; /* only 4 needed for utf8 - but it's purpose
+#if CTX_PTY
+  uint8_t    utf8_holding[64];
+#else
+  uint8_t    utf8_holding[4]; /* only 4 needed for utf8 - but it's purpose
                                  is also overloaded for ctx journal command
                                  buffering , and the bigger sizes for the svg-like
                                  ctx parsing mode */
+#endif
   int        utf8_expected_bytes;
   int        utf8_pos;
 
@@ -298,7 +301,7 @@ void        vt_paste              (VT *vt, const char *str);
 #if CTX_PTY
 #define DEFAULT_SCROLLBACK   (1<<13)
 #else
-#define DEFAULT_SCROLLBACK   (16)
+#define DEFAULT_SCROLLBACK   (1)
 #endif
 #define DEFAULT_ROWS         24
 #define DEFAULT_COLS         80

@@ -2505,11 +2505,13 @@ uint32_t    ctx_strhash (const char *str);
 void _ctx_write_png (const char *dst_path, int w, int h, int num_chans, void *data);
 
 
+int ctx_vt_available (Ctx *ctx);
 void ctx_vt_write (Ctx *ctx, uint8_t byte);
 int ctx_vt_has_data (Ctx *ctx);
 int ctx_vt_read (Ctx *ctx);
 
 
+int ctx_vt_cursor_y (CtxClient *client);
 
 #if CTX_GSTATE_PROTECT
 /* sets the current gstate stack (number of unpaired ctx_save calls) as a
