@@ -154,6 +154,8 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 
 inline static int analyze_scanline (CtxRasterizer *rasterizer)
 {
+  if (rasterizer->active_edges + rasterizer->pending_edges == 0)
+    return -1;
   if ((rasterizer->fast_aa == 0) ||
       (rasterizer->ending_edges != rasterizer->pending_edges) ||
       (rasterizer->prev_active_edges != rasterizer->active_edges) 
@@ -1426,7 +1428,6 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
    }
 }
 
-#undef CTX_EDGE_Y0
 #undef CTX_EDGE
 
 static inline void
@@ -1523,16 +1524,13 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
     {
       int aa = ctx_rasterizer_feed_edges_full (rasterizer);
 
-      if (rasterizer->active_edges + rasterizer->pending_edges == 0
-          //|| (aa <= 1)
-          )
-      { /* no edges */
+      switch (aa)
+      {
+        case -1:
         rasterizer->scanline += CTX_FULL_AA;
         dst += blit_stride;
         continue;
-      } else
-      {
-        if (aa==0)
+        case 0:
         { /* the scanline transitions does not contain multiple intersections - each aa segment is a linear ramp */
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
           ctx_rasterizer_feed_edges (rasterizer);
@@ -1549,16 +1547,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           }
           ctx_rasterizer_generate_coverage_set2 (rasterizer, minx, maxx, coverage, is_winding);
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
-#if 0
-          /// XXX : is missing from other cases
-          if (real_aa == 1)
-          {
-            for (int x = minx; x <= maxx; x ++)
-              coverage[x] = coverage[x] > 127?255:0;
-          }
-#endif
+          break;
         }
-        else if (aa == 1) // marginal improvement on esp32
+        case 1:
         {
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
           ctx_rasterizer_feed_edges (rasterizer);
@@ -1580,8 +1571,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
             ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, is_winding);
             ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
           }
+          break;
         }
-        else
+        default:
         { /* level of oversampling based on lowest steepness edges */
           if (aa > real_aa) aa = real_aa;
           int scanline_increment = 15/aa;
@@ -1597,7 +1589,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
         }
       }
   
-    ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx, NULL, NULL);
+      ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx, NULL, NULL);
       apply_coverage (rasterizer,
                       &dst[(minx * rasterizer->format->bpp) /8],
                       rasterizer_src,
