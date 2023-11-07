@@ -157,6 +157,7 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
   if (rasterizer->active_edges + rasterizer->pending_edges == 0)
     return -1;
   if ((rasterizer->fast_aa == 0) ||
+      (rasterizer->horizontal_edges) ||
       (rasterizer->ending_edges != rasterizer->pending_edges) ||
       (rasterizer->prev_active_edges != rasterizer->active_edges) 
 
@@ -258,6 +259,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
   int next_scanline = scanline + CTX_FULL_AA;
   unsigned int edge_count = rasterizer->edge_list.count;
   int active_edges = rasterizer->active_edges;
+  rasterizer->horizontal_edges = 0;
   while ((edge_pos < edge_count &&
          (miny=entries[edge_pos].data.s16[1])  <= next_scanline))
     {
@@ -290,6 +292,8 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
               }
               active_edges++;
             }
+            else
+            rasterizer->horizontal_edges++;
         }
       edge_pos++;
     }
