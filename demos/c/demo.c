@@ -1,1 +1,1 @@
-../../ports/pico/talk.c
+../../demo/pico/talk.c

@@ -5,65 +5,73 @@
 #include "port_config.h"
 #include "ctx.h"
 
+#include <sys/stat.h>
+#include <dirent.h>
+
+#ifndef CTX_DEMO_WIFI_SSID
+#define CTX_DEMO_WIFI_SSID     ""
+#endif
+#ifndef CTX_DEMO_WIFI_PASSWORD
+#define CTX_DEMO_WIFI_PASSWORD ""
+#endif
+
+#ifndef CTX_DEMO_SSH_USER
+#define CTX_DEMO_SSH_USER "pi"
+#endif
+#ifndef CTX_DEMO_SSH_PASSWORD
+#define CTX_DEMO_SSH_PASSWORD "raspberry"
+#endif
+#ifndef CTX_DEMO_SSH_HOST
+#define CTX_DEMO_SSH_HOST "raspberrypi"
+#endif
+
 #if CTX_ESP
 void esp_backlight(int percent);
 void esp_restart(void);
 int wifi_init_sta(const char *ssid, const char *password);
 #endif
+#if CTX_FLOW3R
+void     board_init           (void);
+int16_t  bsp_captouch_angular (int petal);
+uint16_t bsp_captouch_radial  (int petal);
+bool     bsp_captouch_down    (int petal);
+float    bsp_captouch_angle   (float *radial_pos);
+bool     bsp_captouch_screen_touched (void);
+extern bool flow3r_synthesize_key_events;
+#endif
 
-int demo_mode = 1;
-
-int  ctx_osk_mode = 0;
-void ctx_osk_draw (Ctx *ctx);
-
-static float color_focused_fg[4]  = {1,0,0,0.8};
-//static float color_focused_bg[4]  = {1,1,0,0.8};
-static float color_interactive[4] = {1,0,0,0.0}; 
-static float color_bg[4]          = {0.1, 0.2, 0.3, 1.0};
-static float color_bg2[4]         = {0.8, 0.9, 1.0, 1.0};
-static float color_fg[4]; // black or white automatically based on bg
-
-int        screen_no      = 0;
-int        frame_no       = 0;
-float      screen_elapsed = 0.0f;
-
-bool       show_fps          = false; // < boolean ui setting toggles
-bool       gradient_bg       = false;
-bool       interactive_debug = false;
-
-
-
-static float overlay_fade = 1.0;
-
-
-/////////////////////////////////////////////
-
+#if 0
 typedef struct _UiWidget UiWidget;
 typedef struct _Ui       Ui;
-static Ui *ui = NULL;
 
-#define em (ui->font_size)
 void ui_do(Ui *ui, const char *name);
-void ui_start (Ui *ui);
-void ui_end (Ui *ui);
+void ui_start(Ui *ui);
+void ui_end(Ui *ui);
 
 void ui_focus_next(void);
 void ui_focus_prev(void);
 
-int  ui_button(Ui *ui, void *id, const char *label);
-bool ui_toggle(Ui *ui, void *id, const char *label, bool value);
+int  ui_button(Ui *ui, const char *label);
+bool ui_toggle(Ui *ui, const char *label,
+               bool value);
 void ui_text(Ui *ui, const char *string);
+void ui_spacer(Ui *ui);
+int  ui_entry(Ui *ui, const char *label,
+              const char *fallback, char **strptr);
+float ui_slider(Ui *ui, const char *label,
+                float min, float max, float step, float value);
 
-float ui_slider (Ui *ui, void *id,
-                 const char *label, float min, float max, float step, float value);
+void ui_scroll_to (Ui *ui, float offset);
+void ui_set_scroll_offset (Ui *ui, float offset);
 
-float
-ui_slider_coords (Ui *ui, void *id,
-                  float x, float y, float width, float height,
-                  float min_val, float max_val, float step, float value);
-
+float ui_slider_coords (Ui *ui, void *id,
+                        float x, float y, float width, float height,
+                        float min_val, float max_val, float step, float value);
+int ui_button_coords (Ui *ui, float x, float y, float width, float height,
+                      const char *label, int active, void *id);
 char * ui_entry_coords(Ui *ui, void *id, float x, float y, float w, float h,
-         const char *fallback, const char *value);
+                       const char *fallback, const char *value);
+
 
 void ui_set_color_a (Ctx *ctx, float *rgba, float alpha);
 void ui_set_color (Ctx *ctx, float *rgba);
@@ -77,7 +85,6 @@ typedef enum
   ui_type_entry
 } ui_type;
 
-
 typedef enum
 {
   ui_state_default = 0,
@@ -87,8 +94,7 @@ typedef enum
 } ui_state;
 
 struct _UiWidget {
-  void *id; // unique identifier - in functions can be based on __LINE__ +fileid
-            // UI_ID is a macro that uses __LINE__ * 4
+  void *id; // unique identifier
   ui_type type;
 
   float x;  // bounding box of widget
@@ -107,156 +113,168 @@ struct _UiWidget {
 
 };
 
-#define MAX_WIDGETS 32
+#define UI_MAX_WIDGETS 32
+
+typedef void (*ui_fun)(Ui *ui);
+typedef void (*ui_data_finalize)(void *data);
+
+typedef struct ui_style_t {
+  float bg[4];
+  float bg2[4];
+  float fg[4];
+  float focused_fg[4];
+  float focused_bg[4];
+  float cursor_fg[4];
+  float cursor_bg[4];
+  float interactive_fg[4];
+  float interactive_bg[4];
+} ui_style_t;
 
 struct _Ui {
-  Ctx *ctx;
-  float font_size;
-  int widget_no;
-  void *focused_id;
-  void *active_id;
-  int activate;
-  int   delta_ms;
-  float width;
-  float height;
-  float line_height;
-  float scroll_offset;
-  float scroll_offset_target;
-  float scroll_speed;  // fraction of height per second
-  float y;
-  int cursor_pos;
-  int selection_length;
+  Ctx   *ctx;
+  char  *location;
+  ui_fun fun;
+  void  *data;
+  ui_data_finalize data_finalize;
+  int    delta_ms;
+  void  *focused_id;
+  float  scroll_offset;
+  float  font_size;
+  float  view_elapsed;
+  int    frame_no;
+  bool   interactive_debug;
+  bool   show_fps;
+  bool   gradient_bg;
 
-  UiWidget widgets[MAX_WIDGETS];
-  char temp_text[128];
+  float  osk_focus_target;
+  float  overlay_fade;
+
+  void  *active_id;
+  int    activate;
+  float  width;
+  float  height;
+  float  line_height;
+  float  scroll_offset_target;
+  float  scroll_speed;  // fraction of height per second
+  float  y;
+  int    cursor_pos;
+  int    selection_length;
+
+  int      widget_count;
+  UiWidget widgets[UI_MAX_WIDGETS];
+  char     temp_text[128];
+
+  ui_style_t style;
+
+  bool   focus_first;
+  int    queued_next;
 };
+#else
+#include "ui.h"
+#endif
+static Ui *ui = NULL;
 
+#define em (ui->font_size)
+int demo_mode = 1;
+void ctx_osk_draw (Ctx *ctx);
+static bool is_touch     = false;
+static bool osk_captouch = true;
 
+int  ctx_osk_mode = 1;
 
-#define UI_DO(command) ui_do(ui, command)
+#define UI_ID_STR(label) ((void*)(size_t)(ctx_strhash(label)|1))
+#define UI_ID ((void*)(__LINE__*2))
 
-void ui_scroll_to (Ui *ui, float offset);
-void ui_set_scroll_offset (Ui *ui, float offset);
+////////////////////////////////////////////////////////
 
-void draw_bg (Ctx *ctx)
+void draw_bg (Ui *ui)
 {
+  Ctx *ctx = ui->ctx;
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
 
   static float prev_red = 0;
   static float prev_green = 0;
   static float prev_blue = 0;
-  if (color_bg[0] != prev_red ||
-      color_bg[1] != prev_green ||
-      color_bg[2] != prev_blue)
+  if (ui->style.bg[0] != prev_red ||
+      ui->style.bg[1] != prev_green ||
+      ui->style.bg[2] != prev_blue)
   {
-    if (color_bg[0] +
-        color_bg[1] +
-        color_bg[2] > 1.8)
+    if (ui->style.bg[0] +
+        ui->style.bg[1] +
+        ui->style.bg[2] > 1.8)
     {
-      color_fg[0] = 
-      color_fg[1] = 
-      color_fg[2] = 0.0f;
-      color_fg[3] = 1.0f;
+      ui->style.fg[0] = 
+      ui->style.fg[1] = 
+      ui->style.fg[2] = 0.0f;
+      ui->style.fg[3] = 1.0f;
     }
     else
     {
-      color_fg[0] = 
-      color_fg[1] = 
-      color_fg[2] = 1.0f;
-      color_fg[3] = 1.0f;
+      ui->style.fg[0] = 
+      ui->style.fg[1] = 
+      ui->style.fg[2] = 1.0f;
+      ui->style.fg[3] = 1.0f;
     }
 
-    prev_red = color_bg[0];
-    prev_green = color_bg[1];
-    prev_blue = color_bg[2];
+    prev_red = ui->style.bg[0];
+    prev_green = ui->style.bg[1];
+    prev_blue = ui->style.bg[2];
   }
 
   ctx_rectangle(ctx,0,0,width,height);
 
-  ui_set_color (ctx, color_bg);
+  ui_set_color (ctx, ui->style.bg);
 
-  if (gradient_bg)
+  if (ui->gradient_bg)
   {
     ctx_linear_gradient (ctx,0,0,0,height);
-    ctx_gradient_add_stop (ctx, 0.0, color_bg[0], color_bg[1], color_bg[2], 1.0f);
-    ctx_gradient_add_stop (ctx, 1.0, color_bg2[0], color_bg2[1], color_bg2[2], 1.0f);
+    ctx_gradient_add_stop (ctx, 0.0, ui->style.bg[0], ui->style.bg[1], ui->style.bg[2], 1.0f);
+    ctx_gradient_add_stop (ctx, 1.0, ui->style.bg2[0], ui->style.bg2[1], ui->style.bg2[2], 1.0f);
   }
   ctx_fill(ctx);
-  ui_set_color(ctx,color_fg);
+  ui_set_color(ctx,ui->style.fg);
 }
 
 
-////////////////////////////////////////////////////////////////////
-float bx = DISPLAY_WIDTH/2;
-float by = DISPLAY_HEIGHT/2;
-int is_down = 0;
-float vx = 2.0;
-float vy = 2.33;
-static void bg_motion (CtxEvent *event, void *data1, void *data2)
+void view_apps (Ui *ui)
 {
-  bx = event->x;
-  by = event->y;
-  vx = 0;
-  vy = 0;
-  if (event->type != CTX_DRAG_MOTION) is_down = 0;
-  else is_down = 1;
-    
-  if (event->type == CTX_DRAG_RELEASE)
-  {
-    vx = event->delta_x;
-    vy = event->delta_y;
-  }
+   ui_start (ui);
+   if (ui_button(ui,"clock"))    ui_do(ui, "clock");
+#if CTX_FLOW3R
+   if (ui_button(ui,"captouch")) ui_do(ui, "captouch");
+#endif
+#ifdef APP_SSH
+   if (ui_button(ui,"ssh"))      ui_do(ui, "ssh");
+#endif
+   if (ui_button(ui,"spirals"))  ui_do(ui, "spirals");
+   if (ui_button(ui,"bouncy"))   ui_do(ui, "bouncy");
+   ui_end(ui);
 }
 
 
-#define UI_ID                    ((void*)(__LINE__*4))
-#define UI_TEXT(string)          ui_text(ui, string)
-#define UI_TOGGLE(label, value)  ui_toggle(ui, UI_ID, label, value)
-#define UI_BUTTON(label)         ui_button(ui, UI_ID, label)
-#define UI_SLIDER(label,min,max,step,value) \
-   ui_slider(ui,UI_ID,label,min,max,step,value)
-#define UI_ENTRY(label, fallback, strptr) do{\
-   char *ret = NULL;\
-   ctx_save(ui->ctx);ctx_font_size (ui->ctx, ui->font_size * 0.75);\
-   ctx_move_to(ui->ctx, ui->width * 0.5, ui->y + ui->font_size * 0.1);ctx_text(ui->ctx, label);\
-   if ((ret = ui_entry_coords(ui, UI_ID, ui->width * 0.15, ui->y, ui->width * 0.7, ui->line_height, fallback, *strptr)))\
-   {\
-     if (*strptr) free (*strptr);\
-     *strptr = ret;\
-   }ctx_restore(ui->ctx);\
-   ui->y += ui->line_height;}while(0)
-
-
-static char *wifi_ssid = NULL;
-static char *wifi_password = NULL;
-
-void screen_menu (Ui *ui)
+void view_menu (Ui *ui)
 {
    ui_start (ui);
 
-   if (UI_BUTTON("about"))    UI_DO("about");
-#ifdef APP_SSH
-   if (UI_BUTTON("ssh"))      UI_DO("ssh");
-#endif
-   if (UI_BUTTON("clock"))    UI_DO("clock");
-
-   if (UI_BUTTON("wifi"))    UI_DO("wifi");
-   if (UI_BUTTON("settings")) UI_DO("settings");
-
-   if (UI_BUTTON("spirals"))  UI_DO("spirals");
-   if (UI_BUTTON("bouncy"))   UI_DO("bouncy");
-   if (UI_BUTTON("todo"))     UI_DO("todo");
+   if (ui_button(ui, "apps"))     ui_do(ui, "apps");
+   if (ui_button(ui, "files"))    ui_do(ui, "/sd");
+   if (ui_button(ui, "wifi"))     ui_do(ui, "wifi");
+   if (ui_button(ui, "settings")) ui_do(ui, "settings");
+   if (ui_button(ui, "todo"))     ui_do(ui, "todo");
 #if CTX_ESP
-   if (UI_BUTTON("reboot"))   esp_restart();
+   if (ui_button(ui,"reboot"))   esp_restart();
 #endif
 
-   ui->y += ui->line_height;
    ui_end(ui);
 }
 
 ////// term
 
+
+
+
+#ifdef APP_SSH
 static CtxClient *term_client = NULL;
 
 static void term_handle_event (Ctx        *ctx,
@@ -265,7 +283,6 @@ static void term_handle_event (Ctx        *ctx,
 {
   ctx_client_feed_keystring (term_client, ctx_event, event);
 }
-
 static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)  
 {
   Ui *ui = userdata;
@@ -292,7 +309,6 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
   }
 }
 
-#ifdef APP_SSH
 int ssh_connect(Ctx *ctx, const char *host, int port, const char *user, const char *password);
 static char *ssh_host = NULL;
 static char *ssh_user = NULL;
@@ -300,7 +316,7 @@ static char *ssh_port = NULL;
 static char *ssh_password = NULL;
 static int ssh_connected = 0;
 
-static void screen_term (Ui *ui)
+static void view_term (Ui *ui)
 {
    Ctx *ctx = ui->ctx;
    ui_start (ui);
@@ -308,9 +324,9 @@ static void screen_term (Ui *ui)
    if (!ssh_host)
    {
      ssh_host = strdup("192.168.92.98");
-     ssh_user = strdup("user");
+     ssh_user = strdup(CTX_DEMO_SSH_USER);
      ssh_port = strdup("22");
-     ssh_password = strdup("password123");
+     ssh_password = strdup(CTX_DEMO_SSH_PASSWORD);
    }
    if (!term_client)
    {
@@ -346,7 +362,7 @@ static void screen_term (Ui *ui)
      ctx_restore(ctx);
      }break;
      case 0:
-       if (UI_BUTTON("connect"))
+       if (ui_button(ui,"connect"))
        {
          if (ssh_connect(ctx, ssh_host, atoi(ssh_port), ssh_user, ssh_password))
          {
@@ -355,17 +371,15 @@ static void screen_term (Ui *ui)
            ui->focused_id = NULL;
          }
        }
-       UI_ENTRY("host", "ip hostname", &ssh_host);
-       UI_ENTRY("port", "22", &ssh_port);
-       UI_ENTRY("user", "joe", &ssh_user);
-       UI_ENTRY("password", "password", &ssh_password);
+       ui_entry(ui,"host", "ip hostname", &ssh_host);
+       ui_entry(ui,"port", "22", &ssh_port);
+       ui_entry(ui,"user", "joe", &ssh_user);
+       ui_entry(ui,"password", "password", &ssh_password);
        break;
      case 1:
-        UI_TEXT("unused screen");
-        UI_TEXT("for conn error?");
+        ui_text(ui,"unused view");
+        ui_text(ui,"for conn error?");
        break;
- 
-
    }
 
    ui_end (ui);
@@ -373,55 +387,19 @@ static void screen_term (Ui *ui)
 }
 #endif
 
-static void screen_todo (Ui *ui)
-{
-   ui_start (ui);
-   UI_TEXT("file system browser");
-   UI_TEXT("espnow-chat");
-   UI_TEXT("scrolling/clipping/different positioning of text");
-   UI_TEXT("selection in text entry");
-   UI_TEXT("micropython");
-   UI_TEXT("text editor");
-   UI_TEXT("flow3r port");
-   ui_end(ui);
-}
 
-static float prev_backlight = 100.0f;
-
-#if CTX_ESP
-static bool wifi_connected = false;
-void screen_wifi (Ui *ui)
-{
-   ui_start (ui);
-   ui->y += ui->height * 0.05;
-   UI_TEXT("wifi");
-
-   UI_ENTRY("essid", "wifi name", &wifi_ssid);
-   UI_ENTRY("password", "joshua", &wifi_password);
-
-   if (wifi_connected)
-     UI_TEXT("connected");
-   else
-   if (UI_BUTTON("connect"))
-   {
-     wifi_connected = !wifi_init_sta(wifi_ssid, wifi_password); 
-   }
-
-   ui_end (ui);
-}
-#endif
-
-void screen_settings (Ui *ui)
+void view_settings (Ui *ui)
 {
    ui_start (ui);
    static float backlight  = 100.0;
+   static float prev_backlight = 100.0f;
    float line_height = ui->line_height;
 
    ui->y += ui->height * 0.05;
-   //if (UI_BUTTON("back")) UI_DO("back");
-   UI_TEXT("settings");
+   //if (ui_button(ui,"back")) ui_do(ui, "back");
+   ui_text(ui,"settings");
 
-   ui->font_size=UI_SLIDER("font size", 18,45,0.5,ui->font_size);
+   ui->font_size=ui_slider(ui,"font size", 18,45,0.5,ui->font_size);
 
    if (prev_backlight != backlight)
    {
@@ -431,333 +409,334 @@ void screen_settings (Ui *ui)
      prev_backlight = backlight;
    }
 
-#if 0
-   static uint8_t byte = 11;
-   static int8_t sbyte = 11;
-   byte      = UI_SLIDER("uint8_t", 0, 255, 1.0, byte);
-   sbyte     = UI_SLIDER("int8_t", -128, 127, 1.0, sbyte);
-#endif
-   backlight = UI_SLIDER("backlight", 0.0f, 100.0f, 5.0, backlight);
-   show_fps  = UI_TOGGLE("show fps", show_fps);
+   backlight = ui_slider(ui,"backlight", 0.0f, 100.0f, 5.0, backlight);
+   ui->show_fps  = ui_toggle(ui,"show fps", ui->show_fps);
+
 
    //ctx_move_to (ctx, ui->width * 0.5f, ui->y+em);
-   if (gradient_bg)
-     UI_TEXT("bg start gradient RGB");
+   if (ui->gradient_bg)
+     ui_text(ui,"Background top");
    else
-     UI_TEXT("Background RGB");
-   color_bg[0] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, color_bg[0]);
+     ui_text(ui,"Background RGB");
+   ui->style.bg[0] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, ui->style.bg[0]);
    ui->y += line_height;
-   color_bg[1] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, color_bg[1]);
+   ui->style.bg[1] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, ui->style.bg[1]);
    ui->y += line_height;
-   color_bg[2] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, color_bg[2]);
+   ui->style.bg[2] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, ui->style.bg[2]);
    ui->y += line_height;
 
-#if 0
-   gradient_bg = UI_TOGGLE("gradient bg", gradient_bg);
+#if 1
+   ui->gradient_bg = ui_toggle(ui,"gradient bg", ui->gradient_bg);
 
-   if (gradient_bg)
+   if (ui->gradient_bg)
    {
-     ctx_move_to (ctx, ui->width * 0.5f, ui->y+em);
-     ctx_text (ctx, "bg end gradient RGB");
+     ctx_move_to (ui->ctx, ui->width * 0.5f, ui->y+em);
+     ctx_text (ui->ctx, "Background bottom");
      ui->y += em;
-   color_bg2[0] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, color_bg2[0]);
+   ui->style.bg2[0] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, ui->style.bg2[0]);
      ui->y += line_height;
-   color_bg2[1] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, color_bg2[1]);
+   ui->style.bg2[1] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, ui->style.bg2[1]);
      ui->y += line_height;
-   color_bg2[2] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, color_bg2[2]);
+   ui->style.bg2[2] = ui_slider_coords (ui, UI_ID,ui->width * 0.1f, ui->y, ui->width * 0.8f, line_height, 0,1,8/255.0, ui->style.bg2[2]);
      ui->y += line_height;
    }
 #endif 
-   interactive_debug = UI_TOGGLE("show interaction zones", interactive_debug);
-   color_interactive[3] = interactive_debug ? 0.3f : 0.0f;
+
+   ui->interactive_debug = ui_toggle(ui,"show interaction zones", ui->interactive_debug);
+   ui->style.interactive_bg[3] = ui->interactive_debug ? 0.3f : 0.0f;
+
+#if CTX_FLOW3R
+   flow3r_synthesize_key_events = ui_toggle(ui,"cap-touch keys", flow3r_synthesize_key_events);
+#endif
+
    ui_end(ui);
 }
 
-////////
 
-void screen_bouncy (Ui *ui)
-{
-    Ctx *ctx = ui->ctx;
-    float width = ctx_width (ctx);
-    float height = ctx_height (ctx);
-    static float dim = 100;
-    if (frame_no == 0)
-    {
-      bx = width /2;
-      by = height/2;
-      vx = 2.0;
-      vy = 2.33;
-    }
-
-    ctx_rectangle(ctx,0,0,width, height);
-    ctx_listen (ctx, CTX_DRAG, bg_motion, NULL, NULL);
-    ctx_begin_path (ctx); // clear the path, listen doesnt
-    draw_bg (ctx);
-
-    ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
-    ctx_text_baseline(ctx, CTX_TEXT_BASELINE_MIDDLE);
-    ctx_move_to(ctx, width/2, height/2);ctx_text(ctx, TITLE);
-
-    if (!is_down)
-    {
-      ctx_logo (ctx, bx, by, dim);
-    }
-    else
-    {
-      ctx_rgb (ctx, 0.5, 0.5, 1);
-      ctx_rectangle(ctx, (int)bx, 0, 1, height);ctx_fill(ctx);
-      ctx_rectangle(ctx, 0, (int)by, width, 1);ctx_fill(ctx);
-    }
-    bx += vx;
-    by += vy;
-
-    if (bx <= dim/2 || bx >= width - dim/2)
-      vx *= -1;
-    if (by <= dim/2 || by >= height - dim/2)
-      vy *= -1;
-}
-//////////////////////////////////////////////
-
-void screen_clock (Ui *ui)
-{
-  Ctx *ctx = ui->ctx;
-  uint32_t ms = ctx_ticks ()/1000;
-  uint32_t s = ms / 1000;
-  uint32_t m = s / 60;
-  uint32_t h = m / 60;
-  float radius = ctx_width(ctx)/2;
-  int smoothstep = 1;
-  float x = ctx_width (ctx)/ 2;
-  float y = ctx_height (ctx)/ 2;
-  if (radius > ctx_height (ctx)/2) radius = ctx_height (ctx)/2;
-
-  ms = ((uint32_t)(ms)) % 1000;
-  s %= 60;
-  m %= 60;
-  h %= 12;
-  
-  draw_bg (ctx);
-  float r; 
-  
-  ctx_line_width (ctx, radius * 0.02f);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-  
-  for (int markh = 0; markh < 12; markh++)
-  { 
-    r = markh * CTX_PI * 2 / 12.0 - CTX_PI / 2;
-    
-    if (markh == 0)
-    {
-      ctx_move_to (ctx, x + cosf(r) * radius * 0.7f,
-                        y + sinf (r) * radius * 0.65f); 
-      ctx_line_to (ctx, x + cosf(r) * radius * 0.8f,
-                        y + sinf (r) * radius * 0.85f);   
-    }
-    else
-    {
-      ctx_move_to (ctx, x + cosf(r) * radius * 0.7f,
-                        y + sinf (r) * radius * 0.7f);   
-      ctx_line_to (ctx, x + cosf(r) * radius * 0.8f,
-                        y + sinf (r) * radius * 0.8f);   
-    }
-    ctx_stroke (ctx);
-  }
-  ctx_line_width (ctx, radius * 0.01f);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-
-  ctx_line_width (ctx, radius * 0.075f);
-  ctx_line_cap (ctx, CTX_CAP_ROUND);
-  
-  r = m * CTX_PI * 2 / 60.0 - CTX_PI / 2;
-  ;
-
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.7f,
-                    y + sinf(r) * radius * 0.7f);
-  ctx_stroke (ctx);
-
-  
-  r = (h + m/60.0) * CTX_PI * 2 / 12.0 - CTX_PI / 2;
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.4f,
-                    y + sinf(r) * radius * 0.4f);
-  ctx_stroke (ctx);
-  
-  
-  ctx_line_width (ctx, radius * 0.02f);
-  ctx_line_cap (ctx, CTX_CAP_NONE);
-  
-  if (smoothstep && frame_no > 2) 
-    r = (s + ms / 1000.0f) * CTX_PI * 2 / 60 - CTX_PI / 2;
-  else
-    r = (s ) * CTX_PI * 2 / 60 - CTX_PI / 2;
-  ctx_move_to (ctx, x, y);
-  ctx_line_to (ctx, x + cosf(r) * radius * 0.78f,
-                    y + sinf(r) * radius * 0.78f);
-  ctx_stroke (ctx);
-}
-
-static void screen_spirals (Ui *ui)
-{
-  Ctx *ctx = ui->ctx;
-  static int dot_count = 0;
-  static int shape = 0;
-  float dot_scale = 42;
-  static float twist = 2.9645f;
-
-  if (frame_no == 0) dot_count = 27;
-  dot_count += 2;
-  if (dot_count >= 42)
-  {
-    shape = !shape;
-    dot_count = 27;
-  }
-
-  draw_bg(ctx);
-  for (int i = 0; i < dot_count; i ++)
-  {
-    float x = ctx_width (ctx)/ 2;
-    float y = ctx_height (ctx) / 2;
-    float radius = ctx_height (ctx) / dot_scale;
-    float dist = (i) * (ctx_height (ctx)/ 2) / (dot_count * 1.0f);
-    float twisted = (i * twist);
-    x += cosf (twisted) * dist;
-    y += sinf (twisted) * dist;
-    if (shape == 0)
-    {
-      ctx_arc (ctx, x, y, radius, 0, CTX_PI * 2.1, 0);
-    }
-    else
-    {
-      ctx_save (ctx);
-      ctx_translate (ctx, x, y);
-      ctx_rotate (ctx, twisted);
-      ctx_rectangle (ctx, -radius, -radius, radius*2, radius*2);
-      ctx_restore (ctx);
-    }
-    ctx_fill (ctx);
-  }
-
-}
-
-typedef void (*screen_fun)(Ui *ui);
 
 typedef struct Screen
 {
   const char *name;
-  screen_fun  fun;
+  ui_fun      fun;
   float       fps[4];
 } Screen;
 
-void screen_about (Ui *ui);
-static Screen screens[]={
-  {"menu",     screen_menu,    {0,}},
-  {"about",    screen_about,   {0,}},
-  {"settings", screen_settings,{0,}},
-#if CTX_ESP
-  {"wifi",     screen_wifi,    {0,}},
-#endif
-  {"clock",    screen_clock,   {0,}},
-  {"bouncy",   screen_bouncy,  {0,}},
-  {"spirals",  screen_spirals, {0,}},
-#ifdef APP_SSH
-  {"ssh",      screen_term,    {0,}},
-#endif
-  {"todo",     screen_todo,    {0,}},
-};
 
-void screen_about (Ui *ui)
+void view_splash (Ui *ui)
 {
   Ctx *ctx = ui->ctx;
   ui_start (ui);
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
-  draw_bg (ctx);
+  draw_bg (ui);
   float ty = height/2;
   char buf[256];
 
   {
-    ctx_move_to(ctx, width * 0.5f,ty);ctx_text(ctx,TITLE);
+    ctx_move_to(ctx, width * 0.5f,ty);ctx_text(ctx,CTX_DEMO_TITLE);
     ty+=em;
-    ctx_move_to(ctx, width * 0.5f,ty);ctx_text(ctx,SUBTITLE);
+    ctx_move_to(ctx, width * 0.5f,ty);ctx_text(ctx,CTX_DEMO_SUBTITLE);
     ty+=em;
     sprintf(buf, "%.0fx%.0f", width, height);
     ctx_move_to(ctx, width * 0.5,ty);
     ctx_text(ctx,buf);
   }
-#if 0
-  else
-  {
-    int n_screens = sizeof(screens)/sizeof(screens[0]);
-      if (frame_no == 0) printf("\n");
-    for (int i = 1; i < n_screens; i++)
-    {
-      char buf[64];
-      ctx_move_to(ctx, width * 0.1f,ty);ctx_text(ctx,screens[i].name);
-      sprintf (buf, "%.1f", screens[i].fps[0]);
-      ctx_move_to(ctx, width * 0.5f,ty);ctx_text(ctx,buf);
-      sprintf (buf, "%.1f", screens[i].fps[1]);
-      ctx_move_to(ctx, width * 0.7f,ty);ctx_text(ctx,buf);
-      ty+=em;
-
-      if (frame_no == 0)
-      {
-        printf ("%s  %.1f %.1f\n", screens[i].name, screens[i].fps[0], screens[i].fps[1]);
-      }
-    }
-  }
-#endif
  
   ctx_logo (ctx, width/2,height/5,height/3);
   ui_end (ui);
+
+  if (ui->view_elapsed > 3.0)
+    ui_do (ui, "menu");
 }
 
-#define MAX_HISTORY 8
+void view_clock    (Ui *ui);
+void view_todo     (Ui *ui);
+void view_bouncy   (Ui *ui);
+void view_spirals  (Ui *ui);
+void view_wifi     (Ui *ui);
+void view_captouch (Ui *ui);
+
+static Screen views[]={
+  {"menu",     view_menu,    {0,}},
+  {"apps",     view_apps,    {0,}},
+  {"splash",   view_splash,  {0,}},
+  {"settings", view_settings,{0,}},
+
+  {"clock",    view_clock,   {0,}},
+  {"todo",     view_todo,    {0,}},
+#if CTX_FLOW3R
+  //{"keyboard", view_keyboard,{0,}},
+  {"captouch", view_captouch,{0,}},
+#endif
+  {"wifi",     view_wifi,    {0,}},
+  {"bouncy",   view_bouncy,  {0,}},
+  {"spirals",  view_spirals, {0,}},
+#ifdef APP_SSH
+  {"ssh",      view_term,    {0,}},
+#endif
+};
+
+
+#define MAX_HISTORY 16
 static int history_count = 0;
-static char *history_screen[MAX_HISTORY];
+static char *history_view[MAX_HISTORY];
 static float history_scroll_offset[MAX_HISTORY];
 static void *history_focused[MAX_HISTORY];
 
+void
+ui_load_view(Ui *ui, const char *target);
 
-static void ui_load_screen_no(Ui *ui, int no)
+static void save_state(Ui *ui)
 {
-  int n_screens = sizeof(screens)/sizeof(screens[0]);
-  if (no < 0) no = n_screens - 1;
-  else if (no >= n_screens) no = 0;
-
   if (history_count + 1 < MAX_HISTORY)
   {
-    if (history_screen[history_count])
-      free(history_screen[history_count]);
-    history_screen[history_count] = strdup (screens[screen_no].name);
+    if (history_view[history_count])
+      free(history_view[history_count]);
+    if (ui->location == NULL)
+    {
+      history_view[history_count] = strdup (views[0].name);
+    }
+    else
+      history_view[history_count] = strdup (ui->location);
+      
     history_focused[history_count] = ui->focused_id;
     history_scroll_offset[history_count] = ui->scroll_offset;
-    //printf ("save scroll %f focus %p to %i\n", ui->scroll_offset, ui->focused_id, history_count);
     history_count++;
   }
-  ui->focused_id = NULL;
-  ui_set_scroll_offset (ui, 0);
+}
 
-  ctx_osk_mode = 0;
-  screen_no = no;
-  frame_no = 0;
-  screen_elapsed = 0; 
+static void restore_state(Ui *ui)
+{
+    if (history_count>0)
+    {
+       int no = history_count-1;
+       ui_load_view (ui, history_view[no]);
+       ui->queued_next = 0;
+       history_count-=2;
+       ui_set_scroll_offset (ui, history_scroll_offset[no]);
+       ui->focused_id = history_focused[no];
+    }
+    else printf ("tried to restore without history\n");
+}
+
+
+static void ui_set_fun (Ui *ui, ui_fun fun, void *data, ui_data_finalize data_finalize)
+{
+  ui->fun = fun;
+  if (ui->data && ui->data_finalize)
+    ui->data_finalize (ui->data);
+  ui->data = data;
+  ui->data_finalize = data_finalize;
+}
+
+static void ui_load_view_no(Ui *ui, int no)
+{
+  int n_views = sizeof(views)/sizeof(views[0]);
+  if (no < 0) no = n_views - 1;
+  else if (no >= n_views) no = 0;
+
+  ui_set_fun (ui, views[no].fun, NULL, NULL);
+}
+
+static void ui_unhandled (Ui *ui)
+{
+   ui_start (ui);
+   ui_text(ui,"unhandled location");
+   ui_text(ui,ui->location);
+   ui_end (ui);
+}
+
+static void ui_view_text (Ui *ui)
+{
+   if (ui->data == NULL)
+   {
+     FILE *file = fopen(ui->location, "rb");
+     fseek(file, 0, SEEK_END);
+     long length = ftell(file);
+     fseek(file, 0, SEEK_SET);
+     ui->data = malloc(length + 1);
+     fread(ui->data, length, 1, file);
+     fclose(file);
+     ((char*)ui->data)[length] = 0;
+   }
+   ui_start (ui);
+   ui_text(ui,ui->location);
+   ctx_save(ui->ctx);
+   ctx_text_align (ui->ctx, CTX_TEXT_ALIGN_START);
+   ctx_wrap_left (ui->ctx, ui->width * 0.15);
+   ctx_wrap_right (ui->ctx, ui->width * 0.85);
+   ctx_move_to (ui->ctx, ui->width * 0.15, ui->y + ui->line_height);
+   ctx_text (ui->ctx, ui->data);
+   ctx_restore(ui->ctx);
+   ui_end (ui);
+}
+
+
+static void ui_view_file (Ui *ui)
+{
+   ui_start (ui);
+   ui_text(ui,"file");
+   ui_text(ui,ui->location);
+   ui->fun = ui_view_text;
+   ui->data_finalize = free;
+   ui_end (ui);
+}
+
+
+static void ui_view_dir (Ui *ui)
+{
+   ui_start (ui);
+   ui_text(ui,ui->location);
+
+   int     n = 0;
+
+   DIR *dir = opendir(ui->location);
+
+   if (dir)
+   {
+   struct dirent *ent;
+
+   while ((ent = readdir(dir)))
+   {
+     const char *basename = ent->d_name;
+
+     if (basename[0] == '.')
+       continue;
+
+     if (ui->y > ui->height)
+     {
+     }
+     else if (ui->y > -ui->font_size)
+     {
+       if (ui_button(ui, basename))
+       {
+         char *target = malloc (strlen (ui->location) + 3 + strlen (basename));
+         if (target)
+         {
+           if (ui->location[strlen(ui->location)-1]=='/')
+             sprintf(target, "%s%s", ui->location, basename);
+           else
+             sprintf(target, "%s/%s", ui->location, basename);
+           ui_do(ui, target);
+           free(target);
+         }
+       }
+     }
+     else
+     {
+       ui_text(ui,basename);
+
+     }
+     n++;
+   }
+   closedir(dir);
+   }
+
+   ui_end (ui);
+}
+
+static void ui_view_404 (Ui *ui)
+{
+   ui_start (ui);
+   ui_text(ui,"404");
+   ui_text(ui,ui->location);
+   ui_end (ui);
 }
 
 void
-ui_load_screen(Ui *ui, const char *target)
+ui_load_view(Ui *ui, const char *target)
 {
-  int n_screens = sizeof(screens)/sizeof(screens[0]);
-  overlay_fade = 0.7;
-  for (int i = 0; i < n_screens; i++)
-  if (!strcmp (screens[i].name, target))
+  save_state(ui);
+
+  if (ui->location)
+    free (ui->location);
+  ui->location = strdup (target);
+
+  ui->focused_id = NULL;
+  ui_set_scroll_offset (ui, 0);
+
+  //ctx_osk_mode = 0;
+  ui->frame_no = 0;
+  ui->view_elapsed = 0; 
+
+  if (ui->focus_first && ui->widget_count)
+  {
+    ui->queued_next = 2;
+  }
+
+  if (target[0]=='/')
+  {
+    struct stat st;
+    if (stat(target, &st) == 0) {
+      if (S_ISDIR(st.st_mode))
+        ui_set_fun (ui, ui_view_dir, NULL, NULL);
+      else
+        ui_set_fun (ui, ui_view_file, NULL, NULL);
+    }
+    else
     {
-      ui_load_screen_no (ui, i);
+      ui_set_fun (ui, ui_view_404, NULL, NULL);
+    }
+  }
+  else
+  {
+  int n_views = sizeof(views)/sizeof(views[0]);
+  ui->overlay_fade = 0.7;
+
+
+  for (int i = 0; i < n_views; i++)
+  if (!strcmp (views[i].name, target))
+    {
+      ui_load_view_no (ui, i);
       return;
     }
-  printf ("screen: %s unhandled!\n", target);
+
+  ui_set_fun (ui, ui_unhandled, strdup(target), free);
+
+  }
 }
 
+UiWidget *ui_widget_by_id(Ui *ui, void *id);
 
 void
 ui_do(Ui *ui, const char *action)
@@ -765,19 +744,15 @@ ui_do(Ui *ui, const char *action)
   printf ("ui_do: %s\n", action);
   if (!strcmp (action, "back"))
   {
-    if (history_count>0)
-    {
-       int no = history_count-1;
-       ui_load_screen (ui, history_screen[no]);
-       history_count-=2;
-       ui_set_scroll_offset (ui, history_scroll_offset[no]);
-       ui->focused_id = history_focused[no];
-    }
+    restore_state (ui);
   }
   else if (!strcmp (action, "activate"))
   {
+    UiWidget *widget = ui_widget_by_id (ui, ui->focused_id);
     if (ui->focused_id)
       ui->activate = 1;
+    if (widget && (widget->type == ui_type_entry))
+       ui_do(ui, "kb-show");
   }
   else if (!strcmp (action, "focus-next"))
   {
@@ -799,7 +774,7 @@ ui_do(Ui *ui, const char *action)
   {
     ctx_osk_mode = 0;
   }
-  else ui_load_screen(ui, action);
+  else ui_load_view(ui, action);
 }
 
 static void ui_cb (CtxEvent *event, void *data1, void *data2)
@@ -812,24 +787,25 @@ static void ui_cb (CtxEvent *event, void *data1, void *data2)
     ui_do (ui, target);
 }
 
-void overlay_button (Ctx *ctx, float x, float y, float w, float h, const char *label, char *action)
+void overlay_button (Ui *ui, float x, float y, float w, float h, const char *label, char *action)
 {
+  Ctx *ctx = ui->ctx;
   float m = w;
   if (m > h) m = h;
       ctx_save(ctx);
        ctx_rectangle (ctx, x,y,w,h);
        ctx_listen (ctx, CTX_PRESS, ui_cb, action, NULL);
-      if (overlay_fade <= 0.0f)
+      if (ui->overlay_fade <= 0.0f)
       {
         ctx_begin_path(ctx);
       }
       else
       {
-        ctx_rgba(ctx,0,0,0,overlay_fade);
+        ctx_rgba(ctx,0,0,0,ui->overlay_fade);
         ctx_fill(ctx);
-        if (overlay_fade > 0.2)
+        if (ui->overlay_fade > 0.2)
         {
-          ctx_rgba(ctx,1,1,1,overlay_fade);
+          ctx_rgba(ctx,1,1,1,ui->overlay_fade);
           ctx_move_to (ctx, x+0.5 * w, y + 0.8 * h);
           ctx_font_size (ctx, 0.8 * m);
           ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
@@ -840,7 +816,42 @@ void overlay_button (Ctx *ctx, float x, float y, float w, float h, const char *l
       ctx_restore (ctx);
 }
 
-void ui_main(Ui *ui, Ctx *ctx);
+Ui *ui_new(Ctx *ctx)
+{
+  Ui *ui = calloc (1, sizeof (Ui));
+  ui->ctx = ctx;
+  ui->style.bg[0]=0.1;
+  ui->style.bg[1]=0.2;
+  ui->style.bg[2]=0.3;
+  ui->style.bg[3]=1.0;
+  ui->style.fg[0]=1.0;
+  ui->style.fg[1]=1.0;
+  ui->style.fg[2]=0.8;
+  ui->style.fg[3]=1.0;
+  ui->style.focused_fg[0]=1.0;
+  ui->style.focused_fg[1]=0.0;
+  ui->style.focused_fg[2]=0.0;
+  ui->style.focused_fg[3]=0.8;
+  ui->style.interactive_fg[0]=1.0;
+  ui->style.interactive_fg[1]=0.0;
+  ui->style.interactive_fg[2]=0.0;
+  ui->style.interactive_fg[3]=0.8;
+#if 0
+static float color_focused_fg[4]  = {1,0,0,0.8};
+//static float color_focused_bg[4]  = {1,1,0,0.8};
+static float color_interactive[4] = {1,0,0,0.0}; 
+static float color_bg[4]          = {0.1, 0.2, 0.3, 1.0};
+static float color_bg2[4]         = {0.8, 0.9, 1.0, 1.0};
+static float color_fg[4]; // black or white automatically based on bg
+#endif
+#if CTX_FLOW3R
+  ui->focus_first = true;
+#endif
+
+  return ui;
+}
+
+void ui_main(Ui *ui);
 
 #if CTX_ESP
 void app_main(void)
@@ -848,20 +859,21 @@ void app_main(void)
 int main (int argc, char **argv)
 #endif
 {
-#if CTX_ESP
-     wifi_ssid = strdup ("internet");
-     wifi_password = strdup ("tryagain");
-     wifi_connected = !wifi_init_sta(wifi_ssid, wifi_password); 
-#endif
+
+
     Ctx *ctx = ctx_new(DISPLAY_WIDTH,
                        DISPLAY_HEIGHT, NULL);
     
-    ui = calloc (1, sizeof (Ui));
-    ui->scroll_speed = 1.5;
+    ui = ui_new(ctx);
+#if CTX_FLOW3R
+    ui->osk_focus_target = 0.33f;
+#else
+    ui->osk_focus_target = 0.18f;
+#endif
+    ui->scroll_speed = 1.5f;
 
-
-    ui_do(ui, "menu");
-    ui_main(ui, ctx);
+    ui_do(ui, "captouch");
+    ui_main(ui);
 }
 
 /////////////////////////// keyboard
@@ -903,7 +915,7 @@ static float osk_pos = 1.0f;
 
 static float osk_rows = 10.0f;
 
-static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
+static void ctx_on_view_key_event (CtxEvent *event, void *data1, void *data2)
 {
   const KeyCap *key = data1;
   Ui *ui = data1;
@@ -1149,6 +1161,181 @@ static const KeyBoardLayout kb_round = {
 
 static KeyBoard keyboard = {&kb_round, 0, 0, 0, 0, 0};
 
+
+
+typedef struct circle_key_t {
+  const char *label;
+  const char *key;
+ } circle_key_t;
+
+circle_key_t circle_keys[]={
+  {"a","A"},
+  {"b","B"},
+  {"c","C"},
+  {"d","D"},
+  {"e","E"},
+  {"f","F"},
+  {"g","G"},
+  {"h","H"},
+  {"i","I"},
+  {"j","J"},
+  {"k","K"},
+  {"l","L"},
+  {"m","M"},
+  {"n","N"},
+  {"o","O"},
+  {"p","P"},
+  {"q","Q"},
+  {"r","R"},
+  {"s","S"},
+  {"ß","ẞ"},
+  {"t","T"},
+  {"u","U"},
+  {"ü","Ǔ"},
+  {"v","V"},
+  {"w","W"},
+  {"x","X"},
+  {"y","Y"},
+  {"z","Z"},
+  {"æ","Æ"},
+  {"ø","Ø"},
+  {"ö","Ö"}, 
+  {"å","Å"},
+  {".","."},
+  {",",","},
+  {":",";"},
+  {"(","("},
+  {")",")"},
+  {"&","!"},
+  {"0","0"},
+  {"1","1"},
+  {"2","2"},
+  {"3","3"},
+  {"4","4"},
+  {"5","5"},
+  {"6","6"},
+  {"7","7"},
+  {"8","8"},
+  {"9","9"},
+  {"-","-"},
+  {"+","+"},
+  {"*","*"},
+  {"*","*"},
+  {"€","$"},
+  {"=","="},
+  {"|","|"},
+  {"/","\\"},
+  {"@","#"},
+  {"'","\""},
+  {"^","_"},
+  {"<",">"},
+  {"`","~"},
+  {"{","}"},
+  {"[","]"},
+  {"♥","♥"},
+};
+
+static const int n_circle_keys = sizeof(circle_keys)/sizeof(circle_keys[0]);
+
+#define KEYS_PER_CYCLE 26
+
+void captouch_keyboard (Ctx *ctx)
+{
+   float width = ctx_width (ctx);
+   float height = ctx_height (ctx);
+   ctx_save (ctx);
+   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+   float _em = height / 10;
+   ctx_font_size (ctx, _em);
+   
+   float rad_pos;
+#if CTX_FLOW3R
+   float angle = bsp_captouch_angle(&rad_pos);
+#else
+   float angle = -1.0f;//bsp_captouch_angle(&rad_pos);
+   rad_pos = 0.5f;
+#endif
+
+   static int last_key = 0;
+   static bool last_active = false;
+   static bool last_down = false;
+   static bool last_upper = false;
+   bool down = false;
+   int cursor_no = -1;
+   if (angle >=0)
+   {
+     cursor_no = (int)(angle * KEYS_PER_CYCLE + 0.5f);
+     down = true;
+   }
+
+   if ((down != last_down) && (down==false))
+   {
+      if (last_active)
+      {
+         if (last_upper)
+         ctx_key_press (ctx, 0, circle_keys[last_key].key, 0);
+         else
+         ctx_key_press (ctx, 0, circle_keys[last_key].label, 0);
+      }
+   }
+
+   // background
+   ctx_save (ctx);
+   ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
+   ctx_rgba (ctx, 0, 0, 0, down?0.5f:0.25f);
+   ctx_rectangle (ctx, 0, 0, width, height);
+   ctx_arc (ctx, width/2, height/2, height/2 - _em, 0.0f, M_PI*2, 0);
+   ctx_fill (ctx);
+   ctx_restore (ctx);
+
+   bool active = rad_pos < 0.7f;
+   last_down = down;
+   last_active = false;
+   for (int j = last_key - KEYS_PER_CYCLE*3/4;
+        j < last_key + KEYS_PER_CYCLE/4 || j < KEYS_PER_CYCLE - 2;
+        j++)
+   {
+      if (j < n_circle_keys && j >= 0)
+      {
+        int i = j % KEYS_PER_CYCLE;
+      ctx_save (ctx);
+      ctx_translate (ctx, width/2, height/2);
+      ctx_rotate (ctx, (i) / (1.0f * KEYS_PER_CYCLE) * M_PI * 2 + M_PI);
+      if (i==cursor_no && active)
+      {
+        ctx_rgba (ctx, 1.0f, 1.0f, 1.0f, 1.0f);
+        ctx_rectangle (ctx, -_em/2, height * 0.47f - _em * 0.8, _em, _em * 1.2);
+        ctx_fill (ctx);
+        ctx_rgba (ctx, 0.0f, 0.0f, 0.0f, 1.0f);
+        ctx_move_to (ctx, 0, height * 0.47f);
+        if (rad_pos < 0.4)
+        {
+        ctx_text (ctx, circle_keys[j].key);
+        last_upper = true;
+        }
+        else
+        {
+        ctx_text (ctx, circle_keys[j].label);
+        last_upper = false;
+        }
+        last_key = j;
+        last_active = true;
+      }
+      else
+      {
+        ctx_rgba (ctx, 1.0f, 1.0f, 1.0f, down?0.7f:0.4);
+        ctx_move_to (ctx, 0, height * 0.47f);
+        ctx_text (ctx, circle_keys[j].label);
+      }
+      ctx_restore (ctx);
+      }
+   }
+
+   ctx_restore (ctx);
+}
+
+
+
 void ctx_osk_draw (Ctx *ctx)
 {
   static float fade = 0.0;
@@ -1163,7 +1350,7 @@ void ctx_osk_draw (Ctx *ctx)
   prev_ticks = ticks; 
 
   //printf ("%f\n", elapsed_ms);
-  overlay_fade -= 0.3 * elapsed_ms/1000.0f;
+  ui->overlay_fade -= 0.3 * elapsed_ms/1000.0f;
   
 
   float h = ctx_height (ctx);
@@ -1171,14 +1358,16 @@ void ctx_osk_draw (Ctx *ctx)
   float m = h;
   if (w < h)
     m = w;
-
   switch (ctx_osk_mode)
   {
     case 2:
-
   fade = 1.0f;
   //if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
   //   fade = 0.9;
+      if (osk_captouch) {
+        captouch_keyboard (ctx);      
+        return;
+      }
 
   int rows = 0;
   for (int row = 0; kb->layout->keys[row][0].label; row++)
@@ -1192,7 +1381,7 @@ void ctx_osk_draw (Ctx *ctx)
                       y0,
                       w,
                       c * rows);
-  ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, ui, (void*)kb);
+  ctx_listen (ctx, CTX_DRAG, ctx_on_view_key_event, ui, (void*)kb);
   ctx_rgba (ctx, 0,0,0, 0.8 * fade);
   ctx_fill (ctx);
 
@@ -1306,18 +1495,21 @@ void ctx_osk_draw (Ctx *ctx)
   ctx_restore (ctx);
      break;
      case 1:
-       overlay_button (ctx, 0, h - h * 0.14, w, h * 0.14, "kb", "kb-show");
+       overlay_button (ui, 0, h - h * 0.14, w, h * 0.14, "kb", "kb-show");
        break;
   }
 }
 
 ///  UI 
 
-void ui_main(Ui *ui, Ctx *ctx)
+void ui_main(Ui *ui)
 {
+    Ctx *ctx = ui->ctx;
     long int prev_ticks = ctx_ticks();
     float width = ctx_width (ctx);
     float height = ctx_height (ctx);
+
+    //ui_do(ui, "splash");
     if (height <= width)
       ui->font_size = height * 0.09f;
     else
@@ -1328,6 +1520,7 @@ void ui_main(Ui *ui, Ctx *ctx)
       height = ctx_height (ctx);
       ctx_start_frame (ctx);
       ctx_add_key_binding (ctx, "escape", NULL, "foo",  ui_cb, "back");
+      ctx_add_key_binding (ctx, "backspace", NULL, "foo",  ui_cb, "back");
       long int ticks = ctx_ticks ();
       long int ticks_delta = ticks - prev_ticks;
       if (ticks_delta > 1000000) ticks_delta = 10; 
@@ -1335,33 +1528,36 @@ void ui_main(Ui *ui, Ctx *ctx)
 
       ctx_save (ctx);
 
-      if (screen_no >= 0 && screen_no < sizeof(screens)/sizeof(screens[0]))
+      ui->delta_ms = ticks_delta/1000;
+
+      if (ui->fun)
+        ui->fun(ui);
+      if (ui->queued_next)
       {
-        ui->delta_ms = ticks_delta/1000;
-        ui->ctx = ctx;
-        screens[screen_no].fun(ui);
+        ui->queued_next--;
+        if (ui->queued_next <= 0)
+           ui_do(ui,"focus-next");
       }
 
-      frame_no++;
-      screen_elapsed += ticks_delta* 1/(1000*1000.0f);
+      ui->frame_no++;
+      ui->view_elapsed += ticks_delta* 1/(1000*1000.0f);
 
       ctx_restore (ctx);
 
-      if (screen_no != 0)
-      {
-        overlay_button (ctx, 0,0,width,height*0.12, "back", "back");
+      if (is_touch){
+        overlay_button (ui, 0,0,width,height*0.12, "back", "back");
       }
       ctx_osk_draw (ctx);
 
-      if (show_fps)
+      if (ui->show_fps)
       {
          char buf[32];
          ctx_save (ctx);
          ctx_font_size (ctx,16);
-         ctx_rgba(ctx,color_bg[0], color_bg[1], color_bg[2], 0.66f);
+         ctx_rgba(ctx,ui->style.bg[0], ui->style.bg[1], ui->style.bg[2], 0.8f);
          ctx_rectangle(ctx,0,0,width, 17);
          ctx_fill(ctx);
-         ui_set_color(ctx,color_fg);
+         ui_set_color(ctx,ui->style.fg);
          ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
          ctx_move_to (ctx, ctx_width(ctx)/2, 13);
          static float fps = 0.0f;
@@ -1411,7 +1607,7 @@ ui_set_color_a (Ctx *ctx, float *rgba, float alpha)
 
 UiWidget *ui_widget_by_id(Ui *ui, void *id)
 {
-  for (int i = 0; i < ui->widget_no; i++)
+  for (int i = 0; i < ui->widget_count; i++)
   {
     if (ui->widgets[i].id == id)
       return &ui->widgets[i];
@@ -1420,7 +1616,7 @@ UiWidget *ui_widget_by_id(Ui *ui, void *id)
 }
 static void ui_set_focus (UiWidget *widget)
 {
-  for (int i = 0; i < ui->widget_no; i++)
+  for (int i = 0; i < ui->widget_count; i++)
   if (ui->focused_id)
   {
     UiWidget *old_widget = ui_widget_by_id (ui, ui->focused_id);
@@ -1449,13 +1645,13 @@ static void ui_set_focus (UiWidget *widget)
 void ui_focus_next(void)
 {
   bool found = false;
-  if (ui->widget_no == 0)
+  if (ui->widget_count == 0)
   {
     ui_scroll_to (ui, ui->scroll_offset - ui->height * 0.2f);
     return;
   }
 
-  for (int i = 0; i < ui->widget_no; i++)
+  for (int i = 0; i < ui->widget_count; i++)
   {
     if (found || !ui->focused_id)
     {
@@ -1473,12 +1669,12 @@ void ui_focus_next(void)
 void ui_focus_prev(void)
 {
   bool found = false;
-  if (ui->widget_no == 0)
+  if (ui->widget_count == 0)
   {
     ui_scroll_to (ui, ui->scroll_offset + ui->height * 0.2f);
     return;
   }
-  for (int i=ui->widget_no-1;i>=0; i--)
+  for (int i=ui->widget_count-1;i>=0; i--)
   {
     if (found || !ui->focused_id)
     {
@@ -1516,6 +1712,8 @@ static void ui_slider_key_press (CtxEvent *event,
       widget->float_data = widget->min_val;
   }
   else if (!strcmp (string, "escape")
+        || !strcmp (string, "space")
+        || !strcmp (string, "backspace")
         || !strcmp (string, "return"))
   {
      ui->active_id = NULL;
@@ -1568,6 +1766,7 @@ static void ui_entry_key_press (CtxEvent *event,
   {
      ui->active_id = NULL;
      printf ("deactivated\n");
+     ui_do(ui, "kb-hide");
   }
   else if (!strcmp (string, "left"))
   {
@@ -1635,12 +1834,12 @@ static void ui_slider_drag_float (CtxEvent *event, void *data1, void *data2)
 }
 
 static UiWidget *
-widget_register (Ui *ui, ui_type type, float x, float y, float width, float height, void *id)
+ui_widget_register (Ui *ui, ui_type type, float x, float y, float width, float height, void *id)
 {
    Ctx *ctx = ui->ctx;
-   if (ui->widget_no+1 >= MAX_WIDGETS) { printf("too many widgets\n");return &ui->widgets[ui->widget_no]; }
+   if (ui->widget_count+1 >= UI_MAX_WIDGETS) { printf("too many widgets\n");return &ui->widgets[ui->widget_count]; }
 
-   UiWidget *widget  = &ui->widgets[ui->widget_no++];
+   UiWidget *widget  = &ui->widgets[ui->widget_count++];
   
    if (widget->id != id)
    {
@@ -1669,7 +1868,7 @@ widget_register (Ui *ui, ui_type type, float x, float y, float width, float heig
         if (ui->active_id != widget->id)
         {
         ctx_save(ctx);
-        ui_set_color(ctx, color_focused_fg);
+        ui_set_color(ctx, ui->style.focused_fg);
         ctx_rectangle (ctx, x - em/2, y - em/2, width + em, height + em);
         ctx_stroke (ctx);
         ctx_restore(ctx);
@@ -1683,7 +1882,7 @@ float
 ui_slider_coords (Ui *ui, void *id, float x, float y, float width, float height, float min_val, float max_val, float step, float value)
 {
    Ctx *ctx = ui->ctx;
-   UiWidget *widget = widget_register(ui,ui_type_slider,x,y,width,height,id);
+   UiWidget *widget = ui_widget_register(ui,ui_type_slider,x,y,width,height,id);
    if (widget->fresh)
      widget->float_data = value;
    widget->min_val = min_val;
@@ -1707,23 +1906,26 @@ ui_slider_coords (Ui *ui, void *id, float x, float y, float width, float height,
    ctx_save(ctx); 
 
    ctx_line_width(ctx,2.0);
-   ui_set_color(ctx, color_fg);
+   ui_set_color(ctx, ui->style.fg);
    ctx_move_to (ctx, x, y + height/2);
    ctx_line_to (ctx, x + width, y + height/2);
    ctx_stroke (ctx);
 
-   ui_set_color(ctx, color_fg);
+   if (ui->active_id == widget->id)
+   ui_set_color(ctx, ui->style.focused_fg);
+   else
+   ui_set_color(ctx, ui->style.fg);
    ctx_arc (ctx, x + rel_value * width, y + height/2, height*0.34, 0, 2*3.1415, 0);
    ctx_fill (ctx);
-   ui_set_color(ctx, color_bg);
+   ui_set_color(ctx, ui->style.bg);
    ctx_arc (ctx, x + rel_value * width, y + height/2, height*0.3, 0.0, 3.1415*2, 0);
    ctx_fill (ctx);
 
    ctx_rectangle (ctx, x + rel_value * width - height * 0.75, y, height * 1.5, height);
    ctx_listen (ctx, CTX_DRAG, ui_slider_drag_float, ui, widget->id);
-   if (color_interactive[3]>0.0)
+   if (ui->interactive_debug)
    {
-     ui_set_color(ctx, color_interactive);
+     ui_set_color(ctx, ui->style.interactive_bg);
      ctx_fill(ctx);
    }
    else
@@ -1743,7 +1945,6 @@ static void ui_button_drag (CtxEvent *event, void *data1, void *data2)
   UiWidget *widget = ui_widget_by_id (ui, data2);
   if (!widget) return;
 
-  //int widget_no = (widget - &widgets[0]);
   if (event->type == CTX_DRAG_PRESS)
   {
     ui_set_focus (widget);
@@ -1781,14 +1982,14 @@ ui_button_coords (Ui *ui, float x, float y, float width, float height,
    if (width <= 0) width = ctx_text_width (ctx, label);
    if (height <= 0) height = em * 1.4;
 
-   UiWidget *widget  = widget_register(ui,ui_type_button,x,y,width,height,id);
+   UiWidget *widget  = ui_widget_register(ui,ui_type_button,x,y,width,height,id);
    if (widget->visible)
    {
    ctx_save(ctx); 
 
    ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
 
-   ui_set_color(ctx, color_fg);
+   ui_set_color(ctx, ui->style.fg);
 
    if (active) 
    {
@@ -1802,9 +2003,9 @@ ui_button_coords (Ui *ui, float x, float y, float width, float height,
    ctx_begin_path (ctx);
    ctx_rectangle (ctx, x, y, width, height);
    ctx_listen (ctx, CTX_DRAG, ui_button_drag, ui, widget->id);
-   if (color_interactive[3]>0.0)
+   if (ui->interactive_debug)
    {
-     ui_set_color(ctx, color_interactive);
+     ui_set_color(ctx, ui->style.interactive_bg);
      ctx_fill(ctx);
    }
    else
@@ -1835,8 +2036,8 @@ void ui_end (Ui *ui)
     if (focused) {
       if (ctx_osk_mode == 2) // when keyboard, snap to pos
       {
-          if (fabs(ui->height * 0.18 - focused->y) > 2)
-            ui->scroll_offset += ui->height * 0.18 - focused->y;
+          if (fabs(ui->height * ui->osk_focus_target - focused->y) > 2)
+            ui->scroll_offset += ui->height * ui->osk_focus_target - focused->y;
       }
       else
       {
@@ -1885,7 +2086,8 @@ void ui_end (Ui *ui)
         ctx_add_key_binding (ctx, "right", NULL, "foo",   ui_cb, "focus-next");
         ctx_add_key_binding (ctx, "right", NULL, "foo",   ui_cb, "focus-next");
         ctx_add_key_binding (ctx, "down", NULL, "foo",     ui_cb, "focus-next");
-        //ctx_add_key_binding (ctx, "return", NULL, "foo",  ui_cb, "activate");
+        ctx_add_key_binding (ctx, "return", NULL, "foo",  ui_cb, "activate");
+        ctx_add_key_binding (ctx, "space", NULL, "foo",  ui_cb, "activate");
       }
       ctx_add_key_binding (ctx, "control-q", NULL, "foo", ui_cb, "quit");
 }
@@ -1893,10 +2095,9 @@ void ui_end (Ui *ui)
 void ui_start (Ui *ui)
 {
    Ctx *ctx = ui->ctx;
-   draw_bg(ctx);
+   draw_bg(ui);
    ui->width = ctx_width (ctx);
    ui->height = ctx_height (ctx);
-   ui->widget_no = 0;
    ui->line_height = ui->font_size * 1.7;
    ctx_rectangle(ctx,0,0,ui->width, ui->height);
    ctx_listen (ctx, CTX_DRAG, ui_pan, NULL, &ui->scroll_offset);
@@ -1905,24 +2106,25 @@ void ui_start (Ui *ui)
    ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
    ctx_font_size(ctx,ui_get_font_size (ui));
    ui->y = (int)(ui->scroll_offset + ui->height * 0.15);
+   ui->widget_count = 0;
 }
 
 float
-ui_slider (Ui *ui, void *id,
+ui_slider (Ui *ui,
            const char *label, float min, float max, float step, float value)
 {  Ctx *ctx = ui->ctx;
-   ctx_save(ctx);ctx_text_align(ctx,CTX_TEXT_ALIGN_CENTER);\
-   ctx_move_to (ctx, ui->width * 0.5, ui->y+em);\
+   ctx_save(ctx);ctx_text_align(ctx,CTX_TEXT_ALIGN_CENTER);
+   ctx_move_to (ctx, ui->width * 0.5, ui->y+em);
    ctx_text (ctx, label);
 
    ui->y += em * 0.8f;
-   float ret = ui_slider_coords (ui, id, ui->width * 0.1, ui->y, ui->width * 0.8, ui->line_height, min, max, step, value);
+   float ret = ui_slider_coords (ui, UI_ID_STR(label), ui->width * 0.1, ui->y, ui->width * 0.8, ui->line_height, min, max, step, value);
    ui->y += ui->line_height;
    ctx_restore(ctx);
    return ret;
 }
 
-bool ui_toggle(Ui *ui, void *id, const char *label, bool value)
+bool ui_toggle(Ui *ui, const char *label, bool value)
 { 
    Ctx *ctx = ui->ctx;
    if (ui->y>-2 * em && ui->y < ui->height - em)
@@ -1931,10 +2133,10 @@ bool ui_toggle(Ui *ui, void *id, const char *label, bool value)
      ctx_text (ctx, label);
    }
    ui->y += ui->line_height;
-   if (ui_button_coords(ui, ui->width * 0.15, ui->y, em * 2, 0, "off", value==0, id))
-      {value=false;};
-   if (ui_button_coords(ui, ui->width * 0.50, ui->y, em * 2, 0, "on", value==1, id+1))
-      {value=true;};
+   if (ui_button_coords(ui, ui->width * 0.15, ui->y, em * 2, 0, "off", value==0, UI_ID_STR(label)))
+      value=false;
+   if (ui_button_coords(ui, ui->width * 0.50, ui->y, em * 2, 0, "on", value==1, UI_ID_STR(label+1))) // XXX hack - skipping first label char
+      value=true;
    ui->y += ui->line_height;
    return value;
 }
@@ -1947,10 +2149,9 @@ void ui_text(Ui *ui, const char *string)
    ui->y += ui->line_height;
 }
 
-int ui_button(Ui *ui, void *id, const char *label)
+int ui_button(Ui *ui, const char *label)
 {
-   if (id == NULL) id = (void*)label;
-   return ui->y += ui->line_height, ui_button_coords(ui, ui->width * 0.0, ui->y-ui->line_height, ui->width, ui->line_height, label, 0, id);
+   return ui->y += ui->line_height, ui_button_coords(ui, ui->width * 0.0, ui->y-ui->line_height, ui->width, ui->line_height, label, 0, UI_ID_STR(label));
 }
 
 static void ui_entry_drag (CtxEvent *event, void *data1, void *data2)
@@ -1996,7 +2197,7 @@ ui_entry_coords(Ui *ui,
                 const char *fallback, const char *value)
 {
   Ctx *ctx = ui->ctx;
-  UiWidget *widget  = widget_register(ui,ui_type_entry,x,y,w,h, id);
+  UiWidget *widget  = ui_widget_register(ui,ui_type_entry,x,y,w,h, id);
 
   bool focused = (id == ui->focused_id);
   if (focused && ui->activate)
@@ -2031,7 +2232,7 @@ ui_entry_coords(Ui *ui,
       if (to_show && to_show[0])
       { 
         if (to_show == fallback)
-          ui_set_color_a (ctx, color_fg, 0.5);
+          ui_set_color_a (ctx, ui->style.fg, 0.5);
         ctx_text (ctx, to_show);
       }
     }
@@ -2063,14 +2264,14 @@ ui_entry_coords(Ui *ui,
        if (to_show && to_show[0])
        { 
          if (to_show == fallback)
-           ui_set_color_a (ctx, color_fg, 0.5);
+           ui_set_color_a (ctx, ui->style.fg, 0.5);
          ctx_text (ctx, to_show);
        }
   
        ctx_rectangle (ctx, x + w/5 + tw_pre -1, y + ui->font_size * 0.1,
                       2 + tw_selection, ui->font_size);
        ctx_save (ctx);
-       ui_set_color(ctx, color_focused_fg);
+       ui_set_color(ctx, ui->style.focused_fg);
        ctx_fill (ctx);
        ctx_restore (ctx);
     }
@@ -2078,9 +2279,9 @@ ui_entry_coords(Ui *ui,
     ctx_begin_path (ctx);
     ctx_rectangle (ctx, x, y, w, h);
     ctx_listen (ctx, CTX_DRAG, ui_entry_drag, ui, widget->id);
-    if (color_interactive[3]>0.0)
+    if (ui->interactive_debug)
     {
-      ui_set_color(ctx, color_interactive);
+      ui_set_color(ctx, ui->style.interactive_bg);
       ctx_fill(ctx);
     }
     else
@@ -2094,11 +2295,29 @@ ui_entry_coords(Ui *ui,
   if (widget->state == ui_state_commit)
   {
     widget->state = ui_state_default;
+    ui_do (ui, "kb-hide");
     return strdup (ui->temp_text);
   }
   return NULL;
 }
 
+int 
+ui_entry (Ui *ui,
+          const char *label, const char *fallback, char **strptr)
+{
+   char *ret = NULL;
+   ctx_save(ui->ctx);ctx_font_size (ui->ctx, ui->font_size * 0.75);
+   ctx_move_to(ui->ctx, ui->width * 0.5, ui->y + ui->font_size * 0.1);ctx_text(ui->ctx, label);
+   if ((ret = ui_entry_coords(ui, UI_ID_STR(label), ui->width * 0.15, ui->y, ui->width * 0.7, ui->line_height, fallback, *strptr)))
+   {
+     if (*strptr) free (*strptr);
+     *strptr = ret;
+   }
+   ui->y += ui->line_height;
+   ctx_restore(ui->ctx);
+
+   return ret != NULL;
+}
 
 void ui_set_scroll_offset (Ui *ui, float offset)
 {
@@ -2110,4 +2329,3 @@ void ui_scroll_to (Ui *ui, float offset)
 {
   ui->scroll_offset_target = offset;
 }
-
