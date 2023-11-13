@@ -138,7 +138,7 @@ _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, ui
   float v = x;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   CtxGradient *g = &rasterizer->state->gradient;
-  if (v < 0) { v = 0; }
+  v *= (v>0);
   if (v > 1) { v = 1; }
 
   if (g->n_stops == 0)
@@ -175,14 +175,15 @@ _ctx_fragment_gradient_1d_RGBA8 (CtxRasterizer *rasterizer, float x, float y, ui
       ctx_color_get_rgba8 (rasterizer->state, & (stop->color), stop_rgba);
       ctx_color_get_rgba8 (rasterizer->state, & (next_stop->color), next_rgba);
       int dx = (int)((v - stop->pos) * 255 / (next_stop->pos - stop->pos));
-#if 1
       ((uint32_t*)rgba)[0] = ctx_lerp_RGBA8 (((uint32_t*)stop_rgba)[0],
                                              ((uint32_t*)next_rgba)[0], dx);
-#else
-      for (int c = 0; c < 4; c++)
-        { rgba[c] = ctx_lerp_u8 (stop_rgba[c], next_rgba[c], dx); }
-#endif
       rgba[3]=(rgba[3]*global_alpha_u8+255)>>8;
+      if (rasterizer->swap_red_green)
+      {
+         uint8_t tmp = rgba[0];
+         rgba[0] = rgba[2];
+         rgba[2] = tmp;
+      }
       ctx_RGBA8_associate_alpha (rgba);
       return;
     }
