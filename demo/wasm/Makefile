@@ -5,7 +5,7 @@ HTML_FILES = $(C_FILES:.c=.html)
 all: $(HTML_FILES) index.html $(JS_FILES)
 
 %.js: %.c Makefile  ../../ctx.h
-	emcc -I../.. `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -o $@ -I../../fonts -s ASYNCIFY
+	emcc -I../.. `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -o $@ -I../../fonts -s ASYNCIFY -I..
 
 ../../ctx.h: ../../src/*.[ch]
 	make -C ../../ ctx.h

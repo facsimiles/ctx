@@ -1,13 +1,15 @@
 #include "ui.h"
 
 ////////////////////////////////////////////////////////////////////
-static float bx = DISPLAY_WIDTH/2;
-static float by = DISPLAY_HEIGHT/2;
+static float bx = 142;
+static float by = 123;
 static int is_down = 0;
 static float vx = 2.0;
 static float vy = 2.33;
+
 static void bg_motion (CtxEvent *event, void *data1, void *data2)
 {
+  if (data1 || data2){}
   bx = event->x;
   by = event->y;
   vx = 0;
@@ -39,11 +41,11 @@ void view_bouncy (Ui *ui)
     ctx_rectangle(ctx,0,0,width, height);
     ctx_listen (ctx, CTX_DRAG, bg_motion, NULL, NULL);
     ctx_begin_path (ctx); // clear the path, listen doesnt
-    draw_bg (ui);
+    ui_draw_bg (ui);
 
     ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
     ctx_text_baseline(ctx, CTX_TEXT_BASELINE_MIDDLE);
-    ctx_move_to(ctx, width/2, height/2);ctx_text(ctx, CTX_DEMO_TITLE);
+    ctx_move_to(ctx, width/2, height/2);ctx_text(ctx, "vector graphics");
 
     if (!is_down)
     {

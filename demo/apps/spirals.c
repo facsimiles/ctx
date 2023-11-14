@@ -16,7 +16,7 @@ void view_spirals (Ui *ui)
     dot_count = 27;
   }
 
-  draw_bg(ui);
+  ui_draw_bg(ui);
   for (int i = 0; i < dot_count; i ++)
   {
     float x = ctx_width (ctx)/ 2;

@@ -589,7 +589,7 @@ static void _ctx_bindings_key_press (CtxEvent *event, void *data1, void *data2)
     {
       if (events->bindings[i].cb)
       {
-        events->bindings[i].cb (event, events->bindings[i].cb_data, NULL);
+        events->bindings[i].cb (event, events->bindings[i].cb_data, events->bindings[i].command);
         if (event->stop_propagate)
           return;
         handled = 1;

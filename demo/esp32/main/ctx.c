@@ -298,7 +298,7 @@ static void set_pixels_ctx (Ctx *ctx, void *user_data, int x, int y, int w, int 
 #endif
 }
 
-Ctx *esp_ctx(void)
+Ctx *ctx_host(void)
 {
   static Ctx *ctx = NULL;
   if (ctx) return ctx;

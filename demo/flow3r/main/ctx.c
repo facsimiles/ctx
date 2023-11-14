@@ -4,20 +4,25 @@
 #define DISPLAY_HEIGHT 240
 
 
-
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #define SCRATCH_BUF_BYTES (240*240*2)
 
 #define CTX_DITHER                         1
 #define CTX_PROTOCOL_U8_COLOR              1
-#define CTX_LIMIT_FORMATS                  1
+#define CTX_LIMIT_FORMATS                  0
 #define CTX_32BIT_SEGMENTS                 0
 #define CTX_RASTERIZER                     1
-#define CTX_RASTERIZER_AA                  5
+#define CTX_RASTERIZER_AA                  3
 #define CTX_ENABLE_GRAY1                   1
 #define CTX_ENABLE_GRAY2                   1
 #define CTX_ENABLE_GRAY4                   1
 #define CTX_ENABLE_GRAY8                   1
+#define CTX_ENABLE_GRAYA8                  1
+#define CTX_ENABLE_RGB8                    1
+#define CTX_ENABLE_RGBA8                   1
+#define CTX_ENABLE_BGRA8                   1
 #define CTX_ENABLE_RGB332                  1
 #define CTX_ENABLE_RGB565                  1
 #define CTX_ENABLE_RGB565_BYTESWAPPED      1
@@ -68,14 +73,22 @@
 #define CTX_NATIVE_GRAYA8                  0
 #define CTX_AVOID_CLIPPED_SUBDIVISION      0
 
+#define CTX_STB_IMAGE                   1
+#define STBI_ONLY_PNG
+#define STBI_ONLY_GIF
+#define STBI_ONLY_JPEG
+
+
 #include <stdint.h>
-#include "Arimo-Regular.h"
 #define CTX_STATIC_FONT(font) \
   ctx_load_font_ctx(ctx_font_##font##_name, \
                     ctx_font_##font,       \
                     sizeof (ctx_font_##font))
 
+#include "Arimo-Regular.h"
+#include "Cousine-Regular.h"
 #define CTX_FONT_1   CTX_STATIC_FONT(Arimo_Regular)
+#define CTX_FONT_2   CTX_STATIC_FONT(Cousine_Regular)
 
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
@@ -100,25 +113,8 @@
 static const char *TAG = "ctx";
 
 
-#define CT_DOWN_THRESHOLD 3000
-#define CT_SMOOTHING 2   // 1 is disabled   2 is fast 3 is probably decent 
-                         // what is too high for interaction, is it needed?
+#define CT_DOWN_THRESHOLD     3000
 
-
-#define CT_RADIAL_EXPONENT    0.5f
-#define CT_RADIAL_FACTOR      1.0f
-
-
-#define CT_ANGULAR_EXPONENT   1.0f 
-#define CT_ANGULAR_FACTOR     1.0f
-
-#define CT_RADIAL_FLOOR       0.04f
-
-// least tuned constants, last added:
-#define CT_INNER_EXPONENT     0.333f
-
-#define CT_INNER_RADIUS       0.3f
-#define CT_INNER_MID_RADIUS   1.2f
 
 static uint8_t scratch[SCRATCH_BUF_BYTES];
 
@@ -159,15 +155,49 @@ bool bsp_captouch_screen_touched (void)
   return ct_screen_touched;
 }
 
-static float ct_angle = -1.0f;
+static float ct_angle = -1000.0f;
+static float ct_quant_angle = -1000.0f;
 static float ct_radial = 0.0f;
+
+static float ct_angle_i = -1000.0f;
+static float ct_angle_o = -1000.0f;
+
+static uint16_t ct_petal_mask = (1<<10)-1;
 
 // return < 0 if no touch on upper petals,
 // otherwise a value that is 0 for top going to
 // 1.0 for full rotation.
-float bsp_captouch_angle (float *radial_pos)
+//
+// if quantize is non-0 quantize to given number of levels,
+// there is currently special handling for 5, 10 and 20 steps.
+//
+float bsp_captouch_angle (float *radial_pos, int quantize, uint16_t petal_mask)
 {
-   if (radial_pos) *radial_pos = ct_radial;
+  if (petal_mask == 0)
+    ct_petal_mask = (1<<10)-1;
+  else
+    ct_petal_mask = petal_mask;
+
+  if (radial_pos) *radial_pos = ct_radial;
+  if (ct_angle < -100.0) return -1000.0f;
+
+  switch (quantize)
+  {
+    case -1: return ct_angle_i;
+    case -2: return ct_angle_o;
+    case 20:
+    case 10:
+    case 5:
+    case 4:
+    case 2:
+      return floorf(ct_quant_angle*quantize+0.5f)/quantize;
+    case 0:
+    case 1:
+      return ct_angle;
+    // TODO: make better and specific attempt at 12 and thus 6
+    default:
+      return ((int)(ct_angle*quantize+0.5f))/(quantize * 1.0f);
+  }
   return ct_angle;
 }
 
@@ -323,187 +353,8 @@ static void set_pixels_ctx (Ctx *ctx, void *user_data, int x, int y, int w, int 
     lcd_data(pixels,w*h*2);
 }
 
-static SemaphoreHandle_t mutex = NULL; // XXX
-static void on_captouch_data(const flow3r_bsp_captouch_state_t *st)
-{
-  static int calibrated =0;
-  xSemaphoreTake (mutex, portMAX_DELAY);
-  if (!calibrated)
-  {
-    flow3r_bsp_captouch_calibrate ();
-    calibrated = 1;
-  }
-  uint16_t best_sum = 0;
-  float best_angular = 32767;
-  int best_petal = -1;
-
-  for (int i = 0; i < 10; i++)
-  {
-     if ((i % 2) == 0)
-     {
-#if CT_SMOOTHING==1
-        _captouch[i].cw = st->petals[i].cw.raw;
-        _captouch[i].ccw = st->petals[i].ccw.raw;
-        _captouch[i].base = st->petals[i].base.raw;
-#else
-        _captouch[i].cw =
-           (_captouch[i].cw * (CT_SMOOTHING-1) + st->petals[i].cw.raw) / CT_SMOOTHING;
-        _captouch[i].ccw =
-           (_captouch[i].ccw * (CT_SMOOTHING-1) + st->petals[i].ccw.raw) / CT_SMOOTHING;
-        _captouch[i].base =
-           (_captouch[i].base * (CT_SMOOTHING-1) + st->petals[i].base.raw) / CT_SMOOTHING;
-#endif
-        _captouch[i].tip = (_captouch[i].cw + (uint32_t)_captouch[i].ccw)/2;
-     }
-     else
-     {
-#if CT_SMOOTHING==1
-        _captouch[i].tip  = st->petals[i].tip.raw;
-        _captouch[i].base = st->petals[i].base.raw;
-#else
-        _captouch[i].tip =
-           (_captouch[i].tip * (CT_SMOOTHING-1) + st->petals[i].tip.raw) / CT_SMOOTHING;
-        _captouch[i].base =
-           (_captouch[i].base * (CT_SMOOTHING-1) + st->petals[i].base.raw) / CT_SMOOTHING;
-#endif
-
-     }
-  }
-  xSemaphoreGive (mutex);
-
-
-  for (int i = 0; i < 10; i++)
-  {
-     float pos_angular = 0.0f;
-     float pos_radial  = 0.5f;
-
-     if ((i % 2) == 0)
-     {
-        int prev_petal = (i - 2 + 10) % 10;
-        int next_petal = (i + 2) % 10;
-        float angular_sum = (_captouch[i].cw + (uint32_t)_captouch[i].ccw +
-                             _captouch[prev_petal].sum+
-                             _captouch[next_petal].sum);
-        
-        if (angular_sum == 0)
-          pos_angular = 0.0f;
-        else if (_captouch[i].cw + _captouch[next_petal].sum <
-                 _captouch[i].ccw + _captouch[prev_petal].sum)
-        {
-          pos_angular = -powf(((0.5f - (_captouch[i].cw + _captouch[next_petal].sum) / angular_sum)*2), CT_ANGULAR_EXPONENT);
-        }
-        else
-        {
-          pos_angular = powf(((0.5f - (_captouch[i].ccw + _captouch[prev_petal].sum) / angular_sum)*2), CT_ANGULAR_EXPONENT);
-        }
-        pos_angular = (pos_angular) * 32767.0f;
-        //(CT_ANGULAR_FACTOR * 32767.0f);
-        //if (pos_angular < -32767) pos_angular = -32767;
-        //else if (pos_angular > 32767) pos_angular = 32767;
-
-     }
-
-     float radial_sum = (_captouch[i].tip + (uint32_t)_captouch[i].base)/2;
-     if (radial_sum == 0.0f)
-       pos_radial = 0.5f;
-     else if (_captouch[i].tip < _captouch[i].base)
-     {
-       pos_radial = (0.5f * powf( _captouch[i].tip / radial_sum, CT_RADIAL_EXPONENT));
-     }
-     else
-     {
-       pos_radial = 1.0f-(0.5f * powf(_captouch[i].base / radial_sum, CT_RADIAL_EXPONENT));
-     }
-     pos_radial -= CT_RADIAL_FLOOR;
-     pos_radial -= 0.5f;
-     pos_radial *= CT_RADIAL_FACTOR;
-     pos_radial += 0.5f;
-     if (pos_radial < 0.0f) pos_radial = 0.0f;
-     if (pos_radial > 1.0f) pos_radial = 1.0f;
-
-     if (((i % 2) == 0))
-     {
-       if (radial_sum > best_sum)
-       {
-         best_sum = radial_sum;
-         best_angular = pos_angular;
-         best_petal = i;
-       }
-     }
-     if (radial_sum < CT_DOWN_THRESHOLD)
-     {
-        pos_angular = 0.0f;
-        pos_radial = 0.5f;
-     }
-     _captouch[i].sum         = radial_sum;
-     _captouch[i].pos_angular = pos_angular;
-     _captouch[i].pos_radial  = pos_radial * 65535;
-  }
-
-
-  if (best_sum < CT_DOWN_THRESHOLD)
-    ct_angle = -1.0f;
-  else
-  {
-    float rel_angle = (best_angular/32767.0f);
-
-    float radial = _captouch[best_petal].pos_radial/65535.0f;
-
-    int prev_petal = (best_petal + 10 - 2) % 10;
-    int next_petal = (best_petal + 2) % 10;
-
-
-    float this_sum = _captouch[best_petal].sum;
-
-
-    if (radial < CT_INNER_RADIUS)
-    {
-      float new_rel_angle;
-      float dist = 0.0f;
-
-      if (rel_angle < -1.0f) rel_angle = -1.0f;
-      if (rel_angle > 1.0f) rel_angle = 1.0f;
-
-      if (rel_angle < -0.0f)
-      {
-        float prev_sum = _captouch[prev_petal].sum;
-        new_rel_angle = -powf(2*(prev_sum / ((prev_sum+this_sum))), CT_INNER_EXPONENT);
-
-      } 
-      else
-      {
-        float next_sum = _captouch[next_petal].sum;
-        new_rel_angle = powf(2*(next_sum / ((next_sum+this_sum))), CT_INNER_EXPONENT);
-      }
-
-
-
-      dist = radial / CT_INNER_MID_RADIUS;
-
-      float factor = 1.0f-dist;
-      if (factor < 0.0f) factor = 0.0f;
-      if (factor > 1.0f) factor = 1.0f;
-      //factor = 1.0f;
-
-      rel_angle = rel_angle * (1.0f-factor) + new_rel_angle * factor;
-
-
-    }
-
-    if (rel_angle < -1.0f) rel_angle = -1.0f;
-    if (rel_angle > 1.0f) rel_angle = 1.0f;
-
-
-    float angle = best_petal + rel_angle;
-    angle = best_petal + rel_angle;
-    if (angle < 0) angle += 10;
-    angle /= 10.0f;
-       
-    ct_angle =  angle;
-    ct_radial = radial;
-  }
-}
-
+static SemaphoreHandle_t ct_mutex = NULL; 
+static void on_captouch_data(const flow3r_bsp_captouch_state_t *st);
 
 void sd_init (void);
 void board_init (void)
@@ -512,7 +363,7 @@ void board_init (void)
   
   flow3r_bsp_i2c_init();
   flow3r_bsp_spio_init();
-  mutex = xSemaphoreCreateMutex();
+  ct_mutex = xSemaphoreCreateMutex();
 
   esp_err_t ret = flow3r_bsp_captouch_init (on_captouch_data);
   if (ret != ESP_OK) ESP_LOGE(TAG, "captouch init failed\n");
@@ -521,7 +372,7 @@ void board_init (void)
   //touch_init();
 }
 
-Ctx *esp_ctx(void)
+Ctx *ctx_host(void)
 {
   static Ctx *ctx = NULL;
   if (ctx) return ctx;
@@ -647,14 +498,7 @@ int wifi_init_sta(const char *ssid_arg, const char *password_arg)
     }
 
     wifi_config_t wifi_config = {
-        .sta = {
-            /* Authmode threshold resets to WPA2 as default if password matches WPA2 standards (pasword len => 8).
-             * If you want to connect the device to deprecated WEP/WPA networks, Please set the threshold value
-             * to WIFI_AUTH_WEP/WIFI_AUTH_WPA_PSK and set the password with length and format matching to
-             * WIFI_AUTH_WEP/WIFI_AUTH_WPA_PSK standards.
-             */
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-        },
+        .sta = { .threshold.authmode = WIFI_AUTH_WPA2_PSK, },
     };
    strncpy((char*)&wifi_config.sta.ssid[0], ssid_arg, sizeof (wifi_config.sta.ssid)-1);
    strncpy((char*)&wifi_config.sta.password[0], password_arg, sizeof (wifi_config.sta.password)-1);
@@ -747,4 +591,180 @@ void sd_init (void)
   return;
 }
 
+#define CT_OUTHER_EXPONENT    1.0f
+#define CT_INNER_EXPONENT     1.0f
 
+static void on_captouch_data(const flow3r_bsp_captouch_state_t *st)
+{
+  static int calibrated =0;
+  xSemaphoreTake (ct_mutex, portMAX_DELAY);
+  if (!calibrated)
+  {
+    flow3r_bsp_captouch_calibrate ();
+    calibrated = 1;
+  }
+
+  for (int i = 0; i < 10; i++)
+  {
+     if ((i % 2) == 0)
+     {
+        _captouch[i].cw   = st->petals[i].cw.raw;
+        _captouch[i].ccw  = st->petals[i].ccw.raw;
+        _captouch[i].base = st->petals[i].base.raw;
+        _captouch[i].tip  = (_captouch[i].cw + (uint32_t)_captouch[i].ccw)/2;
+     }
+     else
+     {
+        _captouch[i].tip  = st->petals[i].tip.raw;
+        _captouch[i].base = st->petals[i].base.raw;
+     }
+  }
+  xSemaphoreGive (ct_mutex);
+
+  uint16_t best_sum = 0;
+  int best_angular = 32767;
+  int best_petal = -1;
+
+  for (int i = 0; i < 10; i++)
+  {
+     float pos_angular = 0;
+     int   pos_radial  = 32767;
+
+     if ((i % 2) == 0)
+     {
+        float angular_sum = (_captouch[i].cw + _captouch[i].ccw);
+        
+        if (angular_sum == 0)
+          pos_angular = 0.0f;
+        else if (_captouch[i].cw < _captouch[i].ccw)
+        {
+          pos_angular = -((0.5f - _captouch[i].cw / angular_sum ))*2;
+        }
+        else
+        {
+          pos_angular = ((0.5f - _captouch[i].ccw / angular_sum))*2;
+        }
+        pos_angular *= 32767;
+
+        if (pos_angular < -32767) pos_angular = -32767;
+        else if (pos_angular > 32767) pos_angular = 32767;
+     }
+
+     uint32_t radial_sum = (_captouch[i].tip + (uint32_t)_captouch[i].base)/2;
+     if (radial_sum == 0)
+       pos_radial = 32767;
+     else if (_captouch[i].tip < _captouch[i].base)
+     {
+       pos_radial = (65535*_captouch[i].tip) / (radial_sum*2);
+     }
+     else
+     {
+       pos_radial = 65535-((65535*_captouch[i].base) / (radial_sum*2));
+     }
+
+     if (((i % 2) == 0))
+     {
+       if (radial_sum > best_sum && ((ct_petal_mask & (1<<i))!=0))
+       {
+         best_sum = radial_sum;
+         best_angular = pos_angular;
+         best_petal = i;
+       }
+     }
+     if (radial_sum < CT_DOWN_THRESHOLD)
+     {
+        pos_angular = 0;
+        pos_radial = 32767;
+     }
+     _captouch[i].sum         = radial_sum;
+     _captouch[i].pos_angular = pos_angular;
+     _captouch[i].pos_radial  = pos_radial;
+  }
+
+
+  if (best_sum < CT_DOWN_THRESHOLD)
+  {
+    ct_radial = 0;
+    ct_angle =
+    ct_angle_o =
+    ct_angle_i = 
+    ct_quant_angle = -1000.0f;;
+  }
+  else
+  {
+    float rel_angle = (best_angular/32767.0f);
+
+    float radial = _captouch[best_petal].pos_radial/65535.0f;
+
+    int prev_petal = (best_petal + 10 - 2) % 10;
+    int next_petal = (best_petal + 2) % 10;
+
+    float this_sum = _captouch[best_petal].sum;
+
+    {
+      float new_rel_angle;
+
+
+      ct_angle_o = best_petal + rel_angle;
+      if (rel_angle < -1.0f) rel_angle = -1.0f;
+      if (rel_angle > 1.0f) rel_angle = 1.0f;
+      if (ct_angle_o < 0) ct_angle_o += 10;
+      ct_angle_o /= 10.0f;
+
+      if (rel_angle < -0.0f)
+      {
+        float prev_sum = _captouch[prev_petal].sum;
+        new_rel_angle = -(2*(prev_sum / ((prev_sum+this_sum))));
+
+      } 
+      else
+      {
+        float next_sum = _captouch[next_petal].sum;
+        new_rel_angle = (2*(next_sum / ((next_sum+this_sum))));
+      }
+
+      ct_angle_i = best_petal + new_rel_angle;
+
+      if (new_rel_angle < -1.0f) new_rel_angle = -1.0f;
+      if (new_rel_angle > 1.0f) new_rel_angle = 1.0f;
+      if (ct_angle_i < 0) ct_angle_i += 10;
+      ct_angle_i /= 10.0f;
+
+#if 0
+      float factor = (1.0f-(radial / CT_INNER_RADIUS)) * (1.0f-fabs(rel_angle));
+      if (factor < 0.0f) factor = 0.0f;
+      if (factor > 1.0f) factor = 1.0f;
+#endif
+      float factor = 0.5f;
+      rel_angle = rel_angle * (1.0f-factor) + new_rel_angle * factor;
+    }
+
+    if (rel_angle < -1.0f) rel_angle = -1.0f;
+    if (rel_angle > 1.0f) rel_angle = 1.0f;
+
+    if (fabsf(rel_angle) > 0.7f)
+       radial *= 1.5;
+    else if (fabsf(rel_angle) < 0.2f)
+       radial *= 1.5;
+
+    float angle = best_petal + rel_angle;
+    if (angle < 0) angle += 10;
+    angle /= 10.0f;
+       
+    ct_angle  = angle;
+    ct_radial = radial;
+
+    float threshold = 0.125;
+    if      (rel_angle < -0.5-threshold) rel_angle = -1.0f;
+    else if (rel_angle < -0.5+threshold) rel_angle = -0.5f;
+    else if (rel_angle <  0.5-threshold) rel_angle =  0.0f;
+    else if (rel_angle <  0.5+threshold) rel_angle =  0.5f;
+    else rel_angle = 1.0f;
+
+    angle = best_petal + rel_angle;
+    if (angle < 0) angle += 10;
+    angle /= 10.0f;
+       
+    ct_quant_angle  = angle;
+  }
+}

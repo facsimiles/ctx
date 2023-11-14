@@ -18,7 +18,7 @@ void view_clock (Ui *ui)
   m %= 60;
   h %= 12;
   
-  draw_bg (ui);
+  ui_draw_bg (ui);
   float r; 
   
   ctx_line_width (ctx, radius * 0.02f);
@@ -78,4 +78,3 @@ void view_clock (Ui *ui)
                     y + sinf(r) * radius * 0.78f);
   ctx_stroke (ctx);
 }
-

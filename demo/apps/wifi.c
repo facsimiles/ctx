@@ -5,11 +5,14 @@ static char *wifi_password = NULL;
 static bool wifi_connected = false;
 void view_wifi (Ui *ui)
 {
+//#if CTX_FLOW3R
    if (ui->data == NULL)
    {
      if (!wifi_ssid) wifi_ssid = strdup (CTX_DEMO_WIFI_SSID);
      if (!wifi_password) wifi_password = strdup (CTX_DEMO_WIFI_PASSWORD);
      FILE *file = fopen("/sd/w1f1_config.json", "rb");
+     if (file)
+     {
      fseek(file, 0, SEEK_END);
      long length = ftell(file);
      fseek(file, 0, SEEK_SET);
@@ -18,7 +21,9 @@ void view_wifi (Ui *ui)
      fclose(file);
      ((char*)ui->data)[length] = 0;
      ui->data_finalize = free;
+     }
    }
+//#endif
    ui_start (ui);
    ui->y += ui->height * 0.05;
    ui_text(ui,"wifi");

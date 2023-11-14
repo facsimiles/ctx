@@ -1,5 +1,6 @@
 #include "ui.h"
 
+
 void view_captouch (Ui *ui)
 {
    Ctx *ctx = ui->ctx;
@@ -19,18 +20,32 @@ void view_captouch (Ui *ui)
       ctx_restore (ctx);
    }
    float rad_pos = 0.0f;
-   float angle = bsp_captouch_angle(&rad_pos);
+   int petal_mask = 0;// (1<<4) | (1<<6);
+   float angle = bsp_captouch_angle(&rad_pos, 0, petal_mask);
+   float angle_quant = bsp_captouch_angle(&rad_pos, 20, petal_mask);
    if (angle >= 0.0f)
    {
+     
+     ctx_save (ctx);
+     ctx_translate (ctx, ui->width/2, ui->height/2);
+     ctx_rotate (ctx, angle_quant * M_PI * 2 + M_PI);
+     ctx_move_to (ctx, 0, 0.6 * ui->height/2);
+     ctx_line_to (ctx, 0, 0.9 * ui->height/2);
+     ctx_rgba (ctx, 1.0f, 0.5f, 0, 1);
+     ctx_line_width (ctx, 6.0);
+     ctx_stroke (ctx);
+     ctx_restore (ctx);
+
+
      ctx_save (ctx);
      ctx_translate (ctx, ui->width/2, ui->height/2);
      ctx_rotate (ctx, angle * M_PI * 2 + M_PI);
      ctx_move_to (ctx, 0, 0.8 * ui->height/2);
      ctx_line_to (ctx, 0, ui->height/2);
+     ctx_line_width (ctx, 8.0);
      ctx_gray (ctx, 1.0f);
      ctx_stroke (ctx);
      ctx_restore (ctx);
-     
    }
 
    ui_end(ui);

@@ -1,2 +1,8 @@
-idf_component_register(SRCS "gc9a01.c" "ctx.c" "main.c" "clock.c" "todo.c" "spirals.c" "bouncy.c" "wifi.c" "captouch.c"
-                    INCLUDE_DIRS ".")
+idf_component_register(
+
+SRCS "ctx.c"
+     "ui.c"
+     "main.c"
+     "gc9a01.c"
+
+INCLUDE_DIRS "." "../../../" "../../" "../../../deps" "../../../fonts")
