@@ -19,8 +19,6 @@ int  ctx_osk_mode = 0;
 
 ////////////////////////////////////////////////////////
 
-
-
 static float backlight  = 100.0;
 static void ui_backlight (float backlight)
 {
@@ -45,7 +43,6 @@ void view_settings (Ui *ui)
    if (ui_button(ui, "ui"))   ui_do(ui, "settings-ui");
    if (ui_button(ui, "wifi")) ui_do(ui, "wifi");
 
-
    backlight = ui_slider(ui,"backlight", 0.0f, 100.0f, 5.0, backlight);
 
    ui_backlight (backlight);
@@ -53,7 +50,6 @@ void view_settings (Ui *ui)
 #if CTX_FLOW3R
    flow3r_synthesize_key_events = ui_toggle(ui,"cap-touch keys", flow3r_synthesize_key_events);
 #endif
-
    ui_end(ui);
 }
 
@@ -120,6 +116,7 @@ void ui_register_view (Ui *ui,
 {
   if (n_registered_views + 1 >= 64) return;
   registered_view[n_registered_views].name = strdup (name);
+  registered_view[n_registered_views].category = strdup (category);
   registered_view[n_registered_views].fun = fun;
   n_registered_views++;
 }
@@ -127,12 +124,12 @@ void ui_register_view (Ui *ui,
 #define UI_MAX_HISTORY 16
 
 typedef struct ui_history_item {
-char *view;
-float scroll_offset;
-void *focused;
-ui_fun fun;
-void *data;
-ui_data_finalize data_finalize;
+  char *view;
+  float scroll_offset;
+  void *focused;
+  ui_fun fun;
+  void *data;
+  ui_data_finalize data_finalize;
 } ui_history_item;
 
 static int   history_count = 0;
@@ -226,23 +223,18 @@ static void ui_view_file (Ui *ui)
    ui_text(ui,"file");
    ui_text(ui,ui->location);
 
-   if (strstr(ui->location, ".jpg") ||
-       strstr(ui->location, ".png") ||
-       strstr(ui->location, ".PNG") ||
-       strstr(ui->location, ".JPG"))
+   for (int i = 0; i < n_registered_views; i++)
    {
-     ui->fun = ui_view_image;
+     const char *cat = registered_view[i].category;
+     if (cat && 
+         strstr (ui->location, cat) &&
+         (strstr (ui->location, cat)[strlen(cat)]==0))
+     {
+        ui->fun = registered_view[i].fun;
+        break;
+     }
    }
-#if 0
-   else if (strstr(ui->location, ".json") ||
-            strstr(ui->location, ".py") ||
-            strstr(ui->location, ".txt") ||
-            strstr(ui->location, ".toml") ||
-            strstr(ui->location, ".md"))
-   {
-     ui->fun = ui_view_text;
-   }
-#endif
+
    ui_end (ui);
 }
 
