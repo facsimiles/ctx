@@ -190,4 +190,5 @@ struct _Ui {
 };
 
 
+void ui_load_file (Ui *ui, const char *path);
 #endif

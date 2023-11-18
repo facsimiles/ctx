@@ -41,8 +41,9 @@ void view_apps (Ui *ui)
    ui_start (ui);
 
 #define UI_APP(name, label, fun, category) \
-   if (ui_button(ui, label?label:name)) \
-     ui_do(ui, name);
+   if (category && (!strcmp (category, "apps")))\
+     if (ui_button(ui, label?label:name)) \
+       ui_do(ui, name);
    #include "apps.inc"
 #undef UI_APP
 
