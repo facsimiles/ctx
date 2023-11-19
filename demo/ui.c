@@ -19,15 +19,6 @@ static bool osk_captouch = false;
 int  ctx_osk_mode = 0;
 
 
-typedef struct UiView
-{
-  const char *name;
-  ui_fun      fun;
-  const char *category;
-} UiView;
-
-static UiView registered_view[64];
-static int n_registered_views = 0;
 
 
 ////////////////////////////////////////////////////////
@@ -113,16 +104,16 @@ void view_settings_ui (Ui *ui)
 }
 
 
-void ui_register_view (Ui *ui,
+void ui_register_view (Ui         *ui,
                        const char *name,
                        const char *category,
-                       ui_fun fun)
+                       ui_fun      fun)
 {
-  if (n_registered_views + 1 >= 64) return;
-  registered_view[n_registered_views].name = strdup (name);
-  registered_view[n_registered_views].category = strdup (category);
-  registered_view[n_registered_views].fun = fun;
-  n_registered_views++;
+  if (ui->n_views + 1 >= 64) return;
+  ui->views[ui->n_views].name = strdup (name);
+  ui->views[ui->n_views].category = strdup (category);
+  ui->views[ui->n_views].fun = fun;
+  ui->n_views++;
 }
 
 #define UI_MAX_HISTORY 16
@@ -150,7 +141,7 @@ static void save_state(Ui *ui)
       free(history[history_count].view);
     if (ui->location == NULL)
     {
-      history[history_count].view = strdup (registered_view[0].name);
+      history[history_count].view = strdup (ui->views[0].name);
     }
     else
       history[history_count].view = strdup (ui->location);
@@ -227,14 +218,14 @@ static void ui_view_file (Ui *ui)
    ui_text(ui,"file");
    ui_text(ui,ui->location);
 
-   for (int i = 0; i < n_registered_views; i++)
+   for (int i = 0; i < ui->n_views; i++)
    {
-     const char *cat = registered_view[i].category;
+     const char *cat = ui->views[i].category;
      if (cat && 
          strstr (ui->location, cat) &&
          (strstr (ui->location, cat)[strlen(cat)]==0))
      {
-        ui->fun = registered_view[i].fun;
+        ui->fun = ui->views[i].fun;
         break;
      }
    }
@@ -361,10 +352,10 @@ ui_load_view(Ui *ui, const char *target)
     }
 #endif
 
-    for (int i = 0; i < n_registered_views; i++)
-    if (!strcmp (registered_view[i].name, target))
+    for (int i = 0; i < ui->n_views; i++)
+    if (!strcmp (ui->views[i].name, target))
     {
-      ui_push_fun (ui, registered_view[i].fun, target, NULL, NULL);
+      ui_push_fun (ui, ui->views[i].fun, target, NULL, NULL);
       return;
     }
     ui_push_fun (ui, ui_unhandled, target, NULL, NULL);

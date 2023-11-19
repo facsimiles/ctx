@@ -148,6 +148,14 @@ typedef struct ui_style_t {
   float interactive_bg[4];
 } ui_style_t;
 
+typedef struct UiView
+{
+  const char *name;
+  ui_fun      fun;
+  const char *category;
+} UiView;
+
+
 struct _Ui {
   Ctx   *ctx;
   char  *location;
@@ -182,6 +190,8 @@ struct _Ui {
   int      widget_count;
   UiWidget widgets[UI_MAX_WIDGETS];
   char     temp_text[128];
+  UiView   views[64];
+  int      n_views;
 
   ui_style_t style;
 
