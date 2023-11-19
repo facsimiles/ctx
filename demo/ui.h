@@ -7,7 +7,6 @@
 #include "ctx.h"
 
 #include <sys/stat.h>
-#include <dirent.h>
 
 #ifndef CTX_DEMO_WIFI_SSID
 #define CTX_DEMO_WIFI_SSID     ""
@@ -191,4 +190,8 @@ struct _Ui {
 
 
 void ui_load_file (Ui *ui, const char *path);
+
+Ui *_default_ui(void);
+
 #endif
+

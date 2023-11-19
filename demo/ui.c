@@ -1,5 +1,6 @@
 #include "port_config.h"
 #include "ui.h"
+#include <dirent.h>
 
 static void ui_set_color_a (Ctx *ctx, float *rgba, float alpha);
 static void ui_set_color (Ctx *ctx, float *rgba);
@@ -16,6 +17,18 @@ static bool is_touch     = true;
 static bool osk_captouch = false;
 
 int  ctx_osk_mode = 0;
+
+
+typedef struct UiView
+{
+  const char *name;
+  ui_fun      fun;
+  const char *category;
+} UiView;
+
+static UiView registered_view[64];
+static int n_registered_views = 0;
+
 
 ////////////////////////////////////////////////////////
 
@@ -99,15 +112,6 @@ void view_settings_ui (Ui *ui)
    ui_end(ui);
 }
 
-typedef struct UiView
-{
-  const char *name;
-  ui_fun      fun;
-  const char *category;
-} UiView;
-
-static UiView registered_view[64];
-static int n_registered_views = 0;
 
 void ui_register_view (Ui *ui,
                        const char *name,
@@ -461,9 +465,17 @@ void overlay_button (Ui *ui, float x, float y, float w, float h, const char *lab
       ctx_restore (ctx);
 }
 
+static Ui *def_ui = NULL;
+
+Ui *_default_ui(void)
+{
+  return def_ui;
+}
+
 Ui *ui_new(Ctx *ctx)
 {
   Ui *ui = calloc (1, sizeof (Ui));
+  if (!def_ui)def_ui = ui;
   ui->ctx = ctx;
   ui->style.bg[0]=0.1;
   ui->style.bg[1]=0.2;
@@ -1193,11 +1205,8 @@ void ui_main(Ui *ui, const char *start_location)
         if (ui->queued_next <= 0 && ui->widget_count)
            ui_do(ui,"focus-next");
       }
-
-      ui->frame_no++;
-      ui->view_elapsed += ticks_delta* 1/(1000*1000.0f);
-
       ctx_restore (ctx);
+
 
       if (is_touch){
         overlay_button (ui, 0,0,width,height*0.12, "back", "back");
@@ -1272,6 +1281,10 @@ void ui_main(Ui *ui, const char *start_location)
       ctx_restore (ctx);
 #endif
       ctx_end_frame (ctx);
+
+
+      ui->frame_no++;
+      ui->view_elapsed += ticks_delta* 1/(1000*1000.0f);
     }
 }
 static void
@@ -2112,5 +2125,9 @@ void ui_scroll_to (Ui *ui, float offset)
 
 void ui_destroy (Ui *ui)
 {
+   if (ui->location)
+     free (ui->location);
+   ui->location = NULL;
+  // XXX : destroy more
   free (ui);
 }

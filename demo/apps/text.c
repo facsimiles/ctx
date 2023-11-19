@@ -10,6 +10,9 @@ void view_text (Ui *ui)
 
    ui_start (ui);
    ui_text(ui,ui->location);
+
+   ui->y += ui->font_size;
+
    if (ui->data)
    {
      ctx_save(ctx);
