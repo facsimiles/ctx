@@ -163,6 +163,19 @@ uintptr_t elf_find_sym(const char *sym_name)
 {
     const struct esp_elfsym *syms;
 
+#ifdef CONFIG_ELF_LOADER_CUSTOMER_SYMBOLS
+    extern const struct esp_elfsym g_customer_elfsyms[];
+
+    syms = g_customer_elfsyms;
+    while (syms->name) {
+        if (!strcmp(syms->name, sym_name)) {
+            return (uintptr_t)syms->sym;
+        }
+
+        syms++;
+    }
+#endif
+
 #ifdef CONFIG_ELF_LOADER_LIBC_SYMBOLS
     syms = g_esp_libc_elfsyms;
     while (syms->name) {
@@ -191,18 +204,6 @@ uintptr_t elf_find_sym(const char *sym_name)
     (void)syms;
 #endif
 
-#ifdef CONFIG_ELF_LOADER_CUSTOMER_SYMBOLS
-    extern const struct esp_elfsym g_customer_elfsyms[];
-
-    syms = g_customer_elfsyms;
-    while (syms->name) {
-        if (!strcmp(syms->name, sym_name)) {
-            return (uintptr_t)syms->sym;
-        }
-
-        syms++;
-    }
-#endif
 
     return 0;
 }
