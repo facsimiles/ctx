@@ -103,7 +103,15 @@ void destroy_esp_elf (void *esp_elf)
   free (esp_elf);
 }
 
+void reset_elf_output_state (void);
+int  elf_output_state (void); // 1 text 2 graphics 3 both
 void _ctx_toggle_in_idle_dispatch (Ctx *ctx);
+
+static int elf_run (int argc, char **argv)
+{
+  return 0;
+}
+
 
 static int launch_elf_handler = 0;
 static int elf_retval = 0;
@@ -114,6 +122,7 @@ int launch_elf (Ctx *ctx, void *data)
     esp_elf_t *elf = data;
     ctx_remove_idle (ctx, launch_elf_handler);
     launch_elf_handler = 0;
+    reset_elf_output_state ();
     elf_retval = esp_elf_request(elf, 0, 0, NULL);
     _ctx_toggle_in_idle_dispatch (ctx);
     destroy_esp_elf (elf);
