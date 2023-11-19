@@ -416,6 +416,11 @@ void _ctx_events_init (Ctx *ctx)
   events->tap_hysteresis = 32;  /* XXX: should be ppi dependent */
 }
 
+void _ctx_toggle_in_idle_dispatch (Ctx *ctx)
+{
+  ctx->events.in_idle_dispatch= !ctx->events.in_idle_dispatch;
+}
+
 
 void _ctx_idle_iteration (Ctx *ctx)
 {
@@ -438,7 +443,12 @@ void _ctx_idle_iteration (Ctx *ctx)
 
   ctx->events.in_idle_dispatch=1;
 
-  for (l = ctx->events.idles; l; l = l->next)
+  CtxList *idles_to_remove = ctx->events.idles_to_remove;
+  ctx->events.idles_to_remove = NULL;
+  CtxList *idles = ctx->events.idles;
+  ctx->events.idles = NULL;
+
+  for (l = idles; l; l = l->next)
   {
     CtxIdleCb *item = l->data;
 
@@ -452,7 +462,7 @@ void _ctx_idle_iteration (Ctx *ctx)
     if (rem < 0)
     {
       int to_be_removed = 0;
-      for (CtxList *l2 = ctx->events.idles_to_remove; l2; l2=l2->next)
+      for (CtxList *l2 = idles_to_remove; l2; l2=l2->next)
       {
         CtxIdleCb *item2 = l2->data;
         if (item2 == item) to_be_removed = 1;
@@ -462,7 +472,7 @@ void _ctx_idle_iteration (Ctx *ctx)
       {
       if (item->cb (ctx, item->idle_data) == 0)
       {
-        ctx_list_prepend (&ctx->events.idles_to_remove, item);
+        ctx_list_prepend (&idles_to_remove, item);
       }
       else
         item->ticks_remaining = item->ticks_full;
@@ -474,7 +484,7 @@ void _ctx_idle_iteration (Ctx *ctx)
     else
     {
       int to_be_removed = 0;
-      for (CtxList *l2 = ctx->events.idles_to_remove; l2; l2=l2->next)
+      for (CtxList *l2 = idles_to_remove; l2; l2=l2->next)
       {
         CtxIdleCb *item2 = l2->data;
         if (item2 == item) to_be_removed = 1;
@@ -484,7 +494,7 @@ void _ctx_idle_iteration (Ctx *ctx)
       {
         if (item->cb (ctx, item->idle_data) == 0)
         {
-          ctx_list_prepend (&ctx->events.idles_to_remove, item);
+          ctx_list_prepend (&idles_to_remove, item);
         }
         else
           item->ticks_remaining = item->ticks_full;
@@ -495,18 +505,19 @@ void _ctx_idle_iteration (Ctx *ctx)
   while (ctx->events.idles_to_add)
   {
     CtxIdleCb *item = ctx->events.idles_to_add->data;
-    ctx_list_prepend (&ctx->events.idles, item);
+    ctx_list_prepend (&idles, item);
     ctx_list_remove (&ctx->events.idles_to_add, item);
   }
 
-  while (ctx->events.idles_to_remove)
+  while (idles_to_remove)
   {
-    CtxIdleCb *item = ctx->events.idles_to_remove->data;
-    ctx_list_remove (&ctx->events.idles, item);
-    ctx_list_remove (&ctx->events.idles_to_remove, item);
+    CtxIdleCb *item = idles_to_remove->data;
+    ctx_list_remove (&idles, item);
+    ctx_list_remove (&idles_to_remove, item);
     if (item->destroy_notify)
       item->destroy_notify (item->destroy_data);
   }
+  ctx->events.idles = idles;
   ctx->events.in_idle_dispatch=0;
 #if EMSCRIPTEN
 #ifdef ASYNCIFY

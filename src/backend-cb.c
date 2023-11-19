@@ -692,6 +692,8 @@ ctx_cb_end_frame (Ctx *ctx)
   }
   if (cb_backend->update_fb)
     cb_backend->update_fb (ctx, cb_backend->update_fb_user_data);
+  
+  ctx_handle_events (ctx);
 }
 
 Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
