@@ -105,8 +105,8 @@ void destroy_esp_elf (void *esp_elf)
 
 void _ctx_toggle_in_idle_dispatch (Ctx *ctx);
 
-
 static int launch_elf_handler = 0;
+static int elf_retval = 0;
 int launch_elf (Ctx *ctx, void *data)
 {
   if (launch_elf_handler) {
@@ -114,10 +114,8 @@ int launch_elf (Ctx *ctx, void *data)
     esp_elf_t *elf = data;
     ctx_remove_idle (ctx, launch_elf_handler);
     launch_elf_handler = 0;
-    printf ("elf launch!\n");
-    int ret = esp_elf_request(elf, 0, 0, NULL);
+    elf_retval = esp_elf_request(elf, 0, 0, NULL);
     _ctx_toggle_in_idle_dispatch (ctx);
-    printf ("retval: %i\n", ret);
     destroy_esp_elf (elf);
   }
   return 0;
@@ -127,7 +125,6 @@ void view_elf(Ui *ui)
 {
   if (ui->data == NULL)
   {
-    printf ("%i\n", ui->frame_no);
     ui_load_file (ui, ui->location);
 
     if (ui->data)
@@ -137,22 +134,25 @@ void view_elf(Ui *ui)
       int ret = esp_elf_init(elf);
       if (ret < 0) {
         destroy_esp_elf (elf);
-        return;
       }
+      else
+      {
       ret = esp_elf_relocate(elf, data);
       free (data);
       ui->data = NULL;
       if (ret < 0) {
         destroy_esp_elf (elf);
-        return;
       }
       else
       {
-        printf("added timeout\n");
+        // we want it to excecute outside start_frame / end_frame ; 
+        // calling it here means it is called at the tail-end of end_frame
+        // where things work out
         launch_elf_handler = ctx_add_timeout (ui->ctx, 0, launch_elf, elf);
       }
+      }
     }
-    ui_do (ui, "back");
+    ui_pop_fun (ui);
   }
 }
 #endif

@@ -53,6 +53,7 @@ void ui_destroy (Ui *ui);
 void ui_main(Ui *ui, const char *start_location);
 void ui_do(Ui *ui, const char *name);
 void ui_start(Ui *ui);
+void ui_pop_fun(Ui *ui);
 
 // draw background like ui would - without needing a matching ui_end
 void ui_draw_bg(Ui *ui);

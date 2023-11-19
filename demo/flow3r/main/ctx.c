@@ -852,8 +852,15 @@ int ctx_printf (const char *restrict format, ...)
 }
 
 extern float __divsf3(float a, float b);
+extern double __floatsidf(int a);
+double __muldf3 (double a, double b);
+float __truncdfsf2 (double a);
 
   const struct esp_elfsym g_customer_elfsyms[] = {
+    ESP_ELFSYM_EXPORT(__muldf3),
+    ESP_ELFSYM_EXPORT(__divsf3),
+    ESP_ELFSYM_EXPORT(__floatsidf),
+    ESP_ELFSYM_EXPORT(__truncdfsf2),
     { "puts", &ctx_puts},
     { "fputs", &ctx_puts},
     { "fputc", &ctx_puts},
@@ -861,7 +868,6 @@ extern float __divsf3(float a, float b);
     { "fprintf", &ctx_fprintf},
     { "printf", &ctx_printf},
     { "fwrite", &ctx_fwrite},
-    ESP_ELFSYM_EXPORT(__divsf3),
     ESP_ELFSYM_EXPORT(_default_ui),
     ESP_ELFSYM_EXPORT(ui_start),
     ESP_ELFSYM_EXPORT(ui_text),
