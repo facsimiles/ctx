@@ -1,0 +1,9 @@
+idf_component_register(
+   SRCS
+      esp_elf_adapter.c
+      esp_elf.c
+      esp_elf_symbol.c
+      arch/esp_elf_xtensa.c
+   INCLUDE_DIRS
+      .
+)
