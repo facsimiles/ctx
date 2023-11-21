@@ -1,7 +1,7 @@
  /* Copyright (C) 2020 Øyvind Kolås <pippin@gimp.org>
  */
 
-#if CTX_FORMATTER
+#if CTX_FORMATTER || CTX_AUDIO
 
 /* returns the maximum string length including terminating \0 */
 int ctx_a85enc_len (int input_length)

@@ -6,6 +6,7 @@
 #ifndef CTX_EXTERNAL_MALLOC
 static inline void *ctx_realloc (void *mem, size_t old_size, size_t new_size)
 {
+  if (old_size){};
   return (void*)realloc (mem, new_size);
 }
 
@@ -333,13 +334,13 @@ static inline void ctx_list_insert_sorted (CtxList **list,
 
 static inline CtxList *ctx_list_find_custom (CtxList *list,
                                          void    *needle,
-                                         int(*compare)(const void *a, const void *b),
+                                         int(*compare)(const void *a, const void *b, void *userdata),
                                          void *userdata)
 {
   CtxList *l;
   for (l = list; l; l = l->next)
   {
-    if (compare (l->data, needle) == 0)
+    if (compare (l->data, needle, userdata) == 0)
       return l;
   }
   return NULL;

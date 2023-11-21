@@ -11,13 +11,11 @@
 #include <alsa/asoundlib.h>
 #endif
 
-
-
-//#include <alloca.h>
-
 #endif
 
 #define DESIRED_PERIOD_SIZE 1000
+
+static pthread_mutex_t ctx_audio_mutex;
 
 int ctx_pcm_bytes_per_frame (CtxPCM format)
 {
@@ -181,7 +179,9 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
           if (ctx_pcm_cur_left == 0)
           {
             void *old = ctx_pcm_list->data;
+            pthread_mutex_lock (&ctx_audio_mutex);
             ctx_list_remove (&ctx_pcm_list, old);
+            pthread_mutex_unlock (&ctx_audio_mutex);
             ctx_free (old);
             ctx_pcm_cur_left = 0;
             if (ctx_pcm_list)
@@ -310,7 +310,9 @@ void ctx_ctx_pcm (Ctx *ctx)
           if (ctx_pcm_cur_left == 0)
           {
             void *old = ctx_pcm_list->data;
+            pthread_mutex_lock (&ctx_audio_mutex);
             ctx_list_remove (&ctx_pcm_list, old);
+            pthread_mutex_unlock (&ctx_audio_mutex);
             ctx_free (old);
             ctx_pcm_cur_left = 0;
             if (ctx_pcm_list)
@@ -333,8 +335,13 @@ void ctx_ctx_pcm (Ctx *ctx)
     }
 }
 
+#if CTX_AUDIO_HOST
+int ctx_host_audio_init (int hz, CtxPCM format);
+#endif
+
 int ctx_pcm_init (Ctx *ctx)
 {
+   pthread_mutex_init (&ctx_audio_mutex, NULL);
 #if 0
   if (!strcmp (ctx->backend->name, "mmm") ||
       !strcmp (ctx->backend->name, "mmm-client"))
@@ -354,6 +361,10 @@ int ctx_pcm_init (Ctx *ctx)
   }
   else
   {
+#if CTX_AUDIO_HOST
+     if (!ctx_host_audio_init (ctx_host_freq, ctx_host_format))
+        return -1;
+#endif
 #if CTX_ALSA
      pthread_t tid;
      h = alsa_open("default", ctx_host_freq, ctx_pcm_channels (ctx_host_format));
@@ -409,7 +420,9 @@ int ctx_pcm_queue (Ctx *ctx, const int8_t *data, int frames)
     if (ctx_pcm_list == NULL)     // otherwise it is another frame at front
       ctx_pcm_cur_left = scaled_frames;  // and current cur_left is valid
 
+    pthread_mutex_lock (&ctx_audio_mutex);
     ctx_list_append (&ctx_pcm_list, packet);
+    pthread_mutex_unlock (&ctx_audio_mutex);
     ctx_pcm_queued += scaled_frames;
 
     return frames;
