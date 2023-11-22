@@ -628,7 +628,7 @@ int ctx_client_resize (Ctx *ctx, int id, int width, int height)
    return 0;
 }
 
-static void ctx_client_titlebar_drag (CtxEvent *event, void *data, void *data2)
+void ctx_client_titlebar_drag (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
 
@@ -776,7 +776,7 @@ static void ctx_client_resize_w (CtxEvent *event, void *data, void *data2)
   event->stop_propagate = 1;
 }
 
-static void ctx_client_close (CtxEvent *event, void *data, void *data2)
+void ctx_client_close (CtxEvent *event, void *data, void *data2)
 {
   //Ctx *ctx = event->ctx;
   CtxClient *client = data;
@@ -1047,7 +1047,7 @@ static int ctx_clients_dirty_count (Ctx *ctx)
   return changes;
 }
 
-static void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, void *data2)
+void ctx_client_titlebar_drag_maximized (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
   Ctx *ctx = event->ctx;
@@ -1328,7 +1328,10 @@ int ctx_clients_need_redraw (Ctx *ctx)
                                     ctx_pointer_y (ctx));
 
    if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
-       ctx_pointer_is_down (ctx, 1) || (ctx->events.active==NULL))
+#if CTX_MAX_DEVICES>1
+       ctx_pointer_is_down (ctx, 1) ||
+#endif
+        (ctx->events.active==NULL))
    {
         if (client)
         {
@@ -1336,8 +1339,11 @@ int ctx_clients_need_redraw (Ctx *ctx)
           {
             ctx->events.active = client;
             if (follow_mouse == 0 ||
-                (ctx_pointer_is_down (ctx, 0) ||
-                 ctx_pointer_is_down (ctx, 1)))
+                (ctx_pointer_is_down (ctx, 0) 
+#if CTX_MAX_DEVICES > 1
+                 || ctx_pointer_is_down (ctx, 1)
+#endif
+                ))
             {
               //if (client != clients->data)
        #if 1

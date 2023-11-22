@@ -5,4 +5,4 @@ SRCS "ctx.c"
      "main.c"
      "gc9a01.c"
 
-INCLUDE_DIRS "." "../../../" "../../" "../../../deps" "../../../fonts")
+INCLUDE_DIRS "." ".." "../../../" "../../" "../../../deps" "../../../fonts")

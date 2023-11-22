@@ -2171,9 +2171,11 @@ ctx_destroy (Ctx *ctx)
     ctx_client_remove (ctx, ctx_clients(ctx)->data);
 #endif
 
+#if 0
 #if CTX_PICO || CTX_ESP
    if (ctx == ctx_host ())
       return;
+#endif
 #endif
 
 #if CTX_EVENTS

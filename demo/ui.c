@@ -414,7 +414,7 @@ ui_do(Ui *ui, const char *action)
   else ui_load_view(ui, action);
 }
 
-static void ui_cb (CtxEvent *event, void *data1, void *data2)
+void ui_cb_do (CtxEvent *event, void *data1, void *data2)
 {
   Ui *ui = data1;
   const char *target = data2;
@@ -434,7 +434,7 @@ void overlay_button (Ui *ui, float x, float y, float w, float h, const char *lab
   if (m > h) m = h;
       ctx_save(ctx);
        ctx_rectangle (ctx, x,y,w,h);
-       ctx_listen (ctx, CTX_PRESS, ui_cb, ui, action);
+       ctx_listen (ctx, CTX_PRESS, ui_cb_do, ui, action);
       if (ui->overlay_fade <= 0.0f)
       {
         ctx_begin_path(ctx);
@@ -805,10 +805,6 @@ static const KeyBoardLayout kb_round = {
 static KeyBoard keyboard = {&kb_round, 0, 0, 0, 0, 0};
 
 
-
-
-
-
 void captouch_keyboard (Ctx *ctx)
 {
    float width = ctx_width (ctx);
@@ -985,7 +981,6 @@ void captouch_keyboard (Ctx *ctx)
 #endif
 }
 
-
 static void ui_osk_draw (Ui *ui)
 {
   Ctx *ctx = ui->ctx;
@@ -1151,6 +1146,15 @@ static void ui_osk_draw (Ui *ui)
   }
 }
 
+int elf_output_state(void);
+
+#if CTX_ESP
+#include "esp_task.h"
+#include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#endif
+
 void ui_main(Ui *ui, const char *start_location)
 {
     Ctx *ctx = ui->ctx;
@@ -1174,11 +1178,19 @@ void ui_main(Ui *ui, const char *start_location)
       ui->font_size = width * 0.09f;
     while (!ctx_has_quit (ctx))
     {
+#if CTX_ESP
+      int os = elf_output_state (); // 1 text 2 graphics 3 both
+      if (os > 1) {
+         vTaskDelay(1);
+         continue;
+      }
+#endif
+ 
       width = ctx_width (ctx);
       height = ctx_height (ctx);
       ctx_start_frame (ctx);
-      ctx_add_key_binding (ctx, "escape", "back",    "foo",  ui_cb, ui);
-      ctx_add_key_binding (ctx, "backspace", "back", "foo",  ui_cb, ui);
+      ctx_add_key_binding (ctx, "escape",    "back", "foo", ui_cb_do, ui);
+      ctx_add_key_binding (ctx, "backspace", "back", "foo", ui_cb_do, ui);
       long int ticks = ctx_ticks ();
       long int ticks_delta = ticks - prev_ticks;
       if (ticks_delta > 1000000) ticks_delta = 10; 
@@ -1272,7 +1284,6 @@ void ui_main(Ui *ui, const char *start_location)
       ctx_restore (ctx);
 #endif
       ctx_end_frame (ctx);
-
 
       ui->frame_no++;
       ui->view_elapsed += ticks_delta* 1/(1000*1000.0f);
@@ -1801,18 +1812,18 @@ void ui_end (Ui *ui)
       }
       else
       {
-        ctx_add_key_binding (ctx, "up", "focus-prev", "foo",  ui_cb, ui);
-        ctx_add_key_binding (ctx, "left", "focus-prev", "foo",    ui_cb, ui);
-        ctx_add_key_binding (ctx, "shift-tab", "focus-prev", "foo", ui_cb, ui);
+        ctx_add_key_binding (ctx, "up",     "focus-prev", "foo",    ui_cb_do, ui);
+        ctx_add_key_binding (ctx, "left",   "focus-prev", "foo",    ui_cb_do, ui);
+        ctx_add_key_binding (ctx, "shift-tab", "focus-prev", "foo", ui_cb_do, ui);
 
-        ctx_add_key_binding (ctx, "tab", "focus-next", "foo",     ui_cb, ui);
-        ctx_add_key_binding (ctx, "right", "focus-next", "foo",   ui_cb, ui);
-        ctx_add_key_binding (ctx, "right", "focus-next", "foo",   ui_cb, ui);
-        ctx_add_key_binding (ctx, "down", "focus-next", "foo",     ui_cb, ui);
-        ctx_add_key_binding (ctx, "return", "activate", "foo",  ui_cb, ui);
-        ctx_add_key_binding (ctx, "space", "activate", "foo",  ui_cb, ui);
+        ctx_add_key_binding (ctx, "tab",    "focus-next", "foo", ui_cb_do, ui);
+        ctx_add_key_binding (ctx, "right",  "focus-next", "foo", ui_cb_do, ui);
+        ctx_add_key_binding (ctx, "right",  "focus-next", "foo", ui_cb_do, ui);
+        ctx_add_key_binding (ctx, "down",   "focus-next", "foo", ui_cb_do, ui);
+        ctx_add_key_binding (ctx, "return", "activate", "foo",  ui_cb_do, ui);
+        ctx_add_key_binding (ctx, "space",  "activate", "foo",  ui_cb_do, ui);
       }
-      ctx_add_key_binding (ctx, "control-q", "quit", "foo", ui_cb, ui);
+      ctx_add_key_binding (ctx, "control-q", "quit", "foo", ui_cb_do, ui);
 }
 
 void ui_draw_bg (Ui *ui)

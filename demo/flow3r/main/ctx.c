@@ -34,9 +34,9 @@
 #define CTX_RAW_KB_EVENTS                  0
 #define CTX_THREADS                        0
 #define CTX_TILED                          0
-#define CTX_VT 1
-#define CTX_PTY 0
-#define CTX_PARSER 1
+#define CTX_VT                             1
+#define CTX_PTY                            0
+#define CTX_PARSER                         1
 #define CTX_BAREMETAL                      1
 #define CTX_ONE_FONT_ENGINE                1
 #define CTX_ESP                            1
@@ -55,7 +55,6 @@
 #define CTX_MAX_STATES                     10
 #define CTX_MAX_EDGES                      127
 #define CTX_MAX_PENDING                    64
-#define CTX_PARSER                         0
 #define CTX_FORMATTER                      0
 #define CTX_GRADIENT_CACHE_ELEMENTS        128
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 64
@@ -75,7 +74,8 @@
 #define CTX_RASTERIZER_SWITCH_DISPATCH     0
 #define CTX_NATIVE_GRAYA8                  0
 #define CTX_AVOID_CLIPPED_SUBDIVISION      0
-
+#define CTX_AUDIO                          1
+#define CTX_AUDIO_HOST                     1
 #define CTX_STB_IMAGE                   1
 #define STBI_ONLY_PNG
 #define STBI_ONLY_GIF
@@ -349,11 +349,16 @@ static void lcd_init (void)
   esp_backlight(100);
 }
 
-static void set_pixels_ctx (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
-{   
+void display_set_pixels(int x, int y, int w, int h, void *buf)
+{
     uint8_t *pixels = (uint8_t*)buf; 
     GC9A01_SetWindow(x,y,x+w-1,y+h-1);
     lcd_data(pixels,w*h*2);
+}
+
+static void set_pixels_ctx (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
+{   
+    display_set_pixels (x, y, w, h, buf);
 }
 
 static SemaphoreHandle_t ct_mutex = NULL; 
@@ -771,5 +776,91 @@ static void on_captouch_data(const flow3r_bsp_captouch_state_t *st)
     ct_quant_angle  = angle;
   }
 }
+
+#if CTX_AUDIO_HOST
+
+#define AUDIO_CHUNK_SIZE   128
+
+static uint16_t outbuf[AUDIO_CHUNK_SIZE*2];
+
+static void audio_task (void *data)
+{
+  while (true)
+  {
+     int client_channels = ctx_pcm_channels (ctx_client_format);
+     bool is_float = (ctx_client_format == CTX_F32 || ctx_client_format == CTX_F32S);
+
+     int c = AUDIO_CHUNK_SIZE;
+     uint16_t left = 0, right = 0;
+     int i = 0;
+     for (i =0; i < c && ctx_pcm_cur_left; i++)
+     {
+       uint32_t *packet_size_p = (ctx_pcm_list->data);
+       uint32_t packet_size = *packet_size_p;
+
+       if (is_float)
+       {
+          float *packet = (ctx_pcm_list->data);
+          packet += 4;
+          packet += (packet_size - ctx_pcm_cur_left) * client_channels;
+          left = right = packet[0] * (1<<15);
+          if (client_channels > 1)
+            right = packet[0] * (1<<15);
+       }
+       else
+       {
+          uint16_t *packet = (ctx_pcm_list->data);
+          packet += 8;
+          packet += (packet_size - ctx_pcm_cur_left) * client_channels;
+          left = right = packet[0];
+          if (client_channels > 1)
+            right = packet[1];
+       }
+       outbuf[i * 2] = left;
+       outbuf[i * 2 + 1] = right;
+       ctx_pcm_cur_left --;
+       ctx_pcm_queued --;
+       if (ctx_pcm_cur_left == 0)
+       {
+            void *old = ctx_pcm_list->data;
+            pthread_mutex_lock (&ctx_audio_mutex);
+
+            ctx_list_remove (&ctx_pcm_list, old);
+            pthread_mutex_unlock (&ctx_audio_mutex);
+            ctx_free (old);
+            ctx_pcm_cur_left = 0;
+            if (ctx_pcm_list)
+            {
+              uint32_t *packet_sizep = (ctx_pcm_list->data);
+              uint32_t packet_size = *packet_sizep;
+              ctx_pcm_cur_left = packet_size;
+            }
+       }
+     }
+      for (;i < c; i ++)
+      {
+         /* slight click protection in case we were not left at dc */
+         outbuf[i * 2 + 0] = (left /= 2);
+         outbuf[i * 2 + 1] = (right /= 2);
+      }
+     
+     size_t bytes_written;
+     flow3r_bsp_audio_write(outbuf, AUDIO_CHUNK_SIZE*4, &bytes_written, 1000);
+     vTaskDelay(0);
+  }
+}
+
+int ctx_host_audio_init (int hz, CtxPCM format)
+{
+  printf ("audio init\n");
+  flow3r_bsp_audio_init();
+  xTaskCreate(&audio_task, "audio", 2048, NULL, 6, NULL);
+
+  flow3r_bsp_audio_speaker_set_volume(false, -10.0);
+  return 0;
+}
+
+#endif
+
 
 #include "symbols.inc"

@@ -427,7 +427,9 @@ const char *vt_get_title (VT *vt)
   return vt->title;
 }
 
+#if CTX_PTY
 static void vt_run_command (VT *vt, const char *command, const char *term);
+#endif
 static void vtcmd_set_top_and_bottom_margins (VT *vt, const char *sequence);
 static void vtcmd_set_left_and_right_margins (VT *vt, const char *sequence);
 static void _vt_move_to (VT *vt, int y, int x);
@@ -605,9 +607,9 @@ void vt_set_line_spacing (VT *vt, float line_spacing)
 }
 
 
+#if CTX_PTY
 static void ctx_clients_signal_child (int signum)
 {
-#if CTX_PTY
   pid_t pid;
   int   status;
   if ( (pid = waitpid (-1, &status, WNOHANG) ) != -1)
@@ -625,8 +627,8 @@ static void ctx_clients_signal_child (int signum)
             }
         }
     }
-#endif
 }
+#endif
 
 static void vt_init (VT *vt, int width, int height, float font_size, float line_spacing, int id, int can_launch)
 {
@@ -5768,10 +5770,9 @@ const char *ctx_find_shell_command (void)
 
 
 
-
-static void vt_run_command (VT *vt, const char *command, const char *term)
-{
 #if CTX_PTY
+void vt_run_command (VT *vt, const char *command, const char *term)
+{
 #ifdef EMSCRIPTEN
         printf ("run command %s\n", command);
 #else
@@ -5802,8 +5803,8 @@ static void vt_run_command (VT *vt, const char *command, const char *term)
   fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
   _ctx_add_listen_fd (vt->vtpty.pty);
 #endif
-#endif
 }
+#endif
 
 
 void vt_destroy (VT *vt)

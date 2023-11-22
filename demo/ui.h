@@ -155,7 +155,6 @@ typedef struct UiView
   const char *category;
 } UiView;
 
-
 struct _Ui {
   Ctx   *ctx;
   char  *location;
@@ -201,6 +200,7 @@ struct _Ui {
 
 
 void ui_load_file (Ui *ui, const char *path);
+void ui_cb_do     (CtxEvent *event, void *data1, void *data2);
 
 Ui *_default_ui(void);
 
