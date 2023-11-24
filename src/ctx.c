@@ -2109,12 +2109,7 @@ Ctx *ctx_host (void);
 CTX_EXPORT Ctx *
 ctx_new (int width, int height, const char *backend)
 {
-  static Ctx * ret = NULL;
-#if CTX_PICO || CTX_ESP
-  return ctx_host ();
-#endif
-  if (ret)
-    return ret;
+  Ctx * ret = NULL;
 #if CTX_EVENTS
   if (backend && !ctx_strcmp (backend, "drawlist"))
 #endif
@@ -2168,6 +2163,18 @@ ctx_destroy (Ctx *ctx)
 {
   if (!ctx)
     { return; }
+
+   if ((ctx_backend_type(ctx) != CTX_BACKEND_DRAWLIST) &&
+       //(ctx_backend_type(ctx) != CTX_BACKEND_RASTERIZER) &&
+       (ctx_backend_type(ctx) != CTX_BACKEND_HASHER) 
+
+        && _ctx_depth)
+   {
+     _ctx_depth--;
+     ctx->quit = 0;
+     return;
+   }
+
 
 #if CTX_VT
   while (ctx_clients (ctx))

@@ -208,8 +208,25 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 }
 #else
 
+static int _ctx_depth = 0;
+
 static Ctx *ctx_new_ui (int width, int height, const char *backend)
 {
+  static Ctx *ret = NULL;
+  if (ret)
+  {
+    _ctx_depth ++;
+    return ret;
+  }
+#if CTX_PICO || CTX_ESP
+  ret = ctx_host ();
+#endif
+  if (ret)
+  {
+    return ret;
+  }
+
+
 #if CTX_TILED
   if (getenv ("CTX_DAMAGE_CONTROL"))
   {
@@ -269,7 +286,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     exit (-1);
   }
 
-  Ctx *ret = NULL;
 #if CTX_FORMATTER
 #if CTX_TERMINAL_EVENTS
   /* we do the query on auto but not on directly set ctx
