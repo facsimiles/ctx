@@ -14,7 +14,7 @@
 
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl backends
 
-
+#define CTX_GSTATE_PROTECT 1
 #define CTX_MAX_TEXTURES         1024  // default: 32
 				       //
 /* for misc storage with compressed/

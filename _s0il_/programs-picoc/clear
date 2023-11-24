@@ -1,0 +1,8 @@
+//!picoc
+#include <stdio.h>
+
+int main (int arc, char **argv)
+{
+  printf ("\033c");
+  return 0;
+}

@@ -1,0 +1,29 @@
+//!picoc
+
+#include "ui.h"
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <math.h>
+#include <dirent.h>
+
+int main(int argc, char **argv)
+{
+   for (int i = 1; argv[i]; i++)
+   {
+   }
+   int count = 0;
+   for (int i = 1; argv[i]; i++)
+   {
+     if (argv[i][0]!='-')
+     {
+       if (count)
+         printf (" ");
+       printf("%s", argv[i]);
+       count++;
+     }
+   }
+   printf ("\n");
+   return 0;
+}
+  

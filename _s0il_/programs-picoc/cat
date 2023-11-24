@@ -1,0 +1,43 @@
+//!picoc
+
+#include "ui.h"
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <math.h>
+#include <dirent.h>
+
+int main(int argc, char **argv)
+{
+  FILE *fin  = stdin;
+  FILE *fout = stdout;
+  argv[argc]=NULL;
+  if (argc>1)
+  {
+    if (!strcmp (argv[1], "-"))
+    {
+    }
+    else
+    fin = fopen (argv[1], "rb");
+  }
+
+  char buf[512];
+  int read;
+  do {
+    read = fread(buf, 1, 512, fin);
+    if (read)
+      fwrite (buf, 1, read, fout);
+  } while (read>0);
+
+  if (argc>1)
+  {
+    if (!strcmp (argv[1], "-"))
+    {
+    }
+    else
+    fclose (fin);
+  }
+
+   return 0;
+}
+  

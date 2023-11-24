@@ -870,7 +870,7 @@ void ctx_vt_write (Ctx *ctx, uint8_t byte)
   }
   else
   {
-    fprintf (stderr, "ctx uart overflow\n");
+    //fprintf (stderr, "ctx uart overflow\n");
   }
 }
 

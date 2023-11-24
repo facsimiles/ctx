@@ -1,0 +1,11 @@
+demo
+flow3r/build
+flow3r/managed_components
+flow3r/dependencies.lock
+flow3r/sdkconfig
+libui.so
+elf_strip_pie
+xtensa
+native
+fs_bin_xtensa.c
+fs_bin_native.c

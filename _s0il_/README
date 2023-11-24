@@ -1,0 +1,34 @@
+Project _s0il_ - a portable single threaded, single tasking unix like system
+
+Tasted ports:
+  wasm         runs as an applet in browser
+  esp32c3      with gc9a01 display and csxxx touch
+  flow3r       cccamp 2023 badge
+
+Features:
+  high level immediate mode ui toolkit
+     button
+     text
+     entry
+     slider
+     focus, interaction apart from text-entry usable with left,right,return,esc
+  demos of drawing with ctx
+
+  only for some ports:
+    wifi connect
+    sd-card
+
+Testing on host:
+  ~/src/ctx$ ./configure && make && sudo make install # build an install ctx
+
+  ~/src/ctx$ source ~/src/esp-idf/export.sh   # set up esp-idf environment
+
+  ~/src/ctx$ cd _s0il_
+  ~/src/ctx/_s0il_$ make
+  ~/src/ctx/_s0il_$ make install #this creats a symlink in / to to sd folder in this dir - allowing simulated running
+  ~/src/ctx/_s0il_$ ./demo # tun native demo
+  ~/src/ctx/_s0il_$ cd flow3r
+
+  ~/src/ctx/_s0il_/flow3r$ idf.py app-flash monitor
+
+#

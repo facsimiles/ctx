@@ -307,7 +307,6 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
     else if (!ctx_strcmp (eid_info->eid, eid) &&
              ctx->frame - eid_info->frame < 2)
     {
-    //fclose (f);
       eid_info->frame = ctx->frame;
       if (w) *w = eid_info->width;
       if (h) *h = eid_info->height;
@@ -317,9 +316,6 @@ static int ctx_eid_valid (Ctx *ctx, const char *eid, int *w, int *h)
   while (to_remove)
   {
     CtxEidInfo *eid_info = (CtxEidInfo*)to_remove->data;
-    //FILE  *f  = fopen ("/tmp/l", "a");
-    //fprintf (f, "%i client removing %s\n", getpid(), eid_info->eid);
-    //fclose (f);
     ctx_list_remove (&ctx->eid_db, eid_info);
     ctx_list_remove (&to_remove, eid_info);
     ctx_free (eid_info->eid);
@@ -2171,7 +2167,6 @@ ctx_destroy (Ctx *ctx)
         && _ctx_depth)
    {
      _ctx_depth--;
-     ctx->quit = 0;
      return;
    }
 
@@ -2550,6 +2545,7 @@ static CtxMagicEntry ctx_magics[]={
   {0, "image/exr",  ".exr", 4, {0x76, 0x2f, 0x31, 0x01}},
   {0, "video/mpeg", ".mpg", 4, {0x00, 0x00, 0x01, 0xba}},
   {0, "application/blender", ".blend", 8, {0x42, 0x4c,0x45,0x4e,0x44,0x45,0x52}},
+  {0, "application/x-sharedlib", ".elf", 4, {0x7f, 'E','L','F'}},
   {0, "image/xcf",  ".xcf", 8, {0x67, 0x69,0x6d,0x70,0x20,0x78,0x63,0x66}},
   {0, "application/bzip2", ".bz2", 3, {0x42, 0x5a, 0x68}},
   {0, "application/gzip", ".gz", 2, {0x1f, 0x8b}},
@@ -2576,7 +2572,6 @@ static CtxMagicEntry ctx_magics[]={
   {0, "application/octet-stream", ".bin", 0, {0x0}},
   {0, "application/x-object", ".o", 0, {0x0}},
   {1, "text/utf-8", ".txt", 0, {0xef, 0xbb, 0xbf}}, // utf8 bom
-  {1, "text/x-sh", ".sh", 0, {0x0}},
   {1, "text/x-python", ".py", 0, {0x0}},
   {1, "text/x-perl", ".pl", 0, {0x0}},
   {1, "text/x-perl", ".pm", 0, {0x0}},
@@ -2593,6 +2588,8 @@ static CtxMagicEntry ctx_magics[]={
   {0, "audio/x-wav", ".wav",  4, {0x52, 0x49, 0x46, 0x46}},
   {0, "audio/ogg", ".ogg",    4, {0x4f, 0x67, 0x67, 0x53}},
   {0, "audio/ogg", ".opus",   0, {0x0}},
+  {0, "audio/protracker", ".mod",   0, {0x0}},
+  {0, "audio/screamtracker", ".s3m",   0, {0x0}},
   {0, "audio/ogg", ".oga",    0, {0x0}},
   {0, "audio/mpeg", ".mp1",   0, {0x0}},
   {0, "audio/m3u", ".m3u",    0, {0x0}},
@@ -2610,7 +2607,7 @@ int ctx_path_is_dir (const char *path)
 {
   struct stat stat_buf;
   if (!path || path[0]==0) return 0;
-  lstat (path, &stat_buf);
+  stat (path, &stat_buf);
   return S_ISDIR (stat_buf.st_mode);
 }
 
@@ -2618,7 +2615,7 @@ static int ctx_path_is_exec (const char *path)
 {
   struct stat stat_buf;
   if (!path || path[0]==0) return 0;
-  lstat (path, &stat_buf);
+  stat (path, &stat_buf);
   return stat_buf.st_mode & 0x1;
 }
 
@@ -2856,6 +2853,7 @@ static CtxBackendType __ctx_backend_type (Ctx *ctx)
   CtxBackend *backend = ctx->backend;
   if (backend == NULL)
     return CTX_BACKEND_NONE;
+  else if (backend->destroy == (void*) ctx_cb_destroy) return CTX_BACKEND_CB;
 #if CTX_FORMATTER
   else if (backend->destroy == (void*) ctx_ctx_destroy) return CTX_BACKEND_CTX;
 #if CTX_HEADLESS

@@ -1392,6 +1392,7 @@ typedef enum CtxBackendType {
   CTX_BACKEND_SDL,
   CTX_BACKEND_DRAWLIST,
   CTX_BACKEND_PDF,
+  CTX_BACKEND_CB,
 } CtxBackendType;
 
 CtxBackendType ctx_backend_type (Ctx *ctx);

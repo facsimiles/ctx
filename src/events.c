@@ -197,6 +197,7 @@ static int is_in_ctx (void)
 }
 #endif
 
+static int _ctx_depth = 0;
 #if EMSCRIPTEN
 
 CTX_EXPORT Ctx *
@@ -208,7 +209,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 }
 #else
 
-static int _ctx_depth = 0;
 #if CTX_PICO || CTX_ESP
 Ctx *ctx_host(void);
 #endif
@@ -438,6 +438,7 @@ void _ctx_events_init (Ctx *ctx)
 void _ctx_toggle_in_idle_dispatch (Ctx *ctx)
 {
   ctx->events.in_idle_dispatch= !ctx->events.in_idle_dispatch;
+  ctx->quit = 0;
 }
 
 

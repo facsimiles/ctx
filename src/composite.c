@@ -6151,7 +6151,7 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 #endif
 #if CTX_ENABLE_RGB565_BYTESWAPPED
 
-static inline void
+void
 ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
 {
   const uint16_t *pixel = (uint16_t *) buf;

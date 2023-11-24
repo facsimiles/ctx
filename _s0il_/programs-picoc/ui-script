@@ -1,0 +1,43 @@
+//!picoc
+
+#include "ui.h"
+
+static char *str = NULL;
+
+int main(int argc, char **argv)
+{
+  argv[argc]=NULL;
+  Ctx *ctx = ctx_new(240,240,NULL);
+  if (!ctx) return -1;
+
+  Ui *ui = ui_new (ctx); 
+  int counter = 0;
+  char buf[32];
+
+  while (!ctx_has_quit(ctx))
+  {
+    ctx_start_frame (ctx);
+    ui_start_frame(ui);
+
+    ui_entry(ui, "entry", "fallback", &str);
+
+    sprintf (buf, "%i", counter);
+    ui_text (ui, buf);
+
+    if (ui_button (ui, "up"))
+    {
+       counter++;
+    }
+    if (ui_button (ui, "down"))
+    {
+       counter--;
+    }
+    ui_keyboard(ui);
+    ui_end_frame(ui);
+    ctx_end_frame (ctx);
+  }
+  ui_destroy (ui);
+  ctx_destroy (ctx);
+
+  return 0;
+}

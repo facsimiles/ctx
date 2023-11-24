@@ -158,7 +158,7 @@ int update_fb (Ctx *ctx, void *user_data)
 EMSCRIPTEN_KEEPALIVE
 uint8_t wasm_scratch[1024*1024*4];
 
-static void set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf)
+void ctx_set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf)
 {
   uint8_t *src = (uint8_t*)buf;
   int in_w = w;
@@ -259,7 +259,7 @@ EM_ASM(
 
    if (!em_ctx){
       em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGB565_BYTESWAPPED,
-                           set_pixels, 
+                           ctx_set_pixels, 
                            NULL,
                            update_fb,
                            NULL,

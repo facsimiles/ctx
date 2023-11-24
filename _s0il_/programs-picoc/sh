@@ -1,0 +1,33 @@
+//!picoc
+
+#include "ui.h"
+
+int main(int argc, char **argv)
+{
+  char *home_path = "/sd";
+  argv[argc]=NULL;
+  char commandline[1024];
+  char wd[512];
+  printf ("%s> ", getcwd(wd, sizeof(wd)));
+//printf ("\033[12h"); // local echo on
+  char *read = 0;
+  read = fgets (commandline, 1024, stdin);
+  for (;
+       read != NULL ;
+       read=fgets (commandline, 1024, stdin))
+  {
+    commandline[strlen(commandline)-1]=0;
+    if (!strcmp (commandline, "cd"))
+      chdir(home_path);
+    else if (!strcmp (commandline, "exit"))
+      return 0;
+    else if (!strncmp (commandline, "cd ", 3))
+      chdir (&commandline[3]);
+    else if (commandline[0])
+      runs (commandline);
+    printf ("%s> ", getcwd(wd, sizeof(wd)));
+    printf ("\033[12h"); // local echo on
+  }
+  
+  return 0;
+}

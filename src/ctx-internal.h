@@ -581,7 +581,7 @@ CtxBuffer *ctx_buffer_new (int width, int height,
                            CtxPixelFormat pixel_format);
 void ctx_buffer_destroy (CtxBuffer *buffer);
 
-void
+static void
 ctx_state_gradient_clear_stops (CtxState *state);
 
 static inline void ctx_interpret_style         (CtxState *state, CtxEntry *entry, void *data);

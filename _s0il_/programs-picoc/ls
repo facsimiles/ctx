@@ -1,0 +1,91 @@
+//!/bin/picoc
+
+#include "ui.h"
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <math.h>
+#include <dirent.h>
+
+typedef struct dir_entry_t
+{
+  char       *name;
+} dir_entry_t;
+
+typedef struct dir_info_t
+{
+  dir_entry_t *entries;
+  int count;
+  int capacity;
+} dir_info_t;
+
+static void dir_info_finalize (void *d)
+{
+  dir_info_t *di = d;
+  if (di->entries)
+    for (int i = 0; i < di->count; i++)
+    {
+      free (di->entries[i].name);
+    }
+  free (di->entries);
+  free (di);
+}
+
+void di_sort (dir_info_t *di)
+{
+  int swaps = 0;
+  do {
+    swaps = 0;
+    for (int i = 0; i < di->count-1; i++)
+    {
+       if (strcmp (di->entries[i].name, di->entries[i+1].name)>0)
+       {
+          dir_entry_t tmp  = di->entries[i];
+          di->entries[i]   = di->entries[i+1];
+          di->entries[i+1] = tmp;
+          swaps++;
+       }
+    }
+  } while (swaps > 0);
+}
+
+int main(int argc, char **argv)
+{
+  argv[argc]=NULL;
+  char wd[512];
+  char *w=getcwd(wd, sizeof(wd));
+  if (argc>1) w = argv[1];
+  DIR *dir = opendir(w);
+  if (dir)
+  {
+    dir_info_t *di = calloc (sizeof (dir_info_t), 1);
+    struct dirent *ent;
+    while ((ent = readdir(dir)))
+    {
+      char *base = ent->d_name;
+      if (base[0] == '.')
+        continue;
+
+      if (di->count + 1 >= di->capacity)
+      {
+        di->capacity += 16;
+        di->entries = realloc (di->entries, sizeof (dir_entry_t) * di->capacity);
+      }
+      dir_entry_t *de = &di->entries[di->count++];
+      de->name = strdup (base);
+    }
+    closedir (dir);
+
+    di_sort (di);
+
+    for (int i = 0; i < di->count; i++)
+    {
+       dir_entry_t *de = &di->entries[i];
+       printf ("%s ", de->name);
+    }
+    printf ("\n");
+
+    dir_info_finalize (di);
+  }
+  return 0;
+}

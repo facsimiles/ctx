@@ -4441,7 +4441,7 @@ CtxRasterizer *ctx_rasterizer_new (void *data, int x, int y, int width, int heig
 #endif
 
 
-void
+static void
 ctx_state_gradient_clear_stops (CtxState *state)
 {
   state->gradient.n_stops = 0;

@@ -413,6 +413,12 @@ ctx_cb_extent (Ctx *ctx, float *x0, float *y0, float *x1, float *y1)
 }
 
 static void
+ctx_cb_start_frame (Ctx *ctx)
+{
+  ctx_handle_events (ctx);
+}
+
+static void
 ctx_cb_end_frame (Ctx *ctx)
 {
   CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
@@ -693,7 +699,12 @@ ctx_cb_end_frame (Ctx *ctx)
   if (cb_backend->update_fb)
     cb_backend->update_fb (ctx, cb_backend->update_fb_user_data);
   
-  ctx_handle_events (ctx);
+}
+
+static void ctx_cb_destroy (void *data)
+{
+  // XXX leaking ->fb if it was dynamically allocated
+  free (data);
 }
 
 Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
@@ -709,7 +720,9 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   Ctx *ctx                   = ctx_new_drawlist (width, height);
   CtxBackend    *backend     = (CtxBackend*)ctx_calloc (sizeof (CtxCbBackend), 1);
   CtxCbBackend  *cb_backend  = (CtxCbBackend*)backend;
+  backend->start_frame       = ctx_cb_start_frame;
   backend->end_frame         = ctx_cb_end_frame;
+  backend->destroy        = ctx_cb_destroy;
   cb_backend->format         = format;
   cb_backend->fb             = (uint16_t*)scratch_fb;
   cb_backend->set_pixels     = set_pixels;
@@ -733,7 +746,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
 
 #if CTX_TFT_ESPI
 
-static void ctx_tft_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
+void ctx_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
 {
   TFT_eSPI *tft = (TFT_eSPI*)user_data;
   tft->pushRect (x, y, w, h, (uint16_t*)buf);
@@ -746,7 +759,7 @@ Ctx *ctx_new_tft (TFT_eSPI *tft,
 {
   return ctx_new_cb (tft->width(), tft->height(), 
                      CTX_FORMAT_RGB565_BYTESWAPPED,
-                     ctx_tft_set_pixels,
+                     ctx_set_pixels,
                      tft,
                      NULL,
                      NULL,
