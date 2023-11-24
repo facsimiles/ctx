@@ -29,7 +29,7 @@
 #define CTX_HASH_COLS            5 // default: 6
 #define CTX_HASH_ROWS            5 // default: 5
 #define CTX_MAX_KEYDB            128  // default: 64
-
+#define CTX_GET_CONTENTS         1
 
 #include "stb_image.h"
 

@@ -18,9 +18,6 @@ static bool osk_captouch = false;
 
 int  ctx_osk_mode = 0;
 
-
-
-
 ////////////////////////////////////////////////////////
 
 static float backlight  = 100.0;
@@ -211,7 +208,6 @@ void ui_load_file (Ui *ui, const char *path)
   }
 }
 
-
 static void ui_view_file (Ui *ui)
 {
    ui_start (ui);
@@ -253,23 +249,21 @@ static void ui_view_dir (Ui *ui)
      if (basename[0] == '.')
        continue;
 
-     if (ui->y > ui->height)
+     if (ui->y > ui->height && n != 0)
      {
      }
      else if (ui->y > -ui->font_size)
      {
+       char  target[strlen (ui->location) + 3 + strlen (basename)];
+       if (ui->location[strlen(ui->location)-1]=='/')
+         sprintf(target, "%s%s", ui->location, basename);
+       else
+         sprintf(target, "%s/%s", ui->location, basename);
+       const char *mt = ctx_path_get_media_type (target);
+       //ui_text(ui, mt);
        if (ui_button(ui, basename))
        {
-         char *target = malloc (strlen (ui->location) + 3 + strlen (basename));
-         if (target)
-         {
-           if (ui->location[strlen(ui->location)-1]=='/')
-             sprintf(target, "%s%s", ui->location, basename);
-           else
-             sprintf(target, "%s/%s", ui->location, basename);
            ui_do(ui, target);
-           free(target);
-         }
        }
      }
      else
@@ -364,7 +358,6 @@ ui_load_view(Ui *ui, const char *target)
 
 static UiWidget *ui_widget_by_id(Ui *ui, void *id);
 
-
 void
 ui_do(Ui *ui, const char *action)
 {
@@ -458,8 +451,12 @@ void overlay_button (Ui *ui, float x, float y, float w, float h, const char *lab
 
 static Ui *def_ui = NULL;
 
-Ui *_default_ui(void)
+Ui *ui_host(void)
 {
+  if (!def_ui)
+  {
+    // create a host in a thread?
+  }
   return def_ui;
 }
 
@@ -1154,35 +1151,21 @@ int elf_output_state(void);
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #endif
+#include <unistd.h>
 
-void ui_main(Ui *ui, const char *start_location)
+void ui_iteration(Ui *ui)
 {
     Ctx *ctx = ui->ctx;
-    long int prev_ticks = ctx_ticks();
+    static long int prev_ticks = -1;
     float width  = ctx_width (ctx);
     float height = ctx_height (ctx);
 
-    if (start_location)
-    {
-       ui_load_view (ui, start_location);
-    }
-    else
-    {
-      if (!ui->fun)
-        ui_load_view (ui, "menu");
-    }
-    //ui_do(ui, "splash");
-    if (height <= width)
-      ui->font_size = height * 0.09f;
-    else
-      ui->font_size = width * 0.09f;
-    while (!ctx_has_quit (ctx))
     {
 #if CTX_ESP
       int os = elf_output_state (); // 1 text 2 graphics 3 both
       if (os > 1) {
          vTaskDelay(1);
-         continue;
+         return;
       }
 #endif
  
@@ -1193,7 +1176,7 @@ void ui_main(Ui *ui, const char *start_location)
       ctx_add_key_binding (ctx, "backspace", "back", "foo", ui_cb_do, ui);
       long int ticks = ctx_ticks ();
       long int ticks_delta = ticks - prev_ticks;
-      if (ticks_delta > 1000000) ticks_delta = 10; 
+      if (ticks_delta > 1000000 || prev_ticks == -1) ticks_delta = 10; 
       prev_ticks = ticks;
 
       ctx_save (ctx);
@@ -1288,6 +1271,31 @@ void ui_main(Ui *ui, const char *start_location)
       ui->frame_no++;
       ui->view_elapsed += ticks_delta* 1/(1000*1000.0f);
     }
+}
+
+void ui_main(Ui *ui, const char *start_location)
+{
+    Ctx *ctx = ui->ctx;
+    float width  = ctx_width (ctx);
+    float height = ctx_height (ctx);
+
+    if (start_location)
+    {
+       ui_load_view (ui, start_location);
+    }
+    else
+    {
+      if (!ui->fun)
+        ui_load_view (ui, "menu");
+    }
+    //ui_do(ui, "splash");
+    if (height <= width)
+      ui->font_size = height * 0.09f;
+    else
+      ui->font_size = width * 0.09f;
+
+    while (!ctx_has_quit (ctx))
+      ui_iteration (ui);
 }
 static void
 ui_set_color (Ctx *ctx, float *rgba)

@@ -323,13 +323,11 @@ int esp_elf_relocate(esp_elf_t *elf, const uint8_t *pbuf)
  * @param argc - Arguments number
  * @param argv - Arguments value array
  * 
- * @return ESP_OK if sucess or other if failed.
+ * @return return value of main of elf
  */
 int esp_elf_request(esp_elf_t *elf, int opt, int argc, char *argv[])
 {
-    elf->entry(argc, argv);
-
-    return 0;
+    return elf->entry(argc, argv);
 }
 
 /**

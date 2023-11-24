@@ -23,6 +23,7 @@
 #define CTX_ENABLE_RGB8                    1
 #define CTX_ENABLE_RGBA8                   1
 #define CTX_ENABLE_BGRA8                   1
+#define CTX_GET_CONTENTS                   1
 #define CTX_ENABLE_RGB332                  1
 #define CTX_ENABLE_RGB565                  1
 #define CTX_ENABLE_RGB565_BYTESWAPPED      1
@@ -64,7 +65,7 @@
 #define CTX_PARSER_FIXED_TEMP              1
 #define CTX_STRINGPOOL_SIZE                256
 #define CTX_MAX_DEVICES                    1
-#define CTX_MAX_KEYBINDINGS                16
+#define CTX_MAX_KEYBINDINGS                32
 #define CTX_MAX_CBS                        8
 #define CTX_MAX_LISTEN_FDS                 1
 #define CTX_TERMINAL_EVENTS                0

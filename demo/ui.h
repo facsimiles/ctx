@@ -201,8 +201,12 @@ struct _Ui {
 
 void ui_load_file (Ui *ui, const char *path);
 void ui_cb_do     (CtxEvent *event, void *data1, void *data2);
+void
+ui_push_fun(Ui *ui, ui_fun fun, const char *location, void *data, ui_data_finalize data_finalize);
 
-Ui *_default_ui(void);
+void ui_iteration(Ui *ui);
+
+Ui *ui_host(void);
 
 #endif
 

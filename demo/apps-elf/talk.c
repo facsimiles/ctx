@@ -809,7 +809,7 @@ char *slide_events3[]=
 "ctx_add_key_binding","(ctx, \"home\", NULL, \"foo\",","action_first, NULL);\n",
 "ctx_add_key_binding","(ctx, \"left\", NULL, \"foo\",","action_prev, NULL);\n",
 "ctx_add_key_binding","(ctx, \"right\", NULL, \"foo\",","action_next, NULL);\n",
-"ctx_add_key_binding","(ctx, \"q\", NULL, \"foo\",","action_quit, NULL);\n",
+"ctx_add_key_binding","(ctx, \"escape\", NULL, \"foo\",","action_quit, NULL);\n",
 "ctx_add_key_binding","(ctx, \"F11\", NULL, \"foo\",","action_fullscreen, NULL);\n",
 "ctx_add_key_binding","(ctx, \"f\", NULL, \"foo\",","action_fullscreen, NULL);\n",
   NULL
@@ -1008,6 +1008,7 @@ static void scene_text (Ctx *ctx, const char *title, int frame_no, float time_de
   //if (y > height- font_size) scroll = scroll * 0.95 + 0.05 * (y -height + font_size)  ; else scroll = 0;
 }
 
+#if 0
 static void scene_text_50 (Ctx *ctx, const char *title, int frame_no, float time_delta)
 {
    scene_text (ctx, title, frame_no, time_delta, 0.02);
@@ -1023,22 +1024,28 @@ static void scene_text_30 (Ctx *ctx, const char *title, int frame_no, float time
    scene_text (ctx, title, frame_no, time_delta, 0.033);
 }
 
+static void scene_text_25 (Ctx *ctx, const char *title, int frame_no, float time_delta)
+{
+   scene_text (ctx, title, frame_no, time_delta, 1.0/25.0f);
+}
+static void scene_text_14 (Ctx *ctx, const char *title, int frame_no, float time_delta)
+{
+   scene_text (ctx, title, frame_no, time_delta, 1.0/14.0f);
+}
+static void scene_text_5 (Ctx *ctx, const char *title, int frame_no, float time_delta)
+{
+   scene_text (ctx, title, frame_no, time_delta, 0.2);
+}
+#endif
+
 static void scene_text_20 (Ctx *ctx, const char *title, int frame_no, float time_delta)
 {
    scene_text (ctx, title, frame_no, time_delta, 0.05);
 }
 
-static void scene_text_25 (Ctx *ctx, const char *title, int frame_no, float time_delta)
-{
-   scene_text (ctx, title, frame_no, time_delta, 1.0/25.0f);
-}
 static void scene_text_15 (Ctx *ctx, const char *title, int frame_no, float time_delta)
 {
    scene_text (ctx, title, frame_no, time_delta, 1.0/15.0f);
-}
-static void scene_text_14 (Ctx *ctx, const char *title, int frame_no, float time_delta)
-{
-   scene_text (ctx, title, frame_no, time_delta, 1.0/14.0f);
 }
 static void scene_text_13 (Ctx *ctx, const char *title, int frame_no, float time_delta)
 {
@@ -1059,10 +1066,6 @@ static void scene_text_7 (Ctx *ctx, const char *title, int frame_no, float time_
    scene_text (ctx, title, frame_no, time_delta, 1.0/7.0f);
 }
 
-static void scene_text_5 (Ctx *ctx, const char *title, int frame_no, float time_delta)
-{
-   scene_text (ctx, title, frame_no, time_delta, 0.2);
-}
 
 
 void reset_time(void)
@@ -1113,7 +1116,7 @@ Scene scenes[]=
   {"spiral boxes", scene_spirals2, 120},
   {"spiral boxes", scene_spirals3, 120},
   {"circles",    scene_circles, 120},
-  //{"curve_to",    scene_curve_to, 120},
+  {"curve_to",    scene_curve_to, 120},
   {"intro0",      scene_text_12, 120},
   {"terminal",    scene_text_13, 120},
   {"intro1",      scene_text_7, 120},
@@ -1231,7 +1234,7 @@ static int ui_scenes (Ctx *ctx, void *data)
   ctx_add_key_binding (ctx, "home", NULL, "foo",  action_first, NULL);
   ctx_add_key_binding (ctx, "left", NULL, "foo",  action_prev, NULL);
   ctx_add_key_binding (ctx, "right", NULL, "foo", action_next, NULL);
-  ctx_add_key_binding (ctx, "q", NULL, "foo",     action_quit, NULL);
+  ctx_add_key_binding (ctx, "escape", NULL, "foo",     action_quit, NULL);
   ctx_add_key_binding (ctx, "F11", NULL, "foo",   action_fullscreen, NULL);
   ctx_add_key_binding (ctx, "f", NULL, "foo",   action_fullscreen, NULL);
   ctx_add_key_binding (ctx, "b", NULL, "foo",   action_bouncy, NULL);
@@ -1261,6 +1264,6 @@ int main (int argc, char **argv)
   ctx_get_event (ctx);
   while(!ctx_has_quit (ctx))
      ui_scenes (ctx, NULL);
- 
+  ctx_destroy (ctx);
   return 0;
 }

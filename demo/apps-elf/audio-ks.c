@@ -246,7 +246,7 @@ void *string_create (void)
   string->voice.render=(void*)string_render;
   string->pos      = 0;
   string->velocity = 1.0f;
-  string->alpha    = 0.5f;
+  string->alpha    = 0.2f;
 
   string_set_hz(string, 440);
   return string;
@@ -359,7 +359,10 @@ static void render_audio (Ctx *ctx)
 
    ctx_stroke (ctx);
 
-  ctx_add_key_binding (ctx, "space", NULL, "foo",  do_pluck, "0.0");
+  ctx_add_key_binding (ctx, "left", NULL, "foo",  do_pluck, "0.0");
+  ctx_add_key_binding (ctx, "space", NULL, "foo",  do_pluck, "1.0");
+  ctx_add_key_binding (ctx, "right", NULL, "foo",  do_pluck, "2.0");
+#if 0
   ctx_add_key_binding (ctx, "q", NULL, "foo",  do_pluck, "0.0");
   ctx_add_key_binding (ctx, "w", NULL, "foo",  do_pluck, "1.0");
   ctx_add_key_binding (ctx, "e", NULL, "foo",  do_pluck, "2.0");
@@ -392,8 +395,10 @@ static void render_audio (Ctx *ctx)
   ctx_add_key_binding (ctx, "s", NULL, "foo",  do_audio_b, (void*)3);
   ctx_add_key_binding (ctx, "d", NULL, "foo",  do_audio_c, (void*)3);
 */
-  ctx_add_key_binding (ctx, "a", NULL, "foo",  do_adjust_octave, "1");
-  ctx_add_key_binding (ctx, "z", NULL, "foo",  do_adjust_octave, "-1");
+#endif
+  ctx_add_key_binding (ctx, "page-up", NULL, "foo",  do_adjust_octave, "1");
+  ctx_add_key_binding (ctx, "page-down", NULL, "foo",  do_adjust_octave, "-1");
+#if 0
   ctx_add_key_binding (ctx, "`", NULL, "foo",  do_adjust_alpha, "0.01");
   ctx_add_key_binding (ctx, "1", NULL, "foo",  do_adjust_alpha, "-0.01");
   ctx_add_key_binding (ctx, "s", NULL, "foo",  do_adjust_alpha, "0.05");
@@ -404,6 +409,7 @@ static void render_audio (Ctx *ctx)
   ctx_add_key_binding (ctx, "v", NULL, "foo",  do_adjust_pluck_mode, "-1");
   ctx_add_key_binding (ctx, "g", NULL, "foo",  do_adjust_hit_release, "0.05");
   ctx_add_key_binding (ctx, "b", NULL, "foo",  do_adjust_hit_release, "-0.05");
+#endif
 }
 
 
@@ -433,34 +439,9 @@ static void do_fullscreen (CtxEvent *event, void *data1, void *data2)
 
 static void do_quit (CtxEvent *event, void *data1, void *data2)
 {
+  printf ("quitting?\n");
   ctx_quit (event->ctx);
   ctx_queue_draw (event->ctx);
-}
-
-static int ui_scenes (Ctx *ctx, void *data)
-{
-  uint64_t ticks = ctx_ticks ();
-
-  render_time = (ticks - prev_ticks) / 1000.0f/ 1000.0f / 10.0f;
-  render_fps = 1.0 / render_time;
-  prev_ticks = ticks;
-
-  ctx_start_frame (ctx);
-
-  ctx_save (ctx);
-  clear (ctx);
-  render_audio (ctx);
-  ctx_restore (ctx);
- 
-  ctx_add_key_binding (ctx, "up", NULL, "foo",    do_scroll_up, NULL);
-  ctx_add_key_binding (ctx, "down", NULL, "foo",  do_scroll_down, NULL);
-  ctx_add_key_binding (ctx, "escape", NULL, "foo",     do_quit, NULL);
-  ctx_add_key_binding (ctx, "F11", NULL, "foo",   do_fullscreen, NULL);
-  ctx_end_frame (ctx);
-
-  ctx_handle_events (ctx);
-
-  return 1;
 }
 
 int main (int argc, char **argv)
@@ -480,9 +461,29 @@ int main (int argc, char **argv)
   printf ("      f,v: pluck mode +/-\n");
   printf ("      g,b: hit_release +/- 0.05\n");
 #endif
-  ctx_get_event (ctx);
-  while(!ctx_has_quit (ctx))
-     ui_scenes (ctx, NULL);
+
+  while(!ctx_has_quit(ctx))
+  {
+  uint64_t ticks = ctx_ticks ();
+
+  render_time = (ticks - prev_ticks) / 1000.0f/ 1000.0f / 10.0f;
+  render_fps = 1.0 / render_time;
+  prev_ticks = ticks;
+
+  ctx_start_frame (ctx);
+
+  ctx_save (ctx);
+  clear (ctx);
+  render_audio (ctx);
+  ctx_restore (ctx);
  
+  ctx_add_key_binding (ctx, "up", NULL, "foo",    do_scroll_up, NULL);
+  ctx_add_key_binding (ctx, "down", NULL, "foo",  do_scroll_down, NULL);
+  ctx_add_key_binding (ctx, "escape", NULL, "foo",     do_quit, NULL);
+  ctx_add_key_binding (ctx, "F11", NULL, "foo",   do_fullscreen, NULL);
+  ctx_end_frame (ctx);
+
+  }
+  ctx_destroy(ctx);
   return 0;
 }

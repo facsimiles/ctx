@@ -18,7 +18,7 @@ int main (int argc, char **argv)
     ctx_rgba (ctx, 1, 1,1, 1.0f);
     ctx_move_to (ctx, width/2, height/2);
     char buf[1024];
-    sprintf (buf, "foo %i", i);
+    sprintf (buf, "%i", i);
     ctx_text (ctx, buf);
 
     ctx_end_frame (ctx);

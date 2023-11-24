@@ -8,7 +8,8 @@
 #include "private/elf_symbol.h"
 //#include <semaphore.h>
 
-#define EXPORT_UI
+#define EXPORT_UI 1
+
 #ifdef EXPORT_UI
 #include "ui.h"
 #endif
@@ -37,6 +38,7 @@ int wrap_fputs (const char *s, FILE *stream)
          ctx_vt_write(NULL, '\r');
        ctx_vt_write(NULL, s[i]);
     }
+    ui_iteration(ui_host());
   }
   int ret = fputs(s, stream);
   return ret;
@@ -50,6 +52,7 @@ int wrap_fputc (int c, FILE *stream)
      if (c == '\n')
        ctx_vt_write(NULL, '\r');
      ctx_vt_write(NULL, c);
+     ui_iteration(ui_host());
   }
   return fputc(c, stream);
 }
@@ -66,6 +69,7 @@ int wrap_fwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream)
         ctx_vt_write(NULL, '\r');
       ctx_vt_write(NULL, s[i]);
     }
+    ui_iteration(ui_host());
   }
 
   return fwrite (ptr, size, nmemb, stream);
@@ -406,7 +410,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 
 
 #ifdef EXPORT_UI
-//  ESP_ELFSYM_EXPORT(_default_ui),
+    ESP_ELFSYM_EXPORT(ui_host),
     ESP_ELFSYM_EXPORT(ui_start),
     ESP_ELFSYM_EXPORT(ui_text),
     ESP_ELFSYM_EXPORT(ui_button),
@@ -420,6 +424,9 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ESP_ELFSYM_EXPORT(ui_set_scroll_offset),
     ESP_ELFSYM_EXPORT(ui_end),
     ESP_ELFSYM_EXPORT(ui_main),
+    ESP_ELFSYM_EXPORT(ui_iteration),
+    ESP_ELFSYM_EXPORT(ui_push_fun),
+    ESP_ELFSYM_EXPORT(ui_pop_fun),
 #endif
 
     {"ctx_new", &wrap_ctx_new},
@@ -584,8 +591,10 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ESP_ELFSYM_EXPORT(ctx_quit),
     ESP_ELFSYM_EXPORT(ctx_rgba8),
     ESP_ELFSYM_EXPORT(ctx_has_quit),
-    //ESP_ELFSYM_EXPORT(ctx_guess_media_type),
-    //ESP_ELFSYM_EXPORT(ctx_path_get_media_type),
+#if CTX_GET_CONTENTS
+    ESP_ELFSYM_EXPORT(ctx_guess_media_type),
+    ESP_ELFSYM_EXPORT(ctx_path_get_media_type),
+#endif
     ESP_ELFSYM_EXPORT(ctx_gstate_protect),
     ESP_ELFSYM_EXPORT(ctx_gstate_unprotect),
 
