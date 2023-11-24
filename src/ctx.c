@@ -2109,20 +2109,23 @@ Ctx *ctx_host (void);
 CTX_EXPORT Ctx *
 ctx_new (int width, int height, const char *backend)
 {
+  static Ctx * ret = NULL;
 #if CTX_PICO || CTX_ESP
   return ctx_host ();
 #endif
-
+  if (ret)
+    return ret;
 #if CTX_EVENTS
   if (backend && !ctx_strcmp (backend, "drawlist"))
 #endif
   {
-    return _ctx_new_drawlist (width, height);
+    ret = _ctx_new_drawlist (width, height);
   }
 #if CTX_EVENTS
   else
-    return ctx_new_ui (width, height, backend);
+    ret = ctx_new_ui (width, height, backend);
 #endif
+  return ret;
 }
 
 static inline void
