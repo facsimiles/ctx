@@ -1152,8 +1152,13 @@ struct _CtxFloatRectangle {
   float height;
 };
 
-void ctx_quit (Ctx *ctx);
+void ctx_exit       (Ctx *ctx);
 int  ctx_has_exited (Ctx *ctx);
+void ctx_reset_has_exited (Ctx *ctx);
+
+// XXX : compat - in case someone were using it
+#define ctx_quit     ctx_exit
+#define ctx_has_quit ctx_has_exited
 
 typedef void (*CtxCb) (CtxEvent *event,
                        void     *data,
@@ -1362,6 +1367,8 @@ char *vt_get_selection    (VT *vt);
 long vt_rev               (VT *vt);
 int  vt_has_blink         (VT *vt);
 int ctx_vt_had_alt_screen (VT *vt);
+int  vt_get_cursor_x         (VT *vt);
+int  vt_get_cursor_y         (VT *vt);
 
 int ctx_clients_handle_events (Ctx *ctx);
 

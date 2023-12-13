@@ -156,8 +156,8 @@ MAIN(text)
   do {
     ctx_start_frame (ctx);
     view_wifi (ui);
-    ctx_add_key_binding (ctx, "escape", "quit", "foo",  ui_cb_do, ui);
-    ctx_add_key_binding (ctx, "backspace", "quit", "foo",  ui_cb_do, ui);
+    ctx_add_key_binding (ctx, "escape", "exit", "foo",  ui_cb_do, ui);
+    ctx_add_key_binding (ctx, "backspace", "exit", "foo",  ui_cb_do, ui);
     ui_keyboard (ui);
     ctx_end_frame (ctx);
   } while (!ctx_has_exited (ctx));

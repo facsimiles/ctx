@@ -1185,7 +1185,7 @@ static void action_bouncy (CtxEvent *event, void *data1, void *data2)
 
 static void action_quit (CtxEvent *event, void *data1, void *data2)
 {
-  ctx_quit (event->ctx);
+  ctx_exit (event->ctx);
   ctx_queue_draw (event->ctx);
 }
 

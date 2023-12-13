@@ -1007,7 +1007,7 @@ void ctx_client_handle_event (Ctx *ctx, CtxEvent *ctx_event, const char *event)
 #endif
   else if (!strcmp (event, "shift-control-q") )
     {
-      ctx_quit (ctx);
+      ctx_exit (ctx);
     }
   else if (!strcmp (event, "shift-control-w") )
     {

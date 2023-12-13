@@ -130,7 +130,7 @@ float       itk_edge_top       (ITK *itk);
 float       itk_edge_bottom    (ITK *itk);
 void        itk_set_wrap_width (ITK *itk, float wwidth);
 
-/* runs until ctx_quit itk->ctx) is called */
+/* runs until ctx_exit itk->ctx) is called */
 void        itk_run_ui         (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data);
 void        itk_set_font_size  (ITK *itk, float font_size);
 
@@ -2659,7 +2659,7 @@ itk_itk_settings (ITK *itk)
 
 void itk_key_quit (CtxEvent *event, void *userdata, void *userdata2)
 {
-  ctx_quit (event->ctx);
+  ctx_exit (event->ctx);
 }
 
 int _itk_key_bindings_active = 1;

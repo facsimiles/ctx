@@ -2,27 +2,18 @@
 #include "ui.h"
 #include <dirent.h>
 
-typedef struct ui_magic_t {
-  bool is_text;
-  char *mime_type;
-  char *ext;
-  uint8_t magic[16];
-  int magic_len;
-} ui_magic_t;
-
 
 int _init_main (int argc, char **argv)
 {
-  Ui *ui = ui_host(NULL);
+  //Ui *ui = ui_host(NULL);
 
   char elf_magic_32bit[]={0x7f, 'E','L','F', 1,1, 1, 0, 0, 0};
   char elf_magic_64bit[]={0x7f, 'E','L','F', 2,1, 1, 0, 0, 0};
   //uint8_t elf_magic[]={0x7f, 'E','L','F', 0,0, 0, 0, 0, 0};
-  ui_register_magic(ui, "application/x-sharedlib", NULL, elf_magic_32bit, 8, 0);
-  ui_register_magic(ui, "application/x-sharedlib", NULL, elf_magic_64bit, 8, 0);
+  magic_add("application/x-sharedlib", NULL, elf_magic_32bit, 8, 0);
+  magic_add("application/x-sharedlib", NULL, elf_magic_64bit, 8, 0);
 
-  ui_register_magic(ui,
-      "application/flow3r",
+  magic_add("application/flow3r",
       "inode/directory",
       "flow3r.toml",
       -1, 0);
@@ -37,36 +28,36 @@ int _init_main (int argc, char **argv)
   char gif_magic1[] = {0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0};
   char gif_magic2[] = {0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0};
 
-  ui_register_magic(ui, "video/mpeg", ".mpg", mpg1_magic, 4, 0);
-  ui_register_magic(ui, "image/gif", ".gif", gif_magic1, -1, 0);
-  ui_register_magic(ui, "image/gif", ".gif", gif_magic2, -1, 0);
+  magic_add("video/mpeg", ".mpg", mpg1_magic, 4, 0);
+  magic_add("image/gif", ".gif", gif_magic1, -1, 0);
+  magic_add("image/gif", ".gif", gif_magic2, -1, 0);
 
   char z_magic[] = {0x1f, 0x9d, 0};
-  ui_register_magic(ui, "application/gzip", ".z", z_magic, -1, 0);
+  magic_add("application/gzip", ".z", z_magic, -1, 0);
   char gz_magic[] = {0x1f, 0x8b, 0};
 
-  ui_register_magic(ui, "application/gz", ".gz", gz_magic, -1, 0);
+  magic_add("application/gz", ".gz", gz_magic, -1, 0);
   char bz2_magic[] = {0x42, 0x5a, 0x68, 0};
-  ui_register_magic(ui, "application/bzip2", ".gz", bz2_magic, -1, 0);
+  magic_add("application/bzip2", ".gz", bz2_magic, -1, 0);
   char zip_magic[] = {0x50, 0x4b, 0x03, 0x04, 0};
   char zip_magic2[] = {0x50, 0x4b, 0x05, 0x06, 0};
 
-  ui_register_magic(ui, "application/zip", ".zip", zip_magic, -1, 0);
-  ui_register_magic(ui, "application/zip", ".zip", zip_magic2, -1, 0);
+  magic_add("application/zip", ".zip", zip_magic, -1, 0);
+  magic_add("application/zip", ".zip", zip_magic2, -1, 0);
 
 #if 0
   char wasm_magic[] = {0x00, 0x61, 0x73, 0x6d};
-  ui_register_magic(ui, "application/wasm", ".wasm", wasm_magic, 4, 0);
+  magic_add(ui, "application/wasm", ".wasm", wasm_magic, 4, 0);
 #endif
 
   char flac_magic[] = {0x66, 0x4c, 0x61, 0x43, 0};
 
-  ui_register_magic(ui, "audio/flac", ".flac", flac_magic, -1, 0);
+  magic_add("audio/flac", ".flac", flac_magic, -1, 0);
   char midi_magic[] = {0x4d, 0x54, 0x68, 0x64, 0};
-  ui_register_magic(ui, "audio/sp-midi", ".mid", midi_magic, -1, 0);
+  magic_add("audio/sp-midi", ".mid", midi_magic, -1, 0);
   char wav_magic[] = {0x52, 0x49, 0x46, 0x46, 0};
-  ui_register_magic(ui, "audio/x-wav", ".wav", wav_magic, -1, 0);
-  ui_register_magic(ui, "audio/mp3", ".mp3", NULL, 0, 0);
+  magic_add("audio/x-wav", ".wav", wav_magic, -1, 0);
+  magic_add("audio/mp3", ".mp3", NULL, 0, 0);
 
   return 0;
 }
@@ -204,23 +195,19 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
 
     if (ui->interpreter)
     {
-    char *argv[5] = {ui->interpreter, ui->location, NULL, NULL, NULL};
-   
-    if (!strcmp(ui_basename (ui->interpreter), "picoc"))
-    {
-       printf ("wtd\n");
-    }
-
-    retval = runvp (ui->interpreter, argv);
+      char *argv[5] = {ui->interpreter, ui->location, NULL, NULL, NULL};
+      retval = runvp (ui->interpreter, argv);
     }
     else
     {
-    char *argv[2] = {ui->location, NULL};
-
-    retval = runvp (ui->location, argv);
+      char *argv[2] = {ui->location, NULL};
+      retval = runvp (ui->location, argv);
     }
     if (run_output_state () == 1)
+    {
+      // TODO : draw a visual count-down
       sleep (2);
+    }
 
     launch_elf_handler = 0;
 
@@ -264,7 +251,7 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
    else
    {
      if (!strcmp (string, "shift-space")){ ui_do (ui, "kb-show"); return; }
-     if (!strcmp (string, "return")){ ui_do (ui, "kb-show"); return; }
+     //if (!strcmp (string, "return")){ ui_do (ui, "kb-show"); return; }
    }
 
         handle_event (event->ctx, event, event->string);
@@ -287,6 +274,7 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
     }
   }
 }
+int  ctx_osk_mode = 0;
 
 static void draw_term (Ui *ui)
 {
@@ -301,14 +289,24 @@ static void draw_term (Ui *ui)
     ctx_client_resize (ctx, ctx_client_id(term_client), ui->width*180/240, ui->height*180/240);
   }
   ctx_save (ctx);
+
+  if (ctx_osk_mode)
+  {
+   int y = vt_get_cursor_y (ctx_client_vt(term_client));
+   if (y < 3) y = 3;
+   if (y > 10) y = 10;
+   ctx_translate (ctx, ctx_width(ctx) * 35/240, ctx_height(ctx)*35/240 - (y-3) * font_size);
+  }
+  else
+  {
   ctx_translate (ctx, ctx_width(ctx) * 35/240, ctx_height(ctx)*35/240);
+  }
   ctx_clients_draw (ctx, 0);
   ctx_restore (ctx);
   ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, ui, NULL);
   ctx_listen (ctx, CTX_KEY_DOWN, terminal_key_any, ui, NULL);
   ctx_listen (ctx, CTX_KEY_UP, terminal_key_any, ui, NULL);
 }
-int  ctx_osk_mode = 0;
 
 void view_elf (Ui *ui)
 {
@@ -547,178 +545,10 @@ void ui_load_file (Ui *ui, const char *path)
      printf ("didnt load %s\n", path);
 }
 
-static CtxList *ui_magic = NULL;
-
-void
-ui_register_magic (Ui *ui,
-  const char *mime_type,
-  const char *ext,
-  char *magic_data,
-  int magic_len,
-  int is_text)
-{
-  // TODO : skip duplicates
-  if (!mime_type) return;
-  if (magic_len < 0)
-  {
-    if (magic_data) magic_len = strlen ((char*)magic_data);
-  }
-
-  if (magic_len > 16) magic_len = 16;
-  ui_magic_t *magic = calloc (sizeof (ui_magic_t), 1);
-  magic->mime_type = strdup (mime_type);
-  if (ext)
-    magic->ext = strdup (ext);
-  if (magic_data)
-    memcpy ((char*)magic->magic, (char*)magic_data, magic_len);
-  magic->magic_len = magic_len;
-  magic->is_text = is_text;
-  ctx_list_append (&ui_magic, magic);
-}
-
-bool ui_has_magic(Ui *ui, const char *mime_type)
-{
-   for (CtxList *iter = ui_magic; iter; iter = iter->next)
-   {
-     ui_magic_t *magic = iter->data;
-     if (!strcmp (magic->mime_type, mime_type))
-       return true;
-   }
-   return false;
-}
-
-static int ui_read_start (const char *path, char *sector_512b)
-{
-  //fprintf (stderr, "%s\n", path);
-  FILE *f = run_fopen (path, "r");
-  if (!f)
-    return -1;
-
-  memset(sector_512b, 0, 512);
-  run_fread(sector_512b, 512, 1, f);
-
-  run_fclose (f);
-  return 0;
-}
-
-static const char *ui_get_mime_type_dir_int(Ui *ui, const char *path)
-{
-   char temp[512];
-   for (CtxList *iter = ui_magic; iter; iter = iter->next)
-   {
-     ui_magic_t *magic = iter->data;
-     if (magic->ext && !strcmp (magic->ext, "inode/directory"))
-     {
-       snprintf (temp, sizeof(temp), "%s/%s", path, magic->magic);
-       if (run_access (temp, R_OK) == F_OK)
-         return magic->mime_type;
-     }
-   }
-   return "inode/directory";
-}
-
-static const char *ui_get_mime_type_int(Ui *ui, const char *path,
-                                                const char *sector)
-{
-   const char *suffix_match = NULL;
-   const char *magic_match = NULL;
-
-   for (CtxList *iter = ui_magic; iter; iter = iter->next)
-   {
-     ui_magic_t *magic = iter->data;
-     if (magic->ext && 
-         strstr (path, magic->ext) &&
-         (strstr (path, magic->ext)[strlen(magic->ext)]==0))
-       suffix_match = magic->mime_type;
-     if (magic->magic_len &&
-         !memcmp(sector, magic->magic, magic->magic_len))
-       magic_match = magic->mime_type;
-   }
-
-   if (magic_match)
-     return magic_match;
-   if (suffix_match)
-     return suffix_match;
-
-   for (unsigned int i = 0; i < 512-4;)
-   {
-     uint8_t first_byte = ((uint8_t*)sector)[i];
-     if ((first_byte & 0x80) == 0)
-     {
-       i++;
-     } else
-     {
-        int trail_bytes = 0;
-        if ((first_byte & (128+64+32)) == 128+64)
-           trail_bytes = 1;
-        else if ((first_byte & (128+64+32+16)) == 128+64+32)
-           trail_bytes = 2;
-        else if ((first_byte & (128+64+32+16+8)) == 128+64+32+16)
-           trail_bytes = 3;
-        else
-           return "application/octet-stream";
-        for (int j = 0; j < trail_bytes; j++)
-        {
-          uint8_t byte = ((uint8_t*)sector)[i+j+1];
-          if ((byte & (128+64)) != 128)
-             return "application/octet-stream";
-        }
-        i++;
-        i+=trail_bytes;
-     }
-   }
-   return "text/plain";
-}
-                                         
-const char *ui_get_mime_type(Ui *ui, const char *location)
-{
-   const char *path = location;
-   if (strchr(path, ':') && strchr(path, ':') < path + 5)
-   {
-     path = strchr (path, ':')+1;
-     if (path[0]=='/') path++;
-     if (path[0]=='/') path++;
-   }
-
-   struct stat stat_buf; 
-   if (!path || path[0]==0) return 0;
-      run_stat (path, &stat_buf);
-   if (S_ISDIR (stat_buf.st_mode))
-   {
-     return ui_get_mime_type_dir_int(ui, location);
-     //return "inode/directory";
-   }
-
-   char sector[512]={0,};
-   if (ui_read_start (path, sector))
-     return NULL;
-   return ui_get_mime_type_int(ui, location, sector);
-}
 
 static void ui_view_file (Ui *ui)
 {
-   char sector[512]={0,0,};
-   ui_read_start (ui->location, sector);
-   
-   if (sector[0]=='#' && sector[1]=='!')
-   {
-     char *base = &sector[2];
-     sector[500]=0;
-     char *p;
-     for (p = base; *p != '\n'; p++);
-     *p = 0;
-     printf ("%s\n", base);
-     if (strchr(base, '/'))
-       base = strrchr(base, '/')+1;
-     
-     ui->fun = view_elf;
-     ui->interpreter = ui_find_executable(ui, base);
-     return;
-   }
-
    const char *mime_type = ui_get_mime_type (ui, ui->location);
-   //printf ("%s:%s\n", ui->location, mime_type);
-   //const char *base = ui_basename(ui->location);
    ui->interpreter = NULL;
    for (int i = 0; i < ui->n_views; i++)
    {
@@ -962,9 +792,9 @@ void
 ui_do(Ui *ui, const char *action)
 {
   printf ("ui_do: %s\n", action);
-  if (!strcmp (action, "quit"))
+  if (!strcmp (action, "exit"))
   {
-    ctx_quit (ui->ctx);
+    ctx_exit (ui->ctx);
   }
   else if (!strcmp (action, "backspace") ||
            !strcmp (action, "return") ||
@@ -1092,7 +922,7 @@ Ui *ui_new(Ctx *ctx)
 #ifdef NATIVE
      _ctx_host = ctx;
 #endif
-     //ui_register_magic(ui, "application/octet-stream", ".bin", NULL, 0, 0);
+     //magic_add(ui, "application/octet-stream", ".bin", NULL, 0, 0);
   }
   ui->ctx = ctx;
   ui->style.bg[0]=0.1;
@@ -2447,7 +2277,7 @@ void ui_end_frame (Ui *ui)
         ctx_add_key_binding (ctx, "return", "activate", "foo",  ui_cb_do, ui);
         ctx_add_key_binding (ctx, "space",  "activate", "foo",  ui_cb_do, ui);
       }
-      ctx_add_key_binding (ctx, "control-q", "quit", "foo", ui_cb_do, ui);
+      ctx_add_key_binding (ctx, "control-q", "exit", "foo", ui_cb_do, ui);
 
 #if CTX_ESP==0
       {

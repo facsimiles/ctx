@@ -373,7 +373,7 @@ void ctx_sdl_consume_events (Ctx *ctx)
         }
         break;
       case SDL_QUIT:
-        ctx_quit (ctx);
+        ctx_exit (ctx);
         break;
       case SDL_DROPFILE:
         ctx_pointer_drop (ctx, x, y, 0, 0, event.drop.file);

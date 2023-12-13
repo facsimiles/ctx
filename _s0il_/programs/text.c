@@ -115,7 +115,7 @@ static void text_key_press (CtxEvent *event, void *data1, void *data2)
      if (!strcmp (string, "return")){ ui_do (ui, "kb-show"); return; }
    }
 
-  if (!strcmp (string, "escape")) ui_do (ui, "quit");
+  if (!strcmp (string, "escape")) ui_do (ui, "exit");
   else if (!strcmp (string, "down")) text_down (event, data1, data2);
   else if (!strcmp (string, "up")) text_up (event, data1, data2);
   else if (!strcmp (string, "left")) text_left (event, data1, data2);
@@ -393,7 +393,7 @@ MAIN(text)
     for (int i = 0; mime_types[i]; i+=2)
     {
       if (mime_types[i+1])
-        ui_register_magic(ui, mime_types[i], mime_types[i+1], NULL, 0, 1);
+        magic_add(mime_types[i], mime_types[i+1], NULL, 0, 1);
       ui_register_view(ui, mime_types[i], NULL, argv[0]);
     }
   }

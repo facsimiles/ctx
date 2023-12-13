@@ -130,6 +130,17 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
           Param[1]->Val->FP);\
 }
 
+#define fun_void__ptr_ptr_ptr_int_int(funname) \
+void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
+	         struct Value **Param, int NumArgs)\
+{\
+  funname(Param[0]->Val->Pointer,\
+          Param[1]->Val->Pointer,\
+          Param[2]->Val->Pointer,\
+          Param[3]->Val->Integer,\
+          Param[4]->Val->Integer);\
+}
+
 #define fun_void__ptr_ptr_ptr_ptr_int_int(funname) \
 void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 	         struct Value **Param, int NumArgs)\
@@ -139,7 +150,7 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
           Param[2]->Val->Pointer,\
           Param[3]->Val->Pointer,\
           Param[4]->Val->Integer,\
-          Param[4]->Val->Integer);\
+          Param[5]->Val->Integer);\
 }
 
 #define fun_void__ptr_float_float(funname) \
@@ -362,7 +373,7 @@ fun_ptr__ptr(ui_ctx);
 fun_ptr__ptr(ui_get_data);
 fun_void__ptr(ui_keyboard);
 fun_void__ptr_ptr(ui_load_file);
-fun_void__ptr_ptr_ptr_ptr_int_int(ui_register_magic);
+fun_void__ptr_ptr_ptr_int_int(magic_add);
 
 // ui_push_fun ui_register_view
 // set_data get_data  find_exec  ui_basename  elf_output_state 
@@ -378,7 +389,7 @@ struct LibraryFunction UiFunctions[] =
     {Cui_ctx,          "Ctx *ui_ctx(Ui*);"},
     {Cui_get_data,     "void *ui_get_data(Ui*);"},
     {Cui_load_file,    "void ui_load_file(Ui *,char*p);"},
-    {Cui_register_magic, "void ui_register_magic(Ui *,char*,char*,unsigned char*,int, int);"},
+    {Cmagic_add, "void magic_add(char*,char*,unsigned char*,int, int);"},
     {Cui_keyboard,     "void ui_keyboard(Ui *);"},
     {Cui_destroy,      "void ui_destroy(Ui *);"},
     {Cui_main,         "void ui_main(Ui *, char*);"},
@@ -422,7 +433,7 @@ fun_void__ptr(ctx_end_group);
 fun_void__ptr(ctx_save);
 fun_void__ptr(ctx_restore);
 fun_void__ptr(ctx_queue_draw);
-fun_void__ptr(ctx_quit);
+fun_void__ptr(ctx_exit);
 fun_void__ptr(ctx_new_page);
 fun_void__ptr(ctx_begin_path);
 fun_void__ptr(ctx_stroke_source);
@@ -547,7 +558,7 @@ struct LibraryFunction CtxFunctions[] =
     {Cctx_new_page,    "void ctx_new_page(Ctx*);"},
     {Cctx_restore,     "void ctx_restore(Ctx*);"},
     {Cctx_queue_draw,  "void ctx_queue_draw(Ctx*);"},
-    {Cctx_quit,     "void ctx_quit(Ctx*);"},
+    {Cctx_exit,     "void ctx_exit(Ctx*);"},
     {Cctx_begin_path,     "void ctx_begin_path(Ctx*);"},
     {Cctx_stroke_source,  "void ctx_stroke_source(Ctx*);"},
     {Cctx_close_path,     "void ctx_close_path(Ctx*);"},

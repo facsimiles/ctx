@@ -11,11 +11,11 @@ MAIN(image)
      char jpg_magic3[]={0xff, 0xd8, 0xff, 0xee};
      char jpg_magic4[]={0xff, 0xd8, 0xff, 0xe1};
     
-     ui_register_magic(ui, "image/png",  NULL, png_magic,  sizeof(png_magic),  0);
-     ui_register_magic(ui, "image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
-     ui_register_magic(ui, "image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
-     ui_register_magic(ui, "image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
-     ui_register_magic(ui, "image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
+     magic_add("image/png",  NULL, png_magic,  sizeof(png_magic),  0);
+     magic_add("image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
+     magic_add("image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
+     magic_add("image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
+     magic_add("image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
 // {0, "image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x37, 0x61}},
 // {0, "image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x39, 0x61}},
 
@@ -52,8 +52,8 @@ MAIN(image)
            (dheight - height * factor)/2,
            width * factor, height * factor);
    
-      ctx_add_key_binding (ctx, "escape", "quit", "foo",  ui_cb_do, ui_host(ctx));
-      ctx_add_key_binding (ctx, "backspace", "quit", "foo",  ui_cb_do, ui_host(ctx));
+      ctx_add_key_binding (ctx, "escape", "exit", "foo",  ui_cb_do, ui_host(ctx));
+      ctx_add_key_binding (ctx, "backspace", "exit", "foo",  ui_cb_do, ui_host(ctx));
    
       }
       ctx_end_frame (ctx);

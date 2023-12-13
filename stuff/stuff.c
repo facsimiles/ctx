@@ -2983,7 +2983,7 @@ int edit_location (COMMAND_ARGS) /* "location-edit", 0, "", "" */
 
 int cmd_quit (COMMAND_ARGS) /* "quit", 0, "", "" */
 {
-   ctx_quit (ctx);
+   ctx_exit (ctx);
    return 0;
 }
 

@@ -105,8 +105,8 @@ MAIN(clock)
 
       draw_clock (ctx);
   
-      ctx_add_key_binding (ctx, "escape", "quit", "foo",  ui_cb_do, ui_host(ctx));
-      ctx_add_key_binding (ctx, "backspace", "quit", "foo",  ui_cb_do, ui_host(ctx));
+      ctx_add_key_binding (ctx, "escape", "exit", "foo",  ui_cb_do, ui_host(ctx));
+      ctx_add_key_binding (ctx, "backspace", "exit", "foo",  ui_cb_do, ui_host(ctx));
       ctx_end_frame (ctx);
     }
     else

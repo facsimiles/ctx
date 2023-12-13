@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
 #if 0
         char buf[128];
         if (event->type == CTX_KEY_PRESS && !strcmp (event->string, "q"))
-          ctx_quit (ctx);
+          ctx_exit (ctx);
         switch (event->type)
         {
           default:

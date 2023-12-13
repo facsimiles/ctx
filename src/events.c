@@ -438,7 +438,7 @@ void _ctx_events_init (Ctx *ctx)
 void _ctx_toggle_in_idle_dispatch (Ctx *ctx)
 {
   ctx->events.in_idle_dispatch= !ctx->events.in_idle_dispatch;
-  ctx->quit = 0;
+  ctx_reset_has_exited (ctx);
 }
 
 

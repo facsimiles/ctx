@@ -845,24 +845,24 @@ static void httpd_magic(void)
   char jpg_magic3[]={0xff, 0xd8, 0xff, 0xee};
   char jpg_magic4[]={0xff, 0xd8, 0xff, 0xe1};
 
-  if (!ui_has_magic (ui, "image/png"))
-    ui_register_magic(ui, "image/png",  NULL, png_magic,  sizeof(png_magic),  0);
-  if (!ui_has_magic (ui, "image/jped"))
+  if (!magic_has_mime (ui, "image/png"))
+    magic_add(ui, "image/png",  NULL, png_magic,  sizeof(png_magic),  0);
+  if (!magic_has_mime (ui, "image/jped"))
   {
-    ui_register_magic(ui, "image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
-    ui_register_magic(ui, "image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
-    ui_register_magic(ui, "image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
-    ui_register_magic(ui, "image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
+    magic_add(ui, "image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
+    magic_add(ui, "image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
+    magic_add(ui, "image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
+    magic_add(ui, "image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
   }
 
-  if (!ui_has_magic (ui, "text/markdown"))
-    ui_register_magic(ui, "text/markdown", ".md", NULL, 0, 1);
-  if (!ui_has_magic (ui, "text/html"))
-    ui_register_magic(ui, "text/html", ".html", NULL, 0, 1);
-  if (!ui_has_magic (ui, "text/css"))
-    ui_register_magic(ui, "text/css", ".css", NULL, 0, 1);
-  if (!ui_has_magic (ui, "application/javascript"))
-    ui_register_magic(ui, "application/javascript", ".js", NULL, 0, 1);
+  if (!magic_has_mime (ui, "text/markdown"))
+    magic_add(ui, "text/markdown", ".md", NULL, 0, 1);
+  if (!magic_has_mime (ui, "text/html"))
+    magic_add(ui, "text/html", ".html", NULL, 0, 1);
+  if (!magic_has_mime (ui, "text/css"))
+    magic_add(ui, "text/css", ".css", NULL, 0, 1);
+  if (!magic_has_mime (ui, "application/javascript"))
+    magic_add(ui, "application/javascript", ".js", NULL, 0, 1);
 }
 
 int httpd_port = -1; 

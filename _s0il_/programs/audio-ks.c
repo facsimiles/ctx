@@ -312,8 +312,8 @@ int main (int argc, char **argv)
     render_audio (ctx);
     ctx_restore (ctx);
  
-    ctx_add_key_binding (ctx, "escape", "quit", "foo",  ui_cb_do, ui_host(ctx));
-    ctx_add_key_binding (ctx, "backspace", "quit", "foo",  ui_cb_do, ui_host(ctx));
+    ctx_add_key_binding (ctx, "escape", "exit", "foo",  ui_cb_do, ui_host(ctx));
+    ctx_add_key_binding (ctx, "backspace", "exit", "foo",  ui_cb_do, ui_host(ctx));
     ctx_add_key_binding (ctx, "F11", NULL, "foo",   do_fullscreen, NULL);
     ctx_end_frame (ctx);
   }

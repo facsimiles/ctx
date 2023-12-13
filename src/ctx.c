@@ -2277,25 +2277,23 @@ ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx)
     }
 }
 
-void ctx_quit (Ctx *ctx)
+void ctx_exit (Ctx *ctx)
 {
 #if CTX_VT
   while (ctx_clients (ctx))
     ctx_client_remove (ctx, ctx_clients(ctx)->data);
 #endif
-
-#if CTX_EVENTS
-  ctx->quit ++;
-#endif
+  ctx->exit++;
 }
 
 int  ctx_has_exited (Ctx *ctx)
 {
-#if CTX_EVENTS
-  return (ctx->quit);
-#else
-  return 1; 
-#endif
+  return (ctx->exit != 0);
+}
+
+void ctx_reset_has_exited (Ctx *ctx)
+{
+  ctx->exit = 0;
 }
 
 int ctx_pixel_format_bits_per_pixel (CtxPixelFormat format)

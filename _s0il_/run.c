@@ -245,7 +245,15 @@ static int dlopen_runv (char *path2, char **argv)
   {
     // XXX : we expect this to be an internal dir where dlopen
     //       does not work, thus make copies.
-    char *tmp = strdup(path);
+    char *tmp = malloc (strlen(path) + 20);
+    sprintf (tmp, "/tmp/_s0il_elf_%s", path);
+    for (int i = 8; tmp[i]; i++)
+    {
+      switch (tmp[i])
+      {
+        case '/':tmp[i]='_';
+      }
+    }
     tmp[1]='t';
     tmp[2]='m';
     tmp[3]='p';

@@ -165,14 +165,14 @@ float ui_x (Ui *ui);
 float ui_y (Ui *ui);
 void ui_move_to (Ui *ui, float x, float y);
 bool ui_keyboard_visible(Ui *ui);
-void ui_register_magic(Ui *ui,
-  const char *mime_type,
+
+
+void magic_add(const char *mime_type,
   const char *ext,
   char *magic,
   int magic_len,
   int is_text);
-
-bool ui_has_magic(Ui *ui, const char *mime_type);
+bool magic_has_mime(const char *mime_type);
 
 #endif
 

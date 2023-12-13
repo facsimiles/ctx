@@ -154,7 +154,7 @@ static void settings_thread (Ctx *ctx, void *user_data)
 
         ctx_end_frame (ctx);
      }
-     if (frame > 100) ctx_quit (ctx);
+     if (frame > 100) ctx_exit (ctx);
      
      ctx_handle_events (ctx);
    }
@@ -303,7 +303,7 @@ static void handle_event (Ctx        *ctx,
   else if (!strcmp (event, "alt-0"))   switch_to_tab(ctx, 9);
   else if (!strcmp (event, "shift-control-q") )
     {
-      ctx_quit (ctx);
+      ctx_exit (ctx);
     }
   else if (!strcmp (event, "shift-control-w") )
     {
@@ -342,7 +342,7 @@ static void ctx_client_close (CtxEvent *event, void *data, void *data2)
   
   ctx_client_remove (ctx, client);
   if (clients == NULL)
-    ctx_quit (ctx);//
+    ctx_exit (ctx);//
 
   ctx_queue_draw (ctx);
   event->stop_propagate = 1;

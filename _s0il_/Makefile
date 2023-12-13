@@ -42,8 +42,9 @@ install:
 	@sudo ln -sf `pwd`/sd /sd
 
 test: demo native_bins
+	rm -f /tmp/_s0il_*
 	./demo
-demo: main.o ui.o run.o run-symbols.o bundled-programs.o
+demo: main.o ui.o run.o run-symbols.o bundled-programs.o magic.o
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -lm $^ -o $@ $(CFLAGS_NATIVE)
 
 PROGRAM_C_INLINED=programs/text.c programs/image.c programs/clock.c
@@ -55,8 +56,8 @@ run-symbols.o: run-stdio.c
 %.o: %.c *.h Makefile
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -c -g $< -o $@
 
-libui.so: ui.o run.o run-symbols.o Makefile 
-	$(CC_NATIVE) $(CFLAGS_NATIVE) -g -shared ui.o run.o run-symbols.o -o libui.so 
+libui.so: ui.o run.o run-symbols.o magic.o Makefile 
+	$(CC_NATIVE) $(CFLAGS_NATIVE) -g -shared ui.o run.o run-symbols.o -o libui.so magic.o
 
 clean:
 	rm -rf demo libui.so xtensa-bin native-bin elf_strip_pie *.o

@@ -858,31 +858,30 @@ static void request_finish (HttpdRequest *req)
 
 static void httpd_magic(void)
 {
-  Ui *ui = NULL;
   char png_magic[]={0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
   char jpg_magic1[]={0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0};
   char jpg_magic2[]={0xff, 0xd8, 0xff, 0xe0};
   char jpg_magic3[]={0xff, 0xd8, 0xff, 0xee};
   char jpg_magic4[]={0xff, 0xd8, 0xff, 0xe1};
 
-  if (!ui_has_magic (ui, "image/png"))
-    ui_register_magic(ui, "image/png",  NULL, png_magic,  sizeof(png_magic),  0);
-  if (!ui_has_magic (ui, "image/jped"))
+  if (!magic_has_mime ("image/png"))
+    magic_add("image/png",  NULL, png_magic,  sizeof(png_magic),  0);
+  if (!magic_has_mime ("image/jped"))
   {
-    ui_register_magic(ui, "image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
-    ui_register_magic(ui, "image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
-    ui_register_magic(ui, "image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
-    ui_register_magic(ui, "image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
+    magic_add("image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
+    magic_add("image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
+    magic_add("image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
+    magic_add("image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
   }
 
-  if (!ui_has_magic (ui, "text/markdown"))
-    ui_register_magic(ui, "text/markdown", ".md", NULL, 0, 1);
-  if (!ui_has_magic (ui, "text/html"))
-    ui_register_magic(ui, "text/html", ".html", NULL, 0, 1);
-  if (!ui_has_magic (ui, "text/css"))
-    ui_register_magic(ui, "text/css", ".css", NULL, 0, 1);
-  if (!ui_has_magic (ui, "application/javascript"))
-    ui_register_magic(ui, "application/javascript", ".js", NULL, 0, 1);
+  if (!magic_has_mime ("text/markdown"))
+    magic_add("text/markdown", ".md", NULL, 0, 1);
+  if (!magic_has_mime ("text/html"))
+    magic_add("text/html", ".html", NULL, 0, 1);
+  if (!magic_has_mime ("text/css"))
+    magic_add("text/css", ".css", NULL, 0, 1);
+  if (!magic_has_mime ("application/javascript"))
+    magic_add("application/javascript", ".js", NULL, 0, 1);
 }
 
 int httpd_port = -1; 

@@ -43,7 +43,7 @@ static void view_menu (Ui *ui)
       ui_do(ui, "clock");
    if (ui_button(ui,"httpd"))
       ui_do(ui, "httpd");
-   if (ui_button(ui,"shell"))
+   if (ui_button(ui,"console"))
       ui_do(ui, "sh");
    if (ui_button(ui,"raw_fb"))
       ui_do(ui, "raw_fb");
@@ -94,8 +94,7 @@ int main (int argc, char **argv)
     else if (access ("./sd", R_OK)==F_OK)
       root_path = realpath("./sd", NULL);
 
-    ui_register_magic(ui,
-      "application/flow3r",
+    magic_add("application/flow3r",
       "inode/directory",
       "flow3r.toml",
       -1, 0);

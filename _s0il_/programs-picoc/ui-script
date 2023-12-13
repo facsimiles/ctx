@@ -14,7 +14,7 @@ int main(int argc, char **argv)
   int counter = 0;
   char buf[32];
 
-  while (!ctx_has_quit(ctx))
+  while (!ctx_has_exited(ctx))
   {
     ctx_start_frame (ctx);
     ui_start_frame(ui);
