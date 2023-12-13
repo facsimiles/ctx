@@ -64,8 +64,8 @@ clean:
 CC_DEVICE=@   echo 'CC     ' $@ ; xtensa-esp32s3-elf-gcc 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CC)
 #CC_NATIVE=$(CC)
-#POST_DEVICE=@echo 'STRIP  ' $@ ; xtensa-esp32s3-elf-strip 
-POST_DEVICE=@ echo 'STRIP  ' $@ ; echo
+POST_DEVICE=@echo 'STRIP  ' $@ ; xtensa-esp32s3-elf-strip 
+#POST_DEVICE=@ echo 'STRIP  ' $@ ; echo
 #--remove-section=.xtensa.info --remove-section=.comment
 POST_NATIVE=@ echo 'rem-PIE' $@; ./elf_strip_pie $@
 #POST_NATIVE=@echo 'rem-PIE  $@'; ./elf_strip_pie $@ && strip $@
@@ -138,7 +138,6 @@ fs_bin_native.c: $(PROGRAM_NATIVE) native-bin/picoc Makefile gen_fs.sh
 	@rm -rf tmpfs2
 	@mkdir tmpfs2
 	@cp native-bin/* tmpfs2
-	@rm tmpfs2/image tmpfs2/text tmpfs2/clock  tmpfs2/busywarp
 	./gen_fs.sh tmpfs2 bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm $@_

@@ -5,17 +5,19 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-void run_add_file(const char *path, const char *contents, size_t size, bool readonly);
-
-// The Ui * argument is currently unused
-void  run_inline_main (const char *name, int(*main)(int argc, char **argv));
 int   runv (char *pathname, char **argv);
 int   runvp (char *file, char **argv);
 
-// returns pid or -1 on fail
-int   spawnp (char **argv);
+void  run_inline_main (const char *name, int(*main)(int argc, char **argv));
 
 int   runs (const char *cmdline);
+
+
+void run_add_file(const char *path, const char *contents, size_t size, bool readonly);
+
+// returns pid or -1 on fail // XXX : needs work - not fully working
+int   spawnp (char **argv);
+
 
 void run_output_state_reset (void);
 int  run_output_state (void); // 1 text 2 graphics 3 both

@@ -1,11 +1,3 @@
-#if 0
-#include <stdint.h>
-
-#include <stdio.h>
-#include <math.h>
-
-#include "ctx.h"
-#endif
 #include "ui.h"
 
 float render_time = 0.0;
@@ -69,29 +61,6 @@ struct _VoiceString
  float   hit_release;
 };
 
-
-// 1.5
-// every 2 double one
-
-// 10.5
-// -- every 20 double one
-
-// 10.33
-// -- every 30 double one
-
-// 10.1
-// -- every 100 double one
-
-
-typedef struct _VoiceGuitar VoiceGuitar;
-
-struct _VoiceGuitar{
-  Voice  voice;
-  VoiceString *string[5];
-  int    n_strings;
-  char   chord[5];
-};
-
 void string_pluck (VoiceString *string)
 {
   switch (string->pluck_mode)
@@ -116,26 +85,6 @@ void string_pluck (VoiceString *string)
       string->buffer[i] *= velocity;
   }
 }
-
-
-void guitar_set_chord (VoiceGuitar *guitar, const char *chord)
-{
-  strncpy(guitar->chord, chord, sizeof(guitar->chord));
-  guitar->chord[sizeof(guitar->chord)-1]=0;
-}
-
-void guitar_strum (VoiceGuitar *guitar)
-{
-  for (int i = 0; i < guitar->n_strings; i++)
-   string_pluck(guitar->string[i]);
-}
-
-int16_t string_to_sin (int16_t phase)
-{
-  return sinf((phase/32767.0)*(M_PI*2))*32767;
-}
-
-
 
 void string_set_hz (VoiceString *string, float hz);
 int16_t string_render (VoiceString *string)
@@ -170,18 +119,6 @@ int16_t string_render (VoiceString *string)
     return ret;
   }
 }
-
-int16_t osc_render (VoiceString *string)
-{
-  string->pos += string->vel;
-  if (string->pos >= 32768)
-  {
-    string->pos = -32767;
-  }
-  return string_to_sin(string->pos);
-  //return string_to_triangle(string->pos);
-}
-
 
 int sample_rate = 48000;
 
@@ -274,33 +211,14 @@ static void do_pluck (CtxEvent *event, void *data1, void *data2)
     string_pluck (string);
   }
 }
-#if 0
+
 static void do_slide (CtxEvent *event, void *data1, void *data2)
 {
   VoiceString *string = (VoiceString*)render_data;
   float semitone = data1?(float)atof(data1):0.0f;
   string_set_target_semitone (string, 0.1, string->octave*12+semitone);
-  // XXX : do a tiny additive pluck with tiny velocity as we start the slide?
-  //string_pluck (string);
 }
-#endif
-#if 0
-static void do_adjust_pluck_mode (CtxEvent *event, void *data1, void *data2)
-{
-  VoiceString *string = (VoiceString*)render_data;
-  int adjustment = data1?atoi(data1):0.0f;
-  string->pluck_mode +=adjustment;
-  if (string->pluck_mode < 0) string->pluck_mode = 0;
-  string->pluck_mode %= 3;
-  printf("pluck_mode: ");
-  switch (string->pluck_mode){
-   case 0: printf("xor\n");break;
-   case 1: printf("random\n");break;
-   case 2: printf("code\n");break;
-  }
-}
-#endif
-#if 0
+
 static void do_adjust_alpha (CtxEvent *event, void *data1, void *data2)
 {
   VoiceString *string = (VoiceString*)render_data;
@@ -308,18 +226,7 @@ static void do_adjust_alpha (CtxEvent *event, void *data1, void *data2)
   string->alpha+=adjustment;
   printf("alpha: %f\n", (double)string->alpha);
 }
-#endif
-#if 0
-static void do_adjust_hit_release (CtxEvent *event, void *data1, void *data2)
-{
-  VoiceString *string = (VoiceString*)render_data;
-  float adjustment = data1?(float)atof(data1):0.0f;
-  string->hit_release+=adjustment;
-  if (string->hit_release < 0.0f)
-    string->hit_release =0.0f;
-  printf("hit_release: %f\n", (double)string->hit_release);
-}
-#endif
+
 static void do_adjust_octave (CtxEvent *event, void *data1, void *data2)
 {
   VoiceString *string = (VoiceString*)render_data;
@@ -327,15 +234,7 @@ static void do_adjust_octave (CtxEvent *event, void *data1, void *data2)
   string->octave+=adjustment;
   printf("octave: %f\n", (double)string->octave);
 }
-#if 0
-static void do_adjust_velocity (CtxEvent *event, void *data1, void *data2)
-{
-  VoiceString *string = (VoiceString*)render_data;
-  float adjustment = data1?(float)atof(data1):0.0f;
-  string->velocity+=adjustment;
-  printf("velocity: %f\n", (double)string->velocity);
-}
-#endif
+
 static void render_audio (Ctx *ctx)
 {
    float qlen = ctx_pcm_get_queued_length (ctx);
@@ -372,72 +271,15 @@ static void render_audio (Ctx *ctx)
 
   ctx_add_key_binding (ctx, "left", NULL, "foo",  do_pluck, "0.0");
   ctx_add_key_binding (ctx, "space", NULL, "foo",  do_pluck, "1.0");
-  ctx_add_key_binding (ctx, "right", NULL, "foo",  do_pluck, "2.0");
-#if 0
-  ctx_add_key_binding (ctx, "q", NULL, "foo",  do_pluck, "0.0");
-  ctx_add_key_binding (ctx, "w", NULL, "foo",  do_pluck, "1.0");
-  ctx_add_key_binding (ctx, "e", NULL, "foo",  do_pluck, "2.0");
-  ctx_add_key_binding (ctx, "r", NULL, "foo",  do_pluck, "3.0");
-  ctx_add_key_binding (ctx, "t", NULL, "foo",  do_pluck, "4.0");
-  ctx_add_key_binding (ctx, "y", NULL, "foo",  do_pluck, "5.0");
-  ctx_add_key_binding (ctx, "u", NULL, "foo",  do_pluck, "6.0");
-  ctx_add_key_binding (ctx, "i", NULL, "foo",  do_pluck, "7.0");
-  ctx_add_key_binding (ctx, "o", NULL, "foo",  do_pluck, "8.0");
-  ctx_add_key_binding (ctx, "p", NULL, "foo",  do_pluck, "9.0");
-  ctx_add_key_binding (ctx, "[", NULL, "foo",  do_pluck, "10.0");
-  ctx_add_key_binding (ctx, "]", NULL, "foo",  do_pluck, "11.0");
-  ctx_add_key_binding (ctx, "\\", NULL, "foo",  do_pluck, "12.0");
-
-  ctx_add_key_binding (ctx, "Q", NULL, "foo",  do_slide, "0.0");
-  ctx_add_key_binding (ctx, "W", NULL, "foo",  do_slide, "1.0");
-  ctx_add_key_binding (ctx, "E", NULL, "foo",  do_slide, "2.0");
-  ctx_add_key_binding (ctx, "R", NULL, "foo",  do_slide, "3.0");
-  ctx_add_key_binding (ctx, "T", NULL, "foo",  do_slide, "4.0");
-  ctx_add_key_binding (ctx, "Y", NULL, "foo",  do_slide, "5.0");
-  ctx_add_key_binding (ctx, "U", NULL, "foo",  do_slide, "6.0");
-  ctx_add_key_binding (ctx, "I", NULL, "foo",  do_slide, "7.0");
-  ctx_add_key_binding (ctx, "O", NULL, "foo",  do_slide, "8.0");
-  ctx_add_key_binding (ctx, "P", NULL, "foo",  do_slide, "9.0");
-  ctx_add_key_binding (ctx, "{", NULL, "foo",  do_slide, "10.0");
-  ctx_add_key_binding (ctx, "}", NULL, "foo",  do_slide, "11.0");
-  ctx_add_key_binding (ctx, "|", NULL, "foo",  do_slide, "12.0");
-
-/*
-  ctx_add_key_binding (ctx, "s", NULL, "foo",  do_audio_b, (void*)3);
-  ctx_add_key_binding (ctx, "d", NULL, "foo",  do_audio_c, (void*)3);
-*/
-#endif
+  ctx_add_key_binding (ctx, "right", NULL, "foo",  do_slide, "2.0");
   ctx_add_key_binding (ctx, "page-up", NULL, "foo",  do_adjust_octave, "1");
   ctx_add_key_binding (ctx, "page-down", NULL, "foo",  do_adjust_octave, "-1");
-#if 0
-  ctx_add_key_binding (ctx, "`", NULL, "foo",  do_adjust_alpha, "0.01");
-  ctx_add_key_binding (ctx, "1", NULL, "foo",  do_adjust_alpha, "-0.01");
-  ctx_add_key_binding (ctx, "s", NULL, "foo",  do_adjust_alpha, "0.05");
-  ctx_add_key_binding (ctx, "x", NULL, "foo",  do_adjust_alpha, "-0.05");
-  ctx_add_key_binding (ctx, "d", NULL, "foo",  do_adjust_velocity, "0.05");
-  ctx_add_key_binding (ctx, "c", NULL, "foo",  do_adjust_velocity, "-0.05");
-  ctx_add_key_binding (ctx, "f", NULL, "foo",  do_adjust_pluck_mode, "1");
-  ctx_add_key_binding (ctx, "v", NULL, "foo",  do_adjust_pluck_mode, "-1");
-  ctx_add_key_binding (ctx, "g", NULL, "foo",  do_adjust_hit_release, "0.05");
-  ctx_add_key_binding (ctx, "b", NULL, "foo",  do_adjust_hit_release, "-0.05");
-#endif
+  ctx_add_key_binding (ctx, "up", NULL, "foo",  do_adjust_alpha, "0.01");
+  ctx_add_key_binding (ctx, "down", NULL, "foo",  do_adjust_alpha, "-0.01");
 }
 
 
 float _ctx_pause = 0.0;
-
-void ctx_parse2 (Ctx *ctx, const char *str, float *scene_time, int *scene_no);
-
-
-static void do_scroll_up (CtxEvent *event, void *data1, void *data2)
-{
-  ctx_queue_draw (event->ctx);
-}
-
-static void do_scroll_down (CtxEvent *event, void *data1, void *data2)
-{
-  ctx_queue_draw (event->ctx);
-}
 
 static void do_fullscreen (CtxEvent *event, void *data1, void *data2)
 {
@@ -450,44 +292,30 @@ static void do_fullscreen (CtxEvent *event, void *data1, void *data2)
 
 int main (int argc, char **argv)
 {
-  //set_sys_clock_khz(270000, true);
   Ctx *ctx = ctx_new (240, 240, NULL);
   prev_ticks = ctx_ticks();
-  ctx_pcm_set_format (ctx, CTX_S16);
+  ctx_pcm_set_format      (ctx, CTX_S16);
   ctx_pcm_set_sample_rate (ctx, sample_rate);
-#if 0
-  printf ("keys: q,w,e,r,t,y,...  semitones\n");
-  printf ("      Q,W,E,R,T,Y,... slide to - only gives sound if delay line contains audio\n");
-  printf ("      a,z: octave up/down +/- 1\n");
-  printf ("      `,1: alpha adjustment +/- 0.005\n");
-  printf ("      s,x: alpha adjustment +/- 0.05\n");
-  printf ("      d,c: velocity adjustment +/- 0.05\n");
-  printf ("      f,v: pluck mode +/-\n");
-  printf ("      g,b: hit_release +/- 0.05\n");
-#endif
 
   while(!ctx_has_quit(ctx))
   {
-  uint64_t ticks = ctx_ticks ();
+    uint64_t ticks = ctx_ticks ();
 
-  render_time = (ticks - prev_ticks) / 1000.0f/ 1000.0f / 10.0f;
-  render_fps = 1.0 / render_time;
-  prev_ticks = ticks;
+    render_time = (ticks - prev_ticks) / 1000.0f/ 1000.0f / 10.0f;
+    render_fps = 1.0 / render_time;
+    prev_ticks = ticks;
 
-  ctx_start_frame (ctx);
+    ctx_start_frame (ctx);
 
-  ctx_save (ctx);
-  clear (ctx);
-  render_audio (ctx);
-  ctx_restore (ctx);
+    ctx_save (ctx);
+    clear (ctx);
+    render_audio (ctx);
+    ctx_restore (ctx);
  
-  ctx_add_key_binding (ctx, "up", NULL, "foo",    do_scroll_up, NULL);
-  ctx_add_key_binding (ctx, "down", NULL, "foo",  do_scroll_down, NULL);
-  ctx_add_key_binding (ctx, "escape", "quit", "foo",  ui_cb_do, ui_host(ctx));
-  ctx_add_key_binding (ctx, "backspace", "quit", "foo",  ui_cb_do, ui_host(ctx));
-  ctx_add_key_binding (ctx, "F11", NULL, "foo",   do_fullscreen, NULL);
-  ctx_end_frame (ctx);
-
+    ctx_add_key_binding (ctx, "escape", "quit", "foo",  ui_cb_do, ui_host(ctx));
+    ctx_add_key_binding (ctx, "backspace", "quit", "foo",  ui_cb_do, ui_host(ctx));
+    ctx_add_key_binding (ctx, "F11", NULL, "foo",   do_fullscreen, NULL);
+    ctx_end_frame (ctx);
   }
   ctx_destroy(ctx);
   return 0;

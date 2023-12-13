@@ -95,7 +95,6 @@ void draw_clock (Ctx *ctx)
 
 MAIN(clock)
 {
-  printf("!!!!\n");
   Ctx *ctx = ctx_new (-1,-1,NULL);
   ctx_queue_draw (ctx);
   do
