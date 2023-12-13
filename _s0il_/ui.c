@@ -548,7 +548,7 @@ void ui_load_file (Ui *ui, const char *path)
 
 static void ui_view_file (Ui *ui)
 {
-   const char *mime_type = ui_get_mime_type (ui, ui->location);
+   const char *mime_type = magic_detect_path (ui->location);
    ui->interpreter = NULL;
    for (int i = 0; i < ui->n_views; i++)
    {

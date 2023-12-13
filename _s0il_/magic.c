@@ -116,7 +116,7 @@ const char *magic_detect_sector512 (Ui *ui, const char *path, const char *sector
    return "text/plain";
 }
 
-const char *magic_detect_path(Ui *ui, const char *location)
+const char *magic_detect_path(const char *location)
 {
    const char *path = location;
    if (strchr(path, ':') && strchr(path, ':') < path + 5)
@@ -143,4 +143,17 @@ const char *magic_detect_path(Ui *ui, const char *location)
    run_fread(sector, 512, 1, f);
    run_fclose (f);
    return magic_detect_sector512(ui, location, sector);
+}
+
+int magic_main (int argc, char **argv)
+{
+  if (!argv[1])
+  {
+    return 0;
+  }
+  for (int i = 1; argv[i]; i++)
+  {
+     const char *mime_type = magic_detect_path (argv[1]);
+  }
+  return 0;
 }
