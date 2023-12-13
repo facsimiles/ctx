@@ -1405,7 +1405,7 @@ ctx_rel_arc_to (Ctx *ctx, float x1, float y1, float x2, float y2, float radius)
 }
 
 void
-ctx_exit (Ctx *ctx)
+ctx_done_frame (Ctx *ctx)
 {
   CTX_PROCESS_VOID (CTX_EXIT);
 }

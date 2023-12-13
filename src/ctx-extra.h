@@ -324,7 +324,7 @@ void ctx_buffer_set_data (CtxBuffer *buffer,
 int ctx_textureclock (Ctx *ctx);
 
 
-void ctx_exit (Ctx *ctx);
+void ctx_done_frame (Ctx *ctx);
 void ctx_list_backends(void);
 int ctx_pixel_format_ebpp (CtxPixelFormat format);
 

@@ -2422,7 +2422,7 @@ static void vtcmd_set_alternate_font (VT *vt, const char *sequence)
 }
 
 
-static void vt_ctx_exit (void *data)
+static void vt_ctx_frame_done (void *data)
 {
   VT *vt = data;
   vt->state = vt_state_neutral;
@@ -2681,7 +2681,7 @@ qagain:
                 vt->ctxp = ctx_parser_new (vt->current_line->ctx,
                                            vt->cols * vt->cw, vt->rows * vt->ch,
                                            vt->cw, vt->ch, vt->cursor_x, vt->cursor_y,
-                                           (void*)vt_set_prop, (void*)vt_get_prop, vt, vt_ctx_exit, vt);
+                                           (void*)vt_set_prop, (void*)vt_get_prop, vt, vt_ctx_frame_done, vt);
                 }
                 vt->utf8_holding[vt->utf8_pos=0]=0; // XXX : needed?
                 vt->state = vt_state_ctx;

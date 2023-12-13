@@ -145,8 +145,8 @@ struct
 
   CtxColorSpace   color_space_slot;
 
-  void (*exit) (void *exit_data);
-  void *exit_data;
+  void (*frame_done) (void *frame_done_data);
+  void *frame_done_data;
   int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len);
   int   (*get_prop)(void *prop_data, const char *key, char **data, int *len);
   void *prop_data;
@@ -182,8 +182,8 @@ ctx_parser_init (CtxParser *parser,
   int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len),
   int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
                  void  *prop_data,
-                 void (*exit) (void *exit_data),
-                 void *exit_data
+                 void (*frame_done) (void *frame_done_data),
+                 void *frame_done_data
                 )
 {
   memset (parser, 0, sizeof (CtxParser) );
@@ -197,8 +197,8 @@ ctx_parser_init (CtxParser *parser,
   parser->cursor_y         = cursor_y;
   parser->width            = width;
   parser->height           = height;
-  parser->exit             = exit;
-  parser->exit_data        = exit_data;
+  parser->frame_done       = frame_done;
+  parser->frame_done_data  = frame_done_data;
   parser->color_model      = CTX_RGBA;
   parser->color_stroke     = 0;
   parser->color_components = 4;
@@ -220,15 +220,15 @@ CtxParser *ctx_parser_new (
   int   (*set_prop)(void *prop_data, uint32_t key, const char *data,  int len),
   int   (*get_prop)(void *prop_Data, const char *key, char **data, int *len),
   void  *prop_data,
-  void (*exit) (void *exit_data),
-  void *exit_data)
+  void (*frame_done) (void *frame_done_data),
+  void *frame_done_data)
 {
   return ctx_parser_init ( (CtxParser *) ctx_calloc (sizeof (CtxParser), 1),
                            ctx,
                            width, height,
                            cell_width, cell_height,
                            cursor_x, cursor_y, set_prop, get_prop, prop_data,
-                           exit, exit_data);
+                           frame_done, frame_done_data);
 }
 
 void ctx_parser_destroy (CtxParser *parser)
@@ -1312,9 +1312,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_CLOSE_PATH:
         ctx_close_path (ctx);
         break;
-      case CTX_EXIT:
-        if (parser->exit)
-          { parser->exit (parser->exit_data);
+      case CTX_EXIT: // XXX // should be END_FRAME ?
+        if (parser->frame_done)
+          { parser->frame_done (parser->frame_done_data);
             return;
           }
         break;
