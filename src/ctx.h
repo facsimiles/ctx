@@ -1153,7 +1153,7 @@ struct _CtxFloatRectangle {
 };
 
 void ctx_quit (Ctx *ctx);
-int  ctx_has_quit (Ctx *ctx);
+int  ctx_has_exited (Ctx *ctx);
 
 typedef void (*CtxCb) (CtxEvent *event,
                        void     *data,

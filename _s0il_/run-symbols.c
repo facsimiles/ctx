@@ -241,7 +241,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ctx_gstate_unprotect),
     ELFSYM_EXPORT(ctx_guess_media_type),
     ELFSYM_EXPORT(ctx_handle_events),
-    ELFSYM_EXPORT(ctx_has_quit),
+    ELFSYM_EXPORT(ctx_has_exited),
     ELFSYM_EXPORT(ctx_height),
     ELFSYM_EXPORT(ctx_image_smoothing),
     ELFSYM_EXPORT(ctx_incoming_message),

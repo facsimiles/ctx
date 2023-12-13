@@ -58,7 +58,7 @@ MAIN(image)
       }
       ctx_end_frame (ctx);
       frame_no ++;
-    } while (!ctx_has_quit (ctx));
+    } while (!ctx_has_exited (ctx));
    ctx_destroy(ctx);
 
   return 0;

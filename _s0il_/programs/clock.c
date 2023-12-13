@@ -113,7 +113,7 @@ MAIN(clock)
     {
       ctx_handle_events(ctx);
     }
-  } while (!ctx_has_quit (ctx));
+  } while (!ctx_has_exited (ctx));
   ctx_destroy(ctx);
   return 0;
 }

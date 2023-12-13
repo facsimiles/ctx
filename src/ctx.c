@@ -2289,7 +2289,7 @@ void ctx_quit (Ctx *ctx)
 #endif
 }
 
-int  ctx_has_quit (Ctx *ctx)
+int  ctx_has_exited (Ctx *ctx)
 {
 #if CTX_EVENTS
   return (ctx->quit);

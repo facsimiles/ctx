@@ -44,7 +44,7 @@ int main (int argc, char **argv)
   int enable_keybindings = 1;
   char input[256]="fnord";
   //ctx_queue_draw (ctx);
-  while (!ctx_has_quit (ctx))
+  while (!ctx_has_exited (ctx))
   {
     int width  = ctx_width (ctx);
     int height = ctx_height (ctx);

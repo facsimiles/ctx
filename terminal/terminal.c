@@ -128,7 +128,7 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
 static void settings_thread (Ctx *ctx, void *user_data)
 {
    int frame = 0;
-   while (!ctx_has_quit (ctx))
+   while (!ctx_has_exited (ctx))
    {
      fprintf (stderr, "[%i]", frame++);
      if (ctx_need_redraw (ctx))
@@ -652,7 +652,7 @@ int terminal_main (int argc, char **argv)
     print_shape_cache_rate = 1;
 #endif
 
-  while (ctx_clients (ctx) && !ctx_has_quit (ctx))
+  while (ctx_clients (ctx) && !ctx_has_exited (ctx))
     {
       //int changes = 0;
       int n_clients = ctx_list_length (ctx_clients (ctx));

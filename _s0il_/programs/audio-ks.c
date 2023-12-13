@@ -297,7 +297,7 @@ int main (int argc, char **argv)
   ctx_pcm_set_format      (ctx, CTX_S16);
   ctx_pcm_set_sample_rate (ctx, sample_rate);
 
-  while(!ctx_has_quit(ctx))
+  while(!ctx_has_exited(ctx))
   {
     uint64_t ticks = ctx_ticks ();
 

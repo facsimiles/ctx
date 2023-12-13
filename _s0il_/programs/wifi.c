@@ -160,7 +160,7 @@ MAIN(text)
     ctx_add_key_binding (ctx, "backspace", "quit", "foo",  ui_cb_do, ui);
     ui_keyboard (ui);
     ctx_end_frame (ctx);
-  } while (!ctx_has_quit (ctx));
+  } while (!ctx_has_exited (ctx));
   free (wifis);
 
   if (wifi_contents)

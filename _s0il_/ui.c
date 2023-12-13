@@ -1910,7 +1910,7 @@ void ui_main(Ui *ui, const char *start_location)
       return;
     }
 
-    while (!ctx_has_quit (ctx))
+    while (!ctx_has_exited (ctx))
       ui_iteration (ui);
 }
 static void

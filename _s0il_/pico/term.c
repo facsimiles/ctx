@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
     // Now enable the UART to send interrupts - RX only
     uart_set_irq_enables(UART_ID, true, false);
 
-    while(true) // && !ctx_has_quit(ctx))
+    while(true) // && !ctx_has_exited(ctx))
     {
       if (ctx_need_redraw(ctx))
       {

@@ -1257,7 +1257,7 @@ int main (int argc, char **argv)
   prev_ticks = ctx_ticks();
 
   ctx_get_event (ctx);
-  while(!ctx_has_quit (ctx))
+  while(!ctx_has_exited (ctx))
      ui_scenes (ctx, NULL);
  
   return 0;

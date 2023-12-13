@@ -364,7 +364,7 @@ MAIN(text)
       ui_keyboard (ui);
 
       ctx_end_frame (ctx);
-    } while (!ctx_has_quit (ctx));
+    } while (!ctx_has_exited (ctx));
 
     if (text->dirty)
     {

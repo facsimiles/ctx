@@ -2699,7 +2699,7 @@ void itk_run_ui (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data)
 
 #ifdef EMSCRIPTEN
 #ifdef ASYNCIFY
-  while (!ctx_has_quit (itk->ctx) && (ret_val == 1))
+  while (!ctx_has_exited (itk->ctx) && (ret_val == 1))
   {
     ret_val = itk_iteration (0.0, itk);
   }
@@ -2708,7 +2708,7 @@ void itk_run_ui (ITK *itk, int (*ui_fun)(ITK *itk, void *data), void *ui_data)
   return;
 #endif
 #else
-  while (!ctx_has_quit (itk->ctx) && (ret_val == 1))
+  while (!ctx_has_exited (itk->ctx) && (ret_val == 1))
   {
     ret_val = itk_iteration (0.0, itk);
   }

@@ -408,7 +408,7 @@ struct LibraryFunction UiFunctions[] =
 
 
 fun_ptr__int_int_ptr(ctx_new);
-fun_int__ptr(ctx_has_quit);
+fun_int__ptr(ctx_has_exited);
 fun_void__ptr(ctx_destroy);
 fun_void__ptr(ctx_start_frame);
 fun_void__ptr(ctx_end_frame);
@@ -532,7 +532,7 @@ fun_void__ptr_ptr_float_float_float_float(ctx_draw_image);
 struct LibraryFunction CtxFunctions[] =
 {
     {Cctx_new,         "void *ctx_new(int, int, char *);"},
-    {Cctx_has_quit,    "int ctx_has_quit(Ctx*);"},
+    {Cctx_has_exited,    "int ctx_has_exited(Ctx*);"},
     {Cctx_start_frame, "void ctx_start_frame(Ctx*);"},
     {Cctx_end_frame,   "void ctx_end_frame(Ctx*);"},
     {Cctx_destroy,     "void ctx_destroy(Ctx*);"},
