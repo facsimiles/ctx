@@ -86,7 +86,7 @@ static struct ReservedWord ReservedWords[] =
 /* initialise the lexer */
 void LexInit(Picoc *pc)
 {
-    int Count;
+    unsigned int Count;
     
     TableInitTable(&pc->ReservedWordTable, &pc->ReservedWordHashTable[0], sizeof(ReservedWords) / sizeof(struct ReservedWord) * 2, TRUE);
 
@@ -107,7 +107,7 @@ void LexInit(Picoc *pc)
 /* deallocate */
 void LexCleanup(Picoc *pc)
 {
-    int Count;
+    unsigned int Count;
 
     LexInteractiveClear(pc, NULL);
 

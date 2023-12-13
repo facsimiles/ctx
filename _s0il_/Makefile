@@ -65,9 +65,9 @@ CC_DEVICE=@   echo 'CC     ' $@ ; xtensa-esp32s3-elf-gcc
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CC)
 #CC_NATIVE=$(CC)
 #POST_DEVICE=@echo 'STRIP  ' $@ ; xtensa-esp32s3-elf-strip 
-POST_DEVICE=@echo 'STRIP  ' $@ ; echo
+POST_DEVICE=@ echo 'STRIP  ' $@ ; echo
 #--remove-section=.xtensa.info --remove-section=.comment
-POST_NATIVE=@echo 'rem-PIE  $@'; ./elf_strip_pie $@
+POST_NATIVE=@ echo 'rem-PIE' $@; ./elf_strip_pie $@
 #POST_NATIVE=@echo 'rem-PIE  $@'; ./elf_strip_pie $@ && strip $@
 
 elf_strip_pie: elf_strip_pie.c
@@ -104,9 +104,9 @@ xtensa-bin/picoc: picoc/*.c picoc/*/*.c ui.h Makefile
 
 
 native-bin/%: programs-picoc/%
-	@echo 'ln   $@'; ln -sf `pwd`/$< $@ || true
+	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 xtensa-bin/%: programs-picoc/%
-	@echo 'ln   $@'; ln -sf `pwd`/$< $@ || true
+	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 
 
 native_bins: $(PROGRAM_NATIVE) native-bin/picoc
@@ -126,21 +126,24 @@ wasm:
 	(cd wasm; make)
 
 fs_bin_xtensa.c: $(PROGRAM_DEVICE) xtensa-bin/picoc Makefile gen_fs.sh
-	rm -rf tmpfs
-	mkdir tmpfs
-	cp xtensa-bin/* tmpfs
-	rm tmpfs/image tmpfs/text tmpfs/clock  tmpfs/busywarp
-	./gen_fs.sh tmpfs bin > $@
-	rpl unsigned 'static const unsigned' $@
+	@rm -rf tmpfs
+	@mkdir tmpfs
+	@cp xtensa-bin/* tmpfs
+	@rm tmpfs/image tmpfs/text tmpfs/clock  tmpfs/busywarp
+	./gen_fs.sh tmpfs bin > $@_
+	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
+	@rm $@_
 
 fs_bin_native.c: $(PROGRAM_NATIVE) native-bin/picoc Makefile gen_fs.sh
-	rm -rf tmpfs2
-	mkdir tmpfs2
-	cp native-bin/* tmpfs2
-	rm tmpfs2/image tmpfs2/text tmpfs2/clock  tmpfs2/busywarp
-	./gen_fs.sh tmpfs2 bin > $@
-	rpl unsigned 'static const unsigned' $@
+	@rm -rf tmpfs2
+	@mkdir tmpfs2
+	@cp native-bin/* tmpfs2
+	@rm tmpfs2/image tmpfs2/text tmpfs2/clock  tmpfs2/busywarp
+	./gen_fs.sh tmpfs2 bin > $@_
+	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
+	@rm $@_
 
 fs_bin_generic.c: programs-picoc/* Makefile gen_fs.sh
-	./gen_fs.sh programs-picoc bin > $@
-	rpl unsigned 'static const unsigned' $@
+	./gen_fs.sh programs-picoc bin > $@_
+	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
+	@rm $@_

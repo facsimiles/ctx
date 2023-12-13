@@ -478,7 +478,7 @@ static void *run_thread(void *data)
   char **cargv = data;
   int ret = runvp (cargv[0], cargv);
   printf ("got %i as ret in thread\n", ret);
-  return (void*)ret;
+  return (void*)((size_t)ret);
 }
 
   pthread_attr_t attr;

@@ -482,7 +482,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(mkdtemp),
     ELFSYM_EXPORT(mkostemp),
     ELFSYM_EXPORT(mkstemp),
-    ELFSYM_EXPORT(mktemp),
+  //ELFSYM_EXPORT(mktemp),
     ELFSYM_EXPORT(mktime),
     ELFSYM_EXPORT(fmod),
     ELFSYM_EXPORT(fmodf),

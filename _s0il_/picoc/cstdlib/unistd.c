@@ -150,10 +150,12 @@ void UnistdGetlogin(struct ParseState *Parser, struct Value *ReturnValue, struct
     ReturnValue->Val->Pointer = getlogin();
 }
 
+#if 0
 void UnistdGetlogin_r(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs)
 {
     ReturnValue->Val->Integer = getlogin_r(Param[0]->Val->Pointer, Param[1]->Val->Integer);
 }
+#endif
 
 void UnistdGetpagesize(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs)
 {
