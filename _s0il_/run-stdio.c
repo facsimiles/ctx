@@ -414,6 +414,20 @@ char *run_fgets(char *s, int size, FILE *stream)
   return fgets(s, size, stream);
 }
 
+int run_rename(const char *src, const char *dst)
+{
+  int ret = 0;
+  if (!src || !dst)
+    return -1;
+  char *src_p = run_resolve_path(src);
+  char *dst_p = run_resolve_path(dst);
+
+  ret = rename(src_p, dst_p);
+  if (src_p!=src)free (src_p);
+  if (dst_p!=dst)free (dst_p);
+  return ret;
+}
+
 FILE *run_fopen(const char *pathname, const char *mode)
 {
   char *path = run_resolve_path (pathname);

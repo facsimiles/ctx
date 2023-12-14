@@ -577,7 +577,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(recvfrom),
     ELFSYM_EXPORT(recvmsg),
     ELFSYM_EXPORT(remove),
-    ELFSYM_EXPORT(rename),
+    {"rename", &run_rename},
     {"rewind", &run_rewind},
     ELFSYM_EXPORT(rindex),
     ELFSYM_EXPORT(rmdir),
@@ -742,7 +742,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ui_y),
 #endif
     {"ungetc", &run_ungetc},
-    ELFSYM_EXPORT(unlink),
+    {"unlink", &run_unlink},
     ELFSYM_EXPORT(unsetenv),
     ELFSYM_EXPORT(usleep),
 #ifndef EMSCRIPTEN

@@ -30,6 +30,7 @@ int     run_fputc (int c, FILE *stream);
 ssize_t run_write(int fd, const void *buf, size_t count);
 int     run_fwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int     run_puts (const char *s);
+int     run_unlink (const char *s);
 int     run_fprintf (FILE *stream, const char *restrict format, ...);
 int     run_vfprintf (FILE *stream, const char *format, va_list ap);
 int     run_printf (const char *restrict format, ...);
@@ -46,6 +47,7 @@ pid_t  run_getpid(void);
 pid_t  run_getppid(void);
 int    run_stat(const char *pathname, struct stat *statbuf);
 int    run_fstat(int fd, struct stat *statbuf);
+int run_rename(const char *src, const char *dst);
 
 
 
@@ -80,8 +82,10 @@ int   run_chdir(const char *path);
 #define readdir run_readdir
 #define closedir run_closedir
 #define getpid run_getpid
+#define unlink run_unlink
 #define getppid run_getppid
 #define stat(p,b) run_stat(p,b)
+#define rename(p,b) run_rename(p,b)
 
 //#define signal      run_signal
 #define fgets       run_fgets
