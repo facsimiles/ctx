@@ -201,11 +201,11 @@ static int _ctx_depth = 0;
 #if EMSCRIPTEN
 
 CTX_EXPORT Ctx *
-ctx_wasm_get_context (int flags);
+ctx_wasm_get_context (void);
 
 static Ctx *ctx_new_ui (int width, int height, const char *backend)
 {
-   return ctx_wasm_get_context (64*1024);//CTX_FLAG_HASH_CACHE);
+   return ctx_wasm_get_context ();//CTX_FLAG_HASH_CACHE);
 }
 #else
 

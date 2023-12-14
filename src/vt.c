@@ -939,12 +939,6 @@ void ctx_dummy_resize  (void *serial_obj, int cols, int rows, int px_width, int 
 
 static void vt_run_argv (VT *vt, char **argv, const char *term)
 {
-#ifdef EMSCRIPTEN
-        vt->read = em_read;
-        vt->write = em_write;
-        vt->waitdata = em_waitdata;
-        vt->resize = dummy_resize;
-#else
 
 #if 0
   int was_pidone = (getpid () == 1);
@@ -990,7 +984,6 @@ static void vt_run_argv (VT *vt, char **argv, const char *term)
     }
   fcntl(vt->vtpty.pty, F_SETFL, O_NONBLOCK|O_NOCTTY);
   _ctx_add_listen_fd (vt->vtpty.pty);
-#endif
 }
 
 
