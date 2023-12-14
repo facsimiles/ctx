@@ -60,7 +60,7 @@ libui.so: ui.o run.o run-symbols.o magic.o Makefile
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -g -shared ui.o run.o run-symbols.o -o libui.so magic.o
 
 clean:
-	rm -rf demo libui.so xtensa-bin native-bin elf_strip_pie *.o
+	rm -rf demo libui.so xtensa-bin native-bin elf_strip_pie *.o tmpfs tmpfs2
 
 CC_DEVICE=@   echo 'CC     ' $@ ; xtensa-esp32s3-elf-gcc 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CC)
@@ -123,25 +123,25 @@ flow3r-flash: flow3r-build
 monitor:
 	(cd flow3r; idf.py monitor)
 
-wasm:
+wasm: fs_bin_generic.c
 	(cd wasm; make)
 
 fs_bin_xtensa.c: $(PROGRAM_DEVICE) xtensa-bin/picoc Makefile gen_fs.sh
-	@rm -rf tmpfs
-	@mkdir tmpfs
-	@cp xtensa-bin/* tmpfs
-	@rm tmpfs/image tmpfs/text tmpfs/clock
-	./gen_fs.sh tmpfs bin > $@_
+	@rm -rf $@_fs
+	@mkdir $@_fs
+	@cp xtensa-bin/* $@_fs
+	@rm $@_fs/image $@_fs/text $@_fs/clock
+	./gen_fs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
-	@rm $@_
+	@rm -rf $@_ $@_fs
 
 fs_bin_native.c: $(PROGRAM_NATIVE) native-bin/picoc Makefile gen_fs.sh
-	@rm -rf tmpfs2
-	@mkdir tmpfs2
-	@cp native-bin/* tmpfs2
-	./gen_fs.sh tmpfs2 bin > $@_
+	@rm -rf $@_fs
+	@mkdir $@_fs
+	@cp native-bin/* $@_fs
+	./gen_fs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
-	@rm $@_
+	@rm -rf $@_ $@_fs
 
 fs_bin_generic.c: programs-picoc/* Makefile gen_fs.sh
 	./gen_fs.sh programs-picoc bin > $@_

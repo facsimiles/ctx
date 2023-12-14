@@ -85,6 +85,8 @@ void run_signal(int sig, void(*func)(int))
 #endif
 }
 
+Ctx *ctx_host(void);
+
 const struct esp_elfsym g_customer_elfsyms[] =
 {
 
@@ -251,6 +253,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ctx_handle_events),
     ELFSYM_EXPORT(ctx_has_exited),
     ELFSYM_EXPORT(ctx_height),
+    ELFSYM_EXPORT(ctx_host),
     ELFSYM_EXPORT(ctx_image_smoothing),
     ELFSYM_EXPORT(ctx_incoming_message),
     ELFSYM_EXPORT(ctx_in_fill),

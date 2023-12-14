@@ -117,7 +117,7 @@ int main (int argc, char **argv)
     ui_register_view (ui, "menu", view_menu, NULL);
     ui_do(ui, "menu"); // queue menu - as initial view
 
-    runs("wifi --auto ");
+//    runs("wifi --auto ");
 
     ui_main(ui, NULL); // boot to root_path
     ui_destroy (ui);

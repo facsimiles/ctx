@@ -417,7 +417,7 @@ char *run_fgets(char *s, int size, FILE *stream)
 FILE *run_fopen(const char *pathname, const char *mode)
 {
   char *path = run_resolve_path (pathname);
-    
+  printf ("fopen:%s %s\n", path, mode);
   file_t *file = run_find_file (path);
   if (file)
   {

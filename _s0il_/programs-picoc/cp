@@ -1,0 +1,35 @@
+//!picoc
+#include "ui.h"
+
+int main(int argc, char **argv)
+{
+  int ret = 0;
+  if (argc < 3)
+  {
+    printf ("Usage: cp <file1> <file2>\n");
+    return ret;
+  }
+  char *src = argv[1];
+  char *dst = argv[2];
+  FILE *in = NULL;
+  FILE *out = NULL;
+  in = fopen(src, "rb");
+  if (in == NULL) goto done;
+  out = fopen(dst, "w");
+  if (out == NULL) goto done;
+  fseek(in, 0, SEEK_END);
+  int length = ftell(in);
+  fseek(in, 0, SEEK_SET);
+  char *data = malloc(length + 1);
+  if (data)
+  {
+     fread(data, length, 1, in);
+     fwrite(data, length, 1, out);
+     free (data);
+  }
+  done:
+   if (in)  fclose (in);
+   if (out) fclose (out);
+ 
+  return ret;   
+}

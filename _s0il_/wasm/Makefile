@@ -7,9 +7,11 @@ all: index.html s0il.js
 
 CFLAGS=-I/usr/local/include -flto -O3 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc -Wl,--lto-O3 -DWASM -DCTX
 
+../fs_bin_generic.c: ../programs-picoc/*
+	make -C .. fs_bin_generic.c
 
-s0il.js: $(C_FILES) ../programs/*.c Makefile  ../../ctx.h
-	emcc $(C_FILES) -I../.. $(CFLAGS) -o $@ -I../../fonts -s ASYNCIFY -I..
+s0il.js: $(C_FILES) ../programs/*.c Makefile  ../../ctx.h ../fs_bin_generic.c
+	emcc $(C_FILES) -I../.. $(CFLAGS) -o $@ -I../../fonts -s ASYNCIFY -I.. -I../../deps
 
 ../../ctx.h: ../../src/*.[ch]
 	make -C ../../ ctx.h

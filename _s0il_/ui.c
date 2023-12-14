@@ -280,7 +280,7 @@ int  ctx_osk_mode = 0;
 static void draw_term (Ui *ui)
 {
   Ctx *ctx = ui->ctx;
-  float font_size = ui->height / 17.0f;
+  float font_size = ui->height / 16.5f;
   if (!term_client)
   {
     int flags = 0;

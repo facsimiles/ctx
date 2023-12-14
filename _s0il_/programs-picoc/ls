@@ -56,12 +56,10 @@ int main(int argc, char **argv)
   char *w=getcwd(wd, sizeof(wd));
   if (argc>1) w = argv[1];
   DIR *dir = opendir(w);
-  printf ("wd:%s\n", w);
   if (dir)
   {
     dir_info_t *di = calloc (sizeof (dir_info_t), 1);
     struct dirent *ent;
-    printf ("dir:%p\n", dir);
     while ((ent = readdir(dir)))
     {
       char *base = ent->d_name;
