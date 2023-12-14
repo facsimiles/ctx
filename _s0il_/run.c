@@ -478,11 +478,12 @@ char *ui_find_executable(Ui *ui, const char *file)
 int
 runvp (char *file, char **argv)
 {
+  if (file)
+  if (file[0]==':')file++;
   char *path = file;
-  if (path[0]==':')path++;
   if (path[0]!='/')
     path = ui_find_executable(NULL, file);
-  //printf ("%s %s\n", file, path);
+  printf ("runvp:%s %s\n", file, path);
   if (path)
   {
     int retval = runv (path, argv);

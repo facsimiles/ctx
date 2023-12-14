@@ -5,9 +5,11 @@ static char *wifi_password = NULL;
 static bool wifi_connected = false;
 
 static char *wifi_contents = NULL;
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
 int wifi_init_sta(const char *ssid_arg, const char *password_arg);
 char **wifi_scan(void);
+#endif
 #endif
 
 static char **wifis = NULL;
@@ -22,8 +24,10 @@ void view_wifi (Ui *ui)
    else
    if (ui_button(ui,"connect"))
    {
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
      wifi_connected = !wifi_init_sta(wifi_ssid, wifi_password); 
+#endif
 #endif
    }
 
@@ -72,12 +76,17 @@ MAIN(wifi)
        ((char*)wifi_contents)[length] = 0;
      }
    }
+#if EMSCRIPTEN
+  printf("hi!\n");
+#endif
 
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
   //printf ("scanning wifis\n");
   wifis = wifi_scan();
 #else
  wifis = _wifis;
+#endif
 #endif
 
    if (wifi_contents)
@@ -146,9 +155,11 @@ MAIN(wifi)
        }
      } while (*p && *p != '}');
    }
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    if (wifi_ssid && wifi_ssid[0])
      wifi_connected = !wifi_init_sta(wifi_ssid, wifi_password); 
+#endif
 #endif
 
   if (argv[1] && !strcmp (argv[1], "--auto")) return 0;

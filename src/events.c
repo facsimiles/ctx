@@ -198,18 +198,11 @@ static int is_in_ctx (void)
 #endif
 
 static int _ctx_depth = 0;
+
 #if EMSCRIPTEN
-
-CTX_EXPORT Ctx *
-ctx_wasm_get_context (void);
-
-static Ctx *ctx_new_ui (int width, int height, const char *backend)
-{
-   return ctx_wasm_get_context ();//CTX_FLAG_HASH_CACHE);
-}
-#else
-
-#if CTX_PICO || CTX_ESP
+CTX_EXPORT
+#endif
+#if CTX_PICO || CTX_ESP || EMSCRIPTEN
 Ctx *ctx_host(void);
 #endif
 
@@ -221,7 +214,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     _ctx_depth ++;
     return ret;
   }
-#if CTX_PICO || CTX_ESP
+#if CTX_PICO || CTX_ESP || EMSCRIPTEN
   ret = ctx_host ();
 #endif
   if (ret)
@@ -371,7 +364,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   ctx_get_event (ret); // enables events
   return ret;
 }
-#endif
 #endif
 #else
 void _ctx_texture_unlock (void)

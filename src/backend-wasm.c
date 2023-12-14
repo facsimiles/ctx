@@ -158,6 +158,7 @@ int update_fb (Ctx *ctx, void *user_data)
 EMSCRIPTEN_KEEPALIVE
 uint8_t wasm_scratch[1024*1024*4];
 
+CTX_EXPORT
 void ctx_set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, void *buf)
 {
   uint8_t *src = (uint8_t*)buf;
@@ -189,9 +190,7 @@ void ctx_set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, vo
     var h = $3;
     var canvas = document.getElementById('c');
     var context = canvas.getContext('2d');
-    var _ctx = _ctx_wasm_get_context(); // we presume an earlier
-                                         // call to have passed
-                                         // the memory budget
+    var _ctx = _ctx_host();
     const offset = _get_fb(canvas.width, canvas.height);
     const imgData = context.createImageData(w,h);
 
@@ -213,23 +212,14 @@ void ctx_set_pixels (Ctx *ctx, void *user_data, int x0, int y0, int w, int h, vo
 
 }
 
-#if 0
-int wasm_damage_control = 0;
-
-CTX_EXPORT
-void wasm_set_damage_control(int val)
-{
-  wasm_damage_control = val;
-}
-#endif
-
 void ctx_wasm_reset (void)
 {
   if (fb) free (fb); fb = NULL;
   em_ctx = NULL;
 }
 
-Ctx *ctx_wasm_get_context (void)
+CTX_EXPORT
+Ctx *ctx_host (void)
 {
   int memory_budget = 64 * 1024;
   if (em_ctx) return em_ctx;
