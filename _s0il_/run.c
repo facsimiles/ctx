@@ -24,18 +24,22 @@ void pre_exec (void)
   //        most of this info can be shared between a 
   //        synchronous implementation and task/pthread one
   exec_state[exec_depth].cwd=strdup(getcwd (tmp,512)); 
+#ifndef WASM
   exec_state[exec_depth].stdin_copy=stdin;
   exec_state[exec_depth].stdout_copy=stdout;
   exec_state[exec_depth].stderr_copy=stderr;
+#endif
   exec_depth++;
 }
 void post_exec (void)
 {
   exec_depth--;
   chdir(exec_state[exec_depth].cwd);
+#ifndef WASM
   stdin=exec_state[exec_depth].stdin_copy;
   stdout=exec_state[exec_depth].stdout_copy;
   stderr=exec_state[exec_depth].stderr_copy;
+#endif
   free (exec_state[exec_depth].cwd);
 }
 
@@ -47,7 +51,7 @@ typedef struct inlined_program_t {
 
 static CtxList *inlined_programs = NULL;
 
-void run_inline_main (const char *name, int(*main)(int argc, char **argv))
+void run_bundle_main (const char *name, int(*main)(int argc, char **argv))
 {
   inlined_program_t *program = calloc (sizeof (inlined_program_t), 1);
   program->base = strdup (name);
@@ -55,6 +59,7 @@ void run_inline_main (const char *name, int(*main)(int argc, char **argv))
   program->main = main;
   sprintf (program->path, ":%s", name);
   ctx_list_append (&inlined_programs, program);
+  printf ("bundled %s\n", name);
 }
 #include <libgen.h>
 
@@ -64,7 +69,7 @@ static void busywarp_list (void)
   for (CtxList *iter = inlined_programs; iter; iter = iter->next)
   {
     inlined_program_t *program = iter->data;
-    printf ("%s ", program->base);
+    run_printf ("%s ", program->base);
   }
 }
 
@@ -85,10 +90,10 @@ int busywarp (int argc, char **argv)
   {
     if (argv[1] == NULL)
     {
-    printf ("Usage: %s <command> [args ..]\n  commands: ", base);
-    busywarp_list ();
-    printf ("\n");
-    return 0;
+      run_printf ("Usage: %s <command> [args ..]\n  commands: ", base);
+      busywarp_list ();
+      run_printf ("\n");
+      return 0;
     }
     else
     {
@@ -113,6 +118,7 @@ int busywarp (int argc, char **argv)
   return -1;
 }
 
+#ifndef WASM
 #if CTX_FLOW3R
 
 #include "esp_log.h"
@@ -301,6 +307,7 @@ static int dlopen_runv (char *path2, char **argv)
   return 0;
 }
 #endif
+#endif
 
 static int program_runv (inlined_program_t *program, char **argv)
 {
@@ -425,10 +432,14 @@ int runv (char *path, char **argv)
   }
 #endif
 
+#ifndef WASM
 #if CTX_FLOW3R
   return esp_elf_runv (path, argv);
 #else
   return dlopen_runv (path, argv);
+#endif
+#else
+  return -4;
 #endif
 }
 
@@ -468,6 +479,7 @@ int
 runvp (char *file, char **argv)
 {
   char *path = file;
+  if (path[0]==':')path++;
   if (path[0]!='/')
     path = ui_find_executable(NULL, file);
   //printf ("%s %s\n", file, path);

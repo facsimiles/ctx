@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include "ui.h"
 
 void ctx_set_pixels(void *ctx, void *user_data, int x, int y, int w, int h, void *buf);
 
@@ -14,7 +15,7 @@ static inline uint16_t rgb888_to_rgb565bs(uint8_t red,
   return (ret >> 8) | (ret << 8); // byteswap
 }
 
-int main (int argc, char **argv)
+MAIN(raw_fb)
 {
   for (int frame_no = -120; frame_no < 120; frame_no++)
   {

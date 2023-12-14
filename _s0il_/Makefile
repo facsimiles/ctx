@@ -130,7 +130,7 @@ fs_bin_xtensa.c: $(PROGRAM_DEVICE) xtensa-bin/picoc Makefile gen_fs.sh
 	@rm -rf tmpfs
 	@mkdir tmpfs
 	@cp xtensa-bin/* tmpfs
-	@rm tmpfs/image tmpfs/text tmpfs/clock  tmpfs/busywarp
+	@rm tmpfs/image tmpfs/text tmpfs/clock
 	./gen_fs.sh tmpfs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm $@_

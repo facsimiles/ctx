@@ -24,7 +24,11 @@ int main(int argc, char **argv)
     else if (!strncmp (commandline, "cd ", 3))
       chdir (&commandline[3]);
     else if (commandline[0])
+    {
+      ctx_reset_has_exited(ctx_host());
       runs (commandline);
+      ctx_reset_has_exited(ctx_host());
+    }
     printf ("%s> ", getcwd(wd, sizeof(wd)));
     printf ("\033[12h"); // local echo on
   }

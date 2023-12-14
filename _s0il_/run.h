@@ -8,7 +8,7 @@
 int   runv (char *pathname, char **argv);
 int   runvp (char *file, char **argv);
 
-void  run_inline_main (const char *name, int(*main)(int argc, char **argv));
+void  run_bundle_main (const char *name, int(*main)(int argc, char **argv));
 
 int   runs (const char *cmdline);
 

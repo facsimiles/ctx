@@ -34,6 +34,18 @@ magic_add (const char *mime_type,
     memcpy ((char*)magic->magic, (char*)magic_data, magic_len);
   magic->magic_len = magic_len;
   magic->is_text = is_text;
+
+#if 0
+   for (CtxList *iter = ui_magic; iter; iter = iter->next)
+   {
+     ctx_magic_t *magic_b = iter->data;
+     if (!strcmp (magic_b->mime_type, mime_type) &&
+        (!strcmp (magic_b->mime_type, mime_type) &&
+       bail
+   }
+#endif
+
+
   ctx_list_append (&ui_magic, magic);
 }
 
@@ -48,7 +60,19 @@ bool magic_has_mime(const char *mime_type)
    return false;
 }
 
-static const char *magic_get_dir_type(Ui *ui, const char *path)
+int magic_is_text (const char *media_type)
+{
+   for (CtxList *iter = ui_magic; iter; iter = iter->next)
+   {
+     ctx_magic_t *magic = iter->data;
+     if (!strcmp (magic->mime_type, media_type))
+       return magic->is_text;
+   }
+  return 0;
+}
+
+
+static const char *magic_get_dir_type(const char *path)
 {
    char temp[512];
    for (CtxList *iter = ui_magic; iter; iter = iter->next)
@@ -64,7 +88,7 @@ static const char *magic_get_dir_type(Ui *ui, const char *path)
    return "inode/directory";
 }
 
-const char *magic_detect_sector512 (Ui *ui, const char *path, const char *sector)
+const char *magic_detect_sector512 (const char *path, const char *sector)
 {
    const char *suffix_match = NULL;
    const char *magic_match = NULL;
@@ -94,6 +118,7 @@ const char *magic_detect_sector512 (Ui *ui, const char *path, const char *sector
        i++;
      } else
      {
+        /// UTF-8 detector
         int trail_bytes = 0;
         if ((first_byte & (128+64+32)) == 128+64)
            trail_bytes = 1;
@@ -131,7 +156,7 @@ const char *magic_detect_path(const char *location)
       run_stat (path, &stat_buf);
    if (S_ISDIR (stat_buf.st_mode))
    {
-     return magic_get_dir_type(ui, location);
+     return magic_get_dir_type(location);
    }
 
    char sector[512]={0,};
@@ -142,18 +167,27 @@ const char *magic_detect_path(const char *location)
    memset(sector, 0, 512);
    run_fread(sector, 512, 1, f);
    run_fclose (f);
-   return magic_detect_sector512(ui, location, sector);
+   return magic_detect_sector512(location, sector);
 }
 
 int magic_main (int argc, char **argv)
 {
   if (!argv[1])
   {
-    return 0;
+    for (CtxList *iter = ui_magic; iter; iter=iter->next)
+    {
+      ctx_magic_t *magic = iter->data;
+      run_printf ("%s ext:%s magic-len:%i %s\n", magic->mime_type, magic->ext, magic->magic_len, magic->is_text?"text":"");
+    }
   }
+  else
   for (int i = 1; argv[i]; i++)
   {
-     const char *mime_type = magic_detect_path (argv[1]);
+     if (argv[i][0]!='-')
+     {
+       const char *mime_type = magic_detect_path (argv[i]);
+       run_printf ("%s - %s\n", argv[i], mime_type);
+     }
   }
   return 0;
 }

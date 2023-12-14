@@ -118,6 +118,11 @@ file_t *run_find_file(const char *path)
   return NULL;
 }
 
+void run_add_dir(const char *path, bool readonly)
+{
+  // should add it to parent but disambiguated from file
+}
+
 void run_add_file(const char *path, const char *contents, size_t size, bool readonly)
 {
   char *parent = strdup (path);

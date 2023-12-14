@@ -114,7 +114,8 @@ MAIN(clock)
       ctx_handle_events(ctx);
     }
   } while (!ctx_has_exited (ctx));
+  ctx_reset_has_exited(ctx);
   ctx_destroy(ctx);
+  
   return 0;
 }
-

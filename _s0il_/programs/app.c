@@ -1,7 +1,6 @@
-#include "ctx.h"
-#include <unistd.h>
+#include "ui.h"
 
-int main(int argc, char **argv)
+MAIN(app)
 {
   Ctx *ctx = ctx_new(240,240,NULL);
   if (!ctx) return -1;

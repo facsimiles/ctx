@@ -290,7 +290,7 @@ static void do_fullscreen (CtxEvent *event, void *data1, void *data2)
     ctx_set_fullscreen (ctx, 1);
 }
 
-int main (int argc, char **argv)
+MAIN(audio_ks)
 {
   Ctx *ctx = ctx_new (240, 240, NULL);
   prev_ticks = ctx_ticks();

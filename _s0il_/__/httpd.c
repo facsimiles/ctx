@@ -160,7 +160,7 @@ dir_listing_t *dir_listing_read (HttpdRequest *req, const char *path)
             sprintf(de->path, "%s%s", path, base);
           else
             sprintf(de->path, "%s/%s", path, base);
-          de->mime_type = ui_get_mime_type (NULL, de->path);
+          de->mime_type = magic_detect_path (NULL, de->path);
           struct stat info;
           stat (de->path, &info);
           de->size = info.st_size;
@@ -255,7 +255,7 @@ static void httpd_browse_handler (HttpdRequest *req)
       char *decoded_path = decode_uri (req->path + 2);
       const char *path = decoded_path;
       const char *item_path = path;
-      const char *mime_type = ui_get_mime_type(NULL, path);
+      const char *mime_type = magic_detect_path(NULL, path);
 
       char *dirnam = NULL;
       if (strcmp (mime_type, "inode/directory"))
@@ -427,7 +427,7 @@ static void httpd_dir_handler (HttpdRequest *req)
   for (int i = 0; i < di->count; i++)
    {
      dir_entry_t *de = &di->entries[i];
-     const char *mime_type = ui_get_mime_type (NULL, de->path);
+     const char *mime_type = magic_detect_path (NULL, de->path);
 
      if (!strcmp (mime_type, "inode/directory"))
      {
@@ -516,7 +516,7 @@ static char *http_headers (HttpdRequest *req, int content_length)
 static void
 httpd_serve_file (HttpdRequest *req, const char *path)
 {
-      const char *mime_type = ui_get_mime_type(NULL, path);
+      const char *mime_type = magic_detect_path(NULL, path);
       req->mime_type = mime_type;
       int content_length = 0;
       FILE *file = fopen (path, "rb");
@@ -753,7 +753,7 @@ httpd_request_handler (HttpdRequest *req)
       else
       {
 
-      const char *mime_type  = ui_get_mime_type (NULL, path);
+      const char *mime_type  = magic_detect_path (NULL, path);
       if (!mime_type)
       {
         req->status = 404;

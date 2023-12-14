@@ -15,10 +15,14 @@ static char *root_path = NULL;
 
 #include <libgen.h>
 
+#ifdef EMSCRIPTEN
+#include "fs_bin_generic.c"
+#else
 #if CTX_ESP
 #include "fs_bin_xtensa.c"
 #else
 #include "fs_bin_native.c"
+#endif
 #endif
 // todo wasm
 
@@ -39,6 +43,8 @@ static void view_menu (Ui *ui)
    if (ui_button(ui, "/bin"))
      ui_do(ui, "/bin");
 #if 1
+   if (ui_button(ui,"app"))
+      ui_do(ui, "app");
    if (ui_button(ui,"clock"))
       ui_do(ui, "clock");
    if (ui_button(ui,"httpd"))
@@ -82,6 +88,7 @@ int main (int argc, char **argv)
     setvbuf(stdin, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
     fcntl (STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL,0)| O_NONBLOCK);
+    run_bundle_main("magic", magic_main);
     add_mains();
     mount_bin();
 

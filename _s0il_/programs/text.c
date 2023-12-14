@@ -63,7 +63,7 @@ void text_down (CtxEvent *event, void *data1, void *data2)
   {
     text->pos ++;
     while (text->contents[text->pos] && (text->contents[text->pos] != '\n')) text->pos++;
-    if ((text->contents[text->pos] == '\n')) text->pos++;
+    if (text->contents[text->pos] == '\n') text->pos++;
     
   }
   reset_cursor_info ();

@@ -242,6 +242,7 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
     switch (event->type)
     {
       case CTX_KEY_PRESS:
+   {
    const char *string = event->string;
    if (ui_keyboard_visible(ui))
    {
@@ -251,11 +252,11 @@ static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
    else
    {
      if (!strcmp (string, "shift-space")){ ui_do (ui, "kb-show"); return; }
-     //if (!strcmp (string, "return")){ ui_do (ui, "kb-show"); return; }
    }
 
         handle_event (event->ctx, event, event->string);
 
+}
         break;
       case CTX_KEY_UP:
         { char buf[1024];
@@ -370,8 +371,10 @@ static void ui_backlight (float backlight)
 
 }
 
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
 extern int flow3r_synthesize_key_events;
+#endif
 #endif
 
 void view_settings (Ui *ui)
@@ -389,8 +392,10 @@ void view_settings (Ui *ui)
 
    ui_backlight (backlight);
 
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    flow3r_synthesize_key_events = ui_toggle(ui,"cap-touch keys", flow3r_synthesize_key_events);
+#endif
 #endif
    ui_end_frame(ui);
 }
@@ -650,7 +655,7 @@ static void ui_view_dir (Ui *ui)
             sprintf(de->path, "%s%s", ui->location, base);
           else
             sprintf(de->path, "%s/%s", ui->location, base);
-          de->mime_type = ctx_path_get_media_type (de->path);
+          de->mime_type = magic_detect_path (de->path);
         }
         run_closedir(dir);
         qsort(di->entries, di->count, sizeof(dir_entry_t), cmp_dir_entry);
@@ -777,6 +782,7 @@ ui_load_view(Ui *ui, const char *target)
     char *epath;
     if ((epath = ui_find_executable (ui, target)))
     {
+      //printf ("push efun %s %s\n", target, epath);
       ui_push_fun (ui, view_elf, epath, NULL, NULL);
       free (epath);
       return;
@@ -829,22 +835,28 @@ ui_do(Ui *ui, const char *action)
   else if (!strcmp (action, "kb-collapse"))
   {
     ctx_osk_mode = 1;
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    bsp_captouch_key_events(2);
+#endif
 #endif
   }
   else if (!strcmp (action, "kb-show"))
   {
     ctx_osk_mode = 2;
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    bsp_captouch_key_events(1);
+#endif
 #endif
   }
   else if (!strcmp (action, "kb-hide"))
   {
     ctx_osk_mode = 0;
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    bsp_captouch_key_events(2);
+#endif
 #endif
   }
   else ui_load_view(ui, action);
@@ -917,7 +929,7 @@ Ctx *ctx_host (void)
 Ui *ui_new(Ctx *ctx)
 {
   Ui *ui = calloc (1, sizeof (Ui));
-  run_inline_main("_init", _init_main);
+  run_bundle_main("_init", _init_main);
   if (!def_ui) { def_ui = ui;
 #ifdef NATIVE
      _ctx_host = ctx;
@@ -1283,7 +1295,12 @@ void captouch_keyboard (Ctx *ctx)
    
    float rad_pos;
 #if CTX_FLOW3R
+#ifdef EMSCRIPTEN
+   float raw_angle = -1.0f;
+   rad_pos = 0.5f;
+#else
    float raw_angle = bsp_captouch_angle (&rad_pos, 20, 0);
+#endif
 #else
    float raw_angle = -1.0f;
    rad_pos = 0.5f;
@@ -2660,22 +2677,15 @@ void ui_move_to (Ui *ui, float x, float y)
   //ui->x = x;
   ui->y = y;
 }
-#if CTX_FLOW3R
-void sd_msc (void);
-#endif
-
 
 bool ui_keyboard_visible(Ui *ui)
 {
   return ctx_osk_mode != 0;
 }
 
-
 #define DEF_SLIDER(type) \
 void ui_slider_##type (Ui *ui, const char *label, type *val, type min, type max, type step)\
-{\
-  *val = ui_slider (ui, label, min, max, step, *val);\
-}
+{ *val = ui_slider (ui, label, min, max, step, *val); }
 
 DEF_SLIDER(float)
 DEF_SLIDER(int)
@@ -2688,7 +2698,7 @@ DEF_SLIDER(int32_t)
 #undef DEF_SLIDER
 
 
-#if NATIVE
+#if NATIVE // simulated ctx_set_pixels - that uses a texture
 uint8_t scratch[1024*1024*4];
 void
 ctx_RGB565_BS_to_RGBA8 (void *rasterizer, int x, const void *buf, uint8_t *rgba, int count);

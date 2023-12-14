@@ -1,5 +1,6 @@
 #ifndef _UI_H_
 #define  _UI_H_
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -155,7 +156,6 @@ void ui_iteration(Ui *ui);
 
 char *ui_basename (const char *in);
 char *ui_find_executable(Ui *ui, const char *file);
-const char *ui_get_mime_type(Ui *ui, const char *location);
 
 Ctx  *ui_ctx      (Ui *ui);
 void  ui_set_data (Ui *ui, void *data, ui_data_finalize data_finalize);
@@ -166,13 +166,7 @@ float ui_y (Ui *ui);
 void ui_move_to (Ui *ui, float x, float y);
 bool ui_keyboard_visible(Ui *ui);
 
-
-void magic_add(const char *mime_type,
-  const char *ext,
-  char *magic,
-  int magic_len,
-  int is_text);
-bool magic_has_mime(const char *mime_type);
+#include "magic.h"
 
 #endif
 

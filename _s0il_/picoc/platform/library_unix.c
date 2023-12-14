@@ -80,6 +80,13 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
   funname(Param[0]->Val->Pointer);\
 }
 
+#define fun_ptr__void(funname) \
+void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
+	         struct Value **Param, int NumArgs)\
+{\
+  ReturnValue->Val->Pointer = funname();\
+}
+
 #define fun_ptr__ptr(funname) \
 void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 	         struct Value **Param, int NumArgs)\
@@ -417,7 +424,8 @@ struct LibraryFunction UiFunctions[] =
     {NULL, NULL}
 };
 
-
+Ctx *ctx_host(void);
+fun_ptr__void(ctx_host);
 fun_ptr__int_int_ptr(ctx_new);
 fun_int__ptr(ctx_has_exited);
 fun_void__ptr(ctx_destroy);
@@ -536,7 +544,7 @@ fun_void__ptr_ptr_float_float(ctx_texture);
 fun_void__ptr_ptr_float_float_float_float(ctx_draw_texture);
 fun_void__ptr_ptr_float_float_float_float(ctx_draw_image);
 
-
+fun_void__ptr(ctx_reset_has_exited);
 
 
 /* list of all library functions and their prototypes */
@@ -544,6 +552,7 @@ struct LibraryFunction CtxFunctions[] =
 {
     {Cctx_new,         "void *ctx_new(int, int, char *);"},
     {Cctx_has_exited,    "int ctx_has_exited(Ctx*);"},
+    {Cctx_reset_has_exited, "void ctx_reset_has_exited(Ctx*);"},
     {Cctx_start_frame, "void ctx_start_frame(Ctx*);"},
     {Cctx_end_frame,   "void ctx_end_frame(Ctx*);"},
     {Cctx_destroy,     "void ctx_destroy(Ctx*);"},
@@ -608,6 +617,7 @@ struct LibraryFunction CtxFunctions[] =
     {Cctx_fill_rule, "void ctx_fill_rule(Ctx*,int);"},
     {Cctx_line_cap, "void ctx_line_cap(Ctx*,int);"},
     {Cctx_line_join, "void ctx_line_join(Ctx*,int);"},
+    {Cctx_host, "Ctx *ctx_host(void);"},
 
     {Cctx_text, "void ctx_text(Ctx*,char*);"},
     {Cctx_text_width, "float ctx_text_width(Ctx*,char*);"},

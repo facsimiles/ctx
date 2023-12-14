@@ -23,7 +23,7 @@
 #define CTX_ENABLE_RGB8                    1
 #define CTX_ENABLE_RGBA8                   1
 #define CTX_ENABLE_BGRA8                   1
-#define CTX_GET_CONTENTS                   1
+//#define CTX_GET_CONTENTS                   1
 #define CTX_ENABLE_RGB332                  1
 #define CTX_ENABLE_RGB565                  1
 #define CTX_ENABLE_RGB565_BYTESWAPPED      1

@@ -86,7 +86,9 @@ const struct esp_elfsym g_customer_elfsyms[] =
 
 #ifndef NATIVE
     ELFSYM_EXPORT(__adddf3),
+#ifndef EMSCRIPTEN
     ELFSYM_EXPORT(__assert_func),
+#endif
     ELFSYM_EXPORT(__divsf3),
     ELFSYM_EXPORT(__extendsfdf2),
     ELFSYM_EXPORT(__eqdf2),
@@ -128,11 +130,13 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(bcmp),
     ELFSYM_EXPORT(bcopy),
     ELFSYM_EXPORT(bind),
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
     ELFSYM_EXPORT(bsp_captouch_angle),
     ELFSYM_EXPORT(bsp_captouch_angular),
     ELFSYM_EXPORT(bsp_captouch_down),
     ELFSYM_EXPORT(bsp_captouch_radial),
+#endif
 #endif
     ELFSYM_EXPORT(busywarp),
     ELFSYM_EXPORT(bzero),
@@ -239,7 +243,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ctx_gray),
     ELFSYM_EXPORT(ctx_gstate_protect),
     ELFSYM_EXPORT(ctx_gstate_unprotect),
-    ELFSYM_EXPORT(ctx_guess_media_type),
+    //ELFSYM_EXPORT(ctx_guess_media_type),
     ELFSYM_EXPORT(ctx_handle_events),
     ELFSYM_EXPORT(ctx_has_exited),
     ELFSYM_EXPORT(ctx_height),
@@ -277,7 +281,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ctx_paint),
     ELFSYM_EXPORT(ctx_parse),
     ELFSYM_EXPORT(ctx_path_extents),
-    ELFSYM_EXPORT(ctx_path_get_media_type),
+    //ELFSYM_EXPORT(ctx_path_get_media_type),
     ELFSYM_EXPORT(ctx_pcm_get_format),
     ELFSYM_EXPORT(ctx_pcm_get_queued_length),
     ELFSYM_EXPORT(ctx_pcm_get_sample_rate),
@@ -303,6 +307,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ctx_rel_line_to),
     ELFSYM_EXPORT(ctx_rel_move_to),
     ELFSYM_EXPORT(ctx_rel_quad_to),
+    ELFSYM_EXPORT(ctx_reset_has_exited),
     ELFSYM_EXPORT(ctx_remove_idle),
     ELFSYM_EXPORT(ctx_render_ctx),
     ELFSYM_EXPORT(ctx_render_ctx),
@@ -498,12 +503,16 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(nexttowardf),
     ELFSYM_EXPORT(open),
     {"opendir", &run_opendir},
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
     ELFSYM_EXPORT(pcTaskGetName),
 #endif
+#endif
 
     ELFSYM_EXPORT(perror),
+#ifndef EMSCRIPTEN
     ELFSYM_EXPORT(poll),
+#endif
     ELFSYM_EXPORT(posix_memalign),
     ELFSYM_EXPORT(pow),
     ELFSYM_EXPORT(powf),
@@ -573,7 +582,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(run_fputs),
     ELFSYM_EXPORT(run_fputc),
     ELFSYM_EXPORT(run_getcwd),
-    ELFSYM_EXPORT(run_inline_main),
+    ELFSYM_EXPORT(run_bundle_main),
     ELFSYM_EXPORT(run_printf),
     ELFSYM_EXPORT(run_putchar),
     ELFSYM_EXPORT(run_puts),
@@ -697,7 +706,8 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ui_focus_prev),
     ELFSYM_EXPORT(ui_get_data),
     ELFSYM_EXPORT(ui_get_font_size),
-    ELFSYM_EXPORT(ui_get_mime_type),
+    ELFSYM_EXPORT(magic_detect_path),
+    ELFSYM_EXPORT(magic_detect_sector512),
     ELFSYM_EXPORT(magic_has_mime),
     ELFSYM_EXPORT(ui_host),
     ELFSYM_EXPORT(ui_iteration),
@@ -728,8 +738,10 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(unlink),
     ELFSYM_EXPORT(unsetenv),
     ELFSYM_EXPORT(usleep),
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
     ELFSYM_EXPORT(uxTaskGetTaskNumber),
+#endif
 #endif
     ELFSYM_EXPORT(vasprintf),
     ELFSYM_EXPORT(vdprintf),
@@ -739,6 +751,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(vsnprintf),
     ELFSYM_EXPORT(vsprintf),
     ELFSYM_EXPORT(vsscanf),
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
     ELFSYM_EXPORT(vTaskDelay),
 #endif
@@ -746,11 +759,14 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(wifi_init_sta),
     ELFSYM_EXPORT(wifi_scan),
 #endif
+#endif
     { "write",   &run_write},
+#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
     ELFSYM_EXPORT(xTaskGetCurrentTaskHandle),
     ELFSYM_EXPORT(xTaskCreatePinnedToCore),
     ELFSYM_EXPORT(xTaskCreate),
+#endif
 #endif
 
     ELFSYM_EXPORT(y0),

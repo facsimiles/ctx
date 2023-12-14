@@ -173,7 +173,7 @@ dir_listing_t *dir_listing_read (HttpdRequest *req, const char *path)
             sprintf(de->path, "%s%s", path, base);
           else
             sprintf(de->path, "%s/%s", path, base);
-          de->mime_type = ui_get_mime_type (NULL, de->path);
+          de->mime_type = magic_detect_path (de->path);
         }
         closedir(dir);
         qsort(di->entries, di->count, sizeof(dir_entry_t), cmp_dir_entry);
@@ -275,7 +275,7 @@ static void httpd_browse_handler (HttpdRequest *req)
       char *decoded_path = decode_uri (req->path + 2);
       const char *path = decoded_path;
       const char *item_path = path;
-      const char *mime_type = ui_get_mime_type(NULL, path);
+      const char *mime_type = magic_detect_path(path);
 
       char *dirnam = NULL;
       if (!mime_type) mime_type = "missing";
@@ -513,7 +513,7 @@ static char *http_headers (HttpdRequest *req, int content_length)
 static void
 httpd_serve_file (HttpdRequest *req, const char *path)
 {
-      const char *mime_type = ui_get_mime_type(NULL, path);
+      const char *mime_type = magic_detect_path(path);
       req->mime_type = mime_type;
       int content_length = 0;
       FILE *file = fopen (path, "rb");
@@ -775,7 +775,7 @@ httpd_request_handler (HttpdRequest *req)
       else
       {
 
-      const char *mime_type  = ui_get_mime_type (NULL, path);
+      const char *mime_type  = magic_detect_path (path);
       if (!mime_type)
       {
         req->status = 404;

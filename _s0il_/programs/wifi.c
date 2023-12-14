@@ -49,7 +49,7 @@ void view_wifi (Ui *ui)
 
 char *_wifis[] ={"foo", "bar", NULL};
 
-MAIN(text)
+MAIN(wifi)
 {
   Ui *ui = ui_host(NULL);
   Ctx *ctx = ui_ctx (ui);

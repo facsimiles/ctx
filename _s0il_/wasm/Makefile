@@ -1,18 +1,18 @@
-C_FILES = $(wildcard *.c)
-JS_FILES = $(C_FILES:.c=.js)
-HTML_FILES = $(C_FILES:.c=.html)
+C_FILES = ../ui.c ../main.c ../magic.c ctx.c ../run.c ../run-symbols.c ../bundled-programs-wasm.c
+#$(wildcard *.c)
+JS_FILES = s0il.js
+HTML_FILES = s0il.html
 
-all: $(HTML_FILES) index.html $(JS_FILES)
+all: index.html s0il.js
 
-%.js: %.c Makefile  ../../ctx.h
-	emcc ../ui.c -I../.. `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -o $@ -I../../fonts -s ASYNCIFY -I..
+CFLAGS=-I/usr/local/include -flto -O3 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc -Wl,--lto-O3 -DWASM
+
+
+s0il.js: $(C_FILES) ../programs/*.c Makefile  ../../ctx.h
+	emcc $(C_FILES) -I../.. $(CFLAGS) -o $@ -I../../fonts -s ASYNCIFY -I..
 
 ../../ctx.h: ../../src/*.[ch]
 	make -C ../../ ctx.h
-
-%.html: %.c Makefile template.html
-	cp template.html $@
-	rpl file `echo $<|sed s/\.c//` $@
 
 index.html: Makefile *.c
 	echo "<html><body>" > $@
