@@ -2,6 +2,9 @@
 #include "../interpreter.h"
 
 #ifndef BUILTIN_MINI_STDLIB
+#if EMSCRIPTEN
+#define _RUN_REDEFINES_
+#endif
 #include "run.h"
 
 static int Stdlib_ZeroValue = 0;

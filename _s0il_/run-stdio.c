@@ -447,6 +447,12 @@ int run_fclose(FILE *stream)
   return fclose(stream);
 }
 
+int run_ungetc(int c, FILE *stream)
+{
+  if (stream == _run_internal_file) return 0;
+  return ungetc(c, stream);
+}
+
 int run_fgetc(FILE *stream)
 {
   if (stream == _run_internal_file)
@@ -492,11 +498,6 @@ int run_getc(FILE *stream)
   return run_fgetc(stream);
 }
 
-int run_ungetc(int c, FILE *stream)
-{
-  if (stream == _run_internal_file) return 0;
-  return ungetc(c, stream);
-}
 
 int run_fflush (FILE *stream)
 {

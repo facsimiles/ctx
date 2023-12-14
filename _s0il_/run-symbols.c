@@ -28,6 +28,10 @@
 #include <poll.h>
 #endif
 
+#ifdef  _RUN_REDEFINES_
+#undef _RUN_REDEFINES_
+#endif
+
 #define EXPORT_UI 1
 
 #include "ctx.h"

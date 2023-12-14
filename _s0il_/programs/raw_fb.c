@@ -15,6 +15,8 @@ static inline uint16_t rgb888_to_rgb565bs(uint8_t red,
   return (ret >> 8) | (ret << 8); // byteswap
 }
 
+Ctx *ctx_host(void);
+
 MAIN(raw_fb)
 {
   for (int frame_no = -120; frame_no < 120; frame_no++)
@@ -29,7 +31,10 @@ MAIN(raw_fb)
         pixels[o] = rgb888_to_rgb565bs(red, green, blue);
         o++;
       }
-    ctx_set_pixels(NULL, NULL, 0,0,240,240,pixels);
+    ctx_set_pixels(ctx_host(), NULL, 0,0,240,240,pixels);
+#if EMSCRIPTEN
+    usleep(1000 * 10);
+#endif
   }
   return 0;
 }

@@ -13,7 +13,11 @@
 
 #define PICOC_STACK_SIZE (128*1024)              /* space for the the stack */
 
+#if EMSCRIPTEN
+int picoc_main(int argc, char **argv)
+#else
 int main(int argc, char **argv)
+#endif
 {
     int ParamCount = 1;
     int DontRunMain = FALSE;

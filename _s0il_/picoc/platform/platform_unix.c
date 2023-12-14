@@ -1,3 +1,7 @@
+#if EMSCRIPTEN
+#define _RUN_REDEFINES_
+#endif
+
 #include "../picoc.h"
 #include "../interpreter.h"
 

@@ -4,8 +4,11 @@
 #include <limits.h>
 #include <fcntl.h>
 #include "../interpreter.h"
+#if EMSCRIPTEN
+#define _RUN_REDEFINES_
+#endif
 #include "run.h"
-#define chdir run_chdir
+#define chdir  run_chdir
 #define getcwd run_getcwd
 #ifndef BUILTIN_MINI_STDLIB
 

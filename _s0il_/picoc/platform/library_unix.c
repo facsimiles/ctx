@@ -1,4 +1,8 @@
+#if EMSCRIPTEN
+#define _RUN_REDEFINES_
+#endif
 #include "../interpreter.h"
+
 #ifdef CTX
 #include "ctx.h"
 #include "ui.h"
