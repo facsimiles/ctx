@@ -1,6 +1,7 @@
 #include "port_config.h"
 #include "ui.h"
 #include <dirent.h>
+Ctx *ctx_host(void);
 
 #define MAX_EXEC_DEPTH  8
 
@@ -343,6 +344,7 @@ int runv (char *path, char **argv)
     {
       int retval =
       program_runv (program, argv);
+      ctx_reset_has_exited (ctx_host());
       return retval;
     }
   }
@@ -432,15 +434,18 @@ int runv (char *path, char **argv)
   }
 #endif
 
+ int ret = 0;
 #ifndef WASM
 #if CTX_FLOW3R
-  return esp_elf_runv (path, argv);
+  ret = esp_elf_runv (path, argv);
 #else
-  return dlopen_runv (path, argv);
+  ret = dlopen_runv (path, argv);
 #endif
 #else
-  return -4;
+  ret = -4;
 #endif
+  ctx_reset_has_exited (ctx_host());
+  return ret;
 }
 
 char *ui_find_executable(Ui *ui, const char *file)
@@ -483,7 +488,6 @@ runvp (char *file, char **argv)
   char *path = file;
   if (path[0]!='/')
     path = ui_find_executable(NULL, file);
-  printf ("runvp:%s %s\n", file, path);
   if (path)
   {
     int retval = runv (path, argv);
@@ -576,6 +580,7 @@ static char *string_chop_head (char *orig) /* return pointer to reset after arg 
   return NULL;
 }
 
+
 int
 runs (const char *cmdline)
 {
@@ -631,6 +636,7 @@ runs (const char *cmdline)
   } while (rest && rest[0]);
   //done:
   free (copy);
+  ctx_reset_has_exited (ctx_host());
   return ret;
 }
 

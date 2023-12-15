@@ -12,8 +12,12 @@ void  run_bundle_main (const char *name, int(*main)(int argc, char **argv));
 
 int   runs (const char *cmdline);
 
+typedef enum {
+  RUN_READONLY = (1<<0),
+  RUN_DIR      = (1<<1)
+} run_file_flag;
 
-void run_add_file(const char *path, const char *contents, size_t size, bool readonly);
+void run_add_file(const char *path, const char *contents, size_t size, run_file_flag flags);
 
 // returns pid or -1 on fail // XXX : needs work - not fully working
 int   spawnp (char **argv);

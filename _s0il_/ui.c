@@ -217,6 +217,7 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
       ui_start_frame(ui);
       ui_end_frame(ui);
       ctx_end_frame(ctx);
+      ctx_queue_draw (ctx);
     }
     run_output_state_reset ();
 
@@ -322,6 +323,7 @@ void view_elf (Ui *ui)
   {
      if (run_output_state () == 1)
      {
+#if 1
        while (ctx_vt_has_data (NULL))
        {
          int c = ctx_vt_read (NULL);
@@ -329,6 +331,7 @@ void view_elf (Ui *ui)
          if (c == '\r') c = '\n';
          ungetc(c, stdin);
        }
+#endif
        ui_start_frame (ui);
        //if (ctx_osk_mode != 2)
        //  ui_do(ui, "kb-show");
@@ -797,10 +800,13 @@ static UiWidget *ui_widget_by_id(Ui *ui, void *id);
 void
 ui_do(Ui *ui, const char *action)
 {
-  printf ("ui_do: %s\n", action);
+  ctx_queue_draw (ui->ctx);
+  //printf ("ui_do: %s\n", action);
   if (!strcmp (action, "exit"))
   {
+    printf ("ADS %p\n", ui->ctx);
     ctx_exit (ui->ctx);
+    printf ("ooof\n");
   }
   else if (!strcmp (action, "backspace") ||
            !strcmp (action, "return") ||
@@ -886,9 +892,10 @@ void overlay_button (Ui *ui, float x, float y, float w, float h, const char *lab
       }
       else
       {
+        ctx_queue_draw(ctx);
         ctx_rgba(ctx,0,0,0,ui->overlay_fade);
         ctx_fill(ctx);
-        if (ui->overlay_fade > 0.2)
+        if (ui->overlay_fade > 0.02)
         {
           ctx_rgba(ctx,1,1,1,ui->overlay_fade);
           ctx_move_to (ctx, x+0.5 * w, y + 0.8 * h);
@@ -1656,6 +1663,8 @@ void ui_iteration(Ui *ui)
       }
 #endif
  
+      if (1)//ctx_need_redraw (ctx))
+      {
       width = ctx_width (ctx);
       height = ctx_height (ctx);
       ctx_start_frame (ctx);
@@ -1739,6 +1748,11 @@ void ui_iteration(Ui *ui)
 
       ui->frame_no++;
       ui->view_elapsed += ticks_delta* 1/(1000*1000.0f);
+     }
+     else
+     {
+       ctx_handle_events (ctx);
+     }
     }
 }
 
@@ -1784,6 +1798,7 @@ static UiWidget *ui_widget_by_id(Ui *ui, void *id)
 }
 static void ui_set_focus (Ui *ui, UiWidget *widget)
 {
+  ctx_queue_draw (ui->ctx);
   for (int i = 0; i < ui->widget_count; i++)
   if (ui->focused_id)
   {
@@ -1808,11 +1823,13 @@ static void ui_set_focus (Ui *ui, UiWidget *widget)
     ui->focused_id = widget->id;
     widget->state = ui_state_hot;
   }
+  ctx_queue_draw (ui->ctx);
 }
 
 void ui_focus_next(Ui *ui)
 {
   bool found = false;
+  ctx_queue_draw (ui->ctx);
   if (ui->widget_count == 0)
   {
     ui_scroll_to (ui, ui->scroll_offset - ui->height * 0.2f);
@@ -1837,6 +1854,7 @@ void ui_focus_next(Ui *ui)
 void ui_focus_prev(Ui *ui)
 {
   bool found = false;
+  ctx_queue_draw (ui->ctx);
   if (ui->widget_count == 0)
   {
     ui_scroll_to (ui, ui->scroll_offset + ui->height * 0.2f);
@@ -1865,6 +1883,7 @@ static void ui_slider_key_press (CtxEvent *event,
 
   const char *string = event->string;
 
+  ctx_queue_draw (ui->ctx);
   if (!strcmp (string, "right")
    || !strcmp (string, "up"))
   {
@@ -1908,6 +1927,7 @@ static void ui_entry_key_press (CtxEvent *event,
   Ui *ui = userdata;
   UiWidget *widget = userdata2;
   const char *string = event->string;
+  ctx_queue_draw (ui->ctx);
 
   if (!strcmp (string, "space"))
     string = " ";
@@ -1994,6 +2014,7 @@ static void ui_pan (CtxEvent *event, void *data1, void *data2)
   *fptr += event->delta_y;
   if (*fptr > 0)
     *fptr = 0;
+  ctx_queue_draw (event->ctx);
 }
 
 float ui_get_font_size (Ui *ui)
@@ -2013,6 +2034,7 @@ static void ui_slider_drag_float (CtxEvent *event, void *data1, void *data2)
    widget->float_data = new_val;
    widget->float_data_target = new_val;
    event->stop_propagate = 1;
+   ctx_queue_draw (ui->ctx);
 }
 
 static UiWidget *
@@ -2154,6 +2176,7 @@ static void ui_button_drag (CtxEvent *event, void *data1, void *data2)
   {
     ui_set_focus (ui, widget);
     widget->state = ui_state_hot;
+    ctx_queue_draw (ui->ctx);
   }
   else if (event->type == CTX_DRAG_RELEASE)
   {
@@ -2162,6 +2185,7 @@ static void ui_button_drag (CtxEvent *event, void *data1, void *data2)
     if (widget->state == ui_state_hot)
       ui->activate = 1;
     }
+    ctx_queue_draw (ui->ctx);
   }
   else
   {
@@ -2171,10 +2195,12 @@ static void ui_button_drag (CtxEvent *event, void *data1, void *data2)
        (event->x > widget->x + widget->width))
    {
      widget->state = ui_state_lost_focus;
+     ctx_queue_draw (ui->ctx);
    }
    else
    {
      widget->state = ui_state_hot;
+     ctx_queue_draw (ui->ctx);
    }
   }
 }
@@ -2225,6 +2251,7 @@ ui_button_coords (Ui *ui, float x, float y, float width, float height,
    {
      ui->activate = 0;
      widget->state = ui_state_default;
+     ctx_queue_draw (ctx);
      return 1;
    }
    return 0;
@@ -2247,10 +2274,14 @@ void ui_end_frame (Ui *ui)
       else
       {
       if (focused->y - delta_y > ui->height * 0.6)
+      {
         ui->scroll_offset -= delta_y;
+        ctx_queue_draw (ctx);
+      }
        else if (focused->y + delta_y < ui->height * 0.15) 
       {
         ui->scroll_offset += delta_y;
+        ctx_queue_draw (ctx);
        }
       }
     } 
@@ -2258,9 +2289,15 @@ void ui_end_frame (Ui *ui)
    else
     {
       if (ui->scroll_offset_target < ui->scroll_offset - delta_y)
+      {
         ui->scroll_offset -= delta_y;
+        ctx_queue_draw (ctx);
+      }
        else if (ui->scroll_offset_target > ui->scroll_offset  + delta_y)
+      {
         ui->scroll_offset += delta_y;
+        ctx_queue_draw (ctx);
+      }
      }
 
 

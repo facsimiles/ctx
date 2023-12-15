@@ -1,7 +1,8 @@
 // TODO : basic-auth
 //        adapt CSS for running on smart-phones
 //        decode markdown
-
+//        PUT of files larger than RAM
+//        drag-and-drop file upload
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,8 +20,10 @@
 
 #else
 
+
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #endif
 
@@ -29,8 +32,33 @@
 
 #include "ui.h"
 
-#define OUTS(s)      ctx_string_append_str(req->body, s)
-#define OUTF(f, ...) ctx_string_append_printf(req->body, f, __VA_ARGS__)
+
+#define HTTP_PORT_PREFERRED        (80)    // we first try to get this
+#define HTTP_PORT_FALLBACK_START (8080)
+#define HTTP_PORT_FALLBACK_END   (8089) 
+
+
+
+static char *httpd_css = 
+"body { background:black; color:white;}\n"
+"body {font-size: calc(1.0vh + 1.8vw); }\n"
+"input {font-size: calc(0.8vh + 1.1vw); }\n"
+"a { color:white;}\n"
+"a:visited { color:white;}\n"
+".dir_listing { list-style: none; background: #123; margin-top:0.5em;margin-left:auto;margin-right:auto; }\n"
+".mime_type { float: color: #777; }\n"
+".size { float: right; color: #aaa;}\n"
+".dir_listing td { padding-left: 0.5em; padding-right: 0.5em;}\n"
+".path { border-bottom: 0.05em solid gray;}\n"
+".view textarea{ width: 100%; }\n"
+".view img{ max-width: 100%; max-height : 100%; }\n"
+"\n";
+
+CtxList *allowed_ips = NULL;
+CtxList *denied_ips = NULL;
+bool     httpd_firewall = true;
+bool     httpd_ide = true;
+bool     httpd_run = true; // make firewall do this per-ip?
 
 typedef struct {
   char     *method;         /* will be GET */
@@ -59,6 +87,7 @@ typedef struct {
   void     *user_data;
   FILE     *f;
   int       emitted;
+  char     *ip;
 } HttpdRequest;
 
 typedef struct filemapping {
@@ -67,34 +96,20 @@ typedef struct filemapping {
 } filemapping;
 
 static filemapping filemappings[]={
-  {"/","/sd/webassets/index.html"},
-  {"/favicon.ico","/sd/webassets/favicon.ico"},
+  {"/",           "/_/webroot/index.html"},
+  {"/favicon.ico","/_/webroot/favicon.ico"},
   {NULL, NULL},
 };
 
-// XXX : this is hairy - perhaps having a baseroot where it
-//       is permitted is less hairy?
-bool allow_filesystem_modification = true;
-
-// see comment above
-bool allow_run                     = true;
 
 static char httpd_buf2[1024 * 32];
 static char httpd_buf[2048];
 
+
 const char *html_doctype="<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>\n";
-static char *httpd_css = 
-"body { background:black; color:white;}\n"
-"a { color:white;}\n"
-"a:visited { color:white;}\n"
-".dir_listing { list-style: none; background: #123; margin-top:0.5em;margin-left:auto;margin-right:auto; }\n"
-".mime_type { float: color: #777; }\n"
-".size { float: right; color: #aaa;}\n"
-".dir_listing td { padding-left: 0.5em; padding-right: 0.5em;}\n"
-".path { border-bottom: 0.05em solid gray;}\n"
-".view textarea{ width: 100%; }\n"
-".view img{ max-width: 100%; max-height : 100%; }\n"
-"\n";
+
+#define OUTS(s)      ctx_string_append_str(req->body, s)
+#define OUTF(f, ...) ctx_string_append_printf(req->body, f, __VA_ARGS__)
 
 typedef struct dir_entry_t
 {
@@ -178,12 +193,13 @@ dir_listing_t *dir_listing_read (HttpdRequest *req, const char *path)
         closedir(dir);
         qsort(di->entries, di->count, sizeof(dir_entry_t), cmp_dir_entry);
       }
+
   for (int i = 0; i < di->count;i++)
   {
-     dir_entry_t *de = &di->entries[i];
-     struct stat info;
-     stat(de->path, &info);
-     de->size = info.st_size;
+    dir_entry_t *de = &di->entries[i];
+    struct stat info;
+    stat(de->path, &info);
+    de->size = info.st_size;
   }
 
   return di;
@@ -290,10 +306,10 @@ static void httpd_browse_handler (HttpdRequest *req)
   req->mime_type = "text/html";
   OUTS(html_doctype);
   OUTF( "<html><head><title>%s</title>\n<style type='text/css'>\n%s</style>\n", req->path, httpd_css);
-    OUTS( "<link rel='stylesheet' href='/sd/webassets/codemirror.css'/>\n"
-          "<link rel='stylesheet' href='/sd/webassets/codemirror-cobalt.css'/>\n"
-          "<script src='/sd/webassets/codemirror.js'></script>\n"
-          "<script src='/sd/webassets/codemirror-python.js'></script>\n"
+    OUTS( "<link rel='stylesheet' href='/static/codemirror.css'/>\n"
+          "<link rel='stylesheet' href='/static/codemirror-cobalt.css'/>\n"
+          "<script src='/static/codemirror.js'></script>\n"
+          "<script src='/static/codemirror-python.js'></script>\n"
           "<script>"
    "window.unblock_savemod = false;"
    "window.onkeypress= function(event) { }"
@@ -618,14 +634,14 @@ static void httpd_post_handler (HttpdRequest *req)
       break;
 
     case action_rmdir:
-        if (allow_filesystem_modification)
+        if (httpd_ide)
         {
           snprintf (temp, sizeof(temp), "%s%s", post_path, post_param);
           rmdir(temp);
         }
       /* FALLTHROUGH */
     case action_remove:
-      if (allow_filesystem_modification && action == action_remove)
+      if (httpd_ide && action == action_remove)
       {
         snprintf (temp, sizeof(temp), "%s%s", post_path, post_param);
         unlink(temp);
@@ -636,12 +652,12 @@ static void httpd_post_handler (HttpdRequest *req)
     case action_run:
       req->status = 301;
 
-      if (allow_filesystem_modification && ((action == action_save || action==action_run)
+      if (httpd_ide && ((action == action_save || action==action_run)
            && post_content && strlen(post_content)>1))
       {
       snprintf (temp, sizeof(temp), "Location: /_%s%s", post_path, post_param);       
 
-      if (allow_filesystem_modification && post_content){
+      if (httpd_ide && post_content){
       FILE *f = fopen (temp+12, "w");
       if(f)
       {
@@ -661,7 +677,7 @@ static void httpd_post_handler (HttpdRequest *req)
       }
       }
 
-      if (allow_run && action == action_run)
+      if (httpd_run && action == action_run)
       {
         char *commandline = strdup (temp+12);
         printf ("%i\n", runs(commandline));
@@ -680,7 +696,7 @@ static void httpd_post_handler (HttpdRequest *req)
       req->extra_headers = temp;
       break;
     case action_rename:
-      if (allow_filesystem_modification)
+      if (httpd_ide)
       {
       req->status = 301;
       char buf[512];
@@ -696,7 +712,7 @@ static void httpd_post_handler (HttpdRequest *req)
       req->extra_headers = temp;
       break;
     case action_mkfile:
-      if (allow_filesystem_modification){
+      if (httpd_ide){
       req->status = 301;
       snprintf (temp, sizeof(temp), "Location: /_%s%s", post_path, post_param);
       char *content = "";
@@ -711,7 +727,7 @@ static void httpd_post_handler (HttpdRequest *req)
       break;
 
     case action_mkdir:
-      if(allow_filesystem_modification){
+      if(httpd_ide){
         req->status = 301;
         snprintf (temp, sizeof(temp), "Location: /_%s%s/", post_path, post_param);
         mkdir (temp+12, 0777);//"w");
@@ -747,10 +763,71 @@ httpd_request_handler_put (HttpdRequest *req)
     ctx_string_set (req->body, "failed");
   }
 }
+Ctx *ctx_host(void);
 
 static void
 httpd_request_handler (HttpdRequest *req)
-{ 
+{
+  if (httpd_firewall)
+  {
+  int allowed = 0;
+  int denied = 0;
+  for (CtxList *iter = allowed_ips; iter; iter=iter->next)
+    if (!strcmp (iter->data, req->ip))
+    {
+      allowed = 1;
+      break;
+    }
+  for (CtxList *iter = denied_ips; iter; iter=iter->next)
+    if (!strcmp (iter->data, req->ip))
+    {
+      denied = 1;
+      break;
+    }
+
+  if ((!allowed) && (!denied))
+  {
+     Ctx *ctx = ctx_host();
+     Ui *ui = ui_host(ctx);
+
+     int accept_it = -1;
+     do {
+       ctx_start_frame (ctx);
+       ui_start_frame (ui);
+       ui_text (ui, req->ip);
+       ui_text (ui, req->method);
+       ui_text (ui, req->path);
+       if (ui_button (ui, "accept"))
+       {
+         accept_it = 1;
+         ctx_list_append (&allowed_ips, strdup(req->ip));
+         allowed = 1;
+       }
+       if (ui_button (ui, "deny"))
+       {
+         accept_it = 0;
+         ctx_list_append (&denied_ips, strdup(req->ip));
+       }
+       ui_end_frame (ui);
+       ctx_end_frame (ctx);
+     } while (accept_it == -1);
+  }
+
+  if (!allowed)
+  {
+    req->status = 555;
+    req->status_string= "nope";
+    ctx_string_set(req->body, "");
+    return;
+  }
+  }
+
+  if (httpd_ide && !strcasecmp (req->method, "PUT"))
+  {
+    httpd_request_handler_put (req);
+    return;
+  }
+
   if (!strcasecmp (req->method, "POST"))
   {
     httpd_post_handler (req);
@@ -886,6 +963,8 @@ static void httpd_magic(void)
 
 int httpd_port = -1; 
 
+
+
 int _httpd_start_int (int port, 
 #if 0
       void (*httpd_request_handler)(HttpdRequest *req),
@@ -897,8 +976,8 @@ int _httpd_start_int (int port,
   int    sock;
   struct sockaddr_in sin;
   sock = socket (AF_INET, SOCK_STREAM, 0);
-  int try_port = 80;
-  for (;try_port < try_port+16; try_port++)
+  int try_port = port; // we first try this
+  for (;try_port <= HTTP_PORT_FALLBACK_END; try_port++)
   {
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
@@ -908,8 +987,11 @@ int _httpd_start_int (int port,
       httpd_port = try_port;
       break;
     }
-    if (try_port == 80)
-      try_port = 8080-1;
+    if (try_port == port)
+    {
+      if (port != HTTP_PORT_FALLBACK_START)
+        try_port = HTTP_PORT_FALLBACK_START -1;
+    }
   }
   fcntl (sock, F_SETFL, fcntl(sock, F_GETFL,0)| O_NONBLOCK);
 
@@ -924,29 +1006,61 @@ int _httpd_start_int (int port,
       return -1;
     }
   httpd_stop = 0;
-  while (!httpd_stop) /* should have some terminating condition.. */
+
+  while (!httpd_stop)
     {
       HttpdRequest req;
       char *tmp;
       int content_length = -1;
       int s;
       FILE *f;
-      s = accept (sock, NULL, NULL);
+
+
+      struct sockaddr addr;
+      socklen_t addrlen = sizeof(addr);
+
+
+      fd_set set;
+      struct timeval timeout;
+      int rv;
+      FD_ZERO(&set);
+      FD_SET(sock, &set);
+
+      timeout.tv_sec = 20;
+      timeout.tv_usec = 0;
+
+      rv = select(sock + 1, &set, NULL, NULL, &timeout);
+      if (rv == -1)
+      {
+         printf("socket error\n");continue;
+      }else if (rv == 0)
+      {
+        ui_iteration(ui_host(ctx_host()));
+        continue;
+      }
+
+      s = accept (sock, &addr, &addrlen);
 
       if (s < 0)
       {
+#if 1
+        ui_iteration(ui_host(ctx_host()));
+#else
 #ifdef NATIVE
         usleep(1000 * 10);
 #else
         vTaskDelay(1);
 #endif
+#endif
         continue;
       }
+
 
           f = fdopen (s, "a+");
           if (!fgets (httpd_buf, sizeof (httpd_buf), f))
             continue;
           memset(&req,0,sizeof(req));
+          req.ip = inet_ntoa(((struct sockaddr_in*)&addr)->sin_addr);
           req.method   = strtok_r (httpd_buf, " ", &tmp);
           req.path     = strtok_r (NULL, " ", &tmp);
           req.protocol = strtok_r (NULL, "\r", &tmp);
@@ -998,11 +1112,8 @@ int _httpd_start_int (int port,
               }
             }
           fseek (f, 0, SEEK_CUR); 
-          if (allow_filesystem_modification && !strcasecmp (req.method, "PUT"))
-          {
-            httpd_request_handler_put (&req);
-          }
-          else if (!strcasecmp (req.method, "GET") ||
+          if (!strcasecmp (req.method, "GET") ||
+                   !strcasecmp (req.method, "PUT") ||
                    !strcasecmp (req.method, "POST"))
             httpd_request_handler (&req);
           else
@@ -1021,7 +1132,53 @@ int _httpd_start_int (int port,
 
 int main (int argc, char **argv)
 {
+  int port = HTTP_PORT_PREFERRED;
+  for (int i = 1; argv[i]; i++)
+  {
+    if (!strcmp (argv[i], "--help") || !strcmp(argv[i],"-h"))
+    {
+      printf ("usage: httpd [options]\n");
+      printf ("  where options can be:\n");
+      printf ("   --port <portnum>    port to open server on default:%i\n", port);
+      printf ("   --firewall=<on|off> enable interactive firewall default:%s\n", httpd_firewall?"on":"off");
+      printf ("   --ide=<on|off> enable IDE, and file PUTs:%s\n", httpd_ide?"on":"off");
+      return 0;
+    }
+    if (!strcmp (argv[i], "--port"))
+    {
+      if (argv[i+1])
+      {
+        port = atoi(argv[i+1]);
+        i++;
+      }
+    }
+    if (!strcmp (argv[i], "--firewall=on"))
+    {
+      httpd_firewall = true;
+    }
+    else if (!strcmp (argv[i], "--firewall=off"))
+    {
+      httpd_firewall = false;
+    }
+    else if (!strcmp (argv[i], "--ide=on"))
+    {
+      httpd_ide = true;
+    }
+    else if (!strcmp (argv[i], "--ide=off"))
+    {
+      httpd_ide = false;
+    }
+    else if (!strcmp (argv[i], "--run=on"))
+    {
+      httpd_run = true;
+    }
+    else if (!strcmp (argv[i], "--run=off"))
+    {
+      httpd_run = false;
+    }
+  }
+
   httpd_magic ();
-  _httpd_start_int (8080, httpd_request_handler, (void*)23);
+  _httpd_start_int (port, httpd_request_handler, (void*)23);
   return 42; // keeping once of register valid
 }

@@ -15,14 +15,15 @@ void
 magic_add (const char *mime_type,
            const char *ext,
            char *magic_data,
-           int magic_len,
-           int is_text)
+           int   magic_len,
+           int   is_text)
 {
   // TODO : skip duplicates
   if (!mime_type) return;
   if (magic_len < 0)
   {
-    if (magic_data) magic_len = strlen ((char*)magic_data);
+    if (magic_data)
+      magic_len = strlen ((char*)magic_data);
   }
 
   if (magic_len > 16) magic_len = 16;
@@ -44,7 +45,6 @@ magic_add (const char *mime_type,
        bail
    }
 #endif
-
 
   ctx_list_append (&ui_magic, magic);
 }

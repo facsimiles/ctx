@@ -32,16 +32,9 @@ static void view_menu (Ui *ui)
 {
    ui_start_frame (ui);
 
-   if (ui_button(ui, "/sd"))
-     ui_do(ui, "/sd");
-#if CTX_FLOW3RXXX
-   if (ui_button(ui, "usb sd"))
-   {
-     sd_msc ();
-   }
-#endif
-   if (ui_button(ui, "/bin"))
-     ui_do(ui, "/bin");
+   if (ui_button(ui, "files"))
+     ui_do(ui, "/");
+  
 #if 1
    if (ui_button(ui,"app"))
       ui_do(ui, "app");
@@ -56,6 +49,7 @@ static void view_menu (Ui *ui)
    if (ui_button(ui,"audio-ks"))
       ui_do(ui, "audio-ks");
 #endif
+
    if (ui_button(ui, "settings"))
      ui_do(ui, "settings");
 
@@ -106,9 +100,10 @@ int main (int argc, char **argv)
       "flow3r.toml",
       -1, 0);
 
-  const char *temp = "this is a file\nthat is almost just a string";
-  run_add_file("/tmp/file", temp, 0, true);
-  run_add_file("/tmp/file2", temp, 0, true);
+  const char *temp = "Welcome to project s0il\nIt is a unix system, you know this!\n";
+  run_add_file("/sd",  NULL, 0, RUN_DIR|RUN_READONLY);
+  run_add_file("/bin", NULL, 0, RUN_DIR|RUN_READONLY);
+  run_add_file("/READ.ME", temp, 0, RUN_READONLY);
 
   runs("_init");
 //runs("init");
@@ -117,8 +112,8 @@ int main (int argc, char **argv)
     ui_register_view (ui, "menu", view_menu, NULL);
     ui_do(ui, "menu"); // queue menu - as initial view
 
-//    runs("wifi --auto ");
-
+    runs("wifi --auto ");
+    ui_do(ui, "sh");
     ui_main(ui, NULL); // boot to root_path
     ui_destroy (ui);
     free (root_path);

@@ -172,11 +172,14 @@ MAIN(wifi)
     ui_keyboard (ui);
     ctx_end_frame (ctx);
   } while (!ctx_has_exited (ctx));
-  free (wifis);
+  if (wifis != _wifis)
+    free (wifis);
 
   if (wifi_contents)
     free (wifi_contents);
   wifi_contents = NULL;
+
+  ctx_reset_has_exited(ctx);
 
   return 0;
 }

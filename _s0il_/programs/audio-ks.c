@@ -187,8 +187,7 @@ void *string_create (void)
   string->pos      = 0;
   string->velocity = 1.0f;
   string->alpha    = 0.2f;
-
-  string_set_hz(string, 440);
+  string_set_hz (string, 440);
   return string;
 }
 
@@ -224,7 +223,7 @@ static void do_adjust_alpha (CtxEvent *event, void *data1, void *data2)
   VoiceString *string = (VoiceString*)render_data;
   float adjustment = data1?(float)atof(data1):0.0f;
   string->alpha+=adjustment;
-  printf("alpha: %f\n", (double)string->alpha);
+  //printf("alpha: %f\n", (double)string->alpha);
 }
 
 static void do_adjust_octave (CtxEvent *event, void *data1, void *data2)
@@ -232,7 +231,7 @@ static void do_adjust_octave (CtxEvent *event, void *data1, void *data2)
   VoiceString *string = (VoiceString*)render_data;
   float adjustment = data1?(float)atof(data1):0.0f;
   string->octave+=adjustment;
-  printf("octave: %f\n", (double)string->octave);
+  //printf("octave: %f\n", (double)string->octave);
 }
 
 static void render_audio (Ctx *ctx)

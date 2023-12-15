@@ -21,6 +21,8 @@ int main(int argc, char **argv)
     fin = fopen (argv[1], "rb");
   }
 
+  if (fin)
+  {
   char buf[512];
   int read;
   do {
@@ -36,6 +38,7 @@ int main(int argc, char **argv)
     }
     else
     fclose (fin);
+  }
   }
 
    return 0;

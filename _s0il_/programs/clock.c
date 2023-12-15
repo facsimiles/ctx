@@ -1,38 +1,20 @@
 #include "ui.h"
 
-void draw_clock (Ctx *ctx)
+void draw_clock (Ctx *ctx, float x, float y, float radius, uint32_t ms_since_midnight)
 {
-  uint32_t ms = ctx_ticks ()/1000;
+  uint32_t ms = ms_since_midnight;
   uint32_t s = ms / 1000;
   uint32_t m = s / 60;
   uint32_t h = m / 60;
-  float radius = ctx_width(ctx)/2;
   //int smoothstep = 1;
-  float x = ctx_width (ctx)/ 2;
-  float y = ctx_height (ctx)/ 2;
-  if (radius > ctx_height (ctx)/2) radius = ctx_height (ctx)/2;
+
+  ctx_save(ctx);
 
   ms = ((uint32_t)(ms)) % 1000;
   s %= 60;
   m %= 60;
   h %= 12;
   
-#if 1
-  Ui *ui = ui_host(ctx);
-  if (ui)
-  {
-    ui_draw_bg (ui);
-  }
-  else
-#endif
-  {
-    // when running directly on host without a wrapping ctx we
-    // do not get a ui - this makes that work
-    ctx_gray(ctx, 0.0f);
-    ctx_rectangle (ctx, 0,0, ctx_width(ctx),ctx_height(ctx));
-    ctx_fill (ctx);
-    ctx_gray(ctx, 1.0f);
-  }
   float r; 
   
   ctx_line_width (ctx, radius * 0.02f);
@@ -90,32 +72,45 @@ void draw_clock (Ctx *ctx)
                     y + sinf(r) * radius * 0.78f);
   ctx_stroke (ctx);
 
-  ctx_queue_draw (ctx);
+  ctx_restore (ctx);
 }
+
+Ctx *ctx_host(void);
 
 MAIN(clock)
 {
+  //Ctx *ctx = ctx_host();//new (-1,-1,NULL);
   Ctx *ctx = ctx_new (-1,-1,NULL);
-  ctx_queue_draw (ctx);
   do
   {
-    if (ctx_need_redraw (ctx))
-    {
       ctx_start_frame (ctx);
 
-      draw_clock (ctx);
+      float w = ctx_width(ctx);
+      float h = ctx_width(ctx);
+      float min = w < h ? w : h;
+#if 0
+      if (ui)
+      {
+        ui_draw_bg (ui); // this draws the configured bacground and leaves ctx
+                         // with the configured foreground color set
+      }
+      else
+#endif
+      {
+        // when running directly on host without a wrapping ctx we
+        // do not get a ui - this makes that work
+        ctx_gray(ctx, 0.0f);
+        ctx_rectangle (ctx, 0,0, ctx_width(ctx),ctx_height(ctx));
+        ctx_fill (ctx);
+        ctx_rgba (ctx, 1.0f, 1.0f, 1.0f, 1.0f);
+      }
   
-      ctx_add_key_binding (ctx, "escape", "exit", "foo",  ui_cb_do, ui_host(ctx));
-      ctx_add_key_binding (ctx, "backspace", "exit", "foo",  ui_cb_do, ui_host(ctx));
+      draw_clock (ctx, w/2, h/2, min/2, ctx_ticks ()/1000);
+  
+      ctx_add_key_binding (ctx, "escape", "exit", "foo",  ui_cb_do, ui_host(NULL));
+      ctx_add_key_binding (ctx, "backspace", "exit", "foo",  ui_cb_do, ui_host(NULL));
       ctx_end_frame (ctx);
-    }
-    else
-    {
-      ctx_handle_events(ctx);
-    }
   } while (!ctx_has_exited (ctx));
-  ctx_reset_has_exited(ctx);
   ctx_destroy(ctx);
-  
   return 0;
 }

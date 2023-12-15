@@ -51,7 +51,7 @@ PROGRAM_C_INLINED=programs/text.c programs/image.c programs/clock.c
 bundled-programs.o: $(PROGRAM_C_INLINED)
 
 main.o: fs_bin_native.c
-run-symbols.o: run-stdio.c
+run-symbols.o: run-clib.c
 
 %.o: %.c *.h Makefile
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -c -g $< -o $@
@@ -60,7 +60,7 @@ libui.so: ui.o run.o run-symbols.o magic.o Makefile
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -g -shared ui.o run.o run-symbols.o -o libui.so magic.o
 
 clean:
-	rm -rf demo libui.so xtensa-bin native-bin elf_strip_pie *.o tmpfs tmpfs2
+	rm -rf demo libui.so xtensa-bin native-bin elf_strip_pie *.o tmpfs tmpfs2 fs_bin_*.c
 
 CC_DEVICE=@   echo 'CC     ' $@ ; xtensa-esp32s3-elf-gcc 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CC)
@@ -82,11 +82,12 @@ PROGRAM_NATIVE = $(patsubst programs/%.c, native-bin/%, $(PROGRAM_C)) \
 PROGRAM_DEVICE = $(patsubst programs/%.c, xtensa-bin/%, $(PROGRAM_C)) \
                  $(patsubst programs-picoc/%, xtensa-bin/%, $(PROGRAM_PICOC))
 
-native-bin/%: programs/%.c ui.h Makefile elf_strip_pie
+native-bin/%: programs/%.c ui.h Makefile elf_strip_pie libui.so
 	@mkdir -p `dirname $@` || true
-	$(CC_NATIVE) $< -o $@ $(CFLAGS_NATIVE) -D_RUN_REDEFINES_
+	$(CC_NATIVE) $< ./libui.so -o $@ $(CFLAGS_NATIVE) -D_RUN_REDEFINES_
 	@echo 'rem-PIE $@'; ./elf_strip_pie $@
-	$(POST_NATIVE) $@  
+	$(POST_NATIVE) $@
+
 native-bin/picoc: picoc/*.c picoc/*/*.c ui.h Makefile elf_strip_pie libui.so
 	@mkdir -p `dirname $@` || true
 	$(CC_NATIVE) picoc/platform/*.c picoc/cstdlib/*.c picoc/*.c ./libui.so\

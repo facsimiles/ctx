@@ -1,50 +1,6 @@
 static int text_output = 0;
 static int gfx_output  = 0;
 
-static char *run_cwd = NULL;
-
-char *run_getcwd(char *buf, size_t size)
-{
-  if (!buf){ int size = 4; if (run_cwd) size = strlen(run_cwd)+2;
-             buf = malloc(size);}
-  if (!run_cwd)
-    strncpy(buf, "/", size-1);
-  else
-    strncpy(buf, run_cwd, size-1);
-  return buf;
-}
-
-int   run_chdir(const char *path)
-{
-  // XXX need better check?
-  //if (!run_access (path, R_OK)) return -1;
-  if (run_cwd) free (run_cwd);
-
-  run_cwd = malloc (strlen(path)+2);
-  strcpy (run_cwd, path);
-  if (run_cwd[strlen(run_cwd)-1]!='/')
-  {
-    run_cwd[strlen(run_cwd)+1]=0;
-    run_cwd[strlen(run_cwd)]='/';
-  }
-  chdir(path);
-  return 0;
-}
-
-static char *run_resolve_path(const char *pathname)
-{
-  char *path = (char*)pathname;
-  if (pathname[0]!='/')
-  {
-     if (!run_cwd)run_cwd=strdup("/");
-     path = malloc (strlen (pathname) + strlen (run_cwd) + 2);
-     sprintf (path, "%s%s", run_cwd, pathname);
-  }
-  return path;
-}
-
-
-
 int  run_output_state (void)
 {
   return text_output * 1 + gfx_output * 2;
@@ -64,7 +20,106 @@ void *run_ctx_new(int width, int height, const char *backend)
 void run_ctx_destroy(void *ctx)
 {
   gfx_output  = 0;
-  //return ctx_new(width, height, backend);
+}
+/////////
+
+static char *run_cwd = NULL;
+
+char *run_getcwd(char *buf, size_t size)
+{
+  if (!buf){ int size = 4; if (run_cwd) size = strlen(run_cwd)+2;
+             buf = malloc(size);}
+  if (!run_cwd)
+    strncpy(buf, "/", size-1);
+  else
+    strncpy(buf, run_cwd, size-1);
+  return buf;
+}
+
+
+static char *run_resolve_path(const char *pathname)
+{
+  char *path = (char*)pathname;
+
+  if (pathname[0]!='/')
+  {
+     if (!run_cwd)run_cwd=strdup("/");
+     path = malloc (strlen (pathname) + strlen (run_cwd) + 2);
+     sprintf (path, "%s%s", run_cwd, pathname);
+  }
+
+  if (strstr(path, "/./"))
+  {
+    if (path == pathname) path = strdup (path);
+    do {
+    char *p = strstr (path, "/./");
+    if (p==path)
+    {
+      path[1]=0;
+      return path;
+    }
+    char *parent = p-1;
+    while (parent!=path && *parent !='/') parent--;
+      memmove(parent, p+3, strlen(p+2)+1);
+
+    } while (strstr (path, "/./"));
+  }
+
+  if (strstr(path, "/../"))
+  {
+    if (path == pathname) path = strdup (path);
+    do {
+    char *p = strstr (path, "/../");
+    if (p==path)
+    {
+      path[1]=0;
+      return path;
+    }
+    char *parent = p-1;
+    while (parent!=path && *parent !='/') parent--;
+      memmove(parent, p+3, strlen(p+3)+1);
+
+    } while (strstr (path, "/../"));
+  }
+
+  if (strstr(path, "/..") && strstr(path, "/..")[3]==0)
+  {
+    if (path == pathname) path = strdup (path);
+    char *p = strstr (path, "/..");
+    if (p==path)
+    {
+      path[1]=0;
+      return path;
+    }
+    char *parent = p-1;
+    while (parent!=path && *parent !='/') parent--;
+      memmove(parent, p+3, strlen(p+2)+1);
+
+  }
+
+
+  return path;
+}
+
+int   run_chdir(const char *path2)
+{
+  char *path = run_resolve_path (path2);
+  // XXX need better check?
+  //if (!run_access (path, R_OK)) return -1;
+  if (run_cwd) free (run_cwd);
+
+  run_cwd = malloc (strlen(path)+2);
+  strcpy (run_cwd, path);
+
+  // append trailing / if missing
+  if (run_cwd[strlen(run_cwd)-1]!='/')
+  {
+    run_cwd[strlen(run_cwd)+1]=0;
+    run_cwd[strlen(run_cwd)]='/';
+  }
+  chdir(path);
+  if (path2 != path) free (path);
+  return 0;
 }
 
 typedef struct file_t {
@@ -95,7 +150,13 @@ file_t *run_find_file(const char *path)
 {
   char *parent = strdup (path);
   strrchr (parent, '/')[0]=0;
+  if (parent[0]==0)
+  {
+    parent[0]='/';
+    parent[1]=0;
+  }
   folder_t *folder = NULL;
+
   for (CtxList *iter = folders; iter; iter=iter->next)
   {
     folder = iter->data;
@@ -105,31 +166,40 @@ file_t *run_find_file(const char *path)
     }
   }
   if (!folder)
+  {
     return NULL;
+  }
+
   for (CtxList *iter = folder->files; iter; iter=iter->next)
   {
     file_t *file = iter->data;
     if (!strcmp (path, file->path))
     {
-      //printf ("found match! %s\n", path);
       return file;
     }
   }
   return NULL;
 }
 
-void run_add_dir(const char *path, bool readonly)
+void run_add_file(const char *path, const char *contents, size_t size, run_file_flag flags)
 {
-  // should add it to parent but disambiguated from file
-}
+  bool readonly = ((flags & RUN_READONLY) != 0);
+  bool is_dir   = ((flags & RUN_DIR) != 0);
 
-void run_add_file(const char *path, const char *contents, size_t size, bool readonly)
-{
   char *parent = strdup (path);
   strrchr (parent, '/')[0]=0;
   folder_t *folder = NULL;
-  if (size == 0)
+  if (size == 0 && !is_dir)
     size = strlen (contents);
+
+  if (parent[0] == 0)
+  {
+    parent[0]='/';
+    parent[1]=0;
+  }
+
+  printf ("adding %s to %s dir?%i\n", path, parent, is_dir);
+
   for (CtxList *iter = folders; iter; iter=iter->next)
   {
     folder = iter->data;
@@ -149,23 +219,33 @@ void run_add_file(const char *path, const char *contents, size_t size, bool read
   {
     free(parent);
   }
+
   file_t *file = calloc(sizeof(file_t),1);
   file->path = (char*)(readonly?path:strdup (path));
   file->d_name = readonly?strrchr(path,'/')+1:strdup (strrchr (path, '/')+1);
   file->size = size;
-  file->d_type = DT_REG;
   file->read_only = readonly;
-  if (readonly)
-    file->data = (char*)contents;
+  if (is_dir)
+  {
+    file->d_type = DT_DIR;
+  }
   else
   {
-    file->data = malloc(file->size);
-    memcpy(file->data, contents, file->size);
+    file->d_type = DT_REG;
+    if (readonly)
+      file->data = (char*)contents;
+    else
+    {
+      file->data = malloc(file->size);
+      memcpy(file->data, contents, file->size);
+    }
   }
-  folder->count++;
-  ctx_list_append (&folder->files, file);
+  if (folder)
+  {
+    folder->count++;
+    ctx_list_append (&folder->files, file);
+  }
 }
-
 
 #define WRAP_STDOUT 1
 
@@ -336,7 +416,9 @@ static int stdin_got_data(void)
 
 static char *run_gets(char* buf, size_t buflen) {
     size_t count = 0;
-    // used by the shell
+    // used by the shell through fgets, and gets use interactive shell
+    // on raw terminals - for now mostly pseudo what regular line-editing
+    // mode would give.
 
     while (count < buflen) {
         int c;
@@ -345,7 +427,9 @@ static char *run_gets(char* buf, size_t buflen) {
         else
         {
           ui_iteration(ui_host(NULL));
+#ifndef EMSCRIPTEN
           usleep (1000); // XXX : seems more stable with it
+#endif
           continue;
         }
         if(count == 0)
@@ -431,7 +515,6 @@ int run_rename(const char *src, const char *dst)
 FILE *run_fopen(const char *pathname, const char *mode)
 {
   char *path = run_resolve_path (pathname);
-  printf ("fopen:%s %s\n", path, mode);
   file_t *file = run_find_file (path);
   if (file)
   {
@@ -621,6 +704,11 @@ DIR    *run_opendir(const char *name2)
     name = strdup(name);
     name[strlen(name)-1]=0;
   }
+  if (name[1]==0)
+  {
+    name[0]='/';
+    name[1]=0;
+  }
   for (CtxList *iter = folders; iter; iter=iter->next)
   {
     folder_t *folder = iter->data;
@@ -688,9 +776,9 @@ run_stat(const char *pathname, struct stat *statbuf)
   char *path = run_resolve_path (pathname);
 
   file_t *file = NULL;
-  if ((file = run_find_file (pathname)))
+  if ((file = run_find_file (path)))
   {
-    statbuf->st_mode = S_IFREG;
+    statbuf->st_mode = file->d_type == DT_REG ? S_IFREG : S_IFDIR;
     statbuf->st_size = file->size;
     if (path != pathname) free (path);
     return 0;

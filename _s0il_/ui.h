@@ -173,7 +173,7 @@ bool ui_keyboard_visible(Ui *ui);
 #ifdef MAIN
 #undef MAIN
 #endif
-#ifdef PROGRAM_NAME
+#ifdef RUN_BUNDLE
 #define MAIN(name) int name##_main(int argc, char **argv)
 #else
 #define MAIN(name) int main (int argc, char **argv)

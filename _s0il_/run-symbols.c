@@ -48,7 +48,7 @@
 #include <dirent.h>
 #include <setjmp.h>
 
-#include "run-stdio.c"
+#include "run-clib.c"
 
 extern float __divsf3     (float a, float b);
 extern double __floatsidf (int a);
