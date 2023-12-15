@@ -86,7 +86,7 @@ MAIN(clock)
       ctx_start_frame (ctx);
 
       float w = ctx_width(ctx);
-      float h = ctx_width(ctx);
+      float h = ctx_height(ctx);
       float min = w < h ? w : h;
 #if 0
       if (ui)
