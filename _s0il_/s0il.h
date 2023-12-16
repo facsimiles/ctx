@@ -46,8 +46,9 @@
 
 #include "ctx.h"
 #include "ui.h"
-#include "s0il-magic.h"
 #include "s0il-run.h"
+#include "s0il-magic.h"
+#include "s0il-clib.h"
 #include <libgen.h>
 
 pid_t gettid(void);

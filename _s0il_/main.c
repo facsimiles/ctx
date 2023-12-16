@@ -93,7 +93,7 @@ int main (int argc, char **argv)
   const char *temp = "Welcome to project s0il\nIt is a unix system, you know this!\n";
   run_add_file("/sd",  NULL, 0, RUN_DIR|RUN_READONLY);
   run_add_file("/bin", NULL, 0, RUN_DIR|RUN_READONLY);
-  run_add_file("/READ.ME", temp, 0, RUN_READONLY);
+  run_add_file("/welcome", temp, 0, RUN_READONLY);
 
   runs("_init");
   runs("init");
