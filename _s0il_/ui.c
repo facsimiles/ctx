@@ -192,7 +192,7 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
   Ui *ui = data;
   if (launch_elf_handler) {
     ctx_remove_idle (ctx, launch_elf_handler);
-    run_output_state_reset ();
+    s0il_output_state_reset ();
     _ctx_toggle_in_idle_dispatch (ctx);
     int retval;
 
@@ -206,7 +206,7 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
       char *argv[2] = {ui->location, NULL};
       retval = runvp (ui->location, argv);
     }
-    if (run_output_state () == 1)
+    if (s0il_output_state () == 1)
     {
       // TODO : draw a visual count-down
       //sleep (2);
@@ -222,7 +222,7 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
       ctx_end_frame(ctx);
       ctx_queue_draw (ctx);
     }
-    run_output_state_reset ();
+    s0il_output_state_reset ();
 
     ui_pop_fun (ui); // leave view when done
     elf_return_value = retval;
@@ -324,7 +324,7 @@ void view_elf (Ui *ui)
   }
   else
   {
-     if (run_output_state () == 1)
+     if (s0il_output_state () == 1)
      {
 #if 0
        while (ctx_vt_has_data (NULL))
@@ -534,7 +534,7 @@ static void ui_unhandled (Ui *ui)
 
 void ui_load_file (Ui *ui, const char *path)
 {
-  FILE *file = run_fopen(path, "rb");
+  FILE *file = s0il_fopen(path, "rb");
   if (ui->data && ui->data_finalize)
   {
     ui->data_finalize (ui->data);
@@ -542,12 +542,12 @@ void ui_load_file (Ui *ui, const char *path)
   ui->data = NULL;
   if (file)
   {
-     run_fseek(file, 0, SEEK_END);
-     long length = run_ftell(file);
-     run_fseek(file, 0, SEEK_SET);
+     s0il_fseek(file, 0, SEEK_END);
+     long length = s0il_ftell(file);
+     s0il_fseek(file, 0, SEEK_SET);
      ui->data = malloc(length + 1);
-     run_fread(ui->data, length, 1, file);
-     run_fclose(file);
+     s0il_fread(ui->data, length, 1, file);
+     s0il_fclose(file);
      ((char*)ui->data)[length] = 0;
      ui->data_finalize = free;
      printf ("loaded %s\n", path);
@@ -636,13 +636,13 @@ static void ui_view_dir (Ui *ui)
       ui->data = calloc (sizeof (dir_info_t), 1);
       ui->data_finalize = dir_info_finalize;
 
-      DIR *dir = run_opendir(ui->location);
+      DIR *dir = s0il_opendir(ui->location);
 
       if (dir)
       {
         struct dirent *ent;
      
-        while ((ent = run_readdir(dir)))
+        while ((ent = s0il_readdir(dir)))
         {
           const char *base = ent->d_name;
      
@@ -663,7 +663,7 @@ static void ui_view_dir (Ui *ui)
             sprintf(de->path, "%s/%s", ui->location, base);
           de->mime_type = magic_detect_path (de->path);
         }
-        run_closedir(dir);
+        s0il_closedir(dir);
         qsort(di->entries, di->count, sizeof(dir_entry_t), cmp_dir_entry);
       }
    }
@@ -768,7 +768,7 @@ ui_load_view(Ui *ui, const char *target)
   if (target[0]=='/')
   {
     struct stat st;
-    if (run_stat (target, &st) == 0) {
+    if (s0il_stat (target, &st) == 0) {
       ui_push_fun (ui, ui_view_file, target, NULL, NULL);
     }
     else
@@ -937,7 +937,7 @@ Ctx *ctx_host (void)
 Ui *ui_new(Ctx *ctx)
 {
   Ui *ui = calloc (1, sizeof (Ui));
-  run_bundle_main("_init", _init_main);
+  s0il_bundle_main("_init", _init_main);
   if (!def_ui) { def_ui = ui;
 #ifdef NATIVE
      _ctx_host = ctx;
@@ -1638,7 +1638,7 @@ void ui_keyboard (Ui *ui)
   }
 }
 
-int run_output_state(void);
+int s0il_output_state(void);
 
 #if CTX_ESP
 #include "esp_task.h"
@@ -1657,7 +1657,7 @@ void ui_iteration(Ui *ui)
 
     {
 #if CTX_ESP
-      int os = run_output_state (); // 1 text 2 graphics 3 both
+      int os = s0il_output_state (); // 1 text 2 graphics 3 both
       if (os > 1) {
          vTaskDelay(1);
          return;
@@ -2480,12 +2480,28 @@ void ui_title(Ui *ui, const char *string)
    ctx_restore (ctx);
    }; 
    ui->y += ui->line_height * scale;
-
-
 }
+
 void ui_seperator(Ui *ui)
 {
-  ui_text(ui, "----------");
+  Ctx *ctx = ui->ctx;
+  ctx_move_to (ctx, ui->width*0.4, ui->y + ui->line_height * 0.3);
+#if 0
+  ctx_rel_line_to (ctx, ui->width * 0.2, -ui->line_height * 0.1);
+  ctx_rel_line_to (ctx, 0, -ui->line_height * 0.2);
+  ctx_rel_line_to (ctx, -ui->width * 0.2, ui->line_height * 0.7);
+  ctx_rel_line_to (ctx, 0, -ui->line_height * 0.2);
+  ctx_rel_line_to (ctx, ui->width * 0.2, -ui->line_height * 0.1);
+#else
+  ctx_rel_quad_to (ctx, ui->width * 0.2, -ui->line_height * 0.1,
+                        ui->width * 0.2, -ui->line_height * 0.3);
+  ctx_rel_quad_to (ctx, -ui->width * 0.1, 0.0,
+                        -ui->width * 0.2, ui->line_height * 0.7);
+  ctx_rel_quad_to (ctx, 0, -ui->line_height * 0.3,
+                        ui->width * 0.2, -ui->line_height * 0.3);
+#endif
+  ctx_stroke (ctx);
+  ui->y += ui->line_height;
 }
 
 void ui_text(Ui *ui, const char *string)

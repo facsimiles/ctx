@@ -87,7 +87,7 @@ PROGRAM_DEVICE = $(patsubst programs/%.c, xtensa-bin/%, $(PROGRAM_C)) \
 
 native-bin/%: programs/%.c ui.h Makefile elf_strip_pie libui.so
 	@mkdir -p `dirname $@` || true
-	$(CC_NATIVE) $< ./libui.so -o $@ $(CFLAGS_NATIVE) -D_RUN_REDEFINES_
+	$(CC_NATIVE) $< ./libui.so -o $@ $(CFLAGS_NATIVE) -DS0IL_REDEFINE_CLIB
 	@echo 'rem-PIE $@'; ./elf_strip_pie $@
 	$(POST_NATIVE) $@
 

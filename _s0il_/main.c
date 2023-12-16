@@ -24,16 +24,23 @@ static void view_menu (Ui *ui)
 
    if (ui_button(ui, "files"))
      ui_do(ui, "/");
-  
+   ui_seperator (ui);  
+
 #if 1
    if (ui_button(ui,"app"))
       ui_do(ui, "app");
-   if (ui_button(ui,"clock"))
-      ui_do(ui, "clock");
-   if (ui_button(ui,"httpd"))
-      ui_do(ui, "httpd");
+#endif
    if (ui_button(ui,"console"))
       ui_do(ui, "sh");
+#if 0
+   if (ui_button(ui,"clock"))
+      ui_do(ui, "clock");
+#endif
+#if 1
+   if (ui_button(ui,"httpd"))
+      ui_do(ui, "httpd");
+#endif
+#if 0
    if (ui_button(ui,"raw_fb"))
       ui_do(ui, "raw_fb");
    if (ui_button(ui,"audio-ks"))
@@ -68,11 +75,11 @@ int main (int argc, char **argv)
                         DISPLAY_HEIGHT,
                         NULL);
 
-    run_signal(SIGPIPE, SIG_IGN);
+    s0il_signal(SIGPIPE, SIG_IGN);
     setvbuf(stdin, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
     fcntl (STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL,0)| O_NONBLOCK);
-    run_bundle_main("magic", magic_main);
+    s0il_bundle_main("magic", magic_main);
     add_mains();
     mount_bin();
 
@@ -91,9 +98,9 @@ int main (int argc, char **argv)
       -1, 0);
 
   const char *temp = "Welcome to project s0il\nIt is a unix system, you know this!\n";
-  run_add_file("/sd",  NULL, 0, RUN_DIR|RUN_READONLY);
-  run_add_file("/bin", NULL, 0, RUN_DIR|RUN_READONLY);
-  run_add_file("/welcome", temp, 0, RUN_READONLY);
+  s0il_add_file("/sd",  NULL, 0, RUN_DIR|RUN_READONLY);
+  s0il_add_file("/bin", NULL, 0, RUN_DIR|RUN_READONLY);
+  s0il_add_file("/welcome", temp, 0, RUN_READONLY);
 
   runs("_init");
   runs("init");

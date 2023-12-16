@@ -11,8 +11,8 @@
 #include <poll.h>
 #endif
 
-#ifdef  _RUN_REDEFINES_
-#undef _RUN_REDEFINES_
+#ifdef  S0IL_REDEFINE_CLIB
+#undef S0IL_REDEFINE_CLIB
 #endif
 
 #define EXPORT_UI 1
@@ -47,7 +47,7 @@ char **wifi_scan(void);
 
 struct esp_elfsym {const char *name; void *sym;};
 
-void run_signal(int sig, void(*func)(int))
+void s0il_signal(int sig, void(*func)(int))
 {
 #if NATIVE
   signal(sig, func);
@@ -79,12 +79,12 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(__subdf3),
     ELFSYM_EXPORT(__truncdfsf2),
 #endif
-    {"ctx_destroy", &run_ctx_destroy},
-    {"ctx_new",     &run_ctx_new},
+    {"ctx_destroy", &s0il_ctx_destroy},
+    {"ctx_new",     &s0il_ctx_new},
     ELFSYM_EXPORT(abort),
     ELFSYM_EXPORT(abs),
     ELFSYM_EXPORT(accept),
-    {"access", &run_access},
+    {"access", &s0il_access},
     ELFSYM_EXPORT(acos),
     ELFSYM_EXPORT(acosf),
     ELFSYM_EXPORT(aligned_alloc),
@@ -129,7 +129,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(clock_settime),
     ELFSYM_EXPORT(close),
     ELFSYM_EXPORT(close),
-    {"closedir", run_closedir},
+    {"closedir", s0il_closedir},
     ELFSYM_EXPORT(connect),
     ELFSYM_EXPORT(cos),
     ELFSYM_EXPORT(cosf),
@@ -356,17 +356,17 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(expm1f),
     ELFSYM_EXPORT(fabs),
     ELFSYM_EXPORT(fabsf),
-    {"fclose", &run_fclose},
+    {"fclose", &s0il_fclose},
     ELFSYM_EXPORT(fcntl),
     ELFSYM_EXPORT(fdim),
     ELFSYM_EXPORT(fdimf),
-    {"fdopen", &run_fdopen},
+    {"fdopen", &s0il_fdopen},
     ELFSYM_EXPORT(feof),
     ELFSYM_EXPORT(ferror),
-    {"fflush", &run_fflush},
-    {"fgetc", &run_fgetc},
-    {"fgetpos", &run_fgetpos},
-    {"fgets", &run_fgets},
+    {"fflush", &s0il_fflush},
+    {"fgetc", &s0il_fgetc},
+    {"fgetpos", &s0il_fgetpos},
+    {"fgets", &s0il_fgets},
     ELFSYM_EXPORT(fileno),
     ELFSYM_EXPORT(finite),
     ELFSYM_EXPORT(finitef),
@@ -374,38 +374,38 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(floorf),
     ELFSYM_EXPORT(fmod),
     ELFSYM_EXPORT(fmodf),
-    { "fopen",   &run_fopen},
-    { "fprintf", &run_fprintf},
-    { "fputs",   &run_fputs},
-    { "fputc",   &run_fputc},
-    { "fread",   &run_fread},
+    { "fopen",   &s0il_fopen},
+    { "fprintf", &s0il_fprintf},
+    { "fputs",   &s0il_fputs},
+    { "fputc",   &s0il_fputc},
+    { "fread",   &s0il_fread},
     ELFSYM_EXPORT(freopen),
     ELFSYM_EXPORT(frexp),
     ELFSYM_EXPORT(frexpf),
     ELFSYM_EXPORT(fscanf),
     ELFSYM_EXPORT(fscanf),
-    {"fseek", &run_fseek},
+    {"fseek", &s0il_fseek},
     ELFSYM_EXPORT(fseeko),
-    {"fsetpos", &run_fsetpos},
-    {"fstat", &run_fstat},
+    {"fsetpos", &s0il_fsetpos},
+    {"fstat", &s0il_fstat},
     ELFSYM_EXPORT(fsync),
-    {"ftell", &run_ftell},
-    {"ftello", &run_ftello},
+    {"ftell", &s0il_ftell},
+    {"ftello", &s0il_ftello},
     ELFSYM_EXPORT(ftruncate),
 
-    { "fwrite",  &run_fwrite},
+    { "fwrite",  &s0il_fwrite},
 
     ELFSYM_EXPORT(getaddrinfo),
-    {"getc", &run_getc},
-    {"getchar", &run_getchar},
+    {"getc", &s0il_getc},
+    {"getchar", &s0il_getchar},
     ELFSYM_EXPORT(getcwd),
     ELFSYM_EXPORT(getenv),
     ELFSYM_EXPORT(gethostbyname),
     //ELFSYM_EXPORT(getline),
-    { "getline",  &run_getline},
+    { "getline",  &s0il_getline},
     ELFSYM_EXPORT(getopt),
-    { "getpid", &run_getpid},
-    { "getppid", &run_getppid},
+    { "getpid", &s0il_getpid},
+    { "getppid", &s0il_getppid},
     ELFSYM_EXPORT(getsockname),
     ELFSYM_EXPORT(gettimeofday),
     ELFSYM_EXPORT(gmtime),
@@ -451,7 +451,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(longjmp),
     ELFSYM_EXPORT(lrintf),
     ELFSYM_EXPORT(lroundf),
-    {"lseek", run_lseek},
+    {"lseek", s0il_lseek},
     ELFSYM_EXPORT(memccpy),
     ELFSYM_EXPORT(memchr),
     ELFSYM_EXPORT(memcmp),
@@ -479,7 +479,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(nexttoward),
     ELFSYM_EXPORT(nexttowardf),
     ELFSYM_EXPORT(open),
-    {"opendir", &run_opendir},
+    {"opendir", &s0il_opendir},
 #ifndef EMSCRIPTEN
 #if CTX_FLOW3R
     ELFSYM_EXPORT(pcTaskGetName),
@@ -493,7 +493,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(posix_memalign),
     ELFSYM_EXPORT(pow),
     ELFSYM_EXPORT(powf),
-    { "printf",  &run_printf},
+    { "printf",  &s0il_printf},
 
 
     ELFSYM_EXPORT(pthread_attr_destroy),
@@ -528,18 +528,18 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(pthread_self),
     ELFSYM_EXPORT(pthread_setcancelstate),
     ELFSYM_EXPORT(pthread_setspecific),
-    { "putc",    &run_fputc},
-    { "putchar", &run_putchar},
+    { "putc",    &s0il_fputc},
+    { "putchar", &s0il_putchar},
     ELFSYM_EXPORT(putenv),
-    { "puts",    &run_puts},
+    { "puts",    &s0il_puts},
 
 
     ELFSYM_EXPORT(qsort),
     ELFSYM_EXPORT(raise),
     ELFSYM_EXPORT(rand),
     ELFSYM_EXPORT(random),
-    {"read", &run_read},
-    {"readdir", &run_readdir},
+    {"read", &s0il_read},
+    {"readdir", &s0il_readdir},
     ELFSYM_EXPORT(readdir_r),
     ELFSYM_EXPORT(realloc),
     ELFSYM_EXPORT(realpath),
@@ -547,23 +547,23 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(recvfrom),
     ELFSYM_EXPORT(recvmsg),
     ELFSYM_EXPORT(remove),
-    {"rename", &run_rename},
-    {"rewind", &run_rewind},
+    {"rename", &s0il_rename},
+    {"rewind", &s0il_rewind},
     ELFSYM_EXPORT(rindex),
     ELFSYM_EXPORT(rmdir),
-    ELFSYM_EXPORT(run_ctx_destroy),
-    ELFSYM_EXPORT(run_ctx_new),
-    ELFSYM_EXPORT(run_chdir),
-    ELFSYM_EXPORT(run_fgets),
-    ELFSYM_EXPORT(run_fprintf),
-    ELFSYM_EXPORT(run_fputs),
-    ELFSYM_EXPORT(run_fputc),
-    ELFSYM_EXPORT(run_getcwd),
-    ELFSYM_EXPORT(run_bundle_main),
-    ELFSYM_EXPORT(run_printf),
-    ELFSYM_EXPORT(run_putchar),
-    ELFSYM_EXPORT(run_puts),
-    ELFSYM_EXPORT(run_write),
+    ELFSYM_EXPORT(s0il_ctx_destroy),
+    ELFSYM_EXPORT(s0il_ctx_new),
+    ELFSYM_EXPORT(s0il_chdir),
+    ELFSYM_EXPORT(s0il_fgets),
+    ELFSYM_EXPORT(s0il_fprintf),
+    ELFSYM_EXPORT(s0il_fputs),
+    ELFSYM_EXPORT(s0il_fputc),
+    ELFSYM_EXPORT(s0il_getcwd),
+    ELFSYM_EXPORT(s0il_bundle_main),
+    ELFSYM_EXPORT(s0il_printf),
+    ELFSYM_EXPORT(s0il_putchar),
+    ELFSYM_EXPORT(s0il_puts),
+    ELFSYM_EXPORT(s0il_write),
     ELFSYM_EXPORT(runs),
     ELFSYM_EXPORT(runv),
     ELFSYM_EXPORT(runvp),
@@ -586,7 +586,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(setlocale),
     ELFSYM_EXPORT(settimeofday),
     ELFSYM_EXPORT(setvbuf),
-    { "signal",   &run_signal},
+    { "signal",   &s0il_signal},
     ELFSYM_EXPORT(shutdown),
     //ELFSYM_EXPORT(sincos),
     //ELFSYM_EXPORT(sincosf),
@@ -603,7 +603,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(srand),
     ELFSYM_EXPORT(srandom),
     ELFSYM_EXPORT(sscanf),
-    {"stat", run_stat},
+    {"stat", s0il_stat},
     ELFSYM_EXPORT(stpcpy),
     ELFSYM_EXPORT(stpncpy),
     ELFSYM_EXPORT(strcasecmp),
@@ -711,8 +711,8 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ui_x),
     ELFSYM_EXPORT(ui_y),
 #endif
-    {"ungetc", &run_ungetc},
-    {"unlink", &run_unlink},
+    {"ungetc", &s0il_ungetc},
+    {"unlink", &s0il_unlink},
     ELFSYM_EXPORT(unsetenv),
     ELFSYM_EXPORT(usleep),
 #ifndef EMSCRIPTEN
@@ -737,7 +737,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(wifi_scan),
 #endif
 #endif
-    { "write",   &run_write},
+    { "write",   &s0il_write},
 #ifndef EMSCRIPTEN
 #if CTX_FLOW3R
     ELFSYM_EXPORT(xTaskGetCurrentTaskHandle),
@@ -754,7 +754,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_END
 };
 
-const void *run_sym(const char *name)
+const void *s0il_sym(const char *name)
 {
   for (int i = 0; g_customer_elfsyms[i].name; i++)
    if (!strcmp (g_customer_elfsyms[i].name, name))

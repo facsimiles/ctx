@@ -81,7 +81,7 @@ static const char *magic_get_dir_type(const char *path)
      if (magic->ext && !strcmp (magic->ext, "inode/directory"))
      {
        snprintf (temp, sizeof(temp), "%s/%s", path, magic->magic);
-       if (run_access (temp, R_OK) == F_OK)
+       if (s0il_access (temp, R_OK) == F_OK)
          return magic->mime_type;
      }
    }
@@ -153,20 +153,20 @@ const char *magic_detect_path(const char *location)
 
    struct stat stat_buf; 
    if (!path || path[0]==0) return 0;
-      run_stat (path, &stat_buf);
+      s0il_stat (path, &stat_buf);
    if (S_ISDIR (stat_buf.st_mode))
    {
      return magic_get_dir_type(location);
    }
 
    char sector[512]={0,};
-   FILE *f = run_fopen (path, "r");
+   FILE *f = s0il_fopen (path, "r");
    if (!f)
      return NULL;
 
    memset(sector, 0, 512);
-   run_fread(sector, 512, 1, f);
-   run_fclose (f);
+   s0il_fread(sector, 512, 1, f);
+   s0il_fclose (f);
    return magic_detect_sector512(location, sector);
 }
 
@@ -177,7 +177,7 @@ int magic_main (int argc, char **argv)
     for (CtxList *iter = ui_magic; iter; iter=iter->next)
     {
       ctx_magic_t *magic = iter->data;
-      run_printf ("%s ext:%s magic-len:%i %s\n", magic->mime_type, magic->ext, magic->magic_len, magic->is_text?"text":"");
+      s0il_printf ("%s ext:%s magic-len:%i %s\n", magic->mime_type, magic->ext, magic->magic_len, magic->is_text?"text":"");
     }
   }
   else
@@ -186,7 +186,7 @@ int magic_main (int argc, char **argv)
      if (argv[i][0]!='-')
      {
        const char *mime_type = magic_detect_path (argv[i]);
-       run_printf ("%s - %s\n", argv[i], mime_type);
+       s0il_printf ("%s - %s\n", argv[i], mime_type);
      }
   }
   return 0;

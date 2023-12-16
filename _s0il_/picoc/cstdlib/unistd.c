@@ -5,11 +5,11 @@
 #include <fcntl.h>
 #include "../interpreter.h"
 #if EMSCRIPTEN
-#define _RUN_REDEFINES_
+#define S0IL_REDEFINE_CLIB
 #endif
 #include "s0il.h"
-#define chdir  run_chdir
-#define getcwd run_getcwd
+#define chdir  s0il_chdir
+#define getcwd s0il_getcwd
 #ifndef BUILTIN_MINI_STDLIB
 
 static int ZeroValue = 0;

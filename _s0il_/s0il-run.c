@@ -83,7 +83,7 @@ typedef struct inlined_program_t {
 
 static CtxList *inlined_programs = NULL;
 
-void run_bundle_main (const char *name, int(*main)(int argc, char **argv))
+void s0il_bundle_main (const char *name, int(*main)(int argc, char **argv))
 {
   inlined_program_t *program = calloc (sizeof (inlined_program_t), 1);
   program->base = strdup (name);
@@ -101,7 +101,7 @@ static void busywarp_list (void)
   for (CtxList *iter = inlined_programs; iter; iter = iter->next)
   {
     inlined_program_t *program = iter->data;
-    run_printf ("%s ", program->base);
+    s0il_printf ("%s ", program->base);
   }
 }
 
@@ -122,9 +122,9 @@ int busywarp (int argc, char **argv)
   {
     if (argv[1] == NULL)
     {
-      run_printf ("Usage: %s <command> [args ..]\n  commands: ", base);
+      s0il_printf ("Usage: %s <command> [args ..]\n  commands: ", base);
       busywarp_list ();
-      run_printf ("\n");
+      s0il_printf ("\n");
       return 0;
     }
     else
@@ -190,20 +190,20 @@ elf_handle_t *elf_open (const char *path)
       return elf;
   }
   
-  FILE *file = run_fopen (path, "rb");
+  FILE *file = s0il_fopen (path, "rb");
   if (file)
   {
-     run_fseek(file, 0, SEEK_END);
-     int length = run_ftell(file);
-     run_fseek(file, 0, SEEK_SET);
+     s0il_fseek(file, 0, SEEK_END);
+     int length = s0il_ftell(file);
+     s0il_fseek(file, 0, SEEK_SET);
      elf_handle_t *elf = calloc (sizeof (elf_handle_t), 1);
      elf->path = strdup (path);
      if (!elf) return NULL;
      uint8_t *data = malloc(length + 1);
      if (data)
      {
-       run_fread(data, length, 1, file);
-       run_fclose(file);
+       s0il_fread(data, length, 1, file);
+       s0il_fclose(file);
        esp_elf_init(&elf->elf);
        if (esp_elf_relocate(&elf->elf, data))
        {
@@ -253,11 +253,11 @@ static int esp_elf_runv (char *path, char **argv, int same_stack)
 #include <dlfcn.h>
 
 #if 0
-void run_output_state_reset (void)
+void s0il_output_state_reset (void)
 {
   output_state = 0;
 }
-int  run_output_state (void){
+int  s0il_output_state (void){
   return output_state;
 }
 #endif
@@ -297,19 +297,19 @@ static int dlopen_runv (char *path2, char **argv, int same_stack)
     if (access (tmp, R_OK) != F_OK)
     {
     char *cmd = malloc(strlen(tmp)*2+10);
-    FILE *in = run_fopen(path, "rb");
-    FILE *out = run_fopen(tmp, "w");
-     run_fseek(in, 0, SEEK_END);
-     int length = run_ftell(in);
-     run_fseek(in, 0, SEEK_SET);
+    FILE *in = s0il_fopen(path, "rb");
+    FILE *out = s0il_fopen(tmp, "w");
+     s0il_fseek(in, 0, SEEK_END);
+     int length = s0il_ftell(in);
+     s0il_fseek(in, 0, SEEK_SET);
      uint8_t *data = malloc(length + 1);
      if (data)
      {
-       run_fread(data, length, 1, in);
-       run_fwrite(data, length, 1, out);
+       s0il_fread(data, length, 1, in);
+       s0il_fwrite(data, length, 1, out);
     }
-    run_fclose (in);
-    run_fclose (out);
+    s0il_fclose (in);
+    s0il_fclose (out);
     free (cmd);
     }
     path = tmp;
@@ -377,12 +377,12 @@ int runv (char *path, char **argv)
 
 #if 1
   {
-    FILE *f = run_fopen (path, "r");
+    FILE *f = s0il_fopen (path, "r");
     if (f)
     {
        uint8_t sector[512];
-       run_fread(sector, 512, 1, f);
-       run_fclose (f);
+       s0il_fread(sector, 512, 1, f);
+       s0il_fclose (f);
        if (sector[0]=='/' && sector[1]=='/' && sector[2]=='!')
        {
          int argc = 0;
@@ -495,7 +495,7 @@ char *ui_find_executable(Ui *ui, const char *file)
     else
     {
       snprintf (temp, sizeof(temp), "%s%s", path[i], file);
-      if (run_access (temp, R_OK) == F_OK)
+      if (s0il_access (temp, R_OK) == F_OK)
       {
         return strdup(temp);
       }
@@ -524,7 +524,7 @@ runvp (char *file, char **argv)
   return -1;
 }
 
-static void *run_thread(void *data)
+static void *s0il_thread(void *data)
 {
   char **cargv = data;
   int ret = runvp (cargv[0], cargv);
@@ -543,7 +543,7 @@ int spawnp (char **argv)
      argv_copy[i]=strdup(argv[i]);
   pthread_attr_init(&attr);
   pthread_attr_setstacksize(&attr, 8*1024);
-  if (pthread_create(&tid, &attr, run_thread, argv_copy))
+  if (pthread_create(&tid, &attr, s0il_thread, argv_copy))
     printf ("failed spawning thread\n");
   return 23;
 }

@@ -4,7 +4,7 @@
 #include <errno.h>
 #include "../interpreter.h"
 #if EMSCRIPTEN
-#define _RUN_REDEFINES_
+#define S0IL_REDEFINE_CLIB
 #endif
 
 #include "s0il.h"
@@ -392,7 +392,7 @@ void StdioFgetc(struct ParseState *Parser, struct Value *ReturnValue, struct Val
 
 void StdioFgets(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs) 
 {
-    ReturnValue->Val->Pointer = run_fgets(Param[0]->Val->Pointer, Param[1]->Val->Integer, Param[2]->Val->Pointer);
+    ReturnValue->Val->Pointer = s0il_fgets(Param[0]->Val->Pointer, Param[1]->Val->Integer, Param[2]->Val->Pointer);
 }
 
 void StdioRemove(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs) 
@@ -511,7 +511,7 @@ void StdioPuts(struct ParseState *Parser, struct Value *ReturnValue, struct Valu
 
 void StdioGets(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs) 
 {
-    ReturnValue->Val->Pointer = run_fgets(Param[0]->Val->Pointer, GETS_MAXValue, stdin);
+    ReturnValue->Val->Pointer = s0il_fgets(Param[0]->Val->Pointer, GETS_MAXValue, stdin);
     if (ReturnValue->Val->Pointer != NULL)
     {
         char *EOLPos = strchr(Param[0]->Val->Pointer, '\n');
