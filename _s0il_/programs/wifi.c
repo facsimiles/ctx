@@ -51,7 +51,7 @@ void view_wifi (Ui *ui)
    ui_end_frame (ui);
 }
 
-char *_wifis[] ={"foo", "bar", NULL};
+char *_wifis[] ={"mutus", "nomen", "dedit", "cocis", NULL};
 
 MAIN(wifi)
 {

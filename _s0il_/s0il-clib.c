@@ -476,6 +476,10 @@ static int stdin_got_data(void)
 
 static char *s0il_gets(char* buf, size_t buflen) {
     size_t count = 0;
+
+    int in_esc=0;
+    char keybuf[8]="";
+    int keylen=0;
     // used by the shell through fgets, and gets use interactive shell
     // on raw terminals - for now mostly pseudo what regular line-editing
     // mode would give.
@@ -487,10 +491,12 @@ static char *s0il_gets(char* buf, size_t buflen) {
         else
         {
           if (s0il_is_main_thread())
+          {
             ui_iteration(ui_host(NULL));
 #ifndef EMSCRIPTEN
           usleep (1000); // XXX : seems more stable with it
 #endif
+          }
           continue;
         }
         if(count == 0)
@@ -508,12 +514,44 @@ static char *s0il_gets(char* buf, size_t buflen) {
         }
         if (c == '\t')
            continue;
-
+ 
+        if (in_esc)
+        {
+          switch (c)
+          {
+            case 'A':
+               printf("up");
+               in_esc = 0;
+              break;
+            case 'B':
+               printf("down");
+               in_esc = 0;
+              break;
+            case 'D':
+               printf("left");
+               in_esc = 0;
+              break;
+            case 'C':
+               printf("right");
+               in_esc = 0;
+              break;
+            default:
+            if (keylen < 4)
+            {
+              printf("{%i %c}", c, c>32?c:'_');
+              keybuf[keylen++]=c;
+              keybuf[keylen]=0;
+            } else in_esc = 0;
+          }
+        }
+        else
+        {
         if (c == '\n') {
             buf[count] = c;
             count++;
             break;
-        } else if (c == '\b' || c == '\177') {
+        } else switch (c)
+        { case '\b': case '\177': // backspace
             if (count > 0) {
                 buf[count - 1] = 0;
                 count--;
@@ -521,12 +559,18 @@ static char *s0il_gets(char* buf, size_t buflen) {
                 s0il_fputc('\b', stdout); /* echo */
             }
             continue;
-        //} else if (c < 32) { fprintf(stdout, "{%i}", (int)c);
-        } else {
+          case 27:
+            in_esc=1;
+            keylen=0;
+            keybuf[keylen++]=c;
+            keybuf[keylen]=0;
+            continue;
+            default:
             buf[count] = c;
             count++;
         }
         s0il_fputc(c, stdout); /* echo */
+        }
         if (s0il_is_main_thread())
           ui_iteration(ui_host(NULL));
     }
@@ -865,3 +909,14 @@ ssize_t s0il_getline (char **lineptr, size_t *n, FILE *stream)
   s0il_fgets(*lineptr, 500, stream);
   return strlen(*lineptr);
 }
+
+void    s0il_exit     (int retval)
+{
+#if CTX_FLOW3R
+  vTaskDelete(NULL);
+  // store ret-val in pid_info?
+#else
+  pthread_exit((void*)(ssize_t)(retval));
+#endif
+}
+

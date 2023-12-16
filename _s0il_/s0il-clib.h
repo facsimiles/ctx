@@ -48,6 +48,7 @@ ssize_t s0il_read     (int fildes, void *buf, size_t nbyte);
 int     s0il_fgetpos  (FILE *s, fpos_t *pos);
 int     s0il_fsetpos  (FILE *s, fpos_t *pos);
 
+void    s0il_exit     (int retval);
 void    s0il_signal   (int sig, void(*func)(int));
 
 char   *s0il_getcwd   (char *buf, size_t size);
@@ -55,6 +56,7 @@ int     s0il_chdir    (const char *path);
 
 #ifdef S0IL_REDEFINE_CLIB
 
+#define exit(r) s0il_exit(r)
 #define access s0il_access
 #define lseek s0il_lseek
 #define opendir s0il_opendir
