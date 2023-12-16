@@ -1,4 +1,3 @@
-#include "port_config.h"
 #include "s0il.h"
 Ctx *ctx_host(void);
 

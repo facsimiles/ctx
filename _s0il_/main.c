@@ -1,19 +1,9 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <math.h>
 #include "port_config.h"
-#include "ctx.h"
-
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
-
-#include "ui.h"
+#include "s0il.h"
 
 static char *root_path = NULL;
 
-#include <libgen.h>
+//#include <libgen.h>
 
 #ifdef EMSCRIPTEN
 #include "fs_bin_generic.c"

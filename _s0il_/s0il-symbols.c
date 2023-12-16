@@ -7,7 +7,9 @@
 #undef strstr
 #undef strlen
 //#endif
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE
+#endif
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
@@ -23,15 +25,7 @@
 
 #include "s0il.h"
 
-#include <stdlib.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <dirent.h>
-#include <setjmp.h>
-
-#include "run-clib.c"
+#include "s0il-clib.c"
 
 extern float __divsf3     (float a, float b);
 extern double __floatsidf (int a);
@@ -48,7 +42,7 @@ void __ledf2   (void);
 void __gedf2   (void);
 void __lshrdi3 (void);
 
-void busywarp(void);
+int busywarp(int argc, char **argv);
 void ctx_set_pixels(Ctx *ctx, void *userdata, int x, int y, int w, int h, void *buf);
 
 extern int ctx_osk_mode;
@@ -115,7 +109,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(atoi),
     ELFSYM_EXPORT(atol),
     ELFSYM_EXPORT(atoll),
-    ELFSYM_EXPORT(basename),
+    {"basename", &ui_basename},
     ELFSYM_EXPORT(bcmp),
     ELFSYM_EXPORT(bcopy),
     ELFSYM_EXPORT(bind),

@@ -10,8 +10,6 @@
 #include <pthread.h>
 #include "ctx.h"
 
-#include "run.h"
-
 #ifndef NATIVE
 #undef CTX_FLOW3R 
 #define CTX_FLOW3R 1
@@ -166,17 +164,5 @@ float ui_y (Ui *ui);
 void ui_move_to (Ui *ui, float x, float y);
 bool ui_keyboard_visible(Ui *ui);
 
-#include "magic.h"
-
 #endif
-
-#ifdef MAIN
-#undef MAIN
-#endif
-#ifdef RUN_BUNDLE
-#define MAIN(name) int name##_main(int argc, char **argv)
-#else
-#define MAIN(name) int main (int argc, char **argv)
-#endif
-
 
