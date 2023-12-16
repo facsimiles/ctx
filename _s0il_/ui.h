@@ -52,6 +52,7 @@ Ui *ui_host(Ctx *ctx); // like ui_new, can take NULL for ctx - should not
                        // be ui_destroy'ed
 
 void ui_destroy (Ui *ui);
+void ui_backlight (float backlight);
 
 // launch an ui view at location, which is am absolute file-system path or
 // a specially recognized view name
@@ -153,7 +154,6 @@ ui_push_fun(Ui *ui, ui_fun fun, const char *location, void *data, ui_data_finali
 void ui_iteration(Ui *ui);
 
 char *ui_basename (const char *in);
-char *ui_find_executable(Ui *ui, const char *file);
 
 Ctx  *ui_ctx      (Ui *ui);
 void  ui_set_data (Ui *ui, void *data, ui_data_finalize data_finalize);

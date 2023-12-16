@@ -162,7 +162,7 @@ MAIN(wifi)
 #endif
 #endif
 
-  if (argv[1] && !strcmp (argv[1], "--auto")) return 0;
+  if (argv[1] && !strcmp (argv[1], "--auto")){ sleep(1);  return 0; }
 
   do {
     ctx_start_frame (ctx);

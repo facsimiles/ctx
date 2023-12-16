@@ -656,7 +656,7 @@ static void httpd_post_handler (HttpdRequest *req)
       if (httpd_run && action == action_run)
       {
         char *commandline = strdup (temp+12);
-        printf ("%i\n", runs(commandline));
+        printf ("%i\n", system(commandline));
         free (commandline);
       }
 

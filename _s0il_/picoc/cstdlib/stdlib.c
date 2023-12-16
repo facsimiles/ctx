@@ -2,9 +2,7 @@
 #include "../interpreter.h"
 
 #ifndef BUILTIN_MINI_STDLIB
-#if EMSCRIPTEN
 #define S0IL_REDEFINE_CLIB
-#endif
 #include "s0il.h"
 
 static int Stdlib_ZeroValue = 0;
@@ -90,7 +88,7 @@ void StdlibGetenv(struct ParseState *Parser, struct Value *ReturnValue, struct V
 
 void StdlibSystem(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs)
 {
-    ReturnValue->Val->Integer = runs(Param[0]->Val->Pointer);
+    ReturnValue->Val->Integer = system(Param[0]->Val->Pointer);
 }
 
 #if 0

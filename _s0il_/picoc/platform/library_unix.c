@@ -348,9 +348,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
           Param[1]->Val->Pointer);\
 }
 
-fun_int__ptr_ptr(runv);
-fun_int__ptr_ptr(runvp);
-fun_int__ptr(runs);
+fun_int__ptr_ptr(s0il_runv);
+fun_int__ptr_ptr(s0il_runvp);
 
 
 fun_void__ptr_ptr(ui_text);
@@ -418,9 +417,9 @@ struct LibraryFunction UiFunctions[] =
     {Cui_cb_do,  "void ui_cb_do(void*,void*,void*);"},
     {Cui_iteration,  "void ui_iteration(Ui*);"},
 
-    {Crunv,            "int runv(char *, char **);"},
-    {Crunvp,           "int runvp(char *, char **);"},
-    {Cruns,            "int runs(char *);"},
+    {Cs0il_runv,     "int s0il_runv(char *, char **);"},
+    {Cs0il_runvp,    "int s0il_runvp(char *, char **);"},
+    //{Cruns,            "int runs(char *);"},
 
  
     {NULL, NULL}

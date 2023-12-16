@@ -46,8 +46,6 @@
 
 #include "ctx.h"
 #include "ui.h"
-#include "s0il-run.h"
-#include "s0il-magic.h"
 #include "s0il-clib.h"
 #include <libgen.h>
 
@@ -56,20 +54,20 @@ pid_t gettid(void);
 extern void *_s0il_main_thread;
 static inline void *_s0il_thread_id(void)
 {
-#if 1
-#if CTX_FLOW3R
+#if EMSCRIPTEN
+  return 0;
+#elif CTX_FLOW3R
   return xTaskGetCurrentTaskHandle();
 #else
   return (void*)((size_t)gettid());
-#endif
-#else
-  return 0;
 #endif
 }
 
 static inline bool s0il_is_main_thread()
 {
-#if CTX_FLOW3R
+#if EMSCRIPTEN
+  return 1;
+#elif CTX_FLOW3R
   return _s0il_thread_id() == _s0il_main_thread;
 #else
   return gettid() == getpid();
@@ -77,6 +75,38 @@ static inline bool s0il_is_main_thread()
 }
 
 Ctx *ctx_host(void);
+
+typedef enum {
+  S0IL_READONLY = (1<<0),
+  S0IL_DIR      = (1<<1)
+} s0il_file_flag;
+void  s0il_add_file(const char *path, const char *contents, size_t size, s0il_file_flag flags);
+void  s0il_bundle_main (const char *name, int(*main)(int argc, char **argv));
+
+int   s0il_runv (char *pathname, char **argv);
+int   s0il_runvp (char *file, char **argv);
+int   s0il_spawnp (char **argv);
+
+// 
+void magic_add (const char *mime_type,
+                const char *ext,
+                char *magic_data,
+                int magic_len,
+                int is_text);
+
+bool magic_has_mime(const char *mime_type);
+
+const char *magic_detect_sector512 (const char *path, const char *sector512);
+
+const char *magic_detect_path (const char *location);
+
+int magic_main(int argc, char **argv);
+
+
+void s0il_output_state_reset (void);
+int  s0il_output_state (void); // 1 text 2 graphics 3 both
+char *s0il_path_lookup(Ui *ui, const char *command);
+
 #endif
 
 #ifdef MAIN

@@ -8,6 +8,7 @@
 #include <dirent.h>
 
 int show_size = 0;
+int one_per_line = 0;
 
 typedef struct dir_entry_t
 {

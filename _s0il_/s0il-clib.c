@@ -185,8 +185,8 @@ file_t *s0il_find_file(const char *path)
 
 void s0il_add_file(const char *path, const char *contents, size_t size, s0il_file_flag flags)
 {
-  bool readonly = ((flags & RUN_READONLY) != 0);
-  bool is_dir   = ((flags & RUN_DIR) != 0);
+  bool readonly = ((flags & S0IL_READONLY) != 0);
+  bool is_dir   = ((flags & S0IL_DIR) != 0);
 
   char *parent = strdup (path);
   strrchr (parent, '/')[0]=0;
@@ -513,6 +513,8 @@ static char *s0il_gets(char* buf, size_t buflen) {
     // used by the shell through fgets, and gets use interactive shell
     // on raw terminals - for now mostly pseudo what regular line-editing
     // mode would give.
+
+    if (keybuf[0]){};
 
     while (count < buflen) {
         int c;
@@ -955,7 +957,8 @@ ssize_t s0il_getline (char **lineptr, size_t *n, FILE *stream)
 
 void    s0il_exit     (int retval)
 {
-#if CTX_FLOW3R
+#if EMSCRIPTEN
+#elif CTX_FLOW3R
   vTaskDelete(NULL);
   // store ret-val in pid_info?
 #else

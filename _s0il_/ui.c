@@ -23,8 +23,8 @@ int _init_main (int argc, char **argv)
 
   //runvp("text",  NULL);
   //runvp("image", NULL);
-  runs("text");
-  runs("image");
+  s0il_system("text");
+  s0il_system("image");
 
   char mpg1_magic[] = {0x00, 0x00, 0x01, 0xba};
 
@@ -61,6 +61,10 @@ int _init_main (int argc, char **argv)
   char wav_magic[] = {0x52, 0x49, 0x46, 0x46, 0};
   magic_add("audio/x-wav", ".wav", wav_magic, -1, 0);
   magic_add("audio/mp3", ".mp3", NULL, 0, 0);
+
+#if EMSCRIPTEN
+  mkdir("/sd", 0777);
+#endif
 
   return 0;
 }
@@ -199,12 +203,12 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
     if (ui->interpreter)
     {
       char *argv[5] = {ui->interpreter, ui->location, NULL, NULL, NULL};
-      retval = runvp (ui->interpreter, argv);
+      retval = s0il_runvp (ui->interpreter, argv);
     }
     else
     {
       char *argv[2] = {ui->location, NULL};
-      retval = runvp (ui->location, argv);
+      retval = s0il_runvp (ui->location, argv);
     }
     if (s0il_output_state () == 1)
     {
@@ -284,7 +288,7 @@ int  ctx_osk_mode = 0;
 static void draw_term (Ui *ui)
 {
   Ctx *ctx = ui->ctx;
-  float font_size = ui->height / 16.5f;
+  float font_size = ui->height / 16.0f;
   if (!term_client)
   {
     int flags = 0;
@@ -363,10 +367,9 @@ static bool osk_captouch = false;
 
 ////////////////////////////////////////////////////////
 
-static float backlight  = 100.0;
-static void ui_backlight (float backlight)
+static float prev_backlight = 100.0f;
+void ui_backlight (float backlight)
 {
-   static float prev_backlight = -10.0f;
    if (prev_backlight != backlight)
    {
 #if CTX_ESP
@@ -374,42 +377,11 @@ static void ui_backlight (float backlight)
 #endif
      prev_backlight = backlight;
    }
-
-}
-
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
-extern int flow3r_synthesize_key_events;
-#endif
-#endif
-
-void view_settings (Ui *ui)
-{
-   ui_start_frame (ui);
-
-   ui->y += ui->height * 0.05;
-   ui_title(ui,"settings");
-
-   if (ui_button(ui, "wifi")) ui_do(ui, "wifi");
-   if (ui_button(ui, "httpd")) ui_do(ui, "httpd");
-   if (ui_button(ui, "ui"))   ui_do(ui, "settings-ui");
-
-   backlight = ui_slider(ui,"backlight", 0.0f, 100.0f, 5.0, backlight);
-
-   ui_backlight (backlight);
-
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
-   flow3r_synthesize_key_events = ui_toggle(ui,"cap-touch keys", flow3r_synthesize_key_events);
-#endif
-#endif
-   ui_end_frame(ui);
 }
 
 void view_settings_ui (Ui *ui)
 {
    ui_start_frame (ui);
-   //static float backlight  = 100.0;
    float line_height = ui->line_height;
 
    ui->y += ui->height * 0.05;
@@ -786,7 +758,7 @@ ui_load_view(Ui *ui, const char *target)
     }
 
     char *epath;
-    if ((epath = ui_find_executable (ui, target)))
+    if ((epath = s0il_path_lookup (ui, target)))
     {
       //printf ("push efun %s %s\n", target, epath);
       ui_push_fun (ui, view_elf, epath, NULL, NULL);
@@ -998,7 +970,6 @@ static float color_fg[4]; // black or white automatically based on bg
     else
       ui->font_size = width * 0.09f;
 
-  ui_register_view (ui, "settings", view_settings, NULL);
   ui_register_view (ui, "settings-ui",  view_settings_ui, NULL);
   ui_register_view (ui, "application/x-sharedlib", view_elf, NULL);
   ui_register_view (ui, "inode/directory", ui_view_dir, NULL);
@@ -2344,10 +2315,10 @@ void ui_end_frame (Ui *ui)
       ctx_rgba (ctx, 0,0,0,0.9);
       ctx_fill_rule (ctx, CTX_FILL_RULE_EVEN_ODD);
       ctx_fill (ctx);
-      if (backlight <= 99.0f)
+      if (prev_backlight <= 99.0f)
       {
       ctx_rectangle (ctx, 0,0,ctx_width(ctx),ctx_height(ctx));
-      float alpha = 1.0f-(backlight/100.0f * 0.8 + 0.2);
+      float alpha = 1.0f-(prev_backlight/100.0f * 0.8 + 0.2);
       ctx_rgba (ctx, 0.0f,0.0f,0.0f, alpha);
       ctx_fill (ctx);
       }

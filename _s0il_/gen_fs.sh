@@ -10,6 +10,6 @@ echo "static int done=0;if(done)return;done=1;"
 for a in `find -L . -type f`;do
    b=`echo $a|sed s:\./::`;
    c=__`echo $b|sed s:[./-]:_:g`;
-   echo "s0il_add_file(\"/$2/$b\", (char*)$c, "$c"_len, RUN_READONLY);";
+   echo "s0il_add_file(\"/$2/$b\", (char*)$c, "$c"_len, S0IL_READONLY);";
 done
 echo "}";

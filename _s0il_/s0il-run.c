@@ -360,7 +360,7 @@ static int program_runv (inlined_program_t *program, char **argv, int same_stack
   return ret;
 }
 
-int runv (char *path, char **argv)
+int s0il_runv (char *path, char **argv)
 {
   //printf (":::%s %s\n", path, argv?argv[0]:NULL);
   for (CtxList *iter = inlined_programs; iter; iter = iter->next)
@@ -411,7 +411,7 @@ int runv (char *path, char **argv)
            argc+=1;
          }
          argv_expanded[argc]=NULL;
-         return runvp(interpreter, argv_expanded);
+         return s0il_runvp(interpreter, argv_expanded);
        }
        else if (sector[0]=='#' && sector[1]=='!')
        {
@@ -441,7 +441,7 @@ int runv (char *path, char **argv)
            argc+=1;
          }
          argv_expanded[argc]=NULL;
-         return runvp(interpreter, argv_expanded);
+         return s0il_runvp(interpreter, argv_expanded);
        }
        else
        if (!(sector[0]==0x7f &&
@@ -474,7 +474,7 @@ int runv (char *path, char **argv)
   return ret;
 }
 
-char *ui_find_executable(Ui *ui, const char *file)
+char *s0il_path_lookup(Ui *ui, const char *file)
 {
   char *path[]={"/sd/bin/", "/bin/", ":", NULL};
   char  temp[512];
@@ -501,22 +501,20 @@ char *ui_find_executable(Ui *ui, const char *file)
       }
     }
   }
-
-
   return NULL;
 }
 
 int
-runvp (char *file, char **argv)
+s0il_runvp (char *file, char **argv)
 {
   if (file)
   if (file[0]==':')file++;
   char *path = file;
   if (path[0]!='/')
-    path = ui_find_executable(NULL, file);
+    path = s0il_path_lookup(NULL, file);
   if (path)
   {
-    int retval = runv (path, argv);
+    int retval = s0il_runv (path, argv);
     if (path != file)
       free (path);
     return retval;
@@ -527,13 +525,13 @@ runvp (char *file, char **argv)
 static void *s0il_thread(void *data)
 {
   char **cargv = data;
-  int ret = runvp (cargv[0], cargv);
+  int ret = s0il_runvp (cargv[0], cargv);
   pthread_exit((void*)((size_t)ret));
   return (void*)((size_t)ret);
 }
 
 pthread_attr_t attr;
-int spawnp (char **argv)
+int s0il_spawnp (char **argv)
 {
   pthread_t tid;
   int argc = 0;
@@ -614,7 +612,7 @@ static char *string_chop_head (char *orig) /* return pointer to reset after arg 
 
 
 int
-runs (const char *cmdline)
+s0il_system (const char *cmdline)
 {
   char *cargv[32];
   int   cargc;
@@ -624,12 +622,9 @@ runs (const char *cmdline)
     return -4;
   copy = calloc (strlen (cmdline)+3, 1);
   strcpy (copy, cmdline);
-  //copy[strlen (cmdline)]=' ';
-  //copy[strlen (cmdline)+1]=0;
   rest = copy;
 
   int pipe_no = 0;
-
   do {
     cargc = 0;
     while (rest && cargc < 30 && (rest[0] != ';' &&
@@ -641,12 +636,20 @@ runs (const char *cmdline)
         rest = string_chop_head (rest);
       }
     cargv[cargc] = NULL;
-    //printf (":::%i %s rest0:%s\n", cargc, cargv[0], rest);
     if (cargv[0])
     {
+      if(strchr(cargv[0],'='))
+      {
+         char *key = cargv[0];
+         char *value = strchr(cargv[0],'=')+1;
+         value[-1]=0;
+         setenv(key, value, 1);
+      }
+      else
+      {
+
       FILE *in_stream = NULL;
       FILE *out_stream = NULL;
-      int ends = 0;
       if (pipe_no)
       {
         char path[] = "/tmp/s0il_pipe_0";
@@ -679,7 +682,7 @@ runs (const char *cmdline)
 
       if (rest && rest[0]=='&')
       {
-         int pid = spawnp (cargv);
+         int pid = s0il_spawnp (cargv);
          if (pid <= 0) printf ("spawn failed\n");
          else {
            printf("got pid:%i\n", pid);
@@ -688,7 +691,7 @@ runs (const char *cmdline)
       }
       else
       {
-        ret = runvp (cargv[0], cargv);
+        ret = s0il_runvp (cargv[0], cargv);
       }
 
       if (in_stream || out_stream)
@@ -700,8 +703,8 @@ runs (const char *cmdline)
          s0il_fclose (out_stream);
       }
 
+      }
     }
-
     if (rest && (rest[0]==';'
               || rest[0]=='&'
               || rest[0]=='|'
@@ -711,9 +714,7 @@ runs (const char *cmdline)
         while (rest[0] == ' ')rest++;
       }
   } while (rest && rest[0]);
-  //done:
   free (copy);
   ctx_reset_has_exited (ctx_host());
   return ret;
 }
-

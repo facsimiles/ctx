@@ -23,6 +23,7 @@ void    s0il_ctx_destroy (void *ctx);
 int     s0il_access   (const char *pathname, int mode);
 ssize_t s0il_getline  (char **lineptr, size_t *n, FILE *stream);
 
+int     s0il_system   (const char *cmdline);
 off_t   s0il_lseek    (int fd, off_t offset, int whence);
 DIR    *s0il_opendir  (const char *name);
 int     s0il_closedir (DIR *dirp);
@@ -34,7 +35,7 @@ int     s0il_stat     (const char *pathname, struct stat *statbuf);
 int     s0il_fstat    (int fd, struct stat *statbuf);
 int     s0il_rename   (const char *src, const char *dst);
 long    s0il_ftell    (FILE *stream);
-long    s0il_ftello   (FILE *stream);
+off_t   s0il_ftello   (FILE *stream);
 
 FILE   *s0il_fopen    (const char *pathname, const char *mode);
 FILE   *s0il_fdopen   (int fd, const char *mode);
@@ -72,6 +73,7 @@ int     s0il_chdir    (const char *path);
 #define getppid s0il_getppid
 #define stat(p,b) s0il_stat(p,b)
 #define rename(p,b) s0il_rename(p,b)
+#define system(c) s0il_system(c)
 
 //#define signal      s0il_signal
 #define fgets       s0il_fgets
