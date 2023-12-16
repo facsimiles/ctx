@@ -7,19 +7,20 @@ int  s0il_output_state (void)
 {
   return text_output * 1 + gfx_output * 2;
 }
+
 void s0il_output_state_reset (void)
 {
   text_output = 0;
   gfx_output = 0;
 }
 
-void *s0il_ctx_new(int width, int height, const char *backend)
+void *s0il_ctx_new (int width, int height, const char *backend)
 {
   gfx_output  = 1;
   return ctx_new(width, height, backend);
 }
 
-void s0il_ctx_destroy(void *ctx)
+void s0il_ctx_destroy (void *ctx)
 {
   gfx_output  = 0;
 }
@@ -27,7 +28,7 @@ void s0il_ctx_destroy(void *ctx)
 
 static char *s0il_cwd = NULL;
 
-char *s0il_getcwd(char *buf, size_t size)
+char *s0il_getcwd (char *buf, size_t size)
 {
   if (!buf){ int size = 4; if (s0il_cwd) size = strlen(s0il_cwd)+2;
              buf = malloc(size);}
@@ -38,8 +39,7 @@ char *s0il_getcwd(char *buf, size_t size)
   return buf;
 }
 
-
-static char *s0il_resolve_path(const char *pathname)
+static char *s0il_resolve_path (const char *pathname)
 {
   char *path = (char*)pathname;
 
@@ -98,13 +98,13 @@ static char *s0il_resolve_path(const char *pathname)
       memmove(parent, p+3, strlen(p+2)+1);
 
   }
-
-
   return path;
 }
 
 int   s0il_chdir(const char *path2)
 {
+  // XXX : not properly thread-aware
+
   char *path = s0il_resolve_path (path2);
   // XXX need better check?
   //if (!s0il_access (path, R_OK)) return -1;
@@ -249,11 +249,21 @@ void s0il_add_file(const char *path, const char *contents, size_t size, s0il_fil
   }
 }
 
-#define WRAP_STDOUT 1
+FILE *stdout_redirect = NULL;
+FILE *stdin_redirect = NULL;
+
+
+void s0il_redirect_io(FILE *in_stream, FILE *out_stream)
+{
+  stdin_redirect = in_stream;
+  stdout_redirect = out_stream;
+}
+
 
 int s0il_putchar (int c)
 {
-#if WRAP_STDOUT
+  if (stdout_redirect)
+    return fputc(c, stdout_redirect);
   text_output = 1;
   if (c == '\n')
   {
@@ -264,16 +274,16 @@ int s0il_putchar (int c)
                                  // so we only do newlines
   }
   ctx_vt_write(NULL, c);
-#endif
   return putchar (c);
 }
 
 int s0il_fputs (const char *s, FILE *stream)
 {
   if (stream == _s0il_internal_file) return 0;
-#if WRAP_STDOUT
   if (stream == stdout || stream == stderr)
   {
+    if (stdout_redirect)
+      return fputs(s, stdout_redirect);
     text_output = 1;
     for (int i = 0; s[i]; i++)
     {
@@ -284,7 +294,6 @@ int s0il_fputs (const char *s, FILE *stream)
     if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
   }
-#endif
   int ret = fputs(s, stream);
   return ret;
 }
@@ -293,16 +302,17 @@ int s0il_fputs (const char *s, FILE *stream)
 int s0il_fputc (int c, FILE *stream)
 {
   if (stream == _s0il_internal_file) return 0;
-#if WRAP_STDOUT
   if (stream == stdout)
+  {
+    if (stdout_redirect)
+      return fputc(c, stdout_redirect);
     return s0il_putchar (c);
-#endif
+  }
   return fputc(c, stream);
 }
 
 ssize_t s0il_write (int fd, const void *buf, size_t count)
 {
-#if WRAP_STDOUT
   if (fd == 1 || fd == 2)
   {
     text_output = 1;
@@ -316,16 +326,16 @@ ssize_t s0il_write (int fd, const void *buf, size_t count)
     if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
   }
-#endif
   return write(fd,buf,count);
 }
 
 int s0il_fwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
   if (stream == _s0il_internal_file) return 0;
-#if WRAP_STDOUT
   if (stream == stdout || stream == stderr)
   {
+    if (stdout_redirect)
+      return fwrite(ptr,size,nmemb, stdout_redirect);
     text_output = 1;
     uint8_t *s=(uint8_t*)ptr;
     for (size_t i= 0; i< size*nmemb; i++)
@@ -337,12 +347,13 @@ int s0il_fwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream)
     if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
   }
-#endif
   return fwrite (ptr, size, nmemb, stream);
 }
 
 int s0il_puts (const char *s)
 {
+  if (stdout_redirect)
+    return fputs(s, stdout_redirect);
   int ret = s0il_fputs(s, stdout);
   s0il_fputc ('\n', stdout);
   if (s0il_is_main_thread())
@@ -404,10 +415,8 @@ int s0il_printf (const char *restrict format, ...)
   va_end (ap_copy);
   s0il_fputs (buffer, stdout);
   free (buffer);
-#if WRAP_STDOUT
   if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL)); // doing a ui iteration
-#endif
   return ret;
 }
 
@@ -458,8 +467,15 @@ int s0il_fclose(FILE *stream)
 }
 
 
-static int stdin_got_data(void)
+static int s0il_got_data(FILE *stream)
 {
+  if (stream == NULL) stream = stdin;
+  if (stream == stdin && stdin_redirect)
+    stream = stdin_redirect;
+
+
+  if (stream == stdin)
+  {
   int gotdata = ctx_vt_has_data (NULL);
   if (gotdata) return 1;
 #ifndef EMSCRIPTEN
@@ -471,10 +487,24 @@ static int stdin_got_data(void)
   }
 #endif
   return 0;
+  }
+
+  {
+    int c = s0il_fgetc(stream);
+    if (c>=0)
+    {
+      s0il_ungetc(c, stream);
+      return 1;
+    }
+    return 0;
+  }
 }
 
 
 static char *s0il_gets(char* buf, size_t buflen) {
+    FILE *stream = stdin;
+    if (stream == stdin && stdin_redirect)
+      stream = stdin_redirect;
     size_t count = 0;
 
     int in_esc=0;
@@ -486,8 +516,8 @@ static char *s0il_gets(char* buf, size_t buflen) {
 
     while (count < buflen) {
         int c;
-        if (stdin_got_data())
-          c = s0il_fgetc(stdin);
+        if (s0il_got_data(stream))
+          c = s0il_fgetc(stream);
         else
         {
           if (s0il_is_main_thread())
@@ -581,8 +611,11 @@ static char *s0il_gets(char* buf, size_t buflen) {
 
 int s0il_fgetc(FILE *stream)
 {
+  if (stream == stdin && stdin_redirect)
+    stream = stdin_redirect;
   if (stream == stdin)
   {
+
     if (ctx_vt_has_data (NULL))
     {
       int c = ctx_vt_read (NULL);
@@ -607,6 +640,8 @@ int s0il_fgetc(FILE *stream)
 
 char *s0il_fgets(char *s, int size, FILE *stream)
 {
+  if (stream == stdin && stdin_redirect)
+    stream = stdin_redirect;
   if (stream == _s0il_internal_file)
   {
     int ret = 0;
@@ -631,6 +666,8 @@ char *s0il_fgets(char *s, int size, FILE *stream)
 
 int s0il_ungetc(int c, FILE *stream)
 { // TODO : unget to ctx|term layer insteead
+  if (stream == stdin && stdin_redirect)
+    stream = stdin_redirect;
   if (stream == _s0il_internal_file) return 0;
   return ungetc(c, stream);
 }
@@ -638,6 +675,8 @@ int s0il_ungetc(int c, FILE *stream)
 
 size_t s0il_fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
+  if (stream == stdin && stdin_redirect)
+    stream = stdin_redirect;
   if (stream == stdin)
   {
     char *dst = ptr;
@@ -692,6 +731,10 @@ int s0il_access(const char *pathname, int mode)
 
 int s0il_fflush (FILE *stream)
 {
+  if (stream == stdin && stdin_redirect)
+    stream = stdin_redirect;
+  if (stream == stdout && stdout_redirect)
+    stream = stdout_redirect;
   if (stream == _s0il_internal_file) return 0;
   if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));

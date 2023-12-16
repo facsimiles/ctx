@@ -100,6 +100,7 @@ int main (int argc, char **argv)
   const char *temp = "Welcome to project s0il\nIt is a unix system, you know this!\n";
   s0il_add_file("/sd",  NULL, 0, RUN_DIR|RUN_READONLY);
   s0il_add_file("/bin", NULL, 0, RUN_DIR|RUN_READONLY);
+  //s0il_add_file("/tmp", NULL, 0, RUN_DIR|RUN_READONLY);
   s0il_add_file("/welcome", temp, 0, RUN_READONLY);
 
   runs("_init");

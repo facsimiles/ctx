@@ -1,6 +1,11 @@
 #ifndef S0IL_CLIB_H
 #define S0IL_CLIB_H
 
+// this set stdin and stdout to be aliases for the given streams,
+// pass in NULL to reset
+void s0il_redirect_io(FILE *in_stream, FILE *out_stream);
+
+
 char   *s0il_fgets    (char *s, int size, FILE *stream);
 int     s0il_access   (const char *pathname, int mode);
 int     s0il_putchar  (int c);

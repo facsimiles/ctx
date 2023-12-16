@@ -583,11 +583,17 @@ static char *string_chop_head (char *orig) /* return pointer to reset after arg 
         {
           while(o[j] != ' ' &&
                 o[j] != 0 &&
+                o[j] != '>' &&
+                o[j] != '|' &&
+                o[j] != '&' &&
                 o[j] != ';')
             j++;
         }
 
       if (o[j] == 0 ||
+          o[j] == '>' ||
+          o[j] == '|' ||
+          o[j] == '&' ||
           o[j] == ';')
         got_more = 0;
       else
@@ -622,26 +628,56 @@ runs (const char *cmdline)
   //copy[strlen (cmdline)+1]=0;
   rest = copy;
 
+  int pipe_no = 0;
+
   do {
     cargc = 0;
-    while (rest && cargc < 30 && (rest[0] != ';' && rest[0] != '&' && rest[0]!='>' && rest[0] != '|') )
+    while (rest && cargc < 30 && (rest[0] != ';' &&
+                                  rest[0] != '&' &&
+                                  rest[0] != '>' &&
+                                  rest[0] != '|') )
       {
         cargv[cargc++] = rest;
         rest = string_chop_head (rest);
       }
     cargv[cargc] = NULL;
-//  printf (":::%i %s\n", cargc, cargv[0]);
+    //printf (":::%i %s rest0:%s\n", cargc, cargv[0], rest);
     if (cargv[0])
     {
+      FILE *in_stream = NULL;
+      FILE *out_stream = NULL;
+      int ends = 0;
+      if (pipe_no)
+      {
+        char path[] = "/tmp/s0il_pipe_0";
+        path[15] = pipe_no-1+'0';
+        in_stream = s0il_fopen(path, "r");
+      }
+
       if (rest && rest[0]=='|')
       {
-         printf ("pipes NYI\n");
+         char path[] = "/tmp/s0il_pipe_0";
+         path[15] = pipe_no +'0';
+         out_stream = s0il_fopen(path, "w");
+         pipe_no++;
+      }
+      else if (rest && rest[0]=='>' && rest[1]=='>')
+      {
+         char *path = rest + 1;
+         while (*path == ' ')path++;
+         out_stream = s0il_fopen(path, "w+");
       }
       else if (rest && rest[0]=='>')
       {
-         printf ("redirect NYI\n");
+         char *path = rest + 1;
+         while (*path == ' ')path++;
+         out_stream = s0il_fopen(path, "w");
       }
-      else if (rest && rest[0]=='&')
+
+      if (in_stream || out_stream)
+         s0il_redirect_io(in_stream, out_stream);
+
+      if (rest && rest[0]=='&')
       {
          int pid = spawnp (cargv);
          if (pid <= 0) printf ("spawn failed\n");
@@ -651,10 +687,25 @@ runs (const char *cmdline)
          }
       }
       else
-      ret = runvp (cargv[0], cargv);
+      {
+        ret = runvp (cargv[0], cargv);
+      }
+
+      if (in_stream || out_stream)
+      {
+         s0il_redirect_io(NULL, NULL);
+         if (in_stream)
+         s0il_fclose (in_stream);
+         if (out_stream)
+         s0il_fclose (out_stream);
+      }
+
     }
 
-    if (rest && (rest[0]==';' || rest[0]=='&'))
+    if (rest && (rest[0]==';'
+              || rest[0]=='&'
+              || rest[0]=='|'
+              || rest[0]=='>'))
       {
         rest++;
         while (rest[0] == ' ')rest++;
