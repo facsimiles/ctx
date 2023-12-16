@@ -62,12 +62,14 @@ void StdStrftime(struct ParseState *Parser, struct Value *ReturnValue, struct Va
 }
 
 #ifndef WIN32
+#if 0
 void StdStrptime(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs)
 {
 	  extern char *strptime(const char *s, const char *format, struct tm *tm);
 	  
     ReturnValue->Val->Pointer = strptime(Param[0]->Val->Pointer, Param[1]->Val->Pointer, Param[2]->Val->Pointer);
 }
+#endif
 
 void StdGmtime_r(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs)
 {
@@ -103,7 +105,9 @@ struct LibraryFunction StdTimeFunctions[] =
     { StdTime,          "int time(int *);" },
     { StdStrftime,      "int strftime(char *, int, char *, struct tm *);" },
 #ifndef WIN32
+#if 0
     { StdStrptime,      "char *strptime(char *, char *, struct tm *);" },
+#endif
 	{ StdGmtime_r,      "struct tm *gmtime_r(int *, struct tm *);" },
     //{ StdTimegm,        "int timegm(struct tm *);" },
 #endif

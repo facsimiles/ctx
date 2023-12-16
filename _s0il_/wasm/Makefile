@@ -1,5 +1,4 @@
-C_FILES = ../ui.c ../main.c ../magic.c ctx.c ../run.c ../run-symbols.c ../bundled-programs-wasm.c ../picoc/*.c ../picoc/platform/*.c ../picoc/cstdlib/*.c
-#$(wildcard *.c)
+C_FILES = ../main.c ../s0il.c ctx.c ../bundled-programs-wasm.c 
 JS_FILES = s0il.js
 HTML_FILES = s0il.html
 

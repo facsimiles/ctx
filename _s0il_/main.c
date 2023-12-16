@@ -96,14 +96,14 @@ int main (int argc, char **argv)
   run_add_file("/READ.ME", temp, 0, RUN_READONLY);
 
   runs("_init");
-//runs("init");
+  runs("init");
 
 
     ui_register_view (ui, "menu", view_menu, NULL);
     ui_do(ui, "menu"); // queue menu - as initial view
 
     runs("wifi --auto ");
-    ui_do(ui, "sh");
+//  ui_do(ui, "sh");
     ui_main(ui, NULL); // boot to root_path
     ui_destroy (ui);
     free (root_path);

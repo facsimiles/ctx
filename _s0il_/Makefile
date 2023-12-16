@@ -88,22 +88,10 @@ native-bin/%: programs/%.c ui.h Makefile elf_strip_pie libui.so
 	@echo 'rem-PIE $@'; ./elf_strip_pie $@
 	$(POST_NATIVE) $@
 
-native-bin/picoc: picoc/*.c picoc/*/*.c ui.h Makefile elf_strip_pie libui.so
-	@mkdir -p `dirname $@` || true
-	$(CC_NATIVE) picoc/platform/*.c picoc/cstdlib/*.c picoc/*.c ./libui.so\
-           -o $@ $(CFLAGS_NATIVE) -Wno-comment -DCTX -Ipicoc -D_RUN_REDEFINES_
-	$(POST_NATIVE) $@ 
-
 xtensa-bin/%: programs/%.c ui.h Makefile
 	@mkdir -p `dirname $@` || true
 	$(CC_DEVICE) $(CFLAGS_DEVICE) $< -o $@
 	$(POST_DEVICE) $@
-xtensa-bin/picoc: picoc/*.c picoc/*/*.c ui.h Makefile
-	@mkdir -p `dirname $@` || true
-	$(CC_DEVICE) picoc/*.c picoc/platform/*.c picoc/cstdlib/*.c \
-          -o $@ $(CFLAGS_DEVICE) -Wno-comment -DCTX -Ipicoc 
-	$(POST_DEVICE) $@ 
-
 
 native-bin/%: programs-picoc/%
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
@@ -111,8 +99,8 @@ xtensa-bin/%: programs-picoc/%
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 
 
-native_bins: $(PROGRAM_NATIVE) native-bin/picoc
-device_bins: $(PROGRAM_DEVICE) xtensa-bin/picoc
+native_bins: $(PROGRAM_NATIVE)
+device_bins: $(PROGRAM_DEVICE)
 
 pop: device_bins
 	cp xtensa-bin/* /media/$(USER)/*-*/bin/ -v
@@ -127,7 +115,7 @@ monitor:
 wasm: fs_bin_generic.c *.[ch] */*.c
 	(cd wasm; make)
 
-fs_bin_xtensa.c: $(PROGRAM_DEVICE) xtensa-bin/picoc Makefile gen_fs.sh
+fs_bin_xtensa.c: $(PROGRAM_DEVICE) Makefile gen_fs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp xtensa-bin/* $@_fs
@@ -136,7 +124,7 @@ fs_bin_xtensa.c: $(PROGRAM_DEVICE) xtensa-bin/picoc Makefile gen_fs.sh
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
 
-fs_bin_native.c: $(PROGRAM_NATIVE) native-bin/picoc Makefile gen_fs.sh
+fs_bin_native.c: $(PROGRAM_NATIVE) Makefile gen_fs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp native-bin/* $@_fs

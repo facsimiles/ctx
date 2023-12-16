@@ -13,7 +13,7 @@
 
 #define PICOC_STACK_SIZE (128*1024)              /* space for the the stack */
 
-#if EMSCRIPTEN
+#ifdef S0IL_BUNDLE
 int picoc_main(int argc, char **argv)
 #else
 int main(int argc, char **argv)

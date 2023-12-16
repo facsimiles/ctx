@@ -7,12 +7,6 @@
 #undef strstr
 #undef strlen
 //#endif
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE
-#endif
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
 #if NATIVE
 #include <poll.h>
 #endif
@@ -99,7 +93,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(asctime_r),
     ELFSYM_EXPORT(asin),
     ELFSYM_EXPORT(asinf),
-    ELFSYM_EXPORT(asprintf),
+    //ELFSYM_EXPORT(asprintf),
     ELFSYM_EXPORT(atan2),
     ELFSYM_EXPORT(atan2f),
     ELFSYM_EXPORT(atan),
@@ -353,8 +347,8 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(div),
     ELFSYM_EXPORT(div),
     ELFSYM_EXPORT(exit),
-    ELFSYM_EXPORT(exp10),
-    ELFSYM_EXPORT(exp10f),
+    //ELFSYM_EXPORT(exp10),
+    //ELFSYM_EXPORT(exp10f),
     ELFSYM_EXPORT(exp2),
     ELFSYM_EXPORT(exp2f),
     ELFSYM_EXPORT(exp),
@@ -463,13 +457,13 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(memchr),
     ELFSYM_EXPORT(memcmp),
     ELFSYM_EXPORT(memcpy),
-    ELFSYM_EXPORT(memmem),
+    //ELFSYM_EXPORT(memmem), // not in emscripten?
     ELFSYM_EXPORT(memmove),
-    ELFSYM_EXPORT(mempcpy),
+    //ELFSYM_EXPORT(mempcpy),
     ELFSYM_EXPORT(memset),
     ELFSYM_EXPORT(mkdir),
     ELFSYM_EXPORT(mkdtemp),
-    ELFSYM_EXPORT(mkostemp),
+    //ELFSYM_EXPORT(mkostemp),
     ELFSYM_EXPORT(mkstemp),
   //ELFSYM_EXPORT(mktemp),
     ELFSYM_EXPORT(mktime),
@@ -595,8 +589,8 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(setvbuf),
     { "signal",   &run_signal},
     ELFSYM_EXPORT(shutdown),
-    ELFSYM_EXPORT(sincos),
-    ELFSYM_EXPORT(sincosf),
+    //ELFSYM_EXPORT(sincos),
+    //ELFSYM_EXPORT(sincosf),
     ELFSYM_EXPORT(sin),
     ELFSYM_EXPORT(sinf),
     ELFSYM_EXPORT(sinh),
@@ -614,10 +608,10 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(stpcpy),
     ELFSYM_EXPORT(stpncpy),
     ELFSYM_EXPORT(strcasecmp),
-    ELFSYM_EXPORT(strcasestr),
+    //ELFSYM_EXPORT(strcasestr),
     ELFSYM_EXPORT(strcat),
     ELFSYM_EXPORT(strchr),
-    ELFSYM_EXPORT(strchrnul),
+    //ELFSYM_EXPORT(strchrnul),
     ELFSYM_EXPORT(strcmp),
     ELFSYM_EXPORT(strcoll),
     ELFSYM_EXPORT(strcpy),
@@ -636,7 +630,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(strndup),
     ELFSYM_EXPORT(strnlen),
     ELFSYM_EXPORT(strpbrk),
-    ELFSYM_EXPORT(strptime),
+    //ELFSYM_EXPORT(strptime),
     ELFSYM_EXPORT(strrchr),
     ELFSYM_EXPORT(strsep),
     ELFSYM_EXPORT(strsignal),
@@ -651,9 +645,9 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(strtoll),
     ELFSYM_EXPORT(strtoul),
     ELFSYM_EXPORT(strtoull),
-    ELFSYM_EXPORT(strverscmp),
+    //ELFSYM_EXPORT(strverscmp),
     ELFSYM_EXPORT(strxfrm),
-    ELFSYM_EXPORT(swab),
+    //ELFSYM_EXPORT(swab),
     ELFSYM_EXPORT(sysconf),
     ELFSYM_EXPORT(tan),
     ELFSYM_EXPORT(tanf),
@@ -727,7 +721,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(uxTaskGetTaskNumber),
 #endif
 #endif
-    ELFSYM_EXPORT(vasprintf),
+    //ELFSYM_EXPORT(vasprintf),
     ELFSYM_EXPORT(vdprintf),
     ELFSYM_EXPORT(vfscanf),
     ELFSYM_EXPORT(vprintf),
