@@ -403,6 +403,53 @@ int run_printf (const char *restrict format, ...)
   return ret;
 }
 
+int run_rename(const char *src, const char *dst)
+{
+  int ret = 0;
+  if (!src || !dst)
+    return -1;
+  char *src_p = run_resolve_path(src);
+  char *dst_p = run_resolve_path(dst);
+
+  ret = rename(src_p, dst_p);
+  if (src_p!=src)free (src_p);
+  if (dst_p!=dst)free (dst_p);
+  return ret;
+}
+
+FILE *run_fopen(const char *pathname, const char *mode)
+{
+  char *path = run_resolve_path (pathname);
+  file_t *file = run_find_file (path);
+  if (file)
+  {
+    _run_file = file;
+    //_run_internal_file->_fileno = 1111;
+    file->pos = 0;
+    return _run_internal_file;
+  }
+
+  FILE *ret = fopen(path, mode);
+  if (path != pathname) free (path);
+  return ret;
+}
+
+FILE *run_fdopen(int fd, const char *mode)
+{
+  return fdopen(fd, mode);
+}
+
+int run_fclose(FILE *stream)
+{
+  if (stream == _run_internal_file)
+  {
+    _run_file = NULL;
+    return 0;
+  }
+  return fclose(stream);
+}
+
+
 static int stdin_got_data(void)
 {
   int c = run_fgetc(stdin);
@@ -497,53 +544,6 @@ char *run_fgets(char *s, int size, FILE *stream)
   }
   return fgets(s, size, stream);
 }
-
-int run_rename(const char *src, const char *dst)
-{
-  int ret = 0;
-  if (!src || !dst)
-    return -1;
-  char *src_p = run_resolve_path(src);
-  char *dst_p = run_resolve_path(dst);
-
-  ret = rename(src_p, dst_p);
-  if (src_p!=src)free (src_p);
-  if (dst_p!=dst)free (dst_p);
-  return ret;
-}
-
-FILE *run_fopen(const char *pathname, const char *mode)
-{
-  char *path = run_resolve_path (pathname);
-  file_t *file = run_find_file (path);
-  if (file)
-  {
-    _run_file = file;
-    //_run_internal_file->_fileno = 1111;
-    file->pos = 0;
-    return _run_internal_file;
-  }
-
-  FILE *ret = fopen(path, mode);
-  if (path != pathname) free (path);
-  return ret;
-}
-
-FILE *run_fdopen(int fd, const char *mode)
-{
-  return fdopen(fd, mode);
-}
-
-int run_fclose(FILE *stream)
-{
-  if (stream == _run_internal_file)
-  {
-    _run_file = NULL;
-    return 0;
-  }
-  return fclose(stream);
-}
-
 int run_ungetc(int c, FILE *stream)
 {
   if (stream == _run_internal_file) return 0;
@@ -583,17 +583,23 @@ size_t run_fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
   return fread(ptr,size,nmemb,stream);
 }
 
+int run_getc(FILE *stream)
+{
+  return run_fgetc(stream);
+}
+
+ssize_t run_read(int fildes, void *buf, size_t nbyte)
+{
+  ui_iteration(ui_host(NULL));
+  return read(fildes,buf,nbyte);
+}
+
 int run_access(const char *pathname, int mode)
 {
   if (run_find_file (pathname)) return F_OK;
   return access(pathname, mode);
 }
 
-
-int run_getc(FILE *stream)
-{
-  return run_fgetc(stream);
-}
 
 
 int run_fflush (FILE *stream)
@@ -603,11 +609,6 @@ int run_fflush (FILE *stream)
   return fflush (stream);
 }
 
-ssize_t run_read(int fildes, void *buf, size_t nbyte)
-{
-  ui_iteration(ui_host(NULL));
-  return read(fildes,buf,nbyte);
-}
 
 // positions
 int run_fsetpos(FILE *stream, fpos_t *pos)
