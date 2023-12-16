@@ -452,13 +452,16 @@ int run_fclose(FILE *stream)
 
 static int stdin_got_data(void)
 {
-  return ctx_vt_has_data (NULL);
+  int gotdata = ctx_vt_has_data (NULL);
+  if (gotdata) return 1;
+#ifndef EMSCRIPTEN
   int c = run_fgetc(stdin);
   if (c>=0)
   {
     run_ungetc(c, stdin);
     return 1;
   }
+#endif
   return 0;
 }
 

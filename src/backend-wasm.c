@@ -275,4 +275,10 @@ EM_ASM(
    return em_ctx;
 }
 
+int ctx_host_audio_init (int hz, CtxPCM format)
+{
+  // NYI, but added to make things link
+  return 0;
+}
+
 #endif
