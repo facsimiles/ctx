@@ -452,6 +452,7 @@ int run_fclose(FILE *stream)
 
 static int stdin_got_data(void)
 {
+  return ctx_vt_has_data (NULL);
   int c = run_fgetc(stdin);
   if (c>=0)
   {
@@ -460,6 +461,7 @@ static int stdin_got_data(void)
   }
   return 0;
 }
+
 
 static char *run_gets(char* buf, size_t buflen) {
     size_t count = 0;
@@ -520,6 +522,30 @@ static char *run_gets(char* buf, size_t buflen) {
     return buf;
 }
 
+int run_fgetc(FILE *stream)
+{
+  if (stream == stdin)
+  {
+    if (ctx_vt_has_data (NULL))
+    {
+      int c = ctx_vt_read (NULL);
+      if (c == '\r') c = '\n';
+      return c;
+    }
+  }
+  if (stream == _run_internal_file)
+  {
+    int ret = EOF;
+    if (_run_file->pos < _run_file->size)
+    {
+      ret = _run_file->data[_run_file->pos];
+      _run_file->pos++;
+    }
+    return ret;
+  }
+  ui_iteration(ui_host(NULL));
+  return fgetc(stream);
+}
 
 char *run_fgets(char *s, int size, FILE *stream)
 {
@@ -544,30 +570,33 @@ char *run_fgets(char *s, int size, FILE *stream)
   }
   return fgets(s, size, stream);
 }
+
 int run_ungetc(int c, FILE *stream)
-{
+{ // TODO : unget to ctx|term layer insteead
   if (stream == _run_internal_file) return 0;
   return ungetc(c, stream);
 }
 
-int run_fgetc(FILE *stream)
-{
-  if (stream == _run_internal_file)
-  {
-    int ret = EOF;
-    if (_run_file->pos < _run_file->size)
-    {
-      ret = _run_file->data[_run_file->pos];
-      _run_file->pos++;
-    }
-    return ret;
-  }
-  ui_iteration(ui_host(NULL));
-  return fgetc(stream);
-}
 
 size_t run_fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
+  if (stream == stdin)
+  {
+    char *dst = ptr;
+    int read = 0;
+    for (int i = 0; i < size * nmemb; i++)
+    {
+      if (ctx_vt_has_data (NULL))
+      {
+        dst[i]=ctx_vt_read(NULL);
+        read++;
+      }
+    }
+    // XXX : this only works well when we can satisfy the reads..
+    return read/size;
+  }
+
+
   if (stream == _run_internal_file)
   {
     int request = size * nmemb;

@@ -124,7 +124,7 @@ flow3r-flash: flow3r-build
 monitor:
 	(cd flow3r; idf.py monitor)
 
-wasm: fs_bin_generic.c
+wasm: fs_bin_generic.c *.[ch] */*.c
 	(cd wasm; make)
 
 fs_bin_xtensa.c: $(PROGRAM_DEVICE) xtensa-bin/picoc Makefile gen_fs.sh

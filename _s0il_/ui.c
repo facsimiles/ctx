@@ -323,7 +323,7 @@ void view_elf (Ui *ui)
   {
      if (run_output_state () == 1)
      {
-#if 1
+#if 0
        while (ctx_vt_has_data (NULL))
        {
          int c = ctx_vt_read (NULL);
@@ -804,9 +804,7 @@ ui_do(Ui *ui, const char *action)
   //printf ("ui_do: %s\n", action);
   if (!strcmp (action, "exit"))
   {
-    printf ("ADS %p\n", ui->ctx);
     ctx_exit (ui->ctx);
-    printf ("ooof\n");
   }
   else if (!strcmp (action, "backspace") ||
            !strcmp (action, "return") ||
@@ -2735,8 +2733,9 @@ DEF_SLIDER(int32_t)
 #undef DEF_SLIDER
 
 
-#if NATIVE // simulated ctx_set_pixels - that uses a texture
+#if NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
 uint8_t scratch[1024*1024*4];
+Ctx *ctx_host(void);
 void
 ctx_RGB565_BS_to_RGBA8 (void *rasterizer, int x, const void *buf, uint8_t *rgba, int count);
 

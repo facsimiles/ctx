@@ -6,7 +6,6 @@
 void ctx_set_pixels(void *ctx, void *user_data, int x, int y, int w, int h, void *buf);
 
 static uint16_t pixels[240*240];
-
 static inline uint16_t rgb888_to_rgb565bs(uint8_t red,
                                           uint8_t green,
                                           uint8_t blue)
@@ -32,9 +31,6 @@ MAIN(raw_fb)
         o++;
       }
     ctx_set_pixels(ctx_host(), NULL, 0,0,240,240,pixels);
-#if EMSCRIPTEN
-    usleep(1000 * 10);
-#endif
   }
   return 0;
 }

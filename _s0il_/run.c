@@ -13,14 +13,37 @@ struct _exec_state_t {
   FILE *stderr_copy;
 };
 
+typedef struct pidinfo_t {
+  int   ppid;
+  int   pid;
+  char *cmdline;
+  char *cwd;
+  FILE *std_in; // < cannot use real name - due to #defines
+  FILE *std_out;
+  FILE *std_err;
+} pidinfo_t;
+
+static int peak_pid = 0;
+
+static CtxList *proc = NULL;
+#if 0
 static exec_state_t exec_state[MAX_EXEC_DEPTH];
 static int exec_depth = 0;
+#endif
 
 #include <unistd.h>
 
-void pre_exec (void)
+int output_state = 0;
+int pre_exec (int same_stack)
 {
+  pidinfo_t *info = calloc (1, sizeof (pidinfo_t));
+  info->pid = ++peak_pid;
+  ctx_list_append (&proc, info);
+  return info->pid;
+#if 0
   char tmp[512];
+  if (same_stack)
+  {
   // TODO : store more info, and implement getpid
   //        most of this info can be shared between a 
   //        synchronous implementation and task/pthread one
@@ -31,9 +54,16 @@ void pre_exec (void)
   exec_state[exec_depth].stderr_copy=stderr;
 #endif
   exec_depth++;
+  }
+#endif
 }
-void post_exec (void)
+
+void post_exec (int pid, int same_stack)
 {
+        output_state = 0;
+#if 0
+  if (same_stack)
+  {
   exec_depth--;
   chdir(exec_state[exec_depth].cwd);
 #ifndef WASM
@@ -42,6 +72,8 @@ void post_exec (void)
   stderr=exec_state[exec_depth].stderr_copy;
 #endif
   free (exec_state[exec_depth].cwd);
+  }
+#endif
 }
 
 typedef struct inlined_program_t {
@@ -134,8 +166,8 @@ int busywarp (int argc, char **argv)
 typedef struct _elf_handle_t elf_handle_t;
 
 struct _elf_handle_t {
-     esp_elf_t elf;
-     char *path;
+  esp_elf_t  elf;
+  char      *path;
 };
 
 static CtxList *elf_handles = NULL;
@@ -189,7 +221,7 @@ elf_handle_t *elf_open (const char *path)
 }
 
 
-static int esp_elf_runv (char *path, char **argv)
+static int esp_elf_runv (char *path, char **argv, int same_stack)
 {
   elf_handle_t *elf = elf_open (path);
   int retval = -1;
@@ -208,9 +240,9 @@ static int esp_elf_runv (char *path, char **argv)
     argc = 1;
     argv = fake_argv;
   }
-  pre_exec();
+  int pid = pre_exec(same_stack);
   retval = esp_elf_request(&elf->elf, 0 /* request-opt*/, argc, argv);
-  post_exec();
+  post_exec(pid, same_stack);
 
   if (retval != 42) // TSR
   {
@@ -221,7 +253,6 @@ static int esp_elf_runv (char *path, char **argv)
 #else
 #include <dlfcn.h>
 
-int output_state = 0;
 #if 0
 void run_output_state_reset (void)
 {
@@ -232,7 +263,7 @@ int  run_output_state (void){
 }
 #endif
 
-static int dlopen_runv (char *path2, char **argv)
+static int dlopen_runv (char *path2, char **argv, int same_stack)
 {
   char *path = path2;
   int argc = 0;
@@ -293,13 +324,11 @@ static int dlopen_runv (char *path2, char **argv)
      int (*main)(int argc, char **argv) = dlsym (dlhandle, "main");
      if (main)
      {
-        output_state = 3;
-        pre_exec();
+        int pid = pre_exec(same_stack);
         int ret = main (argc, argv);
-        post_exec();
+        post_exec(pid, same_stack);
         if (ret != 42)
           dlclose (dlhandle);
-        output_state = 0;
      }
   }
   if (path!= path2)
@@ -310,7 +339,7 @@ static int dlopen_runv (char *path2, char **argv)
 #endif
 #endif
 
-static int program_runv (inlined_program_t *program, char **argv)
+static int program_runv (inlined_program_t *program, char **argv, int same_stack)
 {
   char *path = program->path;
   int argc = 0;
@@ -325,11 +354,9 @@ static int program_runv (inlined_program_t *program, char **argv)
     argv = fake_argv;
   }
   {
-//   output_state = 3;
-     pre_exec();
+     int pid = pre_exec(same_stack);
      ret = program->main(argc, argv);
-     post_exec();
-//   output_state = 0;
+     post_exec(pid, same_stack);
   }
   return ret;
 }
@@ -343,7 +370,7 @@ int runv (char *path, char **argv)
     if (!strcmp (path, program->path))
     {
       int retval =
-      program_runv (program, argv);
+      program_runv (program, argv, 1);
       ctx_reset_has_exited (ctx_host());
       return retval;
     }
@@ -437,9 +464,9 @@ int runv (char *path, char **argv)
  int ret = 0;
 #ifndef WASM
 #if CTX_FLOW3R
-  ret = esp_elf_runv (path, argv);
+  ret = esp_elf_runv (path, argv, 1);
 #else
-  ret = dlopen_runv (path, argv);
+  ret = dlopen_runv (path, argv, 1);
 #endif
 #else
   ret = -4;
