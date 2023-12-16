@@ -32,7 +32,7 @@ static char *httpd_css =
 
 CtxList *allowed_ips = NULL;
 CtxList *denied_ips = NULL;
-bool     httpd_firewall = true;
+bool     httpd_firewall = false;
 bool     httpd_ide = true;
 bool     httpd_run = true; // make firewall do this per-ip?
 
@@ -1002,7 +1002,7 @@ int _httpd_start_int (int port,
       FD_ZERO(&set);
       FD_SET(sock, &set);
 
-      timeout.tv_sec = 20;
+      timeout.tv_sec = 1;
       timeout.tv_usec = 0;
 
       rv = select(sock + 1, &set, NULL, NULL, &timeout);

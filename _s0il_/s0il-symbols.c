@@ -19,7 +19,6 @@
 
 #include "s0il.h"
 
-#include "s0il-clib.c"
 
 extern float __divsf3     (float a, float b);
 extern double __floatsidf (int a);

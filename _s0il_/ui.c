@@ -3,10 +3,12 @@
 
 #include <dirent.h>
 
+void *_s0il_main_thread = NULL;
 
 int _init_main (int argc, char **argv)
 {
   //Ui *ui = ui_host(NULL);
+  _s0il_main_thread = _s0il_thread_id();
 
   char elf_magic_32bit[]={0x7f, 'E','L','F', 1,1, 1, 0, 0, 0};
   char elf_magic_64bit[]={0x7f, 'E','L','F', 2,1, 1, 0, 0, 0};
@@ -207,7 +209,7 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
     if (run_output_state () == 1)
     {
       // TODO : draw a visual count-down
-      sleep (2);
+      //sleep (2);
     }
 
     launch_elf_handler = 0;

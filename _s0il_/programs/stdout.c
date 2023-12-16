@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <s0il.h>
 
 int main (int argc, char **argv)
 {

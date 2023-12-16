@@ -2,11 +2,8 @@
 
 MAIN(app)
 {
-  Ctx *ctx = ctx_new(240,240,NULL);
+  Ctx *ctx = ctx_host();//ctx_new(240,240,NULL);
   if (!ctx) return -1;
-
-  //for (int i = 0; i < argc; i++)
-  //  printf ("%i:%s\n",i, argv[i]);
 
   float width = ctx_width (ctx);
   float height = ctx_height (ctx);
@@ -26,7 +23,7 @@ MAIN(app)
     ctx_end_frame (ctx);
     sleep (1);
   }
-  ctx_destroy (ctx);
+//ctx_destroy (ctx);
 
   return 0;
 }

@@ -44,20 +44,23 @@ install:
 test: demo native_bins
 	rm -f /tmp/_s0il_*
 	./demo
-demo: main.o ui.o s0il-run.o s0il-symbols.o s0il-magic.o bundled-programs.o
+
+S0IL_OBJS=ui.o s0il-run.o s0il-symbols.o s0il-magic.o s0il-clib.o
+
+demo: $(S0IL_OBJS) main.o bundled-programs.o
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -lm $^ -o $@ $(CFLAGS_NATIVE)
 
-PROGRAM_C_INLINED=programs/text.c programs/image.c programs/clock.c
-bundled-programs.o: $(PROGRAM_C_INLINED)
+PROGRAM_C_BUNDLED=programs/*.c
+bundled-programs.o: $(PROGRAM_C_BUNDLED)
 
 main.o: fs_bin_native.c
-s0il-symbols.o: s0il-clib.c
 
 %.o: %.c *.h Makefile
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -c -g $< -o $@
 
-libui.so: ui.o s0il-run.o s0il-symbols.o s0il-magic.o Makefile 
-	$(CC_NATIVE) $(CFLAGS_NATIVE) -g -shared ui.o s0il-run.o s0il-symbols.o -o libui.so s0il-magic.o
+libui.so: $(S0IL_OBJS)  Makefile 
+	$(CC_NATIVE) $(CFLAGS_NATIVE) -g -shared \
+        $(S0IL_OBJS)  -o libui.so
 
 clean:
 	rm -rf demo libui.so xtensa-bin native-bin elf_strip_pie *.o tmpfs tmpfs2 fs_bin_*.c

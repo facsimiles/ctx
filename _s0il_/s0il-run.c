@@ -14,11 +14,12 @@ struct _exec_state_t {
 typedef struct pidinfo_t {
   int   ppid;
   int   pid;
-  char *cmdline;
+  char *program;
   char *cwd;
   FILE *std_in; // < cannot use real name - due to #defines
   FILE *std_out;
   FILE *std_err;
+  
 } pidinfo_t;
 
 static int peak_pid = 0;
@@ -527,11 +528,11 @@ static void *run_thread(void *data)
 {
   char **cargv = data;
   int ret = runvp (cargv[0], cargv);
-  printf ("got %i as ret in thread\n", ret);
+  pthread_exit((void*)((size_t)ret));
   return (void*)((size_t)ret);
 }
 
-  pthread_attr_t attr;
+pthread_attr_t attr;
 int spawnp (char **argv)
 {
   pthread_t tid;
@@ -541,7 +542,7 @@ int spawnp (char **argv)
   for (int i = 0; i < argc; i++)
      argv_copy[i]=strdup(argv[i]);
   pthread_attr_init(&attr);
-  pthread_attr_setstacksize(&attr, 32*1024);
+  pthread_attr_setstacksize(&attr, 8*1024);
   if (pthread_create(&tid, &attr, run_thread, argv_copy))
     printf ("failed spawning thread\n");
   return 23;

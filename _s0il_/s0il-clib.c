@@ -1,3 +1,5 @@
+#include "s0il.h"
+
 static int text_output = 0;
 static int gfx_output  = 0;
 
@@ -198,7 +200,7 @@ void run_add_file(const char *path, const char *contents, size_t size, run_file_
     parent[1]=0;
   }
 
-  printf ("adding %s to %s dir?%i\n", path, parent, is_dir);
+//printf ("adding %s to %s dir?%i\n", path, parent, is_dir);
 
   for (CtxList *iter = folders; iter; iter=iter->next)
   {
@@ -256,6 +258,7 @@ int run_putchar (int c)
   if (c == '\n')
   {
     ctx_vt_write(NULL, '\r');
+    if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL)); // doing a ui iteration
                                  // per received char is a bit much
                                  // so we only do newlines
@@ -278,6 +281,7 @@ int run_fputs (const char *s, FILE *stream)
          ctx_vt_write(NULL, '\r');
        ctx_vt_write(NULL, s[i]);
     }
+    if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
   }
 #endif
@@ -296,7 +300,7 @@ int run_fputc (int c, FILE *stream)
   return fputc(c, stream);
 }
 
-ssize_t run_write(int fd, const void *buf, size_t count)
+ssize_t run_write (int fd, const void *buf, size_t count)
 {
 #if WRAP_STDOUT
   if (fd == 1 || fd == 2)
@@ -309,6 +313,7 @@ ssize_t run_write(int fd, const void *buf, size_t count)
         ctx_vt_write(NULL, '\r');
       ctx_vt_write(NULL, s[i]);
     }
+    if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
   }
 #endif
@@ -329,6 +334,7 @@ int run_fwrite (const void *ptr, size_t size, size_t nmemb, FILE *stream)
         ctx_vt_write(NULL, '\r');
       ctx_vt_write(NULL, s[i]);
     }
+    if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
   }
 #endif
@@ -339,7 +345,8 @@ int run_puts (const char *s)
 {
   int ret = run_fputs(s, stdout);
   run_fputc ('\n', stdout);
-  ui_iteration(ui_host(NULL));
+  if (s0il_is_main_thread())
+    ui_iteration(ui_host(NULL));
   return ret;
 }
 
@@ -398,7 +405,8 @@ int run_printf (const char *restrict format, ...)
   run_fputs (buffer, stdout);
   free (buffer);
 #if WRAP_STDOUT
-  ui_iteration(ui_host(NULL)); // doing a ui iteration
+  if (s0il_is_main_thread())
+    ui_iteration(ui_host(NULL)); // doing a ui iteration
 #endif
   return ret;
 }
@@ -478,7 +486,8 @@ static char *run_gets(char* buf, size_t buflen) {
           c = run_fgetc(stdin);
         else
         {
-          ui_iteration(ui_host(NULL));
+          if (s0il_is_main_thread())
+            ui_iteration(ui_host(NULL));
 #ifndef EMSCRIPTEN
           usleep (1000); // XXX : seems more stable with it
 #endif
@@ -518,7 +527,8 @@ static char *run_gets(char* buf, size_t buflen) {
             count++;
         }
         run_fputc(c, stdout); /* echo */
-        ui_iteration(ui_host(NULL));
+        if (s0il_is_main_thread())
+          ui_iteration(ui_host(NULL));
     }
     run_fputc('\n', stdout);
     buf[count]=0;
@@ -546,7 +556,8 @@ int run_fgetc(FILE *stream)
     }
     return ret;
   }
-  ui_iteration(ui_host(NULL));
+  if (s0il_is_main_thread())
+    ui_iteration(ui_host(NULL));
   return fgetc(stream);
 }
 
@@ -622,7 +633,8 @@ int run_getc(FILE *stream)
 
 ssize_t run_read(int fildes, void *buf, size_t nbyte)
 {
-  ui_iteration(ui_host(NULL));
+  if (s0il_is_main_thread())
+    ui_iteration(ui_host(NULL));
   return read(fildes,buf,nbyte);
 }
 
@@ -637,7 +649,8 @@ int run_access(const char *pathname, int mode)
 int run_fflush (FILE *stream)
 {
   if (stream == _run_internal_file) return 0;
-  ui_iteration(ui_host(NULL));
+  if (s0il_is_main_thread())
+    ui_iteration(ui_host(NULL));
   return fflush (stream);
 }
 
@@ -760,7 +773,8 @@ DIR    *run_opendir(const char *name2)
   return ret;
 }
 
-struct  dirent *run_readdir(DIR *dirp)
+struct  dirent *
+run_readdir(DIR *dirp)
 {
   if (dirp == _run_internal_dir)
   {
@@ -784,7 +798,8 @@ struct  dirent *run_readdir(DIR *dirp)
   return readdir(dirp);
 }
 
-int run_closedir(DIR *dirp)
+int
+run_closedir (DIR *dirp)
 {
   if (dirp == _run_internal_dir) {
      _run_dir = NULL;
@@ -794,7 +809,7 @@ int run_closedir(DIR *dirp)
 }
 
 int
-run_unlink(const char *pathname)
+run_unlink (const char *pathname)
 {
   char *path = run_resolve_path (pathname);
   int ret = 0;
@@ -804,7 +819,7 @@ run_unlink(const char *pathname)
 }
 
 int
-run_stat(const char *pathname, struct stat *statbuf)
+run_stat (const char *pathname, struct stat *statbuf)
 {
   char *path = run_resolve_path (pathname);
 
@@ -832,19 +847,19 @@ run_stat(const char *pathname, struct stat *statbuf)
 }
 
 int
-run_fstat(int fd, struct stat *statbuf)
+run_fstat (int fd, struct stat *statbuf)
 {
   return fstat(fd, statbuf);
 }
 
 //// bits implemented in terms of some of the above
 
-int run_getchar(void)
+int run_getchar (void)
 {
   return run_fgetc(stdin);
 }
 
-ssize_t run_getline(char **lineptr, size_t *n, FILE *stream)
+ssize_t run_getline (char **lineptr, size_t *n, FILE *stream)
 {
   *lineptr = realloc (*lineptr, 500);
   run_fgets(*lineptr, 500, stream);

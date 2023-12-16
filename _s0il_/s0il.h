@@ -50,6 +50,32 @@
 #include "s0il-run.h"
 #include <libgen.h>
 
+pid_t gettid(void);
+
+extern void *_s0il_main_thread;
+static inline void *_s0il_thread_id(void)
+{
+#if 1
+#if CTX_FLOW3R
+  return xTaskGetCurrentTaskHandle();
+#else
+  return (void*)((size_t)gettid());
+#endif
+#else
+  return 0;
+#endif
+}
+
+static inline bool s0il_is_main_thread()
+{
+#if CTX_FLOW3R
+  return _s0il_thread_id() == _s0il_main_thread;
+#else
+  return gettid() == getpid();
+#endif
+}
+
+Ctx *ctx_host(void);
 #endif
 
 #ifdef MAIN

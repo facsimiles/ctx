@@ -426,7 +426,6 @@ struct LibraryFunction UiFunctions[] =
     {NULL, NULL}
 };
 
-Ctx *ctx_host(void);
 fun_ptr__void(ctx_host);
 fun_ptr__int_int_ptr(ctx_new);
 fun_int__ptr(ctx_has_exited);

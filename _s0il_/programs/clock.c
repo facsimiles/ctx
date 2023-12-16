@@ -75,8 +75,6 @@ void draw_clock (Ctx *ctx, float x, float y, float radius, uint32_t ms_since_mid
   ctx_restore (ctx);
 }
 
-Ctx *ctx_host(void);
-
 MAIN(clock)
 {
   //Ctx *ctx = ctx_host();//new (-1,-1,NULL);
