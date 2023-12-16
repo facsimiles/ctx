@@ -1,5 +1,5 @@
 #include <unistd.h>
-#include "ui.h"
+#include "s0il.h"
 
 typedef struct ctx_magic_t {
   bool is_text;

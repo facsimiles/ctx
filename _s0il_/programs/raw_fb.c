@@ -1,7 +1,4 @@
-#include <stdint.h>
-#include <string.h>
-#include <math.h>
-#include "ui.h"
+#include "s0il.h"
 
 void ctx_set_pixels(void *ctx, void *user_data, int x, int y, int w, int h, void *buf);
 

@@ -3,9 +3,7 @@
 #endif
 #include "../interpreter.h"
 
-#ifdef CTX
-#include "ctx.h"
-#include "ui.h"
+#include "s0il.h"
 
 #define fun_int__ptr_ptr_float_float_float_float(funname) \
 void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
@@ -664,10 +662,8 @@ struct LibraryFunction CtxFunctions[] =
 
     {NULL, NULL}
 };
-#endif
 void PlatformLibraryInit(Picoc *pc)
 {
-#ifdef CTX
     IncludeRegister(pc, "ctx.h", NULL, &CtxFunctions[0],
     "#include <stdio.h>\n"
     "typedef struct _Ctx Ctx;\n"
@@ -688,5 +684,4 @@ void PlatformLibraryInit(Picoc *pc)
     "#ifndef NULL\n"
     "#define NULL ((void*)0)\n"
     "#endif\n");
-#endif
 }

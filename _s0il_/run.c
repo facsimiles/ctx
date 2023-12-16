@@ -1,6 +1,5 @@
 #include "port_config.h"
-#include "ui.h"
-#include <dirent.h>
+#include "s0il.h"
 Ctx *ctx_host(void);
 
 #define MAX_EXEC_DEPTH  8

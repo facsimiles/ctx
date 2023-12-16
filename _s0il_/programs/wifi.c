@@ -1,4 +1,4 @@
-#include "ui.h"
+#include "s0il.h"
 
 static char *wifi_ssid     = NULL;
 static char *wifi_password = NULL;

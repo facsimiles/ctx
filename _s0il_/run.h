@@ -1,9 +1,6 @@
-#include <stdbool.h>
 #ifndef _RUN_H
 #define _RUN_H
 
-#include <sys/types.h>
-#include <dirent.h>
 
 int   runv (char *pathname, char **argv);
 int   runvp (char *file, char **argv);

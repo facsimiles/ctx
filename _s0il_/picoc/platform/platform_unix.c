@@ -10,7 +10,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
-#include "ui.h"
+#include "s0il.h"
 
 #ifdef DEBUGGER
 static int gEnableDebugger = true;

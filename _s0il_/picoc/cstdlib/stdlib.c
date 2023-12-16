@@ -5,7 +5,7 @@
 #if EMSCRIPTEN
 #define _RUN_REDEFINES_
 #endif
-#include "run.h"
+#include "s0il.h"
 
 static int Stdlib_ZeroValue = 0;
 

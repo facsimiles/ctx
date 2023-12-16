@@ -11,19 +11,6 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include <signal.h>
-#include <string.h>
-#include <pthread.h>
-#include <termios.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <ctype.h>
-#include <locale.h>
-#include <math.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
 #if NATIVE
 #include <poll.h>
 #endif
@@ -34,11 +21,7 @@
 
 #define EXPORT_UI 1
 
-#include "ctx.h"
-#ifdef EXPORT_UI
-#include "ui.h"
-#endif
-#include "run.h"
+#include "s0il.h"
 
 #include <stdlib.h>
 #include <netdb.h>

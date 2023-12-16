@@ -7,31 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <time.h>
-#include <unistd.h>
-
-#if CTX_FLOW3R
-
-#include "lwip/sockets.h"
-#include "lwip/igmp.h"
-#include "lwip/ip4.h"
-#include "lwip/netdb.h"
-
-#else
-
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#endif
-
-#include <sys/types.h>
-#include <dirent.h>
-
-#include "ui.h"
-
+#include "s0il.h"
 
 #define HTTP_PORT_PREFERRED        (80)    // we first try to get this
 #define HTTP_PORT_FALLBACK_START (8080)

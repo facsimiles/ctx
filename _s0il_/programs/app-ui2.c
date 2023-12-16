@@ -1,7 +1,4 @@
-#include "ctx.h"
-#include "ui.h"
-#include <unistd.h>
-
+#include "s0il.h"
 
 static void app_ui_view_foo2 (Ui *ui)
 {

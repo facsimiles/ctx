@@ -587,7 +587,7 @@ size_t run_fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
   {
     char *dst = ptr;
     int read = 0;
-    for (int i = 0; i < size * nmemb; i++)
+    for (unsigned i = 0; i < size * nmemb; i++)
     {
       if (ctx_vt_has_data (NULL))
       {

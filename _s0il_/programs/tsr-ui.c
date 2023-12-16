@@ -1,7 +1,4 @@
-#include "ctx.h"
-#include "ui.h"
-#include <unistd.h>
-
+#include "s0il.h"
 
 static void tsr_view_foo (Ui *ui)
 {
