@@ -9,7 +9,7 @@ int _init_main (int argc, char **argv)
 {
   //Ui *ui = ui_host(NULL);
   _s0il_main_thread = _s0il_thread_id();
-
+  system("rm -f /tmp/_s0il_*");
   char elf_magic_32bit[]={0x7f, 'E','L','F', 1,1, 1, 0, 0, 0};
   char elf_magic_64bit[]={0x7f, 'E','L','F', 2,1, 1, 0, 0, 0};
   //uint8_t elf_magic[]={0x7f, 'E','L','F', 0,0, 0, 0, 0, 0};

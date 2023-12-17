@@ -159,19 +159,15 @@ static const struct esp_elfsym g_esp_espidf_elfsyms[] = {
  * 
  * @return Symbol address if success or 0 if failed.
  */
-#if 1
-void *run_sym(const char *syn_name);
-#endif
+void *s0il_sym(const char *syn_name);
 uintptr_t elf_find_sym(const char *sym_name)
 {
     const struct esp_elfsym *syms;
 
-#if 1
     {
-    uintptr_t ret = (uintptr_t)run_sym(sym_name);
+    uintptr_t ret = (uintptr_t)s0il_sym(sym_name);
     if (ret) return ret;
     }
-#endif
 
 #ifdef CONFIG_ELF_LOADER_CUSTOMER_SYMBOLSXX
     extern const struct esp_elfsym g_customer_elfsyms[];
