@@ -219,7 +219,6 @@ elf_handle_t *elf_open (const char *path)
    return NULL;
 }
 
-
 static int esp_elf_runv (char *path, char **argv, int same_stack)
 {
   elf_handle_t *elf = elf_open (path);
@@ -296,21 +295,21 @@ static int dlopen_runv (char *path2, char **argv, int same_stack)
     tmp[3]='p';
     if (access (tmp, R_OK) != F_OK)
     {
-    char *cmd = malloc(strlen(tmp)*2+10);
-    FILE *in = s0il_fopen(path, "rb");
-    FILE *out = s0il_fopen(tmp, "w");
-     s0il_fseek(in, 0, SEEK_END);
-     int length = s0il_ftell(in);
-     s0il_fseek(in, 0, SEEK_SET);
-     uint8_t *data = malloc(length + 1);
-     if (data)
-     {
-       s0il_fread(data, length, 1, in);
-       s0il_fwrite(data, length, 1, out);
-    }
-    s0il_fclose (in);
-    s0il_fclose (out);
-    free (cmd);
+      char *cmd = malloc(strlen(tmp)*2+10);
+      FILE *in = s0il_fopen(path, "rb");
+      FILE *out = s0il_fopen(tmp, "w");
+      s0il_fseek(in, 0, SEEK_END);
+      int length = s0il_ftell(in);
+      s0il_fseek(in, 0, SEEK_SET);
+      uint8_t *data = malloc(length + 1);
+      if (data)
+      {
+        s0il_fread(data, length, 1, in);
+        s0il_fwrite(data, length, 1, out);
+      }
+      s0il_fclose (in);
+      s0il_fclose (out);
+      free (cmd);
     }
     path = tmp;
   }
