@@ -1,12 +1,11 @@
+#include "port_config.h"
 /* this file lists all the symbols available for dynamic resolution
  * by the elf-loader
  *
  */
 
-//#if CTX_FLOW3R
 #undef strstr
 #undef strlen
-//#endif
 #if NATIVE
 #include <poll.h>
 #endif
@@ -106,13 +105,11 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(bcmp),
     ELFSYM_EXPORT(bcopy),
     ELFSYM_EXPORT(bind),
-#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
     ELFSYM_EXPORT(bsp_captouch_angle),
     ELFSYM_EXPORT(bsp_captouch_angular),
     ELFSYM_EXPORT(bsp_captouch_down),
     ELFSYM_EXPORT(bsp_captouch_radial),
-#endif
 #endif
     ELFSYM_EXPORT(busywarp),
     ELFSYM_EXPORT(bzero),
@@ -480,10 +477,8 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(nexttowardf),
     ELFSYM_EXPORT(open),
     {"opendir", &s0il_opendir},
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
+#if CTX_ESP
     ELFSYM_EXPORT(pcTaskGetName),
-#endif
 #endif
 
     ELFSYM_EXPORT(perror),
@@ -715,10 +710,8 @@ const struct esp_elfsym g_customer_elfsyms[] =
     {"unlink", &s0il_unlink},
     ELFSYM_EXPORT(unsetenv),
     ELFSYM_EXPORT(usleep),
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
+#if CTX_ESP
     ELFSYM_EXPORT(uxTaskGetTaskNumber),
-#endif
 #endif
     //ELFSYM_EXPORT(vasprintf),
     ELFSYM_EXPORT(vdprintf),
@@ -728,22 +721,18 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(vsnprintf),
     ELFSYM_EXPORT(vsprintf),
     ELFSYM_EXPORT(vsscanf),
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
+#if CTX_ESP
     ELFSYM_EXPORT(vTaskDelay),
 #endif
-#if CTX_FLOW3R
+#if CTX_ESP
     ELFSYM_EXPORT(wifi_init_sta),
     ELFSYM_EXPORT(wifi_scan),
 #endif
-#endif
     { "write",   &s0il_write},
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
+#if CTX_ESP
     ELFSYM_EXPORT(xTaskGetCurrentTaskHandle),
     ELFSYM_EXPORT(xTaskCreatePinnedToCore),
     ELFSYM_EXPORT(xTaskCreate),
-#endif
 #endif
 
     ELFSYM_EXPORT(y0),

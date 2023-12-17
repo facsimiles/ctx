@@ -1,3 +1,6 @@
+#ifndef PORT_CONFIG
+#define PORT_CONFIG
+
 #define CTX_DEMO_TITLE    "esp32c3"
 #define CTX_DEMO_SUBTITLE "risc-v 160mhz"
 #define CTX_ESP  1
@@ -18,3 +21,4 @@
 
 #define SPI_HOST                1
 #define SPI_SCK_FREQ_M          80
+#endif

@@ -1,3 +1,4 @@
+#include "port_config.h"
 #include "s0il.h"
 
 static char *wifi_ssid = NULL;
@@ -5,11 +6,9 @@ static char *wifi_password = NULL;
 static bool wifi_connected = false;
 
 static char *wifi_contents = NULL;
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
+#if CTX_ESP
 int wifi_init_sta(const char *ssid_arg, const char *password_arg);
 char **wifi_scan(void);
-#endif
 #endif
 
 static char **wifis = NULL;
@@ -21,10 +20,8 @@ void view_wifi(Ui *ui) {
   if (wifi_connected)
     ui_text(ui, "connected");
   else if (ui_button(ui, "connect")) {
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
+#if CTX_ESP
     wifi_connected = !wifi_init_sta(wifi_ssid, wifi_password);
-#endif
 #endif
   }
 
@@ -75,13 +72,11 @@ MAIN(wifi) {
   printf("hi!\n");
 #endif
 
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
+#if CTX_ESP
   // printf ("scanning wifis\n");
   wifis = wifi_scan();
 #else
   wifis = _wifis;
-#endif
 #endif
 
   if (wifi_contents) {
@@ -163,11 +158,9 @@ MAIN(wifi) {
       }
     } while (*p && *p != '}');
   }
-#ifndef EMSCRIPTEN
-#if CTX_FLOW3R
+#if CTX_ESP
   if (wifi_ssid && wifi_ssid[0])
     wifi_connected = !wifi_init_sta(wifi_ssid, wifi_password);
-#endif
 #endif
 
   if (argv[1] && !strcmp(argv[1], "--auto")) {

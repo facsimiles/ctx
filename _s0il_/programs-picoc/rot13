@@ -1,0 +1,46 @@
+//! picoc
+
+#include "ui.h"
+#include <dirent.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+int main(int argc, char **argv) {
+  FILE *fin = stdin;
+  FILE *fout = stdout;
+  argv[argc] = NULL;
+  if (argc > 1) {
+    if (!strcmp(argv[1], "-")) {
+    } else
+      fin = fopen(argv[1], "rb");
+  }
+
+  if (fin) {
+    char buf[512];
+    int read;
+    do {
+      read = fread(buf, 1, 512, fin);
+      if (read) {
+        for (int i = 0; i < read; i++) {
+          if (buf[i] >= 'a' && buf[i] <= 'z') {
+            buf[i] = ((buf[i] - 'a' + 13) % 26) + 'a';
+          }
+          if (buf[i] >= 'A' && buf[i] <= 'Z') {
+            buf[i] = ((buf[i] - 'A' + 13) % 26) + 'A';
+          }
+        }
+        fwrite(buf, 1, read, fout);
+      }
+    } while (read > 0);
+
+    if (argc > 1) {
+      if (!strcmp(argv[1], "-")) {
+      } else
+        fclose(fin);
+    }
+  }
+
+  return 0;
+}

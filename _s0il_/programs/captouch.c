@@ -54,7 +54,7 @@ void view_captouch(Ui *ui) {
 
 #endif
 MAIN() {
-#ifndef NATIVE
+#if CTX_FLOW3R
   Ui *ui = ui_host(NULL);
   ui_pop_fun(ui);
   ui_push_fun(ui, view_captouch, NULL, NULL, NULL);

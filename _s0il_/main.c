@@ -5,14 +5,12 @@ static char *root_path = NULL;
 
 //#include <libgen.h>
 
-#ifdef EMSCRIPTEN
-#include "fs_bin_generic.c"
-#else
-#if CTX_ESP
+#if CTX_FLOW3R 
 #include "fs_bin_xtensa.c"
-#else
+#elif NATIVE
 #include "fs_bin_native.c"
-#endif
+#else
+#include "fs_bin_generic.c"
 #endif
 // todo wasm
 
@@ -55,10 +53,8 @@ static void view_menu (Ui *ui)
    ui_end_frame(ui);
 }
 
-#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
 extern int flow3r_synthesize_key_events;
-#endif
 #endif
 
 void view_settings (Ui *ui)
@@ -75,10 +71,8 @@ void view_settings (Ui *ui)
 
    ui_backlight (backlight);
 
-#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    flow3r_synthesize_key_events = ui_toggle(ui,"cap-touch keys", flow3r_synthesize_key_events);
-#endif
 #endif
 
 #if CTX_ESP
@@ -106,6 +100,7 @@ int main (int argc, char **argv)
                         DISPLAY_HEIGHT,
                         NULL);
 
+    ctx_windowtitle (ctx, "s0il");
     s0il_signal(SIGPIPE, SIG_IGN);
     setvbuf(stdin, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -143,7 +138,7 @@ int main (int argc, char **argv)
     ui_register_view (ui, "settings", view_settings, NULL);
     ui_do(ui, "menu"); // queue menu - as initial view
 
-    s0il_system("wifi --auto &");
+//  s0il_system("wifi --auto &");
 //  ui_do(ui, "sh");
     ui_main(ui, NULL); // boot to root_path
     ui_destroy (ui);

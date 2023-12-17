@@ -394,7 +394,6 @@ void view_settings_ui (Ui *ui)
    ui->y += ui->height * 0.05;
    ui_title(ui,"settings/ui");
 
-   ui->font_size_px = ui_slider(ui,"font size px", 18,45,0.5, ui->font_size_px);
    ui->font_size_vh = ui_slider(ui,"font size", 3,20,0.1, ui->font_size_vh);
    ui->show_fps  = ui_toggle(ui,"show fps", ui->show_fps);
 
@@ -822,28 +821,22 @@ ui_do(Ui *ui, const char *action)
   else if (!strcmp (action, "kb-collapse"))
   {
     ctx_osk_mode = 1;
-#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    bsp_captouch_key_events(2);
-#endif
 #endif
   }
   else if (!strcmp (action, "kb-show"))
   {
     ctx_osk_mode = 2;
-#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    bsp_captouch_key_events(1);
-#endif
 #endif
   }
   else if (!strcmp (action, "kb-hide"))
   {
     ctx_osk_mode = 0;
-#ifndef EMSCRIPTEN
 #if CTX_FLOW3R
    bsp_captouch_key_events(2);
-#endif
 #endif
   }
   else ui_load_view(ui, action);
@@ -956,9 +949,6 @@ static float color_interactive[4] = {1,0,0,0.0};
 static float color_bg[4]          = {0.1, 0.2, 0.3, 1.0};
 static float color_bg2[4]         = {0.8, 0.9, 1.0, 1.0};
 static float color_fg[4]; // black or white automatically based on bg
-#endif
-#if CTX_FLOW3R
-  ui->focus_first = true;
 #endif
   ui->focus_first = true;
 
@@ -1283,12 +1273,7 @@ void captouch_keyboard (Ctx *ctx)
    
    float rad_pos;
 #if CTX_FLOW3R
-#ifdef EMSCRIPTEN
-   float raw_angle = -1.0f;
-   rad_pos = 0.5f;
-#else
    float raw_angle = bsp_captouch_angle (&rad_pos, 20, 0);
-#endif
 #else
    float raw_angle = -1.0f;
    rad_pos = 0.5f;
@@ -2315,6 +2300,7 @@ void ui_end_frame (Ui *ui)
       }
       ctx_add_key_binding (ctx, "control-q", "exit", "foo", ui_cb_do, ui);
 
+#ifdef NATIVE
       if (ui->fake_circle){
       float min_dim = ctx_width(ctx);
       if (ctx_height (ctx) < min_dim) min_dim = ctx_height (ctx);
@@ -2333,6 +2319,7 @@ void ui_end_frame (Ui *ui)
       }
       ctx_restore (ctx);
       }
+#endif
 
 }
 

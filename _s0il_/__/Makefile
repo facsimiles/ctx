@@ -18,7 +18,7 @@ CFLAGS_NATIVE = $(CFLAGS) `pkg-config ctx --cflags --libs` \
 CFLAGS_DEVICE = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main \
   -fdata-sections -ffunction-sections -Wl,--gc-sections -fvisibility=hidden \
   -Wno-sign-compare \
-  -DCTX_FLOW3R \
+  -DCTX_FLOW3R -DCTX_ESP \
   \
   -I../flow3r/build/config \
   -I$(IDF_PATH)/components/lwip/include \

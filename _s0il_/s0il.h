@@ -11,7 +11,7 @@
 // we include all relevant headers, the overhead is
 // not that large
 
-#if CTX_FLOW3R
+#if CTX_ESP
 #include "lwip/sockets.h"
 #include "lwip/igmp.h"
 #include "lwip/ip4.h"
@@ -51,29 +51,8 @@
 
 pid_t gettid(void);
 
-extern void *_s0il_main_thread;
-static inline void *_s0il_thread_id(void)
-{
-#if EMSCRIPTEN
-  return 0;
-#elif CTX_FLOW3R
-  return xTaskGetCurrentTaskHandle();
-#else
-  return (void*)((size_t)gettid());
-#endif
-}
-
-static inline bool s0il_is_main_thread()
-{
-#if EMSCRIPTEN
-  return 1;
-#elif CTX_FLOW3R
-  return _s0il_thread_id() == _s0il_main_thread;
-#else
-  return gettid() == getpid();
-#endif
-}
-
+bool s0il_is_main_thread();
+void *_s0il_thread_id(void);
 Ctx *ctx_host(void);
 
 typedef enum {

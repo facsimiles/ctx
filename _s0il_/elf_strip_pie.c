@@ -1,3 +1,4 @@
+
 /* utility to strip out elf_pie flag, which hinders using dlopen on
    pic excutables in recent version. Some things work, and this allows
    having a simulator where the executables also work outside the shell.

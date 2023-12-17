@@ -25,7 +25,7 @@ POST_XTENSA=@echo 'STRIP  ' $@ ; xtensa-esp32s3-elf-strip
 CFLAGS_XTENSA = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main \
   -fdata-sections -ffunction-sections -Wl,--gc-sections -fvisibility=hidden \
   -Wno-sign-compare \
-  -DCTX_FLOW3R \
+  -DCTX_FLOW3R -DCTX_ESP \
   \
   -Iflow3r/build/config \
   -I$(IDF_PATH)/components/lwip/include \
@@ -52,7 +52,7 @@ CFLAGS_XTENSA = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main \
 native: native_bins s0il
 xtensa: xtensa_bins
 
-all: native xtensa flow3r-build wasm
+all: native xtensa flow3r-build wasm riscv
 uninstall:
 install: native
 	rm -f $(DESTDIR)/sd
@@ -130,6 +130,10 @@ monitor:
 
 wasm: fs_bin_generic.c ui*.[ch] s0il*.[ch] */*.c
 	(cd wasm; make)
+riscv-flash: riscv
+	(cd esp32c3; idf.py flash monitor)
+riscv: fs_bin_generic.c ui*.[ch] s0il*.[ch] */*.c
+	(cd esp32c3; idf.py build)
 
 fs_bin_xtensa.c: $(PROGRAMS_XTENSA) Makefile gen_fs.sh
 	@rm -rf $@_fs

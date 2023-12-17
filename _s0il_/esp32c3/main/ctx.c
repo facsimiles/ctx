@@ -1,13 +1,13 @@
 #pragma GCC optimize("jump-tables,tree-switch-conversion")
 
 #include "port_config.h"
-
+#define TAG "ctx"
 
 //#define SCRATCH_BUF_BYTES                  (DISPLAY_WIDTH*DISPLAY_HEIGHT*2)
 // a little faster - no mid-rasterization tearing - but uses more memory
 
-#define SCRATCH_BUF_BYTES                  (240*240*2+1024)
-//#define SCRATCH_BUF_BYTES                  (44*1024)
+//#define SCRATCH_BUF_BYTES                  (240*240*2+1024)
+#define SCRATCH_BUF_BYTES                  (44*1024)
 #define CTX_VT                             1
 #define CTX_PTY                            0
 #define CTX_THREAD                         1
@@ -52,6 +52,7 @@
 #define CTX_MAX_STATES                     16
 #define CTX_MAX_EDGES                      127
 #define CTX_MAX_PENDING                    64
+#define CTX_VT_STYLE_SIZE                  32
 
 #define CTX_GRADIENT_CACHE_ELEMENTS        128
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS 64
@@ -204,11 +205,51 @@ void ctx_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void
     lcd_data(pixels,w*h*2);
 }
 
+#include "esp_vfs.h"
+#include "esp_vfs_dev.h"
+#include "driver/uart.h"
+#include "driver/usb_serial_jtag.h"
+#include "esp_vfs_usb_serial_jtag.h"
+
+void usb_serial_jtag_init(void)
+{
+  /* Disable buffering on stdin */
+
+  /* Minicom, screen, idf_monitor send CR when ENTER key is pressed */
+  esp_vfs_dev_usb_serial_jtag_set_rx_line_endings(ESP_LINE_ENDINGS_CR);
+  /* Move the caret to the beginning of the next line on '\n' */
+  esp_vfs_dev_usb_serial_jtag_set_tx_line_endings(ESP_LINE_ENDINGS_CRLF);
+
+  /* Enable non-blocking mode on stdin and stdout */
+  usb_serial_jtag_driver_config_t usb_serial_jtag_config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+
+  esp_err_t ret = ESP_OK;
+  /* Install USB-SERIAL-JTAG driver for interrupt-driven reads and writes */
+  ret = usb_serial_jtag_driver_install(&usb_serial_jtag_config);
+  if (ret != ESP_OK) {
+    printf ("console eek!\n");
+    return;
+  }
+
+  esp_vfs_usb_serial_jtag_use_driver();
+#if 0
+    setvbuf(stdin, NULL, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
+  fcntl(fileno(stdout), F_SETFL, 0);
+  fcntl(fileno(stdin), F_SETFL, 0);
+#endif
+}
+
+
+
 Ctx *ctx_host(void)
 {
   static Ctx *ctx = NULL;
   if (ctx) return ctx;
 
+  
+//  uart_init();
+  usb_serial_jtag_init();
   lcd_init();
   touch_init();
   ctx = ctx_new_cb(DISPLAY_WIDTH, DISPLAY_HEIGHT, CTX_FORMAT_RGB565_BYTESWAPPED,
@@ -255,12 +296,6 @@ Ctx *ctx_host(void)
 
 #define EXAMPLE_ESP_MAXIMUM_RETRY 4
 
-void wifi_init(const char *ssid, const char *password)
-{
-  
-}
-
-
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;
 
@@ -270,10 +305,10 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-static const char *TAG = "wifi station";
 
 static int s_retry_num = 0;
 
+#undef printf
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
@@ -291,13 +326,15 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG,"connect to the AP fail");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        //ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        printf("got ip: " IPSTR " \n", IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
 
-int wifi_init_sta(const char *ssid_arg, const char *password_arg)
+static
+void nvs_init (void)
 {
   static int inited = 0;
   if (!inited) { inited = 1;
@@ -309,14 +346,75 @@ int wifi_init_sta(const char *ssid_arg, const char *password_arg)
       ESP_ERROR_CHECK(nvs_flash_erase());
       ret = nvs_flash_init();
    }
-
     ESP_ERROR_CHECK(esp_netif_init());
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_sta();
+  }
+}
 
+#define DEFAULT_SCAN_LIST_SIZE 16
+
+static esp_netif_t *sta_netif = NULL;
+char **wifi_scan(void)
+{
+  nvs_init ();
+
+
+  if (!sta_netif)
+  {
+    sta_netif = esp_netif_create_default_wifi_sta();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+  }
+  uint16_t number = DEFAULT_SCAN_LIST_SIZE;
+    wifi_ap_record_t ap_info[DEFAULT_SCAN_LIST_SIZE];
+    uint16_t ap_count = 0;
+    memset(ap_info, 0, sizeof(ap_info));
+
+  int totlen = 0;
+  
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_start());
+    esp_wifi_scan_start(NULL, true);
+    ESP_LOGI(TAG, "Max AP number ap_info can hold = %u", number);
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
+    ESP_LOGI(TAG, "Total APs scanned = %u, actual AP number ap_info holds = %u", ap_count, number);
+
+    for (int i = 0; i < number; i++) {
+        ESP_LOGI(TAG, "SSID \t\t%s", ap_info[i].ssid);
+        ESP_LOGI(TAG, "RSSI \t\t%d", ap_info[i].rssi);
+        //print_auth_mode(ap_info[i].authmode);
+#if 0
+        if (ap_info[i].authmode != WIFI_AUTH_WEP) {
+            print_cipher_type(ap_info[i].pairwise_cipher, ap_info[i].group_cipher);
+        }
+#endif
+        ESP_LOGI(TAG, "Channel \t\t%d", ap_info[i].primary);
+        totlen += strlen ((char*)ap_info[i].ssid) + 1;
+    }
+    int head_len = sizeof(void*)*(number+1);
+
+    char **ret = calloc (head_len + totlen, 1);
+    int pos = head_len;
+    for (int i = 0; i < number; i++) {
+       ret[i] = (((char*)ret)+pos);
+       strcpy(ret[i], (char*)ap_info[i].ssid);
+       pos += strlen ((char*)ap_info[i].ssid)+1;
+    }
+    return ret;
+}
+
+int wifi_init_sta(const char *ssid_arg, const char *password_arg)
+{
+  nvs_init ();
+
+  if (!sta_netif)
+  {
+    sta_netif = esp_netif_create_default_wifi_sta();
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+  }
 
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
@@ -331,21 +429,14 @@ int wifi_init_sta(const char *ssid_arg, const char *password_arg)
                                                         &event_handler,
                                                         NULL,
                                                         &instance_got_ip));
-    }
 
     wifi_config_t wifi_config = {
-        .sta = {
-            /* Authmode threshold resets to WPA2 as default if password matches WPA2 standards (pasword len => 8).
-             * If you want to connect the device to deprecated WEP/WPA networks, Please set the threshold value
-             * to WIFI_AUTH_WEP/WIFI_AUTH_WPA_PSK and set the password with length and format matching to
-             * WIFI_AUTH_WEP/WIFI_AUTH_WPA_PSK standards.
-             */
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-        },
+        .sta = { .threshold.authmode = WIFI_AUTH_WPA2_PSK, },
     };
-   strncpy((char*)&wifi_config.sta.ssid[0], ssid_arg, sizeof (wifi_config.sta.ssid));
-   strncpy((char*)&wifi_config.sta.password[0], password_arg, sizeof (wifi_config.sta.password));
+   strncpy((char*)&wifi_config.sta.ssid[0], ssid_arg, sizeof (wifi_config.sta.ssid)-1);
+   strncpy((char*)&wifi_config.sta.password[0], password_arg, sizeof (wifi_config.sta.password)-1);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
+    ESP_ERROR_CHECK(esp_wifi_stop() );
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
     ESP_ERROR_CHECK(esp_wifi_start() );
 

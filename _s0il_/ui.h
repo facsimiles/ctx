@@ -10,11 +10,6 @@
 #include <pthread.h>
 #include "ctx.h"
 
-#ifndef NATIVE
-#undef CTX_FLOW3R 
-#define CTX_FLOW3R 1
-#endif
-
 #if CTX_ESP
 void esp_backlight(int percent);
 void esp_restart(void);
@@ -22,7 +17,7 @@ int wifi_init_sta(const char *ssid, const char *password);
 
 char **wifi_scan(void);
 #endif
-#if CTX_FLOW3R
+#if CTX_ESP
 char **wifi_scan(void);
 int wifi_init_sta(const char *ssid, const char *password);
 void     board_init           (void);

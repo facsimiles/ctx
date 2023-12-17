@@ -1,3 +1,4 @@
+#include "port_config.h"
 #include "s0il.h"
 Ctx *ctx_host(void);
 
@@ -248,7 +249,7 @@ static int esp_elf_runv (char *path, char **argv, int same_stack)
   }
   return retval;
 }
-#else
+#elif NATIVE
 #include <dlfcn.h>
 
 #if 0
@@ -334,6 +335,10 @@ static int dlopen_runv (char *path2, char **argv, int same_stack)
 
   return 0;
 }
+#else
+
+ /// 
+
 #endif
 #endif
 
@@ -463,7 +468,7 @@ int s0il_runv (char *path, char **argv)
 #ifndef WASM
 #if CTX_FLOW3R
   ret = esp_elf_runv (path, argv, 1);
-#else
+#elif NATIVE
   ret = dlopen_runv (path, argv, 1);
 #endif
 #else
