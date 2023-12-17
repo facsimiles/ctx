@@ -31,9 +31,13 @@ static void view_menu (Ui *ui)
 #endif
    if (ui_button(ui,"console"))
       ui_do(ui, "sh");
-#if 0
+#if 1
    if (ui_button(ui,"clock"))
       ui_do(ui, "clock");
+   if (ui_button(ui,"raw-fb"))
+      ui_do(ui, "raw-fb");
+   if (ui_button(ui,"tsr-ui"))
+      ui_do(ui, "tsr-ui");
 #endif
 #if 1
    if (ui_button(ui,"httpd"))

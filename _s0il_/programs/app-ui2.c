@@ -10,7 +10,6 @@ MAIN(app_ui2) {
   Ui *ui = ui_host(NULL);
 
   ui_push_fun(ui, app_ui_view_foo2, NULL, NULL, NULL);
-  // ui_main (ui, NULL);
 
   return 42;
 }

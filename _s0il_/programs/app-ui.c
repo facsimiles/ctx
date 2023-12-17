@@ -12,11 +12,6 @@ MAIN(app_ui) {
     return -1;
 
   Ui *ui = ui_new(ctx);
-  // XXX : this does not work - but app-ui2 does
-  //       which is directly reusing the ui context without
-  //       creating a new one - this due to the registered
-  //       views...
-
   ui_push_fun(ui, app_ui_view_foo, NULL, NULL, NULL);
   ui_main(ui, NULL);
 

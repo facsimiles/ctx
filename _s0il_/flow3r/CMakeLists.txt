@@ -4,7 +4,7 @@ set(IDF_TARGET esp32s3)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-project(ctx_elf)
+project(s0il)
 
 # Make `1.1` literals into single-point precision float instead of double
 # precision. Also warn any time something gets promoted to a double. We

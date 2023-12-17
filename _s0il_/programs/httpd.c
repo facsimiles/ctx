@@ -5,9 +5,6 @@
 //        drag-and-drop file upload
 
 #include "s0il.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #define HTTP_PORT_PREFERRED (80) // we first try to get this
 #define HTTP_PORT_FALLBACK_START (8080)
@@ -76,8 +73,8 @@ static filemapping filemappings[] = {
     {NULL, NULL},
 };
 
-static char httpd_buf2[1024 * 32];
-static char httpd_buf[2048];
+static char httpd_buf2[1024 * 2];
+static char httpd_buf[1024 * 1];
 
 const char *html_doctype =
     "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' "
@@ -1021,7 +1018,7 @@ int _httpd_start_int(int port,
   return 0;
 }
 
-int main(int argc, char **argv) {
+MAIN(httpd) {
   int port = HTTP_PORT_PREFERRED;
   for (int i = 1; argv[i]; i++) {
     if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
