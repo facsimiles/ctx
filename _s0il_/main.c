@@ -115,6 +115,7 @@ int main (int argc, char **argv)
     mount_bin();
 
     Ui *ui = ui_new(ctx);
+    ui_fake_circle (ui, true);
 
     if (argv[1])
       root_path = realpath(dirname (argv[1]), NULL);

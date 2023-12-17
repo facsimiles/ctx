@@ -150,7 +150,8 @@ struct _Ui {
   int    delta_ms;
   void  *focused_id;
   float  scroll_offset;
-  float  font_size;
+  float  font_size_vh;
+  float  font_size_px; // computed from vh
   float  view_elapsed;
   int    frame_no;
   bool   interactive_debug;
@@ -180,6 +181,7 @@ struct _Ui {
 
   ui_style_t style;
 
+  bool   fake_circle;
   bool   focus_first;
   int    queued_next;
 
@@ -190,6 +192,11 @@ struct _Ui {
 void _ctx_toggle_in_idle_dispatch (Ctx *ctx);
 static int launch_elf_handler = 0;
 static int elf_return_value = 0;
+
+void ui_fake_circle(Ui *ui, bool on)
+{
+  ui->fake_circle = on;
+}
 
 int launch_elf_interpreter (Ctx *ctx, void *data)
 {
@@ -354,7 +361,7 @@ static void ui_set_color_a (Ctx *ctx, float *rgba, float alpha);
 static void ui_set_color (Ctx *ctx, float *rgba);
 #define UI_ID_STR(label) ((void*)(size_t)(ctx_strhash(label)|1))
 #define UI_ID ((void*)(__LINE__*2))
-#define em (ui->font_size)
+#define em (ui->font_size_px)
 int demo_mode = 1;
 void ui_keyboard (Ui *ui);
 #ifdef CTX_FLOW3R
@@ -387,7 +394,8 @@ void view_settings_ui (Ui *ui)
    ui->y += ui->height * 0.05;
    ui_title(ui,"settings/ui");
 
-   ui->font_size = ui_slider(ui,"font size", 18,45,0.5, ui->font_size);
+   ui->font_size_px = ui_slider(ui,"font size px", 18,45,0.5, ui->font_size_px);
+   ui->font_size_vh = ui_slider(ui,"font size", 3,20,0.1, ui->font_size_vh);
    ui->show_fps  = ui_toggle(ui,"show fps", ui->show_fps);
 
 
@@ -650,10 +658,10 @@ static void ui_view_dir (Ui *ui)
    {
      dir_entry_t *de = &di->entries[i];
 
-     if (ui->y > ui->height + ui->font_size * 4 && i < di->count -2)
+     if (ui->y > ui->height + ui->font_size_px * 4 && i < di->count -2)
      {
      }
-     else if (ui->y > -ui->font_size * 4|| i == 0)
+     else if (ui->y > -ui->font_size_px * 4|| i == 0)
      {
        if (ui_button(ui, de->name))
        {
@@ -965,10 +973,11 @@ static float color_fg[4]; // black or white automatically based on bg
 
     float width  = ctx_width (ctx);
     float height = ctx_height (ctx);
+
     if (height <= width)
-      ui->font_size = height * 0.09f;
+      ui->font_size_vh = 9.0f;
     else
-      ui->font_size = width * 0.09f;
+      ui->font_size_vh = width / height * 9;
 
   ui_register_view (ui, "settings-ui",  view_settings_ui, NULL);
   ui_register_view (ui, "application/x-sharedlib", view_elf, NULL);
@@ -1991,7 +2000,7 @@ static void ui_pan (CtxEvent *event, void *data1, void *data2)
 
 float ui_get_font_size (Ui *ui)
 {
-  return ui->font_size;
+  return ui->font_size_px;
 }
 
 static void ui_slider_drag_float (CtxEvent *event, void *data1, void *data2)
@@ -2113,6 +2122,7 @@ ui_slider_coords (Ui *ui, void *id, float x, float y, float width, float height,
    ui_set_color(ctx, ui->style.focused_fg);
    else
    ui_set_color(ctx, ui->style.fg);
+
    ctx_arc (ctx, x + rel_value * width, y + height/2, height*0.34, 0, 2*3.1415, 0);
    ctx_fill (ctx);
    ui_set_color(ctx, ui->style.bg);
@@ -2305,8 +2315,7 @@ void ui_end_frame (Ui *ui)
       }
       ctx_add_key_binding (ctx, "control-q", "exit", "foo", ui_cb_do, ui);
 
-#if CTX_ESP==0
-      {
+      if (ui->fake_circle){
       float min_dim = ctx_width(ctx);
       if (ctx_height (ctx) < min_dim) min_dim = ctx_height (ctx);
       ctx_save (ctx);
@@ -2324,7 +2333,6 @@ void ui_end_frame (Ui *ui)
       }
       ctx_restore (ctx);
       }
-#endif
 
 }
 
@@ -2394,7 +2402,9 @@ void ui_start_frame (Ui *ui)
    ui_draw_bg(ui);
    ui->width = ctx_width (ctx);
    ui->height = ctx_height (ctx);
-   ui->line_height = ui->font_size * 1.7;
+   ui_fake_circle (ui, ui->width == ui->height);
+   ui->font_size_px = ui->font_size_vh * ui->height / 100.0f;
+   ui->line_height = ui->font_size_px * 1.7;
    ctx_rectangle(ctx,0,0,ui->width, ui->height);
    ctx_listen (ctx, CTX_DRAG, ui_pan, &ui->scroll_offset, ui);
    ctx_listen (ctx, CTX_DRAG, ui_pan, &ui->scroll_offset_target, ui);
@@ -2560,8 +2570,8 @@ ui_entry_coords(Ui *ui,
     ctx_text_align (ctx, CTX_TEXT_ALIGN_START);
     if (ui->active_id != widget->id)
     {
-       ctx_move_to (ctx, x + w/5, y + ui->font_size);
-       ctx_font_size (ctx, ui->font_size);
+       ctx_move_to (ctx, x + w/5, y + em);
+       ctx_font_size (ctx, em);
     
       if (to_show && to_show[0])
       { 
@@ -2577,7 +2587,7 @@ ui_entry_coords(Ui *ui,
        float tw_selection = 0;
        int sel_bytes = 0;
   
-       ctx_font_size (ctx, ui->font_size);
+       ctx_font_size (ctx, em);
        ui->temp_text[ui->cursor_pos]=0;
        tw_pre = ctx_text_width (ctx, ui->temp_text);
        ui->temp_text[ui->cursor_pos]=temp;
@@ -2593,7 +2603,7 @@ ui_entry_coords(Ui *ui,
          ui->temp_text[ui->cursor_pos + sel_bytes] = temp;
        }
   
-       ctx_move_to (ctx, x + w/5, y + ui->font_size);
+       ctx_move_to (ctx, x + w/5, y + em);
   
        if (to_show && to_show[0])
        { 
@@ -2602,8 +2612,8 @@ ui_entry_coords(Ui *ui,
          ctx_text (ctx, to_show);
        }
   
-       ctx_rectangle (ctx, x + w/5 + tw_pre -1, y + ui->font_size * 0.1,
-                      2 + tw_selection, ui->font_size);
+       ctx_rectangle (ctx, x + w/5 + tw_pre -1, y + 0.1 * em,
+                      2 + tw_selection, em);
        ctx_save (ctx);
        ui_set_color(ctx, ui->style.focused_fg);
        ctx_fill (ctx);
@@ -2640,8 +2650,8 @@ ui_entry (Ui *ui,
           const char *label, const char *fallback, char **strptr)
 {
    char *ret = NULL;
-   ctx_save(ui->ctx);ctx_font_size (ui->ctx, ui->font_size * 0.75);
-   ctx_move_to(ui->ctx, ui->width * 0.5, ui->y + ui->font_size * 0.1);ctx_text(ui->ctx, label);
+   ctx_save(ui->ctx);ctx_font_size (ui->ctx, 0.75 * em);
+   ctx_move_to(ui->ctx, ui->width * 0.5, ui->y + 0.1 * em);ctx_text(ui->ctx, label);
    if ((ret = ui_entry_coords(ui, UI_ID_STR(label), ui->width * 0.15, ui->y, ui->width * 0.7, ui->line_height, fallback, *strptr)))
    {
      if (*strptr) free (*strptr);

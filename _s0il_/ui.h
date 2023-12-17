@@ -164,5 +164,7 @@ float ui_y (Ui *ui);
 void ui_move_to (Ui *ui, float x, float y);
 bool ui_keyboard_visible(Ui *ui);
 
+void ui_fake_circle(Ui *ui, bool on);
+
 #endif
 
