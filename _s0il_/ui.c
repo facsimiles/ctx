@@ -305,7 +305,9 @@ static void draw_term (Ui *ui)
     ctx_client_resize (ctx, ctx_client_id(term_client), ui->width*180/240, ui->height*180/240);
   }
   ctx_save (ctx);
-
+  ctx_rectangle(ctx,0,0,ctx_width(ctx),ctx_height(ctx));
+  ctx_gray (ctx, 0.0f);
+  ctx_fill (ctx);
   if (ctx_osk_mode)
   {
    int y = vt_get_cursor_y (ctx_client_vt(term_client));

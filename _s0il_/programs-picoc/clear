@@ -3,6 +3,6 @@
 
 int main (int arc, char **argv)
 {
-  printf ("\033c");
+  printf ("\033c\033[?30l");
   return 0;
 }

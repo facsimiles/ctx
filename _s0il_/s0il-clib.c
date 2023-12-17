@@ -570,7 +570,7 @@ static char *s0il_gets(char* buf, size_t buflen)
                buf[count]=0;
                return NULL;
              case 12://ctrl-l - clear
-               s0il_fputs("\033c> ", stdout);
+               s0il_fputs("\033c\033[?30l> ", stdout);
                continue;
            }
         }

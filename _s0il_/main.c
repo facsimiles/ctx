@@ -141,6 +141,7 @@ int main (int argc, char **argv)
     ui_register_view (ui, "menu", view_menu, NULL);
     ui_register_view (ui, "settings", view_settings, NULL);
     ui_do(ui, "menu"); // queue menu - as initial view
+    s0il_printf("\033[?30l"); // turn off scrollbar
 
 //  s0il_system("wifi --auto &");
 //  ui_do(ui, "sh");
