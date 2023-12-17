@@ -115,7 +115,7 @@ flow3r-flash: flow3r-build
 monitor:
 	(cd flow3r; idf.py monitor)
 
-wasm: fs_bin_generic.c *.[ch] */*.c
+wasm: fs_bin_generic.c ui*.[ch] s0il*.[ch] */*.c
 	(cd wasm; make)
 
 fs_bin_xtensa.c: $(PROGRAM_DEVICE) Makefile gen_fs.sh

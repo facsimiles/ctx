@@ -501,11 +501,14 @@ static int s0il_got_data(FILE *stream)
 }
 
 
-static char *s0il_gets(char* buf, size_t buflen) {
+static char *s0il_gets(char* buf, size_t buflen)
+{
     FILE *stream = stdin;
     if (stream == stdin && stdin_redirect)
       stream = stdin_redirect;
     size_t count = 0;
+
+    size_t cursor_pos = 0;
 
     int in_esc=0;
     char keybuf[8]="";
@@ -559,18 +562,26 @@ static char *s0il_gets(char* buf, size_t buflen) {
                printf("down");
                in_esc = 0;
               break;
-            case 'D':
-               printf("left");
+            case 'D': // left
+               if (cursor_pos>0)
+               {
+                 s0il_fputs("\e[D", stdout);
+                 cursor_pos--;
+               }
                in_esc = 0;
               break;
-            case 'C':
-               printf("right");
+            case 'C': // right
+               if ((int)cursor_pos<ctx_utf8_strlen(buf))
+               {
+                 s0il_fputs("\e[C", stdout);
+                 cursor_pos++;
+               }
                in_esc = 0;
               break;
             default:
             if (keylen < 4)
             {
-              printf("{%i %c}", c, c>32?c:'_');
+              //printf("{%i %c}", c, c>32?c:'_');
               keybuf[keylen++]=c;
               keybuf[keylen]=0;
             } else in_esc = 0;
@@ -578,18 +589,51 @@ static char *s0il_gets(char* buf, size_t buflen) {
         }
         else
         {
-        if (c == '\n') {
+        if (c == 1) { // control-a 
+           if (cursor_pos>0)
+           {
+             s0il_printf("\e[%iD", cursor_pos);
+             cursor_pos = 0;
+           }
+           continue;
+        }
+        else if (c == 5) { // control-e
+              s0il_printf("\e[%iC", ctx_utf8_strlen(buf)-cursor_pos);
+              cursor_pos = ctx_utf8_strlen(buf);
+           continue;
+        }
+        else if (c == '\n') {
             buf[count] = c;
             count++;
             break;
         } else switch (c)
         { case '\b': case '\177': // backspace
-            if (count > 0) {
+            if (count > 0 && cursor_pos > 0) {
+            if (count == cursor_pos)
+            {
                 buf[count - 1] = 0;
+                cursor_pos--;
                 count--;
                 s0il_fputs("\x08 ", stdout);
                 s0il_fputc('\b', stdout); /* echo */
             }
+            else
+            {
+              memmove(&buf[cursor_pos]-1, &buf[cursor_pos], strlen(&buf[cursor_pos])+1);
+              cursor_pos--;
+              count--;
+              s0il_fputs("\e[D", stdout);
+              for (int i = cursor_pos; buf[i]; i++)
+                s0il_fputc(buf[i], stdout);
+              s0il_fputc(' ', stdout);
+
+              s0il_printf("\e[%iD", count-cursor_pos+1);
+              continue;
+            }
+
+            }
+
+
             continue;
           case 27:
             in_esc=1;
@@ -597,9 +641,24 @@ static char *s0il_gets(char* buf, size_t buflen) {
             keybuf[keylen++]=c;
             keybuf[keylen]=0;
             continue;
-            default:
-            buf[count] = c;
-            count++;
+          default:
+            if (count==cursor_pos)
+            {
+              buf[count] = c;
+              cursor_pos++;
+              count++;
+            }
+            else
+            {
+              memmove(&buf[cursor_pos]+1, &buf[cursor_pos], strlen(&buf[cursor_pos])+1);
+              buf[cursor_pos]=c;
+              cursor_pos++;
+              count++;
+              for (int i = cursor_pos-1; buf[i]; i++)
+                s0il_fputc(buf[i], stdout);
+              s0il_printf("\e[%iD", count-cursor_pos);
+              continue;
+            }
         }
         s0il_fputc(c, stdout); /* echo */
         }
