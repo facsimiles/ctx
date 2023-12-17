@@ -186,6 +186,7 @@ struct _VT
 
   int        cr_on_lf;
   int        cursor_visible;
+  int        scrollbar_visible;
   int        saved_x;
   int        saved_y;
   uint32_t   saved_style;

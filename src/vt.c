@@ -540,6 +540,7 @@ static void vtcmd_reset_to_initial_state (VT *vt, const char *sequence)
   vt->autowrap               = 1;
   vt->justify                = 0;
   vt->cursor_visible         = 1;
+  vt->scrollbar_visible      = 1;
   vt->charset[0]             = 0;
   vt->charset[1]             = 0;
   vt->charset[2]             = 0;
@@ -2555,6 +2556,7 @@ qagain:
             vt->cursor_visible = set;
             break;
           case 30: // from rxvt - show/hide scrollbar
+            vt->scrollbar_visible = set;
             break;
           case 34: // DECRLM - right to left mode
             break;
@@ -2834,8 +2836,10 @@ static void vtcmd_request_mode (VT *vt, const char *sequence)
             is_set = (vt->state == vt_state_ctx);
             break;
 #endif
-          case 80:/* DECSDM Sixel scrolling */
           case 30: // from rxvt - show/hide scrollbar
+            is_set = vt->scrollbar_visible;
+            break;
+          case 80:/* DECSDM Sixel scrolling */
           case 34: // DECRLM - right to left mode
           case 60: // horizontal cursor coupling
           case 61: // vertical cursor coupling
@@ -8657,7 +8661,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
    }
 
     /* scrollbar */
-    if (!vt->in_alt_screen)
+    if (!vt->in_alt_screen && vt->scrollbar_visible)
     {
       float disp_lines = vt->rows;
       float tot_lines = vt->line_count + vt->scrollback_count;
