@@ -735,7 +735,7 @@ char *s0il_fgets(char *s, int size, FILE *stream)
     int ret = 0;
     if (_s0il_file->pos >=  _s0il_file->size)
       return NULL;
-    for (; _s0il_file->pos <  _s0il_file->size; _s0il_file->pos++)
+    for (; _s0il_file->pos <  _s0il_file->size && ret < size; _s0il_file->pos++)
     {
        char c = _s0il_file->data[_s0il_file->pos];
        s[ret++] = c;
@@ -1037,7 +1037,8 @@ int s0il_getchar (void)
 ssize_t s0il_getline (char **lineptr, size_t *n, FILE *stream)
 {
   *lineptr = realloc (*lineptr, 500);
-  s0il_fgets(*lineptr, 500, stream);
+  void *ret = s0il_fgets(*lineptr, 500, stream);
+  if (!ret) return -1;
   return strlen(*lineptr);
 }
 

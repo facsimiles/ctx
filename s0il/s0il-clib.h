@@ -107,6 +107,7 @@ int     s0il_chdir    (const char *path);
 #define printf      s0il_printf
 #define ctx_new     s0il_ctx_new
 #define ctx_destroy s0il_ctx_destroy
+#define getline     s0il_getline
 
 #endif
 

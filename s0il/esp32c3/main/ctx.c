@@ -7,7 +7,7 @@
 // a little faster - no mid-rasterization tearing - but uses more memory
 
 //#define SCRATCH_BUF_BYTES                  (240*240*2+1024)
-#define SCRATCH_BUF_BYTES                  (44*1024)
+#define SCRATCH_BUF_BYTES                  (32*1024)
 #define CTX_VT                             1
 #define CTX_PTY                            0
 #define CTX_THREAD                         1
