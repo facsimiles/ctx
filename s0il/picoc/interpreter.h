@@ -55,7 +55,7 @@ typedef FILE IOFILE;
 #define IS_NUMERIC_COERCIBLE_PLUS_POINTERS(v,ap) (IS_NUMERIC_COERCIBLE(v) || IS_POINTER_COERCIBLE(v,ap))
 
 
-struct Table;
+struct PcTable;
 struct Picoc_Struct;
 
 typedef struct Picoc_Struct Picoc;
@@ -157,17 +157,17 @@ enum BaseType
 };
 
 /* data type */
-struct ValueType
+struct PcValueType
 {
     enum BaseType Base;             /* what kind of type this is */
     int ArraySize;                  /* the size of an array type */
     int Sizeof;                     /* the storage required */
     int AlignBytes;                 /* the alignment boundary of this type */
     const char *Identifier;         /* the name of a struct or union */
-    struct ValueType *FromType;     /* the type we're derived from (or NULL) */
-    struct ValueType *DerivedTypeList;  /* first in a list of types derived from this one */
-    struct ValueType *Next;         /* next item in the derived type list */
-    struct Table *Members;          /* members of a struct or union */
+    struct PcValueType *FromType;     /* the type we're derived from (or NULL) */
+    struct PcValueType *DerivedTypeList;  /* first in a list of types derived from this one */
+    struct PcValueType *Next;         /* next item in the derived type list */
+    struct PcTable *Members;          /* members of a struct or union */
     int OnHeap;                     /* true if allocated on the heap */
     int StaticQualifier;            /* true if it's a static */
 };
@@ -175,10 +175,10 @@ struct ValueType
 /* function definition */
 struct FuncDef
 {
-    struct ValueType *ReturnType;   /* the return value type */
+    struct PcValueType *ReturnType;   /* the return value type */
     int NumParams;                  /* the number of parameters */
     int VarArgs;                    /* has a variable number of arguments after the explicitly specified ones */
-    struct ValueType **ParamType;   /* array of parameter types */
+    struct PcValueType **ParamType;   /* array of parameter types */
     char **ParamName;               /* array of parameter names */
     void (*Intrinsic)();            /* intrinsic call address or NULL */
     struct ParseState Body;         /* lexical tokens of the function body if not intrinsic */
@@ -205,7 +205,7 @@ union AnyValue
     unsigned char UnsignedCharacter;
     char *Identifier;
     char ArrayMem[2];               /* placeholder for where the data starts, doesn't point to it */
-    struct ValueType *Typ;
+    struct PcValueType *Typ;
     struct FuncDef FuncDef;
     struct MacroDef MacroDef;
 #ifndef NO_FP
@@ -214,33 +214,33 @@ union AnyValue
     void *Pointer;                  /* unsafe native pointers */
 };
 
-struct Value
+struct PcValue
 {
-    struct ValueType *Typ;          /* the type of this value */
+    struct PcValueType *Typ;          /* the type of this value */
     union AnyValue *Val;            /* pointer to the AnyValue which holds the actual content */
-    struct Value *LValueFrom;       /* if an LValue, this is a Value our LValue is contained within (or NULL) */
-    char ValOnHeap;                 /* this Value is on the heap */
-    char ValOnStack;                /* the AnyValue is on the stack along with this Value */
-    char AnyValOnHeap;              /* the AnyValue is separately allocated from the Value on the heap */
+    struct PcValue *LValueFrom;       /* if an LValue, this is a PcValue our LValue is contained within (or NULL) */
+    char ValOnHeap;                 /* this PcValue is on the heap */
+    char ValOnStack;                /* the AnyValue is on the stack along with this PcValue */
+    char AnyValOnHeap;              /* the AnyValue is separately allocated from the PcValue on the heap */
     char IsLValue;                  /* is modifiable and is allocated somewhere we can usefully modify it */
     int ScopeID;                    /* to know when it goes out of scope */
     char OutOfScope;
 };
 
 /* hash table data structure */
-struct TableEntry
+struct PcTableEntry
 {
-    struct TableEntry *Next;        /* next item in this hash chain */
+    struct PcTableEntry *Next;        /* next item in this hash chain */
     const char *DeclFileName;       /* where the variable was declared */
     unsigned short DeclLine;
     unsigned short DeclColumn;
 
-    union TableEntryPayload
+    union PcTableEntryPayload
     {
-        struct ValueEntry
+        struct PcValueEntry
         {
             char *Key;              /* points to the shared string table */
-            struct Value *Val;      /* the value we're storing */
+            struct PcValue *Val;      /* the value we're storing */
         } v;                        /* used for tables of values */
         
         char Key[1];                /* dummy size - used for the shared string table */
@@ -255,11 +255,11 @@ struct TableEntry
     } p;
 };
     
-struct Table
+struct PcTable
 {
     short Size;
     short OnHeap;
-    struct TableEntry **HashTable;
+    struct PcTableEntry **HashTable;
 };
 
 /* stack frame for function calls */
@@ -267,11 +267,11 @@ struct StackFrame
 {
     struct ParseState ReturnParser;         /* how we got here */
     const char *FuncName;                   /* the name of the function we're in */
-    struct Value *ReturnValue;              /* copy the return value here */
-    struct Value **Parameter;               /* array of parameter values */
+    struct PcValue *ReturnValue;              /* copy the return value here */
+    struct PcValue **Parameter;               /* array of parameter values */
     int NumParams;                          /* the number of parameters */
-    struct Table LocalTable;                /* the local variables and parameters */
-    struct TableEntry *LocalHashTable[LOCAL_TABLE_SIZE];
+    struct PcTable LocalTable;                /* the local variables and parameters */
+    struct PcTableEntry *LocalHashTable[LOCAL_TABLE_SIZE];
     struct StackFrame *PreviousStackFrame;  /* the next lower stack frame */
 };
 
@@ -285,7 +285,7 @@ enum LexMode
     LexModeHashDefineSpaceIdent
 };
 
-struct LexState
+struct PcLexState
 {
     const char *Pos;
     const char *End;
@@ -300,7 +300,7 @@ struct LexState
 /* library function definition */
 struct LibraryFunction
 {
-    void (*Func)(struct ParseState *Parser, struct Value *, struct Value **, int);
+    void (*Func)(struct ParseState *Parser, struct PcValue *, struct PcValue **, int);
     const char *Prototype;
 };
 
@@ -363,9 +363,9 @@ struct IncludeLibrary
 struct Picoc_Struct
 {
     /* parser global data */
-    struct Table GlobalTable;
+    struct PcTable GlobalTable;
     struct CleanupTokenNode *CleanupTokenList;
-    struct TableEntry *GlobalHashTable[GLOBAL_TABLE_SIZE];
+    struct PcTableEntry *GlobalHashTable[GLOBAL_TABLE_SIZE];
     
     /* lexer global data */
     struct TokenLine *InteractiveHead;
@@ -373,13 +373,13 @@ struct Picoc_Struct
     struct TokenLine *InteractiveCurrentLine;
     int LexUseStatementPrompt;
     union AnyValue LexAnyValue;
-    struct Value LexValue;
-    struct Table ReservedWordTable;
-    struct TableEntry *ReservedWordHashTable[RESERVED_WORD_TABLE_SIZE];
+    struct PcValue LexValue;
+    struct PcTable ReservedWordTable;
+    struct PcTableEntry *ReservedWordHashTable[RESERVED_WORD_TABLE_SIZE];
 
     /* the table of string literal values */
-    struct Table StringLiteralTable;
-    struct TableEntry *StringLiteralHashTable[STRING_LITERAL_TABLE_SIZE];
+    struct PcTable StringLiteralTable;
+    struct PcTableEntry *StringLiteralHashTable[STRING_LITERAL_TABLE_SIZE];
     
     /* the stack */
     struct StackFrame *TopStackFrame;
@@ -415,32 +415,32 @@ struct Picoc_Struct
     struct AllocNode *FreeListBig;                           /* free memory which doesn't fit in a bucket */
 
     /* types */    
-    struct ValueType UberType;
-    struct ValueType IntType;
-    struct ValueType ShortType;
-    struct ValueType CharType;
-    struct ValueType LongType;
-    struct ValueType UnsignedIntType;
-    struct ValueType UnsignedShortType;
-    struct ValueType UnsignedLongType;
-    struct ValueType UnsignedCharType;
+    struct PcValueType UberType;
+    struct PcValueType IntType;
+    struct PcValueType ShortType;
+    struct PcValueType CharType;
+    struct PcValueType LongType;
+    struct PcValueType UnsignedIntType;
+    struct PcValueType UnsignedShortType;
+    struct PcValueType UnsignedLongType;
+    struct PcValueType UnsignedCharType;
     #ifndef NO_FP
-    struct ValueType FPType;
+    struct PcValueType FPType;
     #endif
-    struct ValueType VoidType;
-    struct ValueType TypeType;
-    struct ValueType FunctionType;
-    struct ValueType MacroType;
-    struct ValueType EnumType;
-    struct ValueType GotoLabelType;
-    struct ValueType *CharPtrType;
-    struct ValueType *CharPtrPtrType;
-    struct ValueType *CharArrayType;
-    struct ValueType *VoidPtrType;
+    struct PcValueType VoidType;
+    struct PcValueType TypeType;
+    struct PcValueType FunctionType;
+    struct PcValueType MacroType;
+    struct PcValueType EnumType;
+    struct PcValueType GotoLabelType;
+    struct PcValueType *CharPtrType;
+    struct PcValueType *CharPtrPtrType;
+    struct PcValueType *CharArrayType;
+    struct PcValueType *VoidPtrType;
 
     /* debugger */
-    struct Table BreakpointTable;
-    struct TableEntry *BreakpointHashTable[BREAKPOINT_TABLE_SIZE];
+    struct PcTable BreakpointTable;
+    struct PcTableEntry *BreakpointHashTable[BREAKPOINT_TABLE_SIZE];
     int BreakpointCount;
     int DebugManualBreak;
     
@@ -465,20 +465,20 @@ struct Picoc_Struct
 #endif
     
     /* string table */
-    struct Table StringTable;
-    struct TableEntry *StringHashTable[STRING_TABLE_SIZE];
+    struct PcTable StringTable;
+    struct PcTableEntry *StringHashTable[STRING_TABLE_SIZE];
     char *StrEmpty;
 };
 
 /* table.c */
-void TableInit(Picoc *pc);
+void PcTableInit(Picoc *pc);
 char *TableStrRegister(Picoc *pc, const char *Str);
 char *TableStrRegister2(Picoc *pc, const char *Str, int Len);
-void TableInitTable(struct Table *Tbl, struct TableEntry **HashTable, int Size, int OnHeap);
-int TableSet(Picoc *pc, struct Table *Tbl, char *Key, struct Value *Val, const char *DeclFileName, int DeclLine, int DeclColumn);
-int TableGet(struct Table *Tbl, const char *Key, struct Value **Val, const char **DeclFileName, int *DeclLine, int *DeclColumn);
-struct Value *TableDelete(Picoc *pc, struct Table *Tbl, const char *Key);
-char *TableSetIdentifier(Picoc *pc, struct Table *Tbl, const char *Ident, int IdentLen);
+void PcTableInitTable(struct PcTable *Tbl, struct PcTableEntry **HashTable, int Size, int OnHeap);
+int TableSet(Picoc *pc, struct PcTable *Tbl, char *Key, struct PcValue *Val, const char *DeclFileName, int DeclLine, int DeclColumn);
+int TableGet(struct PcTable *Tbl, const char *Key, struct PcValue **Val, const char **DeclFileName, int *DeclLine, int *DeclColumn);
+struct PcValue *TableDelete(Picoc *pc, struct PcTable *Tbl, const char *Key);
+char *TableSetIdentifier(Picoc *pc, struct PcTable *Tbl, const char *Ident, int IdentLen);
 void TableStrFree(Picoc *pc);
 
 /* lex.c */
@@ -486,7 +486,7 @@ void LexInit(Picoc *pc);
 void LexCleanup(Picoc *pc);
 void *LexAnalyse(Picoc *pc, const char *FileName, const char *Source, int SourceLen, int *TokenLen);
 void LexInitParser(struct ParseState *Parser, Picoc *pc, const char *SourceText, void *TokenSource, char *FileName, int RunIt, int SetDebugMode);
-enum LexToken LexGetToken(struct ParseState *Parser, struct Value **Value, int IncPos);
+enum LexToken LexGetToken(struct ParseState *Parser, struct PcValue **PcValue, int IncPos);
 enum LexToken LexRawPeekToken(struct ParseState *Parser);
 void LexToEndOfLine(struct ParseState *Parser);
 void *LexCopyTokens(struct ParseState *StartParser, struct ParseState *EndParser);
@@ -500,34 +500,34 @@ void LexInteractiveStatementPrompt(Picoc *pc);
  * void PicocParseInteractive(); */
 void PicocParseInteractiveNoStartPrompt(Picoc *pc, int EnableDebugger);
 enum ParseResult ParseStatement(struct ParseState *Parser, int CheckTrailingSemicolon);
-struct Value *ParseFunctionDefinition(struct ParseState *Parser, struct ValueType *ReturnType, char *Identifier);
+struct PcValue *ParseFunctionDefinition(struct ParseState *Parser, struct PcValueType *ReturnType, char *Identifier);
 void ParseCleanup(Picoc *pc);
 void ParserCopyPos(struct ParseState *To, struct ParseState *From);
 void ParserCopy(struct ParseState *To, struct ParseState *From);
 
 /* expression.c */
-int ExpressionParse(struct ParseState *Parser, struct Value **Result);
+int ExpressionParse(struct ParseState *Parser, struct PcValue **Result);
 long ExpressionParseInt(struct ParseState *Parser);
-void ExpressionAssign(struct ParseState *Parser, struct Value *DestValue, struct Value *SourceValue, int Force, const char *FuncName, int ParamNo, int AllowPointerCoercion);
-long ExpressionCoerceInteger(struct Value *Val);
-unsigned long ExpressionCoerceUnsignedInteger(struct Value *Val);
+void ExpressionAssign(struct ParseState *Parser, struct PcValue *DestValue, struct PcValue *SourceValue, int Force, const char *FuncName, int ParamNo, int AllowPointerCoercion);
+long ExpressionCoerceInteger(struct PcValue *Val);
+unsigned long ExpressionCoerceUnsignedInteger(struct PcValue *Val);
 #ifndef NO_FP
-double ExpressionCoerceFP(struct Value *Val);
+double ExpressionCoerceFP(struct PcValue *Val);
 #endif
 
 /* type.c */
 void TypeInit(Picoc *pc);
 void TypeCleanup(Picoc *pc);
-int TypeSize(struct ValueType *Typ, int ArraySize, int Compact);
-int TypeSizeValue(struct Value *Val, int Compact);
-int TypeStackSizeValue(struct Value *Val);
-int TypeLastAccessibleOffset(Picoc *pc, struct Value *Val);
-int TypeParseFront(struct ParseState *Parser, struct ValueType **Typ, int *IsStatic);
-void TypeParseIdentPart(struct ParseState *Parser, struct ValueType *BasicTyp, struct ValueType **Typ, char **Identifier);
-void TypeParse(struct ParseState *Parser, struct ValueType **Typ, char **Identifier, int *IsStatic);
-struct ValueType *TypeGetMatching(Picoc *pc, struct ParseState *Parser, struct ValueType *ParentType, enum BaseType Base, int ArraySize, const char *Identifier, int AllowDuplicates);
-struct ValueType *TypeCreateOpaqueStruct(Picoc *pc, struct ParseState *Parser, const char *StructName, int Size);
-int TypeIsForwardDeclared(struct ParseState *Parser, struct ValueType *Typ);
+int TypeSize(struct PcValueType *Typ, int ArraySize, int Compact);
+int TypeSizeValue(struct PcValue *Val, int Compact);
+int TypeStackSizeValue(struct PcValue *Val);
+int TypeLastAccessibleOffset(Picoc *pc, struct PcValue *Val);
+int TypeParseFront(struct ParseState *Parser, struct PcValueType **Typ, int *IsStatic);
+void TypeParseIdentPart(struct ParseState *Parser, struct PcValueType *BasicTyp, struct PcValueType **Typ, char **Identifier);
+void TypeParse(struct ParseState *Parser, struct PcValueType **Typ, char **Identifier, int *IsStatic);
+struct PcValueType *TypeGetMatching(Picoc *pc, struct ParseState *Parser, struct PcValueType *ParentType, enum BaseType Base, int ArraySize, const char *Identifier, int AllowDuplicates);
+struct PcValueType *TypeCreateOpaqueStruct(Picoc *pc, struct ParseState *Parser, const char *StructName, int Size);
+int TypeIsForwardDeclared(struct ParseState *Parser, struct PcValueType *Typ);
 
 /* heap.c */
 void HeapInit(Picoc *pc, int StackSize);
@@ -543,42 +543,42 @@ void HeapFreeMem(Picoc *pc, void *Mem);
 /* variable.c */
 void VariableInit(Picoc *pc);
 void VariableCleanup(Picoc *pc);
-void VariableFree(Picoc *pc, struct Value *Val);
-void VariableTableCleanup(Picoc *pc, struct Table *HashTable);
+void VariableFree(Picoc *pc, struct PcValue *Val);
+void VariableTableCleanup(Picoc *pc, struct PcTable *HashTable);
 void *VariableAlloc(Picoc *pc, struct ParseState *Parser, int Size, int OnHeap);
-void VariableStackPop(struct ParseState *Parser, struct Value *Var);
-struct Value *VariableAllocValueAndData(Picoc *pc, struct ParseState *Parser, int DataSize, int IsLValue, struct Value *LValueFrom, int OnHeap);
-struct Value *VariableAllocValueAndCopy(Picoc *pc, struct ParseState *Parser, struct Value *FromValue, int OnHeap);
-struct Value *VariableAllocValueFromType(Picoc *pc, struct ParseState *Parser, struct ValueType *Typ, int IsLValue, struct Value *LValueFrom, int OnHeap);
-struct Value *VariableAllocValueFromExistingData(struct ParseState *Parser, struct ValueType *Typ, union AnyValue *FromValue, int IsLValue, struct Value *LValueFrom);
-struct Value *VariableAllocValueShared(struct ParseState *Parser, struct Value *FromValue);
-struct Value *VariableDefine(Picoc *pc, struct ParseState *Parser, char *Ident, struct Value *InitValue, struct ValueType *Typ, int MakeWritable);
-struct Value *VariableDefineButIgnoreIdentical(struct ParseState *Parser, char *Ident, struct ValueType *Typ, int IsStatic, int *FirstVisit);
+void VariableStackPop(struct ParseState *Parser, struct PcValue *Var);
+struct PcValue *VariableAllocValueAndData(Picoc *pc, struct ParseState *Parser, int DataSize, int IsLValue, struct PcValue *LValueFrom, int OnHeap);
+struct PcValue *VariableAllocValueAndCopy(Picoc *pc, struct ParseState *Parser, struct PcValue *FromValue, int OnHeap);
+struct PcValue *VariableAllocValueFromType(Picoc *pc, struct ParseState *Parser, struct PcValueType *Typ, int IsLValue, struct PcValue *LValueFrom, int OnHeap);
+struct PcValue *VariableAllocValueFromExistingData(struct ParseState *Parser, struct PcValueType *Typ, union AnyValue *FromValue, int IsLValue, struct PcValue *LValueFrom);
+struct PcValue *VariableAllocValueShared(struct ParseState *Parser, struct PcValue *FromValue);
+struct PcValue *VariableDefine(Picoc *pc, struct ParseState *Parser, char *Ident, struct PcValue *InitValue, struct PcValueType *Typ, int MakeWritable);
+struct PcValue *VariableDefineButIgnoreIdentical(struct ParseState *Parser, char *Ident, struct PcValueType *Typ, int IsStatic, int *FirstVisit);
 int VariableDefined(Picoc *pc, const char *Ident);
 int VariableDefinedAndOutOfScope(Picoc *pc, const char *Ident);
-void VariableRealloc(struct ParseState *Parser, struct Value *FromValue, int NewSize);
-void VariableGet(Picoc *pc, struct ParseState *Parser, const char *Ident, struct Value **LVal);
-void VariableDefinePlatformVar(Picoc *pc, struct ParseState *Parser, char *Ident, struct ValueType *Typ, union AnyValue *FromValue, int IsWritable);
+void VariableRealloc(struct ParseState *Parser, struct PcValue *FromValue, int NewSize);
+void VariableGet(Picoc *pc, struct ParseState *Parser, const char *Ident, struct PcValue **LVal);
+void VariableDefinePlatformVar(Picoc *pc, struct ParseState *Parser, char *Ident, struct PcValueType *Typ, union AnyValue *FromValue, int IsWritable);
 void VariableStackFrameAdd(struct ParseState *Parser, const char *FuncName, int NumParams);
 void VariableStackFramePop(struct ParseState *Parser);
-struct Value *VariableStringLiteralGet(Picoc *pc, char *Ident);
-void VariableStringLiteralDefine(Picoc *pc, char *Ident, struct Value *Val);
-void *VariableDereferencePointer(struct ParseState *Parser, struct Value *PointerValue, struct Value **DerefVal, int *DerefOffset, struct ValueType **DerefType, int *DerefIsLValue);
+struct PcValue *VariableStringLiteralGet(Picoc *pc, char *Ident);
+void VariableStringLiteralDefine(Picoc *pc, char *Ident, struct PcValue *Val);
+void *VariableDereferencePointer(struct ParseState *Parser, struct PcValue *PointerValue, struct PcValue **DerefVal, int *DerefOffset, struct PcValueType **DerefType, int *DerefIsLValue);
 int VariableScopeBegin(struct ParseState * Parser, int* PrevScopeID);
 void VariableScopeEnd(struct ParseState * Parser, int ScopeID, int PrevScopeID);
 
 /* clibrary.c */
 void BasicIOInit(Picoc *pc);
 void LibraryInit(Picoc *pc);
-void LibraryAdd(Picoc *pc, struct Table *GlobalTable, const char *LibraryName, const struct LibraryFunction *FuncList);
+void LibraryAdd(Picoc *pc, struct PcTable *GlobalTable, const char *LibraryName, const struct LibraryFunction *FuncList);
 void CLibraryInit(Picoc *pc);
 void PrintCh(char OutCh, IOFILE *Stream);
 void PrintSimpleInt(long Num, IOFILE *Stream);
 void PrintInt(long Num, int FieldWidth, int ZeroPad, int LeftJustify, IOFILE *Stream);
 void PrintStr(const char *Str, IOFILE *Stream);
 void PrintFP(double Num, IOFILE *Stream);
-void PrintType(struct ValueType *Typ, IOFILE *Stream);
-void LibPrintf(struct ParseState *Parser, struct Value *ReturnValue, struct Value **Param, int NumArgs);
+void PcPrintType(struct PcValueType *Typ, IOFILE *Stream);
+void LibPrintf(struct ParseState *Parser, struct PcValue *ReturnValue, struct PcValue **Param, int NumArgs);
 
 /* platform.c */
 /* the following are defined in picoc.h:
@@ -590,8 +590,8 @@ void LibPrintf(struct ParseState *Parser, struct Value *ReturnValue, struct Valu
  * extern int PicocExitValue; */
 void ProgramFail(struct ParseState *Parser, const char *Message, ...);
 void ProgramFailNoParser(Picoc *pc, const char *Message, ...);
-void AssignFail(struct ParseState *Parser, const char *Format, struct ValueType *Type1, struct ValueType *Type2, int Num1, int Num2, const char *FuncName, int ParamNo);
-void LexFail(Picoc *pc, struct LexState *Lexer, const char *Message, ...);
+void AssignFail(struct ParseState *Parser, const char *Format, struct PcValueType *Type1, struct PcValueType *Type2, int Num1, int Num2, const char *FuncName, int ParamNo);
+void LexFail(Picoc *pc, struct PcLexState *Lexer, const char *Message, ...);
 void PlatformInit(Picoc *pc);
 void PlatformCleanup(Picoc *pc);
 char *PlatformGetLine(char *Buf, int MaxLen, const char *Prompt);

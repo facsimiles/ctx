@@ -12,7 +12,7 @@ void PicocInitialise(Picoc *pc, int StackSize)
     PlatformInit(pc);
     BasicIOInit(pc);
     HeapInit(pc, StackSize);
-    TableInit(pc);
+    PcTableInit(pc);
     VariableInit(pc);
     LexInit(pc);
     TypeInit(pc);
@@ -55,7 +55,7 @@ void PicocCleanup(Picoc *pc)
 void PicocCallMain(Picoc *pc, int argc, char **argv)
 {
     /* check if the program wants arguments */
-    struct Value *FuncValue = NULL;
+    struct PcValue *FuncValue = NULL;
 
     if (!VariableDefined(pc, TableStrRegister(pc, "main")))
         ProgramFailNoParser(pc, "main() is not defined");
@@ -156,7 +156,7 @@ void ProgramFailNoParser(Picoc *pc, const char *Message, ...)
 }
 
 /* like ProgramFail() but gives descriptive error messages for assignment */
-void AssignFail(struct ParseState *Parser, const char *Format, struct ValueType *Type1, struct ValueType *Type2, int Num1, int Num2, const char *FuncName, int ParamNo)
+void AssignFail(struct ParseState *Parser, const char *Format, struct PcValueType *Type1, struct PcValueType *Type2, int Num1, int Num2, const char *FuncName, int ParamNo)
 {
     IOFILE *Stream = Parser->pc->CStdOut;
     
@@ -176,7 +176,7 @@ void AssignFail(struct ParseState *Parser, const char *Format, struct ValueType 
 }
 
 /* exit lexing with a message */
-void LexFail(Picoc *pc, struct LexState *Lexer, const char *Message, ...)
+void LexFail(Picoc *pc, struct PcLexState *Lexer, const char *Message, ...)
 {
     va_list Args;
 
@@ -212,7 +212,7 @@ void PlatformVPrintf(IOFILE *Stream, const char *Format, va_list Args)
             case 's': PrintStr(va_arg(Args, char *), Stream); break;
             case 'd': PrintSimpleInt(va_arg(Args, int), Stream); break;
             case 'c': PrintCh(va_arg(Args, int), Stream); break;
-            case 't': PrintType(va_arg(Args, struct ValueType *), Stream); break;
+            case 't': PcPrintType(va_arg(Args, struct PcValueType *), Stream); break;
 #ifndef NO_FP
             case 'f': PrintFP(va_arg(Args, double), Stream); break;
 #endif

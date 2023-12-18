@@ -9,15 +9,15 @@
 /* initialise the debugger by clearing the breakpoint table */
 void DebugInit(Picoc *pc)
 {
-    TableInitTable(&pc->BreakpointTable, &pc->BreakpointHashTable[0], BREAKPOINT_TABLE_SIZE, TRUE);
+    PcTableInitTable(&pc->BreakpointTable, &pc->BreakpointHashTable[0], BREAKPOINT_TABLE_SIZE, TRUE);
     pc->BreakpointCount = 0;
 }
 
 /* free the contents of the breakpoint table */
 void DebugCleanup(Picoc *pc)
 {
-    struct TableEntry *Entry;
-    struct TableEntry *NextEntry;
+    struct PcTableEntry *Entry;
+    struct PcTableEntry *NextEntry;
     int Count;
     
     for (Count = 0; Count < pc->BreakpointTable.Size; Count++)
@@ -31,9 +31,9 @@ void DebugCleanup(Picoc *pc)
 }
 
 /* search the table for a breakpoint */
-static struct TableEntry *DebugTableSearchBreakpoint(struct ParseState *Parser, int *AddAt)
+static struct PcTableEntry *DebugTableSearchBreakpoint(struct ParseState *Parser, int *AddAt)
 {
-    struct TableEntry *Entry;
+    struct PcTableEntry *Entry;
     Picoc *pc = Parser->pc;
     int HashValue = BREAKPOINT_HASH(Parser) % pc->BreakpointTable.Size;
     
@@ -51,13 +51,13 @@ static struct TableEntry *DebugTableSearchBreakpoint(struct ParseState *Parser, 
 void DebugSetBreakpoint(struct ParseState *Parser)
 {
     int AddAt;
-    struct TableEntry *FoundEntry = DebugTableSearchBreakpoint(Parser, &AddAt);
+    struct PcTableEntry *FoundEntry = DebugTableSearchBreakpoint(Parser, &AddAt);
     Picoc *pc = Parser->pc;
     
     if (FoundEntry == NULL)
     {   
         /* add it to the table */
-        struct TableEntry *NewEntry = HeapAllocMem(pc, sizeof(struct TableEntry));
+        struct PcTableEntry *NewEntry = HeapAllocMem(pc, sizeof(struct PcTableEntry));
         if (NewEntry == NULL)
             ProgramFailNoParser(pc, "out of memory");
             
@@ -73,13 +73,13 @@ void DebugSetBreakpoint(struct ParseState *Parser)
 /* delete a breakpoint from the hash table */
 int DebugClearBreakpoint(struct ParseState *Parser)
 {
-    struct TableEntry **EntryPtr;
+    struct PcTableEntry **EntryPtr;
     Picoc *pc = Parser->pc;
     int HashValue = BREAKPOINT_HASH(Parser) % pc->BreakpointTable.Size;
     
     for (EntryPtr = &pc->BreakpointHashTable[HashValue]; *EntryPtr != NULL; EntryPtr = &(*EntryPtr)->Next)
     {
-        struct TableEntry *DeleteEntry = *EntryPtr;
+        struct PcTableEntry *DeleteEntry = *EntryPtr;
         if (DeleteEntry->p.b.FileName == Parser->FileName && DeleteEntry->p.b.Line == Parser->Line && DeleteEntry->p.b.CharacterPos == Parser->CharacterPos)
         {
             *EntryPtr = DeleteEntry->Next;

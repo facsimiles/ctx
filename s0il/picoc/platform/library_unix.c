@@ -6,8 +6,8 @@
 #include "s0il.h"
 
 #define fun_int__ptr_ptr_float_float_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Integer = \
   funname(Param[0]->Val->Pointer,\
@@ -19,8 +19,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_int__ptr_ptr_ptr_ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Integer = \
   funname(Param[0]->Val->Pointer,\
@@ -30,8 +30,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_int__ptr_ptr_int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Integer = \
   funname(Param[0]->Val->Pointer,\
@@ -40,8 +40,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_int__ptr_ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Integer = \
   funname(Param[0]->Val->Pointer,\
@@ -49,16 +49,16 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_int__ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Integer = \
   funname(Param[0]->Val->Pointer);\
 }
 
 #define fun_int__ptr_int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Integer = \
   funname(Param[0]->Val->Pointer,\
@@ -66,8 +66,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_float__ptr_int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->FP = \
   funname(Param[0]->Val->Pointer,\
@@ -75,31 +75,31 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_float__ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->FP = \
   funname(Param[0]->Val->Pointer);\
 }
 
 #define fun_ptr__void(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Pointer = funname();\
 }
 
 #define fun_ptr__ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Pointer = \
   funname(Param[0]->Val->Pointer);\
 }
 
 #define fun_ptr__int_int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Pointer = \
   funname(Param[0]->Val->Integer,\
@@ -107,8 +107,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_ptr__int_int_ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Pointer = \
   funname(Param[0]->Val->Integer,\
@@ -117,31 +117,31 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer);\
 }
 
 #define fun_void__ptr_int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Integer);\
 }
 
 #define fun_void__ptr_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->FP);\
 }
 
 #define fun_void__ptr_ptr_ptr_int_int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Pointer,\
@@ -151,8 +151,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_ptr_ptr_ptr_int_int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Pointer,\
@@ -163,8 +163,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->FP,\
@@ -172,8 +172,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_float_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->FP,\
@@ -182,8 +182,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_float_float_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->FP,\
@@ -193,8 +193,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_ptr_ptr_ptr_ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Pointer,\
@@ -205,8 +205,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 
 
 #define fun_void__ptr_ptr_float_float_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Pointer,\
@@ -217,8 +217,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_ptr_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Pointer,\
@@ -227,8 +227,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_float_float_float_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->FP,\
@@ -240,16 +240,16 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 
 
 #define fun_int__int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Integer = \
   funname(Param[0]->Val->Integer);\
 }
 
 #define fun_float__ptr_ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->FP = \
   funname(Param[0]->Val->Pointer,\
@@ -257,8 +257,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_float__ptr_ptr_float_float_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->FP = \
   funname(Param[0]->Val->Pointer,\
@@ -270,8 +270,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_int__ptr_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   ReturnValue->Val->Integer = \
   funname(Param[0]->Val->Pointer,\
@@ -280,8 +280,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_float_float_float_float_float_float_float_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->FP,\
@@ -296,8 +296,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_float_float_float_float_float_int(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->FP,\
@@ -309,8 +309,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_float_float_float_float_float_float(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->FP,\
@@ -322,8 +322,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_ptr_ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Pointer,\
@@ -331,8 +331,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_ptr_ptr_ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Pointer,\
@@ -341,8 +341,8 @@ void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
 }
 
 #define fun_void__ptr_ptr(funname) \
-void C##funname (struct ParseState *Parser, struct Value *ReturnValue,\
-	         struct Value **Param, int NumArgs)\
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
 {\
   funname(Param[0]->Val->Pointer,\
           Param[1]->Val->Pointer);\

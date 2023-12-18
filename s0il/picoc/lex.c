@@ -88,11 +88,11 @@ void LexInit(Picoc *pc)
 {
     unsigned int Count;
     
-    TableInitTable(&pc->ReservedWordTable, &pc->ReservedWordHashTable[0], sizeof(ReservedWords) / sizeof(struct ReservedWord) * 2, TRUE);
+    PcTableInitTable(&pc->ReservedWordTable, &pc->ReservedWordHashTable[0], sizeof(ReservedWords) / sizeof(struct ReservedWord) * 2, TRUE);
 
     for (Count = 0; Count < sizeof(ReservedWords) / sizeof(struct ReservedWord); Count++)
     {
-        TableSet(pc, &pc->ReservedWordTable, TableStrRegister(pc, ReservedWords[Count].Word), (struct Value *)&ReservedWords[Count], NULL, 0, 0);
+        TableSet(pc, &pc->ReservedWordTable, TableStrRegister(pc, ReservedWords[Count].Word), (struct PcValue *)&ReservedWords[Count], NULL, 0, 0);
     }
     
     pc->LexValue.Typ = NULL;
@@ -118,7 +118,7 @@ void LexCleanup(Picoc *pc)
 /* check if a word is a reserved word - used while scanning */
 enum LexToken LexCheckReservedWord(Picoc *pc, const char *Word)
 {
-    struct Value *val;
+    struct PcValue *val;
     
     if (TableGet(&pc->ReservedWordTable, Word, &val, NULL, NULL, NULL))
         return ((struct ReservedWord *)val)->Token;
@@ -127,7 +127,7 @@ enum LexToken LexCheckReservedWord(Picoc *pc, const char *Word)
 }
 
 /* get a numeric literal - used while scanning */
-enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Value)
+enum LexToken LexGetNumber(Picoc *pc, struct PcLexState *Lexer, struct PcValue *Value)
 {
     long Result = 0;
     long Base = 10;
@@ -236,7 +236,7 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
 }
 
 /* get a reserved word or identifier - used while scanning */
-enum LexToken LexGetWord(Picoc *pc, struct LexState *Lexer, struct Value *Value)
+enum LexToken LexGetWord(Picoc *pc, struct PcLexState *Lexer, struct PcValue *Value)
 {
     const char *StartPos = Lexer->Pos;
     enum LexToken Token;
@@ -322,7 +322,7 @@ unsigned char LexUnEscapeCharacter(const char **From, const char *End)
 }
 
 /* get a string constant - used while scanning */
-enum LexToken LexGetStringConstant(Picoc *pc, struct LexState *Lexer, struct Value *Value, char EndChar)
+enum LexToken LexGetStringConstant(Picoc *pc, struct PcLexState *Lexer, struct PcValue *Value, char EndChar)
 {
     int Escape = FALSE;
     const char *StartPos = Lexer->Pos;
@@ -330,7 +330,7 @@ enum LexToken LexGetStringConstant(Picoc *pc, struct LexState *Lexer, struct Val
     char *EscBuf;
     char *EscBufPos;
     char *RegString;
-    struct Value *ArrayValue;
+    struct PcValue *ArrayValue;
     
     while (Lexer->Pos != Lexer->End && (*Lexer->Pos != EndChar || Escape))
     { 
@@ -387,7 +387,7 @@ enum LexToken LexGetStringConstant(Picoc *pc, struct LexState *Lexer, struct Val
 }
 
 /* get a character constant - used while scanning */
-enum LexToken LexGetCharacterConstant(Picoc *pc, struct LexState *Lexer, struct Value *Value)
+enum LexToken LexGetCharacterConstant(Picoc *pc, struct PcLexState *Lexer, struct PcValue *Value)
 {
     Value->Typ = &pc->CharType;
     Value->Val->Character = LexUnEscapeCharacter(&Lexer->Pos, Lexer->End);
@@ -399,7 +399,7 @@ enum LexToken LexGetCharacterConstant(Picoc *pc, struct LexState *Lexer, struct 
 }
 
 /* skip a comment - used while scanning */
-void LexSkipComment(struct LexState *Lexer, char NextChar, enum LexToken *ReturnToken)
+void LexSkipComment(struct PcLexState *Lexer, char NextChar, enum LexToken *ReturnToken)
 {
     if (NextChar == '*')
     {   
@@ -426,7 +426,7 @@ void LexSkipComment(struct LexState *Lexer, char NextChar, enum LexToken *Return
 }
 
 /* get a single token from the source - used while scanning */
-enum LexToken LexScanGetToken(Picoc *pc, struct LexState *Lexer, struct Value **Value)
+enum LexToken LexScanGetToken(Picoc *pc, struct PcLexState *Lexer, struct PcValue **Value)
 {
     char ThisChar;
     char NextChar;
@@ -523,13 +523,13 @@ int LexTokenSize(enum LexToken Token)
 }
 
 /* produce tokens from the lexer and return a heap buffer with the result - used for scanning */
-void *LexTokenise(Picoc *pc, struct LexState *Lexer, int *TokenLen)
+void *LexTokenise(Picoc *pc, struct PcLexState *Lexer, int *TokenLen)
 {
     enum LexToken Token;
     void *HeapMem;
-    struct Value *GotValue;
+    struct PcValue *GotValue;
     int MemUsed = 0;
-    int ValueSize;
+    int PcValueSize;
     int ReserveSpace = (Lexer->End - Lexer->Pos) * 4 + 16; 
     void *TokenSpace = HeapAllocStack(pc, ReserveSpace);
     char *TokenPos = (char *)TokenSpace;
@@ -554,13 +554,13 @@ void *LexTokenise(Picoc *pc, struct LexState *Lexer, int *TokenLen)
         TokenPos++;
         MemUsed++;
 
-        ValueSize = LexTokenSize(Token);
-        if (ValueSize > 0)
+        PcValueSize = LexTokenSize(Token);
+        if (PcValueSize > 0)
         { 
             /* store a value as well */
-            memcpy((void *)TokenPos, (void *)GotValue->Val, ValueSize);
-            TokenPos += ValueSize;
-            MemUsed += ValueSize;
+            memcpy((void *)TokenPos, (void *)GotValue->Val, PcValueSize);
+            TokenPos += PcValueSize;
+            MemUsed += PcValueSize;
         }
     
         LastCharacterPos = Lexer->CharacterPos;
@@ -592,7 +592,7 @@ void *LexTokenise(Picoc *pc, struct LexState *Lexer, int *TokenLen)
 /* lexically analyse some source text */
 void *LexAnalyse(Picoc *pc, const char *FileName, const char *Source, int SourceLen, int *TokenLen)
 {
-    struct LexState Lexer;
+    struct PcLexState Lexer;
     
     Lexer.Pos = Source;
     Lexer.End = Source + SourceLen;
@@ -623,10 +623,10 @@ void LexInitParser(struct ParseState *Parser, Picoc *pc, const char *SourceText,
 }
 
 /* get the next token, without pre-processing */
-enum LexToken LexGetRawToken(struct ParseState *Parser, struct Value **Value, int IncPos)
+enum LexToken LexGetRawToken(struct ParseState *Parser, struct PcValue **Value, int IncPos)
 {
     enum LexToken Token = TokenNone;
-    int ValueSize;
+    int PcValueSize;
     char *Prompt = NULL;
     Picoc *pc = Parser->pc;
     
@@ -708,8 +708,8 @@ enum LexToken LexGetRawToken(struct ParseState *Parser, struct Value **Value, in
     } while ((Parser->FileName == pc->StrEmpty && Token == TokenEOF) || Token == TokenEndOfLine);
 
     Parser->CharacterPos = *((unsigned char *)Parser->Pos + 1);
-    ValueSize = LexTokenSize(Token);
-    if (ValueSize > 0)
+    PcValueSize = LexTokenSize(Token);
+    if (PcValueSize > 0)
     { 
         /* this token requires a value - unpack it */
         if (Value != NULL)
@@ -726,7 +726,7 @@ enum LexToken LexGetRawToken(struct ParseState *Parser, struct Value **Value, in
                 default: break;
             }
             
-            memcpy((void *)pc->LexValue.Val, (void *)((char *)Parser->Pos + TOKEN_DATA_OFFSET), ValueSize);
+            memcpy((void *)pc->LexValue.Val, (void *)((char *)Parser->Pos + TOKEN_DATA_OFFSET), PcValueSize);
             pc->LexValue.ValOnHeap = FALSE;
             pc->LexValue.ValOnStack = FALSE;
             pc->LexValue.IsLValue = FALSE;
@@ -735,7 +735,7 @@ enum LexToken LexGetRawToken(struct ParseState *Parser, struct Value **Value, in
         }
         
         if (IncPos)
-            Parser->Pos += ValueSize + TOKEN_DATA_OFFSET;
+            Parser->Pos += PcValueSize + TOKEN_DATA_OFFSET;
     }
     else
     {
@@ -761,8 +761,8 @@ void LexHashIncPos(struct ParseState *Parser, int IncPos)
 void LexHashIfdef(struct ParseState *Parser, int IfNot)
 {
     /* get symbol to check */
-    struct Value *IdentValue;
-    struct Value *SavedValue;
+    struct PcValue *IdentValue;
+    struct PcValue *SavedValue;
     int IsDefined;
     enum LexToken Token = LexGetRawToken(Parser, &IdentValue, TRUE);
     
@@ -784,8 +784,8 @@ void LexHashIfdef(struct ParseState *Parser, int IfNot)
 void LexHashIf(struct ParseState *Parser)
 {
     /* get symbol to check */
-    struct Value *IdentValue;
-    struct Value *SavedValue = NULL;
+    struct PcValue *IdentValue;
+    struct PcValue *SavedValue = NULL;
     struct ParseState MacroParser;
     enum LexToken Token = LexGetRawToken(Parser, &IdentValue, TRUE);
 
@@ -880,7 +880,7 @@ void LexPrintToken(enum LexToken Token)
 #endif
 
 /* get the next token given a parser state, pre-processing as we go */
-enum LexToken LexGetToken(struct ParseState *Parser, struct Value **Value, int IncPos)
+enum LexToken LexGetToken(struct ParseState *Parser, struct PcValue **Value, int IncPos)
 {
     enum LexToken Token;
     int TryNextToken;
