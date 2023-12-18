@@ -1,8 +1,7 @@
 //!picoc
 #include <stdio.h>
 
-int main (int arc, char **argv)
-{
-  printf ("\033c\033[?30l");
+int main(int arc, char **argv) {
+  printf("\033c\033[?30l");
   return 0;
 }

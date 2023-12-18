@@ -367,7 +367,7 @@ MAIN(text) {
       printf("no-args would register mimetypes if run in env\n");
       return -1;
     }
-    char *mime_types[] = {"text/plain",
+    const char *mime_types[] = {"text/plain",
                           ".txt",
                           "text/markdown",
                           ".md",

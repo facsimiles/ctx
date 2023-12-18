@@ -3224,7 +3224,7 @@ static void vtcmd_report (VT *vt, const char *sequence)
     }
 }
 
-static char *charmap_cp437[]=
+static const char *charmap_cp437[]=
 {
   " ","☺","☻","♥","♦","♣","♠","•","◘","○","◙","♂","♀","♪","♫","☼",
   "►","◄","↕","‼","¶","§","▬","↨","↑","↓","→","←","∟","↔","▲","▼",
@@ -3245,7 +3245,7 @@ static char *charmap_cp437[]=
 };
 
 
-static char *charmap_graphics[]=
+static const char *charmap_graphics[]=
 {
   " ","!","\"","#","$","%","&","'","(",")","*","+",",","-",".","/","0",
   "1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
@@ -3255,7 +3255,7 @@ static char *charmap_graphics[]=
   "─","⎼","⎽","├","┤","┴","┬","│","≤","≥","π","≠","£","·"," "
 };
 
-static char *charmap_uk[]=
+static const char *charmap_uk[]=
 {
   " ","!","\"","£","$","%","&","'","(",")","*","+",",","-",".","/","0",
   "1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
@@ -3265,7 +3265,7 @@ static char *charmap_uk[]=
   "q","r","s","t","u","v","w","x","y","z","{","|","}","~"," "
 };
 
-static char *charmap_ascii[]=
+static const char *charmap_ascii[]=
 {
   " ","!","\"","#","$","%","&","'","(",")","*","+",",","-",".","/","0",
   "1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
@@ -5119,7 +5119,7 @@ static void vt_state_neutral (VT *vt, int byte)
     if (vt->charset[vt->shifted_in] != 0 &&
         vt->charset[vt->shifted_in] != 'B')
       {
-        char **charmap;
+        const char **charmap;
         switch (vt->charset[vt->shifted_in])
           {
             case 'A':

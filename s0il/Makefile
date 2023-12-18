@@ -156,3 +156,8 @@ fs_bin_generic.c: programs-picoc/* Makefile gen_fs.sh
 	./gen_fs.sh programs-picoc bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm $@_
+format:
+	clang-format -i s0il*.c main.c */main/ctx.c programs/*.c
+	clang-format -i programs-picoc/*
+	rpl '//! picoc' '//!picoc' programs-picoc/*
+

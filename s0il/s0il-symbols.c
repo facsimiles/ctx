@@ -10,7 +10,7 @@
 #include <poll.h>
 #endif
 
-#ifdef  S0IL_REDEFINE_CLIB
+#ifdef S0IL_REDEFINE_CLIB
 #undef S0IL_REDEFINE_CLIB
 #endif
 
@@ -18,36 +18,40 @@
 
 #include "s0il.h"
 
-
-extern float __divsf3     (float a, float b);
-extern double __floatsidf (int a);
-double __muldf3    (double a, double b);
-float __truncdfsf2 (double a);
-void __extendsfdf2 (void);
-void __floatundisf (void);
-void __fixdfsi (void);
-void __adddf3  (void);
-void __subdf3  (void);
-void __eqdf2   (void);
-void __nedf2   (void);
-void __ledf2   (void);
-void __gedf2   (void);
-void __lshrdi3 (void);
+extern float __divsf3(float a, float b);
+extern double __floatsidf(int a);
+double __muldf3(double a, double b);
+float __truncdfsf2(double a);
+void __extendsfdf2(void);
+void __floatundisf(void);
+void __fixdfsi(void);
+void __adddf3(void);
+void __subdf3(void);
+void __eqdf2(void);
+void __nedf2(void);
+void __ledf2(void);
+void __gedf2(void);
+void __lshrdi3(void);
 
 int busywarp(int argc, char **argv);
-void ctx_set_pixels(Ctx *ctx, void *userdata, int x, int y, int w, int h, void *buf);
+void ctx_set_pixels(Ctx *ctx, void *userdata, int x, int y, int w, int h,
+                    void *buf);
 
 extern int ctx_osk_mode;
 int wifi_init_sta(const char *ssid_arg, const char *password_arg);
 char **wifi_scan(void);
 
-#define ELFSYM_EXPORT(_sym)  { #_sym, &_sym }
-#define ELFSYM_END           { NULL, NULL }
+#define ELFSYM_EXPORT(_sym)                                                    \
+  { #_sym, &_sym }
+#define ELFSYM_END                                                             \
+  { NULL, NULL }
 
-struct esp_elfsym {const char *name; void *sym;};
+struct esp_elfsym {
+  const char *name;
+  void *sym;
+};
 
-void s0il_signal(int sig, void(*func)(int))
-{
+void s0il_signal(int sig, void (*func)(int)) {
 #if NATIVE
   signal(sig, func);
 #else
@@ -56,8 +60,7 @@ void s0il_signal(int sig, void(*func)(int))
 
 Ctx *ctx_host(void);
 
-const struct esp_elfsym g_customer_elfsyms[] =
-{
+const struct esp_elfsym g_customer_elfsyms[] = {
 
 #ifndef NATIVE
     ELFSYM_EXPORT(__adddf3),
@@ -79,7 +82,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(__truncdfsf2),
 #endif
     {"ctx_destroy", &s0il_ctx_destroy},
-    {"ctx_new",     &s0il_ctx_new},
+    {"ctx_new", &s0il_ctx_new},
     ELFSYM_EXPORT(abort),
     ELFSYM_EXPORT(abs),
     ELFSYM_EXPORT(accept),
@@ -91,7 +94,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(asctime_r),
     ELFSYM_EXPORT(asin),
     ELFSYM_EXPORT(asinf),
-    //ELFSYM_EXPORT(asprintf),
+    // ELFSYM_EXPORT(asprintf),
     ELFSYM_EXPORT(atan2),
     ELFSYM_EXPORT(atan2f),
     ELFSYM_EXPORT(atan),
@@ -216,7 +219,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ctx_gray),
     ELFSYM_EXPORT(ctx_gstate_protect),
     ELFSYM_EXPORT(ctx_gstate_unprotect),
-    //ELFSYM_EXPORT(ctx_guess_media_type),
+    // ELFSYM_EXPORT(ctx_guess_media_type),
     ELFSYM_EXPORT(ctx_handle_events),
     ELFSYM_EXPORT(ctx_has_exited),
     ELFSYM_EXPORT(ctx_height),
@@ -255,7 +258,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(ctx_paint),
     ELFSYM_EXPORT(ctx_parse),
     ELFSYM_EXPORT(ctx_path_extents),
-    //ELFSYM_EXPORT(ctx_path_get_media_type),
+    // ELFSYM_EXPORT(ctx_path_get_media_type),
     ELFSYM_EXPORT(ctx_pcm_get_format),
     ELFSYM_EXPORT(ctx_pcm_get_queued_length),
     ELFSYM_EXPORT(ctx_pcm_get_sample_rate),
@@ -343,8 +346,8 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(div),
     ELFSYM_EXPORT(div),
     ELFSYM_EXPORT(exit),
-    //ELFSYM_EXPORT(exp10),
-    //ELFSYM_EXPORT(exp10f),
+    // ELFSYM_EXPORT(exp10),
+    // ELFSYM_EXPORT(exp10f),
     ELFSYM_EXPORT(exp2),
     ELFSYM_EXPORT(exp2f),
     ELFSYM_EXPORT(exp),
@@ -372,12 +375,12 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(floorf),
     ELFSYM_EXPORT(fmod),
     ELFSYM_EXPORT(fmodf),
-    { "popen",   &s0il_popen},
-    { "fopen",   &s0il_fopen},
-    { "fprintf", &s0il_fprintf},
-    { "fputs",   &s0il_fputs},
-    { "fputc",   &s0il_fputc},
-    { "fread",   &s0il_fread},
+    {"popen", &s0il_popen},
+    {"fopen", &s0il_fopen},
+    {"fprintf", &s0il_fprintf},
+    {"fputs", &s0il_fputs},
+    {"fputc", &s0il_fputc},
+    {"fread", &s0il_fread},
     ELFSYM_EXPORT(freopen),
     ELFSYM_EXPORT(frexp),
     ELFSYM_EXPORT(frexpf),
@@ -392,7 +395,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     {"ftello", &s0il_ftello},
     ELFSYM_EXPORT(ftruncate),
 
-    { "fwrite",  &s0il_fwrite},
+    {"fwrite", &s0il_fwrite},
 
     ELFSYM_EXPORT(getaddrinfo),
     {"getc", &s0il_getc},
@@ -400,11 +403,11 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(getcwd),
     ELFSYM_EXPORT(getenv),
     ELFSYM_EXPORT(gethostbyname),
-    //ELFSYM_EXPORT(getline),
-    { "getline",  &s0il_getline},
+    // ELFSYM_EXPORT(getline),
+    {"getline", &s0il_getline},
     ELFSYM_EXPORT(getopt),
-    { "getpid", &s0il_getpid},
-    { "getppid", &s0il_getppid},
+    {"getpid", &s0il_getpid},
+    {"getppid", &s0il_getppid},
     ELFSYM_EXPORT(getsockname),
     ELFSYM_EXPORT(gettimeofday),
     ELFSYM_EXPORT(gmtime),
@@ -455,15 +458,15 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(memchr),
     ELFSYM_EXPORT(memcmp),
     ELFSYM_EXPORT(memcpy),
-    //ELFSYM_EXPORT(memmem), // not in emscripten?
+    // ELFSYM_EXPORT(memmem), // not in emscripten?
     ELFSYM_EXPORT(memmove),
-    //ELFSYM_EXPORT(mempcpy),
+    // ELFSYM_EXPORT(mempcpy),
     ELFSYM_EXPORT(memset),
     ELFSYM_EXPORT(mkdir),
     ELFSYM_EXPORT(mkdtemp),
-    //ELFSYM_EXPORT(mkostemp),
+    // ELFSYM_EXPORT(mkostemp),
     ELFSYM_EXPORT(mkstemp),
-  //ELFSYM_EXPORT(mktemp),
+    // ELFSYM_EXPORT(mktemp),
     ELFSYM_EXPORT(mktime),
     ELFSYM_EXPORT(fmod),
     ELFSYM_EXPORT(fmodf),
@@ -490,8 +493,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(posix_memalign),
     ELFSYM_EXPORT(pow),
     ELFSYM_EXPORT(powf),
-    { "printf",  &s0il_printf},
-
+    {"printf", &s0il_printf},
 
     ELFSYM_EXPORT(pthread_attr_destroy),
     ELFSYM_EXPORT(pthread_attr_init),
@@ -525,11 +527,10 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(pthread_self),
     ELFSYM_EXPORT(pthread_setcancelstate),
     ELFSYM_EXPORT(pthread_setspecific),
-    { "putc",    &s0il_fputc},
-    { "putchar", &s0il_putchar},
+    {"putc", &s0il_fputc},
+    {"putchar", &s0il_putchar},
     ELFSYM_EXPORT(putenv),
-    { "puts",    &s0il_puts},
-
+    {"puts", &s0il_puts},
 
     ELFSYM_EXPORT(qsort),
     ELFSYM_EXPORT(raise),
@@ -583,10 +584,10 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(setlocale),
     ELFSYM_EXPORT(settimeofday),
     ELFSYM_EXPORT(setvbuf),
-    { "signal",   &s0il_signal},
+    {"signal", &s0il_signal},
     ELFSYM_EXPORT(shutdown),
-    //ELFSYM_EXPORT(sincos),
-    //ELFSYM_EXPORT(sincosf),
+    // ELFSYM_EXPORT(sincos),
+    // ELFSYM_EXPORT(sincosf),
     ELFSYM_EXPORT(sin),
     ELFSYM_EXPORT(sinf),
     ELFSYM_EXPORT(sinh),
@@ -604,10 +605,10 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(stpcpy),
     ELFSYM_EXPORT(stpncpy),
     ELFSYM_EXPORT(strcasecmp),
-    //ELFSYM_EXPORT(strcasestr),
+    // ELFSYM_EXPORT(strcasestr),
     ELFSYM_EXPORT(strcat),
     ELFSYM_EXPORT(strchr),
-    //ELFSYM_EXPORT(strchrnul),
+    // ELFSYM_EXPORT(strchrnul),
     ELFSYM_EXPORT(strcmp),
     ELFSYM_EXPORT(strcoll),
     ELFSYM_EXPORT(strcpy),
@@ -616,8 +617,8 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(strerror),
     ELFSYM_EXPORT(strerror_r),
     ELFSYM_EXPORT(strftime),
-    //ELFSYM_EXPORT(strlcat),
-    //ELFSYM_EXPORT(strlcpy),
+    // ELFSYM_EXPORT(strlcat),
+    // ELFSYM_EXPORT(strlcpy),
     ELFSYM_EXPORT(strlen),
     ELFSYM_EXPORT(strncasecmp),
     ELFSYM_EXPORT(strncat),
@@ -626,7 +627,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(strndup),
     ELFSYM_EXPORT(strnlen),
     ELFSYM_EXPORT(strpbrk),
-    //ELFSYM_EXPORT(strptime),
+    // ELFSYM_EXPORT(strptime),
     ELFSYM_EXPORT(strrchr),
     ELFSYM_EXPORT(strsep),
     ELFSYM_EXPORT(strsignal),
@@ -641,9 +642,9 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(strtoll),
     ELFSYM_EXPORT(strtoul),
     ELFSYM_EXPORT(strtoull),
-    //ELFSYM_EXPORT(strverscmp),
+    // ELFSYM_EXPORT(strverscmp),
     ELFSYM_EXPORT(strxfrm),
-    //ELFSYM_EXPORT(swab),
+    // ELFSYM_EXPORT(swab),
     ELFSYM_EXPORT(sysconf),
     ELFSYM_EXPORT(tan),
     ELFSYM_EXPORT(tanf),
@@ -716,7 +717,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
 #if CTX_ESP
     ELFSYM_EXPORT(uxTaskGetTaskNumber),
 #endif
-    //ELFSYM_EXPORT(vasprintf),
+    // ELFSYM_EXPORT(vasprintf),
     ELFSYM_EXPORT(vdprintf),
     ELFSYM_EXPORT(vfscanf),
     ELFSYM_EXPORT(vprintf),
@@ -731,7 +732,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(wifi_init_sta),
     ELFSYM_EXPORT(wifi_scan),
 #endif
-    { "write",   &s0il_write},
+    {"write", &s0il_write},
 #if CTX_ESP
     ELFSYM_EXPORT(xTaskGetCurrentTaskHandle),
     ELFSYM_EXPORT(xTaskCreatePinnedToCore),
@@ -743,14 +744,12 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(y1),
     ELFSYM_EXPORT(y1f),
 
-    ELFSYM_END
-};
+    ELFSYM_END};
 
-const void *s0il_sym(const char *name)
-{
+const void *s0il_sym(const char *name) {
   for (int i = 0; g_customer_elfsyms[i].name; i++)
-   if (!strcmp (g_customer_elfsyms[i].name, name))
-    return g_customer_elfsyms[i].sym;
-//printf ("symbol %s not found\n", name);
+    if (!strcmp(g_customer_elfsyms[i].name, name))
+      return g_customer_elfsyms[i].sym;
+  // printf ("symbol %s not found\n", name);
   return NULL;
 }

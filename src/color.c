@@ -692,7 +692,7 @@ typedef struct ColorDef {
   float a;
 } ColorDef;
 
-static ColorDef _ctx_colors[]={
+static const ColorDef _ctx_colors[]={
   {SQZ_black,    0, 0, 0, 1},
   {SQZ_red,      1, 0, 0, 1},
   {SQZ_green,    0, 1, 0, 1},

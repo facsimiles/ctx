@@ -1,108 +1,96 @@
 //!picoc
 
 #include "ui.h"
+#include <dirent.h>
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <math.h>
-#include <dirent.h>
 
 int show_size = 0;
 int one_per_line = 0;
 
-typedef struct dir_entry_t
-{
-  char       *name;
-//  int         size;
+typedef struct dir_entry_t {
+  char *name;
+  //  int         size;
 } dir_entry_t;
 
-typedef struct dir_info_t
-{
+typedef struct dir_info_t {
   dir_entry_t *entries;
   int count;
   int capacity;
 } dir_info_t;
 
-static void dir_info_finalize (void *d)
-{
+static void dir_info_finalize(void *d) {
   dir_info_t *di = d;
   if (di->entries)
-    for (int i = 0; i < di->count; i++)
-    {
-      free (di->entries[i].name);
+    for (int i = 0; i < di->count; i++) {
+      free(di->entries[i].name);
     }
-  free (di->entries);
-  free (di);
+  free(di->entries);
+  free(di);
 }
 
-void di_sort (dir_info_t *di)
-{
+void di_sort(dir_info_t *di) {
   int swaps = 0;
   do {
     swaps = 0;
-    for (int i = 0; i < di->count-1; i++)
-    {
-       if (strcmp (di->entries[i].name, di->entries[i+1].name)>0)
-       {
-          dir_entry_t tmp  = di->entries[i];
-          di->entries[i]   = di->entries[i+1];
-          di->entries[i+1] = tmp;
-          swaps++;
-       }
+    for (int i = 0; i < di->count - 1; i++) {
+      if (strcmp(di->entries[i].name, di->entries[i + 1].name) > 0) {
+        dir_entry_t tmp = di->entries[i];
+        di->entries[i] = di->entries[i + 1];
+        di->entries[i + 1] = tmp;
+        swaps++;
+      }
     }
   } while (swaps > 0);
 }
 
-void list_dir(char *w)
-{
-}
+void list_dir(char *w) {}
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   char wd[256];
-  { 
-    char *w=argv[1];
-    if (w == NULL) w = getcwd(wd, sizeof(wd));
+  {
+    char *w = argv[1];
+    if (w == NULL)
+      w = getcwd(wd, sizeof(wd));
     //  list_dir(w);
     DIR *dir = opendir(w);
-    if (dir)
-    {
-      dir_info_t *di = calloc (sizeof (dir_info_t), 1);
+    if (dir) {
+      dir_info_t *di = calloc(sizeof(dir_info_t), 1);
       struct dirent *ent;
-      while ((ent = readdir(dir)))
-      {
+      while ((ent = readdir(dir))) {
         char *base = ent->d_name;
         if (base[0] == '.')
           continue;
 
-        if (di->count + 1 >= di->capacity)
-        {
+        if (di->count + 1 >= di->capacity) {
           di->capacity += 16;
-          di->entries = realloc (di->entries, sizeof (dir_entry_t) * di->capacity);
+          di->entries =
+              realloc(di->entries, sizeof(dir_entry_t) * di->capacity);
         }
         dir_entry_t *de = &di->entries[di->count++];
- // XXX : make stat work
- //   char path[512];
- //   struct stat buf;
- //   sprintf ("%s%s", w, base);
- //   stat(path, &buf);
-      de->name = strdup (base);
- //   de->size = buf.st_size;
-    }
-    closedir (dir);
+        // XXX : make stat work
+        //   char path[512];
+        //   struct stat buf;
+        //   sprintf ("%s%s", w, base);
+        //   stat(path, &buf);
+        de->name = strdup(base);
+        //   de->size = buf.st_size;
+      }
+      closedir(dir);
 
-    di_sort (di);
+      di_sort(di);
 
-    for (int i = 0; i < di->count; i++)
-    {
-       dir_entry_t *de = &di->entries[i];
-       printf ("%s ", de->name);
+      for (int i = 0; i < di->count; i++) {
+        dir_entry_t *de = &di->entries[i];
+        printf("%s ", de->name);
+      }
+      dir_info_finalize(di);
     }
-    dir_info_finalize (di);
-  }
   }
 
   if (!show_size)
-    printf ("\n");
+    printf("\n");
   return 0;
 }

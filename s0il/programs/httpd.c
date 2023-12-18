@@ -10,7 +10,7 @@
 #define HTTP_PORT_FALLBACK_START (8080)
 #define HTTP_PORT_FALLBACK_END (8089)
 
-static char *httpd_css =
+static const char *httpd_css =
     "body { background:black; color:white;}\n"
     "body {font-size: calc(1.0vh + 1.8vw); }\n"
     "input {font-size: calc(0.8vh + 1.1vw); }\n"
@@ -67,16 +67,15 @@ typedef struct filemapping {
   const char *fs_path;
 } filemapping;
 
-static filemapping filemappings[] = {
+static const filemapping filemappings[] = {
     {"/", "/_/webroot/index.html"},
     {"/favicon.ico", "/_/webroot/favicon.ico"},
     {NULL, NULL},
 };
 
-static char httpd_buf2[1024 * 2];
 static char httpd_buf[1024 * 1];
 
-const char *html_doctype =
+static const char *html_doctype =
     "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' "
     "'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>\n";
 
@@ -844,11 +843,11 @@ static void request_finish(HttpdRequest *req) {
 }
 
 static void httpd_magic(void) {
-  char png_magic[] = {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
-  char jpg_magic1[] = {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0};
-  char jpg_magic2[] = {0xff, 0xd8, 0xff, 0xe0};
-  char jpg_magic3[] = {0xff, 0xd8, 0xff, 0xee};
-  char jpg_magic4[] = {0xff, 0xd8, 0xff, 0xe1};
+  const char png_magic[] = {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
+  const char jpg_magic1[] = {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0};
+  const char jpg_magic2[] = {0xff, 0xd8, 0xff, 0xe0};
+  const char jpg_magic3[] = {0xff, 0xd8, 0xff, 0xee};
+  const char jpg_magic4[] = {0xff, 0xd8, 0xff, 0xe1};
 
   if (!magic_has_mime("image/png"))
     magic_add("image/png", NULL, png_magic, sizeof(png_magic), 0);
@@ -931,7 +930,8 @@ int _httpd_start_int(int port,
       continue;
     } else if (rv == 0) {
       ui_iteration(ui_host(ctx_host()));
-      if (ctx_has_quit(ctx_host())) httpd_stop = 1;
+      if (ctx_has_quit(ctx_host()))
+        httpd_stop = 1;
       continue;
     }
 
@@ -961,8 +961,10 @@ int _httpd_start_int(int port,
     req.user_data = user_data;
     if (!req.method || !req.path || !req.protocol)
       continue;
+    int bsize = 1024;
+    char *httpd_buf2 = malloc(bsize);
 
-    while (fgets(httpd_buf2, sizeof(httpd_buf2), f)) {
+    while (fgets(httpd_buf2, bsize, f)) {
       if (!strncmp(httpd_buf2, "Content-Length", strlen("Content-Length"))) {
         char *sep = strchr(httpd_buf2, ':');
         if (sep) {
@@ -982,7 +984,7 @@ int _httpd_start_int(int port,
       int read_total = 0;
 
       do {
-        int read_attempt = sizeof(httpd_buf2);
+        int read_attempt = bsize;
         if (content_length - read_total < read_attempt)
           read_attempt = content_length - read_total;
         read = fread(httpd_buf2, 1, read_attempt, f);
@@ -1002,6 +1004,7 @@ int _httpd_start_int(int port,
         continue;
       }
     }
+    free (httpd_buf2);
     fseek(f, 0, SEEK_CUR);
     if (!strcasecmp(req.method, "GET") || !strcasecmp(req.method, "PUT") ||
         !strcasecmp(req.method, "POST"))

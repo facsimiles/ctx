@@ -2,12 +2,9 @@
 
 #include "ui.h"
 
-int main(int argc, char **argv)
-{
-   for (int i = 1; argv[i]; i++)
-   {
-     unlink(argv[i]);
-   }
-   return 0;
+int main(int argc, char **argv) {
+  for (int i = 1; argv[i]; i++) {
+    unlink(argv[i]);
+  }
+  return 0;
 }
-  

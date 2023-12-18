@@ -1,16 +1,14 @@
 //!picoc
 #include "ui.h"
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   int ret = 0;
-  if (argc < 3)
-  {
-    printf ("Usage: mv <srcfile> <dstfile>\n");
+  if (argc < 3) {
+    printf("Usage: mv <srcfile> <dstfile>\n");
     return ret;
   }
- 
-  rename (argv[1], argv[2]);
 
-  return ret;   
+  rename(argv[1], argv[2]);
+
+  return ret;
 }

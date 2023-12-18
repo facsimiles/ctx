@@ -45,7 +45,7 @@ void view_wifi(Ui *ui) {
   ui_end_frame(ui);
 }
 
-char *_wifis[] = {"mutus", "nomen", "dedit", "cocis", NULL};
+const char *_wifis[] = {"mutus", "nomen", "dedit", "cocis", NULL};
 
 MAIN(wifi) {
   Ui *ui = ui_host(NULL);
@@ -68,15 +68,12 @@ MAIN(wifi) {
       ((char *)wifi_contents)[length] = 0;
     }
   }
-#if EMSCRIPTEN
-  printf("hi!\n");
-#endif
 
 #if CTX_ESP
   // printf ("scanning wifis\n");
   wifis = wifi_scan();
 #else
-  wifis = _wifis;
+  wifis = (char**)_wifis;
 #endif
 
   if (wifi_contents) {
@@ -176,7 +173,7 @@ MAIN(wifi) {
     ui_keyboard(ui);
     ctx_end_frame(ctx);
   } while (!ctx_has_exited(ctx));
-  if (wifis != _wifis)
+  if (wifis != (char**)_wifis)
     free(wifis);
 
   if (wifi_contents)

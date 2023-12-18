@@ -3270,7 +3270,7 @@ typedef struct CtxRawKey{
 } CtxRawKey;
 
 
-static CtxRawKey raw_key_map[]=
+static const CtxRawKey raw_key_map[]=
 {
    {KEY_F1, "F1","F1"},
    {KEY_F2, "F2","F2"},

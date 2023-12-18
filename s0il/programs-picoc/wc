@@ -1,14 +1,13 @@
 //!picoc
 
 #include <ctype.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
-int main(int argc, char **argv)
-{
-  FILE *fin  = stdin;
+int main(int argc, char **argv) {
+  FILE *fin = stdin;
   FILE *fout = stdout;
-  argv[argc]=NULL;
+  argv[argc] = NULL;
 
   int tot_bytes = 0, tot_lines = 0, tot_words = 0;
 
@@ -17,124 +16,114 @@ int main(int argc, char **argv)
   int n_files = 0;
   int total = 0;
 
-  for(int i = 1; argv[i]; i++)
-  {
-    if (argv[i][0] == '-' &&
-        argv[i][1] != '-' &&
-        argv[i][1] != 0)
-    {
+  for (int i = 1; argv[i]; i++) {
+    if (argv[i][0] == '-' && argv[i][1] != '-' && argv[i][1] != 0) {
       for (int j = 1; argv[i][j]; j++)
-        switch (argv[i][j])
-        {
-          case 'w':  do_word = 1; break;
-          case 'l':  do_line = 1; break;
-          case 'c':  do_byte = 1; break;
+        switch (argv[i][j]) {
+        case 'w':
+          do_word = 1;
+          break;
+        case 'l':
+          do_line = 1;
+          break;
+        case 'c':
+          do_byte = 1;
+          break;
         }
-    }
-    else if (argv[i][0] == '-' &&
-             argv[i][1] == '-')
-    {
-       if (!strcmp(argv[i], "--help")){
-         printf ("Usage: wc [--words] [--lines] [--bytes] [--total=WHEN] [file]\n");
-         printf ("  where total is one of auot, only, always and never\n");
-         printf ("  - indicate stdin if no files are given stdin is read\n");
-         return 0;
-       }
-       if (!strcmp(argv[i], "--words")) do_word = 1;
-       if (!strcmp(argv[i], "--lines")) do_line = 1;
-       if (!strcmp(argv[i], "--bytes")) do_byte = 1;
-       if (!strcmp(argv[i], "--total=auto")) total = 0;
-       if (!strcmp(argv[i], "--total=only")) total = 1;
-       if (!strcmp(argv[i], "--total=always")) total = 2;
-       if (!strcmp(argv[i], "--total=never")) total = -1;
-    }
-    else
-    {
-      n_files ++;
+    } else if (argv[i][0] == '-' && argv[i][1] == '-') {
+      if (!strcmp(argv[i], "--help")) {
+        printf(
+            "Usage: wc [--words] [--lines] [--bytes] [--total=WHEN] [file]\n");
+        printf("  where total is one of auot, only, always and never\n");
+        printf("  - indicate stdin if no files are given stdin is read\n");
+        return 0;
+      }
+      if (!strcmp(argv[i], "--words"))
+        do_word = 1;
+      if (!strcmp(argv[i], "--lines"))
+        do_line = 1;
+      if (!strcmp(argv[i], "--bytes"))
+        do_byte = 1;
+      if (!strcmp(argv[i], "--total=auto"))
+        total = 0;
+      if (!strcmp(argv[i], "--total=only"))
+        total = 1;
+      if (!strcmp(argv[i], "--total=always"))
+        total = 2;
+      if (!strcmp(argv[i], "--total=never"))
+        total = -1;
+    } else {
+      n_files++;
     }
   }
 
-  if (do_word ==0 && do_line ==0 && do_byte == 0)
+  if (do_word == 0 && do_line == 0 && do_byte == 0)
     do_word = do_line = do_byte = 1;
 
   int start = 1;
-  if (n_files == 0)
-  {
-    argv[0]="-";
+  if (n_files == 0) {
+    argv[0] = "-";
     start = 0;
   }
 
-  for(int i = start; argv[i]; i++)
-  {
-    if (!strcmp (argv[i], "-"))
-    {
+  for (int i = start; argv[i]; i++) {
+    if (!strcmp(argv[i], "-")) {
       fin = stdin;
-    }
-    else if (argv[i][0] =='-') continue;
+    } else if (argv[i][0] == '-')
+      continue;
     else
-    fin = fopen (argv[i], "rb");
+      fin = fopen(argv[i], "rb");
 
-    if (fin)
-    {
-    char buf[128];
-    int read;
-    int bytes = 0;
-    int lines = 0;
-    int words = 0;
-   
-    int in_word = 0;
- 
-    do {
-      read = fread(buf, 1, sizeof buf, fin);
-      if (read)
-      {
-        for (int j = 0; j<read;j++)
-        {
-          if(buf[j]=='\n')
-            lines++;
+    if (fin) {
+      char buf[128];
+      int read;
+      int bytes = 0;
+      int lines = 0;
+      int words = 0;
 
-          if(in_word)
-          {
-            if (!isspace(buf[j]))
-              in_word=0;
-          }
-          else
-          {
-            if (isspace(buf[j]))
-            {
-              in_word=1;
-              words++;
+      int in_word = 0;
+
+      do {
+        read = fread(buf, 1, sizeof buf, fin);
+        if (read) {
+          for (int j = 0; j < read; j++) {
+            if (buf[j] == '\n')
+              lines++;
+
+            if (in_word) {
+              if (!isspace(buf[j]))
+                in_word = 0;
+            } else {
+              if (isspace(buf[j])) {
+                in_word = 1;
+                words++;
+              }
             }
           }
+          bytes += read;
         }
-        bytes += read;
+      } while (read > 0);
+
+      tot_words += words;
+      tot_bytes += bytes;
+      tot_lines += lines;
+
+      if (total != 1) {
+        if (do_line)
+          printf("%4i ", lines);
+        if (do_word)
+          printf("%5i ", words);
+        if (do_byte)
+          printf("%5i ", bytes);
+        printf("%s\n", argv[i]);
       }
-    } while (read>0);
 
-    tot_words += words;
-    tot_bytes += bytes;
-    tot_lines += lines;
-
-    if (total != 1)
-    {
-      if (do_line)
-        printf("%4i ", lines);
-      if (do_word)
-        printf("%5i ", words);
-      if (do_byte)
-        printf("%5i ", bytes);
-      printf("%s\n", argv[i]);
-    }
-
-    if (fin!=stdin)
-      fclose(fin);
+      if (fin != stdin)
+        fclose(fin);
     }
   }
 
-  if ((total == 0 && n_files>1) ||
-      (total == 1) ||
-      (total == 2))
-  {
+  if ((total == 0 && n_files > 1) || (total == 1) || (total == 2)) {
     if (do_line)
       printf("%4i ", tot_lines);
     if (do_word)

@@ -1,2 +1,2 @@
 //!picoc
-int main (int arc, char **argv) { return 1; }
+int main(int arc, char **argv) { return 1; }

@@ -69,7 +69,7 @@ int   s0il_spawnp (char **argv);
 // 
 void magic_add (const char *mime_type,
                 const char *ext,
-                char *magic_data,
+                const char *magic_data,
                 int magic_len,
                 int is_text);
 

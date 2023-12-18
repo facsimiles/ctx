@@ -718,7 +718,7 @@ const char *ctx_nct_get_event (Ctx *n, int timeoutms, int *x, int *y)
                   case 67: return "pm";
                            /* have a separate pd ? */
                   default: {
-                             static char rbuf[100];
+                             static char rbuf[50];
                              sprintf (rbuf, "mouse (unhandled state: %i)", buf[3]);
                              return rbuf;
                            }
