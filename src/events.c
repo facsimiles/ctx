@@ -1971,7 +1971,7 @@ typedef struct CtxKeyMap {
   const char *shifted;
 } CtxKeyMap;
 
-static CtxKeyMap intl_key_map[]=
+static const CtxKeyMap intl_key_map[]=
 {
    {"`","`","~"},
    {"1","1","!"},
@@ -2531,7 +2531,7 @@ static Mice* mrg_mice_this = &mice;
 
 static int mmm_evsource_mice_init ()
 {
-  unsigned char reset[]={0xff};
+  const unsigned char reset[]={0xff};
   /* need to detect which event */
 
   mrg_mice_this->prev_state = 0;

@@ -7324,7 +7324,7 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
 }
 
 
-CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
+const CtxPixelFormatInfo CTX_SIMD_SUFFIX(ctx_pixel_formats)[]=
 {
 #if CTX_ENABLE_RGBA8
   {

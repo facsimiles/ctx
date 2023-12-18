@@ -1708,7 +1708,7 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
 
 
 
-extern CtxPixelFormatInfo *ctx_pixel_formats;
+extern const CtxPixelFormatInfo *ctx_pixel_formats;
 void CTX_SIMD_SUFFIX(ctx_simd_setup)(void);
 void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
 {

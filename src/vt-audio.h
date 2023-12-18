@@ -90,7 +90,7 @@ int mic_device = 0;   // when non 0 we have an active mic device
  */
 
 #if 0
-static char MuLawCompressTable[256] =
+static const char MuLawCompressTable[256] =
 {
    0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,
    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
@@ -147,7 +147,7 @@ void vt_feed_audio (VT *vt, void *samples, int bytes)
     int z_result = compress (data, &len, samples, len);
     if (z_result != Z_OK)
     {
-      char buf[256]= "\033_Ao=z;zlib error2\033\\";
+      const char *buf = "\033_Ao=z;zlib error2\033\\";
       vt_write (vt, buf, strlen(buf));
       data = samples;
     }
@@ -389,7 +389,7 @@ void vt_audio_task (VT *vt, int click)
 
 void terminal_queue_pcm (int16_t sample_left, int16_t sample_right);
 
-static unsigned char vt_bell_audio[] = {
+static unsigned char const vt_bell_audio[] = {
 #if 1
   0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf, 0xaf,
   0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
@@ -1154,7 +1154,7 @@ static unsigned char vt_bell_audio[] = {
 #endif
 };
 
-static short MuLawDecompressTable[256] =
+static const short MuLawDecompressTable[256] =
 {
      -32124,-31100,-30076,-29052,-28028,-27004,-25980,-24956,
      -23932,-22908,-21884,-20860,-19836,-18812,-17788,-16764,
@@ -1448,7 +1448,7 @@ void vt_audio (VT *vt, const char *command)
 
       if (!new_data)
       {
-        char buf[256]= "\e_Gf=100;audio decode error\e\\";
+        const char *buf= "\e_Gf=100;audio decode error\e\\";
         vt_write (vt, buf, strlen(buf));
         goto cleanup;
       }

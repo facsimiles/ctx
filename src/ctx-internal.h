@@ -124,7 +124,7 @@ struct _CtxBuffer
   int                 frame;      // last frame used in, everything > 3 can be removed,
                                   // as clients wont rely on it.
   char               *eid;        // might be NULL, when not - should be unique for pixel contents
-  CtxPixelFormatInfo *format;
+  const CtxPixelFormatInfo *format;
   void (*free_func) (void *pixels, void *user_data);
   void               *user_data;
 
@@ -634,7 +634,7 @@ static inline void
 ctx_drawlist_deinit (CtxDrawlist *drawlist);
 
 //extern CtxPixelFormatInfo *(*ctx_pixel_format_info) (CtxPixelFormat format);
-CtxPixelFormatInfo *ctx_pixel_format_info (CtxPixelFormat format);
+const CtxPixelFormatInfo *ctx_pixel_format_info (CtxPixelFormat format);
 
 
 
@@ -760,7 +760,7 @@ struct _CtxRasterizer
 #if CTX_BRAILLE_TEXT
   CtxList   *glyphs;
 #endif
-  CtxPixelFormatInfo *format;
+  const CtxPixelFormatInfo *format;
   Ctx       *texture_source; /* normally same as ctx */
   int        shadow_y;
 

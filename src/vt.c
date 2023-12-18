@@ -3916,7 +3916,7 @@ void vt_gfx (VT *vt, const char *command)
                                      vt->gfx.data_size);
           if (z_result != Z_OK)
             {
-              char buf[256]= "\033_Go=z;zlib error\033\\";
+              const char *buf = "\033_Go=z;zlib error\033\\";
               vt_write (vt, buf, strlen (buf) );
               goto cleanup;
             }
@@ -3933,7 +3933,7 @@ void vt_gfx (VT *vt, const char *command)
           uint8_t *new_data = stbi_load_from_memory (vt->gfx.data, vt->gfx.data_size, &vt->gfx.buf_width, &vt->gfx.buf_height, &channels, 4);
           if (!new_data)
             {
-              char buf[256]= "\033_Gf=100;image decode error\033\\";
+              const char *buf= "\033_Gf=100;image decode error\033\\";
               vt_write (vt, buf, strlen (buf) );
               goto cleanup;
             }
@@ -5744,7 +5744,7 @@ const char *ctx_find_shell_command (void)
   int i;
   const char *command = NULL;
   struct stat stat_buf;
-  static char *alts[][2] =
+  static const char *alts[][2] =
   {
     {"/bin/bash",     "/bin/bash"},
     {"/usr/bin/bash", "/usr/bin/bash"},

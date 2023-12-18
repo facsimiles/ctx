@@ -414,12 +414,12 @@ typedef int intptr_t;\
 ";
 
 /* all unistd.h functions */
-struct LibraryFunction UnistdFunctions[] =
+const struct LibraryFunction UnistdFunctions[] =
 {
-    { UnistdAccess,        "int access(char *, int);" },
+    { UnistdAccess,        "int access(char*,int);" },
 //  { UnistdAlarm,         "unsigned int alarm(unsigned int);" },
 /*    { UnistdBrk,           "int brk(void *);" }, */
-    { UnistdChdir,         "int chdir(char *);" },
+    { UnistdChdir,         "int chdir(char*);" },
 //  { UnistdChroot,        "int chroot(char *);" },
 //  { UnistdChown,         "int chown(char *, uid_t, gid_t);" },
     { UnistdClose,         "int close(int);" },
@@ -442,8 +442,8 @@ struct LibraryFunction UnistdFunctions[] =
 //  { UnistdFork,          "pid_t fork(void);" },
 //  { UnistdFpathconf,     "long fpathconf(int, int);" },
     { UnistdFsync,         "int fsync(int);" },
-    { UnistdFtruncate,     "int ftruncate(int, off_t);" },
-    { UnistdGetcwd,        "char *getcwd(char *, size_t);" },
+    { UnistdFtruncate,     "int ftruncate(int,off_t);" },
+    { UnistdGetcwd,        "char*getcwd(char*,size_t);" },
 //  { UnistdGetdtablesize, "int getdtablesize(void);" },
 //  { UnistdGetegid,       "gid_t getegid(void);" },
 //  { UnistdGeteuid,       "uid_t geteuid(void);" },
@@ -461,12 +461,12 @@ struct LibraryFunction UnistdFunctions[] =
 //  { UnistdGetppid,       "pid_t getppid(void);" },
 /*    { UnistdGetsid,        "pid_t getsid(pid_t);" }, */
 //  { UnistdGetuid,        "uid_t getuid(void);" },
-    { UnistdGetwd,         "char *getwd(char *);" },
+    { UnistdGetwd,         "char *getwd(char*);" },
     { UnistdIsatty,        "int isatty(int);" },
 //  { UnistdLchown,        "int lchown(char *, uid_t, gid_t);" },
-    { UnistdLink,          "int link(char *, char *);" },
+    { UnistdLink,          "int link(char*,char*);" },
 //  { UnistdLockf,         "int lockf(int, int, off_t);" },
-    { UnistdLseek,         "off_t lseek(int, off_t, int);" },
+    { UnistdLseek,         "off_t lseek(int,off_t,int);" },
 //  { UnistdNice,          "int nice(int);" },
 //  { UnistdPathconf,      "long pathconf(char *, int);" },
 //  { UnistdPause,         "int pause(void);" },
@@ -474,10 +474,10 @@ struct LibraryFunction UnistdFunctions[] =
 /*    { UnistdPread,         "ssize_t pread(int, void *, size_t, off_t);" }, */
 /*    { UnistdPthread_atfork,"int pthread_atfork(void (*)(void), void (*)(void), void(*)(void));" }, */
 /*    { UnistdPwrite,        "ssize_t pwrite(int, void *, size_t, off_t);" }, */
-    { UnistdRead,          "ssize_t read(int, void *, size_t);" },
+    { UnistdRead,          "ssize_t read(int,void*,size_t);" },
 //  { UnistdReadlink,      "int readlink(char *, char *, size_t);" },
-    { UnistdRmdir,         "int rmdir(char *);" },
-    { UnistdMkdir,         "int mkdir(char *, int);" },
+    { UnistdRmdir,         "int rmdir(char*);" },
+    { UnistdMkdir,         "int mkdir(char*,int);" },
 //  { UnistdSbrk,          "void *sbrk(intptr_t);" },
 //  { UnistdSetgid,        "int setgid(gid_t);" },
 //  { UnistdSetpgid,       "int setpgid(pid_t, pid_t);" },
@@ -493,14 +493,14 @@ struct LibraryFunction UnistdFunctions[] =
 //  { UnistdSysconf,       "long sysconf(int);" },
 //  { UnistdTcgetpgrp,     "pid_t tcgetpgrp(int);" },
 //  { UnistdTcsetpgrp,     "int tcsetpgrp(int, pid_t);" },
-    { UnistdTruncate,      "int truncate(char *, off_t);" },
+    { UnistdTruncate,      "int truncate(char*,off_t);" },
 //  { UnistdTtyname,       "char *ttyname(int);" },
 //  { UnistdTtyname_r,     "int ttyname_r(int, char *, size_t);" },
 //  { UnistdUalarm,        "useconds_t ualarm(useconds_t, useconds_t);" },
-    { UnistdUnlink,        "int unlink(char *);" },
+    { UnistdUnlink,        "int unlink(char*);" },
     { UnistdUsleep,        "int usleep(useconds_t);" },
 //  { UnistdVfork,         "pid_t vfork(void);" },
-    { UnistdWrite,         "ssize_t write(int, void *, size_t);" },
+    { UnistdWrite,         "ssize_t write(int,void*,size_t);" },
     { NULL,                 NULL }
 };
 

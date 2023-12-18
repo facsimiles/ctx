@@ -386,28 +386,28 @@ fun_void__ptr_ptr_ptr_int_int(magic_add);
 // ui_push_fun ui_register_view
 // set_data get_data  find_exec  ui_basename  elf_output_state 
 
-struct LibraryFunction UiFunctions[] =
+const struct LibraryFunction UiFunctions[] =
 {
     {Cui_start_frame,        "void ui_start_frame(Ui*);"},
     {Cui_end_frame,          "void ui_end_frame(Ui*);"},
-    {Cui_text,         "void ui_text(Ui*, char*str);"},
-    {Cui_title,        "void ui_title(Ui*, char*str);"},
-    {Cui_button,       "int ui_button(Ui*, char*string);"},
-    {Cui_new,          "Ui *ui_new(Ctx*);"},
-    {Cui_ctx,          "Ctx *ui_ctx(Ui*);"},
-    {Cui_get_data,     "void *ui_get_data(Ui*);"},
-    {Cui_load_file,    "void ui_load_file(Ui *,char*p);"},
-    {Cmagic_add, "void magic_add(char*,char*,unsigned char*,int, int);"},
-    {Cui_keyboard,     "void ui_keyboard(Ui *);"},
-    {Cui_destroy,      "void ui_destroy(Ui *);"},
-    {Cui_main,         "void ui_main(Ui *, char*);"},
-    {Cui_do,           "void ui_do(Ui *, char*);"},
-    {Cui_pop_fun,      "void ui_pop_fun(Ui *);"},
-    {Cui_draw_bg,      "void ui_draw_bg(Ui *);"},
-    {Cui_scroll_to,    "void ui_pop_scroll_to(Ui *,float);"},
-    {Cui_set_scroll_offset,    "void ui_pop_set_scroll_offset(Ui *,float);"},
-    {Cui_toggle,       "int ui_toggle(Ui *, char*, int);"},
-    {Cui_entry,        "int ui_entry(Ui*, char*,char*,char**strptr);"},
+    {Cui_text,         "void ui_text(Ui*,char*str);"},
+    {Cui_title,        "void ui_title(Ui*,char*str);"},
+    {Cui_button,       "int ui_button(Ui*,char*string);"},
+    {Cui_new,          "Ui*ui_new(Ctx*);"},
+    {Cui_ctx,          "Ctx*ui_ctx(Ui*);"},
+    {Cui_get_data,     "void*ui_get_data(Ui*);"},
+    {Cui_load_file,    "void ui_load_file(Ui*,char*p);"},
+    {Cmagic_add, "void magic_add(char*,char*,unsigned char*,int,int);"},
+    {Cui_keyboard,     "void ui_keyboard(Ui*);"},
+    {Cui_destroy,      "void ui_destroy(Ui*);"},
+    {Cui_main,         "void ui_main(Ui*,char*);"},
+    {Cui_do,           "void ui_do(Ui*,char*);"},
+    {Cui_pop_fun,      "void ui_pop_fun(Ui*);"},
+    {Cui_draw_bg,      "void ui_draw_bg(Ui*);"},
+    {Cui_scroll_to,    "void ui_pop_scroll_to(Ui*,float);"},
+    {Cui_set_scroll_offset,    "void ui_pop_set_scroll_offset(Ui*,float);"},
+    {Cui_toggle,       "int ui_toggle(Ui*,char*,int);"},
+    {Cui_entry,        "int ui_entry(Ui*,char*,char*,char**strptr);"},
     {Cui_slider,       "float ui_slider(Ui*, char*,float,float,float,float);"},
     {Cui_get_font_size,  "float ui_get_font_size(Ui*);"},
     {Cui_x,  "float ui_x(Ui*);"},
@@ -417,8 +417,8 @@ struct LibraryFunction UiFunctions[] =
     {Cui_cb_do,  "void ui_cb_do(void*,void*,void*);"},
     {Cui_iteration,  "void ui_iteration(Ui*);"},
 
-    {Cs0il_runv,     "int s0il_runv(char *, char **);"},
-    {Cs0il_runvp,    "int s0il_runvp(char *, char **);"},
+    {Cs0il_runv,     "int s0il_runv(char*,char**);"},
+    {Cs0il_runvp,    "int s0il_runvp(char*,char**);"},
     //{Cruns,            "int runs(char *);"},
 
  
@@ -548,7 +548,7 @@ fun_void__ptr(ctx_reset_has_exited);
 
 
 /* list of all library functions and their prototypes */
-struct LibraryFunction CtxFunctions[] =
+const struct LibraryFunction CtxFunctions[] =
 {
     {Cctx_new,         "void *ctx_new(int, int, char *);"},
     {Cctx_has_exited,    "int ctx_has_exited(Ctx*);"},
@@ -617,7 +617,7 @@ struct LibraryFunction CtxFunctions[] =
     {Cctx_fill_rule, "void ctx_fill_rule(Ctx*,int);"},
     {Cctx_line_cap, "void ctx_line_cap(Ctx*,int);"},
     {Cctx_line_join, "void ctx_line_join(Ctx*,int);"},
-    {Cctx_host, "Ctx *ctx_host(void);"},
+    {Cctx_host, "Ctx*ctx_host(void);"},
 
     {Cctx_text, "void ctx_text(Ctx*,char*);"},
     {Cctx_text_width, "float ctx_text_width(Ctx*,char*);"},
@@ -650,12 +650,12 @@ struct LibraryFunction CtxFunctions[] =
     {Cctx_draw_texture, "void ctx_draw_texture(Ctx*,char*,float,float,float,float);"},
     {Cctx_utf8_strlen, "int ctx_utf8_strlen(char*);"},
     {Cctx_utf8_len, "int ctx_utf8_len(int);"},
-    {Cctx_new_drawlist, "Ctx *ctx_new_drawlist(int, int);"},
+    {Cctx_new_drawlist,"Ctx *ctx_new_drawlist(int,int);"},
     {Cctx_drawlist_clear, "void ctx_drawlist_clear(Ctx*);"},
-    {Cctx_set_drawlist, "int ctx_set_drawlist(Ctx*, void*,void*,int);"},
-    {Cctx_append_drawlist, "int ctx_append_drawlist(Ctx*, void*,void*,int);"},
-    {Cctx_texture, "void ctx_texture(Ctx*, void*,float,float);"},
-    {Cctx_texture_load, "void ctx_texture_load(Ctx*, void*,void*,void*,void*);"},
+    {Cctx_set_drawlist,"int ctx_set_drawlist(Ctx*,void*,void*,int);"},
+    {Cctx_append_drawlist,"int ctx_append_drawlist(Ctx*,void*,void*,int);"},
+    {Cctx_texture,"void ctx_texture(Ctx*,void*,float,float);"},
+    {Cctx_texture_load,"void ctx_texture_load(Ctx*,void*,void*,void*,void*);"},
 
 
     {NULL, NULL}

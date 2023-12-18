@@ -102,7 +102,7 @@ void StdToascii(struct ParseState *Parser, struct Value *ReturnValue,
 }
 
 /* all string.h functions */
-struct LibraryFunction StdCtypeFunctions[] =
+const struct LibraryFunction StdCtypeFunctions[] =
 {
     {StdIsalnum, "int isalnum(int);"},
     {StdIsalpha, "int isalpha(int);"},

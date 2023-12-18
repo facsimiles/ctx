@@ -128,7 +128,7 @@ ctx_sinf (float x)
     { x -= CTX_PI * 2; }
 
   /* source : http://mooooo.ooo/chebyshev-sine-approximation/ */
-  float coeffs[]=
+  const float coeffs[]=
   {
     -0.10132118f,           // x
       0.0066208798f,         // x^3

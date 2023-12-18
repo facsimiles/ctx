@@ -28,7 +28,7 @@ void LibraryInit(Picoc *pc)
 }
 
 /* add a library */
-void LibraryAdd(Picoc *pc, struct Table *GlobalTable, const char *LibraryName, struct LibraryFunction *FuncList)
+void LibraryAdd(Picoc *pc, struct Table *GlobalTable, const char *LibraryName, const struct LibraryFunction *FuncList)
 {
     struct ParseState Parser;
     int Count;
@@ -622,11 +622,11 @@ void LibMemcmp(struct ParseState *Parser, struct Value *ReturnValue, struct Valu
 #endif
 
 /* list of all library functions and their prototypes */
-struct LibraryFunction CLibrary[] =
+const struct LibraryFunction CLibrary[] =
 {
-    { LibPrintf,        "void printf(char *, ...);" },
-    { LibSPrintf,       "char *sprintf(char *, char *, ...);" },
-    { LibGets,          "char *gets(char *);" },
+    { LibPrintf,        "void printf(char*,...);" },
+    { LibSPrintf,       "char *sprintf(char*,char*,...);" },
+    { LibGets,          "char *gets(char*);" },
     { LibGetc,          "int getchar();" },
     { LibExit,          "void exit(int);" },
 #ifdef PICOC_LIBRARY
@@ -654,21 +654,21 @@ struct LibraryFunction CLibrary[] =
     { LibCalloc,        "void *calloc(int,int);" },
 #endif
 #ifndef NO_REALLOC
-    { LibRealloc,       "void *realloc(void *,int);" },
+    { LibRealloc,       "void *realloc(void*,int);" },
 #endif
-    { LibFree,          "void free(void *);" },
+    { LibFree,          "void free(void*);" },
 #ifndef NO_STRING_FUNCTIONS
-    { LibStrcpy,        "void strcpy(char *,char *);" },
-    { LibStrncpy,       "void strncpy(char *,char *,int);" },
-    { LibStrcmp,        "int strcmp(char *,char *);" },
-    { LibStrncmp,       "int strncmp(char *,char *,int);" },
-    { LibStrcat,        "void strcat(char *,char *);" },
-    { LibIndex,         "char *index(char *,int);" },
-    { LibRindex,        "char *rindex(char *,int);" },
-    { LibStrlen,        "int strlen(char *);" },
-    { LibMemset,        "void memset(void *,int,int);" },
-    { LibMemcpy,        "void memcpy(void *,void *,int);" },
-    { LibMemcmp,        "int memcmp(void *,void *,int);" },
+    { LibStrcpy,        "void strcpy(char*,char*);" },
+    { LibStrncpy,       "void strncpy(char*,char*,int);" },
+    { LibStrcmp,        "int strcmp(char*,char*);" },
+    { LibStrncmp,       "int strncmp(char*,char*,int);" },
+    { LibStrcat,        "void strcat(char*,char*);" },
+    { LibIndex,         "char *index(char*,int);" },
+    { LibRindex,        "char *rindex(char*,int);" },
+    { LibStrlen,        "int strlen(char*);" },
+    { LibMemset,        "void memset(void*,int,int);" },
+    { LibMemcpy,        "void memcpy(void*,void*,int);" },
+    { LibMemcmp,        "int memcmp(void*,void*,int);" },
 #endif
     { NULL,             NULL }
 };

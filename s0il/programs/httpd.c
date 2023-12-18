@@ -73,7 +73,7 @@ static const filemapping filemappings[] = {
     {NULL, NULL},
 };
 
-static char httpd_buf[1024 * 1];
+static char httpd_buf[512]; // < contains the request
 
 static const char *html_doctype =
     "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' "
@@ -578,7 +578,7 @@ static void httpd_post_handler(HttpdRequest *req) {
            strstr(req->body->str, "action="))
     action = action_mkfile;
 
-  static char temp[256];
+  static char temp[128];
   switch (action) {
   case action_stop:
     httpd_stop = 1; // XXX : perhaps with a delay - permit , a few redirected
@@ -904,6 +904,8 @@ int _httpd_start_int(int port,
     return -1;
   }
   httpd_stop = 0;
+  int bsize = 1024;
+  char *httpd_buf2 = malloc(bsize);
 
   while (!httpd_stop) {
     HttpdRequest req;
@@ -961,8 +963,6 @@ int _httpd_start_int(int port,
     req.user_data = user_data;
     if (!req.method || !req.path || !req.protocol)
       continue;
-    int bsize = 1024;
-    char *httpd_buf2 = malloc(bsize);
 
     while (fgets(httpd_buf2, bsize, f)) {
       if (!strncmp(httpd_buf2, "Content-Length", strlen("Content-Length"))) {
@@ -1004,7 +1004,6 @@ int _httpd_start_int(int port,
         continue;
       }
     }
-    free (httpd_buf2);
     fseek(f, 0, SEEK_CUR);
     if (!strcasecmp(req.method, "GET") || !strcasecmp(req.method, "PUT") ||
         !strcasecmp(req.method, "POST"))
@@ -1018,6 +1017,7 @@ int _httpd_start_int(int port,
     fclose(f);
     close(s);
   }
+  free (httpd_buf2);
   close(sock);
   return 0;
 }

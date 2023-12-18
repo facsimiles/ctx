@@ -2293,7 +2293,7 @@ void ctx_reset_has_exited (Ctx *ctx)
 
 int ctx_pixel_format_bits_per_pixel (CtxPixelFormat format)
 {
-  CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
+  const CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
   if (info)
     return info->bpp;
   return -1;
@@ -2301,7 +2301,7 @@ int ctx_pixel_format_bits_per_pixel (CtxPixelFormat format)
 
 int ctx_pixel_format_get_stride (CtxPixelFormat format, int width)
 {
-  CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
+  const CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
   if (info)
   {
     switch (info->bpp)
@@ -2322,7 +2322,7 @@ int ctx_pixel_format_get_stride (CtxPixelFormat format, int width)
 
 int ctx_pixel_format_ebpp (CtxPixelFormat format)
 {
-  CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
+  const CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
   if (info)
     return info->ebpp;
   return -1;
@@ -2330,7 +2330,7 @@ int ctx_pixel_format_ebpp (CtxPixelFormat format)
 
 int ctx_pixel_format_components (CtxPixelFormat format)
 {
-  CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
+  const CtxPixelFormatInfo *info = ctx_pixel_format_info (format);
   if (info)
     return info->components;
   return -1;
@@ -2522,7 +2522,7 @@ typedef struct CtxMagicEntry {
   uint8_t magic[16];
 } CtxMagicEntry;
 
-static CtxMagicEntry ctx_magics[]={
+static const CtxMagicEntry ctx_magics[]={
   {0, "image/bmp",  ".bmp", 0, {0}},
   {0, "image/png",  ".png", 8, {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}},
   {0, "image/jpeg", ".jpg", 8,  {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0}},
@@ -2916,14 +2916,14 @@ int ctx_get_fullscreen (Ctx *ctx)
     return 0;
 }
 
-CtxPixelFormatInfo *ctx_pixel_formats =
+const CtxPixelFormatInfo *ctx_pixel_formats =
 #if CTX_COMPOSITE
 ctx_pixel_formats_generic;
 #else
 NULL;
 #endif
 
-CtxPixelFormatInfo *
+const CtxPixelFormatInfo *
 ctx_pixel_format_info (CtxPixelFormat format)
 {
   if (!ctx_pixel_formats)

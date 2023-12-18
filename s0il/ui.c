@@ -10,8 +10,8 @@ int _init_main (int argc, char **argv)
   //Ui *ui = ui_host(NULL);
   _s0il_main_thread = _s0il_thread_id();
   system("rm -f /tmp/_s0il_*");
-  char elf_magic_32bit[]={0x7f, 'E','L','F', 1,1, 1, 0, 0, 0};
-  char elf_magic_64bit[]={0x7f, 'E','L','F', 2,1, 1, 0, 0, 0};
+  const char elf_magic_32bit[]={0x7f, 'E','L','F', 1,1, 1, 0, 0, 0};
+  const char elf_magic_64bit[]={0x7f, 'E','L','F', 2,1, 1, 0, 0, 0};
   //uint8_t elf_magic[]={0x7f, 'E','L','F', 0,0, 0, 0, 0, 0};
   magic_add("application/x-sharedlib", NULL, elf_magic_32bit, 8, 0);
   magic_add("application/x-sharedlib", NULL, elf_magic_64bit, 8, 0);
@@ -26,39 +26,39 @@ int _init_main (int argc, char **argv)
   s0il_system("text");
   s0il_system("image");
 
-  char mpg1_magic[] = {0x00, 0x00, 0x01, 0xba};
+  const char mpg1_magic[] = {0x00, 0x00, 0x01, 0xba};
 
-  char gif_magic1[] = {0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0};
-  char gif_magic2[] = {0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0};
+  const char gif_magic1[] = {0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0};
+  const char gif_magic2[] = {0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0};
 
   magic_add("video/mpeg", ".mpg", mpg1_magic, 4, 0);
   magic_add("image/gif", ".gif", gif_magic1, -1, 0);
   magic_add("image/gif", ".gif", gif_magic2, -1, 0);
 
-  char z_magic[] = {0x1f, 0x9d, 0};
+  const char z_magic[] = {0x1f, 0x9d, 0};
   magic_add("application/gzip", ".z", z_magic, -1, 0);
-  char gz_magic[] = {0x1f, 0x8b, 0};
+  const char gz_magic[] = {0x1f, 0x8b, 0};
 
   magic_add("application/gz", ".gz", gz_magic, -1, 0);
-  char bz2_magic[] = {0x42, 0x5a, 0x68, 0};
+  const char bz2_magic[] = {0x42, 0x5a, 0x68, 0};
   magic_add("application/bzip2", ".gz", bz2_magic, -1, 0);
-  char zip_magic[] = {0x50, 0x4b, 0x03, 0x04, 0};
-  char zip_magic2[] = {0x50, 0x4b, 0x05, 0x06, 0};
+  const char zip_magic[] = {0x50, 0x4b, 0x03, 0x04, 0};
+  const char zip_magic2[] = {0x50, 0x4b, 0x05, 0x06, 0};
 
   magic_add("application/zip", ".zip", zip_magic, -1, 0);
   magic_add("application/zip", ".zip", zip_magic2, -1, 0);
 
 #if 0
-  char wasm_magic[] = {0x00, 0x61, 0x73, 0x6d};
+  const char wasm_magic[] = {0x00, 0x61, 0x73, 0x6d};
   magic_add(ui, "application/wasm", ".wasm", wasm_magic, 4, 0);
 #endif
 
-  char flac_magic[] = {0x66, 0x4c, 0x61, 0x43, 0};
+  const char flac_magic[] = {0x66, 0x4c, 0x61, 0x43, 0};
 
   magic_add("audio/flac", ".flac", flac_magic, -1, 0);
-  char midi_magic[] = {0x4d, 0x54, 0x68, 0x64, 0};
+  const char midi_magic[] = {0x4d, 0x54, 0x68, 0x64, 0};
   magic_add("audio/sp-midi", ".mid", midi_magic, -1, 0);
-  char wav_magic[] = {0x52, 0x49, 0x46, 0x46, 0};
+  const char wav_magic[] = {0x52, 0x49, 0x46, 0x46, 0};
   magic_add("audio/x-wav", ".wav", wav_magic, -1, 0);
   magic_add("audio/mp3", ".mp3", NULL, 0, 0);
 
@@ -1652,7 +1652,7 @@ void ui_iteration(Ui *ui)
         ctx_translate (ctx, -width/2,-height/2);
 
         const char *labels[]  = {"ok", "next","space","prev","back"};
-        char *actions[] = {"return", "right","space","left","backspace"};
+        const char *actions[] = {"return", "right","space","left","backspace"};
 
         for (int i = 0; i < 5; i++)
         {

@@ -2,7 +2,6 @@
 #include "s0il.h"
 Ctx *ctx_host(void);
 
-#define MAX_EXEC_DEPTH 8
 
 typedef struct _exec_state_t exec_state_t;
 struct _exec_state_t {
@@ -26,10 +25,6 @@ typedef struct pidinfo_t {
 static int peak_pid = 0;
 
 static CtxList *proc = NULL;
-#if 0
-static exec_state_t exec_state[MAX_EXEC_DEPTH];
-static int exec_depth = 0;
-#endif
 
 #include <unistd.h>
 
@@ -39,39 +34,10 @@ int pre_exec(int same_stack) {
   info->pid = ++peak_pid;
   ctx_list_append(&proc, info);
   return info->pid;
-#if 0
-  char tmp[512];
-  if (same_stack)
-  {
-  // TODO : store more info, and implement getpid
-  //        most of this info can be shared between a 
-  //        synchronous implementation and task/pthread one
-  exec_state[exec_depth].cwd=strdup(getcwd (tmp,512));
-#ifndef WASM
-  exec_state[exec_depth].stdin_copy=stdin;
-  exec_state[exec_depth].stdout_copy=stdout;
-  exec_state[exec_depth].stderr_copy=stderr;
-#endif
-  exec_depth++;
-  }
-#endif
 }
 
 void post_exec(int pid, int same_stack) {
   output_state = 0;
-#if 0
-  if (same_stack)
-  {
-  exec_depth--;
-  chdir(exec_state[exec_depth].cwd);
-#ifndef WASM
-  stdin=exec_state[exec_depth].stdin_copy;
-  stdout=exec_state[exec_depth].stdout_copy;
-  stderr=exec_state[exec_depth].stderr_copy;
-#endif
-  free (exec_state[exec_depth].cwd);
-  }
-#endif
 }
 
 typedef struct inlined_program_t {
@@ -428,7 +394,7 @@ int s0il_runv(char *path, char **argv) {
 }
 
 char *s0il_path_lookup(Ui *ui, const char *file) {
-  char *path[] = {"/sd/bin/", "/bin/", ":", NULL};
+  const char *path[] = {"/sd/bin/", "/bin/", ":", NULL};
   char temp[512];
 
   for (int i = 0; path[i]; i++) {

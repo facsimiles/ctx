@@ -134,26 +134,26 @@ typedef struct { \
 #endif
 
 /* all stdlib.h functions */
-struct LibraryFunction StdlibFunctions[] =
+const struct LibraryFunction StdlibFunctions[] =
 {
 #ifndef NO_FP
-    { StdlibAtof,           "float atof(char *);" },
-    { StdlibStrtod,         "float strtod(char *,char **);" },
+    { StdlibAtof,           "float atof(char*);" },
+    { StdlibStrtod,         "float strtod(char*,char **);" },
 #endif
-    { StdlibAtoi,           "int atoi(char *);" },
-    { StdlibAtol,           "int atol(char *);" },
-    { StdlibStrtol,         "int strtol(char *,char **,int);" },
-    { StdlibStrtoul,        "int strtoul(char *,char **,int);" },
-    { StdlibMalloc,         "void *malloc(int);" },
-    { StdlibCalloc,         "void *calloc(int,int);" },
-    { StdlibRealloc,        "void *realloc(void *,int);" },
-    { StdlibFree,           "void free(void *);" },
+    { StdlibAtoi,           "int atoi(char*);" },
+    { StdlibAtol,           "int atol(char*);" },
+    { StdlibStrtol,         "int strtol(char*,char**,int);" },
+    { StdlibStrtoul,        "int strtoul(char*,char**,int);" },
+    { StdlibMalloc,         "void*malloc(int);" },
+    { StdlibCalloc,         "void*calloc(int,int);" },
+    { StdlibRealloc,        "void*realloc(void*,int);" },
+    { StdlibFree,           "void free(void*);" },
     { StdlibRand,           "int rand();" },
     { StdlibSrand,          "void srand(int);" },
     { StdlibAbort,          "void abort();" },
     { StdlibExit,           "void exit(int);" },
-    { StdlibGetenv,         "char *getenv(char *);" },
-    { StdlibSystem,         "int system(char *);" },
+    { StdlibGetenv,         "char*getenv(char*);" },
+    { StdlibSystem,         "int system(char*);" },
 /*    { StdlibBsearch,        "void *bsearch(void *,void *,int,int,int (*)());" }, */
 /*    { StdlibQsort,          "void *qsort(void *,int,int,int (*)());" }, */
     { StdlibAbs,            "int abs(int);" },
