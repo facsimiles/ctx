@@ -614,6 +614,58 @@ static char *string_chop_head (char *orig) /* return pointer to reset after arg 
   return NULL;
 }
 
+FILE *s0il_popen(const char *cmdline, const char *type)
+{
+  char *cargv[32];
+  int   cargc;
+  char *rest, *copy;
+  if (!cmdline)
+    return NULL;
+  copy = calloc (strlen (cmdline)+3, 1);
+  strcpy (copy, cmdline);
+  rest = copy;
+  FILE *out_stream = NULL;
+
+    cargc = 0;
+    while (rest && cargc < 30 && (rest[0] != ';' &&
+                                  rest[0] != '&' &&
+                                  rest[0] != '>' &&
+                                  rest[0] != '|') )
+      {
+        cargv[cargc++] = rest;
+        rest = string_chop_head (rest);
+      }
+    cargv[cargc] = NULL;
+    if (cargv[0])
+    {
+      {
+
+      char path[] = "/tmp/s0il_popen_0";
+      out_stream = s0il_fopen(path, "w");
+
+      s0il_redirect_io(NULL, out_stream);
+      s0il_runvp (cargv[0], cargv);
+
+      s0il_redirect_io(NULL, NULL);
+      s0il_rewind (out_stream);
+    }
+    if (rest && (rest[0]==';'
+              || rest[0]=='&'
+              || rest[0]=='|'
+              || rest[0]=='>'))
+      {
+        rest++;
+        while (rest[0] == ' ')rest++;
+      }
+  } while (rest && rest[0]);
+  free (copy);
+  return out_stream;
+}
+
+int s0il_pclose(FILE *stream)
+{
+  return s0il_fclose (stream);
+}
 
 int
 s0il_system (const char *cmdline)
@@ -683,7 +735,9 @@ s0il_system (const char *cmdline)
          pipe_no = 0;
       }
       else
+      {
          pipe_no = 0;
+      }
 
       if (in_stream || out_stream)
          s0il_redirect_io(in_stream, out_stream);
@@ -702,14 +756,11 @@ s0il_system (const char *cmdline)
         ret = s0il_runvp (cargv[0], cargv);
       }
 
-      if (in_stream || out_stream)
-      {
-         s0il_redirect_io(NULL, NULL);
-         if (in_stream)
-         s0il_fclose (in_stream);
-         if (out_stream)
-         s0il_fclose (out_stream);
-      }
+      s0il_redirect_io(NULL, NULL);
+      if (in_stream)
+        s0il_fclose (in_stream);
+      if (out_stream)
+        s0il_fclose (out_stream);
 
       }
     }

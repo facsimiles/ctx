@@ -13,6 +13,8 @@ int     s0il_fputs    (const char *s, FILE *stream);
 int     s0il_fputc    (int c, FILE *stream);
 ssize_t s0il_write    (int fd, const void *buf, size_t count);
 int     s0il_fwrite   (const void *ptr, size_t size, size_t nmemb, FILE *stream);
+FILE   *s0il_popen    (const char *cmdline, const char *mode);
+int     s0il_pclose   (FILE *stream);
 int     s0il_puts     (const char *s);
 int     s0il_unlink   (const char *s);
 int     s0il_fprintf  (FILE *stream, const char *restrict format, ...);
@@ -62,8 +64,10 @@ int     s0il_chdir    (const char *path);
 
 #ifdef S0IL_REDEFINE_CLIB
 
+#define popen(a,b) s0il_popen(a,b)
+#define pclose(a) s0il_pclose(a)
 #define exit(r) s0il_exit(r)
-#define access s0il_access
+#define access(a,b) s0il_access(a,b)
 #define lseek s0il_lseek
 #define opendir s0il_opendir
 #define readdir s0il_readdir
