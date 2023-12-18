@@ -74,6 +74,8 @@ int main(int argc, char **argv)
     else
     fin = fopen (argv[i], "rb");
 
+    if (fin)
+    {
     char buf[128];
     int read;
     int bytes = 0;
@@ -126,9 +128,10 @@ int main(int argc, char **argv)
 
     if (fin!=stdin)
       fclose(fin);
+    }
   }
 
-  if ((total == 0 && n_files) ||
+  if ((total == 0 && n_files>1) ||
       (total == 1) ||
       (total == 2))
   {

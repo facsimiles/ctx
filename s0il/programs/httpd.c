@@ -931,6 +931,7 @@ int _httpd_start_int(int port,
       continue;
     } else if (rv == 0) {
       ui_iteration(ui_host(ctx_host()));
+      if (ctx_has_quit(ctx_host())) httpd_stop = 1;
       continue;
     }
 
