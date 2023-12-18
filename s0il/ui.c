@@ -190,19 +190,19 @@ struct _Ui {
 };
 
 void _ctx_toggle_in_idle_dispatch (Ctx *ctx);
-static int launch_elf_handler = 0;
-static int elf_return_value = 0;
+static int launch_program_handler = 0;
+static int program_return_value = 0;
 
 void ui_fake_circle(Ui *ui, bool on)
 {
   ui->fake_circle = on;
 }
 
-int launch_elf_interpreter (Ctx *ctx, void *data)
+int launch_program_interpreter (Ctx *ctx, void *data)
 {
   Ui *ui = data;
-  if (launch_elf_handler) {
-    ctx_remove_idle (ctx, launch_elf_handler);
+  if (launch_program_handler) {
+    ctx_remove_idle (ctx, launch_program_handler);
     s0il_output_state_reset ();
     _ctx_toggle_in_idle_dispatch (ctx);
     int retval;
@@ -223,7 +223,7 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
       //sleep (2);
     }
 
-    launch_elf_handler = 0;
+    launch_program_handler = 0;
 
     _ctx_toggle_in_idle_dispatch (ctx);
     {
@@ -236,7 +236,7 @@ int launch_elf_interpreter (Ctx *ctx, void *data)
     s0il_output_state_reset ();
 
     ui_pop_fun (ui); // leave view when done
-    elf_return_value = retval;
+    program_return_value = retval;
   }
   return 0;
 }
@@ -326,12 +326,12 @@ static void draw_term (Ui *ui)
   ctx_listen (ctx, CTX_KEY_UP, terminal_key_any, ui, NULL);
 }
 
-void view_elf (Ui *ui)
+void view_program (Ui *ui)
 {
   if (ui->data == NULL)
   {
-     if (!launch_elf_handler)
-       launch_elf_handler = ctx_add_timeout (ui->ctx, 0, launch_elf_interpreter, ui);
+     if (!launch_program_handler)
+       launch_program_handler = ctx_add_timeout (ui->ctx, 0, launch_program_interpreter, ui);
      ui->data = (void*)1;
      ui->data_finalize = NULL;
   }
@@ -339,18 +339,7 @@ void view_elf (Ui *ui)
   {
      if (s0il_output_state () == 1)
      {
-#if 0
-       while (ctx_vt_has_data (NULL))
-       {
-         int c = ctx_vt_read (NULL);
-         //if (c == '\n') c == '\r';
-         if (c == '\r') c = '\n';
-         ungetc(c, stdin);
-       }
-#endif
        ui_start_frame (ui);
-       //if (ctx_osk_mode != 2)
-       //  ui_do(ui, "kb-show");
        draw_term (ui);
        ui_end_frame (ui);
      }
@@ -552,7 +541,7 @@ static void ui_view_file (Ui *ui)
         ui->fun = ui->views[i].fun;
         if (!ui->fun && ui->views[i].binary_path)
         {
-          ui->fun = view_elf;
+          ui->fun = view_program;
           ui->interpreter = ui->views[i].binary_path;
         }
         return;
@@ -770,7 +759,7 @@ ui_load_view(Ui *ui, const char *target)
     if ((epath = s0il_path_lookup (ui, target)))
     {
       //printf ("push efun %s %s\n", target, epath);
-      ui_push_fun (ui, view_elf, epath, NULL, NULL);
+      ui_push_fun (ui, view_program, epath, NULL, NULL);
       free (epath);
       return;
     }
@@ -801,8 +790,15 @@ ui_do(Ui *ui, const char *action)
   }
   else if (!strcmp (action, "back"))
   {
-    ui_pop_fun (ui);
     ui->overlay_fade = 0.7;
+    if (ui->fun == view_program)
+    {
+      ctx_exit(ui->ctx);
+    }
+    else
+    {
+      ui_pop_fun (ui);
+    }
   }
   else if (!strcmp (action, "activate"))
   {
@@ -972,7 +968,7 @@ static float color_fg[4]; // black or white automatically based on bg
       ui->font_size_vh = width / height * 9;
 
   ui_register_view (ui, "settings-ui",  view_settings_ui, NULL);
-  ui_register_view (ui, "application/x-sharedlib", view_elf, NULL);
+  ui_register_view (ui, "application/x-sharedlib", view_program, NULL);
   ui_register_view (ui, "inode/directory", ui_view_dir, NULL);
 
   return ui;
@@ -1455,7 +1451,6 @@ void ui_keyboard (Ui *ui)
   prev_ticks = ticks; 
 
   //printf ("%f\n", elapsed_ms);
-  ui->overlay_fade -= 0.3 * elapsed_ms/1000.0f;
   
 
   float h = ctx_height (ctx);
@@ -1618,7 +1613,6 @@ int s0il_output_state(void);
 void ui_iteration(Ui *ui)
 {
     Ctx *ctx = ui->ctx;
-    static long int prev_ticks = -1;
     float width  = ctx_width (ctx);
     float height = ctx_height (ctx);
 
@@ -1638,14 +1632,9 @@ void ui_iteration(Ui *ui)
       ctx_start_frame (ctx);
       ctx_add_key_binding (ctx, "escape",    "back", "foo", ui_cb_do, ui);
       ctx_add_key_binding (ctx, "backspace", "back", "foo", ui_cb_do, ui);
-      long int ticks = ctx_ticks ();
-      long int ticks_delta = ticks - prev_ticks;
-      if (ticks_delta > 1000000 || prev_ticks == -1) ticks_delta = 10; 
-      prev_ticks = ticks;
 
       ctx_save (ctx);
 
-      ui->delta_ms = ticks_delta/1000;
 
       if (ui->fun)
         ui->fun(ui);
@@ -1688,8 +1677,6 @@ void ui_iteration(Ui *ui)
       }    
       }
 
-
-
       ui_keyboard (ui);
 
       if (ui->show_fps)
@@ -1705,17 +1692,16 @@ void ui_iteration(Ui *ui)
          ctx_move_to (ctx, ctx_width(ctx)/2, ui->height/20);
          static float fps = 0.0f;
 
-         fps = fps * 0.6f + 0.4f * (1000 * 1000.0f/ticks_delta);
+         fps = fps * 0.6f + 0.4f * (1000.0f/ui->delta_ms);
          sprintf(buf, "%.1f", (double)fps);
          ctx_text (ctx, buf);
          ctx_restore (ctx);
       }
 
-
       ctx_end_frame (ctx);
 
       ui->frame_no++;
-      ui->view_elapsed += ticks_delta* 1/(1000*1000.0f);
+      ui->view_elapsed += ui->delta_ms / 1000.0f;
      }
      else
      {
@@ -2302,6 +2288,14 @@ void ui_end_frame (Ui *ui)
       }
       ctx_add_key_binding (ctx, "control-q", "exit", "foo", ui_cb_do, ui);
 
+#if 1
+      if (is_touch){
+        float width = ctx_width(ctx);
+        float height = ctx_height(ctx);
+        overlay_button (ui, 0,0,width,height*0.12, "back", "back");
+      }
+#endif
+
 #ifdef NATIVE
       if (ui->fake_circle){
       float min_dim = ctx_width(ctx);
@@ -2323,6 +2317,7 @@ void ui_end_frame (Ui *ui)
       }
 #endif
 
+    ui->overlay_fade -= 0.3 * ui->delta_ms/1000.0f;
 }
 
 void ui_draw_bg (Ui *ui)
@@ -2388,6 +2383,14 @@ void ui_draw_bg (Ui *ui)
 void ui_start_frame (Ui *ui)
 {
    Ctx *ctx = ui->ctx;
+
+   static long int prev_ticks = -1;
+   long int ticks = ctx_ticks ();
+   long int ticks_delta = ticks - prev_ticks;
+   if (ticks_delta > 1000000 || prev_ticks == -1) ticks_delta = 10; 
+   prev_ticks = ticks;
+   ui->delta_ms = ticks_delta/1000;
+
    ui_draw_bg(ui);
    ui->width = ctx_width (ctx);
    ui->height = ctx_height (ctx);

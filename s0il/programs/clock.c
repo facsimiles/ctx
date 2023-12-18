@@ -67,22 +67,17 @@ void draw_clock(Ctx *ctx, float x, float y, float radius,
 }
 
 MAIN(clock) {
-  // Ctx *ctx = ctx_host();//new (-1,-1,NULL);
-  Ctx *ctx = ctx_new(-1, -1, NULL);
+   Ctx *ctx = ctx_host();//new (-1,-1,NULL);
+  //Ctx *ctx = ctx_new(-1, -1, NULL);
   do {
     ctx_start_frame(ctx);
 
     float w = ctx_width(ctx);
     float h = ctx_height(ctx);
     float min = w < h ? w : h;
-#if 0
-      if (ui)
-      {
-        ui_draw_bg (ui); // this draws the configured bacground and leaves ctx
-                         // with the configured foreground color set
-      }
-      else
-#endif
+#if 1
+    ui_start_frame(ui_host(NULL));
+#else
     {
       // when running directly on host without a wrapping ctx we
       // do not get a ui - this makes that work
@@ -91,14 +86,16 @@ MAIN(clock) {
       ctx_fill(ctx);
       ctx_rgba(ctx, 1.0f, 1.0f, 1.0f, 1.0f);
     }
+#endif
 
     draw_clock(ctx, w / 2, h / 2, min / 2, ctx_ticks() / 1000);
 
     ctx_add_key_binding(ctx, "escape", "exit", "foo", ui_cb_do, ui_host(NULL));
     ctx_add_key_binding(ctx, "backspace", "exit", "foo", ui_cb_do,
                         ui_host(NULL));
+    ui_end_frame(ui_host(NULL));
     ctx_end_frame(ctx);
   } while (!ctx_has_exited(ctx));
-  ctx_destroy(ctx);
+//ctx_destroy(ctx);
   return 0;
 }

@@ -558,6 +558,8 @@ static char *s0il_gets(char* buf, size_t buflen)
 #ifndef EMSCRIPTEN
           usleep (1000); // XXX : seems more stable with it
 #endif
+             if(ctx_has_quit(ctx_host()))
+               return NULL;
           }
           continue;
         }
