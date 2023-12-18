@@ -276,8 +276,8 @@ void s0il_add_file(const char *path, const char *contents, size_t size, s0il_fil
   }
 }
 
-FILE *stdout_redirect = NULL;
-FILE *stdin_redirect = NULL;
+static FILE *stdout_redirect = NULL;
+static FILE *stdin_redirect = NULL;
 
 
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream)

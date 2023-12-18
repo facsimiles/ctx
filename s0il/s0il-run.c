@@ -673,13 +673,17 @@ s0il_system (const char *cmdline)
          char *path = rest + 1;
          while (*path == ' ')path++;
          out_stream = s0il_fopen(path, "w+");
+         pipe_no = 0;
       }
       else if (rest && rest[0]=='>')
       {
          char *path = rest + 1;
          while (*path == ' ')path++;
          out_stream = s0il_fopen(path, "w");
+         pipe_no = 0;
       }
+      else
+         pipe_no = 0;
 
       if (in_stream || out_stream)
          s0il_redirect_io(in_stream, out_stream);

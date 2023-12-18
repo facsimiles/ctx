@@ -3,9 +3,7 @@
 
 #include <errno.h>
 #include "../interpreter.h"
-#if EMSCRIPTEN
 #define S0IL_REDEFINE_CLIB
-#endif
 
 #include "s0il.h"
 

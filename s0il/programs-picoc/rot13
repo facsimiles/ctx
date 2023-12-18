@@ -1,7 +1,8 @@
-//! picoc
+//!picoc
 
 #include "ui.h"
 #include <dirent.h>
+#include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
