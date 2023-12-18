@@ -47,9 +47,8 @@ MAIN(image) {
                      (dheight - height * factor) / 2, width * factor,
                      height * factor);
 
-      ctx_add_key_binding(ctx, "escape", "exit", "foo", ui_cb_do, ui_host(ctx));
-      ctx_add_key_binding(ctx, "backspace", "exit", "foo", ui_cb_do,
-                          ui_host(ctx));
+      ui_add_key_binding(ui_host(ctx), "escape", "exit", "leave view");
+      ui_add_key_binding(ui_host(ctx), "backspace", "exit", "leave view");
     }
     ctx_end_frame(ctx);
     frame_no++;

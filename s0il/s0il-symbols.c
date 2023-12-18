@@ -662,6 +662,7 @@ const struct esp_elfsym g_customer_elfsyms[] =
     ELFSYM_EXPORT(truncf),
     ELFSYM_EXPORT(tzset),
 #if EXPORT_UI
+    ELFSYM_EXPORT(ui_add_key_binding),
     ELFSYM_EXPORT(ui_basename),
     ELFSYM_EXPORT(ui_button),
     ELFSYM_EXPORT(ui_button_coords),

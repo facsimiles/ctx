@@ -886,7 +886,7 @@ int _httpd_start_int(int port,
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
     sin.sin_port = htons(try_port);
-    if (!bind(sock, (struct sockaddr *)&sin, sizeof(sin)) != 0) {
+    if (bind(sock, (struct sockaddr *)&sin, sizeof(sin))) {
       httpd_port = try_port;
       break;
     }

@@ -17,38 +17,38 @@ static char *root_path = NULL;
 void add_mains(void);
 
 static float backlight  = 100.0;
+
+
+static void view_tests (Ui *ui)
+{
+   ui_start_frame (ui);
+
+   if (ui_button(ui,"raw-fb"))
+      ui_do(ui, "raw-fb");
+   if (ui_button(ui,"tsr-ui"))
+      ui_do(ui, "tsr-ui");
+   if (ui_button(ui,"audio-ks"))
+      ui_do(ui, "audio-ks");
+   if (ui_button(ui,"app"))
+      ui_do(ui, "app");
+
+   ui_end_frame(ui);
+}
+
 static void view_menu (Ui *ui)
 {
    ui_start_frame (ui);
 
    if (ui_button(ui, "files"))
      ui_do(ui, "/");
-   //ui_seperator (ui);  
-
-#if 0
-   if (ui_button(ui,"app"))
-      ui_do(ui, "app");
-#endif
-   if (ui_button(ui,"console"))
-      ui_do(ui, "sh");
-#if 1
    if (ui_button(ui,"clock"))
       ui_do(ui, "clock");
-   if (ui_button(ui,"raw-fb"))
-      ui_do(ui, "raw-fb");
-   if (ui_button(ui,"tsr-ui"))
-      ui_do(ui, "tsr-ui");
-#endif
-#if 1
+   if (ui_button(ui,"console"))
+      ui_do(ui, "sh");
    if (ui_button(ui,"httpd"))
       ui_do(ui, "httpd");
-#endif
-#if 0
-   if (ui_button(ui,"raw_fb"))
-      ui_do(ui, "raw_fb");
-   if (ui_button(ui,"audio-ks"))
-      ui_do(ui, "audio-ks");
-#endif
+   if (ui_button(ui,"tests"))
+      ui_do(ui, "tests");
 
    if (ui_button(ui, "system"))
      ui_do(ui, "settings");
@@ -139,6 +139,7 @@ int main (int argc, char **argv)
 
 
     ui_register_view (ui, "menu", view_menu, NULL);
+    ui_register_view (ui, "tests", view_tests, NULL);
     ui_register_view (ui, "settings", view_settings, NULL);
     ui_do(ui, "menu"); // queue menu - as initial view
     s0il_printf("\033[?30l"); // turn off scrollbar

@@ -484,7 +484,7 @@ static void restore_state(Ui *ui)
        ui_set_scroll_offset (ui, ui->history[no].scroll_offset);
        ui->focused_id = ui->history[no].focused;
     }
-    else printf ("tried to restore without ui->history\n");
+    else ui_do(ui, "exit");
 }
 
 void
@@ -922,7 +922,7 @@ Ui *ui_new(Ctx *ctx)
   ui->style.bg[3]=1.0;
   ui->style.fg[0]=1.0;
   ui->style.fg[1]=1.0;
-  ui->style.fg[2]=0.8;
+  ui->style.fg[2]=1.0;
   ui->style.fg[3]=1.0;
 
   ui->style.focused_fg[0]=1.0;
@@ -1620,8 +1620,8 @@ void ui_iteration(Ui *ui)
       width = ctx_width (ctx);
       height = ctx_height (ctx);
       ctx_start_frame (ctx);
-      ctx_add_key_binding (ctx, "escape",    "back", "foo", ui_cb_do, ui);
-      ctx_add_key_binding (ctx, "backspace", "back", "foo", ui_cb_do, ui);
+      ui_add_key_binding(ui, "escape", "exit", "leave view");
+      ui_add_key_binding(ui, "backspace", "exit", "leave view");
 
       ctx_save (ctx);
 
@@ -2265,18 +2265,16 @@ void ui_end_frame (Ui *ui)
       }
       else
       {
-        ctx_add_key_binding (ctx, "up",     "focus-prev", "foo",    ui_cb_do, ui);
-        ctx_add_key_binding (ctx, "left",   "focus-prev", "foo",    ui_cb_do, ui);
-        ctx_add_key_binding (ctx, "shift-tab", "focus-prev", "foo", ui_cb_do, ui);
-
-        ctx_add_key_binding (ctx, "tab",    "focus-next", "foo", ui_cb_do, ui);
-        ctx_add_key_binding (ctx, "right",  "focus-next", "foo", ui_cb_do, ui);
-        ctx_add_key_binding (ctx, "right",  "focus-next", "foo", ui_cb_do, ui);
-        ctx_add_key_binding (ctx, "down",   "focus-next", "foo", ui_cb_do, ui);
-        ctx_add_key_binding (ctx, "return", "activate", "foo",  ui_cb_do, ui);
-        ctx_add_key_binding (ctx, "space",  "activate", "foo",  ui_cb_do, ui);
+        ui_add_key_binding(ui, "up", "focus-prev", "previous focusable item");
+        ui_add_key_binding(ui, "left", "focus-prev", "previous focusable item");
+        ui_add_key_binding(ui, "shift-tab", "focus-prev", "previous focusable item");
+        ui_add_key_binding(ui, "down", "focus-next", "next focusable item");
+        ui_add_key_binding(ui, "right", "focus-next", "next focusable item");
+        ui_add_key_binding(ui, "tab", "focus-next", "next focusable item");
+        ui_add_key_binding(ui, "space", "activate", "activate");
+        ui_add_key_binding(ui, "return", "activate", "activate");
       }
-      ctx_add_key_binding (ctx, "control-q", "exit", "foo", ui_cb_do, ui);
+      ui_add_key_binding(ui, "control-q", "exit", "quit");
 
 #if 1
       if (is_touch){
@@ -2286,7 +2284,7 @@ void ui_end_frame (Ui *ui)
       }
 #endif
 
-#ifdef NATIVE
+#if defined(NATIVE) || defined(EMSCRIPTEN)
       if (ui->fake_circle){
       float min_dim = ctx_width(ctx);
       if (ctx_height (ctx) < min_dim) min_dim = ctx_height (ctx);
@@ -2714,6 +2712,10 @@ DEF_SLIDER(int16_t)
 DEF_SLIDER(int32_t)
 #undef DEF_SLIDER
 
+void ui_add_key_binding(Ui *ui, const char *key, const char *action, const char *label)
+{
+  ctx_add_key_binding(ui->ctx, key, action, label, ui_cb_do, ui);
+}
 
 #if NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
 uint8_t scratch[1024*1024*4];

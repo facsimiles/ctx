@@ -254,14 +254,6 @@ static void render_audio(Ctx *ctx) {
 
 float _ctx_pause = 0.0;
 
-static void do_fullscreen(CtxEvent *event, void *data1, void *data2) {
-  Ctx *ctx = event->ctx;
-  if (ctx_get_fullscreen(ctx))
-    ctx_set_fullscreen(ctx, 0);
-  else
-    ctx_set_fullscreen(ctx, 1);
-}
-
 MAIN(audio_ks) {
   Ctx *ctx = ctx_new(240, 240, NULL);
   prev_ticks = ctx_ticks();
@@ -282,10 +274,8 @@ MAIN(audio_ks) {
     render_audio(ctx);
     ctx_restore(ctx);
 
-    ctx_add_key_binding(ctx, "escape", "exit", "foo", ui_cb_do, ui_host(ctx));
-    ctx_add_key_binding(ctx, "backspace", "exit", "foo", ui_cb_do,
-                        ui_host(ctx));
-    ctx_add_key_binding(ctx, "F11", NULL, "foo", do_fullscreen, NULL);
+    ui_add_key_binding(ui_host(ctx), "escape", "exit", "leave view");
+    ui_add_key_binding(ui_host(ctx), "backspace", "exit", "leave view");
     ctx_end_frame(ctx);
   }
   ctx_destroy(ctx);

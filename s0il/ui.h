@@ -40,7 +40,7 @@ typedef struct _Ui       Ui;
 
 /////////////////////////////////////////////
 
-
+void ui_add_key_binding(Ui *ui, const char *key, const char *action, const char *label);
 
 Ui *ui_new(Ctx *ctx);
 Ui *ui_host(Ctx *ctx); // like ui_new, can take NULL for ctx - should not
