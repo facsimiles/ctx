@@ -2,7 +2,6 @@
 #include "s0il.h"
 Ctx *ctx_host(void);
 
-
 typedef struct _exec_state_t exec_state_t;
 struct _exec_state_t {
   char *cwd;
@@ -36,9 +35,7 @@ int pre_exec(int same_stack) {
   return info->pid;
 }
 
-void post_exec(int pid, int same_stack) {
-  output_state = 0;
-}
+void post_exec(int pid, int same_stack) { output_state = 0; }
 
 typedef struct inlined_program_t {
   char *base;

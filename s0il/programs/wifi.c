@@ -73,7 +73,7 @@ MAIN(wifi) {
   // printf ("scanning wifis\n");
   wifis = wifi_scan();
 #else
-  wifis = (char**)_wifis;
+  wifis = (char **)_wifis;
 #endif
 
   if (wifi_contents) {
@@ -173,7 +173,7 @@ MAIN(wifi) {
     ui_keyboard(ui);
     ctx_end_frame(ctx);
   } while (!ctx_has_exited(ctx));
-  if (wifis != (char**)_wifis)
+  if (wifis != (char **)_wifis)
     free(wifis);
 
   if (wifi_contents)

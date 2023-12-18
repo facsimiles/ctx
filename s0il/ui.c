@@ -850,14 +850,14 @@ void ui_cb_do (CtxEvent *event, void *data1, void *data2)
     ui_do (ui, target);
 }
 
-void overlay_button (Ui *ui, float x, float y, float w, float h, const char *label, char *action)
+void overlay_button (Ui *ui, float x, float y, float w, float h, const char *label, const char *action)
 {
   Ctx *ctx = ui->ctx;
   float m = w;
   if (m > h) m = h;
       ctx_save(ctx);
        ctx_rectangle (ctx, x,y,w,h);
-       ctx_listen (ctx, CTX_PRESS, ui_cb_do, ui, action);
+       ctx_listen (ctx, CTX_PRESS, ui_cb_do, ui, (void*)action);
       if (ui->overlay_fade <= 0.0f)
       {
         ctx_begin_path(ctx);

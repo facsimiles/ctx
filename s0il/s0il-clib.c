@@ -476,6 +476,8 @@ static int s0il_got_data(FILE *stream) {
   }
 }
 
+CtxList *commandline_history = NULL;
+
 static char *s0il_gets(char *buf, size_t buflen) {
   FILE *stream = stdin;
   if (stream == stdin && stdin_redirect)
@@ -490,6 +492,8 @@ static char *s0il_gets(char *buf, size_t buflen) {
   // used by the shell through fgets, and gets use interactive shell
   // on raw terminals - for now mostly pseudo what regular line-editing
   // mode would give.
+
+  int history_pos = -1;
 
   if (keybuf[0]) {
   };
@@ -526,11 +530,19 @@ static char *s0il_gets(char *buf, size_t buflen) {
     if (in_esc) {
       switch (c) {
       case 'A':
-        printf("up");
-        in_esc = 0;
-        break;
       case 'B':
-        printf("down");
+        if (c == 'A')
+          history_pos++;
+        else
+          history_pos--;
+        {
+          const char *cmd = ctx_list_nth_data(commandline_history, history_pos);
+          if (cmd)
+          printf("replace with: %s\n", cmd);
+          else
+          printf(":( %i %p\n", history_pos, commandline_history);
+        }
+
         in_esc = 0;
         break;
       case 'D': // left
@@ -627,6 +639,12 @@ static char *s0il_gets(char *buf, size_t buflen) {
   }
   s0il_fputc('\n', stdout);
   buf[count] = 0;
+
+  if (count &&
+      (commandline_history == NULL || strcmp(commandline_history->data, buf))) {
+    ctx_list_prepend(&commandline_history, strdup(buf));
+  }
+
   return buf;
 }
 

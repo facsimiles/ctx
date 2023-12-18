@@ -1017,7 +1017,7 @@ int _httpd_start_int(int port,
     fclose(f);
     close(s);
   }
-  free (httpd_buf2);
+  free(httpd_buf2);
   close(sock);
   return 0;
 }

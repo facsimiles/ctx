@@ -368,21 +368,21 @@ MAIN(text) {
       return -1;
     }
     const char *mime_types[] = {"text/plain",
-                          ".txt",
-                          "text/markdown",
-                          ".md",
-                          "text/html",
-                          ".html",
-                          "application/javascript",
-                          ".js",
-                          "text/css",
-                          ".css",
-                          "text/x-csrc",
-                          ".c",
-                          "text/x-chdr",
-                          ".h",
-                          NULL,
-                          NULL};
+                                ".txt",
+                                "text/markdown",
+                                ".md",
+                                "text/html",
+                                ".html",
+                                "application/javascript",
+                                ".js",
+                                "text/css",
+                                ".css",
+                                "text/x-csrc",
+                                ".c",
+                                "text/x-chdr",
+                                ".h",
+                                NULL,
+                                NULL};
     for (int i = 0; mime_types[i]; i += 2) {
       if (mime_types[i + 1])
         magic_add(mime_types[i], mime_types[i + 1], NULL, 0, 1);
