@@ -1441,16 +1441,6 @@ void ui_keyboard (Ui *ui)
   Ctx *ctx = ui->ctx;
   static float fade = 0.0;
   const KeyBoard *kb = &keyboard;
-  static long prev_ticks = -1;
-  long ticks = ctx_ticks ();
-  float elapsed_ms = 0;
-  if (prev_ticks > 0)
-  {
-    elapsed_ms = (ticks - prev_ticks) / 1000.0f;
-  }
-  prev_ticks = ticks; 
-
-  //printf ("%f\n", elapsed_ms);
   
 
   float h = ctx_height (ctx);
