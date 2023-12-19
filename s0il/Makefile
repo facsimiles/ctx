@@ -110,7 +110,7 @@ bin-native/%: programs/%.c *.h Makefile elf_strip_pie libs0il.so
 	@echo 'rem-PIE $@'; ./elf_strip_pie $@
 	$(POST_NATIVE) $@
 
-bin-xtensa/%: programs/%.c *.h Makefile
+bin-xtensa/%: programs/%.c *.h Makefile flow3r/build/config/sdkconfig.h
 	@mkdir -p `dirname $@` || true
 	$(CC_XTENSA) $(CFLAGS_XTENSA) $< -o $@
 	$(POST_XTENSA) $@
@@ -166,5 +166,6 @@ format:
 	rpl '//! picoc' '//!picoc' programs-picoc/*
 
 flow3r/build/config/sdkconfig.h:
-	(cd flow3r;idf.py reconfigure)
+	@test -r flow3r/flow3r || ( echo "ERROR: You need to set up flow3r symlink in flow3r to point to flow3r-firmware checkout";exit 1)
+	(cd flow3r;idf.py)
 
