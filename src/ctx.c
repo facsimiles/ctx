@@ -2410,7 +2410,7 @@ ctx_string_append_callback (void *contents, size_t size, size_t nmemb, void *use
 
 #endif
 
-#ifdef ITK_HAVE_FS
+#if ITK_HAVE_FS
 int itk_static_get_contents (const char *path, char **contents, long *length);
 #endif
 
@@ -2458,7 +2458,7 @@ ctx_get_contents2 (const char     *uri,
 
   if (!strncmp (uri, "file://", 7))
     success = ___ctx_file_get_contents (uri + 7, contents, length, max_len);
-#ifdef ITK_HAVE_FS
+#if ITK_HAVE_FS
   else if (!strncmp (uri, "itk:", 4))
   {
     success = itk_static_get_contents (uri, (char**)contents, length);

@@ -53,7 +53,7 @@
 #include <cairo.h>
 #endif
 
-#define ITK_HAVE_FS 1
+#define ITK_HAVE_FS 0
 
 #define CTX_STATIC_FONT(font) \
   ctx_load_font_ctx(ctx_font_##font##_name, \

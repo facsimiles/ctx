@@ -64,7 +64,7 @@ build.conf:
 	@echo "you will have to run make again after this.";echo
 	./configure.sh
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";
-	@echo "!! now run Make again !!";
+	@echo "!! now run make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
 demos/c/%: demos/c/%.c build.conf Makefile build.conf itk/itk.h libctx.a 
@@ -188,7 +188,7 @@ ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_ARM_NEON -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
-itk.o: itk/itk.c itk/css.h itk/itk.h build.conf Makefile static.inc itk/w3c-constants.h
+itk.o: itk/itk.c itk/css.h itk/itk.h build.conf Makefile itk/w3c-constants.h
 	$(CCC) itk/itk.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 deps.o: deps.c build.conf Makefile 
