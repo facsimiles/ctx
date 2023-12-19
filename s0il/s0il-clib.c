@@ -145,9 +145,10 @@ typedef struct file_t {
   char *path;
   char *d_name;
   unsigned char d_type;
-  bool read_only;
+  int flags;
   char *data;
   size_t size;
+  size_t capacity;
   size_t pos;
 } file_t;
 
@@ -249,15 +250,19 @@ void s0il_add_file(const char *path, const char *contents, size_t size,
   file->d_name =
       readonly ? strrchr(path, '/') + 1 : strdup(strrchr(path, '/') + 1);
   file->size = size;
-  file->read_only = readonly;
+  file->flags = flags;
   if (is_dir) {
     file->d_type = DT_DIR;
   } else {
     file->d_type = DT_REG;
     if (readonly)
+    {
       file->data = (char *)contents;
+      file->capacity = 0;
+    }
     else {
       file->data = malloc(file->size);
+      file->capacity = file->size;
       memcpy(file->data, contents, file->size);
     }
   }
@@ -290,9 +295,39 @@ int s0il_putchar(int c) {
   return putchar(c);
 }
 
+int s0il_fputc(int c, FILE *stream) {
+  if (s0il_stream_is_internal(stream))
+  {
+    file_t *file = _s0il_file[s0il_fileno(stream)];
+    if (file->pos+1 >= file->capacity)
+    {
+      file->capacity += 256;
+      file->data = realloc (file->data, file->capacity);
+    }
+    file->data[file->pos]=c;
+    file->pos++;
+    if (file->pos > file->size) file->size=file->pos;
+    return c;
+  }
+  if (stream == stdout) {
+    if (stdout_redirect)
+      return fputc(c, stdout_redirect);
+    return s0il_putchar(c);
+  }
+  return fputc(c, stream);
+}
+
 int s0il_fputs(const char *s, FILE *stream) {
   if (s0il_stream_is_internal(stream))
-    return 0;
+  {
+    int count = 0;
+    for (int i = 0; s[i]; i++)
+    {
+      if (s0il_fputc(s[i], stream) != EOF)
+        count ++;
+    }
+    return count;
+  }
   if (stream == stdout || stream == stderr) {
     if (stdout_redirect)
       return fputs(s, stdout_redirect);
@@ -309,16 +344,6 @@ int s0il_fputs(const char *s, FILE *stream) {
   return ret;
 }
 
-int s0il_fputc(int c, FILE *stream) {
-  if (s0il_stream_is_internal(stream))
-    return 0;
-  if (stream == stdout) {
-    if (stdout_redirect)
-      return fputc(c, stdout_redirect);
-    return s0il_putchar(c);
-  }
-  return fputc(c, stream);
-}
 
 ssize_t s0il_write(int fd, const void *buf, size_t count) {
   if (fd == 1 || fd == 2) {
@@ -337,7 +362,16 @@ ssize_t s0il_write(int fd, const void *buf, size_t count) {
 
 int s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
   if (s0il_stream_is_internal(stream))
-    return 0;
+  {
+    uint8_t *s = (uint8_t *)ptr;
+    int count = 0;
+    for (size_t i = 0; i < size * nmemb; i++) {
+      //if (s[i] == '\n')
+      //  ctx_vt_write(NULL, '\r');
+      count += (s0il_fputc(s[i], stream) != EOF);
+    }
+    return count;
+  }
   if (stream == stdout || stream == stderr) {
     if (stdout_redirect)
       return fwrite(ptr, size, nmemb, stdout_redirect);
@@ -459,8 +493,25 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
         break;
     _s0il_file[fileno] = file;
     file->pos = 0;
+    if (strchr(mode, 'w'))
+    {
+      if (file->flags & S0IL_READONLY)
+      {
+        char *old_data = file->data;
+        file->data = malloc (file->size);
+        file->capacity = file->size;
+        memcpy(file->data, old_data, file->size);
+        file->flags &= ~S0IL_READONLY;
+      }
+      if (!strchr(mode, '+'))
+      {
+        file->pos = 0;
+        file->size = 0;
+      }
+    }
     return _s0il_internal_file;
   }
+
 
   FILE *ret = fopen(path, mode);
   if (path != pathname)
@@ -510,7 +561,7 @@ static int s0il_got_data(FILE *stream) {
   }
 }
 
-CtxList *commandline_history = NULL;
+static CtxList *commandline_history = NULL;
 
 static char *s0il_gets(char *buf, size_t buflen) {
   FILE *stream = stdin;
@@ -523,9 +574,6 @@ static char *s0il_gets(char *buf, size_t buflen) {
   int in_esc = 0;
   char keybuf[8] = "";
   int keylen = 0;
-  // used by the shell through fgets, and gets use interactive shell
-  // on raw terminals - for now mostly pseudo what regular line-editing
-  // mode would give.
 
   int history_pos = -1;
 
@@ -580,8 +628,8 @@ static char *s0il_gets(char *buf, size_t buflen) {
           cursor_pos = len;
 
           int i = 0;
-          for (i = 0; i <= len - 3; i += 3) {
-            s0il_printf("\b\b\b   \b\b\b");
+          for (i = 0; i <= len - 4; i += 4) {
+            s0il_printf("\b\b\b\b    \b\b\b\b");
           }
           for (; i <= len; i++) {
             s0il_printf("\b \b");
