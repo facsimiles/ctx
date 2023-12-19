@@ -2557,6 +2557,7 @@ void ui_start_frame(Ui *ui) {
   ctx_begin_path(ctx);
   ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_font_size(ctx, ui_get_font_size(ui));
+  ctx_font (ctx, "Regular");
 
   ui->y = (int)(ui->scroll_offset + ui->height * 0.15);
   ui->widget_count = 0;
