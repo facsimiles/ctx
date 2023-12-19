@@ -5,7 +5,9 @@ PREFIX  ?= /usr/local
 CCACHE=
 
 CFLAGS=-Wall -Wextra -Wno-unused-parameter -g -Wno-deprecated-declarations
+CFLAGS+= -Wwrite-strings -Wchar-subscripts -Wno-format -Wno-sign-compare
 CFLAGS+= -I. -I..
+CFLAGS+=-Wno-discarded-qualifiers
 CFLAGS+= -fsingle-precision-constant -Wdouble-promotion
 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CCACHE) $(CC)
@@ -114,8 +116,10 @@ bin-xtensa/%: programs/%.c *.h Makefile
 	$(POST_XTENSA) $@
 
 bin-native/%: programs-picoc/%
+	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 bin-xtensa/%: programs-picoc/%
+	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 
 native_bins: $(PROGRAMS_NATIVE)
@@ -128,7 +132,7 @@ flow3r-flash: flow3r-build
 monitor:
 	(cd flow3r; idf.py monitor)
 
-wasm: fs_bin_generic.c s0il*.[ch] */*.c
+wasm: fs_bin_generic.c s0il*.[ch] */*.c bundled-programs-wasm.c wasm/Makefile
 	(cd wasm; make)
 riscv-flash: riscv
 	(cd esp32c3; idf.py flash monitor)

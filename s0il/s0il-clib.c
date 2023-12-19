@@ -535,12 +535,34 @@ static char *s0il_gets(char *buf, size_t buflen) {
           history_pos++;
         else
           history_pos--;
+        if (history_pos < -1) history_pos = -1;
+        else if (history_pos >= ctx_list_length (commandline_history))
+        history_pos = -1;
         {
           const char *cmd = ctx_list_nth_data(commandline_history, history_pos);
+          int len = ctx_utf8_strlen(buf);
+          s0il_printf("\e[%iC", len - cursor_pos + 1);
+          cursor_pos = len;
+
+          int i = 0;
+          for (i = 0; i <= len-3; i+=3)
+          {
+            s0il_printf("\b\b\b   \b\b\b");
+          }
+          for (; i <= len; i++)
+          {
+            s0il_printf("\b \b");
+          }
+          count=0;
+          buf[count]=0;
+
           if (cmd)
-          printf("replace with: %s\n", cmd);
-          else
-          printf(":( %i %p\n", history_pos, commandline_history);
+          {
+            strncpy(buf, cmd, buflen-1);
+            s0il_printf("%s", buf);
+            count=strlen(buf);
+            cursor_pos = ctx_utf8_strlen(buf);
+          }
         }
 
         in_esc = 0;
@@ -591,8 +613,7 @@ static char *s0il_gets(char *buf, size_t buflen) {
               buf[count - 1] = 0;
               cursor_pos--;
               count--;
-              s0il_fputs("\x08 ", stdout);
-              s0il_fputc('\b', stdout); /* echo */
+              s0il_fputs("\b \b", stdout);
             } else {
               memmove(&buf[cursor_pos] - 1, &buf[cursor_pos],
                       strlen(&buf[cursor_pos]) + 1);
@@ -642,8 +663,11 @@ static char *s0il_gets(char *buf, size_t buflen) {
 
   if (count &&
       (commandline_history == NULL || strcmp(commandline_history->data, buf))) {
-    ctx_list_prepend(&commandline_history, strdup(buf));
+    char *copy=strdup(buf);
+    copy[count-1]=0;
+    ctx_list_prepend(&commandline_history, copy);
   }
+  history_pos=-1;
 
   return buf;
 }
@@ -708,7 +732,7 @@ int s0il_ungetc(int c,
 size_t s0il_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
   if (stream == stdin && stdin_redirect)
     stream = stdin_redirect;
-  if (stream == stdin) {
+  if (stream == stdin && ctx_vt_has_data(NULL)) {
     char *dst = ptr;
     int read = 0;
     for (unsigned i = 0; i < size * nmemb; i++) {
@@ -740,6 +764,10 @@ int s0il_getc(FILE *stream) { return s0il_fgetc(stream); }
 ssize_t s0il_read(int fildes, void *buf, size_t nbyte) {
   if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
+  if (fildes == 0 && ctx_vt_has_data (NULL))
+  {
+     return s0il_fread (buf, 1, nbyte,  stdin);
+  }
   return read(fildes, buf, nbyte);
 }
 
@@ -944,4 +972,31 @@ void s0il_exit(int retval) {
 #else
   pthread_exit((void *)(ssize_t)(retval));
 #endif
+}
+
+int     s0il_select   (int nfds, fd_set *read_fds,
+                       fd_set *write_fds,
+                       fd_set *except_fds,
+                       struct timeval *timeout)
+{
+  if (nfds == 1 && read_fds && FD_ISSET(0, read_fds))
+  {
+    if (s0il_is_main_thread())
+      ui_iteration(ui_host(NULL)); // doing a ui iteration
+    // workaround for missing select
+    int has_data = s0il_got_data(stdin);
+    if (write_fds)
+      FD_ZERO(write_fds);
+    if (except_fds)
+      FD_ZERO(except_fds);
+    if (has_data)
+    {
+      return 1;
+    }
+    if (read_fds)
+      FD_ZERO(read_fds);
+    return 0;
+  }
+  printf ("select nfds: %i\n", nfds);
+  return select(nfds,read_fds,write_fds,except_fds,timeout);
 }

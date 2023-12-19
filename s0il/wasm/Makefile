@@ -4,7 +4,7 @@ HTML_FILES = s0il.html
 
 all: index.html s0il.js
 
-CFLAGS=-I/usr/local/include -flto -O3 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc -Wl,--lto-O3 -DWASM -DCTX
+CFLAGS=-I/usr/local/include -flto -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc -Wl,--lto-O3 -DWASM -DCTX
 
 ../fs_bin_generic.c: ../programs-picoc/*
 	make -C .. fs_bin_generic.c

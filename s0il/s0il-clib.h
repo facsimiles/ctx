@@ -5,7 +5,10 @@
 // pass in NULL to reset
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream);
 
-
+int     s0il_select   (int nfds, fd_set *read_fds,
+                       fd_set *write_fds,
+                       fd_set *except_fds,
+                       struct timeval *timeout);
 char   *s0il_fgets    (char *s, int size, FILE *stream);
 int     s0il_access   (const char *pathname, int mode);
 int     s0il_putchar  (int c);
@@ -79,6 +82,7 @@ int     s0il_chdir    (const char *path);
 #define rename(p,b) s0il_rename(p,b)
 #define system(c)   s0il_system(c)
 
+#define select(n,r,w,e,t) s0il_select(n,r,w,e,t)
 #define signal(a,b) s0il_signal(a,b)
 #define fgets       s0il_fgets
 #define fsetpos     s0il_fsetpos
@@ -95,7 +99,7 @@ int     s0il_chdir    (const char *path);
 #define fseek       s0il_fseek
 #define ftell       s0il_ftell
 #define rewind      s0il_rewind
-#define read        s0il_read
+#define read(a,b,c) s0il_read(a,b,c)
 #define getcwd      s0il_getcwd
 #define chdir       s0il_chdir
 
