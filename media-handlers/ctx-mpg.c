@@ -167,20 +167,19 @@ void app_destroy(app_t *self) {
 	free(self);
 }
 
-int paused = 0;
+int mpg_paused = 0;
 
-
-double g_seek_to = -1.0;
+double mpg_seek_to = -1.0;
 
 void app_update(app_t *self) {
 	double seek_to = -1;
 
         const CtxEvent *event = NULL;
 
-        if (g_seek_to > 0.0)
+        if (mpg_seek_to > 0.0)
         {
-          seek_to = g_seek_to;
-          g_seek_to = -1;
+          seek_to = mpg_seek_to;
+          mpg_seek_to = -1;
         }
 
         while ((event = ctx_get_event(self->ctx)))
@@ -189,6 +188,9 @@ void app_update(app_t *self) {
           {
             case CTX_KEY_PRESS:
               if (!strcmp (event->string, "q")) {
+                self->wants_to_quit = TRUE;
+              }
+              else if (!strcmp (event->string, "escape")) {
                 self->wants_to_quit = TRUE;
               }
               else if (!strcmp (event->string, "left")) {
@@ -204,10 +206,10 @@ void app_update(app_t *self) {
 		 seek_to = plm_get_time(self->plm) + 10;
               }
               else if (!strcmp (event->string, "space")) {
-		 paused = !paused;
+		 mpg_paused = !mpg_paused;
               }
               else if (!strcmp (event->string, "p")) {
-		 paused = !paused;
+		 mpg_paused = !mpg_paused;
               }
               break;
             default:
@@ -226,7 +228,7 @@ void app_update(app_t *self) {
 
         if (elapsed_time < 1.0 / 60.0) usleep (1000);
 #endif
-        if (paused) elapsed_time = 0;
+        if (mpg_paused) elapsed_time = 0;
 	self->last_time = current_time;
 
 	// Seek or advance decode
@@ -304,7 +306,7 @@ void app_on_video(plm_t *mpeg, plm_frame_t *frame, void *user) {
 
 void app_on_audio(plm_t *mpeg, plm_samples_t *samples, void *user) {
 	app_t *self = (app_t *)user;
-        if (!paused)
+        if (!mpg_paused)
         ctx_pcm_queue (self->ctx, (const signed char*)(samples->interleaved), samples->count);
 }
 
@@ -314,7 +316,7 @@ int ctx_mpg_main(int argc, char *argv[]) {
 	if (argc < 2) {
 		SDL_Log("Usage: ctx mpg [options] <file.mpg>\n"
                                 "where options are --seek-to <seconds>\n"
-                                " --paused to start off in a paused state\n"
+                                " --mpg_paused to start off in a mpg_paused state\n"
                                 " --yuv  used YUV rather than RGB\n"
                                 " --smoothing  to turn on bilinear interpolation\n"
                                 " --report-duration print duration in seconds and exit\n"
@@ -359,12 +361,12 @@ int ctx_mpg_main(int argc, char *argv[]) {
                     !strcmp(argv[i], "--seek-to"))
             {
               i++;
-              g_seek_to = atof (argv[i]);
+              mpg_seek_to = atof (argv[i]);
             }
             else if (argv[i][1] == 'P' ||
-                    !strcmp(argv[i], "--paused"))
+                    !strcmp(argv[i], "--mpg_paused"))
             {
-              paused = 1;
+              mpg_paused = 1;
             }
           }
           else
