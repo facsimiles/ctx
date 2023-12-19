@@ -6152,40 +6152,9 @@ ctx_composite_RGB565 (CTX_COMPOSITE_ARGUMENTS)
 #if CTX_ENABLE_RGB565_BYTESWAPPED
 
 void
-ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
-{
-  const uint16_t *pixel = (uint16_t *) buf;
-  while (count--)
-    {
-      //ctx_565_unpack (*pixel, &rgba[0], &rgba[1], &rgba[2], 1);
-      ((uint32_t*)(rgba))[0] = ctx_565_unpack_32 (*pixel, 1);
-#if CTX_RGB565_ALPHA
-      if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
-        { rgba[3] = 0; }
-      else
-        { rgba[3] = 255; }
-#endif
-      pixel+=1;
-      rgba +=4;
-    }
-}
-
-static inline void
-ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
-{
-  uint16_t *pixel = (uint16_t *) buf;
-  while (count--)
-    {
-#if CTX_RGB565_ALPHA
-      if (rgba[3]==0)
-        { pixel[0] = ctx_565_pack (255, 0, 255, 1); }
-      else
-#endif
-        { pixel[0] = ctx_565_pack (rgba[0], rgba[1], rgba[2], 1); }
-      pixel+=1;
-      rgba +=4;
-    }
-}
+ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count);
+void
+ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count);
 
 static void
 ctx_composite_RGB565_BS (CTX_COMPOSITE_ARGUMENTS)

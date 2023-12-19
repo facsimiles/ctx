@@ -1,3 +1,5 @@
+
+
 #ifndef __clang__
 #if CTX_RASTERIZER_O3
 #pragma GCC push_options
@@ -15,6 +17,7 @@
 #include "ctx-split.h"
 #define CTX_AA_HALFSTEP2   (CTX_FULL_AA/2)
 #define CTX_AA_HALFSTEP    ((CTX_FULL_AA/2)+1)
+
 
 
 static inline int ctx_compare_edges (const void *ap, const void *bp)
@@ -1728,6 +1731,41 @@ void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
 #endif
 #if CTX_IMPLEMENTATION
 #if CTX_RASTERIZER
+
+void
+ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
+{
+  uint16_t *pixel = (uint16_t *) buf;
+  while (count--)
+    {
+#if CTX_RGB565_ALPHA
+      if (rgba[3]==0)
+        { pixel[0] = ctx_565_pack (255, 0, 255, 1); }
+      else
+#endif
+        { pixel[0] = ctx_565_pack (rgba[0], rgba[1], rgba[2], 1); }
+      pixel+=1;
+      rgba +=4;
+    }
+}
+
+void
+ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *rgba, int count)
+{
+  const uint16_t *pixel = (uint16_t *) buf;
+  while (count--)
+    {
+      ((uint32_t*)(rgba))[0] = ctx_565_unpack_32 (*pixel, 1);
+#if CTX_RGB565_ALPHA
+      if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
+        { rgba[3] = 0; }
+      else
+        { rgba[3] = 255; }
+#endif
+      pixel+=1;
+      rgba +=4;
+    }
+}
 
 
 inline static float ctx_fast_hypotf (float x, float y)
