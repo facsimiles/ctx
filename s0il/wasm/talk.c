@@ -1,1 +1,0 @@
-../pico/talk.c

@@ -535,9 +535,10 @@ static char *s0il_gets(char *buf, size_t buflen) {
           history_pos++;
         else
           history_pos--;
-        if (history_pos < -1) history_pos = -1;
-        else if (history_pos >= ctx_list_length (commandline_history))
-        history_pos = -1;
+        if (history_pos < -1)
+          history_pos = -1;
+        else if (history_pos >= ctx_list_length(commandline_history))
+          history_pos = -1;
         {
           const char *cmd = ctx_list_nth_data(commandline_history, history_pos);
           int len = ctx_utf8_strlen(buf);
@@ -545,22 +546,19 @@ static char *s0il_gets(char *buf, size_t buflen) {
           cursor_pos = len;
 
           int i = 0;
-          for (i = 0; i <= len-3; i+=3)
-          {
+          for (i = 0; i <= len - 3; i += 3) {
             s0il_printf("\b\b\b   \b\b\b");
           }
-          for (; i <= len; i++)
-          {
+          for (; i <= len; i++) {
             s0il_printf("\b \b");
           }
-          count=0;
-          buf[count]=0;
+          count = 0;
+          buf[count] = 0;
 
-          if (cmd)
-          {
-            strncpy(buf, cmd, buflen-1);
+          if (cmd) {
+            strncpy(buf, cmd, buflen - 1);
             s0il_printf("%s", buf);
-            count=strlen(buf);
+            count = strlen(buf);
             cursor_pos = ctx_utf8_strlen(buf);
           }
         }
@@ -663,11 +661,11 @@ static char *s0il_gets(char *buf, size_t buflen) {
 
   if (count &&
       (commandline_history == NULL || strcmp(commandline_history->data, buf))) {
-    char *copy=strdup(buf);
-    copy[count-1]=0;
+    char *copy = strdup(buf);
+    copy[count - 1] = 0;
     ctx_list_prepend(&commandline_history, copy);
   }
-  history_pos=-1;
+  history_pos = -1;
 
   return buf;
 }
@@ -764,9 +762,8 @@ int s0il_getc(FILE *stream) { return s0il_fgetc(stream); }
 ssize_t s0il_read(int fildes, void *buf, size_t nbyte) {
   if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
-  if (fildes == 0 && ctx_vt_has_data (NULL))
-  {
-     return s0il_fread (buf, 1, nbyte,  stdin);
+  if (fildes == 0 && ctx_vt_has_data(NULL)) {
+    return s0il_fread(buf, 1, nbyte, stdin);
   }
   return read(fildes, buf, nbyte);
 }
@@ -974,13 +971,9 @@ void s0il_exit(int retval) {
 #endif
 }
 
-int     s0il_select   (int nfds, fd_set *read_fds,
-                       fd_set *write_fds,
-                       fd_set *except_fds,
-                       struct timeval *timeout)
-{
-  if (nfds == 1 && read_fds && FD_ISSET(0, read_fds))
-  {
+int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
+                fd_set *except_fds, struct timeval *timeout) {
+  if (nfds == 1 && read_fds && FD_ISSET(0, read_fds)) {
     if (s0il_is_main_thread())
       ui_iteration(ui_host(NULL)); // doing a ui iteration
     // workaround for missing select
@@ -989,14 +982,13 @@ int     s0il_select   (int nfds, fd_set *read_fds,
       FD_ZERO(write_fds);
     if (except_fds)
       FD_ZERO(except_fds);
-    if (has_data)
-    {
+    if (has_data) {
       return 1;
     }
     if (read_fds)
       FD_ZERO(read_fds);
     return 0;
   }
-  printf ("select nfds: %i\n", nfds);
-  return select(nfds,read_fds,write_fds,except_fds,timeout);
+  printf("select nfds: %i\n", nfds);
+  return select(nfds, read_fds, write_fds, except_fds, timeout);
 }
