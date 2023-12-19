@@ -208,6 +208,7 @@ void ctx_set_pixels(Ctx *ctx, void *user_data, int x, int y, int w, int h,
 #include "driver/usb_serial_jtag.h"
 #include "esp_vfs.h"
 #include "esp_vfs_dev.h"
+#include "esp_vfs_fat.h"
 #include "esp_vfs_usb_serial_jtag.h"
 
 void usb_serial_jtag_init(void) {
@@ -239,12 +240,30 @@ void usb_serial_jtag_init(void) {
 #endif
 }
 
+void flash_init(void)
+{   
+    // Handle of the wear levelling library instance
+    static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+    const esp_vfs_fat_mount_config_t mount_config = {
+            .max_files = 4,
+            .format_if_mount_failed = true,
+            .allocation_unit_size = CONFIG_WL_SECTOR_SIZE
+    };
+    esp_err_t err = esp_vfs_fat_spiflash_mount("/flash", "vfs", &mount_config, &s_wl_handle);
+    if (err != ESP_OK)
+    {
+      ESP_LOGE(TAG, "Failed to mount FATFS (%s)", esp_err_to_name(err));
+    }
+}
+
+
 Ctx *ctx_host(void) {
   static Ctx *ctx = NULL;
   if (ctx)
     return ctx;
 
   //  uart_init();
+  flash_init();
   usb_serial_jtag_init();
   lcd_init();
   touch_init();

@@ -15,8 +15,8 @@
 
 #if !defined(_XOPEN_SOURCE)
 #define _XOPEN_SOURCE           600
-#elif _XOPEN_SOURCE == 0
-#undef _XOPEN_SOURCE  /* use -D_XOPEN_SOURCE=0 to undefine it */
+//#elif _XOPEN_SOURCE == 0
+//#undef _XOPEN_SOURCE  /* use -D_XOPEN_SOURCE=0 to undefine it */
 #endif
 
 /*

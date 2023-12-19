@@ -64,22 +64,22 @@ int     s0il_chdir    (const char *path);
 
 #ifdef S0IL_REDEFINE_CLIB
 
-#define popen(a,b) s0il_popen(a,b)
-#define pclose(a) s0il_pclose(a)
-#define exit(r) s0il_exit(r)
+#define popen(a,b)  s0il_popen(a,b)
+#define pclose(a)   s0il_pclose(a)
+#define exit(r)     s0il_exit(r)
 #define access(a,b) s0il_access(a,b)
-#define lseek s0il_lseek
-#define opendir s0il_opendir
-#define readdir s0il_readdir
-#define closedir s0il_closedir
-#define getpid s0il_getpid
-#define unlink s0il_unlink
-#define getppid s0il_getppid
-#define stat(p,b) s0il_stat(p,b)
+#define lseek       s0il_lseek
+#define opendir     s0il_opendir
+#define readdir     s0il_readdir
+#define closedir    s0il_closedir
+#define getpid      s0il_getpid
+#define unlink      s0il_unlink
+#define getppid     s0il_getppid
+#define stat(p,b)   s0il_stat(p,b)
 #define rename(p,b) s0il_rename(p,b)
-#define system(c) s0il_system(c)
+#define system(c)   s0il_system(c)
 
-//#define signal      s0il_signal
+#define signal(a,b) s0il_signal(a,b)
 #define fgets       s0il_fgets
 #define fsetpos     s0il_fsetpos
 #define fgetpos     s0il_fgetpos

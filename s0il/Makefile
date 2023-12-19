@@ -70,7 +70,7 @@ uninstall:
 test: s0il native_bins
 	LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./s0il
 
-S0IL_OBJS=ui.o s0il-run.o s0il-symbols.o s0il-magic.o s0il-clib.o
+S0IL_OBJS=s0il-ui.o s0il-run.o s0il-symbols.o s0il-magic.o s0il-clib.o
 
 s0il: libs0il.so main.o bundled-programs.o
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -lm $^ -o $@ $(CFLAGS_NATIVE) -L. -ls0il
@@ -102,13 +102,13 @@ PROGRAMS_NATIVE = $(patsubst programs/%.c, bin-native/%, $(PROGRAMS_C)) \
 PROGRAMS_XTENSA = $(patsubst programs/%.c, bin-xtensa/%, $(PROGRAMS_C)) \
                  $(patsubst programs-picoc/%, bin-xtensa/%, $(PROGRAMS_PICOC))
 
-bin-native/%: programs/%.c ui.h Makefile elf_strip_pie libs0il.so
+bin-native/%: programs/%.c *.h Makefile elf_strip_pie libs0il.so
 	@mkdir -p `dirname $@` || true
 	$(CC_NATIVE) $< -L. -ls0il -o $@ $(CFLAGS_NATIVE) -DS0IL_REDEFINE_CLIB
 	@echo 'rem-PIE $@'; ./elf_strip_pie $@
 	$(POST_NATIVE) $@
 
-bin-xtensa/%: programs/%.c ui.h Makefile
+bin-xtensa/%: programs/%.c *.h Makefile
 	@mkdir -p `dirname $@` || true
 	$(CC_XTENSA) $(CFLAGS_XTENSA) $< -o $@
 	$(POST_XTENSA) $@
@@ -121,18 +121,18 @@ bin-xtensa/%: programs-picoc/%
 native_bins: $(PROGRAMS_NATIVE)
 xtensa_bins: $(PROGRAMS_XTENSA)
 
-flow3r-build: fs_bin_xtensa.c ui.c ui.h s0il*.[ch]
+flow3r-build: fs_bin_xtensa.c s0il*.[ch]
 	(cd flow3r; idf.py build)
 flow3r-flash: flow3r-build
 	(cd flow3r; idf.py app-flash monitor)
 monitor:
 	(cd flow3r; idf.py monitor)
 
-wasm: fs_bin_generic.c ui*.[ch] s0il*.[ch] */*.c
+wasm: fs_bin_generic.c s0il*.[ch] */*.c
 	(cd wasm; make)
 riscv-flash: riscv
 	(cd esp32c3; idf.py flash monitor)
-riscv: fs_bin_generic.c ui*.[ch] s0il*.[ch] */*.c
+riscv: fs_bin_generic.c s0il*.[ch] */*.c
 	(cd esp32c3; idf.py build)
 
 fs_bin_xtensa.c: $(PROGRAMS_XTENSA) Makefile gen_fs.sh

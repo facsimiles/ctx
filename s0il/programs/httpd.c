@@ -429,7 +429,6 @@ typedef enum action_t {
 
 static int httpd_stop = 0;
 static int rno = 0;
-#include "ui.h"
 #include <fcntl.h>
 
 static void ctx_string_append_time(CtxString *str, time_t time) {

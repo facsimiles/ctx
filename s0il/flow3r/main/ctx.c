@@ -406,6 +406,7 @@ void usb_serial_jtag_init(void) {
 }
 
 void sd_init(void);
+void flash_init(void);
 void board_init(void) {
   flow3r_bsp_i2c_init();
   flow3r_bsp_spio_init();
@@ -439,6 +440,7 @@ Ctx *ctx_host(void) {
     ESP_LOGE(TAG, "captouch init failed\n");
 
   sd_init();
+  flash_init();
   usb_serial_jtag_init();
 
   return ctx;
@@ -644,7 +646,22 @@ int wifi_init_sta(const char *ssid_arg, const char *password_arg) {
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
 
-#define MOUNT_POINT "/sd"
+
+void flash_init(void)
+{
+    // Handle of the wear levelling library instance
+    static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+    const esp_vfs_fat_mount_config_t mount_config = {
+            .max_files = 4,
+            .format_if_mount_failed = true,
+            .allocation_unit_size = CONFIG_WL_SECTOR_SIZE
+    };
+    esp_err_t err = esp_vfs_fat_spiflash_mount("/flash", "vfs", &mount_config, &s_wl_handle); 
+    if (err != ESP_OK)
+    {
+      ESP_LOGE(TAG, "Failed to mount FATFS (%s)", esp_err_to_name(err));
+    }
+}
 
 void sd_init(void) {
   esp_err_t ret;
@@ -658,7 +675,7 @@ void sd_init(void) {
       .max_files = 5,
       .allocation_unit_size = 16 * 1024};
   sdmmc_card_t *card;
-  const char mount_point[] = MOUNT_POINT;
+  const char mount_point[] = "/sd";
   ESP_LOGI(TAG, "Initializing SD card");
 
   sdmmc_host_t host = SDMMC_HOST_DEFAULT();

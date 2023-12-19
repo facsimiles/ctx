@@ -7,4 +7,4 @@
 #include "s0il-magic.c"
 #include "s0il-run.c"
 #include "s0il-symbols.c"
-#include "ui.c"
+#include "s0il-ui.c"

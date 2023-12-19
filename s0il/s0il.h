@@ -45,7 +45,7 @@
 #include <unistd.h>
 
 #include "ctx.h"
-#include "ui.h"
+#include "s0il-ui.h"
 #include "s0il-clib.h"
 #include <libgen.h>
 
