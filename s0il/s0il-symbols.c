@@ -381,7 +381,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     {"fputs", &s0il_fputs},
     {"fputc", &s0il_fputc},
     {"fread", &s0il_fread},
-    ELFSYM_EXPORT(freopen),
+    {"freopen", &s0il_freopen},
     ELFSYM_EXPORT(frexp),
     ELFSYM_EXPORT(frexpf),
     ELFSYM_EXPORT(fscanf),

@@ -420,6 +420,21 @@ int s0il_rename(const char *src, const char *dst) {
   return ret;
 }
 
+FILE *s0il_freopen(const char *pathname, const char *mode, FILE *stream)
+{
+  if (stream == stdin)
+  {
+    stdin_redirect = s0il_fopen(pathname, mode);
+    return stdin;
+  }
+  else if (stream == stdout)
+  {
+    stdout_redirect = s0il_fopen(pathname, mode);
+    return stdout;
+  }
+  return freopen(pathname, mode, stream);
+}
+
 FILE *s0il_fopen(const char *pathname, const char *mode) {
   char *path = s0il_resolve_path(pathname);
   file_t *file = s0il_find_file(path);
@@ -439,6 +454,7 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
 FILE *s0il_fdopen(int fd, const char *mode) { return fdopen(fd, mode); }
 
 int s0il_fclose(FILE *stream) {
+  if (stream == stdin || stream == stdout) return 0;
   if (stream == _s0il_internal_file) {
     _s0il_file = NULL;
     return 0;

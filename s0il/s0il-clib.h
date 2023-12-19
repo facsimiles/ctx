@@ -43,6 +43,7 @@ long    s0il_ftell    (FILE *stream);
 off_t   s0il_ftello   (FILE *stream);
 
 FILE   *s0il_fopen    (const char *pathname, const char *mode);
+FILE   *s0il_freopen  (const char *pathname, const char *mode, FILE *stream);
 FILE   *s0il_fdopen   (int fd, const char *mode);
 int     s0il_fclose   (FILE *stream);
 size_t  s0il_fread    (void *ptr, size_t size, size_t nmemb, FILE *stream);
@@ -89,6 +90,7 @@ int     s0il_chdir    (const char *path);
 #define fgetpos     s0il_fgetpos
 #define fflush      s0il_fflush
 #define fopen       s0il_fopen
+#define freopen     s0il_freopen
 #define fdopen      s0il_fdopen
 #define fclose      s0il_fclose
 #define fread       s0il_fread
