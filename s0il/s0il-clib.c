@@ -158,14 +158,26 @@ typedef struct folder_t {
   int pos;
 } folder_t;
 
+#define S0IL_MAX_FILES 4
+
 static DIR *_s0il_internal_dir = (void *)100;
 static FILE *_s0il_internal_file = (void *)200;
 static folder_t *_s0il_dir = NULL;
-static file_t *_s0il_file = NULL;
+static file_t *_s0il_file[S0IL_MAX_FILES] = {
+    NULL,
+};
 
-static bool s0il_stream_is_internal (FILE *stream)
-{
-  if (stream == _s0il_internal_file) return true;
+static int s0il_fileno(FILE *stream) {
+  if ((char *)stream >= (char *)_s0il_internal_file &&
+      (char *)stream <= ((char *)_s0il_internal_file) + S0IL_MAX_FILES)
+    return ((char *)stream - (char *)_s0il_internal_file);
+  return -1;
+}
+
+static bool s0il_stream_is_internal(FILE *stream) {
+  if ((char *)stream >= (char *)_s0il_internal_file &&
+      (char *)stream <= ((char *)_s0il_internal_file) + S0IL_MAX_FILES)
+    return true;
   return false;
 }
 
@@ -279,7 +291,7 @@ int s0il_putchar(int c) {
 }
 
 int s0il_fputs(const char *s, FILE *stream) {
-  if (s0il_stream_is_internal (stream))
+  if (s0il_stream_is_internal(stream))
     return 0;
   if (stream == stdout || stream == stderr) {
     if (stdout_redirect)
@@ -298,7 +310,7 @@ int s0il_fputs(const char *s, FILE *stream) {
 }
 
 int s0il_fputc(int c, FILE *stream) {
-  if (s0il_stream_is_internal (stream))
+  if (s0il_stream_is_internal(stream))
     return 0;
   if (stream == stdout) {
     if (stdout_redirect)
@@ -324,7 +336,7 @@ ssize_t s0il_write(int fd, const void *buf, size_t count) {
 }
 
 int s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
-  if (s0il_stream_is_internal (stream))
+  if (s0il_stream_is_internal(stream))
     return 0;
   if (stream == stdout || stream == stderr) {
     if (stdout_redirect)
@@ -353,7 +365,7 @@ int s0il_puts(const char *s) {
 }
 
 int s0il_fprintf(FILE *stream, const char *restrict format, ...) {
-  if (s0il_stream_is_internal (stream))
+  if (s0il_stream_is_internal(stream))
     return 0;
   va_list ap;
   va_list ap_copy;
@@ -373,7 +385,7 @@ int s0il_fprintf(FILE *stream, const char *restrict format, ...) {
 }
 
 int s0il_vfprintf(FILE *stream, const char *format, va_list ap) {
-  if (s0il_stream_is_internal (stream))
+  if (s0il_stream_is_internal(stream))
     return 0;
   va_list ap_copy;
   size_t needed;
@@ -426,15 +438,11 @@ int s0il_rename(const char *src, const char *dst) {
   return ret;
 }
 
-FILE *s0il_freopen(const char *pathname, const char *mode, FILE *stream)
-{
-  if (stream == stdin)
-  {
+FILE *s0il_freopen(const char *pathname, const char *mode, FILE *stream) {
+  if (stream == stdin) {
     stdin_redirect = s0il_fopen(pathname, mode);
     return stdin;
-  }
-  else if (stream == stdout)
-  {
+  } else if (stream == stdout) {
     stdout_redirect = s0il_fopen(pathname, mode);
     return stdout;
   }
@@ -445,7 +453,11 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
   char *path = s0il_resolve_path(pathname);
   file_t *file = s0il_find_file(path);
   if (file) {
-    _s0il_file = file;
+    int fileno = 0;
+    for (fileno = 0; fileno < S0IL_MAX_FILES; fileno++)
+      if (_s0il_file[fileno] == NULL)
+        break;
+    _s0il_file[fileno] = file;
     file->pos = 0;
     return _s0il_internal_file;
   }
@@ -459,10 +471,10 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
 FILE *s0il_fdopen(int fd, const char *mode) { return fdopen(fd, mode); }
 
 int s0il_fclose(FILE *stream) {
-  if (stream == stdin || stream == stdout) return 0;
-  if (s0il_stream_is_internal (stream))
-  {
-    _s0il_file = NULL;
+  if (stream == stdin || stream == stdout)
+    return 0;
+  if (s0il_stream_is_internal(stream)) {
+    _s0il_file[s0il_fileno(stream)] = NULL;
     return 0;
   }
   return fclose(stream);
@@ -704,12 +716,12 @@ int s0il_fgetc(FILE *stream) {
       return c;
     }
   }
-  if (s0il_stream_is_internal (stream))
-  {
+  if (s0il_stream_is_internal(stream)) {
     int ret = EOF;
-    if (_s0il_file->pos < _s0il_file->size) {
-      ret = _s0il_file->data[_s0il_file->pos];
-      _s0il_file->pos++;
+    file_t *file = _s0il_file[s0il_fileno(stream)];
+    if (file->pos < file->size) {
+      ret = file->data[file->pos];
+      file->pos++;
     }
     return ret;
   }
@@ -721,14 +733,13 @@ int s0il_fgetc(FILE *stream) {
 char *s0il_fgets(char *s, int size, FILE *stream) {
   if (stream == stdin && stdin_redirect)
     stream = stdin_redirect;
-  if (s0il_stream_is_internal (stream))
-  {
+  if (s0il_stream_is_internal(stream)) {
+    file_t *file = _s0il_file[s0il_fileno(stream)];
     int ret = 0;
-    if (_s0il_file->pos >= _s0il_file->size)
+    if (file->pos >= file->size)
       return NULL;
-    for (; _s0il_file->pos < _s0il_file->size && ret < size;
-         _s0il_file->pos++) {
-      char c = _s0il_file->data[_s0il_file->pos];
+    for (; file->pos < file->size && ret < size; file->pos++) {
+      char c = file->data[file->pos];
       s[ret++] = c;
       if (c == '\n')
         break;
@@ -746,7 +757,7 @@ int s0il_ungetc(int c,
                 FILE *stream) { // TODO : unget to ctx|term layer insteead
   if (stream == stdin && stdin_redirect)
     stream = stdin_redirect;
-  if (s0il_stream_is_internal (stream))
+  if (s0il_stream_is_internal(stream))
     return 0;
   return ungetc(c, stream);
 }
@@ -767,15 +778,15 @@ size_t s0il_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
     return read / size;
   }
 
-  if (s0il_stream_is_internal (stream))
-  {
+  if (s0il_stream_is_internal(stream)) {
+    file_t *file = _s0il_file[s0il_fileno(stream)];
     int request = size * nmemb;
-    if (_s0il_file->pos + request > _s0il_file->size)
-      request = _s0il_file->size - _s0il_file->pos;
+    if (file->pos + request > file->size)
+      request = file->size - file->pos;
     if (request <= 0)
       return 0;
-    memcpy(ptr, _s0il_file->data + _s0il_file->pos, request);
-    _s0il_file->pos += request;
+    memcpy(ptr, file->data + file->pos, request);
+    file->pos += request;
     return request;
   }
   // ui_iteration(ui_host(NULL));
@@ -804,7 +815,7 @@ int s0il_fflush(FILE *stream) {
     stream = stdin_redirect;
   if (stream == stdout && stdout_redirect)
     stream = stdout_redirect;
-  if (s0il_stream_is_internal (stream))
+  if (s0il_stream_is_internal(stream))
     return 0;
   if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
@@ -828,26 +839,26 @@ off_t s0il_lseek(int fd, off_t offset, int whence) {
 }
 
 int s0il_fseek(FILE *stream, long offset, int whence) {
-  if (s0il_stream_is_internal (stream))
-  {
+  if (s0il_stream_is_internal(stream)) {
+    file_t *file = _s0il_file[s0il_fileno(stream)];
     switch (whence) {
     case SEEK_SET:
-      _s0il_file->pos = 0;
-      return _s0il_file->pos;
+      file->pos = 0;
+      return file->pos;
     case SEEK_CUR:
-      return _s0il_file->pos;
+      return file->pos;
     case SEEK_END:
-      _s0il_file->pos = _s0il_file->size;
-      return _s0il_file->pos;
+      file->pos = file->size;
+      return file->pos;
     }
   }
   return fseek(stream, offset, whence);
 }
 
 void s0il_rewind(FILE *stream) {
-  if (s0il_stream_is_internal (stream))
-  {
-    _s0il_file->pos = 0;
+  if (s0il_stream_is_internal(stream)) {
+    file_t *file = _s0il_file[s0il_fileno(stream)];
+    file->pos = 0;
     return;
   }
   rewind(stream);
@@ -865,14 +876,18 @@ int s0il_fgetpos(FILE *s, fpos_t *pos) {
 }
 
 long s0il_ftell(FILE *stream) {
-  if (s0il_stream_is_internal (stream))
-    return _s0il_file->pos;
+  if (s0il_stream_is_internal(stream)) {
+    file_t *file = _s0il_file[s0il_fileno(stream)];
+    return file->pos;
+  }
   return ftell(stream);
 }
 
 off_t s0il_ftello(FILE *stream) {
-  if (s0il_stream_is_internal (stream))
-    return _s0il_file->pos;
+  if (s0il_stream_is_internal(stream)) {
+    file_t *file = _s0il_file[s0il_fileno(stream)];
+    return file->pos;
+  }
   return ftello(stream);
 }
 
@@ -1016,6 +1031,6 @@ int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
       FD_ZERO(read_fds);
     return 0;
   }
-  //printf("select nfds: %i\n", nfds);
+  // printf("select nfds: %i\n", nfds);
   return select(nfds, read_fds, write_fds, except_fds, timeout);
 }
