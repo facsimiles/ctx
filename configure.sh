@@ -86,7 +86,6 @@ do
      "--enable-audio") ENABLE_AUDIO=1 ;;
      "--enable-cmyk") ENABLE_CMYK=1 ;;
      "--enable-CMYK") ENABLE_CMYK=1 ;;
-     "--enable-stuff") ENABLE_STUFF=1 ;;
      "--enable-tinyvg") ENABLE_TINYVG=1 ;;
      "--enable-pdf") ENABLE_PDF=1 ;;
      "--enable-bloaty_fast_paths") ENABLE_BLOATY_FAST_PATHS=1 ;;
@@ -141,7 +140,6 @@ do
      "--disable-audio") ENABLE_AUDIO=0 ;;
      "--disable-cmyk") ENABLE_CMYK=0 ;;
      "--disable-CMYK") ENABLE_CMYK=0 ;;
-     "--disable-stuff") ENABLE_STUFF=0 ;;
      "--disable-tinyvg") ENABLE_TINYVG=0 ;;
      "--disable-simd") HAVE_SIMD=0 ;;
      "--disable-fb") ENABLE_FB=0 ;;
@@ -372,8 +370,6 @@ echo -n " audio           "; [ $ENABLE_AUDIO = 1 ] && echo -n "yes" || echo -n "
 echo "    audio handling (both alsa and ctx backend)"
 echo -n " screenshot      "; [ $ENABLE_SCREENSHOT = 1 ] && echo -n "yes" || echo -n "no" ; 
 echo "    code for saving PNG"
-echo -n " stuff           "; [ $ENABLE_STUFF = 1 ] && echo -n "yes" || echo -n "no"
-echo "   media creation and curation editor"
 echo -n " tinyvg          "; [ $ENABLE_TINYVG = 1 ] && echo -n "yes" || echo -n "no"
 echo "   tinyvg viewer"
 echo -n " CMYK            "; [ $ENABLE_CMYK = 1 ] && echo -n "yes" || echo -n "no" ; 

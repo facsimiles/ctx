@@ -3933,7 +3933,7 @@ void js_std_eval_binary(JSContext *ctx, const uint8_t *buf, size_t buf_len,
                         int load_only)
 {
     JSValue obj;
-    JSValue val;
+    JSValue val = JS_NULL;
     obj = JS_ReadObject(ctx, buf, buf_len, JS_READ_OBJ_BYTECODE);
     if (JS_IsException(obj))
         goto exception;

@@ -32,8 +32,6 @@ int convert_main (int argc, char **argv);
 int ctx_tinyvg_main (int argc, char **argv);
 int ctx_img_main (int argc, char **argv);
 int ctx_gif_main (int argc, char **argv);
-int stuff_main (int argc, char **argv);
-int stuffcmd_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
 int ctx_hexview_main (int argc, char **argv);
 
@@ -157,7 +155,6 @@ void ctx_mkdir_ancestors (const char *path, unsigned int mode)
   free (tmppaths);
 }
 
-int stuff_make_thumb (const char *src_path, const char *dst_path);
 int make_thumb (const char *src_path, const char *dst_path)
 {
   /* XXX  does nearest neighbor which is horrid for thumbs  */
@@ -215,45 +212,6 @@ int make_thumb (const char *src_path, const char *dst_path)
   return 0;
 }
 
-#if CTX_STUFF
-char *ctx_get_thumb_path (const char *path);
-char *ctx_thumb_path (const char *path)
-{
-  return ctx_get_thumb_path (path);
-}
-
-int thumb_main (int argc, char **argv)
-{
-  ctx_init (&argc, &argv);
-  if (!argv[1])
-  {
-    fprintf (stderr, "usage: ctx thumb <path1> [path2 [path3 ..]]\n");
-    return -1;
-  }
-  for (int i = 1; argv[i]; i++)
-  {
-    char *ip = argv[i];
-
-    if (strchr (ip, ':'))
-    {
-      ip = strchr (ip, ':') + 1;
-      if (ip[0]=='/')ip++;
-      if (ip[0]=='/')ip++;
-    }
-    char *thumb_path = ctx_thumb_path (ip);
-
-    {
-      ctx_mkdir_ancestors (thumb_path, 0777);
-      //make_thumb (ip, thumb_path);
-      stuff_make_thumb (ip, thumb_path);
-    }
-    free (thumb_path);
-  }
-
-  return 0;
-}
-#endif
-
 #endif
 
 static char *output_path = NULL;
@@ -307,25 +265,10 @@ static int lsfonts_main (int argc, char **argv)
   return 0;
 }
 
-int stuff_ls_main (int argc, char **argv);
-int stuff_realpath_main (int argc, char **argv);
-
 int main (int argc, char **argv)
 {
   if (!strcmp (basename(argv[1]), "lsfonts"))
     return lsfonts_main (argc-1, argv+1);
-#if CTX_STUFF
-  if (!strcmp (basename(argv[1]), "stuffcmd"))
-    return stuffcmd_main (argc-1, argv+1);
-  if (!strcmp (basename(argv[1]), "ls"))
-    return stuff_ls_main (argc-1, argv+1);
-  if (!strcmp (basename(argv[1]), "realpath"))
-    return stuff_realpath_main (argc-1, argv+1);
-#endif
-//  if (!strcmp (basename(argv[1]), "stuff"))
-//    return stuff_main (argc-1, argv+1);
-//  if (!strcmp (basename(argv[0]), "stuff"))
-//    return stuff_main (argc, argv);
   if (!strcmp (basename(argv[1]), "hexview"))
     return ctx_hexview_main (argc-1, argv+1);
   for (int i = 1; argv[i]; i++)
@@ -357,20 +300,11 @@ int main (int argc, char **argv)
 
   if (argv[1] && !strcmp (argv[1], "file"))
     return file_main (argc-1, argv+1);
-#if CTX_STUFF
-#if CTX_IMAGE_WRITE
-  if (argv[1] && !strcmp (argv[1], "thumb"))
-    return thumb_main (argc-1, argv+1);
-#endif
-#endif
   if (argv[1] && !strcmp (argv[1], "launch"))
     return launch_main (argc-1, argv+1);
 
   if (input_path && !commandline)
   {
-#if CTX_STUFF
-    const char*orig_path = input_path;
-#endif
     if (strchr (input_path, ':'))
     {
       input_path = strchr (input_path, ':') + 1;
@@ -408,32 +342,6 @@ int main (int argc, char **argv)
     if (!strcmp (media_type, "video/mpeg"))
     {
       return ctx_mpg_main (argc, argv);
-    }
-#endif
-
-#if CTX_STUFF
-    if (!strcmp (media_type, "inode/directory"))
-    {
-      char *argv[]={"stuff", input_path, NULL};
-      return stuff_main (2, argv);
-    }
-
-    if (media_type_class == CTX_MEDIA_TYPE_TEXT)
-    {
-      char *new_argc[] = {argv[0], "-E", input_path, NULL};
-
-	    fprintf (stderr, "u1p1\n");
-      return stuff_main (3, new_argc);
-
-  //  return ctx_text_main (argc, argv);
-    }
-
-    if (!strncmp (orig_path, "itk:", 4) ||
-        !strncmp (orig_path, "http:", 5) ||
-        !strncmp (orig_path, "https:", 6))
-    {
-      char *argv[]={"stuff", (char*)orig_path, NULL};
-      return stuff_main (2, argv);
     }
 #endif
 

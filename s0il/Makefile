@@ -11,7 +11,7 @@ CFLAGS+=-Wno-discarded-qualifiers
 CFLAGS+= -fsingle-precision-constant -Wdouble-promotion
 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CCACHE) $(CC)
-CFLAGS_NATIVE = $(CFLAGS) `pkg-config ctx --cflags --libs` \
+CFLAGS_NATIVE = $(CFLAGS) -I.. -L.. -lctx \
                    -g -lm -DNATIVE -fPIC -rdynamic -fpic \
                    -Wl,-E,--unresolved-symbols=ignore-all
 
@@ -70,7 +70,7 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/include/s0il
 
 test: s0il native_bins
-	LD_LIBRARY_PATH=.:$(LD_LIBRARY_PATH) ./s0il
+	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) ./s0il
 
 S0IL_OBJS=s0il-ui.o s0il-run.o s0il-symbols.o s0il-magic.o s0il-clib.o
 
@@ -164,4 +164,7 @@ format:
 	clang-format -i s0il*.c main.c */main/ctx.c programs/*.c
 	clang-format -i programs-picoc/*
 	rpl '//! picoc' '//!picoc' programs-picoc/*
+
+flow3r/build/config/sdkconfig.h:
+	(cd flow3r;idf.py reconfigure)
 
