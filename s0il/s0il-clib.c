@@ -989,6 +989,6 @@ int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
       FD_ZERO(read_fds);
     return 0;
   }
-  printf("select nfds: %i\n", nfds);
+  //printf("select nfds: %i\n", nfds);
   return select(nfds, read_fds, write_fds, except_fds, timeout);
 }

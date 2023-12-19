@@ -21,7 +21,7 @@
 #include "programs/raw-fb.c"
 #include "programs/tsr-ui.c"
 #include "programs/wifi.c"
-#include "programs/httpd.c"
+//#include "programs/httpd.c"
 
 void add_mains(void) {
   static bool done = false;
@@ -39,7 +39,7 @@ void add_mains(void) {
   //s0il_bundle_main("app", app_main);
   s0il_bundle_main("wifi", wifi_main);
   s0il_bundle_main("audio-ks", audio_ks_main);
-  s0il_bundle_main("httpd", httpd_main);
+//s0il_bundle_main("httpd", httpd_main);
   s0il_bundle_main("lua", lua_main);
   s0il_bundle_main("luac", luac_main);
   s0il_bundle_main("qjs", qjs_main);

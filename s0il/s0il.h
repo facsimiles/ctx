@@ -11,16 +11,18 @@
 // we include all relevant headers, the overhead is
 // not that large
 
-#if CTX_ESP
+#if defined(NATIVE) || defined(WASM)
+#include <netdb.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#else
+ #include "lwip/err.h"
+ #include "lwip/sys.h"
+
 #include "lwip/sockets.h"
 #include "lwip/igmp.h"
 #include "lwip/ip4.h"
 #include "lwip/netdb.h"
-
-#else
-#include <netdb.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 #endif
 
 #include <dirent.h>

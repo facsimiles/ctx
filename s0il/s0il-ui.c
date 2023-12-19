@@ -1896,8 +1896,8 @@ void ui_iteration(Ui *ui) {
       width = ctx_width(ctx);
       height = ctx_height(ctx);
       ctx_start_frame(ctx);
-      ui_add_key_binding(ui, "escape", "exit", "leave view");
-      ui_add_key_binding(ui, "backspace", "exit", "leave view");
+      ui_add_key_binding(ui, "escape", "back", "leave view");
+      ui_add_key_binding(ui, "backspace", "back", "leave view");
 
       ctx_save(ctx);
 
@@ -2557,7 +2557,7 @@ void ui_start_frame(Ui *ui) {
   ctx_begin_path(ctx);
   ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_font_size(ctx, ui_get_font_size(ui));
-  ctx_font (ctx, "Regular");
+  ctx_font(ctx, "Regular");
 
   ui->y = (int)(ui->scroll_offset + ui->height * 0.15);
   ui->widget_count = 0;

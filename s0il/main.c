@@ -12,7 +12,6 @@ static char *root_path = NULL;
 #else
 #include "fs_bin_generic.c"
 #endif
-// todo wasm
 
 void add_mains(void);
 
@@ -33,11 +32,29 @@ static void view_tests(Ui *ui) {
   ui_end_frame(ui);
 }
 
+static void view_repls(Ui *ui) {
+  ui_start_frame(ui);
+
+  if (ui_button(ui, "unix"))
+    ui_do(ui, "sh");
+  if (ui_button(ui, "lua"))
+    ui_do(ui, "lua");
+  if (ui_button(ui, "quickjs"))
+    ui_do(ui, "qjs");
+#if 0
+  if (ui_button(ui, "picoc"))
+    s0il_system("picoc -i");
+#endif
+  ui_end_frame(ui);
+}
+
 static void view_menu(Ui *ui) {
   ui_start_frame(ui);
 
   if (ui_button(ui, "files"))
     ui_do(ui, "/");
+  if (ui_button(ui, "repls"))
+    ui_do(ui, "repls");
   if (ui_button(ui, "clock"))
     ui_do(ui, "clock");
   if (ui_button(ui, "console"))
@@ -119,7 +136,47 @@ int main(int argc, char **argv) {
   magic_add("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
 
   const char *temp =
-      "Welcome to project s0il\nIt is a unix system, you know this!\n";
+      "s0il a vector graphics operating environment\n"
+      "\n"
+      "s0il is a compact and portable operating system.\n"
+      "\n"
+      "Features:\n"
+      "  - tested ports to risc-v, xtensa, linux and wasm\n"
+      "  - running of programs from ELF, lua, C and javascript files\n"
+      "  - programs run take over the main task/threads\n"
+      "  - on linux - and freertos can use threads for simulating processes "
+      "(experimental\n"
+      "  - built-it mime handlers for:\n"
+      "     - ELF (runs the binary)\n"
+      "     - image/png and image/jpeg shows it, no real controls\n"
+      "     - text/* small text editor\n"
+
+      "Key-mappings:\n"
+#if CTX_FLOW3R
+      " I         return\n"
+      " II        tab\n"   // only upper part, when in keyboard mode
+      " III       right\n" // possibly to be unused
+      " IV        unused\n"
+      " V         space\n"
+      " VI        down\n" // to be unused
+      " VII       left\n" // possible to be unused
+      " VIII      up\n"   // make part of this be shift-space
+      " IX        backspace\n"
+      " X         shift-space\n" // TODO : make this be all of
+                                 // up,down,left,right
+      " tristate0 left,return,right\n"
+      " tristate1 page-up,control-q,page-down\n"
+      "\n"
+#endif
+
+      "Keybindings:\n"
+      " left, right    previous, next\n"
+      "                shit-tab, tab and up and down are also recognized\n"
+      " return/space   activate\n"
+      " backspace      back\n"
+      " escape         exit\n"
+      " shift-space    toggle keyboard\n";
+
   s0il_add_file("/sd", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/flash", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/bin", NULL, 0, S0IL_DIR | S0IL_READONLY);
@@ -130,6 +187,7 @@ int main(int argc, char **argv) {
   s0il_system("init");
 
   ui_register_view(ui, "menu", view_menu, NULL);
+  ui_register_view(ui, "repls", view_repls, NULL);
   ui_register_view(ui, "tests", view_tests, NULL);
   ui_register_view(ui, "settings", view_settings, NULL);
   ui_do(ui, "menu");        // queue menu - as initial view
@@ -137,7 +195,14 @@ int main(int argc, char **argv) {
 
   //  s0il_system("wifi --auto &");
   //  ui_do(ui, "sh");
-  ui_main(ui, NULL); // boot to root_path
+#ifdef NATIVE
+  ui_main(ui, NULL);
+#else
+  for (;;) {
+    ctx_reset_has_exited(ctx);
+    ui_main(ui, NULL);
+  }
+#endif
   ui_destroy(ui);
   free(root_path);
 

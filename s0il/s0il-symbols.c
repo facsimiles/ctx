@@ -562,7 +562,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(s0il_putchar),
     ELFSYM_EXPORT(s0il_puts),
     ELFSYM_EXPORT(s0il_write),
-    ELFSYM_EXPORT(s0il_system),
+    {"system", &s0il_system},
     ELFSYM_EXPORT(s0il_runv),
     ELFSYM_EXPORT(s0il_runvp),
     ELFSYM_EXPORT(scalbln),
