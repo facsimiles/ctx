@@ -56,6 +56,9 @@ void ui_main(Ui *ui, const char *start_location);
 
 // do an action, or go to a specified view - if activating a new
 // view the current view is first pushed on the view stack
+//
+// ui_do 
+//
 void ui_do(Ui *ui, const char *name);
 
 

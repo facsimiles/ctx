@@ -695,6 +695,7 @@ void ui_do(Ui *ui, const char *action) {
   // printf ("ui_do: %s\n", action);
   if (!strcmp(action, "exit")) {
     ctx_exit(ui->ctx);
+  // we proxy some keys, since this makes binding code simpler
   } else if (!strcmp(action, "backspace") || !strcmp(action, "return") ||
              !strcmp(action, "left") || !strcmp(action, "escape") ||
              !strcmp(action, "right") || !strcmp(action, "space")) {
@@ -714,7 +715,7 @@ void ui_do(Ui *ui, const char *action) {
       ui_do(ui, "kb-show");
   } else if (!strcmp(action, "focus-next")) {
     ui_focus_next(ui);
-  } else if (!strcmp(action, "focus-prev")) {
+  } else if (!strcmp(action, "focus-previous")) {
     ui_focus_prev(ui);
   } else if (!strcmp(action, "kb-collapse")) {
     ctx_osk_mode = 1;
@@ -734,6 +735,28 @@ void ui_do(Ui *ui, const char *action) {
   } else
     ui_load_view(ui, action);
 }
+
+int ui_do_main(int argc, char **argv)
+{
+  Ui *ui = ui_host(NULL);
+  if (argv[1])
+    ui_do(ui, argv[1]);
+  else
+  {
+    printf ("Usage: ui_do <action | view | path>\n");
+    printf ("  actions: back\n"
+            "           activate\n"
+            "           kb-show\n"
+            "           kb-hide\n"
+            "           focus-next\n"
+            "           focus-previous\n"
+            "           kb-collapse\n"
+            "  news views can be registered by programs, either TSR\n"
+            "  or with new invokation each time.\n");
+  }
+  return 0;
+}
+
 
 void ui_cb_do(CtxEvent *event, void *data1, void *data2) {
   Ui *ui = data1;
@@ -794,9 +817,11 @@ static Ctx *_ctx_host = NULL;
 Ctx *ctx_host(void) { return _ctx_host; }
 #endif
 
+int ui_do_main(int argc, char **argv);
 Ui *ui_new(Ctx *ctx) {
   Ui *ui = calloc(1, sizeof(Ui));
   s0il_bundle_main("_init", _init_main);
+  s0il_bundle_main("ui_do", ui_do_main);
   if (!def_ui) {
     def_ui = ui;
 #ifdef NATIVE
@@ -2440,9 +2465,9 @@ void ui_end_frame(Ui *ui) {
         break;
       }
   } else {
-    ui_add_key_binding(ui, "up", "focus-prev", "previous focusable item");
-    ui_add_key_binding(ui, "left", "focus-prev", "previous focusable item");
-    ui_add_key_binding(ui, "shift-tab", "focus-prev",
+    ui_add_key_binding(ui, "up", "focus-previous", "previous focusable item");
+    ui_add_key_binding(ui, "left", "focus-previous", "previous focusable item");
+    ui_add_key_binding(ui, "shift-tab", "focus-previous",
                        "previous focusable item");
     ui_add_key_binding(ui, "down", "focus-next", "next focusable item");
     ui_add_key_binding(ui, "right", "focus-next", "next focusable item");

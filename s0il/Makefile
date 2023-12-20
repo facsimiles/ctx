@@ -73,6 +73,8 @@ test: s0il native_bins
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) ./s0il
 gdb: s0il native_bins
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) gdb ./s0il
+valgrind: s0il native_bins
+	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) valgrind ./s0il
 
 S0IL_OBJS=s0il-ui.o s0il-run.o s0il-symbols.o s0il-magic.o s0il-clib.o
 
@@ -170,4 +172,12 @@ format:
 flow3r/build/config/sdkconfig.h:
 	@test -r flow3r/flow3r || ( echo "ERROR: You need to set up flow3r symlink in flow3r to point to flow3r-firmware checkout";exit 1)
 	(cd flow3r;idf.py)
-
+help:
+	@echo targets:
+	@echo   test         - run s0il locally with a native build
+	@echo   gdb          - run s0il locally under gdb
+	@echo   valgrind     - run s0il locally under valgrind
+	@echo   flow3r       - build flow3r firmware
+	@echo   flow3r-flash - flash (and build if needed) flow3r firmware
+	@echo   riscv        - build esp32c3 firmware
+	@echo   riscv-flash  - flash (and build if needed) esp32c3 firmware

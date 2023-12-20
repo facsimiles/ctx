@@ -216,6 +216,8 @@ void bsp_captouch_key_events(int level) {
   flow3r_synthesize_key_events = level;
 }
 
+bool usb_console_connected = false;
+
 static int frame_done_ctx(Ctx *ctx, void *user_data) {
   unsigned long ticks = ctx_ticks();
   static flow3r_bsp_tripos_state_t _app_button_state;
@@ -226,6 +228,8 @@ static int frame_done_ctx(Ctx *ctx, void *user_data) {
   static unsigned int os_repeats = 0;
 
   const int debounce_time = subsequent_repeat_time;
+
+  usb_console_connected = usb_serial_jtag_is_connected();
 
   flow3r_bsp_spio_update();
   flow3r_bsp_tripos_state_t app_button_state =
@@ -376,6 +380,7 @@ esp_vfs_dev_uart_use_driver(uart_num);
 }
 
 #endif
+
 
 void usb_serial_jtag_init(void) {
   /* Disable buffering on stdin */

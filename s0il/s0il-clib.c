@@ -212,8 +212,48 @@ file_t *s0il_find_file(const char *path) {
   return NULL;
 }
 
+static int s0il_unlink_internal(const char *path) {
+  file_t *file = s0il_find_file(path);
+  if (!file) return -2;
+  char *parent = strdup(path);
+  strrchr(parent, '/')[0] = 0;
+  folder_t *folder = NULL;
+
+  if (parent[0] == 0) {
+    parent[0] = '/';
+    parent[1] = 0;
+  }
+
+  // printf ("adding %s to %s dir?%i\n", path, parent, is_dir);
+
+  for (CtxList *iter = folders; iter; iter = iter->next) {
+    folder = iter->data;
+    if (!strcmp(folder->path, parent)) {
+      break;
+    }
+    folder = NULL;
+  }
+  if (!folder) {
+    return 1;
+  } else {
+    free(parent);
+  }
+
+  ctx_list_remove(&folder->files, file);
+
+  if ((file->flags & S0IL_READONLY) == 0)
+  {
+    free (file->d_name);
+    free (file->path);
+    free (file->data);
+  }
+  free (file);
+ 
+  return 0;
+}
+
 void *s0il_add_file(const char *path, const char *contents, size_t size,
-                   s0il_file_flag flags) {
+                    s0il_file_flag flags) {
   bool readonly = ((flags & S0IL_READONLY) != 0);
   bool is_dir = ((flags & S0IL_DIR) != 0);
 
@@ -400,8 +440,6 @@ int s0il_puts(const char *s) {
 }
 
 int s0il_fprintf(FILE *stream, const char *restrict format, ...) {
-  if (s0il_stream_is_internal(stream))
-    return 0;
   va_list ap;
   va_list ap_copy;
   size_t needed;
@@ -420,8 +458,6 @@ int s0il_fprintf(FILE *stream, const char *restrict format, ...) {
 }
 
 int s0il_vfprintf(FILE *stream, const char *format, va_list ap) {
-  if (s0il_stream_is_internal(stream))
-    return 0;
   va_list ap_copy;
   size_t needed;
   char *buffer;
@@ -515,6 +551,7 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
     return (FILE*)(((char*)_s0il_internal_file) + fileno);
   }
 
+  if (strchr(mode, 'w'))
   {
   char *parent = strdup(path);
   strrchr(parent, '/')[0] = 0;
@@ -907,7 +944,7 @@ int s0il_fflush(FILE *stream) {
 
 // positions
 int s0il_fsetpos(FILE *stream, fpos_t *pos) {
-#if 0
+#if 0 // TODO
   if (s0il_stream_is_internal (stream))
   {
     _s0il_file->pos = *pos;
@@ -947,7 +984,7 @@ void s0il_rewind(FILE *stream) {
   rewind(stream);
 }
 
-int s0il_fgetpos(FILE *s, fpos_t *pos) {
+int s0il_fgetpos(FILE *s, fpos_t *pos) { // TODO
 #if 0
   if (s0il_stream_is_internal (stream))
   {
@@ -976,7 +1013,7 @@ off_t s0il_ftello(FILE *stream) {
 
 // pid info
 
-pid_t s0il_getpid(void) { return 1; }
+pid_t s0il_getpid(void)  { return 1; }
 
 pid_t s0il_getppid(void) { return 0; }
 
@@ -1041,6 +1078,10 @@ int s0il_closedir(DIR *dirp) {
 int s0il_unlink(const char *pathname) {
   char *path = s0il_resolve_path(pathname);
   int ret = 0;
+  file_t *file = NULL;
+  if ((file = s0il_find_file(path))) {
+    return s0il_unlink_internal(path);
+  }
   ret = unlink(path);
   if (path != pathname)
     free(path);
@@ -1088,6 +1129,7 @@ ssize_t s0il_getline(char **lineptr, size_t *n, FILE *stream) {
 }
 
 void s0il_exit(int retval) {
+  // XXX : this gets called for nested mains as well!
 #if CTX_ESP
   vTaskDelete(NULL);
   // store ret-val in pid_info?

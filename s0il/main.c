@@ -48,8 +48,36 @@ static void view_repls(Ui *ui) {
   ui_end_frame(ui);
 }
 
+#if CTX_FLOW3R
+extern bool usb_console_connected;
+static bool usb_had_console = false;
+#endif
+
+
 static void view_menu(Ui *ui) {
   ui_start_frame(ui);
+#if CTX_FLOW3R
+  if (usb_console_connected)
+  {
+    char buf[8];
+    if (!usb_had_console)
+    {
+      fprintf(stdout, "\e[5n");
+      int read = s0il_fread(buf, 1,4, stdin);
+      if (read) usb_had_console = true;
+
+      if (usb_had_console)  // launch a shell first time we
+        ui_do(ui, "sh");    // see a terminal on the other
+                            // end of USB
+    }
+    #if 0
+    if (usb_had_console)
+      ui_text(ui, "had TERM!");
+    else
+      ui_text(ui, "USB");
+    #endif
+  }
+#endif
 
   if (ui_button(ui, "files"))
     ui_do(ui, "/");
@@ -136,20 +164,26 @@ int main(int argc, char **argv) {
   magic_add("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
 
   const char *temp =
-      "s0il a vector graphics operating environment\n"
+      "s0il - vector graphics operating environment\n"
       "\n"
-      "s0il is a compact and portable operating system.\n"
+      "s0il is a compact and portable vector graphics UI, with small memory"
+      "requirements built on top of ctx.\n"
       "\n"
       "Features:\n"
-      "  - tested ports to risc-v, xtensa, linux and wasm\n"
-      "  - running of programs from ELF, lua, C and javascript files\n"
-      "  - programs run take over the main task/threads\n"
-      "  - on linux - and freertos can use threads for simulating processes "
-      "(experimental\n"
-      "  - built-it mime handlers for:\n"
+      "  - ports to risc-v, xtensa, linux and wasm\n"
+      "  - nested running of programs bundled in host binary or external ELF dynamic fpic executables (linux and esp32s3)\n"
+      "  - threads simulating processes (in progress)\n"
+      "  - wrappers for many libc functions providing a start of process insolation, when relocating symbols in ELF binaries these wrapper functions are automatically used, when bundling programs the pre-processor replaces calls.\n"
+      "  - RAM file-system, provides a pre-loaded mutable root file system.\n"
+      "      system() is provided by the internal libc, it supports both #! and //! as first line of files to specify interpreter."
+      "    changes in folders managed by it ,/ /bin/ and /tmp/ are lost on reboot\n"
+      "  - view system based on named views/URI or path locations\n"
+      "    view handlers for the following mime types built in:\n"
       "     - ELF (runs the binary)\n"
       "     - image/png and image/jpeg shows it, no real controls\n"
-      "     - text/* small text editor\n"
+      "     - text/* small text editor, which auto saves on quit\n"
+      "     - directory/inode shows browsable directories\n"
+      "     - further mime handlers can be installed, latest registered should be used (not yet implemented).\n"
 
       "Key-mappings:\n"
 #if CTX_FLOW3R
