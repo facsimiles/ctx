@@ -100,13 +100,13 @@ clean:
 elf_strip_pie: elf_strip_pie.c
 	$(CC_NATIVE) $< -o $@
 PROGRAMS_C = $(wildcard bin-src/*.c)
-PROGRAMS_PICOC = $(wildcard programs-picoc/*)
+PROGRAMS_PICOC = $(wildcard bin-generic/*)
 PROGRAMS_NATIVE = $(patsubst bin-src/%.c, bin-native/%, $(PROGRAMS_C)) \
-                 $(patsubst programs-picoc/%, bin-native/%, $(PROGRAMS_PICOC))
+                 $(patsubst bin-generic/%, bin-native/%, $(PROGRAMS_PICOC))
 
 
 PROGRAMS_XTENSA = $(patsubst bin-src/%.c, bin-xtensa/%, $(PROGRAMS_C)) \
-                 $(patsubst programs-picoc/%, bin-xtensa/%, $(PROGRAMS_PICOC))
+                 $(patsubst bin-generic/%, bin-xtensa/%, $(PROGRAMS_PICOC))
 
 bin-native/%: bin-src/%.c *.h Makefile elf_strip_pie libs0il.so
 	@mkdir -p `dirname $@` || true
@@ -119,10 +119,10 @@ bin-xtensa/%: bin-src/%.c *.h Makefile flow3r/build/config/sdkconfig.h
 	$(CC_XTENSA) $(CFLAGS_XTENSA) $< -o $@
 	$(POST_XTENSA) $@
 
-bin-native/%: programs-picoc/%
+bin-native/%: bin-generic/%
 	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
-bin-xtensa/%: programs-picoc/%
+bin-xtensa/%: bin-generic/%
 	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 
@@ -160,14 +160,14 @@ fs_bin_native.c: $(PROGRAMS_NATIVE) Makefile gen_fs.sh
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
 
-fs_bin_generic.c: programs-picoc/* Makefile gen_fs.sh
-	./gen_fs.sh programs-picoc bin > $@_
+fs_bin_generic.c: bin-generic/* Makefile gen_fs.sh
+	./gen_fs.sh bin-generic bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm $@_
 format:
 	clang-format -i s0il*.c main.c */main/ctx.c bin-src/*.c
-	clang-format -i programs-picoc/*
-	rpl '//! picoc' '//!picoc' programs-picoc/*
+	clang-format -i bin-generic/*
+	rpl '//! picoc' '//!picoc' bin-generic/*
 
 flow3r/build/config/sdkconfig.h:
 	@test -r flow3r/flow3r || ( echo "ERROR: You need to set up flow3r symlink in flow3r to point to flow3r-firmware checkout";exit 1)

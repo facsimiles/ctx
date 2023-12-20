@@ -6,7 +6,7 @@ all: index.html s0il.js
 
 CFLAGS=-I/usr/local/include -flto -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc -Wl,--lto-O3 -DWASM -DCTX
 
-../fs_bin_generic.c: ../programs-picoc/*
+../fs_bin_generic.c: ../bin-generic/*
 	make -C .. fs_bin_generic.c
 
 s0il.js: $(C_FILES) ../bin-src/*.c Makefile  ../../ctx.h ../fs_bin_generic.c

@@ -12,9 +12,9 @@
 #include "bin-src/image.c"
 #include "bin-src/text.c"
 
-#include "qjs_bundle.c"
-#include "lua_bundle.c"
-#include "picoc_bundle.c"
+#include "bundled/qjs.c"
+#include "bundled/lua.c"
+#include "bundled/picoc.c"
 //#include "bin-src/app.c"
 #include "bin-src/audio-ks.c"
 #include "bin-src/busywarp.c"

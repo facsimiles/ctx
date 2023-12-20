@@ -4,9 +4,9 @@
 #include "s0il.h"
 // what follows is a list of programs to include directly
 
-#include "qjs_bundle.c"
-#include "lua_bundle.c"
-#include "picoc_bundle.c"
+#include "bundled/qjs.c"
+#include "bundled/lua.c"
+#include "bundled/picoc.c"
 #include "bin-src/clock.c"
 #include "bin-src/image.c"
 #include "bin-src/text.c"
