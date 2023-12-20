@@ -8,20 +8,20 @@
 #include "s0il.h"
 // what follows is a list of programs to include directly
 
-#include "programs/clock.c"
-#include "programs/image.c"
-#include "programs/text.c"
+#include "bin-src/clock.c"
+#include "bin-src/image.c"
+#include "bin-src/text.c"
 
 #include "qjs_bundle.c"
 #include "lua_bundle.c"
 #include "picoc_bundle.c"
-//#include "programs/app.c"
-#include "programs/audio-ks.c"
-#include "programs/busywarp.c"
-#include "programs/raw-fb.c"
-#include "programs/tsr-ui.c"
-#include "programs/wifi.c"
-//#include "programs/httpd.c"
+//#include "bin-src/app.c"
+#include "bin-src/audio-ks.c"
+#include "bin-src/busywarp.c"
+#include "bin-src/raw-fb.c"
+#include "bin-src/tsr-ui.c"
+#include "bin-src/wifi.c"
+//#include "bin-src/httpd.c"
 
 void add_mains(void) {
   static bool done = false;

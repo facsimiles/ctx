@@ -9,7 +9,7 @@ CFLAGS=-I/usr/local/include -flto -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPO
 ../fs_bin_generic.c: ../programs-picoc/*
 	make -C .. fs_bin_generic.c
 
-s0il.js: $(C_FILES) ../programs/*.c Makefile  ../../ctx.h ../fs_bin_generic.c
+s0il.js: $(C_FILES) ../bin-src/*.c Makefile  ../../ctx.h ../fs_bin_generic.c
 	emcc $(C_FILES) -I../.. $(CFLAGS) -o $@ -I../../fonts -s ASYNCIFY -I.. -I../../deps
 
 ../../ctx.h: ../../src/*.[ch]

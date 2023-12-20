@@ -81,7 +81,7 @@ S0IL_OBJS=s0il-ui.o s0il-program-loader.o s0il-symbols.o s0il-magic.o s0il-clib.
 s0il: libs0il.so main.o bundled-programs.o
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -lm $^ -o $@ $(CFLAGS_NATIVE) -L. -ls0il
 
-PROGRAMS_C_BUNDLED=programs/*.c
+PROGRAMS_C_BUNDLED=bin-src/*.c
 bundled-programs.o: $(PROGRAMS_C_BUNDLED)
 
 main.o: fs_bin_native.c
@@ -99,22 +99,22 @@ clean:
 
 elf_strip_pie: elf_strip_pie.c
 	$(CC_NATIVE) $< -o $@
-PROGRAMS_C = $(wildcard programs/*.c)
+PROGRAMS_C = $(wildcard bin-src/*.c)
 PROGRAMS_PICOC = $(wildcard programs-picoc/*)
-PROGRAMS_NATIVE = $(patsubst programs/%.c, bin-native/%, $(PROGRAMS_C)) \
+PROGRAMS_NATIVE = $(patsubst bin-src/%.c, bin-native/%, $(PROGRAMS_C)) \
                  $(patsubst programs-picoc/%, bin-native/%, $(PROGRAMS_PICOC))
 
 
-PROGRAMS_XTENSA = $(patsubst programs/%.c, bin-xtensa/%, $(PROGRAMS_C)) \
+PROGRAMS_XTENSA = $(patsubst bin-src/%.c, bin-xtensa/%, $(PROGRAMS_C)) \
                  $(patsubst programs-picoc/%, bin-xtensa/%, $(PROGRAMS_PICOC))
 
-bin-native/%: programs/%.c *.h Makefile elf_strip_pie libs0il.so
+bin-native/%: bin-src/%.c *.h Makefile elf_strip_pie libs0il.so
 	@mkdir -p `dirname $@` || true
 	$(CC_NATIVE) $< -L. -ls0il -o $@ $(CFLAGS_NATIVE) -DS0IL_REDEFINE_CLIB
 	@echo 'rem-PIE $@'; ./elf_strip_pie $@
 	$(POST_NATIVE) $@
 
-bin-xtensa/%: programs/%.c *.h Makefile flow3r/build/config/sdkconfig.h
+bin-xtensa/%: bin-src/%.c *.h Makefile flow3r/build/config/sdkconfig.h
 	@mkdir -p `dirname $@` || true
 	$(CC_XTENSA) $(CFLAGS_XTENSA) $< -o $@
 	$(POST_XTENSA) $@
@@ -165,7 +165,7 @@ fs_bin_generic.c: programs-picoc/* Makefile gen_fs.sh
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm $@_
 format:
-	clang-format -i s0il*.c main.c */main/ctx.c programs/*.c
+	clang-format -i s0il*.c main.c */main/ctx.c bin-src/*.c
 	clang-format -i programs-picoc/*
 	rpl '//! picoc' '//!picoc' programs-picoc/*
 

@@ -4,7 +4,7 @@
 
 #include "port_config.h"
 #include "s0il-ui.c"
-#include "s0il-run.c"
+#include "s0il-program-loader.c"
 #include "s0il-magic.c"
 #include "s0il-symbols.c"
 #include "s0il-clib.c"

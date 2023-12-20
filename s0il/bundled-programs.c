@@ -7,9 +7,9 @@
 #include "qjs_bundle.c"
 #include "lua_bundle.c"
 #include "picoc_bundle.c"
-#include "programs/clock.c"
-#include "programs/image.c"
-#include "programs/text.c"
+#include "bin-src/clock.c"
+#include "bin-src/image.c"
+#include "bin-src/text.c"
 
 void add_mains(void) {
   static bool done = false;
