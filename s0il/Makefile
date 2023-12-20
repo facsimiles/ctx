@@ -76,7 +76,7 @@ gdb: s0il native_bins
 valgrind: s0il native_bins
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) valgrind ./s0il
 
-S0IL_OBJS=s0il-ui.o s0il-run.o s0il-symbols.o s0il-magic.o s0il-clib.o
+S0IL_OBJS=s0il-ui.o s0il-program-loader.o s0il-symbols.o s0il-magic.o s0il-clib.o
 
 s0il: libs0il.so main.o bundled-programs.o
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -lm $^ -o $@ $(CFLAGS_NATIVE) -L. -ls0il
