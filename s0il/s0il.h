@@ -81,7 +81,6 @@ const char *magic_detect_sector512 (const char *path, const char *sector512);
 
 const char *magic_detect_path (const char *location);
 
-int magic_main(int argc, char **argv);
 
 
 void s0il_output_state_reset (void);

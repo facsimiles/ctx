@@ -50,8 +50,10 @@ void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
   program->base = strdup(name);
   program->path = malloc(strlen(name) + 10);
   program->main = main;
-  sprintf(program->path, ":%s", name);
+  sprintf(program->path, "/bin/%s", name);
   ctx_list_append(&inlined_programs, program);
+  static const char busy_magic[6]={0, 's','0','i','l'};
+  s0il_add_file(program->path, busy_magic, sizeof(busy_magic), S0IL_READONLY);
 }
 #include <libgen.h>
 

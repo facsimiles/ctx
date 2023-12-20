@@ -131,6 +131,9 @@ void view_settings(Ui *ui) {
   ui_end_frame(ui);
 }
 
+int magic_main(int argc, char **argv);
+int file_main(int argc, char **argv);
+
 #include <fcntl.h>
 #include <signal.h>
 #if CTX_ESP
@@ -148,6 +151,7 @@ int main(int argc, char **argv) {
   setvbuf(stdout, NULL, _IONBF, 0);
   fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
   s0il_bundle_main("magic", magic_main);
+  s0il_bundle_main("file", file_main);
   add_mains();
   mount_bin();
 
