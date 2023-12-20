@@ -375,7 +375,7 @@ int s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
   }
   if (stream == stdout || stream == stderr) {
     if (stdout_redirect)
-      return fwrite(ptr, size, nmemb, stdout_redirect);
+      return s0il_fwrite(ptr, size, nmemb, stdout_redirect);
     text_output = 1;
     uint8_t *s = (uint8_t *)ptr;
     for (size_t i = 0; i < size * nmemb; i++) {
