@@ -212,7 +212,7 @@ file_t *s0il_find_file(const char *path) {
   return NULL;
 }
 
-void s0il_add_file(const char *path, const char *contents, size_t size,
+void *s0il_add_file(const char *path, const char *contents, size_t size,
                    s0il_file_flag flags) {
   bool readonly = ((flags & S0IL_READONLY) != 0);
   bool is_dir = ((flags & S0IL_DIR) != 0);
@@ -270,6 +270,7 @@ void s0il_add_file(const char *path, const char *contents, size_t size,
     folder->count++;
     ctx_list_append(&folder->files, file);
   }
+  return file;
 }
 
 static FILE *stdout_redirect = NULL;
@@ -311,7 +312,7 @@ int s0il_fputc(int c, FILE *stream) {
   }
   if (stream == stdout) {
     if (stdout_redirect)
-      return fputc(c, stdout_redirect);
+      return s0il_fputc(c, stdout_redirect);
     return s0il_putchar(c);
   }
   return fputc(c, stream);
@@ -330,7 +331,7 @@ int s0il_fputs(const char *s, FILE *stream) {
   }
   if (stream == stdout || stream == stderr) {
     if (stdout_redirect)
-      return fputs(s, stdout_redirect);
+      return s0il_fputs(s, stdout_redirect);
     text_output = 1;
     for (int i = 0; s[i]; i++) {
       if (s[i] == '\n')
@@ -509,7 +510,41 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
         file->size = 0;
       }
     }
-    return _s0il_internal_file;
+    if (path != pathname)
+      free(path);
+    return (FILE*)(((char*)_s0il_internal_file) + fileno);
+  }
+
+  {
+  char *parent = strdup(path);
+  strrchr(parent, '/')[0] = 0;
+  if (parent[0] == 0) {
+    parent[0] = '/';
+    parent[1] = 0;
+  }
+  folder_t *folder = NULL;
+
+  for (CtxList *iter = folders; iter; iter = iter->next) {
+    folder = iter->data;
+    if (!strcmp(folder->path, parent)) {
+      break;
+    }
+  }
+    free (parent);
+    if (folder)
+    {
+      char *t = "";
+      file_t *file = s0il_add_file(path, t, 0, 0);
+      int fileno = 0;
+      for (fileno = 0; fileno < S0IL_MAX_FILES; fileno++)
+        if (_s0il_file[fileno] == NULL)
+          break;
+      _s0il_file[fileno] = file;
+      file->pos = 0;
+      if (path != pathname)
+        free(path);
+      return (FILE*)(((char*)_s0il_internal_file) + fileno);
+    }
   }
 
 

@@ -227,23 +227,20 @@ static int dlopen_runv(char *path2, char **argv, int same_stack) {
         tmp[i] = '_';
       }
     }
-    tmp[1] = 't';
-    tmp[2] = 'm';
-    tmp[3] = 'p';
     if (access(tmp, R_OK) != F_OK) {
       char *cmd = malloc(strlen(tmp) * 2 + 10);
       FILE *in = s0il_fopen(path, "rb");
-      FILE *out = s0il_fopen(tmp, "w");
+      FILE *out = fopen(tmp, "w");
       s0il_fseek(in, 0, SEEK_END);
       int length = s0il_ftell(in);
       s0il_fseek(in, 0, SEEK_SET);
       uint8_t *data = malloc(length + 1);
       if (data) {
         s0il_fread(data, length, 1, in);
-        s0il_fwrite(data, length, 1, out);
+        fwrite(data, length, 1, out);
       }
       s0il_fclose(in);
-      s0il_fclose(out);
+      fclose(out);
       free(cmd);
     }
     path = tmp;

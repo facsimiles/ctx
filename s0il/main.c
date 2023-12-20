@@ -182,6 +182,8 @@ int main(int argc, char **argv) {
   s0il_add_file("/bin", NULL, 0, S0IL_DIR | S0IL_READONLY);
   // s0il_add_file("/tmp", NULL, 0, S0IL_DIR|S0IL_READONLY);
   s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
+  char *t="";
+  s0il_add_file("/tmp/dummy", t, 1, 0);
 
   s0il_system("_init");
   s0il_system("init");

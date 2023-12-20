@@ -61,7 +61,7 @@ typedef enum {
   S0IL_READONLY = (1<<0),
   S0IL_DIR      = (1<<1)
 } s0il_file_flag;
-void  s0il_add_file(const char *path, const char *contents, size_t size, s0il_file_flag flags);
+void *s0il_add_file(const char *path, const char *contents, size_t size, s0il_file_flag flags);
 void  s0il_bundle_main (const char *name, int(*main)(int argc, char **argv));
 
 int   s0il_runv (char *pathname, char **argv);

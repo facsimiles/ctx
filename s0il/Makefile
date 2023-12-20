@@ -71,6 +71,8 @@ uninstall:
 
 test: s0il native_bins
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) ./s0il
+gdb: s0il native_bins
+	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) gdb ./s0il
 
 S0IL_OBJS=s0il-ui.o s0il-run.o s0il-symbols.o s0il-magic.o s0il-clib.o
 
