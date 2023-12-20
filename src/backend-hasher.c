@@ -646,6 +646,7 @@ uint32_t ctx_hasher_get_hash (Ctx *ctx, int col, int row)
   if (row >= hasher->rows) row = hasher->rows-1;
   if (col >= hasher->cols) col = hasher->cols-1;
 
+  if (hasher->prev_command >= 0)
   hasher->drawlist->entries[hasher->prev_command].data.u32[1] = 0xffffffff;
 
   return hasher->hashes[(row*hasher->cols+col)];
