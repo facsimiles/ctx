@@ -227,7 +227,7 @@ void view_text(Ui *ui, const char *path) {
     MAYBE_DRAW_CURSOR();                                                       \
     if (byte_pos >= text->pos && text->virtual_line <= -1) {                   \
       text->virtual_line = virtual_line_no;                                    \
-      if (text->pos > 0 && contents[text->pos - 1] == '\n')                                     \
+      if (text->pos > 0 && contents[text->pos - 1] == '\n')                    \
         text->virtual_line--;                                                  \
     }                                                                          \
   } while (0)
@@ -259,8 +259,8 @@ void view_text(Ui *ui, const char *path) {
       }
     }
 
-    char word[128]="";
-    char prev_word[128]="";
+    char word[128] = "";
+    char prev_word[128] = "";
     int wordlen = 0;
 
     float y = text->scroll + height * 0.5f;

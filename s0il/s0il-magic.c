@@ -154,17 +154,17 @@ const char *magic_detect_path(const char *location) {
 }
 
 int magic_main(int argc, char **argv) {
-    for (CtxList *iter = ui_magic; iter; iter = iter->next) {
-      ctx_magic_t *magic = iter->data;
-      s0il_printf("%s ext:%s magic-len:%i %s\n", magic->mime_type, magic->ext,
-                  magic->magic_len, magic->is_text ? "text" : "");
-    }
+  for (CtxList *iter = ui_magic; iter; iter = iter->next) {
+    ctx_magic_t *magic = iter->data;
+    s0il_printf("%s ext:%s magic-len:%i %s\n", magic->mime_type, magic->ext,
+                magic->magic_len, magic->is_text ? "text" : "");
+  }
   return 0;
 }
 
 int file_main(int argc, char **argv) {
   for (int i = 1; argv[i]; i++)
     if (argv[i][0] != '-')
-        s0il_printf("%s : %s\n", argv[i], magic_detect_path(argv[i]));
+      s0il_printf("%s : %s\n", argv[i], magic_detect_path(argv[i]));
   return 0;
 }

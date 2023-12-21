@@ -168,6 +168,7 @@ format:
 	clang-format -i s0il*.c main.c */main/ctx.c bin-src/*.c
 	clang-format -i bin-generic/*
 	rpl '//! picoc' '//!picoc' bin-generic/*
+	rpl '//! qjs' '//!qjs' bin-generic/*
 
 flow3r/build/config/sdkconfig.h:
 	@test -r flow3r/flow3r || ( echo "ERROR: You need to set up flow3r symlink in flow3r to point to flow3r-firmware checkout";exit 1)

@@ -3,12 +3,9 @@
 
 #include <dirent.h>
 
-
 void s0il_program_runner_init(void);
 int _init_main(int argc, char **argv) {
   // Ui *ui = ui_host(NULL);
-
-  s0il_program_runner_init();
 
   system("rm -f /tmp/_s0il_*");
   const char elf_magic_32bit[] = {0x7f, 'E', 'L', 'F', 1, 1, 1, 0, 0, 0};
@@ -697,7 +694,7 @@ void ui_do(Ui *ui, const char *action) {
   // printf ("ui_do: %s\n", action);
   if (!strcmp(action, "exit")) {
     ctx_exit(ui->ctx);
-  // we proxy some keys, since this makes binding code simpler
+    // we proxy some keys, since this makes binding code simpler
   } else if (!strcmp(action, "backspace") || !strcmp(action, "return") ||
              !strcmp(action, "left") || !strcmp(action, "escape") ||
              !strcmp(action, "right") || !strcmp(action, "space")) {
@@ -738,27 +735,24 @@ void ui_do(Ui *ui, const char *action) {
     ui_load_view(ui, action);
 }
 
-int ui_do_main(int argc, char **argv)
-{
+int ui_do_main(int argc, char **argv) {
   Ui *ui = ui_host(NULL);
   if (argv[1])
     ui_do(ui, argv[1]);
-  else
-  {
-    printf ("Usage: ui_do <action | view | path>\n");
-    printf ("  actions: back\n"
-            "           activate\n"
-            "           kb-show\n"
-            "           kb-hide\n"
-            "           focus-next\n"
-            "           focus-previous\n"
-            "           kb-collapse\n"
-            "  news views can be registered by programs, either TSR\n"
-            "  or with new invokation each time.\n");
+  else {
+    printf("Usage: ui_do <action | view | path>\n");
+    printf("  actions: back\n"
+           "           activate\n"
+           "           kb-show\n"
+           "           kb-hide\n"
+           "           focus-next\n"
+           "           focus-previous\n"
+           "           kb-collapse\n"
+           "  news views can be registered by programs, either TSR\n"
+           "  or with new invokation each time.\n");
   }
   return 0;
 }
-
 
 void ui_cb_do(CtxEvent *event, void *data1, void *data2) {
   Ui *ui = data1;

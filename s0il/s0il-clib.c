@@ -14,7 +14,6 @@ void *_s0il_thread_id(void) {
 #endif
 }
 
-
 bool s0il_is_main_thread(void) {
 #if EMSCRIPTEN
   return 1;
@@ -215,7 +214,8 @@ file_t *s0il_find_file(const char *path) {
 
 static int s0il_unlink_internal(const char *path) {
   file_t *file = s0il_find_file(path);
-  if (!file) return -2;
+  if (!file)
+    return -2;
   char *parent = strdup(path);
   strrchr(parent, '/')[0] = 0;
   folder_t *folder = NULL;
@@ -242,14 +242,13 @@ static int s0il_unlink_internal(const char *path) {
 
   ctx_list_remove(&folder->files, file);
 
-  if ((file->flags & S0IL_READONLY) == 0)
-  {
-    free (file->d_name);
-    free (file->path);
-    free (file->data);
+  if ((file->flags & S0IL_READONLY) == 0) {
+    free(file->d_name);
+    free(file->path);
+    free(file->data);
   }
-  free (file);
- 
+  free(file);
+
   return 0;
 }
 
@@ -296,12 +295,10 @@ void *s0il_add_file(const char *path, const char *contents, size_t size,
     file->d_type = DT_DIR;
   } else {
     file->d_type = DT_REG;
-    if (readonly)
-    {
+    if (readonly) {
       file->data = (char *)contents;
       file->capacity = 0;
-    }
-    else {
+    } else {
       file->data = malloc(file->size);
       file->capacity = file->size;
       memcpy(file->data, contents, file->size);
@@ -338,17 +335,16 @@ int s0il_putchar(int c) {
 }
 
 int s0il_fputc(int c, FILE *stream) {
-  if (s0il_stream_is_internal(stream))
-  {
+  if (s0il_stream_is_internal(stream)) {
     file_t *file = _s0il_file[s0il_fileno(stream)];
-    if (file->pos+1 >= file->capacity)
-    {
+    if (file->pos + 1 >= file->capacity) {
       file->capacity += 256;
-      file->data = realloc (file->data, file->capacity);
+      file->data = realloc(file->data, file->capacity);
     }
-    file->data[file->pos]=c;
+    file->data[file->pos] = c;
     file->pos++;
-    if (file->pos > file->size) file->size=file->pos;
+    if (file->pos > file->size)
+      file->size = file->pos;
     return c;
   }
   if (stream == stdout) {
@@ -360,13 +356,11 @@ int s0il_fputc(int c, FILE *stream) {
 }
 
 int s0il_fputs(const char *s, FILE *stream) {
-  if (s0il_stream_is_internal(stream))
-  {
+  if (s0il_stream_is_internal(stream)) {
     int count = 0;
-    for (int i = 0; s[i]; i++)
-    {
+    for (int i = 0; s[i]; i++) {
       if (s0il_fputc(s[i], stream) != EOF)
-        count ++;
+        count++;
     }
     return count;
   }
@@ -386,7 +380,6 @@ int s0il_fputs(const char *s, FILE *stream) {
   return ret;
 }
 
-
 ssize_t s0il_write(int fd, const void *buf, size_t count) {
   if (fd == 1 || fd == 2) {
     text_output = 1;
@@ -403,13 +396,12 @@ ssize_t s0il_write(int fd, const void *buf, size_t count) {
 }
 
 int s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
-  if (s0il_stream_is_internal(stream))
-  {
+  if (s0il_stream_is_internal(stream)) {
     uint8_t *s = (uint8_t *)ptr;
     int count = 0;
     for (size_t i = 0; i < size * nmemb; i++) {
-      //if (s[i] == '\n')
-      //  ctx_vt_write(NULL, '\r');
+      // if (s[i] == '\n')
+      //   ctx_vt_write(NULL, '\r');
       count += (s0il_fputc(s[i], stream) != EOF);
     }
     return count;
@@ -531,46 +523,41 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
         break;
     _s0il_file[fileno] = file;
     file->pos = 0;
-    if (strchr(mode, 'w'))
-    {
-      if (file->flags & S0IL_READONLY)
-      {
+    if (strchr(mode, 'w')) {
+      if (file->flags & S0IL_READONLY) {
         char *old_data = file->data;
-        file->data = malloc (file->size);
+        file->data = malloc(file->size);
         file->capacity = file->size;
         memcpy(file->data, old_data, file->size);
         file->flags &= ~S0IL_READONLY;
       }
-      if (!strchr(mode, '+'))
-      {
+      if (!strchr(mode, '+')) {
         file->pos = 0;
         file->size = 0;
       }
     }
     if (path != pathname)
       free(path);
-    return (FILE*)(((char*)_s0il_internal_file) + fileno);
+    return (FILE *)(((char *)_s0il_internal_file) + fileno);
   }
 
-  if (strchr(mode, 'w'))
-  {
-  char *parent = strdup(path);
-  strrchr(parent, '/')[0] = 0;
-  if (parent[0] == 0) {
-    parent[0] = '/';
-    parent[1] = 0;
-  }
-  folder_t *folder = NULL;
-
-  for (CtxList *iter = folders; iter; iter = iter->next) {
-    folder = iter->data;
-    if (!strcmp(folder->path, parent)) {
-      break;
+  if (strchr(mode, 'w')) {
+    char *parent = strdup(path);
+    strrchr(parent, '/')[0] = 0;
+    if (parent[0] == 0) {
+      parent[0] = '/';
+      parent[1] = 0;
     }
-  }
-    free (parent);
-    if (folder)
-    {
+    folder_t *folder = NULL;
+
+    for (CtxList *iter = folders; iter; iter = iter->next) {
+      folder = iter->data;
+      if (!strcmp(folder->path, parent)) {
+        break;
+      }
+    }
+    free(parent);
+    if (folder) {
       char *t = "";
       file_t *file = s0il_add_file(path, t, 0, 0);
       int fileno = 0;
@@ -581,10 +568,9 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
       file->pos = 0;
       if (path != pathname)
         free(path);
-      return (FILE*)(((char*)_s0il_internal_file) + fileno);
+      return (FILE *)(((char *)_s0il_internal_file) + fileno);
     }
   }
-
 
   FILE *ret = fopen(path, mode);
   if (path != pathname)
@@ -1014,7 +1000,7 @@ off_t s0il_ftello(FILE *stream) {
 
 // pid info
 
-pid_t s0il_getpid(void)  { return 1; }
+pid_t s0il_getpid(void) { return 1; }
 
 pid_t s0il_getppid(void) { return 0; }
 

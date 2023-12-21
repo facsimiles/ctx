@@ -381,7 +381,6 @@ esp_vfs_dev_uart_use_driver(uart_num);
 
 #endif
 
-
 void usb_serial_jtag_init(void) {
   /* Disable buffering on stdin */
   setvbuf(stdin, NULL, _IONBF, 0);

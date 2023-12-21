@@ -1,17 +1,30 @@
 #include "port_config.h"
 #include "s0il.h"
 Ctx *ctx_host(void);
-#define MAX_THREADS 8
-void *thread_data[MAX_THREADS]={NULL,};
-int   thread_pid[MAX_THREADS]={0,};
+#define MAX_THREADS 4
+void *thread_data[MAX_THREADS] = {
+    NULL,
+};
+int thread_pid[MAX_THREADS] = {
+    0,
+};
 void *_s0il_thread_id(void);
 
 void *_s0il_main_thread = NULL;
 
-void s0il_program_runner_init(void)
-{
-  if (_s0il_main_thread) return;
+void s0il_program_runner_init(void) {
+  if (_s0il_main_thread)
+    return;
   thread_data[0] = _s0il_main_thread = _s0il_thread_id();
+}
+
+int s0il_thread_no(void) {
+  void *id = _s0il_thread_id();
+  for (int i = 0; i < MAX_THREADS; i++)
+    if (thread_data[i] == id)
+      return i;
+  exit(2);
+  return 0;
 }
 
 typedef struct _exec_state_t exec_state_t;
@@ -23,14 +36,13 @@ struct _exec_state_t {
 };
 
 typedef struct pidinfo_t {
-  int ppid;
-  int pid;
+  int   ppid;
+  int   pid;
   char *program;
   char *cwd;
   FILE *std_in; // < cannot use real name - due to #defines
   FILE *std_out;
   FILE *std_err;
-
 } pidinfo_t;
 
 static int peak_pid = 0;
@@ -47,10 +59,10 @@ int pre_exec(int same_stack) {
   return info->pid;
 }
 
-void post_exec(int pid, int same_stack) { output_state = 0;
+void post_exec(int pid, int same_stack) {
+  output_state = 0;
   pidinfo_t *info = NULL;
-  for (CtxList *iter = proc; iter; iter=iter->next)
-  {
+  for (CtxList *iter = proc; iter; iter = iter->next) {
     info = iter->data;
     if (info->pid == pid)
       break;
@@ -61,23 +73,14 @@ void post_exec(int pid, int same_stack) { output_state = 0;
 }
 int s0il_thread_no(void);
 
-int ps_main (int argc, char **argv)
-{
-  printf ("in thread_no:%i \n", s0il_thread_no());
-
-  for (int i = 0; i < MAX_THREADS; i++)
-  {
-     if (thread_data[i]) s0il_printf ("thread: %i pid: %i\n", i, thread_pid[i]);
-  }
-
-  for (CtxList *iter = proc; iter; iter=iter->next)
-  {
+int ps_main(int argc, char **argv) {
+  for (CtxList *iter = proc; iter; iter = iter->next) {
     pidinfo_t *info = iter->data;
-    s0il_printf ("%i", info->pid);
+    s0il_printf("%i", info->pid);
     if (info->program)
-      s0il_printf (" %s", info->program);
+      s0il_printf(" %s", info->program);
     if (info->cwd)
-      s0il_printf ("   %s", info->cwd);
+      s0il_printf("   %s", info->cwd);
     s0il_printf("\n");
   }
   return 0;
@@ -98,7 +101,7 @@ void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
   program->main = main;
   sprintf(program->path, "/bin/%s", name);
   ctx_list_append(&inlined_programs, program);
-  static const char busy_magic[6]={0, 's','0','i','l'};
+  static const char busy_magic[6] = {0, 's', '0', 'i', 'l'};
   s0il_add_file(program->path, busy_magic, sizeof(busy_magic), S0IL_READONLY);
 }
 #include <libgen.h>
@@ -227,8 +230,14 @@ static int esp_elf_runv(char *path, char **argv, int same_stack) {
     argc = 1;
     argv = fake_argv;
   }
+
   int pid = pre_exec(same_stack);
+  int old_pid = thread_pid[s0il_thread_no()];
+  thread_pid[s0il_thread_no()] = pid;
+
   retval = esp_elf_request(&elf->elf, 0 /* request-opt*/, argc, argv);
+
+  thread_pid[s0il_thread_no()] = old_pid;
   post_exec(pid, same_stack);
 
   if (retval != 42) // TSR
@@ -300,9 +309,16 @@ static int dlopen_runv(char *path2, char **argv, int same_stack) {
   if (dlhandle) {
     int (*main)(int argc, char **argv) = dlsym(dlhandle, "main");
     if (main) {
+
       int pid = pre_exec(same_stack);
+      int old_pid = thread_pid[s0il_thread_no()];
+      thread_pid[s0il_thread_no()] = pid;
+
       int ret = main(argc, argv);
+
+      thread_pid[s0il_thread_no()] = old_pid;
       post_exec(pid, same_stack);
+
       if (ret != 42)
         dlclose(dlhandle);
     }
@@ -334,13 +350,19 @@ static int program_runv(inlined_program_t *program, char **argv,
   }
   {
     int pid = pre_exec(same_stack);
+    int old_pid = thread_pid[s0il_thread_no()];
+    thread_pid[s0il_thread_no()] = pid;
+
     ret = program->main(argc, argv);
+
+    thread_pid[s0il_thread_no()] = old_pid;
     post_exec(pid, same_stack);
   }
   return ret;
 }
 
 int s0il_runv(char *path, char **argv) {
+  s0il_program_runner_init();
   // printf (":::%s %s\n", path, argv?argv[0]:NULL);
   for (CtxList *iter = inlined_programs; iter; iter = iter->next) {
     inlined_program_t *program = iter->data;
@@ -473,25 +495,16 @@ int s0il_runvp(char *file, char **argv) {
   return -1;
 }
 
-
-
-int s0il_thread_no(void)
-{
-  void *id = _s0il_thread_id();
-  for (int i = 0; i < MAX_THREADS; i++)
-    if (thread_data[i]==id) return i;
-  return -1;
-}
-
 static void *s0il_thread(void *data) {
   char **cargv = data;
   int thread_no = 0;
-  for (; thread_data[thread_no] && thread_no < MAX_THREADS; thread_no++);
+  for (; thread_data[thread_no] && thread_no < MAX_THREADS; thread_no++)
+    ;
 
   thread_data[thread_no] = _s0il_thread_id();
   int ret = s0il_runvp(cargv[0], cargv);
-  pthread_exit((void *)((size_t)ret));
   thread_data[thread_no] = NULL;
+  pthread_exit((void *)((size_t)ret));
   return (void *)((size_t)ret);
 }
 
