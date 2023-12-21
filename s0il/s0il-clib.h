@@ -69,8 +69,35 @@ int     s0il_chdir    (const char *path);
 char *s0il_getenv (const char *name);
 int   s0il_setenv (const char *name, const char *value, int overwrite);
 
+typedef struct {
+  size_t gl_pathc;
+  char **gl_pathv;
+  size_t gl_offs;
+} s0il_glob_t;
+
+#ifndef GLOB_ERR
+#define GLOB_ERR (1<<0)
+#define GLOB_MARK (1<<1)
+#define GLOB_NOSORT (1<<2)
+#define GLOB_DOOFFS (1<<3)
+#define GLOB_NOCHECK (1<<4)
+#define GLOB_APPEND  (1<<5)
+#define GLOB_NOESCAPE (1<<6)
+#define GLOB_PERIOD   (1<<7)
+#define GLOB_TILDE    (1<<8)
+#define GLOB_NOSPACE  1
+#define GLOB_ABORTED  2
+#define GLOB_NOMATCH  3
+#define GLOB_NOSYS    4
+#endif
+
+int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
+               void *glob_buf);
+
 #ifdef S0IL_REDEFINE_CLIB
 
+
+#define glob(a,b,c,d) s0il_glob(a,b,c,d)
 #define getenv(a) s0il_getenv(a) 
 #define setenv(a,b,c) s0il_setenv(a,b,c) 
 

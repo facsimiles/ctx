@@ -44,6 +44,15 @@ void s0il_ctx_destroy(void *ctx) { gfx_output = 0; }
 
 static char *s0il_cwd = NULL;
 
+char *s0il_getenv (const char *name)
+{
+  return getenv(name);
+}
+int   s0il_setenv (const char *name,const char *value, int overwrite)
+{
+  return setenv(name, value, overwrite);
+}
+
 char *s0il_getcwd(char *buf, size_t size) {
   if (!buf) {
     int size = 4;
@@ -140,6 +149,8 @@ int s0il_chdir(const char *path2) {
     free(path);
   return 0;
 }
+
+
 
 typedef struct file_t {
   char *path;
@@ -1148,11 +1159,11 @@ int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
 }
 
 
-char *s0il_getenv (const char *name)
+int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
+               void *glob_buf)
 {
-  return getenv(name);
+  // XXX : nneds to be implemented for wildcard expansion in cmdline parser
+  return 0;
 }
-int   s0il_setenv (const char *name,const char *value, int overwrite)
-{
-  return setenv(name, value, overwrite);
-}
+
+
