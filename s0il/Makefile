@@ -84,7 +84,7 @@ s0il: libs0il.so main.o bundled-programs.o
 PROGRAMS_C_BUNDLED=bin-src/*.c
 bundled-programs.o: $(PROGRAMS_C_BUNDLED)
 
-main.o: fs_bin_native.c
+main.o: fs_bin_native.c fs_data.c
 
 %.o: %.c *.h Makefile
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -c -g $< -o $@
@@ -129,14 +129,14 @@ bin-xtensa/%: bin-generic/%
 native_bins: $(PROGRAMS_NATIVE)
 xtensa_bins: $(PROGRAMS_XTENSA)
 
-flow3r-build: fs_bin_xtensa.c s0il*.[ch]
+flow3r-build: fs_data.c fs_bin_xtensa.c s0il*.[ch]
 	(cd flow3r; idf.py build)
 flow3r-flash: flow3r-build
 	(cd flow3r; idf.py app-flash monitor)
 monitor:
 	(cd flow3r; idf.py monitor)
 
-wasm: fs_bin_generic.c s0il*.[ch] */*.c bundled-programs-wasm.c wasm/Makefile
+wasm: fs_data.c fs_bin_generic.c s0il*.[ch] */*.c bundled-programs-wasm.c wasm/Makefile
 	(cd wasm; make)
 riscv-flash: riscv
 	(cd esp32c3; idf.py flash monitor)
@@ -156,12 +156,18 @@ fs_bin_native.c: $(PROGRAMS_NATIVE) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-native/* $@_fs
+	@rm $@_fs/image $@_fs/text $@_fs/clock
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
 
 fs_bin_generic.c: bin-generic/* Makefile mkfs.sh
 	./mkfs.sh bin-generic bin > $@_
+	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
+	@rm $@_
+
+fs_data.c: data/* Makefile mkfs.sh
+	./mkfs.sh data data > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm $@_
 format:

@@ -12,6 +12,7 @@ static char *root_path = NULL;
 #else
 #include "fs_bin_generic.c"
 #endif
+#include "fs_data.c"
 
 void add_mains(void);
 
@@ -154,6 +155,7 @@ int main(int argc, char **argv) {
   s0il_bundle_main("ps", ps_main);
   add_mains();
   mount_bin();
+  mount_data();
 
   Ui *ui = ui_new(ctx);
   ui_fake_circle(ui, true);
@@ -223,6 +225,7 @@ int main(int argc, char **argv) {
       " shift-space    toggle keyboard\n";
 
   s0il_add_file("/sd", NULL, 0, S0IL_DIR | S0IL_READONLY);
+  s0il_add_file("/data", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/flash", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/bin", NULL, 0, S0IL_DIR | S0IL_READONLY);
   // s0il_add_file("/tmp", NULL, 0, S0IL_DIR|S0IL_READONLY);

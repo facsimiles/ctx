@@ -1,1 +1,1 @@
-../../bundled-programs-wasm.c
+../../bundled-programs.c

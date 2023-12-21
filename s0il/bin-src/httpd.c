@@ -68,8 +68,8 @@ typedef struct filemapping {
 } filemapping;
 
 static const filemapping filemappings[] = {
-    {"/", "/_/webroot/index.html"},
-    {"/favicon.ico", "/_/webroot/favicon.ico"},
+    {"/", "/data/index.html"},
+    {"/favicon.ico", "/data/favicon.ico"},
     {NULL, NULL},
 };
 
@@ -264,10 +264,10 @@ static void httpd_browse_handler(HttpdRequest *req) {
   OUTF("<html><head><title>%s</title>\n<style type='text/css'>\n%s</style>\n",
        req->path, httpd_css);
   OUTS(
-      "<link rel='stylesheet' href='/static/codemirror.css'/>\n"
-      "<link rel='stylesheet' href='/static/codemirror-cobalt.css'/>\n"
-      "<script src='/static/codemirror.js'></script>\n"
-      "<script src='/static/codemirror-python.js'></script>\n"
+      "<link rel='stylesheet' href='/data/codemirror.css'/>\n"
+      "<link rel='stylesheet' href='/data/codemirror-cobalt.css'/>\n"
+      "<script src='/data/codemirror.js'></script>\n"
+      "<script src='/data/codemirror-python.js'></script>\n"
       "<script>"
       "window.unblock_savemod = false;"
       "window.onkeypress= function(event) { }"

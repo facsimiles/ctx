@@ -11,7 +11,7 @@ static void tsr_view_foo(Ui *ui) {
   ui_end_frame(ui);
 }
 
-MAIN(tsr_ui) {
+MAIN(demo_tsr) {
   Ui *ui = ui_host(NULL);
 
   // XXX: this is ugly

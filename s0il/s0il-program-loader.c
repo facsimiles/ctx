@@ -123,7 +123,7 @@ int busywarp(int argc, char **argv) {
   char *tmp = strdup(argv[0]);
   char *base = ui_basename(tmp);
 
-  if (!strcmp(base, "busywarp")) {
+  if (!strcmp(base, "bundled")) {
     if (argv[1] == NULL) {
       s0il_printf("Usage: %s <command> [args ..]\n  commands: ", base);
       busywarp_list();
@@ -142,11 +142,388 @@ int busywarp(int argc, char **argv) {
       return ret;
     }
   }
-  printf("no matching internal %s\nAvailable commands: ", base);
+  printf("no matching bunle %s\nAvailable bundled commands: ", base);
   busywarp_list();
   printf("\n");
   free(tmp);
   return -1;
+}
+
+static char *resolve_variable(const char *variable)
+{
+  if (!strcmp (variable, "foo"))  return "foo thing";
+  if (!strcmp (variable, "HOME")) return "/home/user";
+  if (!strcmp (variable, "PATH")) return "/bin:/usr/bin:/sd/bin";
+  return "";
+}
+
+static char *resolve_cmd(const char *cmd)
+{
+  if (!strcmp (cmd, "foo"))  return "foo thing";
+  if (!strcmp (cmd, "ls")) return "bin sd";
+  return "";
+}
+
+typedef enum {
+  S0IL_CMD_DEFAULT = 0,
+  S0IL_CMD_IN_ARG,
+  S0IL_CMD_STRING,
+  S0IL_CMD_QUOT,
+  S0IL_CMD_DQUOT,
+  S0IL_CMD_STRING_VAR,
+  S0IL_CMD_DQUOT_VAR,
+  S0IL_CMD_RQUOT,
+  S0IL_CMD_STRING_ESCAPE,
+  S0IL_CMD_QUOT_ESCAPE,
+  S0IL_CMD_DQUOT_ESCAPE,
+  S0IL_CMD_RQUOT_ESCAPE,
+  S0IL_CMD_TERMINATOR,
+  S0IL_CMD_WHITE_SPACE,
+} argv_state; 
+
+static char **s0il_parse_cmdline (const char  *input,
+                                  char        *terminator,
+                                  const char **rest)
+{
+  char **argv = NULL;
+  int arg_count = 0;
+
+  char *out = 0;
+
+#define case_TERMINATORS \
+          case '>':  \
+          case '&':  \
+          case '\n': \
+          case '\0': \
+          case '|':  \
+          case '#':  \
+          case ';'
+
+#define case_VAR_BREAKER \
+          case '-': \
+          case ' ': \
+          case '+': \
+          case '='
+
+  for (int write = 0; write < 2; write ++) // first round is non write
+  { 
+  char variable[32];
+  int varlen = 0;
+  char cmd[256];
+  int cmdlen = 0;
+  int total_length = 0;
+  int arg_length = 0;
+  int state = S0IL_CMD_DEFAULT;
+  const char *p = input;
+  for (; (p==input || p[-1]) && state != S0IL_CMD_TERMINATOR; p++)
+  {
+    switch (state) 
+    {
+      case S0IL_CMD_DEFAULT:
+        switch (*p)
+        {
+          case '$':  state = S0IL_CMD_STRING_VAR; varlen=0; break;
+          case '\'': state = S0IL_CMD_QUOT; break;
+          case '"':  state = S0IL_CMD_DQUOT; break;
+          case '`':  state = S0IL_CMD_RQUOT; cmdlen=0;cmd[cmdlen]=0;break;
+          case ' ': break;
+          case_TERMINATORS:
+            state = S0IL_CMD_TERMINATOR;
+            if (terminator)
+              *terminator = *p;
+            break;
+          default: state = S0IL_CMD_STRING;
+            if (write)
+               *(out++) = *p;
+            arg_length++;
+            break;
+        }
+        break;
+      case S0IL_CMD_STRING:
+        switch (*p)
+        {
+          case ' ':
+            state = S0IL_CMD_DEFAULT;
+            total_length += arg_length + 1;
+            arg_count++;
+            out++;
+	    if (write)
+              argv[arg_count] = out;
+            arg_length = 0;
+            break;
+          case '\\': state = S0IL_CMD_STRING_ESCAPE; break;
+          case '"': state = S0IL_CMD_DQUOT; break;
+          case '`': state = S0IL_CMD_RQUOT; cmdlen=0;cmd[cmdlen]=0;break;
+          case_TERMINATORS:
+            total_length += arg_length + 1;
+            arg_count++;
+	    if (write)
+              argv[arg_count] = out;
+            arg_length = 0;
+            state = S0IL_CMD_TERMINATOR;
+            if(terminator)*terminator = *p;
+            break;
+          default:
+            if (write)
+               *(out++) = *p;
+            arg_length++;
+            break;
+        }
+        break;
+
+     case S0IL_CMD_STRING_VAR:
+        switch (*p)
+        {
+          case_TERMINATORS:
+            if(terminator)
+              *terminator = *p;
+            state = S0IL_CMD_TERMINATOR;
+            {
+              const char *value = resolve_variable(variable);
+              if (value)
+              {
+                for (int i = 0; value[i]; i++)
+                {
+                  if (write)
+                    *(out++) = value[i];
+                  arg_length++;
+                }
+              }
+            }
+            break;
+          case_VAR_BREAKER:
+            if (state != S0IL_CMD_TERMINATOR)
+              state = S0IL_CMD_STRING;
+            {
+              const char *value = resolve_variable(variable);
+              if (value)
+              {
+                for (int i = 0; value[i]; i++)
+                {
+                  if (write)
+                    *(out++) = value[i];
+                  arg_length++;
+                }
+              }
+            }
+            break;
+          default:
+            if (varlen+1<sizeof(variable))
+              variable[varlen++]=*p;
+            variable[varlen]=0;
+        }
+        break;
+     case S0IL_CMD_DQUOT_VAR:
+        switch (*p)
+        {
+          case_TERMINATORS:
+          case_VAR_BREAKER:
+          case '"':
+            state = S0IL_CMD_DQUOT;
+            {
+              const char *value = resolve_variable(variable);
+              if (value)
+              {
+                for (int i = 0; value[i]; i++)
+                {
+                  if (write)
+                    *(out++) = value[i];
+                  arg_length++;
+                }
+              }
+            }
+            if (*p == '"')p--;
+            break;
+          default:
+            if (varlen+1<sizeof(variable))
+              variable[varlen++]=*p;
+            variable[varlen]=0;
+        }
+        break;
+
+      case S0IL_CMD_IN_ARG:
+        switch (*p)
+        {
+          case '\'': state = S0IL_CMD_QUOT; break;
+          case '"': state = S0IL_CMD_DQUOT; break;
+          case '`': state = S0IL_CMD_RQUOT; break;
+          case ' ':
+            state = S0IL_CMD_DEFAULT;
+            arg_count++;
+            out++;
+	    if (write)
+              argv[arg_count] = ++out;
+            total_length += arg_length + 1;
+            arg_length = 0;
+            break;
+          case_TERMINATORS:
+            total_length += arg_length + 1;
+            arg_length = 0;
+            arg_count++;
+            out++;
+	    if (write)
+              argv[arg_count] = out;
+            state = S0IL_CMD_TERMINATOR;
+            break;
+          default: state = S0IL_CMD_STRING;
+            if (write)
+               *(out++) = *p;
+            break;
+        }
+        break;
+      case S0IL_CMD_QUOT:
+        switch (*p)
+        {
+          case '\'': state = S0IL_CMD_IN_ARG; break;
+          case '\\': state = S0IL_CMD_QUOT_ESCAPE; break;
+             break;
+          default: 
+            if (write)
+               *(out++) = *p;
+	    else
+               arg_length++;
+            break;
+        }
+        break;
+      case S0IL_CMD_DQUOT:
+        switch (*p)
+        {
+          case '$':  state = S0IL_CMD_DQUOT_VAR; varlen=0; break;
+          case '"':  state = S0IL_CMD_IN_ARG; break;
+          case '\\': state = S0IL_CMD_DQUOT_ESCAPE; break;
+          default:
+            if (write)
+               *(out++) = *p;
+            break;
+        }
+        break;
+      case S0IL_CMD_RQUOT:
+        switch (*p)
+        {
+          case '`':  state = S0IL_CMD_IN_ARG;
+
+    {
+      const char *value = resolve_cmd(cmd);
+      if (value)
+      {
+        for (int i = 0; value[i]; i++)
+        {
+          if (write)
+            *(out++) = value[i];
+          arg_length++;
+        }
+      }
+    }
+          break;
+          case '\\': state = S0IL_CMD_RQUOT_ESCAPE; break;
+          default:
+            if(cmdlen + 1 < sizeof(cmd))
+              cmd[cmdlen++]=*p;
+            cmd[cmdlen]=0;
+            break;
+        }
+        break;
+      case S0IL_CMD_RQUOT_ESCAPE:
+        switch (*p)
+        {
+          case '\n': break;
+          default:
+            state = S0IL_CMD_RQUOT;
+            if(cmdlen + 1 < sizeof(cmd))
+              cmd[cmdlen++]=*p;
+            cmd[cmdlen]=0;
+            break;
+        }
+        break;
+      case S0IL_CMD_QUOT_ESCAPE:
+        switch (*p)
+        {
+          case '\n':
+            break;
+          default:
+            state = S0IL_CMD_QUOT;
+            if (write)
+               *(out++) = *p;
+	    else
+              arg_length++;
+            break;
+        }
+        break;
+      case S0IL_CMD_DQUOT_ESCAPE:
+        switch (*p)
+        {
+          case '\n':
+            break;
+          default:
+            state = S0IL_CMD_DQUOT;
+            if (write)
+               *(out++) = *p;
+	    else
+              arg_length++;
+            break;
+        }
+        break;
+      case S0IL_CMD_STRING_ESCAPE:
+        switch (*p)
+        {
+          case '\n':
+            break;
+          default:
+            state = S0IL_CMD_STRING;
+            if (write)
+               *(out++) = *p;
+	    else
+              arg_length++;
+            break;
+        }
+        break;
+    }
+  }
+#undef case_TERMINATORS
+
+  // TODO : check if this is no longer needed with \0 incorporated in
+  // state machine
+  if (state == S0IL_CMD_STRING_VAR)
+  {
+    state = S0IL_CMD_STRING;
+    {
+      const char *value = resolve_variable(variable);
+      if (value)
+      {
+        for (int i = 0; value[i]; i++)
+        {
+          if (write)
+            *(out++) = value[i];
+          arg_length++;
+        }
+      }
+    }
+  }
+  if (arg_length)
+  {
+    total_length += arg_length + 1;
+    arg_count++;
+    if (write)
+      argv[arg_count] = NULL;
+    arg_length = 0;
+  }
+
+
+
+    if (write == 0)
+    {
+      // XXX : the 8 is to make it valgrind clean.. overshoots of 2 have been seen
+      argv = calloc (1, total_length + (arg_count + 1)* sizeof(void*) + 1 + 8);
+      out = (char*)(argv + (arg_count+1));
+      argv[0] = out;
+      arg_count = 0;
+    }
+
+    if(rest)*rest = p;
+  }
+  argv[arg_count]=NULL;
+  if(rest)if (**rest == 0) *rest = NULL;
+  return argv;
 }
 
 #ifndef WASM
@@ -524,79 +901,15 @@ int s0il_spawnp(char **argv) {
   return 23;
 }
 
-static char *
-string_chop_head(char *orig) /* return pointer to reset after arg */
-{
-  int j = 0;
-  int eat = 0; /* number of chars to eat at start */
-
-  if (orig) {
-    int got_more;
-    char *o = orig;
-    while (o[j] == ' ') {
-      j++;
-      eat++;
-    }
-
-    if (o[j] == '"') {
-      eat++;
-      j++;
-      while (o[j] != '"' && o[j] != 0)
-        j++;
-      o[j] = '\0';
-      j++;
-    } else if (o[j] == '\'') {
-      eat++;
-      j++;
-      while (o[j] != '\'' && o[j] != 0)
-        j++;
-      o[j] = '\0';
-      j++;
-    } else {
-      while (o[j] != ' ' && o[j] != 0 && o[j] != '>' && o[j] != '|' &&
-             o[j] != '&' && o[j] != ';')
-        j++;
-    }
-
-    if (o[j] == 0 || o[j] == '>' || o[j] == '|' || o[j] == '&' || o[j] == ';')
-      got_more = 0;
-    else
-      got_more = 1;
-    o[j] = 0; /* XXX: this is where foo;bar won't work but foo ;bar works*/
-
-    if (eat) {
-      int k;
-      for (k = 0; k < j - eat; k++)
-        orig[k] = orig[k + eat];
-    }
-    if (got_more)
-      return &orig[j + 1];
-  }
-  return NULL;
-}
-
 FILE *s0il_popen(const char *cmdline, const char *type) {
-  char *cargv[32];
-  int cargc;
-  char *rest, *copy;
+  const char *rest = cmdline;
+  char terminator = 0;
   if (!cmdline)
     return NULL;
-  copy = calloc(strlen(cmdline) + 3, 1);
-  strcpy(copy, cmdline);
-  rest = copy;
+  char **cargv = s0il_parse_cmdline(rest, &terminator, &rest);
   FILE *out_stream = NULL;
-
-  cargc = 0;
-  while (
-      rest && cargc < 30 &&
-      (rest[0] != ';' && rest[0] != '&' && rest[0] != '>' && rest[0] != '|')) {
-    cargv[cargc++] = rest;
-    rest = string_chop_head(rest);
-  }
-  cargv[cargc] = NULL;
-  if (cargv[0]) {
-    {
-
+  if (cargv) {
+    if (cargv[0]){
       char path[] = "/tmp/s0il_popen_0";
       out_stream = s0il_fopen(path, "w");
 
@@ -606,42 +919,29 @@ FILE *s0il_popen(const char *cmdline, const char *type) {
       s0il_redirect_io(NULL, NULL);
       s0il_rewind(out_stream);
     }
-    if (rest && (rest[0] == ';' || rest[0] == '&' || rest[0] == '|' ||
-                 rest[0] == '>')) {
-      rest++;
-      while (rest[0] == ' ')
-        rest++;
-    }
+    free(cargv);
   }
-  while (rest && rest[0])
-    ;
-  free(copy);
   return out_stream;
 }
 
 int s0il_pclose(FILE *stream) { return s0il_fclose(stream); }
 
 int s0il_system(const char *cmdline) {
-  char *cargv[32];
+  char **cargv = NULL;
   int cargc;
-  char *rest, *copy;
+  char terminator = 0;
+  const char *rest;
   int ret = 0;
   if (!cmdline)
     return -4;
-  copy = calloc(strlen(cmdline) + 3, 1);
-  strcpy(copy, cmdline);
-  rest = copy;
+  rest = cmdline;
 
   int pipe_no = 0;
   do {
-    cargc = 0;
-    while (rest && cargc < 30 &&
-           (rest[0] != ';' && rest[0] != '&' && rest[0] != '>' &&
-            rest[0] != '|')) {
-      cargv[cargc++] = rest;
-      rest = string_chop_head(rest);
-    }
-    cargv[cargc] = NULL;
+    cargv = s0il_parse_cmdline(rest, &terminator, &rest);
+    if (cargv){
+    for (cargc = 0; cargv[cargc]; cargc++);
+
     if (cargv[0]) {
       if (strchr(cargv[0], '=')) {
         char *key = cargv[0];
@@ -653,36 +953,42 @@ int s0il_system(const char *cmdline) {
         FILE *in_stream = NULL;
         FILE *out_stream = NULL;
         if (pipe_no) {
-          char path[] = "/tmp/s0il_pipe_0";
+          char path[] = "/tmp/s0il_pipe_0"; // todo : use mktemp
           path[15] = pipe_no - 1 + '0';
           in_stream = s0il_fopen(path, "r");
         }
 
-        if (rest && rest[0] == '|') {
+        switch(terminator)
+        {
+        case '|':
+          {
           char path[] = "/tmp/s0il_pipe_0";
           path[15] = pipe_no + '0';
           out_stream = s0il_fopen(path, "w");
           pipe_no++;
-        } else if (rest && rest[0] == '>' && rest[1] == '>') {
-          char *path = rest + 1;
+          }
+          break;
+        case '>':
+          {
+           int append = 0;
+           if (rest[0]=='>'){
+             append = 1; rest++;
+           }
+          char *path = rest;
           while (*path == ' ')
             path++;
-          out_stream = s0il_fopen(path, "w+");
+          out_stream = s0il_fopen(path, append?"w":"w+");
           pipe_no = 0;
-        } else if (rest && rest[0] == '>') {
-          char *path = rest + 1;
-          while (*path == ' ')
-            path++;
-          out_stream = s0il_fopen(path, "w");
-          pipe_no = 0;
-        } else {
+          }
+          break;
+          default:
           pipe_no = 0;
         }
 
         if (in_stream || out_stream)
           s0il_redirect_io(in_stream, out_stream);
 
-        if (rest && rest[0] == '&') {
+        if (terminator == '&') {
           int pid = s0il_spawnp(cargv);
           if (pid <= 0)
             printf("spawn failed\n");
@@ -701,14 +1007,9 @@ int s0il_system(const char *cmdline) {
           s0il_fclose(out_stream);
       }
     }
-    if (rest && (rest[0] == ';' || rest[0] == '&' || rest[0] == '|' ||
-                 rest[0] == '>')) {
-      rest++;
-      while (rest[0] == ' ')
-        rest++;
+    free (cargv);
     }
   } while (rest && rest[0]);
-  free(copy);
   ctx_reset_has_exited(ctx_host());
   return ret;
 }

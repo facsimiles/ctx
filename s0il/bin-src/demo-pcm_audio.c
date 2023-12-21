@@ -254,7 +254,7 @@ static void render_audio(Ctx *ctx) {
 
 float _ctx_pause = 0.0;
 
-MAIN(audio_ks) {
+MAIN(demo_pcm_audio) {
   Ctx *ctx = ctx_new(240, 240, NULL);
   prev_ticks = ctx_ticks();
   ctx_pcm_set_format(ctx, CTX_S16);

@@ -1,6 +1,6 @@
 #include "s0il.h"
 
-MAIN(app) {
+MAIN(demo_ctx_host) {
   Ctx *ctx = ctx_host(); // ctx_new(240,240,NULL);
   if (!ctx)
     return -1;

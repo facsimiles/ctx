@@ -11,7 +11,7 @@ static inline uint16_t rgb888_to_rgb565bs(uint8_t red, uint8_t green,
 
 Ctx *ctx_host(void);
 
-MAIN(raw_fb) {
+MAIN(demo_setpixels) {
   int width = 240;
   int height = 240;
   uint16_t *pixels = NULL;

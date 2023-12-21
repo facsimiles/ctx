@@ -6,7 +6,7 @@ static void app_ui_view_foo(Ui *ui) {
   ui_end_frame(ui);
 }
 
-MAIN(app_ui) {
+MAIN(demo_ui) {
   Ctx *ctx = ctx_new(240, 240, NULL);
   if (!ctx)
     return -1;
