@@ -14,7 +14,8 @@ void *_s0il_thread_id(void) {
 #endif
 }
 
-bool s0il_is_main_thread() {
+
+bool s0il_is_main_thread(void) {
 #if EMSCRIPTEN
   return 1;
 #elif CTX_ESP

@@ -133,6 +133,7 @@ void view_settings(Ui *ui) {
 
 int magic_main(int argc, char **argv);
 int file_main(int argc, char **argv);
+int ps_main (int argc, char **argv);
 
 #include <fcntl.h>
 #include <signal.h>
@@ -152,6 +153,7 @@ int main(int argc, char **argv) {
   fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
   s0il_bundle_main("magic", magic_main);
   s0il_bundle_main("file", file_main);
+  s0il_bundle_main("ps", ps_main);
   add_mains();
   mount_bin();
 

@@ -3,11 +3,13 @@
 
 #include <dirent.h>
 
-void *_s0il_main_thread = NULL;
 
+void s0il_program_runner_init(void);
 int _init_main(int argc, char **argv) {
   // Ui *ui = ui_host(NULL);
-  _s0il_main_thread = _s0il_thread_id();
+
+  s0il_program_runner_init();
+
   system("rm -f /tmp/_s0il_*");
   const char elf_magic_32bit[] = {0x7f, 'E', 'L', 'F', 1, 1, 1, 0, 0, 0};
   const char elf_magic_64bit[] = {0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0};

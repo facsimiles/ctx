@@ -143,25 +143,25 @@ riscv-flash: riscv
 riscv: fs_bin_generic.c s0il*.[ch] */*.c
 	(cd esp32c3; idf.py build)
 
-fs_bin_xtensa.c: $(PROGRAMS_XTENSA) Makefile gen_fs.sh
+fs_bin_xtensa.c: $(PROGRAMS_XTENSA) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-xtensa/* $@_fs
 	@rm $@_fs/image $@_fs/text $@_fs/clock
-	./gen_fs.sh $@_fs bin > $@_
+	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
 
-fs_bin_native.c: $(PROGRAMS_NATIVE) Makefile gen_fs.sh
+fs_bin_native.c: $(PROGRAMS_NATIVE) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-native/* $@_fs
-	./gen_fs.sh $@_fs bin > $@_
+	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
 
-fs_bin_generic.c: bin-generic/* Makefile gen_fs.sh
-	./gen_fs.sh bin-generic bin > $@_
+fs_bin_generic.c: bin-generic/* Makefile mkfs.sh
+	./mkfs.sh bin-generic bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm $@_
 format:

@@ -1,6 +1,18 @@
 #include "port_config.h"
 #include "s0il.h"
 Ctx *ctx_host(void);
+#define MAX_THREADS 8
+void *thread_data[MAX_THREADS]={NULL,};
+int   thread_pid[MAX_THREADS]={0,};
+void *_s0il_thread_id(void);
+
+void *_s0il_main_thread = NULL;
+
+void s0il_program_runner_init(void)
+{
+  if (_s0il_main_thread) return;
+  thread_data[0] = _s0il_main_thread = _s0il_thread_id();
+}
 
 typedef struct _exec_state_t exec_state_t;
 struct _exec_state_t {
@@ -35,7 +47,41 @@ int pre_exec(int same_stack) {
   return info->pid;
 }
 
-void post_exec(int pid, int same_stack) { output_state = 0; }
+void post_exec(int pid, int same_stack) { output_state = 0;
+  pidinfo_t *info = NULL;
+  for (CtxList *iter = proc; iter; iter=iter->next)
+  {
+    info = iter->data;
+    if (info->pid == pid)
+      break;
+    info = NULL;
+  }
+  if (info)
+    ctx_list_remove(&proc, info);
+}
+int s0il_thread_no(void);
+
+int ps_main (int argc, char **argv)
+{
+  printf ("in thread_no:%i \n", s0il_thread_no());
+
+  for (int i = 0; i < MAX_THREADS; i++)
+  {
+     if (thread_data[i]) s0il_printf ("thread: %i pid: %i\n", i, thread_pid[i]);
+  }
+
+  for (CtxList *iter = proc; iter; iter=iter->next)
+  {
+    pidinfo_t *info = iter->data;
+    s0il_printf ("%i", info->pid);
+    if (info->program)
+      s0il_printf (" %s", info->program);
+    if (info->cwd)
+      s0il_printf ("   %s", info->cwd);
+    s0il_printf("\n");
+  }
+  return 0;
+}
 
 typedef struct inlined_program_t {
   char *base;
@@ -427,10 +473,25 @@ int s0il_runvp(char *file, char **argv) {
   return -1;
 }
 
+
+
+int s0il_thread_no(void)
+{
+  void *id = _s0il_thread_id();
+  for (int i = 0; i < MAX_THREADS; i++)
+    if (thread_data[i]==id) return i;
+  return -1;
+}
+
 static void *s0il_thread(void *data) {
   char **cargv = data;
+  int thread_no = 0;
+  for (; thread_data[thread_no] && thread_no < MAX_THREADS; thread_no++);
+
+  thread_data[thread_no] = _s0il_thread_id();
   int ret = s0il_runvp(cargv[0], cargv);
   pthread_exit((void *)((size_t)ret));
+  thread_data[thread_no] = NULL;
   return (void *)((size_t)ret);
 }
 
