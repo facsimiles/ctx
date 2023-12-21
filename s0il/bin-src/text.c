@@ -329,6 +329,10 @@ MAIN(text) {
   Ctx *ctx = ctx_new(512, 512, NULL);
   Ui *ui = ui_host(ctx);
   text->scroll = 0.0f - ctx_height(ctx) / 8;
+  text->pos = 0;
+  reset_cursor_info();
+  
+  
   if (argv[1]) {
     Ctx *ctx = ui_ctx(ui);
 
