@@ -17,7 +17,7 @@
 #include "bundled/picoc.c"
 //#include "bin-src/app.c"
 #include "bin-src/demo-pcm_audio.c"
-#include "bin-src/busywarp.c"
+#include "bin-src/bundled.c"
 #include "bin-src/demo-setpixels.c"
 #include "bin-src/demo-tsr.c"
 #include "bin-src/demo-ui.c"
@@ -35,7 +35,7 @@ void add_mains(void) {
   s0il_bundle_main("text", text_main);
   s0il_bundle_main("clock", clock_main);
   s0il_bundle_main("demo-setpixels", demo_setpixels_main);
-  s0il_bundle_main("busywarp", busywarp_main);
+  s0il_bundle_main("bundled", bundled_main);
   s0il_bundle_main("demo-tsr", demo_tsr_main);
   //s0il_bundle_main("app", app_main);
   s0il_bundle_main("wifi", wifi_main);

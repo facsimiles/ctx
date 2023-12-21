@@ -33,7 +33,7 @@ void __ledf2(void);
 void __gedf2(void);
 void __lshrdi3(void);
 
-int busywarp(int argc, char **argv);
+int main_bundled(int argc, char **argv);
 void ctx_set_pixels(Ctx *ctx, void *userdata, int x, int y, int w, int h,
                     void *buf);
 
@@ -114,7 +114,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(bsp_captouch_down),
     ELFSYM_EXPORT(bsp_captouch_radial),
 #endif
-    ELFSYM_EXPORT(busywarp),
+    ELFSYM_EXPORT(main_bundled),
     ELFSYM_EXPORT(bzero),
     ELFSYM_EXPORT(calloc),
     ELFSYM_EXPORT(cbrt),

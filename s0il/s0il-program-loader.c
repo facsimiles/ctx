@@ -106,7 +106,7 @@ void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
 }
 #include <libgen.h>
 
-static void busywarp_list(void) {
+static void bundled_list(void) {
   for (CtxList *iter = inlined_programs; iter; iter = iter->next) {
     inlined_program_t *program = iter->data;
     s0il_printf("%s ", program->base);
@@ -119,18 +119,18 @@ char *ui_basename(const char *in) {
   return (char *)in;
 }
 
-int busywarp(int argc, char **argv) {
+int main_bundled(int argc, char **argv) {
   char *tmp = strdup(argv[0]);
   char *base = ui_basename(tmp);
 
   if (!strcmp(base, "bundled")) {
     if (argv[1] == NULL) {
-      s0il_printf("Usage: %s <command> [args ..]\n  commands: ", base);
-      busywarp_list();
+      s0il_printf("Usage: bundled <command> [args ..]\n  commands: ");
+      bundled_list();
       s0il_printf("\n");
       return 0;
     } else {
-      return busywarp(argc - 1, &argv[1]);
+      return main_bundled (argc - 1, &argv[1]);
     }
   }
 
@@ -142,8 +142,8 @@ int busywarp(int argc, char **argv) {
       return ret;
     }
   }
-  printf("no matching bunle %s\nAvailable bundled commands: ", base);
-  busywarp_list();
+  printf("no matching bunlde %s\nValid commands: ", base);
+  bundled_list();
   printf("\n");
   free(tmp);
   return -1;
