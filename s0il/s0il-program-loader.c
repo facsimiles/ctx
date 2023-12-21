@@ -149,14 +149,6 @@ int busywarp(int argc, char **argv) {
   return -1;
 }
 
-static char *resolve_variable(const char *variable)
-{
-  if (!strcmp (variable, "foo"))  return "foo thing";
-  if (!strcmp (variable, "HOME")) return "/home/user";
-  if (!strcmp (variable, "PATH")) return "/bin:/usr/bin:/sd/bin";
-  return "";
-}
-
 static char *resolve_cmd(const char *cmd)
 {
   if (!strcmp (cmd, "foo"))  return "foo thing";
@@ -279,7 +271,7 @@ static char **s0il_parse_cmdline (const char  *input,
               *terminator = *p;
             state = S0IL_CMD_TERMINATOR;
             {
-              const char *value = resolve_variable(variable);
+              const char *value = s0il_getenv(variable);
               if (value)
               {
                 for (int i = 0; value[i]; i++)
@@ -295,7 +287,7 @@ static char **s0il_parse_cmdline (const char  *input,
             if (state != S0IL_CMD_TERMINATOR)
               state = S0IL_CMD_STRING;
             {
-              const char *value = resolve_variable(variable);
+              const char *value = s0il_getenv(variable);
               if (value)
               {
                 for (int i = 0; value[i]; i++)
@@ -321,7 +313,7 @@ static char **s0il_parse_cmdline (const char  *input,
           case '"':
             state = S0IL_CMD_DQUOT;
             {
-              const char *value = resolve_variable(variable);
+              const char *value = s0il_getenv(variable);
               if (value)
               {
                 for (int i = 0; value[i]; i++)
@@ -487,7 +479,7 @@ static char **s0il_parse_cmdline (const char  *input,
   {
     state = S0IL_CMD_STRING;
     {
-      const char *value = resolve_variable(variable);
+      const char *value = s0il_getenv(variable);
       if (value)
       {
         for (int i = 0; value[i]; i++)

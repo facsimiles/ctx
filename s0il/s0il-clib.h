@@ -66,7 +66,13 @@ void    s0il_signal   (int sig, void(*func)(int));
 char   *s0il_getcwd   (char *buf, size_t size);
 int     s0il_chdir    (const char *path);
 
+char *s0il_getenv (const char *name);
+int   s0il_setenv (const char *name, const char *value, int overwrite);
+
 #ifdef S0IL_REDEFINE_CLIB
+
+#define getenv(a) s0il_getenv(a) 
+#define setenv(a,b,c) s0il_setenv(a,b,c) 
 
 #define popen(a,b)  s0il_popen(a,b)
 #define pclose(a)   s0il_pclose(a)

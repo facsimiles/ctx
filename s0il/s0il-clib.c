@@ -1146,3 +1146,13 @@ int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
   // printf("select nfds: %i\n", nfds);
   return select(nfds, read_fds, write_fds, except_fds, timeout);
 }
+
+
+char *s0il_getenv (const char *name)
+{
+  return getenv(name);
+}
+int   s0il_setenv (const char *name,const char *value, int overwrite)
+{
+  return setenv(name, value, overwrite);
+}
