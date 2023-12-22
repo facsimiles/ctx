@@ -2,6 +2,14 @@
 #include "s0il.h"
 extern void *_s0il_main_thread;
 
+
+#if defined(PICO_BUILD)
+#define S0IL_HAVE_FS  0
+#else
+#define S0IL_HAVE_FS  1
+#endif
+
+
 void *_s0il_thread_id(void) {
 #if EMSCRIPTEN
   return 0;
@@ -1037,10 +1045,14 @@ DIR *s0il_opendir(const char *name2) {
       return _s0il_internal_dir;
     }
   }
+#if S0IL_HAVE_FS
   DIR *ret = opendir(name);
   if (name != name2)
     free(name);
   return ret;
+#else
+  return NULL;
+#endif
 }
 
 struct dirent *s0il_readdir(DIR *dirp) {
@@ -1062,7 +1074,11 @@ struct dirent *s0il_readdir(DIR *dirp) {
     }
     return NULL;
   }
+#if S0IL_HAVE_FS
   return readdir(dirp);
+#else
+  return NULL;
+#endif
 }
 
 int s0il_closedir(DIR *dirp) {
@@ -1070,7 +1086,11 @@ int s0il_closedir(DIR *dirp) {
     _s0il_dir = NULL;
     return 0;
   }
+#if S0IL_HAVE_FS
   return closedir(dirp);
+#else
+  return 0;
+#endif
 }
 
 int s0il_unlink(const char *pathname) {
@@ -1080,7 +1100,9 @@ int s0il_unlink(const char *pathname) {
   if ((file = s0il_find_file(path))) {
     return s0il_unlink_internal(path);
   }
+#if S0IL_HAVE_FS
   ret = unlink(path);
+#endif
   if (path != pathname)
     free(path);
   return ret;
@@ -1106,13 +1128,23 @@ int s0il_stat(const char *pathname, struct stat *statbuf) {
         return 0;
       }
     }
+#if S0IL_HAVE_FS
   int ret = stat(path, statbuf);
   if (path != pathname)
     free(path);
   return ret;
+#else
+  return -1;
+#endif
 }
 
-int s0il_fstat(int fd, struct stat *statbuf) { return fstat(fd, statbuf); }
+int s0il_fstat(int fd, struct stat *statbuf) {
+#if S0IL_HAVE_FS
+  return fstat(fd, statbuf);
+#else
+  return 0;
+#endif
+}
 
 //// bits implemented in terms of some of the above
 
@@ -1131,6 +1163,7 @@ void s0il_exit(int retval) {
 #if CTX_ESP
   vTaskDelete(NULL);
   // store ret-val in pid_info?
+#elif defined(PICO_BUILD)
 #else
   pthread_exit((void *)(ssize_t)(retval));
 #endif
@@ -1167,3 +1200,13 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 }
 
 
+char   *s0il_realpath (const char *path, char *resolved_path)
+{
+#if defined(PICO_BUILD)
+  if (!resolved_path) return strdup (path);
+  strcpy(resolved_path, path);
+  return resolved_path;
+#else
+  return realpath(path, resolved_path);
+#endif
+}

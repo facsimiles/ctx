@@ -1,9 +1,12 @@
+include_directories(SYSTEM /usr/include/newlib/c++/12.2.1/arm-none-eabi/)
+include_directories(SYSTEM /usr/include/newlib/c++/12.2.1/)
+
 cmake_minimum_required(VERSION 3.12)
 
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(ctxterm C CXX ASM)
+project(s0il C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -19,61 +22,23 @@ add_compile_options(-Wall
         -Wno-maybe-uninitialized
         )
 
-add_executable(ctxterm
-        term.c
+add_executable(s0il
+        main.c
         ctx.h
         ctx.c
-        tusb_keyboard.c
-        tusb_config.h
+        s0il.c
+        bundled-programs-arm.c
         )
 
-target_include_directories(ctxterm PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../fonts)
+target_include_directories(s0il PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}/.. ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../../fonts)
 # pull in common dependencies
-target_link_libraries(ctxterm
+target_link_libraries(s0il
                       pico_stdlib
                       hardware_pio
                       hardware_uart
-                      tinyusb_host
-                      tinyusb_board)
+                      )
 # create map/bin/hex file etc.
-pico_add_extra_outputs(ctxterm)
+pico_add_extra_outputs(s0il)
 
-
-add_executable(demo
-        talk.c
-        ctx.h
-        ctx.c
-        tusb_keyboard.c
-        tusb_config.h
-        itk.h
-        )
-target_include_directories(demo PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../fonts)
-target_link_libraries(demo
-                      pico_stdlib
-                      hardware_pio
-                      tinyusb_host
-                      tinyusb_board)
-# create map/bin/hex file etc.
-pico_add_extra_outputs(demo)
-
-
-add_executable(itk-demo
-        itk-demo.c
-        ctx.h
-        ctx.c
-        tusb_keyboard.c
-        tusb_config.h
-        itk.h
-        )
-target_include_directories(itk-demo PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/../fonts)
-target_link_libraries(itk-demo
-                      pico_stdlib
-                      hardware_pio
-                      tinyusb_host
-                      tinyusb_board)
-# create map/bin/hex file etc.
-pico_add_extra_outputs(itk-demo)
 

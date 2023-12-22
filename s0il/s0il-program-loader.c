@@ -518,7 +518,7 @@ static char **s0il_parse_cmdline (const char  *input,
   return argv;
 }
 
-#ifndef WASM
+#if !defined(WASM) && !defined(PICO_BUILD)
 #if CTX_FLOW3R
 
 #include "esp_log.h"
@@ -864,6 +864,8 @@ int s0il_runvp(char *file, char **argv) {
   return -1;
 }
 
+#ifndef PICO_BUILD
+
 static void *s0il_thread(void *data) {
   char **cargv = data;
   int thread_no = 0;
@@ -876,6 +878,7 @@ static void *s0il_thread(void *data) {
   pthread_exit((void *)((size_t)ret));
   return (void *)((size_t)ret);
 }
+
 
 pthread_attr_t attr;
 int s0il_spawnp(char **argv) {
@@ -892,6 +895,7 @@ int s0il_spawnp(char **argv) {
     printf("failed spawning thread\n");
   return 23;
 }
+#endif
 
 FILE *s0il_popen(const char *cmdline, const char *type) {
   const char *rest = cmdline;
@@ -966,7 +970,7 @@ int s0il_system(const char *cmdline) {
            if (rest[0]=='>'){
              append = 1; rest++;
            }
-          char *path = rest;
+          const char *path = rest;
           while (*path == ' ')
             path++;
           out_stream = s0il_fopen(path, append?"w":"w+");
@@ -981,7 +985,11 @@ int s0il_system(const char *cmdline) {
           s0il_redirect_io(in_stream, out_stream);
 
         if (terminator == '&') {
+#ifdef PICO_BUILD
+          int pid = -1;
+#else
           int pid = s0il_spawnp(cargv);
+#endif
           if (pid <= 0)
             printf("spawn failed\n");
           else {

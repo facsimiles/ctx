@@ -3,7 +3,7 @@
 
 #include "../interpreter.h"
 #include <unistd.h>
-#include <dirent.h>
+//#include <dirent.h>
 #if EMSCRIPTEN
 #define S0IL_REDEFINE_CLIB
 #endif

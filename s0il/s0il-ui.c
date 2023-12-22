@@ -1,7 +1,6 @@
 #include "port_config.h"
 #include "s0il.h"
 
-#include <dirent.h>
 
 void s0il_program_runner_init(void);
 int _init_main(int argc, char **argv) {

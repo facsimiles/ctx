@@ -160,13 +160,16 @@ int main(int argc, char **argv) {
   Ui *ui = ui_new(ctx);
   ui_fake_circle(ui, true);
 
+#ifdef PICO_BUILD
+    root_path = "/sd";
+#else
   if (argv[1])
     root_path = realpath(dirname(argv[1]), NULL);
   else if (access("/sd", R_OK) == F_OK)
     root_path = realpath("/sd", NULL);
   else if (access("./sd", R_OK) == F_OK)
     root_path = realpath("./sd", NULL);
-
+#endif
   magic_add("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
 
   const char *temp =

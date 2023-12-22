@@ -11,24 +11,48 @@
 // we include all relevant headers, the overhead is
 // not that large
 
-#if defined(NATIVE) || defined(WASM)
+#if defined(PICO_BUILD)
+  // what for sockets etc?
+#define DT_DIR 4
+#define DT_REG 8
+
+ struct dirent {
+               int            d_ino;       /* Inode number */
+               int            d_off;       /* Not an offset; see below */
+               unsigned short d_reclen;    /* Length of this record */
+               unsigned char  d_type;      /* Type of file; not supported
+                                              by all filesystem types */
+               char           d_name[256]; /* Null-terminated filename */
+           };
+#define PATH_MAX 256
+
+#elif defined(NATIVE) || defined(WASM) || defined(RISCV)
 #include <netdb.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #else
+
  #include "lwip/err.h"
  #include "lwip/sys.h"
 
-#include "lwip/sockets.h"
-#include "lwip/igmp.h"
-#include "lwip/ip4.h"
-#include "lwip/netdb.h"
+ #include "lwip/sockets.h"
+ #include "lwip/igmp.h"
+ #include "lwip/ip4.h"
+ #include "lwip/netdb.h"
 #endif
 
+#if defined(PICO_BUILD)
+
+#define DIR void
+
+#else
 #include <dirent.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+#endif
+
 #include <sys/types.h>
 #include <ctype.h>
-#include <dirent.h>
 #include <fcntl.h>
 #include <locale.h>
 #include <math.h>
@@ -39,10 +63,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <termios.h>
 #include <time.h>
 #include <unistd.h>
 

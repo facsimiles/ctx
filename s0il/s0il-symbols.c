@@ -64,7 +64,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 
 #ifndef NATIVE
     ELFSYM_EXPORT(__adddf3),
-#ifndef EMSCRIPTEN
+#if !defined(EMSCRIPTEN) && !defined(PICO_BUILD)
     ELFSYM_EXPORT(__assert_func),
 #endif
     ELFSYM_EXPORT(__divsf3),
@@ -85,7 +85,9 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     {"ctx_new", &s0il_ctx_new},
     ELFSYM_EXPORT(abort),
     ELFSYM_EXPORT(abs),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(accept),
+#endif
     {"access", &s0il_access},
     ELFSYM_EXPORT(acos),
     ELFSYM_EXPORT(acosf),
@@ -107,7 +109,10 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     {"basename", &ui_basename},
     ELFSYM_EXPORT(bcmp),
     ELFSYM_EXPORT(bcopy),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(bind),
+#endif
+
 #if CTX_FLOW3R
     ELFSYM_EXPORT(bsp_captouch_angle),
     ELFSYM_EXPORT(bsp_captouch_angular),
@@ -125,12 +130,16 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(clearerr),
     ELFSYM_EXPORT(clearerr),
     ELFSYM_EXPORT(clock),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(clock_gettime),
     ELFSYM_EXPORT(clock_settime),
+#endif
     ELFSYM_EXPORT(close),
     ELFSYM_EXPORT(close),
     {"closedir", s0il_closedir},
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(connect),
+#endif
     ELFSYM_EXPORT(cos),
     ELFSYM_EXPORT(cosf),
     ELFSYM_EXPORT(cosh),
@@ -397,18 +406,24 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 
     {"fwrite", &s0il_fwrite},
 
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(getaddrinfo),
+#endif
     {"getc", &s0il_getc},
     {"getchar", &s0il_getchar},
     ELFSYM_EXPORT(getcwd),
     ELFSYM_EXPORT(getenv),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(gethostbyname),
+#endif
     // ELFSYM_EXPORT(getline),
     {"getline", &s0il_getline},
     ELFSYM_EXPORT(getopt),
     {"getpid", &s0il_getpid},
     {"getppid", &s0il_getppid},
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(getsockname),
+#endif
     ELFSYM_EXPORT(gettimeofday),
     ELFSYM_EXPORT(gmtime),
     ELFSYM_EXPORT(gmtime_r),
@@ -416,7 +431,9 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(hypotf),
     ELFSYM_EXPORT(ilogbf),
     ELFSYM_EXPORT(index),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(ioctl),
+#endif
     ELFSYM_EXPORT(isalnum),
     ELFSYM_EXPORT(isalpha),
     ELFSYM_EXPORT(isascii),
@@ -441,7 +458,9 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(lgamma),
     ELFSYM_EXPORT(lgammaf),
     ELFSYM_EXPORT(link),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(listen),
+#endif
     ELFSYM_EXPORT(lldiv),
     ELFSYM_EXPORT(localeconv),
     ELFSYM_EXPORT(localtime),
@@ -487,14 +506,17 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #endif
 
     ELFSYM_EXPORT(perror),
+#if !defined(PICO_BUILD)
 #ifndef EMSCRIPTEN
     ELFSYM_EXPORT(poll),
+#endif
 #endif
     ELFSYM_EXPORT(posix_memalign),
     ELFSYM_EXPORT(pow),
     ELFSYM_EXPORT(powf),
     {"printf", &s0il_printf},
 
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(pthread_attr_destroy),
     ELFSYM_EXPORT(pthread_attr_init),
     ELFSYM_EXPORT(pthread_attr_setstacksize),
@@ -527,23 +549,30 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(pthread_self),
     ELFSYM_EXPORT(pthread_setcancelstate),
     ELFSYM_EXPORT(pthread_setspecific),
+#endif
     {"putc", &s0il_fputc},
     {"putchar", &s0il_putchar},
     ELFSYM_EXPORT(putenv),
     {"puts", &s0il_puts},
 
     ELFSYM_EXPORT(qsort),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(raise),
+#endif
     ELFSYM_EXPORT(rand),
     ELFSYM_EXPORT(random),
     {"read", &s0il_read},
     {"readdir", &s0il_readdir},
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(readdir_r),
+#endif
     ELFSYM_EXPORT(realloc),
     ELFSYM_EXPORT(realpath),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(recv),
     ELFSYM_EXPORT(recvfrom),
     ELFSYM_EXPORT(recvmsg),
+#endif
     ELFSYM_EXPORT(remove),
     {"rename", &s0il_rename},
     {"rewind", &s0il_rewind},
@@ -571,11 +600,15 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(scalbnf),
     ELFSYM_EXPORT(scanf),
     ELFSYM_EXPORT(scanf),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(sched_yield),
     ELFSYM_EXPORT(seekdir),
+#endif
     ELFSYM_EXPORT(select),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(sendmsg),
     ELFSYM_EXPORT(sendto),
+#endif
     ELFSYM_EXPORT(setbuf),
     ELFSYM_EXPORT(setbuffer),
     ELFSYM_EXPORT(setenv),
@@ -585,7 +618,9 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(settimeofday),
     ELFSYM_EXPORT(setvbuf),
     {"signal", &s0il_signal},
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(shutdown),
+#endif
     // ELFSYM_EXPORT(sincos),
     // ELFSYM_EXPORT(sincosf),
     ELFSYM_EXPORT(sin),
@@ -593,7 +628,9 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(sinh),
     ELFSYM_EXPORT(sinhf),
     ELFSYM_EXPORT(snprintf),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(socket),
+#endif
     ELFSYM_EXPORT(sprintf),
     ELFSYM_EXPORT(sprintf),
     ELFSYM_EXPORT(sqrt),
@@ -650,11 +687,13 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(tanf),
     ELFSYM_EXPORT(tanh),
     ELFSYM_EXPORT(tanhf),
+#if !defined(PICO_BUILD)
     ELFSYM_EXPORT(tcdrain),
     ELFSYM_EXPORT(tcflush),
     ELFSYM_EXPORT(tcgetattr),
     ELFSYM_EXPORT(tcsetattr),
     ELFSYM_EXPORT(telldir),
+#endif
     ELFSYM_EXPORT(tgamma),
     ELFSYM_EXPORT(tgammaf),
     ELFSYM_EXPORT(time),

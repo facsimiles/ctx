@@ -9030,7 +9030,9 @@ void vt_mouse (VT *vt, CtxEvent *event, VtMouseEvent type, int button, int x, in
  if (buf[0])
    {
      vt_write (vt, buf, strlen (buf) );
+#ifndef PICO_BUILD
      fsync (vt->vtpty.pty);
+#endif
    }
 //#endif
 }

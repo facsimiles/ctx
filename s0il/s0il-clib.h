@@ -65,6 +65,7 @@ void    s0il_signal   (int sig, void(*func)(int));
 
 char   *s0il_getcwd   (char *buf, size_t size);
 int     s0il_chdir    (const char *path);
+char   *s0il_realpath (const char *path, char *resolved_path);
 
 char *s0il_getenv (const char *name);
 int   s0il_setenv (const char *name, const char *value, int overwrite);
@@ -96,7 +97,7 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 
 #ifdef S0IL_REDEFINE_CLIB
 
-
+#define realpath(a,b) s0il_realpath(a,b)
 #define glob(a,b,c,d) s0il_glob(a,b,c,d)
 #define getenv(a) s0il_getenv(a) 
 #define setenv(a,b,c) s0il_setenv(a,b,c) 

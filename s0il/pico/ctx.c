@@ -62,8 +62,6 @@
 #include "st7789_lcd.pio.h"
 
 // usb
-#include "bsp/board.h"
-#include "tusb.h"
 
 uint8_t scratch[64*1024]; // perhaps too small, but for a flexible terminal
                           // we need all the memory possible for terminal
@@ -200,6 +198,10 @@ void ctx_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void
       st7789_lcd_put(pio, sm, pixels[i+1]);
     }
 }
+
+#if 0
+
+
 extern void hid_app_task(void);
 void cdc_task(void)
 {
@@ -237,6 +239,16 @@ void tuh_cdc_xfer_isr(uint8_t dev_addr, xfer_result_t event, cdc_pipeid_t pipe_i
   
   tuh_cdc_receive(dev_addr, serial_in_buffer, sizeof(serial_in_buffer), true); // waiting for next data
 }
+
+
+static int ctx_usb_task (Ctx *ctx, void *data)
+{
+  tuh_task();
+  //cdc_task();
+  hid_app_task();
+  return 1;
+}
+#endif
 static void ghostbuster(Ctx *ctx)
 {
     float width = ctx_width (ctx);
@@ -254,16 +266,6 @@ static void ghostbuster(Ctx *ctx)
     ctx_rgb(ctx,0,0,0);ctx_fill(ctx);
     ctx_end_frame(ctx);
 }
-
-
-static int ctx_usb_task (Ctx *ctx, void *data)
-{
-  tuh_task();
-  //cdc_task();
-  hid_app_task();
-  return 1;
-}
-
 
 Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
                            int pin_din, int pin_clk, int pin_cs, int pin_dc,
@@ -298,9 +300,11 @@ Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
                           sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE);
     ghostbuster(ctx);
 
+#if 0
     board_init();
     tusb_init();
     ctx_add_idle (ctx, ctx_usb_task, ctx); 
+#endif
     return ctx;
 }
 
@@ -343,4 +347,8 @@ Ctx *ctx_pico_init (void)
      }
   }
   return pico_ctx;
+}
+Ctx *ctx_host(void)
+{
+  return ctx_pico_init();
 }

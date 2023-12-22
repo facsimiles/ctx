@@ -18,9 +18,12 @@ CFLAGS_NATIVE = $(CFLAGS) -I.. -L.. -lctx \
 POST_NATIVE=@ echo 'rem-PIE' $@; ./elf_strip_pie $@
 #POST_NATIVE=@echo 'rem-PIE  $@'; ./elf_strip_pie $@ && strip $@
 
+CC_RISCV=@   echo 'CC     ' $@ ; $(CCACHE) riscv32-esp-elf-gcc
+
 CC_XTENSA=@   echo 'CC     ' $@ ; $(CCACHE) xtensa-esp32s3-elf-gcc 
 #CC_NATIVE=$(CC)
 POST_XTENSA=@echo 'STRIP  ' $@ ; xtensa-esp32s3-elf-strip 
+POST_RISCV=@echo 'STRIP  ' $@ ; riscv32-esp-elf-strip 
 #POST_XTENSA=@ echo 'STRIP  ' $@ ; echo
 #--remove-section=.xtensa.info --remove-section=.comment
 
@@ -50,6 +53,34 @@ CFLAGS_XTENSA = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main \
   -I$(IDF_PATH)/components/freertos/esp_additions/arch/xtensa/include \
   -I$(IDF_PATH)/components/freertos/FreeRTOS-Kernel/portable/xtensa/include/ \
   -I$(IDF_PATH)/components/freertos/FreeRTOS-Kernel/include \
+
+CFLAGS_RISCV = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main -DRISCV \
+  -fdata-sections -ffunction-sections -Wl,--gc-sections -fvisibility=hidden \
+  -Wno-sign-compare \
+  -DCTX_ESP \
+  \
+  -Iesp32c3/build/config \
+  -I$(IDF_PATH)/components/lwip/include \
+  -I$(IDF_PATH)/components/lwip/lwip/src/include \
+  -I$(IDF_PATH)/components/lwip/port/include \
+  -I$(IDF_PATH)/components/lwip/port/freertos/include \
+  -I$(IDF_PATH)/components/lwip/port/esp32xx/include \
+  -I$(IDF_PATH)/components/newlib/platform_include \
+  -I$(IDF_PATH)/components/esp_system/include \
+  -I$(IDF_PATH)/components/esp_common/include \
+  -I$(IDF_PATH)/components/heap/include \
+  -I$(IDF_PATH)/components/esp_rom/include \
+  -I$(IDF_PATH)/components/esp_timer/include \
+  -I$(IDF_PATH)/components/soc/esp32c3/include \
+  -I$(IDF_PATH)/components/xtensa/riscv/include \
+  -I$(IDF_PATH)/components/esp_hw_support/include \
+  -I$(IDF_PATH)/components/freertos/esp_additions/include/ \
+  -I$(IDF_PATH)/components/freertos/esp_additions/include/freertos \
+  -I$(IDF_PATH)/components/freertos/esp_additions/arch/riscv/include \
+  -I$(IDF_PATH)/components/freertos/FreeRTOS-Kernel/portable/riscv/include/ \
+  -I$(IDF_PATH)/components/freertos/FreeRTOS-Kernel/include \
+  -I$(IDF_PATH)/components/riscv/include \
+
 
 native: native_bins s0il
 xtensa: xtensa_bins
@@ -107,6 +138,8 @@ PROGRAMS_NATIVE = $(patsubst bin-src/%.c, bin-native/%, $(PROGRAMS_C)) \
 
 PROGRAMS_XTENSA = $(patsubst bin-src/%.c, bin-xtensa/%, $(PROGRAMS_C)) \
                  $(patsubst bin-generic/%, bin-xtensa/%, $(PROGRAMS_PICOC))
+PROGRAMS_RISCV = $(patsubst bin-src/%.c, bin-riscv/%, $(PROGRAMS_C)) \
+                 $(patsubst bin-generic/%, bin-riscv/%, $(PROGRAMS_PICOC))
 
 bin-native/%: bin-src/%.c *.h Makefile elf_strip_pie libs0il.so
 	@mkdir -p `dirname $@` || true
@@ -119,15 +152,24 @@ bin-xtensa/%: bin-src/%.c *.h Makefile flow3r/build/config/sdkconfig.h
 	$(CC_XTENSA) $(CFLAGS_XTENSA) $< -o $@
 	$(POST_XTENSA) $@
 
+bin-riscv/%: bin-src/%.c *.h Makefile flow3r/build/config/sdkconfig.h
+	@mkdir -p `dirname $@` || true
+	$(CC_RISCV) $(CFLAGS_RISCV) $< -o $@
+	$(POST_RISCV) $@
+
 bin-native/%: bin-generic/%
 	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 bin-xtensa/%: bin-generic/%
 	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
+bin-riscv/%: bin-generic/%
+	@mkdir -p `dirname $@` || true
+	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 
 native_bins: $(PROGRAMS_NATIVE)
 xtensa_bins: $(PROGRAMS_XTENSA)
+riscv_bins: $(PROGRAMS_RISCV)
 
 flow3r-build: fs_data.c fs_bin_xtensa.c s0il*.[ch]
 	(cd flow3r; idf.py build)
@@ -142,6 +184,15 @@ riscv-flash: riscv
 	(cd esp32c3; idf.py flash monitor)
 riscv: fs_bin_generic.c s0il*.[ch] */*.c
 	(cd esp32c3; idf.py build)
+
+fs_bin_riscv.c: $(PROGRAMS_RISCV) Makefile mkfs.sh
+	@rm -rf $@_fs
+	@mkdir $@_fs
+	@cp bin-riscv/* $@_fs
+	@rm $@_fs/image $@_fs/text $@_fs/clock
+	./mkfs.sh $@_fs bin > $@_
+	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
+	@rm -rf $@_ $@_fs
 
 fs_bin_xtensa.c: $(PROGRAMS_XTENSA) Makefile mkfs.sh
 	@rm -rf $@_fs
