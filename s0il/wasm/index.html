@@ -1,8 +1,8 @@
 <html>
         <head>
-         <title>file</title>
+         <title>s0il</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-        <script src="./file.js"></script>
+        <script src="./s0il.js"></script>
         <script>
                 function windowToCanvas(canvas, x, y) {
    var bbox = canvas.getBoundingClientRect();
@@ -27,9 +27,16 @@
             _ctx_pause=0;
                             }, 100);
          }
+/*
+         function loaded(){
+           setTimeout(function(){
+           FS.mount(IDBFS, {}, '/sd');
+              console.log("LOADED" + FS);
+           }, 1000);
+         }*/
         </script>
         </head>
-        <body>
+        <body> <!-- onload='loaded()'> -->
                 <div>
                 <!--
                 <select id='dim' onchange='setDim(this.value);'>

@@ -1024,7 +1024,7 @@ int s0il_system(const char *cmdline) {
       }
       free(cargv);
     }
-  } while (rest && rest[0]);
+  } while (terminator && rest && rest[0]);
   ctx_reset_has_exited(ctx_host());
   return ret;
 }

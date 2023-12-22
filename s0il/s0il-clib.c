@@ -572,6 +572,7 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
       if (!strcmp(folder->path, parent)) {
         break;
       }
+      folder = NULL;
     }
     free(parent);
     if (folder) {

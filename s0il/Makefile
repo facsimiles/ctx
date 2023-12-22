@@ -128,7 +128,7 @@ s0il: libs0il.so main.o bundled-programs.o
 PROGRAMS_C_BUNDLED=bin-src/*.c
 bundled-programs.o: $(PROGRAMS_C_BUNDLED)
 
-main.o: fs_bin_native.c fs_data.c
+main.o: fs_bin_native.c fs_data.c fs_bin_generic.c
 
 %.o: %.c *.h Makefile
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -c -g $< -o $@
@@ -138,7 +138,7 @@ libs0il.so: $(S0IL_OBJS)  Makefile
         $(S0IL_OBJS)  -o libs0il.so
 
 clean:
-	rm -rf s0il libs0il.so bin-xtensa bin-native elf_strip_pie *.o tmpfs tmpfs2 fs_bin_*.c
+	rm -rf s0il libs0il.so bin-riscv bin-xtensa bin-native elf_strip_pie *.o tmpfs tmpfs2 fs_bin_*.c
 
 
 elf_strip_pie: elf_strip_pie.c
@@ -191,7 +191,7 @@ flow3r-flash: flow3r-build
 monitor:
 	(cd flow3r; idf.py monitor)
 
-wasm: fs_data.c fs_bin_generic.c s0il*.[ch] */*.c bundled-programs-wasm.c wasm/Makefile
+wasm: fs_data.c main.c fs_bin_generic.c s0il*.[ch] */*.c bundled-programs-wasm.c wasm/Makefile
 	(cd wasm; make)
 riscv-flash: riscv
 	(cd esp32c3; idf.py flash monitor)

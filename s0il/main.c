@@ -7,7 +7,7 @@ static char *root_path = NULL;
 
 #if CTX_FLOW3R
 #include "fs_bin_xtensa.c"
-#elif NATIVE
+#elif CTX_NATIVE
 #include "fs_bin_native.c"
 #else
 #include "fs_bin_generic.c"
@@ -21,14 +21,14 @@ static float backlight = 100.0;
 static void view_tests(Ui *ui) {
   ui_start_frame(ui);
 
-  if (ui_button(ui, "raw-fb"))
-    ui_do(ui, "raw-fb");
-  if (ui_button(ui, "tsr-ui"))
-    ui_do(ui, "tsr-ui");
-  if (ui_button(ui, "audio-ks"))
-    ui_do(ui, "audio-ks");
-  if (ui_button(ui, "app"))
-    ui_do(ui, "app");
+  if (ui_button(ui, "setpixels"))
+    ui_do(ui, "demo-setpixels");
+  if (ui_button(ui, "ctx-host"))
+    ui_do(ui, "demo-ctx_host");
+  if (ui_button(ui, "pcm audio"))
+    ui_do(ui, "demo-pcm_audio");
+  if (ui_button(ui, "tsr"))
+    ui_do(ui, "demo-tsr");
 
   ui_end_frame(ui);
 }
@@ -137,6 +137,10 @@ int ps_main(int argc, char **argv);
 #include <fcntl.h>
 #include <signal.h>
 
+#if EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 #if CTX_ESP
 void app_main(void) {
   char *argv[] = {NULL, NULL};
@@ -236,6 +240,15 @@ int main(int argc, char **argv) {
   s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
   char *t = "";
   s0il_add_file("/tmp/dummy", t, 1, 0);
+#if EMSCRIPTEN
+
+  EM_ASM(
+    FS.mkdir('/sd');
+    FS.mount(IDBFS, {}, '/sd');
+    FS.syncfs(true, function (err) { assert(!err); });
+  );
+
+#endif
 
   s0il_system("_init");
   s0il_system("init");
@@ -249,16 +262,29 @@ int main(int argc, char **argv) {
 
   //  s0il_system("wifi --auto &");
   //  ui_do(ui, "sh");
-#ifdef NATIVE
+//#ifdef CTX_NATIVE
   ui_main(ui, NULL);
-#else
-  for (;;) {
-    ctx_reset_has_exited(ctx);
-    ui_main(ui, NULL);
-  }
-#endif
+//#else
+//  for (;;) {
+//    ctx_reset_has_exited(ctx);
+//    ui_main(ui, NULL);
+//  }
+//#endif
+
   ui_destroy(ui);
   free(root_path);
+
+#if EMSCRIPTEN
+  EM_ASM(
+    // Ensure IndexedDB is closed at exit.
+    Module['onExit'] = function() {
+      assert(Object.keys(IDBFS.dbs).length == 0);
+    };
+    FS.syncfs(function (err) {
+      assert(!err);console.log("synced fs");
+    });
+  );
+#endif
 
   ctx_destroy(ctx);
 }
