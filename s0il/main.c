@@ -137,10 +137,6 @@ int ps_main(int argc, char **argv);
 #include <fcntl.h>
 #include <signal.h>
 
-#if EMSCRIPTEN
-#include <emscripten.h>
-#endif
-
 #if CTX_ESP
 void app_main(void) {
   char *argv[] = {NULL, NULL};

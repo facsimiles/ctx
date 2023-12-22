@@ -119,3 +119,7 @@ char *s0il_path_lookup(Ui *ui, const char *command);
 #else
 #define MAIN(name) int main (int argc, char **argv)
 #endif
+
+#if EMSCRIPTEN
+#include <emscripten.h>
+#endif

@@ -22,6 +22,7 @@
 #include "bin-src/demo-tsr.c"
 #include "bin-src/demo-ui.c"
 #include "bin-src/wifi.c"
+#include "bin-src/sync.c"
 //#include "bin-src/httpd.c"
 
 void add_mains(void) {
@@ -39,6 +40,7 @@ void add_mains(void) {
   s0il_bundle_main("demo-tsr", demo_tsr_main);
   //s0il_bundle_main("app", app_main);
   s0il_bundle_main("wifi", wifi_main);
+  s0il_bundle_main("sync", sync_main);
   s0il_bundle_main("demo-pcm_audio", demo_pcm_audio_main);
 
 //s0il_bundle_main("httpd", httpd_main);
