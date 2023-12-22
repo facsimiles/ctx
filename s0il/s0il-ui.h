@@ -99,7 +99,8 @@ void ui_newline(Ui *ui);
 #if 0
 /*
  * returns NULL if value is unchanged or a newly allocated string
- * when entry has been changed. maybe cleaner than using realloc
+ * when entry has been changed. cleaner than using realloc for
+ * language bindings.
  */
 char *itk_entry (ITK *itk,
                  const char *label,
@@ -108,6 +109,7 @@ char *itk_entry (ITK *itk,
 #endif
 
 int  ui_entry(Ui *ui, const char *label, const char *fallback, char **strptr);
+
 float ui_slider(Ui *ui, const char *label, float min, float max, float step, float value);
 
 void ui_slider_float (Ui *ui, const char *label, float *val, float min, float max, float step);

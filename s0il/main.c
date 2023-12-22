@@ -124,7 +124,7 @@ void view_settings(Ui *ui) {
 
 #if CTX_ESP
   if (ui_button(ui, "reboot"))
-    esp_restart();
+    system("reboot");
 #endif
 
   ui_end_frame(ui);
@@ -258,29 +258,18 @@ int main(int argc, char **argv) {
 
   //  s0il_system("wifi --auto &");
   //  ui_do(ui, "sh");
-//#ifdef CTX_NATIVE
+#ifdef CTX_NATIVE
   ui_main(ui, NULL);
-//#else
-//  for (;;) {
-//    ctx_reset_has_exited(ctx);
-//    ui_main(ui, NULL);
-//  }
-//#endif
+#else
+  for (;;) {
+    ctx_reset_has_exited(ctx);
+    ui_main(ui, NULL);
+    s0il_system("sync");
+  }
+#endif
 
   ui_destroy(ui);
   free(root_path);
-
-#if EMSCRIPTEN
-  EM_ASM(
-    // Ensure IndexedDB is closed at exit.
-    Module['onExit'] = function() {
-      assert(Object.keys(IDBFS.dbs).length == 0);
-    };
-    FS.syncfs(function (err) {
-      assert(!err);console.log("synced fs");
-    });
-  );
-#endif
 
   ctx_destroy(ctx);
 }
