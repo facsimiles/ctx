@@ -29,7 +29,7 @@ CFLAGS+= -fsingle-precision-constant -Wdouble-promotion
 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CCACHE) $(CC)
 CFLAGS_NATIVE = $(CFLAGS) -I.. -L.. -lctx \
-                   -g -lm -DNATIVE -fPIC -rdynamic -fpic \
+                   -g -lm -DCTX_NATIVE -fPIC -rdynamic -fpic \
                    -Wl,-E,--unresolved-symbols=ignore-all
 
 POST_NATIVE=@ echo 'rem-PIE' $@; ./elf_strip_pie $@
@@ -195,7 +195,7 @@ wasm: fs_data.c fs_bin_generic.c s0il*.[ch] */*.c bundled-programs-wasm.c wasm/M
 	(cd wasm; make)
 riscv-flash: riscv
 	(cd esp32c3; idf.py flash monitor)
-riscv: fs_bin_generic.c s0il*.[ch] */*.c
+riscv: fs_data.c fs_bin_generic.c s0il*.[ch] */*.c
 	(cd esp32c3; idf.py build)
 
 fs_bin_riscv.c: $(PROGRAMS_RISCV) Makefile mkfs.sh
@@ -243,7 +243,8 @@ format:
 flow3r/build/config/sdkconfig.h:
 	@test -r flow3r/flow3r || ( echo "ERROR: You need to set up flow3r symlink in flow3r to point to flow3r-firmware checkout";exit 1)
 	(cd flow3r;idf.py)
-pico: fs_bin_generic.c s0il-*.[ch] Makefile
+
+pico: fs_data.c fs_bin_generic.c s0il-*.[ch] Makefile
 	make -C pico
 pico-flash: pico
 	cp pico/s0il.uf2 /media/*/RPI-RP2/ ; sync ; sleep 1; mpremote

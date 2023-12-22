@@ -44,7 +44,7 @@ const char DirentDefs[] =
   "char d_name[256];};";
 #else
 
-#if NATIVE
+#if CTX_NATIVE
 const char DirentDefs[] = 
   "typedef struct _DIR DIR;\n"
   "struct dirent {"

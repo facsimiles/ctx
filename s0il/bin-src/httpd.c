@@ -942,7 +942,7 @@ int _httpd_start_int(int port,
 #if 1
       ui_iteration(ui_host(ctx_host()));
 #else
-#ifdef NATIVE
+#ifdef CTX_NATIVE
       usleep(1000 * 10);
 #else
       vTaskDelay(1);

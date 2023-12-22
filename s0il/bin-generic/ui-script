@@ -7,7 +7,7 @@ static char *str = NULL;
 int main(int argc, char **argv) {
   argv[argc] = NULL;
   Ctx *ctx = ctx_new(240, 240, NULL);
-  if (!ctx)
+  if (ctx == NULL)
     return -1;
 
   Ui *ui = ui_new(ctx);

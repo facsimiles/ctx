@@ -6,7 +6,7 @@
 
 #undef strstr
 #undef strlen
-#if NATIVE
+#if CTX_NATIVE
 #include <poll.h>
 #endif
 
@@ -52,7 +52,7 @@ struct esp_elfsym {
 };
 
 void s0il_signal(int sig, void (*func)(int)) {
-#if NATIVE
+#if CTX_NATIVE
   signal(sig, func);
 #else
 #endif
@@ -62,7 +62,7 @@ Ctx *ctx_host(void);
 
 const struct esp_elfsym g_customer_elfsyms[] = {
 
-#ifndef NATIVE
+#ifndef CTX_NATIVE
     ELFSYM_EXPORT(__adddf3),
 #if !defined(EMSCRIPTEN) && !defined(PICO_BUILD)
     ELFSYM_EXPORT(__assert_func),

@@ -634,7 +634,7 @@ static int esp_elf_runv(char *path, char **argv, int same_stack) {
   }
   return retval;
 }
-#elif NATIVE
+#elif CTX_NATIVE
 #include <dlfcn.h>
 
 #if 0
@@ -835,7 +835,7 @@ int s0il_runv(char *path, char **argv) {
 #ifndef WASM
 #if CTX_FLOW3R
   ret = esp_elf_runv(path, argv, 1);
-#elif NATIVE
+#elif CTX_NATIVE
   ret = dlopen_runv(path, argv, 1);
 #endif
 #else

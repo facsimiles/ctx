@@ -4,6 +4,7 @@
 void s0il_program_runner_init(void);
 int _init_main(int argc, char **argv) {
   // Ui *ui = ui_host(NULL);
+  s0il_printf("\033[?30l"); // turn off scrollbar
 
   system("rm -f /tmp/_s0il_*");
   const char elf_magic_32bit[] = {0x7f, 'E', 'L', 'F', 1, 1, 1, 0, 0, 0};
@@ -806,7 +807,7 @@ Ui *ui_host(Ctx *ctx) {
   return def_ui;
 }
 
-#ifdef NATIVE
+#ifdef CTX_NATIVE
 static Ctx *_ctx_host = NULL;
 Ctx *ctx_host(void) { return _ctx_host; }
 #endif
@@ -818,7 +819,7 @@ Ui *ui_new(Ctx *ctx) {
   s0il_bundle_main("ui_do", ui_do_main);
   if (!def_ui) {
     def_ui = ui;
-#ifdef NATIVE
+#ifdef CTX_NATIVE
     _ctx_host = ctx;
 #endif
     // magic_add(ui, "application/octet-stream", ".bin", NULL, 0, 0);
@@ -2479,7 +2480,7 @@ void ui_end_frame(Ui *ui) {
   }
 #endif
 
-#if defined(NATIVE) || defined(EMSCRIPTEN)
+#if defined(CTX_NATIVE) || defined(EMSCRIPTEN)
   if (ui->fake_circle) {
     float min_dim = ctx_width(ctx);
     if (ctx_height(ctx) < min_dim)
@@ -2867,7 +2868,7 @@ void ui_add_key_binding(Ui *ui, const char *key, const char *action,
   ctx_add_key_binding(ui->ctx, key, action, label, ui_cb_do, ui);
 }
 
-#if NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
+#if CTX_NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
 uint8_t scratch[1024 * 1024 * 4];
 Ctx *ctx_host(void);
 void ctx_RGB565_BS_to_RGBA8(void *rasterizer, int x, const void *buf,

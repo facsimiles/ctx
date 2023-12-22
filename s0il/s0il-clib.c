@@ -15,7 +15,7 @@ void *_s0il_thread_id(void) {
   return 0;
 #elif CTX_ESP
   return xTaskGetCurrentTaskHandle();
-#elif NATIVE
+#elif CTX_NATIVE
   return (void *)((size_t)gettid());
 #else
   return 0;
