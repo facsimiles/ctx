@@ -13,11 +13,7 @@
 
 #define PICOC_STACK_SIZE (32*1024)              /* space for the the stack */
 
-#ifdef S0IL_BUNDLE
-int picoc_main(int argc, char **argv)
-#else
 int main(int argc, char **argv)
-#endif
 {
     int ParamCount = 1;
     int DontRunMain = FALSE;

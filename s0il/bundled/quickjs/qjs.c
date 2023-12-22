@@ -302,11 +302,7 @@ void help(void)
     exit(1);
 }
 
-#ifdef S0IL_BUNDLE
-int qjs_main(int argc, char **argv)
-#else
 int main(int argc, char **argv)
-#endif
 {
     JSRuntime *rt;
     JSContext *ctx;

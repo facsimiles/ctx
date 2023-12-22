@@ -1,4 +1,4 @@
-
+#define main qjs_main
 #define CONFIG_BIGNUM
 #define CONFIG_VERSION "s0il"
 #include "quickjs/list.h"
@@ -12,3 +12,4 @@
 #include "quickjs/qjs.c"
 #include "quickjs/qjscalc.c"
 #include "quickjs/repl.c"
+#undef main

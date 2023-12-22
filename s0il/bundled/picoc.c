@@ -1,3 +1,4 @@
+#define main picoc_main
 #include "./picoc/clibrary.c"
 #include "./picoc/cstdlib/ctype.c"
 #include "./picoc/cstdlib/dirent.c"
@@ -22,3 +23,4 @@
 #include "./picoc/table.c"
 #include "./picoc/type.c"
 #include "./picoc/variable.c"
+#undef main
