@@ -138,7 +138,11 @@ libs0il.so: $(S0IL_OBJS)  Makefile
         $(S0IL_OBJS)  -o libs0il.so
 
 clean:
-	rm -rf s0il libs0il.so bin-riscv bin-xtensa bin-native elf_strip_pie *.o tmpfs tmpfs2 fs_bin_*.c
+	rm -rf s0il libs0il.so bin-riscv bin-xtensa bin-native elf_strip_pie *.o tmpfs tmpfs2 fs_*.c
+	rm -rf flow3r/sdkconfig flow3r/build
+	rm -rf esp32c3/sdkconfig esp32c3/build
+	make -C pico clean
+	make -C wasm clean
 
 
 elf_strip_pie: elf_strip_pie.c
@@ -165,7 +169,7 @@ bin-xtensa/%: bin-src/%.c *.h Makefile flow3r/build/config/sdkconfig.h
 	$(CC_XTENSA) $(CFLAGS_XTENSA) $< -o $@
 	$(POST_XTENSA) $@
 
-bin-riscv/%: bin-src/%.c *.h Makefile flow3r/build/config/sdkconfig.h
+bin-riscv/%: bin-src/%.c *.h Makefile esp32c3/build/config/sdkconfig.h
 	@mkdir -p `dirname $@` || true
 	$(CC_RISCV) $(CFLAGS_RISCV) $< -o $@
 	$(POST_RISCV) $@
@@ -240,9 +244,12 @@ format:
 	rpl '//! picoc' '//!picoc' bin-generic/*
 	rpl '//! qjs' '//!qjs' bin-generic/*
 
+esp32c3/build/config/sdkconfig.h:
+	(cd esp32c3; idf.py reconfigure )
+
 flow3r/build/config/sdkconfig.h:
 	@test -r flow3r/flow3r || ( echo "ERROR: You need to set up flow3r symlink in flow3r to point to flow3r-firmware checkout";exit 1)
-	(cd flow3r;idf.py)
+	(cd flow3r; idf.py reconfigure )
 
 pico: fs_data.c fs_bin_generic.c s0il-*.[ch] Makefile
 	make -C pico

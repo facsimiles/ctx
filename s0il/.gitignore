@@ -7,5 +7,11 @@ libui.so
 elf_strip_pie
 xtensa
 native
-fs_bin_xtensa.c
-fs_bin_native.c
+fs_*.c
+wasm/s0il.wasm
+wasm/s0il.js
+flow3r/main/build/
+esp32c3/build
+esp32c3/managed_components
+esp32c3/dependencies.lock
+esp32c3/sdkconfig
