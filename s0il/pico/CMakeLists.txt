@@ -36,8 +36,12 @@ target_include_directories(s0il PUBLIC
 target_link_libraries(s0il
                       pico_stdlib
                       hardware_pio
-                      hardware_uart
                       )
+
+    pico_enable_stdio_usb(s0il 1)
+    pico_enable_stdio_uart(s0il 0)
+
+
 # create map/bin/hex file etc.
 pico_add_extra_outputs(s0il)
 

@@ -2,16 +2,16 @@
 #include "s0il.h"
 extern void *_s0il_main_thread;
 
-
 #if defined(PICO_BUILD)
-#define S0IL_HAVE_FS  0
+#define S0IL_HAVE_FS 0
 #else
-#define S0IL_HAVE_FS  1
+#define S0IL_HAVE_FS 1
 #endif
 
-
 void *_s0il_thread_id(void) {
-#if EMSCRIPTEN
+#if PICO_BUILD
+  return 0;
+#elif EMSCRIPTEN
   return 0;
 #elif CTX_ESP
   return xTaskGetCurrentTaskHandle();
@@ -23,7 +23,9 @@ void *_s0il_thread_id(void) {
 }
 
 bool s0il_is_main_thread(void) {
-#if EMSCRIPTEN
+#if PICO_BUILD
+  return 1;
+#elif EMSCRIPTEN
   return 1;
 #elif CTX_ESP
   return _s0il_thread_id() == _s0il_main_thread;
@@ -52,12 +54,8 @@ void s0il_ctx_destroy(void *ctx) { gfx_output = 0; }
 
 static char *s0il_cwd = NULL;
 
-char *s0il_getenv (const char *name)
-{
-  return getenv(name);
-}
-int   s0il_setenv (const char *name,const char *value, int overwrite)
-{
+char *s0il_getenv(const char *name) { return getenv(name); }
+int s0il_setenv(const char *name, const char *value, int overwrite) {
   return setenv(name, value, overwrite);
 }
 
@@ -152,13 +150,13 @@ int s0il_chdir(const char *path2) {
     s0il_cwd[strlen(s0il_cwd) + 1] = 0;
     s0il_cwd[strlen(s0il_cwd)] = '/';
   }
+#if S0IL_HAVE_FS
   chdir(path);
   if (path2 != path)
     free(path);
+#endif
   return 0;
 }
-
-
 
 typedef struct file_t {
   char *path;
@@ -1191,22 +1189,60 @@ int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
   return select(nfds, read_fds, write_fds, except_fds, timeout);
 }
 
-
-int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
-               void *glob_buf)
-{
+int s0il_glob(const char *pattern, int flags, int (*errfunc)(char *, int),
+              void *glob_buf) {
   // XXX : nneds to be implemented for wildcard expansion in cmdline parser
   return 0;
 }
 
-
-char   *s0il_realpath (const char *path, char *resolved_path)
-{
+char *s0il_realpath(const char *path, char *resolved_path) {
 #if defined(PICO_BUILD)
-  if (!resolved_path) return strdup (path);
+  if (!resolved_path)
+    return strdup(path);
   strcpy(resolved_path, path);
   return resolved_path;
 #else
   return realpath(path, resolved_path);
+#endif
+}
+
+int s0il_rmdir(const char *path) {
+  // TODO : internal
+#if S0IL_HAVE_FS
+  return rmdir(path);
+#else
+  return 0;
+#endif
+}
+
+int s0il_fsync(int fd) {
+#if S0IL_HAVE_FS
+  return fsync(fd);
+#else
+  return 0;
+#endif
+}
+
+int s0il_ftruncate(int fd, int length) {
+#if S0IL_HAVE_FS
+  return ftruncate(fd, length);
+#else
+  return 0;
+#endif
+}
+
+int s0il_mkdir(const char *pathname, int mode) {
+#if S0IL_HAVE_FS
+  return mkdir(pathname, mode);
+#else
+  return 0;
+#endif
+}
+
+int s0il_truncate(const char *path, int length) {
+#if S0IL_HAVE_FS
+  return truncate(path, length);
+#else
+  return 0;
 #endif
 }

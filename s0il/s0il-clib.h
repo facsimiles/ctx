@@ -31,6 +31,7 @@ ssize_t s0il_getline  (char **lineptr, size_t *n, FILE *stream);
 int     s0il_system   (const char *cmdline);
 off_t   s0il_lseek    (int fd, off_t offset, int whence);
 DIR    *s0il_opendir  (const char *name);
+int     s0il_rmdir    (const char *path);
 int     s0il_closedir (DIR *dirp);
 struct dirent *
         s0il_readdir  (DIR *dirp);
@@ -66,6 +67,11 @@ void    s0il_signal   (int sig, void(*func)(int));
 char   *s0il_getcwd   (char *buf, size_t size);
 int     s0il_chdir    (const char *path);
 char   *s0il_realpath (const char *path, char *resolved_path);
+
+int s0il_fsync(int fd);
+int s0il_ftruncate(int fd, int length);
+int s0il_mkdir(const char *pathname, int mode);
+int s0il_truncate(const char *path, int length);
 
 char *s0il_getenv (const char *name);
 int   s0il_setenv (const char *name, const char *value, int overwrite);
@@ -152,7 +158,16 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define ctx_new     s0il_ctx_new
 #define ctx_destroy s0il_ctx_destroy
 #define getline     s0il_getline
+#define rmdir(p)    s0il_rmdir(p)
 
+#define truncate(p,l) s0il_truncate(p,l)
+#define fsync(fd)   s0il_fsync(fd)
+#define ftruncate(fd, length)   s0il_ftruncate(fd, length)
+#define mkdir(p,m)   s0il_mkdir(p,m)
+#endif
+
+#if PICO_BUILD
+#define usleep(us) sleep_us(us)
 #endif
 
 #endif

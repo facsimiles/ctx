@@ -1,3 +1,20 @@
+native: native_bins s0il
+help:
+	@echo 'targets:'
+	@echo '  clean        - not often needed, and itself not complete..'
+	@echo '  test         - run s0il locally with a native build'
+	@echo '  gdb          - run s0il locally under gdb'
+	@echo '  valgrind     - run s0il locally under valgrind'
+	@echo '  flow3r       - build flow3r firmware'
+	@echo ' flow3r-flash - flash (and build if needed) flow3r firmware'
+	@echo ' riscv        - build esp32c3 firmware'
+	@echo ' riscv-flash  - flash (and build if needed) esp32c3 firmware'
+	@echo ' pico         - build rp2040 firmware'
+	@echo ' pico-flash   - flash (and build if needed) rp2040 firmware'
+
+xtensa: xtensa_bins
+all: native xtensa flow3r-build wasm riscv pico
+
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
@@ -82,10 +99,6 @@ CFLAGS_RISCV = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main -DRISCV \
   -I$(IDF_PATH)/components/riscv/include \
 
 
-native: native_bins s0il
-xtensa: xtensa_bins
-
-all: native xtensa flow3r-build wasm riscv
 uninstall:
 install: native
 	rm -f $(DESTDIR)/sd
@@ -230,12 +243,7 @@ format:
 flow3r/build/config/sdkconfig.h:
 	@test -r flow3r/flow3r || ( echo "ERROR: You need to set up flow3r symlink in flow3r to point to flow3r-firmware checkout";exit 1)
 	(cd flow3r;idf.py)
-help:
-	@echo targets:
-	@echo   test         - run s0il locally with a native build
-	@echo   gdb          - run s0il locally under gdb
-	@echo   valgrind     - run s0il locally under valgrind
-	@echo   flow3r       - build flow3r firmware
-	@echo   flow3r-flash - flash (and build if needed) flow3r firmware
-	@echo   riscv        - build esp32c3 firmware
-	@echo   riscv-flash  - flash (and build if needed) esp32c3 firmware
+pico: fs_bin_generic.c s0il-*.[ch] Makefile
+	make -C pico
+pico-flash: pico
+	cp pico/s0il.uf2 /media/*/RPI-RP2/ ; sync ; sleep 1; mpremote

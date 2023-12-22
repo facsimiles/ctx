@@ -202,7 +202,7 @@ static int _ctx_depth = 0;
 #if EMSCRIPTEN
 CTX_EXPORT
 #endif
-#if CTX_PICO || CTX_ESP || EMSCRIPTEN
+#if defined(PICO_BUILD) || CTX_ESP || EMSCRIPTEN
 Ctx *ctx_host(void);
 #endif
 
@@ -214,7 +214,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     _ctx_depth ++;
     return ret;
   }
-#if CTX_PICO || CTX_ESP || EMSCRIPTEN
+#if defined(PICO_BUILD) || CTX_ESP || EMSCRIPTEN
   ret = ctx_host ();
 #endif
   if (ret)

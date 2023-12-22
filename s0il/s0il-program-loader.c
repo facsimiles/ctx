@@ -36,8 +36,8 @@ struct _exec_state_t {
 };
 
 typedef struct pidinfo_t {
-  int   ppid;
-  int   pid;
+  int ppid;
+  int pid;
   char *program;
   char *cwd;
   FILE *std_in; // < cannot use real name - due to #defines
@@ -130,7 +130,7 @@ int main_bundled(int argc, char **argv) {
       s0il_printf("\n");
       return 0;
     } else {
-      return main_bundled (argc - 1, &argv[1]);
+      return main_bundled(argc - 1, &argv[1]);
     }
   }
 
@@ -149,10 +149,11 @@ int main_bundled(int argc, char **argv) {
   return -1;
 }
 
-static char *resolve_cmd(const char *cmd)
-{
-  if (!strcmp (cmd, "foo"))  return "foo thing";
-  if (!strcmp (cmd, "ls")) return "bin sd";
+static char *resolve_cmd(const char *cmd) {
+  if (!strcmp(cmd, "foo"))
+    return "foo thing";
+  if (!strcmp(cmd, "ls"))
+    return "bin sd";
   return "";
 }
 
@@ -171,350 +172,368 @@ typedef enum {
   S0IL_CMD_RQUOT_ESCAPE,
   S0IL_CMD_TERMINATOR,
   S0IL_CMD_WHITE_SPACE,
-} argv_state; 
+} argv_state;
 
-static char **s0il_parse_cmdline (const char  *input,
-                                  char        *terminator,
-                                  const char **rest)
-{
+static char **s0il_parse_cmdline(const char *input, char *terminator,
+                                 const char **rest) {
   char **argv = NULL;
   int arg_count = 0;
 
   char *out = 0;
 
-#define case_TERMINATORS \
-          case '>':  \
-          case '&':  \
-          case '\n': \
-          case '\0': \
-          case '|':  \
-          case '#':  \
-          case ';'
+#define case_TERMINATORS                                                       \
+  case '>':                                                                    \
+  case '&':                                                                    \
+  case '\n':                                                                   \
+  case '\0':                                                                   \
+  case '|':                                                                    \
+  case '#':                                                                    \
+  case ';'
 
-#define case_VAR_BREAKER \
-          case '-': \
-          case ' ': \
-          case '+': \
-          case '='
+#define case_VAR_BREAKER                                                       \
+  case '-':                                                                    \
+  case ' ':                                                                    \
+  case '+':                                                                    \
+  case '='
 
-  for (int write = 0; write < 2; write ++) // first round is non write
-  { 
-  char variable[32];
-  int varlen = 0;
-  char cmd[256];
-  int cmdlen = 0;
-  int total_length = 0;
-  int arg_length = 0;
-  int state = S0IL_CMD_DEFAULT;
-  const char *p = input;
-  for (; (p==input || p[-1]) && state != S0IL_CMD_TERMINATOR; p++)
+  for (int write = 0; write < 2; write++) // first round is non write
   {
-    switch (state) 
-    {
+    char variable[32];
+    int varlen = 0;
+    char cmd[256];
+    int cmdlen = 0;
+    int total_length = 0;
+    int arg_length = 0;
+    int state = S0IL_CMD_DEFAULT;
+    const char *p = input;
+    for (; (p == input || p[-1]) && state != S0IL_CMD_TERMINATOR; p++) {
+      switch (state) {
       case S0IL_CMD_DEFAULT:
-        switch (*p)
-        {
-          case '$':  state = S0IL_CMD_STRING_VAR; varlen=0; break;
-          case '\'': state = S0IL_CMD_QUOT; break;
-          case '"':  state = S0IL_CMD_DQUOT; break;
-          case '`':  state = S0IL_CMD_RQUOT; cmdlen=0;cmd[cmdlen]=0;break;
-          case ' ': break;
-          case_TERMINATORS:
-            state = S0IL_CMD_TERMINATOR;
-            if (terminator)
-              *terminator = *p;
-            break;
-          default: state = S0IL_CMD_STRING;
-            if (write)
-               *(out++) = *p;
-            arg_length++;
-            break;
+        switch (*p) {
+        case '$':
+          state = S0IL_CMD_STRING_VAR;
+          varlen = 0;
+          break;
+        case '\'':
+          state = S0IL_CMD_QUOT;
+          break;
+        case '"':
+          state = S0IL_CMD_DQUOT;
+          break;
+        case '`':
+          state = S0IL_CMD_RQUOT;
+          cmdlen = 0;
+          cmd[cmdlen] = 0;
+          break;
+        case ' ':
+          break;
+        case_TERMINATORS:
+          state = S0IL_CMD_TERMINATOR;
+          if (terminator)
+            *terminator = *p;
+          break;
+        default:
+          state = S0IL_CMD_STRING;
+          if (write)
+            *(out++) = *p;
+          arg_length++;
+          break;
         }
         break;
       case S0IL_CMD_STRING:
-        switch (*p)
-        {
-          case ' ':
-            state = S0IL_CMD_DEFAULT;
-            total_length += arg_length + 1;
-            arg_count++;
-            out++;
-	    if (write)
-              argv[arg_count] = out;
-            arg_length = 0;
-            break;
-          case '\\': state = S0IL_CMD_STRING_ESCAPE; break;
-          case '"': state = S0IL_CMD_DQUOT; break;
-          case '`': state = S0IL_CMD_RQUOT; cmdlen=0;cmd[cmdlen]=0;break;
-          case_TERMINATORS:
-            total_length += arg_length + 1;
-            arg_count++;
-	    if (write)
-              argv[arg_count] = out;
-            arg_length = 0;
-            state = S0IL_CMD_TERMINATOR;
-            if(terminator)*terminator = *p;
-            break;
-          default:
-            if (write)
-               *(out++) = *p;
-            arg_length++;
-            break;
+        switch (*p) {
+        case ' ':
+          state = S0IL_CMD_DEFAULT;
+          total_length += arg_length + 1;
+          arg_count++;
+          out++;
+          if (write)
+            argv[arg_count] = out;
+          arg_length = 0;
+          break;
+        case '\\':
+          state = S0IL_CMD_STRING_ESCAPE;
+          break;
+        case '"':
+          state = S0IL_CMD_DQUOT;
+          break;
+        case '`':
+          state = S0IL_CMD_RQUOT;
+          cmdlen = 0;
+          cmd[cmdlen] = 0;
+          break;
+        case_TERMINATORS:
+          total_length += arg_length + 1;
+          arg_count++;
+          if (write)
+            argv[arg_count] = out;
+          arg_length = 0;
+          state = S0IL_CMD_TERMINATOR;
+          if (terminator)
+            *terminator = *p;
+          break;
+        default:
+          if (write)
+            *(out++) = *p;
+          arg_length++;
+          break;
         }
         break;
 
-     case S0IL_CMD_STRING_VAR:
-        switch (*p)
-        {
-          case_TERMINATORS:
-            if(terminator)
-              *terminator = *p;
-            state = S0IL_CMD_TERMINATOR;
-            {
-              const char *value = s0il_getenv(variable);
-              if (value)
-              {
-                for (int i = 0; value[i]; i++)
-                {
-                  if (write)
-                    *(out++) = value[i];
-                  arg_length++;
-                }
+      case S0IL_CMD_STRING_VAR:
+        switch (*p) {
+        case_TERMINATORS:
+          if (terminator)
+            *terminator = *p;
+          state = S0IL_CMD_TERMINATOR;
+          {
+            const char *value = s0il_getenv(variable);
+            if (value) {
+              for (int i = 0; value[i]; i++) {
+                if (write)
+                  *(out++) = value[i];
+                arg_length++;
               }
             }
-            break;
-          case_VAR_BREAKER:
-            if (state != S0IL_CMD_TERMINATOR)
-              state = S0IL_CMD_STRING;
-            {
-              const char *value = s0il_getenv(variable);
-              if (value)
-              {
-                for (int i = 0; value[i]; i++)
-                {
-                  if (write)
-                    *(out++) = value[i];
-                  arg_length++;
-                }
+          }
+          break;
+        case_VAR_BREAKER:
+          if (state != S0IL_CMD_TERMINATOR)
+            state = S0IL_CMD_STRING;
+          {
+            const char *value = s0il_getenv(variable);
+            if (value) {
+              for (int i = 0; value[i]; i++) {
+                if (write)
+                  *(out++) = value[i];
+                arg_length++;
               }
             }
-            break;
-          default:
-            if (varlen+1<sizeof(variable))
-              variable[varlen++]=*p;
-            variable[varlen]=0;
+          }
+          break;
+        default:
+          if (varlen + 1 < sizeof(variable))
+            variable[varlen++] = *p;
+          variable[varlen] = 0;
         }
         break;
-     case S0IL_CMD_DQUOT_VAR:
-        switch (*p)
-        {
-          case_TERMINATORS:
-          case_VAR_BREAKER:
-          case '"':
-            state = S0IL_CMD_DQUOT;
-            {
-              const char *value = s0il_getenv(variable);
-              if (value)
-              {
-                for (int i = 0; value[i]; i++)
-                {
-                  if (write)
-                    *(out++) = value[i];
-                  arg_length++;
-                }
+      case S0IL_CMD_DQUOT_VAR:
+        switch (*p) {
+        case_TERMINATORS:
+        case_VAR_BREAKER:
+        case '"':
+          state = S0IL_CMD_DQUOT;
+          {
+            const char *value = s0il_getenv(variable);
+            if (value) {
+              for (int i = 0; value[i]; i++) {
+                if (write)
+                  *(out++) = value[i];
+                arg_length++;
               }
             }
-            if (*p == '"')p--;
-            break;
-          default:
-            if (varlen+1<sizeof(variable))
-              variable[varlen++]=*p;
-            variable[varlen]=0;
+          }
+          if (*p == '"')
+            p--;
+          break;
+        default:
+          if (varlen + 1 < sizeof(variable))
+            variable[varlen++] = *p;
+          variable[varlen] = 0;
         }
         break;
 
       case S0IL_CMD_IN_ARG:
-        switch (*p)
-        {
-          case '\'': state = S0IL_CMD_QUOT; break;
-          case '"': state = S0IL_CMD_DQUOT; break;
-          case '`': state = S0IL_CMD_RQUOT; break;
-          case ' ':
-            state = S0IL_CMD_DEFAULT;
-            arg_count++;
-            out++;
-	    if (write)
-              argv[arg_count] = ++out;
-            total_length += arg_length + 1;
-            arg_length = 0;
-            break;
-          case_TERMINATORS:
-            total_length += arg_length + 1;
-            arg_length = 0;
-            arg_count++;
-            out++;
-	    if (write)
-              argv[arg_count] = out;
-            state = S0IL_CMD_TERMINATOR;
-            break;
-          default: state = S0IL_CMD_STRING;
-            if (write)
-               *(out++) = *p;
-            break;
+        switch (*p) {
+        case '\'':
+          state = S0IL_CMD_QUOT;
+          break;
+        case '"':
+          state = S0IL_CMD_DQUOT;
+          break;
+        case '`':
+          state = S0IL_CMD_RQUOT;
+          break;
+        case ' ':
+          state = S0IL_CMD_DEFAULT;
+          arg_count++;
+          out++;
+          if (write)
+            argv[arg_count] = ++out;
+          total_length += arg_length + 1;
+          arg_length = 0;
+          break;
+        case_TERMINATORS:
+          total_length += arg_length + 1;
+          arg_length = 0;
+          arg_count++;
+          out++;
+          if (write)
+            argv[arg_count] = out;
+          state = S0IL_CMD_TERMINATOR;
+          break;
+        default:
+          state = S0IL_CMD_STRING;
+          if (write)
+            *(out++) = *p;
+          break;
         }
         break;
       case S0IL_CMD_QUOT:
-        switch (*p)
-        {
-          case '\'': state = S0IL_CMD_IN_ARG; break;
-          case '\\': state = S0IL_CMD_QUOT_ESCAPE; break;
-             break;
-          default: 
-            if (write)
-               *(out++) = *p;
-	    else
-               arg_length++;
-            break;
+        switch (*p) {
+        case '\'':
+          state = S0IL_CMD_IN_ARG;
+          break;
+        case '\\':
+          state = S0IL_CMD_QUOT_ESCAPE;
+          break;
+          break;
+        default:
+          if (write)
+            *(out++) = *p;
+          else
+            arg_length++;
+          break;
         }
         break;
       case S0IL_CMD_DQUOT:
-        switch (*p)
-        {
-          case '$':  state = S0IL_CMD_DQUOT_VAR; varlen=0; break;
-          case '"':  state = S0IL_CMD_IN_ARG; break;
-          case '\\': state = S0IL_CMD_DQUOT_ESCAPE; break;
-          default:
-            if (write)
-               *(out++) = *p;
-            break;
+        switch (*p) {
+        case '$':
+          state = S0IL_CMD_DQUOT_VAR;
+          varlen = 0;
+          break;
+        case '"':
+          state = S0IL_CMD_IN_ARG;
+          break;
+        case '\\':
+          state = S0IL_CMD_DQUOT_ESCAPE;
+          break;
+        default:
+          if (write)
+            *(out++) = *p;
+          break;
         }
         break;
       case S0IL_CMD_RQUOT:
-        switch (*p)
-        {
-          case '`':  state = S0IL_CMD_IN_ARG;
+        switch (*p) {
+        case '`':
+          state = S0IL_CMD_IN_ARG;
 
-    {
-      const char *value = resolve_cmd(cmd);
-      if (value)
-      {
-        for (int i = 0; value[i]; i++)
-        {
-          if (write)
-            *(out++) = value[i];
-          arg_length++;
-        }
-      }
-    }
+          {
+            const char *value = resolve_cmd(cmd);
+            if (value) {
+              for (int i = 0; value[i]; i++) {
+                if (write)
+                  *(out++) = value[i];
+                arg_length++;
+              }
+            }
+          }
           break;
-          case '\\': state = S0IL_CMD_RQUOT_ESCAPE; break;
-          default:
-            if(cmdlen + 1 < sizeof(cmd))
-              cmd[cmdlen++]=*p;
-            cmd[cmdlen]=0;
-            break;
+        case '\\':
+          state = S0IL_CMD_RQUOT_ESCAPE;
+          break;
+        default:
+          if (cmdlen + 1 < sizeof(cmd))
+            cmd[cmdlen++] = *p;
+          cmd[cmdlen] = 0;
+          break;
         }
         break;
       case S0IL_CMD_RQUOT_ESCAPE:
-        switch (*p)
-        {
-          case '\n': break;
-          default:
-            state = S0IL_CMD_RQUOT;
-            if(cmdlen + 1 < sizeof(cmd))
-              cmd[cmdlen++]=*p;
-            cmd[cmdlen]=0;
-            break;
+        switch (*p) {
+        case '\n':
+          break;
+        default:
+          state = S0IL_CMD_RQUOT;
+          if (cmdlen + 1 < sizeof(cmd))
+            cmd[cmdlen++] = *p;
+          cmd[cmdlen] = 0;
+          break;
         }
         break;
       case S0IL_CMD_QUOT_ESCAPE:
-        switch (*p)
-        {
-          case '\n':
-            break;
-          default:
-            state = S0IL_CMD_QUOT;
-            if (write)
-               *(out++) = *p;
-	    else
-              arg_length++;
-            break;
+        switch (*p) {
+        case '\n':
+          break;
+        default:
+          state = S0IL_CMD_QUOT;
+          if (write)
+            *(out++) = *p;
+          else
+            arg_length++;
+          break;
         }
         break;
       case S0IL_CMD_DQUOT_ESCAPE:
-        switch (*p)
-        {
-          case '\n':
-            break;
-          default:
-            state = S0IL_CMD_DQUOT;
-            if (write)
-               *(out++) = *p;
-	    else
-              arg_length++;
-            break;
+        switch (*p) {
+        case '\n':
+          break;
+        default:
+          state = S0IL_CMD_DQUOT;
+          if (write)
+            *(out++) = *p;
+          else
+            arg_length++;
+          break;
         }
         break;
       case S0IL_CMD_STRING_ESCAPE:
-        switch (*p)
-        {
-          case '\n':
-            break;
-          default:
-            state = S0IL_CMD_STRING;
-            if (write)
-               *(out++) = *p;
-	    else
-              arg_length++;
-            break;
+        switch (*p) {
+        case '\n':
+          break;
+        default:
+          state = S0IL_CMD_STRING;
+          if (write)
+            *(out++) = *p;
+          else
+            arg_length++;
+          break;
         }
         break;
+      }
     }
-  }
 #undef case_TERMINATORS
 
-  // TODO : check if this is no longer needed with \0 incorporated in
-  // state machine
-  if (state == S0IL_CMD_STRING_VAR)
-  {
-    state = S0IL_CMD_STRING;
-    {
-      const char *value = s0il_getenv(variable);
-      if (value)
+    // TODO : check if this is no longer needed with \0 incorporated in
+    // state machine
+    if (state == S0IL_CMD_STRING_VAR) {
+      state = S0IL_CMD_STRING;
       {
-        for (int i = 0; value[i]; i++)
-        {
-          if (write)
-            *(out++) = value[i];
-          arg_length++;
+        const char *value = s0il_getenv(variable);
+        if (value) {
+          for (int i = 0; value[i]; i++) {
+            if (write)
+              *(out++) = value[i];
+            arg_length++;
+          }
         }
       }
     }
-  }
-  if (arg_length)
-  {
-    total_length += arg_length + 1;
-    arg_count++;
-    if (write)
-      argv[arg_count] = NULL;
-    arg_length = 0;
-  }
+    if (arg_length) {
+      total_length += arg_length + 1;
+      arg_count++;
+      if (write)
+        argv[arg_count] = NULL;
+      arg_length = 0;
+    }
 
-
-
-    if (write == 0)
-    {
-      // XXX : the 8 is to make it valgrind clean.. overshoots of 2 have been seen
-      argv = calloc (1, total_length + (arg_count + 1)* sizeof(void*) + 1 + 8);
-      out = (char*)(argv + (arg_count+1));
+    if (write == 0) {
+      // XXX : the 8 is to make it valgrind clean.. overshoots of 2 have been
+      // seen
+      argv = calloc(1, total_length + (arg_count + 1) * sizeof(void *) + 1 + 8);
+      out = (char *)(argv + (arg_count + 1));
       argv[0] = out;
       arg_count = 0;
     }
 
-    if(rest)*rest = p;
+    if (rest)
+      *rest = p;
   }
-  argv[arg_count]=NULL;
-  if(rest)if (**rest == 0) *rest = NULL;
+  argv[arg_count] = NULL;
+  if (rest)
+    if (**rest == 0)
+      *rest = NULL;
   return argv;
 }
 
@@ -879,7 +898,6 @@ static void *s0il_thread(void *data) {
   return (void *)((size_t)ret);
 }
 
-
 pthread_attr_t attr;
 int s0il_spawnp(char **argv) {
   pthread_t tid;
@@ -905,7 +923,7 @@ FILE *s0il_popen(const char *cmdline, const char *type) {
   char **cargv = s0il_parse_cmdline(rest, &terminator, &rest);
   FILE *out_stream = NULL;
   if (cargv) {
-    if (cargv[0]){
+    if (cargv[0]) {
       char path[] = "/tmp/s0il_popen_0";
       out_stream = s0il_fopen(path, "w");
 
@@ -935,79 +953,76 @@ int s0il_system(const char *cmdline) {
   int pipe_no = 0;
   do {
     cargv = s0il_parse_cmdline(rest, &terminator, &rest);
-    if (cargv){
-    for (cargc = 0; cargv[cargc]; cargc++);
+    if (cargv) {
+      for (cargc = 0; cargv[cargc]; cargc++)
+        ;
 
-    if (cargv[0]) {
-      if (strchr(cargv[0], '=')) {
-        char *key = cargv[0];
-        char *value = strchr(cargv[0], '=') + 1;
-        value[-1] = 0;
-        setenv(key, value, 1);
-      } else {
-
-        FILE *in_stream = NULL;
-        FILE *out_stream = NULL;
-        if (pipe_no) {
-          char path[] = "/tmp/s0il_pipe_0"; // todo : use mktemp
-          path[15] = pipe_no - 1 + '0';
-          in_stream = s0il_fopen(path, "r");
-        }
-
-        switch(terminator)
-        {
-        case '|':
-          {
-          char path[] = "/tmp/s0il_pipe_0";
-          path[15] = pipe_no + '0';
-          out_stream = s0il_fopen(path, "w");
-          pipe_no++;
-          }
-          break;
-        case '>':
-          {
-           int append = 0;
-           if (rest[0]=='>'){
-             append = 1; rest++;
-           }
-          const char *path = rest;
-          while (*path == ' ')
-            path++;
-          out_stream = s0il_fopen(path, append?"w":"w+");
-          pipe_no = 0;
-          }
-          break;
-          default:
-          pipe_no = 0;
-        }
-
-        if (in_stream || out_stream)
-          s0il_redirect_io(in_stream, out_stream);
-
-        if (terminator == '&') {
-#ifdef PICO_BUILD
-          int pid = -1;
-#else
-          int pid = s0il_spawnp(cargv);
-#endif
-          if (pid <= 0)
-            printf("spawn failed\n");
-          else {
-            printf("got pid:%i\n", pid);
-            ret = pid;
-          }
+      if (cargv[0]) {
+        if (strchr(cargv[0], '=')) {
+          char *key = cargv[0];
+          char *value = strchr(cargv[0], '=') + 1;
+          value[-1] = 0;
+          setenv(key, value, 1);
         } else {
-          ret = s0il_runvp(cargv[0], cargv);
-        }
 
-        s0il_redirect_io(NULL, NULL);
-        if (in_stream)
-          s0il_fclose(in_stream);
-        if (out_stream)
-          s0il_fclose(out_stream);
+          FILE *in_stream = NULL;
+          FILE *out_stream = NULL;
+          if (pipe_no) {
+            char path[] = "/tmp/s0il_pipe_0"; // todo : use mktemp
+            path[15] = pipe_no - 1 + '0';
+            in_stream = s0il_fopen(path, "r");
+          }
+
+          switch (terminator) {
+          case '|': {
+            char path[] = "/tmp/s0il_pipe_0";
+            path[15] = pipe_no + '0';
+            out_stream = s0il_fopen(path, "w");
+            pipe_no++;
+          } break;
+          case '>': {
+            int append = 0;
+            if (rest[0] == '>') {
+              append = 1;
+              rest++;
+            }
+            const char *path = rest;
+            while (*path == ' ')
+              path++;
+            out_stream = s0il_fopen(path, append ? "w" : "w+");
+            pipe_no = 0;
+          } break;
+          default:
+            pipe_no = 0;
+          }
+
+          if (in_stream || out_stream)
+            s0il_redirect_io(in_stream, out_stream);
+
+          if (terminator == '&') {
+#ifdef PICO_BUILD
+            int pid = -1;
+#else
+            int pid = s0il_spawnp(cargv);
+#endif
+            if (pid <= 0)
+              printf("spawn failed\n");
+            else {
+              printf("got pid:%i\n", pid);
+              ret = pid;
+            }
+          } else {
+            ret = s0il_runvp(cargv[0], cargv);
+          }
+
+          s0il_redirect_io(NULL, NULL);
+          if (in_stream)
+            s0il_fclose(in_stream);
+          if (out_stream)
+            s0il_fclose(out_stream);
+        }
       }
-    }
-    free (cargv);
+      free(cargv);
     }
   } while (rest && rest[0]);
   ctx_reset_has_exited(ctx_host());

@@ -136,6 +136,7 @@ int ps_main(int argc, char **argv);
 
 #include <fcntl.h>
 #include <signal.h>
+
 #if CTX_ESP
 void app_main(void) {
   char *argv[] = {NULL, NULL};
@@ -161,7 +162,7 @@ int main(int argc, char **argv) {
   ui_fake_circle(ui, true);
 
 #ifdef PICO_BUILD
-    root_path = "/sd";
+  root_path = "/sd";
 #else
   if (argv[1])
     root_path = realpath(dirname(argv[1]), NULL);

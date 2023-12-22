@@ -321,10 +321,12 @@ void UnistdSetuid(struct ParseState *Parser, struct PcValue *ReturnValue, struct
     ReturnValue->Val->Integer = setuid(Param[0]->Val->Integer);
 }
 
+#ifndef PICO_BUILD
 void UnistdSleep(struct ParseState *Parser, struct PcValue *ReturnValue, struct PcValue **Param, int NumArgs)
 {
     ReturnValue->Val->Integer = sleep(Param[0]->Val->Integer);
 }
+#endif
 
 #if 0
 void UnistdSwab(struct ParseState *Parser, struct PcValue *ReturnValue, struct PcValue **Param, int NumArgs)
@@ -486,7 +488,9 @@ const struct LibraryFunction UnistdFunctions[] =
 //  { UnistdSetreuid,      "int setreuid(uid_t, uid_t);" },
 //  { UnistdSetsid,        "pid_t setsid(void);" },
 //  { UnistdSetuid,        "int setuid(uid_t);" },
+#ifndef PICO_BUILD
     { UnistdSleep,         "unsigned int sleep(unsigned int);" },
+#endif
 /*    { UnistdSwab,          "void swab(void *, void *, ssize_t);" }, */
 //  { UnistdSymlink,       "int symlink(char *, char *);" },
 //  { UnistdSync,          "void sync(void);" },
