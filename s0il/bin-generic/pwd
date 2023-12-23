@@ -1,0 +1,13 @@
+//!picoc
+
+#include "ui.h"
+
+int main(int argc, char **argv) {
+  char wd[512];
+  getcwd(wd, 512);
+  // XXX : fix in s0il-clib
+  if (strlen(wd)>1 && wd[strlen(wd)-1]=='/')
+    wd[strlen(wd)-1]=0;
+  printf("%s\n", wd);
+  return 0;
+}
