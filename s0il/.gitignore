@@ -1,8 +1,8 @@
 demo
-flow3r/build
-flow3r/managed_components
-flow3r/dependencies.lock
-flow3r/sdkconfig
+*/build
+*/managed_components
+*/dependencies.lock
+*/sdkconfig
 libui.so
 elf_strip_pie
 xtensa
@@ -11,7 +11,6 @@ fs_*.c
 wasm/s0il.wasm
 wasm/s0il.js
 flow3r/main/build/
-esp32c3/build
-esp32c3/managed_components
-esp32c3/dependencies.lock
-esp32c3/sdkconfig
+bin-native
+bin-xtensa
+bin-riscv
