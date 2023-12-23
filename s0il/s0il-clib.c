@@ -997,12 +997,26 @@ int s0il_fgetpos(FILE *s, fpos_t *pos) { // TODO
   return fgetpos(s, pos);
 }
 
+long s0il_telldir(DIR *dir) {
+  if (dir == _s0il_internal_dir)
+    return _s0il_dir->pos;
+#if S0IL_HAVE_FS
+  return telldir(dir);
+#else
+  return 0;
+#endif
+}
+
 long s0il_ftell(FILE *stream) {
   if (s0il_stream_is_internal(stream)) {
     file_t *file = _s0il_file[s0il_fileno(stream)];
     return file->pos;
   }
+#if S0IL_HAVE_FS
   return ftell(stream);
+#else
+  return 0;
+#endif
 }
 
 off_t s0il_ftello(FILE *stream) {
@@ -1093,6 +1107,9 @@ int s0il_closedir(DIR *dirp) {
 #endif
 }
 
+
+
+
 int s0il_unlink(const char *pathname) {
   char *path = s0il_resolve_path(pathname);
   int ret = 0;
@@ -1106,6 +1123,11 @@ int s0il_unlink(const char *pathname) {
   if (path != pathname)
     free(path);
   return ret;
+}
+
+int s0il_remove(const char *pathname) {
+  // TODO : handle dirs
+  return s0il_unlink(pathname);
 }
 
 int s0il_stat(const char *pathname, struct stat *statbuf) {
@@ -1228,6 +1250,7 @@ int s0il_rmdir(const char *path) {
 }
 
 int s0il_fsync(int fd) {
+  s0il_system("sync");
 #if S0IL_HAVE_FS
   return fsync(fd);
 #else

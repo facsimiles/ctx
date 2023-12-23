@@ -16,6 +16,7 @@ int     s0il_fputs    (const char *s, FILE *stream);
 int     s0il_fputc    (int c, FILE *stream);
 ssize_t s0il_write    (int fd, const void *buf, size_t count);
 int     s0il_fwrite   (const void *ptr, size_t size, size_t nmemb, FILE *stream);
+int s0il_remove(const char *pathname);
 FILE   *s0il_popen    (const char *cmdline, const char *mode);
 int     s0il_pclose   (FILE *stream);
 int     s0il_puts     (const char *s);
@@ -105,65 +106,69 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 
 #define realpath(a,b) s0il_realpath(a,b)
 #define glob(a,b,c,d) s0il_glob(a,b,c,d)
-#define getenv(a) s0il_getenv(a) 
+#define getenv(a)     s0il_getenv(a) 
 #define setenv(a,b,c) s0il_setenv(a,b,c) 
 
-#define popen(a,b)  s0il_popen(a,b)
-#define pclose(a)   s0il_pclose(a)
-#define exit(r)     s0il_exit(r)
-#define access(a,b) s0il_access(a,b)
-#define lseek       s0il_lseek
-#define opendir     s0il_opendir
-#define readdir     s0il_readdir
-#define closedir    s0il_closedir
-#define getpid      s0il_getpid
-#define unlink      s0il_unlink
-#define getppid     s0il_getppid
-#define stat(p,b)   s0il_stat(p,b)
-#define rename(p,b) s0il_rename(p,b)
-#define system(c)   s0il_system(c)
+#define popen(a,b)    s0il_popen(a,b)
+#define pclose(a)     s0il_pclose(a)
+#define exit(r)       s0il_exit(r)
+#define access(a,b)   s0il_access(a,b)
+#define lseek(a,b,c)  s0il_lseek(a,b,c)
+#define opendir(a)    s0il_opendir(a)
+#define readdir(a)    s0il_readdir(a)
+#define closedir(a)   s0il_closedir(a)
+#define getpid()      s0il_getpid()
+#define getppid()     s0il_getppid()
+#define unlink(a)     s0il_unlink(a)
+#define remove(a)     s0il_remove(a)
+#define stat(p,b)     s0il_stat(p,b)
+#define rename(p,b)   s0il_rename(p,b)
+#define system(c)     s0il_system(c)
 
 #define select(n,r,w,e,t) s0il_select(n,r,w,e,t)
-#define signal(a,b) s0il_signal(a,b)
-#define fgets       s0il_fgets
-#define fsetpos     s0il_fsetpos
-#define fgetpos     s0il_fgetpos
-#define fflush      s0il_fflush
-#define fopen       s0il_fopen
-#define freopen     s0il_freopen
-#define fdopen      s0il_fdopen
-#define fclose      s0il_fclose
-#define fread       s0il_fread
-#define fgetc       s0il_fgetc
-#define getc        s0il_getc
-#define getchar     s0il_getchar
-#define ungetc      s0il_ungetc
-#define fseek       s0il_fseek
-#define ftell       s0il_ftell
-#define rewind      s0il_rewind
-#define read(a,b,c) s0il_read(a,b,c)
-#define getcwd      s0il_getcwd
-#define chdir       s0il_chdir
+#define signal(a,b)       s0il_signal(a,b)
+#define fgets(a,b,c)      s0il_fgets(a,b,c)
+#define fsetpos           s0il_fsetpos
+#define fgetpos           s0il_fgetpos
+#define fflush(a)         s0il_fflush(a)
+#define fopen(a,b)        s0il_fopen(a,b)
+#define freopen(a,b,c)    s0il_freopen(a,b,c)
+#define fdopen(a,b)       s0il_fdopen(a,b)
+#define fclose(a)         s0il_fclose(a)
+#define fread(a,b,c,d)    s0il_fread(a,b,c,d)
+#define fgetc(a)          s0il_fgetc(a)
+#define getc(a)           s0il_getc(a)
+#define getchar()         s0il_getchar()
+#define ungetc(a,b)       s0il_ungetc(a,b)
+#define fseek(a,b,c)      s0il_fseek(a,b,c)
+#define ftell(a)          s0il_ftell(a)
+#define rewind(a)         s0il_rewind(a)
+#define read(a,b,c)       s0il_read(a,b,c)
+#define getcwd(a,b)       s0il_getcwd(a,b)
+#define chdir(a)          s0il_chdir(a)
 
-#define putchar     s0il_putchar
-#define fputs       s0il_fputs
-#define fputc       s0il_fputc
-#define putc        s0il_fputc
-#define write       s0il_write
-#define fwrite      s0il_fwrite
-#define puts        s0il_puts
-#define fprintf     s0il_fprintf
-#define vfprintf    s0il_vfprintf
-#define printf      s0il_printf
-#define ctx_new     s0il_ctx_new
-#define ctx_destroy s0il_ctx_destroy
-#define getline     s0il_getline
-#define rmdir(p)    s0il_rmdir(p)
+#define putchar(a)        s0il_putchar(a)
+#define fputs(a,b)        s0il_fputs(a,b)
+#define fputc(a,b)        s0il_fputc(a,b)
+#define putc(a,b)         s0il_fputc(a,b)
+#define write(a,b,c)      s0il_write(a,b,c)
+#define fwrite(a,b,c,d)   s0il_fwrite(a,b,c,d)
+#define puts(a)           s0il_puts(a)
 
-#define truncate(p,l) s0il_truncate(p,l)
-#define fsync(fd)   s0il_fsync(fd)
-#define ftruncate(fd, length)   s0il_ftruncate(fd, length)
-#define mkdir(p,m)   s0il_mkdir(p,m)
+#define ctx_new(a,b,c)    s0il_ctx_new(a,b,c)
+#define ctx_destroy(a)    s0il_ctx_destroy(a)
+#define getline(a,b,c)    s0il_getline(a,b,c)
+#define rmdir(p)          s0il_rmdir(p)
+
+#define truncate(p,l)     s0il_truncate(p,l)
+#define fsync(fd)         s0il_fsync(fd)
+#define ftruncate(fd, l)  s0il_ftruncate(fd,l)
+#define mkdir(p,m)        s0il_mkdir(p,m)
+
+#define fprintf           s0il_fprintf
+#define vfprintf          s0il_vfprintf
+#define printf            s0il_printf
+
 #endif
 
 #if PICO_BUILD
