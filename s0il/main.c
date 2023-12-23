@@ -21,13 +21,17 @@ static float backlight = 100.0;
 static void view_tests(Ui *ui) {
   ui_start_frame(ui);
 
-  if (ui_button(ui, "setpixels"))
+  if (ui_button(ui, "C setpixels"))
     ui_do(ui, "demo-setpixels");
-  if (ui_button(ui, "ctx-host"))
+  if (ui_button(ui, "picoc ui"))
+    ui_do(ui, "demo-ui");
+  if (ui_button(ui, "qjs text mandel"))
+    ui_do(ui, "demo-vt-mandel.js");
+  if (ui_button(ui, "C ctx-host"))
     ui_do(ui, "demo-ctx_host");
-  if (ui_button(ui, "pcm audio"))
+  if (ui_button(ui, "C pcm audio"))
     ui_do(ui, "demo-pcm_audio");
-  if (ui_button(ui, "tsr"))
+  if (ui_button(ui, "C tsr"))
     ui_do(ui, "demo-tsr");
 
   ui_end_frame(ui);

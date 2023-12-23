@@ -38,7 +38,7 @@ s0il_process_t *s0il_process(void)
     s0il_process_t *info = iter->data;
     if (info->pid == curpid) return info;
   }
-  assert(0);
+  //assert(0);
   return NULL;
 }
 
@@ -46,13 +46,23 @@ s0il_process_t *s0il_process(void)
 #include <unistd.h>
 
 int output_state = 0;
-int pre_exec(int same_stack) {
+int pre_exec(const char *path, int same_stack) {
   s0il_process_t *pinfo = s0il_process();
   s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
 
-  info->ppid = pinfo->pid;
+  if (pinfo)
+  {
+    info->ppid = pinfo->pid;
+    info->cwd = strdup (pinfo->cwd);
+  }
+  else
+  {
+    info->ppid = 0;
+    info->cwd  = strdup ("/");
+  }
+  info->program = strdup (path);
+
   info->pid = ++peak_pid;
-  info->cwd = strdup (pinfo->cwd);
   ctx_list_append(&proc, info);
 
   return info->pid;
@@ -68,7 +78,11 @@ void post_exec(int pid, int same_stack) {
     info = NULL;
   }
   if (info)
+  {
+    if (info->cwd) free (info->cwd);
+    if (info->program) free (info->program);
     ctx_list_remove(&proc, info);
+  }
 }
 int s0il_thread_no(void);
 
@@ -618,7 +632,7 @@ static int esp_elf_runv(char *path, char **argv, int same_stack) {
     argv = fake_argv;
   }
 
-  int pid = pre_exec(same_stack);
+  int pid = pre_exec(path, same_stack);
   int old_pid = thread_pid[s0il_thread_no()];
   thread_pid[s0il_thread_no()] = pid;
 
@@ -697,7 +711,7 @@ static int dlopen_runv(char *path2, char **argv, int same_stack) {
     int (*main)(int argc, char **argv) = dlsym(dlhandle, "main");
     if (main) {
 
-      int pid = pre_exec(same_stack);
+      int pid = pre_exec(path, same_stack);
       int old_pid = thread_pid[s0il_thread_no()];
       thread_pid[s0il_thread_no()] = pid;
 
@@ -736,7 +750,7 @@ static int program_runv(inlined_program_t *program, char **argv,
     argv = fake_argv;
   }
   {
-    int pid = pre_exec(same_stack);
+    int pid = pre_exec(path, same_stack);
     int old_pid = thread_pid[s0il_thread_no()];
     thread_pid[s0il_thread_no()] = pid;
 
