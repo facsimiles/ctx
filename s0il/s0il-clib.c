@@ -1181,6 +1181,12 @@ ssize_t s0il_getline(char **lineptr, size_t *n, FILE *stream) {
 }
 
 void s0il_exit(int retval) {
+  while((s0il_process()->atexits))
+  {
+    void (*function)(void) = s0il_process()->atexits->data;
+    function();
+    ctx_list_remove(&(s0il_process()->atexits), function);
+  }
   if (s0il_thread_no() > 0)
   {
      // XXX : we should not do this for nested exec on these thread either,.
@@ -1283,3 +1289,41 @@ int s0il_truncate(const char *path, int length) {
   return 0;
 #endif
 }
+
+
+void   *s0il_malloc   (size_t size)
+{
+  return malloc(size);
+}
+
+void    s0il_free     (void *ptr)
+{
+  free (ptr);
+}
+
+void   *s0il_calloc   (size_t nmemb, size_t size)
+{
+  return calloc(nmemb, size);
+}
+
+void   *s0il_realloc  (void *ptr, size_t size)
+{
+  return realloc(ptr, size);
+}
+
+char   *s0il_strdup   (const char *s)
+{
+  return strdup(s);
+}
+
+char   *s0il_strndup  (const char *s, size_t n)
+{
+  return strndup(s,n);
+}
+
+int s0il_atexit(void (*function)(void))
+{
+  ctx_list_append(&(s0il_process()->atexits), function);
+  return 0;
+}
+

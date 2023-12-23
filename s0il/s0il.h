@@ -114,9 +114,13 @@ typedef struct s0il_process_t {
   int pid;
   char *program;
   char *cwd;
+  CtxList *atexits;
+
+
   FILE *std_in; // < cannot use real name - due to #defines
   FILE *std_out;
   FILE *std_err;
+
 } s0il_process_t;
 
 s0il_process_t *s0il_process(void);

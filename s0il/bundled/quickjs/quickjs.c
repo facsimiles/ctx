@@ -10533,7 +10533,7 @@ static __maybe_unused JSValue JS_ToIntegerFree(JSContext *ctx, JSValue val)
                 ret = JS_NewInt32(ctx, 0);
             } else {
                 /* convert -0 to +0 */
-                d = trunc(d) + 0.0;
+                d = trunc(d) + (double)0.0;
                 ret = JS_NewFloat64(ctx, d);
             }
         }
@@ -11412,7 +11412,7 @@ static void js_dtoa1(char *buf, double d, int radix, int n_digits, int flags)
         ptr = i64toa(buf1 + sizeof(buf1), i64, radix);
         strcpy(buf, ptr);
     } else {
-        if (d == 0.0)
+        if (d == (double)0.0)
             d = 0.0; /* convert -0 to 0 */
         if (flags == JS_DTOA_FRAC_FORMAT) {
             js_fcvt(buf, JS_DTOA_BUF_SIZE, d, n_digits);

@@ -5,6 +5,14 @@
 // pass in NULL to reset
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream);
 
+void   *s0il_malloc   (size_t size);
+void    s0il_free     (void *ptr);
+void   *s0il_calloc   (size_t nmemb, size_t size);
+void   *s0il_realloc  (void *ptr, size_t size);
+char   *s0il_strdup   (const char *s);
+char   *s0il_strndup  (const char *s, size_t n);
+
+int     s0il_atexit   (void (*function)(void));
 int     s0il_select   (int nfds, fd_set *read_fds,
                        fd_set *write_fds,
                        fd_set *except_fds,
@@ -170,6 +178,15 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define fprintf           s0il_fprintf
 #define vfprintf          s0il_vfprintf
 #define printf            s0il_printf
+
+#define malloc(a) s0il_malloc(a)
+#define free(a) s0il_free(a)
+#define atexit(a) s0il_atexit(a)
+#define calloc(a,b) s0il_calloc(a,b)
+#define realloc(a,b) s0il_realloc(a,b)
+#define strdup(a) s0il_strdup(a)
+#define strndup(a,n) s0il_strdup(a,n)
+
 
 #endif
 

@@ -782,6 +782,13 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(y1),
     ELFSYM_EXPORT(y1f),
 
+    {"malloc", &s0il_malloc},
+    {"free", &s0il_free},
+    {"realloc", &s0il_realloc},
+    {"calloc", &s0il_calloc},
+    {"strdup", &s0il_strdup},
+    {"strndup", &s0il_strndup},
+
     ELFSYM_END};
 
 const void *s0il_sym(const char *name) {
