@@ -109,6 +109,19 @@ void s0il_output_state_reset (void);
 int  s0il_output_state (void); // 1 text 2 graphics 3 both
 char *s0il_path_lookup(Ui *ui, const char *command);
 
+typedef struct s0il_process_t {
+  int ppid;
+  int pid;
+  char *program;
+  char *cwd;
+  FILE *std_in; // < cannot use real name - due to #defines
+  FILE *std_out;
+  FILE *std_err;
+} s0il_process_t;
+
+s0il_process_t *s0il_process(void);
+int s0il_thread_no(void);
+
 #endif
 
 #ifdef MAIN

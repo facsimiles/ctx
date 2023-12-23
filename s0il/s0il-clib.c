@@ -1018,9 +1018,13 @@ off_t s0il_ftello(FILE *stream) {
 
 // pid info
 
-pid_t s0il_getpid(void) { return 1; }
+pid_t s0il_getpid(void) { 
+  return s0il_process()->pid;
+}
 
-pid_t s0il_getppid(void) { return 0; }
+pid_t s0il_getppid(void) {
+  return s0il_process()->ppid;
+}
 
 // fs/dir bits
 
@@ -1158,6 +1162,10 @@ ssize_t s0il_getline(char **lineptr, size_t *n, FILE *stream) {
 }
 
 void s0il_exit(int retval) {
+  if (s0il_thread_no() > 0)
+  {
+     // XXX : we should not do this for nested exec on these thread either,.
+     //       we should keep track of stack depth
   // XXX : this gets called for nested mains as well!
 #if CTX_ESP
   vTaskDelete(NULL);
@@ -1166,6 +1174,7 @@ void s0il_exit(int retval) {
 #else
   pthread_exit((void *)(ssize_t)(retval));
 #endif
+  }
 }
 
 int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,

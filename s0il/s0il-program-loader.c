@@ -27,33 +27,40 @@ int s0il_thread_no(void) {
   return 0;
 }
 
-typedef struct pidinfo_t {
-  int ppid;
-  int pid;
-  char *program;
-  char *cwd;
-  FILE *std_in; // < cannot use real name - due to #defines
-  FILE *std_out;
-  FILE *std_err;
-} pidinfo_t;
-
 static int peak_pid = 0;
 
 static CtxList *proc = NULL;
+
+s0il_process_t *s0il_process(void)
+{
+  int curpid = thread_pid[s0il_thread_no()];
+  for (CtxList *iter = proc; iter; iter = iter->next) {
+    s0il_process_t *info = iter->data;
+    if (info->pid == curpid) return info;
+  }
+  assert(0);
+  return NULL;
+}
+
 
 #include <unistd.h>
 
 int output_state = 0;
 int pre_exec(int same_stack) {
-  pidinfo_t *info = calloc(1, sizeof(pidinfo_t));
+  s0il_process_t *pinfo = s0il_process();
+  s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
+
+  info->ppid = pinfo->pid;
   info->pid = ++peak_pid;
+  info->cwd = strdup (pinfo->cwd);
   ctx_list_append(&proc, info);
+
   return info->pid;
 }
 
 void post_exec(int pid, int same_stack) {
   output_state = 0;
-  pidinfo_t *info = NULL;
+  s0il_process_t *info = NULL;
   for (CtxList *iter = proc; iter; iter = iter->next) {
     info = iter->data;
     if (info->pid == pid)
@@ -67,7 +74,7 @@ int s0il_thread_no(void);
 
 int ps_main(int argc, char **argv) {
   for (CtxList *iter = proc; iter; iter = iter->next) {
-    pidinfo_t *info = iter->data;
+    s0il_process_t *info = iter->data;
     s0il_printf("%i", info->pid);
     if (info->program)
       s0il_printf(" %s", info->program);
