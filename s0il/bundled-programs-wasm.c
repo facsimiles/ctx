@@ -21,6 +21,7 @@
 #include "bin-src/demo-setpixels.c"
 #include "bin-src/demo-tsr.c"
 #include "bin-src/demo-ui.c"
+#include "bin-src/demo-ctx_host.c"
 #include "bin-src/wifi.c"
 #include "bin-src/sync.c"
 #include "bin-src/httpd.c"
@@ -42,6 +43,7 @@ void add_mains(void) {
   s0il_bundle_main("wifi", wifi_main);
   s0il_bundle_main("sync", sync_main);
   s0il_bundle_main("demo-pcm_audio", demo_pcm_audio_main);
+  s0il_bundle_main("demo-ctx_host", demo_ctx_host_main);
 
   s0il_bundle_main("httpd", httpd_main);
   s0il_bundle_main("lua", lua_main);

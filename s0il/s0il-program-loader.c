@@ -768,37 +768,15 @@ int s0il_runv(char *path, char **argv) {
       uint8_t sector[512];
       s0il_fread(sector, 512, 1, f);
       s0il_fclose(f);
-      if (sector[0] == '/' && sector[1] == '/' && sector[2] == '!') {
-        int argc = 0;
-        int ilen = (strchr((char *)sector, '\n') - ((char *)&sector[0])) - 3;
-        char interpreter[ilen + 1];
-        memcpy(interpreter, sector + 3, ilen);
-        interpreter[ilen] = 0;
 
-        for (; argv && argv[argc]; argc++)
-          ;
-        if (argc == 0)
-          argc = 1;
-        char *argv_expanded[argc + 4];
-        argv_expanded[0] = interpreter;
-        argv_expanded[1] = path;
-        if (strstr(interpreter, "picoc") != NULL) {
-          argv_expanded[2] = "-";
-          for (int i = 1; i < argc; i++)
-            argv_expanded[i + 2] = argv[i];
-          argc += 2;
-        } else {
-          for (int i = 1; i < argc; i++)
-            argv_expanded[i + 1] = argv[i];
-          argc += 1;
-        }
-        argv_expanded[argc] = NULL;
-        return s0il_runvp(interpreter, argv_expanded);
-      } else if (sector[0] == '#' && sector[1] == '!') {
+      if ((sector[0] == '/' && sector[1] == '/' && sector[2] == '!') ||
+          (sector[0] == '#' && sector[1] == '!') ||
+          (sector[0] == '/' && sector[1] == '/' && sector[2] == ' ' && sector[3] == '!')) {
         int argc = 0;
-        int ilen = (strchr((char *)sector, '\n') - ((char *)&sector[0])) - 2;
+        int   diff = strchr((char*)sector, '!')-(char*)sector + 1;
+        int ilen = (strchr((char *)sector, '\n') - ((char *)&sector[0])) - diff;
         char interpreter[ilen + 1];
-        memcpy(interpreter, sector + 2, ilen);
+        memcpy(interpreter, sector + diff, ilen);
         interpreter[ilen] = 0;
 
         for (; argv && argv[argc]; argc++)

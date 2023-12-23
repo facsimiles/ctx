@@ -256,5 +256,5 @@ pico-flash: pico
 	cp pico/s0il.uf2 /media/*/RPI-RP2/ ; sync ; sleep 1; mpremote
 update-doc: wasm flow3r-build
 	cp wasm/s0il.* wasm/index.html ../docs/s0il/
-	cp flow3r/build/s0il.bin ../docs/s0il/
+	cp flow3r/build/s0il.bin ../docs/s0il/s0il-flow3r.bin
 	cp -ru ../docs/* ~/pgo/ctx.graphics/
