@@ -23,7 +23,7 @@
 #include "bin-src/demo-ui.c"
 #include "bin-src/wifi.c"
 #include "bin-src/sync.c"
-//#include "bin-src/httpd.c"
+#include "bin-src/httpd.c"
 
 void add_mains(void) {
   static bool done = false;
@@ -43,7 +43,7 @@ void add_mains(void) {
   s0il_bundle_main("sync", sync_main);
   s0il_bundle_main("demo-pcm_audio", demo_pcm_audio_main);
 
-//s0il_bundle_main("httpd", httpd_main);
+  s0il_bundle_main("httpd", httpd_main);
   s0il_bundle_main("lua", lua_main);
   s0il_bundle_main("luac", luac_main);
   s0il_bundle_main("qjs", qjs_main);

@@ -123,7 +123,7 @@ valgrind: s0il native_bins
 S0IL_OBJS=s0il-ui.o s0il-program-loader.o s0il-symbols.o s0il-magic.o s0il-clib.o
 
 s0il: libs0il.so main.o bundled-programs.o
-	$(CC_NATIVE) $(CFLAGS_NATIVE) -lm $^ -o $@ $(CFLAGS_NATIVE) -L. -ls0il
+	$(CC_NATIVE) $(CFLAGS_NATIVE) $^ -o $@ $(CFLAGS_NATIVE) -L. -ls0il
 
 PROGRAMS_C_BUNDLED=bin-src/*.c
 bundled-programs.o: $(PROGRAMS_C_BUNDLED)
@@ -134,8 +134,7 @@ main.o: fs_bin_native.c fs_data.c fs_bin_generic.c
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -c -g $< -o $@
 
 libs0il.so: $(S0IL_OBJS)  Makefile 
-	$(CC_NATIVE) $(CFLAGS_NATIVE) -g -shared \
-        $(S0IL_OBJS)  -o libs0il.so
+	$(CC_NATIVE) $(CFLAGS_NATIVE) -g -shared $(S0IL_OBJS)  -o libs0il.so -lm
 
 clean:
 	rm -rf s0il libs0il.so bin-riscv bin-xtensa bin-native elf_strip_pie *.o tmpfs tmpfs2 fs_*.c
@@ -255,3 +254,7 @@ pico: fs_data.c fs_bin_generic.c s0il-*.[ch] Makefile
 	make -C pico
 pico-flash: pico
 	cp pico/s0il.uf2 /media/*/RPI-RP2/ ; sync ; sleep 1; mpremote
+update-doc: wasm flow3r-build
+	cp wasm/s0il.* wasm/index.html ../docs/s0il/
+	cp flow3r/build/s0il.bin ../docs/s0il/
+	cp -ru ../docs/* ~/pgo/ctx.graphics/
