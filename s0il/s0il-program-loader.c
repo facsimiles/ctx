@@ -27,14 +27,6 @@ int s0il_thread_no(void) {
   return 0;
 }
 
-typedef struct _exec_state_t exec_state_t;
-struct _exec_state_t {
-  char *cwd;
-  FILE *stdin_copy;
-  FILE *stdout_copy;
-  FILE *stderr_copy;
-};
-
 typedef struct pidinfo_t {
   int ppid;
   int pid;
