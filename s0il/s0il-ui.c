@@ -200,6 +200,7 @@ int launch_program_interpreter(Ctx *ctx, void *data) {
       char *argv[2] = {ui->location, NULL};
       retval = s0il_runvp(ui->location, argv);
     }
+    ui_do(ui, "kb-hide");
     if (s0il_output_state() == 1) {
       // TODO : draw a visual count-down
       // sleep (2);

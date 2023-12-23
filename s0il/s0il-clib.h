@@ -17,6 +17,7 @@ int     s0il_fputc    (int c, FILE *stream);
 ssize_t s0il_write    (int fd, const void *buf, size_t count);
 int     s0il_fwrite   (const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int s0il_remove(const char *pathname);
+long s0il_telldir(DIR *dir);
 FILE   *s0il_popen    (const char *cmdline, const char *mode);
 int     s0il_pclose   (FILE *stream);
 int     s0il_puts     (const char *s);
@@ -159,6 +160,7 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define ctx_destroy(a)    s0il_ctx_destroy(a)
 #define getline(a,b,c)    s0il_getline(a,b,c)
 #define rmdir(p)          s0il_rmdir(p)
+#define telldir(p)          s0il_telldir(p)
 
 #define truncate(p,l)     s0il_truncate(p,l)
 #define fsync(fd)         s0il_fsync(fd)
