@@ -8,6 +8,8 @@ extern void *_s0il_main_thread;
 #define S0IL_HAVE_FS 1
 #endif
 
+#define S0IL_HAVE_SELECT 1
+
 void *_s0il_thread_id(void) {
 #if PICO_BUILD
   return 0;
@@ -52,7 +54,6 @@ void *s0il_ctx_new(int width, int height, const char *backend) {
 void s0il_ctx_destroy(void *ctx) { gfx_output = 0; }
 /////////
 
-static char *s0il_cwd = NULL;
 
 char *s0il_getenv(const char *name) { return getenv(name); }
 int s0il_setenv(const char *name, const char *value, int overwrite) {
@@ -60,16 +61,14 @@ int s0il_setenv(const char *name, const char *value, int overwrite) {
 }
 
 char *s0il_getcwd(char *buf, size_t size) {
+  s0il_process_t *info = s0il_process(); 
   if (!buf) {
     int size = 4;
-    if (s0il_cwd)
-      size = strlen(s0il_cwd) + 2;
+    if (info->cwd)
+      size = strlen(info->cwd) + 2;
     buf = malloc(size);
   }
-  if (!s0il_cwd)
-    strncpy(buf, "/", size - 1);
-  else
-    strncpy(buf, s0il_cwd, size - 1);
+  strncpy(buf, info->cwd, size - 1);
   return buf;
 }
 
@@ -77,10 +76,8 @@ static char *s0il_resolve_path(const char *pathname) {
   char *path = (char *)pathname;
 
   if (pathname[0] != '/') {
-    if (!s0il_cwd)
-      s0il_cwd = strdup("/");
-    path = malloc(strlen(pathname) + strlen(s0il_cwd) + 2);
-    sprintf(path, "%s%s", s0il_cwd, pathname);
+    path = malloc(strlen(pathname) + strlen(s0il_process()->cwd) + 2);
+    sprintf(path, "%s%s", s0il_process()->cwd, pathname);
   }
 
   if (strstr(path, "/./")) {
@@ -134,21 +131,21 @@ static char *s0il_resolve_path(const char *pathname) {
 }
 
 int s0il_chdir(const char *path2) {
-  // XXX : not properly thread-aware
+  s0il_process_t *info = s0il_process(); 
 
   char *path = s0il_resolve_path(path2);
   // XXX need better check?
   // if (!s0il_access (path, R_OK)) return -1;
-  if (s0il_cwd)
-    free(s0il_cwd);
+  if (info->cwd)
+    free(info->cwd);
 
-  s0il_cwd = malloc(strlen(path) + 2);
-  strcpy(s0il_cwd, path);
+  info->cwd = malloc(strlen(path) + 2);
+  strcpy(info->cwd, path);
 
   // append trailing / if missing
-  if (s0il_cwd[strlen(s0il_cwd) - 1] != '/') {
-    s0il_cwd[strlen(s0il_cwd) + 1] = 0;
-    s0il_cwd[strlen(s0il_cwd)] = '/';
+  if (info->cwd[strlen(info->cwd) - 1] != '/') {
+    info->cwd[strlen(info->cwd) + 1] = 0;
+    info->cwd[strlen(info->cwd)] = '/';
   }
 #if S0IL_HAVE_FS
   chdir(path);
@@ -1195,8 +1192,12 @@ int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
       FD_ZERO(read_fds);
     return 0;
   }
+#if S0IL_HAVE_SELECT
   // printf("select nfds: %i\n", nfds);
   return select(nfds, read_fds, write_fds, except_fds, timeout);
+#else
+  return 0;
+#endif
 }
 
 int s0il_glob(const char *pattern, int flags, int (*errfunc)(char *, int),
@@ -1206,6 +1207,7 @@ int s0il_glob(const char *pattern, int flags, int (*errfunc)(char *, int),
 }
 
 char *s0il_realpath(const char *path, char *resolved_path) {
+  // TODO
 #if defined(PICO_BUILD)
   if (!resolved_path)
     return strdup(path);
@@ -1242,6 +1244,7 @@ int s0il_ftruncate(int fd, int length) {
 }
 
 int s0il_mkdir(const char *pathname, int mode) {
+// TODO: internal
 #if S0IL_HAVE_FS
   return mkdir(pathname, mode);
 #else
@@ -1250,6 +1253,7 @@ int s0il_mkdir(const char *pathname, int mode) {
 }
 
 int s0il_truncate(const char *path, int length) {
+// TODO : internal
 #if S0IL_HAVE_FS
   return truncate(path, length);
 #else
