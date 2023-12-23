@@ -251,6 +251,10 @@ static void terminal_key_any(CtxEvent *event, void *userdata, void *userdata2) {
           return;
         }
       }
+      if (!strcmp(string, "control-q")) {
+        ui_do(ui, "exit");
+        return;
+      }
 
       handle_event(event->ctx, event, event->string);
 
@@ -319,6 +323,9 @@ void view_program(Ui *ui) {
       ui_start_frame(ui);
       draw_term(ui);
       ui_end_frame(ui);
+      ui_add_key_binding(ui, "control-q", "exit", "quit");
+      ui_add_key_binding(ui, "escape",    "exit", "quit"); // XXX having
+                                  // tri-state send ESC.. and having vim/quit in term conflicts..
     }
   }
 }

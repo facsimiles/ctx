@@ -60,7 +60,7 @@ static bool usb_had_console = false;
 
 static void view_menu(Ui *ui) {
   ui_start_frame(ui);
-#if CTX_FLOW3R
+#if 0 // CTX_FLOW3R
   if (usb_console_connected) {
     char buf[8];
     if (!usb_had_console) {
@@ -73,12 +73,6 @@ static void view_menu(Ui *ui) {
         ui_do(ui, "sh");   // see a terminal on the other
                            // end of USB
     }
-#if 0
-    if (usb_had_console)
-      ui_text(ui, "had TERM!");
-    else
-      ui_text(ui, "USB");
-#endif
   }
 #endif
 
