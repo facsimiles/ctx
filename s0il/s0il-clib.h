@@ -4,6 +4,11 @@
 // this set stdin and stdout to be aliases for the given streams,
 // pass in NULL to reset
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream);
+int  s0il_sigaction(int signum,
+                    void *act,
+                    void *oldact);
+
+
 
 void   *s0il_malloc   (size_t size);
 void    s0il_free     (void *ptr);
@@ -75,7 +80,7 @@ ssize_t s0il_read     (int fildes, void *buf, size_t nbyte);
 int     s0il_fgetpos  (FILE *s, fpos_t *pos);
 int     s0il_fsetpos  (FILE *s, fpos_t *pos);
 
-void    s0il_exit     (int retval);
+int     s0il_exit     (int retval);
 void    s0il_signal   (int sig, void(*func)(int));
 
 char   *s0il_getcwd   (char *buf, size_t size);
@@ -145,6 +150,7 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 
 #define select(n,r,w,e,t) s0il_select(n,r,w,e,t)
 #define signal(a,b)       s0il_signal(a,b)
+#define sigaction(a,b,c)  s0il_sigaction(a,b,c)
 #define kill(a,b)         s0il_kill(a,b)
 #define fgets(a,b,c)      s0il_fgets(a,b,c)
 #define fflush(a)         s0il_fflush(a)

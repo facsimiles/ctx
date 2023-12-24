@@ -914,6 +914,11 @@ int s0il_spawnp(char **argv) {
     printf("failed spawning thread\n");
   return 23;
 }
+#else
+
+int s0il_spawnp(char **argv) {
+  return 23;
+}
 #endif
 
 FILE *s0il_popen(const char *cmdline, const char *type) {
@@ -1001,17 +1006,7 @@ int s0il_system(const char *cmdline) {
             s0il_redirect_io(in_stream, out_stream);
 
           if (terminator == '&') {
-#ifdef PICO_BUILD
-            int pid = -1;
-#else
-            int pid = s0il_spawnp(cargv);
-#endif
-            if (pid <= 0)
-              printf("spawn failed\n");
-            else {
-              printf("got pid:%i\n", pid);
-              ret = pid;
-            }
+            s0il_spawnp(cargv);
           } else {
             ret = s0il_runvp(cargv[0], cargv);
           }

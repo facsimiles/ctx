@@ -113,6 +113,8 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/lib/libs0il.so
 	rm -rf $(DESTDIR)$(PREFIX)/include/s0il
 
+sh: s0il native_bins
+	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) ./s0il sh
 test: s0il native_bins
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) ./s0il
 gdb: s0il native_bins
@@ -126,7 +128,7 @@ s0il: libs0il.so main.o bundled-programs.o
 	$(CC_NATIVE) $(CFLAGS_NATIVE) $^ -o $@ $(CFLAGS_NATIVE) -L. -ls0il
 
 PROGRAMS_C_BUNDLED=bin-src/*.c
-bundled-programs.o: $(PROGRAMS_C_BUNDLED)
+bundled-programs.o: $(PROGRAMS_C_BUNDLED) bundled/*.c bundled/*/*.c
 
 main.o: fs_bin_native.c fs_data.c fs_bin_generic.c
 

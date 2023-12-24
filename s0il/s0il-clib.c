@@ -69,7 +69,7 @@ int   s0il_unsetenv (const char *name)
 }
 int   s0il_clearenv (void)
 {
-#ifndef CTX_ESP
+#if !defined(CTX_ESP) && !defined(PICO_BUILD)
   return clearenv();
 #else
   return 0;
@@ -1205,7 +1205,7 @@ ssize_t s0il_getline(char **lineptr, size_t *n, FILE *stream) {
   return strlen(*lineptr);
 }
 
-void s0il_exit(int retval) {
+int s0il_exit(int retval) {
   while((s0il_process()->atexits))
   {
     void (*function)(void) = s0il_process()->atexits->data;
@@ -1225,6 +1225,7 @@ void s0il_exit(int retval) {
   pthread_exit((void *)(ssize_t)(retval));
 #endif
   }
+  return retval;
 }
 
 int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
@@ -1384,4 +1385,12 @@ int s0il_kill(int pid, int sig)
 int s0il_pause(void)
 {
   return pause();
+}
+
+
+int  s0il_sigaction(int signum,
+                    void *act,
+                    void *oldact)
+{
+  return 0;
 }

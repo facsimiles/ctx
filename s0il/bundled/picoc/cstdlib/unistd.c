@@ -8,8 +8,6 @@
 #define S0IL_REDEFINE_CLIB
 #endif
 #include "s0il.h"
-#define chdir  s0il_chdir
-#define getcwd s0il_getcwd
 #ifndef BUILTIN_MINI_STDLIB
 
 static int ZeroValue = 0;

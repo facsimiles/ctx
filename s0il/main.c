@@ -1,8 +1,6 @@
 #include "port_config.h"
 #include "s0il.h"
 
-static char *root_path = NULL;
-
 // #include <libgen.h>
 
 #if CTX_FLOW3R
@@ -135,12 +133,12 @@ int ps_main(int argc, char **argv);
 #include <fcntl.h>
 #include <signal.h>
 
+void s0il_program_runner_init(void);
 #if CTX_ESP
 void app_main(void) {
   char *argv[] = {NULL, NULL};
 #else
 
-void s0il_program_runner_init(void);
 
 int main(int argc, char **argv) {
 #endif
@@ -163,16 +161,6 @@ int main(int argc, char **argv) {
   Ui *ui = ui_new(ctx);
   ui_fake_circle(ui, true);
 
-#ifdef PICO_BUILD
-  root_path = "/sd";
-#else
-  if (argv[1])
-    root_path = realpath(dirname(argv[1]), NULL);
-  else if (access("/sd", R_OK) == F_OK)
-    root_path = realpath("/sd", NULL);
-  else if (access("./sd", R_OK) == F_OK)
-    root_path = realpath("./sd", NULL);
-#endif
   magic_add("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
 
   const char *temp =
@@ -258,10 +246,10 @@ int main(int argc, char **argv) {
   ui_do(ui, "menu");        // queue menu - as initial view
   s0il_printf("\033[?30l"); // turn off scrollbar
 
-  //  s0il_system("wifi --auto &");
+  s0il_system("wifi --auto &");
   //  ui_do(ui, "sh");
 #ifdef CTX_NATIVE
-  ui_main(ui, NULL);
+  ui_main(ui, argv[1]);
 #else
   for (;;) {
     ctx_reset_has_exited(ctx);
@@ -271,7 +259,6 @@ int main(int argc, char **argv) {
 #endif
 
   ui_destroy(ui);
-  free(root_path);
 
   ctx_destroy(ctx);
 }
