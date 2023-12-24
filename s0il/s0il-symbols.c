@@ -53,6 +53,34 @@ struct esp_elfsym {
 
 Ctx *ctx_host(void);
 
+void mbedtls_entropy_func(void);
+void mbedtls_ctr_drbg_free(void);
+void mbedtls_ctr_drbg_init(void);
+void mbedtls_ctr_drbg_random(void);
+void mbedtls_ctr_drbg_seed(void);
+void mbedtls_ecp_curve_info_from_grp_id(void);
+void mbedtls_ecp_curve_info_from_name(void);
+void mbedtls_ecp_curve_list(void);
+void mbedtls_ecp_gen_key(void);
+void mbedtls_entropy_free(void);
+void mbedtls_entropy_func(void);
+void mbedtls_entropy_init(void);
+void mbedtls_mpi_free(void);
+void mbedtls_mpi_init(void);
+void mbedtls_mpi_write_file(void);
+void mbedtls_pk_free(void);
+void mbedtls_pk_get_type(void);
+void mbedtls_pk_info_from_type(void);
+void mbedtls_pk_init(void);
+void mbedtls_pk_setup(void);
+void mbedtls_pk_write_key_der(void);
+void mbedtls_pk_write_key_pem(void);
+void mbedtls_rsa_export(void);
+void mbedtls_rsa_export_crt(void);
+void mbedtls_rsa_gen_key(void);
+void mbedtls_strerror(void);
+
+
 const struct esp_elfsym g_customer_elfsyms[] = {
 
 #ifndef CTX_NATIVE
@@ -775,6 +803,33 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(y1),
     ELFSYM_EXPORT(y1f),
 
+    ELFSYM_EXPORT(mbedtls_entropy_func),
+  ELFSYM_EXPORT(mbedtls_entropy_func),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_free),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_init),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_random),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_seed),
+  ELFSYM_EXPORT(mbedtls_ecp_curve_info_from_grp_id),
+  ELFSYM_EXPORT(mbedtls_ecp_curve_info_from_name),
+  ELFSYM_EXPORT(mbedtls_ecp_curve_list),
+  ELFSYM_EXPORT(mbedtls_ecp_gen_key),
+  ELFSYM_EXPORT(mbedtls_entropy_free),
+  ELFSYM_EXPORT(mbedtls_entropy_func),
+  ELFSYM_EXPORT(mbedtls_entropy_init),
+  ELFSYM_EXPORT(mbedtls_mpi_free),
+  ELFSYM_EXPORT(mbedtls_mpi_init),
+  ELFSYM_EXPORT(mbedtls_mpi_write_file),
+  ELFSYM_EXPORT(mbedtls_pk_free),
+  ELFSYM_EXPORT(mbedtls_pk_get_type),
+  ELFSYM_EXPORT(mbedtls_pk_info_from_type),
+  ELFSYM_EXPORT(mbedtls_pk_init),
+  ELFSYM_EXPORT(mbedtls_pk_setup),
+  ELFSYM_EXPORT(mbedtls_pk_write_key_der),
+  ELFSYM_EXPORT(mbedtls_pk_write_key_pem),
+  ELFSYM_EXPORT(mbedtls_rsa_export),
+  ELFSYM_EXPORT(mbedtls_rsa_export_crt),
+  ELFSYM_EXPORT(mbedtls_rsa_gen_key),
+  ELFSYM_EXPORT(mbedtls_strerror),
     ELFSYM_END};
 
 const void *s0il_sym(const char *name) {
