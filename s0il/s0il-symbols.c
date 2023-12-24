@@ -114,7 +114,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #endif
     ELFSYM_EXPORT(main_bundled),
     ELFSYM_EXPORT(bzero),
-    ELFSYM_EXPORT(calloc),
+    {"calloc", &s0il_calloc},
     ELFSYM_EXPORT(cbrt),
     ELFSYM_EXPORT(cbrtf),
     ELFSYM_EXPORT(ceil),
@@ -383,6 +383,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     {"fputs", &s0il_fputs},
     {"fputc", &s0il_fputc},
     {"fread", &s0il_fread},
+    {"free", &s0il_free},
     {"freopen", &s0il_freopen},
     ELFSYM_EXPORT(frexp),
     ELFSYM_EXPORT(frexpf),
@@ -465,6 +466,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(lrintf),
     ELFSYM_EXPORT(lroundf),
     {"lseek", s0il_lseek},
+    {"malloc", &s0il_malloc},
     ELFSYM_EXPORT(memccpy),
     ELFSYM_EXPORT(memchr),
     ELFSYM_EXPORT(memcmp),
@@ -558,7 +560,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #if !defined(PICO_BUILD)
     ELFSYM_EXPORT(readdir_r),
 #endif
-    ELFSYM_EXPORT(realloc),
+    {"realloc", &s0il_realloc},
     {"realpath", &s0il_realpath},
 #if !defined(PICO_BUILD)
     ELFSYM_EXPORT(recv),
@@ -642,7 +644,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(strcoll),
     ELFSYM_EXPORT(strcpy),
     ELFSYM_EXPORT(strcspn),
-    ELFSYM_EXPORT(strdup),
+    {"strdup", &s0il_strdup},
     ELFSYM_EXPORT(strerror),
     ELFSYM_EXPORT(strerror_r),
     ELFSYM_EXPORT(strftime),
@@ -653,7 +655,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(strncat),
     ELFSYM_EXPORT(strncmp),
     ELFSYM_EXPORT(strncpy),
-    ELFSYM_EXPORT(strndup),
+    {"strndup", &s0il_strndup},
     ELFSYM_EXPORT(strnlen),
     ELFSYM_EXPORT(strpbrk),
     // ELFSYM_EXPORT(strptime),
@@ -758,8 +760,6 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(vsscanf),
 #if CTX_ESP
     ELFSYM_EXPORT(vTaskDelay),
-#endif
-#if CTX_ESP
     ELFSYM_EXPORT(wifi_init_sta),
     ELFSYM_EXPORT(wifi_scan),
 #endif
@@ -775,12 +775,6 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(y1),
     ELFSYM_EXPORT(y1f),
 
-    {"malloc", &s0il_malloc},
-    {"free", &s0il_free},
-    {"realloc", &s0il_realloc},
-    {"calloc", &s0il_calloc},
-    {"strdup", &s0il_strdup},
-    {"strndup", &s0il_strndup},
 
     ELFSYM_END};
 
