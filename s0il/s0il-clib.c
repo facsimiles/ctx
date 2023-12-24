@@ -59,6 +59,22 @@ char *s0il_getenv(const char *name) { return getenv(name); }
 int s0il_setenv(const char *name, const char *value, int overwrite) {
   return setenv(name, value, overwrite);
 }
+int   s0il_putenv (char *string)
+{
+  return putenv(string);
+}
+int   s0il_unsetenv (const char *name)
+{
+  return unsetenv (name);
+}
+int   s0il_clearenv (void)
+{
+#ifndef CTX_ESP
+  return clearenv();
+#else
+  return 0;
+#endif
+}
 
 char *s0il_getcwd(char *buf, size_t size) {
   s0il_process_t *info = s0il_process(); 
@@ -72,7 +88,8 @@ char *s0il_getcwd(char *buf, size_t size) {
   return buf;
 }
 
-static char *s0il_resolve_path(const char *pathname) {
+static char *s0il_resolve_path(const char *pathname)
+{
   char *path = (char *)pathname;
 
   if (pathname[0] != '/') {
@@ -130,7 +147,8 @@ static char *s0il_resolve_path(const char *pathname) {
   return path;
 }
 
-int s0il_chdir(const char *path2) {
+int s0il_chdir(const char *path2)
+{
   s0il_process_t *info = s0il_process(); 
 
   char *path = s0il_resolve_path(path2);
@@ -155,7 +173,8 @@ int s0il_chdir(const char *path2) {
   return 0;
 }
 
-typedef struct file_t {
+
+struct _file_t {
   char *path;
   char *d_name;
   unsigned char d_type;
@@ -164,20 +183,20 @@ typedef struct file_t {
   size_t size;
   size_t capacity;
   size_t pos;
-} file_t;
+};
 
-typedef struct folder_t {
+struct _folder_t {
   char *path;
   int count;
   CtxList *files;
   int pos;
-} folder_t;
+};
 
 #define S0IL_MAX_FILES 4
 
 static DIR *_s0il_internal_dir = (void *)100;
 static FILE *_s0il_internal_file = (void *)200;
-static folder_t *_s0il_dir = NULL;
+//static folder_t *_s0il_dir = NULL;
 static file_t *_s0il_file[S0IL_MAX_FILES] = {
     NULL,
 };
@@ -596,7 +615,7 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
 FILE *s0il_fdopen(int fd, const char *mode) { return fdopen(fd, mode); }
 
 int s0il_fclose(FILE *stream) {
-  if (stream == stdin || stream == stdout)
+  if (stream == stdin || stream == stdout || stream == stderr)
     return 0;
   if (s0il_stream_is_internal(stream)) {
     _s0il_file[s0il_fileno(stream)] = NULL;
@@ -999,7 +1018,7 @@ int s0il_fgetpos(FILE *s, fpos_t *pos) { // TODO
 
 long s0il_telldir(DIR *dir) {
   if (dir == _s0il_internal_dir)
-    return _s0il_dir->pos;
+    return s0il_process()->dir->pos;
 #if S0IL_HAVE_FS
   return telldir(dir);
 #else
@@ -1027,8 +1046,6 @@ off_t s0il_ftello(FILE *stream) {
   return ftello(stream);
 }
 
-// pid info
-
 pid_t s0il_getpid(void) { 
   return s0il_process()->pid;
 }
@@ -1036,8 +1053,6 @@ pid_t s0il_getpid(void) {
 pid_t s0il_getppid(void) {
   return s0il_process()->ppid;
 }
-
-// fs/dir bits
 
 DIR *s0il_opendir(const char *name2) {
   char *name = (char *)name2;
@@ -1052,8 +1067,8 @@ DIR *s0il_opendir(const char *name2) {
   for (CtxList *iter = folders; iter; iter = iter->next) {
     folder_t *folder = iter->data;
     if (!strcmp(folder->path, name)) {
-      _s0il_dir = folder;
-      _s0il_dir->pos = 0;
+      s0il_process()->dir = folder;
+      folder->pos = 0;
       if (name != name2)
         free(name);
       return _s0il_internal_dir;
@@ -1072,16 +1087,16 @@ DIR *s0il_opendir(const char *name2) {
 struct dirent *s0il_readdir(DIR *dirp) {
   if (dirp == _s0il_internal_dir) {
     static struct dirent ent;
-    if (_s0il_dir->pos < _s0il_dir->count) {
+    if (s0il_process()->dir->pos < s0il_process()->dir->count) {
       int i = 0;
       file_t *file = NULL;
-      for (CtxList *iter = _s0il_dir->files; iter; iter = iter->next, i++) {
-        if (i == _s0il_dir->pos)
+      for (CtxList *iter = s0il_process()->dir->files; iter; iter = iter->next, i++) {
+        if (i == s0il_process()->dir->pos)
           file = iter->data;
       }
       if (!file)
         return NULL;
-      _s0il_dir->pos++;
+      s0il_process()->dir->pos++;
       strncpy(ent.d_name, file->d_name, sizeof(ent.d_name) - 1);
       ent.d_type = file->d_type;
       return &ent;
@@ -1097,7 +1112,7 @@ struct dirent *s0il_readdir(DIR *dirp) {
 
 int s0il_closedir(DIR *dirp) {
   if (dirp == _s0il_internal_dir) {
-    _s0il_dir = NULL;
+    s0il_process()->dir = NULL;
     return 0;
   }
 #if S0IL_HAVE_FS
@@ -1106,9 +1121,6 @@ int s0il_closedir(DIR *dirp) {
   return 0;
 #endif
 }
-
-
-
 
 int s0il_unlink(const char *pathname) {
   char *path = s0il_resolve_path(pathname);
@@ -1290,35 +1302,50 @@ int s0il_truncate(const char *path, int length) {
 #endif
 }
 
-
-void   *s0il_malloc   (size_t size)
-{
-  return malloc(size);
-}
-
-void    s0il_free     (void *ptr)
-{
-  free (ptr);
-}
-
-void   *s0il_calloc   (size_t nmemb, size_t size)
-{
-  return calloc(nmemb, size);
-}
-
 void   *s0il_realloc  (void *ptr, size_t size)
 {
   return realloc(ptr, size);
 }
 
+void   *s0il_malloc   (size_t size)
+{
+  return s0il_realloc(NULL, size);
+}
+
+void    s0il_free     (void *ptr)
+{
+  if(!ptr)
+    return;
+  s0il_realloc(ptr, 0);
+}
+
+void   *s0il_calloc   (size_t nmemb, size_t size)
+{
+  char *ret = s0il_malloc(nmemb * size);
+  if (ret)
+    memset (ret, 0, nmemb*size);
+  return ret;
+}
+
 char   *s0il_strdup   (const char *s)
 {
-  return strdup(s);
+  size_t len = strlen(s);
+  char *ret = s0il_malloc(len + 1);
+  if (ret)
+    memcpy(ret, s, len + 1);
+  return ret;
 }
 
 char   *s0il_strndup  (const char *s, size_t n)
 {
-  return strndup(s,n);
+  size_t len = strlen(s);
+  if (len < n) n = len;
+  char *ret = s0il_malloc(n + 1);
+  if (ret){
+    memcpy(ret, s, n + 1);
+    ret[n]=0;
+  }
+  return ret;
 }
 
 int s0il_atexit(void (*function)(void))

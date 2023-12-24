@@ -121,7 +121,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(ceilf),
     ELFSYM_EXPORT(chdir),
     ELFSYM_EXPORT(clearerr),
-    ELFSYM_EXPORT(clearerr),
+    {"clearenv", &s0il_clearenv},
     ELFSYM_EXPORT(clock),
 #if !defined(PICO_BUILD)
     ELFSYM_EXPORT(clock_gettime),
@@ -389,13 +389,13 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(frexpf),
     ELFSYM_EXPORT(fscanf),
     ELFSYM_EXPORT(fscanf),
-    {"fseek", &s0il_fseek},
+    {"fseek",   &s0il_fseek},
     ELFSYM_EXPORT(fseeko),
     {"fsetpos", &s0il_fsetpos},
-    {"fstat", &s0il_fstat},
-    {"fsync", &s0il_fsync},
-    {"ftell", &s0il_ftell},
-    {"ftello", &s0il_ftello},
+    {"fstat",   &s0il_fstat},
+    {"fsync",   &s0il_fsync},
+    {"ftell",   &s0il_ftell},
+    {"ftello",  &s0il_ftello},
     {"ftruncate", &s0il_ftruncate},
 
     {"fwrite", &s0il_fwrite},
@@ -546,7 +546,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #endif
     {"putc", &s0il_fputc},
     {"putchar", &s0il_putchar},
-    ELFSYM_EXPORT(putenv),
+    {"putenv", &s0il_putenv},
     {"puts", &s0il_puts},
 
     ELFSYM_EXPORT(qsort),
@@ -745,7 +745,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #endif
     {"ungetc", &s0il_ungetc},
     {"unlink", &s0il_unlink},
-    ELFSYM_EXPORT(unsetenv),
+    {"unsetenv", &s0il_unsetenv},
     ELFSYM_EXPORT(usleep),
 #if CTX_ESP
     ELFSYM_EXPORT(uxTaskGetTaskNumber),
@@ -774,7 +774,6 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(y0f),
     ELFSYM_EXPORT(y1),
     ELFSYM_EXPORT(y1f),
-
 
     ELFSYM_END};
 

@@ -15221,7 +15221,7 @@ static __exception int js_append_enumerate(JSContext *ctx, JSValue *sp)
     if (JS_IsException(iterator))
         return -1;
     is_array_iterator = JS_IsCFunction(ctx, iterator,
-                                       (JSCFunction *)js_create_array_iterator,
+                                       (void*)js_create_array_iterator,
                                        JS_ITERATOR_KIND_VALUE);
     JS_FreeValue(ctx, iterator);
 

@@ -1781,9 +1781,6 @@ static JSValue js_os_ttySetRaw(JSContext *ctx, JSValueConst this_val,
 
 #endif /* !_WIN32 */
 #else
-static void term_exit(void)
-{
-}
 static JSValue js_os_ttySetRaw(JSContext *ctx, JSValueConst this_val,
                                int argc, JSValueConst *argv)
 {
@@ -2597,12 +2594,14 @@ static JSValue js_os_stat(JSContext *ctx, JSValueConst this_val,
     return make_obj_error(ctx, obj, err);
 }
 
+#if 0
 #if !defined(_WIN32)
 static void ms_to_timeval(struct timeval *tv, uint64_t v)
 {
     tv->tv_sec = v / 1000;
     tv->tv_usec = (v % 1000) * 1000;
 }
+#endif
 #endif
 
 #if 0

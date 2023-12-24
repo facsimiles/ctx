@@ -24,12 +24,12 @@ int     s0il_fputs    (const char *s, FILE *stream);
 int     s0il_fputc    (int c, FILE *stream);
 ssize_t s0il_write    (int fd, const void *buf, size_t count);
 
-int s0il_kill(int pid, int sig);
-int s0il_pause(void);
+int     s0il_kill     (int pid, int sig);
+int     s0il_pause    (void);
 
 int     s0il_fwrite   (const void *ptr, size_t size, size_t nmemb, FILE *stream);
-int s0il_remove(const char *pathname);
-long s0il_telldir(DIR *dir);
+int     s0il_remove   (const char *pathname);
+long    s0il_telldir  (DIR *dir);
 FILE   *s0il_popen    (const char *cmdline, const char *mode);
 int     s0il_pclose   (FILE *stream);
 int     s0il_puts     (const char *s);
@@ -82,13 +82,16 @@ char   *s0il_getcwd   (char *buf, size_t size);
 int     s0il_chdir    (const char *path);
 char   *s0il_realpath (const char *path, char *resolved_path);
 
-int s0il_fsync(int fd);
-int s0il_ftruncate(int fd, int length);
-int s0il_mkdir(const char *pathname, int mode);
-int s0il_truncate(const char *path, int length);
+int     s0il_fsync    (int fd);
+int     s0il_ftruncate(int fd, int length);
+int     s0il_mkdir    (const char *pathname, int mode);
+int     s0il_truncate (const char *path, int length);
 
-char *s0il_getenv (const char *name);
-int   s0il_setenv (const char *name, const char *value, int overwrite);
+char   *s0il_getenv   (const char *name);
+int     s0il_setenv   (const char *name, const char *value, int overwrite);
+int     s0il_putenv   (char *string);
+int     s0il_unsetenv (const char *name);
+int     s0il_clearenv (void);
 
 typedef struct {
   size_t gl_pathc;
@@ -120,6 +123,8 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define realpath(a,b) s0il_realpath(a,b)
 #define glob(a,b,c,d) s0il_glob(a,b,c,d)
 #define getenv(a)     s0il_getenv(a) 
+#define putenv(a)     s0il_putenv(a) 
+#define clearenv()    s0il_clearenv() 
 #define setenv(a,b,c) s0il_setenv(a,b,c) 
 
 #define popen(a,b)    s0il_popen(a,b)

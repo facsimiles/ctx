@@ -109,6 +109,9 @@ void s0il_output_state_reset (void);
 int  s0il_output_state (void); // 1 text 2 graphics 3 both
 char *s0il_path_lookup(Ui *ui, const char *command);
 
+typedef struct _file_t   file_t;
+typedef struct _folder_t folder_t;
+
 typedef struct s0il_process_t {
   int ppid;
   int pid;
@@ -116,6 +119,7 @@ typedef struct s0il_process_t {
   char *cwd;
   CtxList *atexits;
 
+  folder_t *dir; // currently open folder
 
   FILE *std_in; // < cannot use real name - due to #defines
   FILE *std_out;
