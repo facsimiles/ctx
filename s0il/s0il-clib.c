@@ -344,17 +344,18 @@ void *s0il_add_file(const char *path, const char *contents, size_t size,
   return file;
 }
 
-static FILE *stdout_redirect = NULL;
-static FILE *stdin_redirect = NULL;
 
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream) {
-  stdin_redirect = in_stream;
-  stdout_redirect = out_stream;
+  s0il_process_t *pi = s0il_process();
+  if (!pi)return;
+  pi->redir_stdin = in_stream;
+  pi->redir_stdout = out_stream;
 }
 
 int s0il_putchar(int c) {
-  if (stdout_redirect)
-    return fputc(c, stdout_redirect);
+  if (s0il_process()->redir_stdout)
+    return fputc(c, s0il_process()->redir_stdout);
+
   text_output = 1;
   if (c == '\n') {
     ctx_vt_write(NULL, '\r');
@@ -381,8 +382,13 @@ int s0il_fputc(int c, FILE *stream) {
     return c;
   }
   if (stream == stdout) {
-    if (stdout_redirect)
-      return s0il_fputc(c, stdout_redirect);
+    if (s0il_process()->redir_stdout)
+      return s0il_fputc(c, s0il_process()->redir_stdout);
+    return s0il_putchar(c);
+  }
+  if (stream == stderr) {
+    if (s0il_process()->redir_stderr)
+      return s0il_fputc(c, s0il_process()->redir_stderr);
     return s0il_putchar(c);
   }
   return fputc(c, stream);
@@ -398,8 +404,8 @@ int s0il_fputs(const char *s, FILE *stream) {
     return count;
   }
   if (stream == stdout || stream == stderr) {
-    if (stdout_redirect)
-      return s0il_fputs(s, stdout_redirect);
+    if (stream == stdout && s0il_process()->redir_stdout)
+      return s0il_fputs(s, s0il_process()->redir_stdout);
     text_output = 1;
     for (int i = 0; s[i]; i++) {
       if (s[i] == '\n')
@@ -440,8 +446,10 @@ int s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
     return count;
   }
   if (stream == stdout || stream == stderr) {
-    if (stdout_redirect)
-      return s0il_fwrite(ptr, size, nmemb, stdout_redirect);
+    if (stream == stdout && s0il_process()->redir_stdout)
+      return s0il_fwrite(ptr, size, nmemb, s0il_process()->redir_stdout);
+    if (stream == stderr && s0il_process()->redir_stderr)
+      return s0il_fwrite(ptr, size, nmemb, s0il_process()->redir_stderr);
     text_output = 1;
     uint8_t *s = (uint8_t *)ptr;
     for (size_t i = 0; i < size * nmemb; i++) {
@@ -456,8 +464,8 @@ int s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
 }
 
 int s0il_puts(const char *s) {
-  if (stdout_redirect)
-    return fputs(s, stdout_redirect);
+  if (s0il_process()->redir_stdout)
+    return fputs(s, s0il_process()->redir_stdout);
   int ret = s0il_fputs(s, stdout);
   s0il_fputc('\n', stdout);
   if (s0il_is_main_thread())
@@ -537,11 +545,14 @@ int s0il_rename(const char *src, const char *dst) {
 
 FILE *s0il_freopen(const char *pathname, const char *mode, FILE *stream) {
   if (stream == stdin) {
-    stdin_redirect = s0il_fopen(pathname, mode);
+    s0il_process()->redir_stdin = s0il_fopen(pathname, mode);
     return stdin;
   } else if (stream == stdout) {
-    stdout_redirect = s0il_fopen(pathname, mode);
+    s0il_process()->redir_stdout  = s0il_fopen(pathname, mode);
     return stdout;
+  } else if (stream == stderr) {
+    s0il_process()->redir_stderr  = s0il_fopen(pathname, mode);
+    return stderr;
   }
   return freopen(pathname, mode, stream);
 }
@@ -627,8 +638,8 @@ int s0il_fclose(FILE *stream) {
 static int s0il_got_data(FILE *stream) {
   if (stream == NULL)
     stream = stdin;
-  if (stream == stdin && stdin_redirect)
-    stream = stdin_redirect;
+  if (stream == stdin && s0il_process()->redir_stdin)
+    stream = s0il_process()->redir_stdin;
 
   if (stream == stdin) {
     int gotdata = ctx_vt_has_data(NULL);
@@ -658,8 +669,8 @@ static CtxList *commandline_history = NULL;
 
 static char *s0il_gets(char *buf, size_t buflen) {
   FILE *stream = stdin;
-  if (stream == stdin && stdin_redirect)
-    stream = stdin_redirect;
+  if (stream == stdin && s0il_process()->redir_stdin)
+    stream = s0il_process()->redir_stdin;
   size_t count = 0;
 
   size_t cursor_pos = 0;
@@ -846,8 +857,8 @@ static char *s0il_gets(char *buf, size_t buflen) {
 }
 
 int s0il_fgetc(FILE *stream) {
-  if (stream == stdin && stdin_redirect)
-    stream = stdin_redirect;
+  if (stream == stdin && s0il_process()->redir_stdin)
+    stream = s0il_process()->redir_stdin;
   if (stream == stdin) {
 
     if (ctx_vt_has_data(NULL)) {
@@ -872,8 +883,8 @@ int s0il_fgetc(FILE *stream) {
 }
 
 char *s0il_fgets(char *s, int size, FILE *stream) {
-  if (stream == stdin && stdin_redirect)
-    stream = stdin_redirect;
+  if (stream == stdin && s0il_process()->redir_stdin)
+    stream = s0il_process()->redir_stdin;
   if (s0il_stream_is_internal(stream)) {
     file_t *file = _s0il_file[s0il_fileno(stream)];
     int ret = 0;
@@ -896,16 +907,16 @@ char *s0il_fgets(char *s, int size, FILE *stream) {
 
 int s0il_ungetc(int c,
                 FILE *stream) { // TODO : unget to ctx|term layer insteead
-  if (stream == stdin && stdin_redirect)
-    stream = stdin_redirect;
+  if (stream == stdin && s0il_process()->redir_stdin)
+    stream = s0il_process()->redir_stdin;
   if (s0il_stream_is_internal(stream))
     return 0;
   return ungetc(c, stream);
 }
 
 size_t s0il_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-  if (stream == stdin && stdin_redirect)
-    stream = stdin_redirect;
+  if (stream == stdin && s0il_process()->redir_stdin)
+    stream = s0il_process()->redir_stdin;
   if (stream == stdin && ctx_vt_has_data(NULL)) {
     char *dst = ptr;
     int read = 0;
@@ -952,10 +963,12 @@ int s0il_access(const char *pathname, int mode) {
 }
 
 int s0il_fflush(FILE *stream) {
-  if (stream == stdin && stdin_redirect)
-    stream = stdin_redirect;
-  if (stream == stdout && stdout_redirect)
-    stream = stdout_redirect;
+  if (stream == stdin && s0il_process()->redir_stdin)
+    stream = s0il_process()->redir_stdin;
+  if (stream == stdout && s0il_process()->redir_stdout)
+    stream = s0il_process()->redir_stdout;
+  if (stream == stderr && s0il_process()->redir_stderr)
+    stream = s0il_process()->redir_stderr;
   if (s0il_stream_is_internal(stream))
     return 0;
   if (s0il_is_main_thread())

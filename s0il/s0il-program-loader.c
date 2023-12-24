@@ -11,11 +11,19 @@ int thread_pid[MAX_THREADS] = {
 void *_s0il_thread_id(void);
 
 void *_s0il_main_thread = NULL;
+static CtxList *proc = NULL;
 
 void s0il_program_runner_init(void) {
   if (_s0il_main_thread)
     return;
   thread_data[0] = _s0il_main_thread = _s0il_thread_id();
+
+  s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
+  info->ppid = 0;
+  info->pid = 0;
+  info->cwd  = strdup ("/");
+  info->program = strdup ("s0il");
+  ctx_list_append(&proc, info);
 }
 
 int s0il_thread_no(void) {
@@ -29,7 +37,6 @@ int s0il_thread_no(void) {
 
 static int peak_pid = 0;
 
-static CtxList *proc = NULL;
 
 s0il_process_t *s0il_process(void)
 {
@@ -54,6 +61,9 @@ int pre_exec(const char *path, int same_stack) {
   {
     info->ppid = pinfo->pid;
     info->cwd = strdup (pinfo->cwd);
+    info->redir_stdin = pinfo->redir_stdin;
+    info->redir_stdout = pinfo->redir_stdout;
+    info->redir_stderr = pinfo->redir_stderr;
   }
   else
   {

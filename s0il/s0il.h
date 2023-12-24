@@ -121,9 +121,9 @@ typedef struct s0il_process_t {
 
   folder_t *dir; // currently open folder
 
-  FILE *std_in; // < cannot use real name - due to #defines
-  FILE *std_out;
-  FILE *std_err;
+  FILE *redir_stdout;
+  FILE *redir_stderr;
+  FILE *redir_stdin;
 
 } s0il_process_t;
 

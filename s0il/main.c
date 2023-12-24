@@ -139,8 +139,12 @@ int ps_main(int argc, char **argv);
 void app_main(void) {
   char *argv[] = {NULL, NULL};
 #else
+
+void s0il_program_runner_init(void);
+
 int main(int argc, char **argv) {
 #endif
+  s0il_program_runner_init();
 
   Ctx *ctx = ctx_new(DISPLAY_WIDTH, DISPLAY_HEIGHT, NULL);
 
