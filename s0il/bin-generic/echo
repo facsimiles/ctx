@@ -7,18 +7,52 @@
 #include <string.h>
 #include <unistd.h>
 
+int newline = 1;
+int escapes = 0;
+
 int main(int argc, char **argv) {
   for (int i = 1; argv[i]; i++) {
+    if (argv[i][0] == '-') {
+      for (int j = 1; argv[i][j];j++)
+        switch (argv[i][j])
+        {
+          case 'e': escapes = 1; break;
+          case 'n': newline = 0; break;
+        }
+    }
   }
   int count = 0;
   for (int i = 1; argv[i]; i++) {
     if (argv[i][0] != '-') {
       if (count)
         printf(" ");
+      if (escapes)
+      {
+        int in_esc = 0;
+        for (int j = 0; argv[i][j]; j++)
+        {
+          if (in_esc)
+          {
+            switch(argv[i][j]){
+              case 'n': printf("\n"); break;
+              case 'r': printf("\r"); break;
+              case 'e': printf("\e"); break;
+              case 'b': printf("\b"); break;
+              case 't': printf("\t"); break;
+            }
+            in_esc = 0;
+          }
+          else
+            {
+              if(argv[i][j]=='\\') in_esc = 1;
+              else printf("%c", argv[i][j]);
+            }
+        }
+      } else
       printf("%s", argv[i]);
       count++;
     }
   }
-  printf("\n");
+  if(newline)printf("\n");
   return 0;
 }
