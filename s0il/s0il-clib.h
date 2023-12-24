@@ -23,6 +23,10 @@ int     s0il_putchar  (int c);
 int     s0il_fputs    (const char *s, FILE *stream);
 int     s0il_fputc    (int c, FILE *stream);
 ssize_t s0il_write    (int fd, const void *buf, size_t count);
+
+int s0il_kill(int pid, int sig);
+int s0il_pause(void);
+
 int     s0il_fwrite   (const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int s0il_remove(const char *pathname);
 long s0il_telldir(DIR *dir);
@@ -136,9 +140,8 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 
 #define select(n,r,w,e,t) s0il_select(n,r,w,e,t)
 #define signal(a,b)       s0il_signal(a,b)
+#define kill(a,b)         s0il_kill(a,b)
 #define fgets(a,b,c)      s0il_fgets(a,b,c)
-#define fsetpos           s0il_fsetpos
-#define fgetpos           s0il_fgetpos
 #define fflush(a)         s0il_fflush(a)
 #define fopen(a,b)        s0il_fopen(a,b)
 #define freopen(a,b,c)    s0il_freopen(a,b,c)
@@ -168,12 +171,14 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define ctx_destroy(a)    s0il_ctx_destroy(a)
 #define getline(a,b,c)    s0il_getline(a,b,c)
 #define rmdir(p)          s0il_rmdir(p)
-#define telldir(p)          s0il_telldir(p)
+#define telldir(p)        s0il_telldir(p)
 
 #define truncate(p,l)     s0il_truncate(p,l)
 #define fsync(fd)         s0il_fsync(fd)
 #define ftruncate(fd, l)  s0il_ftruncate(fd,l)
 #define mkdir(p,m)        s0il_mkdir(p,m)
+#define fsetpos           s0il_fsetpos
+#define fgetpos           s0il_fgetpos
 
 #define fprintf           s0il_fprintf
 #define vfprintf          s0il_vfprintf

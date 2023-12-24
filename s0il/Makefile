@@ -13,7 +13,7 @@ help:
 	@echo ' pico-flash   - flash (and build if needed) rp2040 firmware'
 
 xtensa: xtensa_bins
-all: native xtensa flow3r-build wasm riscv pico
+all: native xtensa flow3r wasm riscv pico
 
 DESTDIR ?=
 PREFIX  ?= /usr/local
@@ -187,9 +187,9 @@ native_bins: $(PROGRAMS_NATIVE)
 xtensa_bins: $(PROGRAMS_XTENSA)
 riscv_bins: $(PROGRAMS_RISCV)
 
-flow3r-build: fs_data.c fs_bin_xtensa.c s0il*.[ch]
+flow3r: fs_data.c fs_bin_xtensa.c s0il*.[ch]
 	(cd flow3r; idf.py build)
-flow3r-flash: flow3r-build
+flow3r-flash: flow3r
 	(cd flow3r; idf.py app-flash monitor)
 monitor:
 	(cd flow3r; idf.py monitor)
@@ -254,7 +254,7 @@ pico: fs_data.c fs_bin_generic.c s0il-*.[ch] Makefile
 	make -C pico
 pico-flash: pico
 	cp pico/s0il.uf2 /media/*/RPI-RP2/ ; sync ; sleep 1; mpremote
-update-doc: wasm flow3r-build
+update-doc: wasm flow3r
 	cp wasm/s0il.* wasm/index.html ../docs/s0il/
 	cp flow3r/build/s0il.bin ../docs/s0il/s0il-flow3r.bin
 	cp -ru ../docs/* ~/pgo/ctx.graphics/

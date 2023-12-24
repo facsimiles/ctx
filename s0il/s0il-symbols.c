@@ -51,13 +51,6 @@ struct esp_elfsym {
   void *sym;
 };
 
-void s0il_signal(int sig, void (*func)(int)) {
-#if CTX_NATIVE
-  signal(sig, func);
-#else
-#endif
-}
-
 Ctx *ctx_host(void);
 
 const struct esp_elfsym g_customer_elfsyms[] = {
@@ -450,7 +443,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(j0f),
     ELFSYM_EXPORT(j1),
     ELFSYM_EXPORT(j1f),
-    ELFSYM_EXPORT(kill), // XXX wrap
+    {"kill", &s0il_kill},
     ELFSYM_EXPORT(ldexp),
     ELFSYM_EXPORT(ldexpf),
     ELFSYM_EXPORT(ldiv),

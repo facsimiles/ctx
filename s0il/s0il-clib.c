@@ -1327,3 +1327,21 @@ int s0il_atexit(void (*function)(void))
   return 0;
 }
 
+
+void s0il_signal(int sig, void (*func)(int)) {
+#if CTX_NATIVE
+  //return signal(sig, func);
+#else
+#endif
+}
+
+int s0il_kill(int pid, int sig)
+{
+  // ust tkill ?
+  return kill(pid, sig);
+}
+
+int s0il_pause(void)
+{
+  return pause();
+}
