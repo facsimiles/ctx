@@ -4,7 +4,7 @@
 void s0il_program_runner_init(void);
 int _init_main(int argc, char **argv) {
   // Ui *ui = ui_host(NULL);
-  s0il_printf("\033[?30l"); // turn off scrollbar
+  s0il_program_runner_init();
 
   system("rm -f /tmp/_s0il_*");
   const char elf_magic_32bit[] = {0x7f, 'E', 'L', 'F', 1, 1, 1, 0, 0, 0};
