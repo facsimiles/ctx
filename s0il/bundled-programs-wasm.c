@@ -9,8 +9,8 @@
 // what follows is a list of programs to include directly
 
 #include "bin-src/clock.c"
-#include "bin-src/image.c"
-#include "bin-src/text.c"
+#include "bin-src/s0il-image.c"
+#include "bin-src/s0il-text.c"
 
 #include "bundled/qjs.c"
 #include "bundled/lua.c"
@@ -33,8 +33,8 @@ void add_mains(void) {
   done = true;
 
   s0il_bundle_main("picoc", picoc_main);
-  s0il_bundle_main("image", image_main);
-  s0il_bundle_main("text", text_main);
+  s0il_bundle_main("s0il-image", s0il_image_main);
+  s0il_bundle_main("s0il-text", s0il_text_main);
   s0il_bundle_main("clock", clock_main);
   s0il_bundle_main("demo-setpixels", demo_setpixels_main);
 //s0il_bundle_main("bundled", bundled_main);

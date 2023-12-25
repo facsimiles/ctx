@@ -503,9 +503,8 @@ void s0il_load_file(Ui *ui, const char *path) {
 static void ui_view_file(Ui *ui) {
   const char *mime_type = s0il_detect_media_path(ui->location);
   ui->interpreter = NULL;
-  for (int i = 0; i < ui->n_views; i++) {
+  for (int i = ui->n_views-1; i>=0; i--) {
     const char *name = ui->views[i].name;
-    // const char *cat = ui->views[i].category;
 
     if ((name && !strcmp(name, mime_type))) {
       ui->fun = ui->views[i].fun;
@@ -677,7 +676,7 @@ void ui_load_view(Ui *ui, const char *target) {
       ui_push_fun(ui, ui_view_404, target, NULL, NULL);
     }
   } else {
-    for (int i = 0; i < ui->n_views; i++)
+    for (int i = ui->n_views-1; i>=0; i--)
       if (!strcmp(ui->views[i].name, target)) {
         ui_push_fun(ui, ui->views[i].fun, target, NULL, NULL);
         return;

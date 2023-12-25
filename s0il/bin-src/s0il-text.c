@@ -325,7 +325,7 @@ void view_text(Ui *ui, const char *path) {
   ctx_listen(ctx, CTX_KEY_PRESS, text_key_press, ui, NULL);
 }
 
-MAIN(text) {
+MAIN(s0il_text) {
   Ctx *ctx = ctx_new(512, 512, NULL);
   Ui *ui = ui_host(ctx);
   text->scroll = 0.0f - ctx_height(ctx) / 8;

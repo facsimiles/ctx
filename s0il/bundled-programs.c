@@ -8,8 +8,8 @@
 #include "bundled/lua.c"
 #include "bundled/picoc.c"
 #include "bin-src/clock.c"
-#include "bin-src/image.c"
-#include "bin-src/text.c"
+#include "bin-src/s0il-image.c"
+#include "bin-src/s0il-text.c"
 
 void add_mains(void) {
   static bool done = false;
@@ -17,8 +17,8 @@ void add_mains(void) {
     return;
   done = true;
 
-  s0il_bundle_main("image", image_main);
-  s0il_bundle_main("text", text_main);
+  s0il_bundle_main("s0il-image", s0il_image_main);
+  s0il_bundle_main("s0il-text", s0il_text_main);
   s0il_bundle_main("clock", clock_main);
   s0il_bundle_main("picoc", picoc_main);
   s0il_bundle_main("lua", lua_main);

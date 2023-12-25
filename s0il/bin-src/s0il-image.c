@@ -1,6 +1,6 @@
 #include "s0il.h"
 
-MAIN(image) {
+MAIN(s0il_image) {
   if (argv[1] == NULL) {
     Ui *ui = ui_host(NULL);
     const char png_magic[] = {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};

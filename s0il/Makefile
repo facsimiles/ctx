@@ -128,7 +128,7 @@ fs_bin_riscv.c: $(PROGRAMS_RISCV) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-riscv/* $@_fs
-	@rm $@_fs/image $@_fs/text $@_fs/clock
+	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
@@ -137,7 +137,7 @@ fs_bin_xtensa.c: $(PROGRAMS_XTENSA) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-xtensa/* $@_fs
-	@rm $@_fs/image $@_fs/text $@_fs/clock
+	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
@@ -146,7 +146,7 @@ fs_bin_native.c: $(PROGRAMS_NATIVE) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-native/* $@_fs
-	@rm $@_fs/image $@_fs/text $@_fs/clock
+	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
