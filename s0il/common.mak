@@ -2,7 +2,7 @@
 #CCACHE=`command -v ccache`
 CCACHE=
 
-CFLAGS=-Wall -Wextra -Wno-unused-parameter -g -Wno-deprecated-declarations
+CFLAGS+=-O2 -Wall -Wextra -Wno-unused-parameter -g -Wno-deprecated-declarations
 CFLAGS+= -Wwrite-strings -Wchar-subscripts -Wno-format -Wno-sign-compare
 CFLAGS+= -I. -I..
 CFLAGS+=-Wno-discarded-qualifiers

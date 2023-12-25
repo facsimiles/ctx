@@ -57,6 +57,7 @@ void mbedtls_entropy_func(void);
 void mbedtls_ctr_drbg_free(void);
 void mbedtls_ctr_drbg_init(void);
 void mbedtls_ctr_drbg_random(void);
+void mbedtls_ctr_drbg_reseed(void);
 void mbedtls_ctr_drbg_seed(void);
 void mbedtls_ecp_curve_info_from_grp_id(void);
 void mbedtls_ecp_curve_info_from_name(void);
@@ -79,10 +80,98 @@ void mbedtls_rsa_export(void);
 void mbedtls_rsa_export_crt(void);
 void mbedtls_rsa_gen_key(void);
 void mbedtls_strerror(void);
+void mbedtls_cipher_free(void);
+void mbedtls_aes_context(void);
+//void mbedtls_chacha20_context(void);
+void mbedtls_chacha20_free(void);
+void mbedtls_chacha20_init(void);
+void mbedtls_chacha20_setkey(void);
+void mbedtls_chacha20_starts(void);
+void mbedtls_chacha20_update(void);
+void mbedtls_cipher_finish(void);
+void mbedtls_cipher_free(void);
+void mbedtls_cipher_info_from_type(void);
+void mbedtls_cipher_init(void);
+void mbedtls_cipher_reset(void);
+void mbedtls_cipher_set_iv(void);
+void mbedtls_cipher_setkey(void);
+void mbedtls_cipher_set_padding_mode(void);
+void mbedtls_cipher_setup(void);
+void mbedtls_cipher_update(void);
+void mbedtls_ctr_drbg_set_prediction_resistance(void);
+void mbedtls_ecdh_compute_shared(void);
+void mbedtls_ecdsa_free(void);
+void mbedtls_ecdsa_from_keypair(void);
+void mbedtls_ecdsa_init(void);
+void mbedtls_ecdsa_sign(void);
+void mbedtls_ecdsa_verify(void);
+void mbedtls_ecp_copy(void);
+void mbedtls_ecp_gen_keypair(void);
+void mbedtls_ecp_group_copy(void);
+void mbedtls_ecp_group_free(void);
+void mbedtls_ecp_group_init(void);
+void mbedtls_ecp_group_load(void);
+void mbedtls_ecp_keypair_free(void);
+void mbedtls_ecp_keypair_init(void);
+void mbedtls_ecp_point_free(void);
+void mbedtls_ecp_point_init(void);
+void mbedtls_ecp_point_read_binary(void);
+void mbedtls_ecp_point_write_binary(void);
+void mbedtls_gcm_auth_decrypt(void);
+void mbedtls_gcm_crypt_and_tag(void);
+void mbedtls_gcm_free(void);
+void mbedtls_gcm_init(void);
+void mbedtls_gcm_setkey(void);
+void mbedtls_md(void);
+void mbedtls_md_finish(void);
+void mbedtls_md_free(void);
+void mbedtls_md_hmac_finish(void);
+void mbedtls_md_hmac_starts(void);
+void mbedtls_md_hmac_update(void);
+void mbedtls_md_info_from_type(void);
+void mbedtls_md_init(void);
+void mbedtls_md_setup(void);
+void mbedtls_md_starts(void);
+void mbedtls_md_update(void);
+void mbedtls_mpi_bitlen(void);
+void mbedtls_mpi_cmp_mpi(void);
+void mbedtls_mpi_copy(void);
+void mbedtls_mpi_exp_mod(void);
+void mbedtls_mpi_fill_random(void);
+void mbedtls_mpi_get_bit(void);
+void mbedtls_mpi_lset(void);
+void mbedtls_mpi_mod_mpi(void);
+void mbedtls_mpi_read_binary(void);
+void mbedtls_mpi_read_string(void);
+void mbedtls_mpi_set_bit(void);
+void mbedtls_mpi_size(void);
+void mbedtls_mpi_sub_mpi(void);
+void mbedtls_mpi_write_binary(void);
+void mbedtls_pk_can_do(void);
+void mbedtls_pk_get_bitlen(void);
+void mbedtls_pk_get_type(void);
+void mbedtls_pk_parse_key(void);
+void mbedtls_pk_sign(void);
+void mbedtls_pk_verify(void);
+void mbedtls_poly1305_finish(void);
+void mbedtls_poly1305_free(void);
+void mbedtls_poly1305_init(void);
+void mbedtls_poly1305_starts(void);
+void mbedtls_poly1305_update(void);
+void mbedtls_rsa_check_privkey(void);
+void mbedtls_rsa_complete(void);
+void mbedtls_rsa_export(void);
+void mbedtls_rsa_gen_key(void);
+void mbedtls_rsa_import(void);
+void mbedtls_rsa_import_raw(void);
+void mbedtls_strerror(void);
+
 
 
 const struct esp_elfsym g_customer_elfsyms[] = {
 
+    //ELFSYM_EXPORT(dup),
+    //ELFSYM_EXPORT(dup2),
 #ifndef CTX_NATIVE
     ELFSYM_EXPORT(__adddf3),
 #if !defined(EMSCRIPTEN) && !defined(PICO_BUILD)
@@ -132,6 +221,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(bcopy),
 #if !defined(PICO_BUILD)
     ELFSYM_EXPORT(bind),
+    ELFSYM_EXPORT(setsockopt),
 #endif
 
 #if CTX_FLOW3R
@@ -814,6 +904,18 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(y1),
     ELFSYM_EXPORT(y1f),
 
+  
+ // ELFSYM_EXPORT(mbedtls_aes_context),
+    ELFSYM_EXPORT(mbedtls_cipher_free),
+#if 1
+    //ELFSYM_EXPORT(mbedtls_chacha20_context),
+    ELFSYM_EXPORT(mbedtls_chacha20_free),
+    ELFSYM_EXPORT(mbedtls_chacha20_init),
+    ELFSYM_EXPORT(mbedtls_chacha20_setkey),
+    ELFSYM_EXPORT(mbedtls_chacha20_starts),
+    ELFSYM_EXPORT(mbedtls_chacha20_update),
+#endif
+
     ELFSYM_EXPORT(mbedtls_entropy_func),
   ELFSYM_EXPORT(mbedtls_entropy_func),
   ELFSYM_EXPORT(mbedtls_ctr_drbg_free),
@@ -840,6 +942,87 @@ const struct esp_elfsym g_customer_elfsyms[] = {
   ELFSYM_EXPORT(mbedtls_rsa_export),
   ELFSYM_EXPORT(mbedtls_rsa_export_crt),
   ELFSYM_EXPORT(mbedtls_rsa_gen_key),
+  ELFSYM_EXPORT(mbedtls_strerror),
+  ELFSYM_EXPORT(mbedtls_cipher_finish),
+  ELFSYM_EXPORT(mbedtls_cipher_free),
+  ELFSYM_EXPORT(mbedtls_cipher_info_from_type),
+  ELFSYM_EXPORT(mbedtls_cipher_init),
+  ELFSYM_EXPORT(mbedtls_cipher_reset),
+  ELFSYM_EXPORT(mbedtls_cipher_set_iv),
+  ELFSYM_EXPORT(mbedtls_cipher_setkey),
+  ELFSYM_EXPORT(mbedtls_cipher_set_padding_mode),
+  ELFSYM_EXPORT(mbedtls_cipher_setup),
+  ELFSYM_EXPORT(mbedtls_cipher_update),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_set_prediction_resistance),
+  ELFSYM_EXPORT(mbedtls_ecdh_compute_shared),
+  ELFSYM_EXPORT(mbedtls_ecdsa_free),
+  ELFSYM_EXPORT(mbedtls_ecdsa_from_keypair),
+  ELFSYM_EXPORT(mbedtls_ecdsa_init),
+  ELFSYM_EXPORT(mbedtls_ecdsa_sign),
+  ELFSYM_EXPORT(mbedtls_ecdsa_verify),
+  ELFSYM_EXPORT(mbedtls_ecp_copy),
+  ELFSYM_EXPORT(mbedtls_ecp_gen_keypair),
+  ELFSYM_EXPORT(mbedtls_ecp_group_copy),
+  ELFSYM_EXPORT(mbedtls_ecp_group_free),
+  ELFSYM_EXPORT(mbedtls_ecp_group_init),
+  ELFSYM_EXPORT(mbedtls_ecp_group_load),
+  ELFSYM_EXPORT(mbedtls_ecp_keypair_free),
+  ELFSYM_EXPORT(mbedtls_ecp_keypair_init),
+  ELFSYM_EXPORT(mbedtls_ecp_point_free),
+  ELFSYM_EXPORT(mbedtls_ecp_point_init),
+  ELFSYM_EXPORT(mbedtls_ecp_point_read_binary),
+  ELFSYM_EXPORT(mbedtls_ecp_point_write_binary),
+#if 0
+  ELFSYM_EXPORT(mbedtls_gcm_auth_decrypt),
+  ELFSYM_EXPORT(mbedtls_gcm_crypt_and_tag),
+  ELFSYM_EXPORT(mbedtls_gcm_free),
+  ELFSYM_EXPORT(mbedtls_gcm_init),
+  ELFSYM_EXPORT(mbedtls_gcm_setkey),
+#endif
+  ELFSYM_EXPORT(mbedtls_md),
+  ELFSYM_EXPORT(mbedtls_md_finish),
+  ELFSYM_EXPORT(mbedtls_md_free),
+  ELFSYM_EXPORT(mbedtls_md_hmac_finish),
+  ELFSYM_EXPORT(mbedtls_md_hmac_starts),
+  ELFSYM_EXPORT(mbedtls_md_hmac_update),
+  ELFSYM_EXPORT(mbedtls_md_info_from_type),
+  ELFSYM_EXPORT(mbedtls_md_init),
+  ELFSYM_EXPORT(mbedtls_md_setup),
+  ELFSYM_EXPORT(mbedtls_md_starts),
+  ELFSYM_EXPORT(mbedtls_md_update),
+  ELFSYM_EXPORT(mbedtls_mpi_bitlen),
+  ELFSYM_EXPORT(mbedtls_mpi_cmp_mpi),
+  ELFSYM_EXPORT(mbedtls_mpi_copy),
+  ELFSYM_EXPORT(mbedtls_mpi_exp_mod),
+  ELFSYM_EXPORT(mbedtls_mpi_fill_random),
+  ELFSYM_EXPORT(mbedtls_mpi_get_bit),
+  ELFSYM_EXPORT(mbedtls_mpi_lset),
+  ELFSYM_EXPORT(mbedtls_mpi_mod_mpi),
+  ELFSYM_EXPORT(mbedtls_mpi_read_binary),
+  ELFSYM_EXPORT(mbedtls_mpi_read_string),
+  ELFSYM_EXPORT(mbedtls_mpi_set_bit),
+  ELFSYM_EXPORT(mbedtls_mpi_size),
+  ELFSYM_EXPORT(mbedtls_mpi_sub_mpi),
+  ELFSYM_EXPORT(mbedtls_mpi_write_binary),
+  ELFSYM_EXPORT(mbedtls_pk_can_do),
+  ELFSYM_EXPORT(mbedtls_pk_get_bitlen),
+  ELFSYM_EXPORT(mbedtls_pk_get_type),
+  ELFSYM_EXPORT(mbedtls_pk_parse_key),
+  ELFSYM_EXPORT(mbedtls_pk_sign),
+  ELFSYM_EXPORT(mbedtls_pk_verify),
+#if 1
+  ELFSYM_EXPORT(mbedtls_poly1305_finish),
+  ELFSYM_EXPORT(mbedtls_poly1305_free),
+  ELFSYM_EXPORT(mbedtls_poly1305_init),
+  ELFSYM_EXPORT(mbedtls_poly1305_starts),
+  ELFSYM_EXPORT(mbedtls_poly1305_update),
+#endif
+  ELFSYM_EXPORT(mbedtls_rsa_check_privkey),
+  ELFSYM_EXPORT(mbedtls_rsa_complete),
+  ELFSYM_EXPORT(mbedtls_rsa_export),
+  ELFSYM_EXPORT(mbedtls_rsa_gen_key),
+  ELFSYM_EXPORT(mbedtls_rsa_import),
+  ELFSYM_EXPORT(mbedtls_rsa_import_raw),
   ELFSYM_EXPORT(mbedtls_strerror),
 
   {"gethostname", &s0il_gethostname},

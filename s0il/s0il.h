@@ -39,6 +39,19 @@
  #include "lwip/igmp.h"
  #include "lwip/ip4.h"
  #include "lwip/netdb.h"
+
+
+ struct winsize
+  {
+    unsigned short int ws_row;
+    unsigned short int ws_col;
+    unsigned short int ws_xpixel;
+    unsigned short int ws_ypixel;
+  };
+
+#define TIOCSWINSZ 0x5414
+#define TIOCGWINSZ 0x5413
+
 #endif
 
 #if defined(PICO_BUILD)
