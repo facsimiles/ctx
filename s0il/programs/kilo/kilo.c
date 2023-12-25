@@ -54,6 +54,9 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#if S0IL_NATIVE
+#define S0IL_DEFINES
+#endif
 #include "s0il.h"
 
 /* Syntax highlight types */

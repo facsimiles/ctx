@@ -10,7 +10,8 @@ SOURCES=kilo.c
 PROGRAM=kilo
 
 $(PROGRAM).native: $(SOURCES)
-	$(CC_NATIVE) $(CFLAGS_NATIVE) $? -o $@ -I. -Iinclude
+	$(CC_NATIVE) $(CFLAGS_NATIVE) $? -o $@ -I. -Iinclude \
+            -ls0il `pkg-config ctx --libs --cflags`
 	../../elf_strip_pie $@
 
 $(PROGRAM).xtensa: $(SOURCES)

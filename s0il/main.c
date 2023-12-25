@@ -97,6 +97,10 @@ static void view_menu(Ui *ui) {
 extern int flow3r_synthesize_key_events;
 #endif
 
+void view_magic(Ui *ui);
+
+void s0il_view_views(Ui *ui);
+
 void view_settings(Ui *ui) {
   ui_start_frame(ui);
 
@@ -106,7 +110,7 @@ void view_settings(Ui *ui) {
     ui_do(ui, "wifi");
   if (ui_button(ui, "httpd"))
     ui_do(ui, "httpd");
-  if (ui_button(ui, "ui"))
+  if (ui_button(ui, "appearance"))
     ui_do(ui, "settings-ui");
 
   backlight = ui_slider(ui, "backlight", 0.0f, 100.0f, 5.0, backlight);
@@ -117,6 +121,11 @@ void view_settings(Ui *ui) {
   flow3r_synthesize_key_events =
       ui_toggle(ui, "cap-touch keys", flow3r_synthesize_key_events);
 #endif
+
+  //if (ui_button(ui, "mime types"))
+  //  ui_do(ui, "magic");
+  if (ui_button(ui, "views"))
+    ui_do(ui, "s0il-views");
 
 #if CTX_ESP
   if (ui_button(ui, "reboot"))
@@ -243,6 +252,8 @@ int main(int argc, char **argv) {
   ui_register_view(ui, "repls", view_repls, NULL);
   ui_register_view(ui, "tests", view_tests, NULL);
   ui_register_view(ui, "settings", view_settings, NULL);
+  //ui_register_view(ui, "magic", view_magic, NULL);
+  ui_register_view(ui, "s0il-views", s0il_view_views, NULL);
   ui_do(ui, "menu");        // queue menu - as initial view
   s0il_printf("\033[?30l"); // turn off scrollbar
 

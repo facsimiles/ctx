@@ -550,9 +550,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(hypotf),
     ELFSYM_EXPORT(ilogbf),
     ELFSYM_EXPORT(index),
-#if !defined(PICO_BUILD)
-    ELFSYM_EXPORT(ioctl),  // XXX wrap
-#endif
+    {"ioctl", &s0il_ioctl},
     ELFSYM_EXPORT(isalnum),
     ELFSYM_EXPORT(isalpha),
     ELFSYM_EXPORT(isascii),

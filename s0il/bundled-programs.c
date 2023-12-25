@@ -7,7 +7,6 @@
 #include "bundled/qjs.c"
 #include "bundled/lua.c"
 #include "bundled/picoc.c"
-#include "bundled/kilo.c"
 #include "bin-src/clock.c"
 #include "bin-src/image.c"
 #include "bin-src/text.c"
@@ -25,5 +24,4 @@ void add_mains(void) {
   s0il_bundle_main("lua", lua_main);
   s0il_bundle_main("luac", luac_main);
   s0il_bundle_main("qjs", qjs_main);
-  s0il_bundle_main("kilo", kilo_main);
 }

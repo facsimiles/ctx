@@ -413,6 +413,7 @@ void view_settings_ui(Ui *ui) {
   ui_end_frame(ui);
 }
 
+// XXX : why is this not a linked list?
 void ui_register_view(Ui *ui,
                       const char *name, // or mime-type
                       ui_fun fun,       // either fun - or binary_path ..
@@ -2874,6 +2875,15 @@ DEF_SLIDER(int32_t)
 void ui_add_key_binding(Ui *ui, const char *key, const char *action,
                         const char *label) {
   ctx_add_key_binding(ui->ctx, key, action, label, ui_cb_do, ui);
+}
+
+void s0il_view_views(Ui *ui) {
+  ui_start_frame(ui);
+  for (int i=ui->n_views-1; i>=0; i--) {
+    const char *name = ui->views[i].name;
+    ui_text(ui, name);
+  }
+  ui_end_frame(ui);
 }
 
 #if S0IL_NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture

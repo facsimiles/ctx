@@ -10,7 +10,7 @@ typedef struct ctx_magic_t {
   int magic_len;
 } ctx_magic_t;
 
-static CtxList *ui_magic = NULL;
+static CtxList *s0il_magic = NULL;
 
 void s0il_add_magic(const char *mime_type, const char *ext, const char *magic_data,
                int magic_len, int is_text) {
@@ -34,7 +34,7 @@ void s0il_add_magic(const char *mime_type, const char *ext, const char *magic_da
   magic->is_text = is_text;
 
 #if 0
-   for (CtxList *iter = ui_magic; iter; iter = iter->next)
+   for (CtxList *iter = s0il_magic; iter; iter = iter->next)
    {
      ctx_magic_t *magic_b = iter->data;
      if (!strcmp (magic_b->mime_type, mime_type) &&
@@ -43,11 +43,11 @@ void s0il_add_magic(const char *mime_type, const char *ext, const char *magic_da
    }
 #endif
 
-  ctx_list_append(&ui_magic, magic);
+  ctx_list_append(&s0il_magic, magic);
 }
 
 bool s0il_has_mime(const char *mime_type) {
-  for (CtxList *iter = ui_magic; iter; iter = iter->next) {
+  for (CtxList *iter = s0il_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
     if (!strcmp(magic->mime_type, mime_type))
       return true;
@@ -56,7 +56,7 @@ bool s0il_has_mime(const char *mime_type) {
 }
 
 int s0il_media_is_text(const char *media_type) {
-  for (CtxList *iter = ui_magic; iter; iter = iter->next) {
+  for (CtxList *iter = s0il_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
     if (!strcmp(magic->mime_type, media_type))
       return magic->is_text;
@@ -66,7 +66,7 @@ int s0il_media_is_text(const char *media_type) {
 
 static const char *s0il_detect_dir_type(const char *path) {
   char temp[512];
-  for (CtxList *iter = ui_magic; iter; iter = iter->next) {
+  for (CtxList *iter = s0il_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
     if (magic->ext && !strcmp(magic->ext, "inode/directory")) {
       snprintf(temp, sizeof(temp), "%s/%s", path, magic->magic);
@@ -81,7 +81,7 @@ const char *s0il_detect_media_sector512(const char *path, const char *sector) {
   const char *suffix_match = NULL;
   const char *magic_match = NULL;
 
-  for (CtxList *iter = ui_magic; iter; iter = iter->next) {
+  for (CtxList *iter = s0il_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
     if (magic->ext && strstr(path, magic->ext) &&
         (strstr(path, magic->ext)[strlen(magic->ext)] == 0))
@@ -154,12 +154,21 @@ const char *s0il_detect_media_path(const char *location) {
 }
 
 int magic_main(int argc, char **argv) {
-  for (CtxList *iter = ui_magic; iter; iter = iter->next) {
+  for (CtxList *iter = s0il_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
     s0il_printf("%s ext:%s magic-len:%i %s\n", magic->mime_type, magic->ext,
                 magic->magic_len, magic->is_text ? "text" : "");
   }
   return 0;
+}
+
+void view_magic(Ui *ui) {
+  ui_start_frame(ui);
+  for (CtxList *iter = s0il_magic; iter; iter = iter->next) {
+    ctx_magic_t *magic = iter->data;
+    ui_text(ui, magic->mime_type);
+  }
+  ui_end_frame(ui);
 }
 
 int file_main(int argc, char **argv) {
