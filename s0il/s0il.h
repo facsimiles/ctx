@@ -42,6 +42,9 @@
  #include "lwip/netdb.h"
 
 
+#endif
+
+#if defined(RISCV) || defined(CTX_ESP)  || defined(PICO_BUILD)
  struct winsize
   {
     unsigned short int ws_row;
@@ -52,7 +55,6 @@
 
 #define TIOCSWINSZ 0x5414
 #define TIOCGWINSZ 0x5413
-
 #endif
 
 #if defined(PICO_BUILD)

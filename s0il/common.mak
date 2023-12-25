@@ -32,6 +32,7 @@ CFLAGS_XTENSA = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main \
   \
   -Iflow3r/build/config \
   -I../flow3r/build/config \
+  -I../../flow3r/build/config \
   -I$(IDF_PATH)/components/lwip/include \
   -I$(IDF_PATH)/components/lwip/lwip/src/include \
   -I$(IDF_PATH)/components/lwip/port/include \
@@ -60,6 +61,8 @@ CFLAGS_RISCV = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main -DRISCV \
   -DCTX_ESP \
   \
   -Iesp32c3/build/config \
+  -I../esp32c3/build/config \
+  -I../../esp32c3/build/config \
   -I$(IDF_PATH)/components/lwip/include \
   -I$(IDF_PATH)/components/lwip/lwip/src/include \
   -I$(IDF_PATH)/components/lwip/port/include \
