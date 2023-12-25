@@ -3,7 +3,7 @@
 
 #include <errno.h>
 #include "../interpreter.h"
-#define S0IL_REDEFINE_CLIB
+#define S0IL_DEFINES
 
 #include "s0il.h"
 

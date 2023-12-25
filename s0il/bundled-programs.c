@@ -1,5 +1,5 @@
 #include "port_config.h"
-#define S0IL_REDEFINE_CLIB
+#define S0IL_DEFINES
 #define S0IL_BUNDLE
 #include "s0il.h"
 // what follows is a list of programs to include directly

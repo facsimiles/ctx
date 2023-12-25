@@ -10,7 +10,7 @@ CFLAGS+= -fsingle-precision-constant -Wdouble-promotion
 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CCACHE) $(CC)
 CFLAGS_NATIVE = $(CFLAGS) -I.. -L.. -lctx \
-                   -g -lm -DCTX_NATIVE -fPIC -rdynamic -fpic \
+                   -g -lm -DS0IL_NATIVE -fPIC -rdynamic -fpic \
                    -Wl,-E,--unresolved-symbols=ignore-all
 
 POST_NATIVE=@ echo 'rem-PIE' $@; ./elf_strip_pie $@

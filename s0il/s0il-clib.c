@@ -19,7 +19,7 @@ void *_s0il_thread_id(void) {
   return 0;
 #elif CTX_ESP
   return xTaskGetCurrentTaskHandle();
-#elif CTX_NATIVE
+#elif S0IL_NATIVE
   return (void *)((size_t)gettid());
 #else
   return 0;
@@ -425,22 +425,8 @@ int s0il_fputs(const char *s, FILE *stream) {
   return ret;
 }
 
-ssize_t s0il_write(int fd, const void *buf, size_t count) {
-  if (fd == 1 || fd == 2) {
-    text_output = 1;
-    uint8_t *s = (uint8_t *)buf;
-    for (size_t i = 0; i < count; i++) {
-      if (s[i] == '\n')
-        ctx_vt_write(NULL, '\r');
-      ctx_vt_write(NULL, s[i]);
-    }
-    if (s0il_is_main_thread())
-      ui_iteration(ui_host(NULL));
-  }
-  return write(fd, buf, count);
-}
 
-int s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
+size_t s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
   if (s0il_stream_is_internal(stream)) {
     uint8_t *s = (uint8_t *)ptr;
     int count = 0;
@@ -467,6 +453,26 @@ int s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
       ui_iteration(ui_host(NULL));
   }
   return fwrite(ptr, size, nmemb, stream);
+}
+
+ssize_t s0il_write(int fd, const void *buf, size_t count) {
+
+  if (s0il_stream_is_internal((FILE*)(size_t)fd)) {
+     return s0il_fwrite(buf, 1, count, (FILE*)(size_t)fd);
+  }
+
+  if (fd == 1 || fd == 2) {
+    text_output = 1;
+    uint8_t *s = (uint8_t *)buf;
+    for (size_t i = 0; i < count; i++) {
+      if (s[i] == '\n')
+        ctx_vt_write(NULL, '\r');
+      ctx_vt_write(NULL, s[i]);
+    }
+    if (s0il_is_main_thread())
+      ui_iteration(ui_host(NULL));
+  }
+  return write(fd, buf, count);
 }
 
 int s0il_puts(const char *s) {
@@ -629,7 +635,7 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
   return ret;
 }
 
-int s0il_open(const char *patname, int flags)
+int s0il_open(const char *pathname, int flags)
 {
   char *path = s0il_resolve_path(pathname);
   file_t *file = s0il_find_file(path);
@@ -653,8 +659,8 @@ int s0il_open(const char *patname, int flags)
 
 int s0il_close (int fd)
 {
-  if (s0il_stream_is_internal((FILE*)fd)) {
-    _s0il_file[s0il_fileno((FILE*)fd)] = NULL;
+  if (s0il_stream_is_internal((FILE*)(size_t)fd)) {
+    _s0il_file[s0il_fileno((FILE*)(size_t)fd)] = NULL;
     return 0;
   }
 #if S0IL_HAVE_FS
@@ -668,8 +674,8 @@ FILE *s0il_fdopen(int fd, const char *mode) {
   if (fd == STDIN_FILENO) return stdin;
   if (fd == STDOUT_FILENO) return stdout;
   if (fd == STDERR_FILENO) return stderr;
-  if (s0il_stream_is_internal((FILE*)fd))
-    return (FILE*)fd;
+  if (s0il_stream_is_internal((FILE*)(size_t)fd))
+    return (FILE*)(size_t)fd;
   return fdopen(fd, mode);
 }
 
@@ -996,6 +1002,9 @@ size_t s0il_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
 int s0il_getc(FILE *stream) { return s0il_fgetc(stream); }
 
 ssize_t s0il_read(int fildes, void *buf, size_t nbyte) {
+  if (s0il_stream_is_internal((FILE*)(size_t)fildes)) {
+     return s0il_fread(buf, 1, nbyte, (FILE*)(size_t)fildes);
+  }
   if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
   if (fildes == 0 && ctx_vt_has_data(NULL)) {
@@ -1419,7 +1428,7 @@ int s0il_atexit(void (*function)(void))
 
 
 void s0il_signal(int sig, void (*func)(int)) {
-#if CTX_NATIVE
+#if S0IL_NATIVE
   //return signal(sig, func);
 #else
 #endif
@@ -1462,13 +1471,18 @@ pid_t s0il_waitpid(pid_t pid, int *status, int options)
   return 0;
 }
 
-
 pid_t s0il_wait(int *stat_loc)
 {
   printf ("%s NYI", __FUNCTION__);
   return 0;
 }
 
+int s0il_ioctl(int fd, unsigned long request, void *arg)
+{
+  return ioctl(fd,request,arg);
+}
+
+#if 0
 int s0il_pipe(int pipefd[2]){
   printf ("%s NYI", __FUNCTION__);
   return 0;
@@ -1485,3 +1499,4 @@ int s0il_dup2(int oldfd, int newfd)
   printf ("%s NYI", __FUNCTION__);
   return 0;
 }
+#endif

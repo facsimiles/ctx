@@ -2,7 +2,7 @@
 #include "../interpreter.h"
 
 #ifndef BUILTIN_MINI_STDLIB
-#define S0IL_REDEFINE_CLIB
+#define S0IL_DEFINES
 #include "s0il.h"
 
 static int Stdlib_ZeroValue = 0;

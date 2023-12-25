@@ -1,5 +1,5 @@
 #if EMSCRIPTEN
-#define S0IL_REDEFINE_CLIB
+#define S0IL_DEFINES
 #endif
 
 #include "../picoc.h"

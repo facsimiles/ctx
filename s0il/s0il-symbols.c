@@ -6,12 +6,12 @@
 
 #undef strstr
 #undef strlen
-#if CTX_NATIVE
+#if S0IL_NATIVE
 #include <poll.h>
 #endif
 
-#ifdef S0IL_REDEFINE_CLIB
-#undef S0IL_REDEFINE_CLIB
+#ifdef S0IL_DEFINES
+#undef S0IL_DEFINES
 #endif
 
 #define EXPORT_UI 1
@@ -174,7 +174,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 
     //ELFSYM_EXPORT(dup),
     //ELFSYM_EXPORT(dup2),
-#ifndef CTX_NATIVE
+#ifndef S0IL_NATIVE
     ELFSYM_EXPORT(__adddf3),
 #if !defined(EMSCRIPTEN) && !defined(PICO_BUILD)
     ELFSYM_EXPORT(__assert_func),
@@ -979,13 +979,11 @@ const struct esp_elfsym g_customer_elfsyms[] = {
   ELFSYM_EXPORT(mbedtls_rsa_export_crt),
   ELFSYM_EXPORT(mbedtls_rsa_gen_key),
   ELFSYM_EXPORT(mbedtls_strerror),
-#if 1
   ELFSYM_EXPORT(mbedtls_gcm_auth_decrypt),
   ELFSYM_EXPORT(mbedtls_gcm_crypt_and_tag),
   ELFSYM_EXPORT(mbedtls_gcm_free),
   ELFSYM_EXPORT(mbedtls_gcm_init),
   ELFSYM_EXPORT(mbedtls_gcm_setkey),
-#endif
   ELFSYM_EXPORT(mbedtls_md),
   ELFSYM_EXPORT(mbedtls_md_finish),
   ELFSYM_EXPORT(mbedtls_md_free),
@@ -1017,13 +1015,11 @@ const struct esp_elfsym g_customer_elfsyms[] = {
   ELFSYM_EXPORT(mbedtls_pk_parse_key),
   ELFSYM_EXPORT(mbedtls_pk_sign),
   ELFSYM_EXPORT(mbedtls_pk_verify),
-#if 1
   ELFSYM_EXPORT(mbedtls_poly1305_finish),
   ELFSYM_EXPORT(mbedtls_poly1305_free),
   ELFSYM_EXPORT(mbedtls_poly1305_init),
   ELFSYM_EXPORT(mbedtls_poly1305_starts),
   ELFSYM_EXPORT(mbedtls_poly1305_update),
-#endif
   ELFSYM_EXPORT(mbedtls_rsa_check_privkey),
   ELFSYM_EXPORT(mbedtls_rsa_complete),
   ELFSYM_EXPORT(mbedtls_rsa_export),
@@ -1031,16 +1027,28 @@ const struct esp_elfsym g_customer_elfsyms[] = {
   ELFSYM_EXPORT(mbedtls_rsa_import),
   ELFSYM_EXPORT(mbedtls_rsa_import_raw),
   ELFSYM_EXPORT(mbedtls_strerror),
-//{"if_indextoname", &netif_index_to_name},
-//{"if_nametoindex", &netif_name_to_index},
+
+#if !defined(PICO_BUILD) && !defined(EMSCRIPTEN)
+#if S0IL_NATIVE
+  {"if_indextoname", &if_indextoname},
+  {"if_nametoindex", &if_nametoindex},
+#else
+  {"if_indextoname", &netif_index_to_name},
+  {"if_nametoindex", &netif_name_to_index},
+  {"netif_index_to_name", &netif_index_to_name},
+  {"netif_name_to_index", &netif_name_to_index},
+#endif
+#endif
 
   {"gethostname", &s0il_gethostname},
   {"getuid", &s0il_getuid},
   {"waitpid", &s0il_waitpid},
   {"wait", &s0il_wait},
+#if 0
   {"dup", &s0il_dup},
   {"dup2", &s0il_dup2},
   {"pipe", &s0il_pipe},
+#endif
 
     ELFSYM_END};
 

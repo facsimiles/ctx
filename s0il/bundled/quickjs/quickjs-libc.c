@@ -42,7 +42,7 @@
 #include <conio.h>
 #include <utime.h>
 #else
-#ifdef CTX_NATIVE
+#ifdef S0IL_NATIVE
 #include <dlfcn.h>
 #include <termios.h>
 #endif
@@ -483,7 +483,7 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
         filename = (char *)module_name;
     }
    
-#if CTX_NATIVE 
+#if S0IL_NATIVE 
     /* C module */
     hd = dlopen(filename, RTLD_NOW | RTLD_LOCAL);
     if (filename != module_name)
@@ -509,7 +509,7 @@ static JSModuleDef *js_module_loader_so(JSContext *ctx,
         JS_ThrowReferenceError(ctx, "could not load module filename '%s': initialization error",
                                module_name);
     fail:
-#if CTX_NATIVE
+#if S0IL_NATIVE
         if (hd)
             dlclose(hd);
 #endif

@@ -5,7 +5,7 @@
 
 #if CTX_FLOW3R
 #include "fs_bin_xtensa.c"
-#elif CTX_NATIVE
+#elif S0IL_NATIVE
 #include "fs_bin_native.c"
 #else
 #include "fs_bin_generic.c"
@@ -136,7 +136,7 @@ int ps_main(int argc, char **argv);
 void s0il_program_runner_init(void);
 #if CTX_ESP
 void app_main(void) {
-  char *argv[] = {NULL, NULL};
+  //char *argv[] = {NULL, NULL};
 #else
 
 
@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
 
   s0il_system("wifi --auto &");
   //  ui_do(ui, "sh");
-#ifdef CTX_NATIVE
+#ifdef S0IL_NATIVE
   ui_main(ui, argv[1]);
 #else
   for (;;) {

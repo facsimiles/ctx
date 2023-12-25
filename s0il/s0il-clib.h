@@ -4,6 +4,7 @@
 // this set stdin and stdout to be aliases for the given streams,
 // pass in NULL to reset
 
+int s0il_ioctl(int fd, unsigned long request, void *arg);
 int s0il_gethostname(char *name, size_t len);
 int s0il_getuid(void);
 pid_t s0il_waitpid(pid_t pid, int *status, int options);
@@ -17,9 +18,9 @@ int  s0il_sigaction(int signum,
                     void *act,
                     void *oldact);
 
-int s0il_pipe(int pipefd[2]);
-int s0il_dup(int oldfd);
-int s0il_dup2(int oldfd, int newfd);
+//int s0il_pipe(int pipefd[2]);
+//int s0il_dup(int oldfd);
+//int s0il_dup2(int oldfd, int newfd);
 
 void   *s0il_malloc   (size_t size);
 void    s0il_free     (void *ptr);
@@ -43,7 +44,7 @@ ssize_t s0il_write    (int fd, const void *buf, size_t count);
 int     s0il_kill     (int pid, int sig);
 int     s0il_pause    (void);
 
-int     s0il_fwrite   (const void *ptr, size_t size, size_t nmemb, FILE *stream);
+size_t  s0il_fwrite   (const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int     s0il_remove   (const char *pathname);
 long    s0il_telldir  (DIR *dir);
 FILE   *s0il_popen    (const char *cmdline, const char *mode);
@@ -134,31 +135,30 @@ typedef struct {
 int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
                void *glob_buf);
 
-#ifdef S0IL_REDEFINE_CLIB
+#ifdef S0IL_DEFINES
 
-#define realpath(a,b) s0il_realpath(a,b)
-#define glob(a,b,c,d) s0il_glob(a,b,c,d)
-#define getenv(a)     s0il_getenv(a) 
-#define putenv(a)     s0il_putenv(a) 
-#define clearenv()    s0il_clearenv() 
-#define setenv(a,b,c) s0il_setenv(a,b,c) 
-
-#define popen(a,b)    s0il_popen(a,b)
-#define pclose(a)     s0il_pclose(a)
-#define exit(r)       s0il_exit(r)
-#define access(a,b)   s0il_access(a,b)
-#define lseek(a,b,c)  s0il_lseek(a,b,c)
-#define opendir(a)    s0il_opendir(a)
-#define readdir(a)    s0il_readdir(a)
-#define closedir(a)   s0il_closedir(a)
-#define getpid()      s0il_getpid()
-#define getppid()     s0il_getppid()
-#define unlink(a)     s0il_unlink(a)
-#define remove(a)     s0il_remove(a)
-#define stat(p,b)     s0il_stat(p,b)
-#define rename(p,b)   s0il_rename(p,b)
-#define system(c)     s0il_system(c)
-#define wait(p) s0il_wait(p)
+#define realpath(a,b)     s0il_realpath(a,b)
+#define glob(a,b,c,d)     s0il_glob(a,b,c,d)
+#define getenv(a)         s0il_getenv(a) 
+#define putenv(a)         s0il_putenv(a) 
+#define clearenv()        s0il_clearenv() 
+#define setenv(a,b,c)     s0il_setenv(a,b,c) 
+#define popen(a,b)        s0il_popen(a,b)
+#define pclose(a)         s0il_pclose(a)
+#define exit(r)           s0il_exit(r)
+#define access(a,b)       s0il_access(a,b)
+#define lseek(a,b,c)      s0il_lseek(a,b,c)
+#define opendir(a)        s0il_opendir(a)
+#define readdir(a)        s0il_readdir(a)
+#define closedir(a)       s0il_closedir(a)
+#define getpid()          s0il_getpid()
+#define getppid()         s0il_getppid()
+#define unlink(a)         s0il_unlink(a)
+#define remove(a)         s0il_remove(a)
+#define stat(p,b)         s0il_stat(p,b)
+#define rename(p,b)       s0il_rename(p,b)
+#define system(c)         s0il_system(c)
+#define wait(p)           s0il_wait(p)
 #define select(n,r,w,e,t) s0il_select(n,r,w,e,t)
 #define signal(a,b)       s0il_signal(a,b)
 #define sigaction(a,b,c)  s0il_sigaction(a,b,c)
@@ -206,20 +206,20 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define vfprintf          s0il_vfprintf
 #define printf            s0il_printf
 
-#define malloc(a) s0il_malloc(a)
-#define free(a) s0il_free(a)
-#define atexit(a) s0il_atexit(a)
-#define calloc(a,b) s0il_calloc(a,b)
-#define realloc(a,b) s0il_realloc(a,b)
-#define strdup(a) s0il_strdup(a)
-#define strndup(a,n) s0il_strdup(a,n)
+#define malloc(a)         s0il_malloc(a)
+#define free(a)           s0il_free(a)
+#define atexit(a)         s0il_atexit(a)
+#define calloc(a,b)       s0il_calloc(a,b)
+#define realloc(a,b)      s0il_realloc(a,b)
+#define strdup(a)         s0il_strdup(a)
+#define strndup(a,n)      s0il_strdup(a,n)
 
-#define gethostname(a,b) s0il_gethostname(a,b)
-#define getuid() s0il_getuid()
-#define waitpid(a,b,c) s0il_waitpid(a,b,c)
-#define open(a,b) s0il_open(a,b)
-#define close(a) s0il_close(a)
-
+#define gethostname(a,b)  s0il_gethostname(a,b)
+#define getuid()          s0il_getuid()
+#define waitpid(a,b,c)    s0il_waitpid(a,b,c)
+#define open(a,b,c)       s0il_open(a,b)
+#define close(a)          s0il_close(a)
+#define ioctl(a,b,c)      s0il_ioctl(a,b,c)
 
 #endif
 

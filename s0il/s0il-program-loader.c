@@ -46,7 +46,14 @@ s0il_process_t *s0il_process(void)
     if (info->pid == curpid) return info;
   }
   //assert(0);
-  return NULL;
+  if (proc) return proc->data;
+  s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
+  info->ppid = 0;
+  info->pid = 0;
+  info->cwd  = strdup ("/");
+  info->program = strdup ("s0il");
+  ctx_list_append(&proc, info);
+  return info;
 }
 
 
@@ -660,7 +667,7 @@ static int esp_elf_runv(char *path, char **argv, int same_stack) {
   }
   return retval;
 }
-#elif CTX_NATIVE
+#elif S0IL_NATIVE
 #include <dlfcn.h>
 
 #if 0
@@ -839,7 +846,7 @@ int s0il_runv(char *path, char **argv) {
 #ifndef WASM
 #if CTX_FLOW3R
   ret = esp_elf_runv(path, argv, 1);
-#elif CTX_NATIVE
+#elif S0IL_NATIVE
   ret = dlopen_runv(path, argv, 1);
 #endif
 #else

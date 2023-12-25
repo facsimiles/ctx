@@ -5,7 +5,7 @@
 #include <unistd.h>
 //#include <dirent.h>
 #if EMSCRIPTEN
-#define S0IL_REDEFINE_CLIB
+#define S0IL_DEFINES
 #endif
 #include "s0il.h"
 
@@ -44,7 +44,7 @@ const char DirentDefs[] =
   "char d_name[256];};";
 #else
 
-#if CTX_NATIVE
+#if S0IL_NATIVE
 const char DirentDefs[] = 
   "typedef struct _DIR DIR;\n"
   "struct dirent {"

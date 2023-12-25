@@ -83,7 +83,7 @@ PROGRAMS_RISCV = $(patsubst bin-src/%.c, bin-riscv/%, $(PROGRAMS_C)) \
 
 bin-native/%: bin-src/%.c *.h Makefile elf_strip_pie libs0il.so
 	@mkdir -p `dirname $@` || true
-	$(CC_NATIVE) $< -L. -ls0il -o $@ $(CFLAGS_NATIVE) -DS0IL_REDEFINE_CLIB
+	$(CC_NATIVE) $< -L. -ls0il -o $@ $(CFLAGS_NATIVE) -DS0IL_DEFINES
 	$(POST_NATIVE) $@
 
 bin-xtensa/%: bin-src/%.c *.h Makefile flow3r/build/config/sdkconfig.h

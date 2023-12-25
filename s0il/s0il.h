@@ -26,7 +26,8 @@
            };
 #define PATH_MAX 256
 
-#elif defined(CTX_NATIVE) || defined(WASM) || defined(RISCV)
+#elif defined(S0IL_NATIVE) || defined(WASM) || defined(RISCV)
+#include <net/if.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
