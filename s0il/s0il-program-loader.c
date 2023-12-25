@@ -31,7 +31,7 @@ int s0il_thread_no(void) {
   for (int i = 0; i < MAX_THREADS; i++)
     if (thread_data[i] == id)
       return i;
-  exit(2);
+  //exit(2);
   return 0;
 }
 

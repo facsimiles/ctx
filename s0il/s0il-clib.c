@@ -153,7 +153,7 @@ int s0il_chdir(const char *path2)
 
   char *path = s0il_resolve_path(path2);
   // XXX need better check?
-  // if (!s0il_access (path, R_OK)) return -1;
+  //if (!s0il_access (path, X_OK)) return -1;
   if (info->cwd)
     free(info->cwd);
 
@@ -165,6 +165,8 @@ int s0il_chdir(const char *path2)
     info->cwd[strlen(info->cwd) + 1] = 0;
     info->cwd[strlen(info->cwd)] = '/';
   }
+  return 0;
+
 #if S0IL_HAVE_FS
   chdir(path);
   if (path2 != path)
