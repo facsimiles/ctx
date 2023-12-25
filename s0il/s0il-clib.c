@@ -4,6 +4,8 @@ extern void *_s0il_main_thread;
 
 #if defined(PICO_BUILD)
 #define S0IL_HAVE_FS 0
+  // the APIs still work but only target the ram-disk,
+  // this permits running in isolation in RAM in a process
 #else
 #define S0IL_HAVE_FS 1
 #endif
@@ -177,11 +179,11 @@ int s0il_chdir(const char *path2)
 
 
 struct _file_t {
-  char *path;
-  char *d_name;
+  char  *path;
+  char  *d_name;
   unsigned char d_type;
-  int flags;
-  char *data;
+  int    flags;
+  char  *data;
   size_t size;
   size_t capacity;
   size_t pos;
@@ -194,10 +196,12 @@ struct _folder_t {
   int pos;
 };
 
-#define S0IL_MAX_FILES 4
+#define S0IL_MAX_FILES 16 // shared among processes
 
-static DIR *_s0il_internal_dir = (void *)100;
-static FILE *_s0il_internal_file = (void *)200;
+static DIR *_s0il_internal_dir =   (void *)256;
+
+static FILE *_s0il_internal_file = (void *)512;
+
 //static folder_t *_s0il_dir = NULL;
 static file_t *_s0il_file[S0IL_MAX_FILES] = {
     NULL,
@@ -625,7 +629,49 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
   return ret;
 }
 
-FILE *s0il_fdopen(int fd, const char *mode) { return fdopen(fd, mode); }
+int s0il_open(const char *patname, int flags)
+{
+  char *path = s0il_resolve_path(pathname);
+  file_t *file = s0il_find_file(path);
+  if (file)
+  {
+    int fileno = 0;
+    for (fileno = 0; fileno < S0IL_MAX_FILES; fileno++)
+      if (_s0il_file[fileno] == NULL)
+        break;
+    // XXX : handle too many open files
+    _s0il_file[fileno] = file;
+    file->pos = 0;
+    return fileno;
+  }
+#if S0IL_HAVE_FS
+  return open(pathname, flags);
+#else
+  return -1;
+#endif
+}
+
+int s0il_close (int fd)
+{
+  if (s0il_stream_is_internal((FILE*)fd)) {
+    _s0il_file[s0il_fileno((FILE*)fd)] = NULL;
+    return 0;
+  }
+#if S0IL_HAVE_FS
+  return close(fd);
+#else
+  return -1;
+#endif
+}
+
+FILE *s0il_fdopen(int fd, const char *mode) {
+  if (fd == STDIN_FILENO) return stdin;
+  if (fd == STDOUT_FILENO) return stdout;
+  if (fd == STDERR_FILENO) return stderr;
+  if (s0il_stream_is_internal((FILE*)fd))
+    return (FILE*)fd;
+  return fdopen(fd, mode);
+}
 
 int s0il_fclose(FILE *stream) {
   if (stream == stdin || stream == stdout || stream == stderr)
@@ -1068,6 +1114,7 @@ pid_t s0il_getpid(void) {
 pid_t s0il_getppid(void) {
   return s0il_process()->ppid;
 }
+
 
 DIR *s0il_opendir(const char *name2) {
   char *name = (char *)name2;

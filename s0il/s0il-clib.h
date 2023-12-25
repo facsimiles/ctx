@@ -8,6 +8,8 @@ int s0il_gethostname(char *name, size_t len);
 int s0il_getuid(void);
 pid_t s0il_waitpid(pid_t pid, int *status, int options);
 pid_t s0il_wait(int *stat_loc);
+int s0il_open(const char *pathname, int flags);
+int s0il_close (int fd);
 
 
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream);
@@ -215,10 +217,9 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define gethostname(a,b) s0il_gethostname(a,b)
 #define getuid() s0il_getuid()
 #define waitpid(a,b,c) s0il_waitpid(a,b,c)
+#define open(a,b) s0il_open(a,b)
+#define close(a) s0il_close(a)
 
-#define pipe(a) s0il_pipe(a)
-#define dup(a) s0il_dup(a)
-#define dup2(a,b) s0il_dup2(a,b)
 
 #endif
 
