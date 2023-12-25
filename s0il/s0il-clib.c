@@ -1405,11 +1405,36 @@ int s0il_gethostname(char *name, size_t len)
 
 int s0il_getuid(void)
 {
+  printf ("%s NYI", __FUNCTION__);
   return 1;
 }
 
 pid_t s0il_waitpid(pid_t pid, int *status, int options)
 {
+  printf ("%s NYI", __FUNCTION__);
   return 0;
 }
 
+
+pid_t s0il_wait(int *stat_loc)
+{
+  printf ("%s NYI", __FUNCTION__);
+  return 0;
+}
+
+int s0il_pipe(int pipefd[2]){
+  printf ("%s NYI", __FUNCTION__);
+  return 0;
+}
+
+int s0il_dup(int oldfd)
+{
+  printf ("%s NYI", __FUNCTION__);
+  return 0;
+}
+
+int s0il_dup2(int oldfd, int newfd)
+{
+  printf ("%s NYI", __FUNCTION__);
+  return 0;
+}

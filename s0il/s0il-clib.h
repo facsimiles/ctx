@@ -7,6 +7,7 @@
 int s0il_gethostname(char *name, size_t len);
 int s0il_getuid(void);
 pid_t s0il_waitpid(pid_t pid, int *status, int options);
+pid_t s0il_wait(int *stat_loc);
 
 
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream);
@@ -14,7 +15,9 @@ int  s0il_sigaction(int signum,
                     void *act,
                     void *oldact);
 
-
+int s0il_pipe(int pipefd[2]);
+int s0il_dup(int oldfd);
+int s0il_dup2(int oldfd, int newfd);
 
 void   *s0il_malloc   (size_t size);
 void    s0il_free     (void *ptr);
@@ -153,7 +156,7 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define stat(p,b)     s0il_stat(p,b)
 #define rename(p,b)   s0il_rename(p,b)
 #define system(c)     s0il_system(c)
-
+#define wait(p) s0il_wait(p)
 #define select(n,r,w,e,t) s0il_select(n,r,w,e,t)
 #define signal(a,b)       s0il_signal(a,b)
 #define sigaction(a,b,c)  s0il_sigaction(a,b,c)
@@ -212,6 +215,10 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define gethostname(a,b) s0il_gethostname(a,b)
 #define getuid() s0il_getuid()
 #define waitpid(a,b,c) s0il_waitpid(a,b,c)
+
+#define pipe(a) s0il_pipe(a)
+#define dup(a) s0il_dup(a)
+#define dup2(a,b) s0il_dup2(a,b)
 
 #endif
 

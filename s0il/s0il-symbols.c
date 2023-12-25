@@ -32,6 +32,7 @@ void __nedf2(void);
 void __ledf2(void);
 void __gedf2(void);
 void __lshrdi3(void);
+void __udivdi3(void);
 
 int main_bundled(int argc, char **argv);
 void ctx_set_pixels(Ctx *ctx, void *userdata, int x, int y, int w, int h,
@@ -52,6 +53,7 @@ struct esp_elfsym {
 };
 
 Ctx *ctx_host(void);
+void __xpg_strerror_r(void);
 
 void mbedtls_entropy_func(void);
 void mbedtls_ctr_drbg_free(void);
@@ -190,6 +192,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(__nedf2),
     ELFSYM_EXPORT(__subdf3),
     ELFSYM_EXPORT(__truncdfsf2),
+  ELFSYM_EXPORT(__udivdi3),
 #endif
     {"ctx_destroy", &s0il_ctx_destroy},
     {"ctx_new", &s0il_ctx_new},
@@ -891,6 +894,12 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(vTaskDelay),
     ELFSYM_EXPORT(wifi_init_sta),
     ELFSYM_EXPORT(wifi_scan),
+  ELFSYM_EXPORT(lwip_getaddrinfo),
+  ELFSYM_EXPORT(lwip_freeaddrinfo),
+  ELFSYM_EXPORT(lwip_inet_pton),
+  ELFSYM_EXPORT(lwip_getsockopt),
+  ELFSYM_EXPORT(lwip_setsockopt),
+  ELFSYM_EXPORT(__xpg_strerror_r),
 #endif
     {"write", &s0il_write},
 #if CTX_ESP
@@ -915,34 +924,6 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(mbedtls_chacha20_starts),
     ELFSYM_EXPORT(mbedtls_chacha20_update),
 #endif
-
-    ELFSYM_EXPORT(mbedtls_entropy_func),
-  ELFSYM_EXPORT(mbedtls_entropy_func),
-  ELFSYM_EXPORT(mbedtls_ctr_drbg_free),
-  ELFSYM_EXPORT(mbedtls_ctr_drbg_init),
-  ELFSYM_EXPORT(mbedtls_ctr_drbg_random),
-  ELFSYM_EXPORT(mbedtls_ctr_drbg_seed),
-  ELFSYM_EXPORT(mbedtls_ecp_curve_info_from_grp_id),
-  ELFSYM_EXPORT(mbedtls_ecp_curve_info_from_name),
-  ELFSYM_EXPORT(mbedtls_ecp_curve_list),
-  ELFSYM_EXPORT(mbedtls_ecp_gen_key),
-  ELFSYM_EXPORT(mbedtls_entropy_free),
-  ELFSYM_EXPORT(mbedtls_entropy_func),
-  ELFSYM_EXPORT(mbedtls_entropy_init),
-  ELFSYM_EXPORT(mbedtls_mpi_free),
-  ELFSYM_EXPORT(mbedtls_mpi_init),
-  ELFSYM_EXPORT(mbedtls_mpi_write_file),
-  ELFSYM_EXPORT(mbedtls_pk_free),
-  ELFSYM_EXPORT(mbedtls_pk_get_type),
-  ELFSYM_EXPORT(mbedtls_pk_info_from_type),
-  ELFSYM_EXPORT(mbedtls_pk_init),
-  ELFSYM_EXPORT(mbedtls_pk_setup),
-  ELFSYM_EXPORT(mbedtls_pk_write_key_der),
-  ELFSYM_EXPORT(mbedtls_pk_write_key_pem),
-  ELFSYM_EXPORT(mbedtls_rsa_export),
-  ELFSYM_EXPORT(mbedtls_rsa_export_crt),
-  ELFSYM_EXPORT(mbedtls_rsa_gen_key),
-  ELFSYM_EXPORT(mbedtls_strerror),
   ELFSYM_EXPORT(mbedtls_cipher_finish),
   ELFSYM_EXPORT(mbedtls_cipher_free),
   ELFSYM_EXPORT(mbedtls_cipher_info_from_type),
@@ -972,7 +953,35 @@ const struct esp_elfsym g_customer_elfsyms[] = {
   ELFSYM_EXPORT(mbedtls_ecp_point_init),
   ELFSYM_EXPORT(mbedtls_ecp_point_read_binary),
   ELFSYM_EXPORT(mbedtls_ecp_point_write_binary),
-#if 0
+
+  ELFSYM_EXPORT(mbedtls_entropy_func),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_free),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_init),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_reseed),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_random),
+  ELFSYM_EXPORT(mbedtls_ctr_drbg_seed),
+  ELFSYM_EXPORT(mbedtls_ecp_curve_info_from_grp_id),
+  ELFSYM_EXPORT(mbedtls_ecp_curve_info_from_name),
+  ELFSYM_EXPORT(mbedtls_ecp_curve_list),
+  ELFSYM_EXPORT(mbedtls_ecp_gen_key),
+  ELFSYM_EXPORT(mbedtls_entropy_free),
+  ELFSYM_EXPORT(mbedtls_entropy_func),
+  ELFSYM_EXPORT(mbedtls_entropy_init),
+  ELFSYM_EXPORT(mbedtls_mpi_free),
+  ELFSYM_EXPORT(mbedtls_mpi_init),
+  ELFSYM_EXPORT(mbedtls_mpi_write_file),
+  ELFSYM_EXPORT(mbedtls_pk_free),
+  ELFSYM_EXPORT(mbedtls_pk_get_type),
+  ELFSYM_EXPORT(mbedtls_pk_info_from_type),
+  ELFSYM_EXPORT(mbedtls_pk_init),
+  ELFSYM_EXPORT(mbedtls_pk_setup),
+  ELFSYM_EXPORT(mbedtls_pk_write_key_der),
+  ELFSYM_EXPORT(mbedtls_pk_write_key_pem),
+  ELFSYM_EXPORT(mbedtls_rsa_export),
+  ELFSYM_EXPORT(mbedtls_rsa_export_crt),
+  ELFSYM_EXPORT(mbedtls_rsa_gen_key),
+  ELFSYM_EXPORT(mbedtls_strerror),
+#if 1
   ELFSYM_EXPORT(mbedtls_gcm_auth_decrypt),
   ELFSYM_EXPORT(mbedtls_gcm_crypt_and_tag),
   ELFSYM_EXPORT(mbedtls_gcm_free),
@@ -1024,10 +1033,16 @@ const struct esp_elfsym g_customer_elfsyms[] = {
   ELFSYM_EXPORT(mbedtls_rsa_import),
   ELFSYM_EXPORT(mbedtls_rsa_import_raw),
   ELFSYM_EXPORT(mbedtls_strerror),
+//{"if_indextoname", &netif_index_to_name},
+//{"if_nametoindex", &netif_name_to_index},
 
   {"gethostname", &s0il_gethostname},
   {"getuid", &s0il_getuid},
   {"waitpid", &s0il_waitpid},
+  {"wait", &s0il_wait},
+  {"dup", &s0il_dup},
+  {"dup2", &s0il_dup2},
+  {"pipe", &s0il_pipe},
 
     ELFSYM_END};
 

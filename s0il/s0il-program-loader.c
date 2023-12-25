@@ -199,6 +199,12 @@ typedef enum {
 
 static char **s0il_parse_cmdline(const char *input, char *terminator,
                                  const char **rest) {
+/*
+  still missing:  `` inside strings
+                     wildcard expansion
+                     more valid escapes
+*/
+
   char **argv = NULL;
   int arg_count = 0;
 
@@ -274,9 +280,9 @@ static char **s0il_parse_cmdline(const char *input, char *terminator,
             argv[arg_count] = out;
           arg_length = 0;
           break;
-        case '\\':
-          state = S0IL_CMD_STRING_ESCAPE;
-          break;
+  //    case '\\':
+  //      state = S0IL_CMD_STRING_ESCAPE;
+  //      break;
         case '"':
           state = S0IL_CMD_DQUOT;
           break;
@@ -407,10 +413,6 @@ static char **s0il_parse_cmdline(const char *input, char *terminator,
         case '\'':
           state = S0IL_CMD_IN_ARG;
           break;
-        case '\\':
-          state = S0IL_CMD_QUOT_ESCAPE;
-          break;
-          break;
         default:
           if (write)
             *(out++) = *p;
@@ -428,9 +430,9 @@ static char **s0il_parse_cmdline(const char *input, char *terminator,
         case '"':
           state = S0IL_CMD_IN_ARG;
           break;
-        case '\\':
-          state = S0IL_CMD_DQUOT_ESCAPE;
-          break;
+      case '\\':
+        state = S0IL_CMD_DQUOT_ESCAPE;
+        break;
         default:
           if (write)
             *(out++) = *p;
@@ -475,29 +477,30 @@ static char **s0il_parse_cmdline(const char *input, char *terminator,
           break;
         }
         break;
-      case S0IL_CMD_QUOT_ESCAPE:
-        switch (*p) {
-        case '\n':
-          break;
-        default:
-          state = S0IL_CMD_QUOT;
-          if (write)
-            *(out++) = *p;
-          else
-            arg_length++;
-          break;
-        }
-        break;
       case S0IL_CMD_DQUOT_ESCAPE:
         switch (*p) {
         case '\n':
           break;
-        default:
+        case '"':
+        case '`':
+        case '\\':
           state = S0IL_CMD_DQUOT;
           if (write)
             *(out++) = *p;
           else
             arg_length++;
+          break;
+        default:
+          state = S0IL_CMD_DQUOT;
+          if (write)
+          {
+            *(out++) = '\\';
+            *(out++) = *p;
+          }
+          else
+          {
+            arg_length+=2;
+          }
           break;
         }
         break;
