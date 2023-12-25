@@ -374,7 +374,7 @@ fun_float__ptr(ui_get_font_size);
 fun_float__ptr(ui_x);
 fun_float__ptr(ui_y);
 fun_void__ptr_float_float(ui_move_to);
-fun_void__ptr_ptr_ptr_ptr(ui_register_view);
+fun_void__ptr_ptr_ptr_ptr(ui_add_view);
 fun_void__ptr_ptr_ptr(ui_cb_do);
 fun_void__ptr(ui_iteration);
 fun_ptr__ptr(ui_ctx);
@@ -413,7 +413,7 @@ const struct LibraryFunction UiFunctions[] =
     {Cui_x,  "float ui_x(Ui*);"},
     {Cui_y,  "float ui_y(Ui*);"},
     {Cui_move_to,  "void ui_move_to(Ui*,float,float);"},
-    {Cui_register_view,  "void ui_register_view(Ui*,char*,void*,char*);"},
+    {Cui_add_view,  "void ui_add_view(Ui*,char*,void*,char*);"},
     {Cui_cb_do,  "void ui_cb_do(void*,void*,void*);"},
     {Cui_iteration,  "void ui_iteration(Ui*);"},
 

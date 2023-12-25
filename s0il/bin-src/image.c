@@ -17,8 +17,8 @@ MAIN(image) {
     // {0, "image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x37, 0x61}},
     // {0, "image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x39, 0x61}},
 
-    ui_register_view(ui, "image/png", NULL, argv[0]);
-    ui_register_view(ui, "image/jpeg", NULL, argv[0]);
+    ui_add_view(ui, "image/png", NULL, argv[0]);
+    ui_add_view(ui, "image/jpeg", NULL, argv[0]);
 
     return 0;
   }

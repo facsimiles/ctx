@@ -248,12 +248,12 @@ int main(int argc, char **argv) {
   s0il_system("_init");
   s0il_system("init");
 
-  ui_register_view(ui, "menu", view_menu, NULL);
-  ui_register_view(ui, "repls", view_repls, NULL);
-  ui_register_view(ui, "tests", view_tests, NULL);
-  ui_register_view(ui, "settings", view_settings, NULL);
-  //ui_register_view(ui, "magic", view_magic, NULL);
-  ui_register_view(ui, "s0il-views", s0il_view_views, NULL);
+  ui_add_view(ui, "menu", view_menu, NULL);
+  ui_add_view(ui, "repls", view_repls, NULL);
+  ui_add_view(ui, "tests", view_tests, NULL);
+  ui_add_view(ui, "settings", view_settings, NULL);
+  //ui_add_view(ui, "magic", view_magic, NULL);
+  ui_add_view(ui, "s0il-views", s0il_view_views, NULL);
   ui_do(ui, "menu");        // queue menu - as initial view
   s0il_printf("\033[?30l"); // turn off scrollbar
 

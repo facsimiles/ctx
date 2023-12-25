@@ -857,7 +857,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(ui_pop_fun),
     ELFSYM_EXPORT(ui_push_fun),
     ELFSYM_EXPORT(s0il_add_magic),
-    ELFSYM_EXPORT(ui_register_view),
+    ELFSYM_EXPORT(ui_add_view),
     ELFSYM_EXPORT(ui_scroll_to),
     ELFSYM_EXPORT(ui_set_data),
     ELFSYM_EXPORT(ui_set_scroll_offset),

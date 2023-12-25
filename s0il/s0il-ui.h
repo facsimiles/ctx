@@ -139,7 +139,7 @@ typedef void (*ui_data_finalize)(void *data);
 
 // TODO:   allow specifying place in menu hierarchy
 
-void ui_register_view (Ui         *ui,
+void ui_add_view (Ui         *ui,
                        const char *name,     // or suffix-to match
       //               const char *category, // or mime-type
                        ui_fun      fun,

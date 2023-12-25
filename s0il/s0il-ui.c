@@ -414,7 +414,7 @@ void view_settings_ui(Ui *ui) {
 }
 
 // XXX : why is this not a linked list?
-void ui_register_view(Ui *ui,
+void ui_add_view(Ui *ui,
                       const char *name, // or mime-type
                       ui_fun fun,       // either fun - or binary_path ..
                       const char *binary_path) {
@@ -884,9 +884,9 @@ static float color_fg[4]; // black or white automatically based on bg
   else
     ui->font_size_vh = width / height * 9;
 
-  ui_register_view(ui, "settings-ui", view_settings_ui, NULL);
-  ui_register_view(ui, "application/x-sharedlib", view_program, NULL);
-  ui_register_view(ui, "inode/directory", ui_view_dir, NULL);
+  ui_add_view(ui, "settings-ui", view_settings_ui, NULL);
+  ui_add_view(ui, "application/x-sharedlib", view_program, NULL);
+  ui_add_view(ui, "inode/directory", ui_view_dir, NULL);
 
   return ui;
 }
