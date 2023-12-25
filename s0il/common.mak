@@ -32,20 +32,19 @@ CFLAGS_XTENSA = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main \
   \
   -Iflow3r/build/config \
   -I../flow3r/build/config \
-  -I$(IDF_PATH)/components/newlib/platform_include/sys \
   -I$(IDF_PATH)/components/lwip/include \
   -I$(IDF_PATH)/components/lwip/lwip/src/include \
   -I$(IDF_PATH)/components/lwip/port/include \
   -I$(IDF_PATH)/components/lwip/port/freertos/include \
-  -I$(IDF_PATH)/components/lwip/port/esp32xx/include \
   -I$(IDF_PATH)/components/newlib/platform_include \
+  -I$(IDF_PATH)/components/heap/include \
   -I$(IDF_PATH)/components/esp_system/include \
   -I$(IDF_PATH)/components/esp_common/include \
-  -I$(IDF_PATH)/components/heap/include \
   -I$(IDF_PATH)/components/esp_rom/include \
   -I$(IDF_PATH)/components/esp_timer/include \
-  -I$(IDF_PATH)/components/xtensa/include \
   -I$(IDF_PATH)/components/esp_hw_support/include \
+  -I$(IDF_PATH)/components/lwip/port/esp32xx/include \
+  -I$(IDF_PATH)/components/xtensa/include \
   -I$(IDF_PATH)/components/soc/esp32s3/include \
   -I$(IDF_PATH)/components/xtensa/esp32s3/include \
   -I$(IDF_PATH)/components/freertos/esp_additions/include/ \
@@ -65,16 +64,16 @@ CFLAGS_RISCV = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main -DRISCV \
   -I$(IDF_PATH)/components/lwip/lwip/src/include \
   -I$(IDF_PATH)/components/lwip/port/include \
   -I$(IDF_PATH)/components/lwip/port/freertos/include \
-  -I$(IDF_PATH)/components/lwip/port/esp32xx/include \
   -I$(IDF_PATH)/components/newlib/platform_include \
+  -I$(IDF_PATH)/components/heap/include \
   -I$(IDF_PATH)/components/esp_system/include \
   -I$(IDF_PATH)/components/esp_common/include \
-  -I$(IDF_PATH)/components/heap/include \
   -I$(IDF_PATH)/components/esp_rom/include \
   -I$(IDF_PATH)/components/esp_timer/include \
+  -I$(IDF_PATH)/components/esp_hw_support/include \
+  -I$(IDF_PATH)/components/lwip/port/esp32xx/include \
   -I$(IDF_PATH)/components/soc/esp32c3/include \
   -I$(IDF_PATH)/components/xtensa/riscv/include \
-  -I$(IDF_PATH)/components/esp_hw_support/include \
   -I$(IDF_PATH)/components/freertos/esp_additions/include/ \
   -I$(IDF_PATH)/components/freertos/esp_additions/include/freertos \
   -I$(IDF_PATH)/components/freertos/esp_additions/arch/riscv/include \

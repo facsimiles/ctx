@@ -1396,3 +1396,20 @@ int  s0il_sigaction(int signum,
 {
   return 0;
 }
+
+int s0il_gethostname(char *name, size_t len)
+{
+  strncpy(name, "s0il", len);
+  return 0;
+}
+
+int s0il_getuid(void)
+{
+  return 1;
+}
+
+pid_t s0il_waitpid(pid_t pid, int *status, int options)
+{
+  return 0;
+}
+

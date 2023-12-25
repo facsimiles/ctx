@@ -147,6 +147,13 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(cbrtf),
     ELFSYM_EXPORT(ceil),
     ELFSYM_EXPORT(ceilf),
+#if !defined(PICO_BUILD)
+    ELFSYM_EXPORT(cfgetispeed),
+    ELFSYM_EXPORT(cfgetospeed),
+    ELFSYM_EXPORT(cfsetispeed),
+    ELFSYM_EXPORT(cfsetospeed),
+#endif
+
     ELFSYM_EXPORT(chdir),
     ELFSYM_EXPORT(clearerr),
     {"clearenv", &s0il_clearenv},
@@ -712,8 +719,12 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #if !defined(PICO_BUILD)
     ELFSYM_EXPORT(tcdrain),
     ELFSYM_EXPORT(tcflush),
+    ELFSYM_EXPORT(tcflow),
     ELFSYM_EXPORT(tcgetattr),
+    ELFSYM_EXPORT(tcgetsid),
     ELFSYM_EXPORT(tcsetattr),
+
+
     {"telldir", &s0il_telldir},
 #endif
     ELFSYM_EXPORT(tgamma),
@@ -830,6 +841,11 @@ const struct esp_elfsym g_customer_elfsyms[] = {
   ELFSYM_EXPORT(mbedtls_rsa_export_crt),
   ELFSYM_EXPORT(mbedtls_rsa_gen_key),
   ELFSYM_EXPORT(mbedtls_strerror),
+
+  {"gethostname", &s0il_gethostname},
+  {"getuid", &s0il_getuid},
+  {"waitpid", &s0il_waitpid},
+
     ELFSYM_END};
 
 const void *s0il_sym(const char *name) {

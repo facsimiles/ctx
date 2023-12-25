@@ -3,6 +3,12 @@
 
 // this set stdin and stdout to be aliases for the given streams,
 // pass in NULL to reset
+
+int s0il_gethostname(char *name, size_t len);
+int s0il_getuid(void);
+pid_t s0il_waitpid(pid_t pid, int *status, int options);
+
+
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream);
 int  s0il_sigaction(int signum,
                     void *act,
@@ -203,6 +209,9 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define strdup(a) s0il_strdup(a)
 #define strndup(a,n) s0il_strdup(a,n)
 
+#define gethostname(a,b) s0il_gethostname(a,b)
+#define getuid() s0il_getuid()
+#define waitpid(a,b,c) s0il_waitpid(a,b,c)
 
 #endif
 
