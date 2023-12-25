@@ -380,8 +380,8 @@ fun_void__ptr(ui_iteration);
 fun_ptr__ptr(ui_ctx);
 fun_ptr__ptr(ui_get_data);
 fun_void__ptr(ui_keyboard);
-fun_void__ptr_ptr(ui_load_file);
-fun_void__ptr_ptr_ptr_int_int(magic_add);
+fun_void__ptr_ptr(s0il_load_file);
+fun_void__ptr_ptr_ptr_int_int(s0il_add_magic);
 
 // ui_push_fun ui_register_view
 // set_data get_data  find_exec  ui_basename  elf_output_state 
@@ -396,8 +396,8 @@ const struct LibraryFunction UiFunctions[] =
     {Cui_new,          "Ui*ui_new(Ctx*);"},
     {Cui_ctx,          "Ctx*ui_ctx(Ui*);"},
     {Cui_get_data,     "void*ui_get_data(Ui*);"},
-    {Cui_load_file,    "void ui_load_file(Ui*,char*p);"},
-    {Cmagic_add, "void magic_add(char*,char*,unsigned char*,int,int);"},
+    {Cs0il_load_file,    "void s0il_load_file(Ui*,char*p);"},
+    {Cs0il_add_magic, "void s0il_add_magic(char*,char*,unsigned char*,int,int);"},
     {Cui_keyboard,     "void ui_keyboard(Ui*);"},
     {Cui_destroy,      "void ui_destroy(Ui*);"},
     {Cui_main,         "void ui_main(Ui*,char*);"},

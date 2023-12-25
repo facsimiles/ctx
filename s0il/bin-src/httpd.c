@@ -151,7 +151,7 @@ dir_listing_t *dir_listing_read(HttpdRequest *req, const char *path) {
         sprintf(de->path, "%s%s", path, base);
       else
         sprintf(de->path, "%s/%s", path, base);
-      de->mime_type = magic_detect_path(de->path);
+      de->mime_type = s0il_detect_media_path(de->path);
     }
     closedir(dir);
     qsort(di->entries, di->count, sizeof(dir_entry_t), cmp_dir_entry);
@@ -247,7 +247,7 @@ static void httpd_browse_handler(HttpdRequest *req) {
   char *decoded_path = decode_uri(req->path + 2);
   const char *path = decoded_path;
   const char *item_path = path;
-  const char *mime_type = magic_detect_path(path);
+  const char *mime_type = s0il_detect_media_path(path);
 
   char *dirnam = NULL;
   if (!mime_type)
@@ -473,7 +473,7 @@ static char *http_headers(HttpdRequest *req, int content_length) {
 }
 
 static void httpd_serve_file(HttpdRequest *req, const char *path) {
-  const char *mime_type = magic_detect_path(path);
+  const char *mime_type = s0il_detect_media_path(path);
   req->mime_type = mime_type;
   int content_length = 0;
   FILE *file = fopen(path, "rb");
@@ -773,7 +773,7 @@ static void httpd_request_handler(HttpdRequest *req) {
       httpd_browse_handler(req);
     } else {
 
-      const char *mime_type = magic_detect_path(path);
+      const char *mime_type = s0il_detect_media_path(path);
       if (!mime_type) {
         req->status = 404;
         req->status_string = "NOSPOON";
@@ -848,23 +848,23 @@ static void httpd_magic(void) {
   const char jpg_magic3[] = {0xff, 0xd8, 0xff, 0xee};
   const char jpg_magic4[] = {0xff, 0xd8, 0xff, 0xe1};
 
-  if (!magic_has_mime("image/png"))
-    magic_add("image/png", NULL, png_magic, sizeof(png_magic), 0);
-  if (!magic_has_mime("image/jped")) {
-    magic_add("image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
-    magic_add("image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
-    magic_add("image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
-    magic_add("image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
+  if (!s0il_has_mime("image/png"))
+    s0il_add_magic("image/png", NULL, png_magic, sizeof(png_magic), 0);
+  if (!s0il_has_mime("image/jped")) {
+    s0il_add_magic("image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
+    s0il_add_magic("image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
+    s0il_add_magic("image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
+    s0il_add_magic("image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
   }
 
-  if (!magic_has_mime("text/markdown"))
-    magic_add("text/markdown", ".md", NULL, 0, 1);
-  if (!magic_has_mime("text/html"))
-    magic_add("text/html", ".html", NULL, 0, 1);
-  if (!magic_has_mime("text/css"))
-    magic_add("text/css", ".css", NULL, 0, 1);
-  if (!magic_has_mime("application/javascript"))
-    magic_add("application/javascript", ".js", NULL, 0, 1);
+  if (!s0il_has_mime("text/markdown"))
+    s0il_add_magic("text/markdown", ".md", NULL, 0, 1);
+  if (!s0il_has_mime("text/html"))
+    s0il_add_magic("text/html", ".html", NULL, 0, 1);
+  if (!s0il_has_mime("text/css"))
+    s0il_add_magic("text/css", ".css", NULL, 0, 1);
+  if (!s0il_has_mime("application/javascript"))
+    s0il_add_magic("application/javascript", ".js", NULL, 0, 1);
 }
 
 int httpd_port = -1;

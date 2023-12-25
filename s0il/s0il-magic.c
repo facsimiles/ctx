@@ -12,7 +12,7 @@ typedef struct ctx_magic_t {
 
 static CtxList *ui_magic = NULL;
 
-void magic_add(const char *mime_type, const char *ext, const char *magic_data,
+void s0il_add_magic(const char *mime_type, const char *ext, const char *magic_data,
                int magic_len, int is_text) {
   // TODO : skip duplicates
   if (!mime_type)
@@ -46,7 +46,7 @@ void magic_add(const char *mime_type, const char *ext, const char *magic_data,
   ctx_list_append(&ui_magic, magic);
 }
 
-bool magic_has_mime(const char *mime_type) {
+bool s0il_has_mime(const char *mime_type) {
   for (CtxList *iter = ui_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
     if (!strcmp(magic->mime_type, mime_type))
@@ -55,7 +55,7 @@ bool magic_has_mime(const char *mime_type) {
   return false;
 }
 
-int magic_is_text(const char *media_type) {
+int s0il_media_is_text(const char *media_type) {
   for (CtxList *iter = ui_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
     if (!strcmp(magic->mime_type, media_type))
@@ -64,7 +64,7 @@ int magic_is_text(const char *media_type) {
   return 0;
 }
 
-static const char *magic_get_dir_type(const char *path) {
+static const char *s0il_detect_dir_type(const char *path) {
   char temp[512];
   for (CtxList *iter = ui_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
@@ -77,7 +77,7 @@ static const char *magic_get_dir_type(const char *path) {
   return "inode/directory";
 }
 
-const char *magic_detect_sector512(const char *path, const char *sector) {
+const char *s0il_detect_media_sector512(const char *path, const char *sector) {
   const char *suffix_match = NULL;
   const char *magic_match = NULL;
 
@@ -122,7 +122,7 @@ const char *magic_detect_sector512(const char *path, const char *sector) {
   return "text/plain";
 }
 
-const char *magic_detect_path(const char *location) {
+const char *s0il_detect_media_path(const char *location) {
   const char *path = location;
   if (strchr(path, ':') && strchr(path, ':') < path + 5) {
     path = strchr(path, ':') + 1;
@@ -137,7 +137,7 @@ const char *magic_detect_path(const char *location) {
     return 0;
   s0il_stat(path, &stat_buf);
   if (S_ISDIR(stat_buf.st_mode)) {
-    return magic_get_dir_type(location);
+    return s0il_detect_dir_type(location);
   }
 
   char sector[512] = {
@@ -150,7 +150,7 @@ const char *magic_detect_path(const char *location) {
   memset(sector, 0, 512);
   s0il_fread(sector, 512, 1, f);
   s0il_fclose(f);
-  return magic_detect_sector512(location, sector);
+  return s0il_detect_media_sector512(location, sector);
 }
 
 int magic_main(int argc, char **argv) {
@@ -165,6 +165,6 @@ int magic_main(int argc, char **argv) {
 int file_main(int argc, char **argv) {
   for (int i = 1; argv[i]; i++)
     if (argv[i][0] != '-')
-      s0il_printf("%s : %s\n", argv[i], magic_detect_path(argv[i]));
+      s0il_printf("%s : %s\n", argv[i], s0il_detect_media_path(argv[i]));
   return 0;
 }

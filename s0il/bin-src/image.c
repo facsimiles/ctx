@@ -9,11 +9,11 @@ MAIN(image) {
     const char jpg_magic3[] = {0xff, 0xd8, 0xff, 0xee};
     const char jpg_magic4[] = {0xff, 0xd8, 0xff, 0xe1};
 
-    magic_add("image/png", NULL, png_magic, sizeof(png_magic), 0);
-    magic_add("image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
-    magic_add("image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
-    magic_add("image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
-    magic_add("image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
+    s0il_add_magic("image/png", NULL, png_magic, sizeof(png_magic), 0);
+    s0il_add_magic("image/jpeg", NULL, jpg_magic1, sizeof(jpg_magic1), 0);
+    s0il_add_magic("image/jpeg", NULL, jpg_magic2, sizeof(jpg_magic2), 0);
+    s0il_add_magic("image/jpeg", NULL, jpg_magic3, sizeof(jpg_magic3), 0);
+    s0il_add_magic("image/jpeg", NULL, jpg_magic4, sizeof(jpg_magic4), 0);
     // {0, "image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x37, 0x61}},
     // {0, "image/gif",  ".gif", 6, {0x47, 0x49, 0x46, 0x38, 0x39, 0x61}},
 

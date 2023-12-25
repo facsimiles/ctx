@@ -10,10 +10,10 @@ int _init_main(int argc, char **argv) {
   const char elf_magic_32bit[] = {0x7f, 'E', 'L', 'F', 1, 1, 1, 0, 0, 0};
   const char elf_magic_64bit[] = {0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0};
   // uint8_t elf_magic[]={0x7f, 'E','L','F', 0,0, 0, 0, 0, 0};
-  magic_add("application/x-sharedlib", NULL, elf_magic_32bit, 8, 0);
-  magic_add("application/x-sharedlib", NULL, elf_magic_64bit, 8, 0);
+  s0il_add_magic("application/x-sharedlib", NULL, elf_magic_32bit, 8, 0);
+  s0il_add_magic("application/x-sharedlib", NULL, elf_magic_64bit, 8, 0);
 
-  magic_add("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
+  s0il_add_magic("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
 
   // runvp("text",  NULL);
   // runvp("image", NULL);
@@ -25,36 +25,36 @@ int _init_main(int argc, char **argv) {
   const char gif_magic1[] = {0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0};
   const char gif_magic2[] = {0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0};
 
-  magic_add("video/mpeg", ".mpg", mpg1_magic, 4, 0);
-  magic_add("image/gif", ".gif", gif_magic1, -1, 0);
-  magic_add("image/gif", ".gif", gif_magic2, -1, 0);
+  s0il_add_magic("video/mpeg", ".mpg", mpg1_magic, 4, 0);
+  s0il_add_magic("image/gif", ".gif", gif_magic1, -1, 0);
+  s0il_add_magic("image/gif", ".gif", gif_magic2, -1, 0);
 
   const char z_magic[] = {0x1f, 0x9d, 0};
-  magic_add("application/gzip", ".z", z_magic, -1, 0);
+  s0il_add_magic("application/gzip", ".z", z_magic, -1, 0);
   const char gz_magic[] = {0x1f, 0x8b, 0};
 
-  magic_add("application/gz", ".gz", gz_magic, -1, 0);
+  s0il_add_magic("application/gz", ".gz", gz_magic, -1, 0);
   const char bz2_magic[] = {0x42, 0x5a, 0x68, 0};
-  magic_add("application/bzip2", ".gz", bz2_magic, -1, 0);
+  s0il_add_magic("application/bzip2", ".gz", bz2_magic, -1, 0);
   const char zip_magic[] = {0x50, 0x4b, 0x03, 0x04, 0};
   const char zip_magic2[] = {0x50, 0x4b, 0x05, 0x06, 0};
 
-  magic_add("application/zip", ".zip", zip_magic, -1, 0);
-  magic_add("application/zip", ".zip", zip_magic2, -1, 0);
+  s0il_add_magic("application/zip", ".zip", zip_magic, -1, 0);
+  s0il_add_magic("application/zip", ".zip", zip_magic2, -1, 0);
 
 #if 0
   const char wasm_magic[] = {0x00, 0x61, 0x73, 0x6d};
-  magic_add(ui, "application/wasm", ".wasm", wasm_magic, 4, 0);
+  s0il_add_magic(ui, "application/wasm", ".wasm", wasm_magic, 4, 0);
 #endif
 
   const char flac_magic[] = {0x66, 0x4c, 0x61, 0x43, 0};
 
-  magic_add("audio/flac", ".flac", flac_magic, -1, 0);
+  s0il_add_magic("audio/flac", ".flac", flac_magic, -1, 0);
   const char midi_magic[] = {0x4d, 0x54, 0x68, 0x64, 0};
-  magic_add("audio/sp-midi", ".mid", midi_magic, -1, 0);
+  s0il_add_magic("audio/sp-midi", ".mid", midi_magic, -1, 0);
   const char wav_magic[] = {0x52, 0x49, 0x46, 0x46, 0};
-  magic_add("audio/x-wav", ".wav", wav_magic, -1, 0);
-  magic_add("audio/mp3", ".mp3", NULL, 0, 0);
+  s0il_add_magic("audio/x-wav", ".wav", wav_magic, -1, 0);
+  s0il_add_magic("audio/mp3", ".mp3", NULL, 0, 0);
 
 #if EMSCRIPTEN
   mkdir("/sd", 0777);
@@ -479,7 +479,7 @@ static void ui_unhandled(Ui *ui) {
   ui_end_frame(ui);
 }
 
-void ui_load_file(Ui *ui, const char *path) {
+void s0il_load_file(Ui *ui, const char *path) {
   FILE *file = s0il_fopen(path, "rb");
   if (ui->data && ui->data_finalize) {
     ui->data_finalize(ui->data);
@@ -500,7 +500,7 @@ void ui_load_file(Ui *ui, const char *path) {
 }
 
 static void ui_view_file(Ui *ui) {
-  const char *mime_type = magic_detect_path(ui->location);
+  const char *mime_type = s0il_detect_media_path(ui->location);
   ui->interpreter = NULL;
   for (int i = 0; i < ui->n_views; i++) {
     const char *name = ui->views[i].name;
@@ -587,7 +587,7 @@ static void ui_view_dir(Ui *ui) {
           sprintf(de->path, "%s%s", ui->location, base);
         else
           sprintf(de->path, "%s/%s", ui->location, base);
-        de->mime_type = magic_detect_path(de->path);
+        de->mime_type = s0il_detect_media_path(de->path);
       }
       s0il_closedir(dir);
       qsort(di->entries, di->count, sizeof(dir_entry_t), cmp_dir_entry);
@@ -830,7 +830,7 @@ Ui *ui_new(Ctx *ctx) {
 #ifdef S0IL_NATIVE
     _ctx_host = ctx;
 #endif
-    // magic_add(ui, "application/octet-stream", ".bin", NULL, 0, 0);
+    // s0il_add_magic(ui, "application/octet-stream", ".bin", NULL, 0, 0);
   }
   ui->ctx = ctx;
   ui->style.bg[0] = 0.1;

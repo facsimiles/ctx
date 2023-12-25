@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
   Ui *ui = ui_new(ctx);
   ui_fake_circle(ui, true);
 
-  magic_add("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
+  s0il_add_magic("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
 
   const char *temp =
       "s0il - vector graphics operating environment\n"

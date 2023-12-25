@@ -336,7 +336,7 @@ MAIN(text) {
     Ctx *ctx = ui_ctx(ui);
 
     {
-      ui_load_file(ui, argv[1]);
+      s0il_load_file(ui, argv[1]);
       if (!ui_get_data(ui)) {
         ctx_destroy(ctx);
         return -1;
@@ -388,7 +388,7 @@ MAIN(text) {
                                 NULL};
     for (int i = 0; mime_types[i]; i += 2) {
       if (mime_types[i + 1])
-        magic_add(mime_types[i], mime_types[i + 1], NULL, 0, 1);
+        s0il_add_magic(mime_types[i], mime_types[i + 1], NULL, 0, 1);
       ui_register_view(ui, mime_types[i], NULL, argv[0]);
     }
   }

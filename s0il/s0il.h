@@ -104,41 +104,35 @@ int   s0il_runv (char *pathname, char **argv);
 int   s0il_runvp (char *file, char **argv);
 int   s0il_spawnp (char **argv);
 
-// 
-void magic_add (const char *mime_type,
-                const char *ext,
-                const char *magic_data,
-                int magic_len,
-                int is_text);
+void   s0il_add_magic (const char *mime_type,
+                  const char *ext,
+                  const char *magic_data,
+                  int magic_len,
+                  int is_text);
 
-bool magic_has_mime(const char *mime_type);
+bool s0il_has_mime(const char *mime_type);
 
-const char *magic_detect_sector512 (const char *path, const char *sector512);
+const char *s0il_detect_media_sector512 (const char *path, const char *sector512);
 
-const char *magic_detect_path (const char *location);
+const char *s0il_detect_media_path (const char *location);
 
-
-
-void s0il_output_state_reset (void);
-int  s0il_output_state (void); // 1 text 2 graphics 3 both
-char *s0il_path_lookup(Ui *ui, const char *command);
+void  s0il_output_state_reset (void);
+int   s0il_output_state       (void); // 1 text 2 graphics 3 both
+char *s0il_path_lookup        (Ui *ui, const char *command);
 
 typedef struct _file_t   file_t;
 typedef struct _folder_t folder_t;
 
 typedef struct s0il_process_t {
-  int ppid;
-  int pid;
-  char *program;
-  char *cwd;
-  CtxList *atexits;
-
+  int       ppid;
+  int       pid;
+  char     *program;
+  char     *cwd;
+  CtxList  *atexits;
   folder_t *dir; // currently open folder
-
-  FILE *redir_stdout;
-  FILE *redir_stderr;
-  FILE *redir_stdin;
-
+  FILE     *redir_stdout;
+  FILE     *redir_stderr;
+  FILE     *redir_stdin;
 } s0il_process_t;
 
 s0il_process_t *s0il_process(void);
