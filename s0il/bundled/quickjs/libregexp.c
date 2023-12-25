@@ -772,8 +772,8 @@ static int get_class_atom(REParseState *s, CharRange *cr,
                 c = CLASS_RANGE_BASE;
                 break;
             }
-            /* fall thru */
 #endif
+        /*FALLTHROUGH*/
         default:
             p--;
             ret = lre_parse_escape(&p, s->is_utf16 * 2);

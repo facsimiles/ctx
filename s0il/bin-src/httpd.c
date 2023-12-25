@@ -879,6 +879,7 @@ int _httpd_start_int(int port,
   int sock;
   struct sockaddr_in sin;
   sock = socket(AF_INET, SOCK_STREAM, 0);
+  printf("gotsock:%i\n", sock);
   int try_port = port; // we first try this
   for (; try_port <= HTTP_PORT_FALLBACK_END; try_port++) {
     sin.sin_family = AF_INET;

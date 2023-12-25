@@ -5,7 +5,7 @@ CCACHE=
 CFLAGS+=-O2 -Wall -Wextra -Wno-unused-parameter -g -Wno-deprecated-declarations
 CFLAGS+= -Wwrite-strings -Wchar-subscripts -Wno-format -Wno-sign-compare
 CFLAGS+= -I. -I..
-CFLAGS+=-Wno-discarded-qualifiers
+CFLAGS+=-Wno-discarded-qualifiers -Wno-clobbered
 CFLAGS+= -fsingle-precision-constant -Wdouble-promotion
 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CCACHE) $(CC)

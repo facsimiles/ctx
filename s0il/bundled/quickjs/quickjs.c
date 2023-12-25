@@ -12037,7 +12037,7 @@ static bf_t *JS_ToBigIntFree(JSContext *ctx, bf_t *buf, JSValue val)
     case JS_TAG_UNDEFINED:
         if (!is_math_mode(ctx))
             goto fail;
-        /* fall tru */
+        /*FALLTHROUGH*/
     case JS_TAG_BOOL:
         r = buf;
         bf_init(ctx->bf_ctx, r);
@@ -15234,7 +15234,7 @@ static __exception int js_append_enumerate(JSContext *ctx, JSValue *sp)
         return -1;
     }
     if (is_array_iterator
-    &&  JS_IsCFunction(ctx, method, (JSCFunction *)js_array_iterator_next, 0)
+    &&  JS_IsCFunction(ctx, method, (void*)js_array_iterator_next, 0)
     &&  js_get_fast_array(ctx, sp[-1], &arrp, &count32)) {
         uint32_t len;
         if (js_get_length32(ctx, &len, sp[-1]))
@@ -39560,8 +39560,8 @@ static const JSCFunctionListEntry js_number_funcs[] = {
     JS_CFUNC_DEF("isFinite", 1, js_number_isFinite ),
     JS_CFUNC_DEF("isInteger", 1, js_number_isInteger ),
     JS_CFUNC_DEF("isSafeInteger", 1, js_number_isSafeInteger ),
-    JS_PROP_DOUBLE_DEF("MAX_VALUE", 1.7976931348623157e+308, 0 ),
-    JS_PROP_DOUBLE_DEF("MIN_VALUE", 5e-324, 0 ),
+    JS_PROP_DOUBLE_DEF("MAX_VALUE", 1.7976931348623157e+38, 0 ), 
+    JS_PROP_DOUBLE_DEF("MIN_VALUE", 5e-38, 0 ), 
     JS_PROP_DOUBLE_DEF("NaN", NAN, 0 ),
     JS_PROP_DOUBLE_DEF("NEGATIVE_INFINITY", -INFINITY, 0 ),
     JS_PROP_DOUBLE_DEF("POSITIVE_INFINITY", INFINITY, 0 ),
@@ -41543,7 +41543,7 @@ static JSValue js_math_min_max(JSContext *ctx, JSValueConst this_val,
 
 static double js_math_sign(double a)
 {
-    if (isnan(a) || a == 0.0)
+    if (isnan(a) || a == (double)0.0)
         return a;
     if (a < 0)
         return -1;
@@ -41666,7 +41666,7 @@ static JSValue js_math_random(JSContext *ctx, JSValueConst this_val,
     v = xorshift64star(&ctx->random_state);
     /* 1.0 <= u.d < 2 */
     u.u64 = ((uint64_t)0x3ff << 52) | (v >> 12);
-    return __JS_NewFloat64(ctx, u.d - 1.0);
+    return __JS_NewFloat64(ctx, u.d - (double)1.0);
 }
 
 static const JSCFunctionListEntry js_math_funcs[] = {
@@ -43622,6 +43622,7 @@ static JSValue js_json_check(JSContext *ctx, JSONStringifyContext *jsc,
     case JS_TAG_OBJECT:
         if (JS_IsFunction(ctx, val))
             break;
+        /*FALLTHROUGH*/
     case JS_TAG_STRING:
     case JS_TAG_INT:
     case JS_TAG_FLOAT64:
@@ -45372,7 +45373,7 @@ static JSValueConst map_normalize_key(JSContext *ctx, JSValueConst key)
 {
     uint32_t tag = JS_VALUE_GET_TAG(key);
     /* convert -0.0 to +0.0 */
-    if (JS_TAG_IS_FLOAT64(tag) && JS_VALUE_GET_FLOAT64(key) == 0.0) {
+    if (JS_TAG_IS_FLOAT64(tag) && JS_VALUE_GET_FLOAT64(key) == (double)0.0) {
         key = JS_NewInt32(ctx, 0);
     }
     return key;
@@ -47280,7 +47281,7 @@ void JS_AddIntrinsicPromise(JSContext *ctx)
 
     /* AsyncFunction */
     ctx->class_proto[JS_CLASS_ASYNC_FUNCTION] = JS_NewObjectProto(ctx, ctx->function_proto);
-    obj1 = JS_NewCFunction3(ctx, (JSCFunction *)js_function_constructor,
+    obj1 = JS_NewCFunction3(ctx, (void*)js_function_constructor,
                             "AsyncFunction", 1,
                             JS_CFUNC_constructor_or_func_magic, JS_FUNC_ASYNC,
                             ctx->function_ctor);
@@ -47316,7 +47317,7 @@ void JS_AddIntrinsicPromise(JSContext *ctx)
     /* AsyncGeneratorFunction */
     ctx->class_proto[JS_CLASS_ASYNC_GENERATOR_FUNCTION] =
         JS_NewObjectProto(ctx, ctx->function_proto);
-    obj1 = JS_NewCFunction3(ctx, (JSCFunction *)js_function_constructor,
+    obj1 = JS_NewCFunction3(ctx, (void*)js_function_constructor,
                             "AsyncGeneratorFunction", 1,
                             JS_CFUNC_constructor_or_func_magic,
                             JS_FUNC_ASYNC_GENERATOR,
@@ -47764,8 +47765,8 @@ static __exception int get_date_fields(JSContext *ctx, JSValueConst obj,
 }
 
 static double time_clip(double t) {
-    if (t >= -8.64e15 && t <= 8.64e15)
-        return trunc(t) + 0.0;  /* convert -0 to +0 */
+    if (t >= (double)-8.64e15 && t <= (double)8.64e15)
+        return trunc(t) +(double) 0.0;  /* convert -0 to +0 */
     else
         return NAN;
 }
@@ -48025,7 +48026,7 @@ static JSValue js_date_constructor(JSContext *ctx, JSValueConst new_target,
             if (i == 0 && fields[0] >= 0 && fields[0] < 100)
                 fields[0] += 1900;
         }
-        val = (i == n) ? set_date_fields(fields, 1) : NAN;
+        val = (i == n) ? set_date_fields(fields, 1) : (double)NAN;
     }
 has_val:
 #if 0
@@ -50747,7 +50748,7 @@ void JS_AddIntrinsicBaseObjects(JSContext *ctx)
         JSValue func_obj;
         int n_args;
         n_args = 1 + (i == JS_AGGREGATE_ERROR);
-        func_obj = JS_NewCFunction3(ctx, (JSCFunction *)js_error_constructor,
+        func_obj = JS_NewCFunction3(ctx, (void*)js_error_constructor,
                                     native_error_name[i], n_args,
                                     JS_CFUNC_constructor_or_func_magic, i, obj1);
         JS_NewGlobalCConstructor2(ctx, func_obj, native_error_name[i],
@@ -52084,7 +52085,7 @@ static JSValue js_typed_array_indexOf(JSContext *ctx, JSValueConst this_val,
                     break;
                 }
             }
-        } else if ((f = (float)d) == d) {
+        } else if ((f = (float)d) == (float)d) {
             const float *pv = p->u.array.u.float_ptr;
             for (; k != stop; k += inc) {
                 if (pv[k] == f) {
@@ -53785,7 +53786,7 @@ void JS_AddIntrinsicTypedArrays(JSContext *ctx)
                                   0);
         name = JS_AtomGetStr(ctx, buf, sizeof(buf),
                              JS_ATOM_Uint8ClampedArray + i - JS_CLASS_UINT8C_ARRAY);
-        func_obj = JS_NewCFunction3(ctx, (JSCFunction *)js_typed_array_constructor,
+        func_obj = JS_NewCFunction3(ctx, (void*)js_typed_array_constructor,
                                     name, 3, JS_CFUNC_constructor_magic, i,
                                     typed_array_base_func);
         JS_NewGlobalCConstructor2(ctx, func_obj, name, ctx->class_proto[i]);
