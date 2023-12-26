@@ -146,7 +146,7 @@ static inline size_t js_trace_malloc_usable_size(void *ptr)
     return malloc_size(ptr);
 #elif defined(_WIN32)
     return _msize(ptr);
-#elif defined(S0IL_BUNDLE)
+#elif defined(S0IL)
     return 0;
 #elif defined(EMSCRIPTEN)
     return 0;
@@ -266,7 +266,7 @@ static const JSMallocFunctions trace_mf = {
     (size_t (*)(const void *))_msize,
 #elif defined(EMSCRIPTEN)
     NULL,
-#elif defined(S0IL_BUNDLE)
+#elif defined(S0IL)
     NULL,
 #elif defined(__linux__)
     (size_t (*)(const void *))malloc_usable_size,

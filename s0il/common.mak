@@ -2,7 +2,7 @@
 #CCACHE=`command -v ccache`
 CCACHE=
 
-CFLAGS+=-O2 -Wall -Wextra -Wno-unused-parameter -g -Wno-deprecated-declarations
+CFLAGS+=-O2 -DS0IL -Wall -Wextra -Wno-unused-parameter -g -Wno-deprecated-declarations
 CFLAGS+= -Wwrite-strings -Wchar-subscripts -Wno-format -Wno-sign-compare
 CFLAGS+= -I. -I..
 CFLAGS+=-Wno-discarded-qualifiers -Wno-clobbered
@@ -11,7 +11,7 @@ CFLAGS+= -fsingle-precision-constant -Wdouble-promotion
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CCACHE) $(CC)
 CFLAGS_NATIVE = $(CFLAGS) -I.. -L.. -lctx \
                    -g -lm -DS0IL_NATIVE -fPIC -rdynamic -fpic \
-                   -Wl,-E,--unresolved-symbols=ignore-all
+                   -Wl,-E,--unresolved-symbols=ignore-all 
 
 POST_NATIVE=@ echo 'rem-PIE' $@; ./elf_strip_pie $@
 #POST_NATIVE=@echo 'rem-PIE  $@'; ./elf_strip_pie $@ && strip $@

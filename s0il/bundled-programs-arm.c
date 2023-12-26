@@ -12,7 +12,7 @@
 #include "bin-src/s0il-image.c"
 #include "bin-src/s0il-text.c"
 
-#include "bundled/picoc.c"
+#include "programs/picoc.c"
 //#include "bin-src/app.c"
 #include "bin-src/demo-pcm_audio.c"
 #include "bin-src/bundled.c"

@@ -1,4 +1,4 @@
-native: native_bins s0il
+native: bin-native s0il
 help:
 	@echo 'targets:'
 	@echo '  clean        - not often needed, and itself not complete..'
@@ -14,7 +14,7 @@ help:
 
 include common.mak
 
-xtensa: xtensa_bins
+xtensa: bin-xtensa
 all: native xtensa flow3r wasm riscv pico
 
 DESTDIR ?=
@@ -35,13 +35,13 @@ uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/lib/libs0il.so
 	rm -rf $(DESTDIR)$(PREFIX)/include/s0il
 
-sh: s0il native_bins
+sh: s0il bin-native
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) ./s0il sh
-test: s0il native_bins
+test: s0il bin-native
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) ./s0il
-gdb: s0il native_bins
+gdb: s0il bin-native 
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) gdb ./s0il
-valgrind: s0il native_bins
+valgrind: s0il bin-native 
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) valgrind ./s0il
 
 S0IL_OBJS=s0il-ui.o s0il-program-loader.o s0il-symbols.o s0il-magic.o s0il-clib.o
@@ -50,7 +50,7 @@ s0il: libs0il.so main.o bundled-programs.o
 	$(CC_NATIVE) $(CFLAGS_NATIVE) $^ -o $@ $(CFLAGS_NATIVE) -L. -ls0il 
 
 PROGRAMS_C_BUNDLED=bin-src/*.c
-bundled-programs.o: $(PROGRAMS_C_BUNDLED) bundled/*.c bundled/*/*.c
+bundled-programs.o: $(PROGRAMS_C_BUNDLED) programs/*.c programs/*/*.c
 
 main.o: fs_bin_native.c fs_data.c fs_bin_generic.c
 
@@ -66,6 +66,7 @@ clean:
 	rm -rf esp32c3/sdkconfig esp32c3/build
 	make -C pico clean
 	make -C wasm clean
+	make -C programs clean
 
 
 elf_strip_pie: elf_strip_pie.c
@@ -106,9 +107,9 @@ bin-riscv/%: bin-generic/%
 	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 
-native_bins: $(PROGRAMS_NATIVE)
-xtensa_bins: $(PROGRAMS_XTENSA)
-riscv_bins: $(PROGRAMS_RISCV)
+bin-native: $(PROGRAMS_NATIVE)
+bin-xtensa: $(PROGRAMS_XTENSA)
+bin-riscv: $(PROGRAMS_RISCV)
 
 flow3r: fs_data.c fs_bin_xtensa.c s0il*.[ch]
 	(cd flow3r; idf.py build)
@@ -172,7 +173,8 @@ esp32c3/build/config/sdkconfig.h:
 flow3r/build/config/sdkconfig.h:
 	@test -r flow3r/flow3r || ( echo "ERROR: You need to set up flow3r symlink in flow3r to point to flow3r-firmware checkout";exit 1)
 	(cd flow3r; idf.py reconfigure )
-
+programs:
+	make -C programs
 pico: fs_data.c fs_bin_generic.c s0il-*.[ch] Makefile
 	make -C pico
 pico-flash: pico

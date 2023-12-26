@@ -1,4 +1,0 @@
-This folder contains third-party projects that have
-been been retuned to be includable as a single
-file, with the s0il clib virtualization layer on
-top via defines.

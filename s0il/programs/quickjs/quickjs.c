@@ -32,6 +32,7 @@
 #include <time.h>
 #include <fenv.h>
 #include <math.h>
+#include "quickjs.h"
 #if defined(__APPLE__)
 #include <malloc/malloc.h>
 #elif defined(__linux__)
@@ -1670,7 +1671,7 @@ static inline size_t js_def_malloc_usable_size(void *ptr)
     return _msize(ptr);
 #elif defined(EMSCRIPTEN)
     return 0;
-#elif defined(S0IL_BUNDLE)
+#elif defined(S0I)
     return 0;
 #elif defined(__linux__)
     return malloc_usable_size(ptr);
@@ -1746,7 +1747,7 @@ static const JSMallocFunctions def_malloc_funcs = {
     (size_t (*)(const void *))_msize,
 #elif defined(EMSCRIPTEN)
     NULL,
-#elif defined(S0IL_BUNDLE)
+#elif defined(S0IL)
     NULL,
 #elif defined(__linux__)
     (size_t (*)(const void *))malloc_usable_size,

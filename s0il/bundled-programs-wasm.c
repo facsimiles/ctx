@@ -12,9 +12,9 @@
 #include "bin-src/s0il-image.c"
 #include "bin-src/s0il-text.c"
 
-#include "bundled/qjs.c"
-#include "bundled/lua.c"
-#include "bundled/picoc.c"
+//#include "programs/qjs.c"
+//#include "programs/lua.c"
+#include "programs/picoc.c"
 //#include "bin-src/app.c"
 //#include "bin-src/demo-pcm_audio.c"
 //#include "bin-src/bundled.c"
@@ -46,7 +46,7 @@ void add_mains(void) {
   s0il_bundle_main("demo-ctx_host", demo_ctx_host_main);
 
   s0il_bundle_main("httpd", httpd_main);
-  s0il_bundle_main("lua", lua_main);
-  s0il_bundle_main("luac", luac_main);
-  s0il_bundle_main("qjs", qjs_main);
+  //s0il_bundle_main("lua", lua_main);
+  //s0il_bundle_main("luac", luac_main);
+  //s0il_bundle_main("qjs", qjs_main);
 }
