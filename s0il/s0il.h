@@ -111,7 +111,7 @@ void   s0il_add_magic (const char *mime_type,
                   const char *magic_data,
                   int magic_len,
                   int is_text);
-
+ 
 bool s0il_has_mime(const char *mime_type);
 
 const char *s0il_detect_media_sector512 (const char *path, const char *sector512);

@@ -15,7 +15,7 @@ help:
 include common.mak
 
 xtensa: bin-xtensa
-all: native xtensa flow3r wasm riscv pico
+all: native xtensa flow3r wasm riscv pico programs
 
 DESTDIR ?=
 PREFIX  ?= /usr/local
