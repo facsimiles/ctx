@@ -586,6 +586,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(log10f),
     ELFSYM_EXPORT(log),
     ELFSYM_EXPORT(logf),
+    ELFSYM_EXPORT(log2f),
     ELFSYM_EXPORT(longjmp),
     ELFSYM_EXPORT(lrintf),
     ELFSYM_EXPORT(lroundf),

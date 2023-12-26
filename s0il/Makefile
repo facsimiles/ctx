@@ -182,4 +182,8 @@ pico-flash: pico
 update-doc: wasm flow3r
 	cp wasm/s0il.* wasm/index.html ../docs/s0il/
 	cp flow3r/build/s0il.bin ../docs/s0il/s0il-flow3r.bin
+	cp programs/*/xtensa/* ~/src/ctx/docs/s0il/bin/xtensa -v
+	cp programs/*/native/* ~/src/ctx/docs/s0il/bin/x86_64 -v
+	cp programs/*/rv32/* ~/src/ctx/docs/s0il/bin/rv32 -v
 	cp -ru ../docs/* ~/pgo/ctx.graphics/
+

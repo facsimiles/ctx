@@ -142,6 +142,10 @@ int s0il_thread_no(void);
 
 #endif
 
+#ifndef ulong32
+#define ulong32 uint32_t
+#endif
+
 #ifdef MAIN
 #undef MAIN
 #endif

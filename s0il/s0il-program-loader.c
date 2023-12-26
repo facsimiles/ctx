@@ -1014,7 +1014,7 @@ int s0il_system(const char *cmdline) {
 
           if (in_stream || out_stream)
             s0il_redirect_io(in_stream, out_stream);
-
+          // XXX : redirect should be handled in spawn..
           if (terminator == '&') {
             s0il_spawnp(cargv);
           } else {
