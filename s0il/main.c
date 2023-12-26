@@ -122,8 +122,8 @@ void view_settings(Ui *ui) {
       ui_toggle(ui, "cap-touch keys", flow3r_synthesize_key_events);
 #endif
 
-  //if (ui_button(ui, "mime types"))
-  //  ui_do(ui, "magic");
+  // if (ui_button(ui, "mime types"))
+  //   ui_do(ui, "magic");
   if (ui_button(ui, "views"))
     ui_do(ui, "s0il-views");
 
@@ -145,9 +145,8 @@ int ps_main(int argc, char **argv);
 void s0il_program_runner_init(void);
 #if CTX_ESP
 void app_main(void) {
-  //char *argv[] = {NULL, NULL};
+  // char *argv[] = {NULL, NULL};
 #else
-
 
 int main(int argc, char **argv) {
 #endif
@@ -237,11 +236,8 @@ int main(int argc, char **argv) {
   s0il_add_file("/tmp/dummy", t, 1, 0);
 #if EMSCRIPTEN
 
-  EM_ASM(
-    FS.mkdir('/sd');
-    FS.mount(IDBFS, {}, '/sd');
-    FS.syncfs(true, function (err) { assert(!err); });
-  );
+  EM_ASM(FS.mkdir('/sd'); FS.mount(IDBFS, {}, '/sd'); FS.syncfs(
+      true, function(err) { assert(!err); }););
 
 #endif
 
@@ -252,7 +248,7 @@ int main(int argc, char **argv) {
   ui_add_view(ui, "repls", view_repls, NULL);
   ui_add_view(ui, "tests", view_tests, NULL);
   ui_add_view(ui, "settings", view_settings, NULL);
-  //ui_add_view(ui, "magic", view_magic, NULL);
+  // ui_add_view(ui, "magic", view_magic, NULL);
   ui_add_view(ui, "s0il-views", s0il_view_views, NULL);
   ui_do(ui, "menu");        // queue menu - as initial view
   s0il_printf("\033[?30l"); // turn off scrollbar

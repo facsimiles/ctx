@@ -6,9 +6,9 @@
 
 #include "s0il.h"
 
-#define HTTP_PORT_PREFERRED      (80) // we first try to get this
+#define HTTP_PORT_PREFERRED (80) // we first try to get this
 #define HTTP_PORT_FALLBACK_START (8080)
-#define HTTP_PORT_FALLBACK_END   (8089)
+#define HTTP_PORT_FALLBACK_END (8089)
 
 static const char *httpd_css =
     "body { background:black; color:white;}\n"

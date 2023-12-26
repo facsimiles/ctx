@@ -324,8 +324,10 @@ void view_program(Ui *ui) {
       draw_term(ui);
       ui_end_frame(ui);
       ui_add_key_binding(ui, "control-q", "exit", "quit");
-      ui_add_key_binding(ui, "escape",    "exit", "quit"); // XXX having
-                                  // tri-state send ESC.. and having vim/quit in term conflicts..
+      ui_add_key_binding(ui, "escape", "exit",
+                         "quit"); // XXX having
+                                  // tri-state send ESC.. and having vim/quit in
+                                  // term conflicts..
     }
   }
 }
@@ -415,9 +417,9 @@ void view_settings_ui(Ui *ui) {
 
 // XXX : why is this not a linked list?
 void ui_add_view(Ui *ui,
-                      const char *name, // or mime-type
-                      ui_fun fun,       // either fun - or binary_path ..
-                      const char *binary_path) {
+                 const char *name, // or mime-type
+                 ui_fun fun,       // either fun - or binary_path ..
+                 const char *binary_path) {
   if (ui->n_views + 1 >= 64)
     return;
   ui->views[ui->n_views].name = strdup(name);
@@ -503,7 +505,7 @@ void s0il_load_file(Ui *ui, const char *path) {
 static void ui_view_file(Ui *ui) {
   const char *mime_type = s0il_detect_media_path(ui->location);
   ui->interpreter = NULL;
-  for (int i = ui->n_views-1; i>=0; i--) {
+  for (int i = ui->n_views - 1; i >= 0; i--) {
     const char *name = ui->views[i].name;
 
     if ((name && !strcmp(name, mime_type))) {
@@ -676,7 +678,7 @@ void ui_load_view(Ui *ui, const char *target) {
       ui_push_fun(ui, ui_view_404, target, NULL, NULL);
     }
   } else {
-    for (int i = ui->n_views-1; i>=0; i--)
+    for (int i = ui->n_views - 1; i >= 0; i--)
       if (!strcmp(ui->views[i].name, target)) {
         ui_push_fun(ui, ui->views[i].fun, target, NULL, NULL);
         return;
@@ -2878,7 +2880,7 @@ void ui_add_key_binding(Ui *ui, const char *key, const char *action,
 
 void s0il_view_views(Ui *ui) {
   ui_start_frame(ui);
-  for (int i=ui->n_views-1; i>=0; i--) {
+  for (int i = ui->n_views - 1; i >= 0; i--) {
     const char *name = ui->views[i].name;
     ui_text(ui, name);
   }

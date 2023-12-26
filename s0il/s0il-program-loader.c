@@ -21,8 +21,8 @@ void s0il_program_runner_init(void) {
   s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
   info->ppid = 0;
   info->pid = 0;
-  info->cwd  = strdup ("/");
-  info->program = strdup ("s0il");
+  info->cwd = strdup("/");
+  info->program = strdup("s0il");
   ctx_list_append(&proc, info);
 }
 
@@ -31,31 +31,30 @@ int s0il_thread_no(void) {
   for (int i = 0; i < MAX_THREADS; i++)
     if (thread_data[i] == id)
       return i;
-  //exit(2);
+  // exit(2);
   return 0;
 }
 
 static int peak_pid = 0;
 
-
-s0il_process_t *s0il_process(void)
-{
+s0il_process_t *s0il_process(void) {
   int curpid = thread_pid[s0il_thread_no()];
   for (CtxList *iter = proc; iter; iter = iter->next) {
     s0il_process_t *info = iter->data;
-    if (info->pid == curpid) return info;
+    if (info->pid == curpid)
+      return info;
   }
-  //assert(0);
-  if (proc) return proc->data;
+  // assert(0);
+  if (proc)
+    return proc->data;
   s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
   info->ppid = 0;
   info->pid = 0;
-  info->cwd  = strdup ("/");
-  info->program = strdup ("s0il");
+  info->cwd = strdup("/");
+  info->program = strdup("s0il");
   ctx_list_append(&proc, info);
   return info;
 }
-
 
 #include <unistd.h>
 
@@ -64,20 +63,17 @@ int pre_exec(const char *path, int same_stack) {
   s0il_process_t *pinfo = s0il_process();
   s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
 
-  if (pinfo)
-  {
+  if (pinfo) {
     info->ppid = pinfo->pid;
-    info->cwd = strdup (pinfo->cwd);
+    info->cwd = strdup(pinfo->cwd);
     info->redir_stdin = pinfo->redir_stdin;
     info->redir_stdout = pinfo->redir_stdout;
     info->redir_stderr = pinfo->redir_stderr;
-  }
-  else
-  {
+  } else {
     info->ppid = 0;
-    info->cwd  = strdup ("/");
+    info->cwd = strdup("/");
   }
-  info->program = strdup (path);
+  info->program = strdup(path);
 
   info->pid = ++peak_pid;
   ctx_list_append(&proc, info);
@@ -94,10 +90,11 @@ void post_exec(int pid, int same_stack) {
       break;
     info = NULL;
   }
-  if (info)
-  {
-    if (info->cwd) free (info->cwd);
-    if (info->program) free (info->program);
+  if (info) {
+    if (info->cwd)
+      free(info->cwd);
+    if (info->program)
+      free(info->program);
     ctx_list_remove(&proc, info);
   }
 }
@@ -206,11 +203,11 @@ typedef enum {
 
 static char **s0il_parse_cmdline(const char *input, char *terminator,
                                  const char **rest) {
-/*
-  still missing:  `` inside strings
-                     wildcard expansion
-                     more valid escapes
-*/
+  /*
+    still missing:  `` inside strings
+                       wildcard expansion
+                       more valid escapes
+  */
 
   char **argv = NULL;
   int arg_count = 0;
@@ -287,9 +284,9 @@ static char **s0il_parse_cmdline(const char *input, char *terminator,
             argv[arg_count] = out;
           arg_length = 0;
           break;
-  //    case '\\':
-  //      state = S0IL_CMD_STRING_ESCAPE;
-  //      break;
+          //    case '\\':
+          //      state = S0IL_CMD_STRING_ESCAPE;
+          //      break;
         case '"':
           state = S0IL_CMD_DQUOT;
           break;
@@ -437,9 +434,9 @@ static char **s0il_parse_cmdline(const char *input, char *terminator,
         case '"':
           state = S0IL_CMD_IN_ARG;
           break;
-      case '\\':
-        state = S0IL_CMD_DQUOT_ESCAPE;
-        break;
+        case '\\':
+          state = S0IL_CMD_DQUOT_ESCAPE;
+          break;
         default:
           if (write)
             *(out++) = *p;
@@ -499,14 +496,11 @@ static char **s0il_parse_cmdline(const char *input, char *terminator,
           break;
         default:
           state = S0IL_CMD_DQUOT;
-          if (write)
-          {
+          if (write) {
             *(out++) = '\\';
             *(out++) = *p;
-          }
-          else
-          {
-            arg_length+=2;
+          } else {
+            arg_length += 2;
           }
           break;
         }
@@ -804,9 +798,10 @@ int s0il_runv(char *path, char **argv) {
 
       if ((sector[0] == '/' && sector[1] == '/' && sector[2] == '!') ||
           (sector[0] == '#' && sector[1] == '!') ||
-          (sector[0] == '/' && sector[1] == '/' && sector[2] == ' ' && sector[3] == '!')) {
+          (sector[0] == '/' && sector[1] == '/' && sector[2] == ' ' &&
+           sector[3] == '!')) {
         int argc = 0;
-        int   diff = strchr((char*)sector, '!')-(char*)sector + 1;
+        int diff = strchr((char *)sector, '!') - (char *)sector + 1;
         int ilen = (strchr((char *)sector, '\n') - ((char *)&sector[0])) - diff;
         char interpreter[ilen + 1];
         memcpy(interpreter, sector + diff, ilen);
@@ -926,9 +921,7 @@ int s0il_spawnp(char **argv) {
 }
 #else
 
-int s0il_spawnp(char **argv) {
-  return 23;
-}
+int s0il_spawnp(char **argv) { return 23; }
 #endif
 
 FILE *s0il_popen(const char *cmdline, const char *type) {

@@ -12,8 +12,8 @@ typedef struct ctx_magic_t {
 
 static CtxList *s0il_magic = NULL;
 
-void s0il_add_magic(const char *mime_type, const char *ext, const char *magic_data,
-               int magic_len, int is_text) {
+void s0il_add_magic(const char *mime_type, const char *ext,
+                    const char *magic_data, int magic_len, int is_text) {
   // TODO : skip duplicates
   if (!mime_type)
     return;

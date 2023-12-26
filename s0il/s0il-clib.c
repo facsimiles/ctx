@@ -4,8 +4,8 @@ extern void *_s0il_main_thread;
 
 #if defined(PICO_BUILD)
 #define S0IL_HAVE_FS 0
-  // the APIs still work but only target the ram-disk,
-  // this permits running in isolation in RAM in a process
+// the APIs still work but only target the ram-disk,
+// this permits running in isolation in RAM in a process
 #else
 #define S0IL_HAVE_FS 1
 #endif
@@ -56,21 +56,13 @@ void *s0il_ctx_new(int width, int height, const char *backend) {
 void s0il_ctx_destroy(void *ctx) { gfx_output = 0; }
 /////////
 
-
 char *s0il_getenv(const char *name) { return getenv(name); }
 int s0il_setenv(const char *name, const char *value, int overwrite) {
   return setenv(name, value, overwrite);
 }
-int   s0il_putenv (char *string)
-{
-  return putenv(string);
-}
-int   s0il_unsetenv (const char *name)
-{
-  return unsetenv (name);
-}
-int   s0il_clearenv (void)
-{
+int s0il_putenv(char *string) { return putenv(string); }
+int s0il_unsetenv(const char *name) { return unsetenv(name); }
+int s0il_clearenv(void) {
 #if !defined(CTX_ESP) && !defined(PICO_BUILD)
   return clearenv();
 #else
@@ -79,7 +71,7 @@ int   s0il_clearenv (void)
 }
 
 char *s0il_getcwd(char *buf, size_t size) {
-  s0il_process_t *info = s0il_process(); 
+  s0il_process_t *info = s0il_process();
   if (!buf) {
     int size = 4;
     if (info->cwd)
@@ -90,8 +82,7 @@ char *s0il_getcwd(char *buf, size_t size) {
   return buf;
 }
 
-static char *s0il_resolve_path(const char *pathname)
-{
+static char *s0il_resolve_path(const char *pathname) {
   char *path = (char *)pathname;
 
   if (pathname[0] != '/') {
@@ -149,13 +140,12 @@ static char *s0il_resolve_path(const char *pathname)
   return path;
 }
 
-int s0il_chdir(const char *path2)
-{
-  s0il_process_t *info = s0il_process(); 
+int s0il_chdir(const char *path2) {
+  s0il_process_t *info = s0il_process();
 
   char *path = s0il_resolve_path(path2);
   // XXX need better check?
-  //if (!s0il_access (path, X_OK)) return -1;
+  // if (!s0il_access (path, X_OK)) return -1;
   if (info->cwd)
     free(info->cwd);
 
@@ -177,13 +167,12 @@ int s0il_chdir(const char *path2)
   return 0;
 }
 
-
 struct _file_t {
-  char  *path;
-  char  *d_name;
+  char *path;
+  char *d_name;
   unsigned char d_type;
-  int    flags;
-  char  *data;
+  int flags;
+  char *data;
   size_t size;
   size_t capacity;
   size_t pos;
@@ -198,11 +187,11 @@ struct _folder_t {
 
 #define S0IL_MAX_FILES 16 // shared among processes
 
-static DIR *_s0il_internal_dir =   (void *)256;
+static DIR *_s0il_internal_dir = (void *)256;
 
 static FILE *_s0il_internal_file = (void *)512;
 
-//static folder_t *_s0il_dir = NULL;
+// static folder_t *_s0il_dir = NULL;
 static file_t *_s0il_file[S0IL_MAX_FILES] = {
     NULL,
 };
@@ -350,10 +339,10 @@ void *s0il_add_file(const char *path, const char *contents, size_t size,
   return file;
 }
 
-
 void s0il_redirect_io(FILE *in_stream, FILE *out_stream) {
   s0il_process_t *pi = s0il_process();
-  if (!pi)return;
+  if (!pi)
+    return;
   pi->redir_stdin = in_stream;
   pi->redir_stdout = out_stream;
 }
@@ -425,7 +414,6 @@ int s0il_fputs(const char *s, FILE *stream) {
   return ret;
 }
 
-
 size_t s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
   if (s0il_stream_is_internal(stream)) {
     uint8_t *s = (uint8_t *)ptr;
@@ -457,8 +445,8 @@ size_t s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
 
 ssize_t s0il_write(int fd, const void *buf, size_t count) {
 
-  if (s0il_stream_is_internal((FILE*)(size_t)fd)) {
-     return s0il_fwrite(buf, 1, count, (FILE*)(size_t)fd);
+  if (s0il_stream_is_internal((FILE *)(size_t)fd)) {
+    return s0il_fwrite(buf, 1, count, (FILE *)(size_t)fd);
   }
 
   if (fd == 1 || fd == 2) {
@@ -560,10 +548,10 @@ FILE *s0il_freopen(const char *pathname, const char *mode, FILE *stream) {
     s0il_process()->redir_stdin = s0il_fopen(pathname, mode);
     return stdin;
   } else if (stream == stdout) {
-    s0il_process()->redir_stdout  = s0il_fopen(pathname, mode);
+    s0il_process()->redir_stdout = s0il_fopen(pathname, mode);
     return stdout;
   } else if (stream == stderr) {
-    s0il_process()->redir_stderr  = s0il_fopen(pathname, mode);
+    s0il_process()->redir_stderr = s0il_fopen(pathname, mode);
     return stderr;
   }
   return freopen(pathname, mode, stream);
@@ -635,12 +623,10 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
   return ret;
 }
 
-int s0il_open(const char *pathname, int flags)
-{
+int s0il_open(const char *pathname, int flags) {
   char *path = s0il_resolve_path(pathname);
   file_t *file = s0il_find_file(path);
-  if (file)
-  {
+  if (file) {
     int fileno = 0;
     for (fileno = 0; fileno < S0IL_MAX_FILES; fileno++)
       if (_s0il_file[fileno] == NULL)
@@ -657,10 +643,9 @@ int s0il_open(const char *pathname, int flags)
 #endif
 }
 
-int s0il_close (int fd)
-{
-  if (s0il_stream_is_internal((FILE*)(size_t)fd)) {
-    _s0il_file[s0il_fileno((FILE*)(size_t)fd)] = NULL;
+int s0il_close(int fd) {
+  if (s0il_stream_is_internal((FILE *)(size_t)fd)) {
+    _s0il_file[s0il_fileno((FILE *)(size_t)fd)] = NULL;
     return 0;
   }
 #if S0IL_HAVE_FS
@@ -671,11 +656,14 @@ int s0il_close (int fd)
 }
 
 FILE *s0il_fdopen(int fd, const char *mode) {
-  if (fd == STDIN_FILENO) return stdin;
-  if (fd == STDOUT_FILENO) return stdout;
-  if (fd == STDERR_FILENO) return stderr;
-  if (s0il_stream_is_internal((FILE*)(size_t)fd))
-    return (FILE*)(size_t)fd;
+  if (fd == STDIN_FILENO)
+    return stdin;
+  if (fd == STDOUT_FILENO)
+    return stdout;
+  if (fd == STDERR_FILENO)
+    return stderr;
+  if (s0il_stream_is_internal((FILE *)(size_t)fd))
+    return (FILE *)(size_t)fd;
   return fdopen(fd, mode);
 }
 
@@ -1002,8 +990,8 @@ size_t s0il_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
 int s0il_getc(FILE *stream) { return s0il_fgetc(stream); }
 
 ssize_t s0il_read(int fildes, void *buf, size_t nbyte) {
-  if (s0il_stream_is_internal((FILE*)(size_t)fildes)) {
-     return s0il_fread(buf, 1, nbyte, (FILE*)(size_t)fildes);
+  if (s0il_stream_is_internal((FILE *)(size_t)fildes)) {
+    return s0il_fread(buf, 1, nbyte, (FILE *)(size_t)fildes);
   }
   if (s0il_is_main_thread())
     ui_iteration(ui_host(NULL));
@@ -1116,14 +1104,9 @@ off_t s0il_ftello(FILE *stream) {
   return ftello(stream);
 }
 
-pid_t s0il_getpid(void) { 
-  return s0il_process()->pid;
-}
+pid_t s0il_getpid(void) { return s0il_process()->pid; }
 
-pid_t s0il_getppid(void) {
-  return s0il_process()->ppid;
-}
-
+pid_t s0il_getppid(void) { return s0il_process()->ppid; }
 
 DIR *s0il_opendir(const char *name2) {
   char *name = (char *)name2;
@@ -1161,7 +1144,8 @@ struct dirent *s0il_readdir(DIR *dirp) {
     if (s0il_process()->dir->pos < s0il_process()->dir->count) {
       int i = 0;
       file_t *file = NULL;
-      for (CtxList *iter = s0il_process()->dir->files; iter; iter = iter->next, i++) {
+      for (CtxList *iter = s0il_process()->dir->files; iter;
+           iter = iter->next, i++) {
         if (i == s0il_process()->dir->pos)
           file = iter->data;
       }
@@ -1264,23 +1248,21 @@ ssize_t s0il_getline(char **lineptr, size_t *n, FILE *stream) {
 }
 
 int s0il_exit(int retval) {
-  while((s0il_process()->atexits))
-  {
+  while ((s0il_process()->atexits)) {
     void (*function)(void) = s0il_process()->atexits->data;
     function();
     ctx_list_remove(&(s0il_process()->atexits), function);
   }
-  if (s0il_thread_no() > 0)
-  {
-     // XXX : we should not do this for nested exec on these thread either,.
-     //       we should keep track of stack depth
-  // XXX : this gets called for nested mains as well!
+  if (s0il_thread_no() > 0) {
+    // XXX : we should not do this for nested exec on these thread either,.
+    //       we should keep track of stack depth
+    // XXX : this gets called for nested mains as well!
 #if CTX_ESP
-  vTaskDelete(NULL);
-  // store ret-val in pid_info?
+    vTaskDelete(NULL);
+    // store ret-val in pid_info?
 #elif defined(PICO_BUILD)
 #else
-  pthread_exit((void *)(ssize_t)(retval));
+    pthread_exit((void *)(ssize_t)(retval));
 #endif
   }
   return retval;
@@ -1374,33 +1356,24 @@ int s0il_truncate(const char *path, int length) {
 #endif
 }
 
-void   *s0il_realloc  (void *ptr, size_t size)
-{
-  return realloc(ptr, size);
-}
+void *s0il_realloc(void *ptr, size_t size) { return realloc(ptr, size); }
 
-void   *s0il_malloc   (size_t size)
-{
-  return s0il_realloc(NULL, size);
-}
+void *s0il_malloc(size_t size) { return s0il_realloc(NULL, size); }
 
-void    s0il_free     (void *ptr)
-{
-  if(!ptr)
+void s0il_free(void *ptr) {
+  if (!ptr)
     return;
   s0il_realloc(ptr, 0);
 }
 
-void   *s0il_calloc   (size_t nmemb, size_t size)
-{
+void *s0il_calloc(size_t nmemb, size_t size) {
   char *ret = s0il_malloc(nmemb * size);
   if (ret)
-    memset (ret, 0, nmemb*size);
+    memset(ret, 0, nmemb * size);
   return ret;
 }
 
-char   *s0il_strdup   (const char *s)
-{
+char *s0il_strdup(const char *s) {
   size_t len = strlen(s);
   char *ret = s0il_malloc(len + 1);
   if (ret)
@@ -1408,78 +1381,61 @@ char   *s0il_strdup   (const char *s)
   return ret;
 }
 
-char   *s0il_strndup  (const char *s, size_t n)
-{
+char *s0il_strndup(const char *s, size_t n) {
   size_t len = strlen(s);
-  if (len < n) n = len;
+  if (len < n)
+    n = len;
   char *ret = s0il_malloc(n + 1);
-  if (ret){
+  if (ret) {
     memcpy(ret, s, n + 1);
-    ret[n]=0;
+    ret[n] = 0;
   }
   return ret;
 }
 
-int s0il_atexit(void (*function)(void))
-{
+int s0il_atexit(void (*function)(void)) {
   ctx_list_append(&(s0il_process()->atexits), function);
   return 0;
 }
 
-
 void s0il_signal(int sig, void (*func)(int)) {
 #if S0IL_NATIVE
-  //return signal(sig, func);
+  // return signal(sig, func);
 #else
 #endif
 }
 
-int s0il_kill(int pid, int sig)
-{
+int s0il_kill(int pid, int sig) {
   // ust tkill ?
   return kill(pid, sig);
 }
 
-int s0il_pause(void)
-{
-  return pause();
-}
+int s0il_pause(void) { return pause(); }
 
+int s0il_sigaction(int signum, void *act, void *oldact) { return 0; }
 
-int  s0il_sigaction(int signum,
-                    void *act,
-                    void *oldact)
-{
-  return 0;
-}
-
-int s0il_gethostname(char *name, size_t len)
-{
+int s0il_gethostname(char *name, size_t len) {
   strncpy(name, "s0il", len);
   return 0;
 }
 
-int s0il_getuid(void)
-{
-  printf ("%s NYI", __FUNCTION__);
+int s0il_getuid(void) {
+  printf("%s NYI", __FUNCTION__);
   return 1;
 }
 
-pid_t s0il_waitpid(pid_t pid, int *status, int options)
-{
-  printf ("%s NYI", __FUNCTION__);
+pid_t s0il_waitpid(pid_t pid, int *status, int options) {
+  printf("%s NYI", __FUNCTION__);
   return 0;
 }
 
-pid_t s0il_wait(int *stat_loc)
-{
-  printf ("%s NYI", __FUNCTION__);
+pid_t s0il_wait(int *stat_loc) {
+  printf("%s NYI", __FUNCTION__);
   return 0;
 }
 
-int s0il_ioctl(int fd, unsigned long request, void *arg)
-{
-  return ioctl(fd,request,arg);
+int s0il_ioctl(int fd, unsigned long request, void *arg) {
+  return ioctl(fd, request, arg);
 }
 
 #if 0
