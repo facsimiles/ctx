@@ -15,10 +15,9 @@ int _init_main(int argc, char **argv) {
 
   s0il_add_magic("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
 
-  // runvp("text",  NULL);
-  // runvp("image", NULL);
-  s0il_system("text");
-  s0il_system("image");
+  // register text and image handlers
+  s0il_system("s0il-text");
+  s0il_system("s0il-image");
 
   const char mpg1_magic[] = {0x00, 0x00, 0x01, 0xba};
 
