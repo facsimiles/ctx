@@ -313,7 +313,7 @@ static void httpd_browse_handler(HttpdRequest *req) {
              "onclick='window.unblock_savemod=true;'/>"
              " <input value='run' type='submit' name='action' "
              "onclick='window.unblock_savemod=true;'/>"
-             " <input value='reload' style='float:right' type='submit' "
+             " <input value='reload' type='submit' "
              "name='action' onclick='window.unblock_savemod=true;'/>"
         );
       }
@@ -324,11 +324,11 @@ static void httpd_browse_handler(HttpdRequest *req) {
       OUTF(" <span class='mime_type'>%s</span>", mime_type);
 #endif
 
-      OUTS(" <input value='remove' style='float:right' type='submit' "
+      OUTS(" <input value='remove' type='submit' "
            "name='action' onclick='window.unblock_savemod=true;'/>");
     }
 #ifndef EMSCRIPTEN
-    OUTS(" <input value='stop' style='float:right' type='submit' name='action' "
+    OUTS(" <input value='stop' type='submit' name='action' "
          "onclick='window.unblock_savemod=true;'/>");
 #endif
     OUTF("<input type='hidden' value='%s' id='origname' name='origname'/>",

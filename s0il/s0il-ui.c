@@ -56,6 +56,9 @@ int _init_main(int argc, char **argv) {
   s0il_add_magic("audio/x-wav", ".wav", wav_magic, -1, 0);
   s0il_add_magic("audio/mp3", ".mp3", NULL, 0, 0);
 
+  const char s0il_magic[] = {0, 's', '0', 'i', 'l'};
+  s0il_add_magic("s0il/built-in", NULL, s0il_magic, 5, 0);
+
 #if EMSCRIPTEN
   mkdir("/sd", 0777);
 #endif
