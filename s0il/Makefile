@@ -46,15 +46,19 @@ valgrind: s0il bin-native
 
 S0IL_OBJS=s0il-ui.o s0il-program-loader.o s0il-symbols.o s0il-magic.o s0il-clib.o
 
+s0il: ../ctx.h
 s0il: libs0il.so main.o bundled-programs.o
 	$(CC_NATIVE) $(CFLAGS_NATIVE) $^ -o $@ $(CFLAGS_NATIVE) -L. -ls0il 
+
 
 PROGRAMS_C_BUNDLED=bin-src/*.c
 bundled-programs.o: $(PROGRAMS_C_BUNDLED) programs/*.c programs/*/*.c
 
 main.o: fs_bin_native.c fs_data.c fs_bin_generic.c
 
-%.o: %.c *.h Makefile
+Makefile: common.mak
+
+%.o: %.c *.h Makefile ../ctx.h
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -c -g $< -o $@
 
 libs0il.so: $(S0IL_OBJS)  Makefile 
@@ -187,3 +191,5 @@ update-doc: wasm flow3r
 	cp programs/*/rv32/* ~/src/ctx/docs/s0il/bin/rv32 -v
 	cp -ru ../docs/* ~/pgo/ctx.graphics/
 
+../ctx.h: ../src/*.[ch]
+	make -C .. ctx

@@ -5,7 +5,7 @@ native/$(PROGRAM): $(SOURCES)
 	@mkdir -p `dirname $@` || true
 	$(CC_NATIVE) $(CFLAGS_NATIVE) -include s0il.h $? -o $@ -I. -Iinclude \
             -ls0il `pkg-config ctx --libs --cflags`
-	../../elf_strip_pie $@
+	$(POST_NATIVE3) $@
 
 xtensa/$(PROGRAM): $(SOURCES)
 	@mkdir -p `dirname $@` || true

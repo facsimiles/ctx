@@ -4,6 +4,7 @@
 // this set stdin and stdout to be aliases for the given streams,
 // pass in NULL to reset
 
+
 int s0il_ioctl(int fd, unsigned long request, void *arg);
 int s0il_gethostname(char *name, size_t len);
 int s0il_getuid(void);
@@ -28,6 +29,8 @@ void   *s0il_calloc   (size_t nmemb, size_t size);
 void   *s0il_realloc  (void *ptr, size_t size);
 char   *s0il_strdup   (const char *s);
 char   *s0il_strndup  (const char *s, size_t n);
+void   *s0il_mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset);
+int     s0il_munmap(void *addr, size_t length);
 
 int     s0il_atexit   (void (*function)(void));
 int     s0il_select   (int nfds, fd_set *read_fds,
@@ -205,7 +208,8 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #define fprintf           s0il_fprintf
 #define vfprintf          s0il_vfprintf
 #define printf            s0il_printf
-
+#define mmap(a,b,c,d,e,f) s0il_mmap(a,b,c,d,e,f)
+#define munmap(a,b,c,d,e) s0il_munmap(a,b,c,d,e)
 #define malloc(a)         s0il_malloc(a)
 #define free(a)           s0il_free(a)
 #define atexit(a)         s0il_atexit(a)

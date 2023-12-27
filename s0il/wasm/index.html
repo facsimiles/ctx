@@ -2,6 +2,30 @@
         <head>
         <title>s0il - a 32bit program environment with vector graphics</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <link rel='stylesheet' href='/data/codemirror.css'/>
+        <link rel='stylesheet' href='/data/codemirror-cobalt.css'/>
+
+        <style>
+                canvas {image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges;}
+              body {font-size: calc(1.0vh + 1.8vw); margin:0 0 0 0;}
+              .spacefiller { float:right; width: 100vh; height: 100vh;}
+
+             input {font-size: calc(0.8vh + 1.1vw); }
+              @media (orientation:portrait) {
+                canvas {width: 100%;}
+              } 
+              @media (orientation:landscape) {
+                canvas {position:fixed;top:0;height: 100%;right:0;margin-left:0.5em;}
+              } 
+              p, pre { padding-left: 0.5em; padding-right: 0.5em;}
+              .CodeMirror { width: calc(100vw - 100vh - 1em);
+                            height: calc(100vh - 3em);
+                          }
+        </style>
+
+        <script src='/data/codemirror.js'></script>
+        <script src='/data/codemirror-python.js'></script>
+
         <script src="./s0il.js"></script>
         <script>
                 function windowToCanvas(canvas, x, y) {
@@ -11,36 +35,122 @@
             y: (y - bbox.top)  * (canvas.height / bbox.height)
           };
 }
+function make_editor(){
+         if(document.getElementById('content')){
+         window.editor = 
+         CodeMirror.fromTextArea(document.getElementById('content'), {
+          lineNumbers: true,
+         theme:'cobalt'});}
+}
+
+
+function location_changed()
+{
+  if(loc.value != '/_/')
+    loc.value = loc.value.replace(/\/$/,'')
+  let tmp = allocateUTF8(loc.value);
+  content_c = _wasm_http(tmp);
+  page.innerHTML=UTF8ToString(content_c);
+  if (document.getElementById('content'))
+    window.make_editor();
+  _free(tmp);
+  _free(content_c);
+}
+
+function button_press(action)
+{
+  let tmp = allocateUTF8(loc.value);
+
+
+  let form= "action=" + action + "\r\n";
+  let path = loc.value.replace('/_','').replace(/\/[a-zA-Z0-9_-]*$/,'/');
+  form += "path=" + path + "\r\n";
+
+  if (document.getElementById('param'))
+       form += "param=" + param.value + "\r\n";
+  if (document.getElementById('origname'))
+       form += "origname=" + origname.value + "\r\n";
+
+  if (action=='save' || action =='run')
+    if (document.getElementById('content'))
+       form += "content=" + window.editor.getValue();//content.value;
+
+  let form_c= allocateUTF8(form);
+  content_c = _wasm_http(tmp, form_c);
+  new_loc = UTF8ToString(content_c);
+  loc.value = new_loc.replace('Location: ','').trim()
+  _free(tmp);
+  _free(form_c);
+  _free(content_c);
+  location_changed();
+}
+document.onclick = function (e) {
+  e = e ||  window.event;
+
+  //alert(window.editor);//.state.doc.toString())
+
+  var element = e.target || e.srcElement;
+  if (element.tagName == 'INPUT')
+  {
+    if (element.type== 'submit')
+    {
+      e.preventDefault();
+      button_press(element.value)
+      return false;
+    }
+    else alert(element.type);
+  }
+  if (element.tagName == 'A' || element.tagName == 'a') {
+    e.preventDefault();
+    loc.value=element.href.replace(/.*:\/\/[a-z0-9.:]*/,'');
+    location_changed();
+    return false; // prevent default action and stop event propagation
+  }
+};
+
+
         </script>
-        <style>
-                canvas {image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges;}
-              body {font-size: calc(1.0vh + 1.8vw); margin:0 0 0 0;}
-             input {font-size: calc(0.8vh + 1.1vw); }
-              @media (orientation:portrait) {
-                canvas {width: 100%;}
-              } 
-              @media (orientation:landscape) {
-                canvas {height: 100%;float:left;margin-right:0.5em;}
-              } 
-              p, pre { padding-left: 0.5em; padding-right: 0.5em;}
-        </style>
         </head>
-        <body><canvas id='c' width='240' height='240' tabindex='0'></canvas>
+        <body><canvas id='c' width='240' height='240' tabindex='0'></canvas><div class='spacefiller'>A</div>
 
-<h3>s0il</h3>
-<p>s0il is a small program environment for programs for 32bit systems and beyond.
+<input style='width:20em' type='hidden' id='loc' value='/' oninput='location_changed()'></input>
+<div id='page'>
+
+<h1>s0il</h1>
+<p>
+s0il a portable vector graphics program environment for resource constrained
+environments. It features a small immediate mode ui widget set with support
+for both touch and keyboard input. <a href='/_/'>browse/edit file system</a>
+</p><p>
+
+Portable across linux, wasm, esp32, rp2040 and more, the primary environment it
+is being developed on is the flow3r badge. It features a DOS like single
+tasking commandline with pipes, and optional background processes on hosts with
+pthreads APIs, though backgroud tasks can also be achieved by using ctx'
+event loop on baremetal.
+</p>
+
+<h2>Building s0il</h2>
+<p>This might work:</p>
+<pre>
+git clone https://ctx.graphics/.git/
+cd git.graphics
+make
+make
+cd s0il
+make test
+make help</pre>
 
 </p><p>
 
-s0il contains a partial libc implementation/wrapper for IO with access to a
-RAM file system, and a program loader capable of running other <tt>main_foo(int
-argc, char **argv);</tt> functions bundled in the binary, and xtensa/x86_64
-loading shared ELF binaries. Programs can also be interpreted by starting with
-<tt>#!</tt> or <tt>//!</tt>. By using only interpreted or bundled programs,
-systems can be built that run the same across all targets.
+I you have a flow3r, you might want to run it there, here is a pre-built binary:<br/><a href='s0il-flow3r.bin'><span>flow3r firmware</span></a>
 
-</p><p>
+</p>
 
+</div>
+           
+
+<!--
 <b><tt>system</tt></b>: pipes are implemented like in DOS, using temporary
 files. By default programs are also sharing the stack of the invoker.
 Backgrounding with <tt>&amp;</tt> is only supported when the underlying
@@ -83,18 +193,8 @@ by specifying a file which if present makes the folder not report
 mime-type of inode/directory.
 
 </p><p>
+-->
    
-I you have a flow3r, you might want to run it there, here is a pre-built binary: <a href='s0il-flow3r.bin'>flow3r firmware</a>
-           
-<h2>Building s0il</h2>
-<p>This might work:</p>
-<pre>
-git clone https://ctx.graphics/.git/
-cd git.graphics
-make
-make
-cd s0il
-make test
-make help</pre>
+
 
 </body></html>

@@ -180,10 +180,10 @@ void append_dir_listing(HttpdRequest *req, dir_listing_t *di,
     OUTS("<tr><td>");
 
     if (mime_type && !strcmp(mime_type, "inode/directory"))
-      OUTF("<a href='%s%s/'><span class='name'>%s</span></a>/\n", prefix,
+      OUTF("<span class='name'><a href='%s%s/'>%s</a></span>\n", prefix,
            de->path, de->name);
     else
-      OUTF("<a href='%s%s'><span class='name'>%s</span></a>\n", prefix,
+      OUTF("<span class='name'><a href='%s%s'>%s</a></span>\n", prefix,
            de->path, de->name);
     OUTS("</td><td class='size'>");
 
@@ -268,13 +268,19 @@ static void httpd_browse_handler(HttpdRequest *req) {
       "<link rel='stylesheet' href='/data/codemirror-cobalt.css'/>\n"
       "<script src='/data/codemirror.js'></script>\n"
       "<script src='/data/codemirror-python.js'></script>\n"
-      "<script>"
-      "window.unblock_savemod = false;"
-      "window.onkeypress= function(event) { }"
-      "window.onbeforeunload = function(event) {"
-      "if (!window.unblock_savemod &&  content.value != content.defaultValue) {"
-      " event.preventDefault();"
-      "}}</script>\n"
+      "<script>\n"
+      "window.unblock_savemod = false;\n"
+      "window.onkeypress= function(event) { }\n"
+      "window.onbeforeunload = function(event) {\n"
+      "if (!window.unblock_savemod &&  content.value != content.defaultValue) {\n"
+      " event.preventDefault();\n"
+      "};}\n");
+    OUTS("window.make_editor=function(){"
+         "if(document.getElementById('content')){"
+         "window.editor = "
+         "CodeMirror.fromTextArea(document.getElementById('content'), {"
+         " lineNumbers: true,"
+         "theme:'cobalt'});};};</script>"
       "</head>\n");
 
   ctx_string_append_printf(req->body, "<body>");
@@ -297,10 +303,10 @@ static void httpd_browse_handler(HttpdRequest *req) {
         OUTS(" <input type='submit' value='rmdir' name='action'/>");
       OUTS(" <input type='submit' value='new dir' name='action'/>"
            " <input type='submit' value='new file' name='action'/>"
-           " <input value='' name='param'/>");
+           " <input value='' id='param' name='param'/>");
     } else {
 
-      OUTF(" <input value='%s' name='param'/>", ui_basename(item_path));
+      OUTF(" <input value='%s' name='param' id='param'/>", ui_basename(item_path));
 
       if (mime_is_text(mime_type)) {
         OUTS(" <input value='save' type='submit' name='action' "
@@ -309,23 +315,25 @@ static void httpd_browse_handler(HttpdRequest *req) {
              "onclick='window.unblock_savemod=true;'/>"
              " <input value='reload' style='float:right' type='submit' "
              "name='action' onclick='window.unblock_savemod=true;'/>"
-
         );
       }
 
       OUTS(" <input value='rename' type='submit' name='action' />");
+#ifndef EMSCRIPTEN
       OUTF(" <a href='%s'>download</a>", item_path);
       OUTF(" <span class='mime_type'>%s</span>", mime_type);
+#endif
 
       OUTS(" <input value='remove' style='float:right' type='submit' "
            "name='action' onclick='window.unblock_savemod=true;'/>");
     }
+#ifndef EMSCRIPTEN
     OUTS(" <input value='stop' style='float:right' type='submit' name='action' "
          "onclick='window.unblock_savemod=true;'/>");
-
-    OUTF("<input type='hidden' value='%s' name='origname'/>",
+#endif
+    OUTF("<input type='hidden' value='%s' id='origname' name='origname'/>",
          ui_basename(item_path));
-    OUTF("<input type='hidden' value='%s' name='path'/>", path);
+    OUTF("<input type='hidden' value='%s' id='path' name='path'/>", path);
 
     OUTS("</div>\n"); // toolbar
 
@@ -360,7 +368,7 @@ static void httpd_browse_handler(HttpdRequest *req) {
       }
       OUTS("</textarea>");
     } else {
-      OUTS("<input type='hidden' value='' name='content' id='content'/>");
+      //OUTS("<input type='hidden' value='' name='content' id='content'/>");
     }
 
     if (mime_is_text(mime_type)) {
@@ -384,10 +392,7 @@ static void httpd_browse_handler(HttpdRequest *req) {
     free(decoded_path);
 
   if (mime_is_text(mime_type))
-    OUTS("<script>editor = "
-         "CodeMirror.fromTextArea(document.getElementById('content'), {"
-         " lineNumbers: true,"
-         "theme:'cobalt'});</script>");
+    OUTS("<script>window.make_editor();</script>");
 
   OUTS("</body></html>\n");
 }
@@ -441,6 +446,9 @@ static void ctx_string_append_time(CtxString *str, time_t time) {
 }
 
 static char *http_headers(HttpdRequest *req, int content_length) {
+#if EMSCRIPTEN
+  return strdup("");
+#endif
   CtxString *str = ctx_string_new("");
   ctx_string_append_printf(str, "%s %d %s\r\n", "HTTP/1.0", req->status,
                            req->status_string);
@@ -477,7 +485,6 @@ static void httpd_serve_file(HttpdRequest *req, const char *path) {
   req->mime_type = mime_type;
   int content_length = 0;
   FILE *file = fopen(path, "rb");
-  printf("%s\n", req->mime_type);
   req->status = 404;
   if (file) {
     fseek(file, 0, SEEK_END);
@@ -506,8 +513,10 @@ static void httpd_serve_file(HttpdRequest *req, const char *path) {
     fclose(file);
 
     req->emitted = 1;
+#ifndef EMSCRIPTEN
     printf("logemitF:%i %s %s %i %s\n", req->status, req->method,
            req->status_string, req->content_length, req->path);
+#endif
   }
 
   if (req->body) {
@@ -534,8 +543,6 @@ static void httpd_post_handler(HttpdRequest *req) {
     memcpy(var, p, len);                                                       \
     var[len] = 0;                                                              \
   }
-
-  printf("{%s}\n", req->body->str);
 
   get_arg(post_param, "param=") get_arg(post_origname, "origname=")
       get_arg(post_path, "path=") post_content =
@@ -624,7 +631,6 @@ static void httpd_post_handler(HttpdRequest *req) {
 
     if (httpd_run && action == action_run) {
       char *commandline = strdup(temp + 12);
-      printf("%i\n", system(commandline));
       free(commandline);
     }
 
@@ -823,8 +829,10 @@ static void request_emit(HttpdRequest *req) {
   }
   free(header);
   req->emitted = 1;
+#ifndef EMSCRIPTEN
   printf("logemit:%i %s %s %i %s\n", req->status, req->method,
          req->status_string, req->content_length, req->path);
+#endif
 }
 
 static void request_finish(HttpdRequest *req) {
@@ -879,7 +887,6 @@ int _httpd_start_int(int port,
   int sock;
   struct sockaddr_in sin;
   sock = socket(AF_INET, SOCK_STREAM, 0);
-  printf("gotsock:%i\n", sock);
   int try_port = port; // we first try this
   for (; try_port <= HTTP_PORT_FALLBACK_END; try_port++) {
     sin.sin_family = AF_INET;
@@ -1061,3 +1068,46 @@ MAIN(httpd) {
   _httpd_start_int(port, httpd_request_handler, (void *)23);
   return 42; // keeping once of register valid
 }
+
+#if EMSCRIPTEN
+char *wasm_http(const char *path, const char *post)
+{
+  HttpdRequest *req = calloc(1, sizeof(HttpdRequest));
+  FILE *out = fopen("/sd/http-out", "wb");
+  req->ip = "127.0.0.1";
+  req->method = post?"POST":"GET";
+  req->path = (char*)path;
+  request_init(req, out);
+  if (post)
+    ctx_string_set (req->body, post);
+
+  httpd_request_handler(req);
+  if (!req->emitted)
+    request_emit(req);
+  fclose(out);
+  request_finish(req);
+
+  if (req->content_length > 0)
+  {
+    FILE *in = fopen("/sd/http-out", "rb");
+    char *ret = calloc(1, req->content_length+65536); // room for header
+    ret[0]=0;
+    if (in)
+    {
+    fread (ret, req->content_length, 1, in);
+    //ret[req->content_length]=0;
+    fclose (in);
+    }
+    free(req);
+    return ret;
+  }
+  else if (req->extra_headers) {
+    char buf[256]="";
+    if (req->extra_headers)
+      sprintf(buf, "%s", req->extra_headers);
+    free(req);
+    return strdup(buf);
+  }
+  return strdup("");
+}
+#endif

@@ -1,10 +1,7 @@
+PROGRAMS=lua kilo picoc quickjs
+
 all: 
-	make -C lua
-	make -C kilo
-	make -C picoc
-	make -C quickjs
+	for a in $(PROGRAMS);do \
+	make -C $$a; done
 clean: 
-	make -C lua clean
-	make -C kilo clean
-	make -C picoc clean
-	make -C quickjs clean
+	rm -f */native/* */xtensa/* */rv32/*

@@ -1400,7 +1400,7 @@ int s0il_atexit(void (*function)(void)) {
 
 void s0il_signal(int sig, void (*func)(int)) {
 #if S0IL_NATIVE
-  // return signal(sig, func);
+   signal(sig, func);
 #else
 #endif
 }
@@ -1456,3 +1456,20 @@ int s0il_dup2(int oldfd, int newfd)
   return 0;
 }
 #endif
+
+#if S0IL_NATIVE
+#include <sys/mman.h>
+#endif
+
+void   *s0il_mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset)
+{
+#if S0IL_NATIVE
+  return mmap(addr, length, prot, flags, fd, offset);
+#else
+  return NULL;
+#endif
+}
+int     s0il_munmap(void *addr, size_t length)
+{
+  return 0;
+}
