@@ -234,6 +234,7 @@ file_t *s0il_find_file(const char *path) {
       break;
     }
   }
+  free (parent);
   if (!folder) {
     return NULL;
   }
