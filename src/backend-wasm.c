@@ -73,21 +73,21 @@ int update_fb (Ctx *ctx, void *user_data)
 
      if (!canvas.regevents)
      {
-       canvas.onmousedown = function (e){
+       canvas.onpointerdown = function (e){
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
           setValue(_pointer_x, loc.x, "float");
           setValue(_pointer_y, loc.y, "float");
           setValue(_pointer_down, 1, "i32");
           e.stopPropagate=1;
                        };
-       canvas.onmouseup = function (e){
+       canvas.onpointerup = function (e){
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
           setValue(_pointer_x, loc.x, "float");
           setValue(_pointer_y, loc.y, "float");
           setValue(_pointer_down, 0, "i32");
           e.stopPropagate=1;
                        };
-       canvas.onmousemove = function (e){
+       canvas.onpointermove = function (e){
           var loc = windowToCanvas (canvas, e.clientX, e.clientY);
           setValue(_pointer_x, loc.x, "float");
           setValue(_pointer_y, loc.y, "float");
