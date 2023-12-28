@@ -84,10 +84,15 @@ char *s0il_getcwd(char *buf, size_t size) {
 
 static char *s0il_resolve_path(const char *pathname) {
   char *path = (char *)pathname;
+  const char *cwd = s0il_process()->cwd;
 
   if (pathname[0] != '/') {
-    path = malloc(strlen(pathname) + strlen(s0il_process()->cwd) + 2);
-    sprintf(path, "%s%s", s0il_process()->cwd, pathname);
+    path = malloc(strlen(pathname) + strlen(cwd) + 2);
+    
+    if (cwd[strlen(cwd)-1]=='/')
+      sprintf(path, "%s%s", cwd, pathname);
+    else
+      sprintf(path, "%s/%s", cwd, pathname);
   }
 
   if (strstr(path, "/./")) {
@@ -152,11 +157,13 @@ int s0il_chdir(const char *path2) {
   info->cwd = malloc(strlen(path) + 2);
   strcpy(info->cwd, path);
 
+#if 0
   // append trailing / if missing
   if (info->cwd[strlen(info->cwd) - 1] != '/') {
     info->cwd[strlen(info->cwd) + 1] = 0;
     info->cwd[strlen(info->cwd)] = '/';
   }
+#endif
   return 0;
 
 #if S0IL_HAVE_FS

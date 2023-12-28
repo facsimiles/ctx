@@ -46,8 +46,8 @@ function make_editor(){
 
 function location_changed()
 {
-  if(loc.value != '/_/')
-    loc.value = loc.value.replace(/\/$/,'')
+  //if(loc.value != '/_/')
+  //  loc.value = loc.value.replace(/\/$/,'')
   let tmp = allocateUTF8(loc.value);
   content_c = _wasm_http(tmp);
   page.innerHTML=UTF8ToString(content_c);
@@ -63,8 +63,8 @@ function button_press(action)
 
 
   let form= "action=" + action + "\r\n";
-  let path = loc.value.replace('/_','').replace(/\/[a-zA-Z0-9_-]*$/,'/');
-  form += "path=" + path + "\r\n";
+  if (document.getElementById('path'))
+    form += "path=" + path.value + "\r\n";
 
   if (document.getElementById('param'))
        form += "param=" + param.value + "\r\n";
@@ -73,7 +73,7 @@ function button_press(action)
 
   if (action=='save' || action =='run')
     if (document.getElementById('content'))
-       form += "content=" + window.editor.getValue();//content.value;
+       form += "content=" + window.editor.getValue() + "\r\n";//content.value;
 
   let form_c= allocateUTF8(form);
   content_c = _wasm_http(tmp, form_c);
@@ -98,7 +98,7 @@ document.onclick = function (e) {
       button_press(element.value)
       return false;
     }
-    else alert(element.type);
+    //else alert(element.type);
   }
   if (element.tagName == 'A' || element.tagName == 'a') {
     e.preventDefault();
@@ -113,7 +113,7 @@ document.onclick = function (e) {
         </head>
         <body><canvas id='c' width='240' height='240' tabindex='0'></canvas><div class='spacefiller'>A</div>
 
-<input style='width:20em' type='hidden' id='loc' value='/' oninput='location_changed()'></input>
+<input style='width:20em' id='loc' value='/' oninput='location_changed()'></input>
 <div id='page'>
 
 <h1>s0il</h1>

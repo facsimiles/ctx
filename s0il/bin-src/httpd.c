@@ -37,19 +37,17 @@ typedef struct {
   char *path;   /* path requested from the webserver */
 
   const char *mime_type; /* NULL to skip */
-  int content_length;    /* -1 to skip */
-  time_t last_modified;  /* -1 to skip */
-  char *extra_headers;   /* NULL to skip */
-                         // is not freed - we do not support concurrent
-                         // requests and use static bufs for this
+  int         content_length; /* -1 to skip */
+  time_t      last_modified;  /* -1 to skip */
+  char       *extra_headers;  /* NULL to skip */
 
-  CtxString *body; /* the responsibility of the request handler
-                      is to fill in the body, the preassumed
-                      status is 200 OK - and if no further changes
-                      are done - on POST requests this contains the
-                      received post body, and should be cleared
-                      for the response
-                    */
+  CtxString  *body; /* the responsibility of the request handler
+                       is to fill in the body, the preassumed
+                       status is 200 OK - and if no further changes
+                       are done - on POST requests this contains the
+                       received post body, and should be cleared
+                       for the response
+                     */
 
   char *protocol; /* HTTP/1.x */
   int status;     /* http status code to give */
@@ -331,9 +329,9 @@ static void httpd_browse_handler(HttpdRequest *req) {
     OUTS(" <input value='stop' type='submit' name='action' "
          "onclick='window.unblock_savemod=true;'/>");
 #endif
-    OUTF("<input type='hidden' value='%s' id='origname' name='origname'/>",
+    OUTF("<input value='%s' id='origname' name='origname'/>",
          ui_basename(item_path));
-    OUTF("<input type='hidden' value='%s' id='path' name='path'/>", path);
+    OUTF("<input value='%s' id='path' name='path'/>", path);
 
     OUTS("</div>\n"); // toolbar
 
