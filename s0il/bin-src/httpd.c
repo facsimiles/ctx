@@ -1085,6 +1085,8 @@ char *wasm_http(const char *path, const char *post)
   fclose(out);
   request_finish(req);
 
+  system("sync");
+
   if (req->content_length > 0)
   {
     FILE *in = fopen("/sd/http-out", "rb");
@@ -1106,6 +1108,7 @@ char *wasm_http(const char *path, const char *post)
     free(req);
     return strdup(buf);
   }
+  
   return strdup("");
 }
 #endif
