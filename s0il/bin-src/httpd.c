@@ -329,9 +329,9 @@ static void httpd_browse_handler(HttpdRequest *req) {
     OUTS(" <input value='stop' type='submit' name='action' "
          "onclick='window.unblock_savemod=true;'/>");
 #endif
-    OUTF("<input value='%s' id='origname' name='origname'/>",
+    OUTF("<input type='hidden' value='%s' id='origname' name='origname'/>",
          ui_basename(item_path));
-    OUTF("<input value='%s' id='path' name='path'/>", path);
+    OUTF("<input type='hidden' value='%s' id='path' name='path'/>", path);
 
     OUTS("</div>\n"); // toolbar
 
