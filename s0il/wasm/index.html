@@ -7,20 +7,19 @@
 
         <style>
                 canvas {image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges;}
-              body {font-size: calc(1.0vh + 1.8vw); margin:0 0 0 0;}
-              .spacefiller { float:right; width: 100vh; height: 100vh;}
+              body {font-size: calc(1.4vh + 1.8vw); margin:0 0 0 0;}
 
              input {font-size: calc(0.8vh + 1.1vw); }
               @media (orientation:portrait) {
                 canvas {width: 100%;}
+                .CodeMirror { height: calc(33vh); }
               } 
               @media (orientation:landscape) {
                 canvas {position:fixed;top:0;height: 100%;right:0;margin-left:0.5em;}
+                p, pre { padding-left: 0.5em; padding-right: 0.5em;}
+                #page { width: calc(100vw - 100vh - 1em); }
               } 
-              p, pre { padding-left: 0.5em; padding-right: 0.5em;}
-              .CodeMirror { width: calc(100vw - 100vh - 1em);
-                            height: calc(100vh - 3em);
-                          }
+              .CodeMirror { height: calc(100vh - 3em); }
         </style>
 
         <script src='./data/codemirror.js'></script>
@@ -111,25 +110,18 @@ document.onclick = function (e) {
 
         </script>
         </head>
-        <body><canvas id='c' width='240' height='240' tabindex='0'></canvas><div class='spacefiller'>A</div>
+        <body><canvas id='c' width='240' height='240' tabindex='0'></canvas><div class='spacefiller'></div>
 
-<input style='width:20em' id='loc' value='/' oninput='location_changed()'></input>
+<input style='width:20em' id='loc' type='hidden' value='/' oninput='location_changed()'></input>
 <div id='page'>
 
 <h1>s0il</h1>
 <p>
-s0il a portable vector graphics program environment for resource constrained
-environments. It features a small immediate mode ui widget set with support
-for both touch and keyboard input. <a href='/_/'>browse/edit file system</a>
+s0il a vector graphics ui and shell environment for resource constrained
+devices. <a href='/_/'>browse/edit file system</a>
 </p><p>
 
-Portable across linux, wasm, esp32, rp2040 and more, the primary environment it
-is being developed on is the flow3r badge. It features a DOS like single
-tasking commandline with pipes, and optional background processes on hosts with
-pthreads APIs, though backgroud tasks can also be achieved by using ctx'
-event loop on baremetal.
-</p>
-
+<!--
 <h2>Building s0il</h2>
 <p>This might work:</p>
 <pre>
@@ -140,8 +132,8 @@ make
 cd s0il
 make test
 make help</pre>
-
-</p><p>
+-->
+<p>
 
 I you have a flow3r, you might want to run it there, here is a pre-built binary:<br/><a href='s0il-flow3r.bin'><span>flow3r firmware</span></a>
 

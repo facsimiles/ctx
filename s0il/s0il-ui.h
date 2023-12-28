@@ -26,12 +26,11 @@ int16_t  bsp_captouch_angular (int petal);
 uint16_t bsp_captouch_radial  (int petal);
 bool     bsp_captouch_down    (int petal);
 
-float    bsp_captouch_angle   (float *radial_pos, int quantize, uint16_t petal_mask);
 
 void     bsp_captouch_key_events (int level);
 
-
 #endif
+float    bsp_captouch_angle   (float *radial_pos, int quantize, uint16_t petal_mask);
 
 
 typedef struct _UiWidget UiWidget;

@@ -20,7 +20,7 @@ MAIN(demo_ctx_host) {
     ctx_text(ctx, buf);
 
     ctx_end_frame(ctx);
-    usleep(1000 * 10);
+    usleep(1000 * 250);
   }
   // ctx_destroy (ctx);
 

@@ -875,6 +875,7 @@ static float color_fg[4]; // black or white automatically based on bg
   osk_captouch = true;
 #else
   ui->osk_focus_target = 0.18f;
+  osk_captouch = true;
 #endif
   osk_captouch = true;
   ui->scroll_speed = 1.5f;
@@ -2489,6 +2490,8 @@ void ui_end_frame(Ui *ui) {
     float width = ctx_width(ctx);
     float height = ctx_height(ctx);
     overlay_button(ui, 0, 0, width, height * 0.12, "back", "back");
+    if (ctx_osk_mode <= 1)
+      overlay_button(ui, 0, height - height * 0.14, width, height * 0.14, "kb", "kb-show");
   }
 #endif
 
@@ -2924,5 +2927,13 @@ void ctx_set_pixels(Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
   ctx_draw_texture(ctx, eid, x0, y0, w, h);
   // printf ("should set pixels %i %i %i %i %p\n", x, y, w, h, buf);
   ctx_end_frame(ctx);
+}
+#endif
+
+#if !defined(CTX_FLOW3R)
+float    bsp_captouch_angle   (float *radial_pos, int quantize, uint16_t petal_mask)
+{
+  if (radial_pos)*radial_pos=0.5f;
+  return 1.0f;
 }
 #endif
