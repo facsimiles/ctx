@@ -933,6 +933,38 @@ static float osk_pos = 1.0f;
 
 static float osk_rows = 10.0f;
 
+#if !defined(CTX_FLOW3R)
+float ct_angle = 0.0f;
+float ct_pos = 0.5;
+
+float    bsp_captouch_angle   (float *radial_pos, int quantize, uint16_t petal_mask)
+{
+  if (radial_pos)*radial_pos=ct_pos;
+  return ((int)(ct_angle * quantize + 0.5f)) / (quantize * 1.0f);
+}
+#endif
+
+
+static void ctx_on_ct_event(CtxEvent *event, void *data1, void *data2) {
+#if !defined(CTX_FLOW3R)
+  float w = ctx_width (event->ctx);
+  float h = ctx_height (event->ctx);
+  float m = w;
+  if (h < m)
+    m = h;
+  float x = event->x - w/2;
+  float y = event->y - h/2;
+  ct_pos = sqrtf(x*x+y*y) / m-0.15f;
+  ct_angle = atan2f(x,y)/ (2*3.1415f);
+  ct_angle -= 0.5f;
+  while (ct_angle < 0.0f) ct_angle += 1.0f;
+  ct_angle = 1.0f-ct_angle ;
+  if (event->type == CTX_DRAG_RELEASE)
+    ct_angle = -1000.0f;
+#endif
+  event->stop_propagate = 1;
+}
+
 static void ctx_on_view_key_event(CtxEvent *event, void *data1, void *data2) {
   const KeyCap *key = data1;
   Ui *ui = data1;
@@ -1616,12 +1648,12 @@ void captouch_keyboard(Ctx *ctx) {
   ctx_font_size(ctx, _em);
 
   float rad_pos;
-#if CTX_FLOW3R
+//#if CTX_FLOW3R
   float raw_angle = bsp_captouch_angle(&rad_pos, 20, 0);
-#else
-  float raw_angle = -1.0f;
-  rad_pos = 0.5f;
-#endif
+//#else
+//  float raw_angle = -1.0f;
+//  rad_pos = 0.5f;
+//#endif
   static float angle = -1.0f;
 
   if (raw_angle >= 0) {
@@ -1691,6 +1723,8 @@ void captouch_keyboard(Ctx *ctx) {
           1);
   ctx_arc(ctx, width / 2, height / 2, height * 0.20, -M_PI * 0.05f,
           M_PI * 1.05f, 0);
+  ctx_listen(ctx, CTX_DRAG, ctx_on_ct_event, NULL, NULL);
+
   ctx_fill(ctx);
   ctx_restore(ctx);
 
@@ -2927,13 +2961,5 @@ void ctx_set_pixels(Ctx *ctx, void *user_data, int x0, int y0, int w, int h,
   ctx_draw_texture(ctx, eid, x0, y0, w, h);
   // printf ("should set pixels %i %i %i %i %p\n", x, y, w, h, buf);
   ctx_end_frame(ctx);
-}
-#endif
-
-#if !defined(CTX_FLOW3R)
-float    bsp_captouch_angle   (float *radial_pos, int quantize, uint16_t petal_mask)
-{
-  if (radial_pos)*radial_pos=0.5f;
-  return 1.0f;
 }
 #endif
