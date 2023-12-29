@@ -45,7 +45,7 @@ function make_editor(){
 
 function location_changed()
 {
-  //if(loc.value != '/_/')
+  //if(loc.value != '/_/' && loc.value != '/')
   //  loc.value = loc.value.replace(/\/$/,'')
   let tmp = allocateUTF8(loc.value);
   content_c = _wasm_http(tmp);
@@ -112,7 +112,7 @@ document.onclick = function (e) {
         </head>
         <body><canvas id='c' width='240' height='240' tabindex='0'></canvas><div class='spacefiller'></div>
 
-<input style='width:20em' id='loc' type='hidden' value='/' oninput='location_changed()'></input>
+<input style='width:20em' id='loc' ype='hidden' value='/' oninput='location_changed()'></input>
 <div id='page'>
 
 <h1>s0il</h1>

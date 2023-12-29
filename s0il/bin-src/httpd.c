@@ -48,15 +48,12 @@ typedef struct {
                        received post body, and should be cleared
                        for the response
                      */
-
   char *protocol; /* HTTP/1.x */
-  int status;     /* http status code to give */
-
+  int   status;     /* http status code to give */
   char *status_string; /* OK/not found/internal foobar */
-
   void *user_data;
   FILE *f;
-  int emitted;
+  int   emitted;
   char *ip;
 } HttpdRequest;
 
@@ -66,7 +63,7 @@ typedef struct filemapping {
 } filemapping;
 
 static const filemapping filemappings[] = {
-    {"/", "/data/index.html"},
+    {"/",            "/data/index.html"},
     {"/favicon.ico", "/data/favicon.ico"},
     {NULL, NULL},
 };
