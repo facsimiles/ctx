@@ -1,5 +1,4 @@
 //!picoc
-
 #include "ui.h"
 
 static char *str = NULL;

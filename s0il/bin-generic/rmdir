@@ -1,11 +1,5 @@
 //!picoc
-
 #include "ui.h"
-#include <dirent.h>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 int main(int argc, char **argv) {
   for (int i = 1; argv[i]; i++) {

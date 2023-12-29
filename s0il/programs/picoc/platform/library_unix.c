@@ -677,6 +677,7 @@ void PlatformLibraryInit(Picoc *pc)
     "#include <stdbool.h>\n"
     "#include <unistd.h>\n"
     "#include <math.h>\n"
+    "#include <dirent.h>\n"
     "#include <ctx.h>\n"
     "typedef struct _Ui Ui;\n"
     "#ifndef NULL\n"
