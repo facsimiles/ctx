@@ -88,8 +88,8 @@ static char *s0il_resolve_path(const char *pathname) {
 
   if (pathname[0] != '/') {
     path = malloc(strlen(pathname) + strlen(cwd) + 2);
-    
-    if (cwd[strlen(cwd)-1]=='/')
+
+    if (cwd[strlen(cwd) - 1] == '/')
       sprintf(path, "%s%s", cwd, pathname);
     else
       sprintf(path, "%s/%s", cwd, pathname);
@@ -234,7 +234,7 @@ file_t *s0il_find_file(const char *path) {
       break;
     }
   }
-  free (parent);
+  free(parent);
   if (!folder) {
     return NULL;
   }
@@ -1408,7 +1408,7 @@ int s0il_atexit(void (*function)(void)) {
 
 void s0il_signal(int sig, void (*func)(int)) {
 #if S0IL_NATIVE
-   signal(sig, func);
+  signal(sig, func);
 #else
 #endif
 }
@@ -1469,15 +1469,12 @@ int s0il_dup2(int oldfd, int newfd)
 #include <sys/mman.h>
 #endif
 
-void   *s0il_mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset)
-{
+void *s0il_mmap(void *addr, size_t length, int prot, int flags, int fd,
+                size_t offset) {
 #if S0IL_NATIVE
   return mmap(addr, length, prot, flags, fd, offset);
 #else
   return NULL;
 #endif
 }
-int     s0il_munmap(void *addr, size_t length)
-{
-  return 0;
-}
+int s0il_munmap(void *addr, size_t length) { return 0; }

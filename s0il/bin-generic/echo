@@ -1,5 +1,5 @@
 //!picoc
-#include "ui.h"
+#include "s0il.h"
 
 int newline = 1;
 int escapes = 0;

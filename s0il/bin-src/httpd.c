@@ -37,23 +37,23 @@ typedef struct {
   char *path;   /* path requested from the webserver */
 
   const char *mime_type; /* NULL to skip */
-  int         content_length; /* -1 to skip */
-  time_t      last_modified;  /* -1 to skip */
-  char       *extra_headers;  /* NULL to skip */
+  int content_length;    /* -1 to skip */
+  time_t last_modified;  /* -1 to skip */
+  char *extra_headers;   /* NULL to skip */
 
-  CtxString  *body; /* the responsibility of the request handler
-                       is to fill in the body, the preassumed
-                       status is 200 OK - and if no further changes
-                       are done - on POST requests this contains the
-                       received post body, and should be cleared
-                       for the response
-                     */
-  char *protocol; /* HTTP/1.x */
-  int   status;     /* http status code to give */
+  CtxString *body;     /* the responsibility of the request handler
+                          is to fill in the body, the preassumed
+                          status is 200 OK - and if no further changes
+                          are done - on POST requests this contains the
+                          received post body, and should be cleared
+                          for the response
+                        */
+  char *protocol;      /* HTTP/1.x */
+  int status;          /* http status code to give */
   char *status_string; /* OK/not found/internal foobar */
   void *user_data;
   FILE *f;
-  int   emitted;
+  int emitted;
   char *ip;
 } HttpdRequest;
 
@@ -63,7 +63,7 @@ typedef struct filemapping {
 } filemapping;
 
 static const filemapping filemappings[] = {
-    {"/",            "/data/index.html"},
+    {"/", "/data/index.html"},
     {"/favicon.ico", "/data/favicon.ico"},
     {NULL, NULL},
 };
@@ -258,25 +258,25 @@ static void httpd_browse_handler(HttpdRequest *req) {
   OUTS(html_doctype);
   OUTF("<html><head><title>%s</title>\n<style type='text/css'>\n%s</style>\n",
        req->path, httpd_css);
-  OUTS(
-      "<link rel='stylesheet' href='/data/codemirror.css'/>\n"
-      "<link rel='stylesheet' href='/data/codemirror-cobalt.css'/>\n"
-      "<script src='/data/codemirror.js'></script>\n"
-      "<script src='/data/codemirror-python.js'></script>\n"
-      "<script>\n"
-      "window.unblock_savemod = false;\n"
-      "window.onkeypress= function(event) { }\n"
-      "window.onbeforeunload = function(event) {\n"
-      "if (!window.unblock_savemod &&  content.value != content.defaultValue) {\n"
-      " event.preventDefault();\n"
-      "};}\n");
-    OUTS("window.make_editor=function(){"
-         "if(document.getElementById('content')){"
-         "window.editor = "
-         "CodeMirror.fromTextArea(document.getElementById('content'), {"
-         " lineNumbers: true,"
-         "theme:'cobalt'});};};</script>"
-      "</head>\n");
+  OUTS("<link rel='stylesheet' href='/data/codemirror.css'/>\n"
+       "<link rel='stylesheet' href='/data/codemirror-cobalt.css'/>\n"
+       "<script src='/data/codemirror.js'></script>\n"
+       "<script src='/data/codemirror-python.js'></script>\n"
+       "<script>\n"
+       "window.unblock_savemod = false;\n"
+       "window.onkeypress= function(event) { }\n"
+       "window.onbeforeunload = function(event) {\n"
+       "if (!window.unblock_savemod &&  content.value != content.defaultValue) "
+       "{\n"
+       " event.preventDefault();\n"
+       "};}\n");
+  OUTS("window.make_editor=function(){"
+       "if(document.getElementById('content')){"
+       "window.editor = "
+       "CodeMirror.fromTextArea(document.getElementById('content'), {"
+       " lineNumbers: true,"
+       "theme:'cobalt'});};};</script>"
+       "</head>\n");
 
   ctx_string_append_printf(req->body, "<body>");
 
@@ -301,7 +301,8 @@ static void httpd_browse_handler(HttpdRequest *req) {
            " <input value='' id='param' name='param'/>");
     } else {
 
-      OUTF(" <input value='%s' name='param' id='param'/>", ui_basename(item_path));
+      OUTF(" <input value='%s' name='param' id='param'/>",
+           ui_basename(item_path));
 
       if (mime_is_text(mime_type)) {
         OUTS(" <input value='save' type='submit' name='action' "
@@ -309,8 +310,7 @@ static void httpd_browse_handler(HttpdRequest *req) {
              " <input value='run' type='submit' name='action' "
              "onclick='window.unblock_savemod=true;'/>"
              " <input value='reload' type='submit' "
-             "name='action' onclick='window.unblock_savemod=true;'/>"
-        );
+             "name='action' onclick='window.unblock_savemod=true;'/>");
       }
 
       OUTS(" <input value='rename' type='submit' name='action' />");
@@ -363,7 +363,7 @@ static void httpd_browse_handler(HttpdRequest *req) {
       }
       OUTS("</textarea>");
     } else {
-      //OUTS("<input type='hidden' value='' name='content' id='content'/>");
+      // OUTS("<input type='hidden' value='' name='content' id='content'/>");
     }
 
     if (mime_is_text(mime_type)) {
@@ -1065,16 +1065,15 @@ MAIN(httpd) {
 }
 
 #if EMSCRIPTEN
-char *wasm_http(const char *path, const char *post)
-{
+char *wasm_http(const char *path, const char *post) {
   HttpdRequest *req = calloc(1, sizeof(HttpdRequest));
   FILE *out = fopen("/sd/http-out", "wb");
   req->ip = "127.0.0.1";
-  req->method = post?"POST":"GET";
-  req->path = (char*)path;
+  req->method = post ? "POST" : "GET";
+  req->path = (char *)path;
   request_init(req, out);
   if (post)
-    ctx_string_set (req->body, post);
+    ctx_string_set(req->body, post);
 
   httpd_request_handler(req);
   if (!req->emitted)
@@ -1084,28 +1083,25 @@ char *wasm_http(const char *path, const char *post)
 
   system("sync");
 
-  if (req->content_length > 0)
-  {
+  if (req->content_length > 0) {
     FILE *in = fopen("/sd/http-out", "rb");
-    char *ret = calloc(1, req->content_length+65536); // room for header
-    ret[0]=0;
-    if (in)
-    {
-    fread (ret, req->content_length, 1, in);
-    //ret[req->content_length]=0;
-    fclose (in);
+    char *ret = calloc(1, req->content_length + 65536); // room for header
+    ret[0] = 0;
+    if (in) {
+      fread(ret, req->content_length, 1, in);
+      // ret[req->content_length]=0;
+      fclose(in);
     }
     free(req);
     return ret;
-  }
-  else if (req->extra_headers) {
-    char buf[256]="";
+  } else if (req->extra_headers) {
+    char buf[256] = "";
     if (req->extra_headers)
       sprintf(buf, "%s", req->extra_headers);
     free(req);
     return strdup(buf);
   }
-  
+
   return strdup("");
 }
 #endif

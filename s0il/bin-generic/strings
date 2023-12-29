@@ -1,5 +1,5 @@
 //!picoc
-#include "ui.h"
+#include "s0il.h"
 
 int main(int argc, char **argv) {
   FILE *fin = stdin;

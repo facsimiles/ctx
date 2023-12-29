@@ -135,20 +135,17 @@ const char *s0il_detect_media_path(const char *location) {
   struct stat stat_buf;
   if (!path || path[0] == 0)
     return 0;
- 
-  if (path[strlen(path)-1]=='/' && path[1])
-  {
+
+  if (path[strlen(path) - 1] == '/' && path[1]) {
     char *p = strdup(path);
-    p[strlen(p)-1]=0;
+    p[strlen(p) - 1] = 0;
     s0il_stat(p, &stat_buf);
     if (S_ISDIR(stat_buf.st_mode)) {
       const char *ret = s0il_detect_dir_type(p);
       free(p);
       return ret;
     }
-  }
-  else
-  {
+  } else {
     s0il_stat(path, &stat_buf);
     if (S_ISDIR(stat_buf.st_mode)) {
       const char *ret = s0il_detect_dir_type(path);

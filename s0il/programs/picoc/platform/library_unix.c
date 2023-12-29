@@ -550,24 +550,24 @@ fun_void__ptr(ctx_reset_has_exited);
 /* list of all library functions and their prototypes */
 const struct LibraryFunction CtxFunctions[] =
 {
-    {Cctx_new,         "void *ctx_new(int, int, char *);"},
-    {Cctx_has_exited,    "int ctx_has_exited(Ctx*);"},
+    {Cctx_new,              "void *ctx_new(int, int, char *);"},
+    {Cctx_has_exited,       "int ctx_has_exited(Ctx*);"},
     {Cctx_reset_has_exited, "void ctx_reset_has_exited(Ctx*);"},
-    {Cctx_start_frame, "void ctx_start_frame(Ctx*);"},
-    {Cctx_end_frame,   "void ctx_end_frame(Ctx*);"},
-    {Cctx_destroy,     "void ctx_destroy(Ctx*);"},
-    {Cctx_clip,      "void ctx_clip(Ctx*);"},
-    {Cctx_fill,      "void ctx_fill(Ctx*);"},
-    {Cctx_stroke,    "void ctx_stroke(Ctx*);"},
-    {Cctx_paint,     "void ctx_paint(Ctx*);"},
-    {Cctx_preserve,     "void ctx_preserve(Ctx*);"},
-    {Cctx_start_group,   "void ctx_start_group(Ctx*);"},
-    {Cctx_end_group,     "void ctx_end_group(Ctx*);"},
-    {Cctx_save,     "void ctx_save(Ctx*);"},
-    {Cctx_new_page,    "void ctx_new_page(Ctx*);"},
-    {Cctx_restore,     "void ctx_restore(Ctx*);"},
-    {Cctx_queue_draw,  "void ctx_queue_draw(Ctx*);"},
-    {Cctx_exit,     "void ctx_exit(Ctx*);"},
+    {Cctx_start_frame,      "void ctx_start_frame(Ctx*);"},
+    {Cctx_end_frame,        "void ctx_end_frame(Ctx*);"},
+    {Cctx_destroy,          "void ctx_destroy(Ctx*);"},
+    {Cctx_clip,             "void ctx_clip(Ctx*);"},
+    {Cctx_fill,             "void ctx_fill(Ctx*);"},
+    {Cctx_stroke,           "void ctx_stroke(Ctx*);"},
+    {Cctx_paint,            "void ctx_paint(Ctx*);"},
+    {Cctx_preserve,         "void ctx_preserve(Ctx*);"},
+    {Cctx_start_group,      "void ctx_start_group(Ctx*);"},
+    {Cctx_end_group,        "void ctx_end_group(Ctx*);"},
+    {Cctx_save,             "void ctx_save(Ctx*);"},
+    {Cctx_new_page,         "void ctx_new_page(Ctx*);"},
+    {Cctx_restore,          "void ctx_restore(Ctx*);"},
+    {Cctx_queue_draw,       "void ctx_queue_draw(Ctx*);"},
+    {Cctx_exit,             "void ctx_exit(Ctx*);"},
     {Cctx_begin_path,     "void ctx_begin_path(Ctx*);"},
     {Cctx_stroke_source,  "void ctx_stroke_source(Ctx*);"},
     {Cctx_close_path,     "void ctx_close_path(Ctx*);"},
@@ -660,6 +660,7 @@ const struct LibraryFunction CtxFunctions[] =
 
     {NULL, NULL}
 };
+
 void PlatformLibraryInit(Picoc *pc)
 {
     IncludeRegister(pc, "ctx.h", NULL, &CtxFunctions[0],
@@ -671,6 +672,13 @@ void PlatformLibraryInit(Picoc *pc)
 
     IncludeRegister(pc, "ui.h", NULL, &UiFunctions[0],
 
+    "#include <ctx.h>\n"
+    "typedef struct _Ui Ui;\n"
+    "#ifndef NULL\n"
+    "#define NULL ((void*)0)\n"
+    "#endif\n");
+
+    IncludeRegister(pc, "s0il.h", NULL, NULL,
     "#include <stdio.h>\n"
     "#include <string.h>\n"
     "#include <stdlib.h>\n"
@@ -678,9 +686,12 @@ void PlatformLibraryInit(Picoc *pc)
     "#include <unistd.h>\n"
     "#include <math.h>\n"
     "#include <dirent.h>\n"
-    "#include <ctx.h>\n"
-    "typedef struct _Ui Ui;\n"
-    "#ifndef NULL\n"
-    "#define NULL ((void*)0)\n"
-    "#endif\n");
+    "#include <stdio.h>\n"
+    "#include <string.h>\n"
+    "#include <stdlib.h>\n"
+    "#include <stdbool.h>\n"
+    "#include <unistd.h>\n"
+    "#include <math.h>\n"
+    "#include <dirent.h>\n"
+    "#include <ui.h>\n");
 }
