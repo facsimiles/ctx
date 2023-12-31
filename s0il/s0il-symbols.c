@@ -17,6 +17,7 @@
 #define EXPORT_UI 1
 
 #include "s0il.h"
+#include <fenv.h>
 
 extern float __divsf3(float a, float b);
 extern double __floatsidf(int a);
@@ -33,6 +34,23 @@ void __ledf2(void);
 void __gedf2(void);
 void __lshrdi3(void);
 void __udivdi3(void);
+void __umoddi3(void);
+void __moddi3(void);
+void __gtdf2(void);
+void __ltdf2(void);
+void __unorddf2(void);
+void __floatdidf(void);
+void __fixdfdi(void);
+void __divdi3(void);
+void __floatundidf(void);
+#if 0
+void __atomic_fetch_add_8(void);
+void __atomic_fetch_sub_8(void);
+void __atomic_fetch_and_8(void);
+void __atomic_fetch_or_8(void);
+void __atomic_fetch_xor_8(void);
+void __atomic_exchange_8(void);
+#endif
 
 int main_bundled(int argc, char **argv);
 void ctx_set_pixels(Ctx *ctx, void *userdata, int x, int y, int w, int h,
@@ -183,6 +201,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(__fixdfsi),
     ELFSYM_EXPORT(__floatsidf),
     ELFSYM_EXPORT(__floatundisf),
+    ELFSYM_EXPORT(__floatdidf),
     ELFSYM_EXPORT(__gedf2),
     ELFSYM_EXPORT(__ledf2),
     ELFSYM_EXPORT(__lshrdi3),
@@ -191,10 +210,33 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(__subdf3),
     ELFSYM_EXPORT(__truncdfsf2),
     ELFSYM_EXPORT(__udivdi3),
+    ELFSYM_EXPORT(__umoddi3),
+    ELFSYM_EXPORT(__moddi3),
+    ELFSYM_EXPORT(__unorddf2),
+    ELFSYM_EXPORT(__eqdf2),
+    ELFSYM_EXPORT(__ltdf2),
+    ELFSYM_EXPORT(__gtdf2),
+    ELFSYM_EXPORT(__nedf2),
+    ELFSYM_EXPORT(__divdi3),
+    ELFSYM_EXPORT(__fixdfdi),
+    ELFSYM_EXPORT(__floatundidf),
+#if 0
+    ELFSYM_EXPORT(__atomic_fetch_add_8),
+    ELFSYM_EXPORT(__atomic_fetch_and_8),
+    ELFSYM_EXPORT(__atomic_fetch_or_8),
+    ELFSYM_EXPORT(__atomic_fetch_xor_8),
+    ELFSYM_EXPORT(__atomic_exchange_8),
+    ELFSYM_EXPORT(__atomic_fetch_sub_8),
+#endif
+
 #endif
     {"ctx_destroy", &s0il_ctx_destroy},
     {"ctx_new", &s0il_ctx_new},
+    //ELFSYM_EXPORT(fesetround),
     ELFSYM_EXPORT(abort),
+    ELFSYM_EXPORT(lrint),
+    ELFSYM_EXPORT(fmax),
+    ELFSYM_EXPORT(fmin),
     ELFSYM_EXPORT(abs),
 #if !defined(PICO_BUILD)
     ELFSYM_EXPORT(accept),
@@ -206,6 +248,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(asctime),
     ELFSYM_EXPORT(asctime_r),
     ELFSYM_EXPORT(asin),
+    ELFSYM_EXPORT(round),
     ELFSYM_EXPORT(asinf),
     // ELFSYM_EXPORT(asprintf),
     ELFSYM_EXPORT(atan2),
@@ -616,6 +659,11 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(nextafterf),
     ELFSYM_EXPORT(nexttoward),
     ELFSYM_EXPORT(nexttowardf),
+#if defined(CTX_ESP)
+    ELFSYM_EXPORT(environ),
+#endif
+
+
     {"open", &s0il_open},
     {"opendir", &s0il_opendir},
 #if CTX_ESP
@@ -720,6 +768,8 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #if !defined(PICO_BUILD)
     ELFSYM_EXPORT(sched_yield),
     ELFSYM_EXPORT(seekdir),
+    ELFSYM_EXPORT(fesetround),
+    ELFSYM_EXPORT(fegetround),
 #endif
     {"select", &s0il_select},
 #if !defined(PICO_BUILD)
@@ -1039,6 +1089,14 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     {"getuid", &s0il_getuid},
     {"waitpid", &s0il_waitpid},
     {"wait", &s0il_wait},
+    {"trunc", &trunc},
+    {"acosh", &acosh},
+    {"asinh", &asinh},
+    {"atanh", &atanh},
+    {"log1p", &log1p},
+    {"log2", &log2},
+    {"log10", &log10},
+    {"cbrt", &cbrt},
 #if 0
   {"dup", &s0il_dup},
   {"dup2", &s0il_dup2},
