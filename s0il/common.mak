@@ -10,7 +10,7 @@ CFLAGS+=-O2 -g -DS0IL -fsingle-precision-constant \
 CFLAGS+= -I. -I..
 
 CC_NATIVE=@   echo 'CC     ' $@ ; $(CCACHE) $(CC)
-CFLAGS_NATIVE = $(CFLAGS) -I.. -L.. -lctx \
+CFLAGS_NATIVE = $(CFLAGS) -I.. -L.. -lctx `pkg-config libcurl --cflags --libs` \
                   -g -lm -DS0IL_NATIVE -fPIC -rdynamic -fpic \
                    -Wl,-E,--unresolved-symbols=ignore-all 
 

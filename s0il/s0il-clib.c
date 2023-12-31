@@ -12,6 +12,16 @@ extern void *_s0il_main_thread;
 
 #define S0IL_HAVE_SELECT 1
 
+#if defined(S0IL_NATIVE)
+#define S0IL_LIBCURL 1
+#else
+#endif
+
+#if defined(S0IL_LIBCURL)
+#include <curl/curl.h>
+#endif
+
+
 void *_s0il_thread_id(void) {
 #if PICO_BUILD
   return 0;
@@ -565,7 +575,70 @@ FILE *s0il_freopen(const char *pathname, const char *mode, FILE *stream) {
   return freopen(pathname, mode, stream);
 }
 
+#define S0IL_FETCH_URLS
+
+typedef struct _Sha1 CtxSha1;
+CtxSHA1 *ctx_sha1_new (void);
+void ctx_sha1_free (CtxSHA1 *sha1);
+int ctx_sha1_process(CtxSHA1 *sha1, const unsigned char * msg, unsigned long len);  
+int ctx_sha1_done(CtxSHA1 * sha1, unsigned char *out);
+
+
 FILE *s0il_fopen(const char *pathname, const char *mode) {
+#ifdef S0IL_FETCH_URLS
+  char cached_path[128]="/tmp/..";
+  if (strchr(pathname, ':') &&
+      strchr(pathname, ':')-pathname <=5)
+  {
+     uint8_t digest[64];
+     CtxSHA1 *sha1 = ctx_sha1_new();
+     ctx_sha1_process (sha1, (uint8_t*)pathname, strlen(pathname));
+     ctx_sha1_done (sha1, digest);
+
+     sprintf(cached_path, "/tmp/%s", digest);
+     for (int i = 0; i < 40; i++)
+     {
+       char hex[16]="0123456789ABCDEF";
+       if (i & 1)
+         cached_path[5+i]=hex[(digest[i/2]) & 0xf];
+       else
+         cached_path[5+i]=hex[(digest[i/2]) >> 4];
+     }
+
+     if (access(cached_path, R_OK) == F_OK && !strchr(mode,'!'))
+     {
+       //printf("using cached %s\n", cached_path);
+     }
+     else
+     {
+#if defined(S0IL_LIBCURL)
+       FILE *cached_file = s0il_fopen(cached_path, "wb");
+       if (cached_file)
+       {
+         CURL *curl = curl_easy_init();
+         CURLcode res;
+         curl_easy_setopt(curl, CURLOPT_URL, pathname);
+         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
+         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, s0il_fwrite);
+         curl_easy_setopt(curl, CURLOPT_WRITEDATA, cached_file);
+         curl_easy_setopt(curl, CURLOPT_USERAGENT, "s0il/0.0");
+         res = curl_easy_perform(curl);
+         s0il_fclose(cached_file);
+       }
+#elif defined(CTX_ESP)
+       FILE *cached_file = s0il_fopen(cached_path, "wb");
+       asd
+       s0il_fclose(cached_file);
+#else
+       s0il_printf("fetch to %s\n", cached_path);
+#endif
+     }
+
+     pathname = cached_path;
+  }
+#endif
+
+
   char *path = s0il_resolve_path(pathname);
   file_t *file = s0il_find_file(path);
   if (file) {
