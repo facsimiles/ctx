@@ -496,6 +496,9 @@ static int s_retry_num = 0;
 
 #undef printf
 
+#include "esp_netif_sntp.h"
+#include "esp_sntp.h"
+
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data) {
   if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
@@ -514,6 +517,16 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
     // ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
     printf("got ip: " IPSTR " \n", IP2STR(&event->ip_info.ip));
+
+    static int once = 0;
+    if (!once){once = 1;
+    
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+esp_netif_sntp_init(&config);
+    }
+
+
     s_retry_num = 0;
     xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
   }
