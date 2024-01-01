@@ -232,7 +232,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #endif
     {"ctx_destroy", &s0il_ctx_destroy},
     {"ctx_new", &s0il_ctx_new},
-    //ELFSYM_EXPORT(fesetround),
+    // ELFSYM_EXPORT(fesetround),
     ELFSYM_EXPORT(abort),
     ELFSYM_EXPORT(lrint),
     ELFSYM_EXPORT(fmax),
@@ -662,7 +662,6 @@ const struct esp_elfsym g_customer_elfsyms[] = {
 #if defined(CTX_ESP)
     ELFSYM_EXPORT(environ),
 #endif
-
 
     {"open", &s0il_open},
     {"opendir", &s0il_opendir},
