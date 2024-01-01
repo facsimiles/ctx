@@ -712,7 +712,9 @@ void ui_do(Ui *ui, const char *action) {
     ctx_key_press(ui->ctx, 0, action, 0);
   } else if (!strcmp(action, "back")) {
     ui->overlay_fade = 0.7;
-    if (ui->fun == view_program) {
+    if (ctx_osk_mode > 1) {
+      ui_do(ui, "kb-hide");
+    } else if (ui->fun == view_program) {
       ctx_exit(ui->ctx);
     } else {
       ui_pop_fun(ui);

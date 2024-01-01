@@ -1,7 +1,6 @@
 #include "s0il.h"
 
-MAIN(date)
-{
+MAIN(date) {
   time_t t = time(0);
   struct tm *local_time;
   local_time = localtime(&t);

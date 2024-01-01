@@ -82,11 +82,9 @@ MAIN(clock) {
 
     int tz = +1;
 
-    t.tv_sec += tz * (60*60);
+    t.tv_sec += tz * (60 * 60);
 
-
-    draw_clock(ctx, w / 2, h / 2, min / 2, 
-     t.tv_sec * 1000 + t.tv_usec / 1000);
+    draw_clock(ctx, w / 2, h / 2, min / 2, t.tv_sec * 1000 + t.tv_usec / 1000);
 
     ui_add_key_binding(ui, "escape", "exit", "leave view");
     ui_add_key_binding(ui, "backspace", "exit", "leave view");

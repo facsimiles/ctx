@@ -519,13 +519,13 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     printf("got ip: " IPSTR " \n", IP2STR(&event->ip_info.ip));
 
     static int once = 0;
-    if (!once){once = 1;
-    
-    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
-esp_netif_sntp_init(&config);
-    }
+    if (!once) {
+      once = 1;
 
+      esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+      esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
+      esp_netif_sntp_init(&config);
+    }
 
     s_retry_num = 0;
     xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
@@ -537,7 +537,7 @@ static void nvs_init(void) {
   if (!inited) {
     inited = 1;
 
-    setenv("TZ","CET-1CEST,M3.5.0/2,M10.5.0/3",1);
+    setenv("TZ", "CET-1CEST,M3.5.0/2,M10.5.0/3", 1);
     tzset();
 
     s_wifi_event_group = xEventGroupCreate();
