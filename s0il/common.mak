@@ -35,10 +35,12 @@ CFLAGS_XTENSA = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main \
   -Iflow3r/build/config \
   -I../flow3r/build/config \
   -I../../flow3r/build/config \
+  -I$(IDF_PATH)/components/esp-tls \
   -I$(IDF_PATH)/components/lwip/include \
   -I$(IDF_PATH)/components/lwip/lwip/src/include \
   -I$(IDF_PATH)/components/lwip/port/include \
   -I$(IDF_PATH)/components/lwip/port/freertos/include \
+  -I$(IDF_PATH)/components/esp_event/include \
   -I$(IDF_PATH)/components/newlib/platform_include \
   -I$(IDF_PATH)/components/heap/include \
   -I$(IDF_PATH)/components/esp_system/include \
@@ -55,7 +57,9 @@ CFLAGS_XTENSA = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main \
   -I$(IDF_PATH)/components/freertos/esp_additions/arch/xtensa/include \
   -I$(IDF_PATH)/components/freertos/FreeRTOS-Kernel/portable/xtensa/include/ \
   -I$(IDF_PATH)/components/freertos/FreeRTOS-Kernel/include \
-  -I$(IDF_PATH)/components/mbedtls/mbedtls/include
+  -I$(IDF_PATH)/components/mbedtls/mbedtls/include \
+  -I$(IDF_PATH)/components/mbedtls/esp_crt_bundle/include \
+  -I$(IDF_PATH)/components/esp_http_client/include/
 
 CFLAGS_RISCV = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main -DRISCV \
   -fdata-sections -ffunction-sections -Wl,--gc-sections -fvisibility=hidden \
@@ -65,7 +69,9 @@ CFLAGS_RISCV = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main -DRISCV \
   -Iesp32c3/build/config \
   -I../esp32c3/build/config \
   -I../../esp32c3/build/config \
+  -I$(IDF_PATH)/components/esp-tls \
   -I$(IDF_PATH)/components/lwip/include \
+  -I$(IDF_PATH)/components/esp_event/include \
   -I$(IDF_PATH)/components/lwip/lwip/src/include \
   -I$(IDF_PATH)/components/lwip/port/include \
   -I$(IDF_PATH)/components/lwip/port/freertos/include \
@@ -85,5 +91,7 @@ CFLAGS_RISCV = $(CFLAGS) -nostartfiles -nostdlib -fPIC -shared -e main -DRISCV \
   -I$(IDF_PATH)/components/freertos/FreeRTOS-Kernel/portable/riscv/include/ \
   -I$(IDF_PATH)/components/freertos/FreeRTOS-Kernel/include \
   -I$(IDF_PATH)/components/riscv/include \
-  -I$(IDF_PATH)/components/mbedtls/mbedtls/include
+  -I$(IDF_PATH)/components/mbedtls/mbedtls/include \
+  -I$(IDF_PATH)/components/mbedtls/esp_crt_bundle/include \
+  -I$(IDF_PATH)/components/esp_http_client/include/
 

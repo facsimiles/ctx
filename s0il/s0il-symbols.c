@@ -73,19 +73,22 @@ struct esp_elfsym {
 Ctx *ctx_host(void);
 void __xpg_strerror_r(void);
 
-void mbedtls_entropy_func(void);
+void mbedtls_entropy_init(void);
+void mbedtls_entropy_free(void);
+void mbedtls_ctr_drbg_seed(void);
 void mbedtls_ctr_drbg_free(void);
 void mbedtls_ctr_drbg_init(void);
 void mbedtls_ctr_drbg_random(void);
 void mbedtls_ctr_drbg_reseed(void);
-void mbedtls_ctr_drbg_seed(void);
+void mbedtls_ctr_drbg_set_prediction_resistance(void);
+void mbedtls_entropy_func(void);
+#if !defined(CTX_ESP)
+void mbedtls_mpi_fill_random(void);
 void mbedtls_ecp_curve_info_from_grp_id(void);
 void mbedtls_ecp_curve_info_from_name(void);
 void mbedtls_ecp_curve_list(void);
 void mbedtls_ecp_gen_key(void);
-void mbedtls_entropy_free(void);
 void mbedtls_entropy_func(void);
-void mbedtls_entropy_init(void);
 void mbedtls_mpi_free(void);
 void mbedtls_mpi_init(void);
 void mbedtls_mpi_write_file(void);
@@ -118,7 +121,6 @@ void mbedtls_cipher_setkey(void);
 void mbedtls_cipher_set_padding_mode(void);
 void mbedtls_cipher_setup(void);
 void mbedtls_cipher_update(void);
-void mbedtls_ctr_drbg_set_prediction_resistance(void);
 void mbedtls_ecdh_compute_shared(void);
 void mbedtls_ecdsa_free(void);
 void mbedtls_ecdsa_from_keypair(void);
@@ -157,7 +159,6 @@ void mbedtls_mpi_bitlen(void);
 void mbedtls_mpi_cmp_mpi(void);
 void mbedtls_mpi_copy(void);
 void mbedtls_mpi_exp_mod(void);
-void mbedtls_mpi_fill_random(void);
 void mbedtls_mpi_get_bit(void);
 void mbedtls_mpi_lset(void);
 void mbedtls_mpi_mod_mpi(void);
@@ -183,8 +184,9 @@ void mbedtls_rsa_complete(void);
 void mbedtls_rsa_export(void);
 void mbedtls_rsa_gen_key(void);
 void mbedtls_rsa_import(void);
-void mbedtls_rsa_import_raw(void);
 void mbedtls_strerror(void);
+void mbedtls_rsa_import_raw(void);
+#endif
 
 const struct esp_elfsym g_customer_elfsyms[] = {
 

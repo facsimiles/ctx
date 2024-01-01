@@ -41,6 +41,11 @@
  #include "lwip/ip4.h"
  #include "lwip/netdb.h"
 
+#if defined(CTX_ESP)
+ #include "esp_tls.h"
+ #include "esp_crt_bundle.h"
+#include "esp_http_client.h"
+#endif
 
 #endif
 

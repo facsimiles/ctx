@@ -576,6 +576,115 @@ FILE *s0il_freopen(const char *pathname, const char *mode, FILE *stream) {
 
 #define S0IL_FETCH_URLS
 
+#if !defined(MIN)
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#if !defined(MAX)
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#define MAX_HTTP_OUTPUT_BUFFER 4096
+
+#if defined(CTX_ESP)
+esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
+#define TAG "clib"
+  static char *output_buffer; // Buffer to store response of http request from
+                              // event handler
+  static int output_len;      // Stores number of bytes read
+  switch (evt->event_id) {
+  case HTTP_EVENT_ERROR:
+    fprintf(stderr, "HTTP_EVENT_ERROR");
+    break;
+  case HTTP_EVENT_ON_CONNECTED:
+    // fprintf(stderr, "HTTP_EVENT_ON_CONNECTED");
+    break;
+  case HTTP_EVENT_HEADER_SENT:
+    // fprintf(stderr, "HTTP_EVENT_HEADER_SENT");
+    break;
+  case HTTP_EVENT_ON_HEADER:
+    // fprintf(stderr, "HTTP_EVENT_ON_HEADER, key=%s, value=%s",
+    // evt->header_key, evt->header_value);
+    break;
+  case HTTP_EVENT_ON_DATA:
+    // fprintf(stderr, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+    //  Clean the buffer in case of a new request
+    if (output_len == 0 && evt->user_data) {
+      // we are just starting to copy the output data into the use
+      // memset(evt->user_data, 0, MAX_HTTP_OUTPUT_BUFFER);
+    }
+    /*
+     *  Check for chunked encoding is added as the URL for chunked encoding used
+     * in this example returns binary data. However, event handler can also be
+     * used in case chunked encoding is used.
+     */
+    if (!esp_http_client_is_chunked_response(evt->client)) {
+      // If user_data buffer is configured, copy the response into the buffer
+      int copy_len = 0;
+      if (evt->user_data) {
+        // The last byte in evt->user_data is kept for the NULL character in
+        // case of out-of-bound access.
+        // copy_len = MIN(evt->data_len, (MAX_HTTP_OUTPUT_BUFFER - output_len));
+        if (evt->data_len) {
+          s0il_fwrite(evt->data, 1, evt->data_len, evt->user_data);
+        }
+      } else {
+        int content_len = esp_http_client_get_content_length(evt->client);
+        if (output_buffer == NULL) {
+          // We initialize output_buffer with 0 because it is used by strlen()
+          // and similar functions therefore should be null terminated.
+          output_buffer = (char *)calloc(content_len + 1, sizeof(char));
+          output_len = 0;
+          if (output_buffer == NULL) {
+            fprintf(stderr, "Failed to allocate memory for output buffer");
+            return ESP_FAIL;
+          }
+        }
+        copy_len = MIN(evt->data_len, (content_len - output_len));
+        if (copy_len) {
+          memcpy(output_buffer + output_len, evt->data, copy_len);
+        }
+      }
+      output_len += copy_len;
+    }
+
+    break;
+  case HTTP_EVENT_ON_FINISH:
+    // fprintf(stderr, "HTTP_EVENT_ON_FINISH");
+    if (output_buffer != NULL) {
+      // Response is accumulated in output_buffer. Uncomment the below line to
+      // print the accumulated response ESP_LOG_BUFFER_HEX(TAG, output_buffer,
+      // output_len);
+      free(output_buffer);
+      output_buffer = NULL;
+    }
+    output_len = 0;
+    break;
+  case HTTP_EVENT_DISCONNECTED:
+    // fprintf(stderr, "HTTP_EVENT_DISCONNECTED");
+    int mbedtls_err = 0;
+    esp_err_t err = esp_tls_get_and_clear_last_error(
+        (esp_tls_error_handle_t)evt->data, &mbedtls_err, NULL);
+    if (err != 0) {
+      fprintf(stderr, "Last esp error code: 0x%x", err);
+      fprintf(stderr, "Last mbedtls failure: 0x%x", mbedtls_err);
+    }
+    if (output_buffer != NULL) {
+      free(output_buffer);
+      output_buffer = NULL;
+    }
+    output_len = 0;
+    break;
+  case HTTP_EVENT_REDIRECT:
+    // fprintf(stderr, "HTTP_EVENT_REDIRECT");
+    esp_http_client_set_header(evt->client, "From", "user@example.com");
+    esp_http_client_set_header(evt->client, "Accept", "text/html");
+    esp_http_client_set_redirection(evt->client);
+    break;
+  }
+  return ESP_OK;
+}
+#endif
+
 typedef struct _Sha1 CtxSha1;
 CtxSHA1 *ctx_sha1_new(void);
 void ctx_sha1_free(CtxSHA1 *sha1);
@@ -619,7 +728,26 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
       }
 #elif defined(CTX_ESP)
       FILE *cached_file = s0il_fopen(cached_path, "wb");
-      asd s0il_fclose(cached_file);
+      esp_http_client_config_t config = {
+          .url = pathname,
+          .event_handler = _http_event_handler,
+          .user_data = cached_file,
+          //.crt_bundle_attach = esp_crt_bundle_attach,
+          // XXX : it fails to authenticate lets encrypt..
+      };
+      esp_http_client_handle_t client = esp_http_client_init(&config);
+      esp_err_t err = esp_http_client_perform(client);
+
+      if (err == ESP_OK) {
+        // fprintf(stderr, "HTTPS Status = %d, content_length = %"PRId64,
+        //         esp_http_client_get_status_code(client),
+        //         esp_http_client_get_content_length(client));
+      } else {
+        fprintf(stderr, "Error perform http request %s", esp_err_to_name(err));
+      }
+      esp_http_client_cleanup(client);
+
+      s0il_fclose(cached_file);
 #else
       s0il_printf("fetch to %s\n", cached_path);
 #endif
