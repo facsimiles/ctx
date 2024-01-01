@@ -521,7 +521,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     static int once = 0;
     if (!once){once = 1;
     
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
     esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
 esp_netif_sntp_init(&config);
     }
@@ -536,6 +536,10 @@ static void nvs_init(void) {
   static int inited = 0;
   if (!inited) {
     inited = 1;
+
+    setenv("TZ","CET-1CEST,M3.5.0/2,M10.5.0/3",1);
+    tzset();
+
     s_wifi_event_group = xEventGroupCreate();
 
     // Initialize NVS

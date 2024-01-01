@@ -1,8 +1,8 @@
 #include "s0il.h"
 
 void draw_clock(Ctx *ctx, float x, float y, float radius,
-                uint32_t ms_since_midnight) {
-  uint32_t ms = ms_since_midnight;
+                uint64_t ms_since_midnight) {
+  uint64_t ms = ms_since_midnight;
   uint32_t s = ms / 1000;
   uint32_t m = s / 60;
   uint32_t h = m / 60;
@@ -10,7 +10,7 @@ void draw_clock(Ctx *ctx, float x, float y, float radius,
 
   ctx_save(ctx);
 
-  ms = ((uint32_t)(ms)) % 1000;
+  ms = ((uint64_t)(ms)) % 1000;
   s %= 60;
   m %= 60;
   h %= 12;
@@ -77,7 +77,16 @@ MAIN(clock) {
     float min = w < h ? w : h;
     ui_start_frame(ui);
 
-    draw_clock(ctx, w / 2, h / 2, min / 2, ctx_ticks() / 1000);
+    struct timeval t;
+    gettimeofday(&t, NULL);
+
+    int tz = +1;
+
+    t.tv_sec += tz * (60*60);
+
+
+    draw_clock(ctx, w / 2, h / 2, min / 2, 
+     t.tv_sec * 1000 + t.tv_usec / 1000);
 
     ui_add_key_binding(ui, "escape", "exit", "leave view");
     ui_add_key_binding(ui, "backspace", "exit", "leave view");
