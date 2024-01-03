@@ -1678,7 +1678,7 @@ void captouch_keyboard(Ctx *ctx) {
   bool down = false;
   int cursor_col = -1;
 
-  int cursor_row = 0;
+  int cursor_row = -1;
   static float smoothed_row = 0.0f;
 
   if (angle >= 0) {
@@ -1686,18 +1686,23 @@ void captouch_keyboard(Ctx *ctx) {
     if (cursor_col >= 20)
       cursor_col = 0;
 
+    if (rad_pos > 0.05)
+    {
     if (rad_pos < 0.15)
       cursor_row = 0;
     else if (rad_pos < 0.25)
       cursor_row = 1;
     else
       cursor_row = 2;
+   }
 
     down = true;
   }
 
-  smoothed_row = smoothed_row * 0.8f + (cursor_row + 0.5f) * 0.2f;
-  cursor_row = smoothed_row;
+  smoothed_row = smoothed_row * 0.5f + 0.5 * (cursor_row + 0.5f);
+
+  if (cursor_row != -1)
+    cursor_row = smoothed_row;
 
   const char *neutral_rows[][12] = {
       {"q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "0", 0},
