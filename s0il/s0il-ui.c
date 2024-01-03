@@ -1659,7 +1659,7 @@ void captouch_keyboard(Ctx *ctx) {
   static float angle = -1.0f;
 
   if (raw_angle >= 0) {
-    if (angle < 0)
+    if (angle <= 0)
       angle = raw_angle;
     else
       // the values are already snapped, thus this acts as a debouncing
@@ -1802,6 +1802,22 @@ void captouch_keyboard(Ctx *ctx) {
      ctx_stroke (ctx);
      ctx_restore (ctx);
    }
+#endif
+
+#if !defined(CTX_FLOW3R)
+  ctx_save(ctx);
+  ctx_rectangle(ctx, width * 0.7, height * 0.25, width * 0.3, height * 0.2);
+  ctx_listen(ctx, CTX_PRESS, ui_cb_do, ui_host(ctx), (void *)"return");
+  ctx_begin_path(ctx);
+
+  ctx_rectangle(ctx, width * 0.0, height * 0.25, width * 0.15, height * 0.2);
+  ctx_listen(ctx, CTX_PRESS, ui_cb_do, ui_host(ctx), (void *)"backspace");
+  ctx_begin_path(ctx);
+  ctx_rectangle(ctx, width * 0.15, height * 0.25, width * 0.15, height * 0.2);
+  ctx_listen(ctx, CTX_PRESS, ui_cb_do, ui_host(ctx), (void *)"space");
+  ctx_begin_path(ctx);
+
+  ctx_restore(ctx);
 #endif
 }
 
@@ -2687,20 +2703,12 @@ void ui_title(Ui *ui, const char *string) {
 void ui_seperator(Ui *ui) {
   Ctx *ctx = ui->ctx;
   ctx_move_to(ctx, ui->width * 0.4, ui->y + ui->line_height * 0.3);
-#if 0
-  ctx_rel_line_to (ctx, ui->width * 0.2, -ui->line_height * 0.1);
-  ctx_rel_line_to (ctx, 0, -ui->line_height * 0.2);
-  ctx_rel_line_to (ctx, -ui->width * 0.2, ui->line_height * 0.7);
-  ctx_rel_line_to (ctx, 0, -ui->line_height * 0.2);
-  ctx_rel_line_to (ctx, ui->width * 0.2, -ui->line_height * 0.1);
-#else
   ctx_rel_quad_to(ctx, ui->width * 0.2, -ui->line_height * 0.1, ui->width * 0.2,
                   -ui->line_height * 0.3);
   ctx_rel_quad_to(ctx, -ui->width * 0.1, 0.0, -ui->width * 0.2,
                   ui->line_height * 0.7);
   ctx_rel_quad_to(ctx, 0, -ui->line_height * 0.3, ui->width * 0.2,
                   -ui->line_height * 0.3);
-#endif
   ctx_stroke(ctx);
   ui->y += ui->line_height;
 }
