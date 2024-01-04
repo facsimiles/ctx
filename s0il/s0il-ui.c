@@ -1641,6 +1641,30 @@ static const KeyBoardLayout kb_round = {{
 
 static KeyBoard keyboard = {&kb_round, 0, 0, 0, 0, 0};
 
+static char kb_preview[8] = ""; // TODO : set this, and show it in middle
+
+void kb_cursor_drag(CtxEvent *event, void *data1, void *data2) {
+  event->stop_propagate = 1;
+  if (event->type != CTX_DRAG_RELEASE)
+    return;
+  float h_delta = event->start_x - event->x;
+  float v_delta = event->start_y - event->y;
+  float dist = hypotf(h_delta, v_delta);
+  if (dist < ctx_height(event->ctx) * 0.05) {
+    ctx_key_press(event->ctx, 0, "space", 0);
+  } else if (fabsf(h_delta) > fabsf(v_delta)) {
+    if (h_delta > 0)
+      ctx_key_press(event->ctx, 0, "left", 0);
+    else
+      ctx_key_press(event->ctx, 0, "right", 0);
+  } else {
+    if (v_delta > 0)
+      ctx_key_press(event->ctx, 0, "up", 0);
+    else
+      ctx_key_press(event->ctx, 0, "down", 0);
+  }
+}
+
 void captouch_keyboard(Ctx *ctx) {
   float width = ctx_width(ctx);
   float height = ctx_height(ctx);
@@ -1686,15 +1710,14 @@ void captouch_keyboard(Ctx *ctx) {
     if (cursor_col >= 20)
       cursor_col = 0;
 
-    if (rad_pos > 0.05)
-    {
-    if (rad_pos < 0.15)
-      cursor_row = 0;
-    else if (rad_pos < 0.25)
-      cursor_row = 1;
-    else
-      cursor_row = 2;
-   }
+    if (rad_pos > 0.05) {
+      if (rad_pos < 0.15)
+        cursor_row = 0;
+      else if (rad_pos < 0.25)
+        cursor_row = 1;
+      else
+        cursor_row = 2;
+    }
 
     down = true;
   }
@@ -1820,6 +1843,10 @@ void captouch_keyboard(Ctx *ctx) {
   ctx_begin_path(ctx);
   ctx_rectangle(ctx, width * 0.15, height * 0.25, width * 0.15, height * 0.2);
   ctx_listen(ctx, CTX_PRESS, ui_cb_do, ui_host(ctx), (void *)"space");
+  ctx_begin_path(ctx);
+
+  ctx_rectangle(ctx, width * 0.4, height * 0.45, width * 0.2, height * 0.2);
+  ctx_listen(ctx, CTX_DRAG, kb_cursor_drag, NULL, NULL);
   ctx_begin_path(ctx);
 
   ctx_restore(ctx);

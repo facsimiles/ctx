@@ -10,15 +10,18 @@
               body {font-size: calc(1.4vh + 1.8vw); margin:0 0 0 0;}
 
              input {font-size: calc(0.8vh + 1.1vw); }
+              #browser {background:white; position:fixed; border: 1px solid green; overflow:auto;}
               @media (orientation:portrait) {
                 canvas {width: 100%;}
                 .CodeMirror { height: calc(33vh); }
+                #browser {height:calc(100vh - 100vw); width:100vw;}
               } 
               @media (orientation:landscape) {
                 canvas {position:fixed;top:0;height: 100%;right:0;margin-left:0.5em;}
                 p, pre { padding-left: 0.5em; padding-right: 0.5em;}
-                #page { width: calc(100vw - 100vh - 1em); }
+              #browser {width:calc(100vw - 100vh); height:100vh;}
               } 
+              #page { background:transparent;}
               .CodeMirror { height: calc(100vh - 3em); }
         </style>
 
@@ -112,7 +115,8 @@ document.onclick = function (e) {
         </head>
         <body><canvas id='c' width='240' height='240' tabindex='0'></canvas><div class='spacefiller'></div>
 
-<input style='width:20em' id='loc' ype='hidden' value='/' oninput='location_changed()'></input>
+<div id='browser'>
+<input style='width:20em' id='loc' type='hidden' value='/' oninput='location_changed()'></input>
 <div id='page'>
 
 <h1>s0il</h1>
@@ -139,6 +143,7 @@ I you have a flow3r, you might want to run it there, here is a pre-built binary:
 
 </p>
 
+</div>
 </div>
            
 
