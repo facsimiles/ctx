@@ -25,6 +25,7 @@
 #include "bin-src/wifi.c"
 #include "bin-src/sync.c"
 #include "bin-src/httpd.c"
+#include "bin-src/date.c"
 
 void add_mains(void) {
   static bool done = false;
@@ -49,4 +50,5 @@ void add_mains(void) {
   s0il_bundle_main("lua", lua_main);
   s0il_bundle_main("luac", luac_main);
   s0il_bundle_main("qjs", qjs_main);
+  s0il_bundle_main("date", date_main);
 }

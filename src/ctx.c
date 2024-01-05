@@ -774,7 +774,7 @@ ctx_event_free (void *event, void *user_data)
 {
   CtxEvent *e = event;
   if (e->string)
-    ctx_free (e->string);
+    ctx_free ((char*)e->string);
   ctx_free (event);
 }
 

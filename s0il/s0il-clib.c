@@ -717,13 +717,14 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
       FILE *cached_file = s0il_fopen(cached_path, "wb");
       if (cached_file) {
         CURL *curl = curl_easy_init();
-        CURLcode res;
+        // CURLcode res;
         curl_easy_setopt(curl, CURLOPT_URL, pathname);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, s0il_fwrite);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, cached_file);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "s0il/0.0");
-        res = curl_easy_perform(curl);
+        // res =
+        curl_easy_perform(curl);
         s0il_fclose(cached_file);
       }
 #elif defined(CTX_ESP)
