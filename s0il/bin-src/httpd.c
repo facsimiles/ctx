@@ -12,8 +12,9 @@
 
 static const char *httpd_css =
     "body { background:black; color:white;}\n"
-    "body {font-size: calc(1.0vh + 1.8vw); }\n"
-    "input {font-size: calc(0.8vh + 1.1vw); }\n"
+#if !defined(EMSCRIPTEN)
+    "html {font-size: calc(1.0vh + 1.8vw); }\n"
+#endif
     "a { color:white;}\n"
     "a:visited { color:white;}\n"
     ".dir_listing { list-style: none; background: #123; "

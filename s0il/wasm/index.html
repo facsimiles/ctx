@@ -7,10 +7,9 @@
 
         <style>
                 canvas {image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges;}
-              body {font-size: calc(1.4vh + 1.8vw); margin:0 0 0 0;}
-
-             input {font-size: calc(0.8vh + 1.1vw); }
-              #browser {background:white; position:fixed; border: 1px solid green; overflow:auto;}
+            body { margin:0 0 0 0;}
+            html { font-size: 20pt; }
+              #browser {background:white; position:fixed; overflow:auto;}
               @media (orientation:portrait) {
                 canvas {width: 100%;}
                 .CodeMirror { height: calc(33vh); }
@@ -20,9 +19,10 @@
                 canvas {position:fixed;top:0;height: 100%;right:0;margin-left:0.5em;}
                 p, pre { padding-left: 0.5em; padding-right: 0.5em;}
               #browser {width:calc(100vw - 100vh); height:100vh;}
+              .CodeMirror { height: calc(100vh - 2em); 
+                            width:calc(100vw-100vh);}
               } 
               #page { background:transparent;}
-              .CodeMirror { height: calc(100vh - 3em); }
         </style>
 
         <script src='./data/codemirror.js'></script>
@@ -30,7 +30,7 @@
 
         <script src="./s0il.js"></script>
         <script>
-                function windowToCanvas(canvas, x, y) {
+function windowToCanvas(canvas, x, y) {
    var bbox = canvas.getBoundingClientRect();
 
    return { x: (x - bbox.left) * (canvas.width  / bbox.width),
@@ -48,9 +48,8 @@ function make_editor(){
 
 function location_changed()
 {
-  //if(loc.value != '/_/' && loc.value != '/')
-  //  loc.value = loc.value.replace(/\/$/,'')
-  let tmp = allocateUTF8(loc.value);
+  console.log("!")
+  let tmp = allocateUTF8(document.location.hash.substr(1));
   content_c = _wasm_http(tmp);
   page.innerHTML=UTF8ToString(content_c);
   if (document.getElementById('content'))
@@ -59,9 +58,15 @@ function location_changed()
   _free(content_c);
 }
 
+function deferred_location_changed()
+{
+  // Evil hack - but only on first load..
+  setTimeout(location_changed, 1100);
+}
+
 function button_press(action)
 {
-  let tmp = allocateUTF8(loc.value);
+  let tmp = allocateUTF8(document.location.hash);
 
 
   let form= "action=" + action + "\r\n";
@@ -80,7 +85,7 @@ function button_press(action)
   let form_c= allocateUTF8(form);
   content_c = _wasm_http(tmp, form_c);
   new_loc = UTF8ToString(content_c);
-  loc.value = new_loc.replace('Location: ','').trim()
+  document.location.hash = new_loc.replace('Location: ', "").trim();
   _free(tmp);
   _free(form_c);
   _free(content_c);
@@ -104,7 +109,7 @@ document.onclick = function (e) {
   }
   if (element.tagName == 'A' || element.tagName == 'a') {
     e.preventDefault();
-    loc.value=element.href.replace(/.*:\/\/[a-z0-9.:]*/,'');
+    document.location.hash = element.href.replace(/.*:\/\/[a-z0-9.:]*/,'');
     location_changed();
     return false; // prevent default action and stop event propagation
   }
@@ -113,10 +118,9 @@ document.onclick = function (e) {
 
         </script>
         </head>
-        <body><canvas id='c' width='240' height='240' tabindex='0'></canvas><div class='spacefiller'></div>
+        <body onload='deferred_location_changed()' onhashchange='location_changed()'><canvas id='c' width='240' height='240' tabindex='0'></canvas><div class='spacefiller'></div>
 
 <div id='browser'>
-<input style='width:20em' id='loc' type='hidden' value='/' oninput='location_changed()'></input>
 <div id='page'>
 
 <h1>s0il</h1>
