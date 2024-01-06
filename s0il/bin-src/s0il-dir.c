@@ -1,5 +1,7 @@
 #include "s0il.h"
 
+// XXX : not quite working yet - should be turned into TSR
+
 typedef struct dir_entry_t {
   char *name;
   char *path;
@@ -122,5 +124,5 @@ MAIN(s0il_dir) {
   }
 
   //ctx_destroy(ctx);
-  return 42;
+  return 0;
 }

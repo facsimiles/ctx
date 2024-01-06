@@ -46,7 +46,7 @@ valgrind: s0il bin-native
 valgrind-full: s0il bin-native 
 	LD_LIBRARY_PATH=.:..:$(LD_LIBRARY_PATH) valgrind --leak-check=full ./s0il
 
-S0IL_OBJS=s0il-ui.o s0il-program-loader.o s0il-symbols.o s0il-magic.o s0il-clib.o
+S0IL_OBJS=s0il-ui.o s0il-program-loader.o s0il-symbols.o s0il-magic.o s0il-clib.o s0il-on-screen-keyboard.o
 
 s0il: ../ctx.h
 s0il: libs0il.so main.o bundled-programs.o
