@@ -121,10 +121,12 @@ void UnistdGetcwd(struct ParseState *Parser, struct PcValue *ReturnValue, struct
     ReturnValue->Val->Pointer = getcwd(Param[0]->Val->Pointer, Param[1]->Val->Integer);
 }
 
+#if 0
 void UnistdGetdtablesize(struct ParseState *Parser, struct PcValue *ReturnValue, struct PcValue **Param, int NumArgs)
 {
     ReturnValue->Val->Integer = getdtablesize();
 }
+#endif
 
 void UnistdGetegid(struct ParseState *Parser, struct PcValue *ReturnValue, struct PcValue **Param, int NumArgs)
 {
@@ -163,10 +165,12 @@ void UnistdGetpagesize(struct ParseState *Parser, struct PcValue *ReturnValue, s
     ReturnValue->Val->Integer = getpagesize();
 }
 
+#if 0
 void UnistdGetpass(struct ParseState *Parser, struct PcValue *ReturnValue, struct PcValue **Param, int NumArgs)
 {
     ReturnValue->Val->Pointer = getpass(Param[0]->Val->Pointer);
 }
+#endif
 
 #if 0
 void UnistdGetpgid(struct ParseState *Parser, struct PcValue *ReturnValue, struct PcValue **Param, int NumArgs)

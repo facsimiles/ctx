@@ -26,7 +26,7 @@
            };
 #define PATH_MAX 256
 
-#elif defined(S0IL_NATIVE) || defined(WASM) || defined(RISCV)
+#elif defined(S0IL_NATIVE) || defined(EMSCRIPTEN) || defined(RISCV)
 #include <net/if.h>
 #include <netdb.h>
 #include <sys/socket.h>

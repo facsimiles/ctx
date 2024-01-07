@@ -129,7 +129,9 @@ void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
   sprintf(program->path, "/bin/%s", name);
   ctx_list_append(&inlined_programs, program);
   static const char busy_magic[6] = {0, 's', '0', 'i', 'l'};
-  s0il_add_file(program->path, busy_magic, sizeof(busy_magic), S0IL_READONLY);
+
+  if (s0il_access(program->path, R_OK) != F_OK)
+    s0il_add_file(program->path, busy_magic, sizeof(busy_magic), S0IL_READONLY);
 }
 #include <libgen.h>
 
@@ -564,7 +566,7 @@ static char **s0il_parse_cmdline(const char *input, char *terminator,
   return argv;
 }
 
-#if !defined(WASM) && !defined(PICO_BUILD)
+#if !defined(PICO_BUILD)
 #if CTX_FLOW3R
 
 #include "esp_log.h"
@@ -661,7 +663,7 @@ static int esp_elf_runv(char *path, char **argv, int same_stack) {
   }
   return retval;
 }
-#elif S0IL_NATIVE
+#elif S0IL_NATIVE || defined(EMSCRIPTEN)
 #include <dlfcn.h>
 
 #if 0
@@ -721,6 +723,7 @@ static int dlopen_runv(char *path2, char **argv, int same_stack) {
   void *dlhandle = dlopen(path, RTLD_NOW | RTLD_NODELETE);
   // if (path!= path2)
   //   unlink(path);
+
   if (dlhandle) {
     int (*main)(int argc, char **argv) = dlsym(dlhandle, "main");
     if (main) {
@@ -738,8 +741,10 @@ static int dlopen_runv(char *path2, char **argv, int same_stack) {
         dlclose(dlhandle);
     }
   }
-  if (path != path2)
+  if (path != path2) {
+    unlink(path);
     free(path);
+  }
 
   return 0;
 }
@@ -826,9 +831,16 @@ int s0il_runv(char *path, char **argv) {
         }
         argv_expanded[argc] = NULL;
         return s0il_runvp(interpreter, argv_expanded);
-      } else if (!(sector[0] == 0x7f && sector[1] == 'E' && sector[2] == 'L' &&
-                   sector[3] == 'F')) {
-        printf("wrong magic: %c%c%c\n", sector[0], sector[1], sector[2]);
+      } else
+#if defined(EMSCRIPTEN)
+          if (!(sector[0] == 0x0 && sector[1] == 'a' && sector[2] == 's' &&
+                sector[3] == 'm'))
+#else
+          if (!(sector[0] == 0x7f && sector[1] == 'E' && sector[2] == 'L' &&
+                sector[3] == 'F'))
+#endif
+      {
+        s0il_printf("wrong magic: %c%c%c\n", sector[0], sector[1], sector[2]);
         return -3;
       }
     } else {
@@ -838,14 +850,10 @@ int s0il_runv(char *path, char **argv) {
 #endif
 
   int ret = 0;
-#ifndef WASM
 #if CTX_FLOW3R
   ret = esp_elf_runv(path, argv, 1);
-#elif S0IL_NATIVE
+#elif S0IL_NATIVE || defined(EMSCRIPTEN)
   ret = dlopen_runv(path, argv, 1);
-#endif
-#else
-  ret = -4;
 #endif
   ctx_reset_has_exited(ctx_host());
   return ret;

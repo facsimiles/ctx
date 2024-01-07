@@ -1,3 +1,4 @@
+#if !defined(EMSCRIPTEN)
 /*
  *  Key generation application
  *
@@ -431,3 +432,6 @@ exit:
 }
 #endif /* MBEDTLS_PK_WRITE_C && MBEDTLS_PEM_WRITE_C && MBEDTLS_FS_IO &&        \
         * MBEDTLS_ENTROPY_C && MBEDTLS_CTR_DRBG_C */
+#else
+int main(int argc, char **argv) { return 0; }
+#endif

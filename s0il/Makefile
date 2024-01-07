@@ -15,7 +15,7 @@ help:
 include common.mak
 
 xtensa: bin-xtensa
-all: native xtensa flow3r wasm riscv pico programs
+all: native xtensa flow3r wasm riscv pico programs bin-riscv bin-wasm
 
 DESTDIR ?=
 PREFIX  ?= /usr/local
@@ -87,11 +87,9 @@ PROGRAMS_XTENSA = $(patsubst bin-src/%.c, bin-xtensa/%, $(PROGRAMS_C)) \
                  $(patsubst bin-generic/%, bin-xtensa/%, $(PROGRAMS_PICOC))
 PROGRAMS_RISCV = $(patsubst bin-src/%.c, bin-riscv/%, $(PROGRAMS_C)) \
                  $(patsubst bin-generic/%, bin-riscv/%, $(PROGRAMS_PICOC))
+PROGRAMS_WASM = $(patsubst bin-src/%.c, bin-wasm/%, $(PROGRAMS_C)) \
+                $(patsubst bin-generic/%, bin-wasm/%, $(PROGRAMS_PICOC))
 
-bin-native/%: bin-src/%.c *.h Makefile elf_strip_pie libs0il.so
-	@mkdir -p `dirname $@` || true
-	$(CC_NATIVE) $< -L. -ls0il -o $@ $(CFLAGS_NATIVE) -DS0IL_DEFINES
-	$(POST_NATIVE) $@
 
 bin-xtensa/%: bin-src/%.c *.h Makefile flow3r/build/config/sdkconfig.h
 	@mkdir -p `dirname $@` || true
@@ -103,19 +101,32 @@ bin-riscv/%: bin-src/%.c *.h Makefile esp32c3/build/config/sdkconfig.h
 	$(CC_RISCV) $(CFLAGS_RISCV) $< -o $@
 	$(POST_RISCV) $@
 
+bin-native/%: bin-src/%.c *.h Makefile elf_strip_pie libs0il.so
+	@mkdir -p `dirname $@` || true
+	$(CC_NATIVE) $< -L. -ls0il -o $@ $(CFLAGS_NATIVE) -DS0IL_DEFINES
+	$(POST_NATIVE) $@
+
+bin-wasm/%: bin-src/%.c *.h Makefile 
+	@mkdir -p `dirname $@` || true
+	$(CC_WASM) $(CFLAGS_WASM) $< -o $@ -s SIDE_MODULE=1 -DS0IL_DEFINES
+
 bin-native/%: bin-generic/%
 	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 bin-xtensa/%: bin-generic/%
-	@mkdir -p `dirname $@` || true
+	mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 bin-riscv/%: bin-generic/%
+	@mkdir -p `dirname $@` || true
+	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
+bin-wasm/%: bin-generic/%
 	@mkdir -p `dirname $@` || true
 	@echo 'LN     ' $@; ln -sf `pwd`/$< $@ || true
 
 bin-native: $(PROGRAMS_NATIVE)
 bin-xtensa: $(PROGRAMS_XTENSA)
 bin-riscv: $(PROGRAMS_RISCV)
+bin-wasm: $(PROGRAMS_WASM)
 
 flow3r: fs_data.c fs_bin_xtensa.c s0il*.[ch]
 	(cd flow3r; idf.py build)
@@ -124,7 +135,7 @@ flow3r-flash: flow3r
 monitor:
 	(cd flow3r; idf.py monitor)
 
-wasm: fs_data.c main.c fs_bin_generic.c s0il*.[ch] */*.c bundled-programs-wasm.c wasm/Makefile
+wasm: fs_data.c main.c fs_bin_wasm.c s0il*.[ch] */*.c bundled-programs-wasm.c wasm/Makefile
 	(cd wasm; make)
 riscv-flash: riscv
 	(cd esp32c3; idf.py flash monitor)
@@ -153,6 +164,15 @@ fs_bin_native.c: $(PROGRAMS_NATIVE) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-native/* $@_fs
+	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
+	./mkfs.sh $@_fs bin > $@_
+	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
+	@rm -rf $@_ $@_fs
+
+fs_bin_wasm.c: $(PROGRAMS_WASM) Makefile mkfs.sh
+	@rm -rf $@_fs
+	@mkdir $@_fs
+	@cp bin-wasm/* $@_fs
 	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@

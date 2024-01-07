@@ -897,7 +897,6 @@ static float color_fg[4]; // black or white automatically based on bg
   return ui;
 }
 
-
 int s0il_output_state(void);
 
 #if CTX_ESP
@@ -927,7 +926,7 @@ void ui_iteration(Ui *ui) {
       width = ctx_width(ctx);
       height = ctx_height(ctx);
       ctx_start_frame(ctx);
-      ui_add_key_binding(ui, "escape",    "back", "leave view");
+      ui_add_key_binding(ui, "escape", "back", "leave view");
       ui_add_key_binding(ui, "backspace", "back", "leave view");
 
       ctx_save(ctx);
@@ -962,7 +961,7 @@ void ui_iteration(Ui *ui) {
             ctx_rotate(ctx, M_PI * 2 / 5);
             ctx_translate(ctx, -width / 2, -height / 2);
             ui_overlay_button(ui, 0, 0, width, height * 0.12, labels[i],
-                           actions[i]);
+                              actions[i]);
           }
 
           ctx_restore(ctx);
@@ -1471,14 +1470,14 @@ void ui_end_frame(Ui *ui) {
         break;
       }
   } else {
-    ui_add_key_binding(ui, "up",   "focus-previous", "previous focusable item");
+    ui_add_key_binding(ui, "up", "focus-previous", "previous focusable item");
     ui_add_key_binding(ui, "left", "focus-previous", "previous focusable item");
     ui_add_key_binding(ui, "shift-tab", "focus-previous",
-                           "previous focusable item");
-    ui_add_key_binding(ui, "down",   "focus-next", "next focusable item");
-    ui_add_key_binding(ui, "right",  "focus-next", "next focusable item");
-    ui_add_key_binding(ui, "tab",    "focus-next", "next focusable item");
-    ui_add_key_binding(ui, "space",  "activate", "activate");
+                       "previous focusable item");
+    ui_add_key_binding(ui, "down", "focus-next", "next focusable item");
+    ui_add_key_binding(ui, "right", "focus-next", "next focusable item");
+    ui_add_key_binding(ui, "tab", "focus-next", "next focusable item");
+    ui_add_key_binding(ui, "space", "activate", "activate");
     ui_add_key_binding(ui, "return", "activate", "activate");
   }
   ui_add_key_binding(ui, "control-q", "exit", "quit");
@@ -1489,8 +1488,8 @@ void ui_end_frame(Ui *ui) {
     float height = ctx_height(ctx);
     ui_overlay_button(ui, 0, 0, width, height * 0.12, "back", "back");
     if (ctx_osk_mode <= 1)
-      ui_overlay_button(ui, 0, height - height * 0.14, width, height * 0.14, "kb",
-                     "kb-show");
+      ui_overlay_button(ui, 0, height - height * 0.14, width, height * 0.14,
+                        "kb", "kb-show");
   }
 #endif
 
@@ -1850,7 +1849,6 @@ void ui_move_to(Ui *ui, float x, float y) {
   // ui->x = x;
   ui->y = y;
 }
-
 
 #define DEF_SLIDER(type)                                                       \
   void ui_slider_##type(Ui *ui, const char *label, type *val, type min,        \

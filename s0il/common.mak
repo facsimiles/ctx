@@ -1,7 +1,6 @@
-
 #CCACHE=`command -v ccache`  ## mostly pointless as we compile few .o files
 
-CFLAGS+=-O2 -g -DS0IL -fsingle-precision-constant \
+CFLAGS+=-O2 -fsingle-precision-constant \
   -Wall -Wextra \
   -Wdouble-promotion -Wwrite-strings -Wchar-subscripts \
   \
@@ -17,6 +16,11 @@ CFLAGS_NATIVE = $(CFLAGS) -I.. -L.. -lctx `pkg-config libcurl --cflags --libs` \
 POST_NATIVE=@ echo 'rem-PIE' $@; ./elf_strip_pie $@
 POST_NATIVE2=@ echo 'rem-PIE' $@; ../elf_strip_pie $@
 POST_NATIVE3=@ echo 'rem-PIE' $@; ../../elf_strip_pie $@
+
+
+CC_WASM=@   echo 'CC     ' $@ ; $(CCACHE) emcc
+CFLAGS_WASM = $(CFLAGS) -I/usr/local/include -flto -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -Wl,--lto-O3 
+
 
 CC_RISCV=@   echo 'CC     ' $@ ; $(CCACHE) riscv32-esp-elf-gcc
 

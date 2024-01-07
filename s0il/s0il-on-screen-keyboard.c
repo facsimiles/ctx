@@ -258,13 +258,12 @@ void ui_keyboard(Ui *ui) {
     //    fade = 0.9;
     captouch_keyboard(ctx);
     return;
-  case 1:
-  {
+  case 1: {
     float h = ctx_height(ctx);
     float w = ctx_width(ctx);
     ui_overlay_button(ui, 0, h - h * 0.14, w, h * 0.14, "kb", "kb-show");
-  }
-    break;
+  } break;
   }
 }
+
 bool ui_keyboard_visible(Ui *ui) { return ctx_osk_mode != 0; }

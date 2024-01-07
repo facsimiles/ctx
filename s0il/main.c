@@ -7,6 +7,8 @@
 #include "fs_bin_xtensa.c"
 #elif S0IL_NATIVE
 #include "fs_bin_native.c"
+#elif defined(EMSCRIPTEN)
+#include "fs_bin_wasm.c"
 #else
 #include "fs_bin_generic.c"
 #endif
@@ -162,9 +164,9 @@ int main(int argc, char **argv) {
   s0il_bundle_main("magic", magic_main);
   s0il_bundle_main("file", file_main);
   s0il_bundle_main("ps", ps_main);
-  add_mains();
   mount_bin();
   mount_data();
+  add_mains();
 
   Ui *ui = ui_new(ctx);
   ui_fake_circle(ui, true);
@@ -233,7 +235,9 @@ int main(int argc, char **argv) {
   // s0il_add_file("/tmp", NULL, 0, S0IL_DIR|S0IL_READONLY);
   s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
   char *t = "";
+#if !defined(EMSCRIPTEN)
   s0il_add_file("/tmp/dummy", t, 1, 0);
+#endif
 #if EMSCRIPTEN
 
   EM_ASM(FS.mkdir('/sd'); FS.mount(IDBFS, {}, '/sd'); FS.syncfs(

@@ -1,15 +1,17 @@
 C_FILES = ../main.c ../s0il.c ctx.c ../bundled-programs-wasm.c 
 
-CC=emcc
+include ../common.mak
 
-CFLAGS=-I/usr/local/include -flto -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc,_wasm_http -Wl,--lto-O3 -DWASM -DCTX \
-  -lidbfs.js
+#CFLAGS_WASM+= -s EXPORTED_FUNCTIONS=_main,_free,_calloc,_malloc,_wasm_http 
 
-s0il.js: $(C_FILES) ../bin-src/*.c Makefile  ../../ctx.h ../fs_bin_generic.c
-	$(CC) $(C_FILES) -I../.. $(CFLAGS) -o $@ -I../../fonts -s ASYNCIFY -I.. -I../../deps
+s0il.js: $(C_FILES) ../bin-src/*.c Makefile  ../../ctx.h ../fs_bin_wasm.c
+	$(CC_WASM) $(C_FILES) -I../.. $(CFLAGS_WASM) -O3 -lidbfs.js -o $@ -I../../fonts -s ASYNCIFY -I.. -I../../deps -sMAIN_MODULE=1 -sASYNCIFY_IMPORTS=main
 
 ../fs_bin_generic.c: ../bin-generic/*
 	make -C .. fs_bin_generic.c
+
+../fs_bin_wasm.c: ../bin-wasm/*
+	make -C .. fs_bin_wasm.c
 
 ../../ctx.h: ../../src/*.[ch]
 	make -C ../../ ctx.h

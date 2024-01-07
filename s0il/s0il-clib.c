@@ -72,7 +72,7 @@ int s0il_setenv(const char *name, const char *value, int overwrite) {
 int s0il_putenv(char *string) { return putenv(string); }
 int s0il_unsetenv(const char *name) { return unsetenv(name); }
 int s0il_clearenv(void) {
-#if !defined(CTX_ESP) && !defined(PICO_BUILD)
+#if !defined(CTX_ESP) && !defined(PICO_BUILD) && !defined(EMSCRIPTEN)
   return clearenv();
 #else
   return 0;
@@ -299,6 +299,9 @@ static int s0il_unlink_internal(const char *path) {
 
 void *s0il_add_file(const char *path, const char *contents, size_t size,
                     s0il_file_flag flags) {
+  file_t *file = s0il_find_file(path);
+  if (file)
+    return file;
   bool readonly = ((flags & S0IL_READONLY) != 0);
   bool is_dir = ((flags & S0IL_DIR) != 0);
 
@@ -330,7 +333,7 @@ void *s0il_add_file(const char *path, const char *contents, size_t size,
     free(parent);
   }
 
-  file_t *file = calloc(sizeof(file_t), 1);
+  file = calloc(sizeof(file_t), 1);
   file->path = (char *)(readonly ? path : strdup(path));
   file->d_name =
       readonly ? strrchr(path, '/') + 1 : strdup(strrchr(path, '/') + 1);

@@ -780,10 +780,12 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(setbuf),
     ELFSYM_EXPORT(setbuffer),
     {"setenv", &s0il_setenv},
-    ELFSYM_EXPORT(setjmp),
+    // ELFSYM_EXPORT(setjmp),
     ELFSYM_EXPORT(setlinebuf),
     ELFSYM_EXPORT(setlocale),
+#if !defined(EMSCRIPTEN)
     ELFSYM_EXPORT(settimeofday),
+#endif
     ELFSYM_EXPORT(setvbuf),
     {"signal", &s0il_signal},
 #if !defined(PICO_BUILD)
@@ -958,6 +960,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(y1),
     ELFSYM_EXPORT(y1f),
 
+#if !defined(EMSCRIPTEN)
     // ELFSYM_EXPORT(mbedtls_aes_context),
     ELFSYM_EXPORT(mbedtls_cipher_free),
 #if 1
@@ -1073,6 +1076,8 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(mbedtls_rsa_import),
     ELFSYM_EXPORT(mbedtls_rsa_import_raw),
     ELFSYM_EXPORT(mbedtls_strerror),
+
+#endif
 
 #if !defined(PICO_BUILD) && !defined(EMSCRIPTEN)
 #if S0IL_NATIVE
