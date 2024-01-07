@@ -1890,6 +1890,10 @@ void s0il_view_views(Ui *ui) {
   }
   ui_end_frame(ui);
 }
+const char *ui_location(Ui *ui)
+{
+  return ui->location;
+}
 
 #if S0IL_NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
 uint8_t scratch[1024 * 1024 * 4];

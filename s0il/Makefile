@@ -108,7 +108,7 @@ bin-native/%: bin-src/%.c *.h Makefile elf_strip_pie libs0il.so
 
 bin-wasm/%: bin-src/%.c *.h Makefile 
 	@mkdir -p `dirname $@` || true
-	$(CC_WASM) $(CFLAGS_WASM) $< -o $@ -s SIDE_MODULE=1 -DS0IL_DEFINES
+	$(CC_WASM) $(CFLAGS_WASM) $< -o $@ -s SIDE_MODULE=1 -DS0IL_DEFINES -s ASYNCIFY
 
 bin-native/%: bin-generic/%
 	@mkdir -p `dirname $@` || true

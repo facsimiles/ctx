@@ -18,6 +18,8 @@ void s0il_program_runner_init(void) {
     return;
   thread_data[0] = _s0il_main_thread = _s0il_thread_id();
 
+  printf("!!\n");
+
   s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
   info->ppid = 0;
   info->pid = 0;

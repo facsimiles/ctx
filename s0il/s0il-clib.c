@@ -23,15 +23,15 @@ extern void *_s0il_main_thread;
 
 void *_s0il_thread_id(void) {
 #if PICO_BUILD
-  return 0;
+  return (void*)1;
 #elif EMSCRIPTEN
-  return 0;
+  return (void*)1;
 #elif CTX_ESP
   return xTaskGetCurrentTaskHandle();
 #elif S0IL_NATIVE
   return (void *)((size_t)gettid());
 #else
-  return 0;
+  return (void*1);
 #endif
 }
 
@@ -48,7 +48,7 @@ bool s0il_is_main_thread(void) {
 }
 
 static int text_output = 0;
-static int gfx_output = 0;
+static int gfx_output  = 0;
 
 int s0il_output_state(void) { return text_output * 1 + gfx_output * 2; }
 

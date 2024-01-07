@@ -48,6 +48,8 @@ Ui *ui_host(Ctx *ctx); // like ui_new, can take NULL for ctx - should not
 void ui_destroy (Ui *ui);
 void ui_backlight (float backlight);
 
+const char *ui_location(Ui *ui);
+
 // launch an ui view at location, which is am absolute file-system path or
 // a specially recognized view name
 
@@ -124,18 +126,19 @@ float ui_get_font_size (Ui *ui);
 typedef void (*ui_fun)(Ui *ui);
 typedef void (*ui_data_finalize)(void *data);
 
-
-// TODO:   allow specifying place in menu hierarchy
-
+// adds a view, either fun or binary_path is to be provided
+// name can either be a mime-type or a view title/name
+//
+//
 void ui_add_view (Ui         *ui,
-                       const char *name,     // or suffix-to match
-      //               const char *category, // or mime-type
-                       ui_fun      fun,
-                       const char *binary_path);
+                  const char *name, 
+                  ui_fun      fun,
+                  const char *binary_path);
 
 
 void s0il_load_file (Ui *ui, const char *path);
 void ui_cb_do     (CtxEvent *event, void *data1, void *data2);
+
 void
 ui_push_fun(Ui *ui, ui_fun fun, const char *location, void *data, ui_data_finalize data_finalize);
 

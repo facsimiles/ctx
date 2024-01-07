@@ -108,11 +108,7 @@ int update_fb (Ctx *ctx, void *user_data)
      }
   );
 
-#ifdef EMSCRIPTEN
-//#ifdef ASYNCIFY
-   emscripten_sleep(0);
-//#endif
-#endif
+   emscripten_sleep(1);
 
    int ret = 0;
 

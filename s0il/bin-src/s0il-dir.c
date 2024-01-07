@@ -1,7 +1,5 @@
 #include "s0il.h"
 
-// XXX : not quite working yet - should be turned into TSR
-
 typedef struct dir_entry_t {
   char *name;
   char *path;
@@ -39,7 +37,8 @@ static int cmp_dir_entry(const void *p1, const void *p2) {
   return strcmp(e1->name, e2->name);
 }
 
-static void view_dir(Ui *ui, const char *location) {
+static void view_dir(Ui *ui) {
+  const char *location = ui_location(ui);
   if (!ui_get_data(ui)) {
     dir_info_t *di = calloc(sizeof(dir_info_t), 1);
 
@@ -100,28 +99,6 @@ static void view_dir(Ui *ui, const char *location) {
 }
 
 MAIN(s0il_dir) {
-  // Ctx *ctx = ctx_new(512, 512, NULL);
-  Ctx *ctx = ctx_host();
-  Ui *ui = ui_host(ctx);
-  ui_set_data(ui, NULL, NULL);
-  if (argv[1]) {
-    Ctx *ctx = ui_ctx(ui);
-    do {
-      ctx_start_frame(ctx);
-
-      view_dir(ui, argv[1]);
-      ui_keyboard(ui);
-
-      ctx_end_frame(ctx);
-    } while (!ctx_has_exited(ctx));
-  } else {
-    if (!ui) {
-      printf("no-args would register mimetypes if run in env\n");
-      return -1;
-    }
-    ui_add_view(ui, "inode/directory", NULL, argv[0]);
-  }
-
-  // ctx_destroy(ctx);
-  return 0;
+  ui_add_view(ui_host(ctx_host()), "inode/directory", view_dir, NULL);
+  return 42;
 }
