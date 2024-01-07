@@ -332,7 +332,35 @@ MAIN(s0il_text) {
   text->pos = 0;
   reset_cursor_info();
 
-  if (argv[1]) {
+  if (argv[1] && !strcmp(argv[1], "--register"))
+  {
+    if (!ui) {
+      printf("no-args would register mimetypes if run in env\n");
+      return -1;
+    }
+    const char *mime_types[] = {"text/plain",
+                                ".txt",
+                                "text/markdown",
+                                ".md",
+                                "text/html",
+                                ".html",
+                                "application/javascript",
+                                ".js",
+                                "text/css",
+                                ".css",
+                                "text/x-csrc",
+                                ".c",
+                                "text/x-chdr",
+                                ".h",
+                                NULL,
+                                NULL};
+    for (int i = 0; mime_types[i]; i += 2) {
+      if (mime_types[i + 1])
+        s0il_add_magic(mime_types[i], mime_types[i + 1], NULL, 0, 1);
+      ui_add_view(ui, mime_types[i], NULL, argv[0]);
+    }
+  }
+  else if (argv[1]) {
     Ctx *ctx = ui_ctx(ui);
 
     {
@@ -365,33 +393,7 @@ MAIN(s0il_text) {
     }
     free(text->path);
     free(text->contents);
-  } else {
-    if (!ui) {
-      printf("no-args would register mimetypes if run in env\n");
-      return -1;
-    }
-    const char *mime_types[] = {"text/plain",
-                                ".txt",
-                                "text/markdown",
-                                ".md",
-                                "text/html",
-                                ".html",
-                                "application/javascript",
-                                ".js",
-                                "text/css",
-                                ".css",
-                                "text/x-csrc",
-                                ".c",
-                                "text/x-chdr",
-                                ".h",
-                                NULL,
-                                NULL};
-    for (int i = 0; mime_types[i]; i += 2) {
-      if (mime_types[i + 1])
-        s0il_add_magic(mime_types[i], mime_types[i + 1], NULL, 0, 1);
-      ui_add_view(ui, mime_types[i], NULL, argv[0]);
-    }
-  }
+  } 
 
   ctx_destroy(ctx);
   return 0;

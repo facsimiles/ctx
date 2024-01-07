@@ -78,15 +78,15 @@ static const char *html_doctype =
 #define OUTS(s) ctx_string_append_str(req->body, s)
 #define OUTF(f, ...) ctx_string_append_printf(req->body, f, __VA_ARGS__)
 
-typedef struct dir_entry_t {
+typedef struct httpd_dirent_t {
   char *name;
   char *path;
   const char *mime_type;
   size_t size;
-} dir_entry_t;
+} httpd_dirent_t;
 
 typedef struct dir_listing_t {
-  dir_entry_t *entries;
+  httpd_dirent_t *entries;
   char *path;
   int count;
   int capacity;
@@ -106,9 +106,9 @@ static void dir_listing_destroy(dir_listing_t *di) {
   free(di);
 }
 
-static int cmp_dir_entry(const void *p1, const void *p2) {
-  const dir_entry_t *e1 = p1;
-  const dir_entry_t *e2 = p2;
+static int httpd_cmp_dirent(const void *p1, const void *p2) {
+  const httpd_dirent_t *e1 = p1;
+  const httpd_dirent_t *e2 = p2;
 
   int e1_is_dir = e1->mime_type && !strcmp(e1->mime_type, "inode/directory");
   int e2_is_dir = e2->mime_type && !strcmp(e2->mime_type, "inode/directory");
@@ -138,9 +138,9 @@ dir_listing_t *dir_listing_read(HttpdRequest *req, const char *path) {
 
       if (di->count + 1 >= di->capacity) {
         di->capacity += 16;
-        di->entries = realloc(di->entries, sizeof(dir_entry_t) * di->capacity);
+        di->entries = realloc(di->entries, sizeof(httpd_dirent_t) * di->capacity);
       }
-      dir_entry_t *de = &di->entries[di->count++];
+      httpd_dirent_t *de = &di->entries[di->count++];
       de->name = strdup(base);
       de->path = malloc(strlen(path) + 3 + strlen(base));
       if (path[strlen(path) - 1] == '/')
@@ -150,11 +150,11 @@ dir_listing_t *dir_listing_read(HttpdRequest *req, const char *path) {
       de->mime_type = s0il_detect_media_path(de->path);
     }
     closedir(dir);
-    qsort(di->entries, di->count, sizeof(dir_entry_t), cmp_dir_entry);
+    qsort(di->entries, di->count, sizeof(httpd_dirent_t), httpd_cmp_dirent);
   }
 
   for (int i = 0; i < di->count; i++) {
-    dir_entry_t *de = &di->entries[i];
+    httpd_dirent_t *de = &di->entries[i];
     struct stat info;
     stat(de->path, &info);
     de->size = info.st_size;
@@ -170,7 +170,7 @@ void append_dir_listing(HttpdRequest *req, dir_listing_t *di,
   OUTS("<table class='dir_listing'>\n");
   OUTF("<tr><td colspan='3' class='path'>%s</td></tr>\n", di->path);
   for (int i = 0; i < di->count; i++) {
-    dir_entry_t *de = &di->entries[i];
+    httpd_dirent_t *de = &di->entries[i];
     const char *mime_type = de->mime_type;
 
     OUTS("<tr><td>");

@@ -18,6 +18,7 @@
 #include "bin-src/clock.c"
 #include "bin-src/s0il-image.c"
 #include "bin-src/s0il-text.c"
+#include "bin-src/s0il-dir.c"
 
 #if BUNDLE_QJS
 #include "programs/qjs.c"
@@ -62,6 +63,7 @@ void add_mains(void) {
 
   s0il_bundle_main("s0il-image", s0il_image_main);
   s0il_bundle_main("s0il-text", s0il_text_main);
+  s0il_bundle_main("s0il-dir", s0il_dir_main);
   s0il_bundle_main("clock", clock_main);
   s0il_bundle_main("demo-setpixels", demo_setpixels_main);
 //s0il_bundle_main("bundled", bundled_main);

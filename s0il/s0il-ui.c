@@ -7,6 +7,8 @@ int _init_main(int argc, char **argv) {
   s0il_program_runner_init();
 
   system("rm -f /tmp/_s0il_*");
+  const char wasm_magic[] = {0, 'a', 's', 'm'};
+  s0il_add_magic("application/wasm", NULL, wasm_magic, sizeof wasm_magic, 0);
   const char elf_magic_32bit[] = {0x7f, 'E', 'L', 'F', 1, 1, 1, 0, 0, 0};
   const char elf_magic_64bit[] = {0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0};
   // uint8_t elf_magic[]={0x7f, 'E','L','F', 0,0, 0, 0, 0, 0};
@@ -16,8 +18,9 @@ int _init_main(int argc, char **argv) {
   s0il_add_magic("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
 
   // register text and image handlers
-  s0il_system("s0il-text");
-  s0il_system("s0il-image");
+  s0il_system("s0il-text --register");
+  s0il_system("s0il-image --register");
+  s0il_system("s0il-dir --register");
 
   const char mpg1_magic[] = {0x00, 0x00, 0x01, 0xba};
 
@@ -526,100 +529,6 @@ static void ui_view_file(Ui *ui) {
   ui_end_frame(ui);
 }
 
-typedef struct dir_entry_t {
-  char *name;
-  char *path;
-  const char *mime_type;
-} dir_entry_t;
-
-typedef struct dir_info_t {
-  dir_entry_t *entries;
-  int count;
-  int capacity;
-} dir_info_t;
-
-static void dir_info_finalize(void *d) {
-  dir_info_t *di = d;
-  if (di->entries) {
-    for (int i = 0; i < di->count; i++) {
-      free(di->entries[i].name);
-      free(di->entries[i].path);
-    }
-  }
-  free(di->entries);
-  free(di);
-}
-
-static int cmp_dir_entry(const void *p1, const void *p2) {
-  const dir_entry_t *e1 = p1;
-  const dir_entry_t *e2 = p2;
-
-  int e1_is_dir = !strcmp(e1->mime_type, "inode/directory");
-  int e2_is_dir = !strcmp(e2->mime_type, "inode/directory");
-
-  if (e2_is_dir - e1_is_dir)
-    return (e2_is_dir - e1_is_dir);
-
-  return strcmp(e1->name, e2->name);
-}
-
-static void ui_view_dir(Ui *ui) {
-  if (!ui->data) {
-    dir_info_t *di = ui->data = calloc(sizeof(dir_info_t), 1);
-    ui->data_finalize = dir_info_finalize;
-
-    DIR *dir = s0il_opendir(ui->location);
-
-    if (dir) {
-      struct dirent *ent;
-
-      while ((ent = s0il_readdir(dir))) {
-        const char *base = ent->d_name;
-
-        if (base[0] == '.')
-          continue;
-
-        if (di->count + 1 >= di->capacity) {
-          di->capacity += 16;
-          di->entries =
-              realloc(di->entries, sizeof(dir_entry_t) * di->capacity);
-        }
-        dir_entry_t *de = &di->entries[di->count++];
-        de->name = strdup(base);
-        de->path = malloc(strlen(ui->location) + 3 + strlen(base));
-        if (ui->location[strlen(ui->location) - 1] == '/')
-          sprintf(de->path, "%s%s", ui->location, base);
-        else
-          sprintf(de->path, "%s/%s", ui->location, base);
-        de->mime_type = s0il_detect_media_path(de->path);
-      }
-      s0il_closedir(dir);
-      qsort(di->entries, di->count, sizeof(dir_entry_t), cmp_dir_entry);
-    }
-  }
-
-  ui_start_frame(ui);
-  ui_title(ui, ui->location);
-
-  dir_info_t *di = ui->data;
-
-  if (di)
-    for (int i = 0; i < di->count; i++) {
-      dir_entry_t *de = &di->entries[i];
-
-      if (ui->y > ui->height + ui->font_size_px * 4 && i < di->count - 2) {
-      } else if (ui->y > -ui->font_size_px * 4 || i == 0) {
-        if (ui_button(ui, de->name)) {
-          ui_do(ui, de->path);
-        }
-      } else {
-        ui_text(ui, de->name);
-      }
-    }
-
-  ui_end_frame(ui);
-}
-
 static void ui_view_404(Ui *ui) {
   ui_start_frame(ui);
   ui_title(ui, "404");
@@ -892,7 +801,6 @@ static float color_fg[4]; // black or white automatically based on bg
 
   ui_add_view(ui, "settings-ui", view_settings_ui, NULL);
   ui_add_view(ui, "application/x-sharedlib", view_program, NULL);
-  ui_add_view(ui, "inode/directory", ui_view_dir, NULL);
 
   return ui;
 }
@@ -1472,8 +1380,7 @@ void ui_end_frame(Ui *ui) {
   } else {
     ui_add_key_binding(ui, "up", "focus-previous", "previous focusable item");
     ui_add_key_binding(ui, "left", "focus-previous", "previous focusable item");
-    ui_add_key_binding(ui, "shift-tab", "focus-previous",
-                       "previous focusable item");
+    ui_add_key_binding(ui, "shift-tab", "focus-previous", "previous focusable item");
     ui_add_key_binding(ui, "down", "focus-next", "next focusable item");
     ui_add_key_binding(ui, "right", "focus-next", "next focusable item");
     ui_add_key_binding(ui, "tab", "focus-next", "next focusable item");

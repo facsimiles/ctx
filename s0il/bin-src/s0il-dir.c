@@ -99,6 +99,9 @@ static void view_dir(Ui *ui) {
 }
 
 MAIN(s0il_dir) {
-  ui_add_view(ui_host(ctx_host()), "inode/directory", view_dir, NULL);
+  if (argv[1] && !strcmp(argv[1], "--register"))
+    ui_add_view(ui_host(ctx_host()), "inode/directory", view_dir, NULL);
+  else if (argv[1])
+    ui_push_fun(ui_host(ctx_host()), view_dir, argv[1], NULL, NULL);
   return 42;
 }
