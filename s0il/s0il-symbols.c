@@ -888,6 +888,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(ui_draw_bg),
     ELFSYM_EXPORT(ui_end_frame),
     ELFSYM_EXPORT(ui_entry),
+    ELFSYM_EXPORT(ui_entry_realloc),
     ELFSYM_EXPORT(ui_entry_coords),
     ELFSYM_EXPORT(s0il_path_lookup),
     ELFSYM_EXPORT(ui_focus_next),

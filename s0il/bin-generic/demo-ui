@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     ctx_start_frame(ctx);
     ui_start_frame(ui);
 
-    ui_entry(ui, "entry", "fallback", &str);
+    ui_entry_realloc(ui, "entry", "fallback", &str);
 
     sprintf(buf, "%i", counter);
     ui_text(ui, buf);

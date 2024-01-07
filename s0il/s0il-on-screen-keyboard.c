@@ -37,7 +37,7 @@ static void ctx_on_ct_event(CtxEvent *event, void *data1, void *data2) {
   event->stop_propagate = 1;
 }
 
-static char kb_preview[8] = ""; // TODO : set this, and show it in middle
+//static char kb_preview[8] = ""; // TODO : set this, and show it in middle
 
 void kb_cursor_drag(CtxEvent *event, void *data1, void *data2) {
   event->stop_propagate = 1;

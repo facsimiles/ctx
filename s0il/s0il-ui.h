@@ -95,19 +95,8 @@ void ui_textf(Ui *ui, const char *string, ...);
 void ui_seperator(Ui *ui);
 void ui_newline(Ui *ui);
 
-#if 0
-/*
- * returns NULL if value is unchanged or a newly allocated string
- * when entry has been changed. cleaner than using realloc for
- * language bindings.
- */
-char *itk_entry (ITK *itk,
-                 const char *label,
-                 const char *fallback,
-                 const char *val);
-#endif
-
-int  ui_entry(Ui *ui, const char *label, const char *fallback, char **strptr);
+char *ui_entry(Ui *ui, const char *label, const char *fallback, const char *value);
+int ui_entry_realloc(Ui *ui, const char *label, const char *fallback, char **strptr);
 
 float ui_slider(Ui *ui, const char *label, float min, float max, float step, float value);
 

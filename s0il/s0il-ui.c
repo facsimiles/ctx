@@ -1795,7 +1795,21 @@ char *ui_entry_coords(Ui *ui, void *id, float x, float y, float w, float h,
   return NULL;
 }
 
-int ui_entry(Ui *ui, const char *label, const char *fallback, char **strptr) {
+int ui_entry_realloc(Ui *ui, const char *label, const char *fallback, char **strptr)
+{
+  const char *str = "";
+  if (*strptr) str = *strptr;
+  char *ret = ui_entry(ui,label,fallback,str);
+  if (ret)
+  {
+    if (*strptr)free(*strptr);
+    *strptr = ret;
+    return 1;
+  }
+  return 0;
+}
+
+char *ui_entry(Ui *ui, const char *label, const char *fallback, const char *value) {
   char *ret = NULL;
   ctx_save(ui->ctx);
   ctx_font_size(ui->ctx, 0.75 * em);
@@ -1803,15 +1817,12 @@ int ui_entry(Ui *ui, const char *label, const char *fallback, char **strptr) {
   ctx_text(ui->ctx, label);
   if ((ret = ui_entry_coords(ui, UI_ID_STR(label), ui->width * 0.15, ui->y,
                              ui->width * 0.7, ui->line_height, fallback,
-                             *strptr))) {
-    if (*strptr)
-      free(*strptr);
-    *strptr = ret;
+                             value))) {
   }
   ui->y += ui->line_height;
   ctx_restore(ui->ctx);
 
-  return ret != NULL;
+  return ret;
 }
 
 void ui_set_scroll_offset(Ui *ui, float offset) {

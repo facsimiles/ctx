@@ -18,6 +18,17 @@ void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
           Param[5]->Val->FP);\
 }
 
+#define fun_ptr__ptr_ptr_ptr_ptr(funname) \
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
+{\
+  ReturnValue->Val->Pointer = \
+  funname(Param[0]->Val->Pointer,\
+          Param[1]->Val->Pointer,\
+          Param[2]->Val->Pointer,\
+          Param[3]->Val->Pointer);\
+}
+
 #define fun_int__ptr_ptr_ptr_ptr(funname) \
 void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
 	         struct PcValue **Param, int NumArgs)\
@@ -368,7 +379,8 @@ fun_void__ptr_float(ui_set_scroll_offset);
 fun_int__ptr_ptr_int(ui_toggle);
 fun_int__ptr(ui_keyboard_visible);
 fun_void__ptr_ptr(ui_title);
-fun_int__ptr_ptr_ptr_ptr(ui_entry);
+fun_ptr__ptr_ptr_ptr_ptr(ui_entry);
+fun_int__ptr_ptr_ptr_ptr(ui_entry_realloc);
 fun_float__ptr_ptr_float_float_float_float(ui_slider);
 fun_float__ptr(ui_get_font_size);
 fun_float__ptr(ui_x);
@@ -407,7 +419,8 @@ const struct LibraryFunction UiFunctions[] =
     {Cui_scroll_to,    "void ui_pop_scroll_to(Ui*,float);"},
     {Cui_set_scroll_offset,    "void ui_pop_set_scroll_offset(Ui*,float);"},
     {Cui_toggle,       "int ui_toggle(Ui*,char*,int);"},
-    {Cui_entry,        "int ui_entry(Ui*,char*,char*,char**strptr);"},
+    {Cui_entry,        "char *ui_entry(Ui*,char*,char*,char*);"},
+    {Cui_entry_realloc, "int ui_entry_realloc(Ui*,char*,char*,char**strptr);"},
     {Cui_slider,       "float ui_slider(Ui*, char*,float,float,float,float);"},
     {Cui_get_font_size,  "float ui_get_font_size(Ui*);"},
     {Cui_x,  "float ui_x(Ui*);"},

@@ -26,8 +26,9 @@ void view_wifi(Ui *ui) {
   }
 
   ui_seperator(ui);
-  ui_entry(ui, "essid", "wifi name", &wifi_ssid);
-  ui_entry(ui, "password", "joshua", &wifi_password);
+
+  ui_entry_realloc(ui, "essid", "wifi name", &wifi_ssid);
+  ui_entry_realloc(ui, "password", "joshua", &wifi_password);
 
   for (int i = 0; wifis[i]; i++) {
     if (ui_button(ui, wifis[i])) {
