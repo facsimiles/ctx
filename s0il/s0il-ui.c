@@ -1,6 +1,8 @@
 #include "port_config.h"
 #include "s0il.h"
 
+typedef struct _UiWidget UiWidget;
+
 void s0il_program_runner_init(void);
 int _init_main(int argc, char **argv) {
   // Ui *ui = ui_host(NULL);

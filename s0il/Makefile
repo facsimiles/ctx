@@ -142,11 +142,13 @@ riscv-flash: riscv
 riscv: fs_data.c fs_bin_generic.c s0il*.[ch] */*.c
 	(cd esp32c3; idf.py build)
 
+BUNDLED_SO_REMOVE=s0il-image s0il-text clock s0il-dir
+
 fs_bin_riscv.c: $(PROGRAMS_RISCV) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-riscv/* $@_fs
-	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
+	@(cd $@_fs; rm $(BUNDLED_SO_REMOVE))
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
@@ -155,7 +157,7 @@ fs_bin_xtensa.c: $(PROGRAMS_XTENSA) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-xtensa/* $@_fs
-	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
+	@(cd $@_fs; rm $(BUNDLED_SO_REMOVE))
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
@@ -164,7 +166,7 @@ fs_bin_native.c: $(PROGRAMS_NATIVE) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-native/* $@_fs
-	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
+	@(cd $@_fs; rm $(BUNDLED_SO_REMOVE))
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs
@@ -173,7 +175,7 @@ fs_bin_wasm.c: $(PROGRAMS_WASM) Makefile mkfs.sh
 	@rm -rf $@_fs
 	@mkdir $@_fs
 	@cp bin-wasm/* $@_fs
-	@rm $@_fs/s0il-image $@_fs/s0il-text $@_fs/clock
+	@(cd $@_fs; rm $(BUNDLED_SO_REMOVE))
 	./mkfs.sh $@_fs bin > $@_
 	@sed $@_ -e 's/unsigned/static const unsigned/' > $@
 	@rm -rf $@_ $@_fs

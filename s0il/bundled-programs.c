@@ -10,6 +10,7 @@
 #define BUNDLE_QJS   1
 #define BUNDLE_HTTPD 1
 #define BUNDLE_PICOC 1
+#define BUNDLE_WIFI  1
 
 
 #include "s0il.h"
@@ -69,7 +70,9 @@ void add_mains(void) {
 //s0il_bundle_main("bundled", bundled_main);
   s0il_bundle_main("demo-tsr", demo_tsr_main);
   //s0il_bundle_main("app", app_main);
+#if BUNDLE_WIFI
   s0il_bundle_main("wifi", wifi_main);
+#endif
   s0il_bundle_main("sync", sync_main);
 //s0il_bundle_main("demo-pcm_audio", demo_pcm_audio_main);
   s0il_bundle_main("demo-ctx_host", demo_ctx_host_main);

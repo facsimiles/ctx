@@ -32,21 +32,21 @@ void     bsp_captouch_key_events (int level);
 #endif
 float    bsp_captouch_angle   (float *radial_pos, int quantize, uint16_t petal_mask);
 
-
-typedef struct _UiWidget UiWidget;
-typedef struct _Ui       Ui;
+void ui_backlight (float backlight);
 
 
 /////////////////////////////////////////////
+typedef struct _Ui       Ui;
 
 void ui_add_key_binding(Ui *ui, const char *key, const char *action, const char *label);
 
-Ui *ui_new(Ctx *ctx);
-Ui *ui_host(Ctx *ctx); // like ui_new, can take NULL for ctx - should not
-                       // be ui_destroy'ed
-
+Ui *ui_new(Ctx *ctx);     // create a Ui instance from ctx, should be paired
+                          // with ui_destroy
 void ui_destroy (Ui *ui);
-void ui_backlight (float backlight);
+
+Ui *ui_host(Ctx *ctx); // like ui_new, can take NULL for ctx - should not
+                       // be ui_destroy'ed - reuses the system pre-existing
+                       // Ui instance.
 
 const char *ui_location(Ui *ui);
 
@@ -62,6 +62,25 @@ void ui_main(Ui *ui, const char *start_location);
 //
 void ui_do(Ui *ui, const char *name);
 
+typedef void (*ui_fun)(Ui *ui);
+typedef void (*ui_data_finalize)(void *data);
+
+// adds a view, either fun or binary_path is to be provided
+// name can either be a mime-type or a view title/name
+//
+//
+void ui_add_view (Ui         *ui,
+                  const char *name, 
+                  ui_fun      fun,
+                  const char *binary_path);
+
+void
+ui_push_fun (Ui *ui, ui_fun fun, const char *location, void *data, ui_data_finalize data_finalize);
+
+void ui_pop_fun   (Ui *ui);
+void ui_iteration (Ui *ui);
+
+//////////////////////////////////////////////////////////////////////////
 
 // for each frame should be call bafore other functions, sets up background
 void ui_start_frame(Ui *ui);
@@ -69,7 +88,6 @@ void ui_start_frame(Ui *ui);
 // should be called after all ui functions in a frame are done with
 void ui_end_frame(Ui *ui);
 
-void ui_pop_fun(Ui *ui);
 
 // draw background like ui would - without needing a matching ui_end
 void ui_draw_bg(Ui *ui);
@@ -123,26 +141,11 @@ char * ui_entry_coords(Ui *ui, void *id, float x, float y, float w, float h,
 
 float ui_get_font_size (Ui *ui);
 
-typedef void (*ui_fun)(Ui *ui);
-typedef void (*ui_data_finalize)(void *data);
-
-// adds a view, either fun or binary_path is to be provided
-// name can either be a mime-type or a view title/name
-//
-//
-void ui_add_view (Ui         *ui,
-                  const char *name, 
-                  ui_fun      fun,
-                  const char *binary_path);
 
 
 void s0il_load_file (Ui *ui, const char *path);
 void ui_cb_do     (CtxEvent *event, void *data1, void *data2);
 
-void
-ui_push_fun(Ui *ui, ui_fun fun, const char *location, void *data, ui_data_finalize data_finalize);
-
-void ui_iteration(Ui *ui);
 
 char *ui_basename (const char *in);
 

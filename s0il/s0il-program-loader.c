@@ -18,8 +18,6 @@ void s0il_program_runner_init(void) {
     return;
   thread_data[0] = _s0il_main_thread = _s0il_thread_id();
 
-  printf("!!\n");
-
   s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
   info->ppid = 0;
   info->pid = 0;
@@ -971,18 +969,23 @@ int s0il_system(const char *cmdline) {
 
   int pipe_no = 0;
   do {
-    cargv = s0il_parse_cmdline(rest, &terminator, &rest);
+    char **cmd_cargv;
+    cmd_cargv = cargv = s0il_parse_cmdline(rest, &terminator, &rest);
+
     if (cargv) {
       for (cargc = 0; cargv[cargc]; cargc++)
         ;
 
       if (cargv[0]) {
-        if (strchr(cargv[0], '=')) {
-          char *key = cargv[0];
-          char *value = strchr(cargv[0], '=') + 1;
+        while (cmd_cargv[0] && strchr(cmd_cargv[0], '=')) {
+          char *key = cmd_cargv[0];
+          char *value = strchr(cmd_cargv[0], '=') + 1;
           value[-1] = 0;
           setenv(key, value, 1);
-        } else {
+          cmd_cargv++;
+        }
+
+        if(cmd_cargv[0]){
 
           FILE *in_stream = NULL;
           FILE *out_stream = NULL;
@@ -1019,9 +1022,9 @@ int s0il_system(const char *cmdline) {
             s0il_redirect_io(in_stream, out_stream);
           // XXX : redirect should be handled in spawn..
           if (terminator == '&') {
-            s0il_spawnp(cargv);
+            s0il_spawnp(cmd_cargv);
           } else {
-            ret = s0il_runvp(cargv[0], cargv);
+            ret = s0il_runvp(cargv[0], cmd_cargv);
           }
 
           s0il_redirect_io(NULL, NULL);
