@@ -833,7 +833,7 @@ void ui_iteration(Ui *ui) {
     }
 #endif
 
-    if (1) // ctx_need_redraw (ctx))
+    if (ctx_need_redraw (ctx))
     {
       width = ctx_width(ctx);
       height = ctx_height(ctx);
@@ -945,7 +945,10 @@ static void ui_set_focus(Ui *ui, UiWidget *widget) {
     if (ui->focused_id) {
       UiWidget *old_widget = ui_widget_by_id(ui, ui->focused_id);
       if (old_widget == widget)
+      {
+        ctx_queue_draw(ui->ctx);
         return;
+      }
       if (old_widget) {
         old_widget->state = ui_state_lost_focus;
       }
@@ -976,6 +979,7 @@ void ui_focus_next(Ui *ui) {
   for (int i = 0; i < ui->widget_count; i++) {
     if (found || !ui->focused_id) {
       ui->focused_id = ui->widgets[i].id;
+      ctx_queue_draw(ui->ctx);
       return;
     }
     if (ui->widgets[i].id == ui->focused_id) {
@@ -995,6 +999,7 @@ void ui_focus_prev(Ui *ui) {
   for (int i = ui->widget_count - 1; i >= 0; i--) {
     if (found || !ui->focused_id) {
       ui->focused_id = ui->widgets[i].id;
+      ctx_queue_draw(ui->ctx);
       return;
     }
     if (ui->widgets[i].id == ui->focused_id) {
