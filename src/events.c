@@ -445,10 +445,10 @@ void _ctx_idle_iteration (Ctx *ctx)
 
   if (!ctx->events.idles && !ctx->events.idles_to_add)
   {
+#ifndef __EMSCRIPTEN_PTHREADS__
 #ifdef EMSCRIPTEN
-//#ifdef ASYNCIFY
     emscripten_sleep (10);
-//#endif
+#endif
 #endif
     return;
   }
@@ -531,10 +531,12 @@ void _ctx_idle_iteration (Ctx *ctx)
   }
   ctx->events.idles = idles;
   ctx->events.in_idle_dispatch=0;
+#ifndef __EMSCRIPTEN_PTHREADS__
 #if EMSCRIPTEN
 //#ifdef ASYNCIFY
    emscripten_sleep(1);
 //#endif
+#endif
 #endif
 }
 

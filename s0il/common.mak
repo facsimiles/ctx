@@ -19,7 +19,7 @@ POST_NATIVE3=@ echo 'rem-PIE' $@; ../../elf_strip_pie $@
 
 
 CC_WASM=@   echo 'CC     ' $@ ; $(CCACHE) emcc
-CFLAGS_WASM = $(CFLAGS) -I/usr/local/include -flto -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -Wl,--lto-O3 
+CFLAGS_WASM = $(CFLAGS) -I/usr/local/include -flto -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -Wl,--lto-O3
 
 
 CC_RISCV=@   echo 'CC     ' $@ ; $(CCACHE) riscv32-esp-elf-gcc

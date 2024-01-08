@@ -108,7 +108,9 @@ int update_fb (Ctx *ctx, void *user_data)
      }
   );
 
+#ifndef __EMSCRIPTEN_PTHREADS__
    emscripten_sleep(1);
+#endif
 
    int ret = 0;
 
