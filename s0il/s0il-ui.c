@@ -1806,7 +1806,7 @@ const char *ui_location(Ui *ui)
   return ui->location;
 }
 
-#if S0IL_NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
+#if S0IL_NATIVE //|| EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
 uint8_t scratch[1024 * 1024 * 4];
 Ctx *ctx_host(void);
 void ctx_RGB565_BS_to_RGBA8(void *rasterizer, int x, const void *buf,

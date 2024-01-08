@@ -23,6 +23,8 @@ static void view_tests(Ui *ui) {
 
   if (ui_button(ui, "C setpixels"))
     ui_do(ui, "demo-setpixels");
+  if (ui_button(ui, "C setpixels tsr"))
+    ui_do(ui, "demo-setpixels-tsr");
   if (ui_button(ui, "picoc ui"))
     ui_do(ui, "demo-ui");
   if (ui_button(ui, "qjs text mandel"))
