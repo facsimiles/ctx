@@ -19,8 +19,8 @@ char **wifi_scan(void);
 #endif
 #if CTX_ESP
 char **wifi_scan(void);
-int wifi_init_sta(const char *ssid, const char *password);
-void     board_init           (void);
+int      wifi_init_sta(const char *ssid, const char *password);
+void     board_init (void);
 
 int16_t  bsp_captouch_angular (int petal);
 uint16_t bsp_captouch_radial  (int petal);
@@ -37,60 +37,69 @@ void ui_backlight (float backlight);
 
 /////////////////////////////////////////////
 typedef struct _Ui       Ui;
-
-void ui_add_key_binding(Ui *ui, const char *key, const char *action, const char *label);
-
-Ui *ui_new(Ctx *ctx);     // create a Ui instance from ctx, should be paired
-                          // with ui_destroy
-void ui_destroy (Ui *ui);
-
-Ui *ui_host(Ctx *ctx); // like ui_new, can take NULL for ctx - should not
-                       // be ui_destroy'ed - reuses the system pre-existing
-                       // Ui instance.
-
-const char *ui_location(Ui *ui);
-
-// launch an ui view at location, which is am absolute file-system path or
-// a specially recognized view name
-
-void ui_main(Ui *ui, const char *start_location);
-
-// do an action, or go to a specified view - if activating a new
-// view the current view is first pushed on the view stack
-//
-// ui_do 
-//
-void ui_do(Ui *ui, const char *name);
-
 typedef void (*ui_fun)(Ui *ui);
 typedef void (*ui_data_finalize)(void *data);
 
+void ui_add_key_binding(Ui *ui, const char *key, const char *action, const char *label);
+
+// create a Ui instance from ctx, should be paired
+// with ui_destroy
+Ui *ui_new(Ctx *ctx);
+void ui_destroy (Ui *ui);
+
+// like ui_new, can take NULL for ctx - should not
+// be ui_destroy'ed - reuses the system pre-existing
+// Ui instance.
+Ui *ui_host(Ctx *ctx);
+
+// launch an ui view at location, which is am absolute file-system path or
+// a specially recognized view name
+void ui_main(Ui *ui, const char *start_location);
+
+// do an action, or go to a specified view - if activating a new
+// view the current view is first pushed on the view stack,
+//   built-in/reserved commands: back kb-hide kb-show kb-collapse exit
+//
+// names starting with / are taken to be local file system paths
+//
+// based on mime-type a registered view is used for rendering.
+void ui_do(Ui *ui, const char *name);
+
+void  ui_set_data (Ui *ui, void *data, ui_data_finalize data_finalize);
+
+void *ui_get_data (Ui *ui);
+
+void
+ui_push_fun (Ui *ui, ui_fun fun, const char *location, void *data, ui_data_finalize data_finalize);
+
+// get the current location / path
+// this is set by either ui_push_fun or indirectly by ui_do
+const char *ui_location(Ui *ui);
+
 // adds a view, either fun or binary_path is to be provided
 // name can either be a mime-type or a view title/name
-//
 //
 void ui_add_view (Ui         *ui,
                   const char *name, 
                   ui_fun      fun,
                   const char *binary_path);
 
-void
-ui_push_fun (Ui *ui, ui_fun fun, const char *location, void *data, ui_data_finalize data_finalize);
 
 void ui_pop_fun   (Ui *ui);
 void ui_iteration (Ui *ui);
 
 //////////////////////////////////////////////////////////////////////////
 
-// for each frame should be call bafore other functions, sets up background
+// draw background like ui would - without needing a matching ui_end
+void ui_draw_bg(Ui *ui);
+
+// for each frame should be call bafore other functions, includes a call to
+// ui_draw_bg
 void ui_start_frame(Ui *ui);
 
 // should be called after all ui functions in a frame are done with
 void ui_end_frame(Ui *ui);
 
-
-// draw background like ui would - without needing a matching ui_end
-void ui_draw_bg(Ui *ui);
 
 void ui_scroll_to (Ui *ui, float offset);
 void ui_set_scroll_offset (Ui *ui, float offset);
@@ -143,15 +152,13 @@ float ui_get_font_size (Ui *ui);
 
 
 
-void s0il_load_file (Ui *ui, const char *path);
+char *s0il_load_file (Ui *ui, const char *path, int *ret_length);
 void ui_cb_do     (CtxEvent *event, void *data1, void *data2);
 
 
 char *ui_basename (const char *in);
 
 Ctx  *ui_ctx      (Ui *ui);
-void  ui_set_data (Ui *ui, void *data, ui_data_finalize data_finalize);
-void *ui_get_data (Ui *ui);
 void  ui_keyboard (Ui *ui);
 float ui_x (Ui *ui);
 float ui_y (Ui *ui);

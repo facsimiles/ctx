@@ -40,6 +40,17 @@ void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
           Param[3]->Val->Pointer);\
 }
 
+
+#define fun_ptr__ptr_ptr_ptr(funname) \
+void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
+	         struct PcValue **Param, int NumArgs)\
+{\
+  ReturnValue->Val->Pointer = \
+  funname(Param[0]->Val->Pointer,\
+          Param[1]->Val->Pointer,\
+          Param[2]->Val->Pointer);\
+}
+
 #define fun_int__ptr_ptr_int(funname) \
 void C##funname (struct ParseState *Parser, struct PcValue *ReturnValue,\
 	         struct PcValue **Param, int NumArgs)\
@@ -392,7 +403,7 @@ fun_void__ptr(ui_iteration);
 fun_ptr__ptr(ui_ctx);
 fun_ptr__ptr(ui_get_data);
 fun_void__ptr(ui_keyboard);
-fun_void__ptr_ptr(s0il_load_file);
+fun_ptr__ptr_ptr_ptr(s0il_load_file);
 fun_void__ptr_ptr_ptr_int_int(s0il_add_magic);
 
 // ui_push_fun ui_register_view
@@ -408,7 +419,7 @@ const struct LibraryFunction UiFunctions[] =
     {Cui_new,          "Ui*ui_new(Ctx*);"},
     {Cui_ctx,          "Ctx*ui_ctx(Ui*);"},
     {Cui_get_data,     "void*ui_get_data(Ui*);"},
-    {Cs0il_load_file,    "void s0il_load_file(Ui*,char*p);"},
+    {Cs0il_load_file,    "char *s0il_load_file(Ui*,char*p,int *);"},
     {Cs0il_add_magic, "void s0il_add_magic(char*,char*,unsigned char*,int,int);"},
     {Cui_keyboard,     "void ui_keyboard(Ui*);"},
     {Cui_destroy,      "void ui_destroy(Ui*);"},

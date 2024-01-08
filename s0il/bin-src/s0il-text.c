@@ -3,6 +3,7 @@
 typedef struct TextContext {
   char *path;
   uint8_t *contents;
+
   int length;
   int capacity;
 
@@ -364,17 +365,15 @@ MAIN(s0il_text) {
     Ctx *ctx = ui_ctx(ui);
 
     {
-      s0il_load_file(ui, argv[1]);
-      if (!ui_get_data(ui)) {
+      text->contents = (uint8_t*)s0il_load_file(ui, argv[1], NULL);
+      if (!text->contents) {
         ctx_destroy(ctx);
         return -1;
       }
-      text->contents = (uint8_t *)strdup(ui_get_data(ui));
       text->path = strdup(argv[1]);
       text->length = strlen((char *)text->contents);
       text->capacity = text->length + 1;
       text->dirty = 0;
-      ui_set_data(ui, NULL, NULL);
     }
 
     do {
@@ -392,7 +391,9 @@ MAIN(s0il_text) {
       fclose(f);
     }
     free(text->path);
+    text->path = NULL;
     free(text->contents);
+    text->contents = NULL;
   } 
 
   ctx_destroy(ctx);

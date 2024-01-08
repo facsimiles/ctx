@@ -489,24 +489,26 @@ static void ui_unhandled(Ui *ui) {
   ui_end_frame(ui);
 }
 
-void s0il_load_file(Ui *ui, const char *path) {
+char *s0il_load_file(Ui *ui, const char *path, int *ret_length) {
   FILE *file = s0il_fopen(path, "rb");
-  if (ui->data && ui->data_finalize) {
-    ui->data_finalize(ui->data);
-  }
-  ui->data = NULL;
+  char *data = NULL;
   if (file) {
     s0il_fseek(file, 0, SEEK_END);
     long length = s0il_ftell(file);
     s0il_fseek(file, 0, SEEK_SET);
-    ui->data = malloc(length + 1);
-    s0il_fread(ui->data, length, 1, file);
-    s0il_fclose(file);
-    ((char *)ui->data)[length] = 0;
-    ui->data_finalize = free;
-    printf("loaded %s\n", path);
+    if (ret_length) *ret_length = length;
+    data = malloc(length + 1);
+    if (data)
+    {
+      s0il_fread(data, length, 1, file);
+      s0il_fclose(file);
+      ((char *)data)[length] = 0;
+    }
   } else
-    printf("didnt load %s\n", path);
+  {
+    printf("load failing for %s\n", path);
+  }
+  return data;
 }
 
 static void ui_view_file(Ui *ui) {
