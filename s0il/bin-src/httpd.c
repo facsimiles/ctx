@@ -934,7 +934,7 @@ int _httpd_start_int(int port,
       printf("socket error\n");
       continue;
     } else if (rv == 0) {
-      ui_iteration(ui_host(ctx_host()));
+      s0il_iteration(ui_host(ctx_host()));
       if (ctx_has_quit(ctx_host()))
         httpd_stop = 1;
       continue;
@@ -944,7 +944,7 @@ int _httpd_start_int(int port,
 
     if (s < 0) {
 #if 1
-      ui_iteration(ui_host(ctx_host()));
+      s0il_iteration(ui_host(ctx_host()));
 #else
 #ifdef S0IL_NATIVE
       usleep(1000 * 10);

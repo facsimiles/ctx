@@ -22,19 +22,19 @@ static void view_tests(Ui *ui) {
   ui_start_frame(ui);
 
   if (ui_button(ui, "C setpixels"))
-    ui_do(ui, "demo-setpixels");
+    s0il_do(ui, "demo-setpixels");
   if (ui_button(ui, "C setpixels tsr"))
-    ui_do(ui, "demo-setpixels-tsr");
+    s0il_do(ui, "demo-setpixels-tsr");
   if (ui_button(ui, "picoc ui"))
-    ui_do(ui, "demo-ui");
+    s0il_do(ui, "demo-ui");
   if (ui_button(ui, "qjs text mandel"))
-    ui_do(ui, "demo-vt-mandel.js");
+    s0il_do(ui, "demo-vt-mandel.js");
   if (ui_button(ui, "C ctx-host"))
-    ui_do(ui, "demo-ctx_host");
+    s0il_do(ui, "demo-ctx_host");
   if (ui_button(ui, "C pcm audio"))
-    ui_do(ui, "demo-pcm_audio");
+    s0il_do(ui, "demo-pcm_audio");
   if (ui_button(ui, "C tsr"))
-    ui_do(ui, "demo-tsr");
+    s0il_do(ui, "demo-tsr");
 
   ui_end_frame(ui);
 }
@@ -43,11 +43,11 @@ static void view_repls(Ui *ui) {
   ui_start_frame(ui);
 
   if (ui_button(ui, "unix"))
-    ui_do(ui, "sh");
+    s0il_do(ui, "sh");
   if (ui_button(ui, "lua"))
-    ui_do(ui, "lua");
+    s0il_do(ui, "lua");
   if (ui_button(ui, "quickjs"))
-    ui_do(ui, "qjs");
+    s0il_do(ui, "qjs");
 #if 0
   if (ui_button(ui, "picoc"))
     s0il_system("picoc -i");
@@ -72,27 +72,27 @@ static void view_menu(Ui *ui) {
         usb_had_console = true;
 
       if (usb_had_console) // launch a shell first time we
-        ui_do(ui, "sh");   // see a terminal on the other
+        s0il_do(ui, "sh");   // see a terminal on the other
                            // end of USB
     }
   }
 #endif
 
   if (ui_button(ui, "files"))
-    ui_do(ui, "/");
+    s0il_do(ui, "/");
   if (ui_button(ui, "repls"))
-    ui_do(ui, "repls");
+    s0il_do(ui, "repls");
   if (ui_button(ui, "clock"))
-    ui_do(ui, "clock");
+    s0il_do(ui, "clock");
   if (ui_button(ui, "console"))
-    ui_do(ui, "sh");
+    s0il_do(ui, "sh");
   if (ui_button(ui, "httpd"))
-    ui_do(ui, "httpd");
+    s0il_do(ui, "httpd");
   if (ui_button(ui, "tests"))
-    ui_do(ui, "tests");
+    s0il_do(ui, "tests");
 
   if (ui_button(ui, "system"))
-    ui_do(ui, "settings");
+    s0il_do(ui, "settings");
 
   ui_end_frame(ui);
 }
@@ -111,15 +111,15 @@ void view_settings(Ui *ui) {
   ui_title(ui, "settings");
 
   if (ui_button(ui, "wifi"))
-    ui_do(ui, "wifi");
+    s0il_do(ui, "wifi");
   if (ui_button(ui, "httpd"))
-    ui_do(ui, "httpd");
+    s0il_do(ui, "httpd");
   if (ui_button(ui, "appearance"))
-    ui_do(ui, "settings-ui");
+    s0il_do(ui, "settings-ui");
 
   backlight = ui_slider(ui, "backlight", 0.0f, 100.0f, 5.0, backlight);
 
-  ui_backlight(backlight);
+  s0il_backlight(backlight);
 
 #if CTX_FLOW3R
   flow3r_synthesize_key_events =
@@ -127,9 +127,9 @@ void view_settings(Ui *ui) {
 #endif
 
   // if (ui_button(ui, "mime types"))
-  //   ui_do(ui, "magic");
+  //   s0il_do(ui, "magic");
   if (ui_button(ui, "views"))
-    ui_do(ui, "s0il-views");
+    s0il_do(ui, "s0il-views");
 
 #if CTX_ESP
   if (ui_button(ui, "reboot"))
@@ -250,17 +250,17 @@ int main(int argc, char **argv) {
   s0il_system("_init");
   s0il_system("init");
 
-  ui_add_view(ui, "menu", view_menu, NULL);
-  ui_add_view(ui, "repls", view_repls, NULL);
-  ui_add_view(ui, "tests", view_tests, NULL);
-  ui_add_view(ui, "settings", view_settings, NULL);
-  // ui_add_view(ui, "magic", view_magic, NULL);
-  ui_add_view(ui, "s0il-views", s0il_view_views, NULL);
-  ui_do(ui, "menu");        // queue menu - as initial view
+  s0il_add_view(ui, "menu", view_menu, NULL);
+  s0il_add_view(ui, "repls", view_repls, NULL);
+  s0il_add_view(ui, "tests", view_tests, NULL);
+  s0il_add_view(ui, "settings", view_settings, NULL);
+  // s0il_add_view(ui, "magic", view_magic, NULL);
+  s0il_add_view(ui, "s0il-views", s0il_view_views, NULL);
+  s0il_do(ui, "menu");        // queue menu - as initial view
   s0il_printf("\033[?30l"); // turn off scrollbar
 
   s0il_system("wifi --auto &");
-  //  ui_do(ui, "sh");
+  //  s0il_do(ui, "sh");
 #ifdef S0IL_NATIVE
   s0il_main(ui);
 #else

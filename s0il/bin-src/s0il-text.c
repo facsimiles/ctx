@@ -99,26 +99,26 @@ static void text_key_press(CtxEvent *event, void *data1, void *data2) {
 
   if (ui_keyboard_visible(ui)) {
     if (!strcmp(string, "shift-space")) {
-      ui_do(ui, "kb-hide");
+      s0il_do(ui, "kb-hide");
       return;
     }
     if (!strcmp(string, "escape")) {
-      ui_do(ui, "kb-hide");
+      s0il_do(ui, "kb-hide");
       return;
     }
   } else {
     if (!strcmp(string, "shift-space")) {
-      ui_do(ui, "kb-show");
+      s0il_do(ui, "kb-show");
       return;
     }
     if (!strcmp(string, "return")) {
-      ui_do(ui, "kb-show");
+      s0il_do(ui, "kb-show");
       return;
     }
   }
 
   if (!strcmp(string, "escape"))
-    ui_do(ui, "exit");
+    s0il_do(ui, "exit");
   else if (!strcmp(string, "down"))
     text_down(event, data1, data2);
   else if (!strcmp(string, "up"))
@@ -358,7 +358,7 @@ MAIN(s0il_text) {
     for (int i = 0; mime_types[i]; i += 2) {
       if (mime_types[i + 1])
         s0il_add_magic(mime_types[i], mime_types[i + 1], NULL, 0, 1);
-      ui_add_view(ui, mime_types[i], NULL, argv[0]);
+      s0il_add_view(ui, mime_types[i], NULL, argv[0]);
     }
   }
   else if (argv[1]) {

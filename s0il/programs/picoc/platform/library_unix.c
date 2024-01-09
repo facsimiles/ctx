@@ -382,8 +382,8 @@ fun_void__ptr(ui_destroy);
 fun_int__ptr_ptr(ui_button);
 
 fun_void__ptr(s0il_main);
-fun_void__ptr_ptr(ui_do);
-fun_void__ptr(ui_pop_fun);
+fun_void__ptr_ptr(s0il_do);
+fun_void__ptr(s0il_pop_fun);
 fun_void__ptr(ui_draw_bg);
 fun_void__ptr_float(ui_scroll_to);
 fun_void__ptr_float(ui_set_scroll_offset);
@@ -397,11 +397,11 @@ fun_float__ptr(ui_get_font_size);
 fun_float__ptr(ui_x);
 fun_float__ptr(ui_y);
 fun_void__ptr_float_float(ui_move_to);
-fun_void__ptr_ptr_ptr_ptr(ui_add_view);
+fun_void__ptr_ptr_ptr_ptr(s0il_add_view);
 fun_void__ptr_ptr_ptr(ui_cb_do);
-fun_void__ptr(ui_iteration);
+fun_void__ptr(s0il_iteration);
 fun_ptr__ptr(ui_ctx);
-fun_ptr__ptr(ui_get_data);
+fun_ptr__ptr(s0il_get_data);
 fun_void__ptr(ui_keyboard);
 fun_ptr__ptr_ptr_ptr(s0il_load_file);
 fun_void__ptr_ptr_ptr_int_int(s0il_add_magic);
@@ -418,14 +418,14 @@ const struct LibraryFunction UiFunctions[] =
     {Cui_button,       "int ui_button(Ui*,char*string);"},
     {Cui_new,          "Ui*ui_new(Ctx*);"},
     {Cui_ctx,          "Ctx*ui_ctx(Ui*);"},
-    {Cui_get_data,     "void*ui_get_data(Ui*);"},
+    {Cs0il_get_data,     "void*s0il_get_data(Ui*);"},
     {Cs0il_load_file,    "char *s0il_load_file(Ui*,char*p,int *);"},
     {Cs0il_add_magic, "void s0il_add_magic(char*,char*,unsigned char*,int,int);"},
     {Cui_keyboard,     "void ui_keyboard(Ui*);"},
     {Cui_destroy,      "void ui_destroy(Ui*);"},
     {Cs0il_main,       "void s0il_main(Ui*);"},
-    {Cui_do,           "void ui_do(Ui*,char*);"},
-    {Cui_pop_fun,      "void ui_pop_fun(Ui*);"},
+    {Cs0il_do,           "void s0il_do(Ui*,char*);"},
+    {Cs0il_pop_fun,      "void s0il_pop_fun(Ui*);"},
     {Cui_draw_bg,      "void ui_draw_bg(Ui*);"},
     {Cui_scroll_to,    "void ui_pop_scroll_to(Ui*,float);"},
     {Cui_set_scroll_offset,    "void ui_pop_set_scroll_offset(Ui*,float);"},
@@ -437,9 +437,9 @@ const struct LibraryFunction UiFunctions[] =
     {Cui_x,  "float ui_x(Ui*);"},
     {Cui_y,  "float ui_y(Ui*);"},
     {Cui_move_to,  "void ui_move_to(Ui*,float,float);"},
-    {Cui_add_view,  "void ui_add_view(Ui*,char*,void*,char*);"},
+    {Cs0il_add_view,  "void s0il_add_view(Ui*,char*,void*,char*);"},
     {Cui_cb_do,  "void ui_cb_do(void*,void*,void*);"},
-    {Cui_iteration,  "void ui_iteration(Ui*);"},
+    {Cs0il_iteration,  "void s0il_iteration(Ui*);"},
 
     {Cs0il_runv,     "int s0il_runv(char*,char**);"},
     {Cs0il_runvp,    "int s0il_runvp(char*,char**);"},

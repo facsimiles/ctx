@@ -207,7 +207,7 @@ int launch_program_interpreter(Ctx *ctx, void *data) {
       char *argv[2] = {ui->location, NULL};
       retval = s0il_runvp(ui->location, argv);
     }
-    ui_do(ui, "kb-hide");
+    s0il_do(ui, "kb-hide");
     if (s0il_output_state() == 1) {
       // TODO : draw a visual count-down
       // sleep (2);
@@ -225,7 +225,7 @@ int launch_program_interpreter(Ctx *ctx, void *data) {
     }
     s0il_output_state_reset();
 
-    ui_pop_fun(ui); // leave view when done
+    s0il_pop_fun(ui); // leave view when done
     program_return_value = retval;
   }
   return 0;
@@ -245,21 +245,21 @@ static void terminal_key_any(CtxEvent *event, void *userdata, void *userdata2) {
       const char *string = event->string;
       if (ui_keyboard_visible(ui)) {
         if (!strcmp(string, "shift-space")) {
-          ui_do(ui, "kb-hide");
+          s0il_do(ui, "kb-hide");
           return;
         }
         if (!strcmp(string, "escape")) {
-          ui_do(ui, "kb-hide");
+          s0il_do(ui, "kb-hide");
           return;
         }
       } else {
         if (!strcmp(string, "shift-space")) {
-          ui_do(ui, "kb-show");
+          s0il_do(ui, "kb-show");
           return;
         }
       }
       if (!strcmp(string, "control-q")) {
-        ui_do(ui, "exit");
+        s0il_do(ui, "exit");
         return;
       }
 
@@ -358,7 +358,7 @@ static bool osk_captouch = false;
 ////////////////////////////////////////////////////////
 
 static float prev_backlight = 100.0f;
-void ui_backlight(float backlight) {
+void s0il_backlight(float backlight) {
   if (prev_backlight != backlight) {
 #if CTX_ESP
     esp_backlight(backlight);
@@ -423,7 +423,7 @@ void view_settings_ui(Ui *ui) {
 }
 
 // XXX : why is this not a linked list?
-void ui_add_view(Ui *ui,
+void s0il_add_view(Ui *ui,
                  const char *name, // or mime-type
                  ui_fun fun,       // either fun - or binary_path ..
                  const char *binary_path) {
@@ -474,11 +474,11 @@ static void restore_state(Ui *ui) {
     ui_set_scroll_offset(ui, ui->history[no].scroll_offset);
     ui->focused_id = ui->history[no].focused;
   } else
-    ui_do(ui, "exit");
+    s0il_do(ui, "exit");
 }
 
-void ui_pop_fun(Ui *ui) {
-  ui_set_data(ui, NULL, NULL);
+void s0il_pop_fun(Ui *ui) {
+  s0il_set_data(ui, NULL, NULL);
   restore_state(ui);
 }
 
@@ -540,20 +540,20 @@ static void ui_view_404(Ui *ui) {
   ui_end_frame(ui);
 }
 
-void ui_set_data(Ui *ui, void *data, ui_data_finalize data_finalize) {
+void s0il_set_data(Ui *ui, void *data, ui_data_finalize data_finalize) {
   if (ui->data && ui->data_finalize)
     ui->data_finalize(ui->data);
   ui->data = data;
   ui->data_finalize = data_finalize;
 }
 
-void *ui_get_data(Ui *ui) { return ui->data; }
+void *s0il_get_data(Ui *ui) { return ui->data; }
 
 const char *ui_get_location(Ui *ui) { return ui->location; }
 
 int ui_get_frame_no(Ui *ui) { return ui->frame_no; }
 
-void ui_push_fun(Ui *ui, ui_fun fun, const char *location, void *data,
+void s0il_push_fun(Ui *ui, ui_fun fun, const char *location, void *data,
                  ui_data_finalize data_finalize) {
   if (ui->fun)
     save_state(ui);
@@ -580,7 +580,7 @@ void ui_push_fun(Ui *ui, ui_fun fun, const char *location, void *data,
   ui->data = NULL;
   ui->data_finalize = NULL;
   if (data)
-    ui_set_data(ui, data, data_finalize);
+    s0il_set_data(ui, data, data_finalize);
   ui->overlay_fade = 0.7;
 }
 
@@ -588,34 +588,34 @@ void ui_load_view(Ui *ui, const char *target) {
   if (target[0] == '/') {
     struct stat st;
     if (s0il_stat(target, &st) == 0) {
-      ui_push_fun(ui, ui_view_file, target, NULL, NULL);
+      s0il_push_fun(ui, ui_view_file, target, NULL, NULL);
     } else {
-      ui_push_fun(ui, ui_view_404, target, NULL, NULL);
+      s0il_push_fun(ui, ui_view_404, target, NULL, NULL);
     }
   } else {
     for (int i = ui->n_views - 1; i >= 0; i--)
       if (!strcmp(ui->views[i].name, target)) {
-        ui_push_fun(ui, ui->views[i].fun, target, NULL, NULL);
+        s0il_push_fun(ui, ui->views[i].fun, target, NULL, NULL);
         return;
       }
 
     char *epath;
     if ((epath = s0il_path_lookup(ui, target))) {
       // printf ("push efun %s %s\n", target, epath);
-      ui_push_fun(ui, view_program, epath, NULL, NULL);
+      s0il_push_fun(ui, view_program, epath, NULL, NULL);
       free(epath);
       return;
     }
 
-    ui_push_fun(ui, ui_unhandled, target, NULL, NULL);
+    s0il_push_fun(ui, ui_unhandled, target, NULL, NULL);
   }
 }
 
 static UiWidget *ui_widget_by_id(Ui *ui, void *id);
 
-void ui_do(Ui *ui, const char *action) {
+void s0il_do(Ui *ui, const char *action) {
   ctx_queue_draw(ui->ctx);
-  // printf ("ui_do: %s\n", action);
+  // printf ("s0il_do: %s\n", action);
   if (!strcmp(action, "exit")) {
     ctx_exit(ui->ctx);
     // we proxy some keys, since this makes binding code simpler
@@ -626,18 +626,18 @@ void ui_do(Ui *ui, const char *action) {
   } else if (!strcmp(action, "back")) {
     ui->overlay_fade = 0.7;
     if (ctx_osk_mode > 1) {
-      ui_do(ui, "kb-hide");
+      s0il_do(ui, "kb-hide");
     } else if (ui->fun == view_program) {
       ctx_exit(ui->ctx);
     } else {
-      ui_pop_fun(ui);
+      s0il_pop_fun(ui);
     }
   } else if (!strcmp(action, "activate")) {
     UiWidget *widget = ui_widget_by_id(ui, ui->focused_id);
     if (ui->focused_id)
       ui->activate = 1;
     if (widget && (widget->type == ui_type_entry))
-      ui_do(ui, "kb-show");
+      s0il_do(ui, "kb-show");
   } else if (!strcmp(action, "focus-next")) {
     ui_focus_next(ui);
   } else if (!strcmp(action, "focus-previous")) {
@@ -661,12 +661,12 @@ void ui_do(Ui *ui, const char *action) {
     ui_load_view(ui, action);
 }
 
-int ui_do_main(int argc, char **argv) {
+int s0il_do_main(int argc, char **argv) {
   Ui *ui = ui_host(NULL);
   if (argv[1])
-    ui_do(ui, argv[1]);
+    s0il_do(ui, argv[1]);
   else {
-    printf("Usage: ui_do <action | view | path>\n");
+    printf("Usage: s0il_do <action | view | path>\n");
     printf("  actions: back\n"
            "           activate\n"
            "           kb-show\n"
@@ -687,7 +687,7 @@ void ui_cb_do(CtxEvent *event, void *data1, void *data2) {
   }
   event->stop_propagate = 1;
   // printf ("%s %s %s\n", data1, data2, event->string);
-  ui_do(ui, target);
+  s0il_do(ui, target);
 }
 
 void ui_overlay_button(Ui *ui, float x, float y, float w, float h,
@@ -739,11 +739,11 @@ static Ctx *_ctx_host = NULL;
 Ctx *ctx_host(void) { return _ctx_host; }
 #endif
 
-int ui_do_main(int argc, char **argv);
+int s0il_do_main(int argc, char **argv);
 Ui *ui_new(Ctx *ctx) {
   Ui *ui = calloc(1, sizeof(Ui));
   s0il_bundle_main("_init", _init_main);
-  s0il_bundle_main("ui_do", ui_do_main);
+  s0il_bundle_main("s0il_do", s0il_do_main);
   if (!def_ui) {
     def_ui = ui;
 #ifdef S0IL_NATIVE
@@ -803,8 +803,8 @@ static float color_fg[4]; // black or white automatically based on bg
   else
     ui->font_size_vh = width / height * 9;
 
-  ui_add_view(ui, "settings-ui", view_settings_ui, NULL);
-  ui_add_view(ui, "application/x-sharedlib", view_program, NULL);
+  s0il_add_view(ui, "settings-ui", view_settings_ui, NULL);
+  s0il_add_view(ui, "application/x-sharedlib", view_program, NULL);
 
   return ui;
 }
@@ -819,7 +819,7 @@ int s0il_output_state(void);
 #endif
 #include <unistd.h>
 
-void ui_iteration(Ui *ui) {
+void s0il_iteration(Ui *ui) {
   Ctx *ctx = ui->ctx;
   float width = ctx_width(ctx);
   float height = ctx_height(ctx);
@@ -848,7 +848,7 @@ void ui_iteration(Ui *ui) {
       if (ui->queued_next) {
         ui->queued_next--;
         if (ui->queued_next <= 0 && ui->widget_count)
-          ui_do(ui, "focus-next");
+          s0il_do(ui, "focus-next");
       }
       ctx_restore(ctx);
 
@@ -923,7 +923,7 @@ void s0il_main(Ui *ui) {
   }
 
   while (!ctx_has_exited(ctx))
-    ui_iteration(ui);
+    s0il_iteration(ui);
 }
 static void ui_set_color(Ctx *ctx, float *rgba) {
   ctx_rgba(ctx, rgba[0], rgba[1], rgba[2], rgba[3]);
@@ -957,7 +957,7 @@ static void ui_set_focus(Ui *ui, UiWidget *widget) {
         printf("text commit?\n");
         old_widget->state = ui_state_commit;
         ui->active_id = NULL;
-        ui_do(ui, "kb-hide");
+        s0il_do(ui, "kb-hide");
       }
       ui->active_id = NULL;
       ui->focused_id = NULL;
@@ -1082,7 +1082,7 @@ static void ui_entry_key_press(CtxEvent *event, void *userdata,
   } else if (!strcmp(string, "escape")) {
     ui->active_id = NULL;
     printf("deactivated\n");
-    ui_do(ui, "kb-hide");
+    s0il_do(ui, "kb-hide");
   } else if (!strcmp(string, "left")) {
     ui->cursor_pos--;
     while ((ui->temp_text[ui->cursor_pos] & 192) == 128)
@@ -1605,8 +1605,8 @@ static void ui_entry_drag(CtxEvent *event, void *data1, void *data2) {
     event->stop_propagate = 0;
     if (widget->state != ui_state_lost_focus) {
       if (data2 != ui->active_id) {
-        ui_do(ui, "kb-show");
-        ui_do(ui, "activate");
+        s0il_do(ui, "kb-show");
+        s0il_do(ui, "activate");
       }
     }
   } else {
@@ -1706,7 +1706,7 @@ char *ui_entry_coords(Ui *ui, void *id, float x, float y, float w, float h,
 
   if (widget->state == ui_state_commit) {
     widget->state = ui_state_default;
-    ui_do(ui, "kb-hide");
+    s0il_do(ui, "kb-hide");
     return strdup(ui->temp_text);
   }
   return NULL;
@@ -1807,7 +1807,7 @@ void s0il_view_views(Ui *ui) {
   }
   ui_end_frame(ui);
 }
-const char *ui_location(Ui *ui)
+const char *s0il_location(Ui *ui)
 {
   return ui->location;
 }

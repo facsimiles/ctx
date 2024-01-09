@@ -12,7 +12,7 @@ MAIN(demo_ui) {
     return -1;
 
   Ui *ui = ui_new(ctx);
-  ui_push_fun(ui, app_ui_view_foo, NULL, NULL, NULL);
+  s0il_push_fun(ui, app_ui_view_foo, NULL, NULL, NULL);
   s0il_main(ui);
 
   ui_destroy(ui);

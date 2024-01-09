@@ -15,9 +15,9 @@ MAIN(demo_tsr) {
   Ui *ui = ui_host(NULL);
 
   // XXX: this is ugly
-  ui_pop_fun(ui);
-  ui_push_fun(ui, tsr_view_foo, NULL, NULL, NULL);
-  ui_push_fun(ui, tsr_view_foo, NULL, NULL, NULL);
+  s0il_pop_fun(ui);
+  s0il_push_fun(ui, tsr_view_foo, NULL, NULL, NULL);
+  s0il_push_fun(ui, tsr_view_foo, NULL, NULL, NULL);
 
   return 42;
 }

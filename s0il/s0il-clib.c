@@ -375,7 +375,7 @@ int s0il_putchar(int c) {
   if (c == '\n') {
     ctx_vt_write(NULL, '\r');
     if (s0il_is_main_thread())
-      ui_iteration(ui_host(NULL)); // doing a ui iteration
+      s0il_iteration(ui_host(NULL)); // doing a ui iteration
                                    // per received char is a bit much
                                    // so we only do newlines
   }
@@ -428,7 +428,7 @@ int s0il_fputs(const char *s, FILE *stream) {
       ctx_vt_write(NULL, s[i]);
     }
     if (s0il_is_main_thread())
-      ui_iteration(ui_host(NULL));
+      s0il_iteration(ui_host(NULL));
   }
   int ret = fputs(s, stream);
   return ret;
@@ -458,7 +458,7 @@ size_t s0il_fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
       ctx_vt_write(NULL, s[i]);
     }
     if (s0il_is_main_thread())
-      ui_iteration(ui_host(NULL));
+      s0il_iteration(ui_host(NULL));
   }
   return fwrite(ptr, size, nmemb, stream);
 }
@@ -478,7 +478,7 @@ ssize_t s0il_write(int fd, const void *buf, size_t count) {
       ctx_vt_write(NULL, s[i]);
     }
     if (s0il_is_main_thread())
-      ui_iteration(ui_host(NULL));
+      s0il_iteration(ui_host(NULL));
   }
   return write(fd, buf, count);
 }
@@ -489,7 +489,7 @@ int s0il_puts(const char *s) {
   int ret = s0il_fputs(s, stdout);
   s0il_fputc('\n', stdout);
   if (s0il_is_main_thread())
-    ui_iteration(ui_host(NULL));
+    s0il_iteration(ui_host(NULL));
   return ret;
 }
 
@@ -544,7 +544,7 @@ int s0il_printf(const char *restrict format, ...) {
   s0il_fputs(buffer, stdout);
   free(buffer);
   if (s0il_is_main_thread())
-    ui_iteration(ui_host(NULL)); // doing a ui iteration
+    s0il_iteration(ui_host(NULL)); // doing a ui iteration
   return ret;
 }
 
@@ -935,7 +935,7 @@ static char *s0il_gets(char *buf, size_t buflen) {
       c = s0il_fgetc(stream);
     else {
       if (s0il_is_main_thread()) {
-        ui_iteration(ui_host(NULL));
+        s0il_iteration(ui_host(NULL));
 #ifndef EMSCRIPTEN
         usleep(1000); // XXX : seems more stable with it
 #endif
@@ -1085,7 +1085,7 @@ static char *s0il_gets(char *buf, size_t buflen) {
       s0il_fputc(c, stdout); /* echo */
     }
     if (s0il_is_main_thread())
-      ui_iteration(ui_host(NULL));
+      s0il_iteration(ui_host(NULL));
   }
   s0il_fputc('\n', stdout);
   buf[count] = 0;
@@ -1123,7 +1123,7 @@ int s0il_fgetc(FILE *stream) {
     return ret;
   }
   if (s0il_is_main_thread())
-    ui_iteration(ui_host(NULL));
+    s0il_iteration(ui_host(NULL));
   return fgetc(stream);
 }
 
@@ -1186,7 +1186,7 @@ size_t s0il_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
     file->pos += request;
     return request;
   }
-  // ui_iteration(ui_host(NULL));
+  // s0il_iteration(ui_host(NULL));
   return fread(ptr, size, nmemb, stream);
 }
 
@@ -1197,7 +1197,7 @@ ssize_t s0il_read(int fildes, void *buf, size_t nbyte) {
     return s0il_fread(buf, 1, nbyte, (FILE *)(size_t)fildes);
   }
   if (s0il_is_main_thread())
-    ui_iteration(ui_host(NULL));
+    s0il_iteration(ui_host(NULL));
   if (fildes == 0 && ctx_vt_has_data(NULL)) {
     return s0il_fread(buf, 1, nbyte, stdin);
   }
@@ -1220,7 +1220,7 @@ int s0il_fflush(FILE *stream) {
   if (s0il_stream_is_internal(stream))
     return 0;
   if (s0il_is_main_thread())
-    ui_iteration(ui_host(NULL));
+    s0il_iteration(ui_host(NULL));
   return fflush(stream);
 }
 
@@ -1475,7 +1475,7 @@ int s0il_select(int nfds, fd_set *read_fds, fd_set *write_fds,
                 fd_set *except_fds, struct timeval *timeout) {
   if (nfds == 1 && read_fds && FD_ISSET(0, read_fds)) {
     if (s0il_is_main_thread())
-      ui_iteration(ui_host(NULL)); // doing a ui iteration
+      s0il_iteration(ui_host(NULL)); // doing a ui iteration
     // workaround for missing select
     int has_data = s0il_got_data(stdin);
     if (write_fds)

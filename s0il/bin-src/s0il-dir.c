@@ -38,11 +38,11 @@ static int cmp_dir_entry(const void *p1, const void *p2) {
 }
 
 static void view_dir(Ui *ui) {
-  const char *location = ui_location(ui);
-  if (!ui_get_data(ui)) {
+  const char *location = s0il_location(ui);
+  if (!s0il_get_data(ui)) {
     dir_info_t *di = calloc(sizeof(dir_info_t), 1);
 
-    ui_set_data(ui, di, dir_info_finalize);
+    s0il_set_data(ui, di, dir_info_finalize);
 
     DIR *dir = s0il_opendir(location);
 
@@ -77,7 +77,7 @@ static void view_dir(Ui *ui) {
   ui_start_frame(ui);
   ui_title(ui, location);
 
-  dir_info_t *di = ui_get_data(ui);
+  dir_info_t *di = s0il_get_data(ui);
   float height = ctx_height(ui_ctx(ui));
   float font_size = ui_get_font_size(ui);
 
@@ -88,7 +88,7 @@ static void view_dir(Ui *ui) {
       if (ui_y(ui) > height + font_size * 4 && i < di->count - 2) {
       } else if (ui_y(ui) > -font_size * 4 || i == 0) {
         if (ui_button(ui, de->name)) {
-          ui_do(ui, de->path);
+          s0il_do(ui, de->path);
         }
       } else {
         ui_text(ui, de->name);
@@ -100,8 +100,8 @@ static void view_dir(Ui *ui) {
 
 MAIN(s0il_dir) {
   if (argv[1] && !strcmp(argv[1], "--register"))
-    ui_add_view(ui_host(ctx_host()), "inode/directory", view_dir, NULL);
+    s0il_add_view(ui_host(ctx_host()), "inode/directory", view_dir, NULL);
   else if (argv[1])
-    ui_push_fun(ui_host(ctx_host()), view_dir, argv[1], NULL, NULL);
+    s0il_push_fun(ui_host(ctx_host()), view_dir, argv[1], NULL, NULL);
   return 42;
 }
