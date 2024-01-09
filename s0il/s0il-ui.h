@@ -54,7 +54,7 @@ Ui *ui_host(Ctx *ctx);
 
 // launch an ui view at location, which is am absolute file-system path or
 // a specially recognized view name
-void ui_main(Ui *ui, const char *start_location);
+void s0il_main(Ui *ui);
 
 // do an action, or go to a specified view - if activating a new
 // view the current view is first pushed on the view stack,
@@ -65,8 +65,10 @@ void ui_main(Ui *ui, const char *start_location);
 // based on mime-type a registered view is used for rendering.
 void ui_do(Ui *ui, const char *name);
 
+//
 void  ui_set_data (Ui *ui, void *data, ui_data_finalize data_finalize);
 
+//
 void *ui_get_data (Ui *ui);
 
 void

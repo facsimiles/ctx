@@ -910,7 +910,8 @@ void ui_iteration(Ui *ui) {
   }
 }
 
-void ui_main(Ui *ui, const char *start_location) {
+void s0il_main(Ui *ui) {
+  const char *start_location = NULL;
   Ctx *ctx = ui->ctx;
 
   if (start_location) {

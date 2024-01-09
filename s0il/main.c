@@ -262,11 +262,11 @@ int main(int argc, char **argv) {
   s0il_system("wifi --auto &");
   //  ui_do(ui, "sh");
 #ifdef S0IL_NATIVE
-  ui_main(ui, argv[1]);
+  s0il_main(ui);
 #else
   for (;;) {
     ctx_reset_has_exited(ctx);
-    ui_main(ui, NULL);
+    s0il_main(ui);
     s0il_system("sync");
   }
 #endif

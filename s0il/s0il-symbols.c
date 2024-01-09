@@ -903,7 +903,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(ui_keyboard),
     ELFSYM_EXPORT(ui_keyboard_visible),
     ELFSYM_EXPORT(s0il_load_file),
-    ELFSYM_EXPORT(ui_main),
+    ELFSYM_EXPORT(s0il_main),
     ELFSYM_EXPORT(ui_move_to),
     ELFSYM_EXPORT(ui_new),
     ELFSYM_EXPORT(ui_pop_fun),
