@@ -860,23 +860,14 @@ int s0il_runv(char *path, char **argv) {
 }
 
 char *s0il_path_lookup(Ui *ui, const char *file) {
-  const char *path[] = {"/sd/bin/", "/bin/", ":", NULL};
+  const char *path[] = {"/sd/bin/", "/bin/", NULL};
   char temp[512];
 
   for (int i = 0; path[i]; i++) {
-    if (!strcmp(path[i], ":")) {
-      for (CtxList *iter = inlined_programs; iter; iter = iter->next) {
-        inlined_program_t *program = iter->data;
-        if (!strcmp(program->base, file)) {
-          return strdup(program->path);
-        }
-      }
-    } else {
       snprintf(temp, sizeof(temp), "%s%s", path[i], file);
       if (s0il_access(temp, R_OK) == F_OK) {
         return strdup(temp);
       }
-    }
   }
   return NULL;
 }

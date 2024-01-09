@@ -833,7 +833,7 @@ void ui_iteration(Ui *ui) {
     }
 #endif
 
-    if (ctx_need_redraw (ctx))
+    if (1)//ctx_need_redraw (ctx))
     {
       width = ctx_width(ctx);
       height = ctx_height(ctx);
