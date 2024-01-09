@@ -145,6 +145,28 @@ typedef struct s0il_process_t {
 s0il_process_t *s0il_process(void);
 int s0il_thread_no(void);
 
+void  s0il_backlight      (float backlight);
+#if CTX_ESP
+void esp_backlight               (int percent);
+void esp_restart                 (void);
+int wifi_init_sta                (const char *ssid, const char *password);
+char **wifi_scan                 (void);
+#endif
+#if CTX_ESP
+char   **wifi_scan               (void);
+int      wifi_init_sta           (const char *ssid, const char *password);
+void     board_init              (void);
+int16_t  bsp_captouch_angular    (int petal);
+uint16_t bsp_captouch_radial     (int petal);
+bool     bsp_captouch_down       (int petal);
+void     bsp_captouch_key_events (int level);
+
+#endif
+float    bsp_captouch_angle   (float *radial_pos, int quantize, uint16_t petal_mask);
+
+
+
+
 #endif
 
 #ifndef ulong32
@@ -163,3 +185,4 @@ int s0il_thread_no(void);
 #if EMSCRIPTEN
 #include <emscripten.h>
 #endif
+

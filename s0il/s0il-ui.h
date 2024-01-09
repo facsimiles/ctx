@@ -10,25 +10,6 @@
 #include <pthread.h>
 #include "ctx.h"
 
-#if CTX_ESP
-void esp_backlight               (int percent);
-void esp_restart                 (void);
-int wifi_init_sta                (const char *ssid, const char *password);
-char **wifi_scan                 (void);
-#endif
-#if CTX_ESP
-char   **wifi_scan               (void);
-int      wifi_init_sta           (const char *ssid, const char *password);
-void     board_init              (void);
-int16_t  bsp_captouch_angular    (int petal);
-uint16_t bsp_captouch_radial     (int petal);
-bool     bsp_captouch_down       (int petal);
-void     bsp_captouch_key_events (int level);
-
-#endif
-float    bsp_captouch_angle   (float *radial_pos, int quantize, uint16_t petal_mask);
-
-
 
 /////////////////////////////////////////////
 typedef struct _Ui       Ui;
@@ -67,9 +48,6 @@ void  s0il_set_data       (Ui *ui, void *data, ui_data_finalize data_finalize);
 
 //
 void *s0il_get_data       (Ui *ui);
-
-//
-void  s0il_backlight      (float backlight);
 
 void
 s0il_push_fun (Ui *ui, ui_fun fun, const char *location, void *data, ui_data_finalize data_finalize);

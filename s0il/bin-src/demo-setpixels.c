@@ -12,8 +12,8 @@ static inline uint16_t rgb888_to_rgb565bs(uint8_t red, uint8_t green,
 Ctx *ctx_host(void);
 
 MAIN(demo_setpixels) {
-  int width = 240;
-  int height = 240;
+  int width = ctx_width(ctx_host());
+  int height = ctx_height(ctx_host());
   uint16_t *pixels = NULL;
   for (int i = 0; !pixels && i < 10; i++) {
     pixels = malloc(width * height * 2);

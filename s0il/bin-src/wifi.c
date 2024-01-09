@@ -1,4 +1,6 @@
+#ifndef PORT_CONFIG
 #include "port_config.h"
+#endif
 #include "s0il.h"
 
 static char *wifi_ssid = NULL;

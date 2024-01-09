@@ -17,4 +17,4 @@ s0il.js: $(C_FILES) ../bin-src/*.c Makefile  ../../ctx.h ../fs_bin_wasm.c
 	make -C ../../ ctx.h
 
 clean:
-	rm -f *.js *.wasm
+	rm -f s0il*.js *.wasm

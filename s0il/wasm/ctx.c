@@ -1,7 +1,7 @@
 #define CTX_DITHER 1
 #define CTX_PROTOCOL_U8_COLOR 1
 #define CTX_LIMIT_FORMATS 0
-#define CTX_32BIT_SEGMENTS 0
+#define CTX_32BIT_SEGMENTS 1
 #define CTX_RASTERIZER 1
 #define CTX_RASTERIZER_AA 3
 #define CTX_ENABLE_GRAY1 1
@@ -30,7 +30,7 @@
 #define CTX_BAREMETAL 1
 #define CTX_ONE_FONT_ENGINE 1
 // #define CTX_ESP                            1
-#define CTX_MAX_SCANLINE_LENGTH 480
+#define CTX_MAX_SCANLINE_LENGTH 640
 #define CTX_MAX_FRAMEBUFFER_WIDTH CTX_MAX_SCANLINE_LENGTH
 #define CTX_MAX_JOURNAL_SIZE (1024 * 512)
 // is also max and limits complexity
