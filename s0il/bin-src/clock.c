@@ -90,7 +90,7 @@ void view_clock (Ui *ui)
 }
 
 MAIN(clock) {
-#if 0
+#if 1
   Ctx *ctx = ctx_new(-1, -1, NULL);
   Ui *ui = ui_new(ctx);
   do {

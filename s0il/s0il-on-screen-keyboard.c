@@ -51,8 +51,6 @@ void kb_cursor_drag(CtxEvent *event, void *data1, void *data2) {
     prev_event = event->time;
   }
 
-  //if (event->type != CTX_DRAG_RELEASE)
-  //  return;
   float h_delta = event->start_x - event->x;
   float v_delta = event->start_y - event->y;
   float dist = hypotf(h_delta, v_delta);
@@ -74,7 +72,7 @@ void kb_cursor_drag(CtxEvent *event, void *data1, void *data2) {
     else
       key="down";
   }
-  if (key && (event->time - prev_event) > 200)
+  if (key && (event->time - prev_event) > 400)
   {
     prev_event = event->time;
     ctx_key_press(event->ctx, 0, key, 0);

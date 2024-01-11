@@ -859,10 +859,14 @@ void s0il_iteration(Ui *ui) {
     }
 #endif
 
+#if 0
 #ifdef EMSCRIPTEN
     if (1)//ctx_need_redraw (ctx))
 #else
     if (ctx_need_redraw (ctx))
+#endif
+#else
+    if(1)
 #endif
     {
       width = ctx_width(ctx);

@@ -220,4 +220,17 @@ mime-type of inode/directory.
    
 
 
-</body></html>
+</body>
+
+<script>
+  page.onkeydown = (e) => { 
+  if (e.key == "s" && e.ctrlKey)
+  {
+    // TODO : keep track of line/col of cursor... and restore it
+    button_press("save");
+    e.preventDefault();
+  }
+}
+</script>
+
+</html>
