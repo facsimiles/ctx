@@ -485,7 +485,7 @@ ssize_t s0il_write(int fd, const void *buf, size_t count) {
 
 int s0il_puts(const char *s) {
   if (s0il_process()->redir_stdout)
-    return fputs(s, s0il_process()->redir_stdout);
+    return s0il_fputs(s, s0il_process()->redir_stdout);
   int ret = s0il_fputs(s, stdout);
   s0il_fputc('\n', stdout);
   if (s0il_is_main_thread())
