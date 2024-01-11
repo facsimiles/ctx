@@ -20,22 +20,40 @@ void draw_clock(Ctx *ctx, float x, float y, float radius,
   ctx_line_width(ctx, radius * 0.02f);
   ctx_line_cap(ctx, CTX_CAP_ROUND);
 
-  for (int markh = 0; markh < 12; markh++) {
-    r = markh * CTX_PI * 2 / 12.0 - CTX_PI / 2;
+  ctx_save(ctx);
+  ctx_global_alpha(ctx, 0.5f);
+  for (int markm = 0; markm < 60; markm++) {
+    r = markm * CTX_PI * 2 / 60.0 - CTX_PI / 2;
 
-    if (markh == 0) {
-      ctx_move_to(ctx, x + cosf(r) * radius * 0.7f,
-                  y + sinf(r) * radius * 0.65f);
-      ctx_line_to(ctx, x + cosf(r) * radius * 0.8f,
-                  y + sinf(r) * radius * 0.85f);
-    } else {
-      ctx_move_to(ctx, x + cosf(r) * radius * 0.7f,
-                  y + sinf(r) * radius * 0.7f);
-      ctx_line_to(ctx, x + cosf(r) * radius * 0.8f,
-                  y + sinf(r) * radius * 0.8f);
+    if (markm == s)
+    {
+//    ctx_move_to(ctx,x,y);
+//    ctx_line_to(ctx,x+0.01*radius,y);
+//    ctx_stroke(ctx); // XXX hack - it seems like hashcache doesnt track
+                       // global alpha
+      ctx_global_alpha(ctx, 1.0f);
     }
-    ctx_stroke(ctx);
+    else
+      ctx_global_alpha(ctx, 0.33f);
+
+    if ( ((markm%5) ==0) ){
+      ctx_move_to(ctx, x + cosf(r) * radius * 0.8f,
+                       y + sinf(r) * radius * 0.8f);
+      ctx_line_to(ctx, x + cosf(r) * radius * 0.95f,
+                       y + sinf(r) * radius * 0.95f);
+      ctx_stroke(ctx);
+    }
+    else
+    {
+      ctx_move_to(ctx, x + cosf(r) * radius * 0.92f,
+                       y + sinf(r) * radius * 0.92f);
+      ctx_line_to(ctx, x + cosf(r) * radius * 0.95f,
+                       y + sinf(r) * radius * 0.95f);
+      ctx_stroke(ctx);
+    }
   }
+  ctx_restore(ctx);
+
   ctx_line_width(ctx, radius * 0.01f);
   ctx_line_cap(ctx, CTX_CAP_ROUND);
 
@@ -57,11 +75,24 @@ void draw_clock(Ctx *ctx, float x, float y, float radius,
   ctx_line_width(ctx, radius * 0.02f);
   ctx_line_cap(ctx, CTX_CAP_NONE);
 
-  r = (s + ms / 1000.0f) * CTX_PI * 2 / 60 - CTX_PI / 2;
 
+#if 0
+
+  r = (s + ms / 1000.0f) * CTX_PI * 2 / 60 - CTX_PI / 2;
+#if 0
   ctx_move_to(ctx, x, y);
   ctx_line_to(ctx, x + cosf(r) * radius * 0.78f, y + sinf(r) * radius * 0.78f);
+  ctx_global_alpha(ctx, 0.25f);
   ctx_stroke(ctx);
+#else
+  ctx_arc(ctx, x + cosf(r) * radius * 0.85f, y + sinf(r) * radius * 0.85f, 
+               radius * 0.025, 0.0, M_PI*2, 0);
+  ctx_global_alpha(ctx, 0.125f);
+  ctx_fill(ctx);
+
+#endif
+
+#endif
 
   ctx_restore(ctx);
 }
@@ -91,8 +122,8 @@ void view_clock (Ui *ui)
 
 MAIN(clock) {
 #if 1
-  Ctx *ctx = ctx_new(-1, -1, NULL);
-  Ui *ui = ui_new(ctx);
+  Ctx *ctx = ctx_host();
+  Ui *ui = ui_host(ctx);
   do {
     ctx_start_frame(ctx);
 
@@ -116,8 +147,6 @@ MAIN(clock) {
     ui_end_frame(ui);
     ctx_end_frame(ctx);
   } while (!ctx_has_exited(ctx));
-  ui_destroy(ui);
-  ctx_destroy(ctx);
   return 0;
 #else
   if (argv[1] && !strcmp(argv[1], "--register"))

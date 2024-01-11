@@ -136,6 +136,8 @@ typedef struct ui_history_item {
   ui_data_finalize data_finalize;
 } ui_history_item;
 
+static bool show_fps = 0;
+
 struct _Ui {
   Ctx *ctx;
   char *location;
@@ -152,7 +154,6 @@ struct _Ui {
   float view_elapsed;
   int frame_no;
   bool interactive_debug;
-  bool show_fps;
   bool gradient_bg;
   bool draw_tips;
 
@@ -400,7 +401,7 @@ void view_settings_ui(Ui *ui) {
   ui_title(ui, "settings/ui");
 
   ui->font_size_vh = ui_slider(ui, "font size", 3, 20, 0.1, ui->font_size_vh);
-  ui->show_fps = ui_toggle(ui, "show fps", ui->show_fps);
+  show_fps = ui_toggle(ui, "show fps", show_fps);
 
   if (ui->gradient_bg)
     ui_text(ui, "Background top");
@@ -916,23 +917,6 @@ void s0il_iteration(Ui *ui) {
 
       ui_keyboard(ui);
 
-      if (ui->show_fps) {
-        char buf[32];
-        ctx_save(ctx);
-        ctx_font_size(ctx, ui->height / 20);
-        ctx_rgba(ctx, ui->style.bg[0], ui->style.bg[1], ui->style.bg[2], 0.8f);
-        ctx_rectangle(ctx, 0, 0, width, ui->height / 20);
-        ctx_fill(ctx);
-        ui_set_color(ctx, ui->style.fg);
-        ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
-        ctx_move_to(ctx, ctx_width(ctx) / 2, ui->height / 20);
-        static float fps = 0.0f;
-
-        fps = fps * 0.6f + 0.4f * (1000.0f / ui->delta_ms);
-        sprintf(buf, "%.1f", (double)fps);
-        ctx_text(ctx, buf);
-        ctx_restore(ctx);
-      }
 
       ctx_end_frame(ctx);
 
@@ -1467,6 +1451,25 @@ void ui_end_frame(Ui *ui) {
 #endif
 
   ui->overlay_fade -= 0.3 * ui->delta_ms / 1000.0f;
+
+      if (show_fps) {
+        char buf[32];
+        ctx_save(ctx);
+        ctx_font_size(ctx, ui->height / 20);
+        ctx_rgba(ctx, ui->style.bg[0], ui->style.bg[1], ui->style.bg[2], 0.8f);
+        ctx_rectangle(ctx, 0, 0, ui->width, ui->height / 20);
+        ctx_fill(ctx);
+        ui_set_color(ctx, ui->style.fg);
+        ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
+        ctx_move_to(ctx, ctx_width(ctx) / 2, ui->height / 20);
+        static float fps = 0.0f;
+
+        fps = fps * 0.6f + 0.4f * (1000.0f / ui->delta_ms);
+        sprintf(buf, "%.1f", (double)fps);
+        ctx_text(ctx, buf);
+        ctx_restore(ctx);
+      }
+
 }
 
 void ui_draw_bg(Ui *ui) {

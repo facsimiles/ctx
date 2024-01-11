@@ -1,6 +1,10 @@
 //!picoc
 #include "s0il.h"
 
+// it is probably better to have this as native code..
+// to avoid permanent picoc overhead on stack for launching
+// other things
+
 int main(int argc, char **argv) {
   char *home_path = "/sd";
   argv[argc] = NULL;
@@ -26,7 +30,6 @@ int main(int argc, char **argv) {
       ctx_reset_has_exited(ctx_host());
     }
     printf("%s> ", getcwd(wd, sizeof(wd)));
-    //  printf ("\033[12h"); // local echo on
   }
 
   return 0;

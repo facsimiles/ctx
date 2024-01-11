@@ -42,7 +42,7 @@ static void view_tests(Ui *ui) {
 static void view_repls(Ui *ui) {
   ui_start_frame(ui);
 
-  if (ui_button(ui, "unix"))
+  if (ui_button(ui, "sh"))
     s0il_do(ui, "sh");
   if (ui_button(ui, "lua"))
     s0il_do(ui, "lua");
@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
   s0il_add_file("/flash", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/bin", NULL, 0, S0IL_DIR | S0IL_READONLY);
   // s0il_add_file("/tmp", NULL, 0, S0IL_DIR|S0IL_READONLY);
-  s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
+  //s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
   char *t = "";
 #if !defined(EMSCRIPTEN)
   s0il_add_file("/tmp/dummy", t, 1, 0);

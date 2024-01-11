@@ -213,6 +213,13 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
     //      murmur3_32_process(&murmur, (unsigned char*)&color, 4);
 #endif
           murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
+
+        {
+          float f = rasterizer->state->gstate.global_alpha_f;
+          murmur3_32_process(&murmur, (uint8_t*)&f, sizeof(float));
+        }
+
+
           _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -246,6 +253,13 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
     //    murmur3_32_process(&murmur, (unsigned char*)&color, 4);
 #endif
           murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
+
+        {
+          float f = rasterizer->state->gstate.global_alpha_f;
+          murmur3_32_process(&murmur, (uint8_t*)&f, sizeof(float));
+        }
+
+
           _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -280,6 +294,14 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           murmur3_32_process(&murmur, string, ctx_strlen ((const char*)string));
           murmur3_32_process(&murmur, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
           murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
+
+
+        {
+          float f = rasterizer->state->gstate.global_alpha_f;
+          murmur3_32_process(&murmur, (uint8_t*)&f, sizeof(float));
+        }
+
+
           _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
 
           ctx_rasterizer_rel_move_to (rasterizer, width, 0);
@@ -338,6 +360,10 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           murmur3_32_process(&murmur, (uint8_t*)&e, sizeof(int));
         }
         {
+          float f = rasterizer->state->gstate.global_alpha_f;
+          murmur3_32_process(&murmur, (uint8_t*)&f, sizeof(float));
+        }
+        {
         uint32_t color;
         ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color, (uint8_t*)(&color));
           murmur3_32_process(&murmur, (unsigned char*)&color, 4);
@@ -377,6 +403,8 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         {
           float f;
           int i;
+          f = rasterizer->state->gstate.global_alpha_f;
+          murmur3_32_process(&murmur, (uint8_t*)&f, sizeof(float));
           f = rasterizer->state->gstate.line_width;
           murmur3_32_process(&murmur, (uint8_t*)&f, sizeof(float));
           i = rasterizer->state->gstate.line_cap;

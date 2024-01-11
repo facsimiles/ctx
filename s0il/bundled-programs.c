@@ -6,7 +6,7 @@
 #define S0IL_DEFINES
 #define S0IL_BUNDLE
 
-#define BUNDLE_LUA   0
+#define BUNDLE_LUA   1
 #define BUNDLE_QJS   0
 #define BUNDLE_HTTPD 1
 #define BUNDLE_PICOC 1
