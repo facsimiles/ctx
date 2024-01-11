@@ -780,10 +780,17 @@ Ui *ui_new(Ctx *ctx) {
     // s0il_add_magic(ui, "application/octet-stream", ".bin", NULL, 0, 0);
   }
   ui->ctx = ctx;
-  ui->style.bg[0] = 0.1;
-  ui->style.bg[1] = 0.2;
-  ui->style.bg[2] = 0.3;
+  ui->style.bg[0] = 0.2;
+  ui->style.bg[1] = 0.5;
+  ui->style.bg[2] = 0.7;
   ui->style.bg[3] = 1.0;
+  ui->gradient_bg = true;
+
+  ui->style.bg2[0] = 0.0;
+  ui->style.bg2[1] = 0.13;
+  ui->style.bg2[2] = 0.3;
+  ui->style.bg2[3] = 1.0;
+
   ui->style.fg[0] = 1.0;
   ui->style.fg[1] = 1.0;
   ui->style.fg[2] = 1.0;
@@ -1234,7 +1241,7 @@ float ui_slider_coords(Ui *ui, void *id, float x, float y, float width,
   if (focused && ui->activate) {
     widget->float_data = value;
     widget->float_data_target = value;
-    printf("!activating slider\n");
+    //printf("!activating slider\n");
     ui->active_id = widget->id;
     ui->activate = 0;
   }
@@ -1668,7 +1675,7 @@ char *ui_entry_coords(Ui *ui, void *id, float x, float y, float w, float h,
       ui->temp_text[0] = 0;
     }
     ui->cursor_pos = strlen(ui->temp_text);
-    printf("!activating\n");
+    //printf("!activating\n");
     ui->active_id = widget->id;
     ui->activate = 0;
   }
