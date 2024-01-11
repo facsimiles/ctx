@@ -39,25 +39,45 @@ static void ctx_on_ct_event(CtxEvent *event, void *data1, void *data2) {
 
 //static char kb_preview[8] = ""; // TODO : set this, and show it in middle
 
+
 void kb_cursor_drag(CtxEvent *event, void *data1, void *data2) {
   event->stop_propagate = 1;
-  if (event->type != CTX_DRAG_RELEASE)
-    return;
+  const char *key = NULL;
+
+  static uint32_t prev_event = 0;
+  // TODO : key-repeat
+  if (event->type == CTX_DRAG_PRESS)
+  {
+    prev_event = event->time;
+  }
+
+  //if (event->type != CTX_DRAG_RELEASE)
+  //  return;
   float h_delta = event->start_x - event->x;
   float v_delta = event->start_y - event->y;
   float dist = hypotf(h_delta, v_delta);
   if (dist < ctx_height(event->ctx) * 0.05) {
-    ctx_key_press(event->ctx, 0, "space", 0);
+    if (event->type == CTX_DRAG_RELEASE)
+    {
+      key="space";
+      ctx_key_press(event->ctx, 0, key, 0);
+      return;
+    }
   } else if (fabsf(h_delta) > fabsf(v_delta)) {
     if (h_delta > 0)
-      ctx_key_press(event->ctx, 0, "left", 0);
+      key="left";
     else
-      ctx_key_press(event->ctx, 0, "right", 0);
+      key="right";
   } else {
     if (v_delta > 0)
-      ctx_key_press(event->ctx, 0, "up", 0);
+      key="up";
     else
-      ctx_key_press(event->ctx, 0, "down", 0);
+      key="down";
+  }
+  if (key && (event->time - prev_event) > 200)
+  {
+    prev_event = event->time;
+    ctx_key_press(event->ctx, 0, key, 0);
   }
 }
 
