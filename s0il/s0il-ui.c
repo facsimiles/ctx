@@ -191,6 +191,26 @@ static int launch_program_handler = 0;
 static int program_return_value = 0;
 
 void ui_fake_circle(Ui *ui, bool on) { ui->fake_circle = on; }
+void view_program(Ui *ui);
+
+static void drop_state(Ui *ui) {
+  if (ui->history_count > 0) {
+#if 0
+    int no = ui->history_count - 1;
+    if (ui->location)
+      free(ui->location);
+    ui->location = ui->history[no].location;
+    ui->history[no].location = NULL;
+    ui->fun = ui->history[no].fun;
+    ui->data = ui->history[no].data;
+    ui->data_finalize = ui->history[no].data_finalize;
+    ui->queued_next = 0;
+    ui_set_scroll_offset(ui, ui->history[no].scroll_offset);
+    ui->focused_id = ui->history[no].focused;
+#endif
+    ui->history_count -= 1;
+  }
+}
 
 int launch_program_interpreter(Ctx *ctx, void *data) {
   Ui *ui = data;
@@ -225,7 +245,12 @@ int launch_program_interpreter(Ctx *ctx, void *data) {
     }
     s0il_output_state_reset();
 
-    s0il_pop_fun(ui); // leave view when done
+    if (ui->fun == view_program) {
+      s0il_pop_fun(ui);
+    } else {
+        printf("dropping state - something is amiss, we chould just leave the program view\n");
+      drop_state(ui);
+    }
     program_return_value = retval;
   }
   return 0;
@@ -319,12 +344,12 @@ static void draw_term(Ui *ui) {
 }
 
 void view_program(Ui *ui) {
+
   if (ui->data == NULL) {
     if (!launch_program_handler)
       launch_program_handler =
           ctx_add_timeout(ui->ctx, 0, launch_program_interpreter, ui);
-    ui->data = (void *)1;
-    ui->data_finalize = NULL;
+    s0il_set_data(ui, (void *)1, NULL);
   } else {
     if (s0il_output_state() == 1) {
       ui_start_frame(ui);
@@ -333,8 +358,8 @@ void view_program(Ui *ui) {
       ui_add_key_binding(ui, "control-q", "exit", "quit");
       ui_add_key_binding(ui, "escape", "exit",
                          "quit"); // XXX having
-                                  // tri-state send ESC.. and having vim/quit in
-                                  // term conflicts..
+        // tri-state send ESC.. and having vim/quit in
+        // term conflicts.. - alt+f4 instead?
     }
   }
 }
@@ -459,6 +484,7 @@ static void save_state(Ui *ui) {
   }
 }
 
+
 static void restore_state(Ui *ui) {
   if (ui->history_count > 0) {
     int no = ui->history_count - 1;
@@ -570,13 +596,13 @@ void s0il_push_fun(Ui *ui, ui_fun fun, const char *location, void *data,
   ui->frame_no = 0;
   ui->view_elapsed = 0;
 
-  if (ui->focus_first) {
+  if (ui->focus_first)
+  {
     ui->queued_next = 2;
   }
 
   ui->fun = fun;
 
-  // these are stored by save_state
   ui->data = NULL;
   ui->data_finalize = NULL;
   if (data)
@@ -598,13 +624,12 @@ void ui_load_view(Ui *ui, const char *target) {
         s0il_push_fun(ui, ui->views[i].fun, target, NULL, NULL);
         return;
       }
-
     char *epath;
     if ((epath = s0il_path_lookup(ui, target))) {
-      // printf ("push efun %s %s\n", target, epath);
-      s0il_push_fun(ui, view_program, epath, NULL, NULL);
-      free(epath);
-      return;
+       s0il_set_data(ui, NULL, NULL);
+       s0il_push_fun(ui, view_program, epath, NULL, NULL);
+       free(epath);
+       return;
     }
 
     s0il_push_fun(ui, ui_unhandled, target, NULL, NULL);
@@ -658,7 +683,9 @@ void s0il_do(Ui *ui, const char *action) {
     bsp_captouch_key_events(2);
 #endif
   } else
+  {
     ui_load_view(ui, action);
+  }
 }
 
 int s0il_do_main(int argc, char **argv) {
@@ -804,7 +831,6 @@ static float color_fg[4]; // black or white automatically based on bg
     ui->font_size_vh = width / height * 9;
 
   s0il_add_view(ui, "settings-ui", view_settings_ui, NULL);
-  s0il_add_view(ui, "application/x-sharedlib", view_program, NULL);
 
   return ui;
 }
@@ -1816,7 +1842,7 @@ const char *s0il_location(Ui *ui)
   return ui->location;
 }
 
-#if S0IL_NATIVE //|| EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
+#if S0IL_NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
 uint8_t scratch[1024 * 1024 * 4];
 Ctx *ctx_host(void);
 void ctx_RGB565_BS_to_RGBA8(void *rasterizer, int x, const void *buf,

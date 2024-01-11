@@ -66,7 +66,31 @@ void draw_clock(Ctx *ctx, float x, float y, float radius,
   ctx_restore(ctx);
 }
 
+void view_clock (Ui *ui)
+{
+  Ctx *ctx = ui_ctx (ui);
+  float w = ctx_width(ctx);
+  float h = ctx_height(ctx);
+  float min = w < h ? w : h;
+  ui_start_frame(ui);
+
+  struct timeval t;
+  gettimeofday(&t, NULL);
+
+  int tz = +1;
+
+  t.tv_sec += tz * (60 * 60);
+
+  draw_clock(ctx, w / 2, h / 2, min / 2, t.tv_sec * 1000 + t.tv_usec / 1000);
+
+  ui_add_key_binding(ui, "escape", "exit", "leave view");
+  ui_add_key_binding(ui, "backspace", "exit", "leave view");
+
+  ui_end_frame(ui);
+}
+
 MAIN(clock) {
+#if 0
   Ctx *ctx = ctx_new(-1, -1, NULL);
   Ui *ui = ui_new(ctx);
   do {
@@ -95,4 +119,13 @@ MAIN(clock) {
   ui_destroy(ui);
   ctx_destroy(ctx);
   return 0;
+#else
+  if (argv[1] && !strcmp(argv[1], "--register"))
+    s0il_add_view(ui_host(ctx_host()), "clock", view_clock, NULL);
+  else
+  {
+    s0il_push_fun(ui_host(ctx_host()), view_clock, "clock", NULL, NULL);
+  }
+  return 42;
+#endif
 }
