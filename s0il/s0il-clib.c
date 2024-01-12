@@ -753,7 +753,7 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
 
       s0il_fclose(cached_file);
 #else
-      s0il_printf("fetch to %s\n", cached_path);
+      emscripten_wget(pathname, cached_path);
 #endif
     }
 
@@ -1207,6 +1207,8 @@ ssize_t s0il_read(int fildes, void *buf, size_t nbyte) {
 int s0il_access(const char *pathname, int mode) {
   if (s0il_find_file(pathname))
     return F_OK;
+  if (!strncmp(pathname, "/bin/", 5))
+    return -1;
   return access(pathname, mode);
 }
 

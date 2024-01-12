@@ -166,6 +166,7 @@ const char *s0il_detect_media_path(const char *location) {
   return s0il_detect_media_sector512(location, sector);
 }
 
+#if 0
 int magic_main(int argc, char **argv) {
   for (CtxList *iter = s0il_magic; iter; iter = iter->next) {
     ctx_magic_t *magic = iter->data;
@@ -174,6 +175,7 @@ int magic_main(int argc, char **argv) {
   }
   return 0;
 }
+#endif
 
 void view_magic(Ui *ui) {
   ui_start_frame(ui);

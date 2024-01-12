@@ -121,6 +121,19 @@ typedef struct inlined_program_t {
 
 static CtxList *inlined_programs = NULL;
 
+int which_main(int argc, char **argv)
+{
+  const char *name = argv[1];
+  if (!name) return -1;
+  char *resolved = s0il_path_lookup(ui_host(ctx_host()), name);
+  if (resolved)
+  {
+    s0il_printf ("%s\n", resolved);
+    free (resolved);
+  }
+  return 0;
+}
+
 void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
   inlined_program_t *program = calloc(sizeof(inlined_program_t), 1);
   program->base = strdup(name);
@@ -130,8 +143,12 @@ void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
   ctx_list_append(&inlined_programs, program);
   static const char busy_magic[6] = {0, 's', '0', 'i', 'l'};
 
+  printf ("%s\n", program->path);
   if (s0il_access(program->path, R_OK) != F_OK)
+  {
+    printf ("+%s\n", program->path);
     s0il_add_file(program->path, busy_magic, sizeof(busy_magic), S0IL_READONLY);
+  }
 }
 #include <libgen.h>
 
@@ -860,15 +877,33 @@ int s0il_runv(char *path, char **argv) {
 }
 
 char *s0il_path_lookup(Ui *ui, const char *file) {
-  const char *path[] = {"/sd/bin/", "/bin/", NULL};
+  char *path = s0il_getenv("PATH");
+  if (!path) path = "/sd/bin:/bin:/sd";
+  path = strdup(path);
   char temp[512];
 
-  for (int i = 0; path[i]; i++) {
-      snprintf(temp, sizeof(temp), "%s%s", path[i], file);
-      if (s0il_access(temp, R_OK) == F_OK) {
-        return strdup(temp);
-      }
-  }
+  char *p = path;
+
+  do {
+    char *seg = p;
+    char *e = strchr(p, ':');
+    if (e){
+      *e = 0;
+      p = e+1;
+    } else {
+      p = NULL;
+    }
+
+    if (seg[strlen(seg)-1] == '/')
+      snprintf(temp, sizeof(temp)-1, "%s%s", seg, file);
+    else
+      snprintf(temp, sizeof(temp)-1, "%s/%s", seg, file);
+    if (s0il_access(temp, R_OK) == F_OK) {
+      free (path);
+      return strdup(temp);
+    }
+  } while (p && *p);
+  free (path);
   return NULL;
 }
 

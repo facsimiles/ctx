@@ -139,7 +139,7 @@ void view_settings(Ui *ui) {
   ui_end_frame(ui);
 }
 
-int magic_main(int argc, char **argv);
+//int magic_main(int argc, char **argv);
 int file_main(int argc, char **argv);
 int ps_main(int argc, char **argv);
 
@@ -154,6 +154,7 @@ void app_main(void) {
 
 int main(int argc, char **argv) {
 #endif
+  s0il_setenv("PATH", "/sd/bin:/bin:/sd", 1);
   s0il_program_runner_init();
 
   Ctx *ctx = ctx_new(DISPLAY_WIDTH, DISPLAY_HEIGHT, NULL);
@@ -163,7 +164,7 @@ int main(int argc, char **argv) {
   setvbuf(stdin, NULL, _IONBF, 0);
   setvbuf(stdout, NULL, _IONBF, 0);
   fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
-  s0il_bundle_main("magic", magic_main);
+  //s0il_bundle_main("magic", magic_main);
   s0il_bundle_main("file", file_main);
   s0il_bundle_main("ps", ps_main);
   mount_bin();

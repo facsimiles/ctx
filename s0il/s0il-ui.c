@@ -3,9 +3,13 @@
 
 typedef struct _UiWidget UiWidget;
 
+int which_main(int argc, char **argv);
+
 void s0il_program_runner_init(void);
 int _init_main(int argc, char **argv) {
   // Ui *ui = ui_host(NULL);
+
+
   s0il_program_runner_init();
 
   system("rm -f /tmp/_s0il_*");
@@ -772,6 +776,7 @@ Ui *ui_new(Ctx *ctx) {
   Ui *ui = calloc(1, sizeof(Ui));
   s0il_bundle_main("_init", _init_main);
   s0il_bundle_main("s0il_do", s0il_do_main);
+  s0il_bundle_main("which", which_main);
   if (!def_ui) {
     def_ui = ui;
 #ifdef S0IL_NATIVE

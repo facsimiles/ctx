@@ -208,7 +208,7 @@ pico: fs_data.c fs_bin_generic.c s0il-*.[ch] Makefile
 pico-flash: pico
 	cp pico/s0il.uf2 /media/*/RPI-RP2/ ; sync ; sleep 1; mpremote
 update-doc: wasm flow3r
-	cp wasm/s0il.* wasm/sw.js wasm/index.html ../docs/s0il/
+	cp wasm/*.js wasm/*.wasm wasm/*.html ../docs/s0il/
 	cp flow3r/build/s0il.bin ../docs/s0il/s0il-flow3r.bin
 	cp programs/*/xtensa/* ~/src/ctx/docs/s0il/bin/xtensa -v
 	cp programs/*/native/* ~/src/ctx/docs/s0il/bin/x86_64 -v

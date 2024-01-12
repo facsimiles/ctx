@@ -626,8 +626,7 @@ static void httpd_post_handler(HttpdRequest *req) {
     }
 
     if (httpd_run && action == action_run) {
-      char *commandline = strdup(temp + 12);
-      free(commandline);
+      s0il_do(ui_host(ctx_host()), temp+12);
     }
 
     if (action == action_parent || action == action_remove ||
@@ -778,8 +777,8 @@ static void httpd_request_handler(HttpdRequest *req) {
       const char *mime_type = s0il_detect_media_path(path);
       if (!mime_type) {
         req->status = 404;
-        req->status_string = "NOSPOON";
-        OUTF("404 noroon %i %s", rno++, path);
+        req->status_string = "MISSING";
+        OUTF("404 missing %i %s", rno++, path);
         return;
       } else if (!strcmp(mime_type, "inode/directory")) {
         httpd_dir_handler(req);
@@ -897,7 +896,7 @@ int _httpd_start_int(int port,
         try_port = HTTP_PORT_FALLBACK_START - 1;
     }
   }
-  fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+  //fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
 
   if (httpd_port > 0 && listen(sock, 5) == 0) {
     printf("httpd port %i\n", httpd_port);
