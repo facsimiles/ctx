@@ -1090,11 +1090,13 @@ static char *s0il_gets(char *buf, size_t buflen) {
   s0il_fputc('\n', stdout);
   buf[count] = 0;
 
-  if (count &&
-      (commandline_history == NULL || strcmp(commandline_history->data, buf))) {
+  if (count) {
     char *copy = strdup(buf);
     copy[count - 1] = 0;
-    ctx_list_prepend(&commandline_history, copy);
+    if (commandline_history == NULL || strcmp(commandline_history->data, copy))
+      ctx_list_prepend(&commandline_history, copy);
+    else
+      free(copy);
   }
   history_pos = -1;
 
