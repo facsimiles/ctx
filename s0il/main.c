@@ -139,7 +139,7 @@ void view_settings(Ui *ui) {
   ui_end_frame(ui);
 }
 
-//int magic_main(int argc, char **argv);
+// int magic_main(int argc, char **argv);
 int file_main(int argc, char **argv);
 int ps_main(int argc, char **argv);
 
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
   setvbuf(stdin, NULL, _IONBF, 0);
   setvbuf(stdout, NULL, _IONBF, 0);
   fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
-  //s0il_bundle_main("magic", magic_main);
+  // s0il_bundle_main("magic", magic_main);
   s0il_bundle_main("file", file_main);
   s0il_bundle_main("ps", ps_main);
   mount_bin();
@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
   s0il_add_file("/flash", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/bin", NULL, 0, S0IL_DIR | S0IL_READONLY);
   // s0il_add_file("/tmp", NULL, 0, S0IL_DIR|S0IL_READONLY);
-  //s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
+  // s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
   char *t = "";
 #if !defined(EMSCRIPTEN)
   s0il_add_file("/tmp/dummy", t, 1, 0);
@@ -257,10 +257,14 @@ int main(int argc, char **argv) {
   s0il_add_view(ui, "settings", view_settings, NULL);
   // s0il_add_view(ui, "magic", view_magic, NULL);
   s0il_add_view(ui, "s0il-views", s0il_view_views, NULL);
-  s0il_do(ui, "menu");        // queue menu - as initial view
+  s0il_do(ui, "menu");      // queue menu - as initial view
   s0il_printf("\033[?30l"); // turn off scrollbar
 
+#ifdef CTX_ESP
   s0il_system("wifi --auto &");
+  sleep(1);
+  s0il_system("httpd &");
+#endif
   //  s0il_do(ui, "sh");
 #ifdef S0IL_NATIVE
   s0il_main(ui);

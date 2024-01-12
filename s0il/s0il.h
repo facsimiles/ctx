@@ -134,6 +134,7 @@ typedef struct s0il_process_t {
   int       ppid;
   int       pid;
   char     *program;
+  char     *arg1;
   char     *cwd;
   CtxList  *atexits;
   folder_t *dir; // currently open folder

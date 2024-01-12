@@ -23,15 +23,15 @@ extern void *_s0il_main_thread;
 
 void *_s0il_thread_id(void) {
 #if PICO_BUILD
-  return (void*)1;
+  return (void *)1;
 #elif EMSCRIPTEN
-  return (void*)1;
+  return (void *)1;
 #elif CTX_ESP
   return xTaskGetCurrentTaskHandle();
 #elif S0IL_NATIVE
   return (void *)((size_t)gettid());
 #else
-  return (void*1);
+  return (void * 1);
 #endif
 }
 
@@ -48,7 +48,7 @@ bool s0il_is_main_thread(void) {
 }
 
 static int text_output = 0;
-static int gfx_output  = 0;
+static int gfx_output = 0;
 
 int s0il_output_state(void) { return text_output * 1 + gfx_output * 2; }
 
@@ -376,8 +376,8 @@ int s0il_putchar(int c) {
     ctx_vt_write(NULL, '\r');
     if (s0il_is_main_thread())
       s0il_iteration(ui_host(NULL)); // doing a ui iteration
-                                   // per received char is a bit much
-                                   // so we only do newlines
+                                     // per received char is a bit much
+                                     // so we only do newlines
   }
   ctx_vt_write(NULL, c);
   return putchar(c);
@@ -912,6 +912,12 @@ static int s0il_got_data(FILE *stream) {
 
 static CtxList *commandline_history = NULL;
 
+int s0il_cmd_collect(Ui *ui, const char *prefix, CtxList **ret_list);
+
+int s0il_path_collect(Ui *ui, const char *prefix, CtxList **ret_list) {
+  return 0;
+}
+
 static char *s0il_gets(char *buf, size_t buflen) {
   FILE *stream = stdin;
   if (stream == stdin && s0il_process()->redir_stdin)
@@ -955,8 +961,6 @@ static char *s0il_gets(char *buf, size_t buflen) {
         continue;
       }
     }
-    if (c == '\t')
-      continue;
 
     if (in_esc) {
       switch (c) {
@@ -1028,6 +1032,64 @@ static char *s0il_gets(char *buf, size_t buflen) {
       } else if (c == 5) { // control-e
         s0il_printf("\e[%iC", ctx_utf8_strlen(buf) - cursor_pos);
         cursor_pos = ctx_utf8_strlen(buf);
+        continue;
+      } else if (c == '\t') {
+        buf[count] = 0;
+        if (cursor_pos != count)
+          continue;
+        CtxList *completions = NULL;
+        int n_completions = 0;
+
+        if (strchr(buf, ' ')) {
+          n_completions =
+              s0il_path_collect(ui_host(ctx_host()), buf, &completions);
+        } else {
+          n_completions =
+              s0il_cmd_collect(ui_host(ctx_host()), buf, &completions);
+        }
+
+        if (n_completions == 0) {
+        } else if (n_completions == 1) {
+          s0il_printf("%s", &((char *)completions->data)[count]);
+          strcpy(buf, completions->data);
+          count = strlen(buf);
+          s0il_printf(" ");
+          buf[count++] = ' ';
+          buf[count] = 0;
+          cursor_pos = count;
+        } else {
+          int common = 0;
+          int mismatches = 0;
+          do {
+            const char *fmatch = completions->data;
+            char first = fmatch[common];
+
+            mismatches = 0;
+            for (CtxList *iter = completions; iter; iter = iter->next) {
+              const char *match = iter->data;
+              if (match[common] != first) {
+                mismatches++;
+                break;
+              }
+            }
+            if (!mismatches)
+              common++;
+          } while (mismatches == 0);
+
+          s0il_printf("\n");
+          for (CtxList *iter = completions; iter; iter = iter->next)
+            s0il_printf("%s ", iter->data);
+          strncpy(buf, completions->data, common);
+          buf[common] = 0;
+          count = cursor_pos = strlen(buf);
+
+          s0il_printf("\n> %s", buf);
+        }
+
+        while (completions) {
+          free(completions->data);
+          ctx_list_remove(&completions, completions->data);
+        }
         continue;
       } else if (c == '\n') {
         buf[count] = c;

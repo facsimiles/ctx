@@ -333,8 +333,7 @@ MAIN(s0il_text) {
   text->pos = 0;
   reset_cursor_info();
 
-  if (argv[1] && !strcmp(argv[1], "--register"))
-  {
+  if (argv[1] && !strcmp(argv[1], "--register")) {
     if (!ui) {
       printf("no-args would register mimetypes if run in env\n");
       return -1;
@@ -360,35 +359,28 @@ MAIN(s0il_text) {
         s0il_add_magic(mime_types[i], mime_types[i + 1], NULL, 0, 1);
       s0il_add_view(ui, mime_types[i], NULL, argv[0]);
     }
-  }
-  else if (argv[1]) {
+  } else if (argv[1]) {
     Ctx *ctx = ui_ctx(ui);
 
-
-    if (!strcmp(argv[1],"-"))
-    {
+    if (!strcmp(argv[1], "-")) {
       int rd = 0;
-      text->contents = calloc(128,1);
+      text->contents = calloc(128, 1);
       text->length = 0;
       text->capacity = 128;
       do {
-        if (text->length + 128 > text->capacity)
-        {
-           text->capacity *= 2;
-           text->contents = realloc(text->contents, text->capacity);
+        if (text->length + 128 > text->capacity) {
+          text->capacity *= 2;
+          text->contents = realloc(text->contents, text->capacity);
         }
         rd = fread(&text->contents[text->length], 1, 128, stdin);
-        if (rd >0)
-        {
+        if (rd > 0) {
           text->length += rd;
         }
       } while (rd > 0);
       text->path = strdup("stdin");
       text->dirty = 0;
-    }
-    else
-    {
-      text->contents = (uint8_t*)s0il_load_file(ui, argv[1], NULL);
+    } else {
+      text->contents = (uint8_t *)s0il_load_file(ui, argv[1], NULL);
       if (!text->contents) {
         ctx_destroy(ctx);
         return -1;
@@ -417,7 +409,7 @@ MAIN(s0il_text) {
     text->path = NULL;
     free(text->contents);
     text->contents = NULL;
-  } 
+  }
 
   ctx_destroy(ctx);
   return 0;

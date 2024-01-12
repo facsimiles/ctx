@@ -5,7 +5,7 @@ static char *str = NULL;
 
 int main(int argc, char **argv) {
   argv[argc] = NULL;
-  Ctx *ctx = ctx_new(-1,-1,NULL);
+  Ctx *ctx = ctx_new(-1, -1, NULL);
   if (ctx == NULL)
     return -1;
 

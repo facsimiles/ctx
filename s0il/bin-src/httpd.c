@@ -138,7 +138,8 @@ dir_listing_t *dir_listing_read(HttpdRequest *req, const char *path) {
 
       if (di->count + 1 >= di->capacity) {
         di->capacity += 16;
-        di->entries = realloc(di->entries, sizeof(httpd_dirent_t) * di->capacity);
+        di->entries =
+            realloc(di->entries, sizeof(httpd_dirent_t) * di->capacity);
       }
       httpd_dirent_t *de = &di->entries[di->count++];
       de->name = strdup(base);
@@ -509,9 +510,11 @@ static void httpd_serve_file(HttpdRequest *req, const char *path) {
     fclose(file);
 
     req->emitted = 1;
+#if 0
 #ifndef EMSCRIPTEN
     printf("logemitF:%i %s %s %i %s\n", req->status, req->method,
            req->status_string, req->content_length, req->path);
+#endif
 #endif
   }
 
@@ -519,6 +522,19 @@ static void httpd_serve_file(HttpdRequest *req, const char *path) {
     ctx_string_free(req->body, 1);
     req->body = NULL;
   }
+}
+
+static int deferred_system(Ctx *ctx, void *data)
+{
+  /* this gets invoked during idle dispatch of main-loop
+   */
+  char *cmd = data;
+
+  // XXX : do extra measures like in runv? here
+  printf("running %s\n", cmd);
+  s0il_system (cmd);
+  free (cmd);
+  return 0;
 }
 
 static void httpd_post_handler(HttpdRequest *req) {
@@ -626,7 +642,7 @@ static void httpd_post_handler(HttpdRequest *req) {
     }
 
     if (httpd_run && action == action_run) {
-      s0il_do(ui_host(ctx_host()), temp+12);
+      ctx_add_idle(ctx_host(), deferred_system, strdup(temp + 12));
     }
 
     if (action == action_parent || action == action_remove ||
@@ -824,9 +840,11 @@ static void request_emit(HttpdRequest *req) {
   }
   free(header);
   req->emitted = 1;
+#if 0
 #ifndef EMSCRIPTEN
   printf("logemit:%i %s %s %i %s\n", req->status, req->method,
          req->status_string, req->content_length, req->path);
+#endif
 #endif
 }
 
@@ -896,10 +914,10 @@ int _httpd_start_int(int port,
         try_port = HTTP_PORT_FALLBACK_START - 1;
     }
   }
-  //fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+  // fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
 
   if (httpd_port > 0 && listen(sock, 5) == 0) {
-    printf("httpd port %i\n", httpd_port);
+    // printf("httpd port %i\n", httpd_port);
   } else {
     printf("httpd %s\n",
            httpd_port <= 0 ? "failed to open socket" : "failed to bind port");
@@ -925,7 +943,7 @@ int _httpd_start_int(int port,
     FD_ZERO(&set);
     FD_SET(sock, &set);
 
-    timeout.tv_sec = 1;
+    timeout.tv_sec = 2;
     timeout.tv_usec = 0;
 
     rv = select(sock + 1, &set, NULL, NULL, &timeout);
@@ -933,7 +951,7 @@ int _httpd_start_int(int port,
       printf("socket error\n");
       continue;
     } else if (rv == 0) {
-      s0il_iteration(ui_host(ctx_host()));
+ //   s0il_iteration(ui_host(ctx_host()));
       if (ctx_has_quit(ctx_host()))
         httpd_stop = 1;
       continue;

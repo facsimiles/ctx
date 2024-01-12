@@ -59,7 +59,7 @@ s0il_process_t *s0il_process(void) {
 #include <unistd.h>
 
 int output_state = 0;
-int pre_exec(const char *path, int same_stack) {
+int pre_exec(const char *path, char **argv, int same_stack) {
   s0il_process_t *pinfo = s0il_process();
   s0il_process_t *info = calloc(1, sizeof(s0il_process_t));
 
@@ -74,7 +74,7 @@ int pre_exec(const char *path, int same_stack) {
     info->cwd = strdup("/");
   }
   info->program = strdup(path);
-
+  info->arg1 = argv[1];
   info->pid = ++peak_pid;
   ctx_list_append(&proc, info);
 
@@ -103,12 +103,19 @@ int s0il_thread_no(void);
 int ps_main(int argc, char **argv) {
   for (CtxList *iter = proc; iter; iter = iter->next) {
     s0il_process_t *info = iter->data;
-    s0il_printf("%i", info->pid);
-    if (info->program)
-      s0il_printf(" %s", info->program);
-    if (info->cwd)
-      s0il_printf("   %s", info->cwd);
-    s0il_printf("\n");
+    if (info->pid) {
+      s0il_printf("%i", info->pid);
+
+      if (info->program) {
+        if (!strcmp(info->program, "/bin/picoc") && info->arg1)
+          s0il_printf(" %s", info->arg1);
+        else
+          s0il_printf(" %s", info->program);
+      }
+      if (info->cwd)
+        s0il_printf("   %s", info->cwd);
+      s0il_printf("\n");
+    }
   }
   return 0;
 }
@@ -121,15 +128,14 @@ typedef struct inlined_program_t {
 
 static CtxList *inlined_programs = NULL;
 
-int which_main(int argc, char **argv)
-{
+int which_main(int argc, char **argv) {
   const char *name = argv[1];
-  if (!name) return -1;
+  if (!name)
+    return -1;
   char *resolved = s0il_path_lookup(ui_host(ctx_host()), name);
-  if (resolved)
-  {
-    s0il_printf ("%s\n", resolved);
-    free (resolved);
+  if (resolved) {
+    s0il_printf("%s\n", resolved);
+    free(resolved);
   }
   return 0;
 }
@@ -143,8 +149,7 @@ void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
   ctx_list_append(&inlined_programs, program);
   static const char busy_magic[6] = {0, 's', '0', 'i', 'l'};
 
-  if (s0il_access(program->path, R_OK) != F_OK)
-  {
+  if (s0il_access(program->path, R_OK) != F_OK) {
     s0il_add_file(program->path, busy_magic, sizeof(busy_magic), S0IL_READONLY);
   }
 }
@@ -663,7 +668,7 @@ static int esp_elf_runv(char *path, char **argv, int same_stack) {
     argv = fake_argv;
   }
 
-  int pid = pre_exec(path, same_stack);
+  int pid = pre_exec(path, argv, same_stack);
   int old_pid = thread_pid[s0il_thread_no()];
   thread_pid[s0il_thread_no()] = pid;
 
@@ -743,7 +748,7 @@ static int dlopen_runv(char *path2, char **argv, int same_stack) {
     int (*main)(int argc, char **argv) = dlsym(dlhandle, "main");
     if (main) {
 
-      int pid = pre_exec(path, same_stack);
+      int pid = pre_exec(path, argv, same_stack);
       int old_pid = thread_pid[s0il_thread_no()];
       thread_pid[s0il_thread_no()] = pid;
 
@@ -784,7 +789,7 @@ static int program_runv(inlined_program_t *program, char **argv,
     argv = fake_argv;
   }
   {
-    int pid = pre_exec(path, same_stack);
+    int pid = pre_exec(path, argv, same_stack);
     int old_pid = thread_pid[s0il_thread_no()];
     thread_pid[s0il_thread_no()] = pid;
 
@@ -874,9 +879,51 @@ int s0il_runv(char *path, char **argv) {
   return ret;
 }
 
+int s0il_cmd_collect(Ui *ui, const char *prefix, CtxList **ret_list) {
+  char *path = s0il_getenv("PATH");
+  int prefix_len = strlen(prefix);
+  if (!path)
+    path = "/sd/bin:/bin:/sd";
+  path = strdup(path);
+  char temp[512];
+
+  char *p = path;
+  int count = 0;
+  do {
+    char *seg = p;
+    char *e = strchr(p, ':');
+    if (e) {
+      *e = 0;
+      p = e + 1;
+    } else {
+      p = NULL;
+    }
+
+    DIR *dir = s0il_opendir(seg);
+    if (dir) {
+      struct dirent *de = NULL;
+      do {
+        de = s0il_readdir(dir);
+        if (de) {
+          if (de->d_name[0] != '.' &&
+              !strncmp(de->d_name, prefix, prefix_len)) {
+            if (ret_list)
+              ctx_list_append(ret_list, strdup(de->d_name));
+            count++;
+          }
+        }
+      } while (de);
+      s0il_closedir(dir);
+    }
+  } while (p && *p);
+  free(path);
+  return count;
+}
+
 char *s0il_path_lookup(Ui *ui, const char *file) {
   char *path = s0il_getenv("PATH");
-  if (!path) path = "/sd/bin:/bin:/sd";
+  if (!path)
+    path = "/sd/bin:/bin:/sd";
   path = strdup(path);
   char temp[512];
 
@@ -885,23 +932,23 @@ char *s0il_path_lookup(Ui *ui, const char *file) {
   do {
     char *seg = p;
     char *e = strchr(p, ':');
-    if (e){
+    if (e) {
       *e = 0;
-      p = e+1;
+      p = e + 1;
     } else {
       p = NULL;
     }
 
-    if (seg[strlen(seg)-1] == '/')
-      snprintf(temp, sizeof(temp)-1, "%s%s", seg, file);
+    if (seg[strlen(seg) - 1] == '/')
+      snprintf(temp, sizeof(temp) - 1, "%s%s", seg, file);
     else
-      snprintf(temp, sizeof(temp)-1, "%s/%s", seg, file);
+      snprintf(temp, sizeof(temp) - 1, "%s/%s", seg, file);
     if (s0il_access(temp, R_OK) == F_OK) {
-      free (path);
+      free(path);
       return strdup(temp);
     }
   } while (p && *p);
-  free (path);
+  free(path);
   return NULL;
 }
 
@@ -1009,7 +1056,7 @@ int s0il_system(const char *cmdline) {
           cmd_cargv++;
         }
 
-        if(cmd_cargv[0]){
+        if (cmd_cargv[0]) {
 
           FILE *in_stream = NULL;
           FILE *out_stream = NULL;

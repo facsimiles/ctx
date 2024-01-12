@@ -8,26 +8,22 @@
  * Adhering to the standards with modern extensions.
  *
  * Features:
- *     vt100 - 101 points on scoresheet
- *     UTF8, cp437
  *     dim, bold, strikethrough, underline, italic, reverse
  *     ANSI colors, 256 colors (non-redefineable), 24bit color
- *     realtime audio transmission
- *     raster sprites (kitty spec)
- *     vector graphics
+ *     UTF8, cp437
+ *     vt100 - 101 points on scoresheet
  *     vt320 - horizontal margins
- *     proportional fonts
- *
  *     BBS/ANSI-art mode
+ *
+ *     realtime audio transmission
+ *     raster sprites (sixels, iterm2 and kitty specs)
+ *     vector graphics
+ *     proportional fonts
  *
  * 8bit clean
  *
- *
  * Todo:
  *     DECCIR - cursor state report https://vt100.net/docs/vt510-rm/DECCIR.html
- *     make absolute positioning take proportional into account
- *     HTML / PNG / SVG / PDF export of scrollback / screen
- *     sixels
  *
  */
 

@@ -926,6 +926,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     {"ungetc", &s0il_ungetc},
     {"unlink", &s0il_unlink},
     {"unsetenv", &s0il_unsetenv},
+    ELFSYM_EXPORT(sleep),
     ELFSYM_EXPORT(usleep),
 #if CTX_ESP
     ELFSYM_EXPORT(uxTaskGetTaskNumber),

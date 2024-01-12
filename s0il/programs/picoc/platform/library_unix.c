@@ -712,12 +712,5 @@ void PlatformLibraryInit(Picoc *pc)
     "#include <unistd.h>\n"
     "#include <math.h>\n"
     "#include <dirent.h>\n"
-    "#include <stdio.h>\n"
-    "#include <string.h>\n"
-    "#include <stdlib.h>\n"
-    "#include <stdbool.h>\n"
-    "#include <unistd.h>\n"
-    "#include <math.h>\n"
-    "#include <dirent.h>\n"
     "#include <ui.h>\n");
 }

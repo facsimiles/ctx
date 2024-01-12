@@ -1,8 +1,7 @@
 #include "s0il.h"
 
 MAIN(s0il_image) {
-  if (argv[1] && !strcmp(argv[1], "--register"))
-  {
+  if (argv[1] && !strcmp(argv[1], "--register")) {
     Ui *ui = ui_host(NULL);
     const char png_magic[] = {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
     const char jpg_magic1[] = {0xff, 0xd8, 0xff, 0xdb, 0xff, 0xd8, 0xff, 0xe0};

@@ -25,30 +25,26 @@ void draw_clock(Ctx *ctx, float x, float y, float radius,
   for (int markm = 0; markm < 60; markm++) {
     r = markm * CTX_PI * 2 / 60.0 - CTX_PI / 2;
 
-    if (markm == s)
-    {
-//    ctx_move_to(ctx,x,y);
-//    ctx_line_to(ctx,x+0.01*radius,y);
-//    ctx_stroke(ctx); // XXX hack - it seems like hashcache doesnt track
-                       // global alpha
+    if (markm == s) {
+      //    ctx_move_to(ctx,x,y);
+      //    ctx_line_to(ctx,x+0.01*radius,y);
+      //    ctx_stroke(ctx); // XXX hack - it seems like hashcache doesnt track
+      // global alpha
       ctx_global_alpha(ctx, 1.0f);
-    }
-    else
+    } else
       ctx_global_alpha(ctx, 0.33f);
 
-    if ( ((markm%5) ==0) ){
+    if (((markm % 5) == 0)) {
       ctx_move_to(ctx, x + cosf(r) * radius * 0.8f,
-                       y + sinf(r) * radius * 0.8f);
+                  y + sinf(r) * radius * 0.8f);
       ctx_line_to(ctx, x + cosf(r) * radius * 0.95f,
-                       y + sinf(r) * radius * 0.95f);
+                  y + sinf(r) * radius * 0.95f);
       ctx_stroke(ctx);
-    }
-    else
-    {
+    } else {
       ctx_move_to(ctx, x + cosf(r) * radius * 0.92f,
-                       y + sinf(r) * radius * 0.92f);
+                  y + sinf(r) * radius * 0.92f);
       ctx_line_to(ctx, x + cosf(r) * radius * 0.95f,
-                       y + sinf(r) * radius * 0.95f);
+                  y + sinf(r) * radius * 0.95f);
       ctx_stroke(ctx);
     }
   }
@@ -75,7 +71,6 @@ void draw_clock(Ctx *ctx, float x, float y, float radius,
   ctx_line_width(ctx, radius * 0.02f);
   ctx_line_cap(ctx, CTX_CAP_NONE);
 
-
 #if 0
 
   r = (s + ms / 1000.0f) * CTX_PI * 2 / 60 - CTX_PI / 2;
@@ -97,9 +92,8 @@ void draw_clock(Ctx *ctx, float x, float y, float radius,
   ctx_restore(ctx);
 }
 
-void view_clock (Ui *ui)
-{
-  Ctx *ctx = ui_ctx (ui);
+void view_clock(Ui *ui) {
+  Ctx *ctx = ui_ctx(ui);
   float w = ctx_width(ctx);
   float h = ctx_height(ctx);
   float min = w < h ? w : h;
@@ -151,8 +145,7 @@ MAIN(clock) {
 #else
   if (argv[1] && !strcmp(argv[1], "--register"))
     s0il_add_view(ui_host(ctx_host()), "clock", view_clock, NULL);
-  else
-  {
+  else {
     s0il_push_fun(ui_host(ctx_host()), view_clock, "clock", NULL, NULL);
   }
   return 42;

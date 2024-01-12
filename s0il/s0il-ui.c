@@ -9,7 +9,6 @@ void s0il_program_runner_init(void);
 int _init_main(int argc, char **argv) {
   // Ui *ui = ui_host(NULL);
 
-
   s0il_program_runner_init();
 
   system("rm -f /tmp/_s0il_*");
@@ -253,7 +252,8 @@ int launch_program_interpreter(Ctx *ctx, void *data) {
     if (ui->fun == view_program) {
       s0il_pop_fun(ui);
     } else {
-        printf("dropping state - something is amiss, we chould just leave the program view\n");
+      printf("dropping state - something is amiss, we chould just leave the "
+             "program view\n");
       drop_state(ui);
     }
     program_return_value = retval;
@@ -263,7 +263,6 @@ int launch_program_interpreter(Ctx *ctx, void *data) {
 
 static CtxClient *term_client = NULL;
 static void handle_event(Ctx *ctx, CtxEvent *ctx_event, const char *event) {
-  // printf ("FE! %s\n", event);
   ctx_client_feed_keystring(term_client, ctx_event, event);
 }
 
@@ -363,8 +362,8 @@ void view_program(Ui *ui) {
       ui_add_key_binding(ui, "control-q", "exit", "quit");
       ui_add_key_binding(ui, "escape", "exit",
                          "quit"); // XXX having
-        // tri-state send ESC.. and having vim/quit in
-        // term conflicts.. - alt+f4 instead?
+                                  // tri-state send ESC.. and having vim/quit in
+                                  // term conflicts.. - alt+f4 instead?
     }
   }
 }
@@ -454,9 +453,9 @@ void view_settings_ui(Ui *ui) {
 
 // XXX : why is this not a linked list?
 void s0il_add_view(Ui *ui,
-                 const char *name, // or mime-type
-                 ui_fun fun,       // either fun - or binary_path ..
-                 const char *binary_path) {
+                   const char *name, // or mime-type
+                   ui_fun fun,       // either fun - or binary_path ..
+                   const char *binary_path) {
   if (ui->n_views + 1 >= 64)
     return;
   ui->views[ui->n_views].name = strdup(name);
@@ -488,7 +487,6 @@ static void save_state(Ui *ui) {
     printf("history overflow\n");
   }
 }
-
 
 static void restore_state(Ui *ui) {
   if (ui->history_count > 0) {
@@ -527,16 +525,15 @@ char *s0il_load_file(Ui *ui, const char *path, int *ret_length) {
     s0il_fseek(file, 0, SEEK_END);
     long length = s0il_ftell(file);
     s0il_fseek(file, 0, SEEK_SET);
-    if (ret_length) *ret_length = length;
+    if (ret_length)
+      *ret_length = length;
     data = malloc(length + 1);
-    if (data)
-    {
+    if (data) {
       s0il_fread(data, length, 1, file);
       s0il_fclose(file);
       ((char *)data)[length] = 0;
     }
-  } else
-  {
+  } else {
     printf("load failing for %s\n", path);
   }
   return data;
@@ -585,7 +582,7 @@ const char *ui_get_location(Ui *ui) { return ui->location; }
 int ui_get_frame_no(Ui *ui) { return ui->frame_no; }
 
 void s0il_push_fun(Ui *ui, ui_fun fun, const char *location, void *data,
-                 ui_data_finalize data_finalize) {
+                   ui_data_finalize data_finalize) {
   if (ui->fun)
     save_state(ui);
   if (ui->location)
@@ -601,8 +598,7 @@ void s0il_push_fun(Ui *ui, ui_fun fun, const char *location, void *data,
   ui->frame_no = 0;
   ui->view_elapsed = 0;
 
-  if (ui->focus_first)
-  {
+  if (ui->focus_first) {
     ui->queued_next = 2;
   }
 
@@ -631,10 +627,10 @@ void ui_load_view(Ui *ui, const char *target) {
       }
     char *epath;
     if ((epath = s0il_path_lookup(ui, target))) {
-       s0il_set_data(ui, NULL, NULL);
-       s0il_push_fun(ui, view_program, epath, NULL, NULL);
-       free(epath);
-       return;
+      s0il_set_data(ui, NULL, NULL);
+      s0il_push_fun(ui, view_program, epath, NULL, NULL);
+      free(epath);
+      return;
     }
 
     s0il_push_fun(ui, ui_unhandled, target, NULL, NULL);
@@ -687,8 +683,7 @@ void s0il_do(Ui *ui, const char *action) {
 #if CTX_FLOW3R
     bsp_captouch_key_events(2);
 #endif
-  } else
-  {
+  } else {
     ui_load_view(ui, action);
   }
 }
@@ -879,7 +874,7 @@ void s0il_iteration(Ui *ui) {
     if (ctx_need_redraw (ctx))
 #endif
 #else
-    if(1)
+    if (1)
 #endif
     {
       width = ctx_width(ctx);
@@ -929,7 +924,6 @@ void s0il_iteration(Ui *ui) {
 
       ui_keyboard(ui);
 
-
       ctx_end_frame(ctx);
 
       ui->frame_no++;
@@ -975,8 +969,7 @@ static void ui_set_focus(Ui *ui, UiWidget *widget) {
   for (int i = 0; i < ui->widget_count; i++)
     if (ui->focused_id) {
       UiWidget *old_widget = ui_widget_by_id(ui, ui->focused_id);
-      if (old_widget == widget)
-      {
+      if (old_widget == widget) {
         ctx_queue_draw(ui->ctx);
         return;
       }
@@ -1246,7 +1239,7 @@ float ui_slider_coords(Ui *ui, void *id, float x, float y, float width,
   if (focused && ui->activate) {
     widget->float_data = value;
     widget->float_data_target = value;
-    //printf("!activating slider\n");
+    // printf("!activating slider\n");
     ui->active_id = widget->id;
     ui->activate = 0;
   }
@@ -1420,7 +1413,8 @@ void ui_end_frame(Ui *ui) {
   } else {
     ui_add_key_binding(ui, "up", "focus-previous", "previous focusable item");
     ui_add_key_binding(ui, "left", "focus-previous", "previous focusable item");
-    ui_add_key_binding(ui, "shift-tab", "focus-previous", "previous focusable item");
+    ui_add_key_binding(ui, "shift-tab", "focus-previous",
+                       "previous focusable item");
     ui_add_key_binding(ui, "down", "focus-next", "next focusable item");
     ui_add_key_binding(ui, "right", "focus-next", "next focusable item");
     ui_add_key_binding(ui, "tab", "focus-next", "next focusable item");
@@ -1463,25 +1457,6 @@ void ui_end_frame(Ui *ui) {
 #endif
 
   ui->overlay_fade -= 0.3 * ui->delta_ms / 1000.0f;
-
-      if (show_fps) {
-        char buf[32];
-        ctx_save(ctx);
-        ctx_font_size(ctx, ui->height / 20);
-        ctx_rgba(ctx, ui->style.bg[0], ui->style.bg[1], ui->style.bg[2], 0.8f);
-        ctx_rectangle(ctx, 0, 0, ui->width, ui->height / 20);
-        ctx_fill(ctx);
-        ui_set_color(ctx, ui->style.fg);
-        ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
-        ctx_move_to(ctx, ctx_width(ctx) / 2, ui->height / 20);
-        static float fps = 0.0f;
-
-        fps = fps * 0.6f + 0.4f * (1000.0f / ui->delta_ms);
-        sprintf(buf, "%.1f", (double)fps);
-        ctx_text(ctx, buf);
-        ctx_restore(ctx);
-      }
-
 }
 
 void ui_draw_bg(Ui *ui) {
@@ -1530,6 +1505,25 @@ void ui_draw_bg(Ui *ui) {
                           ui->style.bg2[2], 1.0f);
   }
   ctx_fill(ctx);
+
+  if (show_fps) {
+    char buf[32];
+    ctx_save(ctx);
+    ctx_font_size(ctx, ui->height / 20);
+    ctx_rgba(ctx, ui->style.bg[0], ui->style.bg[1], ui->style.bg[2], 0.8f);
+    ctx_rectangle(ctx, 0, 0, ui->width, ui->height / 20);
+    ctx_fill(ctx);
+    ui_set_color(ctx, ui->style.fg);
+    ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
+    ctx_move_to(ctx, ctx_width(ctx) / 2, ui->height / 20);
+    static float fps = 0.0f;
+
+    fps = fps * 0.6f + 0.4f * (1000.0f / ui->delta_ms);
+    sprintf(buf, "%.1f", (double)fps);
+    ctx_text(ctx, buf);
+    ctx_restore(ctx);
+  }
+
   ui_set_color(ctx, ui->style.fg);
 }
 
@@ -1680,7 +1674,7 @@ char *ui_entry_coords(Ui *ui, void *id, float x, float y, float w, float h,
       ui->temp_text[0] = 0;
     }
     ui->cursor_pos = strlen(ui->temp_text);
-    //printf("!activating\n");
+    // printf("!activating\n");
     ui->active_id = widget->id;
     ui->activate = 0;
   }
@@ -1761,21 +1755,23 @@ char *ui_entry_coords(Ui *ui, void *id, float x, float y, float w, float h,
   return NULL;
 }
 
-int ui_entry_realloc(Ui *ui, const char *label, const char *fallback, char **strptr)
-{
+int ui_entry_realloc(Ui *ui, const char *label, const char *fallback,
+                     char **strptr) {
   const char *str = "";
-  if (*strptr) str = *strptr;
-  char *ret = ui_entry(ui,label,fallback,str);
-  if (ret)
-  {
-    if (*strptr)free(*strptr);
+  if (*strptr)
+    str = *strptr;
+  char *ret = ui_entry(ui, label, fallback, str);
+  if (ret) {
+    if (*strptr)
+      free(*strptr);
     *strptr = ret;
     return 1;
   }
   return 0;
 }
 
-char *ui_entry(Ui *ui, const char *label, const char *fallback, const char *value) {
+char *ui_entry(Ui *ui, const char *label, const char *fallback,
+               const char *value) {
   char *ret = NULL;
   ctx_save(ui->ctx);
   ctx_font_size(ui->ctx, 0.75 * em);
@@ -1856,10 +1852,7 @@ void s0il_view_views(Ui *ui) {
   }
   ui_end_frame(ui);
 }
-const char *s0il_location(Ui *ui)
-{
-  return ui->location;
-}
+const char *s0il_location(Ui *ui) { return ui->location; }
 
 #if S0IL_NATIVE || EMSCRIPTEN // simulated ctx_set_pixels - that uses a texture
 uint8_t scratch[1024 * 1024 * 4];

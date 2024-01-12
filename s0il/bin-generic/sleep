@@ -1,0 +1,8 @@
+//!picoc
+#include <stdlib.h>
+#include <unistd.h>
+int main(int arc, char **argv) { 
+  // TODO : suffixes for hours days and minutes
+  usleep(atof(argv[1])*1000*1000);
+  return 0;
+}
