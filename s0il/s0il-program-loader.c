@@ -143,10 +143,8 @@ void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
   ctx_list_append(&inlined_programs, program);
   static const char busy_magic[6] = {0, 's', '0', 'i', 'l'};
 
-  printf ("%s\n", program->path);
   if (s0il_access(program->path, R_OK) != F_OK)
   {
-    printf ("+%s\n", program->path);
     s0il_add_file(program->path, busy_magic, sizeof(busy_magic), S0IL_READONLY);
   }
 }

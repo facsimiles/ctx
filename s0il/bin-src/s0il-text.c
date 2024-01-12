@@ -364,6 +364,29 @@ MAIN(s0il_text) {
   else if (argv[1]) {
     Ctx *ctx = ui_ctx(ui);
 
+
+    if (!strcmp(argv[1],"-"))
+    {
+      int rd = 0;
+      text->contents = calloc(128,1);
+      text->length = 0;
+      text->capacity = 128;
+      do {
+        if (text->length + 128 > text->capacity)
+        {
+           text->capacity *= 2;
+           text->contents = realloc(text->contents, text->capacity);
+        }
+        rd = fread(&text->contents[text->length], 1, 128, stdin);
+        if (rd >0)
+        {
+          text->length += rd;
+        }
+      } while (rd > 0);
+      text->path = strdup("stdin");
+      text->dirty = 0;
+    }
+    else
     {
       text->contents = (uint8_t*)s0il_load_file(ui, argv[1], NULL);
       if (!text->contents) {
@@ -385,7 +408,7 @@ MAIN(s0il_text) {
       ctx_end_frame(ctx);
     } while (!ctx_has_exited(ctx));
 
-    if (text->dirty) {
+    if (text->dirty && !strcmp(text->path, "stdin")) {
       FILE *f = fopen(argv[1], "w");
       fwrite(text->contents, strlen((char *)text->contents), 1, f);
       fclose(f);

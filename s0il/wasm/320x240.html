@@ -1,0 +1,156 @@
+<html>
+        <head>
+        <title>s0il - a 32bit program environment with vector graphics</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <link rel='stylesheet' href='./data/codemirror.css'/>
+        <link rel='stylesheet' href='./data/codemirror-cobalt.css'/>
+
+        <style>
+                canvas {image-rendering: sharp; image-rendering: -webkit-optimize-contrast;  image-rendering: -moz-crisp-edges;}
+            body { margin:0 0 0 0;}
+            html { font-size: 20pt; }
+              #browser {background:white; position:fixed; overflow:auto;}
+              @media (orientation:portrait) {
+                canvas {width: 100%;}
+                .CodeMirror { height: calc(33vh); }
+                #browser {height:calc(100vh - 73vw); width:100vw;}
+              } 
+              @media (orientation:landscape) {
+                canvas {position:fixed;top:0;height: 100%;right:0;margin-left:0.5em;}
+                p, pre { padding-left: 0.5em; padding-right: 0.5em;}
+              #browser {width:calc(100vw - 134vh); height:100vh;}
+              .CodeMirror { height: calc(100vh - 2em); 
+                            width:calc(100vw-100vh);}
+              } 
+              #page { background:transparent;}
+        </style>
+
+        <script>
+/*
+// main.js
+if ("serviceWorker" in navigator) {
+  // Register service worker
+  navigator.serviceWorker.register(new URL("./sw.js", window.location)).then(
+    function (registration) {
+      console.log("COOP/COEP Service Worker registered", registration.scope);
+      // If the registration is active, but it's not controlling the page
+      if (registration.active && !navigator.serviceWorker.controller) {
+          window.location.reload();
+      }
+    },
+    function (err) {
+      console.log("COOP/COEP Service Worker failed to register", err);
+    }
+  );
+} else {
+  console.warn("Cannot register a service worker");
+}
+*/
+        </script>
+
+        <script src='./data/codemirror.js'></script>
+        <script src='./data/codemirror-python.js'></script>
+
+        <script src="./s0il.js"></script>
+        <script>
+function windowToCanvas(canvas, x, y) {
+   var bbox = canvas.getBoundingClientRect();
+
+   return { x: (x - bbox.left) * (canvas.width  / bbox.width),
+            y: (y - bbox.top)  * (canvas.height / bbox.height)
+          };
+}
+function make_editor(){
+         if(document.getElementById('content')){
+         window.editor = 
+         CodeMirror.fromTextArea(document.getElementById('content'), {
+          lineNumbers: true,
+         theme:'cobalt'});}
+}
+
+
+function location_changed()
+{
+  if(document.location.hash == "")
+    document.location.hash = '/';
+  let tmp = allocateUTF8(document.location.hash.substr(1));
+  content_c = _wasm_http(tmp);
+  page.innerHTML=UTF8ToString(content_c);
+  if (document.getElementById('content'))
+    window.make_editor();
+  _free(tmp);
+  _free(content_c);
+}
+
+function deferred_location_changed()
+{
+  // Evil hack - but only on first load..
+  // we should mark that the wasm is loaded and then trigger this
+  // or do this in the post-hook in the build
+  setTimeout(location_changed, 1100);
+}
+
+function button_press(action)
+{
+  let tmp = allocateUTF8(document.location.hash);
+
+
+  let form= "action=" + action + "\r\n";
+  if (document.getElementById('path'))
+    form += "path=" + path.value + "\r\n";
+
+  if (document.getElementById('param'))
+       form += "param=" + param.value + "\r\n";
+  if (document.getElementById('origname'))
+       form += "origname=" + origname.value + "\r\n";
+
+  if (action=='save' || action =='run')
+    if (document.getElementById('content'))
+       form += "content=" + window.editor.getValue() + "\r\n";//content.value;
+
+  let form_c= allocateUTF8(form);
+  content_c = _wasm_http(tmp, form_c);
+  new_loc = UTF8ToString(content_c);
+  document.location.hash = new_loc.replace('Location: ', "").trim();
+  _free(tmp);
+  _free(form_c);
+  _free(content_c);
+  location_changed();
+}
+document.onclick = function (e) {
+  e = e ||  window.event;
+
+  //alert(window.editor);//.state.doc.toString())
+
+  var element = e.target || e.srcElement;
+  if (element.tagName == 'INPUT')
+  {
+    if (element.type== 'submit')
+    {
+      e.preventDefault();
+      button_press(element.value)
+      return false;
+    }
+    //else alert(element.type);
+  }
+  if (element.tagName == 'A' || element.tagName == 'a') {
+    e.preventDefault();
+    document.location.hash = element.href.replace(/.*:\/\/[a-z0-9.:]*/,'');
+    location_changed();
+    return false; // prevent default action and stop event propagation
+  }
+};
+
+
+        </script>
+        </head>
+        <body onload='deferred_location_changed()' onhashchange='location_changed()'><canvas id='c' width='320' height='240' tabindex='0'></canvas><div class='spacefiller'></div>
+
+<div id='browser'>
+<div id='page'>
+<p>%</p>
+</div>
+</div>
+
+
+</body></html>
