@@ -405,12 +405,14 @@ fun_ptr__ptr(s0il_get_data);
 fun_void__ptr(ui_keyboard);
 fun_ptr__ptr_ptr_ptr(s0il_load_file);
 fun_void__ptr_ptr_ptr_int_int(s0il_add_magic);
+fun_ptr__ptr(ui_host);
 
 // ui_push_fun ui_register_view
 // set_data get_data  find_exec  ui_basename  elf_output_state 
 
 const struct LibraryFunction UiFunctions[] =
 {
+    {Cui_host, "Ui*ui_host(Ctx*);"},
     {Cui_start_frame,        "void ui_start_frame(Ui*);"},
     {Cui_end_frame,          "void ui_end_frame(Ui*);"},
     {Cui_text,         "void ui_text(Ui*,char*str);"},

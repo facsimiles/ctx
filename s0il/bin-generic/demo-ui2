@@ -5,11 +5,11 @@ static char *str = NULL;
 
 int main(int argc, char **argv) {
   argv[argc] = NULL;
-  Ctx *ctx = ctx_new(-1,-1,NULL);
+  Ctx *ctx = ctx_host();
   if (ctx == NULL)
     return -1;
 
-  Ui *ui = ui_new(ctx);
+  Ui *ui = ui_host(ctx);
   int counter = 0;
   char buf[32];
 
@@ -33,8 +33,6 @@ int main(int argc, char **argv) {
     ui_end_frame(ui);
     ctx_end_frame(ctx);
   }
-  ui_destroy(ui);
-  ctx_destroy(ctx);
 
   return 0;
 }

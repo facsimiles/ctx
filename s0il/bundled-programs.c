@@ -36,7 +36,7 @@
 //#include "bin-src/demo-pcm_audio.c"
 #include "bin-src/demo-setpixels.c"
 #include "bin-src/demo-tsr.c"
-#include "bin-src/demo-ui.c"
+//#include "bin-src/demo-ui.c"
 #include "bin-src/demo-ctx_host.c"
 #include "bin-src/wifi.c"
 #include "bin-src/sync.c"

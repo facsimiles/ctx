@@ -36,7 +36,7 @@
 //#include "bin-src/demo-pcm_audio.c"
 #include "bin-src/demo-setpixels.c"
 #include "bin-src/demo-tsr.c"
-#include "bin-src/demo-ui.c"
+#include "bin-src/demo-ui-c.c"
 #include "bin-src/demo-ctx_host.c"
 #include "bin-src/wifi.c"
 #include "bin-src/sync.c"
@@ -76,5 +76,6 @@ void add_mains(void) {
   s0il_bundle_main("sync", sync_main);
 //s0il_bundle_main("demo-pcm_audio", demo_pcm_audio_main);
   s0il_bundle_main("demo-ctx_host", demo_ctx_host_main);
+  s0il_bundle_main("demo-ui-c", demo_ui_c_main);
   s0il_bundle_main("date", date_main);
 }

@@ -148,76 +148,9 @@ document.onclick = function (e) {
 
 <div id='browser'>
 <div id='page'>
-<p>loading..</p>
+<blink>%</blink>
 </div>
 </div>
-
-<p>
-s0il a vector graphics ui and shell environment for resource constrained
-devices. <a href='/_/'>browse/edit file system</a>
-</p><p>
-
-<!--
-<h2>Building s0il</h2>
-<p>This might work:</p>
-<pre>
-git clone https://ctx.graphics/.git/
-cd git.graphics
-make
-make
-cd s0il
-make test
-make help</pre>
-<p>
-
-I you have a flow3r, you might want to run it there, here is a pre-built binary:<br/><a href='s0il-flow3r.bin'><span>flow3r firmware</span></a>
-
-</p>
-
-<b><tt>system</tt></b>: pipes are implemented like in DOS, using temporary
-files. By default programs are also sharing the stack of the invoker.
-Backgrounding with <tt>&amp;</tt> is only supported when the underlying
-platform has pthreads (posix/freertos).
-
-</p><p>
-
-<b><tt>stdin,stdout,stderr</tt></b> gets/fgets provides in-band text editor, stdin,stdout and stderr are treated as constants, internally each running program might have different streams hooked up - or be virtually duplicated 
-
-</p><p>
-
-<b><tt>fopen,opendir,fread,ftell,fwrite,fprint,unlink,rename,mkdir,..</tt></b>
-s0il contains a RAM filesystem - with file contents intitially backed
-by read-only data contained in the s0il binary. The locations used
-with this is /tmp /bin, / and /data, files added or modified here are
-stored in heap memory. Files in /tmp are used for to implement piping
-and thus piping large amounts of data will OOM. The RAM filesystem can be used
-also baremetal without a filesystem in the libc.
-
-</p><p>
-In the wasm simulator on this page /sd is a persistent filesystem
-stored in indexdb on your browser. The filesystem is synced on
-shutdown (exit from main menu) or if sync() is invoked.
-</p><p>
-
-<b><tt>getpid,getppid,exit,getcwd</tt></b>makes use of
-per program data instead of sharing the global state.
-</p><p>
-
-The picoc interpreter comes with quite full bindings for the ctx
-and s0il APIs, adding bindings for lua, quickjs and a micropython
-interpreter are not done yet.
-</p><p>
-
-The UI layer is similar to a small browser shell, it has a location
-the can be set, and a history to get back to previous states, sniffing
-of the first 512 bytes is done to determine mime types, new mime types
-can be registered, also folders can be registered with their own handlers
-by specifying a file which if present makes the folder not report
-mime-type of inode/directory.
-
-</p><p>
--->
-   
 
 
 </body>
@@ -232,5 +165,4 @@ mime-type of inode/directory.
   }
 }
 </script>
-
 </html>
