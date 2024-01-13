@@ -72,7 +72,6 @@ clean:
 	rm -rf esp32c3/sdkconfig esp32c3/build
 	make -C pico clean
 	make -C wasm clean
-	make -C programs clean
 
 
 elf_strip_pie: elf_strip_pie.c

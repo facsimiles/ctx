@@ -154,7 +154,7 @@ void app_main(void) {
 
 int main(int argc, char **argv) {
 #endif
-  s0il_setenv("PATH", "/sd/bin:/bin:/sd", 1);
+  s0il_setenv("PATH", "/sd/bin:/bin", 1);
   s0il_program_runner_init();
 
   Ctx *ctx = ctx_new(DISPLAY_WIDTH, DISPLAY_HEIGHT, NULL);
@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
   ui_fake_circle(ui, true);
 
   s0il_add_magic("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
-
+#if 0
   const char *temp =
       "s0il - vector graphics operating environment\n"
       "\n"
@@ -230,13 +230,14 @@ int main(int argc, char **argv) {
       " backspace      back\n"
       " escape         exit\n"
       " shift-space    toggle keyboard\n";
+  s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
+#endif
 
   s0il_add_file("/sd", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/data", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/flash", NULL, 0, S0IL_DIR | S0IL_READONLY);
   s0il_add_file("/bin", NULL, 0, S0IL_DIR | S0IL_READONLY);
-  // s0il_add_file("/tmp", NULL, 0, S0IL_DIR|S0IL_READONLY);
-  // s0il_add_file("/welcome", temp, 0, S0IL_READONLY);
+  //s0il_add_file("/tmp", NULL, 0, S0IL_DIR|S0IL_READONLY);
   char *t = "";
 #if !defined(EMSCRIPTEN)
   s0il_add_file("/tmp/dummy", t, 1, 0);
@@ -260,11 +261,9 @@ int main(int argc, char **argv) {
   s0il_do(ui, "menu");      // queue menu - as initial view
   s0il_printf("\033[?30l"); // turn off scrollbar
 
-#ifdef CTX_ESP
-  s0il_system("wifi --auto &");
-  sleep(1);
-  s0il_system("httpd &");
-#endif
+//#ifdef CTX_ESP
+  s0il_system("wifi --auto & sleep 1 ; httpd &");
+//#endif
   //  s0il_do(ui, "sh");
 #ifdef S0IL_NATIVE
   s0il_main(ui);
