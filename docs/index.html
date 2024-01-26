@@ -40,15 +40,16 @@
       providing remote backends and process multiplexing integrated
       with a terminal emulator/window manager; providing an end-to-end
       vector rendering framework suitable for serial links. It aims for
-      rendering quality and <a href='performance/'>performance</a> with minimal
-      footprint and resource usage, suitable for bare-metal use on 32bit
+      rendering quality and <a href='performance/'>performance</a> with
+      constrained resource usage, suitable for bare-metal use on 32bit
       microcontrollers without additional dependencies and scaling to handling
       <a href='output.pdf'>PDF</a>, floating point buffer, CMYK and
-      multi-threaded rendering. The core drawing, event handling and rendering
-      APIs are stable, and many features can be reduced or dropped when
-      targeting resource limited microcontroller. Demo UIs experiments and
-      tests are included in the <a hrf='https://ctx.graphics/.git'>git monorepo</a>.
-      </p>
+      multi-threaded rendering with automatic partial redraws. The core
+      drawing, event handling and rendering APIs are stable, and many features can be
+      reduced or dropped when targeting resource limited microcontroller. Demo UIs
+      experiments and tests are included in the <a
+      hrf='https://ctx.graphics/.git'>git monorepo</a>. The most elaborate test
+      <a href='/s0il/'>s0il, an ELF/wasm program launcher</a>.
 
       <p> The <a href='rasterizer/'>ctx rasterizer</a> is
       fast, portable and compact with a wide range of supported pixel encodings
