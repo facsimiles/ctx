@@ -415,7 +415,9 @@ ctx_cb_extent (Ctx *ctx, float *x0, float *y0, float *x1, float *y1)
 static void
 ctx_cb_start_frame (Ctx *ctx)
 {
+#if CTX_EVENTS
   ctx_handle_events (ctx);
+#endif
 }
 
 static void

@@ -113,6 +113,7 @@ int ctx_count (Ctx *ctx)
 
 extern int _ctx_damage_control;
 
+static int _ctx_depth = 0;
 
 #if CTX_EVENTS
 
@@ -197,7 +198,6 @@ static int is_in_ctx (void)
 }
 #endif
 
-static int _ctx_depth = 0;
 
 #if EMSCRIPTEN
 CTX_EXPORT
