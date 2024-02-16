@@ -1002,7 +1002,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
                 coverage[us + count] += (((u - u0 + mod) * recip)>>16) ^ 255;
                 count++;
               }
-              post = last-us+1;
+              post = last-us;
             }
             for (int i = first + pre; i <= last - post; i++)
               coverage[i] = 255;
@@ -1217,7 +1217,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
               coverage[us + count] = (((u - u0 + mod)*recip)>>16)^255;
               count++;
             }
-            post = last-us+1;
+            post = last-us;
 
             accumulated_x1 = us + count;
             accumulated_x0 = us;
