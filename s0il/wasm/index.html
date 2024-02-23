@@ -25,29 +25,6 @@
               #page { background:transparent;}
         </style>
 
-        <script>
-/*
-// main.js
-if ("serviceWorker" in navigator) {
-  // Register service worker
-  navigator.serviceWorker.register(new URL("./sw.js", window.location)).then(
-    function (registration) {
-      console.log("COOP/COEP Service Worker registered", registration.scope);
-      // If the registration is active, but it's not controlling the page
-      if (registration.active && !navigator.serviceWorker.controller) {
-          window.location.reload();
-      }
-    },
-    function (err) {
-      console.log("COOP/COEP Service Worker failed to register", err);
-    }
-  );
-} else {
-  console.warn("Cannot register a service worker");
-}
-*/
-        </script>
-
         <script src='./data/codemirror.js'></script>
         <script src='./data/codemirror-python.js'></script>
 
@@ -149,9 +126,21 @@ document.onclick = function (e) {
 <div id='browser'>
 <div id='page'>
 <blink>% - if some text doesnt turn up here, but s0il launched, try reloading.</blink>
-</div>
-</div>
 
+</div>
+<button id="btn">start</button>
+<pre id="log"></pre>
+
+<div>
+<label>Output volume:<input type="range" name="volume" min="0" max="0.5" step="0.01" value="0.5"></label>
+</div>
+<div>
+Size of each chunk fetched:
+  <label><input type="radio" name="chunk-size" value="2048">2048 bytes (OP's current)</label>
+  <label><input type="radio" name="chunk-size" value="35280">35280 bytes (barely enough for 0.1s interval)</label>
+  <label><input type="radio" name="chunk-size" value="44100" checked>44100 bytes (enough for 0.1s interval)</label>
+</div>
+</div>
 
 </body>
 
@@ -164,5 +153,125 @@ document.onclick = function (e) {
     e.preventDefault();
   }
 }
+
+
+
+
+const min_sample_duration = 2; // sec
+const sample_rate = 44100; // Hz
+// how much data is needed to play for at least min_sample_duration
+const min_sample_size = min_sample_duration * sample_rate;
+
+const fetching_interval = 100; // ms
+
+// you'll probably want this much bigger
+let chunk_size = 35280;//2048; // bytes
+
+const log = document.getElementById( 'log' );
+const btn = document.getElementById( 'btn' );
+
+btn.onclick = e => {
+
+  let stopped = false;
+  let is_reading = false;
+  
+  const ctx = new AudioContext();
+  // to control output volume
+  const gain = ctx.createGain();
+  gain.gain.value = 0.5;
+  gain.connect( ctx.destination );
+  // this will get updated at every new fetch
+  let fetched_data  = new Float32Array( 0 );
+  // keep it accessible so we can stop() it
+  let active_node;
+
+  // let's begin
+  periodicFetch();
+
+  // UI update
+  btn.textContent = "stop";
+  btn.onclick = e => {
+    stopped = true;
+    if( active_node ) { active_node.stop(0); }
+  };
+  oninput = handleUIEvents;
+
+  // our fake fetcher, calls itself every 50ms
+  function periodicFetch() {
+
+    // data from server (here just some noise)
+    const noise = Float32Array.from( { length: chunk_size / 4 }, _ => (Math.random() * 1) - 0.5 );
+    // we concatenate the data just fetched with what we have already buffered
+    fetched_data = concatFloat32Arrays( fetched_data, noise );
+    // for demo only
+    log.textContent = "buffering: " +  fetched_data.length + '/ ' + min_sample_size;
+
+    if( !stopped ) {
+      // do it again
+      setTimeout( periodicFetch , fetching_interval );
+    }
+    // if we are not actively reading and have fetched enough
+    if( !is_reading && fetched_data.length > min_sample_size ) {
+      readingLoop(); // start reading
+    }
+  
+  }
+  function readingLoop() {
+  
+    if( stopped  || fetched_data.length < min_sample_size ) {
+      is_reading = false;
+      return;
+    }
+    // let the world know we are actively reading
+    is_reading = true;
+    // create a new AudioBuffer
+    const aud_buf = ctx.createBuffer( 1, fetched_data.length, sample_rate );
+    // copy our fetched data to its first channel
+    aud_buf.copyToChannel( fetched_data, 0 );
+
+    // clear the buffered data
+    fetched_data = new Float32Array( 0 );
+    
+    // the actual player
+    active_node = ctx.createBufferSource();
+    active_node.buffer = aud_buf;
+    active_node.onended = readingLoop; // in case we buffered enough while playing
+    active_node.connect( gain );
+    active_node.start( 0 );
+
+  }
+
+  function handleUIEvents( evt ) {
+
+    const type = evt.target.name;
+    const value = evt.target.value;
+    switch( type ) {
+      case "chunk-size":
+        chunk_size = +value;
+        break;
+      case "volume":
+        gain.gain.value = +value;
+        break;
+    }
+
+  }
+
+};
+
+// helpers
+function concatFloat32Arrays( arr1, arr2 ) {
+  if( !arr1 || !arr1.length ) {
+    return arr2 && arr2.slice();
+  }
+  if( !arr2 || !arr2.length ) {
+    return arr1 && arr1.slice();
+  }
+  const out = new Float32Array( arr1.length + arr2.length );
+  out.set( arr1 );
+  out.set( arr2, arr1.length );
+  return out;
+}
+
+
 </script>
 </html>

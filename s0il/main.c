@@ -148,7 +148,11 @@ int ps_main(int argc, char **argv);
 
 void s0il_program_runner_init(void);
 #if CTX_ESP
+#if CTX_FLOWER
+void s0il_main(void) {
+#else
 void app_main(void) {
+#endif
   // char *argv[] = {NULL, NULL};
 #else
 

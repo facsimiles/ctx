@@ -885,7 +885,7 @@ int s0il_cmd_collect(Ui *ui, const char *prefix, CtxList **ret_list) {
   if (!path)
     path = "/sd/bin:/bin:/sd";
   path = strdup(path);
-  char temp[512];
+  //char temp[512];
 
   char *p = path;
   int count = 0;
