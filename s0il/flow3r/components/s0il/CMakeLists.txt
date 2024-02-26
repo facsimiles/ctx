@@ -6,6 +6,7 @@ idf_component_register(
    INCLUDE_DIRS
       "." ".." "../../../../" "../../../" "../../../../deps" "../../../../fonts"
    REQUIRES
+      ctx
       driver
       esp-tls
       elf_loader
