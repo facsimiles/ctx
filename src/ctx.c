@@ -1660,24 +1660,20 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
         break;
       case CTX_IDENTITY:
         _ctx_matrix_identity (&state->gstate.transform);
-        //state->gstate.transform_type = 0;
         _ctx_transform_prime (state);
         break;
       case CTX_TRANSLATE:
         ctx_matrix_translate (&state->gstate.transform,
                               ctx_arg_float (0), ctx_arg_float (1) );
-        //state->gstate.transform_type = 0;
         _ctx_transform_prime (state);
         break;
       case CTX_SCALE:
         ctx_matrix_scale (&state->gstate.transform,
                           ctx_arg_float (0), ctx_arg_float (1) );
-        //state->gstate.transform_type = 0;
         _ctx_transform_prime (state);
         break;
       case CTX_ROTATE:
         ctx_matrix_rotate (&state->gstate.transform, ctx_arg_float (0) );
-        //state->gstate.transform_type = 0;
         _ctx_transform_prime (state);
         break;
       case CTX_APPLY_TRANSFORM:
@@ -1691,7 +1687,6 @@ ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
                           ctx_arg_float (8));
           _ctx_matrix_multiply (&state->gstate.transform,
                                 &state->gstate.transform, &m); // XXX verify order
-          // state->gstate.transform_type = 0;
           _ctx_transform_prime (state);
         }
 #if 0

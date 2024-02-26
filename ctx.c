@@ -32,6 +32,7 @@
 #define CTX_GET_CONTENTS         1
 #define CTX_RASTERIZER_AA        3
 #define CTX_FORCE_INLINES        0
+#define CTX_PROTOCOL_U8_COLOR    1
 #include "stb_image.h"
 
 #ifdef CTX_SIMD_X86_64_V2
