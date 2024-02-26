@@ -2870,7 +2870,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
       CtxMatrix transform_backup = gstate->transform;
       _ctx_matrix_identity (&gstate->transform);
-      //gstate->transform_type = 0;
       _ctx_transform_prime (rasterizer->state);
       float prev_x = 0.0f;
       float prev_y = 0.0f;
@@ -3070,7 +3069,6 @@ foo:
       ctx_rasterizer_fill (rasterizer);
       gstate->fill_rule = rule_backup;
       gstate->transform = transform_backup;
-      //gstate->transform_type = 0;
       _ctx_transform_prime (rasterizer->state);
     }
   }
@@ -4074,7 +4072,6 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
           int end   = 0;
       CtxMatrix transform_backup = state->gstate.transform;
       _ctx_matrix_identity (&state->gstate.transform);
-      //state->gstate.transform_type = 0;
       _ctx_transform_prime (state);
       ctx_rasterizer_reset (rasterizer); /* for dashing we create
                                             a dashed path to stroke */
@@ -4169,7 +4166,6 @@ foo:
           start = end+1;
         }
         state->gstate.transform = transform_backup;
-        //state->gstate.transform_type = 0;
         _ctx_transform_prime (state);
         }
         ctx_rasterizer_stroke (rasterizer);

@@ -2047,6 +2047,7 @@ void ctx_push_backend (Ctx *ctx,
   ctx->backend = (CtxBackend*)backend;
   if (ctx->backend->process == NULL)
     ctx->backend->process = (void(*)(Ctx*,CtxCommand*))ctx_drawlist_process;
+  ctx->process = ctx->backend->process;
 }
 
 
@@ -2058,6 +2059,7 @@ void ctx_pop_backend (Ctx *ctx)
     ctx->backend->destroy (ctx->backend);
   ctx->backend = ctx->backend_pushed;
   ctx->backend_pushed = NULL;
+  ctx->process = ctx->backend->process;
 }
 
 void ctx_set_backend (Ctx  *ctx,
@@ -2068,6 +2070,7 @@ void ctx_set_backend (Ctx  *ctx,
   ctx->backend = (CtxBackend*)backend;
   if (ctx->backend->process == NULL)
     ctx->backend->process = (void(*)(Ctx*,CtxCommand*))ctx_drawlist_process;
+  ctx->process = ctx->backend->process;
 }
 
 void *ctx_get_backend (Ctx *ctx)

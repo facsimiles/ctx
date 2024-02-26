@@ -536,6 +536,7 @@ typedef struct _CtxGlyphEntry CtxGlyphEntry;
 struct _Ctx
 {
   CtxBackend       *backend;
+  void  (*process)  (Ctx *ctx, CtxCommand *entry);
   CtxState          state;        /**/
   CtxDrawlist       drawlist;
   int               transformation;
@@ -571,11 +572,15 @@ struct _Ctx
 
 };
 
+#if 0
+#define ctx_process(ctx,entry)  ctx->backend->process (ctx, (CtxCommand *)(entry));
+#else
 static inline void
 ctx_process (Ctx *ctx, CtxEntry *entry)
 {
-  ctx->backend->process (ctx, (CtxCommand *) entry);
+  ctx->process (ctx, (CtxCommand *) entry);
 }
+#endif
 
 CtxBuffer *ctx_buffer_new (int width, int height,
                            CtxPixelFormat pixel_format);

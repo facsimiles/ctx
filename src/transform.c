@@ -21,6 +21,7 @@ ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
 static inline int
 determine_transform_type (const CtxMatrix *m)
 {
+  // XXX : does not set 4 - which is perspective
   if (m->m[2][0] != 0.0f ||
       m->m[2][1] != 0.0f ||
       m->m[2][2] != 1.0f)
@@ -106,8 +107,8 @@ _ctx_user_to_device_prepped_fixed (CtxState *state, int x, int y, int *x_out, in
       _ctx_user_to_device_prepped_fixed (state, x, y, x_out, y_out);
       break;
     case 1:  // identity
-      *x_out = (x * CTX_SUBDIV) / TRANSFORM_SCALE;
-      *y_out = (y * CTX_FULL_AA) / TRANSFORM_SCALE;
+      *x_out = (x * CTX_SUBDIV) >> TRANSFORM_SHIFT;
+      *y_out = (y * CTX_FULL_AA) >> TRANSFORM_SHIFT;
       break;
     case 2:  // scale/translate
       _ctx_matrix_apply_transform_scale_translate_fixed (&state->gstate.prepped_transform, x, y, x_out, y_out);
