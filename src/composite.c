@@ -6294,6 +6294,7 @@ static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int 
 
 #if CTX_FAST_FILL_RECT
 
+#if 0
 static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
   CtxExtend extend = rasterizer->state->gstate.extend;
@@ -6562,7 +6563,6 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (CtxRasterize
   }
 }
 
-#if 0
 static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
   float u0 = 0; float v0 = 0;
@@ -6659,7 +6659,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   int width = x1 - x0 + 1;
   int height= y1 - y0 + 1;
   //
-  if (CTX_UNLIKELY (width <=0 || height <= 0))
+  if (CTX_UNLIKELY ((width <=0) | (height <= 0)))
     return;
 
   CtxCovPath comp = rasterizer->comp;
@@ -6851,9 +6851,10 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
     {
       CtxFragment fragment = rasterizer->fragment;
       CtxMatrix *transform = &rasterizer->state->gstate.source_fill.transform;
-      CtxExtend extend = rasterizer->state->gstate.extend;
+      //CtxExtend extend = rasterizer->state->gstate.extend;
       INIT_ENV;
 
+#if 0
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
@@ -6866,6 +6867,7 @@ y1, 1);
 y1, 1);
         return;
       }
+#endif
 
       if (CTX_LIKELY(ctx_matrix_no_perspective (transform)))
       {
@@ -6895,8 +6897,8 @@ y1, 1);
     }
     case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
     {
-      CtxFragment fragment = rasterizer->fragment;
-      CtxExtend extend = rasterizer->state->gstate.extend;
+      //CtxFragment fragment = rasterizer->fragment;
+      //CtxExtend extend = rasterizer->state->gstate.extend;
 #if 0
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
@@ -6905,6 +6907,8 @@ y1, 1);
       }
       else
 #endif
+
+#if 0
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
@@ -6917,6 +6921,7 @@ y1, 0);
 y1, 0);
         return;
       }
+#endif
 
       INIT_ENV;
       ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
