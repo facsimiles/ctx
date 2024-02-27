@@ -47,7 +47,7 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile ../ctx.h
 	echo "img.thumb{height:10vh;}" >> $@
 	echo "pre{height:40vh;width:20em; overflow:scroll}" >> $@
 	echo "</style>" >> $@
-	echo "<script>setTimeout(function(){location.reload();},8000);</script>" >> $@
+	#echo "<script>setTimeout(function(){location.reload();},8000);</script>" >> $@
 	echo "</head>" >> $@ 
 	echo "<body>" >> $@ 
 	cat ../docs/subpagemenu.txt >> $@

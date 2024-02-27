@@ -139,8 +139,8 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
   int active_edges = rasterizer->active_edges;
   for (unsigned int i = 0; i < pending_edges; i++)
     {
-      if (entries[edges[CTX_MAX_EDGES-1-i]].data.s16[1] <= scanline &&
-          active_edges < CTX_MAX_EDGES-2)
+      if ((entries[edges[CTX_MAX_EDGES-1-i]].data.s16[1] <= scanline) &
+          (active_edges < CTX_MAX_EDGES-2))
         {
           edges[active_edges] = edges[CTX_MAX_EDGES-1-i];
           active_edges++;
@@ -211,9 +211,9 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
 
       const int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
       const int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
-      if (x1_end < x0_end   ||
-          x1_start < x0_end ||
-          x1_end < x0_start
+      if ((x1_end < x0_end)   |
+          (x1_start < x0_end) |
+          (x1_end < x0_start)
          )
       {
          crossings++;
@@ -278,8 +278,8 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
               entries[index].val = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER +
                                          (yd * dx_dy);
 
-              if (miny > scanline &&
-                  pending_edges < CTX_MAX_PENDING-1)
+              if ((miny > scanline) &
+                  (pending_edges < CTX_MAX_PENDING-1))
               {
                   /* it is a pending edge - we add it to the end of the array
                      and keep a different count for items stored here, like
@@ -326,7 +326,7 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, unsigne
 #endif
 
 #if CTX_ENABLE_CLIP
-  if (CTX_UNLIKELY(rasterizer->clip_buffer &&  !rasterizer->clip_rectangle))
+  if (CTX_UNLIKELY((rasterizer->clip_buffer!=NULL) &  (!rasterizer->clip_rectangle)))
   {
   int scanline     = rasterizer->scanline - CTX_FULL_AA; // we do the
                                                  // post process after
@@ -489,9 +489,9 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 #if CTX_RASTERIZER_SWITCH_DISPATCH
   uint32_t *src_pixp;
   uint32_t src_pix, si_ga, si_rb, si_ga_full, si_rb_full, si_a;
-  if (comp != CTX_COV_PATH_FALLBACK &&
-      comp != CTX_COV_PATH_RGBA8_COPY_FRAGMENT &&
-      comp != CTX_COV_PATH_RGBA8_OVER_FRAGMENT)
+  if ((comp != CTX_COV_PATH_FALLBACK) &
+      (comp != CTX_COV_PATH_RGBA8_COPY_FRAGMENT) &
+      (comp != CTX_COV_PATH_RGBA8_OVER_FRAGMENT))
   {
     src_pixp   = ((uint32_t*)rasterizer->color);
     src_pix    = src_pixp[0];
@@ -685,7 +685,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 uint8_t val_x2 = val + (val << 4);
                 {
                   int x = first + 1;
-                  for (unsigned int i = 0; i < count && x & 1; count--)
+                  for (unsigned int i = 0; (i < count) & (x & 1); count--)
                   {
                      int bitno = x & 1;
                      *dstp &= ~(15<<(bitno*4));
@@ -694,7 +694,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                      x++;
                   }
 
-                  for (unsigned int i = 0; i < count && count>2; count-=2, x+=2, dstp++)
+                  for (unsigned int i = 0; (i < count) & (count>2); count-=2, x+=2, dstp++)
                      *dstp = val_x2;
 
                   for (unsigned int i = 0; i < count; count--)
@@ -724,7 +724,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 uint8_t val_x4 = val + (val << 2) + (val << 4) + (val << 6);
                 {
                   int x = first + 1;
-                  for (unsigned int i = 0; i < count && x & 3; count--)
+                  for (unsigned int i = 0; (i < count) & (x & 3); count--)
                   {
                      int bitno = x & 3;
                      *dstp &= ~(3<<(bitno*2));
@@ -733,7 +733,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                      x++;
                   }
 
-                  for (unsigned int i = 0; i < count && count>4; count-=4, x+=4, dstp++)
+                  for (unsigned int i = 0; (i < count) & (count>4); count-=4, x+=4, dstp++)
                      *dstp = val_x4;
 
                   for (unsigned int i = 0; i < count; count--)
@@ -761,7 +761,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 if (srcp[0]>=127)
                 {
                   int x = first + 1;
-                  for (unsigned int i = 0; i < count && x & 7; count--)
+                  for (unsigned int i = 0; (i < count) & (x & 7); count--)
                   {
                      int bitno = x & 7;
                      *dstp |= (1<<bitno);
@@ -769,7 +769,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                      x++;
                   }
 
-                  for (unsigned int i = 0; i < count && count>8; count-=8)
+                  for (unsigned int i = 0; (i < count) & (count>8); count-=8)
                   {
                      *dstp = 255;
                      dstp++;
@@ -787,7 +787,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 else
                 {
                   unsigned int x = first + 1;
-                  for (unsigned int i = 0; i < count && x & 7; count--)
+                  for (unsigned int i = 0; (i < count) & ((x & 7)!=0); count--)
                   {
                      int bitno = x & 7;
                      *dstp &= ~(1<<bitno);
@@ -795,7 +795,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                      x++;
                   }
 
-                  for (unsigned int i = 0; i < count && count>8; count-=8)
+                  for (unsigned int i = 0; (i < count) & (count>8); count-=8)
                   {
                      *dstp = 0;
                      dstp++;
@@ -1035,9 +1035,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 #if CTX_RASTERIZER_SWITCH_DISPATCH
   uint32_t *src_pixp;
   uint32_t src_pix, si_ga, si_rb, si_ga_full, si_rb_full, si_a;
-  if (comp != CTX_COV_PATH_FALLBACK &&
-      comp != CTX_COV_PATH_RGBA8_COPY_FRAGMENT &&
-      comp != CTX_COV_PATH_RGBA8_OVER_FRAGMENT)
+  if ((comp != CTX_COV_PATH_FALLBACK) &
+      (comp != CTX_COV_PATH_RGBA8_COPY_FRAGMENT) &
+      (comp != CTX_COV_PATH_RGBA8_OVER_FRAGMENT))
   {
     src_pixp   = ((uint32_t*)rasterizer->color);
     src_pix    = src_pixp[0];
@@ -1505,8 +1505,8 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
        scan_start = gstate->clip_min_y * CTX_FULL_AA; 
     }
   scan_end = ctx_mini (gstate->clip_max_y * CTX_FULL_AA, scan_end);
-  if (CTX_UNLIKELY((minx >= maxx) || (scan_start > scan_end) ||
-      (scan_start > (rasterizer->blit_y + (rasterizer->blit_height-1)) * CTX_FULL_AA) ||
+  if (CTX_UNLIKELY((minx >= maxx) | (scan_start > scan_end) |
+      (scan_start > (rasterizer->blit_y + (rasterizer->blit_height-1)) * CTX_FULL_AA) |
       (scan_end < (rasterizer->blit_y) * CTX_FULL_AA)))
   { 
     /* not affecting this rasterizers scanlines */
@@ -1518,10 +1518,10 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
 
   int allow_direct = !(0 
 #if CTX_ENABLE_CLIP
-         || (rasterizer->clip_buffer && (!rasterizer->clip_rectangle))
+         | ((rasterizer->clip_buffer!=NULL) & (!rasterizer->clip_rectangle))
 #endif
 #if CTX_ENABLE_SHADOW_BLUR
-         || rasterizer->in_shadow
+         | rasterizer->in_shadow
 #endif
          );
   for (; rasterizer->scanline <= scan_end;)
@@ -1604,11 +1604,11 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
     }
 
 #if CTX_BLENDING_AND_COMPOSITING
-  if (CTX_UNLIKELY(gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OUT ||
-      gstate->compositing_mode == CTX_COMPOSITE_SOURCE_IN ||
-      gstate->compositing_mode == CTX_COMPOSITE_DESTINATION_IN ||
-      gstate->compositing_mode == CTX_COMPOSITE_DESTINATION_ATOP ||
-      gstate->compositing_mode == CTX_COMPOSITE_CLEAR))
+  if (CTX_UNLIKELY((gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OUT) |
+      (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_IN) |
+      (gstate->compositing_mode == CTX_COMPOSITE_DESTINATION_IN) |
+      (gstate->compositing_mode == CTX_COMPOSITE_DESTINATION_ATOP) |
+      (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)))
   {
      /* fill in the rest of the blitrect when compositing mode permits it */
      uint8_t nocoverage[rasterizer->blit_width];
@@ -1757,7 +1757,7 @@ ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8
     {
       ((uint32_t*)(rgba))[0] = ctx_565_unpack_32 (*pixel, 1);
 #if CTX_RGB565_ALPHA
-      if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
+      if ((rgba[0]==255) & (rgba[2] == 255) & (rgba[1]==0))
         { rgba[3] = 0; }
       else
         { rgba[3] = 255; }
@@ -1838,7 +1838,7 @@ static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 
 static inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 {
-  if (rasterizer->has_shape && rasterizer->has_prev)
+  if (rasterizer->has_shape & rasterizer->has_prev)
     {
       ctx_rasterizer_line_to (rasterizer, rasterizer->first_x, rasterizer->first_y);
       rasterizer->has_prev = 0;
@@ -1953,7 +1953,7 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
   ly = ctx_lerpf (sy, ey, t);
   dx = lx - x;
   dy = ly - y;
-  if (iteration < 6 && (dx*dx+dy*dy) > tolerance)
+  if ((iteration < 6) & ((dx*dx+dy*dy) > tolerance))
   {
     ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
                                   sx, sy, x, y, s, t, iteration + 1,
@@ -2019,7 +2019,7 @@ ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
   ly = ctx_lerp_fixed (sy, ey, t);
   dx = lx - x;
   dy = ly - y;
-  if (iteration < 6 && ((dx*dx+dy*dy))  > tolerance)
+  if ((iteration < 6) & (((dx*dx+dy*dy))  > tolerance))
   {
     iteration++;
     ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
@@ -2207,7 +2207,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
   CtxGState     *gstate     = &rasterizer->state->gstate;
   unsigned int preserved_count =
-          (rasterizer->preserve&&rasterizer->edge_list.count)?
+          (rasterizer->preserve&(rasterizer->edge_list.count!=0))?
              rasterizer->edge_list.count:1;
   int blit_x = rasterizer->blit_x;
   int blit_y = rasterizer->blit_y;
@@ -2237,11 +2237,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   }
 #endif
 
-  if (CTX_UNLIKELY(ctx_is_transparent (rasterizer, 0) ||
-      rasterizer->scan_min > CTX_FULL_AA * (blit_y + blit_height) ||
-      rasterizer->scan_max < CTX_FULL_AA * blit_y ||
-      rasterizer->col_min > CTX_SUBDIV * (blit_x + blit_width) ||
-      rasterizer->col_max < CTX_SUBDIV * blit_x))
+  if (CTX_UNLIKELY(ctx_is_transparent (rasterizer, 0) |
+      (rasterizer->scan_min > CTX_FULL_AA * (blit_y + blit_height)) |
+      (rasterizer->scan_max < CTX_FULL_AA * blit_y) |
+      (rasterizer->col_min > CTX_SUBDIV * (blit_x + blit_width)) |
+      (rasterizer->col_max < CTX_SUBDIV * blit_x)))
     {
     }
   else
@@ -2269,7 +2269,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
           (entry1->data.s16[3] == entry2->data.s16[3]) &
           (entry2->data.s16[2] == entry3->data.s16[2])
 #if CTX_ENABLE_SHADOW_BLUR
-           && !rasterizer->in_shadow
+           & (!rasterizer->in_shadow)
 #endif
          )
        {
@@ -2278,7 +2278,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
          float x1 = entry1->data.s16[2] * (1.0f / CTX_SUBDIV);
          float y1 = entry1->data.s16[3] * (1.0f / CTX_FULL_AA);
 
-         if (x1 > x0 && y1 > y0)
+         if ((x1 > x0) & (y1 > y0))
          {
            ctx_composite_fill_rect (rasterizer, x0, y0, x1, y1, 255);
            goto done;
@@ -2352,8 +2352,8 @@ ctx_rasterizer_find_term_glyph (CtxRasterizer *rasterizer, int col, int row)
     for (CtxList *l = rasterizer->glyphs; l; l=l->next)
     {
       glyph = l->data;
-      if (glyph->col == col &&
-          glyph->row == row)
+      if ((glyph->col == col) &
+          (glyph->row == row))
       {
         return glyph;
       }
@@ -2378,9 +2378,9 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   _ctx_user_to_device (rasterizer->state, &tx, &ty);
   _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
 
-  if (tx2 < rasterizer->blit_x || ty2 < rasterizer->blit_y) return;
-  if (tx  > rasterizer->blit_x + rasterizer->blit_width ||
-      ty  > rasterizer->blit_y + rasterizer->blit_height)
+  if ((tx2 < rasterizer->blit_x) | (ty2 < rasterizer->blit_y)) return;
+  if ((tx  > rasterizer->blit_x + rasterizer->blit_width) |
+      (ty  > rasterizer->blit_y + rasterizer->blit_height))
           return;
 
 #if CTX_TERM
@@ -2399,8 +2399,8 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
 
     _ctx_user_to_device_distance (rasterizer->state, &tx, &font_size);
   }
-  if (rasterizer->term_glyphs && !stroke &&
-      fabsf (font_size - ch) < 0.5f)
+  if ((rasterizer->term_glyphs!=0) & (!stroke) &
+      (fabsf (font_size - ch) < 0.5f))
   {
     float tx = rasterizer->x;
     float ty = rasterizer->y;
@@ -2439,8 +2439,8 @@ ctx_rasterizer_text (CtxRasterizer *rasterizer, const char *string, int stroke)
   int   ch = (int)ctx_term_get_cell_height (rasterizer->backend.ctx);
   int   cw = (int)ctx_term_get_cell_width (rasterizer->backend.ctx);
 
-  if (rasterizer->term_glyphs && !stroke &&
-      fabsf (font_size - ch) < 0.5f)
+  if ((rasterizer->term_glyphs!=0) & (!stroke) &
+      (fabsf (font_size - ch) < 0.5f))
   {
     float tx = rasterizer->x;
     float ty = rasterizer->y;
@@ -2548,7 +2548,7 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
         {
           float xv = x + ctx_cosf (angle) * radius;
           float yv = y + ctx_sinf (angle) * radius;
-          if (first && !rasterizer->has_prev)
+          if (first & (!rasterizer->has_prev))
             { ctx_rasterizer_move_to (rasterizer, xv, yv); }
           else
             { ctx_rasterizer_line_to (rasterizer, xv, yv); }
@@ -2648,8 +2648,8 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
     int i = 0;
     int sblit_height = blit_height << 16;
 
-    for (; i < length && x < 0; ++i, ++x, ty += dy);
-    for (; i < length && x < blit_width && (ty<0 || (ty>=sblit_height+1))
+    for (; (i < length) & (x < 0); ++i, ++x, ty += dy);
+    for (; (i < length) & (x < blit_width) & ((ty<0) | (ty>=sblit_height+1))
          ; ++i, ++x, ty += dy);
 
     for (; i < length && x < blit_width && (ty<65536 || (ty>=sblit_height))
@@ -2663,7 +2663,7 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
     }
 
       {
-       for (; i < length && x < blit_width && (ty>65536 && (ty<sblit_height))
+       for (; (i < length) & (x < blit_width) & ((ty>65536) & (ty<sblit_height))
             ; ++i, ++x, ty += dy)
        {
          uint8_t *dst = ( (uint8_t *) rasterizer->buf)
@@ -2700,11 +2700,11 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
 
     int sblit_width = blit_width << 16;
 
-    for (; i < length && y < 0; ++i, ++y, tx += dx);
+    for (; (i < length) & (y < 0); ++i, ++y, tx += dx);
 
-    for (; i < length && y < blit_height && (tx<0 || (tx>=sblit_width+1))
+    for (; (i < length) & (y < blit_height) & ((tx<0) | (tx>=sblit_width+1))
          ; ++i, ++y, tx += dx);
-    for (; i < length && y < blit_height && (tx<65536 || (tx>=sblit_width))
+    for (; (i < length) & (y < blit_height) & ((tx<65536) | (tx>=sblit_width))
          ; ++i, ++y, tx += dx)
     {
       int x = tx>>16;
@@ -2714,7 +2714,7 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
     }
 
       {
-       for (; i < length && y < blit_height && (tx>65536 && (tx<sblit_width))
+       for (; (i < length) & (y < blit_height) & ((tx>65536) & (tx<sblit_width))
             ; ++i, ++y, tx += dx)
        {
          int x = tx>>16;
@@ -2802,9 +2802,9 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   ctx_composite_setup (rasterizer);
 
 #if CTX_STROKE_1PX
-  if (gstate->line_width * factor <= 0.0f &&
-      gstate->line_width * factor > -10.0f &&
-      rasterizer->format->bpp >= 8)
+  if ((gstate->line_width * factor <= 0.0f) &
+      (gstate->line_width * factor > -10.0f) &
+      (rasterizer->format->bpp >= 8))
   {
     ctx_rasterizer_stroke_1px (rasterizer);
     if (preserved)
@@ -2971,7 +2971,7 @@ foo:
                       ctx_rasterizer_line_to (rasterizer, x-dy, y+dx);
                     }
                 }
-              if ( (prev_x != x) && (prev_y != y) )
+              if ( (prev_x != x) & (prev_y != y) )
                 {
                   prev_x = x;
                   prev_y = y;
@@ -3162,11 +3162,11 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   {
     if (count == 5)
     {
-      if (coords[0][0] == coords[1][0] &&
-          coords[0][1] == coords[4][1] &&
-          coords[0][1] == coords[3][1] &&
-          coords[1][1] == coords[2][1] &&
-          coords[3][0] == coords[4][0]
+      if ((coords[0][0] == coords[1][0]) &
+          (coords[0][1] == coords[4][1]) &
+          (coords[0][1] == coords[3][1]) &
+          (coords[1][1] == coords[2][1]) &
+          (coords[3][0] == coords[4][0])
           )
       {
 #if 0
@@ -3307,7 +3307,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
     i=0;
     /* find upper left */
-    for (; i < count && maybe_rect && !next_stage; i++)
+    for (; (i < count) & maybe_rect & (!next_stage); i++)
     {
       uint8_t val = (p_data[i] * data[i])/255;
       data[i] = val;
@@ -3327,7 +3327,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
     next_stage = 0;
     /* figure out with */
-    for (; i < count && !next_stage && maybe_rect; i++)
+    for (; (i < count) & (!next_stage) & maybe_rect; i++)
     {
       int x = i % blit_width;
       int y = i / blit_width;
@@ -3355,7 +3355,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
     next_stage = 0;
     /* body */
-    for (; i < count && maybe_rect && !next_stage; i++)
+    for (; (i < count) & maybe_rect & (!next_stage); i++)
     {
       int x = i % blit_width;
       uint8_t val = (p_data[i] * data[i])/255;
@@ -3374,7 +3374,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
     next_stage = 0;
     /* foot */
-    for (; i < count && maybe_rect && !next_stage; i++)
+    for (; (i < count) & maybe_rect & (!next_stage); i++)
     {
       uint8_t val = (p_data[i] * data[i])/255;
       data[i] = val;
@@ -4058,8 +4058,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
       case CTX_STROKE:
           if (rasterizer->edge_list.count == 0)break;
 #if CTX_ENABLE_SHADOW_BLUR
-        if (state->gstate.shadow_blur > 0.0f &&
-            !rasterizer->in_text)
+        if ((state->gstate.shadow_blur > 0.0f) & (!rasterizer->in_text))
           ctx_rasterizer_shadow_stroke (rasterizer);
 #endif
         {
@@ -4220,8 +4219,7 @@ foo:
         {
           if (rasterizer->edge_list.count == 0)break;
 #if CTX_ENABLE_SHADOW_BLUR
-        if (state->gstate.shadow_blur > 0.0f &&
-            !rasterizer->in_text)
+        if ((state->gstate.shadow_blur > 0.0f) & (!rasterizer->in_text))
           ctx_rasterizer_shadow_fill (rasterizer);
 #endif
         ctx_rasterizer_fill (rasterizer);

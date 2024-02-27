@@ -861,7 +861,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
       if (factor <= 0.50f)
         ctx_fragment_image_rgb8_RGBA8_box_swap_red_green (rasterizer,x,y,z,out,count,dx,dy,dz);
   #if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
-      else if (factor > 0.99f && factor < 1.01f)
+      else if ((factor > 0.99f) & (factor < 1.01f))
         ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green (rasterizer,x,y,z,
                                                             out,count,dx,dy,dz);
   #endif
@@ -884,7 +884,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
         ctx_fragment_image_rgb8_RGBA8_box (rasterizer,x,y,z,out,
                                            count,dx,dy,dz);
   #if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
-      else if (factor > 0.99f && factor < 1.01f)
+      else if ((factor > 0.99f) & (factor < 1.01f))
         ctx_fragment_image_rgb8_RGBA8_nearest (rasterizer, x, y, z, out, count, dx, dy, dz);
   #endif
       else
@@ -998,7 +998,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
   int v = (int)y;
 
   uint32_t *src = ((uint32_t*)buffer->data) + bwidth * v + u;
-  if (CTX_UNLIKELY(!(v >= 0 && v < bheight)))
+  if (CTX_UNLIKELY(!((v >= 0) & (v < bheight))))
   {
     for (unsigned i = 0 ; i < count; i++)
       *dst++ = 0;
@@ -1403,9 +1403,9 @@ ctx_fragment_image_rgba8_RGBA8_nearest (CtxRasterizer *rasterizer,
 {
   unsigned int count = icount;
   CtxExtend extend = rasterizer->state->gstate.extend;
-  if (z == 1.0f && dz == 0.0f) // this also catches other constant z!
+  if ((z == 1.0f) & (dz == 0.0f)) // this also catches other constant z!
   {
-    if (dy == 0.0f && dx == 1.0f && extend == CTX_EXTEND_NONE)
+    if ((dy == 0.0f) & (dx == 1.0f) & (extend == CTX_EXTEND_NONE))
       ctx_fragment_image_rgba8_RGBA8_nearest_copy (rasterizer, x, y, z, out, count, dx, dy, dz);
     else
       ctx_fragment_image_rgba8_RGBA8_nearest_affine (rasterizer, x, y, z, out, count, dx, dy, dz);
@@ -1436,7 +1436,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
 
     if (!extend)
     {
-    if (!(y >= 0 && y < bheight))
+    if (!((y >= 0) & (y < bheight)))
     {
       uint32_t *dst = (uint32_t*)rgba;
       for (i = 0 ; i < count; i++)
@@ -1496,7 +1496,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
   uint32_t *data = ((uint32_t*)buffer->data) + bwidth * v;
   uint32_t *ndata = ((uint32_t*)buffer->data) + bwidth * v1;
 
-  if (!extend && v1 > bheight-1) ndata = data;
+  if ((!extend) & (v1 > bheight-1)) ndata = data;
 
   if (extend)
   {
@@ -1837,11 +1837,11 @@ ctx_fragment_image_rgba8_RGBA8_bi (CtxRasterizer *rasterizer,
                                    void *out, int icount, float dx, float dy, float dz)
 {
   unsigned int count = icount;
-  if (dy == 0.0f && dx > 0.0f && z==1.0f && dz==0.0f) 
+  if ((dy == 0.0f) & (dx > 0.0f) & (z==1.0f) & (dz==0.0f))
   {
     ctx_fragment_image_rgba8_RGBA8_bi_scale (rasterizer, x, y, z, out, count, dx, dy, dz);
   }
-  else if (z == 1.0f && dz == 0.0f)
+  else if ((z == 1.0f) & (dz == 0.0f))
     ctx_fragment_image_rgba8_RGBA8_bi_affine (rasterizer, x, y, z, out, count, dx, dy, dz);
   else
   {
@@ -2026,7 +2026,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       uint32_t y  = v * bwidth;
       uint32_t uv = (v / 2) * bwidth_div_2;
 
-      if (v >= 0 && v < bheight)
+      if ((v >= 0) & (v < bheight))
       {
 #if CTX_DITHER
        if (bits < 24)
@@ -2143,7 +2143,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
         ctx_fragment_image_rgba8_RGBA8_box (rasterizer, x, y, z, out, count, dx, dy, dz);
     }
 #if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
-    else if (factor > 0.99f && factor < 1.01f)
+    else if ((factor > 0.99f) & (factor < 1.01f))
     {
       // XXX: also verify translate == 0 for this fast path to be valid
       if (rasterizer->swap_red_green)
@@ -2489,7 +2489,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     return ctx_fragment_image_rgb8_RGBA8_box;
                   }
 #if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
-                  else if (factor > 0.99f && factor < 1.01f)
+                  else if ((factor > 0.99f) & (factor < 1.01f))
                   {
                     if (rasterizer->swap_red_green)
                       return ctx_fragment_image_rgb8_RGBA8_nearest_swap_red_green;
@@ -2527,7 +2527,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     return ctx_fragment_image_rgba8_RGBA8_box;
                   }
 #if CTX_ALWAYS_USE_NEAREST_FOR_SCALE1
-                  else if (factor > 0.99f && factor < 1.01f && extend == CTX_EXTEND_NONE)
+                  else if ((factor > 0.99f) & (factor < 1.01f) & (extend == CTX_EXTEND_NONE))
                   {
                     if (rasterizer->swap_red_green)
                       return ctx_fragment_image_rgba8_RGBA8_nearest_copy_swap_red_green;
@@ -2542,10 +2542,10 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                       {
                         if (ctx_matrix_no_skew_or_rotate (transform))
                         {
-                          if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
-                              ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f &&
-                              ctx_fmod1f (transform->m[0][2]) < 0.001f &&
-                              ctx_fmod1f (transform->m[1][2]) < 0.001f)
+                          if ((ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
+                              (ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f) &
+                              (ctx_fmod1f (transform->m[0][2]) < 0.001f) &
+                              (ctx_fmod1f (transform->m[1][2]) < 0.001f))
                           {
                             if (extend == CTX_EXTEND_NONE)
                               return ctx_fragment_image_rgba8_RGBA8_nearest_copy_swap_red_green;
@@ -2563,10 +2563,10 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     {
                       if (ctx_matrix_no_skew_or_rotate (transform))
                       {
-                        if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
-                            ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f &&
-                            ctx_fmod1f (transform->m[0][2]) < 0.001f &&
-                            ctx_fmod1f (transform->m[1][2]) < 0.001f)
+                        if ((ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
+                            (ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f) &
+                            (ctx_fmod1f (transform->m[0][2]) < 0.001f) &
+                            (ctx_fmod1f (transform->m[1][2]) < 0.001f))
                         {
                           if (extend == CTX_EXTEND_NONE)
                             return ctx_fragment_image_rgba8_RGBA8_nearest_copy;
@@ -2588,8 +2588,8 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     {
                       if (ctx_matrix_no_skew_or_rotate (transform))
                       {
-                        if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
-                            ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f)
+                        if ((ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
+                            (ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f))
                         {
                            return ctx_fragment_image_rgba8_RGBA8_nearest_copy_swap_red_green;
                          if (extend == CTX_EXTEND_NONE)
@@ -2607,8 +2607,8 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                   {
                     if (ctx_matrix_no_skew_or_rotate (transform))
                     {
-                      if (ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f &&
-                          ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f)
+                      if ((ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
+                          (ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f))
                       {
                          if (extend == CTX_EXTEND_NONE)
                            return ctx_fragment_image_rgba8_RGBA8_nearest_copy;
@@ -3201,13 +3201,13 @@ static void ctx_u8_set_lum (int components, uint8_t *c, uint8_t lum)
   int n = ctx_int_get_min (components, tc);
   int x = ctx_int_get_max (components, tc);
 
-  if (n < 0 && l!=n)
+  if ((n < 0) & (l!=n))
   {
     for (int i = 0; i < components - 1; i++)
       tc[i] = l + (((tc[i] - l) * l) / (l-n));
   }
 
-  if (x > 255 && x!=l)
+  if ((x > 255) & (x!=l))
   {
     for (int i = 0; i < components - 1; i++)
       tc[i] = l + (((tc[i] - l) * (255 - l)) / (x-l));
@@ -3928,13 +3928,13 @@ static void ctx_float_set_lum (int components, float *c, float lum)
   float n = ctx_float_get_min (components, tc);
   float x = ctx_float_get_max (components, tc);
 
-  if (n < 0.0f && l != n)
+  if ((n < 0.0f) & (l != n))
   {
     for (int i = 0; i < components - 1; i++)
       tc[i] = l + (((tc[i] - l) * l) / (l-n));
   }
 
-  if (x > 1.0f && x != l)
+  if ((x > 1.0f) & (x != l))
   {
     for (int i = 0; i < components - 1; i++)
       tc[i] = l + (((tc[i] - l) * (1.0f - l)) / (x-l));
@@ -4960,7 +4960,7 @@ ctx_CMYKAF_to_CMYKA8 (CtxRasterizer *rasterizer, float *src, uint8_t *dst, int c
   for (int i = 0; i < count; i ++)
     {
       int a = ctx_float_to_u8 (src[4]);
-      if (a != 0 && a != 255)
+      if ((a != 0) & (a != 255))
       {
         float recip = 1.0f/src[4];
         for (int c = 0; c < 4; c++)
@@ -5016,7 +5016,7 @@ ctx_CMYKAF_to_CMYK8 (CtxRasterizer *rasterizer, float *src, uint8_t *dst, int co
       float y = src[2];
       float k = src[3];
       float a = src[4];
-      if (a != 0.0f && a != 1.0f)
+      if ((a != 0.0f) & (a != 1.0f))
         {
           float recip = 1.0f/a;
           c *= recip;
@@ -5089,7 +5089,7 @@ ctx_GRAY1_to_GRAYA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
   while (count--)
     {
       int bitno = x&7;
-      if (bitno == 0 && count >= 7)
+      if ((bitno == 0) & (count >= 7))
       {
         if (*pixel == 0)
         {
@@ -5146,7 +5146,7 @@ ctx_GRAY1_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *
     {
       int bitno = x&7;
 
-      if ((bitno) == 0 && count >=7)
+      if ((bitno == 0) & (count >=7))
       {
         /* special case some bit patterns when decoding */
         if (*pixel == 0)
@@ -5287,7 +5287,7 @@ ctx_GRAY2_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t *
   while (count--)
     {
       int bitno = x & 3;
-      if ((bitno) == 0 && count >=3)
+      if ((bitno == 0) & (count >=3))
       {
         /* special case some bit patterns when decoding */
         if (*pixel == 0)
@@ -5785,15 +5785,15 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
         break;
     }
 #else
-    if (gstate->blend_mode == CTX_BLEND_NORMAL &&
-        gstate->source_fill.type == CTX_SOURCE_COLOR)
+    if ((gstate->blend_mode == CTX_BLEND_NORMAL) &
+        (gstate->source_fill.type == CTX_SOURCE_COLOR))
     {
         if (gstate->compositing_mode == CTX_COMPOSITE_COPY)
         {
           rasterizer->comp = CTX_COV_PATH_GRAYA8_COPY;
         }
-        else if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER &&
-                 rasterizer->color[components-1] == 255)
+        else if ((gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER) &
+                 (rasterizer->color[components-1] == 255))
         {
           rasterizer->comp = CTX_COV_PATH_GRAYA8_COPY;
         }
@@ -5902,7 +5902,7 @@ ctx_RGB332_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
     {
       ctx_332_unpack (*pixel, &rgba[0], &rgba[1], &rgba[2]);
 #if CTX_RGB332_ALPHA
-      if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
+      if ((rgba[0]==255) & (rgba[2] == 255) & (rgba[1]==0))
         { rgba[3] = 0; }
       else
 #endif
@@ -6069,7 +6069,7 @@ ctx_RGB565_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8_t 
       // XXX : checking the raw value for alpha before unpack will be faster
       ((uint32_t*)(rgba))[0] = ctx_565_unpack_32 (*pixel, 0);
 #if CTX_RGB565_ALPHA
-      if (rgba[0]==255 && rgba[2] == 255 && rgba[1]==0)
+      if ((rgba[0]==255) & (rgba[2] == 255) & (rgba[1]==0))
         { rgba[3] = 0; }
 #endif
       pixel+=1;
@@ -6476,18 +6476,18 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (CtxRasterize
         uint32_t *src0 = &blank;
         uint32_t *src1 = src0;
     
-        if (CTX_LIKELY (v >= 0 && v < bheight))
+        if (CTX_LIKELY ((v >= 0) & (v < bheight)))
         {
-          if (CTX_LIKELY (u >= 0 && u + 1 < bwidth))
+          if (CTX_LIKELY ((u >= 0) & (u + 1 < bwidth)))
           {
             src0 = data + u + bwidth * (v);
             src1 = src0 + 1;
           }
           else
           {
-            if (u >= 0 && u < bwidth)
+            if ((u >= 0) & (u < bwidth))
               src0 = data + u + bwidth * (v);
-            if (u + 1>= 0 && u + 1 < bwidth)
+            if ((u + 1>= 0) & (u + 1 < bwidth))
               src1 = data + (u+1) + bwidth * (v);
           }
         }
@@ -6518,18 +6518,18 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (CtxRasterize
          uint32_t  blank = 0;
          uint32_t *src0 = &blank;
          uint32_t *src1 = src0;
-         if (CTX_LIKELY (v >= 0 && v < bheight))
+         if (CTX_LIKELY ((v >= 0) & (v < bheight)))
          {
-           if (CTX_LIKELY(u >= 0 && u + 1 < bwidth))
+           if (CTX_LIKELY((u >= 0) & (u + 1 < bwidth)))
            {
              src0 = data + u + bwidth * (v);
              src1 = src0 + 1;
            }
            else
            {
-             if (u >= 0 && u < bwidth)
+             if ((u >= 0) & (u < bwidth))
                src0 = data + u + bwidth * (v);
-             if (u + 1>= 0 && u + 1 < bwidth)
+             if ((u + 1>= 0) & (u + 1 < bwidth))
                src1 = src0 + 1;
            }
          }
@@ -6860,7 +6860,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
 y1, 1);
         return;
       }
-      else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine && extend == CTX_EXTEND_NONE)
+      else if ((fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine) & (extend == CTX_EXTEND_NONE))
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (rasterizer, x0, y0, x1,
 y1, 1);
@@ -6911,7 +6911,7 @@ y1, 1);
 y1, 0);
         return;
       }
-      else if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine && extend == CTX_EXTEND_NONE)
+      else if ((fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine) & (extend == CTX_EXTEND_NONE))
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (rasterizer, x0, y0, x1,
 y1, 0);
@@ -7041,10 +7041,10 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                           float          y1,
                           uint8_t        cov)
 {
-  if((ctx_fmod1f (x0) < 0.01f || ctx_fmod1f(x0) > 0.99f) &&
-     (ctx_fmod1f (y0) < 0.01f || ctx_fmod1f(y0) > 0.99f) &&
-     (ctx_fmod1f (x1) < 0.01f || ctx_fmod1f(x1) > 0.99f) &&
-     (ctx_fmod1f (y1) < 0.01f || ctx_fmod1f(y1) > 0.99f))
+  if(((ctx_fmod1f (x0) < 0.01f) | (ctx_fmod1f(x0) > 0.99f)) &
+     ((ctx_fmod1f (y0) < 0.01f) | (ctx_fmod1f(y0) > 0.99f)) &
+     ((ctx_fmod1f (x1) < 0.01f) | (ctx_fmod1f(x1) > 0.99f)) &
+     ((ctx_fmod1f (y1) < 0.01f) | (ctx_fmod1f(y1) > 0.99f)))
   {
     /* best-case scenario axis aligned rectangle */
     ctx_composite_fill_rect_aligned (rasterizer, (int)x0, (int)y0, (int)(x1-1), (int)(y1-1), 255);
@@ -7174,12 +7174,12 @@ CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
         off_y = (CTX_FULL_AA/2)*1.0f / (CTX_FULL_AA);
       }
 
-      if((is_compat_odd || is_compat_even) &&
+      if((is_compat_odd | is_compat_even) &
 
-     ((ctx_fmod1f (x0-off_x) < 0.01f || ctx_fmod1f(x0-off_x) > 0.99f) &&
-     (ctx_fmod1f (y0-off_y) < 0.01f || ctx_fmod1f(y0-off_y) > 0.99f) &&
-     (ctx_fmod1f (x1-off_x) < 0.01f || ctx_fmod1f(x1-off_x) > 0.99f) &&
-     (ctx_fmod1f (y1-off_y) < 0.01f || ctx_fmod1f(y1-off_y) > 0.99f)))
+     (((ctx_fmod1f (x0-off_x) < 0.01f) | (ctx_fmod1f(x0-off_x) > 0.99f)) &
+     ((ctx_fmod1f (y0-off_y) < 0.01f) | (ctx_fmod1f(y0-off_y) > 0.99f)) &
+     ((ctx_fmod1f (x1-off_x) < 0.01f) | (ctx_fmod1f(x1-off_x) > 0.99f)) &
+     ((ctx_fmod1f (y1-off_y) < 0.01f) | (ctx_fmod1f(y1-off_y) > 0.99f))))
 
 
       {
