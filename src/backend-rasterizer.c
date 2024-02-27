@@ -139,7 +139,7 @@ inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
   int active_edges = rasterizer->active_edges;
   for (unsigned int i = 0; i < pending_edges; i++)
     {
-      if (entries[rasterizer->edges[CTX_MAX_EDGES-1-i]].data.s16[1] <= scanline &&
+      if (entries[edges[CTX_MAX_EDGES-1-i]].data.s16[1] <= scanline &&
           active_edges < CTX_MAX_EDGES-2)
         {
           edges[active_edges] = edges[CTX_MAX_EDGES-1-i];
@@ -285,8 +285,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
                      and keep a different count for items stored here, like
                      a heap and stack growing against each other
                   */
-                    edges[CTX_MAX_EDGES-1-pending_edges] =
-                    rasterizer->edges[active_edges];
+                    edges[CTX_MAX_EDGES-1-pending_edges] = edges[active_edges];
                     pending_edges++;
                     active_edges--;
               }
