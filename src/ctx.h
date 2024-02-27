@@ -871,6 +871,7 @@ void ctx_render_stream  (Ctx *ctx, FILE *stream, int longform);
 void ctx_render_fd      (Ctx *ctx, int fd, int longform);
 
 void ctx_render_ctx     (Ctx *ctx, Ctx *d_ctx);
+void ctx_render_ctx2    (Ctx *ctx, Ctx *d_ctx);
 void ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx); /* cycles through all
                                                         used texture eids
                                                       */

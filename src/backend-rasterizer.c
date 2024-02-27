@@ -2824,8 +2824,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 
   CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
-#if 0
-#if CTX_FAST_FILL_RECT
+#if 1
+#if CTX_FAST_STROKE_RECT
   if (rasterizer->edge_list.count == 5)
     {
       CtxSegment *entry0 = &((CtxSegment*)rasterizer->edge_list.entries)[0];
@@ -3073,8 +3073,8 @@ foo:
       _ctx_transform_prime (rasterizer->state);
     }
   }
-#if CTX_FAST_FILL_RECT
-//done:
+#if CTX_FAST_STROKE_RECT
+  done:
 #endif
   if (preserved)
     {

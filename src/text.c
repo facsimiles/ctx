@@ -368,7 +368,8 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
     { return -1; }  // XXX : fallback glyph
   }
   ctx_iterator_init (&iterator, drawlist, start, CTX_ITERATOR_EXPAND_BITPACK);
-  CtxCommand *command;
+  CtxCommand *command; 
+  void  (*process)  (Ctx *ctx, CtxCommand *entry) = ctx->process;
 
   /* XXX :  do a binary search instead of a linear search */
   while ( (command= ctx_iterator_next (&iterator) ) )
@@ -398,7 +399,7 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
               ctx_restore (ctx);
               return 0;
             }
-          ctx_process (ctx, entry);
+          process (ctx, entry);
         }
       else if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == unichar)
         {

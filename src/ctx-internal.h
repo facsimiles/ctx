@@ -573,7 +573,7 @@ struct _Ctx
 };
 
 #if 0
-#define ctx_process(ctx,entry)  ctx->backend->process (ctx, (CtxCommand *)(entry));
+#define ctx_process(ctx,entry)  ctx->process (ctx, (CtxCommand *)(entry));
 #else
 static inline void
 ctx_process (Ctx *ctx, CtxEntry *entry)

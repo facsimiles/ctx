@@ -17,7 +17,6 @@ ENABLE_VT=1
 ENABLE_SCREENSHOT=1
 ENABLE_BRAILLE_TEXT=1
 ENABLE_PDF=1
-ENABLE_BLOATY_FAST_PATHS=1
 ENABLE_INLINED_NORMAL=1
 ENABLE_STATIC_FONTS=1
 ENABLE_SHAPE_CACHE=0
@@ -88,7 +87,6 @@ do
      "--enable-CMYK") ENABLE_CMYK=1 ;;
      "--enable-tinyvg") ENABLE_TINYVG=1 ;;
      "--enable-pdf") ENABLE_PDF=1 ;;
-     "--enable-bloaty_fast_paths") ENABLE_BLOATY_FAST_PATHS=1 ;;
      "--enable-inlined_normal") ENABLE_INLINED_NORMAL=1 ;;
      "--enable-static_fonts") ENABLE_STATIC_FONTS=1 ;;
      "--enable-fragment_specialize") ENABLE_FRAGMENT_SPECIALIZE=1 ;;
@@ -117,7 +115,6 @@ do
      "--disable-stb_image") HAVE_STB_IMAGE=0 ;;
      "--disable-image_write") ENABLE_IMAGE_WRITE=0 ;;
      "--disable-pdf") ENABLE_PDF=0 ;;
-     "--disable-bloaty_fast_paths") ENABLE_BLOATY_FAST_PATHS=0 ;;
      "--disable-inlined_normal") ENABLE_INLINED_NORMAL=0 ;;
      "--disable-static_fonts") ENABLE_STATIC_FONTS=0 ;;
      "--disable-fragment_specialize") ENABLE_FRAGMENT_SPECIALIZE=0 ;;
@@ -160,7 +157,6 @@ do
         ENABLE_STUFF=0 
         ENABLE_TINYVG=0 
         ENABLE_PDF=0 
-        ENABLE_BLOATY_FAST_PATHS=0 
         ENABLE_INLINED_NORMAL=0 
         ENABLE_STATIC_FONTS=0 
         ENABLE_FRAGMENT_SPECIALIZE=0 
@@ -236,7 +232,6 @@ echo -n "#define CTX_BRAILLE_TEXT " >> local.conf; if [ $ENABLE_BRAILLE_TEXT = 1
 echo -n "#define CTX_ENABLE_CMYK " >> local.conf; if [ $ENABLE_CMYK = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_TINYVG " >> local.conf; if [ $ENABLE_TINYVG = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_PDF " >> local.conf; if [ $ENABLE_PDF = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
-echo -n "#define CTX_BLOATY_FAST_PATHS " >> local.conf; if [ $ENABLE_BLOATY_FAST_PATHS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_INLINED_NORMAL " >> local.conf; if [ $ENABLE_INLINED_NORMAL = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_STATIC_FONTS " >> local.conf; if [ $ENABLE_STATIC_FONTS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_FRAGMENT_SPECIALIZE " >> local.conf; if [ $ENABLE_FRAGMENT_SPECIALIZE = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
@@ -388,7 +383,6 @@ echo -n " fast_fill_rect      "; [ $ENABLE_FAST_FILL_RECT = 1 ] && echo "yes" ||
 echo -n " switch_dispatch     "; [ $ENABLE_SWITCH_DISPATCH = 1 ] && echo "yes" || echo "no"
 echo -n " static_fonts        "; [ $ENABLE_STATIC_FONTS = 1 ] && echo "yes" || echo "no"
 echo -n " inlined_normal      "; [ $ENABLE_INLINED_NORMAL = 1 ] && echo "yes" || echo "no"
-echo -n " bloaty_fast_paths   "; [ $ENABLE_BLOATY_FAST_PATHS = 1 ] && echo "yes" || echo "no"
 
 
 echo

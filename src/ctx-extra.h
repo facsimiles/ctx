@@ -109,13 +109,13 @@ ctx_sinf (float x)
     }
   if (x < -CTX_PI * 1000)
   {
-    x = -0.5;
+    x = -0.5f;
   }
   if (x > CTX_PI * 1000)
   {
           // really large numbers tend to cause practically inifinite
           // loops since the > CTX_PI * 2 seemingly fails
-    x = 0.5;
+    x = 0.5f;
   }
   if (x > CTX_PI * 2)
     { 
