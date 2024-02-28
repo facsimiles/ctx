@@ -53,8 +53,9 @@ static void ctx_update_current_path (Ctx *ctx, CtxEntry *entry)
 }
 
 static void
-ctx_drawlist_process (Ctx *ctx, CtxEntry *entry)
+ctx_drawlist_process (Ctx *ctx, CtxCommand *command)
 {
+  CtxEntry *entry = (CtxEntry*)command;
 #if CTX_CURRENT_PATH
   ctx_update_current_path (ctx, entry);
 #endif
@@ -75,7 +76,7 @@ static CtxBackend *ctx_drawlist_backend_new (void)
                        // initializing the extra members - which might most
                        // often be a false report - we ass slack since it is
                        // "only" ~ 40 bytes per instance.
-  backend->process = (void(*)(Ctx *a, CtxCommand *c))ctx_drawlist_process;
+  backend->process = ctx_drawlist_process;
   backend->destroy = (void(*)(void *a))ctx_drawlist_backend_destroy;
   backend->type = CTX_BACKEND_DRAWLIST;
   return backend;

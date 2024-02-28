@@ -51,7 +51,7 @@ ctx_current_path_iterator (Ctx *ctx)
 CtxDrawlist *
 ctx_current_path (Ctx *ctx)
 {
-  CtxDrawlist *drawlist = ctx_calloc (sizeof (CtxDrawlist) + 
+  CtxDrawlist *drawlist = (CtxDrawlist*)ctx_calloc (sizeof (CtxDrawlist) + 
                               ctx->current_path.count * 9, 1);
   drawlist->entries = (CtxEntry*)(&drawlist[1]);
   drawlist->size = drawlist->count = ctx->current_path.count;
@@ -772,7 +772,7 @@ void _ctx_set_store_clear (Ctx *ctx)
 static void
 ctx_event_free (void *event, void *user_data)
 {
-  CtxEvent *e = event;
+  CtxEvent *e = (CtxEvent*)event;
   if (e->string)
     ctx_free ((char*)e->string);
   ctx_free (event);
@@ -3064,7 +3064,7 @@ typedef struct CtxDeferredCommand {
 
 static CtxDeferredCommand *deferred_new (Ctx *ctx, const char *name)
 {
-   CtxDeferredCommand *deferred = calloc (sizeof (CtxDeferredCommand), 1);
+   CtxDeferredCommand *deferred = (CtxDeferredCommand*)calloc (sizeof (CtxDeferredCommand), 1);
    if (name)
      deferred->name = ctx_strhash (name);
    deferred->offset = ctx->drawlist.count;
@@ -3118,7 +3118,7 @@ static CtxList *ctx_deferred_commands (Ctx *ctx, const char *name, int *ret_coun
   int count = 0;
   for (CtxList *l = ctx->deferred; l; l = l->next)
   {
-    CtxDeferredCommand *command = l->data;
+    CtxDeferredCommand *command = (CtxDeferredCommand*)l->data;
     if (name)
     {
        if (command->name == name_id)
@@ -3219,7 +3219,7 @@ void ctx_resolve (Ctx *ctx, const char *name,
   CtxList *matching = ctx_deferred_commands (ctx, name, &count);
   while (matching)
   {
-    CtxDeferredCommand *command = matching->data;
+    CtxDeferredCommand *command = (CtxDeferredCommand*)matching->data;
 
     float x, y, w = 0, h = 0;
     if (command->is_rect)

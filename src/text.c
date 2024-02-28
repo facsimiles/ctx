@@ -399,7 +399,7 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
               ctx_restore (ctx);
               return 0;
             }
-          process (ctx, entry);
+          process (ctx, (CtxCommand*)entry);
         }
       else if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == unichar)
         {
@@ -1166,7 +1166,7 @@ static int _ctx_resolve_font (const char *name)
     int namelen = 0; 
     if (strchr (subname, ' '))
     {
-      subname = strchr (subname, ' ');
+      subname = (char*)strchr (subname, ' ');
       namelen = subname - name;
       subname++;
     }
@@ -1186,7 +1186,7 @@ static int _ctx_resolve_font (const char *name)
    */
   if (ret < 0 && strchr (name, ' '))
   {
-     char *subname = strchr (name, ' ');
+     char *subname = (char*)strchr (name, ' ');
      for (int i = 0; ret < 0 && i < ctx_font_count; i ++)
      {
        const char *font_name = ctx_font_get_name (&ctx_fonts[i]);

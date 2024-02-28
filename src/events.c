@@ -462,7 +462,7 @@ void _ctx_idle_iteration (Ctx *ctx)
 
   for (l = idles; l; l = l->next)
   {
-    CtxIdleCb *item = l->data;
+    CtxIdleCb *item = (CtxIdleCb*)l->data;
 
     long rem = item->ticks_remaining;
     if (item->ticks_remaining >= 0)
@@ -476,7 +476,7 @@ void _ctx_idle_iteration (Ctx *ctx)
       int to_be_removed = 0;
       for (CtxList *l2 = idles_to_remove; l2; l2=l2->next)
       {
-        CtxIdleCb *item2 = l2->data;
+        CtxIdleCb *item2 = (CtxIdleCb*)l2->data;
         if (item2 == item) to_be_removed = 1;
       }
       
@@ -498,7 +498,7 @@ void _ctx_idle_iteration (Ctx *ctx)
       int to_be_removed = 0;
       for (CtxList *l2 = idles_to_remove; l2; l2=l2->next)
       {
-        CtxIdleCb *item2 = l2->data;
+        CtxIdleCb *item2 = (CtxIdleCb*)l2->data;
         if (item2 == item) to_be_removed = 1;
       }
       
@@ -516,14 +516,14 @@ void _ctx_idle_iteration (Ctx *ctx)
 
   while (ctx->events.idles_to_add)
   {
-    CtxIdleCb *item = ctx->events.idles_to_add->data;
+    CtxIdleCb *item = (CtxIdleCb*)ctx->events.idles_to_add->data;
     ctx_list_prepend (&idles, item);
     ctx_list_remove (&ctx->events.idles_to_add, item);
   }
 
   while (idles_to_remove)
   {
-    CtxIdleCb *item = idles_to_remove->data;
+    CtxIdleCb *item = (CtxIdleCb*)idles_to_remove->data;
     ctx_list_remove (&idles, item);
     ctx_list_remove (&idles_to_remove, item);
     if (item->destroy_notify)
@@ -651,7 +651,7 @@ void ctx_remove_idle (Ctx *ctx, int handle)
 
   for (l = ctx->events.idles; l; l = l->next)
   {
-    CtxIdleCb *item = l->data;
+    CtxIdleCb *item = (CtxIdleCb*)l->data;
     if (item->id == handle)
     {
       ctx_list_prepend (&ctx->events.idles_to_remove, item);
@@ -674,7 +674,7 @@ void ctx_remove_idle (Ctx *ctx, int handle)
 int ctx_add_timeout_full (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                           void (*destroy_notify)(void *destroy_data), void *destroy_data)
 {
-  CtxIdleCb *item = ctx_calloc (sizeof (CtxIdleCb), 1);
+  CtxIdleCb *item = (CtxIdleCb*)ctx_calloc (sizeof (CtxIdleCb), 1);
   item->cb              = idle_cb;
   item->idle_data       = idle_data;
   item->id              = ++ctx->events.idle_id;
@@ -697,7 +697,7 @@ int ctx_add_timeout (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data)
 int ctx_add_idle_full (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                                  void (*destroy_notify)(void *destroy_data), void *destroy_data)
 {
-  CtxIdleCb *item = ctx_calloc (sizeof (CtxIdleCb), 1);
+  CtxIdleCb *item = (CtxIdleCb*)ctx_calloc (sizeof (CtxIdleCb), 1);
   item->cb = idle_cb;
   item->idle_data = idle_data;
   item->id = ++ctx->events.idle_id;
@@ -964,7 +964,7 @@ void ctx_listen (Ctx          *ctx,
   }
 
   if (types == CTX_DRAG_MOTION)
-    types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
+    types = (CtxEventType)(CTX_DRAG_MOTION | CTX_DRAG_PRESS);
   ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, NULL, NULL);
 }
 
@@ -997,7 +997,7 @@ void  ctx_listen_with_finalize (Ctx          *ctx,
   }
 
   if (types == CTX_DRAG_MOTION)
-    types = CTX_DRAG_MOTION | CTX_DRAG_PRESS;
+    types = (CtxEventType)(CTX_DRAG_MOTION | CTX_DRAG_PRESS);
   ctx_listen_full (ctx, x, y, width, height, types, cb, data1, data2, finalize, finalize_data);
 }
 
@@ -1007,7 +1007,7 @@ static void ctx_report_hit_region (CtxEvent *event,
                        void     *data2)
 {
 #if CTX_BAREMETAL==0
-  const char *id = data;
+  const char *id = (char*)data;
 
   fprintf (stderr, "hit region %s\n", id);
 #endif
