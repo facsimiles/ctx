@@ -1,7 +1,7 @@
 #include "ctx-split.h"
 
 
-static inline int
+static CTX_INLINE int
 ctx_conts_for_entry (CtxEntry *entry)
 {
     switch (entry->code)
