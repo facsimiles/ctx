@@ -1487,9 +1487,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
   _ctx_coords_restrict (extend, NULL, &v1, bwidth, bheight);
 
   uint32_t *data = ((uint32_t*)buffer->data) + bwidth * v;
-  uint32_t *ndata = ((uint32_t*)buffer->data) + bwidth * v1;
-
-  if ((!extend) & (v1 > bheight-1)) ndata = data;
+  uint32_t *ndata = data + bwidth * !((!extend) & (v1 > bheight-1));
 
   if (extend)
   {
@@ -1524,32 +1522,29 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
       int prev_u = -1000;
       for (; (i < count); i++)
       {
-        if (CTX_LIKELY(prev_u == u))
+        if (prev_u != u)
         {
-        }
-        else if (prev_u == u-1)
-        {
-          s0_ga = s1_ga;
-          s0_rb = s1_rb;
-          ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
-          prev_u++;
-        }
-        else
-        {
-          ctx_lerp_RGBA8_split (data[u],ndata[u], dv, &s0_ga, &s0_rb);
-          ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
+          if (prev_u == u-1)
+          {
+            s0_ga = s1_ga;
+            s0_rb = s1_rb;
+            ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
+          }
+          else
+          {
+            ctx_lerp_RGBA8_split (data[u],ndata[u], dv, &s0_ga, &s0_rb);
+            ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
+          }
           prev_u = u;
         }
         ((uint32_t*)(&rgba[0]))[0] = 
           ctx_RGBA8_associate_global_alpha_u32 (
                   ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, (xi>>8)), global_alpha_u8);
-        xi += xi_delta;
         rgba += 4;
-        u = xi >> 16;
+        u = (xi+=xi_delta) >> 16;
         _ctx_coords_restrict (extend, &u, NULL, bwidth, bheight);
       }
     }
-  
   }
   else
   {
@@ -1583,28 +1578,26 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
       int prev_u = -1000;
       for (; (i < count); i++)
       {
-        if (CTX_LIKELY(prev_u == u))
+        if (prev_u != u)
         {
-        }
-        else if (prev_u == u-1)
-        {
-          s0_ga = s1_ga;
-          s0_rb = s1_rb;
-          ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
-          prev_u++;
-        }
-        else
-        {
-          ctx_lerp_RGBA8_split (data[u],ndata[u], dv, &s0_ga, &s0_rb);
-          ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
+          if (prev_u == u-1)
+          {
+            s0_ga = s1_ga;
+            s0_rb = s1_rb;
+            ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
+          }
+          else
+          {
+            ctx_lerp_RGBA8_split (data[u],ndata[u], dv, &s0_ga, &s0_rb);
+            ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
+          }
           prev_u = u;
         }
         ((uint32_t*)(&rgba[0]))[0] = 
           ctx_RGBA8_associate_global_alpha_u32 (
                   ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, (xi>>8)), global_alpha_u8);
-        xi += xi_delta;
         rgba += 4;
-        u = xi >> 16;
+        u = (xi+=xi_delta) >> 16;
       }
     }
   }
@@ -2837,7 +2830,7 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
   }
 }
 
-static inline void
+static CTX_INLINE void
 ctx_RGBA8_source_over_normal_full_cov_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 {
   uint32_t *ttsrc = (uint32_t*)tsrc;
@@ -2885,15 +2878,16 @@ ctx_RGBA8_source_over_normal_full_cov_fragment (CTX_COMPOSITE_ARGUMENTS, int sca
 {
   CtxMatrix *transform = &rasterizer->state->gstate.source_fill.transform;
   int scan = rasterizer->scanline /CTX_FULL_AA;
+  CtxFragment fragment = rasterizer->fragment;
 
   if (CTX_LIKELY(ctx_matrix_no_perspective (transform)))
   {
     float u0, v0, ud, vd, w0, wd;
+    uint8_t _tsrc[4 * count];
     ctx_init_uv (rasterizer, x0, scan, &u0, &v0, &w0, &ud, &vd, &wd);
     for (int y = 0; y < scanlines; y++)
     {
-      uint8_t _tsrc[4 * count];
-      rasterizer->fragment (rasterizer, u0, v0, w0, &_tsrc[0], count, ud, vd, wd);
+      fragment (rasterizer, u0, v0, w0, &_tsrc[0], count, ud, vd, wd);
       ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
                           dst, src, x0, coverage, count, &_tsrc[0]);
       u0 -= vd;
@@ -2903,12 +2897,12 @@ ctx_RGBA8_source_over_normal_full_cov_fragment (CTX_COMPOSITE_ARGUMENTS, int sca
   }
   else
   {
+    uint8_t _tsrc[4 * count];
     for (int y = 0; y < scanlines; y++)
     {
-      uint8_t _tsrc[4 * count];
       float u0, v0, ud, vd, w0, wd;
       ctx_init_uv (rasterizer, x0, scan+y, &u0, &v0, &w0, &ud, &vd, &wd);
-      rasterizer->fragment (rasterizer, u0, v0, w0, &_tsrc[0], count, ud, vd, wd);
+      fragment (rasterizer, u0, v0, w0, &_tsrc[0], count, ud, vd, wd);
       ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
                           dst, src, x0, coverage, count, &_tsrc[0]);
       dst += rasterizer->blit_stride;
@@ -6287,274 +6281,7 @@ static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int 
 
 #if CTX_FAST_FILL_RECT
 
-#if 0
-static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
-{
-  CtxExtend extend = rasterizer->state->gstate.extend;
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
-  float w0 = 1; float wd = 0;
-  ctx_init_uv (rasterizer, x0, rasterizer->scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
-  u0-=0.5f;
-  v0-=0.5f;
-
-  uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  int blit_stride = rasterizer->blit_stride;
-  dst += (y0 - rasterizer->blit_y) * blit_stride;
-  dst += (x0) * rasterizer->format->bpp/8;
-
-  unsigned int width = x1-x0+1;
-  unsigned int height = y1-y0+1;
-
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
-
-  int bwidth = buffer->width;
-  int bheight = buffer->height;
-  uint8_t tsrc[copy?1:width*4]; /* unused when not copy */
-
-  //uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
-  uint32_t *data = ((uint32_t*)buffer->data);
-  uint32_t rb_row[2][width*2];
-  //uint32_t ga_row[2][width];
-
-  int32_t row_u = (int)(u0 * 65536);
-  int32_t row_v = (int)(v0 * 65536);
-  int   ui_delta = (int)(ud * 65536);
-  int   vi_delta = (int)(vd * 65536);
-
-  int iter = 0;
-
-  int loaded_v = -1;
-  int top      = iter % 2;
-
-
-  { // preload previous row for first row
-    int32_t ui  = row_u;
-    int32_t vi  = row_v;
-    unsigned int xa=0;
-      for (unsigned int x = 0; x < width; x++, xa+=2)
-      {
-        int u = ui >> 16;
-        int v = vi >> 16;
-        int u1 = u + 1;
-        uint32_t  blank = 0;
-        uint32_t *src0 = &blank;
-        uint32_t *src1 = src0;
-    
-        if (CTX_LIKELY(_ctx_coords_restrict (extend, &u, &v, bwidth, bheight)))
-        {
-          src0 = data + u + bwidth * (v);
-        }
-        if (CTX_LIKELY(_ctx_coords_restrict (extend, &u1, &v, bwidth, bheight)))
-        {
-          src1 = data + u1 + bwidth * (v);
-        }
-    
-        ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[!top][xa],
-                                                   &rb_row[!top][xa+1]);
-        ui += ui_delta;
-        vi += vi_delta;
-      }
-    }
-
-  { // scale/translate only
-    for (unsigned int y = 0; y < height; y++)
-    {
-       int top     = iter % 2;
-       int32_t ui = row_u;
-       int32_t vi = row_v;
-       int v =  (vi >> 16) + 1;
-       uint8_t dv = ((row_v)>> 8);
-  
-       if (v != loaded_v)
-       {
-         loaded_v = v;
-         unsigned int xa=0;
-
-           for (unsigned int x = 0; x < width; x++, xa+=2)
-           {
-             int u = ui >> 16;
-             int u1 = u+1;
-             uint32_t  blank = 0;
-             uint32_t *src0 = &blank;
-             uint32_t *src1 = src0;
-
-
-        if (CTX_LIKELY(_ctx_coords_restrict (extend, &u, &v, bwidth, bheight)))
-        {
-          src0 = data + u + bwidth * (v);
-        }
-        if (CTX_LIKELY(_ctx_coords_restrict (extend, &u1, &v, bwidth, bheight)))
-        {
-          src1 = data + u1 + bwidth * (v);
-        }
-
-             ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[top][xa], &rb_row[top][xa+1]);
-             ui += ui_delta;
-           }
-         iter++;
-         top    = iter % 2;
-       }
-       
-       {
-         uint32_t*dst_i = copy?(uint32_t*)dst:(uint32_t*)tsrc;
-         int ntop = !top;
-         for (unsigned int xa = 0; xa < width * 2; xa+=2)
-         {
-            *dst_i ++ =
-            ctx_lerp_RGBA8_merge (rb_row[top][xa], rb_row[top][xa+1], 
-                                  rb_row[ntop][xa], rb_row[ntop][xa+1],
-                                  dv);
-         }
-         if (!copy)
-         ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
-            dst, NULL, x0, NULL, width, &tsrc[0]);
-       }
-       row_u -= vi_delta;
-       row_v += ui_delta;
-       dst += blit_stride;
-    }
-  }
-}
-
-static inline void ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
-{
-  float u0 = 0; float v0 = 0;
-  float ud = 0; float vd = 0;
-  float w0 = 1; float wd = 0;
-  ctx_init_uv (rasterizer, x0, rasterizer->scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
-  u0-=0.5f;
-  v0-=0.5f;
-
-  uint8_t *dst = ( (uint8_t *) rasterizer->buf);
-  int blit_stride = rasterizer->blit_stride;
-  dst += (y0 - rasterizer->blit_y) * blit_stride;
-  dst += (x0) * rasterizer->format->bpp/8;
-
-  unsigned int width = x1-x0+1;
-  unsigned int height = y1-y0+1;
-
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
-
-  int bwidth = buffer->width;
-  int bheight = buffer->height;
-  uint8_t tsrc[copy?1:width*4]; /* unused when not copy */
-
-  //uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
-  uint32_t *data = ((uint32_t*)buffer->data);
-  uint32_t rb_row[2][width*2];
-  //uint32_t ga_row[2][width];
-
-  uint32_t row_u = (int)(u0 * 65536);
-  uint32_t row_v = (int)(v0 * 65536);
-  int   ui_delta = (int)(ud * 65536);
-  int   vi_delta = (int)(vd * 65536);
-
-  int iter = 0;
-
-  int loaded_v = -1;
-  int top      = iter % 2;
-
-
-  { // preload previous row for first row
-    uint32_t ui  = row_u;
-    uint32_t vi  = row_v;
-    unsigned int xa=0;
-      for (unsigned int x = 0; x < width; x++, xa+=2)
-      {
-        int u = ui >> 16;
-        int v = vi >> 16;
-        uint32_t  blank = 0;
-        uint32_t *src0 = &blank;
-        uint32_t *src1 = src0;
-    
-        if (CTX_LIKELY ((v >= 0) & (v < bheight)))
-        {
-          if (CTX_LIKELY ((u >= 0) & (u + 1 < bwidth)))
-          {
-            src0 = data + u + bwidth * (v);
-            src1 = src0 + 1;
-          }
-          else
-          {
-            if ((u >= 0) & (u < bwidth))
-              src0 = data + u + bwidth * (v);
-            if ((u + 1>= 0) & (u + 1 < bwidth))
-              src1 = data + (u+1) + bwidth * (v);
-          }
-        }
-    
-        ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[!top][xa], &rb_row[!top][xa+1]);
-        ui += ui_delta;
-        vi += vi_delta;
-      }
-    }
-
-  for (unsigned int y = 0; y < height; y++)
-  {
-     int top     = iter % 2;
-     uint32_t ui = row_u;
-     uint32_t vi = row_v;
-
-     int v =  (vi >> 16) + 1;
-     uint8_t dv = ((row_v)>> 8);
-
-     if (v != loaded_v)
-     {
-       loaded_v = v;
-       unsigned int xa=0;
-       for (unsigned int x = 0; x < width; x++, xa+=2)
-       {
-         int u = ui >> 16;
-         v =  (vi >> 16) + 1;
-         uint32_t  blank = 0;
-         uint32_t *src0 = &blank;
-         uint32_t *src1 = src0;
-         if (CTX_LIKELY ((v >= 0) & (v < bheight)))
-         {
-           if (CTX_LIKELY((u >= 0) & (u + 1 < bwidth)))
-           {
-             src0 = data + u + bwidth * (v);
-             src1 = src0 + 1;
-           }
-           else
-           {
-             if ((u >= 0) & (u < bwidth))
-               src0 = data + u + bwidth * (v);
-             if ((u + 1>= 0) & (u + 1 < bwidth))
-               src1 = src0 + 1;
-           }
-         }
-         ctx_lerp_RGBA8_split (*src0, *src1, ui>>8, &rb_row[top][xa],
-                                                    &rb_row[top][xa+1]);
-         ui += ui_delta;
-         vi += vi_delta;
-       }
-       iter++;
-       top    = iter % 2;
-     }
-     
-     {
-       uint32_t*dst_i = copy?(uint32_t*)dst:(uint32_t*)tsrc;
-       int ntop = !top;
-       for (unsigned int xa = 0; xa < width * 2; xa+=2)
-       {
-          *dst_i ++ =
-          ctx_lerp_RGBA8_merge (rb_row[top][xa], rb_row[top][xa+1], 
-                                rb_row[ntop][xa], rb_row[ntop][xa+1],
-                                dv);
-       }
-       if (!copy)
-       ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
-          dst, NULL, x0, NULL, width, &tsrc[0]);
-     }
-     row_u -= vi_delta;
-     row_v += ui_delta;
-     dst += blit_stride;
-  }
-}
+#if 1
 
 static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
@@ -6848,15 +6575,17 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       INIT_ENV;
 
 #if 0
+      if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
+      {
+        ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 1);
+        return;
+      }
+      else
+#endif
+#if 0
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
         ctx_RGBA8_image_rgba8_RGBA8_bi_scaled_fill_rect (rasterizer, x0, y0, x1,
-y1, 1);
-        return;
-      }
-      else if ((fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine) & (extend == CTX_EXTEND_NONE))
-      {
-        ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (rasterizer, x0, y0, x1,
 y1, 1);
         return;
       }
@@ -6900,7 +6629,6 @@ y1, 1);
       }
       else
 #endif
-
 #if 0
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
@@ -6908,14 +6636,7 @@ y1, 1);
 y1, 0);
         return;
       }
-      else if ((fragment == ctx_fragment_image_rgba8_RGBA8_bi_affine) & (extend == CTX_EXTEND_NONE))
-      {
-        ctx_RGBA8_image_rgba8_RGBA8_bi_affine_fill_rect (rasterizer, x0, y0, x1,
-y1, 0);
-        return;
-      }
 #endif
-
       INIT_ENV;
       ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
                          &dst[0], NULL, x0, NULL, width, y1-y0+1);

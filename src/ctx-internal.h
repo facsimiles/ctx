@@ -1294,8 +1294,8 @@ _ctx_matrix_apply_transform (const CtxMatrix *m, float *x, float *y)
   float y_in = *y;
   float w =   (x_in * m->m[2][0]) + (y_in * m->m[2][1]) + m->m[2][2];
   float w_recip = 1.0f/w;
-       *x = ( (x_in * m->m[0][0]) + (y_in * m->m[0][1]) + m->m[0][2]) * w_recip;
-       *y = ( (x_in * m->m[1][0]) + (y_in * m->m[1][1]) + m->m[1][2]) * w_recip;
+  *x = ( (x_in * m->m[0][0]) + (y_in * m->m[0][1]) + m->m[0][2]) * w_recip;
+  *y = ( (x_in * m->m[1][0]) + (y_in * m->m[1][1]) + m->m[1][2]) * w_recip;
 }
 
 
@@ -1357,12 +1357,12 @@ void ctx_push_backend (Ctx *ctx,
 void ctx_pop_backend (Ctx *ctx);
 
 
-static inline float ctx_fmod1f (float val)
+static CTX_INLINE float ctx_fmod1f (float val)
 {
   return ctx_fabsf (val - (int)(val));
 }
 
-static inline float ctx_fmodf (float val, float modulus)
+static CTX_INLINE float ctx_fmodf (float val, float modulus)
 {
   return ctx_fmod1f(val/modulus) * modulus;
 }
