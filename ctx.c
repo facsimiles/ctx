@@ -31,7 +31,7 @@
 #define CTX_MAX_KEYDB            128  // default: 64
 #define CTX_GET_CONTENTS         1
 #define CTX_RASTERIZER_AA        3
-#define CTX_FORCE_INLINES        0
+#define CTX_FORCE_INLINES        1
 #define CTX_PROTOCOL_U8_COLOR    1
 #include "stb_image.h"
 
