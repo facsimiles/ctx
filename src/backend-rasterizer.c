@@ -2039,7 +2039,7 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x2, float y2)
 {
 #if CTX_32BIT_SEGMENTS
-  float tolerance = 0.33f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  float tolerance = 0.4f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
 #else
   float tolerance = 0.5f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
 #endif
@@ -2824,8 +2824,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 
   CtxSegment temp[count]; /* copy of already built up path's poly line  */
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
-#if 1
-#if CTX_FAST_FILLL_RECT
+#if CTX_FAST_FILL_RECT
 #if CTX_FAST_STROKE_RECT
   if (rasterizer->edge_list.count == 5)
     {
@@ -2854,7 +2853,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         goto done;
        }
     }
-#endif
 #endif
 #endif
   
