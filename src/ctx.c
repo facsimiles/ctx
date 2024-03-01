@@ -621,9 +621,9 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
       case 2: pixel_format = CTX_FORMAT_GRAYA8; break;
       case 3: pixel_format = CTX_FORMAT_RGB8;   break;
       case 4: pixel_format = CTX_FORMAT_RGBA8;
-      for (int i = 0; i < w * h; i++)
-        ctx_RGBA8_associate_alpha (&pixels[i * 4]);
-        break;
+        for (int i = 0; i < w * h; i++)
+          ctx_RGBA8_associate_alpha (&pixels[i * 4]);
+      break;
     }
     if (tw) *tw = w;
     if (th) *th = h;

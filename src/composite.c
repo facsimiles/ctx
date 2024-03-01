@@ -2962,7 +2962,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                       {
                         if (ctx_matrix_no_skew_or_rotate (transform))
                         {
-                          if ((ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
+                          if ((int)(ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
                               (ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f) &
                               (ctx_fmod1f (transform->m[0][2]) < 0.001f) &
                               (ctx_fmod1f (transform->m[1][2]) < 0.001f))
@@ -2983,7 +2983,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     {
                       if (ctx_matrix_no_skew_or_rotate (transform))
                       {
-                        if ((ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
+                        if ((int)(ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
                             (ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f) &
                             (ctx_fmod1f (transform->m[0][2]) < 0.001f) &
                             (ctx_fmod1f (transform->m[1][2]) < 0.001f))
@@ -3008,7 +3008,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                     {
                       if (ctx_matrix_no_skew_or_rotate (transform))
                       {
-                        if ((ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
+                        if ((int)(ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
                             (ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f))
                         {
                            return ctx_fragment_image_rgba8_RGBA8_nearest_copy_swap_red_green;
@@ -3027,7 +3027,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
                   {
                     if (ctx_matrix_no_skew_or_rotate (transform))
                     {
-                      if ((ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
+                      if ((int)(ctx_fabsf (transform->m[0][0] - 1.0f) < 0.001f) &
                           (ctx_fabsf (transform->m[1][1] - 1.0f) < 0.001f))
                       {
                          if (extend == CTX_EXTEND_NONE)
@@ -7194,10 +7194,10 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                           float          y1,
                           uint8_t        cov)
 {
-  if(((ctx_fmod1f (x0) < 0.01f) | (ctx_fmod1f(x0) > 0.99f)) &
-     ((ctx_fmod1f (y0) < 0.01f) | (ctx_fmod1f(y0) > 0.99f)) &
-     ((ctx_fmod1f (x1) < 0.01f) | (ctx_fmod1f(x1) > 0.99f)) &
-     ((ctx_fmod1f (y1) < 0.01f) | (ctx_fmod1f(y1) > 0.99f)))
+  if(((int)(ctx_fmod1f (x0) < 0.01f) | (ctx_fmod1f(x0) > 0.99f)) &
+     ((int)(ctx_fmod1f (y0) < 0.01f) | (ctx_fmod1f(y0) > 0.99f)) &
+     ((int)(ctx_fmod1f (x1) < 0.01f) | (ctx_fmod1f(x1) > 0.99f)) &
+     ((int)(ctx_fmod1f (y1) < 0.01f) | (ctx_fmod1f(y1) > 0.99f)))
   {
     /* best-case scenario axis aligned rectangle */
     ctx_composite_fill_rect_aligned (rasterizer, (int)x0, (int)y0, (int)(x1-1), (int)(y1-1), 255);
@@ -7328,10 +7328,10 @@ CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
 
       if((is_compat_odd | is_compat_even) &
 
-     (((ctx_fmod1f (x0-off_x) < 0.01f) | (ctx_fmod1f(x0-off_x) > 0.99f)) &
-     ((ctx_fmod1f (y0-off_y) < 0.01f) | (ctx_fmod1f(y0-off_y) > 0.99f)) &
-     ((ctx_fmod1f (x1-off_x) < 0.01f) | (ctx_fmod1f(x1-off_x) > 0.99f)) &
-     ((ctx_fmod1f (y1-off_y) < 0.01f) | (ctx_fmod1f(y1-off_y) > 0.99f))))
+     (((int)(ctx_fmod1f (x0-off_x) < 0.01f) | (ctx_fmod1f(x0-off_x) > 0.99f)) &
+     ((int)(ctx_fmod1f (y0-off_y) < 0.01f) | (ctx_fmod1f(y0-off_y) > 0.99f)) &
+     ((int)(ctx_fmod1f (x1-off_x) < 0.01f) | (ctx_fmod1f(x1-off_x) > 0.99f)) &
+     ((int)(ctx_fmod1f (y1-off_y) < 0.01f) | (ctx_fmod1f(y1-off_y) > 0.99f))))
 
 
       {
