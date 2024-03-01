@@ -36,17 +36,23 @@
 
       <h1>portable and performant 2D vector graphics</h1>
 
-      ctx is written to be fast by being written as portable 32bit C code (it builds and works
-      on 64bit as well), with code paths that are well suited for auto-vectorization by compilers.
+      ctx is fast and portable 32bit C code (it builds and works on 64bit as
+      well), with code paths that are well suited for auto-vectorization by
+      compilers, and use minimal amounts of resources - making it suitable for
+      microcontrollers.
+      <dl>
+        <dt>x86-64</dt><dd>Runtime choice of 3 different levels of SIMD support.</dd>
+        <dt>arm32</dt><dd>both mcu and cpu's tested on rp2040</dd>
+        <dt>tensilica</dt><dd>tested on esp32 and esp32s3</dd>
+        <dt>riscv</dt><dd>tested on esp32c3</dd>
+        <dt>wasm</dt><dd>built with emscripten</dd>
+      </dl>
 
-      
-      constrained resource usage, suitable for bare-metal use on 32bit 
-      microcontrollers without additional dependencies and scaling to handling
+      While still being small optional features can be built in like
       <a href='output.pdf'>PDF</a>, floating point buffer, CMYK and
       multi-threaded rendering with automatic partial redraws. The core
-      drawing, event handling and rendering APIs are stable, and many features can be
-      reduced or dropped when targeting resource limited microcontroller. Demo UIs
-      experiments and tests are included in the <a
+      drawing, event handling and rendering APIs are stable.
+      Demo UIs experiments and tests are included in the <a
       href='https://ctx.graphics/.git'>git monorepo</a>. The most elaborate test
       is <a href='/s0il/'>s0il, a graphical UNIX like OS for microcontrollers, with interpreted userland.</a>.
 
@@ -55,7 +61,6 @@
       with a terminal emulator/window manager; providing an end-to-end
       vector rendering framework suitable for serial links.
       </p>
-
 
       <p> The <a href='rasterizer/'>ctx rasterizer</a> is
       fast, portable and compact with a wide range of supported pixel encodings
@@ -69,7 +74,7 @@
 
       <p>ctx provides abstractions for event injection and dispatch. It
       provides hit-detection, this allows abstracting over multiple input
-      devices/buttons with a mouste+keyboard abstraction. In the event
+      devices/buttons with a mouse+keyboard abstraction. In the event
       method callback both absolute and local (At time of callback registration)
       coordinates are provided.
       </p>
@@ -87,15 +92,6 @@
 
 
       <img style='max-width:100%' src='esp32.jpg'/>
-
-      <p>The ctx renderer is written in portable C, without
-      inline assembly or SIMD intrinsics - but is still fast (and can
-      make good use of cpu capabilities known by the C compiler, thus making
-      the same code work across x86 32 and 64bit, ARM on MCUs and
-      SBCs, tensilica, RISC-V and other compilers with a modern toolchain.
-      The single threaded rendering performance <a
-      href='performance/'>rendering performance</a> is often better than engines with
-      more dedicated/manual SIMD handling.  </p>
 
 
       <p>Below is ctx compiled to WASM with emscripten (without SIMD support).
