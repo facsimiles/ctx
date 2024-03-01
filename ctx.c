@@ -26,8 +26,8 @@
 #define CTX_MIN_EDGE_LIST_SIZE   1024*8      // default: 1024*4
 //#define CTX_PARSER_MAXLEN      1024*1024*64 // default: 1024*1024*16
 
-#define CTX_HASH_COLS            5 // default: 6
-#define CTX_HASH_ROWS            5 // default: 5
+#define CTX_HASH_COLS            1 // default: 6
+#define CTX_HASH_ROWS            1 // default: 5
 #define CTX_MAX_KEYDB            128  // default: 64
 #define CTX_GET_CONTENTS         1
 #define CTX_RASTERIZER_AA        3

@@ -222,8 +222,8 @@ _ctx_texture_prepare_color_management (CtxState      *state,
           CtxBuffer *color_managed = ctx_buffer_new (buffer->width, buffer->height,
                                                   CTX_FORMAT_RGBA8);
           babl_process (
-             babl_fish (babl_format_with_space ("R'G'B'A u8", buffer->space),
-                        babl_format_with_space ("R'G'B'A u8", state->gstate.device_space)),
+             babl_fish (babl_format_with_space ("Ra'Ga'Ba'A u8", buffer->space),
+                        babl_format_with_space ("Ra'Ga'Ba'A u8", state->gstate.device_space)),
              buffer->data, color_managed->data,
              buffer->width * buffer->height
              );

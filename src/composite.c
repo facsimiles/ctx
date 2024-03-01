@@ -399,21 +399,18 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
-  uint8_t is_assoc = (buffer->format->pixel_format == CTX_FORMAT_RGBA8);
+  uint8_t is_assoc = (buffer->format->pixel_format == CTX_FORMAT_RGBA8 ||
+                      buffer->format->pixel_format == CTX_FORMAT_BGRA8);
 
+  int width = buffer->width;
+  int height = buffer->height;
   for (int i = 0; i < count; i ++)
   {
 
   int u = (int)x;
   int v = (int)y;
-  int width = buffer->width;
-  int height = buffer->height;
-  if ( u < 0 || v < 0 ||
-       u >= width ||
-       v >= height)
-    {
+  if ( (u < 0) | (v < 0) | (u >= width) | (v >= height))
       *((uint32_t*)(rgba)) = 0;
-    }
   else
     {
       int bpp = buffer->format->bpp/8;
@@ -473,7 +470,6 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
                 for (int c = 0; c < bpp; c++)
                   rgba[c] = (ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dxb),
                                           ctx_lerp_u8 (src10[c], src11[c], dxb), dyb) * global_alpha_u8) / 255;
-              rgba[3] = global_alpha_u8;
             }
             else
             {
@@ -1209,8 +1205,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_affine (CtxRasterizer *rasterizer,
     {
       *((uint32_t*)(rgba))= 0;
     }
-    else
-      break;
+    else break;
     xi += xi_delta;
     yi += yi_delta;
     rgba += 4;
@@ -1267,7 +1262,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_affine (CtxRasterizer *rasterizer,
       rgba += 4;
       i++;
     }
-    break;
+   break;
   }
 }
 
@@ -1831,19 +1826,17 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
       int prev_u = -1000;
       for (; (i < count); i++)
       {
-        if (prev_u != u)
+        if (prev_u == u-1)
         {
-          if (prev_u == u-1)
-          {
-            s0_ga = s1_ga;
-            s0_rb = s1_rb;
-            ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
-          }
-          else
-          {
-            ctx_lerp_RGBA8_split (data[u],ndata[u], dv, &s0_ga, &s0_rb);
-            ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
-          }
+          s0_ga = s1_ga;
+          s0_rb = s1_rb;
+          ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
+          prev_u = u;
+        }
+        else if (prev_u != u)
+        {
+          ctx_lerp_RGBA8_split (data[u],ndata[u], dv, &s0_ga, &s0_rb);
+          ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
           prev_u = u;
         }
         ((uint32_t*)(&rgba[0]))[0] = ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, (xi>>8));
@@ -1883,19 +1876,17 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
       int prev_u = -1000;
       for (; (i < count); i++)
       {
-        if (prev_u != u)
+        if (prev_u == u-1)
         {
-          if (prev_u == u-1)
-          {
-            s0_ga = s1_ga;
-            s0_rb = s1_rb;
-            ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
-          }
-          else
-          {
-            ctx_lerp_RGBA8_split (data[u],ndata[u], dv, &s0_ga, &s0_rb);
-            ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
-          }
+          s0_ga = s1_ga;
+          s0_rb = s1_rb;
+          ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
+          prev_u++;
+        }
+        else if (prev_u != u)
+        {
+          ctx_lerp_RGBA8_split (data[u],ndata[u], dv, &s0_ga, &s0_rb);
+          ctx_lerp_RGBA8_split (data[u+1],ndata[u+1], dv, &s1_ga, &s1_rb);
           prev_u = u;
         }
         ((uint32_t*)(&rgba[0]))[0] = ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, (xi>>8));
@@ -7430,8 +7421,9 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
     case CTX_SOURCE_TEXTURE:
 
       _ctx_matrix_multiply (&rasterizer->state->gstate.source_fill.transform,
-                            &rasterizer->state->gstate.source_fill.set_transform,
-                            &rasterizer->state->gstate.transform);
+                            &rasterizer->state->gstate.transform,
+                            &rasterizer->state->gstate.source_fill.set_transform
+                            );
 #if 0
       rasterizer->state->gstate.source_fill.transform_inv =
                            rasterizer->state->gstate.source_fill.transform;

@@ -622,9 +622,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
       case 3: pixel_format = CTX_FORMAT_RGB8;   break;
       case 4: pixel_format = CTX_FORMAT_RGBA8;
       for (int i = 0; i < w * h; i++)
-      {
         ctx_RGBA8_associate_alpha (&pixels[i * 4]);
-      }
         break;
     }
     if (tw) *tw = w;
@@ -669,8 +667,10 @@ ctx_draw_texture_clipped  (Ctx *ctx, const char *eid,
       if (clip_height>0) tex_height = (int)clip_height;
       ctx_rectangle (ctx, x, y, width, height);
       ctx_save (ctx);
-      ctx_texture (ctx, eid, x-(clip_x) * (width/tex_width), y-clip_y * (height
-/tex_height));
+      
+      ctx_texture (ctx, eid, 0,0);//x-(clip_x) * (width/tex_width), y-clip_y * (height
+      ctx_translate (ctx, (x-(clip_x) * (width/tex_width)), (y-clip_y * (height
+/tex_height)));
       ctx_scale (ctx, (width/tex_width), (height/tex_height));
       ctx_fill (ctx);
       ctx_restore (ctx);
