@@ -2223,18 +2223,6 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
 }
 
 void
-ctx_render_ctx2 (Ctx *ctx, Ctx *d_ctx)
-{
-  CtxIterator iterator;
-  CtxCommand *command;
-  d_ctx->bail = 0;
-  void  (*process)  (Ctx *ctx, CtxCommand *entry) = d_ctx->process;
-  ctx_iterator_init (&iterator, &ctx->drawlist, 0, 0);
-  while ( (command = (CtxCommand*)_ctx_iterator_next (&iterator) ) )
-    process (d_ctx, command);
-}
-
-void
 ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, uint32_t mask)
 {
   CtxIterator iterator;
