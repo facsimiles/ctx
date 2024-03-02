@@ -72,12 +72,60 @@
              management ctx scales to meet <a href='https://gegl.org/'>GEGL</a>
              and <a href='https://www.gimp.org.'>GIMP</a>s needs.</p>
 
+<style>
+#feat td.Y{ background: #3f3; color:white }
+#feat td.N{ background: #622; color:white }
+#feat td.P{ background: #b94; color:white }
+#feat td.D{  color:white }
+</style>
+
+      <p>The ctx API still isn't fully covered by the rasterizer, in this feature comparison matrix, the protocol and rasterizer are separate columns.</p>
+      <table id='feat'>
+<tr><th>.</th><th>ctx-protocol</th><th>ctx</th><th>cairo</th><th>skia</th><th>blend2d</th></tr>
+
+<tr><td>GPU rendering</td><td>-</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
+<tr><td>CMYK output</td><td>-</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>float output</td><td>-</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>rgb565 output</td><td>-</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>threaded rendering</td><td>-</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td></tr>
+<tr><td>event-handling</td><td>-</td><td class='Y'>Y</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>drop-shadow</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
+<tr><td>pcm-audio</td><td>-</td><td class='Y'>Y</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>PDF</td><td>-</td><td class='P'>P</td><td class='Y'>Y</td><td class='N'>N</td><td>?</td></tr>
+
+<tr><td>stroke-dash</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td></tr>
+<tr><td>stroke-join-miter</td><td class='Y'>Y</td><td class='N'>N</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>stroke-end-square</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>stroke-join-round</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>stroke-end-round</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>clipping</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td></tr>
+<tr><td>compositing-groups</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td></tr>
+<tr><td>blending-modes</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>text</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>perspective-transform textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
+<tr><td>perspective-transform paths</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
+<tr><td>RGBA</td> <td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>CMYKA</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>linear-gradient</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>radial-gradient</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>conic-gradient</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>mesh-gradient</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td>?</td><td>?</td></tr>
+<tr><td>bilinear textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>nearest textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+
+
+      </table>
+
       <p>ctx provides abstractions for event injection and dispatch. It
       provides hit-detection, this allows abstracting over multiple input
       devices/buttons with a mouse+keyboard abstraction. In the event
       method callback both absolute and local (At time of callback registration)
-      coordinates are provided.
+      coordinates are provided. Interactive ctx backends drive event delivery,
+      if you are implementing the callback backend for microcontrollers and
+      external displays you are expected to turn hardware events into interaction
+      events.
       </p>
+
       <p>
       The same API can also be used for writing applications that run inside
       the <a href='terminal/'>ctx terminal</a>, which provides escape sequences
@@ -89,16 +137,16 @@
 
       <!--<img style='max-width:100%' alt='constant-z rescuing the sixels far far away, tolerance breaking down near framebuffer.' src='perspective.png'/>
       -->
-
-
+<!--
       <img style='max-width:100%' src='esp32.jpg'/>
-
 
       <p>Below is ctx compiled to WASM with emscripten (without SIMD support).
       Operating on a 640x480 canvas.
       </p>
       <canvas style='max-width:100%' width='640' height='480' id='c'>
       </canvas>
+-->
+
 
 <h2 id='license'>license and funding</h2>
 <p> ctx is available under <a
