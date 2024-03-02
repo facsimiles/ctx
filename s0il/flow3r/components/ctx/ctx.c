@@ -35,6 +35,7 @@
 #define CTX_THREADS 0
 #define CTX_TILED 0
 #define CTX_VT 1
+#define CTX_VT_STYLE_SIZE 32
 #define CTX_PTY 0
 #define CTX_PARSER 1
 #define CTX_BAREMETAL 1
