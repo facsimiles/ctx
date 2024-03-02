@@ -1781,10 +1781,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale (CtxRasterizer *rasterizer,
 
  
   int v = yi >> 16;
-
-
   int dv = (yi >> 8) & 0xff;
-
   int u = xi >> 16;
 
   int v1 = v+1;

@@ -15,8 +15,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-parameter \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
-
-CFLAGS+= $(CFLAGS_warnings) -fPIC 
+CFLAGS+= $(CFLAGS_warnings) -fPIC -fomit-frame-pointer
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 
@@ -211,13 +210,11 @@ ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_
 	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) $(CTX_CFLAGS) ctx.o $(CTX_SIMD_OBJS) itk.o deps.o $(LIBS) -static 
 	strip -s -x $@
 
-docs/ctx.h.html: ctx.h Makefile build.conf
-	highlight -l -a --encoding=utf8 -W ctx.h > docs/ctx.h.html
 
 #git gc
 
 foo: ctx
-updateweb: all ctx.static test docs/ctx.h.html
+updateweb: all ctx.static test
 	#make -C docs/uctx
 	git repack
 	(cd docs ; stagit .. )
@@ -227,8 +224,6 @@ updateweb: all ctx.static test docs/ctx.h.html
 	strip -s -x ctx ctx.static
 	cp -f ctx docs/binaries/ctx-x86_64-SDL2
 	cp -f ctx.static docs/binaries/ctx-x86_64-static
-	upx docs/binaries/ctx-x86_64-SDL2
-	upx docs/binaries/ctx-x86_64-static
 	cp -ru tests/* ~/pgo/ctx.graphics/tests
 	#make clean
 	#proot -r /home/pippin/src/isthmus/i486 -b /dev -b /proc -b /sys -b /home/pippin/src/ctx ./configure.sh
