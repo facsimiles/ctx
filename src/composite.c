@@ -128,7 +128,7 @@ inline static int ctx_grad_index (CtxRasterizer *rasterizer, float v)
   return ret;
 }
 
-inline static int ctx_grad_index_i (CtxRasterizer *rasterizer, int v)
+CTX_INLINE static int ctx_grad_index_i (CtxRasterizer *rasterizer, int v)
 {
   v = v >> 8;
   return ctx_maxi (0, ctx_mini (rasterizer->gradient_cache_elements-1, v));
@@ -2716,8 +2716,7 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   for (int i = 0; i < count ; i++)
   {
 #if CTX_GRADIENT_CACHE
-  uint32_t*rgbap = ((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
-  *((uint32_t*)rgba) = *rgbap;
+  *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
 #else
   _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, rgba);
 #endif
