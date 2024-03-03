@@ -2527,7 +2527,7 @@ void itk_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
       }
       else
       {
-              fprintf (stderr, "unhandled %s\n", str);
+              printf ("unhandled %s\n", str);
       }
     }
   event->stop_propagate = 1;

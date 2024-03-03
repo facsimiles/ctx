@@ -1686,7 +1686,6 @@ typedef enum
 
 
 typedef struct _CtxCommand CtxCommand;
-#define CTX_ASSERT               0
 
 #if CTX_ASSERT==1
 #define ctx_assert(a)  if(!(a)){fprintf(stderr,"%s:%i assertion failed\n", __FUNCTION__, __LINE__);  }
