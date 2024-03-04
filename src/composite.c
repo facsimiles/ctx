@@ -1016,7 +1016,7 @@ static void
 ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
                                              float x, float y, float z,
                                              void *out, int scount, float dx, float dy, float dz)
-{
+{ 
   unsigned int count = scount;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   CtxBuffer *buffer = 
@@ -1027,27 +1027,21 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
   int u = (int)x;
   int v = (int)y;
 
-  uint32_t *src = ((uint32_t*)buffer->data) + bwidth * v + u;
-  if (CTX_UNLIKELY(!((v >= 0) & (v < bheight))))
+  if ((!((v >= 0) & (v < bheight))))
   {
     memset (dst, 0, count*4);
     return;
   }
-
-  int pre = ctx_mini(ctx_maxi(-u,0), count);
-  memset (dst, 0, pre);
-  dst +=pre;
-  count-=pre;
-  src+=pre;
-  u+=pre;
-
-  int limit = ctx_mini (count, bwidth - u);
-  if (limit>0)
+  uint32_t *src = ((uint32_t*)buffer->data) + bwidth * v + u;
+  int i = 0;
+  for (; (u<0) & ((unsigned)i < count); i++,u++,src++)
   {
-    memcpy (dst, src, limit * 4);
-    dst += limit;
+    *dst++ = 0;
   }
-  memset (dst, 0, (count - limit)*4);
+  for (; (u<bwidth) & ((unsigned)i<count); i++, u++)
+    *dst++ = *src++;
+  for (; ((unsigned)i<count); i++)
+    *dst++ = 0;
 }
 
 static void
