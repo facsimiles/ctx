@@ -2593,8 +2593,8 @@ ctx_rasterizer_rectangle_reverse (CtxRasterizer *rasterizer,
 static void
 ctx_rasterizer_pset (CtxRasterizer *rasterizer, int x, int y, uint8_t cov)
 {
-  if (x <= 0 || y < 0 || x >= rasterizer->blit_width ||
-      y >= rasterizer->blit_height)
+  if ((x <= 0) | (y < 0) | (x >= rasterizer->blit_width) |
+      (y >= rasterizer->blit_height))
     { return; }
   uint8_t fg_color[4];
   ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_fill.color,
@@ -2833,13 +2833,13 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       CtxSegment *entry2 = &((CtxSegment*)rasterizer->edge_list.entries)[2];
       CtxSegment *entry3 = &((CtxSegment*)rasterizer->edge_list.entries)[3];
 
-      if (!rasterizer->state->gstate.clipped &&
-          (entry0->data.s16[2] == entry1->data.s16[2]) &&
-          (entry0->data.s16[3] == entry3->data.s16[3]) &&
-          (entry1->data.s16[3] == entry2->data.s16[3]) &&
+      if (!rasterizer->state->gstate.clipped &
+          (entry0->data.s16[2] == entry1->data.s16[2]) &
+          (entry0->data.s16[3] == entry3->data.s16[3]) &
+          (entry1->data.s16[3] == entry2->data.s16[3]) &
           (entry2->data.s16[2] == entry3->data.s16[2])
 #if CTX_ENABLE_SHADOW_BLUR
-           && !rasterizer->in_shadow
+           & !rasterizer->in_shadow
 #endif
          )
        {
@@ -3158,8 +3158,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
 
 #if CTX_ENABLE_CLIP
 
-  if ((rasterizer->clip_rectangle==1
-       || !rasterizer->clip_buffer)
+  if (((rasterizer->clip_rectangle==1) | (!rasterizer->clip_buffer))
       )
   {
     if (count == 5)
@@ -3226,7 +3225,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   }
   rasterizer->clip_rectangle = 0;
 
-  if ((minx == maxx) || (miny == maxy)) // XXX : reset hack
+  if ((minx == maxx) | (miny == maxy)) // XXX : reset hack
   {
     ctx_rasterizer_clip_reset (rasterizer);
     return;//goto done;
@@ -4325,8 +4324,8 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
   ((CtxRasterizer*)(ctx->backend))->aa = 
      _ctx_antialias_to_aa (antialias);
   ((CtxRasterizer*)(ctx->backend))->fast_aa = 0;
-  if (antialias == CTX_ANTIALIAS_DEFAULT||
-      antialias == CTX_ANTIALIAS_FAST)
+  if ((antialias == CTX_ANTIALIAS_DEFAULT)|
+      (antialias == CTX_ANTIALIAS_FAST))
     ((CtxRasterizer*)(ctx->backend))->fast_aa = 1;
 }
 
@@ -4350,7 +4349,7 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->texture_source = texture_source?texture_source:ctx;
 
   rasterizer->aa          = _ctx_antialias_to_aa (antialias);
-  rasterizer->fast_aa = (antialias == CTX_ANTIALIAS_DEFAULT||antialias == CTX_ANTIALIAS_FAST);
+  rasterizer->fast_aa = ((antialias == CTX_ANTIALIAS_DEFAULT)|(antialias == CTX_ANTIALIAS_FAST));
   ctx_state_init (rasterizer->state);
   rasterizer->buf         = data;
   rasterizer->blit_x      = x;

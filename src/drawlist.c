@@ -146,9 +146,9 @@ ctx_iterator_next (CtxIterator *iterator)
 {
   CtxEntry *ret;
 #if CTX_BITPACK
-  int expand_bitpack = iterator->flags & CTX_ITERATOR_EXPAND_BITPACK;
+  int expand_bitpack = (iterator->flags & CTX_ITERATOR_EXPAND_BITPACK)!=0;
 again:
-  if (CTX_UNLIKELY(expand_bitpack && iterator->bitpack_length))
+  if (CTX_UNLIKELY(expand_bitpack & (iterator->bitpack_length!=0)))
     {
       ret = &iterator->bitpack_command[iterator->bitpack_pos];
       iterator->bitpack_pos += (ctx_conts_for_entry (ret) + 1);
@@ -161,7 +161,7 @@ again:
 #endif
   ret = _ctx_iterator_next (iterator);
 #if CTX_BITPACK
-  if (CTX_UNLIKELY(ret && expand_bitpack))
+  if (CTX_UNLIKELY((ret != NULL) & (expand_bitpack)))
     switch ((CtxCode)(ret->code))
       {
         case CTX_REL_CURVE_TO_REL_LINE_TO:
@@ -171,7 +171,7 @@ again:
           iterator->bitpack_command[2].code = CTX_CONT;
           iterator->bitpack_command[3].code = CTX_REL_LINE_TO;
           // 0.0 here is a common optimization - so check for it
-          if (ret->data.s8[6]== 0 && ret->data.s8[7] == 0)
+          if ((ret->data.s8[6]== 0) & (ret->data.s8[7] == 0))
             { iterator->bitpack_length = 3; }
           else
             iterator->bitpack_length          = 4;
@@ -816,15 +816,15 @@ ctx_drawlist_bitpack (CtxDrawlist *drawlist, unsigned int start_pos)
                                     to bitpack yet*/
     {
       CtxEntry *entry = &drawlist->entries[i];
-      if (entry[0].code == CTX_SET_RGBA_U8 &&
-          entry[1].code == CTX_MOVE_TO &&
-          entry[2].code == CTX_REL_LINE_TO &&
-          entry[3].code == CTX_REL_LINE_TO &&
-          entry[4].code == CTX_REL_LINE_TO &&
-          entry[5].code == CTX_REL_LINE_TO &&
-          entry[6].code == CTX_FILL &&
-          ctx_fabsf (entry[2].data.f[0] - 1.0f) < 0.02f &&
-          ctx_fabsf (entry[3].data.f[1] - 1.0f) < 0.02f)
+      if ((int)(entry[0].code == CTX_SET_RGBA_U8) &
+          (entry[1].code == CTX_MOVE_TO) &
+          (entry[2].code == CTX_REL_LINE_TO) &
+          (entry[3].code == CTX_REL_LINE_TO) &
+          (entry[4].code == CTX_REL_LINE_TO) &
+          (entry[5].code == CTX_REL_LINE_TO) &
+          (entry[6].code == CTX_FILL) &
+          (ctx_fabsf (entry[2].data.f[0] - 1.0f) < 0.02f) &
+          (ctx_fabsf (entry[3].data.f[1] - 1.0f) < 0.02f))
         {
           entry[0].code = CTX_SET_PIXEL;
           entry[0].data.u16[2] = entry[1].data.f[0];
@@ -839,9 +839,9 @@ ctx_drawlist_bitpack (CtxDrawlist *drawlist, unsigned int start_pos)
 #if 1
       else if (entry[0].code == CTX_REL_LINE_TO)
         {
-          if (entry[1].code == CTX_REL_LINE_TO &&
-              entry[2].code == CTX_REL_LINE_TO &&
-              entry[3].code == CTX_REL_LINE_TO)
+          if ((entry[1].code == CTX_REL_LINE_TO) &
+              (entry[2].code == CTX_REL_LINE_TO) &
+              (entry[3].code == CTX_REL_LINE_TO))
             {
               float max_dev = find_max_dev (entry, 4);
               if (max_dev < 114 / CTX_SUBDIV)
@@ -865,9 +865,9 @@ ctx_drawlist_bitpack (CtxDrawlist *drawlist, unsigned int start_pos)
                   entry[3].code = CTX_NOP;
                 }
             }
-          else if (entry[1].code == CTX_REL_LINE_TO &&
-                   entry[2].code == CTX_REL_LINE_TO &&
-                   entry[3].code == CTX_REL_LINE_TO)
+          else if ((entry[1].code == CTX_REL_LINE_TO) &
+                   (entry[2].code == CTX_REL_LINE_TO) &
+                   (entry[3].code == CTX_REL_LINE_TO))
             {
               float max_dev = find_max_dev (entry, 4);
               if (max_dev < 114 / CTX_SUBDIV)
