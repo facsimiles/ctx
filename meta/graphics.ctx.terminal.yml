@@ -1,6 +1,6 @@
 app-id: graphics.ctx.terminal
 runtime: org.freedesktop.Platform
-runtime-version: '20.08'
+runtime-version: '23.08'
 sdk: org.freedesktop.Sdk
 finish-args:
   - --socket=pulseaudio
@@ -17,7 +17,7 @@ modules:
           sources:
            - type: git
              url: https://gitlab.gnome.org/GNOME/babl.git
-             branch: BABL_0_1_88
+             branch: BABL_0_1_108
         - name: ctx
           buildsystem: simple
           build-commands:
