@@ -1,7 +1,12 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
+
+# hack to prefer clang when available
+CC=`command -v clang || echo cc`
 #CC=musl-gcc
+
+
 CCACHE=`command -v ccache`
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
@@ -15,7 +20,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-parameter \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
-CFLAGS+= $(CFLAGS_warnings) -fPIC -fomit-frame-pointer
+CFLAGS+= $(CFLAGS_warnings) -fPIC 
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 
