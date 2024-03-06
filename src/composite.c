@@ -78,18 +78,6 @@ ctx_RGBA8_mul_alpha_u32(uint32_t val, uint8_t global_alpha)
   return  g|rb|(a << CTX_RGBA8_A_SHIFT);
 }
 
-CTX_INLINE static void
-ctx_RGBA8_associate_alpha_probably_opaque (uint8_t *u8)
-{
-  uint32_t a = u8[3];//val>>24;//u8[3];
-  if (CTX_UNLIKELY(a!=255))
-  {
-    u8[0] = (u8[0] * a + 255) >> 8;
-    u8[1] = (u8[1] * a + 255) >> 8;
-    u8[2] = (u8[2] * a + 255) >> 8;
-  }
-}
-
 CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t isrc00, uint32_t isrc01, uint32_t isrc10, uint32_t isrc11, uint8_t dx, uint8_t dy)
 {
 #if 0
@@ -442,7 +430,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
                                    ctx_lerp_u8 (src10[0], src11[0], dxb), dyb);
             rgba[3] = global_alpha_u8;
             break;
-          case 2:
+	  case 2: // TODO : could be RGB565
             rgba[0] = rgba[1] = rgba[2] = ctx_lerp_u8 (ctx_lerp_u8 (src00[0], src01[0], dxb),
                                    ctx_lerp_u8 (src10[0], src11[0], dxb), dyb);
             rgba[3] = ctx_lerp_u8 (ctx_lerp_u8 (src00[1], src01[1], dxb),
@@ -493,7 +481,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
               { rgba[c] = src[0]; }
             rgba[3] = global_alpha_u8;
             break;
-          case 2:
+          case 2: // todo could be RGB 565
             for (int c = 0; c < 3; c++)
               { rgba[c] = src[0]; }
             rgba[3] = src[1];
@@ -532,7 +520,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
       }
     }
     if (!is_assoc)
-      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+      ctx_RGBA8_associate_alpha (rgba);
     rgba += 4;
     x += dx;
     y += dy;
@@ -725,7 +713,7 @@ ctx_fragment_image_rgb8_RGBA8_box (CtxRasterizer *rasterizer,
           int recip = 65536/count;
           for (int c = 0; c < bpp; c++)
             rgba[c] = sum[c] * recip >> 16;
-          ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+          ctx_RGBA8_associate_alpha (rgba);
     }
     rgba += 4;
     x += dx;
@@ -769,7 +757,7 @@ ctx_RGBA8_apply_global_alpha_and_associate (CtxRasterizer *rasterizer,
   {
     for (int i = 0; i < count; i++)
     {
-      ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+      ctx_RGBA8_associate_alpha (rgba);
       rgba += 4;
     }
   }
@@ -865,7 +853,7 @@ ctx_fragment_image_rgb8_RGBA8_nearest (CtxRasterizer *rasterizer,
     for (unsigned int c = 0; c < 3; c++)
       rgba[c] = data[(bwidth *v +u)*3+c];
     rgba[3] = global_alpha_u8;
-    ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+    ctx_RGBA8_associate_alpha (rgba);
     xi += xi_delta;
     yi += yi_delta;
     zi += zi_delta;
@@ -992,7 +980,7 @@ ctx_fragment_image_rgba8_RGBA8_box (CtxRasterizer *rasterizer,
           for (int c = 0; c < bpp; c++)
             rgba[c] = sum[c] * recip >> 16;
           rgba[3]=rgba[3]*global_alpha_u8/255; // gets lost
-          ctx_RGBA8_associate_alpha_probably_opaque (rgba);
+          ctx_RGBA8_associate_alpha (rgba);
     }
     rgba += 4;
     x += dx;
@@ -1034,6 +1022,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
   }
   uint32_t *src = ((uint32_t*)buffer->data) + bwidth * v + u;
   int i = 0;
+#if 1
   for (; (u<0) & ((unsigned)i < count); i++,u++,src++)
   {
     *dst++ = 0;
@@ -1042,6 +1031,22 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
     *dst++ = *src++;
   for (; ((unsigned)i<count); i++)
     *dst++ = 0;
+#else // TODO : check if this is faster with gcc, the above is faster with clang
+   int pre = ctx_mini(ctx_maxi(-u,0), count);
+   memset (dst, 0, pre);
+   dst +=pre;
+   count-=pre;
+   src+=pre;
+   u+=pre;
+ 
+   int limit = ctx_mini (count, bwidth - u);
+   if (limit>0)
+   {
+     memcpy (dst, src, limit * 4);
+     dst += limit;
+   }
+   memset (dst, 0, (count - limit)*4);
+#endif
 }
 
 static void

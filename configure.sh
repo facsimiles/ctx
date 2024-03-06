@@ -58,7 +58,7 @@ case "$ARCH" in
 esac
 
 
-CFLAGS='-O2 -g -fno-omit-frame-pointer'
+CFLAGS='-O2 -g'
 
 CFLAGS_BACKEND=''
 
