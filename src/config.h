@@ -753,7 +753,7 @@
 #endif
 
 #ifndef CTX_BRANCH_HINTS
-#define CTX_BRANCH_HINTS  1
+#define CTX_BRANCH_HINTS  0
 #endif
 
 #ifdef EMSCRIPTEN
