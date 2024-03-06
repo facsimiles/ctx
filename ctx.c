@@ -12,9 +12,10 @@
 
 #include "local.conf"
 
-#define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl backends
+#define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl/wasm backends
 
-#define CTX_GSTATE_PROTECT 1
+#define CTX_GSTATE_PROTECT       0
+
 #define CTX_MAX_TEXTURES         1024  // default: 32
 				       //
 /* for misc storage with compressed/
@@ -31,8 +32,8 @@
 #define CTX_MAX_KEYDB            128  // default: 64
 #define CTX_GET_CONTENTS         1
 #define CTX_RASTERIZER_AA        3
-#define CTX_FORCE_INLINES        1
 #define CTX_PROTOCOL_U8_COLOR    1
+//#define CTX_CURRENT_PATH         0
 #include "stb_image.h"
 
 #ifdef CTX_SIMD_X86_64_V2

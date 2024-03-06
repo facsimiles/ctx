@@ -20,7 +20,7 @@
 
 
 
-static inline int ctx_compare_edges (const void *ap, const void *bp)
+static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxSegment *a = (const CtxSegment *) ap;
   const CtxSegment *b = (const CtxSegment *) bp;
@@ -57,7 +57,7 @@ static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
     { ctx_edge_qsort (entries, p, high); }
 }
 
-static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
+static CTX_INLINE void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline + 1;
   int next_scanline = scanline + CTX_FULL_AA;
@@ -88,7 +88,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
   rasterizer->ending_edges = ending_edges;
 }
 
-inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
+CTX_INLINE static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
 {
   rasterizer->scanline += count;
   CtxSegment *__restrict__ segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
@@ -115,7 +115,7 @@ inline static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, in
    again feed_edges until middle of scanline if doing non-AA
    or directly render when doing AA
 */
-inline static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries, unsigned int count)
+CTX_INLINE static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries, unsigned int count)
 {
   for(unsigned int i=1; i<count; i++)
    {
@@ -130,7 +130,7 @@ inline static void ctx_edge2_insertion_sort (CtxSegment *segments, int *entries,
    }
 }
 
-inline static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
+CTX_INLINE static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 {
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
