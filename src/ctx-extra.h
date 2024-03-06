@@ -222,19 +222,19 @@ ctx_expf (float x)
 #if !__COSMOPOLITAN__
 #include <math.h>
 #endif
-static inline float ctx_fabsf (float x)           { return fabsf (x); }
-static inline float ctx_floorf (float x)          { return floorf (x); }
-static inline float ctx_asinf (float x)            { return asinf (x); }
-static inline float ctx_sinf (float x)            { return sinf (x); }
-static inline float ctx_atan2f (float y, float x) { return atan2f (y, x); }
-static inline float ctx_hypotf (float a, float b) { return hypotf (a, b); }
-static inline float ctx_acosf (float a)           { return acosf (a); }
-static inline float ctx_cosf (float a)            { return cosf (a); }
-static inline float ctx_tanf (float a)            { return tanf (a); }
-static inline float ctx_expf (float p)            { return expf (p); }
-static inline float ctx_sqrtf (float a)           { return sqrtf (a); }
+static CTX_INLINE float ctx_fabsf (float x)           { return fabsf (x); }
+static CTX_INLINE float ctx_floorf (float x)          { return floorf (x); }
+static CTX_INLINE float ctx_asinf (float x)            { return asinf (x); }
+static CTX_INLINE float ctx_sinf (float x)            { return sinf (x); }
+static CTX_INLINE float ctx_atan2f (float y, float x) { return atan2f (y, x); }
+static CTX_INLINE float ctx_hypotf (float a, float b) { return hypotf (a, b); }
+static CTX_INLINE float ctx_acosf (float a)           { return acosf (a); }
+static CTX_INLINE float ctx_cosf (float a)            { return cosf (a); }
+static CTX_INLINE float ctx_tanf (float a)            { return tanf (a); }
+static CTX_INLINE float ctx_expf (float p)            { return expf (p); }
+static CTX_INLINE float ctx_sqrtf (float a)           { return sqrtf (a); }
 
-static inline float ctx_hypotf_fast (float a, float b)
+static CTX_INLINE float ctx_hypotf_fast (float a, float b)
 {
   return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
 }
