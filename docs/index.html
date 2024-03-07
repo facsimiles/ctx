@@ -73,6 +73,14 @@
              management ctx scales to meet <a href='https://gegl.org/'>GEGL</a>
              and <a href='https://www.gimp.org.'>GIMP</a>s needs.</p>
 
+      <p>The interactive backends of ctx are tailored towards low latency
+      rendering of UIs where only a part of the screen changes, like editing
+      text in a terminal or changing the hover state of a button. Ctx records
+      the drawing commands to draw a frame, and before starting to draw
+      computes a hash for a 6x5 grid dividing the buffer being rendered to.
+      Horizontal chunks of tiles with new hashes compared to the previous frame
+      are then scheduled for rendering on threads.</p>
+
 <style>
 #feat td.Y{ background: #3f3; color:white }
 #feat td.N{ background: #622; color:white }
