@@ -72,6 +72,7 @@ static void ctx_buffer_deinit (CtxBuffer *buffer)
   buffer->data = NULL;
   buffer->free_func = NULL;
   buffer->user_data  = NULL;
+#if CTX_ENABLE_CM
   if (buffer->color_managed)
   {
     if (buffer->color_managed != buffer)
@@ -80,6 +81,7 @@ static void ctx_buffer_deinit (CtxBuffer *buffer)
     }
     buffer->color_managed = NULL;
   }
+#endif
 }
 
 void ctx_buffer_destroy (CtxBuffer *buffer)
@@ -208,6 +210,7 @@ void
 _ctx_texture_prepare_color_management (CtxState      *state,
                                        CtxBuffer     *buffer)
 {
+#if CTX_ENABLE_CM
 // _ctx_texture_lock ();
    switch (buffer->format->pixel_format)
    {
@@ -252,6 +255,7 @@ _ctx_texture_prepare_color_management (CtxState      *state,
      default:
        buffer->color_managed = buffer;
    }
+#endif
 //  _ctx_texture_unlock ();
 }
 

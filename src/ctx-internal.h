@@ -135,7 +135,7 @@ struct _CtxBuffer
   void       *space; 
 #endif
 #endif
-#if 1
+#if CTX_ENABLE_CM
   CtxBuffer          *color_managed; /* only valid for one render target, cache
                                         for a specific space
                                         */
