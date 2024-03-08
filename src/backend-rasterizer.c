@@ -1838,7 +1838,7 @@ static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 
 static inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 {
-  if (rasterizer->has_shape & rasterizer->has_prev)
+  if (rasterizer->has_shape & (rasterizer->has_prev>0))
     {
       ctx_rasterizer_line_to (rasterizer, rasterizer->first_x, rasterizer->first_y);
       rasterizer->has_prev = 0;
@@ -1854,10 +1854,10 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
 {
   int tx = 0, ty = 0;
 
+  rasterizer->first_x  =
   rasterizer->x        = x;
+  rasterizer->first_y  =
   rasterizer->y        = y;
-  rasterizer->first_x  = x;
-  rasterizer->first_y  = y;
   rasterizer->has_prev = -1;
   _ctx_user_to_device_prepped (rasterizer->state, x,y, &tx, &ty);
 
