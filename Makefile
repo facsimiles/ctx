@@ -3,7 +3,7 @@ PREFIX  ?= /usr/local
 
 
 # hack to prefer clang when available
-CC=`command -v clang || echo cc`
+#CC=`command -v clang-16 || echo cc`
 #CC=musl-gcc
 
 
