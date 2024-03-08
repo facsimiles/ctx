@@ -1022,21 +1022,24 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
   }
   uint32_t *src = ((uint32_t*)buffer->data) + bwidth * v + u;
 #if defined(__GNUC__) && !defined(__clang__)
-   int pre = ctx_mini(ctx_maxi(-u,0), count);
-   memset (dst, 0, pre);
-   dst +=pre;
-   count-=pre;
-   src+=pre;
-   u+=pre;
+  int pre = ctx_mini(ctx_maxi(-u,0), count);
+  for (int i = 0; i < pre;i++)
+  { *dst++ = 0; }
+  count-=pre;
+  src+=pre;
+  u+=pre;
  
-   int limit = ctx_mini (count, bwidth - u);
-   if (limit>0)
-   {
-     memcpy (dst, src, limit * 4);
-     dst += limit;
-   }
-   memset (dst, 0, (count - limit)*4);
-#else // TODO : check if this is faster with gcc, the above is faster with clang
+  int limit = ctx_mini (count, bwidth - u);
+  if (limit>0)
+  {
+    for (int i = 0; i < limit;i++)
+     { *dst++ = *src++; }
+  }
+
+  count-=limit;
+  for (unsigned int i = 0; i < count; i++)
+    *dst++ = 0;
+#else
   int i = 0;
   for (; (u<0) & ((unsigned)i < count); i++,u++,src++)
     *dst++ = 0;
