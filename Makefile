@@ -71,6 +71,9 @@ build.conf:
 demos/c/%: demos/c/%.c build.conf Makefile build.conf itk/itk.h libctx.a 
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
+fonts/%.h: tools/ctx-fontgen
+	make -C fonts %.h
+
 fonts/ctx-font-ascii.h: tools/ctx-fontgen Makefile
 	make -C fonts ctx-font-ascii.h \
 		Arimo-Regular.h \

@@ -2663,7 +2663,7 @@ qagain:
 #endif
                   }
 
-                if (!vt->ctxp)
+                //if (!vt->ctxp)
                 {
 
                 if (vt->ctxp)
