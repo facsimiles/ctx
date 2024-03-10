@@ -189,9 +189,9 @@
 #endif
 
 
-// 3 5 or 15
+// 3 5 or 15 - this is the AA used for worst-case scanlines; with crossings or edge start|ends
 #ifndef CTX_RASTERIZER_AA
-#define CTX_RASTERIZER_AA 5   // vertical-AA of CTX_ANTIALIAS_DEFAULT
+#define CTX_RASTERIZER_AA 5    // vertical-AA of CTX_ANTIALIAS_DEFAULT
 #endif
 
 /* The maximum complexity of a single path

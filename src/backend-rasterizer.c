@@ -1454,6 +1454,107 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 
 
 static void
+ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
+{
+	 // XXX : there is crashes in this - should be fixes as code paths are shared
+	 //  with actual code
+  rasterizer->pending_edges   =   
+  rasterizer->active_edges    =   0;
+  CtxGState     *gstate     = &rasterizer->state->gstate;
+  int       is_winding  = fill_rule == CTX_FILL_RULE_WINDING;
+  const int real_aa     = rasterizer->aa;
+  uint8_t  *dst         = ((uint8_t *) rasterizer->buf);
+  int       scan_start  = rasterizer->blit_y * CTX_FULL_AA;
+  int       scan_end    = scan_start + (rasterizer->blit_height - 1) * CTX_FULL_AA;
+  const int blit_width  = rasterizer->blit_width;
+  const int blit_max_x  = rasterizer->blit_x + blit_width;
+  int       minx        = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
+  int       maxx        = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
+                          rasterizer->blit_x;
+  const int blit_stride = rasterizer->blit_stride;
+
+  uint8_t *rasterizer_src = rasterizer->color;
+
+  if (maxx > blit_max_x - 1)
+    { maxx = blit_max_x - 1; }
+
+  minx = ctx_maxi (gstate->clip_min_x, minx);
+  maxx = ctx_mini (gstate->clip_max_x, maxx);
+  minx *= (minx>0);
+ 
+
+  int pixs = maxx - minx + 1;
+  uint8_t _coverage[pixs];
+  uint8_t *coverage = &_coverage[0];
+
+  rasterizer->scan_min -= (rasterizer->scan_min % CTX_FULL_AA);
+  {
+     if (rasterizer->scan_min > scan_start)
+       {
+          dst += (rasterizer->blit_stride * (rasterizer->scan_min-scan_start) / CTX_FULL_AA);
+          scan_start = rasterizer->scan_min;
+       }
+      scan_end = ctx_mini (rasterizer->scan_max, scan_end);
+  }
+
+  if (CTX_UNLIKELY(gstate->clip_min_y * CTX_FULL_AA > scan_start ))
+    { 
+       dst += (rasterizer->blit_stride * (gstate->clip_min_y * CTX_FULL_AA -scan_start) / CTX_FULL_AA);
+       scan_start = gstate->clip_min_y * CTX_FULL_AA; 
+    }
+  scan_end = ctx_mini (gstate->clip_max_y * CTX_FULL_AA, scan_end);
+  if (CTX_UNLIKELY((minx >= maxx) | (scan_start > scan_end) |
+      (scan_start > (rasterizer->blit_y + (rasterizer->blit_height-1)) * CTX_FULL_AA) |
+      (scan_end < (rasterizer->blit_y) * CTX_FULL_AA)))
+  { 
+    /* not affecting this rasterizers scanlines */
+    return;
+  }
+
+  ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
+  rasterizer->scanline = scan_start;
+
+  for (; rasterizer->scanline <= scan_end;)
+    {
+      int aa = ctx_rasterizer_feed_edges_full (rasterizer);
+      if (aa >=0)
+        { /* level of oversampling based on lowest steepness edges */
+          if (aa > real_aa) aa = real_aa;
+	  if (aa == 0) aa = 15; // XXX might be horiz-edges speed sink
+          int scanline_increment = 15/aa;
+          memset (coverage, 0, pixs);
+          uint8_t fraction = 255/aa;
+          for (int i = 0; i < CTX_FULL_AA; i+= scanline_increment)
+          {
+            if (i) ctx_rasterizer_feed_edges (rasterizer);
+            ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
+            ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
+            ctx_rasterizer_increment_edges (rasterizer, scanline_increment);
+          }
+
+      ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx, NULL, NULL);
+      rasterizer->apply_coverage (rasterizer,
+                      &dst[(minx * rasterizer->format->bpp) /8],
+                      rasterizer_src,
+                      minx,
+                      coverage,
+                      pixs);
+      dst += blit_stride;
+
+        }
+      else
+        {
+          rasterizer->scanline += CTX_FULL_AA;
+          dst += blit_stride;
+        }
+  
+    }
+
+}
+
+
+
+static void
 ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
 {
   rasterizer->pending_edges   =   
