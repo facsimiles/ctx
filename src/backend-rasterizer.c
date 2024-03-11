@@ -1,5 +1,4 @@
 
-
 #ifndef __clang__
 #if CTX_RASTERIZER_O3
 #pragma GCC push_options
@@ -2045,13 +2044,11 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
 {
   float t = (s + e) * 0.5f;
   float x, y;
-  float lx, ly, dx, dy;
+  float dx, dy;
   ctx_bezier_sample (ox, oy, x0, y0, x1, y1, x2, y2, t, &x, &y);
-  lx = ctx_lerpf (sx, ex, t);
-  ly = ctx_lerpf (sy, ey, t);
-  dx = lx - x;
-  dy = ly - y;
-  if ((iteration < 6) & ((dx*dx+dy*dy) > tolerance))
+  dx = (sx+ex)/2 - x;
+  dy = (sy+ey)/2 - y;
+  if ((iteration < 6) & (((long)dx*dx+dy*dy) > tolerance))
   {
     ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
                                   sx, sy, x, y, s, t, iteration + 1,
@@ -2106,27 +2103,25 @@ ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
                                     int ex, int ey,
                                     int s,
                                     int e,
-                                    int iteration,
-                                    int tolerance)
+                                    int iteration, long int tolerance)
 {
   int t = (s + e) / 2;
   int x, y;
-  int lx, ly, dx, dy;
+  int dx, dy;
   ctx_bezier_sample_fixed (ox, oy, x0, y0, x1, y1, x2, y2, t, &x, &y);
-  lx = ctx_lerp_fixed (sx, ex, t);
-  ly = ctx_lerp_fixed (sy, ey, t);
-  dx = lx - x;
-  dy = ly - y;
-  if ((iteration < 6) & (((dx*dx+dy*dy))  > tolerance))
+  dx = (sx+ex)/2 - x;
+  dy = (sy+ey)/2 - y;
+
+  if ((iteration < 6) & (((long)dx*dx+dy*dy) > tolerance))
   {
     iteration++;
     ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                  sx, sy, x, y, s, t, iteration,
-                                  tolerance);
+                                  sx, sy, x, y, s, t, iteration, tolerance
+                                  );
     ctx_rasterizer_line_to_fixed (rasterizer, x, y);
     ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                  x, y, ex, ey, t, e, iteration,
-                                  tolerance);
+                                  x, y, ex, ey, t, e, iteration, tolerance
+                                  );
   }
 }
 
@@ -2136,23 +2131,21 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
                          float x1, float y1,
                          float x2, float y2)
 {
-#if CTX_32BIT_SEGMENTS
-  float tolerance = 0.4f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-#else
-  float tolerance = 0.5f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-#endif
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
 
-  tolerance = tolerance * tolerance;
+  float tolerance = 0.42f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
 
 #if 1
+  tolerance *= CTX_FIX_SCALE;
+  tolerance *= tolerance;
   ctx_rasterizer_bezier_divide_fixed (rasterizer,
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x0 * CTX_FIX_SCALE), (int)(y0 * CTX_FIX_SCALE),
             (int)(x1 * CTX_FIX_SCALE), (int)(y1 * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE),
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE),
-            0, CTX_FIX_SCALE, 0, (int)(tolerance * CTX_FIX_SCALE * CTX_FIX_SCALE));
+            0, CTX_FIX_SCALE, 0, (long)tolerance);
 #else
+  tolerance *= tolerance;
   ctx_rasterizer_bezier_divide (rasterizer,
                                 ox, oy, x0, y0,
                                 x1, y1, x2, y2,

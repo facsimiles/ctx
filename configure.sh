@@ -45,7 +45,7 @@ pkg-config babl    && HAVE_BABL=1
 pkg-config libcurl && HAVE_LIBCURL=1
 pkg-config alsa    && HAVE_ALSA=1
 pkg-config libdrm  && HAVE_KMS=1
-#pkg-config harfbuzz && HAVE_HARFBUZZ=1
+pkg-config harfbuzz && HAVE_HARFBUZZ=1
 
 
 
