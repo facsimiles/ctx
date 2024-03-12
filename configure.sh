@@ -267,6 +267,7 @@ fi
 if [ $HAVE_HARFBUZZ = 1 ];then
   echo "#define CTX_HARFBUZZ 1 " >> local.conf
   echo "CTX_CFLAGS+= `pkg-config harfbuzz --cflags`" >> build.conf
+  echo "CTX_CFLAGS+= -DCTX_HARFBUZZ=1 " >> build.conf
   echo "CTX_LIBS+= `pkg-config harfbuzz --libs` " >> build.conf
 else
   echo "#define CTX_HARFBUZZ 0 " >> local.conf
@@ -311,6 +312,7 @@ case "$ARCH" in
    *)         ;;
 esac
 
+
 if [ $HAVE_SIMD = 1 ];then
   echo "CTX_CFLAGS+= -DCTX_SIMD=1 " >> build.conf
   echo "CTX_SIMD=1" >>  build.conf
@@ -321,6 +323,7 @@ fi
 echo "CTX_ARCH=$ARCH" >>  build.conf
 echo "CFLAGS=$CFLAGS" >> build.conf
 echo "LIBS=$LIBS" >> build.conf
+
 
 #echo CCACHE=`command -v ccache` >> build.conf
 
