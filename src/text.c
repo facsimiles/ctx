@@ -218,6 +218,12 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 }
 #endif
 
+
+
+
+
+
+
 static inline int ctx_font_get_length (CtxFont *font)
 {
    return font->ctx.data->data.u32[1];
@@ -639,6 +645,176 @@ ctx_load_font_ctx_fs (const char *name, const void *path, int length) // length 
 
 #endif
 
+#if CTX_FONT_ENGINE_HARFBUZZ
+
+static float
+ctx_glyph_kern_hb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
+{
+#if 0
+  float font_size = ctx->state.gstate.font_size;
+  int first_kern = ctx_glyph_find_ctx (font, ctx, unicharA);
+  if (first_kern < 0) return 0.0;
+  for (int i = first_kern + 1; i < font->ctx.length; i++)
+    {
+      CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
+      if (entry->code == CTX_KERNING_PAIR)
+        {
+          if (entry->data.u16[0] == unicharA && entry->data.u16[1] == unicharB)
+            { return entry->data.s32[1] / 255.0f * font_size / CTX_BAKE_FONT_SIZE; }
+        }
+      if (entry->code == CTX_DEFINE_GLYPH)
+        return 0.0;
+    }
+#endif
+  return 0.0;
+}
+
+static float
+ctx_glyph_width_hb (CtxFont *font, Ctx *ctx, uint32_t unichar)
+{
+  CtxState *state = &ctx->state;
+  float font_size = state->gstate.font_size;
+  hb_codepoint_t glyph_id;
+  if (!hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id))
+     return 0.0f;
+  return hb_font_get_glyph_h_advance (font->hb.font, glyph_id) *
+	    font_size / font->hb.x_scale;
+}
+
+static int
+ctx_glyph_hb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
+{
+  CtxState *state = &ctx->state;
+  float font_size = state->gstate.font_size;
+  ctx_save (ctx);
+  float origin_x = state->x;
+  float origin_y = state->y;
+  hb_codepoint_t glyph_id;
+  hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id);
+  if (!hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id))
+     return 0;
+  ctx_current_point (ctx, &origin_x, &origin_y);
+  ctx_translate (ctx, origin_x, origin_y);
+  ctx_scale (ctx, font_size/font->hb.x_scale, font_size/font->hb.y_scale);
+
+#if HB_VERSION_MAJOR >= 7
+  hb_font_draw_glyph (font->hb.font, glyph_id, font->hb.draw_funcs, ctx);
+#else
+  hb_font_get_glyph_shape (font->hb.font, glyph_id, font->hb.draw_funcs, ctx);
+#endif
+  if (stroke)
+    ctx_stroke (ctx);
+  else
+    ctx_fill (ctx);
+
+  ctx_restore (ctx);
+  return 0;
+}
+
+int
+ctx_load_font_hb (const char *name, const void *data, int length);
+
+static CtxFontEngine ctx_font_engine_hb =
+{
+#if CTX_FONTS_FROM_FILE
+  NULL,
+#endif
+  ctx_load_font_hb,
+  ctx_glyph_hb,
+  ctx_glyph_width_hb,
+  ctx_glyph_kern_hb,
+};
+
+typedef struct ctx_font_hb_data {
+  Ctx *ctx;
+} ctx_font_hb_data;
+
+static void
+ctx_hb_close_path (hb_draw_funcs_t *, Ctx *ctx,
+                   hb_draw_state_t *,    
+                   void *)
+{
+  ctx_close_path (ctx);
+}
+
+static void
+ctx_hb_move_to (hb_draw_funcs_t *, Ctx *ctx,
+                hb_draw_state_t *,    
+                float to_x, float to_y,
+                void *)
+{
+  ctx_move_to (ctx, to_x, -to_y);
+}
+
+static void
+ctx_hb_line_to (hb_draw_funcs_t *, Ctx *ctx,
+                hb_draw_state_t *,    
+                float to_x, float to_y,
+                void *)
+{
+  ctx_line_to (ctx, to_x, -to_y);
+}
+
+static void
+ctx_hb_quadratic_to (hb_draw_funcs_t *, Ctx *ctx,
+                     hb_draw_state_t *,
+                     float control_x, float control_y,
+                     float to_x, float to_y,
+                     void *)
+{
+  ctx_quad_to (ctx, control_x, -control_y,
+                               to_x, -to_y);
+}
+
+static void
+ctx_hb_cubic_to (hb_draw_funcs_t *, Ctx *ctx,
+                 hb_draw_state_t *,
+                 float control1_x, float control1_y,
+                 float control2_x, float control2_y,
+                 float to_x, float to_y,
+                 void *)
+{
+  ctx_curve_to (ctx, control1_x, -control1_y,
+                     control2_x, -control2_y,
+                     to_x, -to_y);
+}
+
+
+
+int
+ctx_load_font_hb (const char *name, const void *path, int length) // length is ignored
+{
+  ctx_font_setup (NULL);
+  if (ctx_font_count >= CTX_MAX_FONTS)
+    { return -1; }
+  CtxFont *font = &ctx_fonts[ctx_font_count];
+
+  font->type = 4;
+  font->hb.name = strdup (name);
+  font->hb.path = ctx_strdup (path);
+  font->hb.blob = hb_blob_create_from_file(path);
+  font->hb.face = hb_face_create(
+      font->hb.blob, 0);
+  font->hb.font = hb_font_create(
+      font->hb.face);
+  font->engine = &ctx_font_engine_hb;
+  hb_draw_funcs_t *funcs = hb_draw_funcs_create ();
+  font->hb.draw_funcs = funcs;
+
+  hb_draw_funcs_set_move_to_func (funcs, (hb_draw_move_to_func_t) ctx_hb_move_to, NULL, NULL);
+  hb_draw_funcs_set_line_to_func (funcs, (hb_draw_line_to_func_t) ctx_hb_line_to, NULL, NULL);
+  hb_draw_funcs_set_quadratic_to_func (funcs, (hb_draw_quadratic_to_func_t) ctx_hb_quadratic_to, NULL, NULL);
+  hb_draw_funcs_set_cubic_to_func (funcs, (hb_draw_cubic_to_func_t) ctx_hb_cubic_to, NULL, NULL);
+  hb_draw_funcs_set_close_path_func (funcs, (hb_draw_close_path_func_t) ctx_hb_close_path, NULL, NULL);
+
+  hb_font_get_scale(font->hb.font, &font->hb.x_scale, &font->hb.y_scale);
+  ctx_font_count++;
+
+  return ctx_font_count-1;
+}
+
+#endif
+
 int
 _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 {
@@ -923,12 +1099,12 @@ _ctx_text (Ctx        *ctx,
     { ctx_move_to (ctx, x, y); }
 }
 
-
 CtxGlyph *
 ctx_glyph_allocate (int n_glyphs)
 {
   return (CtxGlyph *) ctx_malloc (sizeof (CtxGlyph) * n_glyphs);
 }
+
 void
 ctx_glyph_free     (CtxGlyph *glyphs)
 {
@@ -1021,6 +1197,7 @@ ctx_font_get_vmetrics (Ctx *ctx,
   //    font_size = ctx->state.gstate.font_size;
   switch (font->type)
   {
+    case 4:
 #if CTX_FONT_ENGINE_CTX_FS
     case 3:
 #endif
@@ -1079,6 +1256,9 @@ static const char *ctx_font_get_name (CtxFont *font)
 #endif
 #if CTX_FONT_ENGINE_CTX_FS
     case 3:  return font->ctx_fs.name;
+#endif
+#if CTX_FONT_ENGINE_HARFBUZZ
+    case 4:  return font->hb.name;
 #endif
   }
   return "-";
@@ -1276,6 +1456,8 @@ static void ctx_font_setup (Ctx *ctx)
     ctx->fonts = &ctx_fonts[0];
 
   ctx_font_count = 0; 
+
+
 
 #if CTX_FONT_ENGINE_CTX_FS
   if (getenv ("CTX_FONT_LIVE_PATH"))

@@ -374,6 +374,9 @@ struct _CtxFontEngine
   float (*glyph_kern)  (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB);
 };
 
+#if CTX_FONT_ENGINE_HARFBUZZ
+#include <hb.h>
+#endif
 
 #pragma pack(push,1)
 struct _CtxFont
@@ -405,6 +408,22 @@ struct _CtxFont
       stbtt_fontinfo ttf_info;
     } stb;
 #endif
+#if CTX_FONT_ENGINE_HARFBUZZ
+    struct
+    {
+      const char *name;
+      char *path;
+      hb_blob_t *blob;
+      hb_face_t *face;
+      hb_font_t *font;
+      hb_draw_funcs_t *draw_funcs;
+      int x_scale;
+      int y_scale;
+    } hb;
+#endif
+
+
+
 #if 0
     struct { int start; int end; int gw; int gh; const uint8_t *data;} monobitmap;
 #endif

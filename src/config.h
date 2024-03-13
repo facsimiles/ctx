@@ -411,6 +411,15 @@
 #define CTX_FONT_ENGINE_STB        0
 #endif
 
+
+#if CTX_HARFBUZZ
+#ifndef CTX_FONT_ENGINE_HARFBUZZ
+#define CTX_FONT_ENGINE_HARFBUZZ   1
+#endif
+#else
+#define CTX_FONT_ENGINE_HARFBUZZ   0
+#endif
+
 #ifndef CTX_BABL
 #ifdef _BABL_H
 #define CTX_BABL 1
