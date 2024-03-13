@@ -465,12 +465,16 @@ CtxGlyph *ctx_glyph_allocate     (int n_glyphs);
 void      ctx_glyph_free         (CtxGlyph   *glyphs);
 /**
  */
-int       ctx_glyph              (Ctx        *ctx, uint32_t unichar, int stroke);
+int       ctx_glyph              (Ctx        *ctx, uint32_t glyphid, int stroke);
 /**
  */
 void      ctx_glyphs             (Ctx        *ctx,
                                   CtxGlyph   *glyphs,
                                   int         n_glyphs);
+
+int
+ctx_glyph_id_from_unichar (Ctx *ctx, uint32_t unichar);
+
 /**
  */
 void  ctx_glyphs_stroke          (Ctx        *ctx,
@@ -2520,6 +2524,7 @@ int ctx_vt_read (Ctx *ctx);
 
 
 int ctx_vt_cursor_y (CtxClient *client);
+
 
 //#if CTX_GSTATE_PROTECT
 /* sets the current gstate stack (number of unpaired ctx_save calls) as a
