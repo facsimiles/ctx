@@ -678,7 +678,7 @@ ctx_glyph_width_hb (CtxFont *font, Ctx *ctx, uint32_t unichar)
   if (!hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id))
      return 0.0f;
   return hb_font_get_glyph_h_advance (font->hb.font, glyph_id) *
-	    font_size / font->hb.x_scale;
+	    font_size * font->hb.scale;
 }
 
 static int
@@ -695,7 +695,9 @@ ctx_glyph_hb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
      return 0;
   ctx_current_point (ctx, &origin_x, &origin_y);
   ctx_translate (ctx, origin_x, origin_y);
-  ctx_scale (ctx, font_size/font->hb.x_scale, font_size/font->hb.y_scale);
+
+  // XXX : perhaps we can tell harfbuzz about this factor?
+  ctx_scale (ctx, font_size*font->hb.scale, font_size*font->hb.scale);
 
 #if HB_VERSION_MAJOR >= 7
   hb_font_draw_glyph (font->hb.font, glyph_id, font->hb.draw_funcs, ctx);
@@ -730,49 +732,49 @@ typedef struct ctx_font_hb_data {
 } ctx_font_hb_data;
 
 static void
-ctx_hb_close_path (hb_draw_funcs_t *, Ctx *ctx,
-                   hb_draw_state_t *,    
-                   void *)
+ctx_hb_close_path (hb_draw_funcs_t *df, Ctx *ctx,
+                   hb_draw_state_t *ds,    
+                   void *data)
 {
   ctx_close_path (ctx);
 }
 
 static void
-ctx_hb_move_to (hb_draw_funcs_t *, Ctx *ctx,
-                hb_draw_state_t *,    
+ctx_hb_move_to (hb_draw_funcs_t *df, Ctx *ctx,
+                hb_draw_state_t *ds,    
                 float to_x, float to_y,
-                void *)
+                void *data)
 {
   ctx_move_to (ctx, to_x, -to_y);
 }
 
 static void
-ctx_hb_line_to (hb_draw_funcs_t *, Ctx *ctx,
-                hb_draw_state_t *,    
+ctx_hb_line_to (hb_draw_funcs_t *df, Ctx *ctx,
+                hb_draw_state_t *ds,    
                 float to_x, float to_y,
-                void *)
+                void *data)
 {
   ctx_line_to (ctx, to_x, -to_y);
 }
 
 static void
-ctx_hb_quadratic_to (hb_draw_funcs_t *, Ctx *ctx,
-                     hb_draw_state_t *,
+ctx_hb_quadratic_to (hb_draw_funcs_t *df, Ctx *ctx,
+                     hb_draw_state_t *ds,
                      float control_x, float control_y,
                      float to_x, float to_y,
-                     void *)
+                     void *data)
 {
   ctx_quad_to (ctx, control_x, -control_y,
                                to_x, -to_y);
 }
 
 static void
-ctx_hb_cubic_to (hb_draw_funcs_t *, Ctx *ctx,
-                 hb_draw_state_t *,
+ctx_hb_cubic_to (hb_draw_funcs_t *df, Ctx *ctx,
+                 hb_draw_state_t *ds,
                  float control1_x, float control1_y,
                  float control2_x, float control2_y,
                  float to_x, float to_y,
-                 void *)
+                 void *data)
 {
   ctx_curve_to (ctx, control1_x, -control1_y,
                      control2_x, -control2_y,
@@ -799,6 +801,19 @@ ctx_load_font_hb (const char *name, const void *path, int length) // length is i
       font->hb.face);
   font->engine = &ctx_font_engine_hb;
   hb_draw_funcs_t *funcs = hb_draw_funcs_create ();
+#if HB_VERSION_MAJOR >= 7
+  hb_paint_funcs_t *pfuncs = hb_paint_funcs_create ();
+  font->hb.paint_funcs = pfuncs;
+
+#if 0
+  hb_paint_funcs_set_move_to_func (pfuncs, (hb_draw_move_to_func_t) ctx_hb_move_to, NULL, NULL);
+  hb_draw_funcs_set_line_to_func (funcs, (hb_draw_line_to_func_t) ctx_hb_line_to, NULL, NULL);
+  hb_draw_funcs_set_quadratic_to_func (funcs, (hb_draw_quadratic_to_func_t) ctx_hb_quadratic_to, NULL, NULL);
+  hb_draw_funcs_set_cubic_to_func (funcs, (hb_draw_cubic_to_func_t) ctx_hb_cubic_to, NULL, NULL);
+  hb_draw_funcs_set_close_path_func (funcs, (hb_draw_close_path_func_t) ctx_hb_close_path, NULL, NULL);
+#endif
+
+#endif
   font->hb.draw_funcs = funcs;
 
   hb_draw_funcs_set_move_to_func (funcs, (hb_draw_move_to_func_t) ctx_hb_move_to, NULL, NULL);
@@ -807,7 +822,13 @@ ctx_load_font_hb (const char *name, const void *path, int length) // length is i
   hb_draw_funcs_set_cubic_to_func (funcs, (hb_draw_cubic_to_func_t) ctx_hb_cubic_to, NULL, NULL);
   hb_draw_funcs_set_close_path_func (funcs, (hb_draw_close_path_func_t) ctx_hb_close_path, NULL, NULL);
 
-  hb_font_get_scale(font->hb.font, &font->hb.x_scale, &font->hb.y_scale);
+  int x_scale, y_scale;
+  hb_font_extents_t extents;
+  hb_font_get_h_extents (font->hb.font, &extents);
+
+  hb_font_get_scale(font->hb.font, &x_scale, &y_scale);
+
+  font->hb.scale = 1.0f / (extents.ascender - extents.descender);
   ctx_font_count++;
 
   return ctx_font_count-1;
@@ -892,6 +913,7 @@ _ctx_glyphs (Ctx     *ctx,
       {
         uint32_t unichar = glyphs[i].index;
         ctx_move_to (ctx, glyphs[i].x, glyphs[i].y);
+
         ctx_glyph (ctx, unichar, stroke);
       }
     }
@@ -1029,8 +1051,10 @@ _ctx_text (Ctx        *ctx,
             const char *next_utf8 = ctx_utf8_skip (bp, 1);
             uint32_t next_unichar = *next_utf8?ctx_utf8_to_unichar (next_utf8):0;
 
+#if 0
             if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next_unichar))
               bp++;
+#endif
 
             float glyph_width     = ctx_glyph_width (ctx, unichar);
             word_width += glyph_width;
@@ -1051,8 +1075,10 @@ _ctx_text (Ctx        *ctx,
             const char *next_utf8 = ctx_utf8_skip (bp, 1);
             uint32_t next_unichar = *next_utf8?ctx_utf8_to_unichar (next_utf8):0;
 
+#if 0
             if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next_unichar))
               bp++;
+#endif
 
             float glyph_width = ctx_glyph_width (ctx, unichar);
             if (x + glyph_width >= x1)

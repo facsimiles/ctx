@@ -417,8 +417,12 @@ struct _CtxFont
       hb_face_t *face;
       hb_font_t *font;
       hb_draw_funcs_t *draw_funcs;
-      int x_scale;
-      int y_scale;
+#if HB_VERSION_MAJOR >= 7
+      hb_paint_funcs_t *paint_funcs;
+#endif
+      //int x_scale;
+      //int y_scale;
+      float scale;
     } hb;
 #endif
 

@@ -1003,7 +1003,7 @@ typedef enum
 struct
 _CtxGlyph
 {
-  uint32_t index;
+  uint32_t index; // not unichar
   float    x;
   float    y;
 };
@@ -1079,6 +1079,7 @@ float ctx_text_width    (Ctx        *ctx,
 float ctx_glyph_width   (Ctx *ctx, int unichar);
 
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
+int   ctx_load_font_hb (const char *name, const void *path, int length_ignored);
 
 
 /**
