@@ -2471,7 +2471,7 @@ ctx_rasterizer_find_term_glyph (CtxRasterizer *rasterizer, int col, int row)
 }
 #endif
 
-static int _ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke);
+static int _ctx_glyph (Ctx *ctx, int glyph_id, int stroke);
 static void
 ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
 {

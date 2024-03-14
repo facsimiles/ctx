@@ -44,15 +44,13 @@ add_glyph_real (Ctx *ctx, uint32_t glyph)
   ctx_start_frame (ctx);
   ctx_font_size (ctx, CTX_BAKE_FONT_SIZE);
   ctx_move_to (ctx, 0, 0);
-  if (ctx_glyph (ctx, glyph, 0))
+  if (ctx_glyph_unichar (ctx, glyph, 0))
     return;
   glyphs[n_glyphs++] = glyph;
   ctx->drawlist.flags = CTX_TRANSFORMATION_BITPACK;
   ctx_drawlist_compact (&ctx->drawlist);
-
-  char buf[44]={0,0,0,0,0};
-  ctx_unichar_to_utf8 (glyph, (uint8_t*)buf);
-  uint32_t args[2] = {glyph, ctx_glyph_width (ctx, glyph) * 256};
+  //char buf[44]={0,0,0,0,0};
+  uint32_t args[2] = {glyph, ctx_glyph_width (ctx, ctx_glyph_lookup (ctx, glyph)) * 256};
   ctx_drawlist_add_u32 (&output_font, CTX_DEFINE_GLYPH, args);
 
   for (unsigned int i = 3; i < ctx->drawlist.count - 1; i++)

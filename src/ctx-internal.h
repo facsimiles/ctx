@@ -369,10 +369,12 @@ struct _CtxFontEngine
   int   (*load_file)   (const char *name, const char *path);
 #endif
   int   (*load_memory) (const char *name, const void *data, int length);
-  int   (*glyph)       (CtxFont *font, Ctx *ctx, uint32_t glyphid, int stroke);
-  float (*glyph_width) (CtxFont *font, Ctx *ctx, uint32_t glyphid);
-  float (*glyph_kern)  (CtxFont *font, Ctx *ctx, uint32_t glyphid, uint32_t unicharB);
-  int   (*glyph_find)  (CtxFont *font, Ctx *ctx, uint32_t unichar);
+  int   (*glyph)       (CtxFont *font, Ctx *ctx, int glyphid, int stroke);
+  float (*glyph_width) (CtxFont *font, Ctx *ctx, int glyphid);
+  float (*glyph_kern)  (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB);
+
+  // return -1 for not found or 0 or positive number for found glyph
+  int   (*glyph_lookup)  (CtxFont *font, Ctx *ctx, uint32_t unichar);
 };
 
 #if CTX_FONT_ENGINE_HARFBUZZ

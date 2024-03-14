@@ -21,11 +21,11 @@ static inline int ctx_font_is_monospaced (CtxFont *font)
 
 #if CTX_FONT_ENGINE_STB
 static float
-ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar);
+ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, int glyph_id);
 static float
 ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB);
 static int
-ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke);
+ctx_glyph_stb (CtxFont *font, Ctx *ctx, int glyph_id, int stroke);
 
 static int
 ctx_glyph_stb_find (CtxFont *font, Ctx *ctx, uint32_t unichar);
@@ -78,8 +78,8 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
   ctx_fonts[ctx_font_count].engine = &ctx_font_engine_stb;
 
   CtxFont *font = &ctx_fonts[ctx_font_count];
-  if (font->engine->glyph_width (font, NULL, 'O') ==
-      font->engine->glyph_width (font, NULL, 'I'))
+  if (font->engine->glyph_width (font, NULL, font->engine->glyph_lookup(font, NULL, 'O')) ==
+      font->engine->glyph_width (font, NULL, font->engine->glyph_lookup(font, NULL, 'I')))
   {
     font->monospaced = 1;
   }
@@ -91,6 +91,7 @@ ctx_load_font_ttf (const char *name, const void *ttf_contents, int length)
 }
 
 #if CTX_FONTS_FROM_FILE
+
 int
 ctx_load_font_ttf_file (const char *name, const char *path)
 {
@@ -138,7 +139,7 @@ ctx_glyph_stb_find (CtxFont *font, Ctx *ctx, uint32_t unichar)
 }
 
 static float
-ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
+ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, int glyph)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
   float font_size          = 1.0f;
@@ -146,7 +147,6 @@ ctx_glyph_width_stb (CtxFont *font, Ctx *ctx, uint32_t unichar)
       font_size = ctx->state.gstate.font_size;
   float scale              = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   int advance, lsb;
-  int glyph = ctx_glyph_stb_find (font, ctx, unichar);
 
 #if CTX_EVENTS
   if (ctx && ctx_backend_type (ctx) == CTX_BACKEND_TERM && ctx_fabsf(3.0f - font_size) < 0.03f)
@@ -171,10 +171,10 @@ ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
 }
 
 static int
-ctx_glyph_stb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
+ctx_glyph_stb (CtxFont *font, Ctx *ctx, int glyph, int stroke)
 {
   stbtt_fontinfo *ttf_info = &font->stb.ttf_info;
-  int glyph = ctx_glyph_stb_find (font, ctx, unichar);
+  //int glyph = ctx_glyph_stb_find (font, ctx, unichar);
   if (glyph==0)
     { return -1; }
   float font_size = ctx->state.gstate.font_size;
@@ -244,7 +244,7 @@ ctx_glyph_find_next (CtxFont *font, Ctx *ctx, int offset)
   return 0;
 }
 
-static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
+static int ctx_glyph_lookup_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
 #if CTX_GLYPH_CACHE
   uint32_t hash = ((((size_t)(font) * 23) ^ unichar) * 17) %
@@ -293,12 +293,19 @@ static int ctx_glyph_find_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
   return -1;
 }
 
+static int ctx_glyph_lookup_ctx2 (CtxFont *font, Ctx *ctx, uint32_t unichar)
+{
+  if (ctx_glyph_lookup_ctx(font,ctx,unichar)>=0)
+    return unichar;
+  return -1;
+}
+
 
 static float
 ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
   float font_size = ctx->state.gstate.font_size;
-  int first_kern = ctx_glyph_find_ctx (font, ctx, unicharA);
+  int first_kern = ctx_glyph_lookup_ctx (font, ctx, unicharA);
   if (first_kern < 0) return 0.0;
 
 #if CTX_EVENTS
@@ -330,7 +337,7 @@ ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
     CtxState *state = &ctx->state;
     font_size = state->gstate.font_size;
   }
-  int   start     = ctx_glyph_find_ctx (font, ctx, unichar);
+  int   start     = ctx_glyph_lookup_ctx (font, ctx, unichar);
   if (start < 0)
     { return 0.0; }  // XXX : fallback
 
@@ -353,7 +360,7 @@ ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
 }
 
 static int
-ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t unichar, int stroke)
+ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, int unichar, int stroke)
 {
   CtxState *state = &ctx->state;
   CtxIterator iterator;
@@ -367,7 +374,7 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
   if (font->type == 0)
 #endif
   {
-  start = ctx_glyph_find_ctx (font, ctx, unichar);
+  start = ctx_glyph_lookup_ctx (font, ctx, unichar);
   if (start < 0)
     { return -1; }  // XXX : fallback glyph
   }
@@ -441,7 +448,7 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, uint32_t uni
 }
 
 static int
-ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
+ctx_glyph_ctx (CtxFont *font, Ctx *ctx, int glyph_id, int stroke)
 {
   CtxDrawlist drawlist;
   drawlist.entries = font->ctx.data;
@@ -449,7 +456,7 @@ ctx_glyph_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
   drawlist.count = length;
   drawlist.size  = length;
   drawlist.flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
-  return ctx_glyph_drawlist (font, ctx, &drawlist, unichar, stroke);
+  return ctx_glyph_drawlist (font, ctx, &drawlist, glyph_id, stroke);
 }
 
 #if 0
@@ -483,7 +490,7 @@ static CtxFontEngine ctx_font_engine_ctx =
   ctx_glyph_ctx,
   ctx_glyph_width_ctx,
   ctx_glyph_kern_ctx,
-  ctx_glyph_find_ctx
+  ctx_glyph_lookup_ctx2
 };
 #endif
 
@@ -613,7 +620,7 @@ ctx_glyph_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
 int
 ctx_load_font_ctx_fs (const char *name, const void *data, int length);
 
-static int ctx_glyph_find_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar)
+static int ctx_glyph_lookup_ctx_fs (CtxFont *font, Ctx *ctx, uint32_t unichar)
 { return unichar;
 }
 static CtxFontEngine ctx_font_engine_ctx_fs =
@@ -625,7 +632,7 @@ static CtxFontEngine ctx_font_engine_ctx_fs =
   ctx_glyph_ctx_fs,
   ctx_glyph_width_ctx_fs,
   ctx_glyph_kern_ctx_fs,
-  ctx_glyph_find_ctx_fs
+  ctx_glyph_lookup_ctx_fs
 };
 
 int
@@ -650,10 +657,10 @@ ctx_load_font_ctx_fs (const char *name, const void *path, int length) // length 
 
 #if CTX_FONT_ENGINE_HARFBUZZ
 
-static int ctx_glyph_find_hb (CtxFont *font, Ctx *ctx, uint32_t unichar)
+static int ctx_glyph_lookup_hb (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
   hb_codepoint_t glyph_id;
-  if (!hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id))
+  if (hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id))
     return glyph_id;
   return -1;
 }
@@ -661,48 +668,30 @@ static int ctx_glyph_find_hb (CtxFont *font, Ctx *ctx, uint32_t unichar)
 static float
 ctx_glyph_kern_hb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
-#if 0
-  float font_size = ctx->state.gstate.font_size;
-  int first_kern = ctx_glyph_find_ctx (font, ctx, unicharA);
-  if (first_kern < 0) return 0.0;
-  for (int i = first_kern + 1; i < font->ctx.length; i++)
-    {
-      CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
-      if (entry->code == CTX_KERNING_PAIR)
-        {
-          if (entry->data.u16[0] == unicharA && entry->data.u16[1] == unicharB)
-            { return entry->data.s32[1] / 255.0f * font_size / CTX_BAKE_FONT_SIZE; }
-        }
-      if (entry->code == CTX_DEFINE_GLYPH)
-        return 0.0;
-    }
-#endif
   return 0.0;
 }
 
 static float
-ctx_glyph_width_hb (CtxFont *font, Ctx *ctx, uint32_t unichar)
+ctx_glyph_width_hb (CtxFont *font, Ctx *ctx, int glyph_id)
 {
   CtxState *state = &ctx->state;
   float font_size = state->gstate.font_size;
-  hb_codepoint_t glyph_id;
-  if (!hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id))
+  if (glyph_id < 0)
      return 0.0f;
   return hb_font_get_glyph_h_advance (font->hb.font, glyph_id) *
 	    font_size * font->hb.scale;
 }
 
 static int
-ctx_glyph_hb (CtxFont *font, Ctx *ctx, uint32_t unichar, int stroke)
+ctx_glyph_hb (CtxFont *font, Ctx *ctx, int glyph_id, int stroke)
 {
   CtxState *state = &ctx->state;
   float font_size = state->gstate.font_size;
   ctx_save (ctx);
   float origin_x = state->x;
   float origin_y = state->y;
-  hb_codepoint_t glyph_id;
-  hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id);
-  if (!hb_font_get_glyph (font->hb.font, unichar, 0, &glyph_id))
+
+  if (glyph_id < 0)
      return 0;
   ctx_current_point (ctx, &origin_x, &origin_y);
   ctx_translate (ctx, origin_x, origin_y);
@@ -736,7 +725,7 @@ static CtxFontEngine ctx_font_engine_hb =
   ctx_glyph_hb,
   ctx_glyph_width_hb,
   ctx_glyph_kern_hb,
-  ctx_glyph_find_hb,
+  ctx_glyph_lookup_hb,
 };
 
 static void
@@ -844,20 +833,20 @@ ctx_load_font_hb (const char *name, const void *path, int length) // length is i
 #endif
 
 int
-_ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
+_ctx_glyph (Ctx *ctx, int glyph_id, int stroke)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
   // a begin-path here did not remove stray spikes in terminal
 #if CTX_ONE_FONT_ENGINE
-  return ctx_glyph_ctx (font, ctx, unichar, stroke);
+  return ctx_glyph_ctx (font, ctx, glyph_id, stroke);
 #else
-  return font->engine->glyph (font, ctx, unichar, stroke);
+  return font->engine->glyph (font, ctx, glyph_id, stroke);
 #endif
 
 }
 
 int
-ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
+ctx_glyph_id (Ctx *ctx, uint32_t unichar, int stroke)
 {
 #if CTX_BACKEND_TEXT
   CtxEntry commands[3]; // 3 to silence incorrect warning from static analysis
@@ -874,13 +863,24 @@ ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
 }
 
 int
-ctx_glyph_id_from_unichar (Ctx *ctx, uint32_t unichar)
+ctx_glyph_unichar(Ctx *ctx, uint32_t unichar, int stroke)
+{
+  return ctx_glyph_id(ctx, ctx_glyph_lookup (ctx, unichar), stroke);
+}
+
+int ctx_glyph (Ctx *ctx, uint32_t unichar, int stroke)
+{
+  return ctx_glyph_unichar(ctx,unichar,stroke);
+}
+
+int
+ctx_glyph_lookup (Ctx *ctx, uint32_t unichar)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
 #if CTX_ONE_FONT_ENGINE
-  return ctx_glyph_find_ctx (font, ctx, unichar);
+  return ctx_glyph_lookup_ctx (font, ctx, unichar);
 #else
-  return font->engine->glyph_find (font, ctx, unichar);
+  return font->engine->glyph_lookup (font, ctx, unichar);
 #endif
 }
 
@@ -906,6 +906,47 @@ ctx_glyph_kern (Ctx *ctx, int unicharA, int unicharB)
 #endif
 }
 
+static inline int
+_ctx_text_substitute_ligatures (Ctx *ctx, CtxFont *font,
+                                uint32_t *unichar, uint32_t next_unichar)
+{
+  if (ctx_font_is_monospaced (font))
+    return 0;
+  if (*unichar == 'f')
+    switch (next_unichar)
+    {
+      case 'f': if (ctx_glyph_lookup (ctx, 0xfb00)>0)
+        {
+          *unichar = 0xfb00;
+          return 1;
+        }
+        break;
+      case 'i':
+        if (ctx_glyph_lookup (ctx, 0xfb01) > 0)
+        {
+          *unichar = 0xfb01;
+          return 1;
+        }
+        break;
+      case 'l': 
+        if (ctx_glyph_lookup (ctx, 0xfb02) > 0)
+        {
+          *unichar = 0xfb02;
+          return 1;
+        }
+        break;
+      case 't': 
+        if (ctx_glyph_lookup (ctx, 0xfb05) > 0)
+        {
+          *unichar = 0xfb05;
+          return 1;
+        }
+        break;
+    }
+  return 0;
+}
+
+
 float
 ctx_text_width (Ctx        *ctx,
                 const char *string)
@@ -913,9 +954,39 @@ ctx_text_width (Ctx        *ctx,
   float sum = 0.0;
   if (!string)
     return 0.0f;
+  CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+
+#if CTX_FONT_ENGINE_HARFBUZZ
+  if (font->type == 4) // harfbuzz
+  {
+    float x = 0.0f;
+    hb_buffer_t *buf =
+    buf = hb_buffer_create();
+    hb_buffer_add_utf8(buf, string, -1, 0, -1);
+    hb_buffer_guess_segment_properties(buf);
+    hb_shape(font->hb.font,buf, NULL, 0);
+    unsigned int glyph_count;
+    hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions(buf, &glyph_count);
+    for (unsigned int i = 0; i < glyph_count; i++)
+      x += glyph_pos[i].x_advance;
+    hb_buffer_destroy (buf);
+    return x * ctx->state.gstate.font_size * font->hb.scale;
+  }
+#endif
+
   for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1) )
     {
-      sum += ctx_glyph_width (ctx, ctx_utf8_to_unichar (utf8) );
+      uint32_t unichar = ctx_utf8_to_unichar (utf8); 
+      uint32_t next  = ctx_utf8_to_unichar (ctx_utf8_skip(utf8, 1));
+      int skip_kern = 0;
+      if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next))
+      {
+        utf8 = ctx_utf8_skip (utf8,1);
+	skip_kern = 1;
+      }
+
+      sum += ctx_glyph_width (ctx, ctx_glyph_lookup(ctx, unichar));
+      if (next &(!skip_kern)) sum -= ctx_glyph_kern (ctx, unichar, next);
     }
   return sum;
 }
@@ -931,8 +1002,7 @@ _ctx_glyphs (Ctx     *ctx,
       {
         uint32_t unichar = glyphs[i].index;
         ctx_move_to (ctx, glyphs[i].x, glyphs[i].y);
-
-        ctx_glyph (ctx, unichar, stroke);
+        ctx_glyph_id (ctx, unichar, stroke);
       }
     }
 }
@@ -954,46 +1024,6 @@ static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
 }
 #endif
 
-static inline int
-_ctx_text_substitute_ligatures (Ctx *ctx, CtxFont *font,
-                                uint32_t *unichar, uint32_t next_unichar)
-{
-  if (ctx_font_is_monospaced (font))
-    return 0;
-  if (*unichar == 'f')
-    switch (next_unichar)
-    {
-      case 'f': if (ctx_glyph_find (ctx, font, 0xfb00))
-        {
-          *unichar = 0xfb00;
-          return 1;
-        }
-        break;
-      case 'i':
-        if (ctx_glyph_find (ctx, font, 0xfb01))
-        {
-          *unichar = 0xfb01;
-          return 1;
-        }
-        break;
-      case 'l': 
-        if (ctx_glyph_find (ctx, font, 0xfb02))
-        {
-          *unichar = 0xfb02;
-          return 1;
-        }
-        break;
-      case 't': 
-        if (ctx_glyph_find (ctx, font, 0xfb05))
-        {
-          *unichar = 0xfb05;
-          return 1;
-        }
-        break;
-    }
-  return 0;
-}
-
 static void
 _ctx_text (Ctx        *ctx,
            const char *string,
@@ -1003,6 +1033,7 @@ _ctx_text (Ctx        *ctx,
   char word[CTX_MAX_WORD_LEN];
   int word_len = 0;
   CtxState *state = &ctx->state;
+  float font_size = state->gstate.font_size;
   CtxFont *font = &ctx_fonts[state->gstate.font];
   float x = ctx->state.x;
   word[word_len]=0;
@@ -1062,23 +1093,7 @@ _ctx_text (Ctx        *ctx,
         {
           float word_width = 0.0;
           word[word_len]=0;
-
-          for (const char *bp = &word[0]; *bp; bp = ctx_utf8_skip (bp, 1))
-          {
-            uint32_t unichar      = ctx_utf8_to_unichar (bp);
-            const char *next_utf8 = ctx_utf8_skip (bp, 1);
-            uint32_t next_unichar = *next_utf8?ctx_utf8_to_unichar (next_utf8):0;
-
-#if 1
-            if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next_unichar))
-              bp++;
-#endif
-
-            float glyph_width     = ctx_glyph_width (ctx, unichar);
-            word_width += glyph_width;
-            if (next_unichar)
-              word_width += ctx_glyph_kern (ctx, unichar, next_unichar);
-          }
+	  word_width = ctx_text_width (ctx, word);
 
           if (wrap_left != wrap_right &&
               x + word_width >= wrap_right)
@@ -1087,18 +1102,42 @@ _ctx_text (Ctx        *ctx,
             x = x0;
           }
 
+#if CTX_FONT_ENGINE_HARFBUZZ
+	  if (font->type == 4) // harfbuzz
+          {
+	     hb_buffer_t *buf =
+	     buf = hb_buffer_create();
+	     hb_buffer_add_utf8(buf, word, -1, 0, -1);
+	     hb_buffer_guess_segment_properties(buf);
+	     hb_shape(font->hb.font,buf, NULL, 0);
+	     unsigned int glyph_count;
+	     hb_glyph_info_t *glyph_info = hb_buffer_get_glyph_infos(buf, &glyph_count);
+	     hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions(buf, &glyph_count);
+	     for (unsigned int i = 0; i < glyph_count; i++)
+	     {
+               hb_codepoint_t glyphid = glyph_info[i].codepoint;
+               hb_position_t x_offset = glyph_pos[i].x_offset;
+               hb_position_t y_offset = glyph_pos[i].y_offset;
+
+               ctx_move_to (ctx, x + x_offset * font_size * font->hb.scale, y + y_offset * font_size * font->hb.scale  + baseline_offset);
+               _ctx_glyph (ctx, glyphid, stroke);
+	       x += glyph_pos[i].x_advance * font_size * font->hb.scale;
+	     }
+	     hb_buffer_destroy (buf);
+	  }
+	  else
+#endif
           for (const char *bp = &word[0]; *bp; bp = ctx_utf8_skip (bp, 1))
           {
             uint32_t unichar      = ctx_utf8_to_unichar (bp);
             const char *next_utf8 = ctx_utf8_skip (bp, 1);
             uint32_t next_unichar = *next_utf8?ctx_utf8_to_unichar (next_utf8):0;
 
-#if 1
             if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next_unichar))
               bp++;
-#endif
 
-            float glyph_width = ctx_glyph_width (ctx, unichar);
+	    int glyph_id = ctx_glyph_lookup (ctx, unichar);
+            float glyph_width = ctx_glyph_width (ctx, glyph_id);
             if (x + glyph_width >= x1)
             {
               y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
@@ -1107,7 +1146,7 @@ _ctx_text (Ctx        *ctx,
             if (visible)
             {
               ctx_move_to (ctx, x, y + baseline_offset);
-              _ctx_glyph (ctx, unichar, stroke);
+              _ctx_glyph (ctx, glyph_id, stroke);
             }
             x += glyph_width;
             if (next_unichar)
@@ -1121,7 +1160,7 @@ _ctx_text (Ctx        *ctx,
           }
           else if (*utf8 == ' ')
           {
-            x += ctx_glyph_width (ctx, ' ');
+            x += ctx_glyph_width (ctx, ctx_glyph_lookup (ctx, ' '));
           }
           word_len=0;
           word[word_len]=0;
@@ -1242,6 +1281,7 @@ ctx_font_get_vmetrics (Ctx *ctx,
   switch (font->type)
   {
     case 4:
+	    // TODO : implement for harfbuzz
 #if CTX_FONT_ENGINE_CTX_FS
     case 3:
 #endif

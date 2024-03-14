@@ -465,15 +465,17 @@ CtxGlyph *ctx_glyph_allocate     (int n_glyphs);
 void      ctx_glyph_free         (CtxGlyph   *glyphs);
 /**
  */
-int       ctx_glyph              (Ctx        *ctx, uint32_t glyphid, int stroke);
-/**
- */
+int       ctx_glyph_id           (Ctx        *ctx, uint32_t glyphid, int stroke);
+int       ctx_glyph_unichar      (Ctx *ctx, uint32_t unichar, int stroke);
+
+int       ctx_glyph              (Ctx *ctx, uint32_t unichar, int stroke);
+
 void      ctx_glyphs             (Ctx        *ctx,
                                   CtxGlyph   *glyphs,
                                   int         n_glyphs);
 
 int
-ctx_glyph_id_from_unichar (Ctx *ctx, uint32_t unichar);
+ctx_glyph_lookup (Ctx *ctx, uint32_t unichar);
 
 /**
  */
@@ -1085,6 +1087,7 @@ float ctx_glyph_width   (Ctx *ctx, int unichar);
 int   ctx_load_font_ttf (const char *name, const void *ttf_contents, int length);
 int   ctx_load_font_hb (const char *name, const void *path, int length_ignored);
 
+int   ctx_load_font_ttf_file (const char *name, const char *path);
 
 /**
  * ctx_dirty_rect:
