@@ -249,9 +249,9 @@ char* string =
     for (unsigned int j = 0; j < n_glyphs; j++)
     {
       float kerning = ctx_glyph_kern (ctx, glyphs[i], glyphs[j]);
-      if (kerning > 0.2)
+      if (fabsf(kerning) > 0.01)
       {
-        CtxCommand command;
+        CtxCommand command; 
         unsigned int pos = find_glyph (&output_font, glyphs[i]);
         pos ++;
         while (pos < output_font.count &&
@@ -362,7 +362,13 @@ char* string =
     }
     else if (entry->code == '[')
     {
-      printf ("/*kerning*/");
+      char buf[44]={0,0,0,0,0};
+      printf ("/*kerning  ");
+      ctx_unichar_to_utf8 (entry->data.u16[0], (uint8_t*)buf);
+      printf ("%s ", buf);
+      ctx_unichar_to_utf8 (entry->data.u16[1], (uint8_t*)buf);
+      printf ("%s : %f ", buf, entry->data.s32[1] / 255.0f );
+      printf ("*/");
     }
     else
     {

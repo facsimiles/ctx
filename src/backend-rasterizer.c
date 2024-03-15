@@ -2123,7 +2123,7 @@ ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
   dy = ly - y;
 #endif
 
-  if ((iteration < 1) | ((iteration < 6) & (((long)dx*dx+dy*dy) > tolerance)))
+  if ((iteration < 2) | ((iteration < 6) & (((long)dx*dx+dy*dy) > tolerance)))
   {
     iteration++;
     ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,

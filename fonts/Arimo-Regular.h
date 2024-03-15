@@ -5,7 +5,7 @@
   ÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŁπ“”•…€™←↑→↓−≈▼♠♣♥♦ﬁﬂﬃﬄ  */
 static const struct __attribute__ ((packed)) {uint8_t code; uint32_t a; uint32_t b;}
 ctx_font_Arimo_Regular[]={
-{15, 0x00000000, 0x0000146e},/* length:5230 CTX_SUBDIV:8 CTX_BAKE_FONT_SIZE:160 */
+{15, 0x00000000, 0x000014da},/* length:5338 CTX_SUBDIV:8 CTX_BAKE_FONT_SIZE:160 */
 {'(', 0x0000000f, 0x00000002},/* Arimo Regular*/
 {32, 0x6d697241, 0x6552206f},
 {'g', 0x72616c75, 0x00000000},
@@ -21,6 +21,9 @@ ctx_font_Arimo_Regular[]={
 {'e', 0x006e6f73, 0x00000000},
 {')', 0x0000003b, 0x00000007},
 {'@', 0x00000020, 0x000027ca},/*                 x-advance: 39.789062 */
+{'[', 0x00410020, 0xfffff81a},/*kerning    A : -7.929412 */
+{'[', 0x00540020, 0xfffffd6a},/*kerning    T : -2.596078 */
+{'[', 0x00590020, 0xfffffd6a},/*kerning    Y : -2.596078 */
 {'@', 0x00000021, 0x000027ca},/*        !        x-advance: 39.789062 */
 {'M', 0x41c8d6d3, 0xc1de1910},
 {'l', 0xc125982b, 0x00000000},
@@ -380,6 +383,7 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x41bfe35a, 0x36000000},
 {'l', 0x00000000, 0x412b3056},
 {'l', 0xc276fe35, 0x00000000},
+{'[', 0x00310031, 0xfffff55f},/*kerning  1 1 : -10.670588 */
 {'@', 0x00000032, 0x00004fa6},/*        2        x-advance: 79.648438 */
 {'M', 0x40e67d50, 0x00000000},
 {'l', 0x00000000, 0xc10e1910},
@@ -842,6 +846,15 @@ ctx_font_Arimo_Regular[]={
 {'q', 0xbffaa100, 0xc09a67d0},
 {0, 0xc07aa110, 0xc12e8ba0},
 {'l', 0xbff1adc0, 0xc0b9bc00},
+{'[', 0x00200041, 0xfffff81a},/*kerning  A   : -7.929412 */
+{'[', 0x00540041, 0xfffff55f},/*kerning  A T : -10.670588 */
+{'[', 0x00560041, 0xfffff55f},/*kerning  A V : -10.670588 */
+{'[', 0x00570041, 0xfffffab0},/*kerning  A W : -5.333333 */
+{'[', 0x00590041, 0xfffff55f},/*kerning  A Y : -10.670588 */
+{'[', 0x00760041, 0xfffffd6a},/*kerning  A v : -2.596078 */
+{'[', 0x00770041, 0xfffffd6a},/*kerning  A w : -2.596078 */
+{'[', 0x00790041, 0xfffffd6a},/*kerning  A y : -2.596078 */
+{'[', 0x00a00041, 0xfffff81a},/*kerning  A   : -7.929412 */
 {'@', 0x00000042, 0x00005f86},/*        B        x-advance: 95.523438 */
 {'M', 0x42aff1ae, 0xc1de1910},
 {'q', 0x00000000, 0x41525983},
@@ -959,6 +972,9 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x428c0000, 0x00000000},
 {'l', 0x00000000, 0x412e8ba0},
 {'l', 0xc26292cc, 0x00000000},
+{'[', 0x002c0046, 0xfffff021},/*kerning  F , : -15.933333 */
+{'[', 0x002e0046, 0xfffff021},/*kerning  F . : -15.933333 */
+{'[', 0x00410046, 0xfffff81a},/*kerning  F A : -7.929412 */
 {'@', 0x00000047, 0x00006f66},/*        G        x-advance: 111.398438 */
 {'M', 0x40e67d50, 0xc246e191},
 {'q', 0x00000000, 0xc1bfe35a},
@@ -1056,6 +1072,13 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x4247292c, 0xb6400000},
 {'l', 0x00000000, 0x412e8ba3},
 {'l', 0xc27c9660, 0x00000000},
+{'[', 0x0020004c, 0xfffffab0},/*kerning  L   : -5.333333 */
+{'[', 0x0054004c, 0xfffff55f},/*kerning  L T : -10.670588 */
+{'[', 0x0056004c, 0xfffff55f},/*kerning  L V : -10.670588 */
+{'[', 0x0057004c, 0xfffff55f},/*kerning  L W : -10.670588 */
+{'[', 0x0059004c, 0xfffff55f},/*kerning  L Y : -10.670588 */
+{'[', 0x0079004c, 0xfffffab0},/*kerning  L y : -5.333333 */
+{'[', 0x00a0004c, 0xfffffab0},/*kerning  L   : -5.333333 */
 {'@', 0x0000004d, 0x0000774c},/*        M        x-advance: 119.296875 */
 {'M', 0x42bf0c88, 0x00000000},
 {'l', 0x00000000, 0xc28377f2},
@@ -1148,6 +1171,11 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x41d880e5, 0x00000000},
 {'q', 0x41b30560, 0x00000000},
 {0, 0x41b30560, 0xc19e5258},
+{'[', 0x00200050, 0xfffffd6a},/*kerning  P   : -2.596078 */
+{'[', 0x002c0050, 0xffffed8a},/*kerning  P , : -18.533333 */
+{'[', 0x002e0050, 0xffffed8a},/*kerning  P . : -18.533333 */
+{'[', 0x00410050, 0xfffff55f},/*kerning  P A : -10.670588 */
+{'[', 0x00a00050, 0xfffffd6a},/*kerning  P   : -2.596078 */
 {'@', 0x00000051, 0x00006f66},/*        Q        x-advance: 111.398438 */
 {'M', 0x42d11746, 0xc246e191},
 {'q', 0x00000000, 0x41a6b69a},
@@ -1220,6 +1248,10 @@ ctx_font_Arimo_Regular[]={
 {0, 0x41825980, 0xc09ca4b0},
 {'q', 0x40b9bc00, 0xc09ee190},
 {0, 0x40b9bc00, 0xc15d89dc},
+{'[', 0x00540052, 0xfffffd6a},/*kerning  R T : -2.596078 */
+{'[', 0x00560052, 0xfffffd6a},/*kerning  R V : -2.596078 */
+{'[', 0x00570052, 0xfffffd6a},/*kerning  R W : -2.596078 */
+{'[', 0x00590052, 0xfffffd6a},/*kerning  R Y : -2.596078 */
 {'@', 0x00000053, 0x00005f86},/*        S        x-advance: 95.523438 */
 {'M', 0x42b1e6f0, 0xc1d99f54},
 {'q', 0x00000000, 0x415a2e8c},
@@ -1275,6 +1307,26 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x42a1f542, 0x00000000},
 {'l', 0x00000000, 0x412e8ba0},
 {'l', 0xc2076275, 0x00000000},
+{'[', 0x00200054, 0xfffffd6a},/*kerning  T   : -2.596078 */
+{'[', 0x002c0054, 0xfffff021},/*kerning  T , : -15.933333 */
+{'[', 0x002d0054, 0xfffff81a},/*kerning  T - : -7.929412 */
+{'[', 0x002e0054, 0xfffff021},/*kerning  T . : -15.933333 */
+{'[', 0x003a0054, 0xfffff021},/*kerning  T : : -15.933333 */
+{'[', 0x003b0054, 0xfffff021},/*kerning  T ; : -15.933333 */
+{'[', 0x00410054, 0xfffff55f},/*kerning  T A : -10.670588 */
+{'[', 0x004f0054, 0xfffffd6a},/*kerning  T O : -2.596078 */
+{'[', 0x00610054, 0xfffff021},/*kerning  T a : -15.933333 */
+{'[', 0x00630054, 0xfffff021},/*kerning  T c : -15.933333 */
+{'[', 0x00650054, 0xfffff021},/*kerning  T e : -15.933333 */
+{'[', 0x00690054, 0xfffffab0},/*kerning  T i : -5.333333 */
+{'[', 0x006f0054, 0xfffff021},/*kerning  T o : -15.933333 */
+{'[', 0x00720054, 0xfffffab0},/*kerning  T r : -5.333333 */
+{'[', 0x00730054, 0xfffff021},/*kerning  T s : -15.933333 */
+{'[', 0x00750054, 0xfffffab0},/*kerning  T u : -5.333333 */
+{'[', 0x00770054, 0xfffff81a},/*kerning  T w : -7.929412 */
+{'[', 0x00790054, 0xfffff81a},/*kerning  T y : -7.929412 */
+{'[', 0x00a00054, 0xfffffd6a},/*kerning  T   : -2.596078 */
+{'[', 0x00ad0054, 0xfffff81a},/*kerning  T ­ : -7.929412 */
 {'@', 0x00000055, 0x0000676d},/*        U        x-advance: 103.425781 */
 {'M', 0x424c79bc, 0x3fb3055f},
 {'q', 0xc1419104, 0x00000000},
@@ -1310,6 +1362,20 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x41d9101c, 0xc28abdc2},
 {'l', 0x4160e528, 0x00000000},
 {'l', 0xc220d6d3, 0x42c5101c},
+{'[', 0x002c0056, 0xfffff2db},/*kerning  V , : -13.196078 */
+{'[', 0x002d0056, 0xfffff81a},/*kerning  V - : -7.929412 */
+{'[', 0x002e0056, 0xfffff2db},/*kerning  V . : -13.196078 */
+{'[', 0x003a0056, 0xfffffab0},/*kerning  V : : -5.333333 */
+{'[', 0x003b0056, 0xfffffab0},/*kerning  V ; : -5.333333 */
+{'[', 0x00410056, 0xfffff55f},/*kerning  V A : -10.670588 */
+{'[', 0x00610056, 0xfffff55f},/*kerning  V a : -10.670588 */
+{'[', 0x00650056, 0xfffff81a},/*kerning  V e : -7.929412 */
+{'[', 0x00690056, 0xfffffd6a},/*kerning  V i : -2.596078 */
+{'[', 0x006f0056, 0xfffff81a},/*kerning  V o : -7.929412 */
+{'[', 0x00720056, 0xfffffab0},/*kerning  V r : -5.333333 */
+{'[', 0x00750056, 0xfffffab0},/*kerning  V u : -5.333333 */
+{'[', 0x00790056, 0xfffffab0},/*kerning  V y : -5.333333 */
+{'[', 0x00ad0056, 0xfffff81a},/*kerning  V ­ : -7.929412 */
 {'@', 0x00000057, 0x0000872c},/*        W        x-advance: 135.171875 */
 {'M', 0x42d35424, 0x00000000},
 {'4', 0x0000ff81, 0xfe0cff78},
@@ -1334,6 +1400,19 @@ ctx_font_Arimo_Regular[]={
 {'9', 0xffd80009, 0xfdc6009d},
 {'l', 0x415ea850, 0x00000000},
 {'l', 0xc1e82af8, 0x42c5101c},
+{'[', 0x002c0057, 0xfffff81a},/*kerning  W , : -7.929412 */
+{'[', 0x002d0057, 0xfffffd6a},/*kerning  W - : -2.596078 */
+{'[', 0x002e0057, 0xfffff81a},/*kerning  W . : -7.929412 */
+{'[', 0x003a0057, 0xfffffd6a},/*kerning  W : : -2.596078 */
+{'[', 0x003b0057, 0xfffffd6a},/*kerning  W ; : -2.596078 */
+{'[', 0x00410057, 0xfffffab0},/*kerning  W A : -5.333333 */
+{'[', 0x00610057, 0xfffffab0},/*kerning  W a : -5.333333 */
+{'[', 0x00650057, 0xfffffd6a},/*kerning  W e : -2.596078 */
+{'[', 0x006f0057, 0xfffffd6a},/*kerning  W o : -2.596078 */
+{'[', 0x00720057, 0xfffffd6a},/*kerning  W r : -2.596078 */
+{'[', 0x00750057, 0xfffffd6a},/*kerning  W u : -2.596078 */
+{'[', 0x00790057, 0xfffffebe},/*kerning  W y : -1.262745 */
+{'[', 0x00ad0057, 0xfffffd6a},/*kerning  W ­ : -2.596078 */
 {'@', 0x00000058, 0x00005f86},/*        X        x-advance: 95.523438 */
 {'M', 0x429b8644, 0x00000000},
 {'l', 0xc1eca4b4, 0xc22c4ec5},
@@ -1359,6 +1438,23 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x41eee190, 0xc23bb13a},
 {'l', 0x416af710, 0x00000000},
 {'l', 0xc2182af8, 0x4266c4eb},
+{'[', 0x00200059, 0xfffffd6a},/*kerning  Y   : -2.596078 */
+{'[', 0x002c0059, 0xffffed8a},/*kerning  Y , : -18.533333 */
+{'[', 0x002d0059, 0xfffff2db},/*kerning  Y - : -13.196078 */
+{'[', 0x002e0059, 0xffffed8a},/*kerning  Y . : -18.533333 */
+{'[', 0x003a0059, 0xfffff81a},/*kerning  Y : : -7.929412 */
+{'[', 0x003b0059, 0xfffff6b4},/*kerning  Y ; : -9.333333 */
+{'[', 0x00410059, 0xfffff55f},/*kerning  Y A : -10.670588 */
+{'[', 0x00610059, 0xfffff55f},/*kerning  Y a : -10.670588 */
+{'[', 0x00650059, 0xfffff2db},/*kerning  Y e : -13.196078 */
+{'[', 0x00690059, 0xfffffab0},/*kerning  Y i : -5.333333 */
+{'[', 0x006f0059, 0xfffff2db},/*kerning  Y o : -13.196078 */
+{'[', 0x00700059, 0xfffff55f},/*kerning  Y p : -10.670588 */
+{'[', 0x00710059, 0xfffff2db},/*kerning  Y q : -13.196078 */
+{'[', 0x00750059, 0xfffff81a},/*kerning  Y u : -7.929412 */
+{'[', 0x00760059, 0xfffff81a},/*kerning  Y v : -7.929412 */
+{'[', 0x00a00059, 0xfffffd6a},/*kerning  Y   : -2.596078 */
+{'[', 0x00ad0059, 0xfffff2db},/*kerning  Y ­ : -13.196078 */
 {'@', 0x0000005a, 0x0000577b},/*        Z        x-advance: 87.480469 */
 {'M', 0x42a60394, 0x00000000},
 {'l', 0xc29cec4e, 0x00000000},
@@ -1609,6 +1705,7 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x416c157c, 0x00000000},
 {'l', 0x00000000, 0x411292d0},
 {'l', 0xc16c157c, 0x00000000},
+{'[', 0x00660066, 0xfffffd6a},/*kerning  f f : -2.596078 */
 {'@', 0x00000067, 0x00004fa6},/*        g        x-advance: 79.648438 */
 {'M', 0x42194966, 0x41edc322},
 {'q', 0xc1460abe, 0x00000000},
@@ -1887,6 +1984,8 @@ ctx_font_Arimo_Regular[]={
 {'9', 0x0035ffdf, 0x009affdf},
 {'l', 0x00000000, 0x421dc322},
 {'l', 0xc149660b, 0x00000000},
+{'[', 0x002c0072, 0xfffff81a},/*kerning  r , : -7.929412 */
+{'[', 0x002e0072, 0xfffff81a},/*kerning  r . : -7.929412 */
 {'@', 0x00000073, 0x0000479b},/*        s        x-advance: 71.605469 */
 {'M', 0x4284ddfc, 0xc1a745d1},
 {'q', 0x00000000, 0x412b3055},
@@ -1977,6 +2076,8 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x41899f54, 0xc2457b86},
 {'l', 0x4155b4d0, 0x00000000},
 {'l', 0xc1e20394, 0x42975424},
+{'[', 0x002c0076, 0xfffff55f},/*kerning  v , : -10.670588 */
+{'[', 0x002e0076, 0xfffff55f},/*kerning  v . : -10.670588 */
 {'@', 0x00000077, 0x0000676d},/*        w        x-advance: 103.425781 */
 {'M', 0x42a43220, 0x00000000},
 {'4', 0x0000ff8c, 0xfe55ff97},
@@ -1997,6 +2098,8 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x41655ee0, 0xc25e1910},
 {'l', 0x4144ec50, 0x00000000},
 {'l', 0xc1ad6d34, 0x42975424},
+{'[', 0x002c0077, 0xfffff81a},/*kerning  w , : -7.929412 */
+{'[', 0x002e0077, 0xfffff81a},/*kerning  w . : -7.929412 */
 {'@', 0x00000078, 0x0000479b},/*        x        x-advance: 71.605469 */
 {'M', 0x42600e52, 0x00000000},
 {'l', 0xc1a2cc14, 0xc1f86440},
@@ -2029,6 +2132,8 @@ ctx_font_Arimo_Regular[]={
 {'q', 0xc095ee18, 0x41419102},
 {0, 0xc10bdc34, 0x419055ee},
 {'8', 0x46b82ee0, 0x16a816d9},
+{'[', 0x002c0079, 0xfffff55f},/*kerning  y , : -10.670588 */
+{'[', 0x002e0079, 0xfffff55f},/*kerning  y . : -10.670588 */
 {'@', 0x0000007a, 0x0000479b},/*        z        x-advance: 71.605469 */
 {'M', 0x40b9bbf9, 0x00000000},
 {'l', 0x00000000, 0xc1194966},
@@ -2112,6 +2217,9 @@ ctx_font_Arimo_Regular[]={
 {'l', 0x00000000, 0x4126b698},
 {'8', 0x22bf17e0, 0x0ab00ae0},
 {'@', 0x000000a0, 0x000027ca},/*                 x-advance: 39.789062 */
+{'[', 0x004100a0, 0xfffff81a},/*kerning    A� : -7.929412 */
+{'[', 0x005400a0, 0xfffffd6a},/*kerning    T� : -2.596078 */
+{'[', 0x005900a0, 0xfffffd6a},/*kerning    Y� : -2.596078 */
 {'@', 0x000000a1, 0x00002fb1},/*        ¡        x-advance: 47.691406 */
 {'M', 0x4194cfaa, 0xc23f9bbf},
 {'l', 0x4125982a, 0x00000000},

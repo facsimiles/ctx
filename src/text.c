@@ -167,7 +167,8 @@ ctx_glyph_kern_stb (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
   float scale = stbtt_ScaleForPixelHeight (ttf_info, font_size);
   int glyphA = ctx_glyph_stb_find (font, ctx, unicharA);
   int glyphB = ctx_glyph_stb_find (font, ctx, unicharB);
-  return stbtt_GetGlyphKernAdvance (ttf_info, glyphA, glyphB) * scale;
+  float ret = stbtt_GetGlyphKernAdvance (ttf_info, glyphA, glyphB) * scale;
+  return ret;
 }
 
 static int
@@ -305,7 +306,7 @@ static float
 ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
   float font_size = ctx->state.gstate.font_size;
-  int first_kern = ctx_glyph_lookup_ctx (font, ctx, unicharA);
+  int first_kern = ctx_glyph_lookup_ctx (font, ctx, unicharA+1); // XXX ? why doe + 1  make this work
   if (first_kern < 0) return 0.0;
 
 #if CTX_EVENTS
@@ -314,13 +315,15 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
 #endif
 
   int length = ctx_font_get_length (font);
-  for (int i = first_kern + 1; i < length; i++)
+  for (int i = first_kern+1; i < length; i++)
     {
       CtxEntry *entry = (CtxEntry *) &font->ctx.data[i];
       if (entry->code == CTX_KERNING_PAIR)
         {
-          if (entry->data.u16[0] == unicharA && entry->data.u16[1] == unicharB)
-            { return entry->data.s32[1] / 255.0f * font_size / CTX_BAKE_FONT_SIZE; }
+          if (entry->data.u16[1] == unicharB)
+            { 
+               return entry->data.s32[1] / 255.0f * font_size / CTX_BAKE_FONT_SIZE; 
+	    }
         }
       if (entry->code == CTX_DEFINE_GLYPH)
         return 0.0;
@@ -986,7 +989,7 @@ ctx_text_width (Ctx        *ctx,
       }
 
       sum += ctx_glyph_width (ctx, ctx_glyph_lookup(ctx, unichar));
-      if (next &(!skip_kern)) sum -= ctx_glyph_kern (ctx, unichar, next);
+      if (next &(!skip_kern)) sum += ctx_glyph_kern (ctx, unichar, next);
     }
   return sum;
 }
