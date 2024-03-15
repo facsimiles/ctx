@@ -12,9 +12,9 @@
 #endif
 
 #include "local.conf"
-#define CTX_STB_TTF              1
+//#define CTX_STB_TTF              1
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl/wasm backends
-#define CTX_EXTRAS 1
+#define CTX_EXTRAS 0
 #define CTX_GSTATE_PROTECT       0
 #define CTX_FONTS_FROM_FILE      1
 #define CTX_MAX_TEXTURES         1024  // default: 32
@@ -44,7 +44,7 @@
    typedef signed   int    stbtt_int32;
 
 
-#include "stb_truetype.h"
+//#include "stb_truetype.h"
 
 #ifdef CTX_SIMD_X86_64_V2
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v2
@@ -76,8 +76,8 @@
 //#define CTX_FONT0 CTX_STATIC_FONT("sans-ctx", ascii)
 #if CTX_STATIC_FONTS
 #include "Cousine-Regular.h"
-//#include "Arimo-Regular.h"
-#include "Roboto-Regular.h"
+#include "Arimo-Regular.h"
+//#include "Roboto-Regular.h"
 #if 0  // build more static fonts and uncomment these..
 #include "Carlito-Regular.h"
 #include "Carlito-Bold.h"
@@ -95,8 +95,8 @@
 #include "Tinos-BoldItalic.h"
 #endif
 
-//#define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
-#define CTX_FONT_0   CTX_STATIC_FONT(Roboto_Regular)
+#define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
+//#define CTX_FONT_0   CTX_STATIC_FONT(Roboto_Regular)
 #if 0
 #define CTX_FONT_1   CTX_STATIC_FONT(Arimo_Bold)
 #define CTX_FONT_2   CTX_STATIC_FONT(Arimo_Italic)

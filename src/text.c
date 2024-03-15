@@ -659,6 +659,10 @@ ctx_load_font_ctx_fs (const char *name, const void *path, int length) // length 
 #endif
 
 #if CTX_FONT_ENGINE_HARFBUZZ
+typedef struct CtxHb {
+  Ctx  *ctx;
+  float scale;
+} CtxHb;
 
 static int ctx_glyph_lookup_hb (CtxFont *font, Ctx *ctx, uint32_t unichar)
 {
@@ -690,7 +694,7 @@ ctx_glyph_hb (CtxFont *font, Ctx *ctx, int glyph_id, int stroke)
 {
   CtxState *state = &ctx->state;
   float font_size = state->gstate.font_size;
-  ctx_save (ctx);
+  //ctx_save (ctx);
   float origin_x = state->x;
   float origin_y = state->y;
 
@@ -700,19 +704,21 @@ ctx_glyph_hb (CtxFont *font, Ctx *ctx, int glyph_id, int stroke)
   ctx_translate (ctx, origin_x, origin_y);
 
   // XXX : perhaps we can tell harfbuzz about this factor?
-  ctx_scale (ctx, font_size*font->hb.scale, font_size*font->hb.scale);
+  CtxHb ctxhb = {ctx, font_size * font->hb.scale};
+  //ctx_scale (ctx, font_size*font->hb.scale, font_size*font->hb.scale);
 
 #if HB_VERSION_MAJOR >= 7
-  hb_font_draw_glyph (font->hb.font, glyph_id, font->hb.draw_funcs, ctx);
+  hb_font_draw_glyph (font->hb.font, glyph_id, font->hb.draw_funcs, &ctxhb);
 #else
-  hb_font_get_glyph_shape (font->hb.font, glyph_id, font->hb.draw_funcs, ctx);
+  hb_font_get_glyph_shape (font->hb.font, glyph_id, font->hb.draw_funcs, &ctxhb);
 #endif
   if (stroke)
     ctx_stroke (ctx);
   else
     ctx_fill (ctx);
 
-  ctx_restore (ctx);
+  ctx_translate (ctx, -origin_x, -origin_y);
+  //ctx_restore (ctx);
   return 0;
 }
 
@@ -731,53 +737,57 @@ static CtxFontEngine ctx_font_engine_hb =
   ctx_glyph_lookup_hb,
 };
 
+
 static void
-ctx_hb_close_path (hb_draw_funcs_t *df, Ctx *ctx,
+ctx_hb_close_path (hb_draw_funcs_t *df, CtxHb *c,
                    hb_draw_state_t *ds,    
                    void *data)
 {
-  ctx_close_path (ctx);
+  ctx_close_path (c->ctx);
 }
 
 static void
-ctx_hb_move_to (hb_draw_funcs_t *df, Ctx *ctx,
+ctx_hb_move_to (hb_draw_funcs_t *df, CtxHb *c,
                 hb_draw_state_t *ds,    
                 float to_x, float to_y,
                 void *data)
 {
-  ctx_move_to (ctx, to_x, -to_y);
+  ctx_move_to (c->ctx, to_x * c->scale, -to_y * c->scale);
 }
 
 static void
-ctx_hb_line_to (hb_draw_funcs_t *df, Ctx *ctx,
+ctx_hb_line_to (hb_draw_funcs_t *df, CtxHb *c,
                 hb_draw_state_t *ds,    
                 float to_x, float to_y,
                 void *data)
 {
-  ctx_line_to (ctx, to_x, -to_y);
+  float scale = c->scale;
+  ctx_line_to (c->ctx, to_x * scale, -to_y * scale);
 }
 
 static void
-ctx_hb_quadratic_to (hb_draw_funcs_t *df, Ctx *ctx,
+ctx_hb_quadratic_to (hb_draw_funcs_t *df, CtxHb *c,
                      hb_draw_state_t *ds,
                      float control_x, float control_y,
                      float to_x, float to_y,
                      void *data)
 {
-  ctx_quad_to (ctx, control_x, -control_y, to_x, -to_y);
+  float scale = c->scale;
+  ctx_quad_to (c->ctx, control_x * scale, -control_y * scale, to_x * scale, -to_y * scale);
 }
 
 static void
-ctx_hb_cubic_to (hb_draw_funcs_t *df, Ctx *ctx,
+ctx_hb_cubic_to (hb_draw_funcs_t *df, CtxHb *c,
                  hb_draw_state_t *ds,
                  float control1_x, float control1_y,
                  float control2_x, float control2_y,
                  float to_x, float to_y,
                  void *data)
 {
-  ctx_curve_to (ctx, control1_x, -control1_y,
-                     control2_x, -control2_y,
-                     to_x, -to_y);
+  float scale = c->scale;
+  ctx_curve_to (c->ctx, control1_x * scale, -control1_y * scale,
+                     control2_x * scale, -control2_y * scale,
+                     to_x * scale, -to_y *scale);
 }
 
 
