@@ -1001,6 +1001,7 @@ _ctx_shape (Ctx         *ctx,
   float x_advance = 0.0;
   CtxGlyph *glyphs = NULL;
 
+#if CTX_FONT_BACKEND_HARFBUZZ
   if (font->type == 4) // harfbuzz
   {
   hb_buffer_t *buf = hb_buffer_create();
@@ -1021,6 +1022,7 @@ _ctx_shape (Ctx         *ctx,
   hb_buffer_destroy (buf);
   }
   else
+#endif
   {
     float font_size = state->gstate.font_size;
     glyphs = ctx_glyph_allocate (ctx_utf8_strlen (string) * 2);
