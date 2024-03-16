@@ -1608,8 +1608,12 @@ ctx_fragment_image_rgba8_RGBA8_bi_scale_with_alpha (CtxRasterizer *rasterizer,
 
  
   int v = yi >> 16;
+
+
   int dv = (yi >> 8) & 0xff;
+
   int u = xi >> 16;
+
   int v1 = v+1;
 
   _ctx_coords_restrict (extend, &u, &v, bwidth, bheight);
@@ -2786,7 +2790,6 @@ static void
 ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
   uint8_t *rgba_out = (uint8_t *) out;
-  uint32_t *rgba_out_u32 = (uint32_t *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   ctx_color_get_rgba8 (rasterizer->state, &g->color, rgba_out);
   ctx_RGBA8_associate_alpha (rgba_out);
@@ -2796,10 +2799,8 @@ ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
     rgba_out[0] = rgba_out[2];
     rgba_out[2] = tmp;
   }
-  uint32_t icol;
-  memcpy(&icol, rgba_out, 4);
-  for (int i = 1; i < count; i++)
-    rgba_out_u32[i]=icol;
+  for (int i = 1; i < count; i++, rgba_out+=4)
+    memcpy (rgba_out + count * 4, rgba_out, 4);
 }
 #if CTX_ENABLE_FLOAT
 
@@ -3505,7 +3506,7 @@ ctx_u8_blend_normal (int components, uint8_t * __restrict__ dst, uint8_t *src, u
 }
 
 /* branchless 8bit add that maxes out at 255 */
-static CTX_INLINE uint8_t ctx_sadd8(uint8_t a, uint8_t b)
+static inline uint8_t ctx_sadd8(uint8_t a, uint8_t b)
 {
   uint16_t s = (uint16_t)a+b;
   return -(s>>8) | (uint8_t)s;
