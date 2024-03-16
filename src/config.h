@@ -124,6 +124,10 @@
 #endif
 
 
+#ifndef CTX_FONT_SHAPE_CACHE
+#define CTX_FONT_SHAPE_CACHE 0
+#endif
+
 #ifndef CTX_FONTS_FROM_FILE
 #define CTX_FONTS_FROM_FILE  0
 #endif

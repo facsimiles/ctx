@@ -986,6 +986,8 @@ _ctx_shape (Ctx         *ctx,
   CtxState *state = &ctx->state;
   CtxFont *font = &ctx_fonts[state->gstate.font];
 
+
+#if CTX_FONT_SHAPE_CACHE
   uint32_t hash = ctx_strhash (string);
   hash ^= (uint32_t)(size_t)(font);
   int hpos = hash & (SHAPE_CACHE_SIZE-1);
@@ -997,6 +999,7 @@ _ctx_shape (Ctx         *ctx,
      if (width) *width = shape_cache[hpos]->width;
      return 1;
   }
+#endif
   unsigned int glyph_count = 0;
   float x_advance = 0.0;
   CtxGlyph *glyphs = NULL;
@@ -1049,6 +1052,7 @@ _ctx_shape (Ctx         *ctx,
 
 #define CTX_CACHE_SHAPE_MAX_STRLEN   8
 
+#if CTX_FONT_SHAPE_CACHE
   int do_cache = (strlen(string)<CTX_CACHE_SHAPE_MAX_STRLEN);
 
   if (shape_cache[hpos]==0 && do_cache)
@@ -1061,6 +1065,7 @@ _ctx_shape (Ctx         *ctx,
      shape_cache[hpos]->hash = hash;
      goto ret_cached;
   }
+#endif
 
   if (width) *width = x_advance;
   if (ret_count) *ret_count = glyph_count;
