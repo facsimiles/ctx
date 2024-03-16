@@ -83,6 +83,7 @@ static void ctx_tiled_end_frame (Ctx *ctx)
       for (int row = 0; row < CTX_HASH_ROWS; row++)
         for (int col = 0; col < CTX_HASH_COLS; col++)
           {
+            tiled->hashes[(row * CTX_HASH_COLS +  col)] = tiled->frame;
             tiled->tile_affinity[row * CTX_HASH_COLS + col] = 1;
             dirty_tiles++;
           }

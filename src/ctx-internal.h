@@ -277,7 +277,8 @@ struct _CtxGState
   CtxCompositingMode  compositing_mode; // bitfield refs lead to
   CtxBlend                  blend_mode; // non-vectorization
   CtxExtend                 extend;
-
+  long  tolerance_fixed;
+  float tolerance;
   float dashes[CTX_MAX_DASHES]; // XXX moving dashes 
                                 //  to state storage,. will
                                 //  allow it to be larger,

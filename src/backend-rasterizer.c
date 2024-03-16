@@ -2071,8 +2071,6 @@ ctx_lerp_fixed (int v0, int v1, int dx)
   return v0 + (((v1-v0) * dx) >> CTX_FIX_SHIFT);
 }
 
-
-
 CTX_INLINE static int
 ctx_bezier_sample_1d_fixed (int x0, int x1, int x2, int x3, int dt)
 {
@@ -2125,13 +2123,12 @@ ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
 
   if ((iteration < 2) | ((iteration < 6) & (((long)dx*dx+dy*dy) > tolerance)))
   {
-    iteration++;
     ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                  sx, sy, x, y, s, t, iteration, tolerance
+                                  sx, sy, x, y, s, t, iteration+1, tolerance
                                   );
     ctx_rasterizer_line_to_fixed (rasterizer, x, y);
     ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
-                                  x, y, ex, ey, t, e, iteration, tolerance
+                                  x, y, ex, ey, t, e, iteration+1, tolerance
                                   );
   }
 }
@@ -2145,23 +2142,18 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
 
-  float tolerance = 0.25f/ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-
 #if 1
-  tolerance *= CTX_FIX_SCALE;
-  tolerance *= tolerance;
   ctx_rasterizer_bezier_divide_fixed (rasterizer,
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x0 * CTX_FIX_SCALE), (int)(y0 * CTX_FIX_SCALE),
             (int)(x1 * CTX_FIX_SCALE), (int)(y1 * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE),
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE),
-            0, CTX_FIX_SCALE, 0, (long)tolerance);
+            0, CTX_FIX_SCALE, 0, rasterizer->state->gstate.tolerance_fixed);
 #else
-  tolerance *= tolerance;
   ctx_rasterizer_bezier_divide (rasterizer,
                                 ox, oy, x0, y0,
                                 x1, y1, x2, y2,
                                 ox, oy, x2, y2,
-                                0.0f, 1.0f, 0, tolerance);
+                                0.0f, 1.0f, 0, rasterizer->state->gstate.tolerance);
 #endif
   ctx_rasterizer_line_to (rasterizer, x2, y2);
 }
