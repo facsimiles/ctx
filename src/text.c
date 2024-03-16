@@ -332,7 +332,7 @@ ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unichar
 }
 
 static float
-ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, uint32_t unichar)
+ctx_glyph_width_ctx (CtxFont *font, Ctx *ctx, int unichar)
 {
   float font_size = 1.0f;
   if (ctx)
@@ -415,7 +415,7 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, int unichar,
             }
           process (ctx, (CtxCommand*)entry);
         }
-      else if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == unichar)
+      else if (entry->code == CTX_DEFINE_GLYPH && entry->data.u32[0] == (unsigned)unichar)
         {
           in_glyph = 1;
           ctx_save (ctx);

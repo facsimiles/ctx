@@ -233,6 +233,7 @@ static CTX_INLINE float ctx_cosf (float a)            { return cosf (a); }
 static CTX_INLINE float ctx_tanf (float a)            { return tanf (a); }
 static CTX_INLINE float ctx_expf (float p)            { return expf (p); }
 static CTX_INLINE float ctx_sqrtf (float a)           { return sqrtf (a); }
+static CTX_INLINE float ctx_atanf (float a)           { return atanf (a); }
 
 static CTX_INLINE float ctx_hypotf_fast (float a, float b)
 {
