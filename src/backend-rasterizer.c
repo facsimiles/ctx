@@ -2106,10 +2106,10 @@ ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
 {
   int t = (s + e) / 2;
   int x, y;
-  int dx, dy;
 
   ctx_bezier_sample_fixed (ox, oy, x0, y0, x1, y1, x2, y2, t, &x, &y);
 
+  int dx, dy;
 #if 1
   dx = (sx+ex)/2 - x;
   dy = (sy+ey)/2 - y;

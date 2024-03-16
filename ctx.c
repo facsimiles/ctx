@@ -15,7 +15,7 @@
 //#define CTX_STB_TTF              1
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl/wasm backends
 #define CTX_EXTRAS 0
-#define CTX_GSTATE_PROTECT       0
+#define CTX_GSTATE_PROTECT       1
 #define CTX_FONTS_FROM_FILE      1
 #define CTX_MAX_TEXTURES         1024  // default: 32
 				       //

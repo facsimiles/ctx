@@ -959,35 +959,72 @@ _ctx_text_substitute_ligatures (Ctx *ctx, CtxFont *font,
   return 0;
 }
 
+typedef struct CtxShape {
+  uint32_t    hash;
+  const char *utf8;
+  uint64_t    shaping_flags;
+  CtxGlyph   *glyphs;
+  int         count;
+  float       width;
+} CtxShape;
+/*
+ *
+ *  return 1 if the glyphs should be freed
+ */
+#define SHAPE_CACHE_SIZE 4096
 
-float
-ctx_text_width (Ctx        *ctx,
-                const char *string)
+CtxShape *shape_cache[SHAPE_CACHE_SIZE];
+
+
+static int
+_ctx_shape (Ctx         *ctx,
+	    const char  *string,
+	    float       *width,
+	    CtxGlyph   **ret_glyphs,
+	    int         *ret_count)
 {
-  float sum = 0.0;
-  if (!string)
-    return 0.0f;
-  CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
+  CtxState *state = &ctx->state;
+  CtxFont *font = &ctx_fonts[state->gstate.font];
 
-#if CTX_FONT_ENGINE_HARFBUZZ
+  uint32_t hash = ctx_strhash (string);
+  hash ^= (uint32_t)(size_t)(font);
+  int hpos = hash & (SHAPE_CACHE_SIZE-1);
+  if (shape_cache[hpos] && !strcmp (shape_cache[hpos]->utf8, string) && shape_cache[hpos]->hash == hash)
+  {
+     ret_cached:
+     if (ret_glyphs) *ret_glyphs = shape_cache[hpos]->glyphs;
+     if (ret_count) *ret_count= shape_cache[hpos]->count;
+     if (width) *width = shape_cache[hpos]->width;
+     return 1;
+  }
+  unsigned int glyph_count = 0;
+  float x_advance = 0.0;
+  CtxGlyph *glyphs = NULL;
+
   if (font->type == 4) // harfbuzz
   {
-    float x = 0.0f;
-    hb_buffer_t *buf =
-    buf = hb_buffer_create();
-    hb_buffer_add_utf8(buf, string, -1, 0, -1);
-    hb_buffer_guess_segment_properties(buf);
-    hb_shape(font->hb.font,buf, NULL, 0);
-    unsigned int glyph_count;
-    hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions(buf, &glyph_count);
-    for (unsigned int i = 0; i < glyph_count; i++)
-      x += glyph_pos[i].x_advance;
-    hb_buffer_destroy (buf);
-    return x * ctx->state.gstate.font_size * font->hb.scale;
+  hb_buffer_t *buf = hb_buffer_create();
+  hb_buffer_add_utf8(buf, string, -1, 0, -1);
+  hb_buffer_guess_segment_properties(buf);
+  hb_shape(font->hb.font,buf, NULL, 0);
+  hb_glyph_info_t *glyph_info = hb_buffer_get_glyph_infos(buf, &glyph_count);
+  hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions(buf, &glyph_count);
+  glyphs = ctx_glyph_allocate (glyph_count);
+  for (unsigned int i = 0; i < glyph_count; i++)
+  {
+    glyphs[i].index = glyph_info[i].codepoint;
+    glyphs[i].x     = (glyph_pos[i].x_offset + x_advance) * font->hb.scale;;
+    glyphs[i].y     = glyph_pos[i].y_offset * font->hb.scale;;
+    x_advance += glyph_pos[i].x_advance;
   }
-#endif
-
-  for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1) )
+  x_advance *= font->hb.scale;
+  hb_buffer_destroy (buf);
+  }
+  else
+  {
+    float font_size = state->gstate.font_size;
+    glyphs = ctx_glyph_allocate (ctx_utf8_strlen (string) * 2);
+    for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1) )
     {
       uint32_t unichar = ctx_utf8_to_unichar (utf8); 
       uint32_t next  = ctx_utf8_to_unichar (ctx_utf8_skip(utf8, 1));
@@ -998,10 +1035,47 @@ ctx_text_width (Ctx        *ctx,
 	skip_kern = 1;
       }
 
-      sum += ctx_glyph_width (ctx, ctx_glyph_lookup(ctx, unichar));
-      if (next &(!skip_kern)) sum += ctx_glyph_kern (ctx, unichar, next);
+      glyphs[glyph_count].index = ctx_glyph_lookup (ctx, unichar);
+      glyphs[glyph_count].x     = x_advance;
+      glyphs[glyph_count].y     = 0;
+      x_advance += ctx_glyph_width(ctx, glyphs[glyph_count].index)/font_size;
+
+      glyph_count++;
+      if (next &(!skip_kern)) x_advance += ctx_glyph_kern (ctx, unichar, next);
     }
-  return sum;
+  }
+
+#define CTX_CACHE_SHAPE_MAX_STRLEN   8
+
+  int do_cache = (strlen(string)<CTX_CACHE_SHAPE_MAX_STRLEN);
+
+  if (shape_cache[hpos]==0 && do_cache)
+  {
+     shape_cache[hpos] = ctx_calloc(sizeof (CtxShape), 1);
+     shape_cache[hpos]->utf8 = ctx_strdup(string);
+     shape_cache[hpos]->glyphs = glyphs;
+     shape_cache[hpos]->count = glyph_count;
+     shape_cache[hpos]->width = x_advance;
+     shape_cache[hpos]->hash = hash;
+     goto ret_cached;
+  }
+
+  if (width) *width = x_advance;
+  if (ret_count) *ret_count = glyph_count;
+  else ctx_glyph_free (glyphs);
+  if (ret_glyphs){ *ret_glyphs = glyphs; return 0;}
+  else return 1;
+}
+
+float
+ctx_text_width (Ctx        *ctx,
+                const char *string)
+{
+  float sum = 0.0;
+  if (!string)
+    return 0.0f;
+  _ctx_shape (ctx, string, &sum, NULL, NULL);
+  return sum * ctx->state.gstate.font_size;
 }
 
 static void
@@ -1010,13 +1084,12 @@ _ctx_glyphs (Ctx     *ctx,
              int       n_glyphs,
              int       stroke)
 {
+  CtxState *state = &ctx->state;
+  float font_size = state->gstate.font_size;
   for (int i = 0; i < n_glyphs; i++)
     {
-      {
-        uint32_t unichar = glyphs[i].index;
-        ctx_move_to (ctx, glyphs[i].x, glyphs[i].y);
-        ctx_glyph_id (ctx, unichar, stroke);
-      }
+        ctx_move_to (ctx, glyphs[i].x * font_size, glyphs[i].y * font_size);
+        ctx_glyph_id (ctx, glyphs[i].index, stroke);
     }
 }
 
@@ -1037,6 +1110,7 @@ static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
 }
 #endif
 
+
 static void
 _ctx_text (Ctx        *ctx,
            const char *string,
@@ -1047,7 +1121,6 @@ _ctx_text (Ctx        *ctx,
   int word_len = 0;
   CtxState *state = &ctx->state;
   float font_size = state->gstate.font_size;
-  CtxFont *font = &ctx_fonts[state->gstate.font];
   float x = ctx->state.x;
   word[word_len]=0;
   switch ( (int) ctx_state_get (state, SQZ_textAlign) )
@@ -1088,7 +1161,6 @@ _ctx_text (Ctx        *ctx,
         break;
     }
   float x0 = x;
-  float x1 = x + 10000.0f;
   
   float wrap_left = ctx_get_wrap_left (ctx);
   float wrap_right = ctx_get_wrap_right (ctx);
@@ -1106,65 +1178,27 @@ _ctx_text (Ctx        *ctx,
         {
           float word_width = 0.0;
           word[word_len]=0;
-	  word_width = ctx_text_width (ctx, word);
+	  int n_glyphs = 0;
+	  CtxGlyph *glyphs = NULL;
+	  int cached = _ctx_shape (ctx, word, &word_width, &glyphs, &n_glyphs);
 
           if (wrap_left != wrap_right &&
-              x + word_width >= wrap_right)
+              x + word_width * font_size >= wrap_right)
           {
             y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
             x = x0;
           }
 
-#if CTX_FONT_ENGINE_HARFBUZZ
-	  if (font->type == 4) // harfbuzz
-          {
-	     hb_buffer_t *buf =
-	     buf = hb_buffer_create();
-	     hb_buffer_add_utf8(buf, word, -1, 0, -1);
-	     hb_buffer_guess_segment_properties(buf);
-	     hb_shape(font->hb.font,buf, NULL, 0);
-	     unsigned int glyph_count;
-	     hb_glyph_info_t *glyph_info = hb_buffer_get_glyph_infos(buf, &glyph_count);
-	     hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions(buf, &glyph_count);
-	     for (unsigned int i = 0; i < glyph_count; i++)
-	     {
-               hb_codepoint_t glyphid = glyph_info[i].codepoint;
-               hb_position_t x_offset = glyph_pos[i].x_offset;
-               hb_position_t y_offset = glyph_pos[i].y_offset;
-
-               ctx_move_to (ctx, x + x_offset * font_size * font->hb.scale, y + y_offset * font_size * font->hb.scale  + baseline_offset);
-               _ctx_glyph (ctx, glyphid, stroke);
-	       x += glyph_pos[i].x_advance * font_size * font->hb.scale;
-	     }
-	     hb_buffer_destroy (buf);
+	  if (glyphs)
+	  {
+	    ctx_save (ctx);
+	    ctx_translate (ctx, x, y + baseline_offset);
+	    ctx_glyphs (ctx, glyphs, n_glyphs);
+	    ctx_restore (ctx);
+	    if (!cached)
+	      ctx_glyph_free (glyphs);
 	  }
-	  else
-#endif
-          for (const char *bp = &word[0]; *bp; bp = ctx_utf8_skip (bp, 1))
-          {
-            uint32_t unichar      = ctx_utf8_to_unichar (bp);
-            const char *next_utf8 = ctx_utf8_skip (bp, 1);
-            uint32_t next_unichar = *next_utf8?ctx_utf8_to_unichar (next_utf8):0;
-
-            if (_ctx_text_substitute_ligatures (ctx, font, &unichar, next_unichar))
-              bp++;
-
-	    int glyph_id = ctx_glyph_lookup (ctx, unichar);
-            float glyph_width = ctx_glyph_width (ctx, glyph_id);
-            if (x + glyph_width >= x1)
-            {
-              y += ctx->state.gstate.font_size * ctx_get_line_height (ctx);
-              x = x0;
-            }
-            if (visible)
-            {
-              ctx_move_to (ctx, x, y + baseline_offset);
-              _ctx_glyph (ctx, glyph_id, stroke);
-            }
-            x += glyph_width;
-            if (next_unichar)
-              x += ctx_glyph_kern (ctx, unichar, next_unichar );
-          }
+	  x += word_width * font_size;
 
           if (*utf8 == '\n')
           {

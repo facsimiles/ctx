@@ -2671,7 +2671,7 @@ itk_iteration (double time, void *data)
   Ctx *ctx = itk->ctx;
   int   ret_val = 1;
 
-    if (ctx_need_redraw (ctx))
+    if (1 || ctx_need_redraw (ctx))
     {
       itk_reset (itk);
       if (_itk_key_bindings_active)
