@@ -430,6 +430,8 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
   int active_edges = rasterizer->active_edges;
   int parity = 0;
   coverage -= minx;
+  int accumulator_x = 0;
+  uint8_t accumulated = 0;
   for (int t = 0; t < active_edges -1;t++)
     {
       CtxSegment *segment = &entries[edges[t]];
@@ -459,12 +461,36 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
           graystart = (graystart&0xff) ^ 255;
           grayend   = (grayend & 0xff);
 
-          coverage[first] += graystart;
-          coverage[last]  += grayend;
-          if (first + 1< last)
+	  if (accumulated)
+	  {
+	    if (accumulator_x == first)
+	    {
+	       graystart += accumulated;
+	    } else
+	    {
+	       coverage[accumulator_x] = accumulated;
+	    }
+	    accumulated = 0;
+	  }
+
+          if (first < last)
+	  {
+              coverage[first] += graystart;
               memset(&coverage[first+1], 255, last-(first+1));
+	      accumulated = grayend;
+	  }
+	  else
+	  {
+	    accumulated = (graystart-(grayend^255));
+	  }
+	  accumulator_x = last;
+          //coverage[last]  += grayend;
         }
    }
+  if (accumulated)
+  {
+    coverage[accumulator_x] = accumulated;
+  }
 }
 #endif
 
@@ -1624,7 +1650,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
   for (; rasterizer->scanline <= scan_end;)
     {
       int aa = ctx_rasterizer_feed_edges_full (rasterizer);
-
       switch (aa)
       {
         case -1:
