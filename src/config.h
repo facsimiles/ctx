@@ -259,7 +259,7 @@
 /*
  *  do not use manual RGBA8 code but rely on ctx inline templating
  */
-#ifndef CTX_INLINED_NORMAL     
+#ifndef CTX_INLINED_NORMAL_RGBA8
 #define CTX_INLINED_NORMAL_RGBA8  0
 #endif
 

@@ -153,6 +153,7 @@ void ctx_simd_setup (void)
 #if CTX_BABL
 #include <babl/babl.h>
 #else
+#undef CTX_ENABLE_CM
 #define CTX_ENABLE_CM  0
 #endif
 
