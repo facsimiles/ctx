@@ -190,6 +190,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
   client->vt = vt_new (commandline, width, height, font_size,line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
   client->vt->client = client;
   vt_set_ctx (client->vt, ctx);
+  vt_set_title (client->vt, "ctx - native vectors");
   return client;
 }
 
@@ -204,6 +205,7 @@ CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, 
   client->vt = vt_new_argv (argv, width, height, font_size,line_spacing, client->id, (flags & ITK_CLIENT_CAN_LAUNCH)!=0);
   client->vt->client = client;
   vt_set_ctx (client->vt, ctx);
+  vt_set_title (client->vt, "ctx - native vectors");
   return client;
 }
 
