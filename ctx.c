@@ -14,6 +14,7 @@
 #include "local.conf"
 //#define CTX_STB_TTF              1
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl/wasm backends
+//#define CTX_MATH                 0
 #define CTX_EXTRAS               0
 #define CTX_GSTATE_PROTECT       1
 #define CTX_FONT_SHAPE_CACHE     1

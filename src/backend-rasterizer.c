@@ -2246,11 +2246,6 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
   if (rasterizer->texture_source->texture[no].data == NULL)
     {
-#if CTX_32BIT_SEGMENTS
-      // not really, but we want to avoid building/linking fprintf
-      // for firmwares which are likely to not have this set
-      //fprintf (stderr, "ctx tex fail %p %s %i\n", rasterizer->texture_source, eid, no);
-#endif
       return;
     }
   else
@@ -2900,6 +2895,8 @@ foo:
 
 #endif
 
+#define CTX_MIN_STROKE_LEN  0.2f
+
 static void
 ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 {
@@ -2997,7 +2994,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
       float half_width_y = half_width_x;
 
       if (CTX_UNLIKELY(line_width <= 0.0f))
-        { // makes 0 width be 1px in user-space; hairline
+        { // makes negative width be 1px in user-space; hairline
           half_width_x = .5f;
           half_width_y = .5f;
         }
@@ -3028,7 +3025,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
               float dx = x - prev_x;
               float dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
-              if (length>0.001f)
+              if (length>CTX_MIN_STROKE_LEN)
                 {
                   float recip_length = 1.0f/length;
                   dx = dx * recip_length * half_width_x;
@@ -3048,8 +3045,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 
                   ctx_rasterizer_line_to (rasterizer, x-dy, y+dx);
                 }
-              prev_x = x;
-              prev_y = y;
+                  prev_x = x;
+                  prev_y = y;
             }
           end = i-1;
 foo:
@@ -3065,15 +3062,15 @@ foo:
               float recip_length = 1.0f/length;
               dx = dx * recip_length * half_width_x;
               dy = dy * recip_length * half_width_y;
-              if (CTX_LIKELY(length>0.001f))
+              if (CTX_LIKELY(length>CTX_MIN_STROKE_LEN))
                 {
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
                   // XXX possible miter line-to
              //   ctx_rasterizer_line_to (rasterizer, prev_x-dy+10, prev_y+dx+10);
                   ctx_rasterizer_line_to (rasterizer, x-dy,      y+dx);
+              	  prev_x = x;
+                  prev_y = y;
                 }
-              prev_x = x;
-              prev_y = y;
               if (CTX_UNLIKELY(entry->code == CTX_NEW_EDGE))
                 {
                   x = entry->data.s16[0] * 1.0f / CTX_SUBDIV;
@@ -3082,16 +3079,13 @@ foo:
                   dy = y - prev_y;
                   length = ctx_fast_hypotf (dx, dy);
                   recip_length = 1.0f/length;
-                  if (CTX_LIKELY(length>0.001f))
+                  if (CTX_LIKELY(length>CTX_MIN_STROKE_LEN))
                     {
                       dx = dx * recip_length * half_width_x;
                       dy = dy * recip_length * half_width_y;
                       ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
                       ctx_rasterizer_line_to (rasterizer, x-dy, y+dx);
                     }
-                }
-              if ( (prev_x != x) & (prev_y != y) )
-                {
                   prev_x = x;
                   prev_y = y;
                 }

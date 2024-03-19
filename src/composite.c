@@ -111,7 +111,7 @@ CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t isrc00, uint32_t isrc01, uint3
 inline static int ctx_grad_index (CtxRasterizer *rasterizer, float v)
 {
   int ret = (int)(v * (rasterizer->gradient_cache_elements - 1) + 0.5f);
-  ret = ctx_maxi (0, ret);
+  ret *= (ret>0);
   ret = ctx_mini (rasterizer->gradient_cache_elements-1, ret);
   return ret;
 }
@@ -119,7 +119,8 @@ inline static int ctx_grad_index (CtxRasterizer *rasterizer, float v)
 CTX_INLINE static int ctx_grad_index_i (CtxRasterizer *rasterizer, int v)
 {
   v = v >> 8;
-  return ctx_maxi (0, ctx_mini (rasterizer->gradient_cache_elements-1, v));
+  v *= (v>0);
+  return ctx_mini (rasterizer->gradient_cache_elements-1, v);
 }
 
 //static void
