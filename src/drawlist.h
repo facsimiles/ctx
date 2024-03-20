@@ -101,6 +101,7 @@ CtxSegment {
   } data;
   int32_t val;
   int32_t delta;
+  int32_t aa; // bit field of needed AA levels 1=3  4=5  8=15
 } CtxSegment;
 #pragma pack(pop)
 
