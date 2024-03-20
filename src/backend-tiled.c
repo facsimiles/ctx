@@ -1,5 +1,9 @@
 #include "ctx-split.h"
 
+// TODO : tiled renderer should have a work-queue or work-stealing
+//        right now one core might be working while all
+//        others are idle
+
 #if CTX_TILED
 static inline int
 ctx_tiled_threads_done (CtxTiled *tiled)

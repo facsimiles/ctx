@@ -5545,8 +5545,20 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
       vt_set_local (vt, !vt_get_local (vt) );
       return;
     }
-  else if (str[0]=='p' && str[1] != 0 && str[2] == ' ')
+  else if ((!strncmp (str, "control-p", 9)) && (str[9]!=0) && (str[10] == ' '))
     {
+      str+=8;
+      goto mice; 
+    }
+  else if ((!strncmp (str, "shift-p", 7)) && (str[7]!=0) && (str[8] == ' '))
+    {
+      str+=6;
+      goto mice; 
+    }
+
+  else if (str[0]=='p' && str[1] != 0 && str[2] == ' ')
+  {
+mice:{
       int cw = vt_cw (vt);
       int ch = vt_ch (vt);
       if (!strncmp (str, "pm", 2))
@@ -5628,7 +5640,7 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
           // queue-draw
         }
       return;
-    }
+    }}
 
   if (vt->scroll_on_input)
   {
