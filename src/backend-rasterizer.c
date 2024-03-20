@@ -239,7 +239,6 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
                                          (yd * dx_dy);
 
 	      if (dx_dy < 0) dx_dy = -dx_dy;
-	      entries[index].aa = 0;
 #if CTX_RASTERIZER_AA>5
               if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15)
 	        entries[index].aa = 8; /// could be 15 - it contains 8
@@ -252,6 +251,8 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
 #endif
 	      if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
 	        entries[index].aa = 1; // could be 3 - it contains 1
+	      else
+	        entries[index].aa = 0;
 
               if ((miny > scanline) &
                   (pending_edges < CTX_MAX_PENDING-1))
@@ -956,7 +957,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
             int pre = 1;
             int post = 1;
 
-            if (abs(delta0) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
+            if (segment->aa == 0)
             {
               coverage[first] += graystart;
             }
@@ -981,7 +982,7 @@ ctx_rasterizer_generate_coverage_set2 (CtxRasterizer *rasterizer,
               pre = (us+count-1)-first+1;
             }
   
-            if (abs(delta1) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
+            if (next_segment->aa == 0)
             {
                coverage[last] += grayend;
             }
@@ -1110,9 +1111,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
             int pre = 1;
             int post = 1;
 
-          if (abs(delta0) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
+          if (segment->aa==0)
           {
-             coverage[first] += graystart;
+            coverage[first] += graystart;
 
             accumulated_x1 = first;
             accumulated_x0 = ctx_mini (accumulated_x0, first);
@@ -1191,7 +1192,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
              accumulated_x1 = 65536;
           }
 
-          if (abs(delta1) < CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
+          if (next_segment->aa == 0)
           {
              coverage[last] += grayend;
              accumulated_x1 = last;
