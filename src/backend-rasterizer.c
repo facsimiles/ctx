@@ -192,9 +192,9 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
 #endif
   needs_aa3 += (abs(delta0) > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
 
-  for (int t = 0; t < active_edges -1;t++)
+  for (int t = 1; t < active_edges;t++)
     {
-      const CtxSegment *segment1 = segments + edges[t+1];
+      const CtxSegment *segment1 = segments + edges[t];
       const int delta1    = segment1->delta;
       const int x1        = segment1->val;
       const int abs_delta1 = abs(delta1);
@@ -208,35 +208,23 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
 
       const int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
       const int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
-      if ((x1_end < x0_end)   |
-          (x1_start < x0_end) |
-          (x1_end < x0_start)
-         )
-      {
-         crossings = 1;
-#if CTX_RASTERIZER_AA==3
-         if (needs_aa3)
-            return 3;
-         return 1;
-#elif CTX_RASTERIZER_AA==5
-         if (needs_aa5)
-            break;
-#elif CTX_RASTERIZER_AA==15
-         if (needs_aa15)
-            break;
-#endif
-      }
+      crossings += ((x1_end < x0_end)   | (x1_start < x0_end) | (x1_end < x0_start));
       x0_end = x1_end;
       x0_start = x1_start;
     }
 
+  if (crossings)
+  {
 #if CTX_RASTERIZER_AA>5
-  if (needs_aa15) return 15 * crossings;
+    if (needs_aa15) return 15;
 #endif
 #if CTX_RASTERIZER_AA>3
-  if (needs_aa5) return 5 * crossings;
+    if (needs_aa5) return 5;
 #endif
-  return (needs_aa3!=0) * 3 * crossings;
+    if (needs_aa3!=0) return 3;
+    return 1;
+  }
+  return 0;
 }
 
 inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
