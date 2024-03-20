@@ -35,7 +35,7 @@
 #define CTX_MAX_KEYDB            128  // default: 64
 #define CTX_GET_CONTENTS         1
 #define CTX_PROTOCOL_U8_COLOR    1
-//#define CTX_CURRENT_PATH         0
+#define CTX_CURRENT_PATH         1
 #include "stb_image.h"
 
    typedef unsigned char   stbtt_uint8;

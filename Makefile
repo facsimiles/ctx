@@ -208,7 +208,7 @@ media-handlers/%.o: media-handlers/%.c ctx.h itk/itk.h Makefile build.conf
 libctx.a: itk.o deps.o $(CTX_OBJS) build.conf Makefile
 	$(AR) rcs $@ $(CTX_OBJS) deps.o itk.o
 libctx.so: $(CTX_OBJS) deps.o itk.o build.conf Makefile
-	$(LD) -shared $(LIBS) $(CTX_OBJS) deps.o itk.o $(CTX_LIBS) -o $@
+	$(CCC) -shared $(LIBS) $(CTX_OBJS) deps.o itk.o $(CTX_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
