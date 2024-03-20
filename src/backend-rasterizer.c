@@ -157,7 +157,7 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
   if (rasterizer->active_edges + rasterizer->pending_edges == 0)
     return -1;
   if ((rasterizer->fast_aa == 0) |
-      rasterizer->horizontal_edges|
+      rasterizer->horizontal_edges| // XXX : maybe superfluous?
       rasterizer->ending_edges|
       rasterizer->pending_edges)
   {
@@ -213,7 +213,7 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
           (x1_end < x0_start)
          )
       {
-         crossings=1;
+         crossings = 1;
 #if CTX_RASTERIZER_AA==3
          if (needs_aa3)
             return 3;
@@ -231,13 +231,12 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
     }
 
 #if CTX_RASTERIZER_AA>5
-  if (crossings & (needs_aa15!=0)) return 15;
+  if (needs_aa15) return 15 * crossings;
 #endif
 #if CTX_RASTERIZER_AA>3
-  if (crossings & (needs_aa5!=0)) return 5;
+  if (needs_aa5) return 5 * crossings;
 #endif
-  if (crossings & (needs_aa3!=0)) return 3;
-  return crossings;
+  return (needs_aa3!=0) * 3 * crossings;
 }
 
 inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
