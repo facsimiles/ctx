@@ -242,16 +242,16 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
 	      entries[index].aa = 0;
 #if CTX_RASTERIZER_AA>5
               if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15)
-	        entries[index].aa = 15;
+	        entries[index].aa = 8; /// could be 15 - it contains 8
 	      else
 #endif
 #if CTX_RASTERIZER_AA>5
 	      if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5)
-	        entries[index].aa = 5;
+	        entries[index].aa = 4; // could be 5 - it contains 4
 	      else
 #endif
 	      if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
-	        entries[index].aa = 3;
+	        entries[index].aa = 1; // could be 3 - it contains 1
 
               if ((miny > scanline) &
                   (pending_edges < CTX_MAX_PENDING-1))
@@ -545,8 +545,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
              grayend=255;
           }
           graystart = (graystart&0xff) ^ 255;
-
-          grayend     = (grayend & 0xff);
+          grayend   = (grayend&0xff);
 
           if (accumulated)
           {
@@ -583,9 +582,9 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               {
                 uint32_t* dst_pix = (uint32_t*)(&dst[(first *bpp)/8]);
                 *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, graystart);
-
-                dst_pix++;
-                ctx_span_set_colorb (dst_pix, src_pix, last - first - 1);
+		dst_pix++;
+                for (unsigned int i = first + 1; i < (unsigned)last; i++)
+                  *dst_pix++=src_pix;
               }
               break;
             case CTX_COV_PATH_RGB8_COPY:
