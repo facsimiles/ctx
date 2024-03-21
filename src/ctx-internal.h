@@ -785,6 +785,8 @@ struct _CtxRasterizer
   unsigned int  in_text:1;
   unsigned int  swap_red_green:1;
 
+  unsigned int  scan_aa[4]; // 0=none, 1 = 3, 2 = 5, 3 = 15
+
 #if CTX_BRAILLE_TEXT
   unsigned int  term_glyphs:1; // store appropriate glyphs for redisplay
 #endif
