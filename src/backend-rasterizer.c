@@ -69,6 +69,7 @@ static CTX_INLINE void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       if (edge_end < scanline)
         {
           rasterizer->edges[i] = rasterizer->edges[active_edges-1];
+          rasterizer->scan_aa[segment->aa]--;
           active_edges--;
           i--;
         }
@@ -175,26 +176,27 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, unsigned int 
   int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
   int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
 
-  int aa = segment0->aa;
   unsigned int t = 1;
   for (t = 1; (t < active_edges);t++)
     {
       const CtxSegment *segment1 = segments + edges[t];
-      const int delta1    = segment1->delta;
-      const int x1        = segment1->val;
+      const int delta1           = segment1->delta;
+      const int x1               = segment1->val;
       const int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
       const int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
 
-      aa |= segment1->aa;
       crossings |=  ((x1_end < x0_end)   | (x1_start < x0_end) | (x1_end < x0_start));
       x0_end = x1_end;
       x0_start = x1_start;
     }
 
 #if CTX_RASTERIZER_AA > 5
-  aa = (aa&8)*15 + (aa&8==0) * ((aa&4)*5 + ((aa&4)==0) * (((aa&1)==1)*3 + ((aa&1)==0) * (1)));
+  int aa = ((rasterizer->scan_aa[3]>0) *15) + (rasterizer->scan_aa[3]<=0)*
+     ((rasterizer->scan_aa[2]>0) * 5 +
+       (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0)));
 #else
-  aa = (aa&4)*5 + ((aa&4)==0) * ((aa&1)*3 + ((aa&1)==0) * (1));
+  int aa = (rasterizer->scan_aa[2]>0) * 5 +
+       (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0));
 #endif
 
   return aa * crossings;
@@ -232,34 +234,18 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
                                          (yd * dx_dy);
 
 	      dx_dy = abs(dx_dy);
-#if 0
-#if CTX_RASTERIZER_AA>5
-              if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15)
-	        entries[index].aa = 8; /// could be 15 - it contains 8
-	      else
-#endif
-#if CTX_RASTERIZER_AA>3
-	      if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5)
-	        entries[index].aa = 4; // could be 5 - it contains 4
-	      else
-#endif
-	      if (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)
-	        entries[index].aa = 1; // could be 3 - it contains 1
-	      else
-	        entries[index].aa = 0;
-#else
+
 #if CTX_RASTERIZER_AA>5
 	      entries[index].aa =
-                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15) * 8 +
-                 (dx_dy <= CTX_RASTERIZER_AA_SLOPE_LIMIT15) * (
-                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) * 4 +
-                 ((dx_dy <= CTX_RASTERIZER_AA_SLOPE_LIMIT5) * (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA)));
+                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15) +
+                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) +
+                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
 #else
 	      entries[index].aa =
-                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) * 4 +
-                 ((dx_dy <= CTX_RASTERIZER_AA_SLOPE_LIMIT5) * (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA));
+                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) +
+                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
 #endif
-#endif
+	      rasterizer->scan_aa[entries[index].aa]++;
 
               if ((miny > scanline) &
                   (pending_edges < CTX_MAX_PENDING-1))
