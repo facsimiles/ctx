@@ -1576,12 +1576,12 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
           int scanline_increment = 15/aa;
           memset (coverage, 0, pixs);
           uint8_t fraction = 255/aa;
-          for (int i = 0; i < CTX_FULL_AA; i+= scanline_increment)
+          for (unsigned int i = 0; i < (unsigned)aa; i++)
           {
-            if (i) ctx_rasterizer_feed_edges (rasterizer);
             ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
             ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
             ctx_rasterizer_increment_edges (rasterizer, scanline_increment);
+            ctx_rasterizer_feed_edges (rasterizer);
           }
         }
       }
