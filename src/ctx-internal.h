@@ -775,6 +775,8 @@ struct _CtxRasterizer
   uint16_t    blit_height;
   uint16_t    blit_stride;
 
+  unsigned int  non_intersecting:1;
+
   unsigned int  clip_rectangle:1;
   unsigned int  has_shape:2;
   int  has_prev:2;
