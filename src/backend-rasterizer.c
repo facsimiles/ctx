@@ -153,7 +153,7 @@ CTX_INLINE static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     ctx_rasterizer_discard_edges (rasterizer);
 }
 
-CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, unsigned int active_edges, int pending_edges, int horizontal_edges)
+CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const int pending_edges, const int horizontal_edges, const int non_intersecting)
 {
   if ((rasterizer->fast_aa == 0) |
       (horizontal_edges!=0)|
@@ -162,7 +162,7 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, unsigned int 
   {
     return CTX_RASTERIZER_AA;
   }
-  if (rasterizer->non_intersecting)
+  if (non_intersecting)
      return 0;
 
   const int *edges  = rasterizer->edges;
@@ -202,7 +202,7 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, unsigned int 
   return aa * crossings;
 }
 
-inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
+inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, const int non_intersecting)
 {
   int miny;
   ctx_rasterizer_feed_edges (rasterizer);
@@ -272,7 +272,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
     rasterizer->horizontal_edges = horizontal_edges;
     if (active_edges + pending_edges == 0)
       return -1;
-    return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges);
+    return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges, non_intersecting);
 }
 
 static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, unsigned int minx, unsigned int maxx, uint8_t *coverage, int *first_col, int *last_col)
@@ -1456,12 +1456,12 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 
 
 static void
-ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
+ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule, const int allow_direct, const int non_intersecting)
 {
   rasterizer->pending_edges   =   
   rasterizer->active_edges    =   0;
   CtxGState     *gstate     = &rasterizer->state->gstate;
-  int       is_winding  = fill_rule == CTX_FILL_RULE_WINDING;
+  const int      is_winding  = fill_rule == CTX_FILL_RULE_WINDING;
   const CtxCovPath comp = rasterizer->comp;
   const int real_aa     = rasterizer->aa;
   uint8_t  *dst         = ((uint8_t *) rasterizer->buf);
@@ -1516,17 +1516,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
   rasterizer->scanline = scan_start;
 
-  int allow_direct = !(0 
-#if CTX_ENABLE_CLIP
-         | ((rasterizer->clip_buffer!=NULL) & (!rasterizer->clip_rectangle))
-#endif
-#if CTX_ENABLE_SHADOW_BLUR
-         | rasterizer->in_shadow
-#endif
-         );
   for (; rasterizer->scanline <= scan_end;)
     {
-      int aa = ctx_rasterizer_feed_edges_full (rasterizer);
+      int aa = ctx_rasterizer_feed_edges_full (rasterizer, non_intersecting);
       switch (aa)
       {
         case -1:
@@ -1690,13 +1682,49 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
 void
 CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule)
 {
-  if (fill_rule)
+  int allow_direct = !(0 
+#if CTX_ENABLE_CLIP
+         | ((rasterizer->clip_buffer!=NULL) & (!rasterizer->clip_rectangle))
+#endif
+#if CTX_ENABLE_SHADOW_BLUR
+         | rasterizer->in_shadow
+#endif
+         );
+
+  if (rasterizer->non_intersecting)
   {
-    ctx_rasterizer_rasterize_edges2 (rasterizer, 1);
+    if (allow_direct)
+    {
+      if (fill_rule)
+        ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 1, 1);
+      else
+        ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 1, 1);
+    }
+    else
+    {
+      if (fill_rule)
+        ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 0, 1);
+      else
+        ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 0, 1);
+    }
   }
   else
   {
-    ctx_rasterizer_rasterize_edges2 (rasterizer, 0);
+    if (allow_direct)
+    {
+      if (fill_rule)
+        ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 1, 0);
+      else
+        ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 1, 0);
+    }
+    else
+    {
+      if (fill_rule)
+        ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 0, 0);
+      else
+        ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 0, 0);
+    }
+
   }
 }
 #else
@@ -1704,7 +1732,15 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
 void
 CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule)
 {
-    ctx_rasterizer_rasterize_edges2 (rasterizer, fill_rule);
+  int allow_direct = !(0 
+#if CTX_ENABLE_CLIP
+         | ((rasterizer->clip_buffer!=NULL) & (!rasterizer->clip_rectangle))
+#endif
+#if CTX_ENABLE_SHADOW_BLUR
+         | rasterizer->in_shadow
+#endif
+         );
+  ctx_rasterizer_rasterize_edges2 (rasterizer, fill_rule, allow_direct, rasterizer->non_intersecting);
 }
 
 #endif
