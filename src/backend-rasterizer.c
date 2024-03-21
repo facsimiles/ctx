@@ -306,12 +306,15 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, unsigne
     int y = scanline / CTX_FULL_AA;//rasterizer->aa;
     uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
     // XXX SIMD candidate
+#if CTX_1BIT_CLIP==0
+    int blit_x = rasterizer->blit_x;
+#endif
     for (unsigned int x = minx; x <= maxx; x ++)
     {
 #if CTX_1BIT_CLIP
        coverage[x] = (coverage[x] * ((clip_line[x/8]&(1<<(x&8)))?255:0))/255;
 #else
-       coverage[x] = (255 + coverage[x] * clip_line[x-rasterizer->blit_x])>>8;
+       coverage[x] = (255 + coverage[x] * clip_line[x-blit_x])>>8;
 #endif
     }
   }
