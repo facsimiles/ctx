@@ -1472,6 +1472,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   int       minx        = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
   int       maxx        = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
                           rasterizer->blit_x;
+  const int bpp = rasterizer->format->bpp;
   const int blit_stride = rasterizer->blit_stride;
 
   uint8_t *rasterizer_src = rasterizer->color;
@@ -1516,7 +1517,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
   rasterizer->scanline = scan_start;
 
-  for (; rasterizer->scanline <= scan_end;)
+  while (rasterizer->scanline <= scan_end)
     {
       int aa = ctx_rasterizer_feed_edges_full (rasterizer, non_intersecting);
       switch (aa)
@@ -1551,7 +1552,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
           ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
     
           if (allow_direct)
-          { /* can generate with direct rendering to target (we're not using shape cache) */
+          { 
     
             ctx_rasterizer_generate_coverage_apply (rasterizer, minx, maxx, is_winding, comp);
             ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
@@ -1586,7 +1587,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   
       ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx, NULL, NULL);
       rasterizer->apply_coverage (rasterizer,
-                      &dst[(minx * rasterizer->format->bpp) /8],
+                      &dst[(minx * bpp) /8],
                       rasterizer_src,
                       minx,
                       coverage,
