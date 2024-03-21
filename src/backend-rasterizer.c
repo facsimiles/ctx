@@ -155,15 +155,15 @@ CTX_INLINE static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 
 CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, unsigned int active_edges, int pending_edges, int horizontal_edges)
 {
-  if (rasterizer->edge_list.count <= 5)
-     return 0;
   if ((rasterizer->fast_aa == 0) |
-      horizontal_edges| // XXX : maybe superfluous?
-      rasterizer->ending_edges|
-      pending_edges)
+      (horizontal_edges!=0)|
+      (rasterizer->ending_edges!=0)|
+      (pending_edges!=0))
   {
     return CTX_RASTERIZER_AA;
   }
+  if (rasterizer->non_intersecting)
+     return 0;
 
   const int *edges  = rasterizer->edges;
   const CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
@@ -1509,6 +1509,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
       (scan_end < (rasterizer->blit_y) * CTX_FULL_AA)))
   { 
     /* not affecting this rasterizers scanlines */
+    rasterizer->non_intersecting = 0;
     return;
   }
 
@@ -1671,6 +1672,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule)
 #endif
   }
 #endif
+  rasterizer->non_intersecting = 0;
 }
 
 
@@ -2279,13 +2281,14 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     }
 #endif
 
+    // speed up rectangles and triangles
+    rasterizer->non_intersecting |= (rasterizer->edge_list.count <= 5);
+
     ctx_rasterizer_finish_shape (rasterizer);
 
     ctx_rasterizer_poly_to_edges (rasterizer);
 
-    {
     ctx_rasterizer_rasterize_edges (rasterizer, gstate->fill_rule);
-    }
   }
 #if CTX_FAST_FILL_RECT
 done:
@@ -2850,6 +2853,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
 #endif
   
+  rasterizer->non_intersecting = 1;
     {
     {
       if (line_width < 5.0f)
