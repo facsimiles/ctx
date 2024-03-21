@@ -193,18 +193,13 @@ inline static int analyze_scanline (CtxRasterizer *rasterizer)
       x0_start = x1_start;
     }
 
-  if (crossings)
-  {
-#if CTX_RASTERIZER_AA>5
-    if (aa & 8) return 15;
+#if CTX_RASTERIZER_AA > 5
+  aa = (aa&8)*15 + (aa&8==0) * ((aa&4)*5 + ((aa&4)==0) * (((aa&1)==1)*3 + ((aa&1)==0) * (1)));
+#else
+  aa = (aa&4)*5 + ((aa&4)==0) * ((aa&1)*3 + ((aa&1)==0) * (1));
 #endif
-#if CTX_RASTERIZER_AA>3
-    if (aa & 4) return 5;
-#endif
-    if (aa & 1) return 3;
-    return 1;
-  }
-  return 0;
+
+  return aa * crossings;
 }
 
 inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
@@ -223,8 +218,8 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
   while ((edge_pos < edge_count &&
          (miny=entries[edge_pos].data.s16[1])  <= next_scanline))
     {
-      if (active_edges < CTX_MAX_EDGES-2 &&
-      entries[edge_pos].data.s16[3] /* (maxy) */  >= scanline)
+      if ((active_edges < CTX_MAX_EDGES-2) &
+        (entries[edge_pos].data.s16[3] /* (maxy) */  >= scanline))
         {
           int dy = (entries[edge_pos].data.s16[3] - miny);
           if (dy)
