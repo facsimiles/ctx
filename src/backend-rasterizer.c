@@ -1058,6 +1058,9 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
     src_pixp = &src_pix;
   }
 #endif
+  void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
+                         int x, uint8_t *coverage, unsigned int count) =
+      rasterizer->apply_coverage;
 
   uint8_t *dst = ( (uint8_t *) rasterizer->buf) +
          (rasterizer->blit_stride * (scanline / CTX_FULL_AA));
@@ -1143,51 +1146,12 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 
           if (accumulated_x1-accumulated_x0>=0)
           {
-             switch (comp)
-             {
-#if CTX_RASTERIZER_SWITCH_DISPATCH
-                case CTX_COV_PATH_RGBA8_OVER:
-                {
-                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
-                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
-                    {
-                      *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
-                      dst_i++;
-                    }
-                }
-                break;
-
-                case CTX_COV_PATH_RGBA8_COPY:
-                {
-                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
-                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
-                  {
-                    *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
-                    dst_i++;
-                  }
-                }
-                  break;
-                case CTX_COV_PATH_RGB8_COPY:
-                {
-                  uint8_t *dst_i = (uint8_t*)&dst[((accumulated_x0) * bpp)/8];
-                  uint8_t *srcp = (uint8_t*)src_pixp;
-                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
-                  {
-                    for (int c = 0; c < 3; c++)
-                      dst_i[c] = ctx_lerp_u8 (dst_i[c], srcp[c], coverage[accumulated_x0+i]);
-                    dst_i +=3;
-                  }
-                }
-                  break;
-#endif
-                default:
-                rasterizer->apply_coverage (rasterizer,
-                          &dst[((accumulated_x0) * bpp)/8],
-                          rasterizer_src,
-                          accumulated_x0,
-                          &coverage[accumulated_x0],
-                          accumulated_x1-accumulated_x0+1);
-             }
+             apply_coverage (rasterizer,
+                       &dst[((accumulated_x0) * bpp)/8],
+                       rasterizer_src,
+                       accumulated_x0,
+                       &coverage[accumulated_x0],
+                       accumulated_x1-accumulated_x0+1);
              accumulated_x0 = 65538;
              accumulated_x1 = 65536;
           }
@@ -1396,38 +1360,12 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 
    if (accumulated_x1-accumulated_x0>=0)
    {
-             switch (comp)
-             {
-#if CTX_RASTERIZER_SWITCH_DISPATCH
-                case CTX_COV_PATH_RGBA8_OVER:
-                {
-                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
-                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
-                    {
-                      *dst_i = ctx_over_RGBA8_2 (*dst_i, si_ga, si_rb, si_a, coverage[accumulated_x0+i]);
-                      dst_i++;
-                    }
-                }
-                break;
-                case CTX_COV_PATH_RGBA8_COPY:
-                {
-                  uint32_t *dst_i = (uint32_t*)&dst[((accumulated_x0) * bpp)/8];
-                  for (int i = 0; i < accumulated_x1-accumulated_x0+1; i++)
-                  {
-                    *dst_i = ctx_lerp_RGBA8_2 (*dst_i, si_ga, si_rb, coverage[accumulated_x0+i]);
-                    dst_i++;
-                  }
-                }
-                  break;
-#endif
-                default:
-                rasterizer->apply_coverage (rasterizer,
-                          &dst[((accumulated_x0) * bpp)/8],
-                          rasterizer_src,
-                          accumulated_x0,
-                          &coverage[accumulated_x0],
-                          accumulated_x1-accumulated_x0+1);
-             }
+     apply_coverage (rasterizer,
+               &dst[((accumulated_x0) * bpp)/8],
+               rasterizer_src,
+               accumulated_x0,
+               &coverage[accumulated_x0],
+               accumulated_x1-accumulated_x0+1);
    }
 }
 
