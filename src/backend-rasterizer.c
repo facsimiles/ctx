@@ -395,6 +395,85 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 
 #if 1
 inline static void
+ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
+                                      int            minx,
+                                      int            maxx,
+                                      uint8_t       *coverage,
+                                      int            is_winding)
+{
+  CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
+  int      *edges = rasterizer->edges;
+  int scanline     = rasterizer->scanline;
+  int active_edges = rasterizer->active_edges;
+  int parity = 0;
+  coverage -= minx;
+  int accumulator_x = minx;
+  uint8_t accumulated = 0;
+  for (int t = 0; t < active_edges -1;t++)
+    {
+      CtxSegment *segment = &entries[edges[t]];
+      UPDATE_PARITY;
+
+      if (parity)
+        {
+          CtxSegment *next_segment = &entries[edges[t+1]];
+          const int x0        = segment->val;
+          const int x1        = next_segment->val;
+          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
+          int first     = graystart >> 8;
+          int last      = grayend   >> 8;
+
+          if (CTX_UNLIKELY (first < minx))
+          { 
+            first = minx;
+            graystart=0;
+          }
+          if (CTX_UNLIKELY (last > maxx))
+          {
+            last = maxx;
+            grayend=255;
+          }
+
+          graystart = (graystart&0xff) ^ 255;
+          grayend   = (grayend & 0xff);
+
+	  if (accumulated)
+	  {
+	    if (accumulator_x == first)
+	    {
+	       graystart += accumulated;
+	    } else if (accumulator_x >= minx)
+	    {
+	       coverage[accumulator_x] = accumulated;
+	    }
+	    accumulated = 0;
+	  }
+
+          if (first < last)
+	  {
+              coverage[first] += graystart;
+              memset(&coverage[first+1], 255, last-(first+1));
+	      accumulated = grayend;
+	  }
+	  else
+	  {
+	    accumulated = (graystart-(grayend^255));
+	  }
+	  accumulator_x = last;
+        }
+   }
+  if (accumulated)
+  {
+    coverage[accumulator_x] = accumulated;
+  }
+}
+#endif
+
+#if 1
+
+
+inline static void
 ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                         int            minx,
                                         int            maxx,
@@ -1376,8 +1455,11 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
           else
           { /* cheap fully correct AA, to coverage mask / clipping */
             memset (coverage, 0, pixs);
-    
+#if 1 
+            ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, is_winding);
+#else
             ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, 1, 255);
+#endif
             ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP);
           }
           break;
