@@ -514,6 +514,9 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
     src_pixp = &src_pix;
   }
 #endif
+  void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
+                         int x, uint8_t *coverage, unsigned int count) =
+      rasterizer->apply_coverage;
 
   uint8_t *dst = ( (uint8_t *) rasterizer->buf) +
          (rasterizer->blit_stride * (scanline / CTX_FULL_AA));
@@ -557,19 +560,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             else
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)/8]);
-              switch (comp)
-              {
-#if CTX_RASTERIZER_SWITCH_DISPATCH
-                case CTX_COV_PATH_RGBA8_COPY:
-                  *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, accumulated);
-                  break;
-                case CTX_COV_PATH_RGBA8_OVER:
-                  *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
-                  break;
-#endif
-                default:
-                  rasterizer->apply_coverage (rasterizer, (uint8_t*)dst_pix, rasterizer_src, accumulator_x, &accumulated, 1);
-              }
+              apply_coverage (rasterizer, (uint8_t*)dst_pix, rasterizer_src, accumulator_x, &accumulated, 1);
             }
             accumulated = 0;
           }
@@ -601,7 +592,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
             {
               uint8_t* dsts = (uint8_t*)(&dst[(first *bpp)/8]);
               uint8_t  startcov = graystart;
-              rasterizer->apply_coverage (rasterizer, (uint8_t*)dsts, rasterizer_src, first, &startcov, 1);
+              apply_coverage (rasterizer, (uint8_t*)dsts, rasterizer_src, first, &startcov, 1);
               uint8_t* dst_i = (uint8_t*)dsts;
               uint8_t *color = ((uint8_t*)&rasterizer->color_native);
               unsigned int bytes = bpp/8;
@@ -678,7 +669,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
                 uint8_t *srcp = (uint8_t*)src_pixp;
                 uint8_t  startcov = graystart;
-                rasterizer->apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer_src, first, &startcov, 1);
+                apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer_src, first, &startcov, 1);
                 dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
                 unsigned int count = last - first - 1;
                 int val = srcp[0]/17;
@@ -717,7 +708,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
                 uint8_t *srcp = (uint8_t*)src_pixp;
                 uint8_t  startcov = graystart;
-                rasterizer->apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer_src, first, &startcov, 1);
+                apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer_src, first, &startcov, 1);
                 dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
                 unsigned int count = last - first - 1;
                 int val = srcp[0]/85; 
@@ -756,7 +747,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                 uint8_t* dstp = (uint8_t*)(&dst[(first *bpp)/8]);
                 uint8_t *srcp = (uint8_t*)src_pixp;
                 uint8_t  startcov = graystart;
-                rasterizer->apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer_src, first, &startcov, 1);
+                apply_coverage (rasterizer, (uint8_t*)dstp, rasterizer_src, first, &startcov, 1);
                 dstp = (uint8_t*)(&dst[((first+1)*bpp)/8]);
                 unsigned int count = last - first - 1;
                 if (srcp[0]>=127)
@@ -857,7 +848,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
               memset (opaque, 255, sizeof (opaque));
 #endif
               opaque[0] = graystart;
-              rasterizer->apply_coverage (rasterizer,
+              apply_coverage (rasterizer,
                               &dst[(first * bpp)/8],
                               rasterizer_src, first, opaque, last-first);
 
@@ -879,20 +870,8 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
    if (accumulated)
    {
      uint32_t* dst_pix = (uint32_t*)(&dst[(accumulator_x*bpp)/8]);
-     switch (comp)
-     {
-#if CTX_RASTERIZER_SWITCH_DISPATCH
-       case CTX_COV_PATH_RGBA8_COPY:
-         *dst_pix = ctx_lerp_RGBA8_2(*dst_pix, si_ga, si_rb, accumulated);
-         break;
-       case CTX_COV_PATH_RGBA8_OVER:
-         *dst_pix = ctx_over_RGBA8_2(*dst_pix, si_ga, si_rb, si_a, accumulated);
-         break;
-#endif
-       default:
-         rasterizer->apply_coverage (rasterizer, (uint8_t*)dst_pix, rasterizer_src,
-                         accumulator_x, &accumulated, 1);
-     }
+     apply_coverage (rasterizer, (uint8_t*)dst_pix, rasterizer_src,
+                     accumulator_x, &accumulated, 1);
    }
 }
 #endif
