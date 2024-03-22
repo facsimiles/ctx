@@ -2239,23 +2239,6 @@ done:
   rasterizer->preserve = 0;
 }
 
-#if 0
-static void
-ctx_rasterizer_triangle (CtxRasterizer *rasterizer,
-                         int x0, int y0,
-                         int x1, int y1,
-                         int x2, int y2,
-                         int r0, int g0, int b0, int a0,
-                         int r1, int g1, int b1, int a1,
-                         int r2, int g2, int b2, int a2,
-                         int u0, int v0,
-                         int u1, int v1)
-{
-
-}
-#endif
-
-
 typedef struct _CtxTermGlyph CtxTermGlyph;
 
 struct _CtxTermGlyph
