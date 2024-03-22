@@ -168,17 +168,15 @@ ctx_edgelist_resize (CtxDrawlist *drawlist, int desired_size)
 }
 
 
-static inline int
+static CTX_INLINE int
 ctx_edgelist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
 {
   int ret = drawlist->count;
 
-  if (CTX_UNLIKELY(ret >= CTX_MAX_EDGE_LIST_SIZE- 20))
-    {
-      return 0;
-    }
   if (CTX_UNLIKELY(ret + 2 >= drawlist->size))
     {
+      if (CTX_UNLIKELY(ret+2 >= CTX_MAX_EDGE_LIST_SIZE- 20))
+        return 0;
       int new_ = ctx_maxi (drawlist->size * 2, ret + 1024);
       new_ = ctx_mini (CTX_MAX_EDGE_LIST_SIZE, new_);
       ctx_edgelist_resize (drawlist, new_);

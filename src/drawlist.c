@@ -71,10 +71,10 @@ ctx_conts_for_entry (CtxEntry *entry)
 
 
 void
-ctx_iterator_init (CtxIterator      *iterator,
+ctx_iterator_init (CtxIterator  *iterator,
                    CtxDrawlist  *drawlist,
-                   int               start_pos,
-                   int               flags)
+                   int           start_pos,
+                   int           flags)
 {
   iterator->drawlist   = drawlist;
   iterator->flags          = flags;
