@@ -938,9 +938,12 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
               int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV)/255);
 
               int recip = 65536/sum;
+	      int a = mod * recip;
+	      recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
               for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
-                coverage[us + count] += ((u - u0 + mod) * recip)>>16;
+                coverage[us + count] += a>>16;
+		a += recip;
                 count++;
               }
               pre = (us+count-1)-first+1;
@@ -961,9 +964,12 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255));
               int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 5/4)/255);
               int recip = 65536 / sum;
+	      int a = mod * recip;
+	      recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
               for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
-                coverage[us + count] += (((u - u0 + mod) * recip)>>16) ^ 255;
+                coverage[us + count] += (a>>16) ^ 255;
+		a += recip;
                 count++;
               }
               post = last-us;
@@ -1087,9 +1093,12 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
             int count = 0;
             int recip = 65536/ sum;
+	    int a = mod * recip;
+	    recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
             for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] += ((u - u0 + mod) * recip)>>16;
+              coverage[us + count] += a>>16;
+	      a += recip;
               count++;
             }
             pre = us+count-first;
@@ -1129,9 +1138,12 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
             int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 5/4)/255);
 
             int recip = 65536/ sum;
+	    int a = mod * recip;
+	    recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
             for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] = (((u - u0 + mod)*recip)>>16)^255;
+              coverage[us + count] = (a>>16)^255;
+	      a+=recip;
               count++;
             }
             post = last-us;
