@@ -2691,6 +2691,9 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   int dither_green  = rasterizer->format->dither_green;
   int ox = (int)x;
 #endif
+
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  if (global_alpha_u8 != 255)
   for (int i = 0; i <  count; i ++)
   {
     float v = (ctx_hypotf_fast (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
@@ -2701,7 +2704,28 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 #else
     ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, rgba);
 #endif
-#
+
+#if CTX_DITHER
+    ctx_dither_rgba_u8 (rgba, ox+i, scan, dither_red_blue, dither_green);
+#endif
+    *((uint32_t*)rgba) =
+      ctx_RGBA8_mul_alpha_u32(*((uint32_t*)rgba), global_alpha_u8);
+    rgba += 4;
+    x += dx;
+    y += dy;
+  }
+  else
+  for (int i = 0; i <  count; i ++)
+  {
+    float v = (ctx_hypotf_fast (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
+              g->radial_gradient.r0) * (g->radial_gradient.rdelta);
+#if CTX_GRADIENT_CACHE
+    uint32_t *rgbap = (uint32_t*)&rasterizer->gradient_cache_u8[ctx_grad_index(rasterizer, v)][0];
+    *((uint32_t*)rgba) = *rgbap;
+#else
+    ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, rgba);
+#endif
+
 #if CTX_DITHER
     ctx_dither_rgba_u8 (rgba, ox+i, scan, dither_red_blue, dither_green);
 #endif
@@ -2769,6 +2793,24 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   float ud_plus_vd = (ud + vd);
 #endif
 
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  if (global_alpha_u8 != 255)
+  for (int i = 0; i < count ; i++)
+  {
+#if CTX_GRADIENT_CACHE
+  *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
+#else
+  _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, rgba);
+#endif
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (rgba, ox+i, scan, dither_red_blue, dither_green);
+#endif
+  *((uint32_t*)rgba) =
+    ctx_RGBA8_mul_alpha_u32(*((uint32_t*)rgba), global_alpha_u8);
+    rgba+= 4;
+    vv += ud_plus_vd;
+  }
+  else
   for (int i = 0; i < count ; i++)
   {
 #if CTX_GRADIENT_CACHE
