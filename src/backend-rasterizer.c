@@ -153,10 +153,14 @@ CTX_INLINE static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
     ctx_rasterizer_discard_edges (rasterizer);
 }
 
-CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const int pending_edges, const int horizontal_edges, const int non_intersecting)
+CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges, const int non_intersecting)
 {
+     //return (horizontal_edges) * CTX_RASTERIZER_AA;
   if (non_intersecting)
-     return (horizontal_edges) * CTX_RASTERIZER_AA;
+  {
+    return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * CTX_RASTERIZER_AA;
+  }
+
   if ((rasterizer->fast_aa == 0) |
       (horizontal_edges!=0)|
       (rasterizer->ending_edges!=0)|
@@ -233,6 +237,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
               entries[index].val = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER +
                                          (yd * dx_dy);
 
+	      if (!non_intersecting) {
 	      dx_dy = abs(dx_dy);
 
 #if CTX_RASTERIZER_AA>5
@@ -245,6 +250,9 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
                  (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) +
                  (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
 #endif
+	      }
+              else
+	      entries[index].aa=0;
 	      rasterizer->scan_aa[entries[index].aa]++;
 
               if ((miny > scanline) &
@@ -1420,6 +1428,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
     rasterizer->non_intersecting = 0;
     return;
   }
+  rasterizer->scan_aa[1]=
+  rasterizer->scan_aa[2]=
+  rasterizer->scan_aa[3]=0;
 
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
   rasterizer->scanline = scan_start;
