@@ -155,6 +155,8 @@ CTX_INLINE static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 
 CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const int pending_edges, const int horizontal_edges, const int non_intersecting)
 {
+  if (non_intersecting)
+     return (horizontal_edges) * CTX_RASTERIZER_AA;
   if ((rasterizer->fast_aa == 0) |
       (horizontal_edges!=0)|
       (rasterizer->ending_edges!=0)|
@@ -162,8 +164,6 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
   {
     return CTX_RASTERIZER_AA;
   }
-  if (non_intersecting)
-     return 0;
 
   const int *edges  = rasterizer->edges;
   const CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
