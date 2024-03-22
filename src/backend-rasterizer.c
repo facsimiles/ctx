@@ -479,7 +479,7 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                                         int            maxx,
                //                       uint8_t* __restrict__ coverage,
                                         int            is_winding,
-                                        CtxCovPath     comp)
+                                        const CtxCovPath comp)
 {
   CtxSegment *entries     = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   uint8_t *rasterizer_src = rasterizer->color;
@@ -491,28 +491,13 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
 #if CTX_RASTERIZER_SWITCH_DISPATCH
   uint32_t *src_pixp;
   uint32_t src_pix, si_ga, si_rb, si_ga_full, si_rb_full, si_a;
-  if ((comp != CTX_COV_PATH_FALLBACK) &
-      (comp != CTX_COV_PATH_RGBA8_COPY_FRAGMENT) &
-      (comp != CTX_COV_PATH_RGBA8_OVER_FRAGMENT))
-  {
-    src_pixp   = ((uint32_t*)rasterizer->color);
-    src_pix    = src_pixp[0];
-    si_ga      = ((uint32_t*)rasterizer->color)[1];
-    si_rb      = ((uint32_t*)rasterizer->color)[2];
-    si_ga_full = ((uint32_t*)rasterizer->color)[3];
-    si_rb_full = ((uint32_t*)rasterizer->color)[4];
-    si_a       = src_pix >> 24;
-  }
-  else
-  {
-    src_pix    =
-    si_ga      =
-    si_rb      =
-    si_ga_full =
-    si_rb_full =
-    si_a       = 0;
-    src_pixp = &src_pix;
-  }
+  src_pixp   = ((uint32_t*)rasterizer->color);
+  src_pix    = src_pixp[0];
+  si_ga      = ((uint32_t*)rasterizer->color)[1];
+  si_rb      = ((uint32_t*)rasterizer->color)[2];
+  si_ga_full = ((uint32_t*)rasterizer->color)[3];
+  si_rb_full = ((uint32_t*)rasterizer->color)[4];
+  si_a       = src_pix >> 24;
 #endif
   void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
                          int x, uint8_t *coverage, unsigned int count) =
@@ -1001,7 +986,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                                          int            maxx,
                                          uint8_t       *coverage,
                                          int            is_winding,
-                                         CtxCovPath     comp)
+                                         const CtxCovPath comp)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int *edges          = rasterizer->edges;
@@ -1013,28 +998,18 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
 
 #if CTX_RASTERIZER_SWITCH_DISPATCH
   uint32_t *src_pixp;
-  uint32_t src_pix, si_ga, si_rb, si_ga_full, si_rb_full, si_a;
-  if ((comp != CTX_COV_PATH_FALLBACK) &
-      (comp != CTX_COV_PATH_RGBA8_COPY_FRAGMENT) &
-      (comp != CTX_COV_PATH_RGBA8_OVER_FRAGMENT))
+  uint32_t src_pix, si_ga_full, si_rb_full, si_a;
+  //if ((comp != CTX_COV_PATH_FALLBACK) &
+  //    (comp != CTX_COV_PATH_RGBA8_COPY_FRAGMENT) &
+  //    (comp != CTX_COV_PATH_RGBA8_OVER_FRAGMENT))
   {
     src_pixp   = ((uint32_t*)rasterizer->color);
     src_pix    = src_pixp[0];
-    si_ga      = ((uint32_t*)rasterizer->color)[1];
-    si_rb      = ((uint32_t*)rasterizer->color)[2];
+    //si_ga      = ((uint32_t*)rasterizer->color)[1];
+    //si_rb      = ((uint32_t*)rasterizer->color)[2];
     si_ga_full = ((uint32_t*)rasterizer->color)[3];
     si_rb_full = ((uint32_t*)rasterizer->color)[4];
     si_a  = src_pix >> 24;
-  }
-  else
-  {
-    src_pix    =
-    si_ga      =
-    si_rb      =
-    si_ga_full =
-    si_rb_full =
-    si_a  = 0;
-    src_pixp = &src_pix;
   }
 #endif
   void (*apply_coverage)(CtxRasterizer *r, uint8_t *dst, uint8_t *src,
@@ -1317,7 +1292,7 @@ ctx_rasterizer_generate_coverage_apply2 (CtxRasterizer *rasterizer,
                 uint8_t opaque[width];
                 memset (opaque, 255, sizeof (opaque));
 #endif
-                rasterizer->apply_coverage (rasterizer,
+                apply_coverage (rasterizer,
                             &dst[((first + pre) * bpp)/8],
                             rasterizer_src,
                             first + pre,
