@@ -747,7 +747,6 @@ struct _CtxRasterizer
   CtxCovPath  comp;
   void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, unsigned int count);
 
-  unsigned int aa;          // level of vertical aa
   unsigned int active_edges;
   unsigned int pending_edges;
   unsigned int horizontal_edges;
@@ -760,6 +759,7 @@ struct _CtxRasterizer
   int        col_min;
   int        col_max;
 
+  unsigned int aa;          // level of vertical aa
   int        inner_x;
   int        inner_y;
 
