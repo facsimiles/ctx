@@ -1523,9 +1523,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
       switch (aa)
       {
         case -1:
-        rasterizer->scanline += CTX_FULL_AA;
-        dst += blit_stride;
-        continue;
+          rasterizer->scanline += CTX_FULL_AA;
+          dst += blit_stride;
+          continue;
         case 0:
         { /* the scanline transitions does not contain multiple intersections - each aa segment is a linear ramp */
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
@@ -1571,7 +1571,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
         }
         default:
         { /* level of oversampling based on lowest steepness edges */
-          if (aa > real_aa) aa = real_aa;
+          aa = ctx_mini (aa, real_aa);
           int scanline_increment = 15/aa;
           memset (coverage, 0, pixs);
           uint8_t fraction = 255/aa;
