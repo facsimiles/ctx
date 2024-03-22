@@ -2211,11 +2211,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
 
     // speed up rectangles and triangles
-    rasterizer->non_intersecting |= (rasterizer->edge_list.count <= 5);
 
     ctx_rasterizer_finish_shape (rasterizer);
 
     ctx_rasterizer_poly_to_edges (rasterizer);
+    rasterizer->non_intersecting |= (rasterizer->edge_list.count <= 5);
 
     ctx_rasterizer_rasterize_edges (rasterizer, gstate->fill_rule);
   }
