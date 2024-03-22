@@ -1,18 +1,29 @@
 rgb 1 1 1 rectangle 0 0 100% 100% fill
 
 _ rgb 0 0 0
-lineWidth=10%
+lineWidth=6%
 
-moveTo 25% 30% lineTo 75% 30%
+moveTo 15% 30% lineTo 45% 30%
 lineCap=round
 stroke
-moveTo 25% 50% lineTo 75% 50%
+moveTo 15% 50% lineTo 45% 50%
 lineCap=square
 stroke
-moveTo 25% 70% lineTo 75% 70%
+moveTo 15% 70% lineTo 45% 70%
 lineCap=none
 stroke
 
+translate 56% 0
 
+rotate 0.3
 
+moveTo 15% 30% lineTo 45% 30%
+lineCap=round
+stroke
+moveTo 15% 50% lineTo 45% 50%
+lineCap=square
+stroke
+moveTo 15% 70% lineTo 45% 70%
+lineCap=none
+stroke
 
