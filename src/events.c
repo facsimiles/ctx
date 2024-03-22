@@ -893,8 +893,13 @@ void ctx_listen_full (Ctx     *ctx,
     item->cb[0].finalize_data = finalize_data;
     item->cb_count = 1;
     item->types = types;
+#if CTX_CURRENT_PATH
     item->path = ctx_current_path (ctx);
     item->path_hash = ctx_path_hash (item->path);
+#else
+    item->path = NULL;
+    item->path_hash = 0;
+#endif
     ctx_get_matrix (ctx, &item->inv_matrix);
     ctx_matrix_invert (&item->inv_matrix);
 
