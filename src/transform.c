@@ -55,7 +55,7 @@ _ctx_transform_prime (CtxState *state)
      state->gstate.prepped_transform.m[2][c] =
              (int)(state->gstate.transform.m[2][c] * TRANSFORM_SCALE);
    }
-   state->gstate.tolerance = 0.33f/ctx_matrix_get_scale (&state->gstate.transform);
+   state->gstate.tolerance = 0.42f/ctx_matrix_get_scale (&state->gstate.transform);
    state->gstate.tolerance *= state->gstate.tolerance;
    state->gstate.tolerance_fixed =
    (state->gstate.tolerance * CTX_FIX_SCALE * CTX_FIX_SCALE);
