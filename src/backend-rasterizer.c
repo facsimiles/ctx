@@ -187,6 +187,10 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
   int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
   int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
 
+  // TODO : compute likely hood of crossings as bit-mask when adding edge - 
+  //        recomputed for those scanlines to see if we can clear this mask..
+  //        this avoids iterating once over the edges per scanline for spans of scanlines
+
   unsigned int t = 1;
   for (t = 1; (t < active_edges);t++)
     {
