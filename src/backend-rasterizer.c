@@ -1438,6 +1438,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
     rasterizer->non_intersecting = 0;
     return;
   }
+  rasterizer->scan_aa[0]= // this one is unused
   rasterizer->scan_aa[1]=
   rasterizer->scan_aa[2]=
   rasterizer->scan_aa[3]=0;
@@ -1450,7 +1451,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
       int aa = ctx_rasterizer_feed_edges_full (rasterizer, non_intersecting);
       switch (aa)
       {
-        case -1:
+        case -1: /* no edges */
           rasterizer->scanline += CTX_FULL_AA;
           dst += blit_stride;
           continue;
@@ -1474,7 +1475,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
           break;
         }
         case 1:
-        {
+        {/* cheap fully correct AA - where only horizontal aa matters */
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
           ctx_rasterizer_feed_edges (rasterizer);
           ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
@@ -1489,7 +1490,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
             continue;
           }
           else
-          { /* cheap fully correct AA, to coverage mask / clipping */
+          { 
             memset (coverage, 0, pixs);
 #if 1 
             ctx_rasterizer_generate_coverage_set (rasterizer, minx, maxx, coverage, is_winding);
