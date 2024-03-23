@@ -6823,7 +6823,7 @@ static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int 
 
 #if 1
 
-static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
+static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, const int copy)
 {
 #if 1
   float u0 = 0; float v0 = 0;
@@ -6839,8 +6839,6 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRaster
 
   unsigned int width = x1-x0+1;
   unsigned int height = y1-y0+1;
-
-  //CtxSource *g = &rasterizer->state->gstate.source_fill;
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
 #if CTX_ENABLE_CM
@@ -6862,40 +6860,31 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRaster
 
   int core = ctx_mini (width, bwidth - u);
 
+  if (core<0)
+    return;
   if (copy)
   {
-    if (core>0)
-    {
       uint32_t *t_dst = dst;
-      for (unsigned int y = 0; y < height; y++)
+      src += pre;
+      for (unsigned int y = 0; (y < height) & (v < bheight); y++)
       {
-         if (CTX_LIKELY((v >= 0 && v < bheight)))
-         {
-           memcpy (t_dst, src + pre, core * 4);
-         }
+         memcpy (t_dst, src, core * 4);
          v++;
          src += bwidth;
          t_dst += blit_stride;
       }
-    }
   }
   else
   {
-    if (core>0)
-    {
       uint32_t *t_dst = dst;
-      for (unsigned int y = 0; y < height; y++)
+      for (unsigned int y = 0; (y < height) & (v < bheight); y++)
       {
-         if (CTX_LIKELY((v >= 0 && v < bheight)))
-         {
-           ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
-               (uint8_t*)t_dst, NULL, x0+pre, NULL, core, (uint8_t*)src);
-         }
+         ctx_RGBA8_source_over_normal_full_cov_buf (rasterizer,
+             (uint8_t*)t_dst, NULL, x0+pre, NULL, core, (uint8_t*)src);
          v++;
          src += bwidth;
          t_dst += blit_stride;
       }
-    }
   }
 }
 #endif
@@ -7115,14 +7104,11 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       //CtxExtend extend = rasterizer->state->gstate.extend;
       INIT_ENV;
 
-#if 1
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
         ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 1);
         return;
       }
-      else
-#endif
 #if 0
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
