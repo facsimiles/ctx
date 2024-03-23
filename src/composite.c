@@ -6825,10 +6825,12 @@ static inline void ctx_span_set_color_x4 (uint32_t *dst_pix, uint32_t *val, int 
 
 static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRasterizer *rasterizer, int x0, int y0, int x1, int y1, int copy)
 {
+#if 1
   float u0 = 0; float v0 = 0;
   float ud = 0; float vd = 0;
   float w0 = 1; float wd = 0;
-  ctx_init_uv (rasterizer, x0, rasterizer->scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
+  ctx_init_uv (rasterizer, x0, y0,&u0, &v0, &w0, &ud, &vd, &wd);
+#endif
 
   uint32_t *dst = ( (uint32_t *) rasterizer->buf);
   int blit_stride = rasterizer->blit_stride/4;
@@ -6848,8 +6850,8 @@ static inline void ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (CtxRaster
 #endif
   int bwidth  = buffer->width;
   int bheight = buffer->height;
-  int u = x0;// + 0.5f;
-  int v = y0;// + 0.5f;
+  int u = u0;// + 0.5f;
+  int v = v0;// + 0.5f;
 
   uint32_t *src = ((uint32_t*)buffer->data) + bwidth * v + u;
 
@@ -7097,7 +7099,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
-          for (int i = 0; i < width; i++)
+          for (unsigned int i = 0; i < (unsigned)width; i++)
           {
             dst_i[i] = ctx_over_RGBA8_full_2 (dst_i[i], si_ga_full, si_rb_full, si_a);
           }
@@ -7113,7 +7115,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       //CtxExtend extend = rasterizer->state->gstate.extend;
       INIT_ENV;
 
-#if 0
+#if 1
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
         ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 1);
@@ -7158,9 +7160,9 @@ y1, 1);
     }
     case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
     {
-      //CtxFragment fragment = rasterizer->fragment;
+      CtxFragment fragment = rasterizer->fragment;
       //CtxExtend extend = rasterizer->state->gstate.extend;
-#if 0
+#if 1
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
         ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 0);
@@ -7337,8 +7339,8 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   int has_right  = (right >0);
   int has_left   = (left >0);
 
-  if (x1 >= blit_x + blit_width) has_right = 0;
-  if (y1 >= blit_y + blit_height) has_bottom = 0;
+  has_right *= !(x1 >= blit_x + blit_width);
+  has_bottom *= !(y1 >= blit_y + blit_height);
 
   int width = (int)(x1 - x0);
 
