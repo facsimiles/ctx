@@ -157,7 +157,15 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
 {
   if (non_intersecting)
   {
-    return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * CTX_RASTERIZER_AA;
+#if CTX_RASTERIZER_AA > 5
+  int aa = ((rasterizer->scan_aa[3]>0) *15) + (rasterizer->scan_aa[3]<=0)*
+     ((rasterizer->scan_aa[2]>0) * 5 +
+       (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0)));
+#else
+  int aa = (rasterizer->scan_aa[2]>0) * 5 +
+       (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0));
+#endif
+    return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * aa;
   }
 
   if ((rasterizer->fast_aa == 0) |
@@ -1095,7 +1103,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 
             int mod = ((u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255) *
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255);
-            int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 4 / 3)/255);
+            int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV)/255);
 
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
             int count = 0;
