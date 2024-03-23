@@ -155,7 +155,6 @@ CTX_INLINE static void ctx_rasterizer_feed_edges (CtxRasterizer *rasterizer)
 
 CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges, const int non_intersecting)
 {
-     //return (horizontal_edges) * CTX_RASTERIZER_AA;
   if (non_intersecting)
   {
     return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * CTX_RASTERIZER_AA;
@@ -237,7 +236,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
               entries[index].val = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER +
                                          (yd * dx_dy);
 
-	      if (!non_intersecting) {
+              {
 	      dx_dy = abs(dx_dy);
 
 #if CTX_RASTERIZER_AA>5
@@ -251,9 +250,6 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
                  (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
 #endif
 	      }
-              else
-	      entries[index].aa=0;
-	      rasterizer->scan_aa[entries[index].aa]++;
 
               if ((miny > scanline) &
                   (pending_edges < CTX_MAX_PENDING-1))
@@ -269,7 +265,10 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
               active_edges++;
             }
             else
+	    {
             horizontal_edges++;
+            entries[edge_pos].aa = 0;
+	    }
         }
       edge_pos++;
     }
@@ -1096,7 +1095,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 
             int mod = ((u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255) *
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255);
-            int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV)/255);
+            int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 4 / 3)/255);
 
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
             int count = 0;
@@ -1141,9 +1140,9 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
             int count = 0;
 
-            int mod = ((((u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255) +64) *
+            int mod = ((((u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255)) *
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255));
-            int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV * 5/4)/255);
+            int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV *5/4)/255);
 
             int recip = 65536/ sum;
 	    int a = mod * recip;
