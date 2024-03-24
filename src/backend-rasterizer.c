@@ -338,7 +338,7 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, unsigne
         }
 
 
-inline static void
+CTX_INLINE static void
 ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   int            minx,
                                   int            maxx,
@@ -395,7 +395,6 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
    }
 }
 
-#if 1
 inline static void
 ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
                                       int            minx,
@@ -470,10 +469,6 @@ ctx_rasterizer_generate_coverage_set (CtxRasterizer *rasterizer,
     coverage[accumulator_x] = accumulated;
   }
 }
-#endif
-
-#if 1
-
 
 inline static void
 ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
@@ -861,8 +856,6 @@ ctx_rasterizer_generate_coverage_apply (CtxRasterizer *rasterizer,
                      accumulator_x, &accumulated, 1);
    }
 }
-#endif
-
 
 inline static void
 ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
@@ -987,7 +980,6 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
    }
 }
 
-
 inline static void
 ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
                                          int            minx,
@@ -1011,14 +1003,9 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 #if CTX_RASTERIZER_SWITCH_DISPATCH
   uint32_t *src_pixp;
   uint32_t src_pix, si_ga_full, si_rb_full, si_a;
-  //if ((comp != CTX_COV_PATH_FALLBACK) &
-  //    (comp != CTX_COV_PATH_RGBA8_COPY_FRAGMENT) &
-  //    (comp != CTX_COV_PATH_RGBA8_OVER_FRAGMENT))
   {
     src_pixp   = ((uint32_t*)rasterizer->color);
     src_pix    = src_pixp[0];
-    //si_ga      = ((uint32_t*)rasterizer->color)[1];
-    //si_rb      = ((uint32_t*)rasterizer->color)[2];
     si_ga_full = ((uint32_t*)rasterizer->color)[3];
     si_rb_full = ((uint32_t*)rasterizer->color)[4];
     si_a  = src_pix >> 24;
