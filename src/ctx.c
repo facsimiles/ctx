@@ -773,8 +773,18 @@ static void
 ctx_event_free (void *event, void *user_data)
 {
   CtxEvent *e = (CtxEvent*)event;
-  if (e->string)
-    ctx_free ((char*)e->string);
+
+  if (!e->ctx->events.ctx_get_event_enabled)
+  {
+// XXX : we are leaking a string!!!!
+//    without this, consuming events
+//    is broken for clients polling events
+//
+//  we could append them to a list that is freed when starting a new frame?
+//
+    if (e->string)
+      ctx_free ((char*)e->string);
+  }
   ctx_free (event);
 }
 

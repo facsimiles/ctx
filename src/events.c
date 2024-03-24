@@ -1269,6 +1269,9 @@ CtxEvent *ctx_get_event (Ctx *ctx)
   if (ctx->events.events)
     {
       event_copy = *((CtxEvent*)(ctx->events.events->data));
+      // XXX : there is leakage of a string here..
+      //  we could reduce it to a non-growing leak.. by making a copy
+      //  and letting normal free occur..
       ctx_list_remove (&ctx->events.events, ctx->events.events->data);
       return &event_copy;
     }
