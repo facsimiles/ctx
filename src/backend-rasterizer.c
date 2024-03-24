@@ -261,8 +261,9 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
             }
             else
 	    {
-            horizontal_edges++;
-            entries[edge_pos].aa = 0;
+	      horizontal_edges++;
+              entries[edge_pos].aa = 0;
+              rasterizer->scan_aa[0]++; // not neccesary 0 should be ignored
 	    }
         }
       edge_pos++;
