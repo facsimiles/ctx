@@ -2556,6 +2556,20 @@ ctx_rasterizer_reinit (Ctx *ctx,
                        int stride,
                        CtxPixelFormat pixel_format);
 
+/* only valid for rasterizer backends, not kept in graphics state
+ */
+enum _CtxAntialias
+{
+  CTX_ANTIALIAS_DEFAULT, //
+  CTX_ANTIALIAS_NONE, // non-antialiased
+  CTX_ANTIALIAS_FAST, // vertical aa 3 for complex scanlines
+  CTX_ANTIALIAS_GOOD, // vertical aa 5 for complex scanlines
+  CTX_ANTIALIAS_FULL, // vertical aa 15 for complex scanlines
+};
+typedef enum _CtxAntialias CtxAntialias;
+void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
+CtxAntialias ctx_get_antialias (Ctx *ctx);
+
 #ifdef __cplusplus
 }
 #endif
