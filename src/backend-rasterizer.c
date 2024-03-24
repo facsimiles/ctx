@@ -1565,8 +1565,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
      }
 #if 1
      dst = (uint8_t*)(rasterizer->buf) + rasterizer->blit_stride * (scan_end / CTX_FULL_AA);
-     // XXX this crashes under valgrind/asan
-     if(0)for (rasterizer->scanline = scan_end; rasterizer->scanline/CTX_FULL_AA < gscan_end-1;)
+     for (rasterizer->scanline = scan_end; rasterizer->scanline < gscan_end;)
      {
        apply_coverage (rasterizer,
                        &dst[ (startx * rasterizer->format->bpp) /8],
