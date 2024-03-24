@@ -891,7 +891,7 @@ ctx_glyph_lookup (Ctx *ctx, uint32_t unichar)
 {
   CtxFont *font = &ctx_fonts[ctx->state.gstate.font];
 #if CTX_ONE_FONT_ENGINE
-  return ctx_glyph_lookup_ctx (font, ctx, unichar);
+  return ctx_glyph_lookup_ctx2 (font, ctx, unichar);
 #else
   return font->engine->glyph_lookup (font, ctx, unichar);
 #endif
@@ -1198,10 +1198,13 @@ _ctx_text (Ctx        *ctx,
 
 	  if (glyphs)
 	  {
-	    ctx_save (ctx);
-	    ctx_translate (ctx, x, y + baseline_offset);
-	    ctx_glyphs (ctx, glyphs, n_glyphs);
-	    ctx_restore (ctx);
+	    if (visible)
+	    {
+	      ctx_save (ctx);
+	      ctx_translate (ctx, x, y + baseline_offset);
+	      ctx_glyphs (ctx, glyphs, n_glyphs);
+	      ctx_restore (ctx);
+	    }
 	    if (!cached)
 	      ctx_glyph_free (glyphs);
 	  }
