@@ -157,19 +157,13 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
 {
   if (non_intersecting)
   {
-#if CTX_RASTERIZER_AA > 5
-  int aa = ((rasterizer->scan_aa[3]>0) *15) + (rasterizer->scan_aa[3]<=0)*
-     ((rasterizer->scan_aa[2]>0) * 5 +
+    int aa = ((rasterizer->scan_aa[3]>0) *15) + (rasterizer->scan_aa[3]<=0)*
+       ((rasterizer->scan_aa[2]>0) * 5 +
        (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0)));
-#else
-  int aa = (rasterizer->scan_aa[2]>0) * 5 +
-       (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0));
-#endif
     return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * aa;
   }
 
-  if ((rasterizer->fast_aa == 0) |
-      (horizontal_edges!=0)|
+  if ((horizontal_edges!=0)|
       (rasterizer->ending_edges!=0)|
       (pending_edges!=0))
   {
@@ -205,14 +199,9 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
       x0_start = x1_start;
     }
 
-#if CTX_RASTERIZER_AA > 5
   int aa = ((rasterizer->scan_aa[3]>0) *15) + (rasterizer->scan_aa[3]<=0)*
      ((rasterizer->scan_aa[2]>0) * 5 +
        (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0)));
-#else
-  int aa = (rasterizer->scan_aa[2]>0) * 5 +
-       (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0));
-#endif
 
   return aa * crossings;
 }
@@ -249,18 +238,12 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
                                          (yd * dx_dy);
 
               {
-	      dx_dy = abs(dx_dy);
-
-#if CTX_RASTERIZER_AA>5
-	      entries[index].aa =
-                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15) +
-                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) +
-                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
-#else
-	      entries[index].aa =
-                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) +
-                 (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3_FAST_AA);
-#endif
+	        dx_dy = abs(dx_dy);
+		int aa = (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);//_FAST_AA);
+	        aa += (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) * (aa>3);
+	        aa += (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15) * (aa>5);
+                rasterizer->scan_aa[aa]++;
+	        entries[index].aa = aa;
 	      }
 
               if ((miny > scanline) &
@@ -4225,11 +4208,16 @@ CtxAntialias ctx_get_antialias (Ctx *ctx)
 
   switch (((CtxRasterizer*)(ctx->backend))->aa)
   {
-    case 1: return CTX_ANTIALIAS_NONE;
-    case 3: return CTX_ANTIALIAS_FAST;
-    //case 5: return CTX_ANTIALIAS_GOOD;
+    case 0: 
+    case 1:
+	return CTX_ANTIALIAS_NONE;
+    case 3:
+	return CTX_ANTIALIAS_FAST;
+    case 5:
+	return CTX_ANTIALIAS_GOOD;
     default:
-    case 15: return CTX_ANTIALIAS_DEFAULT;
+    case 15:
+	return CTX_ANTIALIAS_FULL;
   }
 }
 
@@ -4240,6 +4228,7 @@ static int _ctx_antialias_to_aa (CtxAntialias antialias)
     case CTX_ANTIALIAS_NONE: return 1;
     case CTX_ANTIALIAS_FAST: return 3;
     case CTX_ANTIALIAS_GOOD: return 5;
+    case CTX_ANTIALIAS_FULL: return 15;
     default:
     case CTX_ANTIALIAS_DEFAULT: return CTX_RASTERIZER_AA;
   }
@@ -4268,10 +4257,6 @@ ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 
   ((CtxRasterizer*)(ctx->backend))->aa = 
      _ctx_antialias_to_aa (antialias);
-  ((CtxRasterizer*)(ctx->backend))->fast_aa = 0;
-  if ((antialias == CTX_ANTIALIAS_DEFAULT)|
-      (antialias == CTX_ANTIALIAS_FAST))
-    ((CtxRasterizer*)(ctx->backend))->fast_aa = 1;
 }
 
 CtxRasterizer *
@@ -4294,7 +4279,6 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->texture_source = texture_source?texture_source:ctx;
 
   rasterizer->aa          = _ctx_antialias_to_aa (antialias);
-  rasterizer->fast_aa = ((antialias == CTX_ANTIALIAS_DEFAULT)|(antialias == CTX_ANTIALIAS_FAST));
   ctx_state_init (rasterizer->state);
   rasterizer->buf         = data;
   rasterizer->blit_x      = x;
