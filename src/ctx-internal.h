@@ -1379,12 +1379,18 @@ void ctx_pop_backend (Ctx *ctx);
 
 static CTX_INLINE float ctx_fmod1f (float val)
 {
-  return ctx_fabsf (val - (int)(val));
+  val = ctx_fabsf(val);
+  return val - (int)(val);
 }
 
 static CTX_INLINE float ctx_fmodf (float val, float modulus)
 {
   return ctx_fmod1f(val/modulus) * modulus;
+}
+
+static CTX_INLINE int ctx_nearly_zero(float val)
+{
+  return (val > 0.001f) & (val > -0.001f);
 }
 
 #if EMSCRIPTEN

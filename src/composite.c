@@ -6896,11 +6896,11 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
                                  int            y0,
                                  int            x1,
                                  int            y1,
-                                 uint8_t        cov)
+                                 const uint8_t  cov)
 {
-  int blit_x = rasterizer->blit_x;
-  int blit_y = rasterizer->blit_y;
-  int blit_width = rasterizer->blit_width;
+  int blit_x      = rasterizer->blit_x;
+  int blit_y      = rasterizer->blit_y;
+  int blit_width  = rasterizer->blit_width;
   int blit_height = rasterizer->blit_height;
   int blit_stride = rasterizer->blit_stride;
 
@@ -6909,10 +6909,10 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
   y0 = ctx_maxi (y0, blit_y);
   y1 = ctx_mini (y1, blit_y + blit_height - 1);
 
-  int width = x1 - x0 + 1;
-  int height= y1 - y0 + 1;
+  const int width = x1 - x0 + 1;
+  const int height= y1 - y0 + 1;
   //
-  if (CTX_UNLIKELY ((width <=0) | (height <= 0)))
+  if (((width <=0) | (height <= 0)))
     return;
 
   CtxCovPath comp = rasterizer->comp;
@@ -6947,14 +6947,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       {
         for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
-#if 1
-          uint32_t *dst_pix = (uint32_t*)&dst[0];
-          int count = width;
-          while(count--)
-            *dst_pix++=color;
-#else
           ctx_span_set_colorbu ((uint32_t*)&dst[0], color, width);
-#endif
           dst += blit_stride;
         }
       }
@@ -7074,7 +7067,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       uint32_t si_a  = rasterizer->color[3];
       INIT_ENV;
 
-      if (CTX_UNLIKELY(width == 1))
+      if (width == 1)
       {
         for (unsigned int y = y0; y <= (unsigned)y1; y++)
         {
@@ -7089,9 +7082,7 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (unsigned int i = 0; i < (unsigned)width; i++)
-          {
             dst_i[i] = ctx_over_RGBA8_full_2 (dst_i[i], si_ga_full, si_rb_full, si_a);
-          }
           dst += blit_stride;
         }
       }
@@ -7187,9 +7178,7 @@ y1, 0);
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (unsigned int i = 0; i < (unsigned)width; i++)
-          {
             dst_i[i] = ctx_lerp_RGBA8 (dst_i[i], color, cov);
-          }
           dst += blit_stride;
         }
         return;
@@ -7233,9 +7222,7 @@ y1, 0);
         {
           uint32_t *dst_i = (uint32_t*)&dst[0];
           for (unsigned int i = 0; i < (unsigned)width; i++)
-          {
             dst_i[i] = ctx_over_RGBA8 (dst_i[i], color, cov);
-          }
           dst += blit_stride;
         }
       }
@@ -7285,10 +7272,15 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
                           float          y1,
                           uint8_t        cov)
 {
-  if(((int)(ctx_fmod1f (x0) < 0.01f) | (ctx_fmod1f(x0) > 0.99f)) &
-     ((int)(ctx_fmod1f (y0) < 0.01f) | (ctx_fmod1f(y0) > 0.99f)) &
-     ((int)(ctx_fmod1f (x1) < 0.01f) | (ctx_fmod1f(x1) > 0.99f)) &
-     ((int)(ctx_fmod1f (y1) < 0.01f) | (ctx_fmod1f(y1) > 0.99f)))
+  float x0_fm = ctx_fmod1f (x0);
+  float y0_fm = ctx_fmod1f (y0);
+  float x1_fm = ctx_fmod1f (x1);
+  float y1_fm = ctx_fmod1f (y1);
+
+  if(((int)(x0_fm < 0.01f) | (x0_fm > 0.99f)) &
+     ((int)(y0_fm < 0.01f) | (y0_fm > 0.99f)) &
+     ((int)(x1_fm < 0.01f) | (x1_fm > 0.99f)) &
+     ((int)(y1_fm < 0.01f) | (y1_fm > 0.99f)))
   {
     /* best-case scenario axis aligned rectangle */
     ctx_composite_fill_rect_aligned (rasterizer, (int)x0, (int)y0, (int)(x1-1), (int)(y1-1), 255);
@@ -7310,10 +7302,10 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   x1 = ctx_minf (x1, blit_x + blit_width);
   y1 = ctx_minf (y1, blit_y + blit_height);
 
-  uint8_t left = (int)(255-ctx_fmod1f (x0) * 255);
-  uint8_t top  = (int)(255-ctx_fmod1f (y0) * 255);
-  uint8_t right  = (int)(ctx_fmod1f (x1) * 255);
-  uint8_t bottom = (int)(ctx_fmod1f (y1) * 255);
+  uint8_t left = (int)(255-x0_fm * 255);
+  uint8_t top  = (int)(255-y0_fm * 255);
+  uint8_t right  = (int)(x1_fm * 255);
+  uint8_t bottom = (int)(y1_fm * 255);
 
   x0 = ctx_floorf (x0);
   y0 = ctx_floorf (y0);
