@@ -2164,6 +2164,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   }
 #endif
 
+  ctx_composite_setup (rasterizer);
   if (CTX_UNLIKELY(ctx_is_transparent (rasterizer, 0) |
       (rasterizer->scan_min > CTX_FULL_AA * (blit_y + blit_height)) |
       (rasterizer->scan_max < CTX_FULL_AA * blit_y) |
@@ -2173,7 +2174,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     }
   else
   {
-    ctx_composite_setup (rasterizer);
 
     rasterizer->state->ink_min_x = ctx_mini (rasterizer->state->ink_min_x, rasterizer->col_min / CTX_SUBDIV);
     rasterizer->state->ink_max_x = ctx_maxi (rasterizer->state->ink_min_x, rasterizer->col_max / CTX_SUBDIV);
@@ -2709,16 +2709,15 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   {
     source_backup = gstate->source_fill;
     gstate->source_fill = gstate->source_stroke;
+    rasterizer->comp_op = NULL;
   }
-
-  rasterizer->comp_op = NULL;
-  ctx_composite_setup (rasterizer);
 
 #if CTX_STROKE_1PX
   if ((gstate->line_width * factor <= 0.0f) &
       (gstate->line_width * factor > -10.0f) &
       (rasterizer->format->bpp >= 8))
   {
+    ctx_composite_setup (rasterizer);
     ctx_rasterizer_stroke_1px (rasterizer);
     if (preserved)
     {
@@ -2761,6 +2760,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
         float x1 = entry1->data.s16[2] * 1.0f / CTX_SUBDIV;
         float y1 = entry1->data.s16[3] * 1.0f / CTX_FULL_AA;
 
+        ctx_composite_setup (rasterizer);
         ctx_composite_stroke_rect (rasterizer, x0, y0, x1, y1, line_width);
 
         goto done;
@@ -2769,8 +2769,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
 #endif
   
-  rasterizer->non_intersecting = 1;
-    {
     {
       if (line_width < 5.0f)
       {
@@ -2978,11 +2976,11 @@ foo:
       CtxFillRule rule_backup = gstate->fill_rule;
       gstate->fill_rule = CTX_FILL_RULE_WINDING;
       rasterizer->preserve = 0; // so fill isn't tripped
+      rasterizer->non_intersecting = 1;
       ctx_rasterizer_fill (rasterizer);
       gstate->fill_rule = rule_backup;
       gstate->transform = transform_backup;
       _ctx_transform_prime (rasterizer->state);
-    }
   }
 #if CTX_FAST_FILL_RECT
 #if CTX_FAST_STROKE_RECT

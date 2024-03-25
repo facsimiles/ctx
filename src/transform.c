@@ -61,7 +61,7 @@ _ctx_transform_prime (CtxState *state)
    (state->gstate.tolerance * CTX_FIX_SCALE * CTX_FIX_SCALE);
 }
 
-static inline void
+static CTX_INLINE void
 _ctx_matrix_apply_transform_perspective_fixed (const Ctx16f16Matrix *m, int x_in, int y_in,
                 int *x_out, int *y_out)
 {
@@ -80,7 +80,7 @@ _ctx_matrix_apply_transform_perspective_fixed (const Ctx16f16Matrix *m, int x_in
 
 }
 
-static inline void
+static CTX_INLINE void
 _ctx_matrix_apply_transform_affine_fixed (const Ctx16f16Matrix *m, int x_in, int y_in,
                 int *x_out, int *y_out)
 {
@@ -92,7 +92,7 @@ _ctx_matrix_apply_transform_affine_fixed (const Ctx16f16Matrix *m, int x_in, int
                      (m->m[1][2])) * CTX_FULL_AA) >>TRANSFORM_SHIFT;
 }
 
-static inline void
+static CTX_INLINE void
 _ctx_matrix_apply_transform_scale_translate_fixed (const Ctx16f16Matrix *m, int x_in, int y_in, int *x_out, int *y_out)
 {
   *x_out = ((((x_in * m->m[0][0])>>TRANSFORM_SHIFT) +
@@ -101,7 +101,7 @@ _ctx_matrix_apply_transform_scale_translate_fixed (const Ctx16f16Matrix *m, int 
                      (m->m[1][2])) * CTX_FULL_AA) >>TRANSFORM_SHIFT;
 }
 
-static inline void
+static CTX_INLINE void
 _ctx_user_to_device_prepped_fixed (CtxState *state, int x, int y, int *x_out, int *y_out)
 {
   switch (state->gstate.transform_type)

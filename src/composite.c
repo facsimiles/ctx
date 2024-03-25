@@ -7533,8 +7533,7 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
 #endif
 #endif
   }
-    rasterizer->format->setup (rasterizer);
-
+  rasterizer->format->setup (rasterizer);
 }
 
 
