@@ -1617,6 +1617,9 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
 
 
 #if CTX_INLINE_FILL_RULE
+
+
+// this can shave 1-2% percent off execution time, at the penalty of increased code size
 void
 CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule)
 {
@@ -2160,6 +2163,73 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
+static CTX_INLINE int perpdot(int ax,int ay,int bx, int by)
+{ return (ax*by)-(ay*bx);
+}
+
+static CTX_INLINE int check_convex (CtxRasterizer *rasterizer)
+{
+  int count = rasterizer->edge_list.count;
+  if (count <= 5) return 1;
+  CtxSegment *temp = (CtxSegment*)rasterizer->edge_list.entries;
+  int prev_x = 0;
+  int prev_y = 0;
+  int prev_prev_x = 0;
+  int prev_prev_y = 0;
+  int start = 0;
+  int end = 0;
+
+  int got_first = 0;
+  int expected_sign = 0;
+
+  while (start < count)
+    {
+      int started = 0;
+      int i;
+      for (i = start; i < count; i++)
+        {
+          CtxSegment *entry = &temp[i];
+          int x, y;
+          if (entry->code == CTX_NEW_EDGE)
+            {
+              if (started)
+                {
+                  end = i - 1;
+                  goto foo;
+                }
+              prev_x = entry->data.s16[0];
+              prev_y = entry->data.s16[1];
+              start = i;
+            }
+          x = entry->data.s16[2];
+          y = entry->data.s16[3];
+          
+	  if (started)
+	  {
+	    if (!got_first)
+	    {
+	       expected_sign = perpdot(prev_x - prev_prev_x, prev_y - prev_prev_y, x - prev_x, y - prev_y) < 0;
+	       got_first = 1;
+	    }
+            int pd = perpdot(prev_x - prev_prev_x, prev_y - prev_prev_y, x - prev_x, y - prev_y);
+	    int sign = pd < 0;
+
+	    if (pd !=0 && sign != expected_sign) {
+		     return 0;
+	    }
+	  }
+          prev_prev_x = prev_x;
+          prev_prev_y = prev_y;
+          prev_x = x;
+          prev_y = y;
+          started++;
+        }
+      end = i-1;
+foo:
+      start = end+1;
+    }
+  return 1;
+}
 
 
 static void
@@ -2252,7 +2322,9 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     ctx_rasterizer_finish_shape (rasterizer);
 
     ctx_rasterizer_poly_to_edges (rasterizer);
-    rasterizer->non_intersecting |= (rasterizer->edge_list.count <= 5);
+
+    if (!rasterizer->non_intersecting)
+      rasterizer->non_intersecting = check_convex(rasterizer);
 
     ctx_rasterizer_rasterize_edges (rasterizer, gstate->fill_rule);
   }
