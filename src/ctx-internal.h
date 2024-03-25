@@ -732,7 +732,6 @@ struct _CtxRasterizer
   CtxFragment fragment;
   //Ctx       *ctx;
   CtxState  *state;
-  void      *buf;
   CtxCovPath  comp;
   void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, unsigned int count);
 
@@ -749,6 +748,8 @@ struct _CtxRasterizer
   int        col_max;
 
   unsigned int aa;          // level of vertical aa
+
+  void      *buf;
   int        inner_x;
   int        inner_y;
 

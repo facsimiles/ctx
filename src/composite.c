@@ -4040,15 +4040,15 @@ static void
 ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
-  int components       = 4;
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op  = ctx_RGBA8_porter_duff_generic;
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
+  CtxSourceType source_type = gstate->source_fill.type;
 
   int blend_mode       = gstate->blend_mode;
   int compositing_mode = gstate->compositing_mode;
 
-  if (gstate->source_fill.type == CTX_SOURCE_COLOR)
+  if (source_type == CTX_SOURCE_COLOR)
     {
       ctx_fragment_color_RGBA8 (rasterizer, 0,0, 1,rasterizer->color, 1, 0,0,0);
       if (gstate->global_alpha_u8 != 255)
@@ -4061,7 +4061,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       uint32_t si_rb      = src_pix & 0x00ff00ff;
       uint32_t si_ga_full = si_ga * 255;
       uint32_t si_rb_full = si_rb * 255;
-//      uint32_t si_a       = si_ga >> 16;
 
       ((uint32_t*)rasterizer->color)[1] = si_ga;
       ((uint32_t*)rasterizer->color)[2] = si_rb;
@@ -4088,18 +4087,18 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           rasterizer->comp_op = ctx_RGBA8_nop;
         }
         else
-        switch (gstate->source_fill.type)
+        switch (source_type)
         {
           case CTX_SOURCE_COLOR:
             if (gstate->compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
             {
               rasterizer->comp_op = ctx_RGBA8_source_over_normal_color;
-              if ( ((float*)rasterizer->color)[3] >= 0.999f)
+              if (rasterizer->color[3] == 255)
                 rasterizer->comp = CTX_COV_PATH_RGBA8_COPY;
             }
             else
             {
-              rasterizer->comp_op = ctx_RGBAF_porter_duff_color_normal;
+              rasterizer->comp_op = ctx_RGBA8_porter_duff_color_normal;
             }
             break;
 #if CTX_GRADIENTS
@@ -4119,7 +4118,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
         }
         break;
       default:
-        switch (gstate->source_fill.type)
+        switch (source_type)
         {
           case CTX_SOURCE_COLOR:
             rasterizer->comp_op = ctx_RGBA8_porter_duff_color;
@@ -4144,7 +4143,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 
 #else
 
-  if (gstate->source_fill.type == CTX_SOURCE_COLOR)
+  if (source_type == CTX_SOURCE_COLOR)
     {
 
       if (blend_mode == CTX_BLEND_NORMAL)
@@ -4156,7 +4155,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
         }
         else if (compositing_mode == CTX_COMPOSITE_SOURCE_OVER)
         {
-          if (rasterizer->color[components-1] == 255)
+          if (rasterizer->color[3] == 255)
           {
             rasterizer->comp_op = ctx_RGBA8_source_copy_normal_color;
             rasterizer->comp = CTX_COV_PATH_RGBA8_COPY;
@@ -7524,7 +7523,7 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
   }
 #endif
 #endif
-    rasterizer->format->setup (rasterizer);
+  rasterizer->format->setup (rasterizer);
   }
 }
 
