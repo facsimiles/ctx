@@ -239,6 +239,12 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 
               {
 	        dx_dy = abs(dx_dy);
+
+//#define CTX_RASTERIZER_AA_SLOPE_LIMIT3         (65536/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           (123456/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           (140425/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          (260425/CTX_SUBDIV/15)
+
 		int aa = (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);//_FAST_AA);
 	        aa += (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) * (aa>3);
 	        aa += (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15) * (aa>5);

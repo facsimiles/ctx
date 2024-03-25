@@ -1009,7 +1009,7 @@ typedef enum
 struct
 _CtxGlyph
 {
-  uint32_t index; // not unichar
+  uint32_t index; // glyph index in font
   float    x;
   float    y;
 };
