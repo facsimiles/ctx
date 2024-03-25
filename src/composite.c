@@ -7491,7 +7491,7 @@ CTX_SIMD_SUFFIX(ctx_composite_stroke_rect) (CtxRasterizer *rasterizer,
 static void
 CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
 {
-  if (CTX_UNLIKELY (rasterizer->comp_op==NULL))
+  if (rasterizer->comp_op==NULL)
   {
 #if CTX_GRADIENTS
 #if CTX_GRADIENT_CACHE
@@ -7524,9 +7524,8 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
   }
 #endif
 #endif
-  }
     rasterizer->format->setup (rasterizer);
-
+  }
 }
 
 

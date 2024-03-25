@@ -2252,7 +2252,6 @@ struct _CtxBackend
   Ctx                      *ctx;
 
   void  (*process)         (Ctx *ctx, CtxCommand *entry);
-  void  (*process_n)       (Ctx *ctx, CtxCommand *entry);
 
   /* for interactive/event-handling backends */
   void  (*start_frame)     (Ctx *ctx);
