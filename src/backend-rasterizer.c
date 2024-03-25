@@ -3952,6 +3952,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
       case CTX_COMPOSITING_MODE:
       case CTX_BLEND_MODE:
       case CTX_EXTEND:
+      case CTX_SET_RGBA_U8:
         rasterizer->comp_op = NULL;
         break;
 #if CTX_COMPOSITING_GROUPS
