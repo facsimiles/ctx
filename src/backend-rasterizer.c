@@ -173,10 +173,6 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
   int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
   int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
 
-  // TODO : compute likely hood of crossings as bit-mask when adding edge - 
-  //        recomputed for those scanlines to see if we can clear this mask..
-  //        this avoids iterating once over the edges per scanline for spans of scanlines
-
   unsigned int t = 1;
   for (t = 1; (t < active_edges);t++)
     {
@@ -240,7 +236,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT5           (140425/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15          (260425/CTX_SUBDIV/15)
 
-		int aa = (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);//_FAST_AA);
+		int aa = (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3);
 	        aa += (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) * (aa>3);
 	        aa += (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15) * (aa>5);
                 rasterizer->scan_aa[aa]++;
@@ -2167,7 +2163,7 @@ static CTX_INLINE int perpdot(int ax,int ay,int bx, int by)
 { return (ax*by)-(ay*bx);
 }
 
-static CTX_INLINE int check_convex (CtxRasterizer *rasterizer)
+static CTX_INLINE int ctx_is_poly_convex (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->edge_list.count;
   if (count <= 5) return 1;
@@ -2284,7 +2280,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     rasterizer->state->ink_max_y = ctx_maxi (rasterizer->state->ink_max_y, rasterizer->scan_max / CTX_FULL_AA);
 
 #if CTX_FAST_FILL_RECT
-  if (rasterizer->edge_list.count == 5)
+  if (rasterizer->edge_list.count == 4)
     {
       CtxSegment *entry0 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[0];
       CtxSegment *entry1 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[1];
@@ -2317,14 +2313,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     }
 #endif
 
-    // speed up rectangles and triangles
-
     ctx_rasterizer_finish_shape (rasterizer);
-
     ctx_rasterizer_poly_to_edges (rasterizer);
 
     if (!rasterizer->non_intersecting)
-      rasterizer->non_intersecting = check_convex(rasterizer);
+      rasterizer->non_intersecting = ctx_is_poly_convex(rasterizer);
 
     ctx_rasterizer_rasterize_edges (rasterizer, gstate->fill_rule);
   }
@@ -2844,7 +2837,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 #if CTX_FAST_FILL_RECT
 #if CTX_FAST_STROKE_RECT
-  if (rasterizer->edge_list.count == 5)
+  if (rasterizer->edge_list.count == 4)
     {
       CtxSegment *entry0 = &((CtxSegment*)rasterizer->edge_list.entries)[0];
       CtxSegment *entry1 = &((CtxSegment*)rasterizer->edge_list.entries)[1];
@@ -3491,8 +3484,6 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_rel_line_to (rasterizer, width, 0);
   ctx_rasterizer_rel_line_to (rasterizer, 0, height);
   ctx_rasterizer_rel_line_to (rasterizer, -width, 0);
-  ctx_rasterizer_rel_line_to (rasterizer, 0, -height);
-  //ctx_rasterizer_rel_line_to (rasterizer, width/2, 0);
   ctx_rasterizer_finish_shape (rasterizer);
 }
 
