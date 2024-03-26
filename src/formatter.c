@@ -878,7 +878,6 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         _ctx_print_endcmd (formatter);
         break;
       case CTX_CONT:
-      case CTX_EDGE:
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_END_FRAME:

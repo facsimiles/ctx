@@ -1528,6 +1528,14 @@ const char *ctx_client_get_title (Ctx *ctx, int id);
 
 typedef enum
 {
+  CTX_EDGE             = 0, 
+  CTX_EDGE_FLIPPED     = 16,
+  CTX_NEW_EDGE         = 32
+} CtxRasterizerCode;
+
+
+typedef enum
+{
   CTX_CONT             = '\0', // - contains args from preceding entry
   CTX_NOP              = ' ', //
                    //     !    UNUSED
@@ -1535,12 +1543,10 @@ typedef enum
                    //     #    comment in parser
                    //     $    UNUSED
                    //     %    percent of viewport width or height
-  CTX_EDGE             = '&', // not occuring in commandstream
                    //     '    start/end string
   CTX_DATA             = '(', // size size-in-entries - u32
   CTX_DATA_REV         = ')', // reverse traversal data marker
   CTX_SET_RGBA_U8      = '*', // r g b a - u8
-  CTX_NEW_EDGE         = '+', // x0 y0 x1 y1 - s16
                    //     ,    UNUSED/RESERVED
   CTX_SET_PIXEL        = '-', // 8bit "fast-path" r g b a x y - u8 for rgba, and u16 for x,y
   // set pixel might want a shorter ascii form with hex-color? or keep it an embedded
@@ -1608,7 +1614,6 @@ typedef enum
                          //    data can be a string with a name,
                          //    icc data or perhaps our own serialization
                          //    of profile data
-  CTX_EDGE_FLIPPED     = '^', // x0 y0 x1 y1 - s16  | also unit
   CTX_STROKE_SOURCE    = '_', // next source definition applies to strokes
   CTX_SOURCE_TRANSFORM = '`',
   CTX_REL_ARC_TO       = 'a', // x1 y1 x2 y2 radius

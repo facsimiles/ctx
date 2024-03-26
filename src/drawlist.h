@@ -86,29 +86,40 @@ ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32
 #pragma pack(push,1)
 typedef struct 
 CtxSegment {
+  union {
+#if CTX_32BIT_SEGMENTS
+   int32_t s16[4];
+   struct {
+     int32_t x0;
+     int32_t y0;
+     int32_t x1;
+     int32_t y1;
+   };
+#else
+   int16_t s16[4]; 
+   struct {
+     int16_t x0;
+     int16_t y0;
+     int16_t x1;
+     int16_t y1;
+   };
+#endif
+   uint32_t u32[2];
+  } data;
 #if CTX_32BIT_SEGMENTS
   uint32_t code;
 #else
   uint16_t code;
 #endif
-  union {
-#if CTX_32BIT_SEGMENTS
-   int32_t s16[4];
-#else
-   int16_t s16[4]; 
-#endif
-   uint32_t u32[2];
-  } data;
-  int32_t val;
   int32_t delta;
+  int32_t val;
+  // TODO: merge AA and code - without needing more branches XXX
   int32_t aa; // bit field of needed AA levels 1=3  4=5  8=15
 } CtxSegment;
 #pragma pack(pop)
 
-
-
 static inline CtxSegment
-ctx_segment_s16 (CtxCode code, int x0, int y0, int x1, int y1)
+ctx_segment_s16 (CtxRasterizerCode code, int x0, int y0, int x1, int y1)
 {
   CtxSegment command;
   command.code = code;
@@ -166,7 +177,6 @@ ctx_edgelist_resize (CtxDrawlist *drawlist, int desired_size)
   //fprintf (stderr, "drawlist %p is %d\n", drawlist, drawlist->size);
 #endif
 }
-
 
 static CTX_INLINE int
 ctx_edgelist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)

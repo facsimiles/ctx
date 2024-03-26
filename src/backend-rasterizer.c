@@ -1772,7 +1772,7 @@ static inline void ctx_rasterizer_update_inner_point (CtxRasterizer *rasterizer,
 
 static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 {
-  CtxSegment entry = {CTX_EDGE, {{0,}},0,0};
+  CtxSegment entry = {{{0,}},CTX_EDGE,0,0};
 
   entry.data.s16[0]=rasterizer->inner_x;
   entry.data.s16[1]=rasterizer->inner_y;

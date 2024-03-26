@@ -348,9 +348,6 @@ static int ctx_arguments_for_code (CtxCode code)
 #if 1
         case CTX_SET_RGBA_U8:
         case CTX_NOP:
-        case CTX_NEW_EDGE:
-        case CTX_EDGE:
-        case CTX_EDGE_FLIPPED:
         case CTX_CONT:
         case CTX_DATA:
         case CTX_DATA_REV:

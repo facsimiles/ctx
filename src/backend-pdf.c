@@ -681,7 +681,6 @@ ctx_pdf_process (Ctx *ctx, CtxCommand *c)
         }
         break;
       case CTX_CONT:
-      case CTX_EDGE:
       case CTX_DATA:
       case CTX_DATA_REV:
       case CTX_END_FRAME:
