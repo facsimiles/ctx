@@ -136,6 +136,7 @@ ctx_edgelist_resize (CtxDrawlist *drawlist, int desired_size)
       static CtxSegment sbuf[CTX_MAX_EDGE_LIST_SIZE];
       drawlist->entries = (CtxEntry*)&sbuf[0];
       drawlist->size = CTX_MAX_EDGE_LIST_SIZE;
+      drawlist->flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
     }
 #else
   int new_size = desired_size;
