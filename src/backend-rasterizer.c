@@ -24,6 +24,8 @@ static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
   return a->data.y0 - b->data.y0;
 }
 
+
+
 static inline int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
 {
   CtxSegment pivot = A[ (high+low) /2];
@@ -225,8 +227,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
               int x1 = entries[index].data.x1;
               int dx_dy = CTX_RASTERIZER_EDGE_MULTIPLIER * (x1 - x0) / dy;
               entries[index].delta = dx_dy;
-              entries[index].val = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER +
-                                         (yd * dx_dy);
+              entries[index].val = x0 * CTX_RASTERIZER_EDGE_MULTIPLIER + (yd * dx_dy);
 
               {
 	        dx_dy = abs(dx_dy);
@@ -242,38 +243,6 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
                 rasterizer->scan_aa[aa]++;
 	        entries[index].aa = aa;
 	      }
-
-#if 0
-	      {
-                 CtxSegment *segA = &entries[index];
-                 int a_x0 = segA->data.x0;
-                 int a_y0 = segA->data.y0;
-                 int a_x1 = segA->data.x1;
-                 int a_y1 = segA->data.y1;
-                 for (unsigned int j = 0; j < (unsigned)active_edges; j++)
-                   if (j != index) {
-                     CtxSegment *segB = &entries[edges[j]];
-                     int b_x0 = segB->data.x0;
-                     int b_y0 = segB->data.y0;
-                     int b_x1 = segB->data.x1;
-                     int b_y1 = segB->data.y1;
-
-                     int dx0 = a_x1-a_x0;
-                     int dx1 = b_x1-b_x0;
-                     int dy0 = a_y1-a_y0;
-                     int dy1 = b_y1-b_y0;
-                     int p0 = dy1*(b_x1-a_x0) - dx1*(b_y1-a_y0);
-                     int p1 = dy1*(b_x1-a_x1) - dx1*(b_y1-a_y1);
-                     int p2 = dy0*(a_x1-b_x0) - dx0*(a_y1-b_y0);
-                     int p3 = dy0*(a_x1-b_x1) - dx0*(a_y1-b_y1);
-                     //int intersects = (p0*p1<0) & (p2*p3<0); // (p0*p1<=0) & (p2*p3<=0)
-                     int intersects = (p0*p1<=0) & (p2*p3<=0);
-
-		     if (intersects){};// fprintf (stderr, "(%i|%i)", index, j);
-                   }
-	      }
-#endif
-
 
               if ((miny > scanline) &
                   (pending_edges < CTX_MAX_PENDING-1))
@@ -292,7 +261,6 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 	    {
 	      horizontal_edges++;
               entries[edge_pos].aa = 0;
-              rasterizer->scan_aa[0]++; // not neccesary 0 should be ignored
 	    }
         }
       edge_pos++;
@@ -1439,7 +1407,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
     rasterizer->non_intersecting = 0;
     return;
   }
-  rasterizer->scan_aa[0]= // this one is unused
   rasterizer->scan_aa[1]=
   rasterizer->scan_aa[2]=
   rasterizer->scan_aa[3]=0;
