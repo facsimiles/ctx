@@ -149,11 +149,12 @@ CTX_INLINE static void ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasteri
 
 CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges, const int non_intersecting)
 {
+  int aa = (rasterizer->scan_aa[3]>0) *10 +
+       (rasterizer->scan_aa[2]>0) * 2 +
+       (rasterizer->scan_aa[1]>0) * 2 + 1;
+
   if (non_intersecting)
   {
-    int aa = ((rasterizer->scan_aa[3]>0) *15) + (rasterizer->scan_aa[3]<=0)*
-       ((rasterizer->scan_aa[2]>0) * 5 +
-       (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0)));
     return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * aa;
   }
 
@@ -161,7 +162,7 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
       (rasterizer->ending_edges!=0)|
       (pending_edges!=0))
   {
-    return CTX_RASTERIZER_AA;
+    return aa;
   }
 
   const int *edges  = rasterizer->edges;
@@ -188,10 +189,6 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
       x0_end = x1_end;
       x0_start = x1_start;
     }
-
-  int aa = ((rasterizer->scan_aa[3]>0) *15) + (rasterizer->scan_aa[3]<=0)*
-     ((rasterizer->scan_aa[2]>0) * 5 +
-       (rasterizer->scan_aa[2]<=0) * ((rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]<=0)));
 
   return aa * crossings;
 }
