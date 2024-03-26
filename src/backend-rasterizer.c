@@ -2159,14 +2159,13 @@ ctx_is_transparent (CtxRasterizer *rasterizer, int stroke)
   return 0;
 }
 
-static CTX_INLINE int perpdot(int ax,int ay,int bx, int by)
+static CTX_INLINE int ctx_perpdot(int ax,int ay,int bx, int by)
 { return (ax*by)-(ay*bx);
 }
 
 static CTX_INLINE int ctx_is_poly_convex (CtxRasterizer *rasterizer)
 {
   int count = rasterizer->edge_list.count;
-  if (count <= 5) return 1;
   CtxSegment *temp = (CtxSegment*)rasterizer->edge_list.entries;
   int prev_x = 0;
   int prev_y = 0;
@@ -2204,14 +2203,18 @@ static CTX_INLINE int ctx_is_poly_convex (CtxRasterizer *rasterizer)
 	  {
 	    if (!got_first)
 	    {
-	       expected_sign = perpdot(prev_x - prev_prev_x, prev_y - prev_prev_y, x - prev_x, y - prev_y) < 0;
-	       got_first = 1;
+               int pd = ctx_perpdot(prev_x - prev_prev_x, prev_y - prev_prev_y, x - prev_x, y - prev_y);
+	       if (pd != 0) {
+	         expected_sign = pd < 0;
+	         got_first = 1;
+	       }
 	    }
-            int pd = perpdot(prev_x - prev_prev_x, prev_y - prev_prev_y, x - prev_x, y - prev_y);
-	    int sign = pd < 0;
-
-	    if (pd !=0 && sign != expected_sign) {
-		     return 0;
+	    else
+	    {
+              int pd = ctx_perpdot(prev_x - prev_prev_x, prev_y - prev_prev_y, x - prev_x, y - prev_y);
+	      int sign = pd < 0;
+	      if ((pd !=0) & (sign != expected_sign))
+	        return 0;
 	    }
 	  }
           prev_prev_x = prev_x;
