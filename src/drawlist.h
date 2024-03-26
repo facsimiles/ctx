@@ -88,7 +88,6 @@ typedef struct
 CtxSegment {
   union {
 #if CTX_32BIT_SEGMENTS
-   int32_t s16[4];
    struct {
      int32_t x0;
      int32_t y0;
@@ -96,7 +95,6 @@ CtxSegment {
      int32_t y1;
    };
 #else
-   int16_t s16[4]; 
    struct {
      int16_t x0;
      int16_t y0;
@@ -108,13 +106,13 @@ CtxSegment {
   } data;
 #if CTX_32BIT_SEGMENTS
   uint32_t code;
+  int32_t aa; 
 #else
   uint16_t code;
+  int16_t aa; 
 #endif
   int32_t delta;
   int32_t val;
-  // TODO: merge AA and code - without needing more branches XXX
-  int32_t aa; // bit field of needed AA levels 1=3  4=5  8=15
 } CtxSegment;
 #pragma pack(pop)
 
@@ -123,10 +121,10 @@ ctx_segment_s16 (CtxRasterizerCode code, int x0, int y0, int x1, int y1)
 {
   CtxSegment command;
   command.code = code;
-  command.data.s16[0] = x0;
-  command.data.s16[1] = y0;
-  command.data.s16[2] = x1;
-  command.data.s16[3] = y1;
+  command.data.x0 = x0;
+  command.data.y0 = y0;
+  command.data.x1 = x1;
+  command.data.y1 = y1;
   return command;
 }
 
