@@ -736,10 +736,10 @@ struct _CtxRasterizer
   void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, unsigned int count);
 
   unsigned int active_edges;
+  unsigned int edge_pos;         // where we're at in iterating all edges
   unsigned int pending_edges;
   unsigned int horizontal_edges;
   unsigned int ending_edges;
-  unsigned int edge_pos;         // where we're at in iterating all edges
 
   int        scanline;
   int        scan_min;

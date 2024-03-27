@@ -559,11 +559,12 @@ void ctx_rgba (Ctx *ctx, float r, float g, float b, float a)
   else au = (uint8_t)(a * 255);
 
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, ru,gu,bu,au, 0, 0, 0, 0);
-
   uint8_t rgba[4];
+#if 0
   ctx_color_get_rgba8 (&ctx->state, &ctx->state.gstate.source_fill.color, rgba);
   if (rgba[0] == ru && rgba[1] == gu && rgba[2] == bu && rgba[3] == au)
      return;
+#endif
   ctx_process (ctx, &command);
 #else
   float components[4]={r,g,b,a};
@@ -883,14 +884,14 @@ int ctx_color (Ctx *ctx, const char *string)
 void
 ctx_rgba8 (Ctx *ctx, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-#if 0
+#if 1
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, r, g, b, a, 0, 0, 0, 0);
-
+#if 0
   uint8_t rgba[4];
   ctx_color_get_rgba8 (&ctx->state, &ctx->state.gstate.source.color, rgba);
   if (rgba[0] == r && rgba[1] == g && rgba[2] == b && rgba[3] == a)
      return;
-
+#endif
   ctx_process (ctx, &command);
 #else
   ctx_rgba (ctx, r/255.0f, g/255.0f, b/255.0f, a/255.0f);

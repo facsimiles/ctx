@@ -156,6 +156,7 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
   if (non_intersecting)
   {
     return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * aa;
+    //return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=0) | (pending_edges!=0)) * aa;
   }
 
   if ((horizontal_edges!=0)|
@@ -185,7 +186,7 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
       const int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
       const int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
 
-      crossings |=  ((x1_end < x0_end)   | (x1_start < x0_end) | (x1_end < x0_start));
+      crossings |=  ((x1_end < x0_end) | (x1_start < x0_end) | (x1_end < x0_start));
       x0_end = x1_end;
       x0_start = x1_start;
     }
@@ -212,10 +213,11 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
   while ((edge_pos < edge_count &&
          (miny=entries[edge_pos].data.y0)  <= next_scanline))
     {
+      int y1 = entries[edge_pos].data.y1;
       if ((active_edges < CTX_MAX_EDGES-2) &
-        (entries[edge_pos].data.y1 /* (maxy) */  >= scanline))
+        (y1 >= scanline))
         {
-          int dy = (entries[edge_pos].data.y1 - miny);
+          int dy = (y1 - miny);
           if (dy)
             {
               int yd = scanline - miny;
@@ -230,7 +232,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 	        dx_dy = abs(dx_dy);
 
 //#define CTX_RASTERIZER_AA_SLOPE_LIMIT3         (65536/CTX_SUBDIV/15)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           (123456/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           (111111/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT5           (140425/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15          (260425/CTX_SUBDIV/15)
 
@@ -248,9 +250,9 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
                      and keep a different count for items stored here, like
                      a heap and stack growing against each other
                   */
-                    edges[CTX_MAX_EDGES-1-pending_edges] = edges[active_edges];
-                    pending_edges++;
-                    active_edges--;
+                  edges[CTX_MAX_EDGES-1-pending_edges] = edges[active_edges];
+                  pending_edges++;
+                  active_edges--;
               }
               active_edges++;
             }
@@ -261,14 +263,13 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
         }
       edge_pos++;
     }
-
-
-    rasterizer->active_edges = active_edges;
-    rasterizer->edge_pos = edge_pos;
-    rasterizer->pending_edges = pending_edges;
-    rasterizer->horizontal_edges = horizontal_edges;
+    rasterizer->active_edges     = active_edges;
+    rasterizer->edge_pos         = edge_pos;
+    rasterizer->pending_edges    = pending_edges;
     if (active_edges + pending_edges == 0)
       return -1;
+    rasterizer->horizontal_edges = horizontal_edges;
+
     return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges, non_intersecting);
 }
 
