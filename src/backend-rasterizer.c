@@ -146,7 +146,6 @@ CTX_INLINE static void ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasteri
     }
     rasterizer->active_edges = active_edges;
     rasterizer->pending_edges = pending_edges;
-    ctx_rasterizer_discard_edges (rasterizer);
 }
 
 CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges, const int non_intersecting)
@@ -199,7 +198,8 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 {
   int miny;
 
-  ctx_rasterizer_feed_pending_edges (rasterizer); // also discards - edges
+  ctx_rasterizer_feed_pending_edges (rasterizer);
+  ctx_rasterizer_discard_edges (rasterizer);
 						  
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
@@ -1424,6 +1424,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
         { /* the scanline transitions does not contain multiple intersections - each aa segment is a linear ramp */
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
           ctx_rasterizer_feed_pending_edges (rasterizer);
+          ctx_rasterizer_discard_edges (rasterizer);
           ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
     
           memset (coverage, 0, pixs);
@@ -1443,6 +1444,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
         {/* cheap fully correct AA - where only horizontal aa matters */
           ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
           ctx_rasterizer_feed_pending_edges (rasterizer);
+          ctx_rasterizer_discard_edges (rasterizer);
           ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
     
           if (allow_direct)
@@ -1478,6 +1480,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
             ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
             ctx_rasterizer_increment_edges (rasterizer, scanline_increment);
             ctx_rasterizer_feed_pending_edges (rasterizer);
+            ctx_rasterizer_discard_edges (rasterizer);
           }
         }
       }
