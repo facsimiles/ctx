@@ -24,8 +24,7 @@ static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
   return a->data.y0 - b->data.y0;
 }
 
-
-
+#if CTX_SCANBIN==0
 static inline int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
 {
   CtxSegment pivot = A[ (high+low) /2];
@@ -55,6 +54,7 @@ static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
   if (low < high)
     { ctx_edge_qsort (entries, p, high); }
 }
+#endif
 
 #define CTX_MAGIC_OFFSET  1 // without this we get scanline glitches
 
@@ -200,19 +200,31 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 
   ctx_rasterizer_feed_pending_edges (rasterizer);
   ctx_rasterizer_discard_edges (rasterizer);
-						  
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
   unsigned int pending_edges   = rasterizer->pending_edges;
   int scanline = rasterizer->scanline + CTX_MAGIC_OFFSET;
-  unsigned int edge_pos = rasterizer->edge_pos;
-  int next_scanline = scanline + CTX_FULL_AA;
-  unsigned int edge_count = rasterizer->edge_list.count;
+
   int active_edges = rasterizer->active_edges;
   int horizontal_edges = 0;
+
+#if CTX_SCANBIN
+  int scan = scanline / CTX_FULL_AA;
+  int count = rasterizer->scan_bin_count[scan];
+  if (count)
+  for (int i = 0; i < count; i++)
+  {
+      int edge_pos = rasterizer->scan_bins[scan][i];
+      miny = entries[edge_pos].data.y0;
+
+#else
+  int next_scanline = scanline + CTX_FULL_AA;
+  unsigned int edge_pos = rasterizer->edge_pos;
+  unsigned int edge_count = rasterizer->edge_list.count;
   while ((edge_pos < edge_count &&
          (miny=entries[edge_pos].data.y0)  <= next_scanline))
-    {
+  {
+#endif
       int y1 = entries[edge_pos].data.y1;
       if ((active_edges < CTX_MAX_EDGES-2) &
         (y1 >= scanline))
@@ -261,10 +273,15 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 	      horizontal_edges++;
 	    }
         }
+#if CTX_SCANBIN
+#else
       edge_pos++;
-    }
-    rasterizer->active_edges     = active_edges;
+#endif
+  }
+#if CTX_SCANBIN==0
     rasterizer->edge_pos         = edge_pos;
+#endif
+    rasterizer->active_edges     = active_edges;
     rasterizer->pending_edges    = pending_edges;
     if (active_edges + pending_edges == 0)
       return -1;
@@ -1328,7 +1345,9 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   rasterizer->has_shape       =   
   rasterizer->has_prev        =   
   rasterizer->edge_list.count =    // ready for new edges
+#if CTX_SCANBIN==0
   rasterizer->edge_pos        =   
+#endif
   rasterizer->scanline        = 0;
   if (CTX_LIKELY(!rasterizer->preserve))
   {
@@ -1408,7 +1427,28 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   rasterizer->scan_aa[2]=
   rasterizer->scan_aa[3]=0;
 
+#if CTX_SCANBIN
+
+  int ss = scan_start/CTX_FULL_AA;
+  int se = scan_end/CTX_FULL_AA;
+  if (ss < 0)ss =0;
+  if (se >= CTX_MAX_SCANLINES) se = CTX_MAX_SCANLINES-1;
+
+  for (int i = ss; i < se; i++)
+    rasterizer->scan_bin_count[i]=0;
+
+  for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
+  {
+    CtxSegment *entry = & ((CtxSegment*)rasterizer->edge_list.entries)[i];
+    int scan = (entry->data.y0-CTX_FULL_AA) / CTX_FULL_AA;
+    if (scan < ss) scan = ss;
+    if (scan < se)
+      rasterizer->scan_bins[scan][rasterizer->scan_bin_count[scan]++]=i;
+  }
+#else
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
+#endif
+
   rasterizer->scanline = scan_start;
 
   while (rasterizer->scanline <= scan_end)
@@ -1470,7 +1510,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
         }
         default:
         { /* level of oversampling based on lowest steepness edges */
-          aa = ctx_mini (aa, real_aa);
+          aa = ctx_mini (aa, real_aa); // limit to maximum vertical super sampling
           int scanline_increment = 15/aa;
           memset (coverage, 0, pixs);
           uint8_t fraction = 255/aa;
