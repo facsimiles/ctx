@@ -2282,6 +2282,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     ctx_rasterizer_finish_shape (rasterizer);
     ctx_rasterizer_poly_to_edges (rasterizer);
 
+    rasterizer->non_intersecting |= (rasterizer->edge_list.count <= 5);
     if (!rasterizer->non_intersecting)
       rasterizer->non_intersecting = ctx_is_poly_convex(rasterizer);
 
