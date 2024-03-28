@@ -1455,6 +1455,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   while (rasterizer->scanline <= scan_end)
     {
       int aa = ctx_rasterizer_feed_edges_full (rasterizer, non_intersecting);
+      aa = ctx_mini (aa, real_aa); // limit to maximum vertical super sampling
       switch (aa)
       {
         case -1: /* no edges */
@@ -1515,13 +1516,11 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
         }
         default:
         { /* level of oversampling based on lowest steepness edges */
-	  
           ctx_rasterizer_increment_edges (rasterizer, -CTX_AA_HALFSTEP2);
-          aa = ctx_mini (aa, real_aa); // limit to maximum vertical super sampling
           int scanline_increment = 15/aa;
           memset (coverage, 0, pixs);
           uint8_t fraction = 255/aa;
-          for (unsigned int i = 0; i < (unsigned)aa; i++)
+          for (unsigned int i = 0; i < (unsigned)aa-1; i++)
           {
             ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
             ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
@@ -1530,7 +1529,12 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
             ctx_rasterizer_feed_pending_edges (rasterizer, 0);
             ctx_rasterizer_discard_edges (rasterizer, 0);
           }
-          ctx_rasterizer_increment_edges (rasterizer, CTX_AA_HALFSTEP2);
+
+          ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
+          ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
+          rasterizer->scanline += scanline_increment;
+          ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2);
+          ctx_rasterizer_feed_pending_edges (rasterizer, 0);
         }
       }
   

@@ -559,8 +559,8 @@ void ctx_rgba (Ctx *ctx, float r, float g, float b, float a)
   else au = (uint8_t)(a * 255);
 
   CtxEntry command = ctx_u8 (CTX_SET_RGBA_U8, ru,gu,bu,au, 0, 0, 0, 0);
-  uint8_t rgba[4];
 #if 0
+  uint8_t rgba[4];
   ctx_color_get_rgba8 (&ctx->state, &ctx->state.gstate.source_fill.color, rgba);
   if (rgba[0] == ru && rgba[1] == gu && rgba[2] == bu && rgba[3] == au)
      return;
