@@ -1529,8 +1529,8 @@ const char *ctx_client_get_title (Ctx *ctx, int id);
 typedef enum
 {
   CTX_EDGE             = 0, 
-  CTX_EDGE_FLIPPED     = 16,
-  CTX_NEW_EDGE         = 32
+  CTX_EDGE_FLIPPED     = 1,
+  CTX_NEW_EDGE         = 2
 } CtxRasterizerCode;
 
 
