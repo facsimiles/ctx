@@ -551,7 +551,7 @@
 #endif
 
 #ifndef CTX_MAX_EDGES
-#define CTX_MAX_EDGES            257
+#define CTX_MAX_EDGES            255
 #endif
 
 #ifndef CTX_MAX_LINGERING_EDGES

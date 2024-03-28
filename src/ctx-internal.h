@@ -825,7 +825,11 @@ struct _CtxRasterizer
 
 #if CTX_SCANBIN
   uint32_t scan_bins[CTX_MAX_SCANLINES][CTX_MAX_EDGES];
+#if CTX_MAX_EDGES>255
   uint32_t scan_bin_count[CTX_MAX_SCANLINES];
+#else
+  uint8_t scan_bin_count[CTX_MAX_SCANLINES];
+#endif
 #endif
 
 };
