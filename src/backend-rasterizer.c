@@ -2985,11 +2985,11 @@ foo:
               dx = x - prev_x;
               dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
-              float recip_length = 1.0f/length;
-              dx = dx * recip_length * half_width_x;
-              dy = dy * recip_length * half_width_y;
               if (length>CTX_MIN_STROKE_LEN)
                 {
+                  float recip_length = 1.0f/length;
+                  dx = dx * recip_length * half_width_x;
+                  dy = dy * recip_length * half_width_y;
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
                   // XXX possible miter line-to
              //   ctx_rasterizer_line_to (rasterizer, prev_x-dy+10, prev_y+dx+10);
@@ -3004,9 +3004,9 @@ foo:
                   dx = x - prev_x;
                   dy = y - prev_y;
                   length = ctx_fast_hypotf (dx, dy);
-                  recip_length = 1.0f/length;
                   if (CTX_LIKELY(length>CTX_MIN_STROKE_LEN))
                     {
+                      float recip_length = 1.0f/length;
                       dx = dx * recip_length * half_width_x;
                       dy = dy * recip_length * half_width_y;
                       ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);

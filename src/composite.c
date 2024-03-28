@@ -4043,7 +4043,7 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBA8 (rasterizer);
   rasterizer->comp_op  = ctx_RGBA8_porter_duff_generic;
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
-  CtxSourceType source_type = gstate->source_fill.type;
+  CtxSourceType source_type = (CtxSourceType)gstate->source_fill.type;
 
   int blend_mode       = gstate->blend_mode;
   int compositing_mode = gstate->compositing_mode;

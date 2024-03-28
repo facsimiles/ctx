@@ -20,7 +20,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-parameter \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
-CFLAGS+= $(CFLAGS_warnings) -fpic -fno-builtin-memcpy -fno-semantic-interposition
+CFLAGS+= $(CFLAGS_warnings) -fpic -fno-builtin-memcpy -fno-semantic-interposition -fomit-frame-pointer
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 

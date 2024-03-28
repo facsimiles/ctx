@@ -78,7 +78,7 @@ ctx_iterator_init (CtxIterator  *iterator,
 {
   iterator->drawlist   = drawlist;
   iterator->flags          = flags;
-  iterator->bitpack_pos    = 0;
+  iterator->bitpack_pos    = 
   iterator->bitpack_length = 0;
   iterator->pos            = start_pos;
   iterator->end_pos        = drawlist->count;

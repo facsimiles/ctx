@@ -14,12 +14,14 @@
 #include "local.conf"
 //#define CTX_STB_TTF              1
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl/wasm backends
-//#define CTX_MATH                 0
+#define CTX_MATH                 0
 #define CTX_EXTRAS               0
 #define CTX_GSTATE_PROTECT       0
 #define CTX_FONT_SHAPE_CACHE     1
 #define CTX_FONTS_FROM_FILE      1
+#define CTX_MAX_EDGES            255
 #define CTX_SCANBIN              0
+//#define CTX_RASTERIZER_AA        5
 #define CTX_MAX_TEXTURES         1024  // default: 32
 				       //
 /* for misc storage with compressed/
@@ -29,6 +31,7 @@
 #define CTX_MIN_JOURNAL_SIZE     1024 // default: 512 ~4kb
 #define CTX_MAX_JOURNAL_SIZE     1024*1024*8 // default: 1024*1024*8 // 72mb
 #define CTX_MIN_EDGE_LIST_SIZE   1024*16     // default: 1024*4
+					     // when max is not set it is set to min
 //#define CTX_PARSER_MAXLEN      1024*1024*64 // default: 1024*1024*16
 
 #define CTX_HASH_COLS            6 // default: 6
