@@ -763,21 +763,21 @@ struct _CtxRasterizer
 
   uint16_t    blit_x;
   uint16_t    blit_y;
-  uint16_t    blit_width;
-  uint16_t    blit_height;
-  uint16_t    blit_stride;
+  int32_t    blit_width;
+  int32_t    blit_height;
+  uint32_t    blit_stride;
 
-  unsigned int  non_intersecting:1;
+  unsigned int  convex;
 
-  unsigned int  clip_rectangle:1;
-  unsigned int  has_shape:2;
-  int  has_prev:2;
-  unsigned int  preserve:1;
+  unsigned int  has_shape;
+  unsigned int  preserve;
+  unsigned int  clip_rectangle;
+  int  has_prev;
 #if CTX_ENABLE_SHADOW_BLUR
   unsigned int  in_shadow:1;
 #endif
-  unsigned int  in_text:1;
-  unsigned int  swap_red_green:1;
+  unsigned int  in_text;
+  unsigned int  swap_red_green;
 
   unsigned int  scan_aa[4]; // 0=none, 1 = 3, 2 = 5, 3 = 15
 
