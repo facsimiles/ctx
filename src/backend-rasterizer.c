@@ -17,44 +17,6 @@
 #define CTX_AA_HALFSTEP2   (CTX_FULL_AA/2)
 #define CTX_AA_HALFSTEP    ((CTX_FULL_AA/2)+1)
 
-static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
-{
-  const CtxSegment *a = (const CtxSegment *) ap;
-  const CtxSegment *b = (const CtxSegment *) bp;
-  return a->data.y0 - b->data.y0;
-}
-
-#if CTX_SCANBIN==0
-static inline int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
-{
-  CtxSegment pivot = A[ (high+low) /2];
-  int i = low;
-  int j = high;
-  while (i <= j)
-    {
-      while (ctx_compare_edges (&A[i], &pivot) < 0) { i ++; }
-      while (ctx_compare_edges (&pivot, &A[j]) < 0) { j --; }
-      if (i <= j)
-        {
-          CtxSegment tmp = A[i];
-          A[i] = A[j];
-          A[j] = tmp;
-          i++;
-          j--;
-        }
-    }
-  return i;
-}
-
-static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
-{
-  int p = ctx_edge_qsort_partition (entries, low, high);
-  if (low < p -1 )
-    { ctx_edge_qsort (entries, low, p - 1); }
-  if (low < high)
-    { ctx_edge_qsort (entries, p, high); }
-}
-#endif
 
 #define CTX_MAGIC_OFFSET  1 // without this we get scanline glitches
 
@@ -1362,6 +1324,44 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 }
 
 
+#if CTX_SCANBIN==0
+static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
+{
+  const CtxSegment *a = (const CtxSegment *) ap;
+  const CtxSegment *b = (const CtxSegment *) bp;
+  return a->data.y0 - b->data.y0;
+}
+
+static inline int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
+{
+  CtxSegment pivot = A[ (high+low) /2];
+  int i = low;
+  int j = high;
+  while (i <= j)
+    {
+      while (ctx_compare_edges (&A[i], &pivot) < 0) { i ++; }
+      while (ctx_compare_edges (&pivot, &A[j]) < 0) { j --; }
+      if (i <= j)
+        {
+          CtxSegment tmp = A[i];
+          A[i] = A[j];
+          A[j] = tmp;
+          i++;
+          j--;
+        }
+    }
+  return i;
+}
+
+static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
+{
+  int p = ctx_edge_qsort_partition (entries, low, high);
+  if (low < p -1 )
+    { ctx_edge_qsort (entries, low, p - 1); }
+  if (low < high)
+    { ctx_edge_qsort (entries, p, high); }
+}
+#endif
 
 static void
 ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule, const int allow_direct, const int non_intersecting)
@@ -1440,7 +1440,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
   {
     CtxSegment *entry = & ((CtxSegment*)rasterizer->edge_list.entries)[i];
-    int scan = (entry->data.y0-CTX_FULL_AA) / CTX_FULL_AA;
+    int scan = (entry->data.y0-CTX_FULL_AA+2) / CTX_FULL_AA;
     if (scan < ss) scan = ss;
     if (scan < se)
       rasterizer->scan_bins[scan][rasterizer->scan_bin_count[scan]++]=i;
@@ -2932,7 +2932,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
               float dx = x - prev_x;
               float dy = y - prev_y;
               float length = ctx_fast_hypotf (dx, dy);
-              if (length>CTX_MIN_STROKE_LEN)
+              if ((length>CTX_MIN_STROKE_LEN) | (entry->code == CTX_NEW_EDGE))
                 {
                   float recip_length = 1.0f/length;
                   dx = dx * recip_length * half_width_x;
@@ -2969,7 +2969,7 @@ foo:
               float recip_length = 1.0f/length;
               dx = dx * recip_length * half_width_x;
               dy = dy * recip_length * half_width_y;
-              if (CTX_LIKELY(length>CTX_MIN_STROKE_LEN))
+              if (length>CTX_MIN_STROKE_LEN)
                 {
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
                   // XXX possible miter line-to
