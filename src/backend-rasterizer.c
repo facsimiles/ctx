@@ -36,7 +36,8 @@ static CTX_INLINE void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       int edge_end = segment->y1;
       if (edge_end < scanline)
         {
-          rasterizer->edges[i] = rasterizer->edges[active_edges-1];
+	  for (unsigned int j = i; j < active_edges -1; j++)
+            rasterizer->edges[j] = rasterizer->edges[j+1];
           rasterizer->scan_aa[segment->aa]--;
           active_edges--;
           i--;
@@ -74,6 +75,7 @@ CTX_INLINE static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer
 
 CTX_INLINE static void ctx_edge2_insertion_sort (CtxSegment *segments, int *__restrict__ entries, unsigned int count)
 {
+#if 1
   for(unsigned int i=1; i<count; i++)
    {
      int temp = entries[i];
@@ -86,6 +88,20 @@ CTX_INLINE static void ctx_edge2_insertion_sort (CtxSegment *segments, int *__re
      }
      entries[j+1] = temp;
    }
+#else
+  for(unsigned int i=1; i<count; i++)
+   {
+     int temp = entries[count-1-i];
+     int tv = segments[temp].x0;
+     int j = i-1;
+     while (j >= 0 && tv - segments[entries[count-1-j]].x0 > 0)
+     {
+       entries[count-1-(j+1)] = entries[count-1-j];
+       j--;
+     }
+     entries[count-1-(j+1)] = temp;
+   }
+#endif
 }
 
 CTX_INLINE static void ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasterizer)
@@ -251,6 +267,8 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
       return -1;
     rasterizer->horizontal_edges = horizontal_edges;
 
+    // TODO: do sorted insert|remove; keeping need for sorts down
+    //ctx_edge2_insertion_sort ((CtxSegment*)rasterizer->edge_list.entries, rasterizer->edges, rasterizer->active_edges);
     return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges, convex);
 }
 
