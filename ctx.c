@@ -12,16 +12,17 @@
 #endif
 
 #include "local.conf"
-//#define CTX_STB_TTF              1
+//#define CTX_STB_TTF            1
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl/wasm backends
 #define CTX_MATH                 0
+#define CTX_32BIT_SEGMENTS       1
 #define CTX_EXTRAS               0
 #define CTX_GSTATE_PROTECT       0
 #define CTX_FONT_SHAPE_CACHE     1
 #define CTX_FONTS_FROM_FILE      1
 #define CTX_MAX_EDGES            255
-#define CTX_SCANBIN              0
-//#define CTX_RASTERIZER_AA        5
+#define CTX_SCANBIN              1
+#define CTX_RASTERIZER_AA        5
 #define CTX_MAX_TEXTURES         1024  // default: 32
 				       //
 /* for misc storage with compressed/

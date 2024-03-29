@@ -84,48 +84,57 @@ CTX_STATIC void
 ctx_process_cmd_str_with_len (Ctx *ctx, CtxCode code, const char *string, uint32_t arg0, uint32_t arg1, int len);
 
 #pragma pack(push,1)
-typedef struct 
+typedef union 
 CtxSegment {
-  union {
 #if CTX_32BIT_SEGMENTS
    struct {
+     int16_t code;
+     int16_t aa;
      int32_t x0;
      int32_t y0;
-     int32_t x1;
      int32_t y1;
+     int32_t x1;
+   };
+   struct {
+     int16_t code__;
+     int16_t aa__;
+     int32_t val;
+     int32_t y0_;
+     int32_t y1_;
+     int32_t delta;
    };
 #else
    struct {
-     int16_t x0;
+     int8_t code;
+     int8_t aa;
+     int32_t x0;
      int16_t y0;
-     int16_t x1;
      int16_t y1;
+     int32_t x1;
+   };
+   struct {
+     int8_t code_;
+     int8_t aa_;
+     int32_t val;
+     int16_t y0_;
+     int16_t y1_;
+     int32_t delta;
    };
 #endif
    uint32_t u32[2];
-  } data;
-#if CTX_32BIT_SEGMENTS
-  uint32_t code;
-  int32_t aa; 
-#else
-  uint16_t code;
-  int16_t aa; 
-#endif
-  int32_t delta;
-  int32_t val;
-} CtxSegment;
+  } CtxSegment;
 #pragma pack(pop)
 
 static inline CtxSegment
 ctx_segment_s16 (CtxRasterizerCode code, int x0, int y0, int x1, int y1)
 {
-  CtxSegment command;
-  command.code = code;
-  command.data.x0 = x0;
-  command.data.y0 = y0;
-  command.data.x1 = x1;
-  command.data.y1 = y1;
-  return command;
+  CtxSegment segment;
+  segment.x0 = x0;
+  segment.y0 = y0;
+  segment.x1 = x1;
+  segment.y1 = y1;
+  segment.code = code;
+  return segment;
 }
 
 static inline void
