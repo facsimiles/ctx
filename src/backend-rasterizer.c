@@ -22,7 +22,7 @@
 
 #define CTX_INITIAL_OFFSET  CTX_AA_HALFSTEP2
 
-static CTX_INLINE void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
+static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline + CTX_MAGIC_OFFSET;
   int next_scanline = scanline + CTX_FULL_AA;
@@ -105,10 +105,9 @@ inline static void ctx_edge2_insertion_sort (CtxRasterizer *rasterizer)
      entries[count-1-(j+1)] = temp;
    }
 #endif
-//rasterizer->sorted = 1;
 }
 
-CTX_INLINE static void ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasterizer)
+inline static void ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasterizer)
 {
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
