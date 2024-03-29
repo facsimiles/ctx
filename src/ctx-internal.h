@@ -797,6 +797,7 @@ struct _CtxRasterizer
   uint16_t   color_nativeB[5];
 
   int edges[CTX_MAX_EDGES]; // integer position in edge array
+  unsigned int  sorted;
   CtxDrawlist edge_list;
 
 #if CTX_GRADIENTS
