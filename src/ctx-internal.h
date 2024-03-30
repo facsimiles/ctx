@@ -733,15 +733,20 @@ struct _CtxRasterizer
   //Ctx       *ctx;
   CtxState  *state;
   CtxCovPath  comp;
+  unsigned int  swap_red_green;
   void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, unsigned int count);
 
   unsigned int active_edges;
-#if CTX_SCANBIN==0
+//#if CTX_SCANBIN==0
   unsigned int edge_pos;         // where we're at in iterating all edges
-#endif
+//#endif
   unsigned int pending_edges;
   unsigned int horizontal_edges;
   unsigned int ending_edges;
+
+  unsigned int aa;          // level of vertical aa
+  unsigned int  convex;
+  unsigned int  scan_aa[4]; // 0=none, 1 = 3, 2 = 5, 3 = 15
 
   int        scanline;
   int        scan_min;
@@ -749,9 +754,6 @@ struct _CtxRasterizer
   int        col_min;
   int        col_max;
 
-  unsigned int aa;          // level of vertical aa
-
-  void      *buf;
   int        inner_x;
   int        inner_y;
 
@@ -767,37 +769,36 @@ struct _CtxRasterizer
   int32_t    blit_height;
   uint32_t    blit_stride;
 
-  unsigned int  convex;
 
   unsigned int  has_shape;
-  unsigned int  preserve;
   unsigned int  clip_rectangle;
-  int  has_prev;
+  int           has_prev;
+  void      *buf;
 #if CTX_ENABLE_SHADOW_BLUR
   unsigned int  in_shadow:1;
-#endif
-  unsigned int  in_text;
-  unsigned int  swap_red_green;
-
-  unsigned int  scan_aa[4]; // 0=none, 1 = 3, 2 = 5, 3 = 15
-
-#if CTX_BRAILLE_TEXT
-  unsigned int  term_glyphs:1; // store appropriate glyphs for redisplay
-#endif
   int        shadow_x;
-#if CTX_BRAILLE_TEXT
-  CtxList   *glyphs;
+  int        shadow_y;
 #endif
+
+
   const CtxPixelFormatInfo *format;
   Ctx       *texture_source; /* normally same as ctx */
-  int        shadow_y;
 
-  uint8_t    color[4*5];   // in compositing format
   uint16_t   color_native;  //
   uint16_t   color_nativeB[5];
-
+  uint8_t    color[4*5];   // in compositing format
   int edges[CTX_MAX_EDGES]; // integer position in edge array
   CtxDrawlist edge_list;
+			   
+  unsigned int  preserve;
+  unsigned int  in_text;
+
+#if CTX_STATIC_OPAQUE
+  uint8_t opaque[CTX_MAX_SCANLINE_LENGTH];
+#endif
+#if CTX_ENABLE_CLIP
+  CtxBuffer *clip_buffer;
+#endif
 
 #if CTX_GRADIENTS
 #if CTX_GRADIENT_CACHE
@@ -807,8 +808,12 @@ struct _CtxRasterizer
 #endif
 #endif
 
-#if CTX_ENABLE_CLIP
-  CtxBuffer *clip_buffer;
+
+#if CTX_BRAILLE_TEXT
+  unsigned int  term_glyphs:1; // store appropriate glyphs for redisplay
+#endif
+#if CTX_BRAILLE_TEXT
+  CtxList   *glyphs;
 #endif
 
 #if CTX_COMPOSITING_GROUPS
@@ -819,9 +824,6 @@ struct _CtxRasterizer
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
 
-#if CTX_STATIC_OPAQUE
-  uint8_t opaque[CTX_MAX_SCANLINE_LENGTH];
-#endif
 
 #if CTX_SCANBIN
   uint32_t scan_bins[CTX_MAX_SCANLINES][CTX_MAX_EDGES];
