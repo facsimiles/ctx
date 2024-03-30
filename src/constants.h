@@ -166,6 +166,7 @@
 #define SQZ_startFrame 2128007688u
 #define SQZ_startGroup 4085444064u
 #define SQZ_stroke 1444212908u
+#define SQZ_strokePos 888669104u
 #define SQZ_strokeRect 1131907664u
 #define SQZ_strokeSource 2685374474u
 #define SQZ_strokeText 1728824940u

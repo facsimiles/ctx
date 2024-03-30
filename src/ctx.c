@@ -910,6 +910,16 @@ void ctx_line_dash_offset (Ctx *ctx, float x)
     CTX_PROCESS_F1 (CTX_LINE_DASH_OFFSET, x);
 }
 
+float ctx_get_stroke_pos (Ctx *ctx)
+{
+  return ctx->state.gstate.stroke_pos;
+}
+
+void ctx_stroke_pos (Ctx *ctx, float x)
+{
+  CTX_PROCESS_F1 (CTX_STROKE_POS, x);
+}
+
 void ctx_line_height (Ctx *ctx, float x)
 {
   CTX_PROCESS_F1 (CTX_LINE_HEIGHT, x);
@@ -1454,6 +1464,9 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
         break;
       case CTX_LINE_DASH_OFFSET:
         state->gstate.line_dash_offset = ctx_arg_float (0);
+        break;
+      case CTX_STROKE_POS:
+        state->gstate.stroke_pos = ctx_arg_float (0);
         break;
       case CTX_LINE_WIDTH:
         state->gstate.line_width = ctx_arg_float (0);
