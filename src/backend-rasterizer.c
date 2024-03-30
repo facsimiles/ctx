@@ -75,10 +75,9 @@ CTX_INLINE static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer
 
 inline static void ctx_edge2_insertion_sort (CtxRasterizer *rasterizer)
 {
-    CtxSegment *segments= (CtxSegment*)rasterizer->edge_list.entries;
-    int *entries = rasterizer->edges;
-    unsigned int count = rasterizer->active_edges;
-#if 1
+  CtxSegment *segments= (CtxSegment*)rasterizer->edge_list.entries;
+  int *entries = rasterizer->edges;
+  unsigned int count = rasterizer->active_edges;
   for(unsigned int i=1; i<count; i++)
    {
      int temp = entries[i];
@@ -91,20 +90,6 @@ inline static void ctx_edge2_insertion_sort (CtxRasterizer *rasterizer)
      }
      entries[j+1] = temp;
    }
-#else
-  for(unsigned int i=1; i<count; i++)
-   {
-     int temp = entries[count-1-i];
-     int tv = segments[temp].x0;
-     int j = i-1;
-     while (j >= 0 && tv - segments[entries[count-1-j]].x0 > 0)
-     {
-       entries[count-1-(j+1)] = entries[count-1-j];
-       j--;
-     }
-     entries[count-1-(j+1)] = temp;
-   }
-#endif
 }
 
 inline static void ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasterizer)
@@ -1343,7 +1328,7 @@ static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
   return a->y0 - b->y0;
 }
 
-static inline int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
+static CTX_INLINE int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
 {
   CtxSegment pivot = A[ (high+low) /2];
   int i = low;
