@@ -78,31 +78,14 @@ ctx_RGBA8_mul_alpha_u32(uint32_t val, uint8_t global_alpha)
   return  g|rb|(a << CTX_RGBA8_A_SHIFT);
 }
 
-CTX_INLINE static uint32_t ctx_bi_RGBA8 (uint32_t isrc00, uint32_t isrc01, uint32_t isrc10, uint32_t isrc11, uint8_t dx, uint8_t dy)
+CTX_INLINE static uint32_t ctx_bi_RGBA8_alpha (uint32_t isrc00, uint32_t isrc01, uint32_t isrc10, uint32_t isrc11, uint8_t dx, uint8_t dy)
 {
-#if 0
-#if 0
-  uint8_t ret[4];
-  uint8_t *src00 = (uint8_t*)&isrc00;
-  uint8_t *src10 = (uint8_t*)&isrc10;
-  uint8_t *src01 = (uint8_t*)&isrc01;
-  uint8_t *src11 = (uint8_t*)&isrc11;
-  for (int c = 0; c < 4; c++)
-  {
-    ret[c] = ctx_lerp_u8 (ctx_lerp_u8 (src00[c], src01[c], dx),
-                         ctx_lerp_u8 (src10[c], src11[c], dx), dy);
-  }
-  return  ((uint32_t*)&ret[0])[0];
-#else
-  return ctx_lerp_RGBA8 (ctx_lerp_RGBA8 (isrc00, isrc01, dx),
-                         ctx_lerp_RGBA8 (isrc10, isrc11, dx), dy);
-#endif
-#else
+  if (((isrc00 | isrc01 | isrc10 | isrc11) & CTX_RGBA8_A_MASK) == 0)
+    return 0;
   uint32_t s0_ga, s0_rb, s1_ga, s1_rb;
   ctx_lerp_RGBA8_split (isrc00, isrc01, dx, &s0_ga, &s0_rb);
   ctx_lerp_RGBA8_split (isrc10, isrc11, dx, &s1_ga, &s1_rb);
   return ctx_lerp_RGBA8_merge (s0_ga, s0_rb, s1_ga, s1_rb, dy);
-#endif
 }
 
 #if CTX_GRADIENTS
@@ -2021,7 +2004,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_affine_with_alpha (CtxRasterizer *rasterizer,
       src10 = src00 + bwidth;
       src11 = src01 + bwidth;
     }
-    ((uint32_t*)(&rgba[0]))[0] = ctx_RGBA8_mul_alpha_u32 ( ctx_bi_RGBA8 (*src00,*src01,*src10,*src11, du,dv), global_alpha_u8);
+    ((uint32_t*)(&rgba[0]))[0] = ctx_RGBA8_mul_alpha_u32 ( ctx_bi_RGBA8_alpha (*src00,*src01,*src10,*src11, du,dv), global_alpha_u8);
     xi += xi_delta;
     yi += yi_delta;
     rgba += 4;
@@ -2128,7 +2111,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_affine (CtxRasterizer *rasterizer,
       src10 = src00 + bwidth;
       src11 = src01 + bwidth;
     }
-    ((uint32_t*)(&rgba[0]))[0] = ctx_bi_RGBA8 (*src00,*src01,*src10,*src11, du,dv);
+    ((uint32_t*)(&rgba[0]))[0] = ctx_bi_RGBA8_alpha (*src00,*src01,*src10,*src11, du,dv);
     xi += xi_delta;
     yi += yi_delta;
     rgba += 4;
@@ -2240,7 +2223,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
       src10 = src00 + bwidth;
       src11 = src01 + bwidth;
     }
-    ((uint32_t*)(&rgba[0]))[0] = ctx_bi_RGBA8 (*src00,*src01,*src10,*src11, du,dv);
+    ((uint32_t*)(&rgba[0]))[0] = ctx_bi_RGBA8_alpha (*src00,*src01,*src10,*src11, du,dv);
     xi += xi_delta;
     yi += yi_delta;
     zi += zi_delta;
@@ -2278,7 +2261,7 @@ ctx_fragment_image_rgba8_RGBA8_bi_generic (CtxRasterizer *rasterizer,
     }
     ((uint32_t*)(&rgba[0]))[0] =
         ctx_RGBA8_mul_alpha_u32 (
-            ctx_bi_RGBA8 (*src00,*src01,*src10,*src11, du,dv), global_alpha_u8);
+            ctx_bi_RGBA8_alpha (*src00,*src01,*src10,*src11, du,dv), global_alpha_u8);
     xi += xi_delta;
     yi += yi_delta;
     zi += zi_delta;
