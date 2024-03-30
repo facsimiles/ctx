@@ -737,9 +737,7 @@ struct _CtxRasterizer
   void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, unsigned int count);
 
   unsigned int active_edges;
-//#if CTX_SCANBIN==0
   unsigned int edge_pos;         // where we're at in iterating all edges
-//#endif
   unsigned int pending_edges;
   unsigned int horizontal_edges;
   unsigned int ending_edges;
@@ -823,17 +821,6 @@ struct _CtxRasterizer
 #if CTX_ENABLE_SHADOW_BLUR
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
-
-
-#if CTX_SCANBIN
-  uint32_t scan_bins[CTX_MAX_SCANLINES][CTX_MAX_EDGES];
-#if CTX_MAX_EDGES>255
-  uint32_t scan_bin_count[CTX_MAX_SCANLINES];
-#else
-  uint8_t scan_bin_count[CTX_MAX_SCANLINES];
-#endif
-#endif
-
 };
 
 struct _CtxSHA1 {

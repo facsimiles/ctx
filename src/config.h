@@ -20,11 +20,6 @@
 #define CTX_BACKEND_TEXT 1
 #endif
 
-
-#ifndef CTX_SCANBIN
-#define CTX_SCANBIN 0
-#endif
-
 #ifndef CTX_MAX_SCANLINES
 #define CTX_MAX_SCANLINES 2048
 #endif
