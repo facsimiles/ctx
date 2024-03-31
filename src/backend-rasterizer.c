@@ -2491,7 +2491,7 @@ ctx_rasterizer_arc (CtxRasterizer *rasterizer,
   full_segments = (int)(factor * radius * CTX_PI * 2 / 4.0f);
   if (full_segments > CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS)
     { full_segments = CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS; }
-  if (full_segments < 42) full_segments = 42;
+  if (full_segments < 24) full_segments = 24;
   float step = CTX_PI*2.0f/full_segments;
   int steps;
 
@@ -2915,7 +2915,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
               y = segment->y1 * 1.0f/ CTX_FULL_AA;
               float dx = x - prev_x;
               float dy = y - prev_y;
-              float length = ctx_fast_hypotf (dx, dy);
+              float length = ctx_hypotf (dx, dy);
               if ((length>CTX_MIN_STROKE_LEN) | (segment->code == CTX_NEW_EDGE))
                 {
                   float recip_length = 1.0f/length;
@@ -2928,12 +2928,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
                     }
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
                   
-                  // we need to know the slope of the other side
-
-                  // XXX possible miter line-to
-                  //ctx_rasterizer_line_to (rasterizer, prev_x-dy+4, prev_y+dx+10);
-                  //ctx_rasterizer_line_to (rasterizer, prev_x-dy+8, prev_y+dx+0);
-
                   ctx_rasterizer_line_to (rasterizer, x-dy, y+dx);
                 }
                   prev_x = x;
@@ -2949,7 +2943,7 @@ foo:
               y = segment->y1 * 1.0f / CTX_FULL_AA;
               dx = x - prev_x;
               dy = y - prev_y;
-              float length = ctx_fast_hypotf (dx, dy);
+              float length = ctx_hypotf (dx, dy);
               if (length>CTX_MIN_STROKE_LEN)
                 {
                   float recip_length = 1.0f/length;
@@ -2968,7 +2962,7 @@ foo:
                   y = segment->y0 * 1.0f / CTX_FULL_AA;
                   dx = x - prev_x;
                   dy = y - prev_y;
-                  length = ctx_fast_hypotf (dx, dy);
+                  length = ctx_hypotf (dx, dy);
                   if (CTX_LIKELY(length>CTX_MIN_STROKE_LEN))
                     {
                       float recip_length = 1.0f/length;
