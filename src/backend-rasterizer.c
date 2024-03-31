@@ -1772,6 +1772,7 @@ static inline void ctx_rasterizer_update_inner_point (CtxRasterizer *rasterizer,
 static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 {
   CtxSegment entry = {{CTX_EDGE, 0, 0, 0, 0, 0}};
+  x1 -= rasterizer->blit_x * CTX_SUBDIV;
 
   entry.x0=rasterizer->inner_x;
   entry.y0=rasterizer->inner_y;
@@ -1781,7 +1782,14 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
 
   ctx_rasterizer_update_inner_point (rasterizer, x1, y1);
 
-  return ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
+  int ret = ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
+  if (CTX_UNLIKELY(rasterizer->has_prev<=0))
+    {
+      CtxSegment *segment = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
+      segment->code = CTX_NEW_EDGE;
+      rasterizer->has_prev = 1;
+    }
+  return ret;
 }
 
 static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
@@ -1834,16 +1842,7 @@ ctx_rasterizer_line_to_fixed (CtxRasterizer *rasterizer, int x, int y)
 {
   int tx = 0, ty = 0;
   _ctx_user_to_device_prepped_fixed (rasterizer->state, x, y, &tx, &ty);
-  tx -= rasterizer->blit_x * CTX_SUBDIV;
   ctx_rasterizer_add_point (rasterizer, tx, ty);
-
-  if (rasterizer->has_prev<=0)
-    {
-      CtxSegment *segment = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
-      segment->code = CTX_NEW_EDGE;
-      rasterizer->has_prev = 1;
-      rasterizer->has_shape = 1;
-    }
 }
 
 static inline void
@@ -1855,16 +1854,7 @@ ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
   rasterizer->x         = x;
 
   _ctx_user_to_device_prepped (rasterizer->state, x, y, &tx, &ty);
-  tx -= rasterizer->blit_x * CTX_SUBDIV;
-
   ctx_rasterizer_add_point (rasterizer, tx, ty);
-
-  if (CTX_UNLIKELY(rasterizer->has_prev<=0))
-    {
-      CtxSegment *segment = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
-      segment->code = CTX_NEW_EDGE;
-      rasterizer->has_prev = 1;
-    }
 }
 
 CTX_INLINE static float
