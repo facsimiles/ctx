@@ -769,7 +769,7 @@ struct _CtxRasterizer
   uint32_t    blit_stride;
 
 
-  unsigned int  has_shape;
+  unsigned int  unused; // kept for layout
   unsigned int  clip_rectangle;
   int           has_prev;
   void      *buf;

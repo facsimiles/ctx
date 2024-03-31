@@ -91,7 +91,7 @@ int ctx_iterator_pos (CtxIterator *iterator)
   return iterator->pos;
 }
 
-static inline CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
+static CTX_INLINE CtxEntry *_ctx_iterator_next (CtxIterator *iterator)
 {
   int ret = iterator->pos;
   CtxEntry *entry = &iterator->drawlist->entries[ret];
