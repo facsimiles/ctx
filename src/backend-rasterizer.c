@@ -1350,16 +1350,39 @@ static CTX_INLINE int ctx_edge_qsort_partition (CtxSegment *A, int low, int high
 
 static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
 {
+  do {
   int p = ctx_edge_qsort_partition (entries, low, high);
   if (low < p -1 )
     { ctx_edge_qsort (entries, low, p - 1); }
-  if (low < high)
-    { ctx_edge_qsort (entries, p, high); }
+  if (low >= high)
+    return;
+  low = p;
+  } while (1);
+ // ctx_edge_qsort (entries, p, high);
+}
+
+inline static void ctx_edge_insertion_sort (CtxSegment *entries, unsigned int count)
+{
+  for(unsigned int i=1; i<count; i++)
+   {
+     CtxSegment tmp = entries[i];
+     int tv = tmp.y0;
+     int j = i-1;
+     while (j >= 0 && tv - entries[j].y0 < 0)
+     {
+       entries[j+1] = entries[j];
+       j--;
+     }
+     entries[j+1] = tmp;
+   }
 }
 
 static inline void ctx_sort_edges (CtxRasterizer *rasterizer)
 {
-  ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
+  if (rasterizer->edge_list.count <= 20)
+    ctx_edge_insertion_sort((CtxSegment*)& (rasterizer->edge_list.entries[0]), rasterizer->edge_list.count);
+  else
+    ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
 }
 
 static void
