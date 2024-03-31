@@ -1303,7 +1303,6 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 static inline void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 {
-  rasterizer->has_shape       =   
   rasterizer->has_prev        =   
   rasterizer->edge_list.count =    // ready for new edges
   rasterizer->edge_pos        =   
@@ -1810,7 +1809,7 @@ static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 
 static inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
 {
-  if (rasterizer->has_shape & (rasterizer->has_prev>0))
+  if (rasterizer->has_prev>0)
     {
       ctx_rasterizer_line_to (rasterizer, rasterizer->first_x, rasterizer->first_y);
       rasterizer->has_prev = 0;
@@ -1837,7 +1836,7 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
   ctx_rasterizer_update_inner_point (rasterizer, tx, ty);
 }
 
-static inline void
+static CTX_INLINE void
 ctx_rasterizer_line_to_fixed (CtxRasterizer *rasterizer, int x, int y)
 {
   int tx = 0, ty = 0;
@@ -1845,11 +1844,10 @@ ctx_rasterizer_line_to_fixed (CtxRasterizer *rasterizer, int x, int y)
   ctx_rasterizer_add_point (rasterizer, tx, ty);
 }
 
-static inline void
+static CTX_INLINE void
 ctx_rasterizer_line_to (CtxRasterizer *rasterizer, float x, float y)
 {
   int tx = 0, ty = 0;
-  rasterizer->has_shape = 1;
   rasterizer->y         = y;
   rasterizer->x         = x;
 
@@ -3152,9 +3150,9 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
     if (count == 4)
     {
       if ((coords[0][0] == coords[1][0]) &
-          (coords[0][1] == coords[4][1]) &
           (coords[0][1] == coords[3][1]) &
-          (coords[1][1] == coords[2][1])
+          (coords[1][1] == coords[2][1]) &
+          (coords[2][0] == coords[3][0])
           )
       {
 #if 0
