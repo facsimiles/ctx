@@ -740,6 +740,45 @@ again:
     }
   else
 #endif
+#if CTX_TINYVG
+  if (!strcmp (get_suffix (source_path), ".tvg"))
+    {
+  uint8_t *data = NULL;
+  long length = 0;
+  int stb_w = 0;
+  int stb_h = 0;
+  ctx_get_contents (source_path, &data, &length);
+  if (!data)
+    return -1;
+  ctx_tinyvg_get_size (data, length, &stb_w, &stb_h);
+
+  int auto_size = 1;
+  float scale  = ctx_width (ctx) * 1.0 / stb_w;
+  float scaleh = ctx_height (ctx) * 1.0 / stb_h;
+
+  if (scaleh < scale)
+     scale = scaleh;
+
+  // center
+  float ox0 = (ctx_width(ctx)/scale-(stb_w)) / 2;
+  float oy0 = (ctx_height(ctx)/scale-(stb_h)) / 2;
+
+      if (auto_size)
+      {
+         scale = ctx_width (ctx) * 1.0 / stb_w;
+         scaleh = ctx_height (ctx) * 1.0 / stb_h;
+         if (scaleh < scale)
+           scale = scaleh;
+         ox0 = (ctx_width(ctx)/scale-(stb_w)) / 2;
+         oy0 = (ctx_height(ctx)/scale-(stb_h)) / 2;
+      }
+
+      ctx_scale (ctx, scale, scale);
+      ctx_translate (ctx, ox0, oy0);
+      ctx_tinyvg_draw (ctx, data, length, 0);
+    
+    }
+#endif
 #if CTX_PARSER
     if (!strcmp (get_suffix (source_path), ".ctx") ||
         !strcmp (get_suffix (source_path), ".ctxc") ||
