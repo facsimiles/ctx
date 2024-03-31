@@ -20,7 +20,7 @@ CFLAGS_warnings= -Wall \
 		 -Wno-unused-parameter \
 		 -Wno-unused-function \
 		 -Wno-missing-field-initializers 
-CFLAGS+= $(CFLAGS_warnings) -fpic -fno-builtin-memcpy -fno-semantic-interposition -fomit-frame-pointer
+CFLAGS+= $(CFLAGS_warnings) -fpic -fno-builtin-memcpy -fno-semantic-interposition
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 
@@ -182,11 +182,11 @@ ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 
 ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	rm -f vec.missed
-	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_X86_64_V2 -momit-leaf-frame-pointer -ftree-vectorize -ffast-math -mfpmath=sse -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) \
+	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_X86_64_V2 -momit-leaf-frame-pointer -ftree-vectorize -mfpmath=sse -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) \
 	#-fopt-info-vec-missed=vec.missed
 ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	rm -f vec.optimized
-	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_X86_64_V3 -mmovbe -momit-leaf-frame-pointer -mxsave -mxsaveopt -ftree-vectorize -ffast-math -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma -mmovbe $(CTX_CFLAGS) $(OFLAGS_LIGHT) \
+	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_X86_64_V3 -mmovbe -momit-leaf-frame-pointer -mxsave -mxsaveopt -ftree-vectorize -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma -mmovbe $(CTX_CFLAGS) $(OFLAGS_LIGHT) \
 	#-fopt-info-vec-optimized=vec.optimized
 
 ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
