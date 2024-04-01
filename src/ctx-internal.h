@@ -171,6 +171,10 @@ struct _CtxSource
       float end;
       float length;
       float rdelta;
+      float rdelta_div_length_recip;
+      float dx_scaled;
+      float dy_scaled;
+      float start_scaled;
     } linear_gradient;
     struct
     {

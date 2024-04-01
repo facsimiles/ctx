@@ -1630,6 +1630,10 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
           source->linear_gradient.start = start;
           source->linear_gradient.end = end;
           source->linear_gradient.rdelta = (end-start)!=0.0f?1.0f/(end - start):1.0f;
+	  float rdelta_div_length_recip = source->linear_gradient.rdelta/length;
+	  source->linear_gradient.dx_scaled = dx * rdelta_div_length_recip;
+	  source->linear_gradient.dy_scaled = dy * rdelta_div_length_recip;
+	  source->linear_gradient.start_scaled = start * source->linear_gradient.rdelta;
           source->type = CTX_SOURCE_LINEAR_GRADIENT;
           source->transform = state->gstate.transform;
           ctx_matrix_invert (&source->transform);
