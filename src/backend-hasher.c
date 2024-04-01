@@ -528,7 +528,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_CLOSE_PATH:
-        ctx_rasterizer_finish_shape (rasterizer);
+        ctx_rasterizer_close_path (rasterizer);
         break;
       case CTX_DEFINE_TEXTURE:
         {

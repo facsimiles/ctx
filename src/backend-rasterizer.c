@@ -1262,18 +1262,6 @@ ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8
 }
 
 
-inline static float ctx_fast_hypotf (float x, float y)
-{
-  if (x < 0) { x = -x; }
-  if (y < 0) { y = -y; }
-  if (x < y)
-    { return 0.96f * y + 0.4f * x; }
-  else
-    { return 0.96f * x + 0.4f * y; }
-}
-
-
-
 static void
 ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *rgba)
 {
@@ -1338,11 +1326,14 @@ static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
     }
 }
 
-static inline void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer)
+static inline void ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
 {
   if (rasterizer->has_prev>0)
     {
       ctx_rasterizer_line_to (rasterizer, rasterizer->first_x, rasterizer->first_y);
+      // to a hack - find first_x.. and next - (or keep pointer to first_x instead
+      // mark this edge separately for detection in stroker - or maybe
+      // simply assume that if they are equal it should be?
       rasterizer->has_prev = 0;
     }
 }
@@ -1459,23 +1450,25 @@ ctx_bezier_sample_1d_fixed (int x0, int x1, int x2, int x3, int dt)
                  ctx_lerp_fixed (x2, x3, dt), dt), dt);
 }
 
+typedef struct CtxFixedBezier
+{
+  int x0; int y0;
+  int x1; int y1;
+  int x2; int y2;
+  int x3; int y3;
+} CtxFixedBezier;
+
 CTX_INLINE static void
-ctx_bezier_sample_fixed (int x0, int y0,
-                         int x1, int y1,
-                         int x2, int y2,
-                         int x3, int y3,
+ctx_bezier_sample_fixed (const CtxFixedBezier *b,
                          int dt, int *x, int *y)
 {
-  *x = ctx_bezier_sample_1d_fixed (x0, x1, x2, x3, dt);
-  *y = ctx_bezier_sample_1d_fixed (y0, y1, y2, y3, dt);
+  *x = ctx_bezier_sample_1d_fixed (b->x0, b->x1, b->x2, b->x3, dt);
+  *y = ctx_bezier_sample_1d_fixed (b->y0, b->y1, b->y2, b->y3, dt);
 }
 
 static inline void
 ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
-                                    int ox, int oy,
-                                    int x0, int y0,
-                                    int x1, int y1,
-                                    int x2, int y2,
+				    const CtxFixedBezier *b,
                                     int sx, int sy,
                                     int ex, int ey,
                                     int s,
@@ -1485,7 +1478,7 @@ ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
   int t = (s + e) / 2;
   int x, y;
 
-  ctx_bezier_sample_fixed (ox, oy, x0, y0, x1, y1, x2, y2, t, &x, &y);
+  ctx_bezier_sample_fixed (b, t, &x, &y);
 
   int dx, dy;
 #if 1
@@ -1501,11 +1494,11 @@ ctx_rasterizer_bezier_divide_fixed (CtxRasterizer *rasterizer,
 
   if ((iteration < 2) | ((iteration < 6) & (((long)dx*dx+dy*dy) > tolerance)))
   {
-    ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
+    ctx_rasterizer_bezier_divide_fixed (rasterizer, b,
                                   sx, sy, x, y, s, t, iteration+1, tolerance
                                   );
     ctx_rasterizer_line_to_fixed (rasterizer, x, y);
-    ctx_rasterizer_bezier_divide_fixed (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
+    ctx_rasterizer_bezier_divide_fixed (rasterizer, b,
                                   x, y, ex, ey, t, e, iteration+1, tolerance
                                   );
   }
@@ -1521,9 +1514,11 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float oy = rasterizer->state->y;
 
 #if 1
-  ctx_rasterizer_bezier_divide_fixed (rasterizer,
+  CtxFixedBezier b = {
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x0 * CTX_FIX_SCALE), (int)(y0 * CTX_FIX_SCALE),
-            (int)(x1 * CTX_FIX_SCALE), (int)(y1 * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE),
+            (int)(x1 * CTX_FIX_SCALE), (int)(y1 * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE)
+  };
+  ctx_rasterizer_bezier_divide_fixed (rasterizer, &b,
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE),
             0, CTX_FIX_SCALE, 0, rasterizer->state->gstate.tolerance_fixed);
 #else
@@ -1826,12 +1821,12 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     }
 #endif
 
-    ctx_rasterizer_finish_shape (rasterizer);
-    ctx_rasterizer_poly_to_edges (rasterizer);
 
     rasterizer->convex |= (rasterizer->edge_list.count <= 5);
     if (!rasterizer->convex)
       rasterizer->convex = ctx_is_poly_convex(rasterizer);
+    ctx_rasterizer_close_path (rasterizer);
+    ctx_rasterizer_poly_to_edges (rasterizer);
 
     ctx_rasterizer_rasterize_edges (rasterizer, gstate->fill_rule);
   }
@@ -2442,7 +2437,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
                   dy = dy * recip_length * half_width_y;
                   if (segment->code == CTX_NEW_EDGE)
                     {
-                      ctx_rasterizer_finish_shape (rasterizer);
+                      ctx_rasterizer_close_path (rasterizer);
                       ctx_rasterizer_move_to (rasterizer, prev_x+dy, prev_y-dx);
                     }
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
@@ -2496,7 +2491,7 @@ foo:
             }
           start = end+1;
         }
-      ctx_rasterizer_finish_shape (rasterizer);
+      ctx_rasterizer_close_path (rasterizer);
       switch (gstate->line_cap)
         {
           case CTX_CAP_SQUARE: // XXX: incorrect - if rectangles were in
@@ -2513,19 +2508,19 @@ foo:
                       if (has_prev)
                         {
                           ctx_rasterizer_rectangle_reverse (rasterizer, x - half_width_x, y - half_width_y, half_width_x, half_width_y);
-                          ctx_rasterizer_finish_shape (rasterizer);
+                          ctx_rasterizer_close_path (rasterizer);
                         }
                       x = segment->x0 * 1.0f / CTX_SUBDIV;
                       y = segment->y0 * 1.0f / CTX_FULL_AA;
                       ctx_rasterizer_rectangle_reverse (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
-                      ctx_rasterizer_finish_shape (rasterizer);
+                      ctx_rasterizer_close_path (rasterizer);
                     }
                   x = segment->x1 * 1.0f / CTX_SUBDIV;
                   y = segment->y1 * 1.0f / CTX_FULL_AA;
                   has_prev = 1;
                 }
               ctx_rasterizer_rectangle_reverse (rasterizer, x - half_width_x, y - half_width_y, half_width_x * 2, half_width_y * 2);
-              ctx_rasterizer_finish_shape (rasterizer);
+              ctx_rasterizer_close_path (rasterizer);
             }
             break;
           case CTX_CAP_NONE: /* nothing to do */
@@ -2542,12 +2537,12 @@ foo:
                       if (has_prev)
                         {
                           ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*3, 0, 1);
-                          ctx_rasterizer_finish_shape (rasterizer);
+                          ctx_rasterizer_close_path (rasterizer);
                         }
                       x = segment->x0 * 1.0f / CTX_SUBDIV;
                       y = segment->y0 * 1.0f / CTX_FULL_AA;
                       ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*2, 0, 1);
-                      ctx_rasterizer_finish_shape (rasterizer);
+                      ctx_rasterizer_close_path (rasterizer);
                     }
                   x = segment->x1 * 1.0f / CTX_SUBDIV;
                   y = segment->y1 * 1.0f / CTX_FULL_AA;
@@ -2555,7 +2550,7 @@ foo:
                 }
               ctx_rasterizer_move_to (rasterizer, x, y);
               ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*2, 0, 1);
-              ctx_rasterizer_finish_shape (rasterizer);
+              ctx_rasterizer_close_path (rasterizer);
               break;
             }
         }
@@ -2575,7 +2570,7 @@ foo:
                   if (CTX_UNLIKELY(segment[1].code == CTX_EDGE))
                     {
                       ctx_rasterizer_arc (rasterizer, x, y, half_width_x, CTX_PI*2, 0, 1);
-                      ctx_rasterizer_finish_shape (rasterizer);
+                      ctx_rasterizer_close_path (rasterizer);
                     }
                 }
               break;
@@ -2977,7 +2972,7 @@ ctx_rasterizer_rectangle_reverse (CtxRasterizer *rasterizer,
   ctx_rasterizer_rel_line_to (rasterizer, 0, -height);
   ctx_rasterizer_rel_line_to (rasterizer, -width, 0);
   //ctx_rasterizer_rel_line_to (rasterizer, width/2, 0);
-  ctx_rasterizer_finish_shape (rasterizer);
+  ctx_rasterizer_close_path (rasterizer);
 }
 
 static void
@@ -2991,7 +2986,7 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
   ctx_rasterizer_rel_line_to (rasterizer, width, 0);
   ctx_rasterizer_rel_line_to (rasterizer, 0, height);
   ctx_rasterizer_rel_line_to (rasterizer, -width, 0);
-  ctx_rasterizer_finish_shape (rasterizer);
+  ctx_rasterizer_close_path (rasterizer);
 }
 
 static void
@@ -3012,7 +3007,7 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
   // using rectangle properly will trigger the fillrect fastpath
   ctx_rasterizer_pset (rasterizer, x, y, 255);
 #else
-  ctx_rasterizer_rectangle (rasterizer, x, y, 1.0, 1.0);
+  ctx_rasterizer_rectangle (rasterizer, x, y, 1.0f, 1.0f);
   ctx_rasterizer_fill (rasterizer);
 #endif
 }
@@ -3056,13 +3051,13 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
   if (radius > width*0.5f) radius = width/2;
   if (radius > height*0.5f) radius = height/2;
 
-  ctx_rasterizer_finish_shape (rasterizer);
+  ctx_rasterizer_close_path (rasterizer);
   ctx_rasterizer_arc (rasterizer, x + width - radius, y + radius, radius, -90 * degrees, 0 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + width - radius, y + height - radius, radius, 0 * degrees, 90 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + radius, y + height - radius, radius, 90 * degrees, 180 * degrees, 0);
   ctx_rasterizer_arc (rasterizer, x + radius, y + radius, radius, 180 * degrees, 270 * degrees, 0);
 
-  ctx_rasterizer_finish_shape (rasterizer);
+  ctx_rasterizer_close_path (rasterizer);
 }
 
 static void
@@ -3644,7 +3639,7 @@ again:
               y = segment->y1 * 1.0f / CTX_FULL_AA;
               float dx = x - prev_x;
               float dy = y - prev_y;
-              float length = ctx_fast_hypotf (dx, dy);
+              float length = ctx_hypotf (dx, dy);
 
               if (dash_lpos + length >= dashes[dash_no] * factor)
               {
@@ -3750,7 +3745,7 @@ foo:
         ctx_rasterizer_clip (rasterizer);
         break;
       case CTX_CLOSE_PATH:
-        ctx_rasterizer_finish_shape (rasterizer);
+        ctx_rasterizer_close_path (rasterizer);
         break;
       case CTX_IMAGE_SMOOTHING:
         rasterizer->comp_op = NULL;

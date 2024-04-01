@@ -1024,7 +1024,7 @@ ctx_rasterizer_rectangle (CtxRasterizer *rasterizer,
                           float width,
                           float height);
 
-CTX_STATIC void ctx_rasterizer_finish_shape (CtxRasterizer *rasterizer);
+CTX_STATIC void ctx_rasterizer_close_path (CtxRasterizer *rasterizer);
 CTX_STATIC void ctx_rasterizer_clip (CtxRasterizer *rasterizer);
 CTX_STATIC void
 ctx_rasterizer_set_font (CtxRasterizer *rasterizer, const char *font_name);
