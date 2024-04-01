@@ -2675,12 +2675,16 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   int ox = (int)x;
 #endif
 
+  float rg_x0 = g->radial_gradient.x0;
+  float rg_y0 = g->radial_gradient.y0;
+  float rg_r0 = g->radial_gradient.r0;
+  float rg_rdelta = g->radial_gradient.rdelta;
+
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   if (global_alpha_u8 != 255)
   for (int i = 0; i <  count; i ++)
   {
-    float v = (ctx_hypotf_fast (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
-              g->radial_gradient.r0) * (g->radial_gradient.rdelta);
+    float v = (ctx_hypotf_fast (rg_x0 - x, rg_y0 - y) - rg_r0) * (rg_rdelta);
 #if CTX_GRADIENT_CACHE
     uint32_t *rgbap = (uint32_t*)&rasterizer->gradient_cache_u8[ctx_grad_index(rasterizer, v)][0];
     *((uint32_t*)rgba) = *rgbap;
@@ -2700,8 +2704,7 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   else
   for (int i = 0; i <  count; i ++)
   {
-    float v = (ctx_hypotf_fast (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
-              g->radial_gradient.r0) * (g->radial_gradient.rdelta);
+    float v = (ctx_hypotf_fast (rg_x0 - x, rg_y0 - y) - rg_r0) * (rg_rdelta);
 #if CTX_GRADIENT_CACHE
     uint32_t *rgbap = (uint32_t*)&rasterizer->gradient_cache_u8[ctx_grad_index(rasterizer, v)][0];
     *((uint32_t*)rgba) = *rgbap;
