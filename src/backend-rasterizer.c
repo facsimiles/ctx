@@ -397,13 +397,6 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
           CtxSegment   *next_segment = &entries[edges[t+1]];
           const int x0        = segment->val;
           const int x1        = next_segment->val;
-          const int delta0    = segment->delta;
-          const int delta1    = next_segment->delta;
-
-          int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
-          int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
-          int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
-          int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
 
           int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
           int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
@@ -434,11 +427,13 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
             }
             else
             {
+              const int delta0    = segment->delta;
+              int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
+              int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
               unsigned int u0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x0_start, x0_end)));
               unsigned int u1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x0_start, x0_end)));
 
               int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
-              int count = 0;
 
               int mod = ((u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255) *
                          (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255);
@@ -449,11 +444,10 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
 	      recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
               for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
-                coverage[us + count] += a>>16;
+                coverage[us ++] += a>>16;
 		a += recip;
-                count++;
               }
-              pre = (us+count-1)-first+1;
+              pre = (us-1)-first+1;
             }
   
             if (next_segment->aa == 0)
@@ -462,25 +456,29 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
             }
             else
             {
+              const int delta1    = next_segment->delta;
+              int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
+              int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
               unsigned int u0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x1_start, x1_end)));
               unsigned int u1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x1_start, x1_end)));
 
               int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
-              int count = 0;
               int mod = ((((u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255)+64) *
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255));
               int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV)/255);
               int recip = 65536 / sum;
 	      int a = mod * recip;
 	      recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
+              post = last-us;
               for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
-                coverage[us + count] += (a>>16) ^ 255;
+                coverage[us ++] += (a>>16) ^ 255;
 		a += recip;
-                count++;
               }
-              post = last-us;
             }
+
+            // TODO: simplify loop condition
+
             for (int i = first + pre; i <= last - post; i++)
               coverage[i] = 255;
           }
@@ -516,10 +514,10 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
   uint32_t *src_pixp;
   uint32_t src_pix, si_ga_full, si_rb_full, si_a;
   {
-    src_pixp   = ((uint32_t*)rasterizer->color);
+    src_pixp   = ((uint32_t*)rasterizer_src);
     src_pix    = src_pixp[0];
-    si_ga_full = ((uint32_t*)rasterizer->color)[3];
-    si_rb_full = ((uint32_t*)rasterizer->color)[4];
+    si_ga_full = ((uint32_t*)rasterizer_src)[3];
+    si_rb_full = ((uint32_t*)rasterizer_src)[4];
     si_a  = src_pix >> 24;
   }
 #endif
@@ -544,13 +542,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
           CtxSegment   *next_segment = &entries[edges[t+1]];
           const int x0        = segment->val;
           const int x1        = next_segment->val;
-          const int delta0    = segment->delta;
-          const int delta1    = next_segment->delta;
 
-          int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
-          int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
-          int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
-          int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
 
           int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
           int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
@@ -584,6 +576,9 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
           }
           else
           {
+            const int delta0    = segment->delta;
+            int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
+            int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
             unsigned int u0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x0_start, x0_end)));
             unsigned int u1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x0_start, x0_end)));
 
@@ -592,20 +587,18 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
             int sum = ((u1-u0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV)/255);
 
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
-            int count = 0;
             int recip = 65536/ sum;
 	    int a = mod * recip;
 	    recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
+            accumulated_x0 = ctx_mini (accumulated_x0, us);
             for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] += a>>16;
+              coverage[us ++] += a>>16;
 	      a += recip;
-              count++;
             }
-            pre = us+count-first;
+            pre = us-first;
 
-            accumulated_x0 = ctx_mini (accumulated_x0, us);
-            accumulated_x1 = us + count - 1;
+            accumulated_x1 = us - 1;
           }
 
           if (accumulated_x1-accumulated_x0>=0)
@@ -628,11 +621,13 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
           }
           else
           {
+            const int delta1    = next_segment->delta;
+            int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
+            int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
             unsigned int u0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x1_start, x1_end)));
             unsigned int u1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x1_start, x1_end)));
 
             int us = u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
-            int count = 0;
 
             int mod = ((((u0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255)) *
                     (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255));
@@ -641,16 +636,15 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
             int recip = 65536/ sum;
 	    int a = mod * recip;
 	    recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
+            accumulated_x0 = us;
+            post = last-us;
             for (unsigned int u = u0; u < u1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
             {
-              coverage[us + count] = (a>>16)^255;
+              coverage[us ++] = (a>>16)^255;
 	      a+=recip;
-              count++;
             }
-            post = last-us;
 
-            accumulated_x1 = us + count;
-            accumulated_x0 = us;
+            accumulated_x1 = us;
           }
           switch (comp)
           {
