@@ -2751,9 +2751,9 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
   float ud = dx; float vd = dy;
   float linear_gradient_rdelta = g->linear_gradient.rdelta;
   float linear_gradient_length = g->linear_gradient.length;
-  float linear_gradient_length_recip = 1.0f/linear_gradient_length;
-  float linear_gradient_dx = g->linear_gradient.dx *linear_gradient_length_recip * linear_gradient_rdelta;
-  float linear_gradient_dy = g->linear_gradient.dy *linear_gradient_length_recip * linear_gradient_rdelta;
+  float linear_gradient_rdelta_div_length_recip = linear_gradient_rdelta/linear_gradient_length;
+  float linear_gradient_dx = g->linear_gradient.dx *linear_gradient_rdelta_div_length_recip;
+  float linear_gradient_dy = g->linear_gradient.dy *linear_gradient_rdelta_div_length_recip;
   float linear_gradient_start = g->linear_gradient.start * linear_gradient_rdelta;
 
 #if CTX_DITHER
