@@ -581,7 +581,7 @@
 #define CTX_FRAGMENT_SPECIALIZE 1
 #endif
 
-#define CTX_RASTERIZER_EDGE_MULTIPLIER  1024
+#define CTX_RASTERIZER_EDGE_MULTIPLIER  2048
                                         // increasing this to 2048
                                         // removes artifacts in top half of res-diagram -
                                         // but reduces maximum available buffer width

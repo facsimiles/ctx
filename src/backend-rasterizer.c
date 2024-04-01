@@ -206,9 +206,9 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*3)/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*5)/CTX_SUBDIV/15)
 #else
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*1.5)/CTX_SUBDIV/15)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*4)/CTX_SUBDIV/15)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*8)/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*1.33)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*6)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*12)/CTX_SUBDIV/15/1024)
 #endif
 
 
@@ -1351,14 +1351,13 @@ static CTX_INLINE int ctx_edge_qsort_partition (CtxSegment *A, int low, int high
 static inline void ctx_edge_qsort (CtxSegment *entries, int low, int high)
 {
   do {
-  int p = ctx_edge_qsort_partition (entries, low, high);
-  if (low < p -1 )
-    { ctx_edge_qsort (entries, low, p - 1); }
-  if (low >= high)
-    return;
-  low = p;
+    int p = ctx_edge_qsort_partition (entries, low, high);
+    if (low < p - 1)
+      ctx_edge_qsort (entries, low, p - 1);
+    if (low >= high)
+      return;
+    low = p;
   } while (1);
- // ctx_edge_qsort (entries, p, high);
 }
 
 inline static void ctx_edge_insertion_sort (CtxSegment *entries, unsigned int count)
