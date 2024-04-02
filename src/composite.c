@@ -2727,29 +2727,6 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 static void
 ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
-#if 0
-  uint8_t *rgba = (uint8_t *) out;
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  for (int i = 0; i <  count; i ++)
-  {
-  float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
-                g->linear_gradient.length) -
-              g->linear_gradient.start) * (g->linear_gradient.rdelta);
-#if CTX_GRADIENT_CACHE
-  uint32_t*rgbap = ((uint32_t*)(&ctx_gradient_cache_u8[ctx_grad_index(v)][0]));
-  *((uint32_t*)rgba) = *rgbap;
-#else
-  _ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 1.0, rgba);
-#endif
-#if CTX_DITHER
-  ctx_dither_rgba_u8 (rgba, x+i, y, rasterizer->format->dither_red_blue,
-                      rasterizer->format->dither_green);
-#endif
-    rgba += 4;
-    x += dx;
-    y += dy;
-  }
-#else
   uint8_t *rgba = (uint8_t *) out;
 
   CtxSource *g = &rasterizer->state->gstate.source_fill;
@@ -2810,7 +2787,6 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
     rgba+= 4;
     vv += ud_plus_vd;
   }
-#endif
 }
 
 #endif
@@ -2835,19 +2811,27 @@ ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
 
 #if CTX_GRADIENTS
 static void
-ctx_fragment_linear_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
+ctx_fragment_linear_gradient_RGBAF (CtxRasterizer *rasterizer, float u0, float v0, float z, void *out, int count, float ud, float vd, float dz)
 {
   float *rgba = (float *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
-  for (int i = 0; i < count; i++)
+  float linear_gradient_dx = g->linear_gradient.dx_scaled;
+  float linear_gradient_dy = g->linear_gradient.dy_scaled;
+  float linear_gradient_start = g->linear_gradient.start_scaled;
+
+  u0 *= linear_gradient_dx;
+  v0 *= linear_gradient_dy;
+  ud *= linear_gradient_dx;
+  vd *= linear_gradient_dy;
+
+  float vv = ((u0 + v0) - linear_gradient_start);
+  float ud_plus_vd = (ud + vd);
+
+  for (int i = 0; i < count ; i++)
   {
-    float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
-                  g->linear_gradient.length) -
-                g->linear_gradient.start) * (g->linear_gradient.rdelta);
-    ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0f, rgba);
-    x += dx;
-    y += dy;
-    rgba += 4;
+    ctx_fragment_gradient_1d_RGBAF (rasterizer, vv, 1.0f, rgba);
+    rgba+= 4;
+    vv += ud_plus_vd;
   }
 }
 
@@ -4958,21 +4942,29 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
 
 #if CTX_GRADIENTS
 static void
-ctx_fragment_linear_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
+ctx_fragment_linear_gradient_GRAYAF (CtxRasterizer *rasterizer, float u0, float v0, float z, void *out, int count, float ud, float vd, float dz)
 {
   float rgba[4];
   CtxSource *g = &rasterizer->state->gstate.source_fill;
+  float linear_gradient_dx = g->linear_gradient.dx_scaled;
+  float linear_gradient_dy = g->linear_gradient.dy_scaled;
+  float linear_gradient_start = g->linear_gradient.start_scaled;
+
+  u0 *= linear_gradient_dx;
+  v0 *= linear_gradient_dy;
+  ud *= linear_gradient_dx;
+  vd *= linear_gradient_dy;
+
+  float vv = ((u0 + v0) - linear_gradient_start);
+  float ud_plus_vd = ud + vd;
+
   for (int i = 0 ; i < count; i++)
   {
-  float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
-                g->linear_gradient.length) -
-              g->linear_gradient.start) * (g->linear_gradient.rdelta);
-  ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 1.0f, rgba);
-  ((float*)out)[0] = ctx_float_color_rgb_to_gray (rasterizer->state, rgba);
-  ((float*)out)[1] = rgba[3];
+    ctx_fragment_gradient_1d_RGBAF (rasterizer, vv, 1.0f, rgba);
+    ((float*)out)[0] = ctx_float_color_rgb_to_gray (rasterizer->state, rgba);
+    ((float*)out)[1] = rgba[3];
      out = ((float*)(out)) + 2;
-     x += dx;
-     y += dy;
+    vv += ud_plus_vd;
   }
 }
 
@@ -6063,33 +6055,39 @@ CTX_INLINE static void ctx_rgba_to_graya_u8 (CtxState *state, uint8_t *in, uint8
 
 #if CTX_GRADIENTS
 static void
-ctx_fragment_linear_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
+ctx_fragment_linear_gradient_GRAYA8 (CtxRasterizer *rasterizer, float u0, float v0, float z, void *out, int count, float ud, float vd, float dz)
 {
   CtxSource *g = &rasterizer->state->gstate.source_fill;
         uint8_t *dst = (uint8_t*)out;
+
+  float linear_gradient_dx = g->linear_gradient.dx_scaled;
+  float linear_gradient_dy = g->linear_gradient.dy_scaled;
+  float linear_gradient_start = g->linear_gradient.start_scaled;
+
+  u0 *= linear_gradient_dx;
+  v0 *= linear_gradient_dy;
+  ud *= linear_gradient_dx;
+  vd *= linear_gradient_dy;
+
+  float vv = ((u0 + v0) - linear_gradient_start);
+  float ud_plus_vd = (ud + vd);
+
 #if CTX_DITHER
   int scan = rasterizer->scanline / CTX_FULL_AA;
   int ox = (int)x;
 #endif
   for (int i = 0; i < count;i ++)
   {
-  float v = ( ( (g->linear_gradient.dx * x + g->linear_gradient.dy * y) /
-                g->linear_gradient.length) -
-              g->linear_gradient.start) * (g->linear_gradient.rdelta);
-  {
     uint8_t rgba[4];
-    ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 1.0f, rgba);
+    ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0f, rgba);
     ctx_rgba_to_graya_u8 (rasterizer->state, rgba, dst);
-   
-  }
 
 #if CTX_DITHER
   ctx_dither_graya_u8 ((uint8_t*)dst, ox + i, scan, rasterizer->format->dither_red_blue,
                       rasterizer->format->dither_green);
 #endif
-  dst += 2;
-  x += dx;
-  y += dy;
+    dst += 2;
+    vv += ud_plus_vd;
   }
 }
 
