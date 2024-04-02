@@ -2371,6 +2371,8 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
   
   rasterizer->convex = 1;
+  int aa_backup = rasterizer->aa;
+  rasterizer->aa = ctx_mini(aa_backup, 5);
     {
     {
       if (line_width < 5.0f)
@@ -2579,6 +2581,7 @@ foo:
       _ctx_transform_prime (rasterizer->state);
     }
   }
+  rasterizer->aa = aa_backup;
 #if CTX_FAST_FILL_RECT
 #if CTX_FAST_STROKE_RECT
   done:
