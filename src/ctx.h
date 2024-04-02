@@ -1538,6 +1538,9 @@ typedef enum
 {
   CTX_CONT             = '\0', // - contains args from preceding entry
   CTX_NOP              = ' ', //
+                   //     ^    used for unit
+                   //     &    UNUSED
+                   //     +    UNUSED
                    //     !    UNUSED
                    //     "    start/end string
                    //     #    comment in parser
