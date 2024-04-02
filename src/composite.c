@@ -2724,8 +2724,65 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 static void
 ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
-}
+  uint8_t *rgba = (uint8_t *) out;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  float cx = g->conic_gradient.x;
+  float cy = g->conic_gradient.y;
+  float offset = g->conic_gradient.start_angle;
+  float cycles = g->conic_gradient.cycles;
+  if (cycles < 0.01) cycles = 1.0f;
 
+  float scale = cycles/(M_PI * 2);
+#if CTX_GRADIENT_CACHE
+  float fscale = (rasterizer->gradient_cache_elements-1) * 256;
+#endif
+
+  x-=cx;
+  y-=cy;
+
+  offset += M_PI;
+
+#if 1
+  uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
+  if (global_alpha_u8 != 255)
+  for (int i = 0; i < count ; i++)
+  {
+#if CTX_GRADIENT_CACHE
+    int vv = ctx_fmod1f((ctx_atan2f (x,y) + offset) * scale) * fscale;
+  *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
+#else
+    float vv = (ctx_atan2f (x,y) + M_PI) * scale;
+  _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, rgba);
+#endif
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (rgba, ox+i, scan, dither_red_blue, dither_green);
+#endif
+  *((uint32_t*)rgba) =
+    ctx_RGBA8_mul_alpha_u32(*((uint32_t*)rgba), global_alpha_u8);
+    rgba+= 4;
+    x += dx;
+    y += dy;
+  }
+  else
+#endif
+  for (int i = 0; i < count ; i++)
+  {
+#if CTX_GRADIENT_CACHE
+    int vv = ctx_fmod1f((ctx_atan2f (x,y) + offset) * scale) * fscale;
+  *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
+#else
+    float vv = (ctx_atan2f (x,y) + M_PI) * scale;
+  _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0f, rgba);
+#endif
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (rgba, ox+i, scan, dither_red_blue, dither_green);
+#endif
+    rgba+= 4;
+    x += dx;
+    y += dy;
+  }
+}
+  
 static void
 ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
@@ -7488,6 +7545,7 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
 #if CTX_GRADIENT_CACHE
   switch (rasterizer->state->gstate.source_fill.type)
   {
+    case CTX_SOURCE_CONIC_GRADIENT:
     case CTX_SOURCE_LINEAR_GRADIENT:
     case CTX_SOURCE_RADIAL_GRADIENT:
       ctx_gradient_cache_prime (rasterizer);
