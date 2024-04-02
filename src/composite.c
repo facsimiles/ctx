@@ -2856,11 +2856,14 @@ ctx_fragment_radial_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
 {
   float *rgba = (float *) out;
   CtxSource *g = &rasterizer->state->gstate.source_fill;
+  float rg_x0 = g->radial_gradient.x0;
+  float rg_y0 = g->radial_gradient.y0;
+  float rg_r0 = g->radial_gradient.r0;
+  float rg_rdelta = g->radial_gradient.rdelta;
   for (int i = 0; i < count; i++)
   {
-  float v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
-        v = (v - g->radial_gradient.r0) * (g->radial_gradient.rdelta);
-  ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0f, rgba);
+    float v = (ctx_hypotf (rg_x0 - x, rg_y0 - y) - rg_r0) * rg_rdelta;
+    ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0f, rgba);
     x+=dx;
     y+=dy;
     rgba +=4;
@@ -4978,14 +4981,13 @@ ctx_fragment_radial_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
 {
   float rgba[4];
   CtxSource *g = &rasterizer->state->gstate.source_fill;
+  float rg_x0 = g->radial_gradient.x0;
+  float rg_y0 = g->radial_gradient.y0;
+  float rg_r0 = g->radial_gradient.r0;
+  float rg_rdelta = g->radial_gradient.rdelta;
   for (int i = 0; i < count; i ++)
   {
-  float v = 0.0f;
-  if ((g->radial_gradient.r1-g->radial_gradient.r0) > 0.0f)
-    {
-      v = ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y);
-      v = (v - g->radial_gradient.r0) / (g->radial_gradient.rdelta);
-    }
+  float v = (ctx_hypotf (rg_x0 - x, rg_y0 - y) - rg_r0) * (rg_rdelta);
   ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0, rgba);
   ((float*)out)[0] = ctx_float_color_rgb_to_gray (rasterizer->state, rgba);
   ((float*)out)[1] = rgba[3];
@@ -6100,11 +6102,14 @@ ctx_fragment_radial_gradient_GRAYA8 (CtxRasterizer *rasterizer, float x, float y
   int ox = (int)x;
 #endif
 
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  float rg_x0 = g->radial_gradient.x0;
+  float rg_y0 = g->radial_gradient.y0;
+  float rg_r0 = g->radial_gradient.r0;
+  float rg_rdelta = g->radial_gradient.rdelta;
   for (int i = 0; i < count;i ++)
   {
-  CtxSource *g = &rasterizer->state->gstate.source_fill;
-  float v = (ctx_hypotf (g->radial_gradient.x0 - x, g->radial_gradient.y0 - y) -
-              g->radial_gradient.r0) * (g->radial_gradient.rdelta);
+  float v = (ctx_hypotf (rg_x0 - x, rg_y0 - y) - rg_r0) * (rg_rdelta);
   {
     uint8_t rgba[4];
     ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 1.0, rgba);
