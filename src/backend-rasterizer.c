@@ -249,8 +249,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
       return -1;
     rasterizer->horizontal_edges = horizontal_edges;
 
-    // TODO: do sorted insert|remove; keeping need for sorts down
-    if (fed | (!convex))
+    if (fed)
       ctx_rasterizer_sort_active_edges (rasterizer);
     return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges, convex);
 }
