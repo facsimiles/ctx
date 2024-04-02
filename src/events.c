@@ -1264,7 +1264,7 @@ void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
 }
 
 
-CtxEvent *ctx_get_event (Ctx *ctx)
+static CtxEvent *ctx_get_event2 (Ctx *ctx, int internal)
 {
   if (ctx->events.events)
     {
@@ -1278,7 +1278,7 @@ CtxEvent *ctx_get_event (Ctx *ctx)
 
   _ctx_idle_iteration (ctx);
 #if 1
-  if (ctx->events.ctx_get_event_enabled==0)
+  if (!internal & (ctx->events.ctx_get_event_enabled==0))
   {
     ctx->events.ctx_get_event_enabled = 1;
     ctx_queue_draw (ctx);
@@ -1294,6 +1294,11 @@ CtxEvent *ctx_get_event (Ctx *ctx)
       return &event_copy;
     }
   return NULL;
+}
+
+CtxEvent *ctx_get_event (Ctx *ctx)
+{
+  return ctx_get_event2 (ctx, 0);
 }
 
 static int
@@ -2482,7 +2487,7 @@ void ctx_handle_events (Ctx *ctx)
 #if CTX_VT
   ctx_clients_handle_events (ctx);
 #endif
-  while (ctx_get_event (ctx)){}
+  while (ctx_get_event2 (ctx, 1)){}
 }
 
 
