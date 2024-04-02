@@ -165,13 +165,7 @@ struct _CtxSource
       float y0;
       float x1;
       float y1;
-      float dx;
-      float dy;
-      float start;
-      float end;
       float length;
-      float rdelta;
-      float rdelta_div_length_recip;
       float dx_scaled;
       float dy_scaled;
       float start_scaled;
