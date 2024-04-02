@@ -175,7 +175,9 @@ int main(int argc, char **argv) {
   mount_data();
   add_mains();
 
+  if (!ctx)fprintf(stderr, "EEee!\n");
   Ui *ui = ui_new(ctx);
+  if (!ui)fprintf(stderr, "EEee!\n");
   ui_fake_circle(ui, true);
 
   s0il_add_magic("application/flow3r", "inode/directory", "flow3r.toml", -1, 0);
@@ -270,11 +272,11 @@ int main(int argc, char **argv) {
 //#endif
   //  s0il_do(ui, "sh");
 #ifdef S0IL_NATIVE
-  s0il_main(ui);
+  s0il_launch(ui);
 #else
   for (;;) {
     ctx_reset_has_exited(ctx);
-    s0il_main(ui);
+    s0il_launch(ui);
     s0il_system("sync");
   }
 #endif

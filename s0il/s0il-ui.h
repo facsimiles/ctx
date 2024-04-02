@@ -32,7 +32,7 @@ char *s0il_load_file      (Ui *ui, const char *path, int *ret_length);
 
 // launch an ui view at location, which is am absolute file-system path or
 // a specially recognized view name
-void s0il_main            (Ui *ui);
+void s0il_launch          (Ui *ui);
 
 // do an action, or go to a specified view - if activating a new
 // view the current view is first pushed on the view stack,

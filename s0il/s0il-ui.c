@@ -934,7 +934,7 @@ void s0il_iteration(Ui *ui) {
   }
 }
 
-void s0il_main(Ui *ui) {
+void s0il_launch(Ui *ui) {
   const char *start_location = NULL;
   Ctx *ctx = ui->ctx;
 

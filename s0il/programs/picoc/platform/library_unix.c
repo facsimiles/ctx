@@ -381,7 +381,7 @@ fun_void__ptr(ui_end_frame);
 fun_void__ptr(ui_destroy);
 fun_int__ptr_ptr(ui_button);
 
-fun_void__ptr(s0il_main);
+fun_void__ptr(s0il_launch);
 fun_void__ptr_ptr(s0il_do);
 fun_void__ptr(s0il_pop_fun);
 fun_void__ptr(ui_draw_bg);
@@ -425,7 +425,7 @@ const struct LibraryFunction UiFunctions[] =
     {Cs0il_add_magic, "void s0il_add_magic(char*,char*,unsigned char*,int,int);"},
     {Cui_keyboard,     "void ui_keyboard(Ui*);"},
     {Cui_destroy,      "void ui_destroy(Ui*);"},
-    {Cs0il_main,       "void s0il_main(Ui*);"},
+    {Cs0il_launch,       "void s0il_launch(Ui*);"},
     {Cs0il_do,           "void s0il_do(Ui*,char*);"},
     {Cs0il_pop_fun,      "void s0il_pop_fun(Ui*);"},
     {Cui_draw_bg,      "void ui_draw_bg(Ui*);"},

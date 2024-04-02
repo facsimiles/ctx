@@ -13,7 +13,7 @@ MAIN(demo_ui_c) {
 
   Ui *ui = ui_new(ctx);
   s0il_push_fun(ui, app_ui_view_foo, NULL, NULL, NULL);
-  s0il_main(ui);
+  s0il_launch(ui);
 
   ui_destroy(ui);
   ctx_destroy(ctx);
