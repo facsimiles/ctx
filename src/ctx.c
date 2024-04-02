@@ -710,6 +710,17 @@ ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_
 }
 
 void
+ctx_conic_gradient (Ctx *ctx, float cx, float cy, float start_angle, float cycles)
+{
+  CtxEntry command[2]=
+  {
+    ctx_f (CTX_CONIC_GRADIENT, cx, cy),
+    ctx_f (CTX_CONT,           start_angle, cycles)
+  };
+  ctx_process (ctx, command);
+}
+
+void
 ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1)
 {
   CtxEntry command[2]=
@@ -1605,6 +1616,23 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
       //case CTX_TEXTURE:
       //  state->gstate.source.type = CTX_SOURCE_
       //  break;
+      case CTX_CONIC_GRADIENT:
+        {
+          int is_stroke = (state->source != 0);
+          CtxSource *source = is_stroke ?
+                                &state->gstate.source_stroke:
+                                &state->gstate.source_fill;
+          state->source = is_stroke ? 2 : 0;
+
+	  source->conic_gradient.x = ctx_arg_float (0);
+	  source->conic_gradient.y = ctx_arg_float (1);
+	  source->conic_gradient.start_angle = ctx_arg_float (2);
+	  source->conic_gradient.cycles = ctx_arg_float (3);
+          source->type = CTX_SOURCE_CONIC_GRADIENT;
+          source->transform = state->gstate.transform;
+          ctx_matrix_invert (&source->transform);
+        }
+        break;
       case CTX_LINEAR_GRADIENT:
         {
           int is_stroke = (state->source != 0);
@@ -1761,6 +1789,12 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
         {
         _ctx_user_to_device (state, &c->linear_gradient.x1, &c->linear_gradient.y1);
         _ctx_user_to_device (state, &c->linear_gradient.x2, &c->linear_gradient.y2);
+        }
+        break;
+      case CTX_CONIC_GRADIENT:
+        if ( ( ( (Ctx *) (data) )->transformation & CTX_TRANSFORMATION_SCREEN_SPACE) )
+        {
+        _ctx_user_to_device (state, &c->conic_gradient.x, &c->conic_gradient.y);
         }
         break;
       case CTX_RADIAL_GRADIENT:

@@ -29,6 +29,7 @@ ctx_conts_for_entry (CtxEntry *entry)
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
       case CTX_LINEAR_GRADIENT:
+      case CTX_CONIC_GRADIENT:
         return 1;
 
       case CTX_TEXT:
@@ -232,6 +233,7 @@ again:
           iterator->bitpack_pos             = 0;
           iterator->bitpack_length          = 2;
           goto again;
+        case CTX_CONIC_GRADIENT:
         case CTX_LINEAR_GRADIENT:
         case CTX_QUAD_TO:
         case CTX_REL_QUAD_TO:

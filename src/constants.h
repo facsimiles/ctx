@@ -27,6 +27,7 @@
 #define SQZ_color 4231809138u
 #define SQZ_colorSpace 4246256736u
 #define SQZ_compositingMode 3764262848u
+#define SQZ_conicGradient 1669326832u
 #define SQZ_copy 2037411783u
 #define SQZ_currentColor 3452186816u
 #define SQZ_curveTo 48499966u

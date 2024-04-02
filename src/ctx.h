@@ -558,6 +558,7 @@ void ctx_get_dcmyka (Ctx *ctx, float *dcmyka);
 int  ctx_in_fill    (Ctx *ctx, float x, float y);
 int  ctx_in_stroke  (Ctx *ctx, float x, float y);
 
+
 /**
  * ctx_linear_gradient:
  * Change the source to a linear gradient from x0,y0 to x1 y1, by default an empty gradient
@@ -571,6 +572,13 @@ void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
  */
 void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
                           float x1, float y1, float r1);
+
+/**
+ * ctx_conic_gradient:
+ * Change the source to a conic/conic gradient cenetered at cx,cy with gradient starting at angle start_angle.
+ * TODO: add repeat-count?
+ */
+void ctx_conic_gradient (Ctx *ctx, float cx, float cy, float start_angle, float cycles);
 
 /* ctx_graident_add_stop:
  *
@@ -1556,6 +1564,13 @@ typedef enum
   // only option?
                    //     .    decimal seperator
                    //     /    UNUSED
+                   //     :    UNUSED
+                   //     <    UNUSED
+                   //     =    UNUSED/RESERVED
+                   //     >    UNUSED
+                   //     ?    UNUSED
+                   //     \    UNUSED
+                   //     ^    PARSER - vh unit
  
   /* optimizations that reduce the number of entries used,
    * not visible outside the drawlist compression, thus
@@ -1573,12 +1588,7 @@ typedef enum
   CTX_FILL_MOVE_TO              = '7', // x y
   CTX_REL_QUAD_TO_REL_QUAD_TO   = '8', // cx1 x1 cy1 y1 cx1 x2 cy1 y1 -- s8
   CTX_REL_QUAD_TO_S16           = '9', // cx1 cy1 x y                 - s16
-                   //     :    UNUSED
   CTX_END_FRAME        = ';',
-                   //     <    UNUSED
-                   //     =    UNUSED/RESERVED
-                   //     >    UNUSED
-                   //     ?    UNUSED
 
   CTX_DEFINE_FONT      = 15,
 
@@ -1603,16 +1613,16 @@ typedef enum
   CTX_VIEW_BOX         = 'R', // x y width height
   CTX_SMOOTH_TO        = 'S', // cx cy x y
   CTX_SMOOTHQ_TO       = 'T', // x y
-  CTX_START_FRAME      = 'U', // XXX does this belong here?
+  CTX_CONIC_GRADIENT   = 'U', // cx cy start_angle
   CTX_VER_LINE_TO      = 'V', // y
   CTX_APPLY_TRANSFORM  = 'W', // a b c d e f g h i j - for set_transform combine with identity
   CTX_EXIT             = 'X', //
   CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
 
   CTX_CLOSE_PATH2      = 'Z', //
+			      
+  CTX_START_FRAME      = ':', // XXX does this belong here?
   CTX_KERNING_PAIR     = '[', // glA glB kerning, glA and glB in u16 kerning in s32
-                       // \   UNUSED
-                       // ^   PARSER - vh unit
   CTX_COLOR_SPACE      = ']', // IccSlot  data  data_len,
                          //    data can be a string with a name,
                          //    icc data or perhaps our own serialization
@@ -1964,6 +1974,15 @@ struct
       float x2;
       float y2;
     } linear_gradient;
+    struct
+    {
+      uint8_t code;
+      float x;
+      float y;
+      uint8_t pad0;
+      float start_angle;
+      float cycles;
+    } conic_gradient;
     struct
     {
       uint8_t code;

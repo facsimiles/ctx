@@ -566,6 +566,7 @@ ctx_hasher_process (Ctx *ctx, CtxCommand *command)
           }
         }
         break;
+      case CTX_CONIC_GRADIENT: // XXX: good enough?
       case CTX_LINEAR_GRADIENT:
           murmur3_32_init (&hasher->murmur_fill[hasher->source_level]);
           murmur3_32_process(&hasher->murmur_fill[hasher->source_level], &rasterizer->state->gstate.global_alpha_u8, 1);

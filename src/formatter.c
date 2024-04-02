@@ -174,6 +174,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_RECTANGLE:            return "rectangle"; break;
           case CTX_ROUND_RECTANGLE:      return "roundRectangle"; break;
           case CTX_LINEAR_GRADIENT:      return "linearGradient"; break;
+          case CTX_CONIC_GRADIENT:       return "conicGradient"; break;
           case CTX_RADIAL_GRADIENT:      return "radialGradient"; break;
           case CTX_GRADIENT_STOP:        return "gradientAddStop"; break;
           case CTX_VIEW_BOX:             return "viewBox"; break;
@@ -603,6 +604,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_SOURCE_TRANSFORM:
         ctx_print_entry (formatter, entry, 9);
         break;
+      case CTX_CONIC_GRADIENT:
       case CTX_QUAD_TO:
       case CTX_RECTANGLE:
       case CTX_REL_QUAD_TO:

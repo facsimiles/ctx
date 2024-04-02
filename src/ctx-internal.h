@@ -98,6 +98,7 @@ enum _CtxSourceType
   CTX_SOURCE_TEXTURE,
   CTX_SOURCE_LINEAR_GRADIENT,
   CTX_SOURCE_RADIAL_GRADIENT,
+  CTX_SOURCE_CONIC_GRADIENT,
   CTX_SOURCE_INHERIT_FILL
 };
 
@@ -170,6 +171,13 @@ struct _CtxSource
       float dy_scaled;
       float start_scaled;
     } linear_gradient;
+    struct
+    {
+      float x;
+      float y;
+      float start_angle;
+      float cycles;
+    } conic_gradient;
     struct
     {
       float x0;

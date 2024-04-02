@@ -223,14 +223,11 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer)
     CtxSource *source = &rasterizer->state->gstate.source_fill;
     float length = 100;
     if (source->type == CTX_SOURCE_LINEAR_GRADIENT)
-    {
        length = source->linear_gradient.length;
-    }
-    else
-    if (source->type == CTX_SOURCE_RADIAL_GRADIENT)
-    {
+    else if (source->type == CTX_SOURCE_RADIAL_GRADIENT)
        length = ctx_maxf (source->radial_gradient.r1, source->radial_gradient.r0);
-    }
+    else if (source->type == CTX_SOURCE_CONIC_GRADIENT)
+       length = 400;
   //  length = CTX_GRADIENT_CACHE_ELEMENTS;
   {
      float u = length; float v = length;
@@ -2725,6 +2722,11 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 }
 
 static void
+ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
+{
+}
+
+static void
 ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
   uint8_t *rgba = (uint8_t *) out;
@@ -3122,6 +3124,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_RGBA8;
 #if CTX_GRADIENTS
+      case CTX_SOURCE_CONIC_GRADIENT: return ctx_fragment_conic_gradient_RGBA8;
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_RGBA8;
       case CTX_SOURCE_RADIAL_GRADIENT: return ctx_fragment_radial_gradient_RGBA8;
 #endif

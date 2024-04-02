@@ -305,6 +305,7 @@ static int ctx_arguments_for_code (CtxCode code)
       case CTX_REL_MOVE_TO:
       case CTX_SMOOTHQ_TO:
         return 2;
+      case CTX_CONIC_GRADIENT:
       case CTX_LINEAR_GRADIENT:
       case CTX_REL_QUAD_TO:
       case CTX_QUAD_TO:
@@ -498,6 +499,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case SQZ_save:           ret = CTX_SAVE; break;
           case SQZ_translate:      ret = CTX_TRANSLATE; break;
           case SQZ_linearGradient: ret = CTX_LINEAR_GRADIENT; break;
+          case SQZ_conicGradient:  ret = CTX_CONIC_GRADIENT; break;
           case SQZ_relHorLineTo:   ret = CTX_REL_HOR_LINE_TO; break;
           case SQZ_relLineTo:      ret = CTX_REL_LINE_TO; break;
           case SQZ_relMoveTo:      ret = CTX_REL_MOVE_TO; break;
@@ -1293,6 +1295,10 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (ctx, arg(0), arg(1), arg(2), arg(3) );
+        break;
+      case CTX_CONIC_GRADIENT:
+	// TODO - default arg3 to 1 if unspecified
+        ctx_conic_gradient (ctx, arg(0), arg(1), arg(2), arg(3));
         break;
       case CTX_RADIAL_GRADIENT:
         ctx_radial_gradient (ctx, arg(0), arg(1), arg(2), arg(3), arg(4), arg(5) );

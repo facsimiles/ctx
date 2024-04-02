@@ -3505,11 +3505,8 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
           rasterizer->comp_op = NULL;
         }
         break;
+      case CTX_CONIC_GRADIENT:
       case CTX_LINEAR_GRADIENT:
-        ctx_state_gradient_clear_stops (state);
-        rasterizer->gradient_cache_valid = 0;
-        rasterizer->comp_op = NULL;
-        break;
       case CTX_RADIAL_GRADIENT:
         ctx_state_gradient_clear_stops (state);
         rasterizer->gradient_cache_valid = 0;
