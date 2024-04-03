@@ -750,7 +750,7 @@ struct _CtxRasterizer
   unsigned int ending_edges;
 
   unsigned int aa;          // level of vertical aa
-  unsigned int  convex;
+  int  convex;
   unsigned int  scan_aa[4]; // 0=none, 1 = 3, 2 = 5, 3 = 15
 
   int        scanline;

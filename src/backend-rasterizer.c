@@ -249,7 +249,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
       return -1;
     rasterizer->horizontal_edges = horizontal_edges;
 
-    if (fed)
+    //if (fed)// | (convex))
       ctx_rasterizer_sort_active_edges (rasterizer);
     return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges, convex);
 }
@@ -1001,10 +1001,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
         case 1: /* level-1 aa is good enough - use same case for less iteration of edges */
         { 
           rasterizer->scanline += CTX_AA_HALFSTEP2;
-          int fed = ctx_rasterizer_feed_pending_edges (rasterizer);
-          ctx_rasterizer_discard_edges (rasterizer);
-	  if (fed | (!convex))
+          if (ctx_rasterizer_feed_pending_edges (rasterizer))
 	    ctx_rasterizer_sort_active_edges (rasterizer);
+          ctx_rasterizer_discard_edges (rasterizer);
     
           memset (coverage, 0, pixs);
           if (allow_direct)
@@ -1046,7 +1045,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
           ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
           rasterizer->scanline += scanline_increment;
           ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2);
-          ctx_rasterizer_feed_pending_edges (rasterizer);
         }
       }
   
@@ -1826,8 +1824,10 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 
 
     rasterizer->convex |= (rasterizer->edge_list.count <= 5);
-    if (!rasterizer->convex)
+    if (rasterizer->convex==0)
       rasterizer->convex = ctx_is_poly_convex(rasterizer);
+    else if (rasterizer->convex==-1)
+      rasterizer->convex=0;
     ctx_rasterizer_close_path (rasterizer);
     ctx_rasterizer_poly_to_edges (rasterizer);
 
@@ -2379,7 +2379,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
 #endif
   
-  //rasterizer->convex = 1;
+  rasterizer->convex = 1;
   int aa_backup = rasterizer->aa;
   rasterizer->aa = ctx_mini(aa_backup, 5);
     {
