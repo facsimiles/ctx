@@ -92,16 +92,15 @@
       <table id='feat'>
 <tr><th>.</th><th>ctx-protocol</th><th>ctx</th><th>cairo</th><th>skia</th><th>blend2d</th></tr>
 
-<tr><td>GPU rendering</td><td>-</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
-<tr><td>change extent detection</td><td>-</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
-<tr><td>CMYK output</td><td>-</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
-<tr><td>float output</td><td>-</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
-<tr><td>rgb565 output</td><td>-</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td></tr>
-<tr><td>threaded rendering</td><td>-</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td></tr>
-<tr><td>event-handling</td><td>-</td><td class='Y'>Y</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>GPU rendering</td><td></td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
+<tr><td>change extent detection</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>CMYK output</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>float output</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>rgb565 output</td><td></td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>threaded rendering</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td></tr>
+<tr><td>event-handling</td><td></td><td class='Y'>Y</td><td></td><td></td><td></td></tr>
 <tr><td>drop-shadow</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
-<tr><td>pcm-audio</td><td>-</td><td class='Y'>Y</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>PDF</td><td>-</td><td class='P'>P</td><td class='Y'>Y</td><td class='N'>N</td><td>?</td></tr>
+<tr><td>pcm-audio</td><td></td><td class='Y'>Y</td><td></td><td></td><td></td></tr>
 
 <tr><td>stroke-dash</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td></tr>
 <tr><td>stroke-join-miter</td><td class='Y'>Y</td><td class='N'>N</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
@@ -114,8 +113,6 @@
 <tr><td>text</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>perspective-transform textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
 <tr><td>perspective-transform paths</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
-<tr><td>RGBA</td> <td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
-<tr><td>CMYKA</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
 <tr><td>linear-gradient</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>radial-gradient</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>conic-gradient</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
@@ -123,6 +120,23 @@
 <tr><td>bilinear textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>nearest textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 
+<tr><td>PDF</td><td></td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td></td></tr>
+<tr><td>RGBA</td> <td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>RGB30</td> <td> </td><td class='N'>N</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
+<tr><td>RGB332</td> <td> </td><td class='Y'>Y</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
+<tr><td>RGB565</td> <td> </td><td class='Y'>Y</td><td class='Y'>Y</td><td>?</td><td class='N'>N</td></tr>
+<tr><td>RGBA float</td> <td> </td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+
+<tr><td>GRAY8</td> <td> </td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>GRAYA8</td> <td> </td><td class='Y'>Y</td><td>?</td><td>?</td><td>?</td></tr>
+<tr><td>gray 1 bit</td> <td> </td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>gray 2 bit</td> <td> </td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>gray 4 bit</td> <td> </td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>GRAY float</td> <td> </td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+<tr><td>GRAYA float</td> <td> </td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
+
+
+<tr><td>CMYKA</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
 
       </table>
 
