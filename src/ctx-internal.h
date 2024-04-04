@@ -626,8 +626,7 @@ struct _CtxInternalFsEntry
 };
 
 
-typedef void (*ctx_apply_coverage_fun) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage,
-                          unsigned int count);
+typedef void (*ctx_apply_coverage_fun) (unsigned int count, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, uint8_t *coverage, CtxRasterizer *r, int x);
 
 struct _CtxPixelFormatInfo
 {
@@ -734,14 +733,14 @@ struct _CtxRasterizer
    */
 
 
-#define CTX_COMPOSITE_ARGUMENTS CtxRasterizer *rasterizer, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x0, uint8_t * __restrict__ coverage, unsigned int count
+#define CTX_COMPOSITE_ARGUMENTS unsigned int count, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, uint8_t * __restrict__ coverage, CtxRasterizer *rasterizer, int x0
   void (*comp_op)(CTX_COMPOSITE_ARGUMENTS);
   CtxFragment fragment;
   //Ctx       *ctx;
   CtxState  *state;
   CtxCovPath  comp;
   unsigned int  swap_red_green;
-  void       (*apply_coverage) (CtxRasterizer *r, uint8_t * __restrict__ dst, uint8_t * __restrict__ src, int x, uint8_t *coverage, unsigned int count);
+  ctx_apply_coverage_fun apply_coverage;
 
   unsigned int active_edges;
   unsigned int edge_pos;         // where we're at in iterating all edges
