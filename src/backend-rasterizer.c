@@ -121,7 +121,11 @@ inline static int ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasterizer)
 
 CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges, const int convex)
 {
-  int aa = (rasterizer->scan_aa[3]>0) * 15 + (rasterizer->scan_aa[3]==0) * ( (rasterizer->scan_aa[2]>0) * 5 + (rasterizer->scan_aa[2]==0) * ( (rasterizer->scan_aa[1]>0) * 3 + (rasterizer->scan_aa[1]==0) * 1));
+  const unsigned int *scan_aa = rasterizer->scan_aa;
+  int aa = (scan_aa[1]==0);
+  if (scan_aa[3]>0) aa = 15;
+  else if (scan_aa[2]>0) aa = 5;
+  else if (scan_aa[1]>0) aa = 3;
 
   if (convex)
   {
@@ -496,7 +500,7 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
 #define CTX_RASTERIZER_MAX_SOLID    16
 
 inline static void
-ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
+ctx_rasterizer_generate_coverage_apply_grad_old (CtxRasterizer *rasterizer,
                                          int            minx,
                                          int            maxx,
                                          uint8_t       *coverage,
@@ -824,6 +828,695 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
      apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src, 
 		     &coverage[cov_min], rasterizer, cov_min);
 }
+
+inline static void
+ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
+                                         int            minx,
+                                         int            maxx,
+                                         uint8_t       *coverage,
+                                         int            is_winding,
+                                         const CtxCovPath comp,
+					 ctx_apply_coverage_fun apply_coverage)
+{
+  CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
+  int *edges  = rasterizer->edges;
+  uint8_t *rasterizer_src = rasterizer->color;
+  const int  bpp      = rasterizer->format->bpp;
+  int scanline        = rasterizer->scanline;
+  int active_edges    = rasterizer->active_edges;
+  int parity        = 0;
+#if CTX_RASTERIZER_SWITCH_DISPATCH
+  uint32_t *src_pixp;
+  uint32_t src_pix, si_ga_full, si_rb_full, si_rb, si_ga, si_a;
+  src_pixp   = ((uint32_t*)rasterizer_src);
+  src_pix    = src_pixp[0];
+  si_ga = ((uint32_t*)rasterizer_src)[1];
+  si_rb = ((uint32_t*)rasterizer_src)[2];
+  si_ga_full = ((uint32_t*)rasterizer_src)[3];
+  si_rb_full = ((uint32_t*)rasterizer_src)[4];
+  si_a  = src_pix >> 24;
+#endif
+
+  uint8_t *dst = ( (uint8_t *) rasterizer->buf) +
+         (rasterizer->blit_stride * (scanline / CTX_FULL_AA));
+  coverage -= minx;
+
+  const int minx_ = minx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
+  const int maxx_ = maxx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
+
+  int cov_min = maxx;
+  int cov_max = minx;
+
+  switch (comp)
+  {
+    default:
+
+
+  for (int t = 0; t < active_edges -1;t++)
+    {
+      CtxSegment   *segment = &entries[edges[t]];
+      UPDATE_PARITY;
+
+       if (parity)
+        {
+#define CTX_A \
+          CtxSegment   *next_segment = &entries[edges[t+1]]; \
+          const int x0        = segment->val; \
+          const int x1        = next_segment->val;\
+\
+          int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256); \
+          int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256); \
+          int first     = graystart >> 8; \
+          int last      = grayend   >> 8; \
+ \
+          if (CTX_UNLIKELY (first < minx)) \
+          {  \
+            first = minx; \
+            graystart=0; \
+          } \
+          if (CTX_UNLIKELY (last > maxx)) \
+          { \
+            last = maxx; \
+            grayend=255; \
+          } \
+          graystart = (graystart&0xff) ^ 255; \
+          grayend   = (grayend & 0xff); \
+
+	  CTX_A
+
+          if (first < last)
+          {
+#define CTX_B \
+            const int delta1 = next_segment->delta; \
+            int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2; \
+            int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP; \
+            unsigned int u0x1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x1_start, x1_end)));\
+\
+            unsigned int pre = 1;\
+            unsigned int post = 1;
+
+	    CTX_B
+
+	    if (first - cov_max > CTX_RASTERIZER_MAX_EMPTIES)
+	    {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+	    }
+
+            if (segment->aa == 0)
+            {
+              coverage[first] += graystart;
+ 	      cov_min = ctx_mini (cov_min, first);
+ 	      cov_max = ctx_maxi (cov_max, first);
+            }
+            else
+            {
+#define CTX_C \
+              const int delta0    = segment->delta; \
+              int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2; \
+              int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP; \
+              unsigned int u0x0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x0_start, x0_end)));\
+              unsigned int u1x0 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x0_start, x0_end)));\
+\
+              int us = u0x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);\
+              int mod = ((u0x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255) *\
+                         (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255);\
+              int sum = ((u1x0-u0x0+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV)/255);\
+\
+              int recip = (65535)/sum;\
+	      int a = mod * recip;\
+	      recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
+	      CTX_C
+ 	      cov_min = ctx_mini (cov_min, us);
+              for (unsigned int u = u0x0; u < u1x0; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                coverage[us ++] += a>>16;
+		a += recip;
+              }
+	      cov_max = ctx_maxi (cov_max, us);
+              pre = (us-1)-first+1;
+            }
+
+            if (next_segment->aa != 0)
+	    {
+              post = last - u0x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+	    }
+
+	    {
+	       int width = (last-post) - (first+pre) + 1;
+	       if (width > CTX_RASTERIZER_MAX_SOLID)
+	       {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+
+                       {
+#if CTX_STATIC_OPAQUE
+                       uint8_t *opaque = &rasterizer->opaque[0];
+#else
+                       uint8_t opaque[width];
+                       memset (opaque, 255, sizeof (opaque));
+#endif
+                       apply_coverage (width,
+                                   &dst[((first + pre) * bpp)/8],
+                                   rasterizer_src,
+                                   opaque,
+				   rasterizer,
+                                   first + pre);
+                       }
+                 }
+	       else
+	       {
+                 for (int i = 0; i < width; i++)
+                   coverage[first + pre + i] = 255;
+ 	         cov_min = ctx_mini (cov_min, first + pre);
+ 	         cov_max = ctx_maxi (cov_max, first + pre + width);
+	       }
+	    }
+  
+            if (next_segment->aa == 0)
+            {
+               coverage[last] += grayend;
+ 	       cov_min = ctx_mini (cov_min, last);
+	       cov_max = ctx_maxi (cov_max, last);
+            }
+            else
+            {
+#define CTX_E \
+              unsigned int u1x1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_maxi (x1_start, x1_end)));\
+              int us = u0x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);\
+              int mod = ((((u0x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256) % 256)^255)) *\
+                    (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/255));\
+              int sum = ((u1x1-u0x1+CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV)/255);\
+              int recip = (65535) / sum;\
+	      int a = (65536 * 255) - mod * recip;\
+	      recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
+	      CTX_E
+ 	      cov_min = ctx_mini (cov_min, us);
+              for (unsigned int u = u0x1; u < u1x1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                coverage[us ++] += (a>>16);
+		a -= recip;
+              }
+	      cov_max = ctx_maxi (cov_max, us);
+            }
+
+	  
+          }
+          else if (first == last)
+          {
+            coverage[last]+=(graystart-(grayend^255));
+	    cov_min = ctx_mini (cov_min, first);
+	    cov_max = ctx_maxi (cov_max, last);
+          }
+
+        }
+   }
+
+   if (cov_max>=cov_min)
+     apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src, 
+		     &coverage[cov_min], rasterizer, cov_min);
+   break;
+
+   case CTX_COV_PATH_RGBA8_COPY_FRAGMENT:
+
+  for (int t = 0; t < active_edges -1;t++)
+    {
+      CtxSegment   *segment = &entries[edges[t]];
+      UPDATE_PARITY;
+
+       if (parity)
+        {
+	  CTX_A
+
+          if (first < last)
+          {
+	    CTX_B
+
+	    if (first - cov_max > CTX_RASTERIZER_MAX_EMPTIES)
+	    {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+	    }
+
+            if (segment->aa == 0)
+            {
+              coverage[first] += graystart;
+ 	      cov_min = ctx_mini (cov_min, first);
+ 	      cov_max = ctx_maxi (cov_max, first);
+            }
+            else
+            {
+	      CTX_C
+ 	      cov_min = ctx_mini (cov_min, us);
+              for (unsigned int u = u0x0; u < u1x0; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                coverage[us ++] += a>>16;
+		a += recip;
+              }
+	      cov_max = ctx_maxi (cov_max, us);
+              pre = (us-1)-first+1;
+            }
+
+            if (next_segment->aa != 0)
+	    {
+              post = last - u0x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+	    }
+
+	    {
+	       int width = (last-post) - (first+pre) + 1;
+	       if (width > CTX_RASTERIZER_MAX_SOLID)
+	       {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+
+                   {
+                       float u0 = 0; float v0 = 0;
+                       float ud = 0; float vd = 0;
+                       float w0 = 1; float wd = 0;
+                       ctx_init_uv (rasterizer, first+pre, scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
+                       rasterizer->fragment (rasterizer, u0, v0, w0, &dst[(first+pre)*4],
+                                             width, ud, vd, wd);
+                   }
+
+	       }
+	       else
+	       {
+                 for (int i = 0; i < width; i++)
+                   coverage[first + pre + i] = 255;
+ 	         cov_min = ctx_mini (cov_min, first + pre);
+ 	         cov_max = ctx_maxi (cov_max, first + pre + width);
+	       }
+	    }
+  
+            if (next_segment->aa == 0)
+            {
+               coverage[last] += grayend;
+ 	       cov_min = ctx_mini (cov_min, last);
+	       cov_max = ctx_maxi (cov_max, last);
+            }
+            else
+            {
+	      CTX_E
+	      cov_min = ctx_maxi (cov_min, us);
+              for (unsigned int u = u0x1; u < u1x1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                coverage[us ++] += (a>>16);
+		a -= recip;
+              }
+	      cov_max = ctx_maxi (cov_max, us);
+            }
+          }
+          else if (first == last)
+          {
+            coverage[last]+=(graystart-(grayend^255));
+	    cov_min = ctx_mini (cov_min, first);
+	    cov_max = ctx_maxi (cov_max, last);
+          }
+        }
+   }
+
+   if (cov_max>=cov_min)
+     apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src, 
+		     &coverage[cov_min], rasterizer, cov_min);
+   break;
+
+   case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
+  for (int t = 0; t < active_edges -1;t++)
+    {
+      CtxSegment   *segment = &entries[edges[t]];
+      UPDATE_PARITY;
+
+       if (parity)
+        {
+	  CTX_A
+
+          if (first < last)
+          {
+	    CTX_B
+
+	    if (first - cov_max > CTX_RASTERIZER_MAX_EMPTIES)
+	    {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+	    }
+
+            if (segment->aa == 0)
+            {
+              coverage[first] += graystart;
+ 	      cov_min = ctx_mini (cov_min, first);
+ 	      cov_max = ctx_maxi (cov_max, first);
+            }
+            else
+            {
+	      CTX_C
+ 	      cov_min = ctx_mini (cov_min, us);
+              for (unsigned int u = u0x0; u < u1x0; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                coverage[us ++] += a>>16;
+		a += recip;
+              }
+	      cov_max = ctx_maxi (cov_max, us);
+              pre = (us-1)-first+1;
+            }
+
+            if (next_segment->aa != 0)
+	    {
+              post = last - u0x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+	    }
+
+	    {
+	       int width = (last-post) - (first+pre) + 1;
+	       if (width > CTX_RASTERIZER_MAX_SOLID)
+	       {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+
+                 ctx_RGBA8_source_over_normal_full_cov_fragment (
+	 	      width,
+                       &dst[(first+pre)*4],
+                       NULL,
+                       NULL,
+                       rasterizer,
+                       first + pre,
+	 	      1);
+
+	       }
+	       else
+	       {
+                 for (int i = 0; i < width; i++)
+                   coverage[first + pre + i] = 255;
+ 	         cov_min = ctx_mini (cov_min, first + pre);
+ 	         cov_max = ctx_maxi (cov_max, first + pre + width);
+	       }
+	    }
+  
+            if (next_segment->aa == 0)
+            {
+               coverage[last] += grayend;
+ 	       cov_min = ctx_mini (cov_min, last);
+	       cov_max = ctx_maxi (cov_max, last);
+            }
+            else
+            {
+	      CTX_E
+	      cov_min = ctx_maxi (cov_min, us);
+              for (unsigned int u = u0x1; u < u1x1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                coverage[us ++] += (a>>16);
+		a -= recip;
+              }
+	      cov_max = ctx_maxi (cov_max, us);
+            }
+          }
+          else if (first == last)
+          {
+            coverage[last]+=(graystart-(grayend^255));
+	    cov_min = ctx_mini (cov_min, first);
+	    cov_max = ctx_maxi (cov_max, last);
+          }
+        }
+   }
+
+   if (cov_max>=cov_min)
+     apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src, 
+		     &coverage[cov_min], rasterizer, cov_min);
+   break;
+
+   case CTX_COV_PATH_RGBA8_COPY:
+
+  for (int t = 0; t < active_edges -1;t++)
+    {
+      CtxSegment   *segment = &entries[edges[t]];
+      UPDATE_PARITY;
+
+       if (parity)
+        {
+	  CTX_A
+
+          if (first < last)
+          {
+	    CTX_B
+
+	    if (first - cov_max > CTX_RASTERIZER_MAX_EMPTIES)
+	    {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+	    }
+
+            if (segment->aa == 0)
+            {
+#if 0
+              coverage[first] += graystart;
+ 	      cov_min = ctx_mini (cov_min, first);
+ 	      cov_max = ctx_maxi (cov_max, first);
+#else
+              uint32_t* dst_pix = (uint32_t*)(&dst[first *4]);
+              *dst_pix = ctx_lerp_RGBA8_2 (*dst_pix, si_ga, si_rb, coverage[first] + graystart);
+	      coverage[first]=0;
+	      if (cov_min == cov_max){
+                cov_min = maxx;
+                cov_max = minx;
+	      } else cov_max--; // XXX and hope we do not gain..
+#endif
+            }
+            else
+            {
+	      CTX_C
+
+              uint32_t* dst_pix = (uint32_t*)(&dst[(us) *4]);
+              for (unsigned int u = u0x0; u < u1x0; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                *dst_pix = ctx_lerp_RGBA8_2 (*dst_pix, si_ga, si_rb, (a>>16));
+		dst_pix++;
+		a += recip;
+		us++;
+              }
+
+	      cov_max = ctx_maxi (cov_max, us);
+              pre = (us-1)-first+1;
+            }
+
+            if (next_segment->aa != 0)
+	    {
+              post = last - u0x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+	    }
+
+	    {
+	       int width = (last-post) - (first+pre) + 1;
+	       if (width > CTX_RASTERIZER_MAX_SOLID)
+	       {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+
+                 uint32_t* dst_pix = (uint32_t*)(&dst[(first+pre) *4]);
+                 ctx_span_set_color (dst_pix, src_pix, width);
+	       }
+	       else
+	       {
+                 for (int i = 0; i < width; i++)
+                   coverage[first + pre + i] = 255;
+ 	         cov_min = ctx_mini (cov_min, first + pre);
+ 	         cov_max = ctx_maxi (cov_max, first + pre + width);
+	       }
+	    }
+  
+            if (next_segment->aa == 0)
+            {
+               coverage[last] += grayend;
+ 	       cov_min = ctx_mini (cov_min, last);
+	       cov_max = ctx_maxi (cov_max, last);
+            }
+            else
+            {
+	      CTX_E
+              uint32_t* dst_pix = (uint32_t*)(&dst[(us) *4]);
+              for (unsigned int u = u0x1; u < u1x1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                *dst_pix = ctx_lerp_RGBA8_2 (*dst_pix, si_ga, si_rb, (a>>16));
+		dst_pix++;
+		a -= recip;
+              }
+            }
+          }
+          else if (first == last)
+          {
+            coverage[last]+=(graystart-(grayend^255));
+	    cov_min = ctx_mini (cov_min, first);
+	    cov_max = ctx_maxi (cov_max, last);
+          }
+        }
+   }
+
+   if (cov_max>=cov_min)
+     apply_coverage (cov_max-cov_min+1, &dst[cov_min*4], rasterizer_src, 
+		     &coverage[cov_min], rasterizer, cov_min);
+   break;
+
+   case CTX_COV_PATH_RGBA8_OVER:
+
+  for (int t = 0; t < active_edges -1;t++)
+    {
+      CtxSegment   *segment = &entries[edges[t]];
+      UPDATE_PARITY;
+
+       if (parity)
+        {
+	  CTX_A
+
+          if (first < last)
+          {
+	    CTX_B
+
+	    if (first - cov_max > CTX_RASTERIZER_MAX_EMPTIES)
+	    {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min*4], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+	    }
+
+            if (segment->aa == 0)
+            {
+              uint32_t* dst_pix = (uint32_t*)(&dst[first *4]);
+              *dst_pix = ctx_over_RGBA8_full_2 (*dst_pix, si_ga, si_rb, coverage[first] + graystart);
+	      if (cov_min == cov_max){
+                cov_min = maxx;
+                cov_max = minx;
+	      } else cov_max--;
+            }
+            else
+            {
+	      CTX_C
+
+              uint32_t* dst_pix = (uint32_t*)(&dst[(us) *4]);
+              for (unsigned int u = u0x0; u < u1x0; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                *dst_pix = ctx_over_RGBA8_full_2 (*dst_pix, si_ga, si_rb, (a>>16));
+		a += recip;
+		dst_pix++;
+		us++;
+              }
+              pre = (us-1)-first+1;
+            }
+
+            if (next_segment->aa != 0)
+	    {
+              post = last - u0x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
+	    }
+
+	    {
+	       int width = (last-post) - (first+pre) + 1;
+	       if (width > CTX_RASTERIZER_MAX_SOLID/2)
+	       {
+                 if (cov_max>=cov_min)
+                 {
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
+				   &coverage[cov_min], rasterizer, cov_min);
+                   cov_min = maxx;
+                   cov_max = minx;
+                 }
+
+                 {
+                   uint32_t* dst_pix = (uint32_t*)(&dst[(first+pre) *4]);
+                     unsigned int count = width;
+                     while (count--)
+                     {
+                       *dst_pix = ctx_over_RGBA8_full_2(*dst_pix, si_ga_full, si_rb_full, si_a);
+                       dst_pix++;
+                     }
+                 }
+	       }
+	       else
+	       {
+                 for (int i = 0; i < width; i++)
+                   coverage[first + pre + i] = 255;
+ 	         cov_min = ctx_mini (cov_min, first + pre);
+ 	         cov_max = ctx_maxi (cov_max, first + pre + width);
+	       }
+	    }
+  
+            if (next_segment->aa == 0)
+            {
+               coverage[last] += grayend;
+ 	       cov_min = ctx_mini (cov_min, last);
+	       cov_max = ctx_maxi (cov_max, last);
+            }
+            else
+            {
+	      CTX_E
+              uint32_t* dst_pix = (uint32_t*)(&dst[(us) *4]);
+              for (unsigned int u = u0x1; u < u1x1; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
+              {
+                *dst_pix = ctx_over_RGBA8_full_2 (*dst_pix, si_ga, si_rb, (a>>16));
+		dst_pix++;
+		a -= recip;
+              }
+            }
+          }
+          else if (first == last)
+          {
+            coverage[last]+=(graystart-(grayend^255));
+	    cov_min = ctx_mini (cov_min, first);
+	    cov_max = ctx_maxi (cov_max, last);
+          }
+        }
+   }
+
+   if (cov_max>=cov_min)
+     apply_coverage (cov_max-cov_min+1, &dst[cov_min*4], rasterizer_src, 
+		     &coverage[cov_min], rasterizer, cov_min);
+   break;
+  }
+}
+
+#undef CTX_A
+#undef CTX_B
+#undef CTX_C
+#undef CTX_D
+#undef CTX_E
 
 #undef CTX_EDGE
 
