@@ -567,8 +567,8 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
             int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
             unsigned int u0x1 = ctx_mini (maxx_, ctx_maxi (minx_, ctx_mini (x1_start, x1_end)));
 
-            int pre = 1;
-            int post = 1;
+            unsigned int pre = 1;
+            unsigned int post = 1;
 
 	    if (first - cov_max > CTX_RASTERIZER_MAX_EMPTIES)
 	    {
@@ -609,7 +609,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
                 coverage[us ++] += a>>16;
 		a += recip;
               }
-	      cov_max = us;
+	      cov_max = ctx_maxi (cov_max, us);
               pre = (us-1)-first+1;
             }
 
@@ -805,7 +805,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
                 coverage[us ++] += (a>>16);
 		a -= recip;
               }
-	     cov_max = ctx_maxi (cov_max, us);
+	      cov_max = ctx_maxi (cov_max, us);
             }
 
 	  
