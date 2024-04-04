@@ -638,8 +638,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
        
                    case CTX_COV_PATH_RGBA8_COPY:
                    {
-                     uint32_t* dst_pix = (uint32_t*)(&dst[first *4]);
-                     dst_pix+=pre;
+                     uint32_t* dst_pix = (uint32_t*)(&dst[(first+pre) *4]);
                      ctx_span_set_color (dst_pix, src_pix, width);
                    }
                    break;
@@ -647,8 +646,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
        
                    case CTX_COV_PATH_RGBA8_OVER:
                    {
-                     uint32_t* dst_pix = (uint32_t*)(&dst[first *4]);
-                     dst_pix+=pre;
+                     uint32_t* dst_pix = (uint32_t*)(&dst[(first+pre) *4]);
                        unsigned int count = width;
                        while (count--)
                        {
@@ -662,14 +660,14 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
                        float u0 = 0; float v0 = 0;
                        float ud = 0; float vd = 0;
                        float w0 = 1; float wd = 0;
-                       ctx_init_uv (rasterizer, first+pre, rasterizer->scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
-                       rasterizer->fragment (rasterizer, u0, v0, w0, &dst[(first+pre)*bpp/8],
+                       ctx_init_uv (rasterizer, first+pre, scanline/CTX_FULL_AA,&u0, &v0, &w0, &ud, &vd, &wd);
+                       rasterizer->fragment (rasterizer, u0, v0, w0, &dst[(first+pre)*4],
                                              width, ud, vd, wd);
                    }
                    break;
                    case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
                        ctx_RGBA8_source_over_normal_full_cov_fragment (rasterizer,
-                                      &dst[((first+pre)*bpp)/8],
+                                      &dst[(first+pre)*4],
                                       NULL,
                                       first + pre,
                                       NULL,
