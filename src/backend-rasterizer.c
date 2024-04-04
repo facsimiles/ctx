@@ -1307,11 +1307,13 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 #else
               uint32_t* dst_pix = (uint32_t*)(&dst[first *4]);
               *dst_pix = ctx_lerp_RGBA8_2 (*dst_pix, si_ga, si_rb, coverage[first] + graystart);
-	      coverage[first]=0;
-	      if (cov_min == cov_max){
+	      if ((cov_min == cov_max) & (cov_min == first)){
                 cov_min = maxx;
                 cov_max = minx;
-	      } else cov_max--; // XXX and hope we do not gain..
+	      } else {
+	        coverage[first]=0;
+		cov_max--;
+	      }
 #endif
             }
             else
@@ -1327,7 +1329,6 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 		us++;
               }
 
-	      cov_max = ctx_maxi (cov_max, us);
               pre = (us-1)-first+1;
             }
 
@@ -1422,10 +1423,11 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
             {
               uint32_t* dst_pix = (uint32_t*)(&dst[first *4]);
               *dst_pix = ctx_over_RGBA8_full_2 (*dst_pix, si_ga, si_rb, coverage[first] + graystart);
-	      if (cov_min == cov_max){
+
+	      if ((cov_min == cov_max) & (cov_min == first)){
                 cov_min = maxx;
                 cov_max = minx;
-	      } else cov_max--;
+	      } else { cov_max--; coverage[first]=0; }
             }
             else
             {
@@ -1706,9 +1708,11 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
         default:
         { /* level of oversampling based on lowest steepness edges */
           ctx_rasterizer_increment_edges (rasterizer, -CTX_AA_HALFSTEP2);
-          int scanline_increment = 15/aa;
           memset (coverage, 0, pixs);
-          uint8_t fraction = 255/aa;
+	  static const int fractions[]={0,255,2,255/3,4,255/5,6,7,8,9,10,11,12,13,14,255/15,16};
+	  static const int increments[]={0,15/1,2,15/3,4,15/5,6,7,8,9,10,11,12,13,14,15/15,16};
+          int scanline_increment = increments[aa];
+          uint8_t fraction = fractions[aa];
 	  int fed = !convex;
 
           for (unsigned int i = 0; i < (unsigned)aa-1; i++)
