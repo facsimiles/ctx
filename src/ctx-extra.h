@@ -148,24 +148,16 @@ ctx_sinf (float x)
          (x + CTX_PI - 0.00000008742278f) * p1 * x;
 }
 
-static CTX_INLINE float ctx_atan2f (float y, float x)
+static CTX_INLINE float ctx_atan2f_rest (
+  const float x, const float y_recip)
 {
-  float atan, z;
-  if ( x == 0.0f )
-    {
-      if ( y > 0.0f )
-        { return CTX_PI/2; }
-      if ( y == 0.0f )
-        { return 0.0f; }
-      return -CTX_PI/2;
-    }
-  z = y/x;
+  float atan, z = x * y_recip;
   if ( ctx_fabsf ( z ) < 1.0f )
     {
       atan = z/ (1.0f + 0.28f*z*z);
-      if (x < 0.0f)
+      if (y_recip < 0.0f)
         {
-          if ( y < 0.0f )
+          if ( x < 0.0f )
             { return atan - CTX_PI; }
           return atan + CTX_PI;
         }
@@ -173,7 +165,37 @@ static CTX_INLINE float ctx_atan2f (float y, float x)
   else
     {
       atan = CTX_PI/2 - z/ (z*z + 0.28f);
-      if ( y < 0.0f ) { return atan - CTX_PI; }
+      if ( x < 0.0f ) { return atan - CTX_PI; }
+    }
+  return atan;
+}
+
+static CTX_INLINE float ctx_atan2f (const float x, const float y)
+{
+  float atan, z;
+  if ( y == 0.0f )
+    {
+      if ( x > 0.0f )
+        { return CTX_PI/2; }
+      if ( x == 0.0f )
+        { return 0.0f; }
+      return -CTX_PI/2;
+    }
+  z = x/y;
+  if ( ctx_fabsf ( z ) < 1.0f )
+    {
+      atan = z/ (1.0f + 0.28f*z*z);
+      if (y < 0.0f)
+        {
+          if ( x < 0.0f )
+            { return atan - CTX_PI; }
+          return atan + CTX_PI;
+        }
+    }
+  else
+    {
+      atan = CTX_PI/2 - z/ (z*z + 0.28f);
+      if ( x < 0.0f ) { return atan - CTX_PI; }
     }
   return atan;
 }

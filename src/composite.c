@@ -2742,7 +2742,6 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
 
   offset += M_PI;
 
-#if 1
   uint8_t global_alpha_u8 = rasterizer->state->gstate.global_alpha_u8;
   if (global_alpha_u8 != 255)
   for (int i = 0; i < count ; i++)
@@ -2764,7 +2763,27 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
     y += dy;
   }
   else
+  {
+  if ((dy == 0.0f) & (y != 0.0f))
+  {
+    float y_recip = 1.0f/y;
+  for (int i = 0; i < count ; i++)
+  {
+#if CTX_GRADIENT_CACHE
+    int vv = ctx_fmod1f((ctx_atan2f_rest (x,y_recip) + offset) * scale) * fscale;
+  *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
+#else
+    float vv = (ctx_atan2f_rest (x,y_recip) + M_PI) * scale;
+  _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0f, rgba);
 #endif
+#if CTX_DITHER
+      ctx_dither_rgba_u8 (rgba, ox+i, scan, dither_red_blue, dither_green);
+#endif
+    rgba+= 4;
+    x += dx;
+  }
+  }
+  else
   for (int i = 0; i < count ; i++)
   {
 #if CTX_GRADIENT_CACHE
@@ -2780,6 +2799,8 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
     rgba+= 4;
     x += dx;
     y += dy;
+  }
+    
   }
 }
   
