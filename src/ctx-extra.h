@@ -9,11 +9,11 @@
 
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
-static CTX_INLINE int   ctx_mini (int a, int b)     { if (a < b) return a; return b; }
-static CTX_INLINE float ctx_minf (float a, float b) { if (a < b) return a; return b; }
-static CTX_INLINE int   ctx_maxi (int a, int b)     { if (a > b) return a; return b; }
-static CTX_INLINE float ctx_maxf (float a, float b) { if (a > b) return a; return b; }
-static CTX_INLINE float ctx_clampf (float v, float min, float max) {
+static CTX_INLINE int   ctx_mini (const int a, const int b)     { if (a < b) return a; return b; }
+static CTX_INLINE float ctx_minf (const float a, const float b) { if (a < b) return a; return b; }
+static CTX_INLINE int   ctx_maxi (const int a, const int b)     { if (a > b) return a; return b; }
+static CTX_INLINE float ctx_maxf (const float a, const float b) { if (a > b) return a; return b; }
+static CTX_INLINE float ctx_clampf (const float v, const float min, const float max) {
        return CTX_CLAMP(v,min,max);
 }
 
@@ -31,16 +31,11 @@ typedef enum CtxOutputmode
   CTX_OUTPUT_MODE_UI
 } CtxOutputmode;
 
-
-
-
-
-
-static inline float ctx_pow2 (float a) { return a * a; }
+static CTX_INLINE float ctx_pow2 (const float a) { return a * a; }
 #if CTX_MATH
 
 static CTX_INLINE float
-ctx_fabsf (float x)
+ctx_fabsf (const float x)
 {
   union
   {
@@ -52,7 +47,7 @@ ctx_fabsf (float x)
 }
 
 static CTX_INLINE float
-ctx_invsqrtf (float x)
+ctx_invsqrtf (const float x)
 {
   union
   {
@@ -66,7 +61,7 @@ ctx_invsqrtf (float x)
 }
 
 static CTX_INLINE float
-ctx_invsqrtf_fast (float x)
+ctx_invsqrtf_fast (const float x)
 {
   union
   {
@@ -77,22 +72,22 @@ ctx_invsqrtf_fast (float x)
   return u.f;
 }
 
-CTX_INLINE static float ctx_sqrtf (float a)
+CTX_INLINE static float ctx_sqrtf (const float a)
 {
   return 1.0f/ctx_invsqrtf (a);
 }
 
-CTX_INLINE static float ctx_sqrtf_fast (float a)
+CTX_INLINE static float ctx_sqrtf_fast (const float a)
 {
   return 1.0f/ctx_invsqrtf_fast (a);
 }
 
-CTX_INLINE static float ctx_hypotf (float a, float b)
+CTX_INLINE static float ctx_hypotf (const float a, const float b)
 {
   return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
 }
 
-CTX_INLINE static float ctx_hypotf_fast (float a, float b)
+CTX_INLINE static float ctx_hypotf_fast (const float a, const float b)
 {
   return ctx_sqrtf_fast (ctx_pow2 (a)+ctx_pow2 (b) );
 }
@@ -113,8 +108,8 @@ ctx_sinf (float x)
   }
   if (x > CTX_PI * 1000)
   {
-          // really large numbers tend to cause practically inifinite
-          // loops since the > CTX_PI * 2 seemingly fails
+    // really large numbers tend to cause practically inifinite
+    // loops since the > CTX_PI * 2 seemingly fails
     x = 0.5f;
   }
   if (x > CTX_PI * 2)
@@ -170,24 +165,24 @@ static CTX_INLINE float ctx_atan2f_rest (
   return atan;
 }
 
-static CTX_INLINE float ctx_atan2f (const float x, const float y)
+static CTX_INLINE float ctx_atan2f (const float y, const float x)
 {
   float atan, z;
-  if ( y == 0.0f )
+  if ( x == 0.0f )
     {
-      if ( x > 0.0f )
+      if ( y > 0.0f )
         { return CTX_PI/2; }
-      if ( x == 0.0f )
+      if ( y == 0.0f )
         { return 0.0f; }
       return -CTX_PI/2;
     }
-  z = x/y;
+  z = y/x;
   if ( ctx_fabsf ( z ) < 1.0f )
     {
       atan = z/ (1.0f + 0.28f*z*z);
-      if (y < 0.0f)
+      if (x < 0.0f)
         {
-          if ( x < 0.0f )
+          if ( y < 0.0f )
             { return atan - CTX_PI; }
           return atan + CTX_PI;
         }
@@ -195,43 +190,43 @@ static CTX_INLINE float ctx_atan2f (const float x, const float y)
   else
     {
       atan = CTX_PI/2 - z/ (z*z + 0.28f);
-      if ( x < 0.0f ) { return atan - CTX_PI; }
+      if ( y < 0.0f ) { return atan - CTX_PI; }
     }
   return atan;
 }
 
 
-static CTX_INLINE float ctx_atanf (float a)
+static CTX_INLINE float ctx_atanf (const float a)
 {
-  return ctx_atan2f ( (a), 1.0f);
+  return ctx_atan2f (a, 1.0f);
 }
 
-static CTX_INLINE float ctx_asinf (float x)
+static CTX_INLINE float ctx_asinf (const float x)
 {
-  return ctx_atanf ( (x) * (ctx_invsqrtf (1.0f-ctx_pow2 (x) ) ) );
+  return ctx_atanf ( x * ctx_invsqrtf (1.0f-ctx_pow2 (x) ));
 }
 
-static CTX_INLINE float ctx_acosf (float x)
+static CTX_INLINE float ctx_acosf (const float x)
 {
-  return ctx_atanf ( (ctx_sqrtf (1.0f-ctx_pow2 (x) ) / (x) ) );
+  return ctx_atanf ( ctx_sqrtf (1.0f-ctx_pow2 (x) ) / (x) );
 }
 
-CTX_INLINE static float ctx_cosf (float a)
+CTX_INLINE static float ctx_cosf (const float a)
 {
   return ctx_sinf ( (a) + CTX_PI/2.0f);
 }
 
-static CTX_INLINE float ctx_tanf (float a)
+static CTX_INLINE float ctx_tanf (const float a)
 {
-  return (ctx_cosf (a) /ctx_sinf (a) );
+  return (ctx_cosf (a) / ctx_sinf (a) );
 }
 static CTX_INLINE float
-ctx_floorf (float x)
+ctx_floorf (const float x)
 {
   return (int)x; // XXX
 }
 static CTX_INLINE float
-ctx_expf (float x)
+ctx_expf (const float x)
 {
   union { uint32_t i; float f; } v =
     {  (uint32_t)( (1 << 23) * (x + 183.1395965f)) };
@@ -244,20 +239,19 @@ ctx_expf (float x)
 #if !__COSMOPOLITAN__
 #include <math.h>
 #endif
-static CTX_INLINE float ctx_fabsf (float x)           { return fabsf (x); }
-static CTX_INLINE float ctx_floorf (float x)          { return floorf (x); }
-static CTX_INLINE float ctx_asinf (float x)            { return asinf (x); }
-static CTX_INLINE float ctx_sinf (float x)            { return sinf (x); }
-static CTX_INLINE float ctx_atan2f (float y, float x) { return atan2f (y, x); }
-static CTX_INLINE float ctx_hypotf (float a, float b) { return hypotf (a, b); }
-static CTX_INLINE float ctx_acosf (float a)           { return acosf (a); }
-static CTX_INLINE float ctx_cosf (float a)            { return cosf (a); }
-static CTX_INLINE float ctx_tanf (float a)            { return tanf (a); }
-static CTX_INLINE float ctx_expf (float p)            { return expf (p); }
-static CTX_INLINE float ctx_sqrtf (float a)           { return sqrtf (a); }
-static CTX_INLINE float ctx_atanf (float a)           { return atanf (a); }
-
-static CTX_INLINE float ctx_hypotf_fast (float a, float b)
+static CTX_INLINE float ctx_fabsf (const float x)           { return fabsf (x); }
+static CTX_INLINE float ctx_floorf (const float x)          { return floorf (x); }
+static CTX_INLINE float ctx_asinf (const float x)           { return asinf (x); }
+static CTX_INLINE float ctx_sinf (const float x)            { return sinf (x); }
+static CTX_INLINE float ctx_atan2f (const float y, float x) { return atan2f (y, x); }
+static CTX_INLINE float ctx_hypotf (const float a, float b) { return hypotf (a, b); }
+static CTX_INLINE float ctx_acosf (const float a)           { return acosf (a); }
+static CTX_INLINE float ctx_cosf (const float a)            { return cosf (a); }
+static CTX_INLINE float ctx_tanf (const float a)            { return tanf (a); }
+static CTX_INLINE float ctx_expf (const float p)            { return expf (p); }
+static CTX_INLINE float ctx_sqrtf (const float a)           { return sqrtf (a); }
+static CTX_INLINE float ctx_atanf (const float a)           { return atanf (a); }
+static CTX_INLINE float ctx_hypotf_fast (const float a, const float b)
 {
   return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
 }
