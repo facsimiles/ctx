@@ -178,7 +178,7 @@ static inline void ctx_tvg_memcpy (CtxTinyVG *tvg, void *dst, int pos, int len)
 }
 
 #define CTX_TVG_DEFINE_ACCESOR(nick, type) \
-static inline type ctx_tvg_##nick (CtxTinyVG *tvg)\
+static CTX_INLINE type ctx_tvg_##nick (CtxTinyVG *tvg)\
 { type ret;\
   ctx_tvg_memcpy (tvg, &ret, tvg->pos, sizeof (type));\
   tvg->pos += sizeof(type);\
@@ -201,7 +201,7 @@ static inline uint8_t ctx_tvg_u6_u2 (CtxTinyVG *tvg, uint8_t *u2_ret)
 
 // XXX if this is inline the ESP32 fails with a compiler error
 //
-static int32_t ctx_tvg_val (CtxTinyVG *tvg)
+static CTX_INLINE int32_t ctx_tvg_val (CtxTinyVG *tvg)
 {
   switch (tvg->val_type)
   {
@@ -212,11 +212,7 @@ static int32_t ctx_tvg_val (CtxTinyVG *tvg)
   return 0;
 }
 
-static inline float ctx_tvg_unit (CtxTinyVG *tvg)
-{
-  uint32_t rv = ctx_tvg_val(tvg);
-  return rv * tvg->scale_factor;
-}
+#define ctx_tvg_unit(tvg) (ctx_tvg_val(tvg)*tvg->scale_factor)
 
 static inline uint32_t ctx_tvg_var (CtxTinyVG *tvg)
 {
@@ -232,7 +228,7 @@ static inline uint32_t ctx_tvg_var (CtxTinyVG *tvg)
 #define CTX_TVG_MIN(a,b)  (((a)<(b))?(a):(b))
 #define CTX_TVG_MAX(a,b)  (((a)>(b))?(a):(b))
 
-static void
+static inline void
 ctx_tvg_segment (CtxTinyVG *tvg, int n_commands)
 {
   Ctx *ctx = tvg->ctx;
@@ -560,7 +556,7 @@ static void ctx_tvg_set_style (CtxTinyVG *tvg, CtxTinyVGStyle *style)
   }
 }
 
-static void ctx_tvg_path (CtxTinyVG *tvg, int item_count)
+static inline void ctx_tvg_path (CtxTinyVG *tvg, int item_count)
 {
    int segment_length[item_count];
    for (int i = 0; i < item_count; i ++)
