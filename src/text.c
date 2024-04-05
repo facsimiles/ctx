@@ -383,7 +383,7 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, int unichar,
   }
   ctx_iterator_init (&iterator, drawlist, start, CTX_ITERATOR_EXPAND_BITPACK);
   CtxCommand *command; 
-  void  (*process)  (Ctx *ctx, CtxCommand *entry) = ctx->process;
+  void  (*process)  (Ctx *ctx, const CtxCommand *entry) = ctx->process;
 
   /* XXX :  do a binary search instead of a linear search */
   while ( (command= ctx_iterator_next (&iterator) ) )

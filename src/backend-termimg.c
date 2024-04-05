@@ -23,7 +23,7 @@ struct _CtxTermImg
 };
 
 inline static void ctx_termimg_process (Ctx        *ctx,
-                                        CtxCommand *command)
+                                        const CtxCommand *command)
 {
   CtxTermImg *termimg = (void*)ctx->backend;
 #if CTX_CURRENT_PATH

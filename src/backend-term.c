@@ -722,7 +722,7 @@ ctx_is_half_opaque (CtxRasterizer *rasterizer)
 }
 
 inline static void ctx_term_process (Ctx *ctx,
-                                     CtxCommand *command)
+                                     const CtxCommand *command)
 {
   CtxTerm *term = (void*)ctx->backend;
 

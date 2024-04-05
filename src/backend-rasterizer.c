@@ -3379,7 +3379,7 @@ ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, flo
 }
 
 static void
-ctx_rasterizer_process (Ctx *ctx, CtxCommand *command);
+ctx_rasterizer_process (Ctx *ctx, const CtxCommand *command);
 
 #if CTX_COMPOSITING_GROUPS
 static void
@@ -3631,7 +3631,7 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
 #endif
 
 static void
-ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, unsigned int count, float *dashes)
+ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, unsigned int count, const float *dashes)
 {
   if (!dashes)
   {
@@ -3650,13 +3650,12 @@ ctx_rasterizer_line_dash (CtxRasterizer *rasterizer, unsigned int count, float *
 
 
 static void
-ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
+ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
 {
-  CtxEntry      *entry      = &command->entry;
-  CtxRasterizer *rasterizer = (CtxRasterizer *) ctx->backend;
-  CtxState      *state      = rasterizer->state;
-  CtxCommand    *c          = (CtxCommand *) entry;
-  int            clear_clip = 0;
+  const CtxEntry *entry      = &c->entry;
+  CtxRasterizer  *rasterizer = (CtxRasterizer *) ctx->backend;
+  CtxState       *state      = rasterizer->state;
+  int             clear_clip = 0;
 
   switch (c->code)
     {

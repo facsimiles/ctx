@@ -560,7 +560,7 @@ typedef struct _CtxGlyphEntry CtxGlyphEntry;
 struct _Ctx
 {
   CtxBackend       *backend;
-  void  (*process)  (Ctx *ctx, CtxCommand *entry);
+  void  (*process)  (Ctx *ctx, const CtxCommand *entry);
   CtxState          state;        /**/
   CtxDrawlist       drawlist;
   int               transformation;
@@ -613,8 +613,8 @@ void ctx_buffer_destroy (CtxBuffer *buffer);
 static void
 ctx_state_gradient_clear_stops (CtxState *state);
 
-static inline void ctx_interpret_style         (CtxState *state, CtxEntry *entry, void *data);
-static inline void ctx_interpret_transforms    (CtxState *state, CtxEntry *entry, void *data);
+static inline void ctx_interpret_style         (CtxState *state, const CtxEntry *entry, void *data);
+static inline void ctx_interpret_transforms    (CtxState *state, const CtxEntry *entry, void *data);
 static inline void ctx_interpret_pos           (CtxState *state, CtxEntry *entry, void *data);
 static inline void ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data);
 
@@ -657,7 +657,7 @@ CTX_STATIC void
 _ctx_user_to_device_distance (CtxState *state, float *x, float *y);
 CTX_STATIC void ctx_state_init (CtxState *state);
 static inline void
-ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data);
+ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data);
 static inline void
 ctx_drawlist_deinit (CtxDrawlist *drawlist);
 
@@ -1200,7 +1200,7 @@ int ctx_sha1_done(CtxSHA1 * sha1, unsigned char *out);
 
 void _ctx_texture_lock (void);
 void _ctx_texture_unlock (void);
-uint8_t *ctx_define_texture_pixel_data (CtxEntry *entry);
+uint8_t *ctx_define_texture_pixel_data (const CtxEntry *entry);
 void ctx_buffer_pixels_free (void *pixels, void *userdata);
 
 /*ctx_texture_init:

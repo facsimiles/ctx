@@ -2,7 +2,7 @@
 #define CTX_DRAWLIST_H
 
 CTX_STATIC int
-ctx_conts_for_entry (CtxEntry *entry);
+ctx_conts_for_entry (const CtxEntry *entry);
 void
 ctx_iterator_init (CtxIterator      *iterator,
                    CtxDrawlist  *drawlist,
@@ -14,8 +14,8 @@ int ctx_iterator_pos (CtxIterator *iterator);
 CTX_STATIC void
 ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size);
 CTX_STATIC int
-ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry);
-CTX_STATIC int ctx_drawlist_add_entry (CtxDrawlist *drawlist, CtxEntry *entry);
+ctx_drawlist_add_single (CtxDrawlist *drawlist, const CtxEntry *entry);
+CTX_STATIC int ctx_drawlist_add_entry (CtxDrawlist *drawlist, const CtxEntry *entry);
 int
 ctx_drawlist_insert_entry (CtxDrawlist *drawlist, int pos, CtxEntry *entry);
 int

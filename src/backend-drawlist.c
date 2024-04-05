@@ -53,7 +53,7 @@ static void ctx_update_current_path (Ctx *ctx, CtxEntry *entry)
 }
 
 static void
-ctx_drawlist_process (Ctx *ctx, CtxCommand *command)
+ctx_drawlist_process (Ctx *ctx, const CtxCommand *command)
 {
   CtxEntry *entry = (CtxEntry*)command;
 #if CTX_CURRENT_PATH

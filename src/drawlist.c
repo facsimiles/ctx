@@ -2,7 +2,7 @@
 
 
 static CTX_INLINE int
-ctx_conts_for_entry (CtxEntry *entry)
+ctx_conts_for_entry (const CtxEntry *entry)
 {
     switch (entry->code)
     {
@@ -412,7 +412,7 @@ ctx_drawlist_resize (CtxDrawlist *drawlist, int desired_size)
 
 
 CTX_STATIC inline int
-ctx_drawlist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
+ctx_drawlist_add_single (CtxDrawlist *drawlist, const CtxEntry *entry)
 {
   unsigned int max_size = CTX_MAX_JOURNAL_SIZE;
   int ret = drawlist->count;
@@ -453,7 +453,7 @@ ctx_add_single (Ctx *ctx, void *entry)
 }
 
 CTX_STATIC inline int
-ctx_drawlist_add_entry (CtxDrawlist *drawlist, CtxEntry *entry)
+ctx_drawlist_add_entry (CtxDrawlist *drawlist, const CtxEntry *entry)
 {
   int length = ctx_conts_for_entry (entry) + 1;
   int ret = 0;
@@ -1048,8 +1048,8 @@ ctx_drawlist_compact (CtxDrawlist *drawlist)
 #endif
 }
 
-uint8_t *ctx_define_texture_pixel_data (CtxEntry *entry)
+uint8_t *ctx_define_texture_pixel_data (const CtxEntry *entry)
 {
-  return &entry[2 + 1 + 1 + ctx_conts_for_entry (&entry[2])].data.u8[0];
+  return (uint8_t*)&entry[2 + 1 + 1 + ctx_conts_for_entry (&entry[2])].data.u8[0];
 }
 

@@ -1459,9 +1459,9 @@ ctx_end_frame (Ctx *ctx)
 ////////////////////////////////////////
 
 static inline void
-ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
+ctx_interpret_style (CtxState *state, const CtxEntry *entry, void *data)
 {
-  CtxCommand *c = (CtxCommand *) entry;
+  const CtxCommand *c = (CtxCommand *) entry;
   switch (entry->code)
     {
       case CTX_LINE_HEIGHT:
@@ -1693,7 +1693,7 @@ ctx_interpret_style (CtxState *state, CtxEntry *entry, void *data)
 }
 
 static inline void
-ctx_interpret_transforms (CtxState *state, CtxEntry *entry, void *data)
+ctx_interpret_transforms (CtxState *state, const CtxEntry *entry, void *data)
 {
   switch (entry->code)
     {
@@ -1937,7 +1937,7 @@ ctx_interpret_pos_transform (CtxState *state, CtxEntry *entry, void *data)
 }
 
 static inline void
-ctx_interpret_pos_bare (CtxState *state, CtxEntry *entry, void *data)
+ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
 {
   switch (entry->code)
     {
@@ -2098,7 +2098,7 @@ void ctx_push_backend (Ctx *ctx,
   ctx->backend_pushed = ctx->backend;
   ctx->backend = (CtxBackend*)backend;
   if (ctx->backend->process == NULL)
-    ctx->backend->process = (void(*)(Ctx*,CtxCommand*))ctx_drawlist_process;
+    ctx->backend->process = (void(*)(Ctx*,const CtxCommand*))ctx_drawlist_process;
   ctx->process = ctx->backend->process;
 }
 
@@ -2121,7 +2121,7 @@ void ctx_set_backend (Ctx  *ctx,
     ctx->backend->destroy (ctx->backend);
   ctx->backend = (CtxBackend*)backend;
   if (ctx->backend->process == NULL)
-    ctx->backend->process = (void(*)(Ctx*,CtxCommand*))ctx_drawlist_process;
+    ctx->backend->process = (void(*)(Ctx*,const CtxCommand*))ctx_drawlist_process;
   ctx->process = ctx->backend->process;
 }
 
@@ -2274,7 +2274,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   d_ctx->bail = 0;
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
                      CTX_ITERATOR_EXPAND_BITPACK);
-  void  (*process)  (Ctx *ctx, CtxCommand *entry) = d_ctx->process;
+  void  (*process)  (Ctx *ctx, const CtxCommand *entry) = d_ctx->process;
   while ( (command = (CtxCommand*)_ctx_iterator_next (&iterator) ) )
     process (d_ctx, command);
 }
@@ -2285,7 +2285,7 @@ ctx_render_ctx_masked (Ctx *ctx, Ctx *d_ctx, uint32_t mask)
   CtxIterator iterator;
   CtxCommand *command;
   ctx_iterator_init (&iterator, &ctx->drawlist, 0, 0);
-  void  (*process)  (Ctx *ctx, CtxCommand *entry) = d_ctx->process;
+  void  (*process)  (Ctx *ctx, const CtxCommand *entry) = d_ctx->process;
   uint32_t active_mask = 0xffffffff;
 
   while ( (command = (CtxCommand*)_ctx_iterator_next (&iterator) ) )

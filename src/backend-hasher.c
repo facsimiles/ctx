@@ -159,9 +159,9 @@ ctx_device_corners_to_user_rect (CtxState *state,
 }
 
 static void
-ctx_hasher_process (Ctx *ctx, CtxCommand *command)
+ctx_hasher_process (Ctx *ctx, const CtxCommand *command)
 {
-  CtxEntry      *entry      = &command->entry;
+  const CtxEntry      *entry      = &command->entry;
   CtxRasterizer *rasterizer = (CtxRasterizer *) ctx->backend;
   CtxHasher     *hasher     = (CtxHasher*) ctx->backend;
   CtxState      *state      = rasterizer->state;

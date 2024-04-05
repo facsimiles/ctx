@@ -303,10 +303,10 @@ ctx_pdf_apply_transform (Ctx *ctx, float a, float b, float c, float d, float e, 
 }
 
 static void
-ctx_pdf_process (Ctx *ctx, CtxCommand *c)
+ctx_pdf_process (Ctx *ctx, const CtxCommand *c)
 {
   CtxPDF *pdf = (void*)ctx->backend;
-  CtxEntry *entry = (CtxEntry *) &c->entry;
+  const CtxEntry *entry = (CtxEntry *) &c->entry;
   CtxState *state = &pdf->state;
 
   CtxDrawlist *preserved = NULL;
