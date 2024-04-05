@@ -258,13 +258,13 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
     return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges, convex);
 }
 
-static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, unsigned int minx, unsigned int maxx, uint8_t *coverage, int *first_col, int *last_col)
+static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, const unsigned int minx, const unsigned int maxx, uint8_t *coverage, int *first_col, int *last_col)
 {
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
-    float radius = rasterizer->state->gstate.shadow_blur;
-    unsigned int dim = 2 * radius + 1;
+    const float radius = rasterizer->state->gstate.shadow_blur;
+    const unsigned int dim = 2 * radius + 1;
     if (CTX_UNLIKELY (dim > CTX_MAX_GAUSSIAN_KERNEL_DIM))
       dim = CTX_MAX_GAUSSIAN_KERNEL_DIM;
     {
@@ -378,10 +378,10 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
 
 inline static void
 ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
-                                           int            minx,
-                                           int            maxx,
+                                           const int      minx,
+                                           const int      maxx,
                                            uint8_t       *coverage,
-                                           int            is_winding)
+                                           const int      is_winding)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int *edges  = rasterizer->edges;
@@ -501,10 +501,10 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
 
 inline static void
 ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
-                                         int            minx,
-                                         int            maxx,
+                                         const int      minx,
+                                         const int      maxx,
                                          uint8_t       *coverage,
-                                         int            is_winding,
+                                         const int      is_winding,
                                          const CtxCovPath comp,
 					 ctx_apply_coverage_fun apply_coverage)
 {
@@ -3656,9 +3656,30 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
   CtxCommand    *c          = (CtxCommand *) entry;
   int            clear_clip = 0;
 
-  ctx_interpret_style (state, entry, NULL);
   switch (c->code)
     {
+      case CTX_LINE_HEIGHT:
+      case CTX_WRAP_LEFT:
+      case CTX_WRAP_RIGHT:
+      case CTX_LINE_DASH_OFFSET:
+      case CTX_STROKE_POS:
+      case CTX_LINE_WIDTH:
+      case CTX_SHADOW_BLUR:
+      case CTX_SHADOW_OFFSET_X:
+      case CTX_SHADOW_OFFSET_Y:
+      case CTX_LINE_CAP:
+      case CTX_FILL_RULE:
+      case CTX_LINE_JOIN:
+      case CTX_TEXT_ALIGN:
+      case CTX_TEXT_BASELINE:
+      case CTX_TEXT_DIRECTION:
+      case CTX_GLOBAL_ALPHA:
+      case CTX_FONT_SIZE:
+      case CTX_MITER_LIMIT:
+      case CTX_COLOR_SPACE:
+      case CTX_STROKE_SOURCE:
+        ctx_interpret_style (state, entry, NULL);
+	break;
 #if CTX_ENABLE_SHADOW_BLUR
       case CTX_SHADOW_COLOR:
         {
@@ -3818,6 +3839,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
       case CTX_CONIC_GRADIENT:
       case CTX_LINEAR_GRADIENT:
       case CTX_RADIAL_GRADIENT:
+        ctx_interpret_style (state, entry, NULL);
         ctx_state_gradient_clear_stops (state);
         rasterizer->gradient_cache_valid = 0;
         rasterizer->comp_op = NULL;
@@ -3831,6 +3853,7 @@ ctx_rasterizer_process (Ctx *ctx, CtxCommand *command)
       case CTX_BLEND_MODE:
       case CTX_EXTEND:
       case CTX_SET_RGBA_U8:
+        ctx_interpret_style (state, entry, NULL);
         rasterizer->comp_op = NULL;
         break;
 #if CTX_COMPOSITING_GROUPS
@@ -4001,6 +4024,7 @@ foo:
 
         break;
       case CTX_FONT:
+        ctx_interpret_style (state, entry, NULL);
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
         break;
       case CTX_TEXT:
@@ -4061,6 +4085,7 @@ foo:
         ctx_rasterizer_close_path (rasterizer);
         break;
       case CTX_IMAGE_SMOOTHING:
+        ctx_interpret_style (state, entry, NULL);
         rasterizer->comp_op = NULL;
         break;
     }
