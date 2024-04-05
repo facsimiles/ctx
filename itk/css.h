@@ -3186,6 +3186,8 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         case  SQZ_square: s->stroke_linecap = CTX_CAP_SQUARE; break;
         default:          s->stroke_linecap = CTX_CAP_NONE;
       }
+      // XXX : keep track of what we have set - so we at least do not
+      // keep re-setting it..
       ctx_line_cap (mrg_ctx (mrg), s->stroke_linecap);
       break;
     case SQZ_vertical_align:
@@ -6593,24 +6595,12 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
       }
     }
 
-    if (number[0] == 0.0f) {};
-#if 0
     matrix->m[0][0] = number[0];
-    matrix->m[0][1] = number[1];
-    matrix->m[1][0] = number[2];
-    matrix->m[1][1] = number[3];
-    matrix->m[2][0] = number[4];
-    matrix->m[2][1] = number[5];
-#else
-#if 0
-    matrix->m[0][0] = number[0];
-    matrix->m[1][0] = number[1];
     matrix->m[0][1] = number[2];
-    matrix->m[1][1] = number[3];
     matrix->m[0][2] = number[4];
+    matrix->m[1][0] = number[1];
+    matrix->m[1][1] = number[3];
     matrix->m[1][2] = number[5];
-#endif
-#endif
   }
   else if (!strncmp (str, "scale", 5))
   {
@@ -6692,7 +6682,6 @@ int
 mrg_parse_svg_path (Mrg *mrg, const char *str)
 {
   /* this function is the seed of the ctx parser */
-  Ctx *ctx = mrg_ctx (mrg);
   char  command = 'm';
   char *s;
   int numbers = 0;
@@ -6701,6 +6690,10 @@ mrg_parse_svg_path (Mrg *mrg, const char *str)
 
   if (!str)
     return -1;
+
+  Ctx *ctx = mrg_ctx (mrg);
+  ctx_parse (ctx, str);
+  return 0;
   //ctx_move_to (ctx, 0, 0);
   //ctx_begin_path (ctx);
   cx = 0; cy = 0;
@@ -6751,7 +6744,12 @@ again:
       switch (command)
       {
         case 'a':
-          /* fallthrough */
+          if (numbers == 9)
+          {
+            /// XXX: NYI
+            s++;
+            goto again;
+          }
         case 'A':
           if (numbers == 7)
           {
@@ -6957,6 +6955,51 @@ again:
     }
   }
 }
+
+static void
+mrg_parse_ellipse (Mrg *mrg, const char *str)
+{
+  Ctx *ctx = mrg_ctx (mrg);
+  char *s;
+  int numbers = 0;
+  int started = 0;
+  double number[12];
+
+  if (!str)
+    return;
+  //ctx_move_to (ctx, 0, 0);
+
+  s = (void*)str;
+again:
+  numbers = 0;
+
+  for (; *s; s++)
+  {
+    switch (*s)
+    {
+      case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
+      number[numbers] = _ctx_parse_float (s, &s);
+      s--;
+      numbers++;
+
+      if (numbers == 2)
+      {
+        if (started)
+          ctx_line_to (ctx, number[0], number[1]);
+        else
+        {
+          ctx_move_to (ctx, number[0], number[1]);
+          started = 1;
+        }
+        s++;
+        goto again;
+      }
+      default:
+        break;
+    }
+  }
+}
+
 
 void _mrg_set_wrap_edge_vfuncs (Mrg *mrg,
     float (*wrap_edge_left)  (Mrg *mrg, void *wrap_edge_data),
@@ -7623,6 +7666,7 @@ void itk_xml_render (Mrg *mrg,
         tagpos = pos;
         ctx_string_clear (style);
         ctx_set_string (mrg->ctx, SQZ_style, "");
+        ctx_set_string (mrg->ctx, SQZ_transform, "");
 
 	if (!strcmp (data, "html"))
 	{
@@ -7831,6 +7875,40 @@ void itk_xml_render (Mrg *mrg,
         else if (data_hash == SQZ_path)
         {
           mrg_parse_svg_path (mrg, PROPS(d));
+          mrg_path_fill_stroke (mrg);
+        }
+
+        else if (data_hash == SQZ_ellipse)
+        {
+          //mrg_parse_ellipse (mrg, PROPS(d));
+	  //  SQZ_cx
+	  //  SQZ_cy
+	  //  SQZ_rx
+	  //  SQZ_ry
+	  //
+          const char *transform;
+          if ((transform = PROPS(transform)))
+            {
+              CtxMatrix matrix;
+              mrg_parse_transform (mrg, &matrix, transform);
+              ctx_apply_matrix (mrg_ctx (mrg), &matrix);
+	      printf ("[%s]", transform);
+            }
+	  ctx_save (mrg->ctx);
+	  ctx_translate (mrg->ctx, PROP(cx), PROP(cy));
+	  ctx_scale (mrg->ctx, PROP(rx), PROP(ry));
+	  ctx_arc (mrg->ctx, 0.0f, 0.0f, 1.0, 0.0, M_PI*2, 0);
+	  ctx_restore (mrg->ctx);
+          mrg_path_fill_stroke (mrg);
+        }
+
+        else if (data_hash == SQZ_circle)
+        {
+          //mrg_parse_ellipse (mrg, PROPS(d));
+	  //  SQZ_cx
+	  //  SQZ_cy
+	  //  SQZ_r
+	  ctx_arc (mrg->ctx, PROP(cx), PROP(cy), PROP(r), 0.0, M_PI*2, 0);
           mrg_path_fill_stroke (mrg);
         }
 
