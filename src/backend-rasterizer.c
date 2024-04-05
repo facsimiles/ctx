@@ -721,6 +721,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 
    break;
 
+#if CTX_RASTERIZER_SWITCH_DISPATCH
    case CTX_COV_PATH_RGBA8_COPY_FRAGMENT:
 
   for (int t = 0; t < active_edges -1;t++)
@@ -1136,6 +1137,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
     if (cov_max>=cov_min)
      apply_coverage (cov_max-cov_min+1, &dst[cov_min*4], rasterizer_src, 
 		     &coverage[cov_min], rasterizer, cov_min);
+#endif
   }
 }
 
