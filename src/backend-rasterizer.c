@@ -736,7 +736,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	    {
                  if (cov_max>=cov_min)
                  {
-                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
 				   &coverage[cov_min], rasterizer, cov_min);
                    cov_min = maxx;
                    cov_max = minx;
@@ -770,7 +770,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	       {
                  if (cov_max>=cov_min)
                  {
-                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
 				   &coverage[cov_min], rasterizer, cov_min);
                    cov_min = maxx;
                    cov_max = minx;
@@ -833,7 +833,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	    {
                  if (cov_max>=cov_min)
                  {
-                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
 				   &coverage[cov_min], rasterizer, cov_min);
                    cov_min = maxx;
                    cov_max = minx;
@@ -867,7 +867,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	       {
                  if (cov_max>=cov_min)
                  {
-                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
 				   &coverage[cov_min], rasterizer, cov_min);
                    cov_min = maxx;
                    cov_max = minx;
@@ -931,7 +931,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	    {
                  if (cov_max>=cov_min)
                  {
-                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
 				   &coverage[cov_min], rasterizer, cov_min);
                    cov_min = maxx;
                    cov_max = minx;
@@ -980,7 +980,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	       {
                  if (cov_max>=cov_min)
                  {
-                   apply_coverage (cov_max-cov_min+1, &dst[((cov_min) * bpp)/8], rasterizer_src,
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
 				   &coverage[cov_min], rasterizer, cov_min);
                    cov_min = maxx;
                    cov_max = minx;
@@ -1015,8 +1015,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	  CTX_H
         }
    }
-
-   break;
+  break;
 
    case CTX_COV_PATH_RGBA8_OVER:
 
@@ -1122,10 +1121,9 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	  CTX_H
         }
    }
-   break;
   }
   if (cov_max>=cov_min)
-     apply_coverage (cov_max-cov_min+1, &dst[cov_min*4], rasterizer_src, 
+     apply_coverage (cov_max-cov_min+1, &dst[(cov_min*bpp)/8], rasterizer_src, 
 		     &coverage[cov_min], rasterizer, cov_min);
 }
 
