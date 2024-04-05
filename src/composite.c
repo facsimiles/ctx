@@ -2702,6 +2702,27 @@ ctx_fragment_radial_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
     y -= dy;
   }
   else
+  if (dy == 0.0f)
+  {
+     float sq_y = y * y;
+  for (int i = 0; i <  count; i ++)
+  {
+    float v = (ctx_sqrtf_fast (x*x+sq_y) - rg_r0) * (rg_rdelta);
+#if CTX_GRADIENT_CACHE
+    uint32_t *rgbap = (uint32_t*)&rasterizer->gradient_cache_u8[ctx_grad_index(rasterizer, v)][0];
+    *((uint32_t*)rgba) = *rgbap;
+#else
+    ctx_fragment_gradient_1d_RGBA8 (rasterizer, v, 0.0, rgba);
+#endif
+
+#if CTX_DITHER
+    ctx_dither_rgba_u8 (rgba, ox+i, scan, dither_red_blue, dither_green);
+#endif
+    rgba += 4;
+    x -= dx;
+  }
+  }
+  else
   for (int i = 0; i <  count; i ++)
   {
     float v = (ctx_hypotf_fast (x, y) - rg_r0) * (rg_rdelta);
