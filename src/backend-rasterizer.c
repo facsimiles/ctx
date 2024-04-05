@@ -2624,6 +2624,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int count = rasterizer->edge_list.count;
   if (count == 0)
     return;
+  int aa_backup = rasterizer->aa;
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&gstate->transform);
   float line_width = gstate->line_width * factor;
@@ -2692,7 +2693,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
   
   rasterizer->convex = 1;
-  int aa_backup = rasterizer->aa;
   rasterizer->aa = ctx_mini(aa_backup, 5);
     {
     {
@@ -3057,7 +3057,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   if ((minx == maxx) | (miny == maxy)) // XXX : reset hack
   {
     ctx_rasterizer_clip_reset (rasterizer);
-    return;//goto done;
+    return;
   }
 
   int we_made_it = 0;
