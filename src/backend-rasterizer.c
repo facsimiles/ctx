@@ -92,7 +92,7 @@ inline static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
    }
 }
 
-inline static int ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasterizer)
+CTX_INLINE static int ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasterizer)
 {
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
@@ -116,6 +116,7 @@ inline static int ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasterizer)
     }
     rasterizer->active_edges = active_edges;
     rasterizer->pending_edges = pending_edges;
+    ctx_rasterizer_discard_edges (rasterizer);
     return fed;
 }
 
@@ -173,7 +174,6 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 {
   int miny;
   int fed = 1 | ctx_rasterizer_feed_pending_edges (rasterizer);
-  ctx_rasterizer_discard_edges (rasterizer);
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
   unsigned int pending_edges   = rasterizer->pending_edges;
@@ -501,12 +501,12 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
 
 inline static void
 ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
-                                         const int      minx,
-                                         const int      maxx,
-                                         uint8_t       *coverage,
-                                         const int      is_winding,
-                                         const CtxCovPath comp,
-					 ctx_apply_coverage_fun apply_coverage)
+                                             const int      minx,
+                                             const int      maxx,
+                                             uint8_t       *coverage,
+                                             const int      is_winding,
+                                             const CtxCovPath comp,
+			                     ctx_apply_coverage_fun apply_coverage)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int *edges  = rasterizer->edges;
@@ -1318,7 +1318,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
           rasterizer->scanline += CTX_AA_HALFSTEP2;
           if (ctx_rasterizer_feed_pending_edges (rasterizer))
 	    ctx_rasterizer_sort_active_edges (rasterizer);
-          ctx_rasterizer_discard_edges (rasterizer);
     
           memset (coverage, 0, pixs);
           if (allow_direct)
@@ -1345,7 +1344,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
           uint8_t fraction = fractions[aa];
 	  int fed = !convex;
 
-          for (unsigned int i = 0; i < (unsigned)aa-1; i++)
+          for (int i = 1; i <= aa; i++)
           {
 	    if (fed){
               ctx_rasterizer_sort_active_edges (rasterizer);
@@ -1353,15 +1352,9 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
 	    }
             ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
             rasterizer->scanline += scanline_increment;
-            ctx_rasterizer_increment_edges (rasterizer, scanline_increment);
+            ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2 * (i==aa));
             fed |= ctx_rasterizer_feed_pending_edges (rasterizer);
-            ctx_rasterizer_discard_edges (rasterizer);
           }
-
-          if (fed) ctx_rasterizer_sort_active_edges (rasterizer);
-          ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
-          rasterizer->scanline += scanline_increment;
-          ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2);
         }
       }
   
