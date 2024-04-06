@@ -6571,7 +6571,7 @@ static MrgEntity entities[]={
 void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 
-static void
+static int 
 mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
 {
   if (!strncmp (str, "matrix", 5))
@@ -6582,7 +6582,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     ctx_matrix_identity (matrix);
     s = (void*) ctx_strchr (str, '(');
     if (!s)
-      return;
+      return 0;
     s++;
     for (; *s &&  numbers < 11; s++)
     {
@@ -6610,7 +6610,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     ctx_matrix_identity (matrix);
     s = (void*) ctx_strchr (str, '(');
     if (!s)
-      return;
+      return 0;
     s++;
     for (; *s; s++)
     {
@@ -6635,7 +6635,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     ctx_matrix_identity (matrix);
     s = (void*) ctx_strchr (str, '(');
     if (!s)
-      return;
+      return 0;
     s++;
     for (; *s; s++)
     {
@@ -6657,7 +6657,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     ctx_matrix_identity (matrix);
     s = (void*) ctx_strchr (str, '(');
     if (!s)
-      return;
+      return 0;
     s++;
     for (; *s; s++)
     {
@@ -6673,9 +6673,11 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
   }
   else
   {
-    fprintf (stderr, "unhandled transform: %s\n", str);
+    //fprintf (stderr, "unhandled transform: %s\n", str);
     ctx_matrix_identity (matrix);
+    return 0;
   }
+  return 1;
 }
 
 int
@@ -7561,6 +7563,7 @@ void itk_xml_render (Mrg *mrg,
   _mrg_set_wrap_edge_vfuncs (mrg, wrap_edge_left, wrap_edge_right, mrg);
   mrg->state = &mrg->states[0];
 
+
   //itk_start (mrg, "fjo", NULL);
   //ctx_stylesheet_add (mrg, style_sheets->str, uri_base, CTX_STYLE_XML, NULL);
 
@@ -7667,6 +7670,7 @@ void itk_xml_render (Mrg *mrg,
         ctx_string_clear (style);
         ctx_set_string (mrg->ctx, SQZ_style, "");
         ctx_set_string (mrg->ctx, SQZ_transform, "");
+  
 
 	if (!strcmp (data, "html"))
 	{
@@ -7847,8 +7851,8 @@ void itk_xml_render (Mrg *mrg,
           if ((transform = PROPS(transform)))
             {
               CtxMatrix matrix;
-              mrg_parse_transform (mrg, &matrix, transform);
-              ctx_apply_matrix (mrg_ctx (mrg), &matrix);
+              if (mrg_parse_transform (mrg, &matrix, transform))
+                ctx_apply_matrix (mrg_ctx (mrg), &matrix);
             }
         }
 
@@ -7868,12 +7872,29 @@ void itk_xml_render (Mrg *mrg,
 
         else if (data_hash == SQZ_polygon)
         {
+          const char *transform;
+          if ((transform = PROPS(transform)))
+            {
+              CtxMatrix matrix;
+              if (mrg_parse_transform (mrg, &matrix, transform))
+                ctx_apply_matrix (mrg_ctx (mrg), &matrix);
+            }
           mrg_parse_polygon (mrg, PROPS(d));
           mrg_path_fill_stroke (mrg);
         }
 
         else if (data_hash == SQZ_path)
         {
+          const char *transform;
+	//ctx_begin_path (mrg_ctx (mrg)); // XXX: eeeek!
+          ctx_move_to (mrg_ctx(mrg), 0,0); // make relative move to in start of
+					   // path work
+          if ((transform = PROPS(transform)))
+            {
+              CtxMatrix matrix;
+              if (mrg_parse_transform (mrg, &matrix, transform))
+                ctx_apply_matrix (mrg_ctx (mrg), &matrix);
+            }
           mrg_parse_svg_path (mrg, PROPS(d));
           mrg_path_fill_stroke (mrg);
         }
@@ -7890,9 +7911,8 @@ void itk_xml_render (Mrg *mrg,
           if ((transform = PROPS(transform)))
             {
               CtxMatrix matrix;
-              mrg_parse_transform (mrg, &matrix, transform);
-              ctx_apply_matrix (mrg_ctx (mrg), &matrix);
-	      printf ("[%s]", transform);
+              if (mrg_parse_transform (mrg, &matrix, transform))
+                ctx_apply_matrix (mrg_ctx (mrg), &matrix);
             }
 	  ctx_save (mrg->ctx);
 	  ctx_translate (mrg->ctx, PROP(cx), PROP(cy));
@@ -7908,13 +7928,20 @@ void itk_xml_render (Mrg *mrg,
 	  //  SQZ_cx
 	  //  SQZ_cy
 	  //  SQZ_r
+          const char *transform;
+          if ((transform = PROPS(transform)))
+            {
+              CtxMatrix matrix;
+              if (mrg_parse_transform (mrg, &matrix, transform))
+                ctx_apply_matrix (mrg_ctx (mrg), &matrix);
+            }
 	  ctx_arc (mrg->ctx, PROP(cx), PROP(cy), PROP(r), 0.0, M_PI*2, 0);
           mrg_path_fill_stroke (mrg);
         }
 
         else if (data_hash == SQZ_rect)
         {
-          float width  = PROP(width);
+          float width  = PROP(width);  // XXX : gets incorrectly handled as html
           float height = PROP(height);
           float x      = PROP(x);
           float y      = PROP(y);
