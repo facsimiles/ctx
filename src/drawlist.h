@@ -205,6 +205,137 @@ ctx_edgelist_add_single (CtxDrawlist *drawlist, CtxEntry *entry)
   return ret;
 }
 
+// special return values - controlling argument behavior for some codes
+#define CTX_ARG_COLLECT_NUMBERS             50
+#define CTX_ARG_STRING_OR_NUMBER            100
+#define CTX_ARG_NUMBER_OF_COMPONENTS        200
+#define CTX_ARG_NUMBER_OF_COMPONENTS_PLUS_1 201
+
+static inline int ctx_arguments_for_code (CtxCode code)
+{
+  switch (code)
+    {
+      case CTX_SAVE:
+      case CTX_START_GROUP:
+      case CTX_END_GROUP:
+      case CTX_IDENTITY:
+      case CTX_CLOSE_PATH:
+      case CTX_BEGIN_PATH:
+      case CTX_START_FRAME:
+      case CTX_END_FRAME:
+      case CTX_RESTORE:
+      case CTX_STROKE:
+      case CTX_FILL:
+      case CTX_PAINT:
+      case CTX_DEFINE_FONT:
+      case CTX_NEW_PAGE:
+      case CTX_CLIP:
+      case CTX_EXIT:
+        return 0;
+      case CTX_GLOBAL_ALPHA:
+      case CTX_COMPOSITING_MODE:
+      case CTX_BLEND_MODE:
+      case CTX_EXTEND:
+      case CTX_FONT_SIZE:
+      case CTX_LINE_JOIN:
+      case CTX_LINE_CAP:
+      case CTX_LINE_WIDTH:
+      case CTX_LINE_DASH_OFFSET:
+      case CTX_STROKE_POS:
+      case CTX_LINE_HEIGHT:
+      case CTX_WRAP_LEFT:
+      case CTX_WRAP_RIGHT:
+      case CTX_IMAGE_SMOOTHING:
+      case CTX_SHADOW_BLUR:
+      case CTX_SHADOW_OFFSET_X:
+      case CTX_SHADOW_OFFSET_Y:
+      case CTX_FILL_RULE:
+      case CTX_TEXT_ALIGN:
+      case CTX_TEXT_BASELINE:
+      case CTX_TEXT_DIRECTION:
+      case CTX_MITER_LIMIT:
+      case CTX_REL_VER_LINE_TO:
+      case CTX_REL_HOR_LINE_TO:
+      case CTX_HOR_LINE_TO:
+      case CTX_VER_LINE_TO:
+      case CTX_FONT:
+      case CTX_ROTATE:
+      case CTX_GLYPH:
+        return 1;
+      case CTX_TRANSLATE:
+      case CTX_REL_SMOOTHQ_TO:
+      case CTX_LINE_TO:
+      case CTX_MOVE_TO:
+      case CTX_SCALE:
+      case CTX_REL_LINE_TO:
+      case CTX_REL_MOVE_TO:
+      case CTX_SMOOTHQ_TO:
+        return 2;
+      case CTX_CONIC_GRADIENT:
+      case CTX_LINEAR_GRADIENT:
+      case CTX_REL_QUAD_TO:
+      case CTX_QUAD_TO:
+      case CTX_RECTANGLE:
+      case CTX_FILL_RECT:
+      case CTX_STROKE_RECT:
+      case CTX_REL_SMOOTH_TO:
+      case CTX_VIEW_BOX:
+      case CTX_SMOOTH_TO:
+        return 4;
+      case CTX_ROUND_RECTANGLE:
+        return 5;
+      case CTX_ARC:
+      case CTX_CURVE_TO:
+      case CTX_REL_CURVE_TO:
+      case CTX_RADIAL_GRADIENT:
+        return 6;
+      case CTX_ARC_TO:
+      case CTX_REL_ARC_TO:
+        return 7;
+      case CTX_APPLY_TRANSFORM:
+      case CTX_SOURCE_TRANSFORM:
+        return 9;
+      case CTX_STROKE_TEXT:
+      case CTX_TEXT:
+      case CTX_COLOR_SPACE:
+      case CTX_DEFINE_GLYPH:
+      case CTX_KERNING_PAIR:
+      case CTX_TEXTURE:
+      case CTX_DEFINE_TEXTURE:
+        return CTX_ARG_STRING_OR_NUMBER;
+      case CTX_LINE_DASH: /* append to current dashes for each argument encountered */
+        return CTX_ARG_COLLECT_NUMBERS;
+      //case CTX_SET_KEY:
+      case CTX_COLOR:
+      case CTX_SHADOW_COLOR:
+        return CTX_ARG_NUMBER_OF_COMPONENTS;
+      case CTX_GRADIENT_STOP:
+        return CTX_ARG_NUMBER_OF_COMPONENTS_PLUS_1;
+
+        default:
+#if 1
+        case CTX_SET_RGBA_U8:
+        case CTX_NOP:
+        case CTX_CONT:
+        case CTX_DATA:
+        case CTX_DATA_REV:
+        case CTX_SET_PIXEL:
+        case CTX_REL_LINE_TO_X4:
+        case CTX_REL_LINE_TO_REL_CURVE_TO:
+        case CTX_REL_CURVE_TO_REL_LINE_TO:
+        case CTX_REL_CURVE_TO_REL_MOVE_TO:
+        case CTX_REL_LINE_TO_X2:
+        case CTX_MOVE_TO_REL_LINE_TO:
+        case CTX_REL_LINE_TO_REL_MOVE_TO:
+        case CTX_FILL_MOVE_TO:
+        case CTX_REL_QUAD_TO_REL_QUAD_TO:
+        case CTX_REL_QUAD_TO_S16:
+        case CTX_STROKE_SOURCE:
+#endif
+        return 0;
+    }
+}
+
 
 #endif
 

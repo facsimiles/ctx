@@ -1546,6 +1546,13 @@ typedef enum
 {
   CTX_CONT             = '\0', // - contains args from preceding entry
   CTX_NOP              = ' ', //
+  CTX_DATA             = '(', // size size-in-entries - u32
+  CTX_DATA_REV         = ')', // reverse traversal data marker
+  CTX_SET_RGBA_U8      = '*', // r g b a - u8
+                   //     ,    UNUSED/RESERVED
+  CTX_SET_PIXEL        = '-', // 8bit "fast-path" r g b a x y - u8 for rgba, and u16 for x,y
+  // set pixel might want a shorter ascii form with hex-color? or keep it an embedded
+  // only option?
                    //     ^    used for unit
                    //     &    UNUSED
                    //     +    UNUSED
@@ -1555,13 +1562,6 @@ typedef enum
                    //     $    UNUSED
                    //     %    percent of viewport width or height
                    //     '    start/end string
-  CTX_DATA             = '(', // size size-in-entries - u32
-  CTX_DATA_REV         = ')', // reverse traversal data marker
-  CTX_SET_RGBA_U8      = '*', // r g b a - u8
-                   //     ,    UNUSED/RESERVED
-  CTX_SET_PIXEL        = '-', // 8bit "fast-path" r g b a x y - u8 for rgba, and u16 for x,y
-  // set pixel might want a shorter ascii form with hex-color? or keep it an embedded
-  // only option?
                    //     .    decimal seperator
                    //     /    UNUSED
                    //     :    UNUSED
@@ -1571,6 +1571,8 @@ typedef enum
                    //     ?    UNUSED
                    //     \    UNUSED
                    //     ^    PARSER - vh unit
+                       // |    UNUSED
+                       // ~    UNUSED/textenc
  
   /* optimizations that reduce the number of entries used,
    * not visible outside the drawlist compression, thus
@@ -1613,11 +1615,12 @@ typedef enum
   CTX_VIEW_BOX         = 'R', // x y width height
   CTX_SMOOTH_TO        = 'S', // cx cy x y
   CTX_SMOOTHQ_TO       = 'T', // x y
-  CTX_CONIC_GRADIENT   = 'U', // cx cy start_angle
+  CTX_CONIC_GRADIENT   = 'U', // cx cy start_angle cycles
   CTX_VER_LINE_TO      = 'V', // y
   CTX_APPLY_TRANSFORM  = 'W', // a b c d e f g h i j - for set_transform combine with identity
   CTX_EXIT             = 'X', //
-  CTX_ROUND_RECTANGLE  = 'Y', // x y width height radius
+  CTX_TRANSLATE        = 'Y', // x y  
+  CTX_ROUND_RECTANGLE  = 151, // x y width height radius
 
   CTX_CLOSE_PATH2      = 'Z', //
 			      
@@ -1633,7 +1636,7 @@ typedef enum
   CTX_CLIP             = 'b',
   CTX_REL_CURVE_TO     = 'c', // cx1 cy1 cx2 cy2 x y
   CTX_LINE_DASH        = 'd', // dashlen0 [dashlen1 ...]
-  CTX_TRANSLATE        = 'e', // x y
+		     //  'e'  -- scientific notation for SVG numbers
   CTX_LINEAR_GRADIENT  = 'f', // x1 y1 x2 y2
   CTX_SAVE             = 'g',
   CTX_REL_HOR_LINE_TO  = 'h', // x
@@ -1654,12 +1657,10 @@ typedef enum
   CTX_REL_VER_LINE_TO  = 'v', // y
   CTX_GLYPH            = 'w', // unichar fontsize
   CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount
-  CTX_IDENTITY         = 'y', // XXX remove?
+  CTX_IDENTITY         = 'y', // XXX remove? - or reset to baseline.. which is what identity expects
   CTX_CLOSE_PATH       = 'z', //
   CTX_START_GROUP      = '{',
-                       // |    UNUSED
   CTX_END_GROUP        = '}',
-                       // ~    UNUSED/textenc
 
 
   /* though expressed as two chars in serialization we have

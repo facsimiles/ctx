@@ -129,9 +129,7 @@ static void _ctx_fd_addstr (CtxFormatter *formatter, const char *str, int len)
 void _ctx_string_addstr (CtxFormatter *formatter, const char *str, int len)
 {
   if (!str || len == 0)
-  {
     return;
-  }
   if (len < 0) len = ctx_strlen (str);
   ctx_string_append_data ((CtxString*)(formatter->target), str, len);
 }
@@ -139,16 +137,13 @@ void _ctx_string_addstr (CtxFormatter *formatter, const char *str, int len)
 static void _ctx_print_endcmd (CtxFormatter *formatter)
 {
   if (formatter->longform)
-    {
-      ctx_formatter_addstr (formatter, ");\n", 3);
-    }
+    ctx_formatter_addstr (formatter, ");\n", 3);
 }
 
 static void _ctx_indent (CtxFormatter *formatter)
 {
   for (int i = 0; i < formatter->indent; i++)
-    { ctx_formatter_addstr (formatter, "  ", 2);
-    }
+    ctx_formatter_addstr (formatter, "  ", 2);
 }
 
 const char *_ctx_code_to_name (int code)
@@ -309,7 +304,7 @@ static void _ctx_print_name (CtxFormatter *formatter, int code)
     ctx_formatter_addstr (formatter, name, -1);
     if (formatter->longform)
       ctx_formatter_addstr (formatter, " (", 2);
-    else
+    else if (ctx_arguments_for_code (code)<1 || ctx_arguments_for_code(code)>8)
       ctx_formatter_addstr (formatter, " ", 1);
   }
 }
