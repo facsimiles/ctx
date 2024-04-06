@@ -72,10 +72,12 @@ ctx_print_int (CtxFormatter *formatter, int val)
 static void
 ctx_print_float (CtxFormatter *formatter, float val)
 {
+  int wasneg = 0;
   if (val < 0.0f)
   {
     ctx_formatter_addstr (formatter, "-", 1);
     val = -val;
+    wasneg = 1;
   }
   int remainder = ((int)(val*10000))%10000;
   if (remainder % 10 > 5)
@@ -83,7 +85,15 @@ ctx_print_float (CtxFormatter *formatter, float val)
   else
     remainder /= 10;
 
-  ctx_print_int (formatter, (int)val);
+  if (!formatter->longform && ((((int)val))==0) && (remainder) && !wasneg)
+  {
+  }
+  else
+  {
+    ctx_print_int (formatter, (int)val);
+  }
+
+
   if (remainder)
   {
     ctx_formatter_addstr (formatter, ".", 1);
@@ -803,14 +813,44 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         break;
       case CTX_SET_RGBA_U8:
         if (formatter->longform)
-          {
             _ctx_indent (formatter);
-            ctx_formatter_addstr (formatter, "rgba (", -1);
+
+	if (ctx_arg_u8(3)==255)
+	{
+	  int components = 3;
+	  if (
+            (ctx_arg_u8 (0) ==
+            ctx_arg_u8 (1)) &&
+            (ctx_arg_u8 (1) ==
+             ctx_arg_u8 (2)))
+	  {
+	    components = 1;
           }
-        else
+
+        ctx_formatter_addstr (formatter, components==1?"gray":"rgb", -1);
+        if (formatter->longform)
+            ctx_formatter_addstr (formatter, " (", -1);
+
+        for (int c = 0; c < components; c++)
           {
-            ctx_formatter_addstr (formatter, "rgba (", -1);
+            if (c)
+              {
+                if (formatter->longform)
+                  ctx_formatter_addstr (formatter, ", ", 2);
+                else
+                  ctx_formatter_addstr (formatter, " ", 1);
+              }
+            ctx_print_float (formatter, ctx_u8_to_float (ctx_arg_u8 (c) ) );
           }
+
+	}
+	else
+	{
+
+        ctx_formatter_addstr (formatter, "rgba", -1);
+        if (formatter->longform)
+            ctx_formatter_addstr (formatter, " (", -1);
+
         for (int c = 0; c < 4; c++)
           {
             if (c)
@@ -822,6 +862,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
               }
             ctx_print_float (formatter, ctx_u8_to_float (ctx_arg_u8 (c) ) );
           }
+	}
         _ctx_print_endcmd (formatter);
         break;
       case CTX_SET_PIXEL:
