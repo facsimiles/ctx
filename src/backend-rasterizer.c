@@ -1458,6 +1458,7 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
 void
 CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule)
 {
+#if 0
   int allow_direct = !(0 
 #if CTX_ENABLE_CLIP
          | ((rasterizer->clip_buffer!=NULL) & (!rasterizer->clip_rectangle))
@@ -1466,6 +1467,10 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
          | rasterizer->in_shadow
 #endif
          );
+#else
+  const int allow_direct = 0;  // temporarily disabled
+			       // we seem to overrrun our scans
+#endif
 
   if (rasterizer->convex)
   {
