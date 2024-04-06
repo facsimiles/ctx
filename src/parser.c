@@ -1642,7 +1642,8 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                   { parser->numbers[parser->n_numbers] *= -1; }
                 parser->state = CTX_PARSER_NEGATIVE_NUMBER;
                 parser->numbers[parser->n_numbers+1] = 0;
-                parser->n_numbers ++;
+		if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
+                  parser->n_numbers ++;
                 parser->decimal = 0;
                 break;
               case '.':
@@ -1713,7 +1714,8 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
           if ( (parser->state != CTX_PARSER_NUMBER) &&
                (parser->state != CTX_PARSER_NEGATIVE_NUMBER))
             {
-              parser->n_numbers ++;
+	      if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
+                parser->n_numbers ++;
               ctx_parser_number_done (parser);
 
               if (parser->n_numbers == parser->expected_args ||
