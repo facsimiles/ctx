@@ -130,8 +130,10 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
 
   if (convex)
   {
-    return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * aa;
-    //return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=0) | (pending_edges!=0)) * aa;
+    return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=0) | (pending_edges!=0)) * aa;
+    
+    // XXX : this is faster, but gets bottom of circles wrong
+    //return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * aa;
   }
 
   if ((horizontal_edges!=0)|

@@ -789,8 +789,8 @@ struct _CtxRasterizer
   Ctx       *texture_source; /* normally same as ctx */
 
   uint16_t   color_native;  //
-  uint16_t   color_nativeB[5];
-  uint8_t    color[4*5];   // in compositing format
+  uint16_t   color_nativeB[8];
+  uint8_t    color[8*5];   // in compositing format
   int edges[CTX_MAX_EDGES]; // integer position in edge array
   CtxDrawlist edge_list;
 			   
