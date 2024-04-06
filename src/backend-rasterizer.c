@@ -328,13 +328,18 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
                                   uint8_t       *coverage,
                                   int            is_winding,
                                   const uint8_t  aa_factor,
-                                  const uint8_t  fraction)
+                                  const uint8_t  fraction,
+				  int *ret_c0,
+				  int *ret_c1
+				  )
 {
   CtxSegment *entries      = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int        *edges        = rasterizer->edges;
   int         scanline     = rasterizer->scanline;
   int         active_edges = rasterizer->active_edges;
   int         parity       = 0;
+  int         c0 = *ret_c0;
+  int         c1 = *ret_c1;
   coverage -= minx;
   for (int t = 0; t < active_edges -1;t++)
     {
@@ -374,8 +379,12 @@ ctx_rasterizer_generate_coverage (CtxRasterizer *rasterizer,
           }
           else if (first == last)
             coverage[first] += (graystart-fraction+grayend);
+	  c0 = ctx_mini(first, c0);
+	  c1 = ctx_maxi(last, c1);
         }
    }
+  *ret_c0 = c0;
+  *ret_c1 = c1;
 }
 
 inline static void
@@ -383,7 +392,9 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
                                            const int      minx,
                                            const int      maxx,
                                            uint8_t       *coverage,
-                                           const int      is_winding)
+                                           const int      is_winding,
+					   int           *c0_ret,
+					   int           *c1_ret)
 {
   CtxSegment *entries = (CtxSegment*)(&rasterizer->edge_list.entries[0]);
   int *edges  = rasterizer->edges;
@@ -395,6 +406,9 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
 
   const int minx_ = minx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
   const int maxx_ = maxx * CTX_RASTERIZER_EDGE_MULTIPLIER * CTX_SUBDIV;
+
+  int c0 = maxx;
+  int c1 = minx;
 
   for (int t = 0; t < active_edges -1;t++)
     {
@@ -433,6 +447,7 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
             if (segment->aa == 0)
             {
               coverage[first] += graystart;
+	      c0 = ctx_mini(first, c0);
             }
             else
             {
@@ -451,6 +466,7 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
               int recip = (65535)/sum;
 	      int a = mod * recip;
 	      recip *= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV;
+	      c0 = ctx_mini(us, c0);
               for (unsigned int u = u0x0; u < u1x0; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
                 coverage[us ++] += a>>16;
@@ -462,6 +478,7 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
             if (next_segment->aa == 0)
             {
                coverage[last] += grayend;
+	       c1 = ctx_maxi(last, c1);
             }
             else
             {
@@ -484,8 +501,8 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
                 coverage[us ++] += (a>>16);
 		a -= recip;
               }
+	      c1 = ctx_maxi(us, c1);
             }
-
 	    last-=post;
             for (int i = first + pre; i <= last; i++)
               coverage[i] = 255;
@@ -493,9 +510,14 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
           else if (first == last)
           {
             coverage[last]+=(graystart-(grayend^255));
+	    c0 = ctx_mini(first, c0);
+	    c1 = ctx_maxi(last, c1);
           }
         }
    }
+
+  *c0_ret = c0;
+  *c1_ret = c1;
 }
 
 #define CTX_RASTERIZER_MAX_EMPTIES  16
@@ -1306,6 +1328,8 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
 
   while (rasterizer->scanline <= scan_end)
     {
+      int c0 = minx;
+      int c1 = maxx;
       int aa = ctx_rasterizer_feed_edges_full (rasterizer, convex);
       aa = ctx_mini (aa, real_aa); // limit to maximum vertical super sampling
       switch (aa)
@@ -1331,7 +1355,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
             dst += blit_stride;
             continue;
           }
-          ctx_rasterizer_generate_coverage_set_grad (rasterizer, minx, maxx, coverage, is_winding);
+          ctx_rasterizer_generate_coverage_set_grad (rasterizer, minx, maxx, coverage, is_winding, &c0, &c1);
           rasterizer->scanline += CTX_AA_HALFSTEP;
           ctx_rasterizer_increment_edges (rasterizer, CTX_FULL_AA);
           break;
@@ -1346,13 +1370,15 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
           uint8_t fraction = fractions[aa];
 	  int fed = !convex;
 
+	  c0 = maxx;
+	  c1 = minx;
           for (int i = 1; i <= aa; i++)
           {
 	    if (fed){
               ctx_rasterizer_sort_active_edges (rasterizer);
 	      fed = !convex;
 	    }
-            ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction);
+            ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction, &c0, &c1);
             rasterizer->scanline += scanline_increment;
             ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2 * (i==aa));
             fed |= ctx_rasterizer_feed_pending_edges (rasterizer);
@@ -1360,12 +1386,15 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
         }
       }
   
-      ctx_coverage_post_process (rasterizer, minx, maxx, coverage - minx, NULL, NULL);
-      apply_coverage (pixs,
-                      &dst[(minx * bpp) /8],
-                      rasterizer_src,
-                      coverage,
-                      rasterizer, minx);
+      if (c1 >= c0)
+      {
+        ctx_coverage_post_process (rasterizer, c0, c1, coverage - c0, NULL, NULL);
+        apply_coverage (c1-c0+1,
+                        &dst[(c0 * bpp) /8],
+                        rasterizer_src,
+                        coverage + (c0-minx),
+                        rasterizer, c0);
+      }
       dst += blit_stride;
     }
 
