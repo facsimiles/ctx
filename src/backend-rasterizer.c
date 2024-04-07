@@ -1179,6 +1179,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 static inline void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 {
+  rasterizer->first_edge = -1;
   rasterizer->has_prev        =   
   rasterizer->edge_list.count =    // ready for new edges
   rasterizer->edge_pos        =   
@@ -1650,6 +1651,7 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
       CtxSegment *segment = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->edge_list.count-1];
       segment->code = CTX_NEW_EDGE;
       rasterizer->has_prev = 1;
+      rasterizer->first_edge = rasterizer->edge_list.count-1;
     }
   return ret;
 }
@@ -1672,13 +1674,39 @@ static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 
 static inline void ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
 {
-  if (rasterizer->has_prev>0)
+  int x0 = rasterizer->inner_x;
+  int y0 = rasterizer->inner_y;
+  if ((rasterizer->has_prev > 0) & (rasterizer->first_edge>=0))
     {
-      ctx_rasterizer_line_to (rasterizer, rasterizer->first_x, rasterizer->first_y);
-      // to a hack - find first_x.. and next - (or keep pointer to first_x instead
-      // mark this edge separately for detection in stroker - or maybe
-      // simply assume that if they are equal it should be?
-      rasterizer->has_prev = 0;
+
+      if (rasterizer->first_edge>=0)
+      {
+        CtxSegment *segment = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->first_edge];
+	if (segment->code == CTX_NEW_EDGE)
+	{
+          CtxSegment entry = {{CTX_EDGE, 0, 0, 0, 0, 0}};
+          int x1 = segment->x0;
+	  int y1 = segment->y0;
+          entry.x0=x0;
+          entry.y0=y0;
+          entry.x1=x1;
+          entry.y1=y1;
+          ctx_rasterizer_update_inner_point (rasterizer, x1, y1);
+          rasterizer->has_prev = 0;
+	  rasterizer->first_edge = -1;
+          ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
+// entry = *segment;
+// entry.code = CTX_EDGE;
+
+	  //entry.x1 = entry.x1 * 0.1f + entry.x0 * 0.9f;
+	  //entry.y1 = entry.y1 * 0.1f + entry.y0 * 0.9f;
+
+
+//        ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
+	  // shorten to half length?
+          return;
+	}
+      }
     }
 }
 
@@ -1691,10 +1719,9 @@ static inline void ctx_rasterizer_move_to (CtxRasterizer *rasterizer, float x, f
 {
   int tx = 0, ty = 0;
 
-  rasterizer->first_x  =
   rasterizer->x        = x;
-  rasterizer->first_y  =
   rasterizer->y        = y;
+  rasterizer->first_edge = rasterizer->edge_list.count - 1; // ?
   rasterizer->has_prev = -1;
   _ctx_user_to_device_prepped (rasterizer->state, x,y, &tx, &ty);
 

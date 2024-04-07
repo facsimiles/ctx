@@ -764,8 +764,7 @@ struct _CtxRasterizer
   float      x;
   float      y;
 
-  float      first_x;
-  float      first_y;
+  int        first_edge;
 
   uint16_t    blit_x;
   uint16_t    blit_y;
