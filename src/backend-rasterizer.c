@@ -2751,16 +2751,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   rasterizer->aa = ctx_mini(aa_backup, 5);
     {
     {
-      if (line_width < 5.0f)
-      {
-#if 1
-      factor *= 0.95f; /* this hack adjustment makes sharp 1px and 2px strokewidths
-      //                 end up sharp without erronious AA; we seem to be off by
-      //                 one somewhere else, causing the need for this
-      //                 */
-      line_width *= 0.95f;
-#endif
-      }
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
       CtxMatrix transform_backup = gstate->transform;
       _ctx_matrix_identity (&gstate->transform);
