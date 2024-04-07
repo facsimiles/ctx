@@ -1533,7 +1533,7 @@ ctx_interpret_style (CtxState *state, const CtxEntry *entry, void *data)
       case CTX_COLOR_SPACE:
         /* move this out of this function and only do it in rasterizer? XXX */
         ctx_rasterizer_colorspace_icc (state, (CtxColorSpace)c->colorspace.space_slot,
-                                              (char*)c->colorspace.data,
+                                              (const unsigned char*)c->colorspace.data,
                                               c->colorspace.data_len);
         break;
       case CTX_IMAGE_SMOOTHING:

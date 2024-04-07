@@ -2443,10 +2443,10 @@ typedef enum _CtxColorSpace CtxColorSpace;
  *
  * The set profiles follows the graphics state.
  */
-void ctx_colorspace (Ctx           *ctx,
-                     CtxColorSpace  space_slot,
-                     unsigned char *data,
-                     int            data_length);
+void ctx_colorspace (Ctx                 *ctx,
+                     CtxColorSpace        space_slot,
+                     const unsigned char *data,
+                     int                  data_length);
 
 
 

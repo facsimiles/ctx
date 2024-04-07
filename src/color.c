@@ -952,10 +952,10 @@ void ctx_rasterizer_colorspace_babl (CtxState      *state,
 }
 #endif
 
-void ctx_rasterizer_colorspace_icc (CtxState      *state,
-                                    CtxColorSpace  space_slot,
-                                    char          *icc_data,
-                                    int            icc_length)
+void ctx_rasterizer_colorspace_icc (CtxState            *state,
+                                    CtxColorSpace        space_slot,
+                                    const unsigned char *icc_data,
+                                    int                  icc_length)
 {
 #if CTX_BABL
    const char *error = NULL;
@@ -994,10 +994,10 @@ void ctx_rasterizer_colorspace_icc (CtxState      *state,
 #endif
 }
 
-void ctx_colorspace (Ctx           *ctx,
-                     CtxColorSpace  space_slot,
-                     unsigned char *data,
-                     int            data_length)
+void ctx_colorspace (Ctx                 *ctx,
+                     CtxColorSpace        space_slot,
+                     const unsigned char *data,
+                     int                  data_length)
 {
   if (data)
   {

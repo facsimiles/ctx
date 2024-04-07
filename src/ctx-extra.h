@@ -323,10 +323,10 @@ void ctx_rasterizer_colorspace_babl (CtxState      *state,
                                      CtxColorSpace  space_slot,
                                      const Babl    *space);
 #endif
-void ctx_rasterizer_colorspace_icc (CtxState      *state,
-                                    CtxColorSpace  space_slot,
-                                    char          *icc_data,
-                                    int            icc_length);
+void ctx_rasterizer_colorspace_icc (CtxState            *state,
+                                    CtxColorSpace        space_slot,
+                                    const unsigned char *icc_data,
+                                    int                  icc_length);
 
 
 CtxBuffer *ctx_buffer_new_bare (void);
