@@ -1695,14 +1695,13 @@ static inline void ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
           rasterizer->has_prev = 0;
 	  rasterizer->first_edge = -1;
           ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
-// entry = *segment;
-// entry.code = CTX_EDGE;
+   entry = *segment;
+   entry.code = CTX_EDGE;
 
-	  //entry.x1 = entry.x1 * 0.1f + entry.x0 * 0.9f;
-	  //entry.y1 = entry.y1 * 0.1f + entry.y0 * 0.9f;
+	  entry.x1 = entry.x1 * 0.001f + entry.x0 * 0.999f;
+	  entry.y1 = entry.y1 * 0.001f + entry.y0 * 0.999f;
 
-
-//        ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
+          ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 	  // shorten to half length?
           return;
 	}
