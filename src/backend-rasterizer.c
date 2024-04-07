@@ -2158,7 +2158,7 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
     rasterizer->state->ink_max_y = ctx_maxi (rasterizer->state->ink_max_y, rasterizer->scan_max / CTX_FULL_AA);
 
 #if CTX_FAST_FILL_RECT
-  if (rasterizer->edge_list.count == 4)
+  if (rasterizer->edge_list.count == 5)
     {
       CtxSegment *entry0 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[0];
       CtxSegment *entry1 = &(((CtxSegment*)(rasterizer->edge_list.entries)))[1];
@@ -2717,7 +2717,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   memcpy (temp, rasterizer->edge_list.entries, sizeof (temp) );
 #if CTX_FAST_FILL_RECT
 #if CTX_FAST_STROKE_RECT
-  if (rasterizer->edge_list.count == 4)
+  if (rasterizer->edge_list.count == 5)
     {
       CtxSegment *entry0 = &((CtxSegment*)rasterizer->edge_list.entries)[0];
       CtxSegment *entry1 = &((CtxSegment*)rasterizer->edge_list.entries)[1];
@@ -3046,7 +3046,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   if (((rasterizer->clip_rectangle==1) | (!rasterizer->clip_buffer))
       )
   {
-    if (count == 4)
+    if (count == 5)
     {
       if ((coords[0][0] == coords[1][0]) &
           (coords[0][1] == coords[3][1]) &
