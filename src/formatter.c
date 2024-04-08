@@ -72,12 +72,10 @@ ctx_print_int (CtxFormatter *formatter, int val)
 static void
 ctx_print_float (CtxFormatter *formatter, float val)
 {
-  int wasneg = 0;
   if (val < 0.0f)
   {
     ctx_formatter_addstr (formatter, "-", 1);
     val = -val;
-    wasneg = 1;
   }
   int remainder = ((int)(val*10000))%10000;
   if (remainder % 10 > 5)
@@ -85,8 +83,9 @@ ctx_print_float (CtxFormatter *formatter, float val)
   else
     remainder /= 10;
 
-  if (!formatter->longform && ((((int)val))==0) && (remainder) && !wasneg)
+  if (!formatter->longform && ((((int)val))==0) && (remainder))
   {
+    // 
   }
   else
   {
@@ -274,28 +273,28 @@ static void _ctx_print_name (CtxFormatter *formatter, int code)
     switch (code)
       {
         case CTX_GLOBAL_ALPHA:      name[1]='a'; break;
-        case CTX_COMPOSITING_MODE:  name[1]='m'; break;
-        case CTX_BLEND_MODE:        name[1]='B'; break;
-        case CTX_EXTEND:            name[1]='e'; break;
-        case CTX_TEXT_ALIGN:        name[1]='t'; break;
         case CTX_TEXT_BASELINE:     name[1]='b'; break;
-        case CTX_TEXT_DIRECTION:    name[1]='d'; break;
-        case CTX_FONT_SIZE:         name[1]='f'; break;
-        case CTX_MITER_LIMIT:       name[1]='l'; break;
-        case CTX_LINE_JOIN:         name[1]='j'; break;
         case CTX_LINE_CAP:          name[1]='c'; break;
-        case CTX_LINE_WIDTH:        name[1]='w'; break;
-        case CTX_LINE_DASH_OFFSET:  name[1]='D'; break;
+        case CTX_TEXT_DIRECTION:    name[1]='d'; break;
+        case CTX_EXTEND:            name[1]='e'; break;
+        case CTX_FONT_SIZE:         name[1]='f'; break;
+        case CTX_LINE_JOIN:         name[1]='j'; break;
+        case CTX_MITER_LIMIT:       name[1]='l'; break;
+        case CTX_COMPOSITING_MODE:  name[1]='m'; break;
         case CTX_STROKE_POS:        name[1]='p'; break;
+        case CTX_FILL_RULE:         name[1]='r'; break;
+        case CTX_SHADOW_BLUR:       name[1]='s'; break;
+        case CTX_TEXT_ALIGN:        name[1]='t'; break;
+        case CTX_LINE_WIDTH:        name[1]='w'; break;
+        case CTX_SHADOW_OFFSET_X:   name[1]='x'; break;
+        case CTX_SHADOW_OFFSET_Y:   name[1]='y'; break;
+        case CTX_BLEND_MODE:        name[1]='B'; break;
+        case CTX_SHADOW_COLOR:      name[1]='C'; break;
+        case CTX_LINE_DASH_OFFSET:  name[1]='D'; break;
         case CTX_LINE_HEIGHT:       name[1]='H'; break;
         case CTX_WRAP_LEFT:         name[1]='L'; break;
         case CTX_WRAP_RIGHT:        name[1]='R'; break;
         case CTX_IMAGE_SMOOTHING:   name[1]='S'; break;
-        case CTX_SHADOW_BLUR:       name[1]='s'; break;
-        case CTX_SHADOW_COLOR:      name[1]='C'; break;
-        case CTX_SHADOW_OFFSET_X:   name[1]='x'; break;
-        case CTX_SHADOW_OFFSET_Y:   name[1]='y'; break;
-        case CTX_FILL_RULE:         name[1]='r'; break;
         default:
           name[0] = code;
           name[1] = 0;

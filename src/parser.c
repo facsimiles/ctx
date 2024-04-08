@@ -98,7 +98,7 @@ static inline void ctx_svg_arc_to (Ctx *ctx, float rx, float ry,
                          // to offer headroom for multiplexing
 
 
-#define CTX_REPORT_COL_ROW 0
+#define CTX_REPORT_COL_ROW 1
 
 struct
   _CtxParser
@@ -151,6 +151,12 @@ struct
   int   (*get_prop)(void *prop_data, const char *key, char **data, int *len);
   void *prop_data;
   int   prev_byte;
+
+#if CTX_REPORT_COL_ROW
+  char *error;
+  int   error_col;
+  int   error_row;
+#endif
 };
 
 void
@@ -660,17 +666,20 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
   Ctx *ctx = parser->ctx;
+  if (parser->error) return;
 
   if (parser->expected_args != CTX_ARG_STRING_OR_NUMBER &&
       parser->expected_args != CTX_ARG_COLLECT_NUMBERS &&
       parser->expected_args != parser->n_numbers)
     {
 #if CTX_REPORT_COL_ROW
-         fprintf (stderr, "ctx:%i:%i %c got %i instead of %i args\n",
+       char *error = ctx_malloc (256);
+       sprintf (error, "ctx:%i:%i %c got %i instead of %i args\n",
                parser->line, parser->col,
                cmd, parser->n_numbers, parser->expected_args);
+       parser->error = error;
 #endif
-      //return;
+      return;
     }
 
 #define arg(a)  (parser->numbers[a])
