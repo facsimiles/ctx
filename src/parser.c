@@ -1647,7 +1647,14 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                 parser->decimal = 0;
                 break;
               case '.':
-                //if (parser->decimal) // TODO permit .13.32.43 to equivalent to .12 .32 .43
+                if (parser->decimal){
+                  if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
+                    { parser->numbers[parser->n_numbers] *= -1; }
+                  parser->state = CTX_PARSER_NUMBER;
+                  parser->numbers[parser->n_numbers+1] = 0;
+		  if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
+                    parser->n_numbers ++;
+		}
                 parser->decimal = 1;
                 break;
               case '0': case '1': case '2': case '3': case '4':
