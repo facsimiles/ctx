@@ -444,12 +444,25 @@ ctx_font_extents (Ctx   *ctx,
                   float *descent,
                   float *line_gap);
 
-/**
- * ctx_parse:
- *
- * Parses a string containg text ctx protocol data.
- */
 void ctx_parse            (Ctx *ctx, const char *string);
+
+/**
+ * ctx_parse_animation:
+ * elapsed_time the 
+ *
+ * Parses a string containg ctx protocol data, including an overlayed
+ * scene and key-framing synax.
+ *
+ * pass in the scene_no you expect to render in the pointer for scene_no
+ * actual rendered scene is returned here.
+ *
+ * elapsed time for scene to render, if we are beyond the specified scene
+ * adjust elapsed_time to reflect elapsed time in actually rendered scene.
+ */
+void
+ctx_parse_animation (Ctx *ctx, const char *string,
+		     float *elapsed_time, 
+                     int   *scene_no);
 
 /**
  * low level glyph drawing calls, unless you are integrating harfbuzz

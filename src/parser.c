@@ -1912,8 +1912,8 @@ ctx_parse (Ctx *ctx, const char *string)
 }
 
 CTX_EXPORT void
-ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time, 
-            int *scene_no_p)
+ctx_parse_animation (Ctx *ctx, const char *string, float *scene_elapsed_time, 
+                     int *scene_no_p)
 {
   float time = *scene_elapsed_time;
   int scene_no = *scene_no_p;
@@ -1923,10 +1923,10 @@ ctx_parse2 (Ctx *ctx, const char *string, float *scene_elapsed_time,
 
   int i;
 
-again:
+//again:
   i = 0;
 
-  // XXX : this doesn't work when there are [ 's in the text
+  // XXX : this doesn't work when there are [  or ('s in text
 
   int scene_pos = 0;
   int last_scene = 0;
@@ -1950,7 +1950,7 @@ again:
             {
               scene_no ++;
               (*scene_no_p)++;
-              *scene_elapsed_time = time = 0;
+              *scene_elapsed_time = time = time- scene_duration;
             }
             else
             {
@@ -1979,7 +1979,8 @@ again:
   {
      scene_no = 0;
      (*scene_no_p) = 0;
-     goto again;
+     return;
+     //goto again;
   }
   
   if (scene_no == 0 && last_scene==0 && string[i]==0)
@@ -2077,6 +2078,7 @@ again:
            val = _ctx_parse_float (eq+1, &ep);
 
         keys[n_keys] = key;
+	if (n_keys < MAX_KEY_FRAMES-1)
         values[n_keys++] = val;
 
         i+=(ep-sp)-1;

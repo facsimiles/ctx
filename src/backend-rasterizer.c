@@ -1488,7 +1488,7 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
 void
 CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, const int fill_rule)
 {
-#if 0
+#if CTX_RASTERIZER_ALLOW_DIRECT
   int allow_direct = !(0 
 #if CTX_ENABLE_CLIP
          | ((rasterizer->clip_buffer!=NULL) & (!rasterizer->clip_rectangle))
