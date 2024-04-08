@@ -905,8 +905,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           float ay = 2 * ctx_y (ctx) - cy;
           ctx_curve_to (ctx, ax, ay, arg(0) +  cx, arg(1) + cy,
                         arg(2) + cx, arg(3) + cy);
-          parser->pcx = arg(0) + cx;
-          parser->pcy = arg(1) + cy;
+          parser->pcx = arg(2) + cx;
+          parser->pcy = arg(3) + cy;
         }
         break;
       case CTX_SMOOTH_TO:
@@ -915,8 +915,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           float ay = 2 * ctx_y (ctx) - parser->pcy;
           ctx_curve_to (ctx, ax, ay, arg(0), arg(1),
                         arg(2), arg(3) );
-          parser->pcx = arg(0);
-          parser->pcx = arg(1);
+          parser->pcx = arg(2);
+          parser->pcx = arg(3);
         }
         break;
       case CTX_SMOOTHQ_TO:
