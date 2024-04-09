@@ -1819,7 +1819,8 @@ static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
     }
 }
 
-static inline void ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
+static inline void
+ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
 {
   int x0 = rasterizer->inner_x;
   int y0 = rasterizer->inner_y;
@@ -1845,8 +1846,8 @@ static inline void ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
    entry = *segment;
    entry.code = CTX_EDGE;
 
-	  entry.x1 = entry.x1 * 0.001f + entry.x0 * 0.999f;
-	  entry.y1 = entry.y1 * 0.001f + entry.y0 * 0.999f;
+	  entry.x1 = entry.x1 * 0.01f + entry.x0 * 0.99f;
+	  entry.y1 = entry.y1 * 0.01f + entry.y0 * 0.99f;
 
           ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 	  // shorten to half length?
