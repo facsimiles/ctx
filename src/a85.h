@@ -7,10 +7,11 @@
 int ctx_a85enc_len (int input_length);
 int ctx_a85enc (const void *srcp, char *dst, int count);
 
+
+#endif
+
 #if CTX_PARSER
 
 int ctx_a85dec (const char *src, char *dst, int count);
 int ctx_a85len (const char *src, int count);
-#endif
-
 #endif

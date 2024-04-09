@@ -965,7 +965,7 @@ void ctx_rasterizer_colorspace_icc (CtxState            *state,
    else if (icc_length < 32)
    {
       if (icc_data[0] == '0' && icc_data[1] == 'x')
-        sscanf (icc_data, "%p", &space);
+        sscanf ((char*)icc_data, "%p", &space);
       else
       {
         char tmp[24];
@@ -985,7 +985,7 @@ void ctx_rasterizer_colorspace_icc (CtxState            *state,
 
    if (!space)
    {
-     space = babl_space_from_icc (icc_data, icc_length, BABL_ICC_INTENT_RELATIVE_COLORIMETRIC, &error);
+     space = babl_space_from_icc ((char*)icc_data, icc_length, BABL_ICC_INTENT_RELATIVE_COLORIMETRIC, &error);
    }
    if (space)
    {

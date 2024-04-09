@@ -1130,7 +1130,7 @@ _ctx_glyphs (Ctx     *ctx,
 #define CTX_MAX_WORD_LEN 128
 
 #if 1
-static int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
+int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar)
 {
   int length = ctx_font_get_length (font);
   for (int i = 0; i < length; i++)
