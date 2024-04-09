@@ -793,7 +793,7 @@ inline static void ctx_term_process (Ctx *ctx,
    */
   ctx_interpret_style (&ctx->state, &command->entry, ctx);
   ctx_interpret_transforms (&ctx->state, &command->entry, ctx);
-  ctx_interpret_pos (&ctx->state, &command->entry, ctx);
+  ctx_interpret_pos_bare (&ctx->state, &command->entry, ctx);
 
   /* directly forward */
   ctx_process (term->host, &command->entry);

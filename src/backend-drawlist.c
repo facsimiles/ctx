@@ -10,7 +10,7 @@ static void ctx_drawlist_backend_destroy (CtxBackend *backend)
   ctx_free (backend);
 }
 
-static void ctx_update_current_path (Ctx *ctx, CtxEntry *entry)
+static void ctx_update_current_path (Ctx *ctx, const CtxEntry *entry)
 {
 #if CTX_CURRENT_PATH
   switch (entry->code)

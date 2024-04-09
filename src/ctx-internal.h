@@ -600,7 +600,7 @@ struct _Ctx
 #define ctx_process(ctx,entry)  ctx->process (ctx, (CtxCommand *)(entry));
 #else
 static inline void
-ctx_process (Ctx *ctx, CtxEntry *entry)
+ctx_process (Ctx *ctx, const CtxEntry *entry)
 {
   ctx->process (ctx, (CtxCommand *) entry);
 }
