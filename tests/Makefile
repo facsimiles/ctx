@@ -13,6 +13,9 @@ TEST_LBPNG  = $(patsubst %, png-480x480/%.png, $(TEST_NAMES))
 
 TESTS=$(TEST_GRAY1) $(TEST_PNG) $(TEST_GRAY8)
 
+#CMD=valgrind ../ctx
+CMD=../ctx
+
 all: pre index.html $(TESTS) check
 png: $(TEST_LPNG)  $(TEST_PPNG)  $(TEST_LBPNG) $(TEST_LVGAPNG)
 
@@ -89,33 +92,34 @@ clean:
 ../ctx: ../ctx.h ../src/*.[ch]
 	make -C .. ctx
 
+
 gray1/%: %.ctx ../ctx Makefile
-	../ctx $< --width 158 --height 80 --rows 6 --cols 23 -o GRAY1 > $@
+	$(CMD) $< --width 158 --height 80 --rows 6 --cols 23 -o GRAY1 > $@
 png/%.png: %.ctx ../ctx Makefile
-	../ctx $< -o $@ --width 160 --height 80 --cols 31 --rows 8
+	$(CMD) $< -o $@ --width 160 --height 80 --cols 31 --rows 8
 png/%.png: %.svg ../ctx Makefile
-	../ctx $< -o $@ --width 160 --height 80 --cols 31 --rows 8
+	$(CMD) $< -o $@ --width 160 --height 80 --cols 31 --rows 8
 gray1/%: %.svg ../ctx Makefile
-	../ctx $< --width 158 --height 80 -o GRAY1 --cols 19 --rows 8 > $@
+	$(CMD) $< --width 158 --height 80 -o GRAY1 --cols 19 --rows 8 > $@
 png-80x160/%.png: %.ctx ../ctx  Makefile
-	../ctx $< -o $@ --width 80 --height 160 --rows 15 --cols 15
+	$(CMD) $< -o $@ --width 80 --height 160 --rows 15 --cols 15
 png-80x160/%.png: %.svg ../ctx  Makefile
-	../ctx $< -o $@ --width 80 --height 160 --rows 15 --cols 15
+	$(CMD) $< -o $@ --width 80 --height 160 --rows 15 --cols 15
 png-640x240/%.png: %.ctx ../ctx Makefile
-	../ctx $< -o $@ --width 640 --height 240 --rows 16 --cols 82 
+	$(CMD) $< -o $@ --width 640 --height 240 --rows 16 --cols 82 
 png-640x240/%.png: %.svg ../ctx  Makefile
-	../ctx $< -o $@ --width 640 --height 240 --rows 16 --cols 82
+	$(CMD) $< -o $@ --width 640 --height 240 --rows 16 --cols 82
 
 png-320x240/%.png: %.ctx ../ctx  Makefile
-	../ctx $< -o $@ --width 320 --height 240 --rows 32 --cols 81
+	$(CMD) $< -o $@ --width 320 --height 240 --rows 32 --cols 81
 png-320x240/%.png: %.svg ../ctx  Makefile
-	../ctx $< -o $@ --width 320 --height 240 --rows 32 --cols 81
+	$(CMD) $< -o $@ --width 320 --height 240 --rows 32 --cols 81
 
 png-480x480/%.png: %.ctx ../ctx  Makefile
-	../ctx $< -o $@ --width 480 --height 480 --rows 40 --cols 81
+	$(CMD) $< -o $@ --width 480 --height 480 --rows 40 --cols 81
 png-480x480/%.png: %.svg ../ctx Makefile
-	../ctx $< -o $@ --width 480 --height 480 --rows 40 --cols 81
+	$(CMD) $< -o $@ --width 480 --height 480 --rows 40 --cols 81
 gray8/%: %.ctx ../ctx Makefile
-	../ctx $< -o GRAY8 --width 79 --height 24 --rows 4 --cols 12 > $@
+	$(CMD) $< -o GRAY8 --width 79 --height 24 --rows 4 --cols 12 > $@
 gray8/%: %.svg ../ctx Makefile
-	../ctx $< -o GRAY8 --width 79 --height 24 --rows 4 --cols 12 > $@
+	$(CMD) $< -o GRAY8 --width 79 --height 24 --rows 4 --cols 12 > $@

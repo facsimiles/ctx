@@ -522,6 +522,8 @@ ctx_rasterizer_generate_coverage_set_grad (CtxRasterizer *rasterizer,
 
 #define CTX_RASTERIZER_MAX_EMPTIES  16
 #define CTX_RASTERIZER_MAX_SOLID    16
+#undef CTX_RASTERIZER_SWITCH_DISPATCH
+#define CTX_RASTERIZER_SWITCH_DISPATCH 0
 
 inline static void
 ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
@@ -1291,7 +1293,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   minx *= (minx>0);
  
   int pixs = maxx - minx + 1;
-  uint8_t _coverage[pixs];
+  uint8_t _coverage[pixs+8]; // XXX this might hide some valid asan warnings
   uint8_t *coverage = &_coverage[0];
   ctx_apply_coverage_fun apply_coverage = rasterizer->apply_coverage;
 
