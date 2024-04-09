@@ -2731,6 +2731,12 @@ static void
 ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
   uint8_t *rgba = (uint8_t *) out;
+#if CTX_DITHER
+  int scan = rasterizer->scanline / CTX_FULL_AA;
+  int dither_red_blue = rasterizer->format->dither_red_blue;
+  int dither_green  = rasterizer->format->dither_green;
+  int ox = (int)x;
+#endif
   CtxSource *g = &rasterizer->state->gstate.source_fill;
   float cx = g->conic_gradient.x;
   float cy = g->conic_gradient.y;

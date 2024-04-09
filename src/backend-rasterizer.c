@@ -1163,7 +1163,35 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 		     &coverage[cov_min], rasterizer, cov_min);
     break;
 
-   case CTX_COV_PATH_RGBAF_COPY:
+    case CTX_COV_PATH_RGBAF_COPY:
+    case CTX_COV_PATH_RGB565_COPY:
+    case CTX_COV_PATH_RGB332_COPY:
+    case CTX_COV_PATH_GRAY8_COPY:
+#if 0
+    case CTX_COV_PATH_RGB8_COPY:
+    case CTX_COV_PATH_GRAYA8_COPY:
+    case CTX_COV_PATH_GRAYAF_COPY:
+    case CTX_COV_PATH_CMYKAF_COPY:
+    case CTX_COV_PATH_CMYK8_COPY:
+    case CTX_COV_PATH_CMYKA8_COPY:
+#endif
+    {
+    unsigned int bytes = 4;
+
+    switch (comp)
+    {
+    case CTX_COV_PATH_RGBAF_COPY: bytes = 16; break;
+    case CTX_COV_PATH_RGB332_COPY:
+    case CTX_COV_PATH_GRAY8_COPY: bytes = 1; break;
+    case CTX_COV_PATH_RGB8_COPY: bytes = 3; break;
+    case CTX_COV_PATH_RGB565_COPY: 
+    case CTX_COV_PATH_GRAYA8_COPY: bytes = 2; break;
+    case CTX_COV_PATH_GRAYAF_COPY: bytes = 8; break;
+    case CTX_COV_PATH_CMYKAF_COPY: bytes = 20; break;
+    case CTX_COV_PATH_CMYK8_COPY: bytes = 4; break;
+    case CTX_COV_PATH_CMYKA8_COPY: bytes = 5; break;
+      default: break;
+    }
 
   for (int t = 0; t < active_edges -1;t++)
     {
@@ -1182,7 +1210,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	    {
                  if (cov_max>=cov_min)
                  {
-                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * bytes], rasterizer_src,
 				   &coverage[cov_min], rasterizer, cov_min);
                    cov_min = maxx;
                    cov_max = minx;
@@ -1216,15 +1244,38 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	       {
                  if (cov_max>=cov_min)
                  {
-                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * 4], rasterizer_src,
+                   apply_coverage (cov_max-cov_min+1, &dst[cov_min * bytes], rasterizer_src,
 				   &coverage[cov_min], rasterizer, cov_min);
                    cov_min = maxx;
                    cov_max = minx;
                  }
 
+                 uint8_t* dst_i = (uint8_t*)(&dst[(first+pre) * bytes]);
 		 uint8_t* color = ((uint8_t*)&rasterizer->color_native);
-                 uint32_t* dst_pix = (uint32_t*)(&dst[(first+pre) * 16]);
-                 ctx_span_set_color_x4 (dst_pix, (uint32_t*)color, width);
+		 switch (bytes)
+		 {
+                   case 16:
+                      ctx_span_set_color_x4 (dst_i, (uint32_t*)color, width);
+		      break;
+	           case 2:
+                   {
+                     uint16_t val = ((uint16_t*)color)[0];
+                     while (width--)
+                     {
+                        ((uint16_t*)dst_i)[0] = val;
+                        dst_i+=2;
+                     }
+                   }
+		     break;
+		  default:
+                  while (width--)
+                  {
+                    for (unsigned int b = 0; b < bytes; b++)
+                      *dst_i++ = color[b];
+                  }
+                  break;
+
+		 }
 	       }
 	       else
 	       {
@@ -1253,10 +1304,10 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
         }
    }
     if (cov_max>=cov_min)
-     apply_coverage (cov_max-cov_min+1, &dst[cov_min*4], rasterizer_src, 
+     apply_coverage (cov_max-cov_min+1, &dst[cov_min*bytes], rasterizer_src, 
 		     &coverage[cov_min], rasterizer, cov_min);
+    }
   break;
-
 #endif
   }
 }
