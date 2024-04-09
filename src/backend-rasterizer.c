@@ -1255,7 +1255,7 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 		 switch (bytes)
 		 {
                    case 16:
-                      ctx_span_set_color_x4 (dst_i, (uint32_t*)color, width);
+                      ctx_span_set_color_x4 ((uint32_t*)dst_i, (uint32_t*)color, width);
 		      break;
 	           case 2:
                    {

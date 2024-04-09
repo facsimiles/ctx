@@ -2762,7 +2762,7 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
     int vv = ctx_fmod1f((ctx_atan2f (x,y) + offset) * scale) * fscale;
   *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
 #else
-    float vv = (ctx_atan2f (x,y) + M_PI) * scale;
+    float vv = (ctx_atan2f (x,y) + offset) * scale;
   _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, rgba);
 #endif
 #if CTX_DITHER
@@ -2785,7 +2785,7 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
     int vv = ctx_fmod1f((ctx_atan2f_rest (x,y_recip) + offset) * scale) * fscale;
   *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
 #else
-    float vv = (ctx_atan2f_rest (x,y_recip) + M_PI) * scale;
+    float vv = (ctx_atan2f_rest (x,y_recip) + offset) * scale;
   _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0f, rgba);
 #endif
 #if CTX_DITHER
@@ -2802,7 +2802,7 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
     int vv = ctx_fmod1f((ctx_atan2f (x,y) + offset) * scale) * fscale;
   *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
 #else
-    float vv = (ctx_atan2f (x,y) + M_PI) * scale;
+    float vv = (ctx_atan2f (x,y) + offset) * scale;
   _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0f, rgba);
 #endif
 #if CTX_DITHER
@@ -2945,6 +2945,36 @@ ctx_fragment_radial_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y,
     rgba +=4;
   }
 }
+
+static void
+ctx_fragment_conic_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
+{
+  float *rgba = (float *) out;
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+  float cx = g->conic_gradient.x;
+  float cy = g->conic_gradient.y;
+  float offset = g->conic_gradient.start_angle;
+  float cycles = g->conic_gradient.cycles;
+  if (cycles < 0.01) cycles = 1.0f;
+
+  float scale = cycles/(M_PI * 2);
+
+  x-=cx;
+  y-=cy;
+
+  offset += M_PI;
+
+  for (int i = 0; i < count ; i++)
+  {
+    float v = (ctx_atan2f (x,y) + offset) * scale;
+    v = ctx_fmod1f(v);
+    ctx_fragment_gradient_1d_RGBAF (rasterizer, v, 0.0f, rgba);
+    rgba+= 4;
+    x += dx;
+    y += dy;
+  }
+}
+  
 #endif
 
 
@@ -2998,6 +3028,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBAF (CtxRasterizer *rasterizer)
 #if CTX_GRADIENTS
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_RGBAF;
       case CTX_SOURCE_RADIAL_GRADIENT: return ctx_fragment_radial_gradient_RGBAF;
+      case CTX_SOURCE_CONIC_GRADIENT: return ctx_fragment_conic_gradient_RGBAF;
 #endif
     }
   return ctx_fragment_color_RGBAF;
@@ -4882,6 +4913,7 @@ ctx_float_porter_duff(RGBAF, 4,generic, rasterizer->fragment, rasterizer->state-
 
 #if CTX_INLINED_NORMAL
 #if CTX_GRADIENTS
+ctx_float_porter_duff(RGBAF, 4,conic_gradient, ctx_fragment_conic_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
 ctx_float_porter_duff(RGBAF, 4,linear_gradient, ctx_fragment_linear_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
 ctx_float_porter_duff(RGBAF, 4,radial_gradient, ctx_fragment_radial_gradient_RGBAF, rasterizer->state->gstate.blend_mode)
 #endif
@@ -5344,6 +5376,9 @@ ctx_fragment_other_CMYKAF (CtxRasterizer *rasterizer, float x, float y, float z,
         ctx_fragment_color_RGBAF (rasterizer, x, y, z, rgba, count, dx, dy, dz);
         break;
 #if CTX_GRADIENTS
+      case CTX_SOURCE_CONIC_GRADIENT:
+        ctx_fragment_conic_gradient_RGBAF (rasterizer, x, y, z, rgba, count, dx, dy, dz);
+        break;
       case CTX_SOURCE_LINEAR_GRADIENT:
         ctx_fragment_linear_gradient_RGBAF (rasterizer, x, y, z, rgba, count, dx, dy, dz);
         break;
