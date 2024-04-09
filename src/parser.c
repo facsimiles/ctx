@@ -243,6 +243,8 @@ void ctx_parser_destroy (CtxParser *parser)
   if (parser->holding)
     ctx_free (parser->holding);
 #endif
+  if (parser->error)
+    ctx_free (parser->error);
   ctx_free (parser);
 }
 
