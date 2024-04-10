@@ -9,9 +9,17 @@
 
 
 #define CTX_CLAMP(val,min,max) ((val)<(min)?(min):(val)>(max)?(max):(val))
-static CTX_INLINE int   ctx_mini (const int a, const int b)     { if (a < b) return a; return b; }
+//static CTX_INLINE int   ctx_mini (const int a, const int b)     { if (a < b) return a; return b; }
+//static CTX_INLINE int   ctx_maxi (const int a, const int b)     { if (a > b) return a; return b; }
+static CTX_INLINE int   ctx_mini (const int a, const int b)     {
+return (a<b)*a+(a>=b)*b;
+	//if (a < b) return a; return b; 
+}
+static CTX_INLINE int   ctx_maxi (const int a, const int b)     {
+return (a>b)*a+(a<=b)*b;
+	//if (a > b) return a; return b; 
+}
 static CTX_INLINE float ctx_minf (const float a, const float b) { if (a < b) return a; return b; }
-static CTX_INLINE int   ctx_maxi (const int a, const int b)     { if (a > b) return a; return b; }
 static CTX_INLINE float ctx_maxf (const float a, const float b) { if (a > b) return a; return b; }
 static CTX_INLINE float ctx_clampf (const float v, const float min, const float max) {
        return CTX_CLAMP(v,min,max);
