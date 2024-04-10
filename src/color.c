@@ -244,7 +244,7 @@ static void ctx_rgb_device_to_user (CtxState *state, float rin, float gin, float
 }
 #endif
 
-static void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
+static inline void ctx_color_get_drgba (CtxState *state, CtxColor *color, float *out)
 {
   if (! (color->valid & CTX_VALID_RGBA_DEVICE) )
     {
@@ -395,14 +395,14 @@ static void ctx_color_get_cmyka_u8 (CtxState *state, CtxColor *color, uint8_t *o
 #endif
 #endif
 
-static inline void
+static CTX_INLINE void
 _ctx_color_get_rgba8 (CtxState *state, CtxColor *color, uint8_t *out)
 {
   if (! (color->valid & CTX_VALID_RGBA_U8) )
     {
       float rgba[4];
       ctx_color_get_drgba (state, color, rgba);
-      for (int i = 0; i < 4; i ++)
+      for (unsigned int i = 0; i < 4; i ++)
         { color->rgba[i] = ctx_float_to_u8 (rgba[i]); }
       color->valid |= CTX_VALID_RGBA_U8;
     }
