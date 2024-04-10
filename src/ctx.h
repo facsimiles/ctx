@@ -1584,7 +1584,6 @@ typedef enum
                    //     ?    UNUSED
                    //     \    UNUSED
                    //     ^    PARSER - vh unit
-                       // |    UNUSED
                        // ~    UNUSED/textenc
  
   /* optimizations that reduce the number of entries used,
@@ -1633,7 +1632,6 @@ typedef enum
   CTX_APPLY_TRANSFORM  = 'W', // a b c d e f g h i j - for set_transform combine with identity
   CTX_EXIT             = 'X', //
   CTX_TRANSLATE        = 'Y', // x y  
-  CTX_ROUND_RECTANGLE  = 151, // x y width height radius
 
   CTX_CLOSE_PATH2      = 'Z', //
 			      
@@ -1721,6 +1719,7 @@ typedef enum
 
   CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
   CTX_FILL_RECT        = 201, // fillRect   - only exist in long form
+  CTX_ROUND_RECTANGLE  = '|', // x y width height radius
 } CtxCode;
 
 
