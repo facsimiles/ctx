@@ -263,6 +263,7 @@
 #define CTX_INLINED_NORMAL_RGBA8  0
 #endif
 
+#undef CTX_RASTERIZER_SWITCH_DISPATCH
 #ifndef CTX_RASTERIZER_SWITCH_DISPATCH
 #define CTX_RASTERIZER_SWITCH_DISPATCH  1 // marginal improvement for some
                                           // modes, maybe get rid of this?
