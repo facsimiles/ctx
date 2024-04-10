@@ -292,7 +292,6 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, const u
     /* perhaps not working right for clear? */
     int y = scanline / CTX_FULL_AA;//rasterizer->aa;
     uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
-    // XXX SIMD candidate
 #if CTX_1BIT_CLIP==0
     int blit_x = rasterizer->blit_x;
 #endif
@@ -307,7 +306,6 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, const u
   }
 #endif
 }
-
 
 #define UPDATE_PARITY \
         if (scanline!=segment->y0-1)\
@@ -549,7 +547,7 @@ ctx_rasterizer_generate_coverage_apply_grad_generic (CtxRasterizer *rasterizer,
   const int  bpp      = rasterizer->format->bpp;
   CTX_APPLY_GRAD_A
 
-#define CTX_APPLY_GRAD_B(solid_factor) \
+#define CTX_APPLY_GRAD_B(empty_factor, solid_factor) \
   for (unsigned int t = 0; t < active_edges;t++) \
     { \
       CtxSegment   *segment = &entries[edges[t]]; \
@@ -589,7 +587,7 @@ ctx_rasterizer_generate_coverage_apply_grad_generic (CtxRasterizer *rasterizer,
             unsigned int pre = 1;\
             unsigned int post = 1;\
 \
-	    if (first - cov_max > CTX_RASTERIZER_MAX_EMPTIES)\
+	    if (first - cov_max > CTX_RASTERIZER_MAX_EMPTIES * empty_factor)\
 	    {\
                  if (cov_max>=cov_min)\
                  {\
@@ -629,7 +627,7 @@ ctx_rasterizer_generate_coverage_apply_grad_generic (CtxRasterizer *rasterizer,
                 coverage[us ++] = a>>16;\
 		a += recip;\
               }\
-	      cov_max = ctx_maxi (cov_max, us);\
+	      cov_max = us;\
 \
               pre = (us-1)-first+1;\
             }\
@@ -648,7 +646,7 @@ ctx_rasterizer_generate_coverage_apply_grad_generic (CtxRasterizer *rasterizer,
                    cov_min = maxx;\
                    cov_max = minx;\
                  }
-  CTX_APPLY_GRAD_B(2)
+  CTX_APPLY_GRAD_B(1, 1)
                        {
 #if CTX_STATIC_OPAQUE
                        uint8_t *opaque = &rasterizer->opaque[0];
@@ -670,7 +668,7 @@ ctx_rasterizer_generate_coverage_apply_grad_generic (CtxRasterizer *rasterizer,
                  for (int i = 0; i < width; i++)\
                    coverage[first + pre + i] = 255;\
  	         cov_min = ctx_mini (cov_min, first + pre);\
- 	         cov_max = ctx_maxi (cov_max, first + pre + width);\
+ 	         cov_max = first + pre + width;\
 	       }\
 	    }\
   \
@@ -678,7 +676,7 @@ ctx_rasterizer_generate_coverage_apply_grad_generic (CtxRasterizer *rasterizer,
             {\
                coverage[last] += grayend;\
  	       cov_min = ctx_mini (cov_min, last);\
-	       cov_max = ctx_maxi (cov_max, last);\
+	       cov_max = last;\
             }\
             else\
             {\
@@ -697,14 +695,14 @@ ctx_rasterizer_generate_coverage_apply_grad_generic (CtxRasterizer *rasterizer,
                 coverage[us ++] += (a>>16);\
 		a -= recip;\
               }\
-	      cov_max = ctx_maxi (cov_max, us);\
+	      cov_max = us;\
             }\
           }\
           else if (first == last)\
           {\
             coverage[last]+=(graystart-(grayend^255)); \
 	    cov_min = ctx_mini (cov_min, first); \
-	    cov_max = ctx_maxi (cov_max, last); \
+	    cov_max = last;\
           }\
         }\
    }\
@@ -723,15 +721,8 @@ ctx_rasterizer_generate_coverage_apply_grad_RGBA8_copy_normal_color (CtxRasteriz
 			                                             ctx_apply_coverage_fun apply_coverage)
 {
   CTX_APPLY_GRAD_A
-
-  uint32_t *src_pixp; 
-  uint32_t src_pix, si_rb, si_ga;
-  src_pixp   = ((uint32_t*)rasterizer_src);
-  src_pix    = src_pixp[0];
-  si_ga = ((uint32_t*)rasterizer_src)[1];
-  si_rb = ((uint32_t*)rasterizer_src)[2];
-
-  CTX_APPLY_GRAD_B(1)
+  uint32_t src_pix = ((uint32_t*)rasterizer_src)[0];
+  CTX_APPLY_GRAD_B(1, 1)
   ctx_span_set_color ((uint32_t*)(&dst[(first+pre) *4]), src_pix, width);
   CTX_APPLY_GRAD_C
 }
@@ -750,7 +741,7 @@ ctx_rasterizer_generate_coverage_apply_grad_RGBA8_over_normal_color (CtxRasteriz
   si_ga_full = ((uint32_t*)rasterizer_src)[3];
   si_rb_full = ((uint32_t*)rasterizer_src)[4];
   si_a  = si_ga >> 16;
-  CTX_APPLY_GRAD_B(1)
+  CTX_APPLY_GRAD_B(1, 1)
   uint32_t* dst_pix = (uint32_t*)(&dst[(first+pre) *4]);
   unsigned int count = width;
   while (count--)
@@ -773,7 +764,7 @@ ctx_rasterizer_generate_coverage_apply_grad_copy_normal_color (CtxRasterizer *ra
   CTX_APPLY_GRAD_A
   unsigned int bytes = bpp/8;
 
-  CTX_APPLY_GRAD_B(1)
+  CTX_APPLY_GRAD_B(1, 1)
 
   uint8_t* dst_i = (uint8_t*)(&dst[(first+pre) * bytes]);
   uint8_t* color = ((uint8_t*)&rasterizer->color_native);
@@ -782,6 +773,9 @@ ctx_rasterizer_generate_coverage_apply_grad_copy_normal_color (CtxRasterizer *ra
     case 16:
        ctx_span_set_color_x4 ((uint32_t*)dst_i, (uint32_t*)color, width);
        break;
+    case 4:
+      ctx_span_set_color ((uint32_t*)(&dst[(first+pre) *4]), ((uint32_t*)color)[0], width);
+      break;
     case 2:
     {
       uint16_t val = ((uint16_t*)color)[0];
@@ -813,7 +807,7 @@ ctx_rasterizer_generate_coverage_apply_grad_RGBA8_copy_fragment (CtxRasterizer *
 			                                         ctx_apply_coverage_fun apply_coverage)
 {
   CTX_APPLY_GRAD_A
-  CTX_APPLY_GRAD_B(1)
+  CTX_APPLY_GRAD_B(1, 1)
                    {
                        float u0 = 0; float v0 = 0;
                        float ud = 0; float vd = 0;
@@ -834,7 +828,7 @@ ctx_rasterizer_generate_coverage_apply_grad_RGBA8_over_fragment (CtxRasterizer *
 			                                         ctx_apply_coverage_fun apply_coverage)
 {
   CTX_APPLY_GRAD_A
-  CTX_APPLY_GRAD_B(1)
+  CTX_APPLY_GRAD_B(1, 1)
 	       ctx_RGBA8_source_over_normal_full_cov_fragment (
 		    width,
 		     &dst[(first+pre)*4],
@@ -893,18 +887,6 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
 	ctx_rasterizer_generate_coverage_apply_grad_generic (rasterizer, minx, maxx, coverage, is_winding, apply_coverage);
   }
 }
-
-#undef CTX_I
-#undef CTX_A
-#undef CTX_B
-#undef CTX_C
-#undef CTX_D
-#undef CTX_E
-#undef CTX_F
-#undef CTX_G
-//#undef CTX_H
-
-#undef CTX_EDGE
 
 static inline void
 ctx_rasterizer_reset (CtxRasterizer *rasterizer)
