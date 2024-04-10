@@ -675,7 +675,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       parser->expected_args != parser->n_numbers)
     {
 #if CTX_REPORT_COL_ROW
-       char *error = ctx_malloc (256);
+       char *error = (char*)ctx_malloc (256);
        sprintf (error, "ctx:%i:%i %c got %i instead of %i args\n",
                parser->line, parser->col,
                cmd, parser->n_numbers, parser->expected_args);
