@@ -22,13 +22,14 @@
 
 #define CTX_INITIAL_OFFSET  CTX_AA_HALFSTEP2
 
-static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
+static inline int ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline + CTX_MAGIC_OFFSET;
   int next_scanline = scanline + CTX_FULL_AA;
   CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
   int *edges = rasterizer->edges;
   int ending_edges = 0;
+  int dropped = 0;
   unsigned int active_edges = rasterizer->active_edges;
   for (unsigned int i = 0; i < active_edges; i++)
     {
@@ -36,11 +37,13 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       int edge_end = segment->y1;
       if (edge_end < scanline)
         {
-	  for (unsigned int j = i; j < active_edges -1; j++)
-            rasterizer->edges[j] = rasterizer->edges[j+1];
+	  //for (unsigned int j = i; j < active_edges -1; j++)
+          //  rasterizer->edges[j] = rasterizer->edges[j+1];
+	  rasterizer->edges[i] = rasterizer->edges[active_edges-1];
           rasterizer->scan_aa[segment->aa]--;
           active_edges--;
           i--;
+	  dropped |= 1;
         }
       else ending_edges += (edge_end < next_scanline);
     }
@@ -53,6 +56,7 @@ static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       ending_edges += (edge_end < next_scanline);
     }
   rasterizer->ending_edges = ending_edges;
+  return dropped;
 }
 
 CTX_INLINE static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer, int count)
@@ -73,11 +77,12 @@ CTX_INLINE static void ctx_rasterizer_increment_edges (CtxRasterizer *rasterizer
     }
 }
 
-inline static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
+CTX_INLINE static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasterizer)
 {
   CtxSegment *segments= (CtxSegment*)rasterizer->edge_list.entries;
   int *entries = rasterizer->edges;
   unsigned int count = rasterizer->active_edges;
+
   for(unsigned int i=1; i<count; i++)
    {
      int temp = entries[i];
@@ -116,7 +121,7 @@ CTX_INLINE static int ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasteriz
     }
     rasterizer->active_edges = active_edges;
     rasterizer->pending_edges = pending_edges;
-    ctx_rasterizer_discard_edges (rasterizer);
+    fed |= ctx_rasterizer_discard_edges (rasterizer);
     return fed;
 }
 
@@ -977,7 +982,7 @@ inline static void ctx_edge_insertion_sort (CtxSegment *entries, unsigned int co
 
 static CTX_INLINE void ctx_sort_edges (CtxRasterizer *rasterizer)
 {
-#if 0
+#if 1
   if (rasterizer->edge_list.count <= 16)
     ctx_edge_insertion_sort((CtxSegment*)& (rasterizer->edge_list.entries[0]), rasterizer->edge_list.count);
   else
