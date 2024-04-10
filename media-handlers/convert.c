@@ -728,7 +728,11 @@ again:
       unsigned char *contents = NULL;
       long length;
       _file_get_contents (source_path, &contents, &length);
+      if (contents)
+      {
       itk_print_xml (mrg, (char *) contents);
+      free (contents);
+      }
       mrg_destroy (mrg);
     }
   else if (!strcmp (get_suffix (source_path), ".ctxf"))
@@ -739,6 +743,7 @@ again:
       if (contents)
         {
           ctx_set_drawlist (ctx, contents, length);
+	  free (contents);
         }
     }
   else
@@ -779,7 +784,7 @@ again:
       ctx_scale (ctx, scale, scale);
       ctx_translate (ctx, ox0, oy0);
       ctx_tinyvg_draw (ctx, data, length, 0);
-    
+      free (data);
     }
 #endif
 #if CTX_PARSER

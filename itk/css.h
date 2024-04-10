@@ -8553,6 +8553,14 @@ void mrg_destroy (Mrg *mrg)
 {
   if (mrg->edited_str)
     ctx_string_free (mrg->edited_str, 1);
+  if (mrg->stylesheet)
+    ctx_list_free (&mrg->stylesheet);
+  if (mrg->style_global)
+    ctx_string_free (mrg->style_global, 1);
+  if (mrg->style)
+    ctx_string_free (mrg->style, 1);
+  if (mrg->css_parse_state)
+    free (mrg->css_parse_state);
   mrg->edited_str = NULL;
   free (mrg);
 }
