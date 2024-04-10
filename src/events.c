@@ -668,6 +668,7 @@ void ctx_remove_idle (Ctx *ctx, int handle)
     ctx_list_remove (&ctx->events.idles_to_remove, item);
     if (item->destroy_notify)
       item->destroy_notify (item->destroy_data);
+    ctx_free (item);
   }
 }
 

@@ -642,7 +642,7 @@ int terminal_main (int argc, char **argv)
     ctx_client_maximize (ctx, add_tab (ctx, commandline, 1));
   }
 
-  ctx_add_timeout (ctx, 1000 * 20, malloc_trim_cb, NULL);
+  int mt = ctx_add_timeout (ctx, 1000 * 20, malloc_trim_cb, NULL);
 
   //int sleep_time = 1000000/10;
 
@@ -694,6 +694,8 @@ int terminal_main (int argc, char **argv)
 
      ctx_handle_events (ctx);
     }
+
+  ctx_remove_idle (ctx, mt);
 
   itk_free (itk);
   ctx_destroy (ctx);
