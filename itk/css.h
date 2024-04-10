@@ -8502,9 +8502,12 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
   mrg_set_size (mrg, width, height);
   _mrg_text_init (mrg);
 
-  mrg->style = ctx_string_new ("");
+  if (!mrg->style)
+    mrg->style = ctx_string_new ("");
 
   mrg_set_mrg_get_contents (mrg, mrg_get_contents_default, mrg);
+  if (mrg->style_global)
+    ctx_string_free (mrg->style_global, 1);
   mrg->style_global = ctx_string_new ("");
 
 

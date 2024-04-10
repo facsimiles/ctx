@@ -493,6 +493,16 @@ void itk_free (ITK *itk)
 {
   if (itk->menu_path)
     free (itk->menu_path);
+  if (itk->stylesheet)
+    ctx_list_free (&itk->stylesheet);
+  if (itk->style_global)
+    ctx_string_free (itk->style_global, 1);
+  if (itk->style)
+    ctx_string_free (itk->style, 1);
+  if (itk->css_parse_state)
+    free (itk->css_parse_state);
+ 
+
   free (itk);
 }
 
