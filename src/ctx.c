@@ -2240,6 +2240,14 @@ ctx_destroy (Ctx *ctx)
 #endif
 #endif
 
+  while (ctx->deferred) 
+  {
+    void *command = ctx->deferred->data;
+    ctx_list_remove (&ctx->deferred, command);
+    free (command);
+  }
+
+
 #if CTX_EVENTS
   ctx_clear_bindings (ctx);
 #endif
