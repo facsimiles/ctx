@@ -305,8 +305,9 @@ static int ctx_glyph_lookup_ctx2 (CtxFont *font, Ctx *ctx, uint32_t unichar)
 static float
 ctx_glyph_kern_ctx (CtxFont *font, Ctx *ctx, uint32_t unicharA, uint32_t unicharB)
 {
+  return 0.0f; // XXX - hack disabling kerning in this backend for now
   float font_size = ctx->state.gstate.font_size;
-  int first_kern = ctx_glyph_lookup_ctx (font, ctx, unicharA+1); // XXX ? why doe + 1  make this work
+  int first_kern = ctx_glyph_lookup_ctx (font, ctx, unicharA); // XXX ? why doe + 1  make this work
   if (first_kern < 0) return 0.0;
 
 #if CTX_EVENTS
