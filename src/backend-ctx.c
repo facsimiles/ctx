@@ -298,7 +298,7 @@ static char *decode_ctx (const char *encoded, int enc_len, const char *prev, int
 }
 #endif
 
-#define CTX_START_STRING "U\n"  // or " start_frame "
+#define CTX_START_STRING ":\n"  // or " start_frame "
 #define CTX_END_STRING   "\nX"  // or "\ndone"
 #define CTX_END_STRING2  "\n"
 
