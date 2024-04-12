@@ -2281,7 +2281,7 @@ ctx_render_ctx (Ctx *ctx, Ctx *d_ctx)
   CtxCommand *command;
   d_ctx->bail = 0;
   ctx_iterator_init (&iterator, &ctx->drawlist, 0,
-                     CTX_ITERATOR_EXPAND_BITPACK);
+                     0);
   void  (*process)  (Ctx *ctx, const CtxCommand *entry) = d_ctx->process;
   while ( (command = (CtxCommand*)_ctx_iterator_next (&iterator) ) )
     process (d_ctx, command);

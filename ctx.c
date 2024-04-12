@@ -23,6 +23,7 @@
 //#define CTX_MAX_EDGES            255
 //#define CTX_RASTERIZER_AA        15
 #define CTX_MAX_TEXTURES         1024  // default: 32
+#define CTX_RASTERIZER_BEZIER_FIXED_POINT 0
 				       //
 #define CTX_RASTERIZER_ALLOW_DIRECT 1
 /* for misc storage with compressed/

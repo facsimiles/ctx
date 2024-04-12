@@ -1360,7 +1360,7 @@ static inline void ctx_rasterizer_update_inner_point (CtxRasterizer *rasterizer,
   rasterizer->inner_y = y;
 }
 
-static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
+static CTX_INLINE int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, int y1)
 {
   CtxSegment entry = {{CTX_EDGE, 0, 0, 0, 0, 0}};
   x1 -= rasterizer->blit_x * CTX_SUBDIV;
@@ -1384,7 +1384,7 @@ static inline int ctx_rasterizer_add_point (CtxRasterizer *rasterizer, int x1, i
   return ret;
 }
 
-static void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
+static inline void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
   unsigned int count = rasterizer->edge_list.count;
   CtxSegment *segment = (CtxSegment*)&rasterizer->edge_list.entries[0];
@@ -1517,7 +1517,7 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
   dx = (sx+ex)/2 - x;
   dy = (sy+ey)/2 - y;
 
-  if ((iteration<1) | ((iteration < 6) & (((long)dx*dx+dy*dy) > tolerance)))
+  if ((iteration<2) | ((iteration < 6) & (dx*dx+dy*dy > tolerance)))
   {
     ctx_rasterizer_bezier_divide (rasterizer, ox, oy, x0, y0, x1, y1, x2, y2,
                                   sx, sy, x, y, s, t, iteration + 1,
@@ -1536,7 +1536,7 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
 CTX_INLINE static int
 ctx_lerp_fixed (int v0, int v1, int dx)
 {
-  return v0 + (((v1-v0) * dx) >> CTX_FIX_SHIFT);
+  return v0 + (((v1-v0) * dx + ((1<<CTX_FIX_SHIFT)-1)) >> CTX_FIX_SHIFT);
 }
 
 CTX_INLINE static int
@@ -1612,7 +1612,8 @@ ctx_rasterizer_curve_to (CtxRasterizer *rasterizer,
   float ox = rasterizer->state->x;
   float oy = rasterizer->state->y;
 
-#if 1
+
+#if CTX_RASTERIZER_BEZIER_FIXED_POINT
   CtxFixedBezier b = {
             (int)(ox * CTX_FIX_SCALE), (int)(oy * CTX_FIX_SCALE), (int)(x0 * CTX_FIX_SCALE), (int)(y0 * CTX_FIX_SCALE),
             (int)(x1 * CTX_FIX_SCALE), (int)(y1 * CTX_FIX_SCALE), (int)(x2 * CTX_FIX_SCALE), (int)(y2 * CTX_FIX_SCALE)

@@ -55,7 +55,7 @@ _ctx_transform_prime (CtxState *state)
      state->gstate.prepped_transform.m[2][c] =
              (int)(state->gstate.transform.m[2][c] * TRANSFORM_SCALE);
    }
-   state->gstate.tolerance = 0.35f/ctx_matrix_get_scale (&state->gstate.transform);
+   state->gstate.tolerance = 0.25f/ctx_matrix_get_scale (&state->gstate.transform);
    state->gstate.tolerance *= state->gstate.tolerance;
    state->gstate.tolerance_fixed =
    (state->gstate.tolerance * CTX_FIX_SCALE * CTX_FIX_SCALE);
@@ -101,7 +101,7 @@ _ctx_matrix_apply_transform_scale_translate_fixed (const Ctx16f16Matrix *m, int 
                      (m->m[1][2])) * CTX_FULL_AA) >>TRANSFORM_SHIFT;
 }
 
-static inline void
+static CTX_INLINE void
 _ctx_user_to_device_prepped_fixed (CtxState *state, int x, int y, int *x_out, int *y_out)
 {
   switch (state->gstate.transform_type)

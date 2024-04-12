@@ -75,6 +75,10 @@
 #define CTX_RASTERIZER_ALLOW_DIRECT 1
 #endif
 
+#ifndef CTX_RASTERIZER_BEZIER_FIXED_POINT
+#define CTX_RASTERIZER_BEZIER_FIXED_POINT 1
+#endif
+
 #ifndef CTX_FAST_FILL_RECT
 #define CTX_FAST_FILL_RECT 1    /*  matters most for tiny rectangles where it shaves overhead, for larger rectangles
                                     a ~15-20% performance win can be seen. */
