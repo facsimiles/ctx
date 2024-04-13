@@ -19,14 +19,12 @@ ENABLE_BRAILLE_TEXT=1
 ENABLE_PDF=1
 ENABLE_INLINED_NORMAL=1
 ENABLE_STATIC_FONTS=1
-ENABLE_SHAPE_CACHE=0
 ENABLE_HEADLESS=1
 ENABLE_FONTS_FROM_FILE=1
 ENABLE_FONT_CTX_FS=0
 ENABLE_TINYVG=1
 ENABLE_TERM=1
 ENABLE_TERMIMG=1
-ENABLE_STUFF=1
 ENABLE_AUDIO=1
 
 ENABLE_RASTERIZER=1
@@ -97,7 +95,6 @@ do
      "--enable-parser") ENABLE_PARSER=1 ;;
      "--enable-formatter") ENABLE_FORMATTER=1 ;;
      "--enable-headless") ENABLE_HEADLESS=1 ;;
-     "--enable-shape_cache") ENABLE_SHAPE_CACHE=1 ;;
      "--enable-fonts_from_file") ENABLE_FONTS_FROM_FILE=1 ;;
      "--enable-font_ctx_fs") ENABLE_FONT_CTX_FS=1 ;;
      "--enable-dither") ENABLE_DITHER=1 ;;
@@ -125,7 +122,6 @@ do
      "--disable-parser") ENABLE_PARSER=0 ;;
      "--disable-formatter") ENABLE_FORMATTER=0 ;;
      "--disable-headless") ENABLE_HEADLESS=0 ;;
-     "--disable-shape_cache") ENABLE_SHAPE_CACHE=0 ;;
      "--disable-fonts_from_file") ENABLE_FONTS_FROM_FILE=0 ;;
      "--disable-font-ctx-fs") ENABLE_FONT_CTX_FS=0 ;;
      "--disable-dither") ENABLE_DITHER=0 ;;
@@ -154,7 +150,6 @@ do
         ENABLE_BRAILLE_TEXT=0 
         ENABLE_AUDIO=0 
         ENABLE_CMYK=0 
-        ENABLE_STUFF=0 
         ENABLE_TINYVG=0 
         ENABLE_PDF=0 
         ENABLE_INLINED_NORMAL=0 
@@ -164,7 +159,6 @@ do
 	ENABLE_SWITCH_DISPATCH=0 
         ENABLE_ONLY_RGBA8=0 
         ENABLE_HEADLESS=0 
-        ENABLE_SHAPE_CACHE=0 
         ENABLE_FORMATTER=0 
         ENABLE_PARSER=1 
         #ENABLE_RASTERIZER=0 
@@ -247,10 +241,7 @@ echo -n "#define CTX_RASTERIZER " >> local.conf; if [ $ENABLE_RASTERIZER = 1 ];t
 echo -n "#define CTX_PARSER " >> local.conf; if [ $ENABLE_PARSER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_FORMATTER " >> local.conf; if [ $ENABLE_FORMATTER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_HEADLESS " >> local.conf; if [ $ENABLE_HEADLESS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
-echo -n "#define CTX_SHAPE_CACHE " >> local.conf; if [ $ENABLE_SHAPE_CACHE = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 
-
-echo -n "CTX_CFLAGS+= -DCTX_STUFF=" >> build.conf; if [ $ENABLE_STUFF = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_PL_MPEG=" >> build.conf; if [ $HAVE_PL_MPEG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_STB_TT=" >> build.conf; if [ $HAVE_STB_TT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_STB_IMAGE=" >> build.conf; if [ $HAVE_STB_IMAGE = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
@@ -379,7 +370,6 @@ echo -n " fonts_from_file "; [ $ENABLE_FONTS_FROM_FILE = 1 ] && echo "yes" || ec
 echo -n " rasterizer      "; [ $ENABLE_RASTERIZER = 1 ] && echo "yes" || echo "no"
 echo -n " parser          "; [ $ENABLE_PARSER = 1 ] && echo "yes" || echo "no"
 echo -n " formatter       "; [ $ENABLE_FORMATTER = 1 ] && echo "yes" || echo "no"
-echo -n " shape_cache     "; [ $ENABLE_SHAPE_CACHE = 1 ] && echo "yes" || echo "no"
 echo -n " only_rgba8      "; [ $ENABLE_ONLY_RGBA8  = 1 ] && echo "yes" || echo "no"
 echo -n " fragment_specialize "; [ $ENABLE_FRAGMENT_SPECIALIZE = 1 ] && echo "yes" || echo "no"
 echo -n " fast_fill_rect      "; [ $ENABLE_FAST_FILL_RECT = 1 ] && echo "yes" || echo "no"

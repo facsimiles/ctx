@@ -862,13 +862,13 @@ ctx_rasterizer_generate_coverage_apply_grad (CtxRasterizer *rasterizer,
   if (rasterizer->active_edges < 2) return;
   switch (comp)
   {
+#if CTX_RASTERIZER_SWITCH_DISPATCH
     case CTX_COV_PATH_RGBA8_OVER:
        ctx_rasterizer_generate_coverage_apply_grad_RGBA8_over_normal_color (rasterizer, minx, maxx, coverage, is_winding, apply_coverage);
        break;
     case CTX_COV_PATH_RGBA8_COPY:
        ctx_rasterizer_generate_coverage_apply_grad_RGBA8_copy_normal_color (rasterizer, minx, maxx, coverage, is_winding, apply_coverage);
        break;
-#if 1
     case CTX_COV_PATH_RGB565_COPY:
     case CTX_COV_PATH_RGBAF_COPY:
     case CTX_COV_PATH_RGB332_COPY:

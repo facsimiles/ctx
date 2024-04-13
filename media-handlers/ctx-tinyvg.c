@@ -122,8 +122,17 @@ void ctx_handle_tvg (Ctx *ctx, const char *path)
       ctx_scale (ctx, scale, scale);
       ctx_translate (ctx, ox0, oy0);
 
-
+#if 0
       ctx_tinyvg_draw (ctx, data, length, 0);
+#else
+      static Ctx *dl = NULL;
+      if (!dl)
+      {
+	dl = ctx_new_drawlist (stb_w, stb_h);
+	ctx_tinyvg_draw (dl, data, length, 0);
+      }
+      ctx_render_ctx (dl, ctx);
+#endif
 #if 0
       ctx_rectangle (ctx, 0,0, stb_w, stb_h);
       ctx_rgba (ctx, 1,0,0,0.25);
