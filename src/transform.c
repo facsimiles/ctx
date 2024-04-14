@@ -101,7 +101,7 @@ _ctx_matrix_apply_transform_scale_translate_fixed (const Ctx16f16Matrix *m, int 
                      (m->m[1][2])) * CTX_FULL_AA) >>TRANSFORM_SHIFT;
 }
 
-static CTX_INLINE void
+static inline void
 _ctx_user_to_device_prepped_fixed (CtxState *state, int x, int y, int *x_out, int *y_out)
 {
   switch (state->gstate.transform_type)
