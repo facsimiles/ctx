@@ -127,26 +127,18 @@ CTX_INLINE static int ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasteriz
 
 CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges, const int convex)
 {
+  if (horizontal_edges) return 5;
   const unsigned int *scan_aa = rasterizer->scan_aa;
   int aa = (scan_aa[1]==0);
   if (scan_aa[3]>0) aa = 15;
   else if (scan_aa[2]>0) aa = 5;
   else if (scan_aa[1]>0) aa = 3;
 
-  if (convex)
-  {
-    return  ((horizontal_edges| rasterizer->ending_edges| pending_edges)!=0) * aa;
-    
-    // XXX : this is faster, but gets bottom of circles wrong
-    //return  ((horizontal_edges!=0)| (rasterizer->ending_edges!=pending_edges)) * aa;
-  }
-
-  if ((horizontal_edges)|
-      (rasterizer->ending_edges)|
-      (pending_edges))
+  if ((rasterizer->ending_edges)|(pending_edges))
   {
     return aa;
   }
+  if (convex) return 0;
 
   const int *edges  = rasterizer->edges;
   const CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
@@ -220,9 +212,9 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*3)/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*5)/CTX_SUBDIV/15)
 #else
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*1.33)/CTX_SUBDIV/15/1024)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*6)/CTX_SUBDIV/15/1024)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*12)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*1)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*3)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*5)/CTX_SUBDIV/15/1024)
 #endif
 
 
@@ -2488,7 +2480,7 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
 #endif
   
-  rasterizer->convex = 1;
+  //rasterizer->convex = 1;
   rasterizer->aa = ctx_mini(aa_backup, 5);
     {
     {
