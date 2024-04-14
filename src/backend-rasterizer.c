@@ -125,7 +125,7 @@ CTX_INLINE static int ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasteriz
     return fed;
 }
 
-CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges, const int convex)
+CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges)
 {
   if (horizontal_edges) return 5;
   const unsigned int *scan_aa = rasterizer->scan_aa;
@@ -173,7 +173,7 @@ CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigne
 }
 
 // makes us up-to date with ready to render rasterizer->scanline
-inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, const int convex)
+inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
 {
   int miny;
   int fed = ctx_rasterizer_feed_pending_edges (rasterizer);
@@ -216,9 +216,9 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*3)/CTX_SUBDIV/15)
 #define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*5)/CTX_SUBDIV/15)
 #else
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*1)/CTX_SUBDIV/15/1024)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*3)/CTX_SUBDIV/15/1024)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*5)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*1.33)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*6)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*12)/CTX_SUBDIV/15/1024)
 #endif
 
 
@@ -258,7 +258,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer, con
 
     if (fed)
       ctx_rasterizer_sort_active_edges (rasterizer);
-    return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges, convex);
+    return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges);
 }
 
 static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, const unsigned int minx, const unsigned int maxx, uint8_t *coverage, int *first_col, int *last_col)
@@ -987,7 +987,7 @@ static CTX_INLINE void ctx_sort_edges (CtxRasterizer *rasterizer)
 }
 
 static void
-ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule, const int allow_direct, const int convex)
+ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule, const int allow_direct)
 {
   rasterizer->pending_edges   =   
   rasterizer->active_edges    =   0;
@@ -1041,7 +1041,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
       (scan_end < (rasterizer->blit_y) * CTX_FULL_AA)))
   { 
     /* not affecting this rasterizers scanlines */
-    rasterizer->convex = 0;
     return;
   }
   rasterizer->scan_aa[1]=
@@ -1056,7 +1055,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
     {
       int c0 = minx;
       int c1 = maxx;
-      int aa = ctx_rasterizer_feed_edges_full (rasterizer, convex);
+      int aa = ctx_rasterizer_feed_edges_full (rasterizer);
       aa = ctx_mini (aa, real_aa); // limit to maximum vertical super sampling
       switch (aa)
       {
@@ -1188,7 +1187,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
 #endif
   }
 #endif
-  rasterizer->convex = 0;
 }
 
 
@@ -1222,30 +1220,16 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
 			       // we seem to overrrun our scans
 #endif
 
-  if (rasterizer->convex)
   {
     if (allow_direct)
     {
-      if (fill_rule) ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 1, 1);
-      else           ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 1, 1);
+      if (fill_rule) ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 1);
+      else           ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 1);
     }
     else
     {
-      if (fill_rule) ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 0, 1);
-      else           ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 0, 1);
-    }
-  }
-  else
-  {
-    if (allow_direct)
-    {
-      if (fill_rule) ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 1, 0);
-      else           ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 1, 0);
-    }
-    else
-    {
-      if (fill_rule) ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 0, 0);
-      else           ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 0, 0);
+      if (fill_rule) ctx_rasterizer_rasterize_edges2 (rasterizer, 1, 0);
+      else           ctx_rasterizer_rasterize_edges2 (rasterizer, 0, 0);
     }
 
   }
@@ -1263,7 +1247,7 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
          | rasterizer->in_shadow
 #endif
          );
-  ctx_rasterizer_rasterize_edges2 (rasterizer, fill_rule, allow_direct, rasterizer->convex);
+  ctx_rasterizer_rasterize_edges2 (rasterizer, fill_rule, allow_direct);
 }
 
 #endif
@@ -1925,11 +1909,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #endif
 
 
-    rasterizer->convex |= (rasterizer->edge_list.count <= 5);
-    if (rasterizer->convex==0)
-      rasterizer->convex = ctx_is_poly_convex(rasterizer);
-    else if (rasterizer->convex==-1)
-      rasterizer->convex=0;
     ctx_rasterizer_close_path (rasterizer);
     ctx_rasterizer_poly_to_edges (rasterizer);
 
@@ -2480,7 +2459,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
 #endif
   
-  //rasterizer->convex = 1;
   rasterizer->aa = ctx_mini(aa_backup, 5);
     {
     {
