@@ -1388,16 +1388,27 @@ static inline void ctx_rasterizer_poly_to_edges (CtxRasterizer *rasterizer)
 {
   unsigned int count = rasterizer->edge_list.count;
   CtxSegment *segment = (CtxSegment*)&rasterizer->edge_list.entries[0];
+  int skipped = 0;
   for (unsigned int i = 0; i < count; i++)
     {
-      if (segment->y1 < segment->y0)
+      if (segment[skipped].code == CTX_CLOSE_EDGE)
+	skipped ++;
+      else
+      {
+        if (segment[skipped].y1 < segment[skipped].y0)
         {
-          *segment= ctx_segment_s16 (CTX_EDGE_FLIPPED,
-                            segment->x1, segment->y1,
-                            segment->x0, segment->y0);
+          segment[0] = ctx_segment_s16 (CTX_EDGE_FLIPPED,
+                            segment[skipped].x1, segment[skipped].y1,
+                            segment[skipped].x0, segment[skipped].y0);
         }
-      segment++;
+        else
+        {
+	  segment[0] = segment[skipped];
+        }
+        segment++;
+      }
     }
+  rasterizer->edge_list.count = count - skipped;
 }
 
 static inline void
@@ -1425,10 +1436,10 @@ ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
 	  rasterizer->first_edge = -1;
           ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
    entry = *segment;
-   entry.code = CTX_EDGE;
+   entry.code = CTX_CLOSE_EDGE;
 
-	  entry.x1 = entry.x1 * 0.01f + entry.x0 * 0.99f;
-	  entry.y1 = entry.y1 * 0.01f + entry.y0 * 0.99f;
+	  entry.x1 = entry.x1 * 0.02f + entry.x0 * 0.98f;
+	  entry.y1 = entry.y1 * 0.02f + entry.y0 * 0.98f;
 
           ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 	  // shorten to half length?

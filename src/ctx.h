@@ -1551,7 +1551,8 @@ typedef enum
 {
   CTX_EDGE             = 0, 
   CTX_EDGE_FLIPPED     = 1,
-  CTX_NEW_EDGE         = 2
+  CTX_NEW_EDGE         = 2,
+  CTX_CLOSE_EDGE       = 3
 } CtxRasterizerCode;
 
 
