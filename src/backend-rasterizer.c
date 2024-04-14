@@ -86,9 +86,9 @@ CTX_INLINE static void ctx_rasterizer_sort_active_edges (CtxRasterizer *rasteriz
   for(unsigned int i=1; i<count; i++)
    {
      int temp = entries[i];
-     int tv = segments[temp].x0;
+     int tv = segments[temp].val;
      int j = i-1;
-     while (j >= 0 && tv - segments[entries[j]].x0 < 0)
+     while (j >= 0 && tv - segments[entries[j]].val < 0)
      {
        entries[j+1] = entries[j];
        j--;
@@ -470,7 +470,7 @@ ctx_rasterizer_generate_coverage_grads (CtxRasterizer *rasterizer,
 	      c0 = ctx_mini(us, c0);
               for (unsigned int u = u0x0; u < u1x0; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)
               {
-                coverage[us ++] = a>>16;
+                coverage[us ++] += a>>16;
 		a += recip;
               }
               pre = (us-1)-first+1;
@@ -629,7 +629,7 @@ ctx_rasterizer_apply_grads_generic (CtxRasterizer *rasterizer,
  	      cov_min = ctx_mini (cov_min, us);\
               for (unsigned int u = u0x0; u < u1x0; u+= CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV)\
               {\
-                coverage[us ++] = a>>16;\
+                coverage[us ++] += a>>16;\
 		a += recip;\
               }\
 	      cov_max = us;\
