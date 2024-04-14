@@ -125,53 +125,6 @@ CTX_INLINE static int ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasteriz
     return fed;
 }
 
-CTX_INLINE static int analyze_scanline (CtxRasterizer *rasterizer, const unsigned int active_edges, const unsigned int pending_edges, const int horizontal_edges)
-{
-  if (horizontal_edges) return 5;
-  const unsigned int *scan_aa = rasterizer->scan_aa;
-  int aa = (scan_aa[1]==0);
-  if (scan_aa[3]>0) aa = 15;
-  else if (scan_aa[2]>0) aa = 5;
-  else if (scan_aa[1]>0) aa = 3;
-
-  if ((rasterizer->ending_edges)!=(pending_edges))
-  {
-    return aa;
-  }
-#if 0
-  if (convex) return 0;
-
-  const int *edges  = rasterizer->edges;
-  const CtxSegment *segments = &((CtxSegment*)(rasterizer->edge_list.entries))[0];
-
-  int crossings = 0;
-
-  const CtxSegment *segment0 = segments + edges[0];
-  const int delta0    = segment0->delta;
-  const int x0        = segment0->val;
-  int x0_end   = x0 + delta0 * CTX_AA_HALFSTEP;
-  int x0_start = x0 - delta0 * CTX_AA_HALFSTEP2;
-
-  unsigned int t = 1;
-  for (t = 1; (t < active_edges);t++)
-    {
-      const CtxSegment *segment1 = segments + edges[t];
-      const int delta1           = segment1->delta;
-      const int x1               = segment1->val;
-      const int x1_end   = x1 + delta1 * CTX_AA_HALFSTEP;
-      const int x1_start = x1 - delta1 * CTX_AA_HALFSTEP2;
-
-      crossings |=  ((x1_end < x0_end) | (x1_start < x0_end) | (x1_end < x0_start));
-      x0_end = x1_end;
-      x0_start = x1_start;
-    }
-
-  return aa * crossings;
-#else
-  return 0;
-#endif
-}
-
 // makes us up-to date with ready to render rasterizer->scanline
 inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
 {
@@ -254,11 +207,19 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
     rasterizer->pending_edges    = pending_edges;
     if (active_edges + pending_edges == 0)
       return -1;
-    rasterizer->horizontal_edges = horizontal_edges;
 
     if (fed)
       ctx_rasterizer_sort_active_edges (rasterizer);
-    return analyze_scanline (rasterizer, active_edges, pending_edges, horizontal_edges);
+
+    if (horizontal_edges) return 5;
+    if (rasterizer->ending_edges!=pending_edges)
+    {
+      const unsigned int *scan_aa = rasterizer->scan_aa;
+      return (scan_aa[3]>0)?15:
+             (scan_aa[2]>0)?5:
+             (scan_aa[1]>0)?3:1;
+    }
+    return 0;
 }
 
 static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, const unsigned int minx, const unsigned int maxx, uint8_t *coverage, int *first_col, int *last_col)
