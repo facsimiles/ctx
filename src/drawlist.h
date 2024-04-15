@@ -258,7 +258,6 @@ static inline int ctx_arguments_for_code (CtxCode code)
       case CTX_REL_HOR_LINE_TO:
       case CTX_HOR_LINE_TO:
       case CTX_VER_LINE_TO:
-      case CTX_FONT:
       case CTX_ROTATE:
       case CTX_GLYPH:
         return 1;
@@ -297,6 +296,7 @@ static inline int ctx_arguments_for_code (CtxCode code)
         return 9;
       case CTX_STROKE_TEXT:
       case CTX_TEXT:
+      case CTX_FONT:
       case CTX_COLOR_SPACE:
       case CTX_DEFINE_GLYPH:
       case CTX_KERNING_PAIR:

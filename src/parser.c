@@ -244,7 +244,10 @@ void ctx_parser_destroy (CtxParser *parser)
     ctx_free (parser->holding);
 #endif
   if (parser->error)
+  {
+    fprintf (stderr, "ctx parse error: %s\n", parser->error);
     ctx_free (parser->error);
+  }
   ctx_free (parser);
 }
 
@@ -668,7 +671,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
   Ctx *ctx = parser->ctx;
-  if (parser->error) return;
+  if (parser->error)
+    return;
 
   if (parser->expected_args != CTX_ARG_STRING_OR_NUMBER &&
       parser->expected_args != CTX_ARG_COLLECT_NUMBERS &&
