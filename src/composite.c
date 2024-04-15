@@ -1055,6 +1055,7 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
 #endif
 }
 
+#if 0
 static void
 ctx_fragment_image_rgba8sepA_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
                                                  float x, float y, float z,
@@ -1063,6 +1064,7 @@ ctx_fragment_image_rgba8sepA_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
   ctx_fragment_image_rgba8_RGBA8_nearest_copy (rasterizer, x, y, z, out, scount, dx, dy, dz);
   ctx_RGBA8_apply_global_alpha_and_associate (rasterizer, (uint8_t*)out, scount);
 }
+#endif
 
 static void
 ctx_fragment_image_rgba8_RGBA8_nearest_copy_repeat (CtxRasterizer *rasterizer,

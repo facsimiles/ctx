@@ -1400,6 +1400,8 @@ static CTX_INLINE int ctx_nearly_zero(float val)
   return (val > 0.001f) & (val > -0.001f);
 }
 
+int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar);
+
 #if EMSCRIPTEN
 #define CTX_EXPORT EMSCRIPTEN_KEEPALIVE
 #else
