@@ -37,9 +37,12 @@ static inline int ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
       int edge_end = segment->y1;
       if (edge_end < scanline)
         {
-	  //for (unsigned int j = i; j < active_edges -1; j++)
-          //  rasterizer->edges[j] = rasterizer->edges[j+1];
+#if 0
+	  for (unsigned int j = i; j < active_edges -1; j++)
+            rasterizer->edges[j] = rasterizer->edges[j+1];
+#else
 	  rasterizer->edges[i] = rasterizer->edges[active_edges-1];
+#endif
           rasterizer->scan_aa[segment->aa]--;
           active_edges--;
           i--;
@@ -1375,9 +1378,6 @@ ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
    entry = *segment;
    entry.code = CTX_CLOSE_EDGE;
 
-	  entry.x1 = entry.x1 * 0.02f + entry.x0 * 0.98f;
-	  entry.y1 = entry.y1 * 0.02f + entry.y0 * 0.98f;
-
           ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
 	  // shorten to half length?
           return;
@@ -2498,6 +2498,7 @@ foo:
                   dx = dx * recip_length * half_width_x;
                   dy = dy * recip_length * half_width_y;
                   ctx_rasterizer_line_to (rasterizer, prev_x-dy, prev_y+dx);
+
                   // XXX possible miter line-to
              //   ctx_rasterizer_line_to (rasterizer, prev_x-dy+10, prev_y+dx+10);
                   ctx_rasterizer_line_to (rasterizer, x-dy,      y+dx);
