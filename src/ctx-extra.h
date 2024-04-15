@@ -68,36 +68,15 @@ ctx_invsqrtf (const float x)
   return u.f;
 }
 
-static CTX_INLINE float
-ctx_invsqrtf_fast (const float x)
-{
-  union
-  {
-    float f;
-    uint32_t i;
-  } u = { x };
-  u.i = 0x5f3759df - (u.i >> 1);
-  return u.f;
-}
 
 CTX_INLINE static float ctx_sqrtf (const float a)
 {
   return 1.0f/ctx_invsqrtf (a);
 }
 
-CTX_INLINE static float ctx_sqrtf_fast (const float a)
-{
-  return 1.0f/ctx_invsqrtf_fast (a);
-}
-
 CTX_INLINE static float ctx_hypotf (const float a, const float b)
 {
   return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
-}
-
-CTX_INLINE static float ctx_hypotf_fast (const float a, const float b)
-{
-  return ctx_sqrtf_fast (ctx_pow2 (a)+ctx_pow2 (b) );
 }
 
 CTX_INLINE static float
@@ -149,28 +128,6 @@ ctx_sinf (float x)
   float p1  = p3*x2  + coeffs[0];
   return (x - CTX_PI + 0.00000008742278f) *
          (x + CTX_PI - 0.00000008742278f) * p1 * x;
-}
-
-static CTX_INLINE float ctx_atan2f_rest (
-  const float x, const float y_recip)
-{
-  float atan, z = x * y_recip;
-  if ( ctx_fabsf ( z ) < 1.0f )
-    {
-      atan = z/ (1.0f + 0.28f*z*z);
-      if (y_recip < 0.0f)
-        {
-          if ( x < 0.0f )
-            { return atan - CTX_PI; }
-          return atan + CTX_PI;
-        }
-    }
-  else
-    {
-      atan = CTX_PI/2 - z/ (z*z + 0.28f);
-      if ( x < 0.0f ) { return atan - CTX_PI; }
-    }
-  return atan;
 }
 
 static CTX_INLINE float ctx_atan2f (const float y, const float x)
@@ -259,11 +216,51 @@ static CTX_INLINE float ctx_tanf (const float a)            { return tanf (a); }
 static CTX_INLINE float ctx_expf (const float p)            { return expf (p); }
 static CTX_INLINE float ctx_sqrtf (const float a)           { return sqrtf (a); }
 static CTX_INLINE float ctx_atanf (const float a)           { return atanf (a); }
-static CTX_INLINE float ctx_hypotf_fast (const float a, const float b)
-{
-  return ctx_sqrtf (ctx_pow2 (a)+ctx_pow2 (b) );
-}
 #endif
+
+static CTX_INLINE float
+ctx_invsqrtf_fast (const float x)
+{
+  union
+  {
+    float f;
+    uint32_t i;
+  } u = { x };
+  u.i = 0x5f3759df - (u.i >> 1);
+  return u.f;
+}
+CTX_INLINE static float ctx_sqrtf_fast (const float a)
+{
+  return 1.0f/ctx_invsqrtf_fast (a);
+}
+CTX_INLINE static float ctx_hypotf_fast (const float a, const float b)
+{
+  return ctx_sqrtf_fast (ctx_pow2 (a)+ctx_pow2 (b) );
+}
+
+
+static CTX_INLINE float ctx_atan2f_rest (
+  const float x, const float y_recip)
+{
+  float atan, z = x * y_recip;
+  if ( ctx_fabsf ( z ) < 1.0f )
+    {
+      atan = z/ (1.0f + 0.28f*z*z);
+      if (y_recip < 0.0f)
+        {
+          if ( x < 0.0f )
+            { return atan - CTX_PI; }
+          return atan + CTX_PI;
+        }
+    }
+  else
+    {
+      atan = CTX_PI/2 - z/ (z*z + 0.28f);
+      if ( x < 0.0f ) { return atan - CTX_PI; }
+    }
+  return atan;
+}
+
 
 static inline float _ctx_parse_float (const char *str, char **endptr)
 {
