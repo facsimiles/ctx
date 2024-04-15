@@ -1,4 +1,5 @@
 
+
 #ifndef __clang__
 #if CTX_RASTERIZER_O3
 #pragma GCC push_options
@@ -141,12 +142,22 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
   int active_edges = rasterizer->active_edges;
   int horizontal_edges = 0;
 
+#if CTX_SCANBIN
+   int scan = scanline / CTX_FULL_AA;
+   int count = rasterizer->scan_bin_count[scan];
+   if (count)
+   for (int i = 0; i < count; i++)
+   {
+       int edge_pos = rasterizer->scan_bins[scan][i];
+       miny = entries[edge_pos].y0;
+#else
   int next_scanline = scanline + CTX_FULL_AA;
   unsigned int edge_pos = rasterizer->edge_pos;
   unsigned int edge_count = rasterizer->edge_list.count;
   while ((edge_pos < edge_count &&
          (miny=entries[edge_pos].y0)  <= next_scanline))
   {
+#endif
       int y1 = entries[edge_pos].y1;
       if ((active_edges < CTX_MAX_EDGES-2) &
         (y1 >= scanline))
@@ -203,9 +214,14 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
 	      horizontal_edges++;
 	    }
         }
+#if CTX_SCANBIN
+#else
       edge_pos++;
+#endif
   }
+#if CTX_SCANBIN==0
     rasterizer->edge_pos         = edge_pos;
+#endif
     rasterizer->active_edges     = active_edges;
     rasterizer->pending_edges    = pending_edges;
     if (active_edges + pending_edges == 0)
@@ -859,7 +875,9 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   rasterizer->first_edge = -1;
   rasterizer->has_prev        =   
   rasterizer->edge_list.count =    // ready for new edges
+#if CTX_SCANBIN==0
   rasterizer->edge_pos        =   
+#endif
   rasterizer->scanline        = 0;
   if (CTX_LIKELY(!rasterizer->preserve))
   {
@@ -873,7 +891,7 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   //     nonchanging
 }
 
-
+#if CTX_SCANBIN==0
 static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
 {
   const CtxSegment *a = (const CtxSegment *) ap;
@@ -949,6 +967,7 @@ static CTX_INLINE void ctx_sort_edges (CtxRasterizer *rasterizer)
 #endif
     ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
 }
+#endif
 
 static void
 ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule, const int allow_direct)
@@ -1011,7 +1030,26 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   rasterizer->scan_aa[2]=
   rasterizer->scan_aa[3]=0;
 
+#if CTX_SCANBIN
+  int ss = scan_start/CTX_FULL_AA;
+  int se = scan_end/CTX_FULL_AA;
+  if (ss < 0)ss =0;
+  if (se >= CTX_MAX_SCANLINES) se = CTX_MAX_SCANLINES-1;
+
+  for (int i = ss; i < se; i++)
+    rasterizer->scan_bin_count[i]=0;
+
+  for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
+  {
+    CtxSegment *segment = & ((CtxSegment*)rasterizer->edge_list.entries)[i];
+    int scan = (segment->y0-CTX_FULL_AA+2) / CTX_FULL_AA;
+    if (scan < ss) scan = ss;
+    if (scan < se)
+      rasterizer->scan_bins[scan][rasterizer->scan_bin_count[scan]++]=i;
+  }
+#else
   ctx_sort_edges (rasterizer);
+#endif
 
   rasterizer->scanline = scan_start;
 

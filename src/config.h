@@ -913,3 +913,8 @@
 #ifndef CTX_ASSERT
 #define CTX_ASSERT               0
 #endif
+
+
+#ifndef CTX_SCANBIN
+#define CTX_SCANBIN 0
+#endif
