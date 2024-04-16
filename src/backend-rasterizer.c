@@ -218,13 +218,12 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
     if (active_edges + pending_edges == 0)
       return -1;
 
-    if (horizontal_edges) return 5;
-    if (rasterizer->ending_edges|pending_edges)
+    if (rasterizer->ending_edges|pending_edges|horizontal_edges)
     {
       const unsigned int *scan_aa = rasterizer->scan_aa;
       return scan_aa[3]?15:
              scan_aa[2]?5:
-             scan_aa[1]?3:1;
+             scan_aa[1]?3:3;
     }
     return 0;
 }
