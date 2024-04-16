@@ -7213,11 +7213,13 @@ ctx_composite_fill_rect_aligned (CtxRasterizer *rasterizer,
       //CtxExtend extend = rasterizer->state->gstate.extend;
       INIT_ENV;
 
+#if CTX_FRAGMENT_SPECIALIZE
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
         ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 1);
         return;
       }
+#endif
 #if 0
       if (fragment == ctx_fragment_image_rgba8_RGBA8_bi_scale)
       {
@@ -7255,9 +7257,9 @@ y1, 1);
     }
     case CTX_COV_PATH_RGBA8_OVER_FRAGMENT:
     {
+#if CTX_FRAGMENT_SPECIALIZE
       CtxFragment fragment = rasterizer->fragment;
       //CtxExtend extend = rasterizer->state->gstate.extend;
-#if 1
       if (fragment == ctx_fragment_image_rgba8_RGBA8_nearest_copy)
       {
         ctx_RGBA8_image_rgba8_RGBA8_nearest_fill_rect_copy (rasterizer, x0, y0, x1, y1, 0);

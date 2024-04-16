@@ -881,13 +881,6 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
 }
 
 #if CTX_SCANBIN==0
-static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
-{
-  const CtxSegment *a = (const CtxSegment *) ap;
-  const CtxSegment *b = (const CtxSegment *) bp;
-  return a->y0 - b->y0;
-}
-
 static CTX_INLINE int ctx_compare_edge (const void *ap, int by0)
 {
   return ((const CtxSegment *) ap)->y0 - by0;
