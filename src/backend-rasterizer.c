@@ -168,17 +168,21 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
               {
 	        dx_dy = abs(dx_dy);
 
-
 #if 0
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*1)/CTX_SUBDIV/15)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*3)/CTX_SUBDIV/15)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*5)/CTX_SUBDIV/15)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*1.3)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*14)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*15)/CTX_SUBDIV/15/1024)
 #else
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*1.33)/CTX_SUBDIV/15/1024)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*6)/CTX_SUBDIV/15/1024)
-#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*12)/CTX_SUBDIV/15/1024)
+#if 0
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*3)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*5)/CTX_SUBDIV/15/1024)
+#else
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT3           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*0.95)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT5           ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*6.5)/CTX_SUBDIV/15/1024)
+#define CTX_RASTERIZER_AA_SLOPE_LIMIT15          ((65536*CTX_RASTERIZER_EDGE_MULTIPLIER*10.5)/CTX_SUBDIV/15/1024)
 #endif
-
+#endif
 
 		int aa = (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3) +
 	           +  (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5)
@@ -221,9 +225,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
     if (rasterizer->ending_edges|pending_edges|horizontal_edges)
     {
       const unsigned int *scan_aa = rasterizer->scan_aa;
-      return scan_aa[3]?15:
-             scan_aa[2]?5:
-             scan_aa[1]?3:3;
+      return scan_aa[3]?15:scan_aa[2]?5:3;
     }
     return 0;
 }
@@ -258,7 +260,7 @@ static inline void ctx_coverage_post_process (CtxRasterizer *rasterizer, const u
                                                  // post process after
                                                  // coverage generation icnrement
     /* perhaps not working right for clear? */
-    int y = scanline / CTX_FULL_AA;//rasterizer->aa;
+    int y = scanline / CTX_FULL_AA;
     uint8_t *clip_line = &((uint8_t*)(rasterizer->clip_buffer->data))[rasterizer->blit_width*y];
 #if CTX_1BIT_CLIP==0
     int blit_x = rasterizer->blit_x;
@@ -948,7 +950,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   CtxGState     *gstate     = &rasterizer->state->gstate;
   const int      is_winding  = fill_rule == CTX_FILL_RULE_WINDING;
   const CtxCovPath comp = rasterizer->comp;
-  const int real_aa     = rasterizer->aa;
   uint8_t  *dst         = ((uint8_t *) rasterizer->buf);
   int       scan_start  = rasterizer->blit_y * CTX_FULL_AA;
   int       scan_end    = scan_start + (rasterizer->blit_height - 1) * CTX_FULL_AA;
@@ -1029,7 +1030,6 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
       int c0 = minx;
       int c1 = maxx;
       int aa = ctx_rasterizer_feed_edges_full (rasterizer);
-      aa = ctx_mini (aa, real_aa); // limit to maximum vertical super sampling
       switch (aa)
       {
         case -1: /* no edges */
@@ -1101,7 +1101,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
 	break;
         case 15:
         { /* level of oversampling based on lowest steepness edges */
-	  const int raa=5;
+	  const int raa=15;
           ctx_rasterizer_increment_edges (rasterizer, -CTX_AA_HALFSTEP2);
           memset (coverage, 0, pixs);
           const int scanline_increment = 15/raa;
@@ -2423,7 +2423,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
   int count = rasterizer->edge_list.count;
   if (count == 0)
     return;
-  int aa_backup = rasterizer->aa;
   int preserved = rasterizer->preserve;
   float factor = ctx_matrix_get_scale (&gstate->transform);
   float line_width = gstate->line_width * factor;
@@ -2491,7 +2490,6 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
 #endif
 #endif
   
-  rasterizer->aa = ctx_mini(aa_backup, 5);
     {
     {
       ctx_rasterizer_reset (rasterizer); /* then start afresh with our stroked shape  */
@@ -2691,7 +2689,6 @@ foo:
       _ctx_transform_prime (rasterizer->state);
     }
   }
-  rasterizer->aa = aa_backup;
 #if CTX_FAST_FILL_RECT
 #if CTX_FAST_STROKE_RECT
   done:
@@ -3988,7 +3985,6 @@ ctx_rasterizer_init (CtxRasterizer *rasterizer, Ctx *ctx, Ctx *texture_source, C
   rasterizer->state       = state;
   rasterizer->texture_source = texture_source?texture_source:ctx;
 
-  rasterizer->aa          = _ctx_antialias_to_aa (antialias);
   ctx_state_init (rasterizer->state);
   rasterizer->buf         = data;
   rasterizer->blit_x      = x;

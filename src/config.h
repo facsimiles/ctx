@@ -876,18 +876,22 @@
 #define CTX_GSTATE_PROTECT  0
 #endif
 
+// only applies with gcc not clang
 #ifndef CTX_COMPOSITE_O3
 #define CTX_COMPOSITE_O3 0
 #endif
 
+// only applies with gcc not clang
 #ifndef CTX_COMPOSITE_O2
 #define CTX_COMPOSITE_O2 0
 #endif
 
+// only applies with gcc not clang
 #ifndef CTX_RASTERIZER_O3
 #define CTX_RASTERIZER_O3 0
 #endif
 
+// only applies with gcc not clang
 #ifndef CTX_RASTERIZER_O2
 #define CTX_RASTERIZER_O2 0
 #endif
