@@ -231,11 +231,11 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
       ctx_rasterizer_sort_active_edges (rasterizer);
 
     if (horizontal_edges) return 5;
-    if (rasterizer->ending_edges!=pending_edges)
+    if (rasterizer->ending_edges|pending_edges)
     {
       const unsigned int *scan_aa = rasterizer->scan_aa;
       return (scan_aa[3]>0)?15:
-             (scan_aa[2]>0)?5:
+             ((scan_aa[2]>0))?5:
              (scan_aa[1]>0)?3:1;
     }
     return 0;
