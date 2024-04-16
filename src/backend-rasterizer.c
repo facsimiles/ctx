@@ -21,8 +21,6 @@
 
 #define CTX_MAGIC_OFFSET  1 // without this we get scanline glitches
 
-#define CTX_INITIAL_OFFSET  CTX_AA_HALFSTEP2
-
 static inline void ctx_rasterizer_discard_edges (CtxRasterizer *rasterizer)
 {
   int scanline = rasterizer->scanline + CTX_MAGIC_OFFSET;
@@ -159,7 +157,7 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
           int dy = (y1 - miny);
           if (dy)
             {
-              int yd = (scanline + CTX_INITIAL_OFFSET) - miny;
+              int yd = (scanline + CTX_AA_HALFSTEP2) - miny;
               unsigned int index = edges[active_edges] = edge_pos;
               int x0 = entries[index].x0;
               int x1 = entries[index].x1;
@@ -889,15 +887,20 @@ static CTX_INLINE int ctx_compare_edges (const void *ap, const void *bp)
   return a->y0 - b->y0;
 }
 
+static CTX_INLINE int ctx_compare_edge (const void *ap, int by0)
+{
+  return ((const CtxSegment *) ap)->y0 - by0;
+}
+
 static CTX_INLINE int ctx_edge_qsort_partition (CtxSegment *A, int low, int high)
 {
-  CtxSegment pivot = A[ (high+low) /2];
+  int pivot_y0 = A[ (high+low) /2].y0;
   int i = low;
   int j = high;
   while (i <= j)
     {
-      while (ctx_compare_edges (&A[i], &pivot) < 0) { i ++; }
-      while (ctx_compare_edges (&pivot, &A[j]) < 0) { j --; }
+      while (ctx_compare_edge (&A[i], pivot_y0) < 0) { i ++; }
+      while (ctx_compare_edge (&A[j], pivot_y0) > 0) { j --; }
       if (i <= j)
         {
           CtxSegment tmp = A[i];
@@ -932,10 +935,11 @@ static CTX_INLINE void ctx_edge_qsort (CtxSegment *entries, int low, int high)
   } while (1);
 }
 
-tatic CTX_INLINE void ctx_sort_edges (CtxRasterizer *rasterizer)
+static CTX_INLINE void ctx_sort_edges (CtxRasterizer *rasterizer)
 {
   ctx_edge_qsort ((CtxSegment*)& (rasterizer->edge_list.entries[0]), 0, rasterizer->edge_list.count-1);
 }
+#endif
 
 static void
 ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule, const int allow_direct)
