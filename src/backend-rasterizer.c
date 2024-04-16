@@ -222,9 +222,9 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
     if (rasterizer->ending_edges|pending_edges)
     {
       const unsigned int *scan_aa = rasterizer->scan_aa;
-      return (scan_aa[3]>0)?15:
-             ((scan_aa[2]>0))?5:
-             (scan_aa[1]>0)?3:1;
+      return scan_aa[3]?15:
+             scan_aa[2]?5:
+             scan_aa[1]?3:1;
     }
     return 0;
 }
@@ -1059,26 +1059,88 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
           ctx_rasterizer_increment_edges (rasterizer, CTX_FULL_AA);
           break;
         }
-        default:
+#if 1
+        case 3:
         { /* level of oversampling based on lowest steepness edges */
+	  const int raa=3;
           ctx_rasterizer_increment_edges (rasterizer, -CTX_AA_HALFSTEP2);
           memset (coverage, 0, pixs);
-	  static const int fractions[]={0,255,2,255/3,4,255/5,6,7,8,9,10,11,12,13,14,255/15,16};
-	  static const int increments[]={0,15/1,2,15/3,4,15/5,6,7,8,9,10,11,12,13,14,15/15,16};
-          int scanline_increment = increments[aa];
-          uint8_t fraction = fractions[aa];
+          const int scanline_increment = 15/raa;
+          const uint8_t fraction = 255/raa;
 
 	  c0 = maxx;
 	  c1 = minx;
-          for (int i = 1; i <= aa; i++)
+          for (int i = 1; i <= raa; i++)
           {
             ctx_rasterizer_sort_active_edges (rasterizer);
-            ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, aa, fraction, &c0, &c1);
+            ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, raa, fraction, &c0, &c1);
             rasterizer->scanline += scanline_increment;
-            ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2 * (i==aa));
+            ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2 * (i==raa));
             ctx_rasterizer_feed_pending_edges (rasterizer);
           }
         }
+	break;
+        case 5:
+        { /* level of oversampling based on lowest steepness edges */
+	  const int raa=5;
+          ctx_rasterizer_increment_edges (rasterizer, -CTX_AA_HALFSTEP2);
+          memset (coverage, 0, pixs);
+          const int scanline_increment = 15/raa;
+          const uint8_t fraction = 255/raa;
+
+	  c0 = maxx;
+	  c1 = minx;
+          for (int i = 1; i <= raa; i++)
+          {
+            ctx_rasterizer_sort_active_edges (rasterizer);
+            ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, raa, fraction, &c0, &c1);
+            rasterizer->scanline += scanline_increment;
+            ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2 * (i==raa));
+            ctx_rasterizer_feed_pending_edges (rasterizer);
+          }
+        }
+	break;
+        case 15:
+        { /* level of oversampling based on lowest steepness edges */
+	  const int raa=5;
+          ctx_rasterizer_increment_edges (rasterizer, -CTX_AA_HALFSTEP2);
+          memset (coverage, 0, pixs);
+          const int scanline_increment = 15/raa;
+          const uint8_t fraction = 255/raa;
+
+	  c0 = maxx;
+	  c1 = minx;
+          for (int i = 1; i <= raa; i++)
+          {
+            ctx_rasterizer_sort_active_edges (rasterizer);
+            ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, raa, fraction, &c0, &c1);
+            rasterizer->scanline += scanline_increment;
+            ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2 * (i==raa));
+            ctx_rasterizer_feed_pending_edges (rasterizer);
+          }
+        }
+	break;
+#else
+        default:
+        { /* level of oversampling based on lowest steepness edges */
+	  const int raa=aa;
+          ctx_rasterizer_increment_edges (rasterizer, -CTX_AA_HALFSTEP2);
+          memset (coverage, 0, pixs);
+          const int scanline_increment = 15/raa;
+          const uint8_t fraction = 255/raa;
+
+	  c0 = maxx;
+	  c1 = minx;
+          for (int i = 1; i <= raa; i++)
+          {
+            ctx_rasterizer_sort_active_edges (rasterizer);
+            ctx_rasterizer_generate_coverage (rasterizer, minx, maxx, coverage, is_winding, raa, fraction, &c0, &c1);
+            rasterizer->scanline += scanline_increment;
+            ctx_rasterizer_increment_edges (rasterizer, scanline_increment + CTX_AA_HALFSTEP2 * (i==raa));
+            ctx_rasterizer_feed_pending_edges (rasterizer);
+          }
+        }
+#endif
       }
   
       if (c1 >= c0)
