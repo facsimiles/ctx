@@ -227,8 +227,7 @@ ctx_gradient_cache_prime (CtxRasterizer *rasterizer)
     else if (source->type == CTX_SOURCE_RADIAL_GRADIENT)
        length = ctx_maxf (source->radial_gradient.r1, source->radial_gradient.r0);
     else if (source->type == CTX_SOURCE_CONIC_GRADIENT)
-       length = 400;
-  //  length = CTX_GRADIENT_CACHE_ELEMENTS;
+      length = CTX_GRADIENT_CACHE_ELEMENTS;
   {
      float u = length; float v = length;
      const CtxMatrix *m = &rasterizer->state->gstate.transform;

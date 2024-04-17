@@ -125,6 +125,7 @@ CTX_INLINE static void ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasteri
 inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
 {
   int miny;
+  const int max_vaa = rasterizer->aa;
   ctx_rasterizer_feed_pending_edges (rasterizer);
   CtxSegment *__restrict__ entries = (CtxSegment*)&rasterizer->edge_list.entries[0];
   int *edges = rasterizer->edges;
@@ -184,9 +185,15 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
 #endif
 #endif
 
-		int aa = (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3) +
-	           +  (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5)
+		int aa = 0;
+		if (max_vaa > 5)
+		aa = (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3) 
+	           +  (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) 
 	           +  (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT15);
+		else
+		aa = (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT3) 
+	           +  (dx_dy > CTX_RASTERIZER_AA_SLOPE_LIMIT5) * (max_vaa>3);
+		
                 rasterizer->scan_aa[aa]++;
 	        entries[index].aa = aa;
 	      }
@@ -225,7 +232,9 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer)
     if (rasterizer->ending_edges|pending_edges|horizontal_edges)
     {
       const unsigned int *scan_aa = rasterizer->scan_aa;
-      return scan_aa[3]?15:scan_aa[2]?5:3;
+      int aa = scan_aa[3]?15:scan_aa[2]?5:3;
+      return aa;
+      //return ctx_mini(aa, rasterizer->aa);
     }
     return 0;
 }
@@ -1780,74 +1789,6 @@ static CTX_INLINE int ctx_perpdot(int ax,int ay,int bx, int by)
 { return (ax*by)-(ay*bx);
 }
 
-static CTX_INLINE int ctx_is_poly_convex (CtxRasterizer *rasterizer)
-{
-  int count = rasterizer->edge_list.count;
-  CtxSegment *temp = (CtxSegment*)rasterizer->edge_list.entries;
-  int prev_x = 0;
-  int prev_y = 0;
-  int prev_prev_x = 0;
-  int prev_prev_y = 0;
-  int start = 0;
-  int end = 0;
-
-  int got_first = 0;
-  int expected_sign = 0;
-
-  while (start < count)
-    {
-      int started = 0;
-      int i;
-      for (i = start; i < count; i++)
-        {
-          CtxSegment *segment = &temp[i];
-          int x, y;
-          if (segment->code == CTX_NEW_EDGE)
-            {
-              if (started)
-                {
-                  end = i - 1;
-                  goto foo;
-                }
-              prev_x = segment->x0;
-              prev_y = segment->y0;
-              start = i;
-            }
-          x = segment->x1;
-          y = segment->y1;
-          
-	  if (started)
-	  {
-	    if (!got_first)
-	    {
-               int pd = ctx_perpdot(prev_x - prev_prev_x, prev_y - prev_prev_y, x - prev_x, y - prev_y);
-	       if (pd != 0) {
-	         expected_sign = pd < 0;
-	         got_first = 1;
-	       }
-	    }
-	    else
-	    {
-              int pd = ctx_perpdot(prev_x - prev_prev_x, prev_y - prev_prev_y, x - prev_x, y - prev_y);
-	      int sign = pd < 0;
-	      if ((pd !=0) & (sign != expected_sign))
-	        return 0;
-	    }
-	  }
-          prev_prev_x = prev_x;
-          prev_prev_y = prev_y;
-          prev_x = x;
-          prev_y = y;
-          started++;
-        }
-      end = i-1;
-foo:
-      start = end+1;
-    }
-  return 1;
-}
-
-
 static void
 ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 {
@@ -2005,10 +1946,11 @@ ctx_rasterizer_glyph (CtxRasterizer *rasterizer, uint32_t unichar, int stroke)
   _ctx_user_to_device (rasterizer->state, &tx, &ty);
   _ctx_user_to_device (rasterizer->state, &tx2, &ty2);
 
-  if ((tx2 < rasterizer->blit_x) | (ty2 < rasterizer->blit_y)) return;
+  if ((tx2 < rasterizer->blit_x) | (ty2 < rasterizer->blit_y))
+    return;
   if ((tx  > rasterizer->blit_x + rasterizer->blit_width) |
       (ty  > rasterizer->blit_y + rasterizer->blit_height))
-          return;
+    return;
 
 #if CTX_TERM
 #if CTX_BRAILLE_TEXT
@@ -2676,7 +2618,10 @@ foo:
       CtxFillRule rule_backup = gstate->fill_rule;
       gstate->fill_rule = CTX_FILL_RULE_WINDING;
       rasterizer->preserve = 0; // so fill isn't tripped
+      int aa = rasterizer->aa;
+      rasterizer->aa = 3 + (aa>5)*2;
       ctx_rasterizer_fill (rasterizer);
+      rasterizer->aa = aa;
       gstate->fill_rule = rule_backup;
       gstate->transform = transform_backup;
       _ctx_transform_prime (rasterizer->state);
