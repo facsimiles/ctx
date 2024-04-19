@@ -94,14 +94,14 @@ CtxSegment {
      int32_t y0;
      int32_t y1;
      int32_t x1;
+     int32_t val;
+     int32_t delta;
    };
    struct {
      int16_t code__;
      int16_t aa__;
-     int32_t val;
      int32_t y0_;
      int32_t y1_;
-     int32_t delta;
    };
 #else
    struct {

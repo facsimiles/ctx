@@ -796,6 +796,7 @@ struct _CtxRasterizer
   unsigned int  preserve;
   unsigned int  in_text;
 
+
 #if CTX_STATIC_OPAQUE
   uint8_t opaque[CTX_MAX_SCANLINE_LENGTH];
 #endif
@@ -826,6 +827,9 @@ struct _CtxRasterizer
 #if CTX_ENABLE_SHADOW_BLUR
   float      kernel[CTX_MAX_GAUSSIAN_KERNEL_DIM];
 #endif
+  unsigned int shadow_active_edges;
+  unsigned int shadow_edge_pos;
+  int shadow_edges[CTX_MAX_EDGES*2];
 
 #if CTX_SCANBIN
   uint32_t scan_bins[CTX_MAX_SCANLINES][CTX_MAX_EDGES];

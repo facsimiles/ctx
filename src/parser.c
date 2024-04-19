@@ -330,6 +330,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case SQZ_stroke:         ret = CTX_STROKE; break;
           case SQZ_fill:           ret = CTX_FILL; break;
           case SQZ_paint:          ret = CTX_PAINT; break;
+          case SQZ_preserve:       ret = CTX_PRESERVE; break;
           case SQZ_endFrame:       ret = CTX_END_FRAME; break;
           case SQZ_horLineTo:      ret = CTX_HOR_LINE_TO; break;
           case SQZ_rotate:         ret = CTX_ROTATE; break;

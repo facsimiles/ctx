@@ -132,10 +132,14 @@
 
 #if CTX_SIMD
 #if CTX_X86_64
+#include <xmmintrin.h>
 void ctx_simd_setup_x86_64_v2 (void);
 void ctx_simd_setup_x86_64_v3 (void);
 void ctx_simd_setup (void)
 {
+  // this would also affect other code..
+  //_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+  //_mm_setcsr(_mm_getcsr() | 0x8040);
   switch (ctx_x86_64_level())
   {
     default:
@@ -148,6 +152,8 @@ void ctx_simd_setup (void)
 #else // must be arm if we have SIMD enabled and are not x86_64
 void ctx_simd_setup_arm_neon (void);
 int ctx_arm_has_neon (int *armv);
+
+
 void ctx_simd_setup (void)
 {
   if (ctx_arm_has_neon (NULL))

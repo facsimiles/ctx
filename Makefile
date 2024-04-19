@@ -24,6 +24,8 @@ CFLAGS+= $(CFLAGS_warnings) -fpic -fno-builtin-memcpy -fno-semantic-interpositio
 CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 	 -I/usr/X11R6/include -I/usr/X11R7/include
 
+CFLAGS += -ffinite-math-only -fno-trapping-math -fno-signed-zeros -fno-math-errno
+
 CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers -Iitk
 LIBS  += -lm -lpthread  
 

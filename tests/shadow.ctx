@@ -4,14 +4,18 @@ fill
 
 rgba shadowColor 0 0 0 1
 shadowBlur 3%
-shadowOffsetX 3%
-shadowOffsetY 3%
+shadowOffsetX 1%
+shadowOffsetY 1%
 
 roundRectangle 10% 20% 80% 60% 4%
 rgba 1 1 1 1
 fill
-rgba 0 0 0 1.0
 
+# the following block should not be needed
+#shadowBlur 0
+#roundRectangle 10% 20% 80% 60% 4%
+#rgba 1 1 1 1
+#fill
 
 rgb 1 0 0
 
@@ -25,7 +29,7 @@ textBaseline bottom
 
 shadowOffsetX 0@
 shadowOffsetY 0@
-shadowBlur 0.2@
+shadowBlur 1.2@
 rgba shadowColor 1 0 0 1
 
 rgb 1 1 1
@@ -40,15 +44,15 @@ textBaseline top
 
 shadowOffsetX 0.1@
 shadowOffsetY 0.1@
-shadowBlur 0.2@
-rgba shadowColor 0 0 0 1
+shadowBlur 1.0@
+rgba shadowColor 0 0 0 0.5
 
 rgb 0.5 1 0.8
 
 text "shadow"
-shadowBlur 2%
-shadowOffsetX 1%
-shadowOffsetY 1%
+shadowBlur 5.0@
+shadowOffsetX 0
+shadowOffsetY 0
 
 lineWidth 1%
 moveTo 15% 30%
@@ -56,4 +60,6 @@ lineTo 14% 40%
 lineTo 25% 60%
 lineTo 12% 70%
 lineTo 15% 75%
+lineTo 45% 15%
 stroke
+

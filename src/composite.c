@@ -3461,7 +3461,7 @@ ctx_RGBA8_source_over_normal_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
 }
 
 static CTX_INLINE void
-ctx_RGBA8_source_over_normal_full_cov_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *tsrc)
+ctx_RGBA8_source_over_normal_full_cov_buf (CTX_COMPOSITE_ARGUMENTS, uint8_t *__restrict__ tsrc)
 {
   uint32_t *ttsrc = (uint32_t*)tsrc;
   uint32_t *ddst  = (uint32_t*)dst;

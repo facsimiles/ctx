@@ -116,6 +116,7 @@
 #define SQZ_normal 1883425054u
 #define SQZ_olive 3415799870u
 #define SQZ_paint 1082699806u
+#define SQZ_preserve 1666261276u
 #define SQZ_purple 3066163412u
 #define SQZ_quadTo 3205866160u
 #define SQZ_radialGradient 83850682u
