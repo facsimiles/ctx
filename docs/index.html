@@ -93,36 +93,39 @@
 <tr><th>.</th><th>ctx-protocol</th><th>ctx</th><th>cairo</th><th>skia</th><th>blend2d</th></tr>
 
 <tr><td>GPU rendering</td><td></td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
-<tr><td>change extent detection</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
-<tr><td>CMYK output</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
-<tr><td>float output</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
-<tr><td>rgb565 output</td><td></td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td></tr>
 <tr><td>threaded rendering</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td></tr>
+<tr><td>color management</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
+<tr><td>automatic partial redraws</td><td></td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
 <tr><td>event-handling</td><td></td><td class='Y'>Y</td><td></td><td></td><td></td></tr>
-<tr><td>drop-shadow</td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
 <tr><td>pcm-audio</td><td></td><td class='Y'>Y</td><td></td><td></td><td></td></tr>
+<tr><td>shadow blur</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>inner shadow</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td class='N'>N</td></tr>
 
-<tr><td>stroke-dash</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td></tr>
 <tr><td>stroke-join-miter</td><td class='Y'>Y</td><td class='N'>N</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>stroke-end-square</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+<tr><td>stroke-dash</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td></tr>
 <tr><td>stroke-join-round</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>stroke-end-round</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>clipping</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td></tr>
 <tr><td>compositing-groups</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td></tr>
 <tr><td>blending-modes</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>text</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
+
+
+
 <tr><td>perspective-transform textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
 <tr><td>perspective-transform paths</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
 <tr><td>linear-gradient</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>radial-gradient</td><td class='Y'>Y</td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>conic-gradient</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='N'>N</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>mesh-gradient</td><td class='N'>N</td><td class='N'>N</td><td class='Y'>Y</td><td>?</td><td>?</td></tr>
+
 <tr><td>bilinear textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 <tr><td>nearest textures</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
 
 <tr><td>PDF</td><td></td><td class='P'>P</td><td class='Y'>Y</td><td class='Y'>Y</td><td></td></tr>
 <tr><td>RGBA</td> <td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td><td class='Y'>Y</td></tr>
-<tr><td>RGB30</td> <td> </td><td class='N'>N</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
+<tr><td>RGB30</td> <td> </td><td class='N'>N</td><td class='Y'>Y</td><td>?</td><td class='N'>N</td></tr>
 <tr><td>RGB332</td> <td> </td><td class='Y'>Y</td><td class='N'>N</td><td>?</td><td class='N'>N</td></tr>
 <tr><td>RGB565</td> <td> </td><td class='Y'>Y</td><td class='Y'>Y</td><td>?</td><td class='N'>N</td></tr>
 <tr><td>RGBA float</td> <td> </td><td class='Y'>Y</td><td class='N'>N</td><td class='N'>N</td><td class='N'>N</td></tr>
@@ -178,7 +181,7 @@
 can encourage continued development of ctx and dissimilar technologies by
 financially supporting me, <a href='https://pippin.gimp.org'>Øyvind Kolås</a> who is doing independent pro-bono R&amp;D through
        <a href='https://pippin.gimp.org/funding/'>patreon</a> and
-       similar. If my income through such sources is above 4000USD per month
+       <a href='https://liberapay.com/pippin/'>similar</a>. If my income through such sources is above 4000USD per month
 for a year, or if someone does a one time payment of the equivalent amount for
 the time I invested in ctx over the last few years, ctx could become available
 under under the <a
