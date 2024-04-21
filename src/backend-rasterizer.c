@@ -123,7 +123,8 @@ CTX_INLINE static void ctx_rasterizer_feed_pending_edges (CtxRasterizer *rasteri
 
 // makes us up-to date with ready to render rasterizer->scanline
 inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer,
-		                                  int with_shadow)
+		                                  int with_shadow,
+						  float blur_radius)
 {
   int miny;
   const int max_vaa = rasterizer->aa;
@@ -140,7 +141,6 @@ inline static int ctx_rasterizer_feed_edges_full (CtxRasterizer *rasterizer,
   {
   int shadow_active_edges = rasterizer->shadow_active_edges;
   int *edges = rasterizer->shadow_edges;
-  float blur_radius = rasterizer->state->gstate.shadow_blur;
   int blur_scanline_start = scanline - CTX_FULL_AA * (int)blur_radius;
   int next_scanline = scanline + CTX_FULL_AA * (int)blur_radius;
   unsigned int edge_pos = rasterizer->shadow_edge_pos;
@@ -1267,7 +1267,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
     {
       int c0 = minx;
       int c1 = maxx;
-      int aa = ctx_rasterizer_feed_edges_full (rasterizer, 0);
+      int aa = ctx_rasterizer_feed_edges_full (rasterizer, 0, 0.0f);
       switch (aa)
       {
         case -1: /* no edges */
@@ -1469,7 +1469,8 @@ ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
   rasterizer->active_edges    =   0;
   rasterizer->shadow_active_edges =   0;
   CtxGState *gstate     = &rasterizer->state->gstate;
-  float blur_radius = gstate->shadow_blur;
+  float blur_radius = gstate->shadow_blur *
+	   ctx_matrix_get_scale (&gstate->transform);
   //fprintf (stderr, "%f\n", gstate->shadow_blur);
   const int  is_winding = fill_rule == CTX_FILL_RULE_WINDING;
   uint8_t  *dst         = ((uint8_t *) rasterizer->buf);
@@ -1553,7 +1554,7 @@ ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
     {
       int c0 = minx;
       int c1 = maxx;
-        ctx_rasterizer_feed_edges_full (rasterizer, 1);
+        ctx_rasterizer_feed_edges_full (rasterizer, 1, blur_radius);
         { 
           rasterizer->scanline += CTX_AA_HALFSTEP2;
           ctx_rasterizer_feed_pending_edges (rasterizer);

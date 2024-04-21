@@ -201,7 +201,7 @@ save
 
   rgba 1.0 1.0 1.0 1
   moveTo 20^ 96^
-  shadowBlur 3.5^
+  shadowBlur 4@
   rgb shadowColor 0 0 0 1.0
   shadowOffsetX 1^
   shadowOffsetY 1^
