@@ -780,8 +780,6 @@ struct _CtxRasterizer
   void      *buf;
 #if CTX_ENABLE_SHADOW_BLUR
   unsigned int  in_shadow:1;
-  int        shadow_x;
-  int        shadow_y;
 #endif
 
 

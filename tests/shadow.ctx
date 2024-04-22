@@ -23,12 +23,12 @@ textBaseline bottom
 
 shadowOffsetX 0@
 shadowOffsetY 0@
-shadowBlur 2@
+shadowBlur 5@
 rgba shadowColor 1 0 0 1
 
 rgb 1 1 1
 
-text "light"
+text "glow"
 
 rgb 1 0 0
 
@@ -38,7 +38,7 @@ textBaseline top
 
 shadowOffsetX 0.1@
 shadowOffsetY 0.1@
-shadowBlur 4@
+shadowBlur 5@
 rgba shadowColor 0 0 0 1.0
 
 rgb 0.5 1 0.8
