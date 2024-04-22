@@ -115,6 +115,12 @@
 #define CTX_ENABLE_SHADOW_BLUR    1
 #endif
 
+// fudge geomtry slightly with smoother blend between edges,
+// busting some SDF artifacts apparent in acute angles
+#ifndef CTX_RASTERIZER_BLUR_FUDGE
+#define CTX_RASTERIZER_BLUR_FUDGE 1
+#endif
+
 #ifndef CTX_GRADIENTS
 #define CTX_GRADIENTS             1
 #endif

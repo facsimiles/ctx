@@ -492,25 +492,38 @@ ctx_glyph_lookup (Ctx *ctx, uint32_t unichar);
 
 /**
  */
-void  ctx_glyphs_stroke          (Ctx        *ctx,
-                                  CtxGlyph   *glyphs,
-                                  int         n_glyphs);
+void  ctx_glyphs_stroke (Ctx        *ctx,
+                         CtxGlyph   *glyphs,
+                         int         n_glyphs);
 
+/* sets the color of the shadow-blur, use a < 1.0 for softer blur
+ */
 void ctx_shadow_rgba      (Ctx *ctx, float r, float g, float b, float a);
-void ctx_shadow_blur      (Ctx *ctx, float x);
+
+/* set the shadow_blur radius, which in HTML5 canvas is double the standard
+ * deviation of an expected gaussian blur.
+ */
+void ctx_shadow_blur      (Ctx *ctx, float stddev_x_2);
+
+/**
+ * specify offset of generated shadow blur
+ */
 void ctx_shadow_offset_x  (Ctx *ctx, float x);
 void ctx_shadow_offset_y  (Ctx *ctx, float y);
+
+/* create a new page
+ */
+void ctx_new_page         (Ctx *ctx);
 
 /**
  * ctx_view_box:
  *
- * Specify the view box for the current page.
+ * Specify the view box for the current page, should immediately follow
+ * new_page if present, the PDF backend in particular makes use of this.
  */
 void ctx_view_box         (Ctx *ctx,
                            float x0, float y0,
                            float w, float h);
-
-void ctx_new_page         (Ctx *ctx);
 
 /**
  * ctx_set_pixel_u8:
@@ -519,14 +532,16 @@ void ctx_new_page         (Ctx *ctx);
  * for individual few pixels, slow for doing textures.
  */
 void
-ctx_set_pixel_u8          (Ctx *ctx, uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+ctx_set_pixel_u8 (Ctx *ctx, uint16_t x, uint16_t y,
+		  uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
 /**
  * ctx_global_alpha:
  *
- * Set a global alpha value that the colors, textures and gradients are modulated by.
+ * Set a global alpha value that the colors, textures and gradients are
+ * modulated by.
  */
-void  ctx_global_alpha     (Ctx *ctx, float global_alpha);
+void  ctx_global_alpha (Ctx *ctx, float global_alpha);
 
 
 /**
@@ -535,7 +550,7 @@ void  ctx_global_alpha     (Ctx *ctx, float global_alpha);
  * The next source definition applies to stroking rather than filling, when a stroke source is
  * not explicitly set the value of filling is inherited.
  */
-void ctx_stroke_source  (Ctx *ctx); // next source definition is for stroking
+void ctx_stroke_source (Ctx *ctx); // next source definition is for stroking
 
 void ctx_rgba_stroke   (Ctx *ctx, float r, float g, float b, float a);
 void ctx_rgb_stroke    (Ctx *ctx, float r, float g, float b);
