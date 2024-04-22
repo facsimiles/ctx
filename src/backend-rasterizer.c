@@ -506,8 +506,8 @@ ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
   int scanline        = rasterizer->scanline;
   int parity        = 0;
   float inv_blur = 1.0/(blur * CTX_FULL_AA);
-  const int skip_len = blur/2+2;
-                          // how far ahead we jump looking for
+  const int skip_len = blur / 2 + 1;
+  // how far ahead we jump looking for
 			  // same alpha runs - speeding up solid/blank and
 
   coverage -= minx;
@@ -1498,7 +1498,7 @@ ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
   rasterizer->shadow_active_edges =   0;
   CtxGState *gstate     = &rasterizer->state->gstate;
   float blur_radius = gstate->shadow_blur *
-	   ctx_matrix_get_scale (&gstate->transform) * 2;
+	   ctx_matrix_get_scale (&gstate->transform)* 2;
   //fprintf (stderr, "%f\n", gstate->shadow_blur); 
   const int  is_winding = fill_rule == CTX_FILL_RULE_WINDING;
   uint8_t  *dst         = ((uint8_t *) rasterizer->buf);
@@ -1507,9 +1507,9 @@ ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
   int       scan_end    = scan_start + (rasterizer->blit_height - 1) * CTX_FULL_AA;
   const int blit_width  = rasterizer->blit_width;
   const int blit_max_x  = rasterizer->blit_x + blit_width;
-  int       minx        = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x - blur_radius;
+  int       minx        = rasterizer->col_min / CTX_SUBDIV - rasterizer->blit_x;
   int       maxx        = (rasterizer->col_max + CTX_SUBDIV-1) / CTX_SUBDIV -
-                          rasterizer->blit_x + blur_radius;
+                          rasterizer->blit_x;
   const int bpp = rasterizer->format->bpp;
   const int blit_stride = rasterizer->blit_stride;
 
@@ -1530,12 +1530,12 @@ ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
   int br = ((int)blur_radius) * CTX_FULL_AA;
   rasterizer->scan_min -= (rasterizer->scan_min % CTX_FULL_AA);
   {
-     if (rasterizer->scan_min - br > scan_start)
+     if (rasterizer->scan_min > scan_start)
        {
-          dst += (blit_stride * (rasterizer->scan_min-br-scan_start) / CTX_FULL_AA);
-          scan_start = rasterizer->scan_min-br;
+          dst += (blit_stride * (rasterizer->scan_min-scan_start) / CTX_FULL_AA);
+          scan_start = rasterizer->scan_min;
        }
-      scan_end = ctx_mini (rasterizer->scan_max + br, scan_end);
+      scan_end = ctx_mini (rasterizer->scan_max, scan_end);
   }
 
   if (CTX_UNLIKELY(gstate->clip_min_y * CTX_FULL_AA > scan_start ))
@@ -2201,18 +2201,19 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
+    float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
     {
       CtxSegment *segment = &((CtxSegment*)rasterizer->edge_list.entries)[i];
-      segment->x0 += rasterizer->state->gstate.shadow_offset_x * CTX_SUBDIV;
-      segment->y0 += rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA;
-      segment->x1 += rasterizer->state->gstate.shadow_offset_x * CTX_SUBDIV;
-      segment->y1 += rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA;
+      segment->x0 += rasterizer->state->gstate.shadow_offset_x * CTX_SUBDIV * factor;
+      segment->y0 += rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA * factor;
+      segment->x1 += rasterizer->state->gstate.shadow_offset_x * CTX_SUBDIV * factor;
+      segment->y1 += rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA * factor;
     }
-    rasterizer->scan_min += rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA;
-    rasterizer->scan_max += rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA;
-    rasterizer->col_min  += (rasterizer->state->gstate.shadow_offset_x - gstate->shadow_blur * 3 + 1) * CTX_SUBDIV;
-    rasterizer->col_max  += (rasterizer->state->gstate.shadow_offset_x + gstate->shadow_blur * 3 + 1) * CTX_SUBDIV;
+    rasterizer->scan_min += ((rasterizer->state->gstate.shadow_offset_y - gstate->shadow_blur)*factor +1) * CTX_FULL_AA;
+    rasterizer->scan_max += ((rasterizer->state->gstate.shadow_offset_y + gstate->shadow_blur)*factor +1) * CTX_FULL_AA;
+    rasterizer->col_min  += ((rasterizer->state->gstate.shadow_offset_x - gstate->shadow_blur)*factor + 1) * CTX_SUBDIV;
+    rasterizer->col_max  += ((rasterizer->state->gstate.shadow_offset_x + gstate->shadow_blur)*factor + 1) * CTX_SUBDIV;
   }
 #endif
 
@@ -2283,10 +2284,11 @@ done:
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
-    rasterizer->scan_min -= rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA;
-    rasterizer->scan_max -= rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA;
-    rasterizer->col_min  -= (rasterizer->state->gstate.shadow_offset_x - gstate->shadow_blur * 3 + 1) * CTX_SUBDIV;
-    rasterizer->col_max  -= (rasterizer->state->gstate.shadow_offset_x + gstate->shadow_blur * 3 + 1) * CTX_SUBDIV;
+    float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+    rasterizer->scan_min -= ((rasterizer->state->gstate.shadow_offset_y - gstate->shadow_blur) *factor+ 1) * CTX_FULL_AA;
+    rasterizer->scan_max -= ((rasterizer->state->gstate.shadow_offset_y + gstate->shadow_blur) *factor+ 1) * CTX_FULL_AA;
+    rasterizer->col_min  -= ((rasterizer->state->gstate.shadow_offset_x - gstate->shadow_blur) *factor+ 1) * CTX_SUBDIV;
+    rasterizer->col_max  -= ((rasterizer->state->gstate.shadow_offset_x + gstate->shadow_blur) *factor+ 1) * CTX_SUBDIV;
   }
 #endif
   rasterizer->preserve = 0;
@@ -3446,35 +3448,6 @@ ctx_rasterizer_set_pixel (CtxRasterizer *rasterizer,
 #endif
 }
 
-#if CTX_ENABLE_SHADOW_BLUR
-static inline float
-ctx_gaussian (float x, float mu, float sigma)
-{
-  float a = ( x- mu) / sigma;
-  return ctx_expf (-0.5f * a * a);
-}
-
-static inline void
-ctx_compute_gaussian_kernel (int dim, float radius, float *kernel)
-{
-  float sigma = radius / 2;
-  float sum = 0.0;
-  int i = 0;
-  //for (int row = 0; row < dim; row ++)
-    for (int col = 0; col < dim; col ++, i++)
-    {
-      float val = //ctx_gaussian (row, radius, sigma) *
-                            ctx_gaussian (col, radius, sigma);
-      kernel[i] = val;
-      sum += val;
-    }
-  i = 0;
-  //for (int row = 0; row < dim; row ++)
-    for (int col = 0; col < dim; col ++, i++)
-        kernel[i] /= sum;
-}
-#endif
-
 static void
 ctx_rasterizer_round_rectangle (CtxRasterizer *rasterizer, float x, float y, float width, float height, float corner_radius)
 {
@@ -3629,8 +3602,6 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_SHADOW_BLUR
     rasterizer->in_shadow = 1;
 #endif
-    //rasterizer->shadow_x = rasterizer->state->gstate.shadow_offset_x;
-    //rasterizer->shadow_y = rasterizer->state->gstate.shadow_offset_y;
     rasterizer->preserve = 1;
     ctx_rasterizer_stroke (rasterizer);
 #if CTX_ENABLE_SHADOW_BLUR
@@ -3702,16 +3673,9 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
     ctx_f (CTX_CONT, rgba[3], 1.0f)
   };
   CtxEntry restore_command = ctx_void(CTX_RESTORE);
-  float radius = rasterizer->state->gstate.shadow_blur;
-  int dim = 2 * radius + 1;
-  if (dim > CTX_MAX_GAUSSIAN_KERNEL_DIM)
-    dim = CTX_MAX_GAUSSIAN_KERNEL_DIM;
-  ctx_compute_gaussian_kernel (dim, radius, rasterizer->kernel);
   ctx_rasterizer_process (ctx, (CtxCommand*)&save_command);
 
   ctx_rasterizer_process (ctx, (CtxCommand*)&set_color_command);
-  //rasterizer->shadow_x = rasterizer->state->gstate.shadow_offset_x;
-  //rasterizer->shadow_y = rasterizer->state->gstate.shadow_offset_y;
   rasterizer->preserve = 1;
   rasterizer->in_shadow = 1;
   ctx_rasterizer_fill (rasterizer);

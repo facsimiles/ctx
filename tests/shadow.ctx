@@ -1,9 +1,10 @@
 gray .75
+fontSize 5.5^
 rectangle 0 0 100% 100%
 fill
 
 rgba shadowColor 0 0 0 0.6
-shadowBlur 4%
+shadowBlur 20
 shadowOffsetX 1%
 shadowOffsetY 1%
 
@@ -13,38 +14,30 @@ fill
 
 rgb 1 0 0
 
-shadowBlur 4@
-shadowOffsetX 0.5@
-shadowOffsetY 0.5@
-fontSize 1.5@
 moveTo 50% 50%
 textAlign right
 textBaseline bottom
 
 shadowOffsetX 0@
 shadowOffsetY 0@
-shadowBlur 5@
+shadowBlur 42
 rgba shadowColor 1 0 0 1
-
-rgb 1 1 1
-
+rgba 1 1 1 1
 text "glow"
 
-rgb 1 0 0
 
+rgb 1 0 0
 moveTo 50% 50%
 textAlign left
 textBaseline top
-
 shadowOffsetX 0.1@
 shadowOffsetY 0.1@
-shadowBlur 5@
+shadowBlur 10
 rgba shadowColor 0 0 0 1.0
-
 rgb 0.5 1 0.8
 
 text "shadow"
-shadowBlur 5%
+shadowBlur    2%
 shadowOffsetX 0
 shadowOffsetY 0
 rgba shadowColor 0 0 0 0.5
