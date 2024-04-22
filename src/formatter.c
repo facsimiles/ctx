@@ -234,6 +234,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_LINE_WIDTH:           return "lineWidth"; break;
           case CTX_LINE_DASH_OFFSET:     return "lineDashOffset"; break;
           case CTX_STROKE_POS:           return "strokePos"; break;
+          case CTX_FEATHER:              return "feather"; break;
           case CTX_LINE_HEIGHT:          return "lineHeight";break;
           case CTX_WRAP_LEFT:            return "wrapLeft"; break;
           case CTX_WRAP_RIGHT:           return "wrapRight"; break;
@@ -282,6 +283,7 @@ static void _ctx_print_name (CtxFormatter *formatter, int code)
         case CTX_MITER_LIMIT:       name[1]='l'; break;
         case CTX_COMPOSITING_MODE:  name[1]='m'; break;
         case CTX_STROKE_POS:        name[1]='p'; break;
+        case CTX_FEATHER:           name[1]='F'; break;
         case CTX_FILL_RULE:         name[1]='r'; break;
         case CTX_SHADOW_BLUR:       name[1]='s'; break;
         case CTX_TEXT_ALIGN:        name[1]='t'; break;
@@ -624,6 +626,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_LINE_WIDTH:
       case CTX_LINE_DASH_OFFSET:
       case CTX_STROKE_POS:
+      case CTX_FEATHER:
       case CTX_LINE_HEIGHT:
       case CTX_WRAP_LEFT:
       case CTX_WRAP_RIGHT:

@@ -55,6 +55,7 @@
 #define SQZ_evenOdd 3373267632u
 #define SQZ_exit 1953069259u
 #define SQZ_extend 2652659078u
+#define SQZ_feather 4162344430u
 #define SQZ_fill 1819044301u
 #define SQZ_fillRect 3070816944u
 #define SQZ_fillRule 2262201016u

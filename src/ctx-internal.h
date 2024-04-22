@@ -224,6 +224,7 @@ struct _CtxGState
   float         line_width;
   float         line_dash_offset;
   float         stroke_pos;
+  float         feather;
   float         miter_limit;
   float         font_size;
 #if CTX_ENABLE_SHADOW_BLUR

@@ -3755,6 +3755,7 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
       case CTX_WRAP_RIGHT:
       case CTX_LINE_DASH_OFFSET:
       case CTX_STROKE_POS:
+      case CTX_FEATHER:
       case CTX_LINE_WIDTH:
       case CTX_SHADOW_BLUR:
       case CTX_SHADOW_OFFSET_X:

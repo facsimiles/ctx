@@ -292,6 +292,7 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
       case 'w': return ctx_parser_set_command (parser, CTX_LINE_WIDTH);
       case 'D': return ctx_parser_set_command (parser, CTX_LINE_DASH_OFFSET);
       case 'p': return ctx_parser_set_command (parser, CTX_STROKE_POS);
+      case 'F': return ctx_parser_set_command (parser, CTX_FEATHER);
       case 'H': return ctx_parser_set_command (parser, CTX_LINE_HEIGHT);
       case 'L': return ctx_parser_set_command (parser, CTX_WRAP_LEFT);
       case 'R': return ctx_parser_set_command (parser, CTX_WRAP_RIGHT);
@@ -466,6 +467,8 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
             return ctx_parser_set_command (parser, CTX_LINE_DASH_OFFSET);
 	  case SQZ_strokePos:
             return ctx_parser_set_command (parser, CTX_STROKE_POS);
+	  case SQZ_feather:
+            return ctx_parser_set_command (parser, CTX_FEATHER);
           case SQZ_lineHeight:
             return ctx_parser_set_command (parser, CTX_LINE_HEIGHT);
           case SQZ_wrapLeft:
@@ -1104,6 +1107,9 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_STROKE_POS:
         ctx_stroke_pos (ctx, arg(0));
         break;
+      case CTX_FEATHER:
+        ctx_feather (ctx, arg(0));
+        break;
       case CTX_LINE_HEIGHT:
         ctx_line_height (ctx, arg(0));
         break;
@@ -1282,6 +1288,7 @@ static void ctx_parser_transform_percent (CtxParser *parser, CtxCode code, int a
           }
         break;
       case CTX_STROKE_POS:
+      case CTX_FEATHER:
       case CTX_FONT_SIZE:
       case CTX_MITER_LIMIT:
       case CTX_LINE_WIDTH:
@@ -1358,6 +1365,7 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
       case CTX_MITER_LIMIT:
       case CTX_FONT_SIZE:
       case CTX_STROKE_POS:
+      case CTX_FEATHER:
       case CTX_LINE_WIDTH:
       case CTX_LINE_DASH_OFFSET:
         {

@@ -931,6 +931,16 @@ void ctx_stroke_pos (Ctx *ctx, float x)
   CTX_PROCESS_F1 (CTX_STROKE_POS, x);
 }
 
+float ctx_get_feather (Ctx *ctx)
+{
+  return ctx->state.gstate.feather;
+}
+
+void ctx_feather (Ctx *ctx, float x)
+{
+  CTX_PROCESS_F1 (CTX_FEATHER, x);
+}
+
 void ctx_line_height (Ctx *ctx, float x)
 {
   CTX_PROCESS_F1 (CTX_LINE_HEIGHT, x);
@@ -1478,6 +1488,9 @@ ctx_interpret_style (CtxState *state, const CtxEntry *entry, void *data)
         break;
       case CTX_STROKE_POS:
         state->gstate.stroke_pos = ctx_arg_float (0);
+        break;
+      case CTX_FEATHER:
+        state->gstate.feather = ctx_arg_float (0);
         break;
       case CTX_LINE_WIDTH:
         state->gstate.line_width = ctx_arg_float (0);

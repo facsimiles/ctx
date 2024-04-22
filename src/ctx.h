@@ -1732,6 +1732,7 @@ typedef enum
   CTX_LINE_HEIGHT      = 149, // kH
                               
   CTX_STROKE_POS       = 150, // kp
+  CTX_FEATHER          = 151, // kp
 
   CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
   CTX_FILL_RECT        = 201, // fillRect   - only exist in long form
@@ -2629,6 +2630,9 @@ enum _CtxAntialias
 typedef enum _CtxAntialias CtxAntialias;
 void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
 CtxAntialias ctx_get_antialias (Ctx *ctx);
+
+float ctx_get_feather (Ctx *ctx);
+void ctx_feather (Ctx *ctx, float x);
 
 #ifdef __cplusplus
 }
