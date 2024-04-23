@@ -447,8 +447,8 @@ static CTX_INLINE float ctx_sdf_f (CtxSegment *entries, int u, int v, int parity
   for (int j = 0; j < edge_count; j++)
   {
 #if CTX_RASTERIZER_BLUR_FUDGE
-     float sq_dist = dist_to_edge(u, v, entries, edges[j], blur);
-     min_dist = smin_cubic(min_dist,sq_dist, blur/2);
+     float dist = dist_to_edge(u, v, entries, edges[j], blur);
+     min_dist = smin_cubic(min_dist,dist, blur/2);
 #else
      float sq_dist = dist_to_edge_sq(u, v, entries, edges[j], blur);
      min_dist = ctx_minf(min_dist, sq_dist);

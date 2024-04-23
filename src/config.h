@@ -118,7 +118,7 @@
 // fudge geomtry slightly with smoother blend between edges,
 // busting some SDF artifacts apparent in acute angles
 #ifndef CTX_RASTERIZER_BLUR_FUDGE
-#define CTX_RASTERIZER_BLUR_FUDGE 1
+#define CTX_RASTERIZER_BLUR_FUDGE 0
 #endif
 
 #ifndef CTX_GRADIENTS
