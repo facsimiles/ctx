@@ -403,9 +403,8 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, int unichar,
       if (ctx->backend && ((CtxRasterizer*)(ctx->backend))->in_shadow)
       {
         ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->backend);
-        ((CtxRasterizer*)(ctx->backend))->in_shadow = 1;
       }
-      else
+      
 #endif
 #endif
          ctx_fill (ctx); 
@@ -438,9 +437,8 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, int unichar,
       if (ctx->backend && ((CtxRasterizer*)(ctx->backend))->in_shadow)
       {
         ctx_rasterizer_shadow_fill ((CtxRasterizer*)ctx->backend);
-        ((CtxRasterizer*)(ctx->backend))->in_shadow = 1;
       }
-      else
+      
 #endif
 #endif
       {

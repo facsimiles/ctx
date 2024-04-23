@@ -201,8 +201,8 @@ save
 
   rgba 1.0 1.0 1.0 1
   moveTo 20^ 96^
-  shadowBlur 4@
-  rgb shadowColor 0 0 0 1.0
+  shadowBlur 4^
+  rgba shadowColor 0 0 0 0.5
   shadowOffsetX 1^
   shadowOffsetY 1^
   text "ctx vector graphics"

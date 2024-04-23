@@ -780,8 +780,10 @@ struct _CtxRasterizer
   void      *buf;
 #if CTX_ENABLE_SHADOW_BLUR
   unsigned int  in_shadow:1;
+  float         feather_x;
+  float         feather_y;
+  float         feather;
 #endif
-
 
   const CtxPixelFormatInfo *format;
   Ctx       *texture_source; /* normally same as ctx */

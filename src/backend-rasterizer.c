@@ -523,7 +523,7 @@ ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
 
       CtxSegment   *next_segment = &entries[edges[t+1]];
       int x0        = segment->val;
-      const int x1        = next_segment->val;
+      const int x1  = next_segment->val;
 
       int graystart = x0 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
       int grayend   = x1 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV/256);
@@ -1497,9 +1497,7 @@ ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
   rasterizer->active_edges    =   0;
   rasterizer->shadow_active_edges =   0;
   CtxGState *gstate     = &rasterizer->state->gstate;
-  float blur_radius = gstate->shadow_blur *
-	   ctx_matrix_get_scale (&gstate->transform)* 2;
-  //fprintf (stderr, "%f\n", gstate->shadow_blur); 
+  float blur_radius = rasterizer->feather;
   const int  is_winding = fill_rule == CTX_FILL_RULE_WINDING;
   uint8_t  *dst         = ((uint8_t *) rasterizer->buf);
 
@@ -2205,15 +2203,15 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
   for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
     {
       CtxSegment *segment = &((CtxSegment*)rasterizer->edge_list.entries)[i];
-      segment->x0 += rasterizer->state->gstate.shadow_offset_x * CTX_SUBDIV * factor;
-      segment->y0 += rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA * factor;
-      segment->x1 += rasterizer->state->gstate.shadow_offset_x * CTX_SUBDIV * factor;
-      segment->y1 += rasterizer->state->gstate.shadow_offset_y * CTX_FULL_AA * factor;
+      segment->x0 += rasterizer->feather_x * CTX_SUBDIV;
+      segment->y0 += rasterizer->feather_y * CTX_FULL_AA;
+      segment->x1 += rasterizer->feather_x * CTX_SUBDIV;
+      segment->y1 += rasterizer->feather_y * CTX_FULL_AA;
     }
-    rasterizer->scan_min += ((rasterizer->state->gstate.shadow_offset_y - gstate->shadow_blur)*factor +1) * CTX_FULL_AA;
-    rasterizer->scan_max += ((rasterizer->state->gstate.shadow_offset_y + gstate->shadow_blur)*factor +1) * CTX_FULL_AA;
-    rasterizer->col_min  += ((rasterizer->state->gstate.shadow_offset_x - gstate->shadow_blur)*factor + 1) * CTX_SUBDIV;
-    rasterizer->col_max  += ((rasterizer->state->gstate.shadow_offset_x + gstate->shadow_blur)*factor + 1) * CTX_SUBDIV;
+    rasterizer->scan_min += ((rasterizer->feather_y - rasterizer->feather) +1) * CTX_FULL_AA;
+    rasterizer->scan_max += ((rasterizer->feather_y + rasterizer->feather) +1) * CTX_FULL_AA;
+    rasterizer->col_min  += ((rasterizer->feather_x - rasterizer->feather)+ 1) * CTX_SUBDIV;
+    rasterizer->col_max  += ((rasterizer->feather_x + rasterizer->feather)+ 1) * CTX_SUBDIV;
   }
 #endif
 
@@ -2284,11 +2282,10 @@ done:
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
-    float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
-    rasterizer->scan_min -= ((rasterizer->state->gstate.shadow_offset_y - gstate->shadow_blur) *factor+ 1) * CTX_FULL_AA;
-    rasterizer->scan_max -= ((rasterizer->state->gstate.shadow_offset_y + gstate->shadow_blur) *factor+ 1) * CTX_FULL_AA;
-    rasterizer->col_min  -= ((rasterizer->state->gstate.shadow_offset_x - gstate->shadow_blur) *factor+ 1) * CTX_SUBDIV;
-    rasterizer->col_max  -= ((rasterizer->state->gstate.shadow_offset_x + gstate->shadow_blur) *factor+ 1) * CTX_SUBDIV;
+    rasterizer->scan_min -= ((rasterizer->feather_y - rasterizer->feather) +1) * CTX_FULL_AA;
+    rasterizer->scan_max -= ((rasterizer->feather_y + rasterizer->feather) +1) * CTX_FULL_AA;
+    rasterizer->col_min  -= ((rasterizer->feather_x - rasterizer->feather)+ 1) * CTX_SUBDIV;
+    rasterizer->col_max  -= ((rasterizer->feather_x + rasterizer->feather)+ 1) * CTX_SUBDIV;
   }
 #endif
   rasterizer->preserve = 0;
@@ -3602,6 +3599,12 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_SHADOW_BLUR
     rasterizer->in_shadow = 1;
 #endif
+  {
+  float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  rasterizer->feather_x = rasterizer->state->gstate.shadow_offset_x * factor;
+  rasterizer->feather_y = rasterizer->state->gstate.shadow_offset_y * factor;
+  rasterizer->feather   = rasterizer->state->gstate.shadow_blur * factor;
+  }
     rasterizer->preserve = 1;
     ctx_rasterizer_stroke (rasterizer);
 #if CTX_ENABLE_SHADOW_BLUR
@@ -3645,6 +3648,12 @@ ctx_rasterizer_shadow_text (CtxRasterizer *rasterizer, const char *str)
         ctx_rasterizer_process (ctx, (CtxCommand*)&set_color_command);
         ctx_rasterizer_process (ctx, (CtxCommand*)&move_to_command);
         rasterizer->in_shadow=1;
+  {
+  float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  rasterizer->feather_x = rasterizer->state->gstate.shadow_offset_x * factor;
+  rasterizer->feather_y = rasterizer->state->gstate.shadow_offset_y * factor;
+  rasterizer->feather   = rasterizer->state->gstate.shadow_blur * factor;
+  }
         ctx_rasterizer_text (rasterizer, str, 0);
         rasterizer->in_shadow=0;
       }
@@ -3678,9 +3687,18 @@ ctx_rasterizer_shadow_fill (CtxRasterizer *rasterizer)
   ctx_rasterizer_process (ctx, (CtxCommand*)&set_color_command);
   rasterizer->preserve = 1;
   rasterizer->in_shadow = 1;
+  {
+  float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
+  if (rasterizer->in_text)
+    factor /= rasterizer->state->gstate.font_size / CTX_BAKE_FONT_SIZE;
+  rasterizer->feather_x = rasterizer->state->gstate.shadow_offset_x * factor;
+  rasterizer->feather_y = rasterizer->state->gstate.shadow_offset_y * factor;
+  rasterizer->feather   = rasterizer->state->gstate.shadow_blur * factor;
+  }
   ctx_rasterizer_fill (rasterizer);
   ctx_rasterizer_reset_soft (rasterizer);
-  rasterizer->in_shadow = 0;
+  if (!rasterizer->in_text)
+    rasterizer->in_shadow = 0;
   ctx_rasterizer_process (ctx, (CtxCommand*)&restore_command);
 }
 #endif
@@ -4125,7 +4143,7 @@ foo:
           if (rasterizer->edge_list.count == 0)break;
 	  int preserve = rasterizer->preserve;
 #if CTX_ENABLE_SHADOW_BLUR
-        if ((state->gstate.shadow_blur > 0.0f) & (!rasterizer->in_text))
+        if ((state->gstate.shadow_blur > 0.0f) & (!rasterizer->in_text) & (!rasterizer->in_shadow))
 	{
           ctx_rasterizer_shadow_fill (rasterizer);
 	}
