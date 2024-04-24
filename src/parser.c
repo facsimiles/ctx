@@ -920,22 +920,26 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         {
           float cx = parser->pcx;
           float cy = parser->pcy;
-          float ax = 2 * ctx_x (ctx) - cx;
-          float ay = 2 * ctx_y (ctx) - cy;
-          ctx_curve_to (ctx, ax, ay, arg(0) +  cx, arg(1) + cy,
-                        arg(2) + cx, arg(3) + cy);
-          parser->pcx = arg(2) + cx;
-          parser->pcy = arg(3) + cy;
+	  float ox = ctx_x (ctx);
+	  float oy = ctx_y (ctx);
+          float ax = 2 * ox - cx;
+          float ay = 2 * oy - cy;
+          ctx_curve_to (ctx, ax, ay, arg(0) +  ox, arg(1) + oy,
+                        arg(2) + ox, arg(3) + oy);
+          parser->pcx = arg(0) + ox;
+          parser->pcy = arg(1) + oy;
         }
         break;
       case CTX_SMOOTH_TO:
         {
-          float ax = 2 * ctx_x (ctx) - parser->pcx;
-          float ay = 2 * ctx_y (ctx) - parser->pcy;
+          float cx = parser->pcx;
+          float cy = parser->pcy;
+          float ax = 2 * ctx_x (ctx) - cx;
+          float ay = 2 * ctx_y (ctx) - cy;
           ctx_curve_to (ctx, ax, ay, arg(0), arg(1),
                         arg(2), arg(3) );
-          parser->pcx = arg(2);
-          parser->pcx = arg(3);
+          parser->pcx = arg(0);
+          parser->pcx = arg(1);
         }
         break;
       case CTX_SMOOTHQ_TO:
@@ -947,8 +951,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         {
           float x = ctx_x (ctx);
           float y = ctx_y (ctx);
-          parser->pcx = 2 * ctx_x (ctx) - parser->pcx;
-          parser->pcy = 2 * ctx_y (ctx) - parser->pcy;
+          parser->pcx = 2 * x - parser->pcx;
+          parser->pcy = 2 * y - parser->pcy;
           ctx_quad_to (ctx, parser->pcx, parser->pcy, arg(0) + x, arg(1) + y);
         }
         break;
@@ -1089,13 +1093,14 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_REL_LINE_TO:
         ctx_rel_line_to (ctx, arg(0), arg(1) );
-        parser->pcx += arg(0);
-        parser->pcy += arg(1);
+        parser->pcx = ctx_x (ctx);
+        parser->pcy = ctx_y (ctx);
         break;
       case CTX_REL_MOVE_TO:
         ctx_rel_move_to (ctx, arg(0), arg(1) );
-        parser->pcx += arg(0);
-        parser->pcy += arg(1);
+        parser->command = CTX_REL_LINE_TO;
+        parser->pcx = ctx_x (ctx);
+        parser->pcy = ctx_y (ctx);
         parser->left_margin = ctx_x (ctx);
         break;
       case CTX_LINE_WIDTH:
@@ -1154,29 +1159,29 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_extend (ctx, (CtxExtend)arg(0));
         break;
       case CTX_FILL_RULE:
-        ctx_fill_rule (ctx, (CtxFillRule) arg(0) );
+        ctx_fill_rule (ctx, (CtxFillRule) arg(0));
         break;
       case CTX_TEXT_ALIGN:
-        ctx_text_align (ctx, (CtxTextAlign) arg(0) );
+        ctx_text_align (ctx, (CtxTextAlign) arg(0));
         break;
       case CTX_TEXT_BASELINE:
-        ctx_text_baseline (ctx, (CtxTextBaseline) arg(0) );
+        ctx_text_baseline (ctx, (CtxTextBaseline) arg(0));
         break;
       case CTX_TEXT_DIRECTION:
-        ctx_text_direction (ctx, (CtxTextDirection) arg(0) );
+        ctx_text_direction (ctx, (CtxTextDirection) arg(0));
         break;
       case CTX_IDENTITY:
         ctx_identity (ctx);
         break;
       case CTX_RECTANGLE:
-        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3) );
+        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3));
         break;
       case CTX_FILL_RECT:
-        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3) );
+        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3));
         ctx_fill (ctx);
         break;
       case CTX_STROKE_RECT:
-        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3) );
+        ctx_rectangle (ctx, arg(0), arg(1), arg(2), arg(3));
         ctx_stroke (ctx);
         break;
       case CTX_ROUND_RECTANGLE:
@@ -1187,7 +1192,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_parser_set_size (parser, (int)arg(2), (int)arg(3), 0, 0);
         break;
       case CTX_LINEAR_GRADIENT:
-        ctx_linear_gradient (ctx, arg(0), arg(1), arg(2), arg(3) );
+        ctx_linear_gradient (ctx, arg(0), arg(1), arg(2), arg(3));
         break;
       case CTX_CONIC_GRADIENT:
 	// TODO - default arg3 to 1 if unspecified
@@ -1235,7 +1240,6 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
     }
 #undef arg
-//  parser->n_numbers = 0;
 }
 
 static inline void ctx_parser_holding_append (CtxParser *parser, int byte)
@@ -1449,6 +1453,7 @@ static void ctx_parser_word_done (CtxParser *parser)
         {
           ctx_parser_dispatch_command (parser);
         }
+      //parser->numbers[0] = 0;
     }
   else
     {
@@ -1746,14 +1751,13 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                 break;
             }
           if (do_process ||
-	       (parser->state != CTX_PARSER_NUMBER) &&
-               (parser->state != CTX_PARSER_NEGATIVE_NUMBER))
+	       ((parser->state != CTX_PARSER_NUMBER) &&
+               (parser->state != CTX_PARSER_NEGATIVE_NUMBER)))
             {
 	      if (!do_process)
 	      {
-	      if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
-                parser->n_numbers ++;
-              ctx_parser_number_done (parser);
+	        if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
+                  parser->n_numbers ++;
 	      }
 
               if (parser->n_numbers == parser->expected_args ||
@@ -1775,15 +1779,15 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                       break;
                           default:
                       parser->n_numbers = 0;
-		      parser->numbers[0] = 0;
                       parser->n_args = 0;
+		      parser->numbers[0] = parser->numbers[tmp1];
                       break;
                   }
                   parser->expected_args = tmp4;
                 }
-              if (parser->n_numbers > CTX_PARSER_MAX_ARGS)
-                { parser->n_numbers = CTX_PARSER_MAX_ARGS;
-                }
+              //if (parser->n_numbers > CTX_PARSER_MAX_ARGS)
+              //  { parser->n_numbers = CTX_PARSER_MAX_ARGS;
+              //  }
             }
         }
         break;
