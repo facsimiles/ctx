@@ -386,10 +386,10 @@ static inline float ctx_p_line_sq_dist (float x, float y, float x1, float y1, fl
   float dot = A * C + B * D;
   float len_sq = C * C + D * D;
   float param = -1.0f;
+  float xx, yy;
+
   if (len_sq != 0.0f) //in case of 0 length line
       param = dot / len_sq;
-
-  float xx, yy;
 
   if (param < 0.0f) {
     xx = x1;
@@ -409,7 +409,7 @@ static inline float ctx_p_line_sq_dist (float x, float y, float x1, float y1, fl
   return dx * dx + dy * dy;
 }
 
-static inline float dist_to_edge_sq (int u, int v, CtxSegment *__restrict__ entries, int edge_no, float blur_rad)
+static inline float dist_to_edge_sq (int u, int v, CtxSegment *__restrict__ entries, int edge_no)
 {
   CtxSegment *segment = &entries[edge_no];
   float y0 = segment->y0;
@@ -420,9 +420,9 @@ static inline float dist_to_edge_sq (int u, int v, CtxSegment *__restrict__ entr
   return ctx_p_line_sq_dist (u, v, x0, y0, x1, y1);
 }
 
-static inline float dist_to_edge (int u, int v, CtxSegment *__restrict__ entries, int edge_no, float blur_rad)
+static inline float dist_to_edge (int u, int v, CtxSegment *__restrict__ entries, int edge_no)
 {
-  return ctx_sqrtf_fast (dist_to_edge_sq(u,v,entries,edge_no,blur_rad));
+  return ctx_sqrtf_fast (dist_to_edge_sq(u,v,entries,edge_no));
 }
 
 static inline float smin_exp( float a, float b, float k )
@@ -440,55 +440,47 @@ static inline float smin_cubic( float a, float b, float k )
   return ctx_minf(a,b) - h*h*k*0.25f;
 }
 
-static CTX_INLINE float ctx_sdf_f (CtxSegment *entries, int u, int v, int parity, int edge_count, float blur, int *edges)
+static CTX_INLINE float ctx_sdf_f (CtxSegment *entries, int u, int v, float sign, int edge_count, float blur, int *edges)
 {
-  float min_dist = 2048 * 2048 * 15 * 15;
-
+  float min_dist_sq = 2048 * 2048 * 15 * 15;
+  float min_dist = 2048 * 15;
   for (int j = 0; j < edge_count; j++)
   {
 #if CTX_RASTERIZER_BLUR_FUDGE
-     float dist = dist_to_edge(u, v, entries, edges[j], blur);
+     float dist = dist_to_edge(u, v, entries, edges[j]);
      min_dist = smin_cubic(min_dist,dist, blur/2);
 #else
-     float sq_dist = dist_to_edge_sq(u, v, entries, edges[j], blur);
-     min_dist = ctx_minf(min_dist, sq_dist);
+     float sq_dist = dist_to_edge_sq(u, v, entries, edges[j]);
+     min_dist_sq = ctx_minf(min_dist_sq, sq_dist);
 #endif
   }
 
 #if CTX_RASTERIZER_BLUR_FUDGE==0
-  min_dist = ctx_sqrtf_fast (min_dist);
+  min_dist = ctx_sqrtf_fast (min_dist_sq);
 #endif
-
-  if (parity)
-    return min_dist;
-  else
-    return -min_dist;
+  return min_dist * sign;
 }
 static inline float ctx_erf2(float x)
 {
-  #define CTX_2_SQRTPI     1.12837916709551257390  /* 2/sqrt(pi) */
+  #define CTX_2_SQRTPI 1.12837916709551257390f  /* 2/sqrt(pi) */
   x = x * CTX_2_SQRTPI;
   float xx = x * x;
   x = x + (0.24295f + (0.03395f + 0.0104f * xx) * xx) * (x * xx);
-  return x * ctx_invsqrtf_fast (1.0 + x * x);
-}
-static inline float ctx_erf(float x)
-{
-  int s = (x>=0.0f) + (-1 * (x<0.0f));
-  float a = x * s;
-  x = 1.0f + (0.278393f + (0.230389f + 0.078108f * (a * a)) * a) * a;
-  x *= x;
-  return s - s / (x * x);
+  return x * ctx_invsqrtf_fast (1.0f + x * x);
 }
 
-static inline uint8_t gaussian_approximation(float x) {
-   x = ctx_erf(x);
-   x+= 0.5f;
-   if (x > 1.0f) return 255;
-   if (x < 0.0f) return 0;
+static inline uint8_t gaussian_approximation(float x)
+{
+  x = ctx_erf2(x);
+  x+= 0.5f;
+  if (x > 1.0f) return 255;
+  if (x < 0.0f) return 0;
   return x * 255.0f;
 }
 
+#ifndef CTX_RASTERIZER_SDF_SKIP
+#define CTX_RASTERIZER_SDF_SKIP 1
+#endif
 
 inline static void
 ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
@@ -506,10 +498,11 @@ ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
   int scanline        = rasterizer->scanline;
   int parity        = 0;
   float inv_blur = 1.0/(blur * CTX_FULL_AA);
+#if CTX_RASTERIZER_SDF_SKIP
   const int skip_len = blur / 2 + 1;
   // how far ahead we jump looking for
 			  // same alpha runs - speeding up solid/blank and
-
+#endif
   coverage -= minx;
 
 
@@ -539,22 +532,20 @@ ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
       {
         int u = x0 * 15 / (CTX_RASTERIZER_EDGE_MULTIPLIER*CTX_SUBDIV);
 
-#if 0
 #define COMPUTE_SDF(u,v) \
-          blur_map[ctx_sdf (entries, (u), (v), parity,\
-    		      shadow_active_edges, blur, shadow_edges)]
-#else
-#define COMPUTE_SDF(u,v) \
-	(gaussian_approximation(ctx_sdf_f(entries,(u),(v), parity, shadow_active_edges, blur, shadow_edges) * inv_blur))
-#endif
+	(gaussian_approximation(ctx_sdf_f(entries,(u),(v), sign, shadow_active_edges, blur, shadow_edges) * inv_blur))
 
         int i;
+#if CTX_RASTERIZER_SDF_SKIP
         int prev = -1;
+#endif
+        float sign = parity?1.0f:-1.0f;
         for (i = first; i <= last; i++)
         {
           coverage[i] = COMPUTE_SDF(u,scanline);
 
-          if (prev == coverage[i])
+#if CTX_RASTERIZER_SDF_SKIP
+          if ((prev == coverage[i]) & ((prev == 0)|(prev==255)))
           {
     	    if (last-i > skip_len
                	&& COMPUTE_SDF(u+15*skip_len, scanline) == prev
@@ -568,6 +559,7 @@ ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
     	    }
           }
           prev = coverage[i];
+#endif
           u += 15;
         }
       }
@@ -575,15 +567,18 @@ ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
       c1 = ctx_maxi (c1, last);
    }
 
-  parity = 0;
+  float sign = -1.0f;
    
   {
      int i = minx;
 
+#if CTX_RASTERIZER_SDF_SKIP
   int prev = -1;
+#endif
   for (; i < c0; i++)
   {
      coverage[i] = COMPUTE_SDF(i*15, scanline);
+#if CTX_RASTERIZER_SDF_SKIP
      if (c0-i > skip_len &&
          COMPUTE_SDF((i+skip_len)*15, scanline) == prev)
      {
@@ -592,11 +587,16 @@ ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
 	i += (skip_len-1);
 	continue;
      }
+     prev = coverage[i];
+#endif
   }
+#if CTX_RASTERIZER_SDF_SKIP
   prev = -1;
+#endif
   for (int i = c1+1; i < maxx; i++)
   {
      coverage[i] = COMPUTE_SDF(i*15, scanline);
+#if CTX_RASTERIZER_SDF_SKIP
      if (maxx-i > skip_len && COMPUTE_SDF((i+skip_len)*15, scanline) == prev)
      {
 	for (int j = 1; j < skip_len; j++)
@@ -604,6 +604,8 @@ ctx_rasterizer_generate_sdf (CtxRasterizer *rasterizer,
 	i += (skip_len-1);
 	continue;
      }
+     prev = coverage[i];
+#endif
   }
   }
 }
@@ -1525,7 +1527,6 @@ ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
   uint8_t *coverage = &_coverage[0];
   ctx_apply_coverage_fun apply_coverage = rasterizer->apply_coverage;
 
-  int br = ((int)blur_radius) * CTX_FULL_AA;
   rasterizer->scan_min -= (rasterizer->scan_min % CTX_FULL_AA);
   {
      if (rasterizer->scan_min > scan_start)
