@@ -1633,6 +1633,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
       case CTX_PARSER_NUMBER:
       case CTX_PARSER_NEGATIVE_NUMBER:
         {
+	  int do_process = 0;
           switch (byte)
             {
               case 0: case 1: case 2: case 3: case 4: case 5:
@@ -1665,19 +1666,21 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                 if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
                   { parser->numbers[parser->n_numbers] *= -1; }
                 parser->state = CTX_PARSER_NEGATIVE_NUMBER;
-                parser->numbers[parser->n_numbers+1] = 0;
 		if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
                   parser->n_numbers ++;
+                parser->numbers[parser->n_numbers] = 0;
                 parser->decimal = 0;
+		do_process = 1;
                 break;
               case '.':
                 if (parser->decimal){
                   if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
                     { parser->numbers[parser->n_numbers] *= -1; }
                   parser->state = CTX_PARSER_NUMBER;
-                  parser->numbers[parser->n_numbers+1] = 0;
 		  if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
                     parser->n_numbers ++;
+                  parser->numbers[parser->n_numbers] = 0;
+		  do_process = 1;
 		}
                 parser->decimal = 1;
                 break;
@@ -1742,12 +1745,16 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                 ctx_parser_holding_append (parser, byte);
                 break;
             }
-          if ( (parser->state != CTX_PARSER_NUMBER) &&
+          if (do_process ||
+	       (parser->state != CTX_PARSER_NUMBER) &&
                (parser->state != CTX_PARSER_NEGATIVE_NUMBER))
             {
+	      if (!do_process)
+	      {
 	      if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
                 parser->n_numbers ++;
               ctx_parser_number_done (parser);
+	      }
 
               if (parser->n_numbers == parser->expected_args ||
                   parser->expected_args == CTX_ARG_COLLECT_NUMBERS ||
@@ -1768,6 +1775,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                       break;
                           default:
                       parser->n_numbers = 0;
+		      parser->numbers[0] = 0;
                       parser->n_args = 0;
                       break;
                   }
