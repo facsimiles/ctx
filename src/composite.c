@@ -4157,8 +4157,8 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
       uint32_t src_pix    = ((uint32_t*)rasterizer->color)[0];
       uint32_t si_ga      = (src_pix & 0xff00ff00) >> 8;
       uint32_t si_rb      = src_pix & 0x00ff00ff;
-      uint32_t si_ga_full = si_ga * 255;
-      uint32_t si_rb_full = si_rb * 255;
+      uint32_t si_ga_full = si_ga * 255 + 0xff00ff;
+      uint32_t si_rb_full = si_rb * 255 + 0xff00ff;
 
       ((uint32_t*)rasterizer->color)[1] = si_ga;
       ((uint32_t*)rasterizer->color)[2] = si_rb;
