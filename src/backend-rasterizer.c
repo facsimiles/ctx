@@ -2578,9 +2578,10 @@ ctx_rasterizer_stroke_1px_segment (CtxRasterizer *rasterizer,
   int pitch = rasterizer->format->bpp / 8;
   int blit_stride = rasterizer->blit_stride;
 
-  //x1 += 0.5f;
+  x1 += 0.5f;
+  x0 += 0.5f;
+
   y1 += 0.5f;
-  //x0 += 0.5f;
   y0 += 0.5f;
 
   float dxf = (x1 - x0);
