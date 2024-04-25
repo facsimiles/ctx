@@ -1424,6 +1424,8 @@ int ctx_glyph_find (Ctx *ctx, CtxFont *font, uint32_t unichar);
 #define CTX_EXPORT
 #endif
 
+float ctx_get_feather (Ctx *ctx);
+void ctx_feather (Ctx *ctx, float x);
 
 
 #endif

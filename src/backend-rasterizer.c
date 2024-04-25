@@ -2200,7 +2200,6 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
 #if CTX_ENABLE_SHADOW_BLUR
   if (CTX_UNLIKELY(rasterizer->in_shadow))
   {
-    float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   for (unsigned int i = 0; i < rasterizer->edge_list.count; i++)
     {
       CtxSegment *segment = &((CtxSegment*)rasterizer->edge_list.entries)[i];
@@ -3597,9 +3596,7 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
   CtxEntry restore_command = ctx_void(CTX_RESTORE);
   ctx_rasterizer_process (ctx, (CtxCommand*)&save_command);
     ctx_rasterizer_process (ctx, (CtxCommand*)&set_color_command[0]);
-#if CTX_ENABLE_SHADOW_BLUR
     rasterizer->in_shadow = 1;
-#endif
   {
   float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
   rasterizer->feather_x = rasterizer->state->gstate.shadow_offset_x * factor;
@@ -3608,10 +3605,7 @@ ctx_rasterizer_shadow_stroke (CtxRasterizer *rasterizer)
   }
     rasterizer->preserve = 1;
     ctx_rasterizer_stroke (rasterizer);
-#if CTX_ENABLE_SHADOW_BLUR
     rasterizer->in_shadow = 0;
-#endif
-  //ctx_free (kernel);
   ctx_rasterizer_process (ctx, (CtxCommand*)&restore_command);
 }
 

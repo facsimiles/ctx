@@ -2631,8 +2631,6 @@ typedef enum _CtxAntialias CtxAntialias;
 void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
 CtxAntialias ctx_get_antialias (Ctx *ctx);
 
-float ctx_get_feather (Ctx *ctx);
-void ctx_feather (Ctx *ctx, float x);
 
 #ifdef __cplusplus
 }

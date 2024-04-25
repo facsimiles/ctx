@@ -563,11 +563,6 @@
 #define CTX_MAX_EDGES            255
 #endif
 
-#ifndef CTX_MAX_LINGERING_EDGES
-#define CTX_MAX_LINGERING_EDGES  64
-#endif
-
-
 #ifndef CTX_MAX_PENDING
 #define CTX_MAX_PENDING          128
 #endif
