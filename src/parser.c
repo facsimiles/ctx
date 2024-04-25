@@ -121,6 +121,8 @@ struct
   float      numbers[CTX_PARSER_MAX_ARGS+1];
   int        n_numbers;
   int        decimal;
+  int        exponent;
+  int        exp;
   CtxCode    command;
   int        expected_args; /* low digits are literal higher values
                                carry special meaning */
@@ -1502,6 +1504,22 @@ static void ctx_parser_string_done (CtxParser *parser)
     ctx_parser_dispatch_command (parser);
   }
 }
+static inline void ctx_parser_finish_number (CtxParser *parser)
+{
+  if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
+     { parser->numbers[parser->n_numbers] *= -1; }
+  if (parser->exponent < 0)
+  {
+    for (int i = 0; i < parser->exp; i++)
+     parser->numbers[parser->n_numbers] *= 0.1f;
+  }
+  else if (parser->exponent > 0)
+  {
+    for (int i = 0; i < parser->exp; i++)
+     parser->numbers[parser->n_numbers] *= 10.0f;
+  }
+  parser->exponent = 0;
+}
 
 static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
 {
@@ -1607,6 +1625,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
             case '-':
               parser->state = CTX_PARSER_NEGATIVE_NUMBER;
               parser->numbers[parser->n_numbers] = 0;
+	      parser->exponent =
               parser->decimal = 0;
               break;
             case '0': case '1': case '2': case '3': case '4':
@@ -1614,11 +1633,13 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
               parser->state = CTX_PARSER_NUMBER;
               parser->numbers[parser->n_numbers] = 0;
               parser->numbers[parser->n_numbers] += (byte - '0');
+	      parser->exponent =
               parser->decimal = 0;
               break;
             case '.':
               parser->state = CTX_PARSER_NUMBER;
               parser->numbers[parser->n_numbers] = 0;
+	      parser->exponent = 0;
               parser->decimal = 1;
               break;
             default:
@@ -1653,38 +1674,49 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
               case '{':
               case '}':
               case '=':
-                if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
-                  { parser->numbers[parser->n_numbers] *= -1; }
+                ctx_parser_finish_number (parser);
                 parser->state = CTX_PARSER_NEUTRAL;
                 break;
               case '#':
                 parser->state = CTX_PARSER_COMMENT;
                 break;
               case '-':
-                if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
-                  { parser->numbers[parser->n_numbers] *= -1; }
-                parser->state = CTX_PARSER_NEGATIVE_NUMBER;
-		if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
-                  parser->n_numbers ++;
-                parser->numbers[parser->n_numbers] = 0;
-                parser->decimal = 0;
-		do_process = 1;
+		if (parser->exponent==1)
+		{
+		  parser->exponent = -1;
+		}
+		else
+		{
+                  ctx_parser_finish_number (parser);
+                  parser->state = CTX_PARSER_NEGATIVE_NUMBER;
+ 		  if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
+                    parser->n_numbers ++;
+                  parser->numbers[parser->n_numbers] = 0;
+	          parser->exponent =
+                  parser->decimal = 0;
+		  do_process = 1;
+		}
                 break;
               case '.':
                 if (parser->decimal){
-                  if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
-                    { parser->numbers[parser->n_numbers] *= -1; }
+                  ctx_parser_finish_number (parser);
                   parser->state = CTX_PARSER_NUMBER;
 		  if (parser->n_numbers < CTX_PARSER_MAX_ARGS)
                     parser->n_numbers ++;
                   parser->numbers[parser->n_numbers] = 0;
 		  do_process = 1;
 		}
+	        parser->exponent = 0;
                 parser->decimal = 1;
                 break;
               case '0': case '1': case '2': case '3': case '4':
               case '5': case '6': case '7': case '8': case '9':
-                if (parser->decimal)
+		if (parser->exponent)
+		{
+		   parser->exp *= 10;
+		   parser->exp += (byte - '0');
+		}
+		else if (parser->decimal)
                   {
                     parser->decimal *= 10;
                     parser->numbers[parser->n_numbers] += (byte - '0') / (1.0f * parser->decimal);
@@ -1696,8 +1728,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                   }
                 break;
               case '@': // cells
-                if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
-                  { parser->numbers[parser->n_numbers] *= -1; }
+                ctx_parser_finish_number (parser);
                 {
                 float fval = parser->numbers[parser->n_numbers];
                 ctx_parser_transform_cell (parser, parser->command, parser->n_numbers, &fval);
@@ -1716,8 +1747,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                 parser->state = CTX_PARSER_NEUTRAL;
                 break;
               case '^': // percent of height
-                if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
-                  { parser->numbers[parser->n_numbers] *= -1; }
+                ctx_parser_finish_number (parser);
                 {
                 float fval = parser->numbers[parser->n_numbers];
                 ctx_parser_transform_percent_height (parser, parser->command, parser->n_numbers, &fval);
@@ -1726,8 +1756,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                 parser->state = CTX_PARSER_NEUTRAL;
                 break;
               case '~': // percent of width
-                if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
-                  { parser->numbers[parser->n_numbers] *= -1; }
+                ctx_parser_finish_number (parser);
                 {
                 float fval = parser->numbers[parser->n_numbers];
                 ctx_parser_transform_percent_width (parser, parser->command, parser->n_numbers, &fval);
@@ -1735,9 +1764,14 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
                 }
                 parser->state = CTX_PARSER_NEUTRAL;
                 break;
+	      case 'e':
+	      case 'E':
+		parser->exponent = 1;
+		parser->exp = 0;
+		break;
               default:
-                if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
-                  { parser->numbers[parser->n_numbers] *= -1; }
+                ctx_parser_finish_number (parser);
+
                 parser->state = CTX_PARSER_WORD;
                 parser->pos = 0;
                 ctx_parser_holding_append (parser, byte);
@@ -1802,6 +1836,7 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
             case '-':
               parser->state = CTX_PARSER_NEGATIVE_NUMBER;
               parser->numbers[parser->n_numbers] = 0;
+	      parser->exponent =
               parser->decimal = 0;
               break;
             case '0': case '1': case '2': case '3': case '4':
@@ -1809,11 +1844,13 @@ static inline void ctx_parser_feed_byte (CtxParser *parser, char byte)
               parser->state = CTX_PARSER_NUMBER;
               parser->numbers[parser->n_numbers] = 0;
               parser->numbers[parser->n_numbers] += (byte - '0');
+	      parser->exponent =
               parser->decimal = 0;
               break;
             case '.':
               parser->state = CTX_PARSER_NUMBER;
               parser->numbers[parser->n_numbers] = 0;
+	      parser->exponent = 0;
               parser->decimal = 1;
               break;
             default:
