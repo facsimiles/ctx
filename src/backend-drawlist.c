@@ -16,7 +16,6 @@ static void ctx_update_current_path (Ctx *ctx, const CtxEntry *entry)
   switch (entry->code)
     {
       case CTX_TEXT:
-      case CTX_STROKE_TEXT:
       case CTX_BEGIN_PATH:
         ctx->current_path.count = 0;
         break;

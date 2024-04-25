@@ -35,7 +35,6 @@ ctx_conts_for_entry (const CtxEntry *entry)
       case CTX_TEXT:
       case CTX_LINE_DASH:
       case CTX_COLOR_SPACE:
-      case CTX_STROKE_TEXT:
       case CTX_FONT:
       case CTX_TEXTURE:
         {
@@ -252,7 +251,6 @@ again:
         case CTX_SOURCE_TRANSFORM:
         case CTX_ROUND_RECTANGLE:
         case CTX_TEXT:
-        case CTX_STROKE_TEXT:
         case CTX_FONT:
         case CTX_LINE_DASH:
         case CTX_FILL:

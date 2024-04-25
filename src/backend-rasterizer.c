@@ -4114,10 +4114,6 @@ foo:
         rasterizer->in_text--;
         ctx_rasterizer_reset (rasterizer);
         break;
-      case CTX_STROKE_TEXT:
-        ctx_rasterizer_text (rasterizer, ctx_arg_string(), 1);
-        ctx_rasterizer_reset (rasterizer);
-        break;
       case CTX_GLYPH:
         if (ctx->bail) break;
         {

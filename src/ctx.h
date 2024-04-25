@@ -1099,17 +1099,9 @@ struct
 
 void  ctx_text          (Ctx        *ctx,
                          const char *string);
-void  ctx_text_stroke   (Ctx        *ctx,
-                         const char *string);
 
 // XXX do not use?
 void  ctx_fill_text     (Ctx        *ctx,
-                         const char *string,
-                         float       x,
-                         float       y);
-
-// XXX do not use?
-void  ctx_stroke_text   (Ctx        *ctx,
                          const char *string,
                          float       x,
                          float       y);
@@ -1627,7 +1619,7 @@ typedef enum
   CTX_ARC              = 'B', // x y radius angle1 angle2 direction
   CTX_CURVE_TO         = 'C', // cx1 cy1 cx2 cy2 x y
   CTX_PAINT            = 'D', // 
-  CTX_STROKE           = 'E', //
+                       // 'E' // scientific notation
   CTX_FILL             = 'F', //
   CTX_RESTORE          = 'G', //
   CTX_HOR_LINE_TO      = 'H', // x
@@ -1680,7 +1672,7 @@ typedef enum
   CTX_RECTANGLE        = 'r', // x y width height
   CTX_REL_SMOOTH_TO    = 's', // cx cy x y
   CTX_REL_SMOOTHQ_TO   = 't', // x y
-  CTX_STROKE_TEXT      = 'u', // string - utf8 string
+  CTX_STROKE           = 'u', // string - utf8 string
   CTX_REL_VER_LINE_TO  = 'v', // y
   CTX_GLYPH            = 'w', // unichar fontsize
   CTX_TEXT             = 'x', // string | kern - utf8 data to shape or horizontal kerning amount

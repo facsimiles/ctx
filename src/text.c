@@ -1450,29 +1450,6 @@ ctx_fill_text (Ctx *ctx, const char *string,
   ctx_text (ctx, string);
 }
 
-void
-ctx_text_stroke (Ctx        *ctx,
-                 const char *string)
-{
-  if (!string)
-    return;
-#if CTX_BACKEND_TEXT
-  ctx_process_cmd_str (ctx, CTX_STROKE_TEXT, string, 0, 0);
-  _ctx_text (ctx, string, 1, 0);
-#else
-  _ctx_text (ctx, string, 1, 1);
-#endif
-}
-
-void
-ctx_stroke_text (Ctx *ctx, const char *string,
-               float x, float y)
-{
-  ctx_move_to (ctx, x, y);
-  ctx_text_stroke (ctx, string);
-}
-
-
 int
 ctx_font_get_vmetrics (Ctx *ctx,
                        CtxFont *font,

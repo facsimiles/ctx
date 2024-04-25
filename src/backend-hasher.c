@@ -226,46 +226,6 @@ ctx_hasher_process (Ctx *ctx, const CtxCommand *command)
         }
         ctx_rasterizer_reset (rasterizer);
         break;
-      case CTX_STROKE_TEXT:
-        {
-          CtxMurmur murmur;
-          const char *str = ctx_arg_string();
-          memcpy (&murmur, &hasher->murmur_stroke[hasher->source_level], sizeof (CtxMurmur));
-          float width = ctx_text_width (rasterizer->backend.ctx, str);
-          float height = ctx_get_font_size (rasterizer->backend.ctx);
-
-           CtxIntRectangle shape_rect;
-
-           float tx = rasterizer->x;
-           float ty = rasterizer->y - height * 1.2f;
-           float tx2 = tx+width;
-           float ty2 = ty+height * (ctx_str_count_lines (str) + 1.5f);
-           ctx_device_corners_to_user_rect (rasterizer->state, tx,ty,tx2,ty2, &shape_rect);
-
-
-#if 0
-          uint32_t color;
-          ctx_color_get_rgba8 (rasterizer->state, &rasterizer->state->gstate.source_stroke.color, (uint8_t*)(&color));
-#endif
-          murmur3_32_process(&murmur, (unsigned char*)ctx_arg_string(), ctx_strlen  (ctx_arg_string()));
-#if 1
-          murmur3_32_process(&murmur, (unsigned char*)(&rasterizer->state->gstate.transform), sizeof (rasterizer->state->gstate.transform));
-    //    murmur3_32_process(&murmur, (unsigned char*)&color, 4);
-#endif
-          murmur3_32_process(&murmur, (unsigned char*)&shape_rect, sizeof (CtxIntRectangle));
-
-        {
-          float f = rasterizer->state->gstate.global_alpha_f;
-          murmur3_32_process(&murmur, (uint8_t*)&f, sizeof(float));
-        }
-
-
-          _ctx_add_hash (hasher, &shape_rect, murmur3_32_finalize (&murmur));
-
-          ctx_rasterizer_rel_move_to (rasterizer, width, 0);
-        }
-        ctx_rasterizer_reset (rasterizer);
-        break;
       case CTX_GLYPH:
          {
           CtxMurmur murmur;

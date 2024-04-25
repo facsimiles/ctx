@@ -295,7 +295,6 @@ static inline int ctx_arguments_for_code (CtxCode code)
       case CTX_APPLY_TRANSFORM:
       case CTX_SOURCE_TRANSFORM:
         return 9;
-      case CTX_STROKE_TEXT:
       case CTX_TEXT:
       case CTX_FONT:
       case CTX_COLOR_SPACE:

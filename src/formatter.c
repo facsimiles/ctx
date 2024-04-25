@@ -168,7 +168,6 @@ const char *_ctx_code_to_name (int code)
           case CTX_SET_PIXEL:            return "setPixel"; break;
           case CTX_GLOBAL_ALPHA:         return "globalAlpha"; break;
           case CTX_TEXT:                 return "text"; break;
-          case CTX_STROKE_TEXT:          return "strokeText"; break;
           case CTX_SAVE:                 return "save"; break;
           case CTX_RESTORE:              return "restore"; break;
           case CTX_STROKE_SOURCE:        return "strokeSource"; break;
@@ -912,7 +911,6 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         _ctx_print_endcmd (formatter);
         break;
       case CTX_TEXT:
-      case CTX_STROKE_TEXT:
       case CTX_FONT:
         _ctx_print_name (formatter, entry->code);
         ctx_formatter_addstr (formatter, "\"", 1);

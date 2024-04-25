@@ -397,7 +397,6 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case SQZ_roundRectangle: ret = CTX_ROUND_RECTANGLE; break;
           case SQZ_relSmoothTo:    ret = CTX_REL_SMOOTH_TO; break;
           case SQZ_relSmoothqTo:   ret = CTX_REL_SMOOTHQ_TO; break;
-          case SQZ_strokeText:     ret = CTX_STROKE_TEXT; break;
           case SQZ_strokeRect:     ret = CTX_STROKE_RECT; break;
           case SQZ_fillRect:       ret = CTX_FILL_RECT; break;
           case SQZ_relVerLineTo:   ret = CTX_REL_VER_LINE_TO; break;
@@ -1051,7 +1050,6 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_font (ctx, (char *) parser->holding);
         break;
 
-      case CTX_STROKE_TEXT:
       case CTX_TEXT:
         if (parser->n_numbers == 1)
           { ctx_rel_move_to (ctx, -parser->numbers[0], 0.0); }  //  XXX : scale by font(size)
@@ -1067,10 +1065,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                  * implicit ones from move_to's .. making move_to work within
                  * margins.
                  */
-                if (cmd == CTX_STROKE_TEXT)
-                  { ctx_text_stroke (ctx, c); }
-                else
-                  { ctx_text (ctx, c); }
+                ctx_text (ctx, c);
+
                 if (next_nl)
                   {
                     *next_nl = '\n'; // swap it newline back in
@@ -1086,10 +1082,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                   }
               }
           }
-        if (cmd == CTX_STROKE_TEXT)
-          { parser->command = CTX_STROKE_TEXT; }
-        else
-          { parser->command = CTX_TEXT; }
+          parser->command = CTX_TEXT;
         break;
       case CTX_REL_LINE_TO:
         ctx_rel_line_to (ctx, arg(0), arg(1) );

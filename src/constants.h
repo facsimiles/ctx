@@ -172,7 +172,6 @@
 #define SQZ_strokePos 888669104u
 #define SQZ_strokeRect 1131907664u
 #define SQZ_strokeSource 2685374474u
-#define SQZ_strokeText 1728824940u
 #define SQZ_teal 1818322409u
 #define SQZ_text 1954047465u
 #define SQZ_textAlign 3594701278u
