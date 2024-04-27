@@ -1451,8 +1451,8 @@ static void ctx_parser_word_done (CtxParser *parser)
       //parser->numbers[0] = 0;
     }
   else
-    {
-      /* interpret char by char */
+    { 
+#if 0
       uint8_t buf[16]=" ";
       for (int i = 0; parser->pos && parser->holding[i] > ' '; i++)
         {
@@ -1472,6 +1472,8 @@ static void ctx_parser_word_done (CtxParser *parser)
               ctx_log ("unhandled command '%c'\n", buf[0]);
             }
         }
+#endif
+        fprintf (stderr, "unhandled command '%s'\n", parser->holding);
     }
 }
 
@@ -1969,7 +1971,8 @@ ctx_parse (Ctx *ctx, const char *string)
 }
 
 CTX_EXPORT void
-ctx_parse_animation (Ctx *ctx, const char *string, float *scene_elapsed_time, 
+ctx_parse_animation (Ctx *ctx, const char *string,
+		     float *scene_elapsed_time, 
                      int *scene_no_p)
 {
   float time = *scene_elapsed_time;
@@ -1987,9 +1990,57 @@ ctx_parse_animation (Ctx *ctx, const char *string, float *scene_elapsed_time,
 
   int scene_pos = 0;
   int last_scene = 0;
+  int scene_start = 0;
+  int got_duration = 0;
+
+  {
+    int start = 0;
+    for (; string[i]; i++)
+    {
+       if (!strncmp (&string[i], "newPage", 7))
+       {
+         if (scene_pos == scene_no)
+	 {
+            if (scene_duration < time)
+            {
+              scene_no ++;
+              (*scene_no_p)++;
+              *scene_elapsed_time = time = time- scene_duration;
+	    }
+	    else
+	    {
+	      scene_start = start;
+	    }
+	 }
+
+	 scene_pos++;
+	 last_scene = scene_pos;
+	 start = i + 7;
+	 scene_duration = 5.0f;
+	 got_duration = 0;
+       }
+
+       if (!got_duration && !strncmp (&string[i], "duration ", 9))
+       {
+	 scene_duration = _ctx_parse_float (&string[i+9], NULL);
+	 got_duration = 1;
+       }
+    }
+  }
+  i = scene_start;
+  if (last_scene)
+    last_scene --;
+#if 0
   {
   int in_scene_marker = 0;
   float duration = -1;
+
+  // go through the string,
+  //
+  // post:
+  //   last_scene = highest scene seen
+  //   i = byte offset of start of scene
+  //   scene_duration = duration of current scene
   for (; string[i]; i++)
   {
     char p = string[i];
@@ -2031,6 +2082,7 @@ ctx_parse_animation (Ctx *ctx, const char *string, float *scene_elapsed_time,
     }
   }
   }
+#endif
 
   if (scene_no > last_scene)
   {
@@ -2054,7 +2106,7 @@ ctx_parse_animation (Ctx *ctx, const char *string, float *scene_elapsed_time,
     char p = string[i];
     if (in_var == 0)
     {
-      if (p == '[')
+      if (!strncmp (&string[i], "newPage", 7))
         break;
       else if (p == '(')
       {

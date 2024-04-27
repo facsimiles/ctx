@@ -1137,7 +1137,6 @@ ctx_rasterizer_reset (CtxRasterizer *rasterizer)
   rasterizer->first_edge = -1;
   rasterizer->has_prev        =   
   rasterizer->edge_list.count =    // ready for new edges
-  rasterizer->edge_list.count =    // ready for new edges
 #if CTX_SCANBIN==0
   rasterizer->edge_pos        =   
 #endif
