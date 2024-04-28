@@ -1011,6 +1011,8 @@ void ctx_shadow_offset_y (Ctx *ctx, float x)
 void
 ctx_global_alpha (Ctx *ctx, float global_alpha)
 {
+  if (global_alpha < 0.0f) global_alpha = 0.0f;
+  else if (global_alpha > 1.0f) global_alpha = 1.0f;
   if (ctx->state.gstate.global_alpha_f != global_alpha)
     CTX_PROCESS_F1 (CTX_GLOBAL_ALPHA, global_alpha);
 }
