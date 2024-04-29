@@ -36,31 +36,25 @@
 
       <h1>portable and performant 2D vector graphics</h1>
 
-      ctx is fast and portable 32bit C code (it builds and works on 64bit as
-      well), with code paths that are well suited for auto-vectorization by
-      compilers, and use minimal amounts of resources - making it suitable for
-      microcontrollers.
-      <dl>
-        <dt>x86-64</dt><dd>Runtime choice of 3 different levels of SIMD support.</dd>
-        <dt>arm32</dt><dd>both mcu and cpu's tested on rp2040</dd>
-        <dt>tensilica</dt><dd>tested on esp32 and esp32s3</dd>
-        <dt>riscv</dt><dd>tested on esp32c3</dd>
-        <dt>wasm</dt><dd>built with emscripten</dd>
-        <dt>?</dt><dd>if it is a 32bit or 64bit arch; with a C compiler it probably works.</dd>
-      </dl>
+      ctx is a compact and portable implementation and serialization format of
+      HTML5 Canvas' 2D context, with a configurable build making it scale from
+      microcontroller user interfaces with embedded fonts to 32bit floating
+      point RGBA and CMYKA compositing for use in <a
+      href='https://www.gimp.org/'>GIMP</a>.
 
-      While still being small optional features can be built in like
-      <a href='output.pdf'>PDF</a>, floating point buffer, CMYK and
-      multi-threaded rendering with automatic partial redraws. The core
-      drawing, event handling and rendering APIs are stable.
+
       Demo UIs experiments and tests are included in the <a
       href='https://ctx.graphics/.git'>git monorepo</a>. The most elaborate test
       is <a href='/s0il/'>s0il</a> a graphical UNIX like OS for microcontrollers, with interpreted userland.</a> and <a href='https://social.librem.one/@dos/111478238181935805'>Petal Hero</a> for the <a href='https://flow3r.garden/'>flow3r badge/instrument</a>.
 
-      <p>ctx is an interactive 2D vector graphics protocol,
-      providing remote backends and process multiplexing integrated
-      with a terminal emulator/window manager; providing an end-to-end
-      vector rendering framework suitable for serial links.
+      <p>ctx as an interactive 2D vector graphics protocol provides remote
+      backends and process multiplexing integrated with a terminal
+      emulator/window manager; providing an end-to-end vector rendering
+      framework suitable for serial links. The serialization of the rendering
+      model is a superset of SVG path d attribute syntax. Internally (as well
+      as for backends extending ctx; by appearing after the
+      CTX_IMPLEMENTATION), a compact binary serialization of this syntax is
+      used.
       </p>
 
       <p> The <a href='rasterizer/'>ctx rasterizer</a> is
@@ -72,6 +66,16 @@
       handled. Combined with floating point pixel encoding support and color
              management ctx scales to meet <a href='https://gegl.org/'>GEGL</a>
              and <a href='https://www.gimp.org.'>GIMP</a>s needs.</p>
+
+      <dl>
+        <dt>x86-64</dt><dd>Runtime choice of 3 different levels of SIMD support.</dd>
+        <dt>arm32</dt><dd>both mcu and cpu's tested on rp2040</dd>
+        <dt>tensilica</dt><dd>tested on esp32 and esp32s3</dd>
+        <dt>riscv</dt><dd>tested on esp32c3</dd>
+        <dt>wasm</dt><dd>built with emscripten</dd>
+        <dt>?</dt><dd>if it is a 32bit or 64bit arch; with a C compiler it probably works.</dd>
+      </dl>
+
 
       <p>The interactive backends of ctx are tailored towards low latency
       rendering of UIs where only a part of the screen changes, like editing
