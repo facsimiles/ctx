@@ -2763,7 +2763,7 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
     int vv = ctx_fmod1f((ctx_atan2f (x,y) + offset) * scale) * fscale;
   *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
 #else
-    float vv = (ctx_atan2f (x,y) + offset) * scale;
+    float vv = ctx_fmod1f((ctx_atan2f (x,y) + offset) * scale);
   _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0, rgba);
 #endif
 #if CTX_DITHER
@@ -2786,7 +2786,7 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
     int vv = ctx_fmod1f((ctx_atan2f_rest (x,y_recip) + offset) * scale) * fscale;
   *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
 #else
-    float vv = (ctx_atan2f_rest (x,y_recip) + offset) * scale;
+    float vv = ctx_fmod1f((ctx_atan2f_rest (x,y_recip) + offset) * scale);
   _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0f, rgba);
 #endif
 #if CTX_DITHER
@@ -2803,7 +2803,7 @@ ctx_fragment_conic_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y, 
     int vv = ctx_fmod1f((ctx_atan2f (x,y) + offset) * scale) * fscale;
   *((uint32_t*)rgba) = *((uint32_t*)(&rasterizer->gradient_cache_u8[ctx_grad_index_i (rasterizer, vv)][0]));
 #else
-    float vv = (ctx_atan2f (x,y) + offset) * scale;
+    float vv = ctx_fmod1f((ctx_atan2f (x,y) + offset) * scale);
   _ctx_fragment_gradient_1d_RGBA8 (rasterizer, vv, 1.0f, rgba);
 #endif
 #if CTX_DITHER

@@ -3911,7 +3911,9 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
       case CTX_RADIAL_GRADIENT:
         ctx_interpret_style (state, entry, NULL);
         ctx_state_gradient_clear_stops (state);
+#if CTX_GRADIENT_CACHE
         rasterizer->gradient_cache_valid = 0;
+#endif
         rasterizer->comp_op = NULL;
         break;
 #endif
@@ -4337,7 +4339,9 @@ ctx_rasterizer_reinit (Ctx *ctx,
   rasterizer->blit_stride = stride;
   rasterizer->scan_min    = 5000;
   rasterizer->scan_max    = -5000;
+#if CTX_GRADIENT_CACHE
   rasterizer->gradient_cache_valid = 0;
+#endif
 
   if (pixel_format == CTX_FORMAT_BGRA8)
   {
