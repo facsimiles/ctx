@@ -33,4 +33,4 @@ perf-circ-nosimd: perf-circ-nosimd.c ../../*.h Makefile
 	$(CC) $(PERF_CFLAGS)  $< -o $@ -I../.. -I../../fonts `pkg-config cairo --cflags --libs` -lm
 
 ctx-info-32bit: ctx-info.c ../../ctx.h tiny-config.h Makefile
-	i686-linux-gnu-gcc $< -o $@ -g -lm -I../.. -I../../fonts -Wall -lm -I../../deps
+	i686-linux-gnu-gcc-12 $< -o $@ -g -lm -I../.. -I../../fonts -Wall -lm -I../../deps

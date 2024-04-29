@@ -1491,6 +1491,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
 #endif
 }
 
+#if CTX_ENABLE_SHADOW_BLUR
 static void
 ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
 {
@@ -1603,7 +1604,7 @@ ctx_rasterizer_rasterize_edges3 (CtxRasterizer *rasterizer, const int fill_rule)
       dst += blit_stride;
     }
 }
-
+#endif
 
 
 #if CTX_INLINE_FILL_RULE
@@ -1635,12 +1636,15 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
   const int allow_direct = 0;  // temporarily disabled
 			       // we seem to overrrun our scans
 #endif
+
+#if CTX_ENABLE_SHADOW_BLUR
     if (rasterizer->in_shadow)
     {
       if (fill_rule) ctx_rasterizer_rasterize_edges3 (rasterizer, 1);
       else           ctx_rasterizer_rasterize_edges3 (rasterizer, 0);
       return;
     }
+#endif
 
 #if 1
     if (allow_direct)
@@ -1666,9 +1670,11 @@ CTX_SIMD_SUFFIX (ctx_rasterizer_rasterize_edges) (CtxRasterizer *rasterizer, con
          | ((rasterizer->clip_buffer!=NULL) & (!rasterizer->clip_rectangle))
 #endif
          );
+#if CTX_ENABLE_SHADOW_BLUR
   if (rasterizer->in_shadow)
     ctx_rasterizer_rasterize_edges3 (rasterizer, fill_rule);
   else
+#endif
     ctx_rasterizer_rasterize_edges2 (rasterizer, fill_rule, allow_direct);
 }
 
@@ -1696,6 +1702,8 @@ void CTX_SIMD_SUFFIX(ctx_simd_setup)(void)
 #endif
 #if CTX_IMPLEMENTATION
 #if CTX_RASTERIZER
+
+#if CTX_ENABLE_RGB565
 
 void
 ctx_RGBA8_to_RGB565_BS (CtxRasterizer *rasterizer, int x, const uint8_t *rgba, void *buf, int count)
@@ -1732,6 +1740,7 @@ ctx_RGB565_BS_to_RGBA8 (CtxRasterizer *rasterizer, int x, const void *buf, uint8
     }
 }
 
+#endif
 
 static void
 ctx_rasterizer_gradient_add_stop (CtxRasterizer *rasterizer, float pos, float *rgba)

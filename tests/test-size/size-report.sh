@@ -42,7 +42,7 @@ echo Ctx + CtxRasterizer + CtxFont + CtxFontEngine + CtxParser
 echo $Ctx + $CtxRasterizer + $CtxFont + $CtxFontEngine + $CtxParser
 RAM=$(($Ctx + $CtxRasterizer + $CtxFont + $CtxFontEngine + $CtxParser))
 
-echo "RAM needed for operation on 32bit: "
+echo "RAM needed for operation on 32bit with a state depth of 8: "
 echo "  only rasterizer:   " $(($RAM - $CtxParser)) " bytes"
 echo "  rasterizer+parser: " $RAM " bytes"
-
+echo "  default ctx desktop build has 16 states, each state level is ~500bytes"
