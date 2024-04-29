@@ -539,10 +539,6 @@
 #define CTX_RASTERIZER_MAX_CIRCLE_SEGMENTS  (128)
 #endif
 
-#ifndef CTX_MAX_FRAMEBUFFER_WIDTH
-#define CTX_MAX_FRAMEBUFFER_WIDTH 2560
-#endif
-
 #ifndef CTX_MAX_FONTS
 #define CTX_MAX_FONTS            32
 #endif
@@ -607,7 +603,7 @@
 
 
 #ifndef CTX_MAX_CBS
-#define CTX_MAX_CBS              1 //128
+#define CTX_MAX_CBS              128
 #endif
 
 #ifndef CTX_STATIC_OPAQUE // causes a CTX_MAX_SCANLINE_LENGTH

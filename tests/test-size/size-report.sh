@@ -31,12 +31,14 @@ CtxFont=`./ctx-info-32bit|grep 'Font)'|cut -f 3 -d ' '`
 CtxFontEngine=`./ctx-info-32bit|grep 'Font)'|cut -f 3 -d ' '`
 Ctx=`./ctx-info-32bit|grep '(Ctx)'|cut -f 3 -d ' '`
 echo ""
-echo "Sizes computed with 32bit (i486 build) dynamic libc binaries,"
-echo "version contains the same raw data and c library calls."
 
+echo "Sizes computed with dynamic libc binaries,"
 echo "RGBA8 Rasterizer:" $(($TINY-$BASELINE-$ASCII_FONT)) " bytes"
 echo "CTX parser:      " $(($SMALL-$TINY)) " bytes"
 echo "CTX formatter: : " $(($MEDIUM-$TINY)) " bytes"
+
+echo "Sizes computed with 32bit (i486 build) dynamic libc binaries,"
+echo "version contains the same raw data and c library calls."
 
 echo Ctx + CtxRasterizer + CtxFont + CtxFontEngine + CtxParser
 echo $Ctx + $CtxRasterizer + $CtxFont + $CtxFontEngine + $CtxParser
