@@ -1533,7 +1533,7 @@ void _ctx_initial_style (Mrg *mrg)
   SET_PROPS(class,"");
   SET_PROPS(id,"");
 
-  ctx_set_float (mrg->ctx, SQZ_stroke_width, 0.2);
+  //ctx_set_float (mrg->ctx, SQZ_stroke_width, 4.0);
 
   CtxColor *color = ctx_color_new ();
   ctx_get_color (mrg->ctx, SQZ_color, color);
@@ -7677,13 +7677,9 @@ void itk_xml_render (Mrg *mrg,
 	}
         break;
       case t_att:
-        //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
-        //  strncpy (htmlctx->attribute[htmlctx->attributes], data, MRG_XML_MAX_ATTRIBUTE_LEN-1);
         att = ctx_strhash (data);
         break;
       case t_val:
-        //if (htmlctx->attributes < MRG_XML_MAX_ATTRIBUTES-1)
-        //  strncpy (htmlctx->value[htmlctx->attributes++], data, MRG_XML_MAX_VALUE_LEN-1);
         ctx_set_string (mrg->ctx, att, data);
         {
             uint32_t style_attribute[] ={
@@ -7704,20 +7700,20 @@ void itk_xml_render (Mrg *mrg,
               SQZ_background,
               0};
             char *style_attribute_names[] ={
-              "fill_rule",
-              "font_size",
-              "font_family",
-              "fill_color",
+              "fill-rule",
+              "font-size",
+              "font-family",
+              "fill-color",
               "fill",
-              "stroke_width",
-              "stroke_color",
-              "stroke_linecap",
-              "stroke_miterlimit",
-              "stroke_linejoin",
+              "stroke-width",
+              "stroke-color",
+              "stroke-linecap",
+              "stroke-miterlimit",
+              "stroke-linejoin",
               "stroke",
               //"viewBox",
               "color",
-              "background_color",
+              "background-color",
               "background",
               0};
 
