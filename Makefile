@@ -41,6 +41,7 @@ MEDIA_HANDLERS_OBJS = \
   media-handlers/ctx-gif.o \
   media-handlers/ctx-img.o \
   media-handlers/ctx-mpg.o \
+  media-handlers/ctx-xml.o \
   media-handlers/ctx-tinyvg.o \
   media-handlers/ctx-hexview.o \
   media-handlers/convert.o

@@ -19,10 +19,8 @@
 #define CTX_ENABLE_RGB565_BYTESWAPPED 1
 #define CTX_BITPACK_PACKER      0
 #define CTX_COMPOSITING_GROUPS  0
-#define CTX_RENDERSTREAM_STATIC 0
 #define CTX_GRADIENT_CACHE      1
 #define CTX_ENABLE_CLIP         1
-#define CTX_BLOATY_FAST_PATHS   0
 
 #define CTX_CLIENTS         1
 #define CTX_VT              1

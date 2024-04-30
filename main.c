@@ -32,6 +32,7 @@ int convert_main (int argc, char **argv);
 int ctx_tinyvg_main (int argc, char **argv);
 int ctx_img_main (int argc, char **argv);
 int ctx_gif_main (int argc, char **argv);
+int browser_main (int argc, char **argv);
 int ctx_mpg_main (int argc, char **argv);
 int ctx_hexview_main (int argc, char **argv);
 
@@ -344,6 +345,10 @@ int main (int argc, char **argv)
       return ctx_mpg_main (argc, argv);
     }
 #endif
+    if (!strcmp (media_type, "image/svg+xml"))
+    {
+      return browser_main (argc, argv);
+    }
 
     return -1;
   }

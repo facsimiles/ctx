@@ -1,4 +1,4 @@
-#define CTX_MAX_STATES     6  // lowered from 16, saving quite a few kb, 2 is also possible
+#define CTX_MAX_STATES     8  // lowered from 16, saving quite a few kb, 2 is also possible
                               // but then there is no save/restore for the user, with 4 there is two
 
 #define CTX_MAX_KEYDB       10
@@ -18,7 +18,7 @@
 #define CTX_STROKE_1PX      0
 #define CTX_GSTATE_PROTECT  0
 #define CTX_ENABLE_CM       0
-#define CTX_NATIVE_GRAYA8   0
+#define CTX_NATIVE_GRAYA8   1
 #define CTX_FONT_SHAPE_CACHE 0
 #define CTX_RASTERIZER_BEZIER_FIXED_POINT 0
 #define CTX_PARSER          0
@@ -34,7 +34,7 @@
 #define CTX_FORMATTER       0
 #define CTX_CURRENT_PATH    0
 #define CTX_SHAPE_CACHE     0
-#define CTX_PARSER_FIXED_TEMP 1
+#define CTX_PARSER_FIXED_TEMP 0 // 1 is probably better for frgmentation
 #define CTX_PARSER_MAXLEN     1024
 
 #define CTX_GRADIENT_CACHE  0
@@ -42,17 +42,15 @@
                                //   should be increased to store poly-lines
                                //   of active clips
 #define CTX_ENABLE_SHADOW_BLUR       0 // < 4kb extra code size
-#define CTX_BLOATY_FAST_PATHS        0
 #define CTX_BITPACK_PACKER           0
 #define CTX_FORCE_INLINES            0
-#define CTX_RASTERIZER_AA           15   // slightly smaller size code path
+#define CTX_RASTERIZER_AA            5 
 #define CTX_COMPOSITING_GROUPS       0   // ~3kb code size
 #define CTX_BLENDING_AND_COMPOSITING 0   // 4392 bytes of code difference
 #define CTX_INLINED_NORMAL           0   // up to 10kb code size difference
                                          // big performance impact
 #define CTX_STRINGPOOL_SIZE     8   // XXX : should be factored out
 #define CTX_MIN_EDGE_LIST_SIZE  512 // is also MIN_RENDERSTREAM_SIZE with RENDERSTREAM_STATIC
-#define CTX_RENDERSTREAM_STATIC 1
 #define CTX_FONTS_FROM_FILE     0 /* leaves out code */
 #define CTX_AUDIO               0
 #define CTX_VT                  0

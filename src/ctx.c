@@ -2635,6 +2635,7 @@ static const CtxMagicEntry ctx_magics[]={
   {1, "text/csv", ".csv", 0, {0x0}},
   {1, "text/html", ".htm", 0, {0x0}},
   {1, "text/html", ".html", 0, {0x0}},
+  {1, "image/svg+xml", ".svg", 0, {0x0}},
   {1, "text/x-makefile", "makefile", 0, {0x0}},
   {1, "application/atom+xml", ".atom", 0, {0x0}},
   {1, "application/rdf+xml", ".rdf", 0, {0x0}},
