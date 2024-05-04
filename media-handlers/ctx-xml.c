@@ -80,6 +80,18 @@ static void exit_cb (CtxEvent *event, void *data1, void *data2)
 {
   ctx_exit (event->ctx);
 }
+static float zoom = 1.0f;
+
+static void zoom_in_cb (CtxEvent *event, void *data, void *data2)
+{
+  zoom *= 1.2f;
+  ctx_queue_draw (event->ctx);
+}
+static void zoom_out_cb (CtxEvent *event, void *data, void *data2)
+{
+  zoom /= 1.2f;
+  ctx_queue_draw (event->ctx);
+}
 
 static void href_cb (CtxEvent *event, void *src, void *data2)
 {
@@ -137,6 +149,7 @@ static int render_ui (ITK *itk, void *data)
 //#if MRG_CAIRO
   ctx_save (ctx);
   ctx_translate (ctx, scroll[0], scroll[1]);
+  ctx_scale (ctx, zoom, zoom);
 //#endif
   ctx_get_contents (mr->uri, (uint8_t**)&contents, &length);
 
@@ -166,6 +179,9 @@ static int render_ui (ITK *itk, void *data)
 
   ctx_add_key_binding (ctx, "page-down", NULL, NULL, pgdn_cb, scroll);
   ctx_add_key_binding (ctx, "page-up",   NULL, NULL, pgup_cb, scroll);
+  ctx_add_key_binding (ctx, "+",   NULL, NULL, zoom_in_cb, NULL);
+  ctx_add_key_binding (ctx, "=",   NULL, NULL, zoom_in_cb, NULL);
+  ctx_add_key_binding (ctx, "-",   NULL, NULL, zoom_out_cb, NULL);
   ctx_add_key_binding (ctx, "control-q", NULL, NULL, exit_cb, NULL);
   ctx_add_key_binding (ctx, "f", NULL, NULL, toggle_fullscreen_cb, NULL);
 
