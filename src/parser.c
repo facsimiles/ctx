@@ -1398,16 +1398,20 @@ static void ctx_parser_transform_cell (CtxParser *parser, CtxCode code, int arg_
     }
 }
 
-// %h %v %m %M
-
-static void ctx_parser_number_done (CtxParser *parser)
-{
-
-}
-
 static void ctx_parser_word_done (CtxParser *parser)
 {
   parser->holding[parser->pos]=0;
+
+  if (parser->pos > 1 && (parser->holding[0]=='Z' || 
+			  parser->holding[0]=='z'))
+  {
+    ctx_close_path (parser->ctx);
+    memmove (parser->holding, parser->holding+1, parser->pos-1);
+    parser->pos--;
+    ctx_parser_word_done (parser);
+    return;
+  }
+
   //int old_args = parser->expected_args;
   int command = ctx_parser_resolve_command (parser, parser->holding);
   if ((command >= 0 && command < 32)
