@@ -8634,6 +8634,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
   }
 
 
+#if 0
   for (int i = 0; i < 4; i++)
     {
       if (vt->leds[i])
@@ -8643,6 +8644,8 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
           ctx_fill (ctx);
         }
     }
+#endif
+
   ctx_restore (ctx);
 //#define SCROLL_SPEED 0.25;
 #define SCROLL_SPEED 0.001;
