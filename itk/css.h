@@ -7883,6 +7883,19 @@ void itk_xml_render (Mrg *mrg,
                 ctx_apply_matrix (mrg_ctx (mrg), &matrix);
             }
           mrg_parse_polygon (mrg, PROPS(d));
+	  ctx_close_path (mrg->ctx);
+          mrg_path_fill_stroke (mrg);
+        }
+        else if (data_hash == SQZ_polyline)
+        {
+          const char *transform;
+          if ((transform = PROPS(transform)))
+            {
+              CtxMatrix matrix;
+              if (mrg_parse_transform (mrg, &matrix, transform))
+                ctx_apply_matrix (mrg_ctx (mrg), &matrix);
+            }
+          mrg_parse_polygon (mrg, PROPS(d));
           mrg_path_fill_stroke (mrg);
         }
 
@@ -7900,6 +7913,23 @@ void itk_xml_render (Mrg *mrg,
           mrg_path_fill_stroke (mrg);
         }
 
+        else if (data_hash == SQZ_line)
+	{
+          const char *transform;
+          if ((transform = PROPS(transform)))
+            {
+              CtxMatrix matrix;
+              if (mrg_parse_transform (mrg, &matrix, transform))
+                ctx_apply_matrix (mrg_ctx (mrg), &matrix);
+            }
+	  // SQZ_x1
+	  // SQZ_y1
+	  // SQZ_x2
+	  // SQZ_y2
+	  ctx_move_to (mrg->ctx, PROP(x1), PROP(y1));
+	  ctx_line_to (mrg->ctx, PROP(x2), PROP(y2));
+          mrg_path_fill_stroke (mrg);
+	}
         else if (data_hash == SQZ_ellipse)
         {
           //mrg_parse_ellipse (mrg, PROPS(d));
