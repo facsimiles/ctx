@@ -7882,9 +7882,7 @@ void itk_xml_render (Mrg *mrg,
         else if (data_hash == SQZ_path)
         {
           const char *transform;
-	//ctx_begin_path (mrg_ctx (mrg)); // XXX: eeeek!
-          ctx_move_to (mrg_ctx(mrg), 0,0); // make relative move to in start of
-					   // path work
+	  ctx_begin_path (mrg_ctx (mrg)); // XXX: eeeek!
           if ((transform = PROPS(transform)))
             {
               CtxMatrix matrix;
