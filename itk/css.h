@@ -7471,6 +7471,7 @@ _ctx_str_get_float (const char *string, int no)
   return ret;
 }
 
+
 void itk_xml_render (Mrg *mrg,
                      char *uri_base,
                      void (*link_cb) (CtxEvent *event, void *href, void *link_data),
@@ -7485,6 +7486,7 @@ void itk_xml_render (Mrg *mrg,
   int type            = t_none;
   static int depth    = 0;
   int in_style        = 0;
+  int in_defs         = 0;
   int should_be_empty = 0;
   int tagpos          = 0;
 
@@ -7666,15 +7668,20 @@ void itk_xml_render (Mrg *mrg,
       case t_tag:
         //htmlctx->attributes = 0;
         //ctx_save (mrg->ctx);
+	{
+        uint32_t data_hash = ctx_strhash (data);
         tagpos = pos;
         ctx_string_clear (style);
         ctx_set_string (mrg->ctx, SQZ_style, "");
         ctx_set_string (mrg->ctx, SQZ_transform, "");
   
 
-	if (!strcmp (data, "html"))
-	{
-	}
+	  if (data_hash == SQZ_html)
+	  {
+  	  }
+	  else if (data_hash == SQZ_defs)
+	    in_defs = 1;
+	  }
         break;
       case t_att:
         att = ctx_strhash (data);
@@ -7933,10 +7940,10 @@ void itk_xml_render (Mrg *mrg,
           mrg_path_fill_stroke (mrg);
         }
 
-        else if (data_hash == SQZ_rect)
+        else if (data_hash == SQZ_rect && !in_defs)
         {
           float width  = PROP(width);  // XXX : gets incorrectly handled as html
-          float height = PROP(height);
+          float height = PROP(height); //       also in SVG mode
           float x      = PROP(x);
           float y      = PROP(y);
 
@@ -8052,6 +8059,11 @@ void itk_xml_render (Mrg *mrg,
           itk_end (mrg, NULL);
           //ctx_restore (mrg->ctx);
           depth--;
+
+	if (data_hash == SQZ_defs)
+	{
+	  in_defs = 0;
+	}
 
           if (depth<0)depth=0; // XXX
 #if 1
