@@ -361,6 +361,7 @@ struct _Mrg {
   Ctx            *absolute_ctx;
   float            rem;
   float            ddpx;
+  int              in_svg;
   CtxList         *absolutes;
   CtxList         *stylesheet;
   void            *css_parse_state;
@@ -1528,7 +1529,7 @@ void _ctx_initial_style (Mrg *mrg)
   s->width_auto = 1;
   s->margin_left_auto = 0;
   s->margin_right_auto = 0;
-  SET_PROP(width, 42);
+  //SET_PROP(width, 42);
 
   SET_PROPS(class,"");
   SET_PROPS(id,"");
@@ -2723,7 +2724,6 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       break;
     case SQZ_right:
     case SQZ_bottom:
-    case SQZ_width:     // handled in pass1m
     case SQZ_color:     // handled in pass0
     case SQZ_font_size: // handled in pass0
       break;
@@ -2754,6 +2754,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
     case SQZ_max_width:
     case SQZ_padding_left:
     case SQZ_padding_right:
+    case SQZ_width:     // handled in pass1m
       SET_PROPh(key, mrg_parse_px_x (mrg, value, NULL));
       break;
     case SQZ_margin:
@@ -3280,6 +3281,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
       }
       break;
     case SQZ_text_align:
+    case SQZ_text_anchor:
       switch (val_hash)
       {
         case SQZ_start:   s->text_align = CTX_TEXT_ALIGN_START;   break;
@@ -3287,6 +3289,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
         case SQZ_left:    s->text_align = CTX_TEXT_ALIGN_LEFT;    break;
         case SQZ_right:   s->text_align = CTX_TEXT_ALIGN_RIGHT;   break;
         case SQZ_justify: s->text_align = CTX_TEXT_ALIGN_JUSTIFY; break;
+        case SQZ_middle:
         case SQZ_center:  s->text_align = CTX_TEXT_ALIGN_CENTER;  break;
         default:          s->text_align = CTX_TEXT_ALIGN_LEFT;
       }
@@ -3386,6 +3389,12 @@ static void css_parse_properties (Mrg *mrg, const char *style,
           case '\t':
             state = MRG_CSS_PROPERTY_PARSER_STATE_EXPECT_COLON;
             break;
+#if 0
+	  case '-':
+            name[name_l++]='_';
+            name[name_l]=0;
+            break;
+#endif
           default:
             name[name_l++]=*p;
             name[name_l]=0;
@@ -3421,6 +3430,8 @@ static void css_parse_properties (Mrg *mrg, const char *style,
         switch (*p)
         {
           case ';':
+            for (int i = 0; name[i];i++)
+              if (name[i]=='-')name[i]='_';
             handle_property (mrg, ctx_strhash (name), string);
             state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
             name_l = 0;
@@ -3437,7 +3448,11 @@ static void css_parse_properties (Mrg *mrg, const char *style,
     }
   }
   if (name[0])
-  handle_property (mrg, ctx_strhash (name), string);
+  {
+    for (int i = 0; name[i];i++)
+      if (name[i]=='-')name[i]='_';
+    handle_property (mrg, ctx_strhash (name), string);
+  }
 }
 
 
@@ -3497,6 +3512,8 @@ void itk_set_style (Mrg *mrg, const char *style)
 
   s = ctx_style (mrg);
 
+  if (!mrg->in_svg)
+  {
   if (s->position == CTX_POSITION_STATIC &&
       !s->float_)
   {
@@ -3558,6 +3575,9 @@ void itk_set_style (Mrg *mrg, const char *style)
       }
     }
   }
+
+  }
+
   css_parse_properties (mrg, style, ctx_css_handle_property_pass2);
 }
 
@@ -6619,7 +6639,8 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
         case '+':case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
         number[numbers] = strtod (s, &s);
         s--;
-        numbers++;
+	if (numbers<11)
+          numbers++;
       }
     }
     if (numbers <= 1)
@@ -6644,6 +6665,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
         case '+':case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
         number[numbers] = strtod (s, &s);
         s--;
+	if (numbers < 11)
         numbers++;
       }
     }
@@ -6666,9 +6688,17 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
         case '+':case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
         number[numbers] = strtod (s, &s);
         s--;
-        numbers++;
+	if (numbers < 11)
+          numbers++;
       }
     }
+    if (numbers == 3)
+    {
+      ctx_matrix_translate (matrix, -number[1], -number[2]);
+      ctx_matrix_rotate (matrix, number[0] / 360.0 * 2 * M_PI);
+      ctx_matrix_translate (matrix, number[1], number[2]);
+    }
+    else
     ctx_matrix_rotate (matrix, number[0] / 360.0 * 2 * M_PI);
   }
   else
@@ -6741,7 +6771,8 @@ again:
         number[numbers] = strtod (s, &s);
         s--;
       }
-      numbers++;
+      if (numbers < 11)
+        numbers++;
 
       switch (command)
       {
@@ -6938,7 +6969,8 @@ again:
       case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
       number[numbers] = _ctx_parse_float (s, &s);
       s--;
-      numbers++;
+      if (numbers<11)
+        numbers++;
 
       if (numbers == 2)
       {
@@ -6982,7 +7014,8 @@ again:
       case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
       number[numbers] = _ctx_parse_float (s, &s);
       s--;
-      numbers++;
+      if (numbers<11)
+        numbers++;
 
       if (numbers == 2)
       {
@@ -7669,19 +7702,24 @@ void itk_xml_render (Mrg *mrg,
         //htmlctx->attributes = 0;
         //ctx_save (mrg->ctx);
 	{
-        uint32_t data_hash = ctx_strhash (data);
-        tagpos = pos;
-        ctx_string_clear (style);
-        ctx_set_string (mrg->ctx, SQZ_style, "");
-        ctx_set_string (mrg->ctx, SQZ_transform, "");
-  
+          uint32_t data_hash = ctx_strhash (data);
+          tagpos = pos;
+          ctx_string_clear (style);
+          ctx_set_string (mrg->ctx, SQZ_style, "");
+          ctx_set_string (mrg->ctx, SQZ_transform, "");
 
 	  if (data_hash == SQZ_html)
 	  {
   	  }
 	  else if (data_hash == SQZ_defs)
+	  {
 	    in_defs = 1;
 	  }
+	  else if (data_hash == SQZ_svg)
+	  {
+	     mrg->in_svg++;
+	  }
+	}
         break;
       case t_att:
         att = ctx_strhash (data);
@@ -7705,6 +7743,7 @@ void itk_xml_render (Mrg *mrg,
               SQZ_color,
               SQZ_background_color,
               SQZ_background,
+              SQZ_text_anchor,
               0};
             char *style_attribute_names[] ={
               "fill-rule",
@@ -7722,6 +7761,7 @@ void itk_xml_render (Mrg *mrg,
               "color",
               "background-color",
               "background",
+              "text-anchor",
               0};
 
               int j;
@@ -7976,7 +8016,18 @@ void itk_xml_render (Mrg *mrg,
           float height = PROP(height); //       also in SVG mode
           float x      = PROP(x);
           float y      = PROP(y);
+          float rx     = PROP(rx);
 
+          const char *transform;
+          if ((transform = PROPS(transform)))
+            {
+              CtxMatrix matrix;
+              if (mrg_parse_transform (mrg, &matrix, transform))
+                ctx_apply_matrix (mrg_ctx (mrg), &matrix);
+            }
+	  if (rx > 0.001)
+            ctx_round_rectangle (mrg_ctx (mrg), x, y, width, height, rx);
+	  else
           ctx_rectangle (mrg_ctx (mrg), x, y, width, height);
           mrg_path_fill_stroke (mrg);
         }
@@ -8093,6 +8144,10 @@ void itk_xml_render (Mrg *mrg,
 	if (data_hash == SQZ_defs)
 	{
 	  in_defs = 0;
+	}
+	else if (data_hash == SQZ_svg)
+	{
+	  mrg->in_svg--;
 	}
 
           if (depth<0)depth=0; // XXX

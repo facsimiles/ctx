@@ -204,6 +204,11 @@ int browser_main (int argc, char **argv)
   {
     if (!strcmp (argv[i], "-i"))
 	interactive = 1;
+    else if (!strcmp (argv[i], "-z"))
+    {
+	zoom = atof (argv[i+1]);
+	i++;
+    }
     else
     {
     char *tmp = realpath (argv[i], NULL);

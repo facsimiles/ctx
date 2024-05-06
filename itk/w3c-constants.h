@@ -218,6 +218,7 @@
 #define SQZ_td 25833u // "td"
 #define SQZ_text 1954047465u // "text"
 #define SQZ_text_align 519203916u // "text-align"
+#define SQZ_text_anchor 2618811808u // "text-anchor"
 #define SQZ_text_decoration 2191990606u // "text-decoration"
 #define SQZ_text_indent 1164860048u // "text-indent"
 #define SQZ_text_stroke 3855125514u // "text-stroke"
