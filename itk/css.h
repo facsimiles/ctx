@@ -3430,8 +3430,10 @@ static void css_parse_properties (Mrg *mrg, const char *style,
         switch (*p)
         {
           case ';':
+#if 0
             for (int i = 0; name[i];i++)
               if (name[i]=='-')name[i]='_';
+#endif
             handle_property (mrg, ctx_strhash (name), string);
             state = MRG_CSS_PROPERTY_PARSER_STATE_NEUTRAL;
             name_l = 0;
@@ -3449,8 +3451,11 @@ static void css_parse_properties (Mrg *mrg, const char *style,
   }
   if (name[0])
   {
+#if 0
     for (int i = 0; name[i];i++)
-      if (name[i]=='-')name[i]='_';
+      if (name[i]=='-')
+	name[i]='_';
+#endif
     handle_property (mrg, ctx_strhash (name), string);
   }
 }
@@ -7514,6 +7519,7 @@ void itk_xml_render (Mrg *mrg,
                      char *html_)
 {
   MrgXml *xmltok;
+  CtxString *svg_text = ctx_string_new ("");
   uint32_t tag[CTX_MAX_STATE_DEPTH];
   int pos             = 0;
   int type            = t_none;
@@ -7654,6 +7660,11 @@ void itk_xml_render (Mrg *mrg,
         }
         else
         {
+	  if (mrg->in_svg)
+	  {
+	    ctx_string_append_str(svg_text, data);
+	  }
+	  else
           itk_print (mrg, data);
         }
         whitespaces = 0;
@@ -7666,6 +7677,15 @@ void itk_xml_render (Mrg *mrg,
         }
         else
         {
+	  if (mrg->in_svg)
+	  {
+	    //if (whitespaces == 0)
+	    {
+	      ctx_string_append_str (svg_text, data);
+	    }
+	    whitespaces ++;
+	  }
+	  else
           switch (ctx_style (mrg)->white_space)
           {
             case CTX_WHITE_SPACE_PRE: /* handles as pre-wrap for now */
@@ -7722,6 +7742,10 @@ void itk_xml_render (Mrg *mrg,
 	}
         break;
       case t_att:
+#if 0
+	for (int i = 0; data[i]; i++)
+	  if (data[i]=='-')data[i]='_';
+#endif
         att = ctx_strhash (data);
         break;
       case t_val:
@@ -7988,7 +8012,7 @@ void itk_xml_render (Mrg *mrg,
 	  ctx_save (mrg->ctx);
 	  ctx_translate (mrg->ctx, PROP(cx), PROP(cy));
 	  ctx_scale (mrg->ctx, PROP(rx), PROP(ry));
-	  ctx_arc (mrg->ctx, 0.0f, 0.0f, 1.0, 0.0, M_PI*2, 0);
+	  ctx_arc (mrg->ctx, 0.0f, 0.0f, 1.0f, 0.0f, M_PI*2, 0);
 	  ctx_restore (mrg->ctx);
           mrg_path_fill_stroke (mrg);
         }
@@ -8006,14 +8030,14 @@ void itk_xml_render (Mrg *mrg,
               if (mrg_parse_transform (mrg, &matrix, transform))
                 ctx_apply_matrix (mrg_ctx (mrg), &matrix);
             }
-	  ctx_arc (mrg->ctx, PROP(cx), PROP(cy), PROP(r), 0.0, M_PI*2, 0);
+	  ctx_arc (mrg->ctx, PROP(cx), PROP(cy), PROP(r), 0.0f, M_PI*2.0f, 0);
           mrg_path_fill_stroke (mrg);
         }
 
         else if (data_hash == SQZ_rect && !in_defs)
         {
-          float width  = PROP(width);  // XXX : gets incorrectly handled as html
-          float height = PROP(height); //       also in SVG mode
+          float width  = PROP(width);
+          float height = PROP(height);
           float x      = PROP(x);
           float y      = PROP(y);
           float rx     = PROP(rx);
@@ -8025,17 +8049,16 @@ void itk_xml_render (Mrg *mrg,
               if (mrg_parse_transform (mrg, &matrix, transform))
                 ctx_apply_matrix (mrg_ctx (mrg), &matrix);
             }
-	  if (rx > 0.001)
+	  if (rx > 0.001f)
             ctx_round_rectangle (mrg_ctx (mrg), x, y, width, height, rx);
 	  else
-          ctx_rectangle (mrg_ctx (mrg), x, y, width, height);
+            ctx_rectangle (mrg_ctx (mrg), x, y, width, height);
           mrg_path_fill_stroke (mrg);
         }
 
         else if (data_hash == SQZ_text)
         {
-          mrg->x = PROP(x);
-          mrg->y = PROP(y);
+	  ctx_string_set (svg_text, "");
         }
 
         if (data_hash == SQZ_a)
@@ -8149,6 +8172,14 @@ void itk_xml_render (Mrg *mrg,
 	{
 	  mrg->in_svg--;
 	}
+        else if (data_hash == SQZ_text)
+	{
+	  ctx_move_to (mrg->ctx, PROP(x), PROP(y));
+
+	  //fprintf (stderr, "%f %f\n", PROP(text_align), PROP(text_anchor));
+	  ctx_font_size (mrg->ctx, PROP(font_size));
+	  ctx_text (mrg->ctx, svg_text->str);
+	}
 
           if (depth<0)depth=0; // XXX
 #if 1
@@ -8237,17 +8268,18 @@ void itk_xml_render (Mrg *mrg,
   xmltok_free (xmltok);
 
   if (depth!=0){
-    fprintf (stderr, "html parsing unbalanced, %i open tags.. \n", depth);
+    //fprintf (stderr, "xml parsing unbalanced, %i open tags.. \n", depth);
     while (depth > 0)
     {
-      fprintf (stderr, " %s ", ctx_str_decode (tag[depth-1]));
+      //fprintf (stderr, " %s ", ctx_str_decode (tag[depth-1]));
       itk_end (mrg, NULL);
       depth--;
     }
-    fprintf (stderr, "\n");
+    //fprintf (stderr, "\n");
   }
 
   ctx_string_free (style, 1);
+  ctx_string_free (svg_text, 1);
 
   if (mrg->absolute_ctx)
   {
