@@ -1725,6 +1725,8 @@ typedef enum
                               
   CTX_STROKE_POS       = 150, // kp
   CTX_FEATHER          = 151, // kp
+			     
+#define CTX_LAST_COMMAND  CTX_FEATHER
 
   CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
   CTX_FILL_RECT        = 201, // fillRect   - only exist in long form

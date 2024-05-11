@@ -254,9 +254,10 @@ void ctx_parser_destroy (CtxParser *parser)
 }
 
 
+
 static int ctx_parser_set_command (CtxParser *parser, CtxCode code)
 {
-  if (code < 150 && code >= 32)
+  if (code <= CTX_LAST_COMMAND && code >= 32)
   {
   parser->expected_args = ctx_arguments_for_code (code);
   parser->n_args = 0;
