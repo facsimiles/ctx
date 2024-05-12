@@ -943,7 +943,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
           ctx_curve_to (ctx, ax, ay, arg(0), arg(1),
                         arg(2), arg(3) );
           parser->pcx = arg(0);
-          parser->pcx = arg(1);
+          parser->pcy = arg(1);
         }
         break;
       case CTX_SMOOTHQ_TO:

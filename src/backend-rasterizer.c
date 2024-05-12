@@ -1823,11 +1823,8 @@ ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
 {
   int x0 = rasterizer->inner_x;
   int y0 = rasterizer->inner_y;
-  if ((rasterizer->has_prev > 0) & (rasterizer->first_edge>=0))
+  if (rasterizer->first_edge>=0)
     {
-
-      if (rasterizer->first_edge>=0)
-      {
         CtxSegment *segment = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->first_edge];
 	if (segment->code == CTX_NEW_EDGE)
 	{
@@ -1839,18 +1836,23 @@ ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
           entry.x1=x1;
           entry.y1=y1;
 	  // XXX 
-          ctx_rasterizer_update_inner_point (rasterizer, x1, y1);
           rasterizer->has_prev = 0;
 	  rasterizer->first_edge = -1;
           ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
-   entry = *segment;
-   entry.code = CTX_CLOSE_EDGE;
+          entry = *segment;
+          entry.code = CTX_CLOSE_EDGE;
 
           ctx_edgelist_add_single (&rasterizer->edge_list, (CtxEntry*)&entry);
-	  // shorten to half length?
+
+          ctx_rasterizer_update_inner_point (rasterizer, x1, y1);
+
+	  float nx = x1 * (1.0f / CTX_SUBDIV);
+	  float ny = y1 * (1.0f / CTX_FULL_AA);
+	  ctx_device_to_user(rasterizer->backend.ctx, &nx, &ny);
+          rasterizer->x = nx;
+          rasterizer->y = ny;
           return;
 	}
-      }
     }
 }
 

@@ -1979,8 +1979,8 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
 	{
 	  state->first_x = state->x;
 	  state->first_y = state->y;
+          state->has_moved = 1;
 	}
-        state->has_moved = 1;
         break;
       case CTX_CURVE_TO:
         state->x = ctx_arg_float (4);
@@ -1989,8 +1989,8 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
 	{
 	  state->first_x = state->x;
 	  state->first_y = state->y;
+          state->has_moved = 1;
 	}
-        state->has_moved = 1;
         break;
       case CTX_QUAD_TO:
         state->x = ctx_arg_float (2);
@@ -1999,13 +1999,18 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
 	{
 	  state->first_x = state->x;
 	  state->first_y = state->y;
+          state->has_moved = 1;
 	}
-        state->has_moved = 1;
         break;
       case CTX_ARC:
         state->x = ctx_arg_float (0) + ctx_cosf (ctx_arg_float (4) ) * ctx_arg_float (2);
         state->y = ctx_arg_float (1) + ctx_sinf (ctx_arg_float (4) ) * ctx_arg_float (2);
-        state->has_moved = 1;
+	if (state->has_moved<=0)
+	{
+	  state->first_x = state->x;
+	  state->first_y = state->y;
+          state->has_moved = 1;
+	}
         break;
       case CTX_REL_MOVE_TO:
       case CTX_REL_LINE_TO:
@@ -2016,8 +2021,8 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
 	{
 	  state->first_x = state->x;
 	  state->first_y = state->y;
+          state->has_moved = 1;
 	}
-        state->has_moved = 1;
         break;
       case CTX_REL_CURVE_TO:
         state->x += ctx_arg_float (4);
@@ -2026,8 +2031,8 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
 	{
 	  state->first_x = state->x;
 	  state->first_y = state->y;
+          state->has_moved = 1;
 	}
-        state->has_moved = 1;
         break;
       case CTX_REL_QUAD_TO:
         state->x += ctx_arg_float (2);
@@ -2036,8 +2041,8 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
 	{
 	  state->first_x = state->x;
 	  state->first_y = state->y;
+          state->has_moved = 1;
 	}
-        state->has_moved = 1;
     }
 }
 
