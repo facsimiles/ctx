@@ -1838,6 +1838,7 @@ ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
           entry.y0=y0;
           entry.x1=x1;
           entry.y1=y1;
+	  // XXX 
           ctx_rasterizer_update_inner_point (rasterizer, x1, y1);
           rasterizer->has_prev = 0;
 	  rasterizer->first_edge = -1;

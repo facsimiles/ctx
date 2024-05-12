@@ -1099,7 +1099,7 @@ ctx_get_font (Ctx *ctx)
 
 void ctx_line_to (Ctx *ctx, float x, float y)
 {
-  if (CTX_UNLIKELY(!ctx->state.has_moved))
+  if (ctx->state.has_moved <= 0)
     { CTX_PROCESS_F (CTX_MOVE_TO, x, y); }
   else
     { CTX_PROCESS_F (CTX_LINE_TO, x, y); }
@@ -1966,10 +1966,20 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
       case CTX_STROKE:
         state->has_moved = 0;
         break;
+      case CTX_CLOSE_PATH:
+	state->x = state->first_x;
+	state->y = state->first_y;
+        state->has_moved = -1;
+	break;
       case CTX_MOVE_TO:
       case CTX_LINE_TO:
         state->x = ctx_arg_float (0);
         state->y = ctx_arg_float (1);
+	if (state->has_moved<=0)
+	{
+	  state->first_x = state->x;
+	  state->first_y = state->y;
+	}
         state->has_moved = 1;
         break;
       case CTX_CURVE_TO:
@@ -1991,14 +2001,23 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
       case CTX_REL_LINE_TO:
         state->x += ctx_arg_float (0);
         state->y += ctx_arg_float (1);
+
+	if (state->has_moved<=0)
+	{
+	  state->first_x = state->x;
+	  state->first_y = state->y;
+	}
+        state->has_moved = 1;
         break;
       case CTX_REL_CURVE_TO:
         state->x += ctx_arg_float (4);
         state->y += ctx_arg_float (5);
+        state->has_moved = 1;
         break;
       case CTX_REL_QUAD_TO:
         state->x += ctx_arg_float (2);
         state->y += ctx_arg_float (3);
+        state->has_moved = 1;
         break;
         // XXX missing some smooths
     }
@@ -2029,6 +2048,7 @@ CTX_STATIC void
 ctx_state_init (CtxState *state)
 {
   memset (state, 0, sizeof (CtxState) );
+  state->gstate.global_alpha_u8 = 255;
   state->gstate.global_alpha_u8 = 255;
   state->gstate.global_alpha_f  = 1.0;
   state->gstate.font_size       = 32; // default HTML canvas is 10px sans

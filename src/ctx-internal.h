@@ -323,7 +323,7 @@ struct _CtxKeyDbEntry
 
 struct _CtxState
 {
-  unsigned int  has_moved:1;
+  int  has_moved;
   unsigned int  has_clipped:1;
   int8_t        source; // used for the single-shifting to stroking
                 // 0  = fill
@@ -336,6 +336,8 @@ struct _CtxState
 
   float         x;
   float         y;
+  float         first_x;
+  float         first_y;
   int           ink_min_x;
   int           ink_min_y;
   int           ink_max_x;
