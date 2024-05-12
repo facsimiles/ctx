@@ -236,10 +236,12 @@ int browser_main (int argc, char **argv)
     itk_run_ui (itk, render_ui, mr);
   else
   {
+#if CTX_FORMATTER
     render_ui (itk, mr);
     fprintf (stdout, "\n\e[?200h");
     ctx_render_stream (ctx, stdout, 0);
     fprintf (stdout, " done\n\n\n");
+#endif
   }
 
   itk_free (itk);
