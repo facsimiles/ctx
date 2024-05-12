@@ -4172,6 +4172,21 @@ foo:
         ctx_interpret_style (state, entry, NULL);
         rasterizer->comp_op = NULL;
         break;
+      case CTX_VIEW_BOX:
+	{ // XXX : this can screw with transforms if one is not careful
+	   float x = ctx_arg_float(0),
+                       y = ctx_arg_float(1),
+                       width = ctx_arg_float(2),
+                       height = ctx_arg_float(2);
+	   float factor = ctx_width (ctx)/width;
+	   float factorh = ctx_height (ctx)/height;
+
+	   if (factorh <= factor) factor = factorh;
+
+	   ctx_translate (ctx, x, y);
+	   ctx_scale (ctx, factor, factor);
+	}
+        break;
     }
   ctx_interpret_pos_bare (state, entry, NULL);
 }
