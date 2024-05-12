@@ -1985,11 +1985,21 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
       case CTX_CURVE_TO:
         state->x = ctx_arg_float (4);
         state->y = ctx_arg_float (5);
+	if (state->has_moved<=0)
+	{
+	  state->first_x = state->x;
+	  state->first_y = state->y;
+	}
         state->has_moved = 1;
         break;
       case CTX_QUAD_TO:
         state->x = ctx_arg_float (2);
         state->y = ctx_arg_float (3);
+	if (state->has_moved<=0)
+	{
+	  state->first_x = state->x;
+	  state->first_y = state->y;
+	}
         state->has_moved = 1;
         break;
       case CTX_ARC:
@@ -2012,14 +2022,22 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
       case CTX_REL_CURVE_TO:
         state->x += ctx_arg_float (4);
         state->y += ctx_arg_float (5);
+	if (state->has_moved<=0)
+	{
+	  state->first_x = state->x;
+	  state->first_y = state->y;
+	}
         state->has_moved = 1;
         break;
       case CTX_REL_QUAD_TO:
         state->x += ctx_arg_float (2);
         state->y += ctx_arg_float (3);
+	if (state->has_moved<=0)
+	{
+	  state->first_x = state->x;
+	  state->first_y = state->y;
+	}
         state->has_moved = 1;
-        break;
-        // XXX missing some smooths
     }
 }
 
