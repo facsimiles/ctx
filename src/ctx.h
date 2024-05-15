@@ -2625,6 +2625,7 @@ typedef enum _CtxAntialias CtxAntialias;
 void         ctx_set_antialias (Ctx *ctx, CtxAntialias antialias);
 CtxAntialias ctx_get_antialias (Ctx *ctx);
 
+int ctx_is_set (Ctx *ctx, uint32_t hash);
 
 #ifdef __cplusplus
 }

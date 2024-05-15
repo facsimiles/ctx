@@ -58,6 +58,9 @@ CTX_STATIC float ctx_string_index_to_float (int index)
   return CTX_KEYDB_STRING_START + index;
 }
 
+static char ctx_kv_num[8][32];
+static int ctx_num_idx = 0;
+
 static void *ctx_state_get_blob (CtxState *state, uint32_t key)
 {
   float stored = ctx_state_get (state, key);
@@ -68,8 +71,12 @@ static void *ctx_state_get_blob (CtxState *state, uint32_t key)
      return &state->stringpool[idx];
   }
 
+  ctx_num_idx ++;
+  if (ctx_num_idx >=8) ctx_num_idx = 0;
+  snprintf (&ctx_kv_num[ctx_num_idx], 31, "%.6f", stored);
+
   // format number as string?
-  return NULL;
+  return ctx_kv_num[ctx_num_idx];
 }
 
 static const char *ctx_state_get_string (CtxState *state, uint32_t key)
