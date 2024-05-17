@@ -6652,8 +6652,14 @@ void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 
 static int 
-mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
+mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str_in)
 {
+  // TODO : parse combined transforms
+
+  const char *str = str_in;
+
+  do {
+
   if (!strncmp (str, "matrix", 5))
   {
     char *s;
@@ -6767,6 +6773,13 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str)
     ctx_matrix_identity (matrix);
     return 0;
   }
+    str = strchr (str, ')');
+    if (str) {
+	str++;
+        while (*str == ' ')str++;
+    }
+  }
+  while (strchr (str, '('));
   return 1;
 }
 
@@ -7660,8 +7673,6 @@ void itk_xml_render (Mrg *mrg,
 	       float rgba[4] = {0,0,0,1.0f};
 	       if (!stop_color)
 		 break;
-	       if (!offset)
-		 break;
 
 	       if (!strcmp (stop_color, "red"))
 	       {
@@ -7687,10 +7698,13 @@ void itk_xml_render (Mrg *mrg,
 		   rgba[3] *= (atof (stop_opacity));
 	       }
 
-	       if (strchr(offset, '%'))
-		 off = atof (offset) / 100.0f;
-	       else 
-		 off = atof (offset);
+	       if (offset)
+	       {
+	         if (strchr(offset, '%'))
+		   off = atof (offset) / 100.0f;
+	         else 
+		   off = atof (offset);
+	       }
 
 	       if (str)
 	      ctx_string_append_printf (str, "addStop %.3f %.3f %.3f %.3f %.3f\n",
@@ -7722,9 +7736,12 @@ void itk_xml_render (Mrg *mrg,
 	      // SQZ_fy,
 	      // SQZ_fx,
 	      // SQZ_fr,
+	      if (id)
+	      {
 	      GRAD_PROP_STR(gradientUnits, "userSpaceOnUse");
 	      GRAD_PROP_STR(spreadMethod, "pad");
-	      GRAD_PROP_STR(transform, "");
+	        const char *transform = ctx_get_string (mrg->ctx, SQZ_gradientTransform);
+
 	      GRAD_PROP_X(cx, "50%");
 	      GRAD_PROP_Y(cy, "50%");
 	      GRAD_PROP_Y(r,  "100%");
@@ -7737,7 +7754,22 @@ void itk_xml_render (Mrg *mrg,
 	       str = itk_svg_add_def (&defs, ctx_strhash (id));
 	       ctx_string_append_printf (str, " radialGradient %f %f %f %f %f %f\n",
 			       cx,cy,r,fx,fy,fr);
+
 	       ctx_string_append_printf (str, " rgba ");
+	       if (transform)
+	       {
+                 CtxMatrix matrix;
+                 if (mrg_parse_transform (mrg, &matrix, transform))
+		 {
+	       ctx_string_append_printf (str, " sourceTransform %f %f %f %f %f %f %f %f %f\n",
+		        matrix.m[0][0], matrix.m[0][1], matrix.m[0][2],
+                        matrix.m[1][0], matrix.m[1][1], matrix.m[1][2],
+                        matrix.m[2][0], matrix.m[2][1], matrix.m[2][2]
+		    );
+		 }
+		 
+	       }
+	      }
 	    }
 	    break;
 	    case SQZ_linearGradient:
@@ -7748,7 +7780,7 @@ void itk_xml_render (Mrg *mrg,
 	      {
 	        GRAD_PROP_STR(gradientUnits, "userSpaceOnUse");
 	        GRAD_PROP_STR(spreadMethod, "pad");
-	        GRAD_PROP_STR(transform, "");
+	        const char *transform = ctx_get_string (mrg->ctx, SQZ_gradientTransform);
 	        GRAD_PROP_X(x1, "0%");
 	        GRAD_PROP_Y(y1, "0%");
 	        GRAD_PROP_X(x2, "100%");
@@ -7758,8 +7790,19 @@ void itk_xml_render (Mrg *mrg,
 	       ctx_string_append_printf (str, " linearGradient %f %f %f %f\n",
 			       x1,y1,x2,y2);
 	       ctx_string_append_printf (str, " rgba ");
-	       // XXX : transform
-	       //pad
+	       if (transform)
+	       {
+                 CtxMatrix matrix;
+                 if (mrg_parse_transform (mrg, &matrix, transform))
+		 {
+	            ctx_string_append_printf (str, " sourceTransform %f %f %f %f %f %f %f %f %f\n",
+		        matrix.m[0][0], matrix.m[0][1], matrix.m[0][2],
+                        matrix.m[1][0], matrix.m[1][1], matrix.m[1][2],
+                        matrix.m[2][0], matrix.m[2][1], matrix.m[2][2]
+		    );
+		 }
+		 
+	       }
 	      }
 	    }
 	    break;
@@ -8148,7 +8191,7 @@ void itk_xml_render (Mrg *mrg,
         else if (data_hash == SQZ_svg)
         {
           const char *vbox = PROPS(viewbox);
-          if (vbox)
+          if (vbox && 0)
           {
             float x = _ctx_str_get_float (vbox, 0);
             float y = _ctx_str_get_float (vbox, 1);
