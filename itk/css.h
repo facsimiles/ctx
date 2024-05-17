@@ -4196,22 +4196,78 @@ void  mrg_set_line_height (Mrg *mrg, float line_height);
 float mrg_line_height (Mrg *mrg);
 
 
-static void mrg_path_fill_stroke (Mrg *mrg)
+typedef struct _ItkCssDef ItkCssDef;
+
+struct _ItkCssDef {
+  uint32_t   id;
+  CtxString *str;
+  ItkCssDef *next;
+};
+
+static CtxString *itk_svg_add_def (ItkCssDef **defs, uint32_t id)
+{
+  ItkCssDef *iter = *defs;
+  while (iter)
+  {
+    if (iter->id == id)
+      return iter->str;
+    iter = iter->next;
+  }
+  iter = ctx_calloc (sizeof (ItkCssDef),1);
+  iter->str = ctx_string_new ("");
+  iter->id = id;
+  iter->next = *defs;
+  *defs = iter;
+  return iter->str;
+}
+
+static void mrg_path_fill_stroke (Mrg *mrg, ItkCssDef **defs)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *fill_color = ctx_color_new ();
   CtxColor *stroke_color = ctx_color_new ();
 
-  ctx_get_color (ctx, SQZ_fill_color, fill_color);
-  ctx_get_color (ctx, SQZ_stroke_color, stroke_color);
+  const char *fill = ctx_get_string (mrg->ctx, SQZ_fill);
 
-  if (!ctx_color_is_transparent (fill_color))
+  ctx_get_color (ctx, SQZ_stroke_color, stroke_color);
+  if (fill && fill[0] == 'u' && strstr(fill, "url("))
   {
-    mrg_ctx_set_source_color (ctx, fill_color);
+    char *id = strchr(fill, '#');
+    if (id)
+    {
+      id ++;
+    }
+    if (id[strlen(id)-1]==')')
+      id[strlen(id)-1]=0;
+    if (id[strlen(id)-1]=='\'')
+      id[strlen(id)-1]=0;
+    if (id[strlen(id)-1]=='"')
+      id[strlen(id)-1]=0;
+    CtxString *str = itk_svg_add_def (defs, ctx_strhash(id));
+    ctx_parse (ctx, str->str);
+
     if (PROP(stroke_width) > 0.001f && !ctx_color_is_transparent (stroke_color))
       ctx_preserve (ctx);
     ctx_fill (ctx);
   }
+  else
+  {
+
+  ctx_get_color (ctx, SQZ_fill_color, fill_color);
+
+  if (!ctx_color_is_transparent (fill_color))
+  {
+    mrg_ctx_set_source_color (ctx, fill_color);
+
+  if (PROP(stroke_width) > 0.001f && !ctx_color_is_transparent (stroke_color))
+    ctx_preserve (ctx);
+  ctx_fill (ctx);
+  }
+
+  }
+  ctx_color_free (fill_color);
+
+
 
   if (PROP(stroke_width) > 0.001f && !ctx_color_is_transparent (stroke_color))
   {
@@ -4219,7 +4275,6 @@ static void mrg_path_fill_stroke (Mrg *mrg)
     mrg_ctx_set_source_color (ctx, stroke_color);
     ctx_stroke (ctx);
   }
-  ctx_color_free (fill_color);
   ctx_color_free (stroke_color);
 }
 
@@ -7528,6 +7583,7 @@ void itk_xml_render (Mrg *mrg,
   int in_defs         = 0;
   int should_be_empty = 0;
   int tagpos          = 0;
+  ItkCssDef *defs = NULL;
 
   if (mrg->uri_base)
 	  free (mrg->uri_base);
@@ -7541,12 +7597,15 @@ void itk_xml_render (Mrg *mrg,
 
 
 ////////////////////////////////////////////////////
+  CtxString *str = NULL;
 
   whitespaces = 0;
   att = 0;
+  pos = 0;
 #if 1
   xmltok = xmltok_buf_new (html_);
 
+  ctx_save (mrg->ctx);
   while (type != t_eof)
   {
     char *data = NULL;
@@ -7560,12 +7619,154 @@ void itk_xml_render (Mrg *mrg,
           ctx_stylesheet_add (mrg, data, uri_base, CTX_STYLE_XML, NULL);
         }
         break;
+      case t_att:
+#if 0
+	for (int i = 0; data[i]; i++)
+	  if (data[i]=='-')data[i]='_';
+#endif
+        att = ctx_strhash (data);
+        break;
+      case t_val:
+	if (in_defs)
+	{
+          ctx_set_string (mrg->ctx, att, data);
+	}
+	break;
       case t_endtag:
 	{
         int i;
-        for (i = 0; data[i]; i++)
-          data[i] = tolower (data[i]);
-        in_style = !strcmp (data, "style");
+        uint32_t data_hash = ctx_strhash (data);
+     // for (i = 0; data[i]; i++)
+     //   data[i] = tolower (data[i]);
+        in_style = (data_hash == SQZ_style);
+
+        if (data_hash == SQZ_defs)
+	{
+	  in_defs = 1;
+	}
+
+	if (in_defs)
+	{
+
+	  switch (data_hash)
+	  {
+	    case SQZ_stop:
+            {
+	       const char *offset     = ctx_get_string (mrg->ctx, SQZ_offset);
+	       const char *stop_color = ctx_get_string (mrg->ctx, SQZ_stop_color);
+	       const char *stop_opacity = ctx_get_string (mrg->ctx, SQZ_stop_opacity);
+
+	       float off = 0.0;
+	       float rgba[4] = {0,0,0,1.0f};
+	       if (!stop_color)
+		 break;
+	       if (!offset)
+		 break;
+
+	       if (!strcmp (stop_color, "red"))
+	       {
+		 rgba[0] = 1.0f;
+	       }
+	       else if (!strcmp (stop_color, "gold"))
+	       {
+		 rgba[0] = 1.0f;
+		 rgba[1] = 0.7f;
+	       }
+	       else
+	       {
+                  CtxColor *color = ctx_color_new ();
+                  ctx_color_set_from_string (mrg->ctx, color, stop_color);
+                  ctx_color_get_rgba (ctx_get_state (mrg->ctx), color, rgba);
+	       }
+
+	       if (stop_opacity)
+	       {
+	         if (strchr(stop_opacity, '%'))
+		   rgba[3] *= (atof (stop_opacity) / 100.0f);
+	         else 
+		   rgba[3] *= (atof (stop_opacity));
+	       }
+
+	       if (strchr(offset, '%'))
+		 off = atof (offset) / 100.0f;
+	       else 
+		 off = atof (offset);
+
+	       if (str)
+	      ctx_string_append_printf (str, "addStop %.3f %.3f %.3f %.3f %.3f\n",
+		   off, rgba[0], rgba[1], rgba[2], rgba[3]);
+	    }
+	    break;
+	    case SQZ_radialGradient:
+	    {
+	      const char *id = ctx_get_string (mrg->ctx, SQZ_id);
+#define GRAD_PROP_STR(name, def_val) \
+	      const char *name = def_val;\
+	      if (ctx_is_set(mrg->ctx, SQZ_##name)) name = PROPS(name);
+#define GRAD_PROP_X(name, def_val) \
+	      float name; const char *str_##name = def_val;\
+	      if (ctx_is_set(mrg->ctx, SQZ_##name)) str_##name = PROPS(name);\
+	      name = mrg_parse_px_x (mrg, str_##name, NULL);
+#define GRAD_PROP_Y(name, def_val) \
+	      float name; const char *str_##name = def_val;\
+	      if (ctx_is_set(mrg->ctx, SQZ_##name)) str_##name = PROPS(name);\
+	      name = mrg_parse_px_y (mrg, str_##name, NULL);
+	      
+
+              // TODO : gradientUnits='userSpaceOnUse'  
+              // TODO : gradientUnits='objectBoundingBox'  (default)
+              // SQZ_gradientUnits
+              // SQZ_gradientTransform
+	      // SQZ_spreadMethod  =  pad, reflect, repeat
+	      //
+	      // SQZ_fy,
+	      // SQZ_fx,
+	      // SQZ_fr,
+	      GRAD_PROP_STR(gradientUnits, "userSpaceOnUse");
+	      GRAD_PROP_STR(spreadMethod, "pad");
+	      GRAD_PROP_STR(transform, "");
+	      GRAD_PROP_X(cx, "50%");
+	      GRAD_PROP_Y(cy, "50%");
+	      GRAD_PROP_Y(r,  "100%");
+	      GRAD_PROP_Y(fr, "0%");
+	      GRAD_PROP_X(fx, "50%"); // XXX should be inherited from cx/cy
+	      GRAD_PROP_Y(fy, "50%"); // not 50% ..
+	    
+	      itk_svg_add_def (&defs, ctx_strhash (id));
+
+	       str = itk_svg_add_def (&defs, ctx_strhash (id));
+	       ctx_string_append_printf (str, " radialGradient %f %f %f %f %f %f\n",
+			       cx,cy,r,fx,fy,fr);
+	       ctx_string_append_printf (str, " rgba ");
+	    }
+	    break;
+	    case SQZ_linearGradient:
+	    {
+	      const char *id = ctx_get_string (mrg->ctx, SQZ_id);
+
+	      if (id)
+	      {
+	        GRAD_PROP_STR(gradientUnits, "userSpaceOnUse");
+	        GRAD_PROP_STR(spreadMethod, "pad");
+	        GRAD_PROP_STR(transform, "");
+	        GRAD_PROP_X(x1, "0%");
+	        GRAD_PROP_Y(y1, "0%");
+	        GRAD_PROP_X(x2, "100%");
+	        GRAD_PROP_Y(y2, "0%");
+
+	       str = itk_svg_add_def (&defs, ctx_strhash (id));
+	       ctx_string_append_printf (str, " linearGradient %f %f %f %f\n",
+			       x1,y1,x2,y2);
+	       ctx_string_append_printf (str, " rgba ");
+	       // XXX : transform
+	       //pad
+	      }
+	    }
+	    break;
+	  }
+
+	}
+
 	if (in_style)
 	{
           if (mrg->css_parse_state)
@@ -7574,10 +7775,31 @@ void itk_xml_render (Mrg *mrg,
 	}
 	}
         break;
+      case t_tag:
+
+	if (in_defs)
+	  ctx_save (mrg->ctx);
+	break;
+
+      case t_closetag:
+      case t_closeemptytag:
+	{
+          uint32_t data_hash = ctx_strhash (data);
+          if (data_hash == SQZ_defs)
+	    in_defs = 0;
+	  if (in_defs)
+	  {
+	    ctx_restore (mrg->ctx);
+	  }
+	}
+	break;
       default:
         break;
     }
   }
+  ctx_restore (mrg->ctx);
+  in_defs = 0;
+  in_style = 0;
 
   xmltok_free (xmltok);
 #endif
@@ -7948,7 +8170,7 @@ void itk_xml_render (Mrg *mrg,
             }
           mrg_parse_polygon (mrg, PROPS(d));
 	  ctx_close_path (mrg->ctx);
-          mrg_path_fill_stroke (mrg);
+          mrg_path_fill_stroke (mrg, &defs);
         }
         else if (data_hash == SQZ_polyline)
         {
@@ -7960,7 +8182,7 @@ void itk_xml_render (Mrg *mrg,
                 ctx_apply_matrix (mrg_ctx (mrg), &matrix);
             }
           mrg_parse_polygon (mrg, PROPS(d));
-          mrg_path_fill_stroke (mrg);
+          mrg_path_fill_stroke (mrg, &defs);
         }
 
         else if (data_hash == SQZ_path)
@@ -7974,7 +8196,7 @@ void itk_xml_render (Mrg *mrg,
                 ctx_apply_matrix (mrg_ctx (mrg), &matrix);
             }
           mrg_parse_svg_path (mrg, PROPS(d));
-          mrg_path_fill_stroke (mrg);
+          mrg_path_fill_stroke (mrg, &defs);
         }
 
         else if (data_hash == SQZ_line)
@@ -7992,7 +8214,7 @@ void itk_xml_render (Mrg *mrg,
 	  // SQZ_y2
 	  ctx_move_to (mrg->ctx, PROP(x1), PROP(y1));
 	  ctx_line_to (mrg->ctx, PROP(x2), PROP(y2));
-          mrg_path_fill_stroke (mrg);
+          mrg_path_fill_stroke (mrg, &defs);
 	}
         else if (data_hash == SQZ_ellipse)
         {
@@ -8014,7 +8236,7 @@ void itk_xml_render (Mrg *mrg,
 	  ctx_scale (mrg->ctx, PROP(rx), PROP(ry));
 	  ctx_arc (mrg->ctx, 0.0f, 0.0f, 1.0f, 0.0f, M_PI*2, 0);
 	  ctx_restore (mrg->ctx);
-          mrg_path_fill_stroke (mrg);
+          mrg_path_fill_stroke (mrg, &defs);
         }
 
         else if (data_hash == SQZ_circle)
@@ -8031,7 +8253,7 @@ void itk_xml_render (Mrg *mrg,
                 ctx_apply_matrix (mrg_ctx (mrg), &matrix);
             }
 	  ctx_arc (mrg->ctx, PROP(cx), PROP(cy), PROP(r), 0.0f, M_PI*2.0f, 0);
-          mrg_path_fill_stroke (mrg);
+          mrg_path_fill_stroke (mrg, &defs);
         }
 
         else if (data_hash == SQZ_rect && !in_defs)
@@ -8053,7 +8275,7 @@ void itk_xml_render (Mrg *mrg,
             ctx_round_rectangle (mrg_ctx (mrg), x, y, width, height, rx);
 	  else
             ctx_rectangle (mrg_ctx (mrg), x, y, width, height);
-          mrg_path_fill_stroke (mrg);
+          mrg_path_fill_stroke (mrg, &defs);
         }
 
         else if (data_hash == SQZ_text)
@@ -8290,6 +8512,14 @@ void itk_xml_render (Mrg *mrg,
   {
      ctx_render_ctx (mrg->fixed_ctx, mrg->ctx);
      ctx_destroy (mrg->fixed_ctx);
+  }
+
+  while (defs)
+  {
+    ItkCssDef *temp =defs;
+    ctx_string_free (temp->str, 1);
+    defs = temp->next;
+    ctx_free (temp);
   }
 }
 
