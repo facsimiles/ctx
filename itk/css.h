@@ -6658,6 +6658,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str_in)
 
   const char *str = str_in;
 
+  ctx_matrix_identity (matrix);
   do {
 
   if (!strncmp (str, "matrix", 5))
@@ -6665,7 +6666,6 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str_in)
     char *s;
     int numbers = 0;
     double number[12]={0.0,};
-    ctx_matrix_identity (matrix);
     s = (void*) ctx_strchr (str, '(');
     if (!s)
       return 0;
@@ -6770,7 +6770,6 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str_in)
   else
   {
     //fprintf (stderr, "unhandled transform: %s\n", str);
-    ctx_matrix_identity (matrix);
     return 0;
   }
     str = strchr (str, ')');
@@ -6780,6 +6779,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str_in)
     }
   }
   while (strchr (str, '('));
+
   return 1;
 }
 
@@ -7748,6 +7748,9 @@ void itk_xml_render (Mrg *mrg,
 	      GRAD_PROP_Y(fr, "0%");
 	      GRAD_PROP_X(fx, "50%"); // XXX should be inherited from cx/cy
 	      GRAD_PROP_Y(fy, "50%"); // not 50% ..
+	
+	      if (!ctx_is_set (mrg->ctx, SQZ_fx)) fx = cx;
+	      if (!ctx_is_set (mrg->ctx, SQZ_fy)) fy = cy;
 	    
 	      itk_svg_add_def (&defs, ctx_strhash (id));
 
@@ -7787,9 +7790,11 @@ void itk_xml_render (Mrg *mrg,
 	        GRAD_PROP_Y(y2, "0%");
 
 	       str = itk_svg_add_def (&defs, ctx_strhash (id));
+
 	       ctx_string_append_printf (str, " linearGradient %f %f %f %f\n",
 			       x1,y1,x2,y2);
 	       ctx_string_append_printf (str, " rgba ");
+
 	       if (transform)
 	       {
                  CtxMatrix matrix;
@@ -7803,6 +7808,7 @@ void itk_xml_render (Mrg *mrg,
 		 }
 		 
 	       }
+
 	      }
 	    }
 	    break;
