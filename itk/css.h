@@ -4228,8 +4228,15 @@ static void mrg_path_fill_stroke (Mrg *mrg, ItkCssDef **defs)
   CtxColor *stroke_color = ctx_color_new ();
 
   const char *fill = ctx_get_string (mrg->ctx, SQZ_fill);
+  const char *stroke = ctx_get_string (mrg->ctx, SQZ_stroke);
+
 
   ctx_get_color (ctx, SQZ_stroke_color, stroke_color);
+
+  int has_stroke = (PROP(stroke_width) > 0.001f &&
+		    (!ctx_color_is_transparent (stroke_color)
+		     || (stroke != NULL)));
+
   if (fill && fill[0] == 'u' && strstr(fill, "url("))
   {
     char *id = strchr(fill, '#');
@@ -4246,7 +4253,7 @@ static void mrg_path_fill_stroke (Mrg *mrg, ItkCssDef **defs)
     CtxString *str = itk_svg_add_def (defs, ctx_strhash(id));
     ctx_parse (ctx, str->str);
 
-    if (PROP(stroke_width) > 0.001f && !ctx_color_is_transparent (stroke_color))
+    if (has_stroke)
       ctx_preserve (ctx);
     ctx_fill (ctx);
   }
@@ -4259,20 +4266,37 @@ static void mrg_path_fill_stroke (Mrg *mrg, ItkCssDef **defs)
   {
     mrg_ctx_set_source_color (ctx, fill_color);
 
-  if (PROP(stroke_width) > 0.001f && !ctx_color_is_transparent (stroke_color))
-    ctx_preserve (ctx);
-  ctx_fill (ctx);
+    if (has_stroke)
+      ctx_preserve (ctx);
+    ctx_fill (ctx);
   }
 
   }
   ctx_color_free (fill_color);
 
-
-
-  if (PROP(stroke_width) > 0.001f && !ctx_color_is_transparent (stroke_color))
+  if (has_stroke)
   {
     ctx_line_width (ctx, PROP(stroke_width));
-    mrg_ctx_set_source_color (ctx, stroke_color);
+    if (stroke && stroke[0] == 'u' && strstr(stroke, "url("))
+    {
+      char *id = strchr(stroke, '#');
+      if (id)
+      {
+        id ++;
+      }
+      if (id[strlen(id)-1]==')')
+        id[strlen(id)-1]=0;
+      if (id[strlen(id)-1]=='\'')
+        id[strlen(id)-1]=0;
+      if (id[strlen(id)-1]=='"')
+        id[strlen(id)-1]=0;
+      CtxString *str = itk_svg_add_def (defs, ctx_strhash(id));
+      ctx_parse (ctx, str->str);
+    }
+    else
+    {
+      mrg_ctx_set_source_color (ctx, stroke_color);
+    }
     ctx_stroke (ctx);
   }
   ctx_color_free (stroke_color);
