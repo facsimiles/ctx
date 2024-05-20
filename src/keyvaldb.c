@@ -93,7 +93,7 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
 {
   int idx = state->gstate.stringpool_pos;
 
-  if (idx + len > CTX_STRINGPOOL_SIZE)
+  if (idx + len + 1 >= CTX_STRINGPOOL_SIZE)
   {
     ctx_log ("blowing varpool size [%c..]\n", data[0]);
     //fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);

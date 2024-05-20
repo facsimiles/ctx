@@ -529,6 +529,8 @@ static void ui_drag (CtxEvent *event, void *data1, void *data2)
   dirty++;
 }
 
+int itk_xml_extent (Mrg *itk, uint8_t *contents, float *width, float *height, float *vb_x, float *vb_y, float *vb_width, float *vb_height);
+
 int convert_main (int argc, char **argv)
 {
   const char *source_path = NULL;
@@ -730,7 +732,20 @@ again:
       _file_get_contents (source_path, &contents, &length);
       if (contents)
       {
+      float c_width = 0;float c_height = 0; float vb_x = 0; float vb_y = 0; float vb_width = 0; float vb_height = 0;
+      itk_xml_extent (mrg, contents, &c_width, &c_height, &vb_x, &vb_y, &vb_width, &vb_height);
+
+      float factor = ctx_width (ctx)/vb_width;
+      float factorh = ctx_height (ctx)/vb_height;
+
+      if (factorh <= factor) factor = factorh;
+
+      ctx_save (ctx);
+      ctx_translate (ctx, vb_x, vb_y);
+      ctx_scale (ctx, factor, factor);
+
       itk_print_xml (mrg, (char *) contents);
+      ctx_restore (ctx);
       free (contents);
       }
       mrg_destroy (mrg);

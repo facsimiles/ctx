@@ -7909,7 +7909,7 @@ void itk_xml_render (Mrg *mrg,
     type = xmltok_get (xmltok, &data, &pos);
 
     if (type == t_tag ||
-        type == t_att ||
+        //type == t_att ||
         type == t_endtag ||
         type == t_closeemptytag ||
         type == t_closetag)
@@ -8594,6 +8594,115 @@ void itk_xml_render (Mrg *mrg,
     defs = temp->next;
     ctx_free (temp);
   }
+}
+
+int itk_xml_extent (Mrg *mrg, uint8_t *contents, float *width, float *height, float *vb_x, float *vb_y, float *vb_width, float *vb_height)
+{
+  MrgXml *xmltok;
+  int pos             = 0;
+  int type            = t_none;
+  int in_style        = 0;
+  int in_defs         = 0;
+  int tagpos          = 0;
+
+  float c_width = 0.0f;
+  float c_height = 0.0f;
+
+   int in_svg = 0;
+////////////////////////////////////////////////////
+
+  type = t_none;
+  int att = 0;
+  in_style = 0;
+  xmltok = xmltok_buf_new (contents);
+
+  while (type != t_eof)
+  {
+    char *data = NULL;
+    type = xmltok_get (xmltok, &data, &pos);
+
+    if (type == t_tag ||
+        //type == t_att ||
+        type == t_endtag ||
+        type == t_closeemptytag ||
+        type == t_closetag)
+    {
+      int i;
+      for (i = 0; data[i]; i++)
+        data[i] = tolower (data[i]);
+    }
+
+    switch (type)
+    {
+      case t_tag:
+        //htmlctx->attributes = 0;
+        //ctx_save (mrg->ctx);
+	{
+          uint32_t data_hash = ctx_strhash (data);
+          tagpos = pos;
+
+	  in_svg = 0;
+	  if (data_hash == SQZ_html)
+	  {
+  	  }
+	  else if (data_hash == SQZ_svg)
+	  {
+	     in_svg = 1;
+	  }
+	}
+        break;
+      case t_att:
+#if 0
+	for (int i = 0; data[i]; i++)
+	  if (data[i]=='-')data[i]='_';
+#endif
+        att = ctx_strhash (data);
+
+        break;
+      case t_val:
+	if (in_svg && att == SQZ_viewBox)
+	{
+            if(vb_x) *vb_x = _ctx_str_get_float (data, 0);
+            if(vb_y) *vb_y = _ctx_str_get_float (data, 1);
+            if(vb_width) *vb_width = _ctx_str_get_float (data, 2);
+            if(vb_height) *vb_height = _ctx_str_get_float (data, 3);
+	}
+	else if (in_svg && att == SQZ_width)
+	{
+	    c_width = mrg_parse_px_x (mrg, data, NULL);
+            if(width) *width = c_width;
+	}
+	else if (in_svg && att == SQZ_height)
+	{
+	    c_height = mrg_parse_px_y (mrg, data, NULL);
+            if(height) *height = c_height;
+	}
+        break;
+      case t_endtag:
+        in_svg = 0;
+        break;
+    }
+  }
+
+  xmltok_free (xmltok);
+
+  if (vb_width && (*vb_width == 0.0f)){
+    if (vb_x) *vb_x = 0;
+    *vb_width = c_width;
+  }
+  if (vb_height && (*vb_height == 0.0f)){
+    if (vb_y) *vb_y = 0;
+    *vb_height = c_height;
+  }
+  if (width && (*width == 0.0f) && vb_width)
+  {
+    *width = *vb_width;
+  }
+  if (height && (*height == 0.0f) && vb_height)
+  {
+    *height = *vb_height;
+  }
+
 }
 
 void itk_xml_renderf (Mrg *mrg,

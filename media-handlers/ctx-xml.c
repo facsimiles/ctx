@@ -22,6 +22,7 @@
 
 int interactive = 0;
 static float zoom = 1.0f;
+static float factor = 1.0f;
 static float scroll[2] = {0,0};
 
 void pgup_cb (CtxEvent *e, void *data1, void *data2)
@@ -43,6 +44,7 @@ void drag_pos (CtxEvent *e, void *data1, void *data2)
   if (e->type == CTX_DRAG_MOTION && e->device_no == 1)
   {
     float *pos = data1;
+    pos[0] += e->delta_x;
     pos[1] += e->delta_y;
     ctx_queue_draw (e->ctx);
   }
@@ -86,6 +88,7 @@ static void exit_cb (CtxEvent *event, void *data1, void *data2)
 static void zoom_in_cb (CtxEvent *event, void *data, void *data2)
 {
   zoom *= 1.2f;
+
   ctx_queue_draw (event->ctx);
 }
 static void zoom_out_cb (CtxEvent *event, void *data, void *data2)
@@ -132,6 +135,7 @@ static const char *magic_mime (const char *data, int length)
   return "text/plain";
 }
 
+int itk_xml_extent (ITK *itk, uint8_t *contents, float *width, float *height, float *vb_x, float *vb_y, float *vb_width, float *vb_height);
 
 static int render_ui (ITK *itk, void *data)
 {
@@ -150,15 +154,19 @@ static int render_ui (ITK *itk, void *data)
     ctx_restore (ctx);
   }
 
-//#if MRG_CAIRO
+
   ctx_save (ctx);
-  ctx_translate (ctx, scroll[0], scroll[1]);
-  ctx_scale (ctx, zoom, zoom);
-//#endif
   ctx_get_contents (mr->uri, (uint8_t**)&contents, &length);
+
+  ctx_translate (ctx, scroll[0], scroll[1]);
+
+
 
   if (contents)
   {
+
+
+
     const char *mime_type = magic_mime (contents, length);
     
     if (!strcmp (mime_type, "text/plain"))
@@ -170,7 +178,23 @@ static int render_ui (ITK *itk, void *data)
              !strcmp (mime_type, "text/svg"))
     {
       //itk_stylesheet_clear (mrg);
+      float vb_x = 0;
+      float vb_y = 0;
+      float vb_width = 0;
+      float vb_height = 0;
+
+      itk_xml_extent (itk, contents, NULL, NULL, &vb_x, &vb_y, &vb_width, &vb_height);
+
+      float factor_h = ctx_height (ctx) / vb_height;
+      factor = ctx_width (ctx) / vb_width;
+      if (factor_h < factor) factor = factor_h;
+
+      ctx_scale (ctx, zoom*factor, zoom*factor);
+
+      ctx_save (ctx);
+
       itk_xml_render (itk, mr->uri, href_cb, mr, NULL, NULL, contents);
+      ctx_restore (ctx);
     }
     else
     {
