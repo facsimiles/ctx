@@ -1226,6 +1226,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         break;
       case CTX_END_FRAME:
         //ctx_flush (ctx); // XXX  XXX  flush only does things inside backends
+	ctx_end_frame (ctx);
         break;
       case CTX_START_FRAME: // XXX is it right to do things here?
         ctx_start_frame (ctx);

@@ -496,7 +496,6 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(ctx_text_align),
     ELFSYM_EXPORT(ctx_text_baseline),
     ELFSYM_EXPORT(ctx_text_direction),
-    ELFSYM_EXPORT(ctx_text_stroke),
     ELFSYM_EXPORT(ctx_texture),
     ELFSYM_EXPORT(ctx_texture_load),
     ELFSYM_EXPORT(ctx_text_width),

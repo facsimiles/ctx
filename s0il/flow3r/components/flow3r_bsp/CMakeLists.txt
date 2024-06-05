@@ -1,0 +1,24 @@
+idf_component_register(
+    SRCS
+		flow3r_bsp_audio.c
+		flow3r_bsp_imu.c
+		flow3r_bsp_display.c
+		flow3r_bsp_gc9a01.c
+		flow3r_bsp_hwconfig.c
+		flow3r_bsp_i2c.c
+		flow3r_bsp_max7321.c
+		flow3r_bsp_max98091.c
+		flow3r_bsp_leds.c
+		flow3r_bsp_rmtled.c
+		flow3r_bsp_spio.c
+		flow3r_bsp_captouch.c
+		flow3r_bsp_ad7147.c
+		flow3r_bsp_ad7147_hw.c
+    INCLUDE_DIRS
+		.
+    REQUIRES
+		driver
+		vfs
+		bmi270
+		bmp581
+)
