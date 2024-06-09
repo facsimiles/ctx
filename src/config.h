@@ -919,3 +919,11 @@
 #ifndef CTX_SCANBIN
 #define CTX_SCANBIN 0
 #endif
+
+#ifndef CTX_LOAD_FILE
+#define CTX_LOAD_FILE ___ctx_file_get_contents
+#endif
+
+#ifndef CTX_MAGIC
+#define CTX_MAGIC 0
+#endif

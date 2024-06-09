@@ -596,11 +596,13 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
   int w, h, components;
   unsigned char *pixels = NULL;
 
+#if 0
   if (path[0] == '/' || !strncmp (path, "file://", 7))
   {
     pixels = stbi_load (path + (path[0]=='/'?0:7), &w, &h, &components, 0);
   }
   else
+#endif
   {
     unsigned char *data = NULL;
     long length = 0;
@@ -687,10 +689,19 @@ void ctx_draw_image_clipped (Ctx *ctx, const char *path, float x, float y, float
 {
   char reteid[65];
   int width, height;
+  if (!strcmp (path + strlen(path) - 4, ".svg"))
+  {
+    ctx_rectangle (ctx, x, y, w, h);
+    ctx_rgba (ctx, 0.0, 0.5, 1.0, 1.0);
+    ctx_fill (ctx);
+  }
+  else
+  {
   ctx_texture_load (ctx, path, &width, &height, reteid);
   if (reteid[0])
   {
     ctx_draw_texture_clipped (ctx, reteid, x, y, w, h, sx, sy, swidth, sheight);
+  }
   }
 }
 
@@ -2578,7 +2589,7 @@ ctx_get_contents2 (const char     *uri,
   }
 
   if (!strncmp (uri, "file://", 7))
-    success = ___ctx_file_get_contents (uri + 7, contents, length, max_len);
+    success = CTX_LOAD_FILE (uri + 7, contents, length, max_len);
 #if ITK_HAVE_FS
   else if (!strncmp (uri, "itk:", 4))
   {
@@ -2617,7 +2628,7 @@ ctx_get_contents2 (const char     *uri,
      success = 0;
   }
 #else
-    success = ___ctx_file_get_contents (uri, contents, length, max_len);
+    success = CTX_LOAD_FILE (uri, contents, length, max_len);
 #endif
   }
   ctx_free (temp_uri);
@@ -2633,7 +2644,7 @@ ctx_get_contents (const char     *uri,
   return ctx_get_contents2 (uri, contents, length, 1024*1024*1024);
 }
 
-
+#if CTX_MAGIC
 
 typedef struct CtxMagicEntry {
   int is_text;
@@ -2902,6 +2913,7 @@ CtxMediaTypeClass ctx_media_type_class (const char *media_type)
   }
   return ret;
 }
+#endif
 
 #else
 int
