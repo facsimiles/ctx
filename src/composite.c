@@ -7618,12 +7618,6 @@ CTX_SIMD_SUFFIX (ctx_composite_setup) (CtxRasterizer *rasterizer)
     case CTX_SOURCE_LINEAR_GRADIENT:
     case CTX_SOURCE_RADIAL_GRADIENT:
       ctx_gradient_cache_prime (rasterizer);
-
-      _ctx_matrix_multiply (&rasterizer->state->gstate.source_fill.transform,
-                            &rasterizer->state->gstate.transform,
-                            &rasterizer->state->gstate.source_fill.set_transform
-                            );
-      ctx_matrix_invert (&rasterizer->state->gstate.source_fill.transform);
       break;
     case CTX_SOURCE_TEXTURE:
 

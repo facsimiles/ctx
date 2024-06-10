@@ -3922,7 +3922,6 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
       case CTX_LINEAR_GRADIENT:
       case CTX_RADIAL_GRADIENT:
         ctx_interpret_style (state, entry, NULL);
-	ctx_matrix_identity (&state->gstate.source_fill.set_transform);
         ctx_state_gradient_clear_stops (state);
 #if CTX_GRADIENT_CACHE
         rasterizer->gradient_cache_valid = 0;
