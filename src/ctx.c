@@ -979,7 +979,7 @@ void ctx_image_smoothing (Ctx *ctx, int enabled)
 }
 
 
-void ctx_line_dash (Ctx *ctx, float *dashes, int count)
+void ctx_line_dash (Ctx *ctx, const float *dashes, int count)
 {
   ctx_process_cmd_str_with_len (ctx, CTX_LINE_DASH, (char*)(dashes), count, 0, count * 4);
 }

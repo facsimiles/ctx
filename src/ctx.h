@@ -421,7 +421,7 @@ void ctx_line_dash_offset (Ctx *ctx, float line_dash);
  *
  * Specify the line dash pattern.
  */
-void  ctx_line_dash       (Ctx *ctx, float *dashes, int count);
+void  ctx_line_dash       (Ctx *ctx, const float *dashes, int count);
 
 /**
  * ctx_font_size:
