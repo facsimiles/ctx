@@ -2,6 +2,13 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
+// SQZ_cx
+// SQZ_cy
+// SQZ_rx
+// SQZ_ry
+// SQZ_c
+// SQZ_r
+
 CTX_EXPORT int
 ctx_width (Ctx *ctx)
 {
@@ -685,23 +692,129 @@ void ctx_draw_texture (Ctx *ctx, const char *eid, float x, float y, float w, flo
   ctx_draw_texture_clipped (ctx, eid, x, y, w, h, 0,0,0,0);
 }
 
+#if CTX_CSS
+
+typedef struct _CtxSvgCache CtxSvgCache;
+struct _CtxSvgCache
+{
+  uint32_t     path_id;
+  float        viewbox[4];
+  float        width;
+  float        height;
+  Ctx         *drawlist;
+  int          last_used_frame;
+  CtxSvgCache *next;
+};
+
+CtxSvgCache *ctx_svg_cache = NULL;
+
+
+static void ctx_draw_svg_clipped (Ctx *ctx, const char *path, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight)
+{
+    ctx_save (ctx);
+
+#if 0
+    // should match HTML 2d context specs for raster images
+    if (swidth > 0.1f || sheight > 0.1f)
+    {
+      ctx_rectangle (ctx, sx, sy, swidth, sheight);
+      ctx_clip (ctx);
+    }
+#endif
+
+    int path_id = ctx_strhash (path);
+    CtxSvgCache *cached = NULL;
+
+    for(cached = ctx_svg_cache; cached; cached = cached->next)
+	if (cached->path_id == path_id)
+	  break;
+
+    int textureclock = ctx_textureclock (ctx);
+
+    if (!cached)
+    {
+      /* evict expired cached svg sprites */
+      {
+	CtxSvgCache *prev = NULL, *iter;
+
+	for (CtxSvgCache *iter = ctx_svg_cache; iter; iter=iter->next)
+	{
+	  if (textureclock - iter->last_used_frame >= CTX_SVG_FREE_AGE)
+	  {
+	    if (prev)
+	    {
+	      prev->next = iter->next;
+	    }
+	    else
+	    {
+	      ctx_svg_cache = iter->next;
+	    }
+
+	    ctx_destroy (iter->drawlist);
+	    ctx_free (iter);
+
+	    iter = prev ? prev : ctx_svg_cache;
+	  }
+	  else
+	  {
+	    prev = iter;
+	  }
+	}
+      }
+
+      unsigned char *contents = NULL;
+      long length = 0;
+      ctx_get_contents (path, &contents, &length);
+      if (contents)
+      {
+        cached = ctx_calloc (sizeof (CtxSvgCache), 1);
+        cached->path_id = path_id;
+        cached->next = ctx_svg_cache;
+        cached->drawlist = ctx_new_drawlist (-1, -1);
+        Css *css= css_new (cached->drawlist);
+        float width, height;
+        css_xml_extent (css, contents, &cached->width, &cached->height, &cached->viewbox[0], &cached->viewbox[1], &cached->viewbox[2], &cached->viewbox[3]);
+        css_xml_render (css, NULL/*uri*/, NULL /* http(s) fetch cb*/, NULL, NULL, NULL, (char*)contents);
+        css_destroy (css);
+	ctx_free (contents);
+        ctx_svg_cache = cached;
+     }
+    }
+
+    if (cached)
+    {
+      float factor,
+      factor_h = h / cached->viewbox[3];
+      factor = w / cached->viewbox[2];
+      if (factor_h < factor) factor = factor_h;
+
+      ctx_translate (ctx, x, y);
+      ctx_scale (ctx, factor, factor);
+      ctx_translate (ctx, -cached->viewbox[0], -cached->viewbox[1]);
+      ctx_render_ctx (cached->drawlist, ctx);
+      cached->last_used_frame = textureclock;
+    }
+    ctx_restore (ctx);
+}
+#endif
+
 void ctx_draw_image_clipped (Ctx *ctx, const char *path, float x, float y, float w, float h, float sx, float sy, float swidth, float sheight)
 {
-  char reteid[65];
-  int width, height;
+#if CTX_CSS
   if (!strcmp (path + strlen(path) - 4, ".svg"))
   {
-    ctx_rectangle (ctx, x, y, w, h);
-    ctx_rgba (ctx, 0.0, 0.5, 1.0, 1.0);
-    ctx_fill (ctx);
+    ctx_draw_svg_clipped (ctx, path, x, y, w, h, sx, sy, swidth, sheight);
   }
   else
+#endif
   {
-  ctx_texture_load (ctx, path, &width, &height, reteid);
-  if (reteid[0])
-  {
-    ctx_draw_texture_clipped (ctx, reteid, x, y, w, h, sx, sy, swidth, sheight);
-  }
+    char reteid[65];
+    int width, height;
+    ctx_texture_load (ctx, path, &width, &height, reteid);
+    if (reteid[0])
+    {
+      ctx_draw_texture_clipped (ctx, reteid, x, y, w, h, sx, sy, swidth, sheight);
+    }
   }
 }
 
@@ -2549,8 +2662,8 @@ ctx_string_append_callback (void *contents, size_t size, size_t nmemb, void *use
 
 #endif
 
-#if ITK_HAVE_FS
-int itk_static_get_contents (const char *path, char **contents, long *length);
+#if CSS_HAVE_FS
+int css_static_get_contents (const char *path, char **contents, long *length);
 #endif
 
 int
@@ -2597,10 +2710,10 @@ ctx_get_contents2 (const char     *uri,
 
   if (!strncmp (uri, "file://", 7))
     success = CTX_LOAD_FILE (uri + 7, contents, length, max_len);
-#if ITK_HAVE_FS
+#if CSS_HAVE_FS
   else if (!strncmp (uri, "itk:", 4))
   {
-    success = itk_static_get_contents (uri, (char**)contents, length);
+    success = css_static_get_contents (uri, (char**)contents, length);
   }
 #endif
   else

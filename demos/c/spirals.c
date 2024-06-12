@@ -1,10 +1,11 @@
 //#define CTX_IMPLEMENTATION 1
-//#define ITK_IMPLEMENTATION 1
-#include "itk.h"
+//#define CSS_IMPLEMENTATION 1
+#include <math.h>
+#include "ctx.h"
 
-static int spirals_ui (ITK *itk, void *data)
+static int spirals_ui (Css *itk, void *data)
 {
-  Ctx *ctx = itk_ctx (itk);
+  Ctx *ctx = css_ctx (itk);
   static int   dot_count = 500;
   static float twist = 2.9645;
   static float dot_scale = 42.0;
@@ -39,44 +40,44 @@ static int spirals_ui (ITK *itk, void *data)
         ctx_fill (ctx);
       }
 
-      itk_panel_start (itk, "spiraling things", ctx_width(ctx)*3/4,0,ctx_width(ctx)/4, ctx_height(ctx)/2);
+      css_panel_start (itk, "spiraling things", ctx_width(ctx)*3/4,0,ctx_width(ctx)/4, ctx_height(ctx)/2);
 
       static int animate = 0;
-      animate = itk_toggle (itk, "animate", animate);
+      animate = css_toggle (itk, "animate", animate);
       if (animate)
       {
         twist += 0.00001;
         ctx_queue_draw (ctx);
       }
 #if 1
-      if (itk_button (itk, "+0.00001"))
+      if (css_button (itk, "+0.00001"))
       {
         twist += 0.00001;
       }
-      if (itk_button (itk, "-0.00001"))
+      if (css_button (itk, "-0.00001"))
       {
         twist -= 0.00001;
       }
 #endif
 
-      itk_slider_int (itk, "count",          &dot_count, 1,  50000, 10);
-      itk_slider_float (itk, "radius",    &dot_scale, 2.0, 400.0, 4.5);
-      itk_slider_float (itk, "twist amount", &twist, -3.14152, 3.14152, 0.0005);
+      css_slider_int (itk, "count",          &dot_count, 1,  50000, 10);
+      css_slider_float (itk, "radius",    &dot_scale, 2.0, 400.0, 4.5);
+      css_slider_float (itk, "twist amount", &twist, -3.14152, 3.14152, 0.0005);
 
 
-      itk_choice_add (itk, 0, "circle");
-      itk_choice_add (itk, 1, "square");
-      shape = itk_choice (itk, "shape", shape);
+      css_choice_add (itk, 0, "circle");
+      css_choice_add (itk, 1, "square");
+      shape = css_choice (itk, "shape", shape);
 
 
-      itk_ctx_settings (itk);
-      itk_panel_end (itk);
+      css_ctx_settings (itk);
+      css_panel_end (itk);
       return 1;
 }
 
 int main (int argc, char **argv)
 {
   ctx_init (&argc, &argv);
-  itk_main (spirals_ui, NULL);
+  css_main (spirals_ui, NULL);
   return 0;
 }

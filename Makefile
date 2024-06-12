@@ -26,7 +26,7 @@ CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 
 CFLAGS += -ffinite-math-only -fno-trapping-math -fno-signed-zeros -fno-math-errno
 
-CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers -Iitk
+CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers
 LIBS  += -lm -lpthread  
 
 
@@ -71,7 +71,7 @@ build.conf:
 	@echo "!! now run make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
-demos/c/%: demos/c/%.c build.conf Makefile build.conf itk/itk.h libctx.a 
+demos/c/%: demos/c/%.c build.conf Makefile build.conf libctx.a 
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
 fonts/%.h: tools/ctx-fontgen
@@ -195,30 +195,27 @@ ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_ARM_NEON -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
-itk.o: itk/itk.c itk/css.h itk/itk.h build.conf Makefile itk/w3c-constants.h
-	$(CCC) itk/itk.c -c -o $@ $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
-
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CTX_CFLAGS) $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
 src/%.o: src/%.c split/*.h
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
 
-terminal/%.o: terminal/%.c ctx.h terminal/*.h itk/itk.h Makefile build.conf
+terminal/%.o: terminal/%.c ctx.h terminal/*.h Makefile build.conf
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-media-handlers/%.o: media-handlers/%.c ctx.h itk/itk.h Makefile build.conf
+media-handlers/%.o: media-handlers/%.c ctx.h Makefile build.conf
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-libctx.a: itk.o deps.o $(CTX_OBJS) build.conf Makefile
-	$(AR) rcs $@ $(CTX_OBJS) deps.o itk.o
-libctx.so: $(CTX_OBJS) deps.o itk.o build.conf Makefile
-	$(CCC) -shared $(LIBS) $(CTX_OBJS) deps.o itk.o $(CTX_LIBS) -o $@
+libctx.a: deps.o $(CTX_OBJS) build.conf Makefile
+	$(AR) rcs $@ $(CTX_OBJS) deps.o 
+libctx.so: $(CTX_OBJS) deps.o build.conf Makefile
+	$(CCC) -shared $(LIBS) $(CTX_OBJS) deps.o $(CTX_LIBS) -o $@
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
 	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS)
 
-ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_OBJS) itk.o ctx.o deps.o terminal/*.[ch] 
-	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) $(CTX_CFLAGS) ctx.o $(CTX_SIMD_OBJS) itk.o deps.o $(LIBS) -static 
+ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_OBJS) ctx.o deps.o terminal/*.[ch] 
+	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) $(CTX_CFLAGS) ctx.o $(CTX_SIMD_OBJS) deps.o $(LIBS) -static 
 	strip -s -x $@
 
 
@@ -269,14 +266,8 @@ squoze/squoze: squoze/*.[ch]
 src/constants.h: src/*.c Makefile squoze/squoze
 	echo '#ifndef __CTX_CONSTANTS' > $@
 	echo '#define __CTX_CONSTANTS' >> $@
-	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][a-zA-Z_0-9]*'|sort | uniq | cut -f 2 -d _`;do echo "#define SQZ_$$a `./squoze/squoze -33 $$a`u";done \
-		>> $@
-	echo '#endif' >> $@
-itk/w3c-constants.h: itk/css.h Makefile squoze/squoze
-	echo '#ifndef __W3C_CONSTANTS' > $@
-	echo '#define __W3C_CONSTANTS' >> $@
-	for a in `cat itk/css.h | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -33 $$b`u // \"$$b\"";done \
-		>> $@
+	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -33 $$b`u // \"$$b\"";done \
+               >> $@
 	echo '#endif' >> $@
 static.inc: static/* static/*/* tools/gen_fs.sh
 	./tools/gen_fs.sh static > $@

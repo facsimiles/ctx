@@ -5,13 +5,13 @@ HTML_FILES = $(C_FILES:.c=.html)
 all: $(HTML_FILES) index.html $(JS_FILES)
 
 %.js: %.c Makefile  ../../ctx.h
-	emcc -I../.. -I../../media-handlers  `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -DITK_IMPLEMENTATION   -o $@ -s ASYNCIFY
+	emcc -I../.. -I../../media-handlers  `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -DCSS_IMPLEMENTATION   -o $@ -s ASYNCIFY
 
 demo.js: demo.c Makefile  ../../ctx.h
-	emcc -I../.. -I../../media-handlers  `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -DITK_IMPLEMENTATION   -o $@ -I../../fonts 
+	emcc -I../.. -I../../media-handlers  `PKG_CONFIG_PATH=../.. pkg-config ctx-wasm --cflags --libs` $< -DCSS_IMPLEMENTATION   -o $@ -I../../fonts 
 
 terminal.js: terminal.c Makefile  /usr/local/include/ctx.h
-	emcc `pkg-config ctx-wasm --cflags --libs` $< -DITK_IMPLEMENTATION -I ../../media-handlers  -o $@ 
+	emcc `pkg-config ctx-wasm --cflags --libs` $< -DCSS_IMPLEMENTATION -I ../../media-handlers  -o $@ 
 
 ../../ctx.h: ../../src/*.[ch]
 	make -C ../../ ctx.h

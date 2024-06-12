@@ -1,200 +1,439 @@
 #ifndef __CTX_CONSTANTS
 #define __CTX_CONSTANTS
-#define SQZ_action 3696112672u
-#define SQZ_addStop 220908742u
-#define SQZ_alphabetic 2966120946u
-#define SQZ_aqua 1635086787u
-#define SQZ_arc 6517443u
-#define SQZ_arcTo 3982854812u
-#define SQZ_beginPath 120180698u
-#define SQZ_bevel 761062270u
-#define SQZ_black 271321868u
-#define SQZ_blend 316843154u
-#define SQZ_blending 3694082958u
-#define SQZ_blendMode 644815934u
-#define SQZ_blue 1702194373u
-#define SQZ_bottom 1302706776u
-#define SQZ_cap 7365063u
-#define SQZ_center 1006603526u
-#define SQZ_clear 1094071360u
-#define SQZ_clip 1885957319u
-#define SQZ_closePath 3537486488u
-#define SQZ_cmyk 1803120071u
-#define SQZ_cmyka 3355381580u
-#define SQZ_cmykaS 3917993734u
-#define SQZ_cmykS 3263315852u
-#define SQZ_cmykSpace 2366647638u
-#define SQZ_color 4231809138u
-#define SQZ_colorSpace 4246256736u
-#define SQZ_compositingMode 3764262848u
-#define SQZ_conicGradient 1669326832u
-#define SQZ_copy 2037411783u
-#define SQZ_currentColor 3452186816u
-#define SQZ_curveTo 48499966u
-#define SQZ_cyan 1851881927u
-#define SQZ_darken 2939689930u
-#define SQZ_defineFont 813704086u
-#define SQZ_defineGlyph 1628031142u
-#define SQZ_defineTexture 4030922434u
-#define SQZ_destinationAtop 1605909240u
-#define SQZ_destinationIn 4096489814u
-#define SQZ_destinationOut 1966109282u
-#define SQZ_destinationOver 507903672u
-#define SQZ_deviceCMYK 3879736092u
-#define SQZ_deviceRGB 911778270u
-#define SQZ_difference 3137481792u
-#define SQZ_done 1701736393u
-#define SQZ_drgb 1650946761u
-#define SQZ_drgba 465014226u
-#define SQZ_drgbaS 2465325300u
-#define SQZ_drgbS 179784888u
-#define SQZ_drgbSpace 1000873868u
-#define SQZ_end 6581963u
-#define SQZ_endFrame 2645960260u
-#define SQZ_endGroup 2864376370u
-#define SQZ_evenOdd 3373267632u
-#define SQZ_exit 1953069259u
-#define SQZ_extend 2652659078u
-#define SQZ_feather 4162344430u
-#define SQZ_fill 1819044301u
-#define SQZ_fillRect 3070816944u
-#define SQZ_fillRule 2262201016u
-#define SQZ_font 1953394637u
-#define SQZ_fontSize 2620910512u
-#define SQZ_fuchsia 439362132u
-#define SQZ_globalAlpha 3833809790u
-#define SQZ_glyph 1308254186u
-#define SQZ_gradientAddStop 2831884664u
-#define SQZ_gray 2036429519u
-#define SQZ_graya 2560443068u
-#define SQZ_grayaS 2408801086u
-#define SQZ_grayS 417614710u
-#define SQZ_green 1517032782u
-#define SQZ_hanging 72134188u
-#define SQZ_height 3762298230u
-#define SQZ_horLineTo 2754532u
-#define SQZ_hue 6649297u
-#define SQZ_identity 4029142280u
-#define SQZ_ideographic 3361616408u
-#define SQZ_imageSmoothing 3109175850u
-#define SQZ_join 1852403669u
-#define SQZ_kerningPair 2079485344u
-#define SQZ_lab 6447577u
-#define SQZ_laba 1633837529u
-#define SQZ_labaS 4170772618u
-#define SQZ_labS 1398956505u
-#define SQZ_lch 6841305u
-#define SQZ_lcha 1634231257u
-#define SQZ_lchaS 2598918966u
-#define SQZ_lchS 1399350233u
-#define SQZ_left 1952867801u
-#define SQZ_lighten 2693650260u
-#define SQZ_lime 1701669337u
-#define SQZ_linearGradient 905023680u
-#define SQZ_lineCap 3957741450u
-#define SQZ_lineDash 2886130602u
-#define SQZ_lineDashOffset 1904302200u
-#define SQZ_lineHeight 1698077880u
-#define SQZ_lineJoin 3891781172u
-#define SQZ_lineTo 3077153258u
-#define SQZ_lineWidth 3851910782u
-#define SQZ_lower 697158190u
-#define SQZ_lowerBottom 4240938844u
-#define SQZ_magenta 578523642u
-#define SQZ_maroon 3386542482u
-#define SQZ_maximize 4009606768u
-#define SQZ_middle 2223770148u
-#define SQZ_miter 886459200u
-#define SQZ_miterLimit 1856773288u
-#define SQZ_moveTo 3083476356u
-#define SQZ_multiply 3976122014u
-#define SQZ_navy 2037801437u
-#define SQZ_newPage 2687321890u
-#define SQZ_newPath 4208019970u
-#define SQZ_newState 3121230612u
-#define SQZ_none 1701736413u
-#define SQZ_nonzero 2746451764u
-#define SQZ_normal 1883425054u
-#define SQZ_olive 3415799870u
-#define SQZ_paint 1082699806u
-#define SQZ_preserve 1666261276u
-#define SQZ_purple 3066163412u
-#define SQZ_quadTo 3205866160u
-#define SQZ_radialGradient 83850682u
-#define SQZ_raise 2772216630u
-#define SQZ_raiseTop 1913256554u
-#define SQZ_rect 1952671205u
-#define SQZ_rectangle 1861211308u
-#define SQZ_red 6579685u
-#define SQZ_relArcTo 4253296276u
-#define SQZ_relCurveTo 2548821600u
-#define SQZ_relHorLineTo 3243288302u
-#define SQZ_relLineTo 1630005260u
-#define SQZ_relMoveTo 429673596u
-#define SQZ_relQuadTo 2362773920u
-#define SQZ_relSmoothqTo 2960208730u
-#define SQZ_relSmoothTo 1725151068u
-#define SQZ_relVerLineTo 1112835164u
-#define SQZ_restore 1405984258u
-#define SQZ_rgb 6449125u
-#define SQZ_rgba 1633839077u
-#define SQZ_rgbaS 4158357036u
-#define SQZ_rgbS 1398958053u
-#define SQZ_rgbSpace 1625332122u
-#define SQZ_right 1751820526u
-#define SQZ_rotate 1488065704u
-#define SQZ_round 3173447652u
-#define SQZ_roundRectangle 3273785582u
-#define SQZ_save 1702257127u
-#define SQZ_scale 2647970994u
-#define SQZ_screen 3670530854u
-#define SQZ_setFontSize 231476456u
-#define SQZ_setLineCap 174619460u
-#define SQZ_setLineJoin 4048631422u
-#define SQZ_setLineWidth 3926586244u
-#define SQZ_shadowBlur 3889925774u
-#define SQZ_shadowColor 291132682u
-#define SQZ_shadowOffsetX 1630263752u
-#define SQZ_shadowOffsetY 89733304u
-#define SQZ_silver 2643959904u
-#define SQZ_smoothQuadTo 954100048u
-#define SQZ_smoothTo 174420282u
-#define SQZ_sourceAtop 864901378u
-#define SQZ_sourceIn 1369048320u
-#define SQZ_sourceOut 1938332472u
-#define SQZ_sourceOver 134897678u
-#define SQZ_sourceTransform 1611809620u
-#define SQZ_square 239664392u
-#define SQZ_start 4080984002u
-#define SQZ_startFrame 2128007688u
-#define SQZ_startGroup 4085444064u
-#define SQZ_stroke 1444212908u
-#define SQZ_strokePos 888669104u
-#define SQZ_strokeRect 1131907664u
-#define SQZ_strokeSource 2685374474u
-#define SQZ_teal 1818322409u
-#define SQZ_text 1954047465u
-#define SQZ_textAlign 3594701278u
-#define SQZ_textBaseline 1453773018u
-#define SQZ_textDirection 1179776176u
-#define SQZ_texture 785032878u
-#define SQZ_title 300059882u
-#define SQZ_top 7368681u
-#define SQZ_transform 3615253204u
-#define SQZ_translate 1137670376u
-#define SQZ_transparent 1911736550u
-#define SQZ_unmaximize 3435737582u
-#define SQZ_userCMYK 622108702u
-#define SQZ_userRGB 4035904520u
-#define SQZ_verLineTo 1200482574u
-#define SQZ_viewBox 1582737754u
-#define SQZ_white 518020662u
-#define SQZ_width 3799171678u
-#define SQZ_winding 2304820652u
-#define SQZ_wrapLeft 3331521568u
-#define SQZ_wrapRight 1810250152u
-#define SQZ_x 241u
-#define SQZ_xor 7499761u
-#define SQZ_y 243u
-#define SQZ_yellow 490403164u
+#define SQZ_a 195u // "a"
+#define SQZ_absolute 1840437120u // "absolute"
+#define SQZ_action 3696112672u // "action"
+#define SQZ_addStop 220908742u // "addStop"
+#define SQZ_aelig 1120987016u // "aelig"
+#define SQZ_alias 2034413622u // "alias"
+#define SQZ_all_scroll 1118648896u // "all-scroll"
+#define SQZ_alpha 4000549904u // "alpha"
+#define SQZ_alphabetic 2966120946u // "alphabetic"
+#define SQZ_amp 7368131u // "amp"
+#define SQZ_apos 1936683203u // "apos"
+#define SQZ_aqua 1635086787u // "aqua"
+#define SQZ_arc 6517443u // "arc"
+#define SQZ_arcTo 3982854812u // "arcTo"
+#define SQZ_aring 855903140u // "aring"
+#define SQZ_auto 1869903299u // "auto"
+#define SQZ_background 1071035380u // "background"
+#define SQZ_background_color 609802584u // "background-color"
+#define SQZ_beginPath 120180698u // "beginPath"
+#define SQZ_bevel 761062270u // "bevel"
+#define SQZ_bidi_override 29328268u // "bidi-override"
+#define SQZ_black 271321868u // "black"
+#define SQZ_blend 316843154u // "blend"
+#define SQZ_blending 3694082958u // "blending"
+#define SQZ_blendMode 644815934u // "blendMode"
+#define SQZ_blink 2515894180u // "blink"
+#define SQZ_block 2220858820u // "block"
+#define SQZ_blue 1702194373u // "blue"
+#define SQZ_bold 1684828101u // "bold"
+#define SQZ_bolder 2370434142u // "bolder"
+#define SQZ_border 1170187232u // "border"
+#define SQZ_border_bottom 3975273498u // "border-bottom"
+#define SQZ_border_bottom_color 3186075110u // "border-bottom-color"
+#define SQZ_border_bottom_width 1124387196u // "border-bottom-width"
+#define SQZ_border_box 1245790092u // "border-box"
+#define SQZ_border_color 541811290u // "border-color"
+#define SQZ_border_left 2975583868u // "border-left"
+#define SQZ_border_left_color 3331269224u // "border-left-color"
+#define SQZ_border_left_width 3310378862u // "border-left-width"
+#define SQZ_border_right 4045413762u // "border-right"
+#define SQZ_border_right_color 243329524u // "border-right-color"
+#define SQZ_border_right_width 1360128814u // "border-right-width"
+#define SQZ_border_top 1801458758u // "border-top"
+#define SQZ_border_top_color 3407512826u // "border-top-color"
+#define SQZ_border_top_width 4176048594u // "border-top-width"
+#define SQZ_border_width 3642950774u // "border-width"
+#define SQZ_both 1752461253u // "both"
+#define SQZ_bottom 1302706776u // "bottom"
+#define SQZ_box_sizing 3965777366u // "box-sizing"
+#define SQZ_br 29381u // "br"
+#define SQZ_bull 1819047365u // "bull"
+#define SQZ_butt 1953789381u // "butt"
+#define SQZ_c 199u // "c"
+#define SQZ_cap 7365063u // "cap"
+#define SQZ_cedil 1951672802u // "cedil"
+#define SQZ_cell 1819043271u // "cell"
+#define SQZ_cent 1953392071u // "cent"
+#define SQZ_center 1006603526u // "center"
+#define SQZ_circle 196442712u // "circle"
+#define SQZ_class 680581762u // "class"
+#define SQZ_clear 1094071360u // "clear"
+#define SQZ_clip 1885957319u // "clip"
+#define SQZ_closePath 3537486488u // "closePath"
+#define SQZ_cmyk 1803120071u // "cmyk"
+#define SQZ_cmyka 3355381580u // "cmyka"
+#define SQZ_cmykaS 3917993734u // "cmykaS"
+#define SQZ_cmykS 3263315852u // "cmykS"
+#define SQZ_cmykSpace 2366647638u // "cmykSpace"
+#define SQZ_colgroup 4270888898u // "colgroup"
+#define SQZ_color 4231809138u // "color"
+#define SQZ_colorSpace 4246256736u // "colorSpace"
+#define SQZ_col_resize 2272161114u // "col-resize"
+#define SQZ_compositingMode 3764262848u // "compositingMode"
+#define SQZ_conicGradient 1669326832u // "conicGradient"
+#define SQZ_context_menu 434478918u // "context-menu"
+#define SQZ_copy 2037411783u // "copy"
+#define SQZ_crosshair 4030082594u // "crosshair"
+#define SQZ_curren 3230040072u // "curren"
+#define SQZ_currentColor 3452186816u // "currentColor"
+#define SQZ_cursor 4212479966u // "cursor"
+#define SQZ_cursor_wait 1647783762u // "cursor-wait"
+#define SQZ_curveTo 48499966u // "curveTo"
+#define SQZ_cx 30919u // "cx"
+#define SQZ_cy 31175u // "cy"
+#define SQZ_cyan 1851881927u // "cyan"
+#define SQZ_d 201u // "d"
+#define SQZ_darken 2939689930u // "darken"
+#define SQZ_dd 25801u // "dd"
+#define SQZ_default 2280700682u // "default"
+#define SQZ_defineFont 813704086u // "defineFont"
+#define SQZ_defineGlyph 1628031142u // "defineGlyph"
+#define SQZ_defineTexture 4030922434u // "defineTexture"
+#define SQZ_defs 1936090569u // "defs"
+#define SQZ_deg 6776265u // "deg"
+#define SQZ_destinationAtop 1605909240u // "destinationAtop"
+#define SQZ_destinationIn 4096489814u // "destinationIn"
+#define SQZ_destinationOut 1966109282u // "destinationOut"
+#define SQZ_destinationOver 507903672u // "destinationOver"
+#define SQZ_deviceCMYK 3879736092u // "deviceCMYK"
+#define SQZ_deviceRGB 911778270u // "deviceRGB"
+#define SQZ_difference 3137481792u // "difference"
+#define SQZ_direction 626501720u // "direction"
+#define SQZ_display 512467722u // "display"
+#define SQZ_div 7760329u // "div"
+#define SQZ_done 1701736393u // "done"
+#define SQZ_dotted 1961166438u // "dotted"
+#define SQZ_drgb 1650946761u // "drgb"
+#define SQZ_drgba 465014226u // "drgba"
+#define SQZ_drgbaS 2465325300u // "drgbaS"
+#define SQZ_drgbS 179784888u // "drgbS"
+#define SQZ_drgbSpace 1000873868u // "drgbSpace"
+#define SQZ_dt 29897u // "dt"
+#define SQZ_ellipse 3790670476u // "ellipse"
+#define SQZ_embed 3279610738u // "embed"
+#define SQZ_end 6581963u // "end"
+#define SQZ_endFrame 2645960260u // "endFrame"
+#define SQZ_endGroup 2864376370u // "endGroup"
+#define SQZ_e_resize 3569673796u // "e-resize"
+#define SQZ_euro 1869772235u // "euro"
+#define SQZ_evenodd 1852152574u // "evenodd"
+#define SQZ_evenOdd 3373267632u // "evenOdd"
+#define SQZ_ew_resize 2458267842u // "ew-resize"
+#define SQZ_exit 1953069259u // "exit"
+#define SQZ_extend 2652659078u // "extend"
+#define SQZ_feather 4162344430u // "feather"
+#define SQZ_file 1701603789u // "file"
+#define SQZ_fill 1819044301u // "fill"
+#define SQZ_fill_color 2350805940u // "fill-color"
+#define SQZ_fillRect 3070816944u // "fillRect"
+#define SQZ_fill_rule 1151472398u // "fill-rule"
+#define SQZ_fillRule 2262201016u // "fillRule"
+#define SQZ_first_child 439258010u // "first-child"
+#define SQZ_fixed 778407114u // "fixed"
+#define SQZ_float 2455282620u // "float"
+#define SQZ_flow_root 518738066u // "flow-root"
+#define SQZ_font 1953394637u // "font"
+#define SQZ_font_family 2798191102u // "font-family"
+#define SQZ_font_size 3477901146u // "font-size"
+#define SQZ_fontSize 2620910512u // "fontSize"
+#define SQZ_font_style 2628706306u // "font-style"
+#define SQZ_font_weight 1197895732u // "font-weight"
+#define SQZ_fr 29389u // "fr"
+#define SQZ_fuchsia 439362132u // "fuchsia"
+#define SQZ_fx 30925u // "fx"
+#define SQZ_fy 31181u // "fy"
+#define SQZ_g 207u // "g"
+#define SQZ_globalAlpha 3833809790u // "globalAlpha"
+#define SQZ_glyph 1308254186u // "glyph"
+#define SQZ_gradientAddStop 2831884664u // "gradientAddStop"
+#define SQZ_gradientTransform 1288938878u // "gradientTransform"
+#define SQZ_gradientUnits 2968072588u // "gradientUnits"
+#define SQZ_gray 2036429519u // "gray"
+#define SQZ_graya 2560443068u // "graya"
+#define SQZ_grayaS 2408801086u // "grayaS"
+#define SQZ_grayS 417614710u // "grayS"
+#define SQZ_green 1517032782u // "green"
+#define SQZ_gt 29903u // "gt"
+#define SQZ_hanging 72134188u // "hanging"
+#define SQZ_head 1684104657u // "head"
+#define SQZ_height 3762298230u // "height"
+#define SQZ_hellip 4254915686u // "hellip"
+#define SQZ_help 1886152145u // "help"
+#define SQZ_hidden 2737189728u // "hidden"
+#define SQZ_horLineTo 2754532u // "horLineTo"
+#define SQZ_hr 29393u // "hr"
+#define SQZ_href 1717924561u // "href"
+#define SQZ_html 1819112657u // "html"
+#define SQZ_http 1886680273u // "http"
+#define SQZ_hue 6649297u // "hue"
+#define SQZ_id 25811u // "id"
+#define SQZ_identity 4029142280u // "identity"
+#define SQZ_ideographic 3361616408u // "ideographic"
+#define SQZ_iexcl 2255292952u // "iexcl"
+#define SQZ_imageSmoothing 3109175850u // "imageSmoothing"
+#define SQZ_img 6778323u // "img"
+#define SQZ_inline_block 3464466506u // "inline-block"
+#define SQZ_input 3954510188u // "input"
+#define SQZ_inset 3128333578u // "inset"
+#define SQZ_italic 396886224u // "italic"
+#define SQZ_join 1852403669u // "join"
+#define SQZ_justify 233888506u // "justify"
+#define SQZ_kerningPair 2079485344u // "kerningPair"
+#define SQZ_lab 6447577u // "lab"
+#define SQZ_laba 1633837529u // "laba"
+#define SQZ_labaS 4170772618u // "labaS"
+#define SQZ_labS 1398956505u // "labS"
+#define SQZ_laquo 64667100u // "laquo"
+#define SQZ_lch 6841305u // "lch"
+#define SQZ_lcha 1634231257u // "lcha"
+#define SQZ_lchaS 2598918966u // "lchaS"
+#define SQZ_lchS 1399350233u // "lchS"
+#define SQZ_left 1952867801u // "left"
+#define SQZ_letter_spacing 1326564462u // "letter-spacing"
+#define SQZ_li 27097u // "li"
+#define SQZ_lighten 2693650260u // "lighten"
+#define SQZ_lime 1701669337u // "lime"
+#define SQZ_line 1701734873u // "line"
+#define SQZ_linearGradient 905023680u // "linearGradient"
+#define SQZ_lineCap 3957741450u // "lineCap"
+#define SQZ_lineDash 2886130602u // "lineDash"
+#define SQZ_lineDashOffset 1904302200u // "lineDashOffset"
+#define SQZ_line_height 3733591786u // "line-height"
+#define SQZ_lineHeight 1698077880u // "lineHeight"
+#define SQZ_lineJoin 3891781172u // "lineJoin"
+#define SQZ_linethrough 34244248u // "linethrough"
+#define SQZ_lineTo 3077153258u // "lineTo"
+#define SQZ_line_width 1869007654u // "line-width"
+#define SQZ_lineWidth 3851910782u // "lineWidth"
+#define SQZ_link 1802398169u // "link"
+#define SQZ_list_item 2339943222u // "list-item"
+#define SQZ_lower 697158190u // "lower"
+#define SQZ_lowerBottom 4240938844u // "lowerBottom"
+#define SQZ_lt 29913u // "lt"
+#define SQZ_ltr 7501017u // "ltr"
+#define SQZ_magenta 578523642u // "magenta"
+#define SQZ_margin 2593567380u // "margin"
+#define SQZ_margin_bottom 2905482030u // "margin-bottom"
+#define SQZ_margin_left 1656714300u // "margin-left"
+#define SQZ_margin_right 3017942990u // "margin-right"
+#define SQZ_margin_top 625296560u // "margin-top"
+#define SQZ_maroon 3386542482u // "maroon"
+#define SQZ_max_height 129479668u // "max-height"
+#define SQZ_maximize 4009606768u // "maximize"
+#define SQZ_max_width 713333008u // "max-width"
+#define SQZ_mdash 2043309408u // "mdash"
+#define SQZ_meta 1635018203u // "meta"
+#define SQZ_middle 2223770148u // "middle"
+#define SQZ_middot 435157574u // "middot"
+#define SQZ_min_height 3589941308u // "min-height"
+#define SQZ_min_width 570636676u // "min-width"
+#define SQZ_miter 886459200u // "miter"
+#define SQZ_miterLimit 1856773288u // "miterLimit"
+#define SQZ_move 1702260699u // "move"
+#define SQZ_moveTo 3083476356u // "moveTo"
+#define SQZ_multiply 3976122014u // "multiply"
+#define SQZ_navy 2037801437u // "navy"
+#define SQZ_nbsp 1886610141u // "nbsp"
+#define SQZ_ne_resize 2436514350u // "ne-resize"
+#define SQZ_nesw_resize 366763636u // "nesw-resize"
+#define SQZ_newPage 2687321890u // "newPage"
+#define SQZ_newPath 4208019970u // "newPath"
+#define SQZ_newState 3121230612u // "newState"
+#define SQZ_no_drop 890688824u // "no-drop"
+#define SQZ_none 1701736413u // "none"
+#define SQZ_nonzero 2746451764u // "nonzero"
+#define SQZ_normal 1883425054u // "normal"
+#define SQZ_not_allowed 224860282u // "not-allowed"
+#define SQZ_nowrap 3884678112u // "nowrap"
+#define SQZ_n_resize 202450980u // "n-resize"
+#define SQZ_ns_resize 1753032392u // "ns-resize"
+#define SQZ_nw_resize 3642132534u // "nw-resize"
+#define SQZ_oblique 2262696070u // "oblique"
+#define SQZ_offset 1396589030u // "offset"
+#define SQZ_olive 3415799870u // "olive"
+#define SQZ_omega 1147793334u // "omega"
+#define SQZ_opacity 2184299270u // "opacity"
+#define SQZ_option 537535526u // "option"
+#define SQZ_ordm 1835299551u // "ordm"
+#define SQZ_oslash 1567583338u // "oslash"
+#define SQZ_overflow 3253908870u // "overflow"
+#define SQZ_overline 2037328102u // "overline"
+#define SQZ_p 225u // "p"
+#define SQZ_padding 2806228288u // "padding"
+#define SQZ_padding_bottom 2393940612u // "padding-bottom"
+#define SQZ_padding_left 2955272020u // "padding-left"
+#define SQZ_padding_right 4039401684u // "padding-right"
+#define SQZ_padding_top 439515192u // "padding-top"
+#define SQZ_paint 1082699806u // "paint"
+#define SQZ_para 1634886113u // "para"
+#define SQZ_path 1752457697u // "path"
+#define SQZ_phi 6908129u // "phi"
+#define SQZ_plusmn 279695816u // "plusmn"
+#define SQZ_pointer 132752978u // "pointer"
+#define SQZ_polygon 1804794854u // "polygon"
+#define SQZ_polyline 845479076u // "polyline"
+#define SQZ_position 3883240572u // "position"
+#define SQZ_pound 363756384u // "pound"
+#define SQZ_pre 6648545u // "pre"
+#define SQZ_pre_line 4122418998u // "pre-line"
+#define SQZ_preserve 1666261276u // "preserve"
+#define SQZ_pre_wrap 837003298u // "pre-wrap"
+#define SQZ_print_symbols 669612738u // "print-symbols"
+#define SQZ_progress 2815872894u // "progress"
+#define SQZ_purple 3066163412u // "purple"
+#define SQZ_quadTo 3205866160u // "quadTo"
+#define SQZ_quot 1953461731u // "quot"
+#define SQZ_r 229u // "r"
+#define SQZ_radialGradient 83850682u // "radialGradient"
+#define SQZ_raise 2772216630u // "raise"
+#define SQZ_raiseTop 1913256554u // "raiseTop"
+#define SQZ_raquo 3261968210u // "raquo"
+#define SQZ_rect 1952671205u // "rect"
+#define SQZ_rectangle 1861211308u // "rectangle"
+#define SQZ_red 6579685u // "red"
+#define SQZ_reg 6776293u // "reg"
+#define SQZ_rel 7103973u // "rel"
+#define SQZ_relArcTo 4253296276u // "relArcTo"
+#define SQZ_relative 979899102u // "relative"
+#define SQZ_relCurveTo 2548821600u // "relCurveTo"
+#define SQZ_relHorLineTo 3243288302u // "relHorLineTo"
+#define SQZ_relLineTo 1630005260u // "relLineTo"
+#define SQZ_relMoveTo 429673596u // "relMoveTo"
+#define SQZ_relQuadTo 2362773920u // "relQuadTo"
+#define SQZ_relSmoothqTo 2960208730u // "relSmoothqTo"
+#define SQZ_relSmoothTo 1725151068u // "relSmoothTo"
+#define SQZ_relVerLineTo 1112835164u // "relVerLineTo"
+#define SQZ_restore 1405984258u // "restore"
+#define SQZ_reverse 2464792996u // "reverse"
+#define SQZ_rgb 6449125u // "rgb"
+#define SQZ_rgba 1633839077u // "rgba"
+#define SQZ_rgbaS 4158357036u // "rgbaS"
+#define SQZ_rgbS 1398958053u // "rgbS"
+#define SQZ_rgbSpace 1625332122u // "rgbSpace"
+#define SQZ_right 1751820526u // "right"
+#define SQZ_rotate 1488065704u // "rotate"
+#define SQZ_round 3173447652u // "round"
+#define SQZ_roundRectangle 3273785582u // "roundRectangle"
+#define SQZ_row_resize 702013530u // "row-resize"
+#define SQZ_rtl 7107813u // "rtl"
+#define SQZ_rx 30949u // "rx"
+#define SQZ_ry 31205u // "ry"
+#define SQZ_save 1702257127u // "save"
+#define SQZ_scale 2647970994u // "scale"
+#define SQZ_screen 3670530854u // "screen"
+#define SQZ_scroll 3099410214u // "scroll"
+#define SQZ_sect 1952671207u // "sect"
+#define SQZ_se_resize 315956726u // "se-resize"
+#define SQZ_setFontSize 231476456u // "setFontSize"
+#define SQZ_setLineCap 174619460u // "setLineCap"
+#define SQZ_setLineJoin 4048631422u // "setLineJoin"
+#define SQZ_setLineWidth 3926586244u // "setLineWidth"
+#define SQZ_shadowBlur 3889925774u // "shadowBlur"
+#define SQZ_shadowColor 291132682u // "shadowColor"
+#define SQZ_shadowOffsetX 1630263752u // "shadowOffsetX"
+#define SQZ_shadowOffsetY 89733304u // "shadowOffsetY"
+#define SQZ_shy 7956711u // "shy"
+#define SQZ_silver 2643959904u // "silver"
+#define SQZ_smoothQuadTo 954100048u // "smoothQuadTo"
+#define SQZ_smoothTo 174420282u // "smoothTo"
+#define SQZ_solid 2770487110u // "solid"
+#define SQZ_sourceAtop 864901378u // "sourceAtop"
+#define SQZ_sourceIn 1369048320u // "sourceIn"
+#define SQZ_sourceOut 1938332472u // "sourceOut"
+#define SQZ_sourceOver 134897678u // "sourceOver"
+#define SQZ_sourceTransform 1611809620u // "sourceTransform"
+#define SQZ_spreadMethod 3574032566u // "spreadMethod"
+#define SQZ_square 239664392u // "square"
+#define SQZ_src 6517479u // "src"
+#define SQZ_s_resize 125328402u // "s-resize"
+#define SQZ_start 4080984002u // "start"
+#define SQZ_startFrame 2128007688u // "startFrame"
+#define SQZ_startGroup 4085444064u // "startGroup"
+#define SQZ_static 3471421972u // "static"
+#define SQZ_stop 1886352615u // "stop"
+#define SQZ_stop_color 1175890462u // "stop-color"
+#define SQZ_stop_opacity 250359768u // "stop-opacity"
+#define SQZ_stroke 1444212908u // "stroke"
+#define SQZ_stroke_color 1804158464u // "stroke-color"
+#define SQZ_stroke_linecap 535668102u // "stroke-linecap"
+#define SQZ_stroke_linejoin 1888005366u // "stroke-linejoin"
+#define SQZ_stroke_miterlimit 1499817720u // "stroke-miterlimit"
+#define SQZ_strokePos 888669104u // "strokePos"
+#define SQZ_strokeRect 1131907664u // "strokeRect"
+#define SQZ_strokeSource 2685374474u // "strokeSource"
+#define SQZ_stroke_width 2655701078u // "stroke-width"
+#define SQZ_style 3511288852u // "style"
+#define SQZ_sub 6452711u // "sub"
+#define SQZ_sup1 829453799u // "sup1"
+#define SQZ_sup2 846231015u // "sup2"
+#define SQZ_sup3 863008231u // "sup3"
+#define SQZ_super 532067904u // "super"
+#define SQZ_svg 6780647u // "svg"
+#define SQZ_sw_resize 2121684268u // "sw-resize"
+#define SQZ_syntax_highlight 1534043236u // "syntax-highlight"
+#define SQZ_table 2705307032u // "table"
+#define SQZ_tab_size 945510526u // "tab-size"
+#define SQZ_tbody 3472781808u // "tbody"
+#define SQZ_td 25833u // "td"
+#define SQZ_teal 1818322409u // "teal"
+#define SQZ_text 1954047465u // "text"
+#define SQZ_text_align 519203916u // "text-align"
+#define SQZ_textAlign 3594701278u // "textAlign"
+#define SQZ_text_anchor 2618811808u // "text-anchor"
+#define SQZ_textBaseline 1453773018u // "textBaseline"
+#define SQZ_text_decoration 2191990606u // "text-decoration"
+#define SQZ_textDirection 1179776176u // "textDirection"
+#define SQZ_text_indent 1164860048u // "text-indent"
+#define SQZ_text_stroke 3855125514u // "text-stroke"
+#define SQZ_text_stroke_color 357760164u // "text-stroke-color"
+#define SQZ_text_stroke_width 376828216u // "text-stroke-width"
+#define SQZ_texture 785032878u // "texture"
+#define SQZ_tfoot 3061216442u // "tfoot"
+#define SQZ_th 26857u // "th"
+#define SQZ_thead 460193516u // "thead"
+#define SQZ_title 300059882u // "title"
+#define SQZ_top 7368681u // "top"
+#define SQZ_tr 29417u // "tr"
+#define SQZ_trade 3023660122u // "trade"
+#define SQZ_transform 3615253204u // "transform"
+#define SQZ_translate 1137670376u // "translate"
+#define SQZ_transparent 1911736550u // "transparent"
+#define SQZ_true 1702195945u // "true"
+#define SQZ_underline 4021545710u // "underline"
+#define SQZ_unicode_bidi 185934494u // "unicode-bidi"
+#define SQZ_unmaximize 3435737582u // "unmaximize"
+#define SQZ_userCMYK 622108702u // "userCMYK"
+#define SQZ_userRGB 4035904520u // "userRGB"
+#define SQZ_verLineTo 1200482574u // "verLineTo"
+#define SQZ_version 3945712782u // "version"
+#define SQZ_vertical_align 3047242218u // "vertical-align"
+#define SQZ_vertical_text 580215056u // "vertical-text"
+#define SQZ_viewbox 816983354u // "viewbox"
+#define SQZ_viewBox 1582737754u // "viewBox"
+#define SQZ_visibility 4182119682u // "visibility"
+#define SQZ_visible 2712656970u // "visible"
+#define SQZ_white 518020662u // "white"
+#define SQZ_white_space 2063040106u // "white-space"
+#define SQZ_width 3799171678u // "width"
+#define SQZ_winding 2304820652u // "winding"
+#define SQZ_word_spacing 2779764612u // "word-spacing"
+#define SQZ_wrapLeft 3331521568u // "wrapLeft"
+#define SQZ_wrapRight 1810250152u // "wrapRight"
+#define SQZ_w_resize 505786646u // "w-resize"
+#define SQZ_x 241u // "x"
+#define SQZ_x1 12785u // "x1"
+#define SQZ_x2 13041u // "x2"
+#define SQZ_xor 7499761u // "xor"
+#define SQZ_y 243u // "y"
+#define SQZ_y1 12787u // "y1"
+#define SQZ_y2 13043u // "y2"
+#define SQZ_yellow 490403164u // "yellow"
+#define SQZ_yen 7235059u // "yen"
+#define SQZ_yes 7562739u // "yes"
+#define SQZ_z_index 448175280u // "z-index"
+#define SQZ_zoom_in 2458604508u // "zoom-in"
+#define SQZ_zoom_out 3603903986u // "zoom-out"
 #endif

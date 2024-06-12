@@ -917,3 +917,12 @@
 #ifndef CTX_MAGIC
 #define CTX_MAGIC 0
 #endif
+
+#ifndef CTX_CSS
+#define CTX_CSS 0
+#endif
+
+#ifndef CTX_SVG_FREE_AGE
+#define CTX_SVG_FREE_AGE 62
+#endif
+

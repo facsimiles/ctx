@@ -22,7 +22,6 @@
 
 #include "ctx.h"
 #include "terminal.h"
-#include "itk.h"
 
 static Ctx *ctx = NULL; // initialized in main
 
@@ -69,8 +68,8 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = ctx_client_is_maximized (ctx, ctx_clients_active (ctx));
-  int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
-  if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
+  int flags = CSS_CLIENT_UI_RESIZABLE |  CSS_CLIENT_TITLEBAR;
+  if (can_launch) flags |= CSS_CLIENT_CAN_LAUNCH;
 
   //ctx_font_size (ctx, start_font_size); // we pass it as arg instead
   CtxClient *active = ctx_client_new (ctx, commandline, add_x, add_y,
@@ -99,8 +98,8 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
 {
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = ctx_client_is_maximized (ctx, ctx_clients_active (ctx));
-  int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
-  if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
+  int flags = CSS_CLIENT_UI_RESIZABLE |  CSS_CLIENT_TITLEBAR;
+  if (can_launch) flags |= CSS_CLIENT_CAN_LAUNCH;
 
   //ctx_font_size (ctx, start_font_size); // we pass it as arg instead
   CtxClient *active = ctx_client_new_argv (ctx, argv, add_x, add_y,
@@ -166,8 +165,8 @@ int add_settings_tab (const char *commandline, int can_launch)
 #if 0
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = ctx_client_is_maximized (ctx, ctx_clients_active (ctx));
-  int flags = ITK_CLIENT_UI_RESIZABLE |  ITK_CLIENT_TITLEBAR;
-  if (can_launch) flags |= ITK_CLIENT_CAN_LAUNCH;
+  int flags = CSS_CLIENT_UI_RESIZABLE |  CSS_CLIENT_TITLEBAR;
+  if (can_launch) flags |= CSS_CLIENT_CAN_LAUNCH;
 
   CtxClient *active = ctx_client_new_thread (ctx, settings_thread, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
@@ -419,7 +418,7 @@ extern int _ctx_enable_hash_cache;
 void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
                                float x, float y, float width, float titlebar_height);
 
-void draw_panel (ITK *itk, Ctx *ctx)
+void draw_panel (Css *itk, Ctx *ctx)
 {
   struct tm local_time_res;
   struct timeval tv;
@@ -449,7 +448,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (ctx_client_flags (client) & ITK_CLIENT_MAXIMIZED)
+    if (ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED)
     tabs ++;
   }
 
@@ -468,7 +467,7 @@ void draw_panel (ITK *itk, Ctx *ctx)
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (ctx_client_flags (client) & ITK_CLIENT_MAXIMIZED)
+    if (ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED)
     {
       ctx_begin_path (ctx);
       ctx_client_titlebar_draw (ctx, client, x, titlebar_height,
@@ -624,10 +623,10 @@ int terminal_main (int argc, char **argv)
   if (font_size < 0)
     font_size = floorf (width / cols  * 2 / 1.5);
 
-  ITK *itk = itk_new (ctx);
+  Css *itk = css_new (ctx);
 
-  itk_set_scale (itk, 1.0);
-  itk_set_font_size (itk, font_size);
+  css_set_scale (itk, 1.0);
+  css_set_font_size (itk, font_size);
   start_font_size = font_size;
   ctx_font_size (ctx, font_size);
 
@@ -664,16 +663,16 @@ int terminal_main (int argc, char **argv)
 #endif
       if (ctx_need_redraw(ctx))
       {
-        itk_reset (itk);
+        css_reset (itk);
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
-        itk_style_bg (itk, "wallpaper");
+        css_style_bg (itk, "wallpaper");
 	//ctx_rgb (ctx, 0,0,0);
         ctx_fill (ctx);
-        ctx_font_size (ctx, itk_em (itk));
+        ctx_font_size (ctx, css_em (itk));
         ctx_clients_draw (ctx, 0);
         if ((n_clients != 1) || (ctx_clients (ctx) &&
                                  !flag_is_set(
-                                         ctx_client_flags (((CtxClient*)ctx_clients(ctx)->data)), ITK_CLIENT_MAXIMIZED)))
+                                         ctx_client_flags (((CtxClient*)ctx_clients(ctx)->data)), CSS_CLIENT_MAXIMIZED)))
           draw_panel (itk, ctx);
         else
           draw_mini_panel (ctx);
@@ -697,7 +696,7 @@ int terminal_main (int argc, char **argv)
 
   ctx_remove_idle (ctx, mt);
 
-  itk_free (itk);
+  css_destroy (itk);
   ctx_destroy (ctx);
 
   if (getpid () == 1)

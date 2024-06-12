@@ -1457,22 +1457,22 @@ static inline int ctx_backend_is_tiled (Ctx *ctx)
 #endif
 
 typedef enum CtxClientFlags {
-  ITK_CLIENT_UI_RESIZABLE = 1<<0,
-  ITK_CLIENT_CAN_LAUNCH   = 1<<1,
-  ITK_CLIENT_MAXIMIZED    = 1<<2,
-  ITK_CLIENT_ICONIFIED    = 1<<3,
-  ITK_CLIENT_SHADED       = 1<<4,
-  ITK_CLIENT_TITLEBAR     = 1<<5,
-  ITK_CLIENT_LAYER2       = 1<<6,  // used for having a second set
+  CSS_CLIENT_UI_RESIZABLE = 1<<0,
+  CSS_CLIENT_CAN_LAUNCH   = 1<<1,
+  CSS_CLIENT_MAXIMIZED    = 1<<2,
+  CSS_CLIENT_ICONIFIED    = 1<<3,
+  CSS_CLIENT_SHADED       = 1<<4,
+  CSS_CLIENT_TITLEBAR     = 1<<5,
+  CSS_CLIENT_LAYER2       = 1<<6,  // used for having a second set
                                    // to draw - useful for splitting
                                    // scrolled and HUD items
                                    // with HUD being LAYER2
                                   
-  ITK_CLIENT_KEEP_ALIVE   = 1<<7,  // do not automatically
-  ITK_CLIENT_FINISHED     = 1<<8,  // do not automatically
+  CSS_CLIENT_KEEP_ALIVE   = 1<<7,  // do not automatically
+  CSS_CLIENT_FINISHED     = 1<<8,  // do not automatically
                                    // remove after process quits
-  ITK_CLIENT_PRELOAD      = 1<<9,
-  ITK_CLIENT_LIVE         = 1<<10
+  CSS_CLIENT_PRELOAD      = 1<<9,
+  CSS_CLIENT_LIVE         = 1<<10
 } CtxClientFlags;
 typedef void (*CtxClientFinalize)(CtxClient *client, void *user_data);
 

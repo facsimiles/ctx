@@ -16,8 +16,8 @@
 #include <sys/time.h>
 #include <time.h>
 #endif
+#include "ctx.h"
 
-#include "itk.h"
 int   on_screen_keyboard = 0;
 
 typedef struct KeyCap {

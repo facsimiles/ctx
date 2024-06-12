@@ -260,13 +260,13 @@ void ctx_sdl_consume_events (Ctx *ctx)
   CtxTiled    *tiled = (void*)backend;
   CtxSDL      *sdl = (void*)backend;
   SDL_Event event;
-  int got_events = 0;
+  //int got_events = 0;
 
   ctx_sdl_show_frame (sdl, 0);
 
   while (SDL_PollEvent (&event))
   {
-    got_events ++;
+    //got_events ++;
     switch (event.type)
     {
       case SDL_MOUSEBUTTONDOWN:

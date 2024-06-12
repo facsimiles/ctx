@@ -1,11 +1,23 @@
-/* This file is not licensed (c) Øyvind Kolås pippin@gimp.org,
- * based on micro-raptor GUI
-  */
+#if 0
+#include "local.conf"
+#include "ctx.h"
 
-#if CTX_EVENTS
+#endif
+
+#if CTX_CSS
+//#include "squoze/squoze.h"
+
+//#include "static.inc"
+
+//#include "itk.h"   // for completeness, itk wants to be built in the ctx
+                   // compilation unit to be influenced by the ctx config
+
+
 
 #define CTX_MAX_STYLE_DEPTH  CTX_MAX_STATES
 #define CTX_MAX_STATE_DEPTH  CTX_MAX_STATES
+
+#if 0
 #define CTX_MAX_FLOATS           16
 #define CTX_MAX_SELECTOR_LENGTH  64
 #define CTX_MAX_CSS_STRINGLEN    512
@@ -15,6 +27,18 @@
 /* other important maximums */
 #define CTX_MAX_TEXT_LISTEN      256
 #define CTX_XML_INBUF_SIZE       1024
+#else
+
+#define CTX_MAX_FLOATS           3
+#define CTX_MAX_SELECTOR_LENGTH  64
+#define CTX_MAX_CSS_STRINGLEN    256
+#define CTX_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
+#define CTX_MAX_CSS_RULES        64
+
+/* other important maximums */
+#define CTX_MAX_TEXT_LISTEN      16
+#define CTX_XML_INBUF_SIZE       256 
+#endif
 
 #define PROP(a)          (ctx_get_float(mrg->ctx, SQZ_##a))
 #define PROPS(a)         (ctx_get_string(mrg->ctx, SQZ_##a))
@@ -35,9 +59,6 @@
  *  SQZ_id  SQZ_class  SQZ_d SQZ_rel    SQZ_viewbox
  *
  */
-
-#include "w3c-constants.h"
-
 
 #ifndef TRUE
 #define TRUE 1
@@ -67,12 +88,12 @@
 #include <string.h>
 #include <math.h>
 
-typedef struct _Mrg          Mrg;
+typedef struct _Css          Css;
 
 
-void mrg_clear (Mrg *mrg);
+void mrg_clear (Css *mrg);
 
-static void mrg_queue_draw (Mrg *mrg, CtxIntRectangle *rect)
+static void mrg_queue_draw (Css *mrg, CtxIntRectangle *rect)
 {
 }
 
@@ -110,10 +131,10 @@ typedef struct CtxFloatData {
   float     height;
 } CtxFloatData;
 
-typedef void (*MrgNewText)       (const char *new_text, void *data);
-typedef void (*UiRenderFun)      (Mrg *mrg, void *ui_data);
+typedef void (*CssNewText)       (const char *new_text, void *data);
+typedef void (*UiRenderFun)      (Css *mrg, void *ui_data);
 
-typedef struct _Mrg Mrg;
+typedef struct _Css Css;
 
 typedef enum {
   CTX_DISPLAY_INLINE = 0,
@@ -245,7 +266,7 @@ typedef enum {
   MRG_CURSOR_WAIT,
   MRG_CURSOR_ZOOM_IN,
   MRG_CURSOR_ZOOM_OUT
-} MrgCursor;
+} CssCursor;
 
 
 typedef enum {
@@ -291,7 +312,7 @@ struct _CtxStyle {
   CtxListStyle        list_style:1;
   CtxClear            clear:2;
   unsigned char       fill:1;
-  MrgCursor           cursor:6;
+  CssCursor           cursor:6;
   CtxTextDecoration   text_decoration:7;
   unsigned char       width_auto:1;
   unsigned char       margin_left_auto:1;
@@ -307,7 +328,7 @@ struct _CtxStyle {
 
 typedef struct _CtxStyle CtxStyle;
 
-typedef struct MrgState {
+typedef struct CssState {
   CtxStyleNode style_node;
 
   float        original_x;
@@ -319,8 +340,8 @@ typedef struct MrgState {
   int          flow_root; // is
   int          float_base;
 
-  float      (*wrap_edge_left)  (Mrg *mrg, void *data);
-  float      (*wrap_edge_right) (Mrg *mrg, void *data);
+  float      (*wrap_edge_left)  (Css *mrg, void *data);
+  float      (*wrap_edge_right) (Css *mrg, void *data);
   void        *wrap_edge_data;
   float        edge_top;
   float        edge_left;
@@ -338,11 +359,11 @@ typedef struct MrgState {
   unsigned int span_bg_started:1;
 
   int          drawlist_start_offset;
-} MrgState;
+} CssState;
 
-typedef struct _MrgAbsolute MrgAbsolute;
+typedef struct _CssAbsolute CssAbsolute;
 
-struct _MrgAbsolute {
+struct _CssAbsolute {
   int       z_index;
   int       fixed;
   float     top;
@@ -354,7 +375,7 @@ struct _MrgAbsolute {
 };
 
 
-struct _Mrg {
+struct _Css {
   Ctx             *ctx;
   Ctx            *document_ctx;
   Ctx            *fixed_ctx;
@@ -374,8 +395,8 @@ struct _Mrg {
   float            relative_y;
   CtxIntRectangle     dirty;
   CtxIntRectangle     dirty_during_paint; // queued during painting
-  MrgState        *state;
-  MrgState         states[CTX_MAX_STATE_DEPTH];
+  CssState        *state;
+  CssState         states[CTX_MAX_STATE_DEPTH];
   int              state_no;
   void            *backend_data;
   int              do_clip;
@@ -396,7 +417,7 @@ struct _Mrg {
   char           **edited;
 
   int              text_edit_blocked;
-  MrgNewText       update_string;
+  CssNewText       update_string;
   void            *update_string_user_data;
 
   CtxDestroyNotify update_string_destroy_notify;
@@ -431,9 +452,9 @@ struct _Mrg {
   ////////////////////////////////////////////////
   //////////////////// end of css ////////////////
 
-  // the following used to be the original ITK struct
+  // the following used to be the original Css struct
 
-  int (*ui_fun)(ITK *itk, void *data);
+  int (*ui_fun)(Css *itk, void *data);
   void *ui_data;
 
   // the following should be removed in favor
@@ -478,7 +499,7 @@ struct _Mrg {
 
   char *entry_copy;
   int   entry_pos;
-  ITKPanel *panel;
+  CssPanel *panel;
   char *uri_base;
 
   CtxList *old_controls;
@@ -515,9 +536,9 @@ struct _Mrg {
 
 };
 
-float itk_panel_scroll (ITK *itk);
+float css_panel_scroll (Css *itk);
 
-static Ctx *mrg_ctx (Mrg *mrg)
+static Ctx *mrg_ctx (Css *mrg)
 {
   return mrg->ctx;
 }
@@ -527,7 +548,7 @@ static Ctx *mrg_ctx (Mrg *mrg)
  * this would permit multiple events to co-register, and use that
  * to signal each other,.. or perhaps more coordination is needed
  */
-void _mrg_clear_text_closures (Mrg *mrg)
+void _mrg_clear_text_closures (Css *mrg)
 {
   int i;
   for (i = 0; i < mrg->text_listen_count; i ++)
@@ -558,7 +579,7 @@ const char * mrg_intern_string (const char *str)
 }
 
 int
-mrg_get_contents (Mrg         *mrg,
+mrg_get_contents (Css         *mrg,
                   const char  *referer,
                   const char  *input_uri,
                   char       **contents,
@@ -611,8 +632,8 @@ void _ctX_bindings_key_down (CtxEvent *event, void *data1, void *data2)
 
 #include <stdio.h>
 
-typedef struct _Mrg    Mrg;
-typedef struct _MrgXml MrgXml;
+typedef struct _Css    Css;
+typedef struct _CssXml CssXml;
 
 enum
 {
@@ -633,11 +654,11 @@ enum
   t_error
 };
 
-MrgXml *xmltok_new     (FILE *file_in);
-MrgXml *xmltok_buf_new (char *membuf);
-void    xmltok_free    (MrgXml *t);
-int     xmltok_lineno  (MrgXml *t);
-int     xmltok_get     (MrgXml *t, char **data, int *pos);
+CssXml *xmltok_new     (FILE *file_in);
+CssXml *xmltok_buf_new (char *membuf);
+void    xmltok_free    (CssXml *t);
+int     xmltok_lineno  (CssXml *t);
+int     xmltok_get     (CssXml *t, char **data, int *pos);
 
 #endif /*XMLTOK_H */
 
@@ -691,7 +712,7 @@ int     xmltok_get     (MrgXml *t, char **data, int *pos);
 #include <stdlib.h>
 #include <string.h>
 
-struct _MrgXml
+struct _CssXml
 {
   FILE      *file_in;
   int        state;
@@ -950,7 +971,7 @@ is_oneof (char c, char *chars)
 }
 
 static int
-nextchar (MrgXml *t)
+nextchar (CssXml *t)
 {
   int       ret;
 
@@ -983,7 +1004,7 @@ nextchar (MrgXml *t)
 }
 
 int
-xmltok_get (MrgXml *t, char **data, int *pos)
+xmltok_get (CssXml *t, char **data, int *pos)
 {
   state_entry *s;
 
@@ -1085,12 +1106,12 @@ xmltok_get (MrgXml *t, char **data, int *pos)
   return t_eof;
 }
 
-MrgXml *
+CssXml *
 xmltok_new (FILE * file_in)
 {
-  MrgXml *ret;
+  CssXml *ret;
 
-  ret = calloc (1, sizeof (MrgXml));
+  ret = calloc (1, sizeof (CssXml));
   ret->file_in = file_in;
   ret->state = s_start;
   ret->curtag = ctx_string_new ("");
@@ -1099,12 +1120,12 @@ xmltok_new (FILE * file_in)
   return ret;
 }
 
-MrgXml *
+CssXml *
 xmltok_buf_new (char *membuf)
 {
-  MrgXml *ret;
+  CssXml *ret;
 
-  ret = calloc (1, sizeof (MrgXml));
+  ret = calloc (1, sizeof (CssXml));
   ret->file_in = NULL;
   ret->state = s_start;
   ret->curtag = ctx_string_new ("");
@@ -1116,7 +1137,7 @@ xmltok_buf_new (char *membuf)
 }
 
 void
-xmltok_free (MrgXml *t)
+xmltok_free (CssXml *t)
 {
   ctx_string_free (t->curtag, 1);
   ctx_string_free (t->curdata, 1);
@@ -1139,7 +1160,7 @@ char     *endomission_tags[] = {
 };
 
 int
-xmltok_lineno (MrgXml *t)
+xmltok_lineno (CssXml *t)
 {
   return t->line_no;
 }
@@ -1157,25 +1178,25 @@ void ctx_events_clear (Ctx *ctx)
   ctx_clear_bindings (ctx);
 }
 
-void mrg_clear (Mrg *mrg)
+void mrg_clear (Css *mrg)
 {
   ctx_events_clear (mrg->ctx);
   _mrg_clear_text_closures (mrg);
 }
 
-void itk_set_edge_right (Mrg *mrg, float val);
-void itk_set_edge_left (Mrg *mrg, float val);
-void itk_set_edge_top (Mrg *mrg, float val);
-void itk_set_edge_bottom (Mrg *mrg, float val);
-float mrg_edge_right (Mrg *mrg);
-float mrg_edge_left (Mrg *mrg);
-float mrg_y (Mrg *mrg);
-float mrg_x (Mrg *mrg);
+void css_set_edge_right (Css *mrg, float val);
+void css_set_edge_left (Css *mrg, float val);
+void css_set_edge_top (Css *mrg, float val);
+void css_set_edge_bottom (Css *mrg, float val);
+float mrg_edge_right (Css *mrg);
+float mrg_edge_left (Css *mrg);
+float mrg_y (Css *mrg);
+float mrg_x (Css *mrg);
 
-float mrg_em (Mrg *mrg);
-void mrg_set_xy (Mrg *mrg, float x, float y);
+float mrg_em (Css *mrg);
+void mrg_set_xy (Css *mrg, float x, float y);
 
-static float _mrg_dynamic_edge_right2 (Mrg *mrg, MrgState *state)
+static float _mrg_dynamic_edge_right2 (Css *mrg, CssState *state)
 {
   float ret = mrg_edge_right (mrg);
   float y   = mrg_y (mrg);
@@ -1196,7 +1217,7 @@ static float _mrg_dynamic_edge_right2 (Mrg *mrg, MrgState *state)
   return ret;
 }
 
-static float _mrg_dynamic_edge_left2 (Mrg *mrg, MrgState *state)
+static float _mrg_dynamic_edge_left2 (Css *mrg, CssState *state)
 {
   float ret = mrg_edge_left (mrg);
   float y   = mrg_y (mrg);
@@ -1216,60 +1237,60 @@ static float _mrg_dynamic_edge_left2 (Mrg *mrg, MrgState *state)
   return ret;
 }
 
-static float _mrg_parent_dynamic_edge_left (Mrg *mrg)
+static float _mrg_parent_dynamic_edge_left (Css *mrg)
 {
-  MrgState *state = mrg->state;
+  CssState *state = mrg->state;
   if (mrg->state_no)
     state = &mrg->states[mrg->state_no-1];
   return _mrg_dynamic_edge_left2 (mrg, state);
 }
 
-static float _mrg_parent_dynamic_edge_right (Mrg *mrg)
+static float _mrg_parent_dynamic_edge_right (Css *mrg)
 {
-  MrgState *state = mrg->state;
+  CssState *state = mrg->state;
   if (mrg->state_no)
     state = &mrg->states[mrg->state_no-1];
   return _mrg_dynamic_edge_right2 (mrg, state);
 }
 
-static float _mrg_dynamic_edge_left (Mrg *mrg)
+static float _mrg_dynamic_edge_left (Css *mrg)
 {
   if (mrg->state->wrap_edge_left)
     return mrg->state->wrap_edge_left (mrg, mrg->state->wrap_edge_data);
   return mrg->state->edge_left;
 }
-int  mrg_width (Mrg *mrg)
+float mrg_width (Css *mrg)
 {
   if (!mrg) return 640;
   return ctx_width (mrg->ctx) / mrg->ddpx;
 }
 
-int  mrg_height (Mrg *mrg)
+float mrg_height (Css *mrg)
 {
   if (!mrg) return 480;
   return ctx_height (mrg->ctx) / mrg->ddpx;
 }
 
-static float _mrg_dynamic_edge_right (Mrg *mrg)
+static float _mrg_dynamic_edge_right (Css *mrg)
 {
   if (mrg->state->wrap_edge_right)
     return mrg->state->wrap_edge_right (mrg, mrg->state->wrap_edge_data);
   return mrg->state->edge_right;
 }
 
-static float wrap_edge_left (Mrg *mrg, void *data)
+static float wrap_edge_left (Css *mrg, void *data)
 {
-  MrgState *state = mrg->state;
+  CssState *state = mrg->state;
   return _mrg_dynamic_edge_left2 (mrg, state);
 }
 
-static float wrap_edge_right (Mrg *mrg, void *data)
+static float wrap_edge_right (Css *mrg, void *data)
 {
-  MrgState *state = mrg->state;
+  CssState *state = mrg->state;
   return _mrg_dynamic_edge_right2 (mrg, state);
 }
 
-static void clear_left (Mrg *mrg)
+static void clear_left (Css *mrg)
 {
   float y = mrg_y (mrg);
   int i;
@@ -1291,7 +1312,7 @@ static void clear_left (Mrg *mrg)
   mrg_set_xy (mrg, mrg_x (mrg), y);
 }
 
-static void clear_right (Mrg *mrg)
+static void clear_right (Css *mrg)
 {
   float y = mrg_y (mrg);
   int i;
@@ -1321,12 +1342,12 @@ static void clear_right (Mrg *mrg)
  * Returns the currently 
  *
  */
-CtxStyle *ctx_style (Mrg *mrg)
+CtxStyle *ctx_style (Css *mrg)
 {
   return &mrg->state->style;
 }
 
-static void clear_both (Mrg *mrg)
+static void clear_both (Css *mrg)
 {
 #if 0
   clear_left (mrg);
@@ -1352,32 +1373,32 @@ static void clear_both (Mrg *mrg)
 #endif
 }
 
-static float mrg_edge_bottom  (Mrg *mrg)
+static float mrg_edge_bottom  (Css *mrg)
 {
   return mrg->state->edge_bottom;
 }
 
-static float mrg_edge_top  (Mrg *mrg)
+static float mrg_edge_top  (Css *mrg)
 {
   return mrg->state->edge_top;
 }
 
-float mrg_edge_left  (Mrg *mrg)
+float mrg_edge_left  (Css *mrg)
 {
   return mrg->state->edge_left;
 }
 
-float mrg_edge_right (Mrg *mrg)
+float mrg_edge_right (Css *mrg)
 {
   return mrg->state->edge_right;
 }
 
-float _mrg_dynamic_edge_right (Mrg *mrg);
-float _mrg_dynamic_edge_left (Mrg *mrg);
+float _mrg_dynamic_edge_right (Css *mrg);
+float _mrg_dynamic_edge_left (Css *mrg);
 
-void itk_set_edge_top (ITK *itk, float edge)
+void css_set_edge_top (Css *itk, float edge)
 {
-  Mrg *mrg = itk;
+  Css *mrg = itk;
   itk->state->edge_top = edge;
 
   // we always set top last, since it causes the
@@ -1392,42 +1413,42 @@ void itk_set_edge_top (ITK *itk, float edge)
    itk->edge_bottom = itk->height + itk->edge_top;
 }
 
-void  itk_set_edge_left (Mrg *itk, float val)
+void  css_set_edge_left (Css *itk, float val)
 {
   itk->state->edge_left = val;
   itk->edge_left = val;
   itk->edge_right = itk->width + itk->edge_left;
 }
 
-void itk_set_edge_bottom (ITK *itk, float edge)
+void css_set_edge_bottom (Css *itk, float edge)
 {
    itk->state->edge_bottom = edge;
    itk->edge_bottom = edge;
    itk->height = itk->edge_bottom - itk->edge_top;
 }
 
-void itk_set_edge_right (ITK *itk, float edge)
+void css_set_edge_right (Css *itk, float edge)
 {
    itk->state->edge_right = edge;
    itk->edge_right = edge;
    itk->width      = itk->edge_right - itk->edge_left;
 }
 
-float mrg_rem (Mrg *mrg)
+float mrg_rem (Css *mrg)
 {
   return mrg->rem;
 }
 
 
-void itk_start            (Mrg *mrg, const char *class_name, void *id_ptr);
-void itk_start_with_style (Mrg        *mrg,
+void css_start            (Css *mrg, const char *class_name, void *id_ptr);
+void css_start_with_style (Css        *mrg,
                            const char *style_id,
                            void       *id_ptr,
                            const char *style);
-void itk_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
+void css_start_with_stylef (Css *mrg, const char *style_id, void *id_ptr,
                             const char *format, ...);
 
-static void ctx_parse_style_id (Mrg          *mrg,
+static void ctx_parse_style_id (Css          *mrg,
                                 const char   *style_id,
                                 CtxStyleNode *node)
 {
@@ -1491,7 +1512,7 @@ static void ctx_parse_style_id (Mrg          *mrg,
   }
 }
 
-void _ctx_initial_style (Mrg *mrg)
+void _ctx_initial_style (Css *mrg)
 {
   CtxStyle *s = ctx_style (mrg);
 
@@ -1748,7 +1769,7 @@ static int ctx_css_compute_specifity (const char *selector, int priority)
   return priority * 100000 + n_pseudo * 10000 + n_id * 1000 + n_class * 100 + n_tag * 10;
 }
 
-static void ctx_css_parse_selector (Mrg *mrg, const char *selector, CtxStyleEntry *entry)
+static void ctx_css_parse_selector (Css *mrg, const char *selector, CtxStyleEntry *entry)
 {
   const char *p = selector;
   char section[256];
@@ -1839,7 +1860,7 @@ static void ctx_css_parse_selector (Mrg *mrg, const char *selector, CtxStyleEntr
   // not reached
 }
 
-static void ctx_stylesheet_add_selector (Mrg *mrg, const char *selector, const char *css, int priority)
+static void ctx_stylesheet_add_selector (Css *mrg, const char *selector, const char *css, int priority)
 {
   CtxStyleEntry *entry = calloc (sizeof (CtxStyleEntry), 1);
   entry->selector = strdup (selector);
@@ -1896,7 +1917,7 @@ enum
 };
 
 
-static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css, const char *uri_base,
+static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css, const char *uri_base,
                          int priority, char **error)
 {
   const char *p;
@@ -2146,7 +2167,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Mrg *mrg, const char *css
   }
 }
 
-void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
+void ctx_stylesheet_add (Css *mrg, const char *css, const char *uri_base,
                          int priority, char **error)
 {
   CtxCssParseState *ps = mrg->css_parse_state;
@@ -2159,13 +2180,13 @@ void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri_base,
 #define CTX_STYLE_INLINE   25
 #define CTX_STYLE_CODE     30
 
-void itk_css_default (Mrg *mrg)
+void css_css_default (Css *mrg)
 {
   char *error = NULL;
   ctx_stylesheet_add (mrg, html_css, NULL, CTX_STYLE_INTERNAL, &error);
   if (error)
   {
-    fprintf (stderr, "Mrg css parsing error: %s\n", error);
+    fprintf (stderr, "Css css parsing error: %s\n", error);
   }
 
   ctx_stylesheet_add (mrg,
@@ -2184,11 +2205,11 @@ void itk_css_default (Mrg *mrg)
   }
 }
 
-void itk_stylesheet_clear (Mrg *mrg)
+void css_stylesheet_clear (Css *mrg)
 {
   if (mrg->stylesheet)
     ctx_list_free (&mrg->stylesheet);
-  itk_css_default (mrg);
+  css_css_default (mrg);
 }
 
 typedef struct CtxStyleMatch
@@ -2241,12 +2262,12 @@ static inline int _ctx_nth_match (const char *selector, int child_no)
   return 0;
 }
 
-int _ctx_child_no (Mrg *mrg)
+int _ctx_child_no (Css *mrg)
 {
   return mrg->states[mrg->state_no-1].children;
 }
 
-static inline int match_nodes (Mrg *mrg, CtxStyleNode *sel_node, CtxStyleNode *subject)
+static inline int match_nodes (Css *mrg, CtxStyleNode *sel_node, CtxStyleNode *subject)
 {
   int j, k;
 
@@ -2297,7 +2318,7 @@ static inline int match_nodes (Mrg *mrg, CtxStyleNode *sel_node, CtxStyleNode *s
   return 1;
 }
 
-static int ctx_selector_vs_ancestry (Mrg *mrg,
+static int ctx_selector_vs_ancestry (Css *mrg,
                                      CtxStyleEntry *entry,
                                      CtxStyleNode **ancestry,
                                      int a_depth)
@@ -2382,7 +2403,7 @@ static int ctx_selector_vs_ancestry (Mrg *mrg,
   return 1;
 }
 
-static int ctx_css_selector_match (Mrg *mrg, CtxStyleEntry *entry, CtxStyleNode **ancestry, int a_depth)
+static int ctx_css_selector_match (Css *mrg, CtxStyleEntry *entry, CtxStyleNode **ancestry, int a_depth)
 {
   if (entry->selector[0] == '*' &&
       entry->selector[1] == 0)
@@ -2397,7 +2418,7 @@ static int ctx_css_selector_match (Mrg *mrg, CtxStyleEntry *entry, CtxStyleNode 
   return 0;
 }
 
-static char *_ctx_css_compute_style (Mrg *mrg, CtxStyleNode **ancestry, int a_depth)
+static char *_ctx_css_compute_style (Css *mrg, CtxStyleNode **ancestry, int a_depth)
 {
   CtxList *l;
   CtxList *matches = NULL;
@@ -2440,13 +2461,13 @@ static char *_ctx_css_compute_style (Mrg *mrg, CtxStyleNode **ancestry, int a_de
   return ret;
 }
 
-static void _ctx_get_ancestry (Mrg *mrg, CtxStyleNode **ancestry)
+static void _ctx_get_ancestry (Css *mrg, CtxStyleNode **ancestry)
 {
   if (mrg->state_no>0)
       ancestry[0] = &mrg->states[0].style_node;
 }
 
-char *_ctx_stylesheet_collate_style (Mrg *mrg)
+char *_ctx_stylesheet_collate_style (Css *mrg)
 {
   CtxStyleNode *ancestry[1];
   _ctx_get_ancestry (mrg, ancestry);
@@ -2454,50 +2475,50 @@ char *_ctx_stylesheet_collate_style (Mrg *mrg)
   return ret;
 }
 
-void  mrg_set_line_height (Mrg *mrg, float line_height)
+void  mrg_set_line_height (Css *mrg, float line_height)
 {
   ctx_style (mrg)->line_height = line_height;
 }
 
-float mrg_line_height (Mrg *mrg)
+float mrg_line_height (Css *mrg)
 {
   return ctx_style (mrg)->line_height;
 }
 
-void  mrg_set_rem         (Mrg *mrg, float em)
+void  mrg_set_rem         (Css *mrg, float em)
 {
   mrg->rem = em;
 }
 
-float mrg_em (Mrg *mrg)
+float mrg_em (Css *mrg)
 {
   return mrg->state->style.font_size;
 }
 
-void  mrg_set_em (Mrg *mrg, float em)
+void  mrg_set_em (Css *mrg, float em)
 {
   mrg->state->style.font_size = em;
 }
 
-void ctx_css_set (Mrg *mrg, const char *css)
+void ctx_css_set (Css *mrg, const char *css)
 {
   ctx_string_set (mrg->style, css);
 }
 
-void ctx_css_add (Mrg *mrg, const char *css)
+void ctx_css_add (Css *mrg, const char *css)
 {
   ctx_string_append_str (mrg->style, css);
 }
 
-void itk_stylesheet_clear (Mrg *mrg);
-void ctx_stylesheet_add (Mrg *mrg, const char *css, const char *uri,
+void css_stylesheet_clear (Css *mrg);
+void ctx_stylesheet_add (Css *mrg, const char *css, const char *uri,
                          int priority,
                          char **error);
 
-void ctx_css_set (Mrg *mrg, const char *css);
-void ctx_css_add (Mrg *mrg, const char *css);
+void ctx_css_set (Css *mrg, const char *css);
+void ctx_css_add (Css *mrg, const char *css);
 
-static inline float mrg_parse_px_x (Mrg *mrg, const char *str, char **endptr)
+static inline float mrg_parse_px_x (Css *mrg, const char *str, char **endptr)
 {
   float result = 0;
   char *end = NULL;
@@ -2580,7 +2601,7 @@ static inline float mrg_parse_px_x (Mrg *mrg, const char *str, char **endptr)
   return result;
 }
 
-static inline float mrg_parse_px_y (Mrg *mrg, const char *str, char **endptr)
+static inline float mrg_parse_px_y (Css *mrg, const char *str, char **endptr)
 {
   float result = 0;
   char *end = NULL;
@@ -2659,7 +2680,7 @@ static inline float mrg_parse_px_y (Mrg *mrg, const char *str, char **endptr)
   return result;
 }
 
-static inline int mrg_parse_pxs (Mrg *mrg, const char *str, float *vals)
+static inline int mrg_parse_pxs (Css *mrg, const char *str, float *vals)
 {
   int n_floats = 0;
   char *p =    (void*)str;
@@ -2681,7 +2702,7 @@ static inline int mrg_parse_pxs (Mrg *mrg, const char *str, float *vals)
 }
 
 
-static inline void ctx_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
+static inline void ctx_css_handle_property_pass0 (Css *mrg, uint32_t key,
                                                   const char *value)
 {
   /* pass0 deals with properties that parsing of many other property
@@ -2711,7 +2732,7 @@ static inline void ctx_css_handle_property_pass0 (Mrg *mrg, uint32_t key,
   }
 }
 
-static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
+static void ctx_css_handle_property_pass1 (Css *mrg, uint32_t key,
                                            const char *value)
 {
   CtxStyle *s = ctx_style (mrg);
@@ -3311,7 +3332,7 @@ static void ctx_css_handle_property_pass1 (Mrg *mrg, uint32_t key,
   }
 }
 
-static void ctx_css_handle_property_pass1med (Mrg *mrg, uint32_t key,
+static void ctx_css_handle_property_pass1med (Css *mrg, uint32_t key,
                                               const char *value)
 {
   CtxStyle *s = ctx_style (mrg);
@@ -3345,8 +3366,8 @@ enum
   MRG_CSS_PROPERTY_PARSER_STATE_IN_VAL
 };
 
-static void css_parse_properties (Mrg *mrg, const char *style,
-  void (*handle_property) (Mrg *mrg, uint32_t key,
+static void css_parse_properties (Css *mrg, const char *style,
+  void (*handle_property) (Css *mrg, uint32_t key,
                            const char *value))
 {
   const char *p;
@@ -3461,7 +3482,7 @@ static void css_parse_properties (Mrg *mrg, const char *style,
 }
 
 
-static void ctx_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
+static void ctx_css_handle_property_pass2 (Css *mrg, uint32_t key,
                                            const char *value)
 {
   /* this pass contains things that might depend on values
@@ -3502,12 +3523,12 @@ static void ctx_css_handle_property_pass2 (Mrg *mrg, uint32_t key,
 }
 
 
-static float deco_width (Mrg *mrg)
+static float deco_width (Css *mrg)
 {
   return PROP (padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width);
 }
 
-void itk_set_style (Mrg *mrg, const char *style)
+void css_set_style (Css *mrg, const char *style)
 {
   CtxStyle *s;
 
@@ -3586,18 +3607,18 @@ void itk_set_style (Mrg *mrg, const char *style)
   css_parse_properties (mrg, style, ctx_css_handle_property_pass2);
 }
 
-void _itk_set_style_properties (Mrg *mrg, const char *style_properties)
+void _css_set_style_properties (Css *mrg, const char *style_properties)
 {
   _ctx_initial_style (mrg);
 
   if (style_properties)
   {
-    itk_set_style (mrg, style_properties);
+    css_set_style (mrg, style_properties);
   }
 }
 
 void
-itk_set_stylef (Mrg *mrg, const char *format, ...)
+css_set_stylef (Css *mrg, const char *format, ...)
 {
   va_list ap;
   size_t needed;
@@ -3609,20 +3630,20 @@ itk_set_stylef (Mrg *mrg, const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  itk_set_style (mrg, buffer);
+  css_set_style (mrg, buffer);
   free (buffer);
 }
 
-void ctx_style_defaults (Mrg *mrg)
+void ctx_style_defaults (Css *mrg)
 {
   Ctx *ctx = mrg->ctx;
   float em = 32;
   mrg_set_em (mrg,  em);
   mrg_set_rem (mrg, em);
-  itk_set_edge_left (mrg, 0);
-  itk_set_edge_right (mrg, mrg_width (mrg));
-  itk_set_edge_bottom (mrg, mrg_height (mrg));
-  itk_set_edge_top (mrg, 0);
+  css_set_edge_left (mrg, 0);
+  css_set_edge_right (mrg, mrg_width (mrg));
+  css_set_edge_bottom (mrg, mrg_height (mrg));
+  css_set_edge_top (mrg, 0);
   mrg_set_line_height (mrg, 1.2);
 
   SET_PROP(stroke_width, 1.0f);
@@ -3645,7 +3666,7 @@ void ctx_style_defaults (Mrg *mrg)
     ctx_color_free (color);
   }
 
-  itk_stylesheet_clear (mrg);
+  css_stylesheet_clear (mrg);
   _ctx_initial_style (mrg);
 
   if (mrg->style_global->length)
@@ -3657,7 +3678,7 @@ void ctx_style_defaults (Mrg *mrg)
     ctx_stylesheet_add (mrg, mrg->style->str, NULL, CTX_STYLE_GLOBAL, NULL);
 }
 
-void mrg_set_mrg_get_contents (Mrg *mrg,
+void mrg_set_mrg_get_contents (Css *mrg,
   int (*mrg_get_contents) (const char  *referer,
                       const char  *input_uri,
                       char       **contents,
@@ -3671,7 +3692,7 @@ void mrg_set_mrg_get_contents (Mrg *mrg,
 }
 
 int
-mrg_get_contents (Mrg         *mrg,
+mrg_get_contents (Css         *mrg,
                   const char  *referer,
                   const char  *input_uri,
                   char       **contents,
@@ -3693,7 +3714,7 @@ mrg_get_contents (Mrg         *mrg,
   }
 }
 
-int itk_print (Mrg *mrg, const char *string);
+int css_print (Css *mrg, const char *string);
 static int is_block_item (CtxStyle *style)
 {
   return ((style->display == CTX_DISPLAY_BLOCK
@@ -3704,7 +3725,7 @@ static int is_block_item (CtxStyle *style)
 	   ));
 }
 
-float mrg_ddpx (Mrg *mrg)
+float mrg_ddpx (Css *mrg)
 {
   return mrg->ddpx;
 }
@@ -3723,7 +3744,7 @@ static void set_line_height (Ctx *ctx, void *userdata, const char *name, int cou
   *y = fptr[0];
 }
 
-static void _mrg_nl (Mrg *mrg)
+static void _mrg_nl (Css *mrg)
 {
   float ascent, descent;
   ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
@@ -3751,7 +3772,7 @@ static void _mrg_nl (Mrg *mrg)
   }
 }
 
-void _mrg_layout_pre (Mrg *mrg)
+void _mrg_layout_pre (Css *mrg)
 {
   CtxStyle *style;
   float dynamic_edge_left, dynamic_edge_right;
@@ -3831,13 +3852,13 @@ void _mrg_layout_pre (Mrg *mrg)
   {
     if (padding_left + margin_left + border_left_width != 0)
     {
-      itk_set_edge_left (mrg, mrg_edge_left (mrg) +
+      css_set_edge_left (mrg, mrg_edge_left (mrg) +
         padding_left + margin_left + border_left_width);
     }
     if (padding_right + margin_right + border_right_width
         != 0)
     {
-      itk_set_edge_right (mrg, mrg_edge_right (mrg) -
+      css_set_edge_right (mrg, mrg_edge_right (mrg) -
         (padding_right + margin_right + border_right_width));
     }
 
@@ -3849,7 +3870,7 @@ void _mrg_layout_pre (Mrg *mrg)
     else
       actual_top = 0;
 
-    itk_set_edge_top (mrg, mrg_y (mrg) + border_top_width + padding_top + actual_top);
+    css_set_edge_top (mrg, mrg_y (mrg) + border_top_width + padding_top + actual_top);
 
     mrg->state->block_start_x = mrg_edge_left (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
@@ -3868,7 +3889,7 @@ void _mrg_layout_pre (Mrg *mrg)
 
     if (left_margin_pad_and_border != 0.0f)
     {
-      itk_set_edge_left (mrg, mrg_x (mrg) +
+      css_set_edge_left (mrg, mrg_x (mrg) +
         padding_left + margin_left + border_left_width);
     }
 
@@ -3876,13 +3897,13 @@ void _mrg_layout_pre (Mrg *mrg)
 #if 0
     if (right_margin_pad_and_border != 0.0f)
     {
-      itk_set_edge_right (mrg, mrg_edge_right (mrg) - right_margin_pad_and_border);
+      css_set_edge_right (mrg, mrg_edge_right (mrg) - right_margin_pad_and_border);
     }
 #else
-      itk_set_edge_right (mrg, mrg_x (mrg) + width);
+      css_set_edge_right (mrg, mrg_x (mrg) + width);
 #endif
 
-    itk_set_edge_top (mrg, mrg_y (mrg) + border_top_width);// + actual_top);
+    css_set_edge_top (mrg, mrg_y (mrg) + border_top_width);// + actual_top);
 
     mrg->state->block_start_x = mrg_x (mrg);
     mrg->state->block_start_y = mrg_y (mrg);
@@ -3898,7 +3919,7 @@ void _mrg_layout_pre (Mrg *mrg)
     float x = mrg->x;
     
     mrg->x -= mrg_em (mrg) * 0.5;
-    itk_print (mrg, "•");
+    css_print (mrg, "•");
     mrg->x = x;
     mrg->line_max_height[mrg->line_level] = 0.0f;
     mrg->line_got_baseline[mrg->line_level]=0;
@@ -3929,8 +3950,8 @@ void _mrg_layout_pre (Mrg *mrg)
             mrg_edge_right(mrg)-mrg_edge_left(mrg))
         {
           clear_both (mrg);
-          itk_set_edge_left (mrg, mrg_edge_right (mrg) - width);
-          itk_set_edge_right (mrg, mrg_edge_right (mrg) - (margin_right + padding_right + border_right_width));
+          css_set_edge_left (mrg, mrg_edge_right (mrg) - width);
+          css_set_edge_right (mrg, mrg_edge_right (mrg) - (margin_right + padding_right + border_right_width));
 
         }
         else
@@ -3942,12 +3963,12 @@ void _mrg_layout_pre (Mrg *mrg)
           dynamic_edge_left = _mrg_parent_dynamic_edge_left(mrg);
         }
 
-        itk_set_edge_left (mrg, dynamic_edge_right - width);
-        itk_set_edge_right (mrg, dynamic_edge_right - (margin_right + padding_right + border_right_width));
+        css_set_edge_left (mrg, dynamic_edge_right - width);
+        css_set_edge_right (mrg, dynamic_edge_right - (margin_right + padding_right + border_right_width));
 
         }
 
-        itk_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top))); // - mrg->state->vmarg));
+        css_set_edge_top (mrg, mrg_y (mrg) + (PROP(margin_top))); // - mrg->state->vmarg));
 
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
@@ -3982,10 +4003,10 @@ void _mrg_layout_pre (Mrg *mrg)
           left = dynamic_edge_left;// + padding_left + border_left_width + margin_left;
         }
 
-        itk_set_edge_left (mrg, left);
-        itk_set_edge_right (mrg,  left + widt +
+        css_set_edge_left (mrg, left);
+        css_set_edge_right (mrg,  left + widt +
             padding_left /* + border_right_width*/);
-        itk_set_edge_top (mrg, mrg_y (mrg) + (margin_top));// - mrg->state->vmarg));
+        css_set_edge_top (mrg, mrg_y (mrg) + (margin_top));// - mrg->state->vmarg));
                         //));//- mrg->state->vmarg));
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);// + padding_top + border_top_width;
@@ -4003,7 +4024,7 @@ void _mrg_layout_pre (Mrg *mrg)
       else if (1)
       {
          if (width)
-           itk_set_edge_right (mrg, mrg->state->block_start_x  + width);
+           css_set_edge_right (mrg, mrg->state->block_start_x  + width);
       }
       break;
     case CTX_POSITION_ABSOLUTE:
@@ -4016,9 +4037,9 @@ void _mrg_layout_pre (Mrg *mrg)
 	  top = mrg->y;
 
         //mrg->floats = 0;
-        itk_set_edge_left (mrg, left + margin_left + border_left_width + padding_left);
-        itk_set_edge_right (mrg, left + width);
-        itk_set_edge_top (mrg, top + margin_top + border_top_width + padding_top);
+        css_set_edge_left (mrg, left + margin_left + border_left_width + padding_left);
+        css_set_edge_right (mrg, left + width);
+        css_set_edge_top (mrg, top + margin_top + border_top_width + padding_top);
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
       }
@@ -4032,13 +4053,13 @@ void _mrg_layout_pre (Mrg *mrg)
           width = mrg_edge_right (mrg) - mrg_edge_left (mrg);
         }
 
-	ctx_translate (mrg_ctx(mrg), 0, itk_panel_scroll (mrg));
+	ctx_translate (mrg_ctx(mrg), 0, css_panel_scroll (mrg));
         ctx_scale (mrg_ctx(mrg), mrg_ddpx (mrg), mrg_ddpx (mrg));
         //mrg->floats = 0;
 
-        itk_set_edge_left (mrg, left + margin_left + border_left_width + padding_left);
-        itk_set_edge_right (mrg, left + margin_left + border_left_width + padding_left + width);
-        itk_set_edge_top (mrg, top + margin_top + border_top_width + padding_top);
+        css_set_edge_left (mrg, left + margin_left + border_left_width + padding_left);
+        css_set_edge_right (mrg, left + margin_left + border_left_width + padding_left + width);
+        css_set_edge_top (mrg, top + margin_top + border_top_width + padding_top);
         mrg->state->block_start_x = mrg_x (mrg);
         mrg->state->block_start_y = mrg_y (mrg);
       }
@@ -4098,11 +4119,11 @@ void _mrg_layout_pre (Mrg *mrg)
   ctx_color_free (background_color);
   }
 }
-void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect);
+void _mrg_layout_post (Css *mrg, CtxFloatRectangle *ret_rect);
 
-void itk_set_style (Mrg *mrg, const char *style);
+void css_set_style (Css *mrg, const char *style);
 
-void itk_start_with_style (Mrg        *mrg,
+void css_start_with_style (Css        *mrg,
                            const char *style_id,
                            void       *id_ptr,
                            const char *style)
@@ -4129,19 +4150,19 @@ void itk_start_with_style (Mrg        *mrg,
     char *collated_style = _ctx_stylesheet_collate_style (mrg);
     if (collated_style)
     {
-      itk_set_style (mrg, collated_style);
+      css_set_style (mrg, collated_style);
       free (collated_style);
     }
   }
   if (style)
   {
-    itk_set_style (mrg, style);
+    css_set_style (mrg, style);
   }
   _mrg_layout_pre (mrg);
 }
 
 void
-itk_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
+css_start_with_stylef (Css *mrg, const char *style_id, void *id_ptr,
                        const char *format, ...)
 {
   va_list ap;
@@ -4154,23 +4175,23 @@ itk_start_with_stylef (Mrg *mrg, const char *style_id, void *id_ptr,
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  itk_start_with_style (mrg, style_id, id_ptr, buffer);
+  css_start_with_style (mrg, style_id, id_ptr, buffer);
   free (buffer);
 }
 
-void itk_start (Mrg *mrg, const char *style_id, void *id_ptr)
+void css_start (Css *mrg, const char *style_id, void *id_ptr)
 {
-  itk_start_with_style (mrg, style_id, id_ptr, NULL);
+  css_start_with_style (mrg, style_id, id_ptr, NULL);
 }
 
 static int compare_zindex (const void *a, const void *b, void *d)
 {
-  const MrgAbsolute *ma = a;
-  const MrgAbsolute *mb = b;
+  const CssAbsolute *ma = a;
+  const CssAbsolute *mb = b;
   return mb->z_index- ma->z_index;
 }
 
-void itk_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
+void css_end (Css *mrg, CtxFloatRectangle *ret_rect)
 {
   _mrg_layout_post (mrg, ret_rect);
   if (mrg->state_no == 0)
@@ -4182,7 +4203,7 @@ void itk_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
     /* TODO: also copy/paste registered interaction points */
     while (mrg->absolutes)
     {
-      MrgAbsolute *absolute = mrg->absolutes->data;
+      CssAbsolute *absolute = mrg->absolutes->data;
       ctx_save (mrg->ctx);
       ctx_translate (mrg->ctx, absolute->relative_x, absolute->relative_y);
       ctx_append_drawlist (mrg->ctx, absolute->entries+1, (absolute->count-1)*9);
@@ -4192,8 +4213,8 @@ void itk_end (Mrg *mrg, CtxFloatRectangle *ret_rect)
   }
 }
 
-void  mrg_set_line_height (Mrg *mrg, float line_height);
-float mrg_line_height (Mrg *mrg);
+void  mrg_set_line_height (Css *mrg, float line_height);
+float mrg_line_height (Css *mrg);
 
 
 typedef struct _ItkCssDef ItkCssDef;
@@ -4204,7 +4225,7 @@ struct _ItkCssDef {
   ItkCssDef *next;
 };
 
-static CtxString *itk_svg_add_def (ItkCssDef **defs, uint32_t id)
+static CtxString *css_svg_add_def (ItkCssDef **defs, uint32_t id)
 {
   ItkCssDef *iter = *defs;
   while (iter)
@@ -4221,7 +4242,7 @@ static CtxString *itk_svg_add_def (ItkCssDef **defs, uint32_t id)
   return iter->str;
 }
 
-static void mrg_path_fill_stroke (Mrg *mrg, ItkCssDef **defs)
+static void mrg_path_fill_stroke (Css *mrg, ItkCssDef **defs)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *fill_color = ctx_color_new ();
@@ -4250,7 +4271,7 @@ static void mrg_path_fill_stroke (Mrg *mrg, ItkCssDef **defs)
       id[strlen(id)-1]=0;
     if (id[strlen(id)-1]=='"')
       id[strlen(id)-1]=0;
-    CtxString *str = itk_svg_add_def (defs, ctx_strhash(id));
+    CtxString *str = css_svg_add_def (defs, ctx_strhash(id));
     ctx_parse (ctx, str->str);
 
     if (has_stroke)
@@ -4290,7 +4311,7 @@ static void mrg_path_fill_stroke (Mrg *mrg, ItkCssDef **defs)
         id[strlen(id)-1]=0;
       if (id[strlen(id)-1]=='"')
         id[strlen(id)-1]=0;
-      CtxString *str = itk_svg_add_def (defs, ctx_strhash(id));
+      CtxString *str = css_svg_add_def (defs, ctx_strhash(id));
       ctx_parse (ctx, str->str);
     }
     else
@@ -4302,7 +4323,7 @@ static void mrg_path_fill_stroke (Mrg *mrg, ItkCssDef **defs)
   ctx_color_free (stroke_color);
 }
 
-void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_top (Css *mrg, int x, int y, int width, int height)
 {
   float border_top_width = PROP(border_top_width);
   if (border_top_width < 0.01f)
@@ -4328,7 +4349,7 @@ void _mrg_border_top (Mrg *mrg, int x, int y, int width, int height)
   ctx_color_free (color);
 }
 
-void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_bottom (Css *mrg, int x, int y, int width, int height)
 {
   float border_bottom_width = PROP(border_bottom_width);
   if (border_bottom_width < 0.01f)
@@ -4354,7 +4375,7 @@ void _mrg_border_bottom (Mrg *mrg, int x, int y, int width, int height)
   ctx_color_free (color);
 }
 
-void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_top_r (Css *mrg, int x, int y, int width, int height)
 {
   float border_top_width = PROP(border_top_width);
   if (border_top_width < 0.01f)
@@ -4378,7 +4399,7 @@ void _mrg_border_top_r (Mrg *mrg, int x, int y, int width, int height)
   }
   ctx_color_free (color);
 }
-void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_bottom_r (Css *mrg, int x, int y, int width, int height)
 {
   float border_bottom_width = PROP(border_bottom_width);
   if (border_bottom_width < 0.01f)
@@ -4404,7 +4425,7 @@ void _mrg_border_bottom_r (Mrg *mrg, int x, int y, int width, int height)
   ctx_color_free (color);
 }
 
-void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_top_l (Css *mrg, int x, int y, int width, int height)
 {
   float border_top_width = PROP(border_top_width);
   if (border_top_width < 0.01f)
@@ -4429,7 +4450,7 @@ void _mrg_border_top_l (Mrg *mrg, int x, int y, int width, int height)
   }
   ctx_color_free (color);
 }
-void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_bottom_l (Css *mrg, int x, int y, int width, int height)
 {
   float border_bottom_width = PROP(border_bottom_width);
   if (border_bottom_width < 0.01f)
@@ -4456,7 +4477,7 @@ void _mrg_border_bottom_l (Mrg *mrg, int x, int y, int width, int height)
 }
 
 
-void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_top_m (Css *mrg, int x, int y, int width, int height)
 {
   float border_top_width = PROP(border_top_width);
   if (border_top_width < 0.01f)
@@ -4481,7 +4502,7 @@ void _mrg_border_top_m (Mrg *mrg, int x, int y, int width, int height)
   }
   ctx_color_free (color);
 }
-void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_bottom_m (Css *mrg, int x, int y, int width, int height)
 {
   float border_bottom_width = PROP(border_bottom_width);
   if ((border_bottom_width) < 0.01f)
@@ -4506,7 +4527,7 @@ void _mrg_border_bottom_m (Mrg *mrg, int x, int y, int width, int height)
 
   ctx_color_free (color);
 }
-void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_left (Css *mrg, int x, int y, int width, int height)
 {
   float border_left_width = PROP(border_left_width);
   if (border_left_width < 0.01f)
@@ -4532,7 +4553,7 @@ void _mrg_border_left (Mrg *mrg, int x, int y, int width, int height)
   ctx_color_free (color);
 }
 
-void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
+void _mrg_border_right (Css *mrg, int x, int y, int width, int height)
 {
   float border_right_width = PROP(border_right_width);
   if (border_right_width < 0.01f)
@@ -4558,7 +4579,7 @@ void _mrg_border_right (Mrg *mrg, int x, int y, int width, int height)
   ctx_color_free (color);
 }
 
-static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
+static void mrg_box (Css *mrg, int x, int y, int width, int height)
 {
   _mrg_border_top (mrg, x, y, width, height);
   _mrg_border_left (mrg, x, y, width, height);
@@ -4566,7 +4587,8 @@ static void mrg_box (Mrg *mrg, int x, int y, int width, int height)
   _mrg_border_bottom (mrg, x, y, width, height);
 }
 
-static void mrg_box_fill (Mrg *mrg, CtxStyle *style, float x, float y, float width, float height)
+#if 0
+static void mrg_box_fill (Css *mrg, CtxStyle *style, float x, float y, float width, float height)
 {
   Ctx *ctx = mrg_ctx (mrg);
   CtxColor *background_color = ctx_color_new ();
@@ -4596,6 +4618,7 @@ static void mrg_box_fill (Mrg *mrg, CtxStyle *style, float x, float y, float wid
   ctx_restore (ctx);
   ctx_color_free (background_color);
 }
+#endif
 
 /*
  *  each style state level needs to know how far down it has
@@ -4607,9 +4630,9 @@ static void mrg_box_fill (Mrg *mrg, CtxStyle *style, float x, float y, float wid
 
 #if 0
 static void
-_mrg_resolve_line_height (Mrg *mrg, void *data, int last)
+_mrg_resolve_line_height (Css *mrg, void *data, int last)
 {
-  //MrgState *state = &mrg->states[mrg->state_no];
+  //CssState *state = &mrg->states[mrg->state_no];
   //CtxStyle *style = &state->style;
   float ascent, descent;
   ctx_font_extents (mrg->ctx, &ascent, &descent, NULL);
@@ -4645,7 +4668,7 @@ _mrg_resolve_line_height (Mrg *mrg, void *data, int last)
 
 /**************/
 
-static float measure_word_width (Mrg *mrg, const char *word)
+static float measure_word_width (Css *mrg, const char *word)
 {
   return ctx_text_width (mrg->ctx, word);
 }
@@ -4657,7 +4680,7 @@ const char * hl_operators [] =
  "if", "else", "break", "case", NULL};
 const char * hl_types[] =
 // XXX anything ending in _t ?
-{"int", "uint32_t", "uint64_t", "uint8_t", "Ctx", "cairo_t", "Mrg", "float", "double",
+{"int", "uint32_t", "uint64_t", "uint8_t", "Ctx", "cairo_t", "Css", "float", "double",
   "char", "const", "static", "void", "NULL",
   "#include", "#define", NULL};
 
@@ -4873,7 +4896,7 @@ void ctx_listen (Ctx     *ctx,
 
 
 /* x and y in cairo user units ; returns x advance in user units  */
-float mrg_draw_string (Mrg *mrg, CtxStyle *style, 
+float mrg_draw_string (Css *mrg, CtxStyle *style, 
                        const char *string,
                        int utf8_len)
 {
@@ -5039,9 +5062,9 @@ float mrg_draw_string (Mrg *mrg, CtxStyle *style,
   return new_x - old_x;
 }
 
-float mrg_addstr (Mrg *mrg, const char *string, int utf8_length);
+float mrg_addstr (Css *mrg, const char *string, int utf8_length);
 
-float paint_span_bg_final (Mrg   *mrg, float x, float y,
+float paint_span_bg_final (Css   *mrg, float x, float y,
                            float  width)
 {
   CtxStyle *style = ctx_style (mrg);
@@ -5070,7 +5093,7 @@ float paint_span_bg_final (Mrg   *mrg, float x, float y,
   return PROP(padding_right) + PROP(border_right_width);
 }
 
-float paint_span_bg (Mrg   *mrg, float x, float y,
+float paint_span_bg (Css   *mrg, float x, float y,
                      float  width)
 {
   CtxStyle *style = ctx_style (mrg);
@@ -5121,7 +5144,7 @@ float paint_span_bg (Mrg   *mrg, float x, float y,
 }
 
 float
-mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
+mrg_addstr (Css *mrg, const char *string, int utf8_length)
 {
   float x = mrg->x;
   float y = mrg->y;
@@ -5172,44 +5195,44 @@ mrg_addstr (Mrg *mrg, const char *string, int utf8_length)
 /******** end of core text-drawing primitives **********/
 
 #if 0
-void mrg_xy (Mrg *mrg, float x, float y)
+void mrg_xy (Css *mrg, float x, float y)
 {
   mrg->x = x * mrg_em (mrg);
   mrg->y = y * mrg_em (mrg);
 }
 #endif
 
-void mrg_set_xy (Mrg *mrg, float x, float y)
+void mrg_set_xy (Css *mrg, float x, float y)
 {
   mrg->x = x;
   mrg->y = y;
   mrg->state->overflowed = 0;
 }
 
-float mrg_x (Mrg *mrg)
+float mrg_x (Css *mrg)
 {
   return mrg->x;
 }
 
-float mrg_y (Mrg *mrg)
+float mrg_y (Css *mrg)
 {
   return mrg->y;
 }
 
-void mrg_set_wrap_skip_lines (Mrg *mrg, int skip_lines);
-void mrg_set_wrap_max_lines  (Mrg *mrg, int max_lines);
+void mrg_set_wrap_skip_lines (Css *mrg, int skip_lines);
+void mrg_set_wrap_max_lines  (Css *mrg, int max_lines);
 
-void mrg_set_wrap_skip_lines (Mrg *mrg, int skip_lines)
+void mrg_set_wrap_skip_lines (Css *mrg, int skip_lines)
 {
     mrg->state->skip_lines = skip_lines;
 }
 
-void mrg_set_wrap_max_lines  (Mrg *mrg, int max_lines)
+void mrg_set_wrap_max_lines  (Css *mrg, int max_lines)
 {
     mrg->state->max_lines = max_lines;
 }
 
-static void _mrg_spaces (Mrg *mrg, int count)
+static void _mrg_spaces (Css *mrg, int count)
 {
   while (count--)
     {
@@ -5249,10 +5272,10 @@ static void _mrg_spaces (Mrg *mrg, int count)
              _mrg_spaces (mrg, 1);\
          if (cursor_start == pos -1 && cursor_start>0 && mrg->text_edited)\
            {\
-             itk_start (mrg, ".cursor", NULL);\
+             css_start (mrg, ".cursor", NULL);\
              _mrg_spaces (mrg, 1);\
              _mrg_nl (mrg);\
-             itk_end (mrg, NULL);\
+             css_end (mrg, NULL);\
            }\
          else\
            _mrg_nl (mrg);\
@@ -5269,10 +5292,10 @@ static void _mrg_spaces (Mrg *mrg, int count)
              _mrg_spaces (mrg, 1);\
          if (cursor_start == *pos -1 && cursor_start>0 && mrg->text_edited)\
            {\
-             itk_start (mrg, ".cursor", NULL);\
+             css_start (mrg, ".cursor", NULL);\
              _mrg_spaces (mrg, 1);\
              _mrg_nl (mrg);\
-             itk_end (mrg, NULL);\
+             css_end (mrg, NULL);\
            }\
          else\
            _mrg_nl (mrg);\
@@ -5283,7 +5306,7 @@ static void _mrg_spaces (Mrg *mrg, int count)
 
 
 
-static void mrg_get_edit_state (Mrg *mrg, 
+static void mrg_get_edit_state (Css *mrg, 
      float *x, float *y, float *s, float *e,
      float *em_size)
 {
@@ -5295,7 +5318,7 @@ static void mrg_get_edit_state (Mrg *mrg,
 }
 
 
-static void emit_word (Mrg *mrg,
+static void emit_word (Css *mrg,
                        int  print,
                        const char *data,
                        const char *word,
@@ -5325,9 +5348,9 @@ static void emit_word (Mrg *mrg,
             if (cursor_start == *pos-1 && cursor_start>=0 && mrg->text_edited)
             { 
               if (print) { 
-               itk_start (mrg, ".cursor", NULL);
+               css_start (mrg, ".cursor", NULL);
                _mrg_spaces (mrg, 1); 
-               itk_end (mrg, NULL);
+               css_end (mrg, NULL);
               } else { 
                mrg->x += measure_word_width (mrg, " ");
               }
@@ -5337,9 +5360,9 @@ static void emit_word (Mrg *mrg,
                 if (print){
                   if (mrg->state->style.print_symbols)
                     {
-                      itk_start (mrg, "dim", NULL);
+                      css_start (mrg, "dim", NULL);
                       mrg->x += mrg_addstr (mrg, "␣", -1);
-                      itk_end (mrg, NULL);
+                      css_end (mrg, NULL);
                     }
                   else
                     _mrg_spaces (mrg, 1);
@@ -5361,9 +5384,9 @@ static void emit_word (Mrg *mrg,
         { 
 #if 0  // XXX: there is a bug in mrg_addstr it doesn't respect the length argument 
           mrg->x += mrg_addstr (mrg,  word, cursor_start - *pos);
-          itk_start (mrg, ".cursor", NULL);
+          css_start (mrg, ".cursor", NULL);
           mrg->x += mrg_addstr (mrg,  mrg_utf8_skip (word, cursor_start - *pos), 1);
-          itk_end (mrg, NULL);
+          css_end (mrg, NULL);
           mrg->x += mrg_addstr (mrg,  mrg_utf8_skip (word, cursor_start - *pos + 1), len - (cursor_start - *pos) - 1);
 #else
 
@@ -5376,9 +5399,9 @@ static void emit_word (Mrg *mrg,
           *((char*)ctx_utf8_skip (dup2, 1)) = 0;
 
           mrg->x += mrg_addstr (mrg,  dup, -1);
-          itk_start (mrg, ".cursor", NULL);
+          css_start (mrg, ".cursor", NULL);
           mrg->x += mrg_addstr (mrg,  dup2, -1);
-          itk_end (mrg, NULL);
+          css_end (mrg, NULL);
           mrg->x += mrg_addstr (mrg,  dup3, -1);
 
           free (dup);
@@ -5399,7 +5422,7 @@ static void emit_word (Mrg *mrg,
 
 }
 
-static int itk_print_wrap (Mrg        *mrg,
+static int css_print_wrap (Css        *mrg,
                            int         print,
                            const char *data, int length,
                            int         max_lines,
@@ -5456,9 +5479,9 @@ static int itk_print_wrap (Mrg        *mrg,
 
           if (mrg->state->style.print_symbols && print)
           {
-            itk_start (mrg, "dim", NULL);
+            css_start (mrg, "dim", NULL);
             mrg->x+=mrg_addstr (mrg,  "¶", -1);\
-            itk_end (mrg, NULL);
+            css_end (mrg, NULL);
           }
           EMIT_NL();
           gotspace = 0;
@@ -5471,9 +5494,9 @@ static int itk_print_wrap (Mrg        *mrg,
                 {
                   if (print)
                   {
-                    itk_start (mrg, ".cursor", NULL);
+                    css_start (mrg, ".cursor", NULL);
                     _mrg_spaces (mrg, 1);
-                    itk_end (mrg, NULL);
+                    css_end (mrg, NULL);
                   }
                   else
                     mrg->x+=mrg_addstr (mrg,  " ", -1);
@@ -5482,9 +5505,9 @@ static int itk_print_wrap (Mrg        *mrg,
                 {
                   if (mrg->state->style.print_symbols)
                     {
-                      itk_start (mrg, "dim", NULL);
+                      css_start (mrg, "dim", NULL);
                       mrg->x+=mrg_addstr (mrg,  "␣", -1);
-                      itk_end (mrg, NULL);
+                      css_end (mrg, NULL);
                     }
                   else
                     {
@@ -5538,9 +5561,9 @@ static int itk_print_wrap (Mrg        *mrg,
       {
         if (c && data[c-1]==' ')
           mrg->x += space_width;
-        itk_start (mrg, ".cursor", NULL);
+        css_start (mrg, ".cursor", NULL);
         _mrg_spaces (mrg, 1);
-        itk_end (mrg, NULL);
+        css_end (mrg, NULL);
       }
       else
         mrg->x += space_width;
@@ -5554,7 +5577,7 @@ static int itk_print_wrap (Mrg        *mrg,
   return wraps;
 }
 
-int itk_print_get_xy (Mrg *mrg, const char *string, int no, float *x, float *y)
+int css_print_get_xy (Css *mrg, const char *string, int no, float *x, float *y)
 {
   int ret;
   if (!string)
@@ -5565,7 +5588,7 @@ int itk_print_get_xy (Mrg *mrg, const char *string, int no, float *x, float *y)
       float ox, oy;
       ox = mrg->x;
       oy = mrg->y;
-      ret = itk_print_wrap (mrg, 0, string, strlen (string), mrg->state->max_lines,
+      ret = css_print_wrap (mrg, 0, string, strlen (string), mrg->state->max_lines,
                              mrg->state->skip_lines, no, x, y);
       mrg->x = ox;
       mrg->y = oy;
@@ -5577,9 +5600,9 @@ int itk_print_get_xy (Mrg *mrg, const char *string, int no, float *x, float *y)
   return 0;
 }
 
-typedef struct _MrgGlyph MrgGlyph;
+typedef struct _CssGlyph CssGlyph;
 
-struct _MrgGlyph{
+struct _CssGlyph{
   unsigned long index; /*  done this way, the remnants of layout; before feeding
                         *  glyphs positions in cairo, similar to how pango would do
                         *  can be reused for computing the caret nav efficiently.
@@ -5589,7 +5612,7 @@ struct _MrgGlyph{
   int   no;
 };
 
-static int itk_print_wrap2 (Mrg        *mrg,
+static int css_print_wrap2 (Css        *mrg,
                            int         print,
                            const char *data, int length,
                            int         max_lines,
@@ -5604,7 +5627,7 @@ static int itk_print_wrap2 (Mrg        *mrg,
   int gotspace = 0;
   int cursor_start = -1;
 
-  MrgGlyph *g = calloc (sizeof (MrgGlyph), 1);
+  CssGlyph *g = calloc (sizeof (CssGlyph), 1);
   g->x = length;
   g->y = 42;
   g->index = 44;
@@ -5654,9 +5677,9 @@ static int itk_print_wrap2 (Mrg        *mrg,
 
           if (mrg->state->style.print_symbols && print)
           {
-            itk_start (mrg, "dim", NULL);
+            css_start (mrg, "dim", NULL);
             mrg->x+=mrg_addstr (mrg,  "¶", -1);\
-            itk_end (mrg, NULL);
+            css_end (mrg, NULL);
           }
           EMIT_NL();
           gotspace = 0;
@@ -5668,9 +5691,9 @@ static int itk_print_wrap2 (Mrg        *mrg,
                 {
                   if (print)
                   {
-                    itk_start (mrg, ".cursor", NULL);
+                    css_start (mrg, ".cursor", NULL);
                     _mrg_spaces (mrg, 1);
-                    itk_end (mrg, NULL);
+                    css_end (mrg, NULL);
                   }
                   else
                     mrg->x+=mrg_addstr (mrg,  " ", -1);
@@ -5679,9 +5702,9 @@ static int itk_print_wrap2 (Mrg        *mrg,
                 {
                   if (mrg->state->style.print_symbols)
                     {
-                      itk_start (mrg, "dim", NULL);
+                      css_start (mrg, "dim", NULL);
                       mrg->x+=mrg_addstr (mrg,  "␣", -1);
-                      itk_end (mrg, NULL);
+                      css_end (mrg, NULL);
                     }
                   else
                     {
@@ -5731,9 +5754,9 @@ static int itk_print_wrap2 (Mrg        *mrg,
     {
       if (print)
       {
-        itk_start (mrg, ".cursor", NULL);
+        css_start (mrg, ".cursor", NULL);
         _mrg_spaces (mrg, 1);
-        itk_end (mrg, NULL);
+        css_end (mrg, NULL);
       }
       else
         mrg->x += measure_word_width (mrg, " ");
@@ -5749,7 +5772,7 @@ static int itk_print_wrap2 (Mrg        *mrg,
   return wraps;
 }
 
-CtxList *itk_print_get_coords (Mrg *mrg, const char *string)
+CtxList *css_print_get_coords (Css *mrg, const char *string)
 {
   CtxList *ret = NULL;
   if (!string)
@@ -5760,7 +5783,7 @@ CtxList *itk_print_get_coords (Mrg *mrg, const char *string)
       float ox, oy;
       ox = mrg->x;
       oy = mrg->y;
-      itk_print_wrap2 (mrg, 0, string, strlen (string), mrg->state->max_lines,
+      css_print_wrap2 (mrg, 0, string, strlen (string), mrg->state->max_lines,
                        mrg->state->skip_lines, &ret);
       mrg->x = ox;
       mrg->y = oy;
@@ -5772,7 +5795,7 @@ CtxList *itk_print_get_coords (Mrg *mrg, const char *string)
 
 #include <math.h>
 
-int itk_print (Mrg *mrg, const char *string)
+int css_print (Css *mrg, const char *string)
 {
   float ret;
   CtxStyle *style = ctx_style (mrg);
@@ -5795,19 +5818,19 @@ int itk_print (Mrg *mrg, const char *string)
     return 0;
 
   if (mrg_edge_left(mrg) != mrg_edge_right(mrg))
-   return itk_print_wrap (mrg, 1, string, strlen (string), mrg->state->max_lines, mrg->state->skip_lines, mrg->cursor_pos, NULL, NULL);
+   return css_print_wrap (mrg, 1, string, strlen (string), mrg->state->max_lines, mrg->state->skip_lines, mrg->cursor_pos, NULL, NULL);
 
   ret  = mrg_addstr (mrg,  string, ctx_utf8_strlen (string));
   mrg->x += ret;
   return ret;
 }
 
-void _mrg_text_prepare (Mrg *mrg)
+void _mrg_text_prepare (Css *mrg)
 {
   hl_state_c = MRG_HL_NEUTRAL;
 }
 
-void _mrg_text_init (Mrg *mrg)
+void _mrg_text_init (Css *mrg)
 {
   // XXX: this should be done in a prepre,.. not an init?
   //
@@ -5815,12 +5838,12 @@ void _mrg_text_init (Mrg *mrg)
   mrg->state->style.print_symbols = 0;
 }
 
-void  mrg_text_listen_done (Mrg *mrg)
+void  mrg_text_listen_done (Css *mrg)
 {
   mrg->text_listen_active = 0;
 }
 
-void  mrg_text_listen_full (Mrg *mrg, CtxEventType types,
+void  mrg_text_listen_full (Css *mrg, CtxEventType types,
                             CtxCb cb, void *data1, void *data2,
                       void   (*finalize)(void *listen_data, void *listen_data2, void *finalize_data),
                       void    *finalize_data)
@@ -5847,7 +5870,7 @@ void  mrg_text_listen_full (Mrg *mrg, CtxEventType types,
   mrg->text_listen_active = 1;
 }
 
-void  mrg_text_listen (Mrg *mrg, CtxEventType types,
+void  mrg_text_listen (Css *mrg, CtxEventType types,
                        CtxCb cb, void *data1, void *data2)
 {
   mrg_text_listen_full (mrg, types, cb, data1, data2, NULL, NULL);
@@ -5856,7 +5879,7 @@ void  mrg_text_listen (Mrg *mrg, CtxEventType types,
 
 static void cmd_home (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   mrg->cursor_pos = 0;
   mrg_queue_draw (mrg, NULL);
   ctx_event_stop_propagate (event);
@@ -5864,7 +5887,7 @@ static void cmd_home (CtxEvent *event, void *data1, void *data2)
 
 static void cmd_end (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   mrg->cursor_pos = ctx_utf8_strlen (mrg->edited_str->str);
   mrg_queue_draw (mrg, NULL);
   ctx_event_stop_propagate (event);
@@ -5872,7 +5895,7 @@ static void cmd_end (CtxEvent *event, void *data1, void *data2)
 
 static void cmd_backspace (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   char *new;
   const char *rest = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos);
   const char *mark = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos-1);
@@ -5898,7 +5921,7 @@ static void cmd_backspace (CtxEvent *event, void *data1, void *data2)
 
 static void cmd_delete (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   char *new;
   const char *rest = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos+1);
   const char *mark = ctx_utf8_skip (mrg->edited_str->str, mrg->cursor_pos);
@@ -5917,16 +5940,16 @@ static void cmd_delete (CtxEvent *event, void *data1, void *data2)
 
 static void cmd_down (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   float e_x, e_y, e_s, e_e, e_em;
   float cx, cy;
   cx = cy = 0;
  
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
-  itk_set_edge_left (mrg, e_s - PROP (padding_left));
-  itk_set_edge_right (mrg, e_e + PROP (padding_right));
+  css_set_edge_left (mrg, e_s - PROP (padding_left));
+  css_set_edge_right (mrg, e_e + PROP (padding_right));
   mrg_set_xy (mrg, e_x, e_y);
-  itk_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
+  css_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
 
   {
     int no;
@@ -5939,7 +5962,7 @@ static void cmd_down (CtxEvent *event, void *data1, void *data2)
       float x = 0, y = 0;
       float attempt_score = 0.0;
       mrg_set_xy (mrg, e_x, e_y);
-      itk_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
+      css_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
 
       if (y > cy && best_y == cy)
         best_y = y;
@@ -5977,16 +6000,16 @@ static void cmd_down (CtxEvent *event, void *data1, void *data2)
 
 static void cmd_up (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   float e_x, e_y, e_s, e_e, e_em;
   float cx = 0.0f, cy = 0.0f;
   mrg_get_edit_state (mrg, &e_x, &e_y, &e_s, &e_e, &e_em);
 
-  itk_set_edge_left  (mrg, e_s - PROP(padding_left));
-  itk_set_edge_right (mrg, e_e + PROP(padding_right));
+  css_set_edge_left  (mrg, e_s - PROP(padding_left));
+  css_set_edge_right (mrg, e_e + PROP(padding_right));
 
   mrg_set_xy (mrg, e_x, e_y);
-  itk_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
+  css_print_get_xy (mrg, mrg->edited_str->str, mrg->cursor_pos, &cx, &cy);
 
   /* XXX: abstract the finding of best cursor pos for x coord to a function */
   {
@@ -5999,7 +6022,7 @@ static void cmd_up (CtxEvent *event, void *data1, void *data2)
       float x = 0, y = 0;
       float attempt_score = 0.0;
       mrg_set_xy (mrg, e_x, e_y);
-      itk_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
+      css_print_get_xy (mrg, mrg->edited_str->str, no, &x, &y);
 
       if (y < cy && best_y == cy)
         best_y = y;
@@ -6033,12 +6056,12 @@ static void cmd_up (CtxEvent *event, void *data1, void *data2)
   ctx_event_stop_propagate (event);
 }
 
-int mrg_get_cursor_pos (Mrg *mrg)
+int mrg_get_cursor_pos (Css *mrg)
 {
   return mrg->cursor_pos;
 }
 
-void mrg_set_cursor_pos (Mrg *mrg, int pos)
+void mrg_set_cursor_pos (Css *mrg, int pos)
 {
   mrg->cursor_pos = pos;
   mrg_queue_draw (mrg, NULL);
@@ -6062,7 +6085,7 @@ static void cmd_page_up (CtxEvent *event, void *data1, void *data2)
 
 static void cmd_left (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   mrg->cursor_pos--;
   if (mrg->cursor_pos < 0)
     mrg->cursor_pos = 0;
@@ -6072,7 +6095,7 @@ static void cmd_left (CtxEvent *event, void *data1, void *data2)
 
 static void cmd_right (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   mrg->cursor_pos++;
 
   /* should mrg have captured the text printed in-between to build its idea
@@ -6092,7 +6115,7 @@ static void cmd_right (CtxEvent *event, void *data1, void *data2)
  *
  */
 
-static void add_utf8 (Mrg *mrg, const char *string)
+static void add_utf8 (Css *mrg, const char *string)
 {
   char *new;
   const char *rest;
@@ -6118,7 +6141,7 @@ static void add_utf8 (Mrg *mrg, const char *string)
 
 static void cmd_unhandled (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   if (!strcmp (event->string, "space"))
   {
     add_utf8 (mrg, " ");
@@ -6145,7 +6168,7 @@ static void cmd_space (CtxEvent *event, void *data1, void *data2)
 
 static void cmd_return (CtxEvent *event, void *data1, void *data2)
 {
-  Mrg *mrg = data1;
+  Css *mrg = data1;
   // this check excludes terminal from working
   //if (!(ctx_utf8_strlen (event->key_name) == 1))
   //  return;
@@ -6161,7 +6184,7 @@ static void cmd_escape (CtxEvent *event, void *data, void *data2)
 #endif
 }
 
-void mrg_text_edit_bindings (Mrg *mrg)
+void mrg_text_edit_bindings (Css *mrg)
 {
   ctx_add_key_binding (mrg->ctx, "escape",    NULL, "stop editing",    cmd_escape,      mrg);
   ctx_add_key_binding (mrg->ctx, "return",    NULL, "add newline",     cmd_return,    mrg);
@@ -6179,8 +6202,8 @@ void mrg_text_edit_bindings (Mrg *mrg)
 }
 
 #if 1
-void mrg_edit_string (Mrg *mrg, char **string,
-                      void (*update_string)(Mrg *mrg,
+void mrg_edit_string (Css *mrg, char **string,
+                      void (*update_string)(Css *mrg,
                         char **string_loc,
                         const char *new_string,
                         void  *user_data),
@@ -6200,7 +6223,7 @@ void mrg_edit_string (Mrg *mrg, char **string,
 #endif
 
 void
-itk_printf (Mrg *mrg, const char *format, ...)
+css_printf (Css *mrg, const char *format, ...)
 {
   va_list ap;
   size_t needed;
@@ -6212,27 +6235,27 @@ itk_printf (Mrg *mrg, const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  itk_print (mrg, buffer);
+  css_print (mrg, buffer);
   free (buffer);
 }
 
-void  itk_set_font_size (Mrg *mrg, float font_size)
+void  css_set_font_size (Css *mrg, float font_size)
 {
   mrg->font_size = font_size;
-  //itk_set_stylef (mrg, "font-size:%fpx;", font_size);
+  //css_set_stylef (mrg, "font-size:%fpx;", font_size);
 }
 
-void _mrg_block_edit (Mrg *mrg)
+void _mrg_block_edit (Css *mrg)
 {
   mrg->text_edit_blocked = 1;
 }
-void _mrg_unblock_edit (Mrg *mrg)
+void _mrg_unblock_edit (Css *mrg)
 {
   mrg->text_edit_blocked = 0;
 }
 
-void mrg_edit_start_full (Mrg *mrg,
-                          MrgNewText  update_string,
+void mrg_edit_start_full (Css *mrg,
+                          CssNewText  update_string,
                           void *user_data,
                           CtxDestroyNotify destroy,
                           void *destroy_data)
@@ -6249,14 +6272,14 @@ void mrg_edit_start_full (Mrg *mrg,
   mrg->update_string_destroy_data   = destroy_data;
 }
 
-void  mrg_edit_start (Mrg *mrg,
-                      MrgNewText  update_string,
+void  mrg_edit_start (Css *mrg,
+                      CssNewText  update_string,
                       void *user_data)
 {
   return mrg_edit_start_full (mrg, update_string, user_data, NULL, NULL);
 }
 
-void  mrg_edit_end (Mrg *mrg)
+void  mrg_edit_end (Css *mrg)
 {
   mrg->text_edited = 0;
   mrg_text_edit_bindings (mrg);
@@ -6264,7 +6287,7 @@ void  mrg_edit_end (Mrg *mrg)
 
 
 #if 0
-static void ctx_css_add_class (Mrg *mrg, const char *class_name)
+static void ctx_css_add_class (Css *mrg, const char *class_name)
 {
   int i;
   CtxStyleNode *node = &mrg->state->style_node;
@@ -6272,7 +6295,7 @@ static void ctx_css_add_class (Mrg *mrg, const char *class_name)
   node->classes[i] = mrg_intern_string (class_name);
 }
 
-static void ctx_css_add_pseudo_class (Mrg *mrg, const char *pseudo_class)
+static void ctx_css_add_pseudo_class (Css *mrg, const char *pseudo_class)
 {
   int i;
   CtxStyleNode *node = &mrg->state->style_node;
@@ -6281,9 +6304,9 @@ static void ctx_css_add_pseudo_class (Mrg *mrg, const char *pseudo_class)
 }
 #endif
 
-void _mrg_set_wrap_edge_vfuncs (Mrg *mrg,
-    float (*wrap_edge_left)  (Mrg *mrg, void *wrap_edge_data),
-    float (*wrap_edge_right) (Mrg *mrg, void *wrap_edge_data),
+void _mrg_set_wrap_edge_vfuncs (Css *mrg,
+    float (*wrap_edge_left)  (Css *mrg, void *wrap_edge_data),
+    float (*wrap_edge_right) (Css *mrg, void *wrap_edge_data),
     void *wrap_edge_data)
 {
   mrg->state->wrap_edge_left = wrap_edge_left;
@@ -6300,7 +6323,7 @@ static void update_rect_geo (Ctx *ctx, void *userdata, const char *name, int cou
 }
 
 
-void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
+void _mrg_layout_post (Css *mrg, CtxFloatRectangle *ret_rect)
 {
   Ctx *ctx         = mrg->ctx;
   float vmarg      = 0;
@@ -6570,7 +6593,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
     const CtxEntry *entries = ctx_get_drawlist (mrg->ctx, &end_offset);
     int count = end_offset - start_offset;
 
-    MrgAbsolute *absolute = calloc (sizeof (MrgAbsolute) + count * 9, 1);
+    CssAbsolute *absolute = calloc (sizeof (CssAbsolute) + count * 9, 1);
     absolute->z_index = style->z_index;
     absolute->top    = top;
     absolute->left   = left;
@@ -6592,7 +6615,7 @@ void _mrg_layout_post (Mrg *mrg, CtxFloatRectangle *ret_rect)
   mrg->state_no--;
   if (mrg->state_no < 0)
   {
-    fprintf (stderr, "unbalanced itk_start/itk_end, enderflow %i\n", mrg->state_no);
+    fprintf (stderr, "unbalanced css_start/css_end, enderflow %i\n", mrg->state_no);
     mrg->state_no = 0;
   }
   mrg->state = &mrg->states[mrg->state_no];
@@ -6615,12 +6638,12 @@ enum {
   HTML_ATT_SRC
 };
 
-typedef struct MrgEntity {
+typedef struct CssEntity {
    uint32_t    name;
    const char *value;
-} MrgEntity;
+} CssEntity;
 
-static MrgEntity entities[]={
+static CssEntity entities[]={
   {SQZ_shy,    ""},   // soft hyphen,. should be made use of in wrapping..
   {SQZ_nbsp,   " "},  //
   {SQZ_lt,     "<"},
@@ -6676,7 +6699,7 @@ void
 ctx_set (Ctx *ctx, uint32_t key_hash, const char *string, int len);
 
 static int 
-mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str_in)
+mrg_parse_transform (Css *mrg, CtxMatrix *matrix, const char *str_in)
 {
   // TODO : parse combined transforms
 
@@ -6808,7 +6831,7 @@ mrg_parse_transform (Mrg *mrg, CtxMatrix *matrix, const char *str_in)
 }
 
 int
-mrg_parse_svg_path (Mrg *mrg, const char *str)
+mrg_parse_svg_path (Css *mrg, const char *str)
 {
   /* this function is the seed of the ctx parser */
   char  command = 'm';
@@ -7043,7 +7066,7 @@ again:
 }
 
 static void
-mrg_parse_polygon (Mrg *mrg, const char *str)
+mrg_parse_polygon (Css *mrg, const char *str)
 {
   Ctx *ctx = mrg_ctx (mrg);
   char *s;
@@ -7087,8 +7110,9 @@ again:
   }
 }
 
+#if 0
 static void
-mrg_parse_ellipse (Mrg *mrg, const char *str)
+mrg_parse_ellipse (Css *mrg, const char *str)
 {
   Ctx *ctx = mrg_ctx (mrg);
   char *s;
@@ -7131,32 +7155,33 @@ again:
     }
   }
 }
+#endif
 
 
-void _mrg_set_wrap_edge_vfuncs (Mrg *mrg,
-    float (*wrap_edge_left)  (Mrg *mrg, void *wrap_edge_data),
-    float (*wrap_edge_right) (Mrg *mrg, void *wrap_edge_data),
+void _mrg_set_wrap_edge_vfuncs (Css *mrg,
+    float (*wrap_edge_left)  (Css *mrg, void *wrap_edge_data),
+    float (*wrap_edge_right) (Css *mrg, void *wrap_edge_data),
     void *wrap_edge_data);
 
-int mrg_get_contents (Mrg         *mrg,
+int mrg_get_contents (Css         *mrg,
                       const char  *referer,
                       const char  *input_uri,
                       char       **contents,
                       long        *length);
 
 
-void  mrg_text_listen (Mrg *mrg, CtxEventType types,
+void  mrg_text_listen (Css *mrg, CtxEventType types,
                        CtxCb cb, void *data1, void *data2);
 
-void  mrg_text_listen_full (Mrg *mrg, CtxEventType types,
+void  mrg_text_listen_full (Css *mrg, CtxEventType types,
                             CtxCb cb, void *data1, void *data2,
           void (*finalize)(void *listen_data, void *listen_data2, void *finalize_data),
           void  *finalize_data);
-void  mrg_text_listen_done (Mrg *mrg);
+void  mrg_text_listen_done (Css *mrg);
 
 char *_mrg_resolve_uri (const char *base_uri, const char *uri);
-typedef struct _MrgImage MrgImage;
-struct _MrgImage
+typedef struct _CssImage CssImage;
+struct _CssImage
 {
   char *uri;
   char *path;
@@ -7167,13 +7192,13 @@ struct _MrgImage
 
 static CtxList *images = NULL;
 
-static MrgImage *_mrg_image (Mrg *mrg, const char *path)
+static CssImage *_mrg_image (Css *mrg, const char *path)
 {
   char *uri =  _mrg_resolve_uri (mrg->uri_base, path);
 
   for (CtxList *l = images; l; l = l->next)
   {
-    MrgImage *image = l->data;
+    CssImage *image = l->data;
     if (!strcmp (path, image->uri))
     {
        return image;
@@ -7197,7 +7222,7 @@ static MrgImage *_mrg_image (Mrg *mrg, const char *path)
 
   if (w)
   {
-    MrgImage *image = calloc (sizeof (MrgImage), 1);
+    CssImage *image = calloc (sizeof (CssImage), 1);
     image->width = w;
     image->height = h;
     image->uri = strdup (path);
@@ -7210,12 +7235,12 @@ static MrgImage *_mrg_image (Mrg *mrg, const char *path)
   return NULL;
 }
 
-int mrg_query_image (Mrg        *mrg,
+int mrg_query_image (Css        *mrg,
                      const char *path,
                      int        *width,
                      int        *height)
 {
-  MrgImage *image = _mrg_image (mrg, path);
+  CssImage *image = _mrg_image (mrg, path);
   if (image)
   {
     *width = image->width;
@@ -7225,9 +7250,9 @@ int mrg_query_image (Mrg        *mrg,
   return 0;
 }
 
-void mrg_image (Mrg *mrg, float x0, float y0, float width, float height, float opacity, const char *path, int *used_width, int *used_height)
+void mrg_image (Css *mrg, float x0, float y0, float width, float height, float opacity, const char *path, int *used_width, int *used_height)
 {
-  MrgImage *image = _mrg_image (mrg, path);
+  CssImage *image = _mrg_image (mrg, path);
   if (image)
   {
     ctx_draw_image (mrg->ctx, image->path, x0, y0, width, height);
@@ -7602,7 +7627,7 @@ _ctx_str_get_float (const char *string, int no)
 }
 
 
-void itk_xml_render (Mrg *mrg,
+void css_xml_render (Css *mrg,
                      char *uri_base,
                      void (*link_cb) (CtxEvent *event, void *href, void *link_data),
                      void *link_data,
@@ -7610,7 +7635,7 @@ void itk_xml_render (Mrg *mrg,
                      void *finalize_data,
                      char *html_)
 {
-  MrgXml *xmltok;
+  CssXml *xmltok;
   CtxString *svg_text = ctx_string_new ("");
   uint32_t tag[CTX_MAX_STATE_DEPTH];
   int pos             = 0;
@@ -7773,9 +7798,9 @@ void itk_xml_render (Mrg *mrg,
 	      GRAD_PROP_X(fx, "50%"); // XXX should be inherited from cx/cy
 	      GRAD_PROP_Y(fy, "50%"); // not 50% ..
 	    
-	      itk_svg_add_def (&defs, ctx_strhash (id));
+	      css_svg_add_def (&defs, ctx_strhash (id));
 
-	       str = itk_svg_add_def (&defs, ctx_strhash (id));
+	       str = css_svg_add_def (&defs, ctx_strhash (id));
 	       ctx_string_append_printf (str, " radialGradient %f %f %f %f %f %f\n",
 			       cx,cy,r,fx,fy,fr);
 
@@ -7810,7 +7835,7 @@ void itk_xml_render (Mrg *mrg,
 	        GRAD_PROP_X(x2, "100%");
 	        GRAD_PROP_Y(y2, "0%");
 
-	       str = itk_svg_add_def (&defs, ctx_strhash (id));
+	       str = css_svg_add_def (&defs, ctx_strhash (id));
 	       ctx_string_append_printf (str, " linearGradient %f %f %f %f\n",
 			       x1,y1,x2,y2);
 	       ctx_string_append_printf (str, " rgba ");
@@ -7894,7 +7919,7 @@ void itk_xml_render (Mrg *mrg,
   mrg->state = &mrg->states[0];
 
 
-  //itk_start (mrg, "fjo", NULL);
+  //css_start (mrg, "fjo", NULL);
   //ctx_stylesheet_add (mrg, style_sheets->str, uri_base, CTX_STYLE_XML, NULL);
 
   while (type != t_eof)
@@ -7922,7 +7947,7 @@ void itk_xml_render (Mrg *mrg,
           if (data[0]=='#')
           {
             int c = atoi (&data[1]);
-            itk_printf (mrg, "%c", c);
+            css_printf (mrg, "%c", c);
           }
           else
           {
@@ -7930,15 +7955,15 @@ void itk_xml_render (Mrg *mrg,
           for (i = 0; entities[i].name && !dealt_with; i++)
             if (hash == entities[i].name)
             {
-              itk_print (mrg, entities[i].value);
+              css_print (mrg, entities[i].value);
               dealt_with = 1;
             }
           }
 
           if (!dealt_with){
-            itk_start (mrg, "dim", (void*)((size_t)pos));
-            itk_print (mrg, data);
-            itk_end (mrg, NULL);
+            css_start (mrg, "dim", (void*)((size_t)pos));
+            css_print (mrg, data);
+            css_end (mrg, NULL);
           }
         }
         break;
@@ -7954,7 +7979,7 @@ void itk_xml_render (Mrg *mrg,
 	    ctx_string_append_str(svg_text, data);
 	  }
 	  else
-          itk_print (mrg, data);
+          css_print (mrg, data);
         }
         whitespaces = 0;
         break;
@@ -7979,7 +8004,7 @@ void itk_xml_render (Mrg *mrg,
           {
             case CTX_WHITE_SPACE_PRE: /* handles as pre-wrap for now */
             case CTX_WHITE_SPACE_PRE_WRAP:
-              itk_print (mrg, data);
+              css_print (mrg, data);
               break;
             case CTX_WHITE_SPACE_PRE_LINE:
               switch (*data)
@@ -7987,7 +8012,7 @@ void itk_xml_render (Mrg *mrg,
                 case ' ':
                   whitespaces ++;
                   if (whitespaces == 1)
-                    itk_print (mrg, " ");
+                    css_print (mrg, " ");
                   break;
                 case '\n':
                   whitespaces = 0;
@@ -8000,7 +8025,7 @@ void itk_xml_render (Mrg *mrg,
               if (whitespaces == 1)
 	      {
 		int save = mrg->unresolved_line;
-                itk_print (mrg, " ");
+                css_print (mrg, " ");
 		mrg->unresolved_line = save;
 	      }
               break;
@@ -8125,7 +8150,7 @@ void itk_xml_render (Mrg *mrg,
 	     }
 	     if (is_block)
 	     {
-               itk_end (mrg, NULL);
+               css_end (mrg, NULL);
                depth--;
 	     }
 
@@ -8135,16 +8160,16 @@ void itk_xml_render (Mrg *mrg,
 
         if (depth && (data_hash == SQZ_tr && tag[depth-1] == SQZ_td))
         {
-          itk_end (mrg, NULL);
+          css_end (mrg, NULL);
           depth--;
-          itk_end (mrg, NULL);
+          css_end (mrg, NULL);
           depth--;
         }
         if (depth && (data_hash == SQZ_tr && tag[depth-1] == SQZ_td))
         {
-          itk_end (mrg, NULL);
+          css_end (mrg, NULL);
           depth--;
-          itk_end (mrg, NULL);
+          css_end (mrg, NULL);
           depth--;
         }
         else if (depth && ((data_hash == SQZ_dd && tag[depth-1] == SQZ_dt) ||
@@ -8155,7 +8180,7 @@ void itk_xml_render (Mrg *mrg,
                       (data_hash == SQZ_dd && tag[depth-1] == SQZ_dd) ||
                       (data_hash == SQZ_p &&  tag[depth-1] == SQZ_p)))
         {
-          itk_end (mrg, NULL);
+          css_end (mrg, NULL);
           depth--;
         }
 #endif
@@ -8198,7 +8223,7 @@ void itk_xml_render (Mrg *mrg,
             free (klass);
             /* collect XML attributes and convert into CSS declarations */
           ctx_string_append_str (style, PROPS(style));
-          itk_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
+          css_start_with_style (mrg, combined, (void*)((size_t)tagpos), style->str);
         }
 
         if (data_hash == SQZ_g)
@@ -8285,12 +8310,6 @@ void itk_xml_render (Mrg *mrg,
 	}
         else if (data_hash == SQZ_ellipse)
         {
-          //mrg_parse_ellipse (mrg, PROPS(d));
-	  //  SQZ_cx
-	  //  SQZ_cy
-	  //  SQZ_rx
-	  //  SQZ_ry
-	  //
           const char *transform;
           if ((transform = PROPS(transform)))
             {
@@ -8308,10 +8327,6 @@ void itk_xml_render (Mrg *mrg,
 
         else if (data_hash == SQZ_circle)
         {
-          //mrg_parse_ellipse (mrg, PROPS(d));
-	  //  SQZ_cx
-	  //  SQZ_cy
-	  //  SQZ_r
           const char *transform;
           if ((transform = PROPS(transform)))
             {
@@ -8419,7 +8434,7 @@ void itk_xml_render (Mrg *mrg,
           }
           else
           {
-            itk_printf (mrg, "![%s]", src);
+            css_printf (mrg, "![%s]", src);
           }
         }
 #if 1
@@ -8432,7 +8447,7 @@ void itk_xml_render (Mrg *mrg,
           case SQZ_br:
           case SQZ_hr:
             should_be_empty = 1;
-            itk_end (mrg, NULL);
+            css_end (mrg, NULL);
             depth--;
         }
 #endif
@@ -8449,7 +8464,7 @@ void itk_xml_render (Mrg *mrg,
             mrg_text_listen_done (mrg);
           }
           in_style = 0;
-          itk_end (mrg, NULL);
+          css_end (mrg, NULL);
           //ctx_restore (mrg->ctx);
           depth--;
 
@@ -8476,12 +8491,12 @@ void itk_xml_render (Mrg *mrg,
           {
             if (tag[depth] == SQZ_p)
             {
-              itk_end (mrg, NULL);
+              css_end (mrg, NULL);
               depth --;
             } else 
             if (depth > 0 && tag[depth-1] == data_hash)
             {
-              itk_end (mrg, NULL);
+              css_end (mrg, NULL);
               depth --;
             }
             else if (depth > 1 && tag[depth-2] == data_hash)
@@ -8490,7 +8505,7 @@ void itk_xml_render (Mrg *mrg,
               for (i = 0; i < 2; i ++)
               {
                 depth --;
-                itk_end (mrg, NULL);
+                css_end (mrg, NULL);
                 //nctx_restore (mrg->ctx);
               }
             }
@@ -8503,7 +8518,7 @@ void itk_xml_render (Mrg *mrg,
               for (i = 0; i < 3; i ++)
               {
                 depth --;
-                itk_end (mrg, NULL);
+                css_end (mrg, NULL);
                // ctx_restore (mrg->ctx);
               }
             }
@@ -8515,7 +8530,7 @@ void itk_xml_render (Mrg *mrg,
               for (i = 0; i < 4; i ++)
               {
                 depth --;
-                itk_end (mrg, NULL);
+                css_end (mrg, NULL);
                 //ctx_restore (mrg->ctx);
               }
             }
@@ -8527,7 +8542,7 @@ void itk_xml_render (Mrg *mrg,
               for (i = 0; i < 5; i ++)
               {
                 depth --;
-                itk_end (mrg, NULL);
+                css_end (mrg, NULL);
               }
             }
 #endif
@@ -8536,14 +8551,14 @@ void itk_xml_render (Mrg *mrg,
               if (data_hash == SQZ_table && tag[depth] == SQZ_td)
               {
                 depth--;
-                itk_end (mrg, NULL);
+                css_end (mrg, NULL);
                 depth--;
-                itk_end (mrg, NULL);
+                css_end (mrg, NULL);
               }
               else if (data_hash == SQZ_table && tag[depth] == SQZ_tr)
               {
                 depth--;
-                itk_end (mrg, NULL);
+                css_end (mrg, NULL);
               }
             }
           }
@@ -8552,7 +8567,7 @@ void itk_xml_render (Mrg *mrg,
         break;
     }
   }
-  //itk_end (mrg,  NULL);
+  //css_end (mrg,  NULL);
 
   xmltok_free (xmltok);
 
@@ -8561,7 +8576,7 @@ void itk_xml_render (Mrg *mrg,
     while (depth > 0)
     {
       //fprintf (stderr, " %s ", ctx_str_decode (tag[depth-1]));
-      itk_end (mrg, NULL);
+      css_end (mrg, NULL);
       depth--;
     }
     //fprintf (stderr, "\n");
@@ -8590,9 +8605,9 @@ void itk_xml_render (Mrg *mrg,
   }
 }
 
-int itk_xml_extent (Mrg *mrg, uint8_t *contents, float *width, float *height, float *vb_x, float *vb_y, float *vb_width, float *vb_height)
+int css_xml_extent (Css *mrg, uint8_t *contents, float *width, float *height, float *vb_x, float *vb_y, float *vb_width, float *vb_height)
 {
-  MrgXml *xmltok;
+  CssXml *xmltok;
   int pos             = 0;
   int type            = t_none;
   int in_style        = 0;
@@ -8606,9 +8621,9 @@ int itk_xml_extent (Mrg *mrg, uint8_t *contents, float *width, float *height, fl
 ////////////////////////////////////////////////////
 
   type = t_none;
-  int att = 0;
+  unsigned int att = 0;
   in_style = 0;
-  xmltok = xmltok_buf_new (contents);
+  xmltok = xmltok_buf_new ((char*)contents);
 
   while (type != t_eof)
   {
@@ -8697,9 +8712,10 @@ int itk_xml_extent (Mrg *mrg, uint8_t *contents, float *width, float *height, fl
     *height = *vb_height;
   }
 
+  return 0;
 }
 
-void itk_xml_renderf (Mrg *mrg,
+void css_xml_renderf (Css *mrg,
                       char *uri_base,
                       void (*link_cb) (CtxEvent *event, void *href, void *link_data),
                       void *link_data,
@@ -8716,18 +8732,18 @@ void itk_xml_renderf (Mrg *mrg,
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  itk_xml_render (mrg, uri_base, link_cb, link_data, NULL, NULL, buffer);
+  css_xml_render (mrg, uri_base, link_cb, link_data, NULL, NULL, buffer);
   free (buffer);
 }
-void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height);
+void css_init (Css *mrg, Ctx *ctx, int width, int height);
 
-void itk_print_xml (Mrg *mrg, const char *xml)
+void css_print_xml (Css *mrg, const char *xml)
 {
-  itk_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
+  css_xml_render (mrg, NULL, NULL, NULL, NULL, NULL, (char*)xml);
 }
 
 void
-itk_printf_xml (Mrg *mrg, const char *format, ...)
+css_printf_xml (Css *mrg, const char *format, ...)
 {
   va_list ap;
   size_t needed;
@@ -8739,11 +8755,11 @@ itk_printf_xml (Mrg *mrg, const char *format, ...)
   va_start(ap, format);
   vsnprintf(buffer, needed, format, ap);
   va_end (ap);
-  itk_print_xml (mrg, buffer);
+  css_print_xml (mrg, buffer);
   free (buffer);
 }
 
-void mrg_set_size (Mrg *mrg, int width, int height)
+void mrg_set_size (Css *mrg, int width, int height)
 {
   if (ctx_width (mrg->ctx) != width ||
       ctx_height (mrg->ctx) != height)
@@ -8883,29 +8899,6 @@ typedef struct _CacheEntry {
 static CtxList *cache = NULL;
 
 
-#ifdef ITK_HAVE_FS
-
-/* we define it here, but it is actually only used from within ctx
- * when ITK_HAVE_FS is also defined for that compilation
- */
-int itk_static_get_contents (const char *path, char **contents, long *length)
-{
-   if (!strncmp (path, "itk:", 4)) path += 4;
-   if (path[0] == '/') path++;
-   for (int i = 0; itk_fs[i].uri; i++)
-   {
-     if (!strcmp (path, itk_fs[i].uri))
-     {
-	*contents = malloc(itk_fs[i].length);
-	memcpy (*contents, itk_fs[i].data, itk_fs[i].length);
-	/// XXX: eeek why need a copy?
-	*length = itk_fs[i].length;
-        return 0;
-     }
-   }
-   return -1;
-}
-#endif
 
 /* caching uri fetcher
  */
@@ -8916,7 +8909,7 @@ mrg_get_contents_default (const char  *referer,
                           long        *length,
                           void        *ignored_user_data)
 {
-  Mrg *mrg = ignored_user_data;
+  Css *mrg = ignored_user_data;
   char *uri =  _mrg_resolve_uri (mrg->uri_base, input_uri);
 #if 0 // without caching
   int ret = 0;
@@ -8989,9 +8982,9 @@ mrg_get_contents_default (const char  *referer,
 #endif
 }
 
-void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
+void css_init (Css *mrg, Ctx *ctx, int width, int height)
 {
-  //memset (mrg, 0, sizeof (Mrg));
+  //memset (mrg, 0, sizeof (Css));
   mrg->do_clip = 1;
   mrg->ctx = mrg->document_ctx = ctx;
   _ctx_events_init (mrg->ctx);
@@ -9007,7 +9000,7 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
   mrg->state->overflowed = 0;
   mrg->state->span_bg_started = 0;
 #endif
-  //memset (mrg->state, 0, sizeof (MrgState));
+  //memset (mrg->state, 0, sizeof (CssState));
   //memset (mrg->states, 0, sizeof (mrg->states));
   /* XXX: is there a better place to set the default text color to black? */
 #if 0
@@ -9056,32 +9049,34 @@ void itk_css_init (Mrg *mrg, Ctx *ctx, int width, int height)
     }
   }
 
-  itk_stylesheet_clear (mrg);
+  css_stylesheet_clear (mrg);
   _mrg_clear_text_closures (mrg);
 }
 
-Mrg *mrg_new (Ctx *ctx, int width, int height)
+#if 0
+Css *mrg_new (Ctx *ctx, int width, int height)
 {
-  Mrg *mrg;
+  Css *mrg;
 
-  mrg = calloc (sizeof (Mrg), 1);
+  mrg = calloc (sizeof (Css), 1);
   mrg->do_clip = 1;
-  itk_css_init (mrg, ctx, width, height);
+  css_init (mrg, ctx, width, height);
   ctx_style_defaults (mrg);
 
 #if 0
   printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
-  printf ("sizeof(Mrg) %li (was: 1142496)\n", sizeof(Mrg));
-  printf ("sizeof(MrgState) %li\n", sizeof(MrgState));
+  printf ("sizeof(Css) %li (was: 1142496)\n", sizeof(Css));
+  printf ("sizeof(CssState) %li\n", sizeof(CssState));
   printf ("sizeof(CtxStyle) %li\n", sizeof(CtxStyle));
-  printf ("sizeof(MrgHtml) %li\n", sizeof(MrgHtml));
+  printf ("sizeof(CssHtml) %li\n", sizeof(CssHtml));
   printf ("sizeof(CtxCssParseState) %li\n", sizeof(CtxCssParseState));
 #endif
 
   return mrg;
 }
+#endif
 
-void mrg_destroy (Mrg *mrg)
+void mrg_destroy (Css *mrg)
 {
   if (mrg->edited_str)
     ctx_string_free (mrg->edited_str, 1);
@@ -9096,4 +9091,2560 @@ void mrg_destroy (Mrg *mrg)
   mrg->edited_str = NULL;
   free (mrg);
 }
+
+typedef struct _UiChoice  UiChoice;
+struct _UiChoice
+{
+  int   val;
+  char *label;
+};
+
+void css_begin_menu_bar (Css *itk, const char *title)
+{
+  if (itk->menu_path)
+    free (itk->menu_path);
+  itk->menu_path = title?strdup (title):NULL;
+}
+
+void css_begin_menu (Css *itk, const char *title)
+{
+  char *tmp = malloc (strlen (title) + (itk->menu_path?strlen (itk->menu_path):0) + 2);
+  sprintf (tmp, "%s/%s", itk->menu_path?itk->menu_path:"", title);
+  if (itk->menu_path)
+          free (itk->menu_path);
+  itk->menu_path = tmp;
+  if (css_button (itk, title))
+  {
+     if (itk->active_menu_path) free (itk->active_menu_path);
+     itk->active_menu_path = strdup (itk->menu_path);
+  }; 
+}
+
+void css_menu_item (Css *itk, const char *title)
+{
+  char *tmp = malloc (strlen (title) + (itk->menu_path?strlen (itk->menu_path):0) + 2);
+  sprintf (tmp, "%s/%s", itk->menu_path?itk->menu_path:"", title);
+  //fprintf (stderr, "[%s]\n", tmp);
+  free (tmp);
+}
+
+void css_end_menu (Css *itk)
+{
+  if (itk->menu_path)
+  {
+    char *split = strrchr (itk->menu_path, '/');
+    if (split) *split = 0;
+  }
+}
+
+void css_end_menu_bar (Css *itk)
+{
+  css_newline (itk);
+}
+
+static char *css_style=NULL;
+
+const char *css_style_string (const char *name)
+{
+  if (!css_style)
+    return NULL;
+  char *p = css_style;
+  static char ret[64];
+  int name_len = strlen (name);
+  while (p && *p)
+  {
+    while (*p == ' ')p++;
+    if (!strncmp (p, name, name_len))
+    {
+      if (p[name_len]==':')
+      {
+        for (int i = 2; p[name_len+i] && (p[name_len+i] != ';')
+                        && (p[name_len+i] != '\n'); i++)
+        {
+          ret[i-2]=p[name_len+i];
+          ret[i-1]=0;
+        }
+        return ret;
+      }
+    }
+    else
+    {
+      p = strchr (p, '\n');
+      if (p) p++;
+    }
+  }
+  return NULL;
+}
+
+float css_style_float (char *name)
+{
+   const char *str = css_style_string (name);
+   if (str)
+   {
+     return atof (str);
+   }
+   return 0.0f;
+}
+
+#if 1
+void css_style_color (Ctx *ctx, const char *name)
+{
+   const char *str = css_style_string (name);
+   if (str)
+   {
+     while (*str == ' ')str++;
+     ctx_color (ctx, str);
+     //ctx_stroke_source (ctx);
+     //ctx_color (ctx, str);
+   }
+   else
+   {
+     ctx_rgb (ctx, 0, 0, 0); // XXX : this shows up in thumbnails
+     //ctx_rgb_stroke (ctx, 1, 0, 1);
+   }
+}
+#endif
+
+static void css_style_color3 (Css *itk, const char *klass, uint32_t attr)
+{           
+   Ctx *ctx = itk->ctx;
+   CtxStyleNode ancestor;
+   CtxStyleNode *ancestry[2] = {&ancestor, NULL};
+   memset(&ancestor, 0, sizeof (CtxStyleNode));
+   ancestry[0]->element_hash = ctx_strhash ("div");
+   ancestry[0]->classes_hash[0] = ctx_strhash (klass);
+   // XXX : fix this casting hack, some stack waste is better then type mismatch?
+   char *collated = _ctx_css_compute_style (itk, ancestry, 1);
+   ctx_save (itk->ctx);
+   css_set_style (itk, collated);
+   CtxColor *color = ctx_color_new ();
+   ctx_get_color (ctx, attr, color);
+   ctx_restore (itk->ctx);
+   mrg_ctx_set_source_color (ctx, color);
+   ctx_color_free (color);
+   free (collated);
+}
+
+void css_style_bg (Css *itk, const char *klass)
+{
+  css_style_color3 (itk, klass, SQZ_background_color);
+}
+
+void css_style_fg (Css *itk, const char *klass)
+{
+  css_style_color3 (itk, klass, SQZ_color);
+}
+
+float css_rel_ver_advance (Css *itk)
+{
+  return itk->rel_ver_advance;
+}
+
+Css *css_new (Ctx *ctx)
+{
+  Css *itk              = calloc (sizeof (Css), 1);
+  //itk->ctx              = ctx;
+  //itk->panels = NULL;
+  itk->focus_wraparound = 1;
+  itk->scale            = 1.0;
+  itk->font_size        = getenv("CSS_FONT_SIZE")?atoi(getenv("CSS_FONT_SIZE")):ctx_get_font_size(ctx);
+  itk->label_width      = 0.5;
+  itk->rel_vmargin      = 0.5;
+  itk->rel_hmargin      = 0.5;
+  itk->rel_ver_advance  = 1.2;
+  itk->menu_path = strdup ("main/foo");
+  itk->rel_hpad         = 0.3;
+  itk->rel_vgap         = 0.2;
+  itk->scroll_speed     = 1.0/8.0;
+  itk->light_mode       = 1;
+  ctx_queue_draw (ctx);
+  if (ctx_backend_type (ctx) == CTX_BACKEND_TERM)
+  {
+    itk->scale     = 1.0;
+    itk->font_size = 3;
+    itk->rel_vgap = 0.0;
+    itk->rel_ver_advance = 1.0;
+    itk->rel_hpad = 0.0;
+  }
+  itk->width = itk->font_size * 15;
+
+  Css *mrg = (Css*)itk;
+  css_init (mrg, ctx, ctx_width(ctx), ctx_height(ctx));
+  ctx_style_defaults (mrg);
+
+  //printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
+
+  return itk;
+}
+
+float css_em (Css *itk)
+{
+  return itk->font_size * itk->scale;
+}
+
+void css_destroy (Css *itk)
+{
+  if (itk->menu_path)
+    free (itk->menu_path);
+  if (itk->stylesheet)
+    ctx_list_free (&itk->stylesheet);
+  if (itk->style_global)
+    ctx_string_free (itk->style_global, 1);
+  if (itk->style)
+    ctx_string_free (itk->style, 1);
+  if (itk->css_parse_state)
+    free (itk->css_parse_state);
+ 
+
+  free (itk);
+}
+
+static inline void control_ref (CtxControl *control)
+{
+  control->ref_count ++;
+}
+
+static inline void control_unref (CtxControl *control)
+{
+  if (control->ref_count <= 0)
+  {
+    CtxControl *w = control;
+
+    if (w->label)
+      free (w->label);
+    if (w->fallback)
+      free (w->fallback);
+    if (w->entry_value)
+      free (w->entry_value);
+
+    free (w);
+    return;
+  }
+  control->ref_count--;
+}
+
+void control_finalize (void *control, void *foo, void *bar)
+{
+  control_unref (control);
+}
+
+void css_reset (Css *itk)
+{
+  Ctx *ctx = itk->ctx = itk->document_ctx;
+  ctx_start_frame           (ctx);
+
+  if (css_style)
+    free (css_style);
+  unsigned char *style = NULL;
+#if CTX_FONTS_FROM_FILE
+  //ctx_get_contents ("/tmp/itk-style", &style, NULL);
+#endif
+  if (style)
+  {
+    css_style = (void*)style;
+  }
+  else
+  {
+    css_style = strdup (
+"\n"
+"itk-font-size: 32.0;\n"
+
+"titlebar-bg:          #0007;\n"
+"titlebar-fg:          #999a;\n"
+"titlebar-close:       #fff9;\n"
+"titlebar-focused-close: #c44;\n"
+"titlebar-focused-bg:  #333b;\n"
+"titlebar-focused-fg:  #ffff;\n"
+"\n"
+"terminal-bg:         #000f;\n"
+"terminal-bg-reverse: #ddde;\n"
+"terminal-active-bg:         #000b;\n"
+"terminal-active-bg-reverse: #dddb;\n"
+"\n"
+"itk-bg:             rgba(30,40,50, 1.0);\n"
+"itk-fg:             rgb(225,225,225);\n"
+"\n"
+    );
+
+  }
+
+  ctx_save (ctx);
+  ctx_font (ctx, "Regular");
+  ctx_font_size (ctx, css_em (itk));
+
+  itk->next_flags = CSS_FLAG_DEFAULT;
+  itk->panel      = NULL;
+
+  while (itk->old_controls)
+  {
+    CtxControl *control = itk->old_controls->data;
+    control_unref (control);
+    ctx_list_remove (&itk->old_controls, control);
+  }
+  itk->old_controls = itk->controls;
+  itk->controls = NULL;
+  while (itk->choices)
+  {
+    UiChoice *choice = itk->choices->data;
+    ctx_list_remove (&itk->choices, choice);
+    free (choice->label);
+    free (choice);
+  }
+  itk->control_no = 0;
+  css_init ((Css*)itk, ctx, ctx_width (itk->ctx), ctx_height (itk->ctx));
+  //mrg_clear (itk);
+  ctx_clear_bindings (itk->ctx);
+  //css_stylesheet_clear ((Css*)itk);
+  ctx_style_defaults ((Css*)itk);
+}
+
+CssPanel *add_panel (Css *itk, const char *label, float x, float y, float width, float height)
+{
+  CssPanel *panel;
+  for (CtxList *l = itk->panels; l; l = l->next)
+  {
+    CssPanel *panel = l->data;
+    if (!strcmp (panel->title, label))
+      return panel;
+  }
+  panel = calloc (sizeof (CssPanel), 1);
+  panel->title = strdup (label);
+  panel->x = x;
+  panel->y = y;
+  panel->width = width;
+  panel->height = height;
+  ctx_list_prepend (&itk->panels, panel);
+
+  itk->panel = panel;
+  return panel;
+}
+
+void
+css_panels_reset_scroll (Css *itk)
+{
+  if (!itk || !itk->panels)
+          return;
+  for (CtxList *l = itk->panels; l; l = l->next)
+  {
+    CssPanel *panel = l->data;
+    panel->scroll = 0.0;
+    panel->do_scroll_jump = 1;
+  }
+}
+
+
+/* adds a control - should be done before the drawing of the
+ * control itself - as this call might draw a highlight in
+ * the background.
+ *
+ * This also allocats a runtime control, used for focus handling
+ * and ephemreal persistance of possible interaction states -
+ * useful for accesibility.
+ */
+CtxControl *css_add_control (Css *itk,
+                             int type,
+                             const char *label,
+                             float x, float y,
+                             float width, float height)
+{
+  CtxControl *control = calloc (sizeof (CtxControl), 1);
+  float em = css_em (itk);
+  control->flags = itk->next_flags;
+  itk->next_flags = CSS_FLAG_DEFAULT;
+  control->label = strdup (label);
+  if (itk->next_id)
+  {
+    control->id = itk->next_id;
+    itk->next_id = NULL;
+  }
+
+  control->type = type;
+  control->ref_count=0;
+  control->x = x;
+  control->y = y;
+  control->no = itk->control_no;
+  itk->control_no++;
+  control->width = width;
+  control->height = height;
+  ctx_list_prepend (&itk->controls, control);
+
+  if (itk->focus_no == control->no && itk->focus_no >= 0)
+  {
+     if (itk->y - itk->panel->scroll < em * 2)
+     {
+        if (itk->panel->scroll != 0.0f)
+        {
+          itk->panel->scroll -= itk->scroll_speed * itk->panel->height * (itk->panel->do_scroll_jump?5:1);
+          if (itk->panel->scroll<0.0)
+            itk->panel->scroll=0.0;
+          ctx_queue_draw (itk->ctx);
+        }
+     }
+     else if (itk->y - itk->panel->scroll +  control->height > itk->panel->y + itk->panel->height - em * 2 && control->height < itk->panel->height - em * 2)
+     {
+          itk->panel->scroll += itk->scroll_speed * itk->panel->height * (itk->panel->do_scroll_jump?5:1);
+
+        ctx_queue_draw (itk->ctx);
+     }
+     else
+     {
+       itk->panel->do_scroll_jump = 0;
+     }
+
+  }
+
+  //ctx_rectangle (itk->ctx, x, y, width, height);
+  if (itk->focus_no == control->no &&
+      control->type == UI_LABEL)   // own-bg
+  {
+#if 1
+    //css_style_bg (itk, "focused");
+    //ctx_fill (itk->ctx);
+#if 0
+    ctx_rectangle (itk->ctx, x, y, width, height);
+    css_style_color (itk->ctx, "itk-fg");
+    ctx_line_width (itk->ctx, 2.0f);
+    ctx_stroke (itk->ctx);
+#endif
+#endif
+  }
+  else
+  {
+    if (control->flags & CSS_FLAG_ACTIVE)
+    if (control->type != UI_LABEL && // no-bg
+        control->type != UI_BUTTON)  // own-bg
+    {
+     // css_style_bg (itk, "interactive");
+     // ctx_fill (itk->ctx);
+    }
+  }
+
+  switch (control->type)
+  {
+    case UI_SLIDER:
+      control->ref_count++;
+      break;
+    default:
+      break;
+  }
+
+  return control;
+}
+
+#if 0
+static void css_base (Css *itk, const char *label, float x, float y, float width, float height, int focused)
+{
+  Ctx *ctx = itk->ctx;
+  if (focused)
+  {
+    css_style_color (itk->ctx, "itk-focused-bg");
+
+    ctx_rectangle (ctx, x, y, width, height);
+    ctx_fill (ctx);
+  }
+#if 0
+  else
+    css_style_color (itk->ctx, "itk-bg");
+
+  if (itk->line_no >= itk->lines_drawn)
+  {
+    ctx_rectangle (ctx, x, y, width, height);
+    ctx_fill (ctx);
+    itk->lines_drawn = itk->line_no -1;
+  }
+#endif
+}
+#endif
+
+void css_newline (Css *itk)
+{
+  itk->y += css_em (itk) * (itk->rel_ver_advance + itk->rel_vgap);
+  itk->x = itk->edge_left;
+  itk->line_no++;
+}
+
+void css_seperator (Css *itk)
+{
+  Css *mrg = (Css*)itk;
+  css_start (mrg, "hr", NULL);
+  css_end (mrg, NULL);
+}
+
+void css_label (Css *itk, const char *label)
+{
+  Css *mrg = (Css*)itk;
+  //css_start (mrg, "label", NULL);
+  css_print (mrg, label);
+  //css_end (mrg, NULL);
+}
+
+void css_labelf (Css *itk, const char *format, ...)
+{
+  va_list ap;
+  size_t needed;
+  char *buffer;
+  va_start (ap, format);
+  needed = vsnprintf (NULL, 0, format, ap) + 1;
+  buffer = malloc (needed);
+  va_end (ap);
+  va_start (ap, format);
+  vsnprintf (buffer, needed, format, ap);
+  va_end (ap);
+  css_label (itk, buffer);
+  free (buffer);
+}
+
+static void titlebar_drag (CtxEvent *event, void *userdata, void *userdata2)
+{
+  Css *itk = userdata2;
+  CssPanel *panel = userdata;
+  
+#if 1
+  //fprintf (stderr, "%d %f %f\n", event->delta_x, event->delta_y);
+  panel->x += event->delta_x;
+  panel->y += event->delta_y;
+  if (panel->y < 0) panel->y = 0;
+#else
+  panel->x = event->x - panel->width / 2;
+  panel->y = event->y;
+#endif
+
+  event->stop_propagate = 1;
+  ctx_queue_draw (itk->ctx);
+}
+
+void css_titlebar (Css *itk, const char *label)
+{
+  Ctx *ctx = itk->ctx;
+  float em = css_em (itk);
+
+  //CtxControl *control = css_add_control (itk, UI_TITLEBAR, label, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+
+  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+  ctx_listen_with_finalize (ctx, CTX_DRAG, titlebar_drag, itk->panel, itk, NULL, NULL);
+
+  ctx_begin_path (ctx);
+  itk->line_no = 0;
+  itk->lines_drawn = 0;
+  //css_base (itk, label, control->x, control->y, control->width - em * itk->rel_hmargin, em * itk->rel_ver_advance, itk->focus_no == control->no);
+  css_label (itk, label);
+  //itk->lines_drawn = 1;
+
+  css_newline (itk);
+}
+
+void css_scroll_start (Css *itk, float height)
+{
+  CssPanel *panel = itk->panel;
+  Ctx *ctx = itk->ctx;
+  ctx_save (ctx);
+  itk->panel->scroll_start_y = itk->y;
+  ctx_rectangle (ctx, itk->edge_left - itk->rel_hmargin*css_em(itk), itk->y, panel->width, panel->height - (itk->y - panel->y));
+  ctx_clip (ctx);
+  ctx_begin_path (ctx);
+  ctx_translate (ctx, 0.0, -panel->scroll);
+}
+
+// applies to next created control
+void css_id (Css *itk, void *id)
+{
+  itk->next_id = id; 
+}
+
+// applies to next created control
+void css_set_flag (Css *itk, int flag, int on)
+{
+  if (on)
+  {
+    itk->next_flags |= flag;
+  }
+  else
+  {
+    if (itk->next_flags & flag)
+      itk->next_flags -= flag;
+  }
+}
+
+void css_scroll_drag (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CssPanel *panel = data2;
+  float scrollbar_height = panel->height - (panel->scroll_start_y - panel->y);
+  float th = scrollbar_height * (scrollbar_height /  (panel->max_y-panel->scroll_start_y));
+  if (th > scrollbar_height)
+  {
+    panel->scroll = 0;
+    event->stop_propagate = 1;
+    ctx_queue_draw (itk->ctx);
+    return;
+  }
+  panel->scroll = ((event->y - panel->scroll_start_y - th / 2) / (scrollbar_height-th)) *
+               (panel->max_y - panel->scroll_start_y - scrollbar_height)
+          ;
+  itk->focus_no = -1;
+  ctx_queue_draw (itk->ctx);
+
+  if (panel->scroll < 0) panel->scroll = 0;
+
+  event->stop_propagate = 1;
+}
+
+void css_scroll_end (Css *itk)
+{
+  CssPanel *panel = itk->panel;
+  Ctx *ctx = itk->ctx;
+  float em = css_em (itk);
+  ctx_restore (ctx);
+  itk->panel->max_y = itk->y;
+
+  float scrollbar_height = panel->height - (panel->scroll_start_y - panel->y);
+  float scrollbar_width = em;
+
+#if 1
+  ctx_begin_path (ctx);
+  ctx_rectangle (ctx, panel->x + panel->width- scrollbar_width,
+                      panel->scroll_start_y,
+                      scrollbar_width,
+                      scrollbar_height);
+  ctx_listen (ctx, CTX_DRAG, css_scroll_drag, itk, panel);
+  css_style_bg (itk, "scroll");
+  ctx_fill (ctx);
+#endif
+
+  ctx_begin_path (ctx);
+  float th = scrollbar_height * (scrollbar_height /  (panel->max_y-panel->scroll_start_y));
+  if (th > scrollbar_height) th = scrollbar_height;
+
+  ctx_rectangle (ctx, panel->x + panel->width- scrollbar_width,
+                      panel->scroll_start_y +
+                      (panel->scroll / (panel->max_y-panel->scroll_start_y)) * ( scrollbar_height ),
+                      scrollbar_width,
+                      th
+                      
+                      );
+
+  css_style_fg (itk, "scroll");
+  ctx_fill (ctx);
+
+
+}
+
+CssPanel *css_panel_start (Css *itk, const char *title,
+                      int x, int y, int width, int height)
+{
+  Ctx *ctx = itk->ctx;
+  CssPanel *panel = add_panel (itk, title, x, y, width, height);
+  float em = css_em (itk);
+  css_set_edge_left (itk, panel->x + em * itk->rel_hmargin);
+  css_set_edge_top (itk, panel->y);
+  css_set_xy (itk, css_edge_left (itk), panel->y);
+  //itk->edge_left = itk->x = panel->x + em * itk->rel_hmargin;
+  //itk->edge_top = itk->y = panel->y;
+
+  if (panel->width != 0)
+  {
+    panel->width = width;
+    panel->height = height;
+  }
+  itk->width = panel->width;
+  itk->height = panel->height;
+  css_set_wrap_width (itk, panel->width - em);
+  //css_set_height (itk, panel->height);
+
+  itk->panel = panel;
+
+  css_style_fg (itk, "itk");
+  ctx_begin_path (ctx);
+  ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
+  ctx_line_width (ctx, 2);
+  ctx_stroke (ctx);
+
+  css_style_bg (itk, "wallpaper");
+  ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
+  ctx_fill (ctx);
+
+  if (title[0])
+    css_titlebar (itk, title);
+
+  css_scroll_start (itk, panel->height - (itk->y - panel->y));
+  css_start (itk, "div", NULL);
+  return panel;
+}
+
+void css_panel_resize_drag (CtxEvent *event, void *data, void *data2)
+{
+  CssPanel *panel = data;
+  panel->width += event->delta_x;
+  panel->height += event->delta_y;
+  ctx_queue_draw (event->ctx);
+  event->stop_propagate = 1;
+}
+
+void css_panel_end (Css *itk)
+{
+  Ctx *ctx = itk->ctx;
+  CssPanel *panel = itk->panel;
+  float em = css_em (itk);
+  css_end ((Css*)itk, NULL);
+  css_scroll_end (itk);
+
+  ctx_rectangle (ctx, panel->x + panel->width - em,
+                      panel->y + panel->height - em,
+                      em,
+                      em);
+  ctx_listen (ctx, CTX_DRAG, css_panel_resize_drag, panel, itk);
+  css_style_fg (itk, "wallpaper");
+  ctx_begin_path (ctx);
+  ctx_move_to (ctx, panel->x + panel->width,
+                    panel->y + panel->height);
+#if 1
+  ctx_rel_line_to (ctx, -em, 0);
+  ctx_rel_line_to (ctx, em, -em);
+  ctx_rel_line_to (ctx, 0, em);
+#endif
+  ctx_fill (ctx);
+
+  itk->panel = NULL;
+}
+
+static void css_float_constrain (CtxControl *control, float *val)
+{
+  float new_val = *val;
+  if (new_val < control->min) new_val = control->min;
+  if (new_val > control->max) new_val = control->max;
+  if (new_val > 0)
+  {
+     if (control->step > 0.0)
+     {
+       new_val = (int)(new_val / control->step) * control->step;
+     }
+  }
+  else
+  {
+     if (control->step > 0.0)
+     {
+       new_val = -new_val;
+       new_val = (int)(new_val / control->step) * control->step;
+       new_val = -new_val;
+     }
+  }
+  *val = new_val;
+}
+
+#if 0
+static void css_slider_cb_drag (CtxEvent *event, void *userdata, void *userdata2)
+{
+  Css *itk = userdata2;
+  CtxControl  *control = userdata;
+  float new_val;
+
+  css_set_focus_no (itk, control->no);
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+  new_val = ((event->x - control->x) / (control->width)) * (control->max-control->min) + control->min;
+
+  css_float_constrain (control, &new_val);
+
+  itk->return_value = 1;
+  control->value = new_val;
+  itk->slider_value = new_val;
+  //if (control->set_val)
+  //  control->set_val (control->val, new_val, control->data);
+}
+#endif
+
+float css_slider (Css *itk, const char *label, float value, double min, double max, double step)
+{
+#if 0
+  Ctx *ctx = itk->ctx;
+  char buf[100] = "";
+  float em = css_em (itk);
+
+  float new_x = itk->x + (itk->label_width) * itk->width;
+  itk->x = new_x;
+
+  CtxControl *control = css_add_control (itk, UI_SLIDER, label, itk->x, itk->y, itk->width * (1.0 - itk->label_width) - em * 1.5, em * itk->rel_ver_advance);
+  //control->data = data;
+  //
+  control->value  = value;
+  control->min  = min;
+  control->max  = max;
+  control->step = step;
+
+  if (itk->focus_no == control->no)
+    css_style_color (itk->ctx, "itk-focused-bg");
+  else
+    css_style_color (itk->ctx, "itk-interactive-bg");
+  ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
+  ctx_fill (ctx);
+  control_ref (control);
+  ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
+  ctx_listen_with_finalize (ctx, CTX_DRAG, css_slider_cb_drag, control, itk, control_finalize, NULL);
+  ctx_begin_path (ctx);
+
+  double fval = value;
+
+  if (step == 1.0)
+  {
+    sprintf (buf, "%.0f", fval);
+  }
+  else
+  {
+    sprintf (buf, "%.3f", fval);
+  }
+  css_style_color (itk->ctx, "itk-slider-text");
+  ctx_text (ctx, buf);
+
+  float rel_val = ((fval) - min) / (max-min);
+  css_style_color (itk->ctx, "itk-slider-cursor");
+  ctx_rectangle (ctx, itk->x + control->width * rel_val, itk->y, em/8, control->height);
+  ctx_fill (ctx);
+  ctx_rectangle (ctx, itk->x, itk->y + em*5/6, control->width, em/8);
+  ctx_fill (ctx);
+
+  itk->x += (1.0 - itk->label_width) * itk->width;
+  css_newline (itk);
+
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return itk->slider_value;
+  }
+  return value;
+#else
+  Css *mrg = (Css*)itk;
+  Ctx *ctx = itk->ctx;
+
+  if (itk->focus_no == itk->control_no)
+    css_start (mrg, "propline:focused", NULL);
+  else
+    css_start (mrg, "propline", NULL);
+  css_label (itk, label);
+
+  CtxFloatRectangle extent;
+  css_start (mrg, "slider", NULL);
+  css_printf (mrg, "%f", value);
+  css_end (mrg, &extent);
+  CtxControl *control = css_add_control (itk, UI_SLIDER, label,
+                                         extent.x, extent.y, extent.width, extent.height);
+  control->value  = value;
+  control->min  = min;
+  control->max  = max;
+  control->step = step;
+  css_end (mrg, NULL);
+
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return itk->slider_value;
+  }
+  return value;
+#endif
+}
+
+void css_slider_float (Css *itk, const char *label, float *val, float min, float max, float step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+void css_slider_int (Css *itk, const char *label, int *val, int min, int max, int step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+void css_slider_double (Css *itk, const char *label, double *val, double min, double max, double step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+void css_slider_uint8 (Css *itk, const char *label, uint8_t *val, uint8_t min, uint8_t max, uint8_t step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+void css_slider_uint16 (Css *itk, const char *label, uint16_t *val, uint16_t min, uint16_t max, uint16_t step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+void css_slider_uint32 (Css *itk, const char *label, uint32_t *val, uint32_t min, uint32_t max, uint32_t step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+void css_slider_int8 (Css *itk, const char *label, int8_t *val, int8_t min, int8_t max, int8_t step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+void css_slider_int16 (Css *itk, const char *label, int16_t *val, int16_t min, int16_t max, int16_t step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+void css_slider_int32 (Css *itk, const char *label, int32_t *val, int32_t min, int32_t max, int32_t step)
+{
+  *val = css_slider (itk, label, *val, min, max, step);
+}
+
+CtxControl *css_find_control (Css *itk, int no)
+{
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->no == no)
+     return control;
+  }
+  return NULL;
+}
+
+
+void css_entry_commit (Css *itk)
+{
+  if (itk->active_entry<0)
+     return;
+
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->no == itk->active_entry)
+    {
+      switch (control->type)
+      {
+        case UI_ENTRY:
+         if (itk->entry_copy)
+         {
+  //fprintf (stderr, "ec %i %s\n", itk->active_entry, itk->entry_copy);
+  //         strcpy (control->val, itk->entry_copy);
+ //          free (itk->entry_copy);
+ //          itk->entry_copy = NULL;
+           itk->active = 2;
+           ctx_queue_draw (itk->ctx);
+         }
+      }
+      return;
+    }
+  }
+}
+
+void css_lost_focus (Css *itk)
+{
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->no == itk->active_entry)
+    {
+      switch (control->type)
+      {
+        case UI_ENTRY:
+         if (itk->active_entry < 0)
+           return;
+         if (control->flags & CSS_FLAG_CANCEL_ON_LOST_FOCUS)
+         {
+           itk->active_entry = -1;
+           itk->active = 0;
+         }
+         else if (itk->entry_copy)
+         {
+           itk->active = 2;
+         }
+         ctx_queue_draw (itk->ctx);
+         break;
+        default :
+         itk->active = 0;
+         itk->choice_active = 0;
+         ctx_queue_draw (itk->ctx);
+         break;
+      }
+      return;
+    }
+  }
+}
+
+void entry_clicked (CtxEvent *event, void *userdata, void *userdata2)
+{
+  Css *itk = userdata2;
+  CtxControl *control = userdata;
+  event->stop_propagate = 1;
+
+  if (itk->active)
+  {
+    css_lost_focus (itk);
+  }
+  else
+  {
+    itk->entry_copy = strdup (control->entry_value);
+    itk->entry_pos = strlen (itk->entry_copy);
+    itk->active = 1;
+    itk->active_entry = control->no;
+  }
+
+  css_set_focus_no (itk, control->no);
+  ctx_queue_draw (event->ctx);
+}
+
+
+char *css_entry (Css        *itk,
+                 const char *label,
+                 const char *fallback,
+                 const char *in_val)
+{
+  Css *mrg = (Css*)itk;
+#if 1
+  if (itk->focus_no == itk->control_no)
+    css_start (mrg, "propline:focused", NULL);
+  else
+    css_start (mrg, "propline", NULL);
+  css_label (itk, label);
+
+  if (itk->active &&
+      itk->entry_copy && itk->focus_no == itk->control_no)
+  {
+    int backup = itk->entry_copy[itk->entry_pos];
+    char buf[4]="|";
+    itk->entry_copy[itk->entry_pos]=0;
+    css_label (itk, itk->entry_copy);
+    css_label (itk, buf);
+
+    buf[0]=backup;
+    if (backup)
+    {
+      css_label (itk, buf);
+      css_label (itk, &itk->entry_copy[itk->entry_pos+1]);
+      itk->entry_copy[itk->entry_pos] = backup;
+    }
+  }
+  else
+  {
+    if (in_val[0])
+    {
+      css_label (itk, in_val);
+    }
+    else
+    {
+      if (fallback)
+      {
+        css_label (itk, fallback);
+      }
+    }
+  }
+
+  CtxFloatRectangle extent;
+  css_end (mrg, &extent);
+  CtxControl *control = css_add_control (itk, UI_ENTRY, label,
+                  extent.x, extent.y, extent.width, extent.height);
+  control->entry_value = strdup (in_val);
+  if (fallback)
+    control->fallback = strdup (fallback);
+  control->ref_count++;
+#else
+  float new_x = itk->x + itk->label_width * itk->width;
+
+  float ewidth = itk->width * (1.0 - itk->label_width);
+
+  if (label[0]) {
+    css_label (itk, label);
+    itk->x = new_x;
+  }
+  else
+  {
+    ewidth = itk->width;
+  }
+  CtxControl *control = css_add_control (itk, UI_ENTRY, label, itk->x, itk->y, ewidth, em * itk->rel_ver_advance);
+  control->entry_value = strdup (in_val);
+  if (fallback)
+    control->fallback = strdup (fallback);
+  control->ref_count++;
+
+  ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
+
+  if (control->flags & CSS_FLAG_ACTIVE)
+  {
+    ctx_listen_with_finalize (ctx, CTX_CLICK, entry_clicked, control, itk, control_finalize, NULL);
+    control_ref (control);
+  }
+
+  ctx_begin_path (ctx);
+  ctx_move_to (ctx, itk->x, itk->y + em);
+  if (itk->active &&
+      itk->entry_copy && itk->focus_no == control->no)
+  {
+    int backup = itk->entry_copy[itk->entry_pos];
+    char buf[4]="|";
+    itk->entry_copy[itk->entry_pos]=0;
+    css_style_color (itk->ctx, "itk-interactive");
+    ctx_text (ctx, itk->entry_copy);
+    css_style_color (itk->ctx, "itk-entry-cursor");
+    ctx_text (ctx, buf);
+
+    buf[0]=backup;
+    if (backup)
+    {
+      css_style_color (itk->ctx, "itk-interactive");
+      ctx_text (ctx, buf);
+      ctx_text (ctx, &itk->entry_copy[itk->entry_pos+1]);
+      itk->entry_copy[itk->entry_pos] = backup;
+    }
+  }
+  else
+  {
+    if (in_val[0])
+    {
+      if (control->flags & CSS_FLAG_ACTIVE)
+        css_style_color (itk->ctx, "itk-interactive");
+      else
+        css_style_color (itk->ctx, "itk-fg");
+      ctx_text (ctx, in_val);
+    }
+    else
+    {
+      if (control->fallback)
+      {
+        css_style_color (itk->ctx, "itk-entry-fallback");
+        ctx_text (ctx, control->fallback);
+      }
+    }
+  }
+  itk->x += ewidth;
+  css_newline (itk);
+#endif
+
+  if (itk->active == 2 && control->no == itk->active_entry)
+  {
+    itk->active = 0;
+    itk->active_entry = -1;
+    char *copy = itk->entry_copy;
+    itk->entry_copy = NULL;
+    ctx_queue_draw (itk->ctx); // queue a draw - since it is likely the
+                               // response triggers computation
+    return copy;
+  }
+  return NULL;
+}
+
+int css_entry_str_len (Css *itk, const char *label, const char *fallback, char *val, int maxlen)
+{
+   char *new_val;
+   if ((new_val = css_entry (itk, label, fallback, val)))
+   {
+      if ((int)strlen (new_val) > maxlen -1)
+        new_val[maxlen-1]=0;
+      strcpy (val, new_val);
+      free (new_val);
+      return 1;
+   }
+   return 0;
+}
+
+void toggle_clicked (CtxEvent *event, void *userdata, void *userdata2)
+{
+  Css *itk = userdata2;
+  CtxControl *control = userdata;
+  int *val = control->val;
+  itk->return_value = 1; // reusing despite name
+  *val = (*val)?0:1;
+  event->stop_propagate = 1;
+  css_set_focus_no (itk, control->no);
+  ctx_queue_draw (event->ctx);
+}
+
+static void button_clicked (CtxEvent *event, void *userdata, void *userdata2)
+{
+  Css *itk = userdata2;
+  CtxControl *control = userdata;
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+  css_set_focus_no (itk, control->no);
+  itk->return_value = 1;
+}
+
+int css_toggle (Css *itk, const char *label, int input_val)
+{
+  Ctx *ctx = itk->ctx;
+  Css *mrg = (Css*)itk;
+  //float em = css_em (itk);
+  //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  CtxFloatRectangle extent;
+  
+  if (itk->focus_no == itk->control_no)
+    css_start (mrg, "propline:focused", NULL);
+  else
+    css_start (mrg, "propline", NULL);
+  css_start (mrg, "toggle", NULL);
+
+  css_print (mrg, label);
+
+  if (input_val)
+  {
+      css_print (mrg, "[x]");
+  }
+  else
+  {
+      css_print (mrg, "[ ]");
+  }
+
+  css_end (mrg, &extent);
+  css_end (mrg, NULL);
+  CtxControl *control = css_add_control (itk, UI_TOGGLE, label,
+                  extent.x, extent.y, extent.width, extent.height);
+
+  control_ref (control);
+  control->type = UI_TOGGLE;
+  ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
+  ctx_begin_path (ctx);
+
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return !input_val;
+  }
+  return input_val;
+}
+
+
+int css_radio (Css *itk, const char *label, int set)
+{
+  Ctx *ctx = itk->ctx;
+  Css *mrg = (Css*)itk;
+  //float em = css_em (itk);
+  //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  CtxFloatRectangle extent;
+  
+  if (itk->focus_no == itk->control_no)
+    css_start (mrg, "propline:focused", NULL);
+  else
+    css_start (mrg, "propline", NULL);
+  css_start (mrg, "toggle", NULL);
+
+  css_print (mrg, label);
+
+  if (set)
+  {
+      css_print (mrg, "(x)");
+  }
+  else
+  {
+      css_print (mrg, "( )");
+  }
+
+  css_end (mrg, &extent);
+  css_end (mrg, NULL);
+  CtxControl *control = css_add_control (itk, UI_TOGGLE, label,
+                  extent.x, extent.y, extent.width, extent.height);
+
+  control_ref (control);
+  control->type = UI_TOGGLE;
+  ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
+  ctx_begin_path (ctx);
+
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return !set;
+  }
+  return set;
+}
+
+void expander_clicked (CtxEvent *event, void *userdata, void *userdata2)
+{
+  Css *itk = userdata2;
+  CtxControl *control = userdata;
+  int *val = control->val;
+  *val = (*val)?0:1;
+  css_set_focus_no (itk, control->no);
+  ctx_queue_draw (event->ctx);
+}
+
+int css_expander (Css *itk, const char *label, int *val)
+{
+  Css *mrg = (Css*)itk;
+  CtxFloatRectangle extent;
+  if (itk->focus_no == itk->control_no)
+    css_start (mrg, "propline:focused", NULL);
+  else
+    css_start (mrg, "propline", NULL);
+
+  css_labelf (itk, "%s %s", *val?"V":">", label);
+
+  css_end (mrg, &extent);
+  CtxControl *control = css_add_control (itk, UI_EXPANDER, label,
+                  extent.x, extent.y, extent.width, extent.height);
+  control->val = val;
+
+  return *val;
+}
+
+int css_button (Css *itk, const char *label)
+{
+#if 1
+  Ctx *ctx = itk->ctx;
+  Css *mrg = (Css*)itk;
+  //float em = css_em (itk);
+  //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  CtxFloatRectangle extent;
+   
+  css_start (mrg, itk->focus_no == itk->control_no ? "button:focused" : "button", NULL);
+
+//  css_label (itk, label);
+  css_print (mrg, label);
+
+
+  css_end (mrg, &extent);
+  CtxControl *control = css_add_control (itk, UI_BUTTON, label,
+                  extent.x, extent.y, extent.width, extent.height);
+                             //itk->x, itk->y, width, em * itk->rel_ver_advance);
+
+  control_ref (control);
+  control->type = UI_BUTTON;
+  ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
+  ctx_rgb (ctx, 1,1,0);
+  ctx_fill (ctx);
+  ctx_begin_path (ctx);
+
+  //css_newline (itk);
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return 1;
+  }
+  return 0;
+#else
+
+  Ctx *ctx = itk->ctx;
+  float em = css_em (itk);
+  float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+
+
+
+  CtxControl *control = css_add_control (itk, UI_BUTTON, label,
+                             itk->x, itk->y, width, em * itk->rel_ver_advance);
+
+  css_style_color (itk->ctx, "itk-button-shadow");
+  ctx_begin_path (ctx);
+  ctx_round_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, width, em * itk->rel_ver_advance, em*0.33);
+  ctx_fill (ctx);
+
+  {
+    float px = ctx_pointer_x (itk->ctx);
+    float py = ctx_pointer_y (itk->ctx);
+    if (px >= control->x && px <= control->x + control->width &&
+        py >= control->y && py <= control->y + control->height)
+    {
+      css_style_color (itk->ctx, "itk-button-hover-bg");
+    }
+  else
+    {
+  if (itk->focus_no == control->no)
+    css_style_color (itk->ctx, "itk-button-focused-bg");
+  else
+    css_style_color (itk->ctx, "itk-interactive-bg");
+  }
+  }
+
+  ctx_round_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance, em * 0.33);
+  ctx_fill (ctx);
+
+
+  css_style_color (itk->ctx, "itk-button-fg");
+  ctx_move_to (ctx, itk->x + em * itk->rel_hpad,  itk->y + em * itk->rel_baseline);
+  ctx_text (ctx, label);
+
+  control_ref (control);
+  control->type = UI_BUTTON;
+  ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
+  ctx_begin_path (ctx);
+
+//  css_newline (itk);
+  if (control->no == itk->focus_no && itk->return_value)
+  {
+    itk->return_value = 0;
+    ctx_queue_draw (ctx);
+    return 1;
+  }
+  return 0;
+
+#endif
+}
+
+static void css_choice_clicked (CtxEvent *event, void *userdata, void *userdata2)
+{
+  Css *itk = userdata2;
+  CtxControl *control = userdata;
+  itk->choice_active = 1;
+  itk->choice_no = control->value;
+  css_set_focus_no (itk, control->no);
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+int css_choice (Css *itk, const char *label, int val)
+{
+  Ctx *ctx = itk->ctx;
+  Css *mrg = (Css*)itk;
+  //float em = css_em (itk);
+  //float width = ctx_text_width (ctx, label) + em * itk->rel_hpad * 2;
+  CtxFloatRectangle extent;
+  
+  if (itk->focus_no == itk->control_no)
+    css_start (mrg, "propline:focused", NULL);
+  else
+    css_start (mrg, "propline", NULL);
+
+  for (CtxList *l = itk->choices; l; l=l?l->next:NULL)
+  {
+    UiChoice *choice = l->data;
+    if (choice->val == val)
+      css_printf (mrg, "%s %s", label, choice->label);
+  }
+
+  //css_end (mrg, NULL);
+  css_end (mrg, &extent);
+  CtxControl *control = css_add_control (itk, UI_CHOICE, label,
+                  extent.x, extent.y, extent.width, extent.height);
+  control->value = val;
+  control_ref (control);
+
+
+  ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
+  ctx_listen_with_finalize (ctx, CTX_CLICK, css_choice_clicked, control, itk, control_finalize, NULL);
+  ctx_begin_path (ctx);
+  if (itk->focus_no == itk->control_no-1)
+  {
+    Css *mrg = (Css*)itk;
+    if (itk->choice_active)
+    {
+      css_start (mrg, "div.choice_menu_wrap", NULL);
+      css_start (mrg, "div.choice_menu", NULL);
+
+      for (CtxList *l = itk->choices; l; l=l?l->next:NULL)
+      {
+        UiChoice *choice = l->data;
+       if (((int)control->value) == choice->val)
+         css_start (mrg, "div.choice:chosen", NULL);
+       else
+         css_start (mrg, "div.choice", NULL);
+       css_print (mrg, choice->label);
+       css_end (mrg, NULL);
+     }
+     css_end (mrg, NULL);
+     css_end (mrg, NULL);
+    }
+    if (!itk->choice_active)
+    {
+      itk->choice_no = val;
+    }
+    else
+    {
+      control->value = val;
+    }
+    itk->popup_x = control->x;
+    itk->popup_y = control->y + (itk->panel?-itk->panel->scroll:0);
+    itk->popup_width = control->width;
+    itk->popup_height = control->height;
+    if (itk->return_value)
+    {
+      itk->return_value = 0;
+      ctx_queue_draw (itk->ctx);
+      return itk->choice_no;
+    }
+  }
+
+  return val;
+}
+
+void css_choice_add (Css *itk, int value, const char *label)
+{
+  UiChoice *choice= calloc (sizeof (UiChoice), 1);
+  choice->val = value;
+  choice->label = strdup (label);
+  ctx_list_append (&itk->choices, choice);
+}
+
+
+void css_set_focus_no (Css *itk, int pos)
+{
+   if (itk->focus_no != pos)
+   {
+     itk->focus_no = pos;
+
+     css_lost_focus (itk);
+     ctx_queue_draw (itk->ctx);
+   }
+}
+
+CtxControl *css_hovered_control(Css *itk)
+{
+  float px = ctx_pointer_x (itk->ctx);
+  float py = ctx_pointer_y (itk->ctx);
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (px >= control->x && px <= control->x + control->width &&
+        py >= control->y && py <= control->y + control->height)
+    {
+      return control;
+    }
+  }
+  return NULL;
+}
+
+CtxControl *css_focused_control(Css *itk)
+{
+  for (CtxList *l = itk->controls; l; l=l->next)
+  {
+    CtxControl *control = l->data;
+    if (control->no == itk->focus_no)
+    {
+      return control;
+    }
+  }
+
+
+  return NULL;
+}
+
+#define CSS_DIRECTION_PREVIOUS  -1
+#define CSS_DIRECTION_NEXT       1
+#define CSS_DIRECTION_LEFT       2
+#define CSS_DIRECTION_RIGHT      3
+#define CSS_DIRECTION_UP         4
+#define CSS_DIRECTION_DOWN       5
+
+void css_focus (Css *itk, int dir)
+{
+   css_lost_focus (itk);
+   if (itk->focus_no < 0)
+   {
+     itk->focus_no = 0;
+     return;
+   }
+
+   if (dir == CSS_DIRECTION_PREVIOUS ||
+       dir == CSS_DIRECTION_NEXT)
+   {
+     itk->focus_no += dir;
+
+     int n_controls = ctx_list_length (itk->controls);
+     CtxList *iter = ctx_list_nth (itk->controls, n_controls-itk->focus_no-1);
+     if (iter)
+     {
+       CtxControl *control = iter->data;
+       itk->focus_no = control->no;
+     }
+     else
+     {
+       if (itk->focus_wraparound)
+       {
+         if (itk->focus_no > 1)
+           itk->focus_no = 0;
+         else
+           itk->focus_no = itk->control_no - 1;
+       }
+       else
+       {
+         if (itk->focus_no <= 1)
+           itk->focus_no = 0;
+         else
+           itk->focus_no = itk->control_no - 1;
+       }
+     }
+     // XXX no control means inifinie loop?
+     CtxControl *control =
+             css_focused_control (itk);
+#if 1
+     if (!control || 
+         !(control->flags & CSS_FLAG_ACTIVE)){
+       css_focus (itk, dir);
+     }
+#endif
+   }
+  else 
+  {
+    /* this implements the non-inner element portions of:
+     *   https://drafts.csswg.org/css-nav-1/#find-the-shortest-distance
+     *
+     * validity is determined by the centers of the items.
+     */
+
+    CtxControl *control = css_focused_control (itk);
+    CtxControl *best = control;
+
+    if (!best)
+       best = itk->controls->data;
+
+    float best_dist = 10000000000.0;
+    {
+      //float mid_ref_x = control->x + control->width/2;
+      //float mid_ref_y = control->y + control->height/2;
+      for (CtxList *iter = itk->controls; iter; iter=iter->next)
+      {
+        CtxControl *candidate = iter->data;
+        //float mid_cand_x = candidate->x + candidate->width/2;
+        //float mid_cand_y = candidate->y + candidate->height/2;
+
+        int valid = 0;
+        if (candidate != control)
+        switch (dir)
+        {
+          case CSS_DIRECTION_DOWN:
+            valid = candidate->y > control->y;
+            break;
+          case CSS_DIRECTION_UP:
+            valid = candidate->y < control->y;
+            break;
+          case CSS_DIRECTION_LEFT:
+            valid = candidate->x < control->x;
+            break;
+          case CSS_DIRECTION_RIGHT:
+            valid = candidate->x > control->x;
+            break;
+        }
+
+        if (valid)
+        {
+          float cand_coord[2]={0.f,0.f};
+          float control_coord[2]={0.f,0.f};
+
+          float overlap = 0.0f;
+          float orthogonalSize = 1.0f;
+          float orthogonalBias = 1.0f;
+          float orthogonalWeight = 1.0f;
+          float alignWeight = 5.0f;
+
+
+        switch (dir)
+        {
+          case CSS_DIRECTION_DOWN:
+            control_coord[1] = control->y + control->height;
+            cand_coord[1]    = candidate->y;
+            orthogonalSize   = control->width;
+            orthogonalBias   = orthogonalSize / 2.0f;
+            orthogonalWeight = 2.0f;
+
+            if (candidate->x + candidate->width < control->x)
+            {
+////    ---------- control
+///  --            candidate
+              cand_coord[0]    = candidate->x + candidate->width;
+              control_coord[0] = control->x;
+            }
+            else if (candidate->x < control->x &&
+                     candidate->x + candidate->width < control->x + control->width)
+            {
+///     ----------
+///  ------
+              cand_coord[0]    = control->x;
+              control_coord[0] = control->x;
+              overlap = (candidate->x+candidate->width) - (control->x);
+            }
+            else if (candidate->x > control->x &&
+                     candidate->x + candidate->width < control->x + control->width)
+            {
+///     ----------
+///       ------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = candidate->width;
+            }
+            else if (candidate->x < control->x &&
+                     candidate->x + candidate->width > control->x + control->width)
+            {
+///     ----------
+///   --------------
+              cand_coord[0]    = control->x;
+              control_coord[0] = control->x;
+              overlap          = control->width;
+            }
+            else if (candidate->x > control->x &&
+                     candidate->x < control->x + control->width &&
+                     candidate->x + candidate->width > control->x + control->width)
+            {
+///     ----------
+///         ----------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = control->x + control->width -
+                                 candidate->x;
+            }
+            else if (candidate->x > control->x + control->width)
+            {
+///     ----------
+///                  ------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = control->x + control->width;
+            }
+            else
+            {
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = candidate->width;
+            }
+
+            break;
+          case CSS_DIRECTION_UP:
+
+            control_coord[1] = control->y;
+            cand_coord[1]    = candidate->y + candidate->height;
+            orthogonalSize   = control->width;
+            orthogonalBias   = orthogonalSize / 2.0f;
+            orthogonalWeight = 2.0f;
+
+            if (candidate->x + candidate->width < control->x)
+            {
+////    ---------- control
+///  --            candidate
+              cand_coord[0]    = candidate->x + candidate->width;
+              control_coord[0] = control->x;
+            }
+            else if (candidate->x < control->x &&
+                     candidate->x + candidate->width < control->x + control->width)
+            {
+///     ----------
+///  ------
+              cand_coord[0]    = control->x;
+              control_coord[0] = control->x;
+              overlap = (candidate->x+candidate->width) - (control->x);
+            }
+            else if (candidate->x > control->x &&
+                     candidate->x + candidate->width < control->x + control->width)
+            {
+///     ----------
+///       ------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = candidate->width;
+            }
+            else if (candidate->x < control->x &&
+                     candidate->x + candidate->width > control->x + control->width)
+            {
+///     ----------
+///   --------------
+              cand_coord[0]    = control->x;
+              control_coord[0] = control->x;
+              overlap          = control->width;
+            }
+            else if (candidate->x > control->x &&
+                     candidate->x < control->x + control->width &&
+                     candidate->x + candidate->width > control->x + control->width)
+            {
+///     ----------
+///         ----------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = control->x + control->width -
+                                 candidate->x;
+            }
+            else if (candidate->x > control->x + control->width)
+            {
+///     ----------
+///                  ------
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = control->x + control->width;
+            }
+            else
+            {
+              cand_coord[0]    = candidate->x;
+              control_coord[0] = candidate->x;
+              overlap          = candidate->width;
+            }
+
+            break;
+          case CSS_DIRECTION_LEFT:
+            control_coord[0] = control->x;
+            cand_coord[0]    = candidate->x + candidate->width;
+            orthogonalSize   = control->height;
+            orthogonalBias   = orthogonalSize / 2.0f;
+            orthogonalWeight = 30.0f;
+
+            if (candidate->y + candidate->height < control->y)
+            {
+////    ---------- control
+///  --            candidate
+              cand_coord[1]    = candidate->y + candidate->height;
+              control_coord[1] = control->y;
+            }
+            else if (candidate->y < control->y &&
+                     candidate->y + candidate->height < control->y + control->height)
+            {
+///     ----------
+///  ------
+              cand_coord[1]    = control->y;
+              control_coord[1] = control->y;
+              overlap = (candidate->y+candidate->height) - (control->y);
+            }
+            else if (candidate->y > control->y &&
+                     candidate->y + candidate->height < control->y + control->height)
+            {
+///     ----------
+///       ------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap = candidate->height;
+            }
+            else if (candidate->y < control->y &&
+                     candidate->y + candidate->height > control->y + control->height)
+            {
+///     ----------
+///   --------------
+              cand_coord[1]    = control->y;
+              control_coord[1] = control->y;
+              overlap = control->height;
+            }
+            else if (candidate->y > control->y &&
+                     candidate->y < control->y + control->height &&
+                     candidate->y + candidate->height > control->y + control->height)
+            {
+///     ----------
+///         ----------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap = control->y + control->height - candidate->y;
+            }
+            else if (candidate->y > control->y + control->height)
+            {
+///     ----------
+///                  ------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = control->y + control->height;
+            }
+            else
+            {
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap          = candidate->height;
+            }
+
+
+
+
+            break;
+          case CSS_DIRECTION_RIGHT:
+            control_coord[0] = control->x + control->width;
+            cand_coord[0]    = candidate->x;
+            orthogonalSize   = control->height;
+            orthogonalBias   = orthogonalSize / 2.0f;
+            orthogonalWeight = 30.0f;
+
+            if (candidate->y + candidate->height < control->y)
+            {
+////    ---------- control
+///  --            candidate
+              cand_coord[1]    = candidate->y + candidate->height;
+              control_coord[1] = control->y;
+            }
+            else if (candidate->y < control->y &&
+                     candidate->y + candidate->height < control->y + control->height)
+            {
+///     ----------
+///  ------
+              cand_coord[1]    = control->y;
+              control_coord[1] = control->y;
+              overlap = (candidate->y+candidate->height) - (control->y);
+            }
+            else if (candidate->y > control->y &&
+                     candidate->y + candidate->height < control->y + control->height)
+            {
+///     ----------
+///       ------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap = candidate->height;
+            }
+            else if (candidate->y < control->y &&
+                     candidate->y + candidate->height > control->y + control->height)
+            {
+///     ----------
+///   --------------
+              cand_coord[1]    = control->y;
+              control_coord[1] = control->y;
+              overlap = control->height;
+            }
+            else if (candidate->y > control->y &&
+                     candidate->y < control->y + control->height &&
+                     candidate->y + candidate->height > control->y + control->height)
+            {
+///     ----------
+///         ----------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap = control->y + control->height - candidate->y;
+            }
+            else if (candidate->y > control->y + control->height)
+            {
+///     ----------
+///                  ------
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = control->y + control->height;
+            }
+            else
+            {
+              cand_coord[1]    = candidate->y;
+              control_coord[1] = candidate->y;
+              overlap          = candidate->height;
+            }
+
+            break;
+        }
+
+        float displacement =  0.0f;
+
+        switch (dir)
+        {
+          case CSS_DIRECTION_DOWN:
+          case CSS_DIRECTION_UP:
+            displacement = (fabsf(cand_coord[0]-control_coord[0]) +
+                    orthogonalBias) * orthogonalWeight;
+            break;
+          case CSS_DIRECTION_LEFT:
+          case CSS_DIRECTION_RIGHT:
+            displacement = (fabsf(cand_coord[1]-control_coord[1]) +
+                    orthogonalBias) * orthogonalWeight;
+            break;
+        }
+
+        float alignBias = overlap / orthogonalSize;
+        float alignment = alignWeight * alignBias;
+
+        float euclidian = hypotf (cand_coord[0]-control_coord[0],
+                                  cand_coord[1]-control_coord[1]);
+
+
+        float dist = euclidian  + displacement - alignment - sqrtf(sqrtf(overlap));
+        // here we deviate from the algorithm - giving a smaller bonus to overlap
+        // to ensure more intermediate small ones miht be chosen
+        //float dist = euclidian  + displacement - alignment - sqrtf(overlap);
+          if (dist <= best_dist)
+          {
+             best_dist = dist;
+             best = candidate;
+          }
+        }
+      }
+    }
+
+    css_set_focus_no (itk, best->no);
+  }
+}
+
+void css_key_tab (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+  if (!control) return;
+  css_focus (itk, CSS_DIRECTION_NEXT);
+
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+void css_key_shift_tab (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+  if (!control) return;
+  css_focus (itk, CSS_DIRECTION_PREVIOUS);
+
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+void css_key_return (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+  if (!control) return;
+  if (control->no == itk->focus_no)
+  {
+    switch (control->type)
+    {
+      case UI_CHOICE:
+       {
+          itk->choice_active = !itk->choice_active;
+       }
+       break;
+      case UI_ENTRY:
+       {
+         if (itk->active)
+         {
+           css_entry_commit (itk);
+         }
+         else
+         {
+           itk->entry_copy = strdup (control->entry_value);
+           itk->entry_pos = strlen (itk->entry_copy);
+           itk->active = 1;
+           itk->active_entry = control->no;
+         }
+       }
+       break;
+      case UI_SLIDER:
+        if (itk->active)
+        {
+          itk->active = 0;
+        }
+        else
+        {
+          itk->active = 1;
+        }
+        break;
+      case UI_TOGGLE:
+          itk->return_value=1;
+          break;
+      case UI_EXPANDER:
+        {
+          int *val = control->val;
+          *val = !(*val);
+        }
+        break;
+      case UI_RADIO:
+      case UI_BUTTON:
+        {
+          itk->return_value=1;
+        }
+        break;
+    }
+  }
+  event->stop_propagate=1;
+  ctx_queue_draw (event->ctx);
+}
+
+void css_key_left (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+  if (!control) return;
+
+  if (itk->active)
+  {
+  switch (control->type)
+  {
+    case UI_TOGGLE:
+    case UI_EXPANDER:
+    case UI_CHOICE:
+      css_key_return (event, data, data2);
+      break;
+    case UI_ENTRY:
+      itk->entry_pos --;
+      if (itk->entry_pos < 0)
+        itk->entry_pos = 0;
+      break;
+    case UI_SLIDER:
+      {
+        double val = control->value;
+        val -= control->step;
+        if (val < control->min)
+          val = control->min;
+
+        itk->slider_value = control->value = val;
+        itk->return_value = 1;
+      }
+      break;
+  }
+  }
+  else
+  {
+    css_focus (itk, CSS_DIRECTION_LEFT);
+  }
+
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+void css_key_right (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+  if (!control) return;
+
+  if (itk->active)
+  {
+  switch (control->type)
+  {
+    case UI_TOGGLE:
+    case UI_EXPANDER:
+    case UI_BUTTON:
+    case UI_CHOICE:
+    case UI_RADIO:
+      // css_key_return (event, data, data2);
+      break;
+    case UI_ENTRY:
+     itk->entry_pos ++;
+     if (itk->entry_pos > (int)strlen (itk->entry_copy))
+       itk->entry_pos = strlen (itk->entry_copy);
+      break;
+    case UI_SLIDER:
+      {
+        double val = control->value;
+        val += control->step;
+        if (val > control->max) val = control->max;
+
+        itk->slider_value = control->value = val;
+        itk->return_value = 1;
+      }
+      break;
+  }
+  }
+  else
+  {
+    css_focus (itk, CSS_DIRECTION_RIGHT);
+  }
+
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+void css_key_up (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+
+  if (control && control->type == UI_CHOICE && itk->choice_active)
+  {
+    int old_val = itk->choice_no;
+    int prev_val = old_val;
+    for (CtxList *l = itk->choices; l; l=l?l->next:NULL)
+    {
+      UiChoice *choice = l->data;
+      if (choice->val == old_val)
+      {
+        itk->choice_no = prev_val;
+        itk->return_value = 1;
+        l=NULL;
+      }
+      prev_val = choice->val;
+    }
+  }
+  else if (control)
+  {
+    css_focus (itk, CSS_DIRECTION_UP);
+  }
+  ctx_queue_draw (event->ctx);
+  event->stop_propagate = 1;
+}
+
+void css_key_down (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+  if (control && control->type == UI_CHOICE && itk->choice_active)
+  {
+    {
+    int old_val = itk->choice_no;
+    for (CtxList *l = itk->choices; l; l=l?l->next:NULL)
+    {
+      UiChoice *choice = l->data;
+      if (choice->val == old_val)
+      {
+         if (l->next)
+         {
+           l = l->next;
+           choice = l->data;
+           itk->choice_no = choice->val;
+           itk->return_value = 1;
+         }
+      }
+    }
+    }
+  }
+  else if (control)
+  {
+    css_focus (itk, CSS_DIRECTION_DOWN);
+  }
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+
+void css_key_backspace (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+  if (!control) return;
+  if (!itk->entry_copy) return;
+  if (!itk->active) return;
+
+  switch (control->type)
+  {
+    case UI_ENTRY:
+     {
+       if (itk->active && itk->entry_pos > 0)
+       {
+         memmove (&itk->entry_copy[itk->entry_pos-1], &itk->entry_copy[itk->entry_pos],
+                   strlen (&itk->entry_copy[itk->entry_pos] )+ 1);
+         itk->entry_pos --;
+       }
+     }
+     break;
+  }
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+void css_key_delete (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  CtxControl *control = css_focused_control (itk);
+  if (!control) return;
+  if (!itk->entry_copy) return;
+  if (!itk->active) return;
+  if ((int)strlen (itk->entry_copy) > itk->entry_pos)
+  {
+    css_key_right (event, data, data2);
+    css_key_backspace (event, data, data2);
+  }
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+void css_key_unhandled (CtxEvent *event, void *userdata, void *userdata2)
+{
+  Css *itk = userdata;
+
+  if (itk->active && itk->entry_copy)
+    {
+      const char *str = event->string;
+      if (!strcmp (str, "space"))
+        str = " ";
+
+      if (ctx_utf8_strlen (str) == 1)
+      {
+
+      char *tmp = malloc (strlen (itk->entry_copy) + strlen (str) + 1);
+
+      char *rest = strdup (&itk->entry_copy[itk->entry_pos]);
+      itk->entry_copy[itk->entry_pos]=0;
+
+      sprintf (tmp, "%s%s%s", itk->entry_copy, str, rest);
+      free (rest);
+      itk->entry_pos+=strlen(str);
+      free (itk->entry_copy);
+      itk->entry_copy = tmp;
+      ctx_queue_draw (event->ctx);
+      }
+      else
+      {
+              printf ("unhandled %s\n", str);
+      }
+    }
+  event->stop_propagate = 1;
+}
+
+void css_key_bindings (Css *itk)
+{
+  Ctx *ctx = itk->ctx;
+  ctx_add_key_binding (ctx, "tab", NULL, "focus next",            css_key_tab,       itk);
+  ctx_add_key_binding (ctx, "shift-tab", NULL, "focus previous",      css_key_shift_tab, itk);
+
+  ctx_add_key_binding (ctx, "up", NULL, "spatial focus up",        css_key_up,    itk);
+  ctx_add_key_binding (ctx, "down", NULL, "spatical focus down",   css_key_down,  itk);
+  ctx_add_key_binding (ctx, "right", NULL, "spatial focus right",  css_key_right, itk);
+  ctx_add_key_binding (ctx, "left", NULL, "spatial focus left",    css_key_left,  itk);
+
+  ctx_add_key_binding (ctx, "return", NULL, "enter/edit", css_key_return,    itk);
+  ctx_add_key_binding (ctx, "backspace", NULL, NULL,    css_key_backspace, itk);
+  ctx_add_key_binding (ctx, "delete", NULL, NULL,       css_key_delete,    itk);
+  ctx_add_key_binding (ctx, "any", NULL, NULL,          css_key_unhandled, itk);
+}
+
+#if 0
+static void css_choice_set (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  itk->choice_no = (size_t)(data2);
+  itk->return_value = 1;
+  ctx_queue_draw (event->ctx);
+  event->stop_propagate = 1;
+}
+#endif
+
+void ctx_event_block (CtxEvent *event, void *data, void *data2)
+{
+  Css *itk = data;
+  itk->choice_active = 0;
+  event->stop_propagate = 1;
+  ctx_queue_draw (event->ctx);
+}
+
+void css_done (Css *itk)
+{
+  Ctx *ctx = itk->ctx;
+
+  CtxControl *control = css_focused_control (itk);
+#if 0
+  CtxControl *hovered_control = css_hovered_control (itk);
+  int hovered_no = hovered_control ? hovered_control->no : -1;
+
+  if (itk->hovered_no != hovered_no)
+  {
+    itk->hovered_no = hovered_no;
+    ctx_queue_draw (ctx);
+  }
+#endif
+
+  if (!control){
+    ctx_restore (ctx);
+    return;
+  }
+
+  ctx_restore (ctx);
+}
+
+int ctx_renderer_is_sdl (Ctx *ctx);
+int ctx_renderer_is_fb  (Ctx *ctx);
+
+extern int ctx_show_fps;
+
+void
+css_ctx_settings (Css *itk)
+{
+#ifdef CTX_MAX_THREADS
+  static int ctx_settings = 0;
+  static int inited = 0;
+  static int threads;
+  //static int hash_cache_enabled;
+  Ctx *ctx = itk->ctx;
+
+  if (!inited){
+    if (!ctx_backend_is_tiled (ctx))
+       return;
+    inited = 1;
+    threads = ctx_get_render_threads (ctx);
+    //hash_cache_enabled = ctx_get_hash_cache (ctx);
+  }
+  if (css_expander (itk, "CTX settings", &ctx_settings))
+  {
+#if 0
+    hash_cache_enabled = css_toggle (itk, "hash cache", hash_cache_enabled);
+    if (hash_cache_enabled != ctx_get_hash_cache (ctx)){
+      ctx_set_hash_cache (ctx, hash_cache_enabled);
+    }
+#endif
+    
+#if CTX_SDL
+    ctx_show_fps = css_toggle (itk, "fps debug", ctx_show_fps);
+#endif
+    threads = css_slider (itk, "threads", threads, 1, CTX_MAX_THREADS, 1);
+    if (threads != ctx_get_render_threads (ctx))
+    {
+      ctx_set_render_threads (ctx, threads);
+    }
+  }
+#endif
+}
+
+void
+css_css_settings (Css *itk)
+{
+   static int css_settings = 0;
+   if (css_expander (itk, "Css settings", &css_settings))
+   {
+     //itk->focus_wraparound = css_toggle (itk, "focus wraparound", itk->focus_wraparound);
+     //enable_keybindings = css_toggle (itk, "enable keybindings", enable_keybindings);
+     //itk->light_mode = css_toggle (itk, "light mode", itk->light_mode);
+
+     itk->scale     = css_slider (itk, "global scale", itk->scale, 0.1, 8.0, 0.1);
+     itk->font_size = css_slider (itk, "font size ", itk->font_size, 3.0, 60.0, 0.25);
+
+     // these will go away with css styling merged.
+     css_slider_float (itk, "vgap", &itk->rel_vgap, 0.0, 3.0, 0.02);
+     css_slider_float (itk, "scroll speed", &itk->scroll_speed, 0.0, 1.0, 0.01);
+     css_slider_float (itk, "ver advance", &itk->rel_ver_advance, 0.1, 4.0, 0.01);
+     css_slider_float (itk, "hmargin", &itk->rel_hmargin, 0.0, 40.0, 0.1);
+     css_slider_float (itk, "vmargin", &itk->rel_vmargin, 0.0, 40.0, 0.1);
+     css_slider_float (itk, "label width", &itk->label_width, 0.0, 40.0, 0.02);
+   }
+}
+
+void css_key_quit (CtxEvent *event, void *userdata, void *userdata2)
+{
+  ctx_exit (event->ctx);
+}
+
+int _css_key_bindings_active = 1;
+
+static int
+css_iteration (double time, void *data)
+{
+  Css *itk = (Css*)data;
+  Ctx *ctx = itk->ctx;
+  int   ret_val = 1;
+
+    if (1 || ctx_need_redraw (ctx))
+    {
+      css_reset (itk);
+      if (_css_key_bindings_active)
+        css_key_bindings (itk);
+      ctx_add_key_binding (itk->ctx, "control-q", NULL, "Quit", css_key_quit, NULL);
+      if (itk->ui_fun)
+      ret_val = itk->ui_fun (itk, itk->ui_data);
+
+      css_done (itk);
+      ctx_end_frame (ctx);
+    }
+
+    return ret_val;
+}
+
+#ifdef EMSCRIPTEN
+#include <emscripten/html5.h>
+#endif
+
+void css_run_ui (Css *itk, int (*ui_fun)(Css *itk, void *data), void *ui_data)
+{
+  itk->ui_fun  = ui_fun;
+  itk->ui_data = ui_data;
+  int  ret_val = 1;
+
+#ifdef EMSCRIPTEN
+#ifdef ASYNCIFY
+  while (!ctx_has_exited (itk->ctx) && (ret_val == 1))
+  {
+    ret_val = css_iteration (0.0, itk);
+  }
+#else
+  emscripten_request_animation_frame_loop (css_iteration, itk);
+  return;
+#endif
+#else
+  while (!ctx_has_exited (itk->ctx) && (ret_val == 1))
+  {
+    ret_val = css_iteration (0.0, itk);
+  }
+#endif
+}
+
+void css_main (int (*ui_fun)(Css *itk, void *data), void *ui_data)
+{
+  Ctx *ctx = ctx_new (-1, -1, NULL);
+  Css  *itk = css_new (ctx);
+  css_run_ui (itk, ui_fun, ui_data);
+  css_destroy (itk);
+  ctx_destroy (ctx);
+}
+
+
+float       css_x            (Css *itk)
+{
+  return itk->x;
+}
+float       css_y            (Css *itk)
+{
+  return itk->y;
+}
+void css_set_x  (Css *itk, float x)
+{
+  itk->x = x;
+}
+void css_set_y  (Css *itk, float y)
+{
+  itk->y = y;
+}
+void css_set_xy  (Css *itk, float x, float y)
+{
+  itk->x = x;
+  itk->y = y;
+}
+
+
+void css_set_height (Css *itk, float height)
+{
+   itk->height = height;
+   itk->edge_bottom = itk->edge_top + height;
+   css_set_edge_top ((Css*)itk, itk->edge_top);
+   css_set_edge_bottom ((Css*)itk, itk->edge_bottom);
+}
+
+float css_edge_bottom (Css *itk)
+{
+   return itk->edge_bottom ;
+}
+float css_edge_top (Css *itk)
+{
+   return itk->edge_top ;
+}
+float css_edge_left (Css *itk)
+{
+   return itk->edge_left;
+}
+float css_height (Css *itk)
+{
+   return itk->height;
+}
+float css_wrap_width (Css *itk)
+{
+    return itk->width; // XXX compute from edges:w
+}
+void css_set_wrap_width (Css *itk, float wwidth)
+{
+    itk->width = wwidth;
+    itk->edge_right = itk->edge_left + wwidth;
+    css_set_edge_right ((Css*)itk, itk->edge_right);
+    css_set_edge_left ((Css*)itk, itk->edge_left);
+}
+
+float css_edge_right (Css *itk)
+{
+   return itk->edge_right;
+}
+
+Ctx *css_ctx (Css *itk)
+{
+  return itk->ctx;
+}
+
+void css_set_scale (Css *itk, float scale)
+{
+  itk->scale = scale;
+  ctx_queue_draw (itk->ctx);
+}
+
+float css_scale (Css *itk)
+{
+  return itk->scale;
+}
+
+int css_focus_no (Css *itk)
+{
+  return itk->focus_no;
+}
+
+int css_is_editing_entry (Css *itk)
+{
+  return itk->entry_copy != NULL;
+}
+
+int  css_control_no (Css *itk)
+{
+  return itk->control_no;
+}
+
+float css_panel_scroll (Css *itk)
+{
+  CssPanel *panel = itk->panel;
+  if (!panel)
+    panel = itk->panels?itk->panels->data:NULL;
+  if (!panel) return 0.0f;
+  return panel->scroll;
+}
+
+void css_panel_set_scroll (Css *itk, float scroll)
+{
+  CssPanel *panel = itk->panel;
+  if (!panel)
+    panel = itk->panels?itk->panels->data:NULL;
+  if (!panel) return;
+  if (scroll < 0.0) scroll = 0.0f;
+    panel->scroll = scroll;
+  ctx_queue_draw (itk->ctx);
+}
+
 #endif

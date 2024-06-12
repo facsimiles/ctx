@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "itk.h"
+#include "ctx.h"
 
 int interactive = 0;
 static float zoom = 1.0f;
@@ -52,7 +52,7 @@ void drag_pos (CtxEvent *e, void *data1, void *data2)
 
 typedef struct Mr
 {
-  ITK  *itk;
+  Css  *itk;
   char *uri;
   int   mode;
 
@@ -68,7 +68,7 @@ browser_set_uri (Mr *mr, const char *uri)
   else
     mr->uri = NULL;
 
-  ctx_queue_draw (itk_ctx(mr->itk));
+  ctx_queue_draw (css_ctx(mr->itk));
 }
 
 #include <sys/types.h>
@@ -135,12 +135,12 @@ static const char *magic_mime (const char *data, int length)
   return "text/plain";
 }
 
-int itk_xml_extent (ITK *itk, uint8_t *contents, float *width, float *height, float *vb_x, float *vb_y, float *vb_width, float *vb_height);
+int css_xml_extent (Css *itk, uint8_t *contents, float *width, float *height, float *vb_x, float *vb_y, float *vb_width, float *vb_height);
 
-static int render_ui (ITK *itk, void *data)
+static int render_ui (Css *itk, void *data)
 {
   Mr *mr = data;
-  Ctx *ctx = itk_ctx (itk);
+  Ctx *ctx = css_ctx (itk);
   char *contents = NULL;
   long  length;
 
@@ -171,19 +171,19 @@ static int render_ui (ITK *itk, void *data)
     
     if (!strcmp (mime_type, "text/plain"))
     {
-      itk_printf (itk, "%s", contents);
+      css_printf (itk, "%s", contents);
     }
     else if (!strcmp (mime_type, "text/html") ||
              !strcmp (mime_type, "text/xml") ||
              !strcmp (mime_type, "text/svg"))
     {
-      //itk_stylesheet_clear (mrg);
+      //css_stylesheet_clear (mrg);
       float vb_x = 0;
       float vb_y = 0;
       float vb_width = 0;
       float vb_height = 0;
 
-      itk_xml_extent (itk, contents, NULL, NULL, &vb_x, &vb_y, &vb_width, &vb_height);
+      css_xml_extent (itk, (unsigned char*)contents, NULL, NULL, &vb_x, &vb_y, &vb_width, &vb_height);
 
       float factor_h = ctx_height (ctx) / vb_height;
       factor = ctx_width (ctx) / vb_width;
@@ -193,12 +193,12 @@ static int render_ui (ITK *itk, void *data)
 
       ctx_save (ctx);
 
-      itk_xml_render (itk, mr->uri, href_cb, mr, NULL, NULL, contents);
+      css_xml_render (itk, mr->uri, href_cb, mr, NULL, NULL, contents);
       ctx_restore (ctx);
     }
     else
     {
-      itk_printf (itk, "\nUnhandled mimetype\n\n[%s]", mime_type);
+      css_printf (itk, "\nUnhandled mimetype\n\n[%s]", mime_type);
     }
     free (contents);
   }
@@ -250,14 +250,14 @@ int browser_main (int argc, char **argv)
     ctx = ctx_new (-1, -1, NULL);
   else
     ctx = ctx_new_drawlist (640, 480);
-  ITK *itk = itk_new (ctx);
+  Css *itk = css_new (ctx);
   mr->itk = itk;
 
   ctx_stylesheet_add (itk, "document { background: #ffff;}", NULL, 25, NULL);
 //  ctx_stylesheet_add (itk, "svg { background: none;}", NULL, 25, NULL);
 
   if (interactive)
-    itk_run_ui (itk, render_ui, mr);
+    css_run_ui (itk, render_ui, mr);
   else
   {
 #if CTX_FORMATTER
@@ -268,9 +268,7 @@ int browser_main (int argc, char **argv)
 #endif
   }
 
-  itk_free (itk);
-
-
+  css_destroy (itk);
   ctx_destroy (ctx);
 
   free (mr->uri);

@@ -8316,7 +8316,7 @@ static void test_popup (Ctx *ctx, void *data)
 }
 #endif
 
-void itk_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
+void css_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
 
 void vt_use_images (VT *vt, Ctx *ctx)
 {
@@ -8420,13 +8420,13 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                      (vt->rows) * vt->ch);
       if (vt->reverse_video)
         {
-          //itk_style_color (ctx, "terminal-bg-reverse");
+          //css_style_color (ctx, "terminal-bg-reverse");
           ctx_rgba (ctx, 1.0,1.0,1.0,1.0f);
           ctx_fill  (ctx);
         }
       else
         {
-          //itk_style_color (ctx, "terminal-bg");
+          //css_style_color (ctx, "terminal-bg");
           ctx_rgba (ctx,0,0,0,1.0f);
           ctx_fill  (ctx);
         }
