@@ -32,8 +32,6 @@
 #define CTX_RASTERIZER_ALLOW_DIRECT 1
 /* for misc storage with compressed/
    variable size for each save|restore*/
-#define CTX_STRINGPOOL_SIZE      10000 // default: 2000
-				       //
 #define CTX_MIN_JOURNAL_SIZE     1024 // default: 512 ~4kb
 #define CTX_MAX_JOURNAL_SIZE     1024*1024*8 // default: 1024*1024*8 // 72mb
 #define CTX_MIN_EDGE_LIST_SIZE   1024*16     // default: 1024*4

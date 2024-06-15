@@ -356,8 +356,9 @@ struct _CtxState
                            */
 #endif
   CtxKeyDbEntry keydb[CTX_MAX_KEYDB];
-  char          stringpool[CTX_STRINGPOOL_SIZE];
   CtxGState     gstate_stack[CTX_MAX_STATES];//at end, so can be made dynamic
+  char         *stringpool;
+  int           stringpool_size;
 };
 
 

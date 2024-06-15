@@ -2297,6 +2297,13 @@ ctx_destroy (Ctx *ctx)
      return;
    }
 
+   if (ctx->state.stringpool)
+   {
+     ctx_free (ctx->state.stringpool);
+     ctx->state.stringpool = NULL;
+     ctx->state.stringpool_size = 0;
+   }
+
 #if CTX_VT
   while (ctx_clients (ctx))
     ctx_client_remove (ctx, ctx_clients(ctx)->data);

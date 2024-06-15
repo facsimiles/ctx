@@ -36,7 +36,9 @@ static void ctx_state_set (CtxState *state, uint32_t key, float value)
 
 
 #define CTX_KEYDB_STRING_START (-90000.0f)
-#define CTX_KEYDB_STRING_END   (CTX_KEYDB_STRING_START + CTX_STRINGPOOL_SIZE)
+// XXX : hard-coded as 32kb - breaking above, used to be set from hardcoded
+// limits with static stringpool size
+#define CTX_KEYDB_STRING_END   (CTX_KEYDB_STRING_START + 32000)
 
 static int ctx_float_is_string (float val)
 {
@@ -93,18 +95,20 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
 {
   int idx = state->gstate.stringpool_pos;
 
-  if (idx + len + 1 >= CTX_STRINGPOOL_SIZE)
+  if (idx + len + 1 >= state->stringpool_size - 512)
   {
-    ctx_log ("blowing varpool size [%c..]\n", data[0]);
+    int desired = idx + len + 1 + 1024;
+   // ctx_log ("blowing varpool size [%c..]\n", data[0]);
     //fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);
-#if 0
-    for (int i = 0; i< CTX_STRINGPOOL_SIZE; i++)
+    void *copy = ctx_malloc (desired);
+    if (!copy) return;
+    if (state->stringpool)
     {
-       if (i==0) fprintf (stderr, "\n%i ", i);
-       else      fprintf (stderr, "%c", state->stringpool[i]);
+      memcpy (copy, state->stringpool, state->gstate.stringpool_pos);
+      ctx_free (state->stringpool);
     }
-#endif
-    return;
+    state->stringpool = copy;
+    state->stringpool_size = desired;
   }
 
   memcpy (&state->stringpool[idx], data, len);
