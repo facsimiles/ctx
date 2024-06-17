@@ -409,6 +409,8 @@ void ctx_define_texture (Ctx *ctx,
   char ascii[41]="";
   int dst_stride = width;
   //fprintf (stderr, "df %s\n", eid);
+  //
+
 
   dst_stride = ctx_pixel_format_get_stride ((CtxPixelFormat)format, width);
   if (stride <= 0)
@@ -500,62 +502,67 @@ void ctx_define_texture (Ctx *ctx,
   else
 
   {
-    CtxEntry *commands;
-    int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
-    if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
+    if (ctx_backend_type (ctx->texture_cache) == CTX_BACKEND_RASTERIZER)
     {
-       commands = (CtxEntry*)ctx_calloc (sizeof (CtxEntry), command_size);
+       ctx_rasterizer_define_texture (
+		(CtxRasterizer*)ctx->texture_cache->backend,
+		eid, width, height, format, data);
     }
     else
     {
-       commands = NULL;
-       ctx_drawlist_resize (&ctx->drawlist, ctx->drawlist.count + command_size);
-       commands = &(ctx->drawlist.entries[ctx->drawlist.count]);
-       memset (commands, 0, sizeof (CtxEntry) * command_size);
-    }
-    /* bottleneck,  we can avoid copying sometimes - and even when copying
-     * we should cut this down to one copy, direct to the drawlist.
-     *
-     */
-    commands[0] = ctx_u32 (CTX_DEFINE_TEXTURE, width, height);
-    commands[1].data.u16[0] = format;
-
-    int pos = 2;
-
-    commands[pos].code        = CTX_DATA;
-    commands[pos].data.u32[0] = eid_len;
-    commands[pos].data.u32[1] = (eid_len+1+1)/9 + 1;
-    memcpy ((char *) &commands[pos+1].data.u8[0], eid, eid_len);
-    ((char *) &commands[pos+1].data.u8[0])[eid_len]=0;
-
-    pos = 2 + 1 + ctx_conts_for_entry (&commands[2]);
-    commands[pos].code        = CTX_DATA;
-    commands[pos].data.u32[0] = data_len;
-    commands[pos].data.u32[1] = (data_len+1+1)/9 + 1;
-    {
-      uint8_t *src = (uint8_t*)data;
-      uint8_t *dst = &commands[pos+1].data.u8[0];
-#if 1
-      memcpy (dst, src, data_len);
-#else
-      for (int y = 0; y < height; y++)
+      CtxEntry *commands;
+      int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
+      if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
       {
-         memcpy (dst, src, dst_stride);
-         src += stride;
-         dst += dst_stride;
+         commands = (CtxEntry*)ctx_calloc (sizeof (CtxEntry), command_size);
       }
-#endif
-    }
-    ((char *) &commands[pos+1].data.u8[0])[data_len]=0;
-
-    if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
-    {
-      ctx_process (ctx, commands);
-      ctx_free (commands);
-    }
-    else
-    {
-       ctx->drawlist.count += ctx_conts_for_entry (commands) + 1;
+      else
+      {
+         commands = NULL;
+         ctx_drawlist_resize (&ctx->drawlist, ctx->drawlist.count + command_size);
+         commands = &(ctx->drawlist.entries[ctx->drawlist.count]);
+         memset (commands, 0, sizeof (CtxEntry) * command_size);
+      }
+      commands[0] = ctx_u32 (CTX_DEFINE_TEXTURE, width, height);
+      commands[1].data.u16[0] = format;
+  
+      int pos = 2;
+  
+      commands[pos].code        = CTX_DATA;
+      commands[pos].data.u32[0] = eid_len;
+      commands[pos].data.u32[1] = (eid_len+1+1)/9 + 1;
+      memcpy ((char *) &commands[pos+1].data.u8[0], eid, eid_len);
+      ((char *) &commands[pos+1].data.u8[0])[eid_len]=0;
+  
+      pos = 2 + 1 + ctx_conts_for_entry (&commands[2]);
+      commands[pos].code        = CTX_DATA;
+      commands[pos].data.u32[0] = data_len;
+      commands[pos].data.u32[1] = (data_len+1+1)/9 + 1;
+      {
+        uint8_t *src = (uint8_t*)data;
+        uint8_t *dst = &commands[pos+1].data.u8[0];
+  #if 1
+        memcpy (dst, src, data_len);
+  #else
+        for (int y = 0; y < height; y++)
+        {
+           memcpy (dst, src, dst_stride);
+           src += stride;
+           dst += dst_stride;
+        }
+  #endif
+      }
+      ((char *) &commands[pos+1].data.u8[0])[data_len]=0;
+  
+      if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
+      {
+        ctx_process (ctx, commands);
+        ctx_free (commands);
+      }
+      else
+      {
+         ctx->drawlist.count += ctx_conts_for_entry (commands) + 1;
+      }
     }
 
     CtxEidInfo *eid_info = (CtxEidInfo*)ctx_calloc (sizeof (CtxEidInfo), 1);
@@ -739,7 +746,7 @@ static void ctx_draw_svg_clipped (Ctx *ctx, const char *path, float x, float y, 
     {
       /* evict expired cached svg sprites */
       {
-	CtxSvgCache *prev = NULL, *iter;
+	CtxSvgCache *prev = NULL;
 
 	for (CtxSvgCache *iter = ctx_svg_cache; iter; iter=iter->next)
 	{
