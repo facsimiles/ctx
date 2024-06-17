@@ -470,23 +470,27 @@ void ctx_define_texture (Ctx *ctx,
 
   int redefine = 0;
   int valid = ctx_eid_valid (ctx, eid, 0, 0); // marks it as valid
+					     
   if (valid && (eid[0] == '!') && ctx->texture_cache)
   {
     for (int i = 0; i < CTX_MAX_TEXTURES; i++)
-      if (ctx->texture_cache->texture[i].data &&
-          ctx->texture_cache->texture[i].eid &&
-          (!strcmp (eid, ctx->texture_cache->texture[i].eid)) &&
-          (ctx->texture_cache->texture[i].width == width) &&
-          (ctx->texture_cache->texture[i].height == height) &&
-          (ctx->texture_cache->texture[i].stride == stride) &&
-          (ctx->texture_cache->texture[i].format->pixel_format == format))
+    {
+      CtxBuffer *buffer = &(ctx->texture_cache->texture[i]);
+      if (buffer->data &&
+          buffer->eid &&
+          (!strcmp (eid, buffer->eid)) &&
+          (buffer->width == width) &&
+          (buffer->height == height) &&
+          (buffer->stride == stride) &&
+          (buffer->format->pixel_format == format))
       {
-        memcpy (ctx->texture_cache->texture[i].data, data, data_len);
+        memcpy (buffer->data, data, data_len);
         ctx_texture (ctx, eid, 0.0f, 0.0f);
         return;
       }
-     ctx_drop_eid (ctx, eid);
-     redefine = 1;
+    }
+    ctx_drop_eid (ctx, eid);
+    redefine = 1;
    }
 
   if ((!redefine) && valid)
