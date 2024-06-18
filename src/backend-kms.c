@@ -529,7 +529,6 @@ Ctx *ctx_new_kms (int width, int height)
 
   ctx_set_backend (backend->ctx, fb);
   ctx_set_backend (tiled->ctx_copy, fb);
-  ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
   backend->end_frame = ctx_tiled_end_frame;
   backend->start_frame = ctx_kms_start_frame;
@@ -549,6 +548,8 @@ Ctx *ctx_new_kms (int width, int height)
     ((CtxRasterizer*)(tiled->host[i]->backend))->swap_red_green = 1;
     ctx_set_texture_source (tiled->host[i], backend->ctx);
   }
+  ctx_set_texture_cache (tiled->ctx_copy, tiled->host[0]);
+  ctx_set_texture_cache (backend->ctx, tiled->host[0]);
 
   mtx_init (&tiled->mtx, mtx_plain);
   cnd_init (&tiled->cond);

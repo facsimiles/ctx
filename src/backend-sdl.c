@@ -506,7 +506,6 @@ Ctx *ctx_new_sdl (int width, int height)
   tiled->rows     = 20;
   ctx_set_backend (backend->ctx, sdl);
   ctx_set_backend (tiled->ctx_copy, sdl);
-  ctx_set_texture_cache (tiled->ctx_copy, backend->ctx);
 
   tiled->pixels = (uint8_t*)ctx_malloc (width * height * 4);
   tiled->show_frame = (void*)ctx_sdl_show_frame;
@@ -530,6 +529,8 @@ Ctx *ctx_new_sdl (int width, int height)
     ctx_set_texture_source (tiled->host[i], backend->ctx);
   }
 
+  ctx_set_texture_cache (tiled->ctx_copy, tiled->host[0]);
+  ctx_set_texture_cache (backend->ctx, tiled->host[0]);
   mtx_init (&tiled->mtx, mtx_plain);
   cnd_init (&tiled->cond);
 

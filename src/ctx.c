@@ -502,11 +502,13 @@ void ctx_define_texture (Ctx *ctx,
   else
 
   {
+    int do_texture = 0;
     if (ctx_backend_type (ctx->texture_cache) == CTX_BACKEND_RASTERIZER)
     {
        ctx_rasterizer_define_texture (
 		(CtxRasterizer*)ctx->texture_cache->backend,
 		eid, width, height, format, data);
+       do_texture = 1;
     }
     else
     {
@@ -565,13 +567,17 @@ void ctx_define_texture (Ctx *ctx,
       }
     }
 
-    CtxEidInfo *eid_info = (CtxEidInfo*)ctx_calloc (sizeof (CtxEidInfo), 1);
-    eid_info->width      = width;
-    eid_info->height     = height;
-    eid_info->frame      = ctx->texture_cache->frame;
-    //fprintf (stderr, "%i\n", eid_info->frame);
-    eid_info->eid        = ctx_strdup (eid);
-    ctx_list_prepend (&ctx->texture_cache->eid_db, eid_info);
+    {
+      CtxEidInfo *eid_info = (CtxEidInfo*)ctx_calloc (sizeof (CtxEidInfo), 1);
+      eid_info->width      = width;
+      eid_info->height     = height;
+      eid_info->frame      = ctx->texture_cache->frame;
+      eid_info->eid        = ctx_strdup (eid);
+      ctx_list_append (&ctx->texture_cache->eid_db, eid_info);
+    }
+
+    if (do_texture)
+      ctx_texture (ctx, eid, 0.0f, 0.0f);
   }
 
 }
