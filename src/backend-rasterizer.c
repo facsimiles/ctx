@@ -2133,7 +2133,8 @@ ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                                int            width,
                                int            height,
                                int            format,
-                               char unsigned *data)
+                               char unsigned *data,
+			       int            steal_data)
 {
   _ctx_texture_lock (); // we're using the same texture_source from all threads, keeping allocaitons down
                         // need synchronizing (it could be better to do a pre-pass)
@@ -2149,7 +2150,7 @@ ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                     NULL,
 #endif
                     data,
-                    ctx_buffer_pixels_free, (void*)23);
+                    ctx_buffer_pixels_free, (steal_data?(void*)0:(void*)23));
                     /*  when userdata for ctx_buffer_pixels_free is 23, texture_init dups the data on
                      *  use
                      */
@@ -3879,7 +3880,7 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
           ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
                                          c->define_texture.width, c->define_texture.height,
                                          c->define_texture.format,
-                                         pixel_data);
+                                         pixel_data, 0);
           rasterizer->comp_op = NULL;
           rasterizer->fragment = NULL;
         }

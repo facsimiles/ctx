@@ -400,10 +400,10 @@ ctx_set_textureclock (Ctx *ctx, int textureclock)
    ctx->frame = textureclock;
 }
 
-void ctx_define_texture (Ctx *ctx,
+static void ctx_define_texture_full (Ctx *ctx,
                          const char *eid,
                          int width, int height, int stride, int format, void *data,
-                         char *ret_eid)
+                         char *ret_eid, int steal_data)
 {
   uint8_t hash[20]="";
   char ascii[41]="";
@@ -507,7 +507,7 @@ void ctx_define_texture (Ctx *ctx,
     {
        ctx_rasterizer_define_texture (
 		(CtxRasterizer*)ctx->texture_cache->backend,
-		eid, width, height, format, data);
+		eid, width, height, format, data, steal_data);
        do_texture = 1;
     }
     else
@@ -579,7 +579,17 @@ void ctx_define_texture (Ctx *ctx,
     if (do_texture)
       ctx_texture (ctx, eid, 0.0f, 0.0f);
   }
+}
 
+void ctx_define_texture (Ctx *ctx,
+                         const char *eid,
+                         int width, int height, int stride, int format, void *data,
+                         char *ret_eid)
+{
+  ctx_define_texture_full (ctx,
+                         eid,
+                         width, height, stride, format, data,
+                         ret_eid, 0);
 }
 
 void
@@ -653,8 +663,7 @@ ctx_texture_load (Ctx *ctx, const char *path, int *tw, int *th, char *reid)
     }
     if (tw) *tw = w;
     if (th) *th = h;
-    ctx_define_texture (ctx, eid, w, h, w * components, pixel_format, pixels, reid);
-    ctx_free (pixels);
+    ctx_define_texture_full (ctx, eid, w, h, w * components, pixel_format, pixels, reid, 1);
   }
   else
   {
