@@ -37,7 +37,7 @@ static inline void ctx_formatter_addstrf (CtxFormatter *formatter, const char *f
 
 
 static void
-ctx_print_int (CtxFormatter *formatter, int val)
+ctx_print_int (CtxFormatter *formatter, int val, int strip_zero)
 {
   char buf[64];
   char *bp = &buf[0];
@@ -66,6 +66,12 @@ ctx_print_int (CtxFormatter *formatter, int val)
     bp[len-1-i] = tmp;
   }
   len += (val < 0);
+  if (strip_zero)
+    for (int i = len-1; i; i--)
+    {
+      if (buf[i]=='0'){ buf[i] = 0;len--;}
+      else break;
+    }
   ctx_formatter_addstr (formatter, buf, len);
 }
 
@@ -89,7 +95,7 @@ ctx_print_float (CtxFormatter *formatter, float val)
   }
   else
   {
-    ctx_print_int (formatter, (int)val);
+    ctx_print_int (formatter, (int)val, 0);
   }
 
 
@@ -100,7 +106,7 @@ ctx_print_float (CtxFormatter *formatter, float val)
       ctx_formatter_addstr (formatter, "0", 1);
     if (remainder < 100)
       ctx_formatter_addstr (formatter, "0", 1);
-    ctx_print_int (formatter, remainder);
+    ctx_print_int (formatter, remainder, 1);
   }
 }
 
@@ -427,13 +433,13 @@ ctx_print_entry_enum (CtxFormatter *formatter, CtxEntry *entry, int args)
             }
           else
             {
-              ctx_print_int (formatter, val);
+              ctx_print_int (formatter, val, 0);
             }
         }
       else
 #endif
         {
-          ctx_print_int (formatter, val);
+          ctx_print_int (formatter, val, 0);
         }
     }
   _ctx_print_endcmd (formatter);
@@ -515,7 +521,7 @@ static void
 ctx_print_glyph (CtxFormatter *formatter, CtxEntry *entry, int args)
 {
   _ctx_print_name (formatter, entry->code);
-  ctx_print_int (formatter, entry->data.u32[0]);
+  ctx_print_int (formatter, entry->data.u32[0], 0);
   _ctx_print_endcmd (formatter);
 }
 
@@ -563,11 +569,11 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
         ctx_formatter_addstr (formatter, "\"", 1);
         ctx_print_escaped_string (formatter, c->define_texture.eid);
         ctx_formatter_addstr (formatter, "\", ", 2);
-        ctx_print_int (formatter, c->define_texture.width);
+        ctx_print_int (formatter, c->define_texture.width, 0);
         ctx_formatter_addstr (formatter, ", ", 2);
-        ctx_print_int (formatter, c->define_texture.height);
+        ctx_print_int (formatter, c->define_texture.height, 0);
         ctx_formatter_addstr (formatter, ", ", 2);
-        ctx_print_int (formatter, c->define_texture.format);
+        ctx_print_int (formatter, c->define_texture.format, 0);
         ctx_formatter_addstr (formatter, ", ", 2);
 
         uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);

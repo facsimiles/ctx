@@ -198,7 +198,7 @@ void view_text(Ui *ui, const char *path) {
       ctx_rgba(ctx, 1, 0, 0, 0.5f);                                            \
       float cursor_x = x - part_width;                                         \
       float cursor_width = cw;                                                 \
-      ctx_rectangle(ctx, cursor_x - cursor_width / 2, y - font_size * 0.8,     \
+      ctx_rectangle(ctx, cursor_x - cursor_width / 2, y - font_size * 0.8f,    \
                     cursor_width, font_size);                                  \
       if (text->cursor_x < 0.0f)                                               \
         text->cursor_x = cursor_x;                                             \
