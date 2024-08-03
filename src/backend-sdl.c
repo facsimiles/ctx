@@ -392,7 +392,7 @@ void ctx_sdl_consume_events (Ctx *ctx)
           sdl->texture = SDL_CreateTexture (sdl->backend, SDL_PIXELFORMAT_ABGR8888,
                           SDL_TEXTUREACCESS_STREAMING, width, height);
           ctx_free (tiled->pixels);
-          tiled->pixels = ctx_calloc (4, width * height);
+          tiled->pixels = ctx_calloc (width * height, 4);
 
           tiled->width  = width;
           tiled->height = height;
@@ -463,7 +463,7 @@ Ctx *ctx_new_sdl (int width, int height)
 {
 #if CTX_RASTERIZER
 
-  CtxSDL *sdl = (CtxSDL*)ctx_calloc (sizeof (CtxSDL), 1);
+  CtxSDL *sdl = (CtxSDL*)ctx_calloc (1, sizeof (CtxSDL));
   CtxTiled *tiled = (void*)sdl;
   CtxBackend *backend = (CtxBackend*)sdl;
 #if CTX_BABL

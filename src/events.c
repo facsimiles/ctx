@@ -675,7 +675,7 @@ void ctx_remove_idle (Ctx *ctx, int handle)
 int ctx_add_timeout_full (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                           void (*destroy_notify)(void *destroy_data), void *destroy_data)
 {
-  CtxIdleCb *item = (CtxIdleCb*)ctx_calloc (sizeof (CtxIdleCb), 1);
+  CtxIdleCb *item = (CtxIdleCb*)ctx_calloc (1, sizeof (CtxIdleCb));
   item->cb              = idle_cb;
   item->idle_data       = idle_data;
   item->id              = ++ctx->events.idle_id;
@@ -698,7 +698,7 @@ int ctx_add_timeout (Ctx *ctx, int ms, int (*idle_cb)(Ctx *ctx, void *idle_data)
 int ctx_add_idle_full (Ctx *ctx, int (*idle_cb)(Ctx *ctx, void *idle_data), void *idle_data,
                                  void (*destroy_notify)(void *destroy_data), void *destroy_data)
 {
-  CtxIdleCb *item = (CtxIdleCb*)ctx_calloc (sizeof (CtxIdleCb), 1);
+  CtxIdleCb *item = (CtxIdleCb*)ctx_calloc (1, sizeof (CtxIdleCb));
   item->cb = idle_cb;
   item->idle_data = idle_data;
   item->id = ++ctx->events.idle_id;
@@ -881,7 +881,7 @@ void ctx_listen_full (Ctx     *ctx,
       }
     }
 
-    item = ctx_calloc (sizeof (CtxItem), 1);
+    item = ctx_calloc (1, sizeof (CtxItem));
     item->x0 = x;
     item->y0 = y;
     item->x1 = x + width;

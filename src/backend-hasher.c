@@ -621,7 +621,7 @@ Ctx *ctx_hasher_new (int width, int height, int cols, int rows, CtxDrawlist *dra
 {
   Ctx *ctx           = _ctx_new_drawlist (width, height);
   CtxState    *state = &ctx->state;
-  CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (sizeof (CtxHasher), 1);
+  CtxRasterizer *rasterizer = (CtxRasterizer *) ctx_calloc (1, sizeof (CtxHasher));
   ctx_hasher_init (rasterizer, ctx, state, width, height, cols, rows, drawlist);
   ctx_set_backend (ctx, (void*)rasterizer);
   return ctx;

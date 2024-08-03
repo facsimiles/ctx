@@ -130,7 +130,7 @@ Ctx *ctx_new_thread (int width, int height)
 {
   float font_size = 12.0;
   Ctx    *ctx    = ctx_new ();
-  CtxThread  *thread = (CtxThread*)ctx_calloc (sizeof (CtxThread), 1);
+  CtxThread  *thread = (CtxThread*)ctx_calloc (1, sizeof (CtxThread));
   CtxBackend *backend = (CtxBackend*)thread;
   if (width <= 0 || height <= 0)
   {

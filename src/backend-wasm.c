@@ -21,7 +21,7 @@ get_fb(int w, int h) {
   }
   width  = w;
   height = h;
-  fb = calloc (w *h, 4);
+  fb = calloc (w * h, 4);
   if (em_ctx) ctx_destroy (em_ctx);
   em_ctx = NULL;
   return fb;

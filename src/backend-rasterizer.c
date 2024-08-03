@@ -2330,7 +2330,7 @@ ctx_rasterizer_find_term_glyph (CtxRasterizer *rasterizer, int col, int row)
       }
     }
 
-    glyph = ctx_calloc (sizeof (CtxTermGlyph), 1);
+    glyph = ctx_calloc (1, sizeof (CtxTermGlyph));
     ctx_list_append (&rasterizer->glyphs, glyph);
     glyph->col = col;
     glyph->row = row;
@@ -4386,7 +4386,7 @@ ctx_new_for_buffer (CtxBuffer *buffer)
 {
   Ctx *ctx = _ctx_new_drawlist (buffer->width, buffer->height);
   ctx_set_backend (ctx,
-                    ctx_rasterizer_init ( (CtxRasterizer *) ctx_calloc (sizeof (CtxRasterizer), 1),
+                    ctx_rasterizer_init ( (CtxRasterizer *) ctx_calloc (1, sizeof (CtxRasterizer)),
                                           ctx, NULL, &ctx->state,
                                           buffer->data, 0, 0, buffer->width, buffer->height,
                                           buffer->stride, buffer->format->pixel_format,
@@ -4401,7 +4401,7 @@ ctx_new_for_framebuffer (void *data, int width, int height,
                          CtxPixelFormat pixel_format)
 {
   Ctx *ctx = _ctx_new_drawlist (width, height);
-  CtxRasterizer *r = ctx_rasterizer_init ( (CtxRasterizer *) ctx_calloc (sizeof (CtxRasterizer), 1),
+  CtxRasterizer *r = ctx_rasterizer_init ( (CtxRasterizer *) ctx_calloc (1, sizeof (CtxRasterizer)),
                                           ctx, NULL, &ctx->state, data, 0, 0, width, height,
                                           stride, pixel_format, CTX_ANTIALIAS_DEFAULT);
   ctx_set_backend (ctx, r);

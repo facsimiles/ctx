@@ -382,7 +382,7 @@ Ctx *ctx_new_fb (int width, int height)
 #if CTX_RASTERIZER
   if (getenv ("CTX_FB_SINGLE_BUFFER"))
     ctx_fb_single_buffer = atoi (getenv ("CTX_FB_SINGLE_BUFFER"));
-  CtxFb *fb = ctx_calloc (sizeof (CtxFb), 1);
+  CtxFb *fb = ctx_calloc (1, sizeof (CtxFb));
   CtxTiled *tiled = (void*)fb;
   CtxBackend *backend = (void*)fb;
   ctx_fb = fb;
@@ -528,7 +528,7 @@ Ctx *ctx_new_fb (int width, int height)
   if (ctx_fb_single_buffer)
     tiled->pixels = tiled->fb;
   else
-    tiled->pixels = ctx_calloc (fb->fb_mapped_size, 1);
+    tiled->pixels = ctx_calloc (1, fb->fb_mapped_size);
   tiled->show_frame = (void*)ctx_fb_show_frame;
 
 #if CTX_BABL

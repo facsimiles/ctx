@@ -720,7 +720,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
                  int   flags)
 {
   Ctx *ctx                   = ctx_new_drawlist (width, height);
-  CtxBackend    *backend     = (CtxBackend*)ctx_calloc (sizeof (CtxCbBackend), 1);
+  CtxBackend    *backend     = (CtxBackend*)ctx_calloc (1, sizeof (CtxCbBackend));
   CtxCbBackend  *cb_backend  = (CtxCbBackend*)backend;
   backend->start_frame       = ctx_cb_start_frame;
   backend->end_frame         = ctx_cb_end_frame;

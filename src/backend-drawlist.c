@@ -69,7 +69,7 @@ ctx_drawlist_process (Ctx *ctx, const CtxCommand *command)
 
 static CtxBackend *ctx_drawlist_backend_new (void)
 {
-  CtxBackend *backend = (CtxBackend*)ctx_calloc (sizeof (CtxCtx), 1);
+  CtxBackend *backend = (CtxBackend*)ctx_calloc (1, sizeof (CtxCtx));
                        // the sizeof(CtxCtx) should actually be sizeof(CtxBackend)
                        // but static analysis complains about event code
                        // initializing the extra members - which might most

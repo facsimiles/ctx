@@ -58,8 +58,8 @@ ctx_current_path_iterator (Ctx *ctx)
 CtxDrawlist *
 ctx_current_path (Ctx *ctx)
 {
-  CtxDrawlist *drawlist = (CtxDrawlist*)ctx_calloc (sizeof (CtxDrawlist) + 
-                              ctx->current_path.count * 9, 1);
+  CtxDrawlist *drawlist = (CtxDrawlist*)ctx_calloc (1, sizeof (CtxDrawlist) + 
+                              ctx->current_path.count * 9);
   drawlist->entries = (CtxEntry*)(&drawlist[1]);
   drawlist->size = drawlist->count = ctx->current_path.count;
   drawlist->flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
@@ -516,7 +516,7 @@ static void ctx_define_texture_full (Ctx *ctx,
       int command_size = 1 + (data_len+1+1)/9 + 1 + (eid_len+1+1)/9 + 1 +   8;
       if (ctx->backend && (void*)ctx->backend->process != (void*)ctx_drawlist_process)
       {
-         commands = (CtxEntry*)ctx_calloc (sizeof (CtxEntry), command_size);
+         commands = (CtxEntry*)ctx_calloc (command_size, sizeof (CtxEntry));
       }
       else
       {
@@ -568,7 +568,7 @@ static void ctx_define_texture_full (Ctx *ctx,
     }
 
     {
-      CtxEidInfo *eid_info = (CtxEidInfo*)ctx_calloc (sizeof (CtxEidInfo), 1);
+      CtxEidInfo *eid_info = (CtxEidInfo*)ctx_calloc (1, sizeof (CtxEidInfo));
       eid_info->width      = width;
       eid_info->height     = height;
       eid_info->frame      = ctx->texture_cache->frame;
@@ -793,7 +793,7 @@ static void ctx_draw_svg_clipped (Ctx *ctx, const char *path, float x, float y, 
       ctx_get_contents (path, &contents, &length);
       if (contents)
       {
-        cached = ctx_calloc (sizeof (CtxSvgCache), 1);
+        cached = ctx_calloc (1, sizeof (CtxSvgCache));
         cached->path_id = path_id;
         cached->next = ctx_svg_cache;
         cached->drawlist = ctx_new_drawlist (-1, -1);
@@ -3334,7 +3334,7 @@ typedef struct CtxDeferredCommand {
 
 static CtxDeferredCommand *deferred_new (Ctx *ctx, const char *name)
 {
-   CtxDeferredCommand *deferred = (CtxDeferredCommand*)calloc (sizeof (CtxDeferredCommand), 1);
+   CtxDeferredCommand *deferred = (CtxDeferredCommand*)calloc (1, sizeof (CtxDeferredCommand));
    if (name)
      deferred->name = ctx_strhash (name);
    deferred->offset = ctx->drawlist.count;

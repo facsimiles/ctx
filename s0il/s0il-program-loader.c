@@ -141,7 +141,7 @@ int which_main(int argc, char **argv) {
 }
 
 void s0il_bundle_main(const char *name, int (*main)(int argc, char **argv)) {
-  inlined_program_t *program = calloc(sizeof(inlined_program_t), 1);
+  inlined_program_t *program = calloc(1, sizeof(inlined_program_t));
   program->base = strdup(name);
   program->path = malloc(strlen(name) + 10);
   program->main = main;
@@ -628,7 +628,7 @@ elf_handle_t *elf_open(const char *path) {
     s0il_fseek(file, 0, SEEK_END);
     int length = s0il_ftell(file);
     s0il_fseek(file, 0, SEEK_SET);
-    elf_handle_t *elf = calloc(sizeof(elf_handle_t), 1);
+    elf_handle_t *elf = calloc(1, sizeof(elf_handle_t));
     elf->path = strdup(path);
     if (!elf)
       return NULL;
@@ -989,7 +989,7 @@ int s0il_spawnp(char **argv) {
   int argc = 0;
   for (; argv[argc]; argc++)
     ;
-  char **argv_copy = calloc(sizeof(char *) * (argc + 1), 1);
+  char **argv_copy = calloc(1, sizeof(char *) * (argc + 1));
   for (int i = 0; i < argc; i++)
     argv_copy[i] = strdup(argv[i]);
   pthread_attr_init(&attr);

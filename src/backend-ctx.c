@@ -80,7 +80,7 @@ static char *encode_in_terms_of_previous (
   int length = CHUNK_SIZE;
   for (start = 0; start < src_len; start += length)
   {
-    CtxSpan *span = ctx_calloc (sizeof (CtxSpan), 1);
+    CtxSpan *span = ctx_calloc (1, sizeof (CtxSpan));
     span->start = start;
     if (start + length > src_len)
       span->length = src_len - start;
@@ -135,7 +135,7 @@ static char *encode_in_terms_of_previous (
 
             if (curr_pos)
             {
-              CtxSpan *prev = ctx_calloc (sizeof (CtxSpan), 1);
+              CtxSpan *prev = ctx_calloc (1, sizeof (CtxSpan));
               prev->start = start;
               prev->length =  curr_pos;
             dassert (prev->start >= 0, prev_pos, prev_start, prev->start);
@@ -147,7 +147,7 @@ static char *encode_in_terms_of_previous (
 
             if (match_len + curr_pos < start + length)
             {
-              CtxSpan *next = ctx_calloc (sizeof (CtxSpan), 1);
+              CtxSpan *next = ctx_calloc (1, sizeof (CtxSpan));
               next->start = start + curr_pos + match_len;
               next->length = (start + length) - next->start;
             dassert (next->start >= 0, prev_pos, prev_start, next->start);
@@ -494,7 +494,7 @@ Ctx *ctx_new_ctx (int width, int height)
 {
   float font_size = 12.0;
   Ctx *ctx = _ctx_new_drawlist (width, height);
-  CtxCtx *ctxctx = (CtxCtx*)ctx_calloc (sizeof (CtxCtx), 1);
+  CtxCtx *ctxctx = (CtxCtx*)ctx_calloc (1, sizeof (CtxCtx));
   CtxBackend *backend = (CtxBackend*)ctxctx;
   fprintf (stdout, "\033[?1049h");
   fflush (stdout);

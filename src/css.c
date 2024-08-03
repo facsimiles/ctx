@@ -1862,7 +1862,7 @@ static void ctx_css_parse_selector (Css *mrg, const char *selector, CtxStyleEntr
 
 static void ctx_stylesheet_add_selector (Css *mrg, const char *selector, const char *css, int priority)
 {
-  CtxStyleEntry *entry = calloc (sizeof (CtxStyleEntry), 1);
+  CtxStyleEntry *entry = calloc (1, sizeof (CtxStyleEntry));
   entry->selector = strdup (selector);
   entry->css = strdup (css);
   entry->specificity = ctx_css_compute_specifity (selector, priority);
@@ -1922,7 +1922,7 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css
 {
   const char *p;
   if (!ps)
-    ps = mrg->css_parse_state = calloc (sizeof (CtxCssParseState), 1);
+    ps = mrg->css_parse_state = calloc (1, sizeof (CtxCssParseState));
 
   if (!css)
     return;
@@ -4234,7 +4234,7 @@ static CtxString *css_svg_add_def (ItkCssDef **defs, uint32_t id)
       return iter->str;
     iter = iter->next;
   }
-  iter = ctx_calloc (sizeof (ItkCssDef),1);
+  iter = ctx_calloc (1, sizeof (ItkCssDef));
   iter->str = ctx_string_new ("");
   iter->id = id;
   iter->next = *defs;
@@ -5627,7 +5627,7 @@ static int css_print_wrap2 (Css        *mrg,
   int gotspace = 0;
   int cursor_start = -1;
 
-  CssGlyph *g = calloc (sizeof (CssGlyph), 1);
+  CssGlyph *g = calloc (1, sizeof (CssGlyph));
   g->x = length;
   g->y = 42;
   g->index = 44;
@@ -6593,7 +6593,7 @@ void _mrg_layout_post (Css *mrg, CtxFloatRectangle *ret_rect)
     const CtxEntry *entries = ctx_get_drawlist (mrg->ctx, &end_offset);
     int count = end_offset - start_offset;
 
-    CssAbsolute *absolute = calloc (sizeof (CssAbsolute) + count * 9, 1);
+    CssAbsolute *absolute = calloc (1, sizeof (CssAbsolute) + count * 9);
     absolute->z_index = style->z_index;
     absolute->top    = top;
     absolute->left   = left;
@@ -7222,7 +7222,7 @@ static CssImage *_mrg_image (Css *mrg, const char *path)
 
   if (w)
   {
-    CssImage *image = calloc (sizeof (CssImage), 1);
+    CssImage *image = calloc (1, sizeof (CssImage));
     image->width = w;
     image->height = h;
     image->uri = strdup (path);
@@ -8786,7 +8786,7 @@ _mrg_file_get_contents (const char  *path,
 
   if (!strncmp (path, "/proc", 4))
   {
-    buffer = calloc(2048, 1);
+    buffer = calloc(1, 2048);
     *contents = buffer;
     *length = fread (buffer, 1, 2047, file);
     buffer[*length] = 0;
@@ -8951,7 +8951,7 @@ mrg_get_contents_default (const char  *referer,
   }
 
   {
-    CacheEntry *entry = calloc (sizeof (CacheEntry), 1);
+    CacheEntry *entry = calloc (1, sizeof (CacheEntry));
     char *c = NULL;
     long  l = 0;
 
@@ -9058,7 +9058,7 @@ Css *mrg_new (Ctx *ctx, int width, int height)
 {
   Css *mrg;
 
-  mrg = calloc (sizeof (Css), 1);
+  mrg = calloc (1, sizeof (Css));
   mrg->do_clip = 1;
   css_init (mrg, ctx, width, height);
   ctx_style_defaults (mrg);
@@ -9242,7 +9242,7 @@ float css_rel_ver_advance (Css *itk)
 
 Css *css_new (Ctx *ctx)
 {
-  Css *itk              = calloc (sizeof (Css), 1);
+  Css *itk              = calloc (1, sizeof (Css));
   //itk->ctx              = ctx;
   //itk->panels = NULL;
   itk->focus_wraparound = 1;
@@ -9407,7 +9407,7 @@ CssPanel *add_panel (Css *itk, const char *label, float x, float y, float width,
     if (!strcmp (panel->title, label))
       return panel;
   }
-  panel = calloc (sizeof (CssPanel), 1);
+  panel = calloc (1, sizeof (CssPanel));
   panel->title = strdup (label);
   panel->x = x;
   panel->y = y;
@@ -9447,7 +9447,7 @@ CtxControl *css_add_control (Css *itk,
                              float x, float y,
                              float width, float height)
 {
-  CtxControl *control = calloc (sizeof (CtxControl), 1);
+  CtxControl *control = calloc (1, sizeof (CtxControl));
   float em = css_em (itk);
   control->flags = itk->next_flags;
   itk->next_flags = CSS_FLAG_DEFAULT;
@@ -10563,7 +10563,7 @@ int css_choice (Css *itk, const char *label, int val)
 
 void css_choice_add (Css *itk, int value, const char *label)
 {
-  UiChoice *choice= calloc (sizeof (UiChoice), 1);
+  UiChoice *choice= calloc (1, sizeof (UiChoice));
   choice->val = value;
   choice->label = strdup (label);
   ctx_list_append (&itk->choices, choice);

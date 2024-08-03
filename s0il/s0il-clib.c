@@ -326,14 +326,14 @@ void *s0il_add_file(const char *path, const char *contents, size_t size,
     folder = NULL;
   }
   if (!folder) {
-    folder = calloc(sizeof(folder_t), 1);
+    folder = calloc(1, sizeof(folder_t));
     folder->path = parent;
     ctx_list_append(&folders, folder);
   } else {
     free(parent);
   }
 
-  file = calloc(sizeof(file_t), 1);
+  file = calloc(1, sizeof(file_t));
   file->path = (char *)(readonly ? path : strdup(path));
   file->d_name =
       readonly ? strrchr(path, '/') + 1 : strdup(strrchr(path, '/') + 1);

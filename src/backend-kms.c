@@ -492,7 +492,7 @@ static int ctx_kms_get_mice_fd (Ctx *ctx)
 Ctx *ctx_new_kms (int width, int height)
 {
 #if CTX_RASTERIZER
-  CtxKMS *fb = ctx_calloc (sizeof (CtxKMS), 1);
+  CtxKMS *fb = ctx_calloc (1, sizeof (CtxKMS));
   CtxBackend *backend = (CtxBackend*)fb;
 
   CtxTiled *tiled = (void*)fb;
@@ -513,7 +513,7 @@ Ctx *ctx_new_kms (int width, int height)
   }
   if (!tiled->fb)
     return NULL;
-  tiled->pixels = ctx_calloc (fb->fb_mapped_size, 1);
+  tiled->pixels = ctx_calloc (1, fb->fb_mapped_size);
 
 #if CTX_BABL
   ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);

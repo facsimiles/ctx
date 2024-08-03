@@ -24,7 +24,7 @@ void s0il_add_magic(const char *mime_type, const char *ext,
 
   if (magic_len > 16)
     magic_len = 16;
-  ctx_magic_t *magic = calloc(sizeof(ctx_magic_t), 1);
+  ctx_magic_t *magic = calloc(1, sizeof(ctx_magic_t));
   magic->mime_type = strdup(mime_type);
   if (ext)
     magic->ext = strdup(ext);

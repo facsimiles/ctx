@@ -183,7 +183,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
                            void *user_data,
                            CtxClientFinalize finalize)
 {
-  CtxClient *client = ctx_calloc (sizeof (CtxClient), 1);
+  CtxClient *client = ctx_calloc (1, sizeof (CtxClient));
   ctx_list_append (&ctx->events.clients, client);
   ctx_client_init (ctx, client, x, y, width, height, font_size, flags, user_data, finalize);
   float line_spacing = 2.0f;
@@ -197,7 +197,7 @@ CtxClient *ctx_client_new (Ctx *ctx,
 CtxClient *ctx_client_new_argv (Ctx *ctx, char **argv, int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {
 
-  CtxClient *client = ctx_calloc (sizeof (CtxClient), 1);
+  CtxClient *client = ctx_calloc (1, sizeof (CtxClient));
   ctx_client_init (ctx, client, x, y, width, height, font_size, flags, user_data, finalize);
   ctx_list_append (&ctx->events.clients, client);
 
@@ -228,7 +228,7 @@ static void *launch_client_thread (void *data)
 CtxClient *ctx_client_new_thread (Ctx *ctx, void (*start_routine)(Ctx *ctx, void *user_data),
                                   int x, int y, int width, int height, float font_size, CtxClientFlags flags, void *user_data, CtxClientFinalize finalize)
 {
-  CtxClient *client = ctx_calloc (sizeof (CtxClient), 1);
+  CtxClient *client = ctx_calloc (1, sizeof (CtxClient));
   ctx_client_init (ctx, client, x, y, width, height, font_size, flags, user_data, finalize);
 
   ctx_list_append (&ctx->events.clients, client);

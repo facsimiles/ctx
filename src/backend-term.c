@@ -62,7 +62,7 @@ void ctx_term_set (CtxTerm *term,
   if (col < 1 || row < 1 || col > term->cols  || row > term->rows) return;
   while (ctx_list_length (term->lines) < row)
   {
-    ctx_list_append (&term->lines, ctx_calloc (sizeof (CtxTermLine), 1));
+    ctx_list_append (&term->lines, ctx_calloc (1, sizeof (CtxTermLine)));
   }
   CtxTermLine *line = ctx_list_nth_data (term->lines, row-1);
   assert (line);
@@ -903,7 +903,7 @@ Ctx *ctx_new_term (int width, int height)
 {
   Ctx *ctx = _ctx_new_drawlist (width, height);
 #if CTX_RASTERIZER
-  CtxTerm *term = (CtxTerm*)ctx_calloc (sizeof (CtxTerm), 1);
+  CtxTerm *term = (CtxTerm*)ctx_calloc (1, sizeof (CtxTerm));
   CtxBackend *backend = (void*)term;
  
   const char *mode = getenv ("CTX_TERM_MODE");

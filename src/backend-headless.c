@@ -181,7 +181,7 @@ Ctx *ctx_new_headless (int width, int height)
     height = 780;
   }
 #if CTX_RASTERIZER
-  CtxHeadless *fb = ctx_calloc (sizeof (CtxHeadless), 1);
+  CtxHeadless *fb = ctx_calloc (1, sizeof (CtxHeadless));
   CtxBackend *backend = (CtxBackend*)fb;
   CtxTiled *tiled     = (CtxTiled*)fb;
   ctx_headless = fb;
@@ -194,10 +194,10 @@ Ctx *ctx_new_headless (int width, int height)
   fb->fb_mapped_size = width * height * 4;
 #endif
 
-  tiled->fb = ctx_calloc (fb->fb_mapped_size, 1);
+  tiled->fb = ctx_calloc (1, fb->fb_mapped_size);
   if (!tiled->fb)
     return NULL;
-  tiled->pixels = ctx_calloc (fb->fb_mapped_size, 1);
+  tiled->pixels = ctx_calloc (1, fb->fb_mapped_size);
   tiled->show_frame = (void*)ctx_headless_show_frame;
 
 

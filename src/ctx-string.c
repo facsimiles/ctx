@@ -110,7 +110,7 @@ void ctx_string_append_str (CtxString *string, const char *str)
 
 CtxString *ctx_string_new_with_size (const char *initial, int initial_size)
 {
-  CtxString *string = (CtxString*)ctx_calloc (sizeof (CtxString), 1);
+  CtxString *string = (CtxString*)ctx_calloc (1, sizeof (CtxString));
   ctx_string_init (string, initial_size);
   if (initial)
     { _ctx_string_append_str (string, initial); }
@@ -224,7 +224,7 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
       char *tmp;
       char *defer;
       string->allocated_length = string->length + new_len + 2;
-      tmp = (char*) ctx_calloc (string->allocated_length + 1 + 8, 1);
+      tmp = (char*) ctx_calloc (1, string->allocated_length + 1 + 8);
       strcpy (tmp, string->str);
       defer = string->str;
       string->str = tmp;
@@ -295,7 +295,7 @@ void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
       char *tmp;
       char *defer;
       string->allocated_length = string->length + new_len + 1;
-      tmp = (char*) ctx_calloc (string->allocated_length + 1, 1);
+      tmp = (char*) ctx_calloc (1, string->allocated_length + 1);
       strcpy (tmp, string->str);
       defer = string->str;
       string->str = tmp;

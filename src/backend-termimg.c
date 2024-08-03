@@ -92,7 +92,7 @@ Ctx *ctx_new_termimg (int width, int height)
 #if CTX_RASTERIZER
   fprintf (stdout, "\033[?1049h");
   fprintf (stdout, "\033[?25l"); // cursor off
-  CtxTermImg *termimg = (CtxTermImg*)ctx_calloc (sizeof (CtxTermImg), 1);
+  CtxTermImg *termimg = (CtxTermImg*)ctx_calloc (1, sizeof (CtxTermImg));
   CtxBackend *backend = (void*)termimg;
 
 

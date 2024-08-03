@@ -41,7 +41,7 @@ static inline void ctx_list_prepend_full (CtxList **list, void *data,
     void (*freefunc)(void *data, void *freefunc_data),
     void *freefunc_data)
 {
-  CtxList *new_= (CtxList*)ctx_calloc (sizeof (CtxList), 1);
+  CtxList *new_= (CtxList*)ctx_calloc (1, sizeof (CtxList));
   new_->next = *list;
   new_->data=data;
   new_->freefunc=freefunc;
@@ -59,7 +59,7 @@ static inline int ctx_list_length (CtxList *list)
 
 static inline void ctx_list_prepend (CtxList **list, void *data)
 {
-  CtxList *new_ = (CtxList*) ctx_calloc (sizeof (CtxList), 1);
+  CtxList *new_ = (CtxList*) ctx_calloc (1, sizeof (CtxList));
   new_->next= *list;
   new_->data=data;
   *list = new_;
@@ -100,7 +100,7 @@ ctx_list_insert_before (CtxList **list, CtxList *sibling,
         }
       if (prev)
         {
-          CtxList *new_ = (CtxList*)ctx_calloc (sizeof (CtxList), 1);
+          CtxList *new_ = (CtxList*)ctx_calloc (1, sizeof (CtxList));
           new_->next = sibling;
           new_->data = data;
           prev->next=new_;
@@ -199,7 +199,7 @@ static inline void ctx_list_append_full (CtxList **list, void *data,
     void (*freefunc)(void *data, void *freefunc_data),
     void *freefunc_data)
 {
-  CtxList *new_ = (CtxList*) ctx_calloc (sizeof (CtxList), 1);
+  CtxList *new_ = (CtxList*) ctx_calloc (1, sizeof (CtxList));
   new_->data=data;
   new_->freefunc = freefunc;
   new_->freefunc_data = freefunc_data;
@@ -233,7 +233,7 @@ ctx_list_insert_at (CtxList **list,
         }
       if (prev)
         {
-          CtxList *new_ = (CtxList*)ctx_calloc (sizeof (CtxList), 1);
+          CtxList *new_ = (CtxList*)ctx_calloc (1, sizeof (CtxList));
           new_->next = sibling;
           new_->data = data;
           prev->next=new_;

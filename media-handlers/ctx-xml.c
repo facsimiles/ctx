@@ -222,7 +222,7 @@ int browser_main (int argc, char **argv)
   Ctx *ctx = NULL;
   Mr *mr;
   
-  mr = calloc (sizeof (Mr), 1);
+  mr = calloc (1, sizeof (Mr));
 
   for (int i = 0; argv[i]; i++)
   {
