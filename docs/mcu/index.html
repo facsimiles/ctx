@@ -1,0 +1,93 @@
+<html>
+        <head><title>ctx on microcontrollers</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <link rel="icon" type="image/svg+xml" href="/graphics.ctx.terminal.svg"/>
+
+        <style type='text/css'>
+          @import "../ctx.css";
+
+img{image-rendering: -moz-crisp-edges; image-rendering:   -o-crisp-edges;            image-rendering: -webkit-optimize-contrast;    image-rendering: crisp-edges;    -ms-interpolation-mode: nearest-neighbor;  }
+        </style>
+      </head>
+
+  <body lang='en'>
+
+
+       <div id='menu'>
+                <a href='https://ctx.graphics/'>
+                 <img style='max-width:6em' src='../graphics.ctx.terminal.svg' alt='ctx'/>
+                </a>
+
+                <a href='../terminal/'>terminal</a>
+                <a href='../protocol/'>protocol</a>
+                <a href='../sdk/'>sdk</a>
+                <a href='../rasterizer/'>rasterizer</a>
+                <a href='../compositing/'>compositing</a>
+                <a href='../performance/'>performance</a>
+                <br/>
+                <a href='https://ctx.graphics/.git/'>git</a>
+                <a href='../#license'>license</a>
+                <br/>
+                <a href='../mcu/'>mcu</a>
+                <a href='../tests/'>tests</a>
+                <a href='../glitch/'>glitch</a>
+        </div>
+
+           <div id='page'>
+
+<h1 id='mcu'>microcontroller tests</h1> <p>To keep code size small and
+constraining development of ctx from the beginning has been the ability to use
+it for antialiased resolution independent user interfaces on microcontrollers;
+the first prototyping board was card10.
+If you have your own retained scene-graph/widget tree, or use immediate-mode-gui
+approaches; ctx can be used to render the scene in chunks/scanlines permitting
+larger displays to be driven from microcontrollers. With more RAM at disposal
+and some subtexture update capable LCD/OLED displays and eink, using the
+drawlist for storing drawing commands becomes possible - as well as the hash-caching capability to reduce inter-frame redraw and recomputations.
+</p>
+
+<p>
+The performance of ctx has increased since these video were made, and making
+more use of RGBA8 directly in small bands is preferable to working in RGB565
+like these demos did. New iterations of demos are planned, and the codesize of
+ctx with full HTML5 canvas API support fits modern microcontrollers, the
+codesize can be as small as 28kb + 20kb (ascii font) of footprint and needing
+as little as 5kb at runtime. (Addendum 2024) a really minimal build in terms of
+code size has not been done in a while and ctx currently clocks in at 64-128kb
+for a small build; RAM requirements remain small.</p>
+
+<p>
+The arm-cortex-m4 at 97mhz in the card10 badge and on the TTGO ESP32 both with
+immediate rendering, the card10 has a 180x80 display with really high visual
+quality, while the TFT LCD on the ESP32 has slightly higher pixel resolution at
+160x128, video from november 2019. Usage of ctx for rendering the existing
+graphics API but with antialiasing has landed <a
+href='https://git.card10.badge.events.ccc.de/card10/firmware/'>in card10</a>,
+the following camp badges <a href='https://flow3r.garden/'>flow3r</a> and <a href='https://tildagon.badge.emfcamp.org/'>tildagon</a>- had a ctx
+renderers when hardware was publicly available.
+</p>
+
+<video width="100%" controls>
+  <source src="ctx2.mp4" type="video/mp4">
+Your browser does not support the video tag and mp4.
+</video>
+
+
+<!--
+<p>january 2020, a demo running on an esp with 320x240 <tt>RGB565</tt> display, here the
+framebuffer is larger than the biggest single allocation we can afford and the
+deferred rendering is rendering the display in 4 chunks.</p>
+
+<video width="100%" controls>
+  <source src="ctx3.mp4" type="video/mp4">
+Your browser does not support the video tag and mp4.
+</video>
+
+With little geometry this is fine; with more the displays starts
+having very visible tearing on large content changes.
+
+</p>
+-->
+        </div>
+      </body>
+</html>
