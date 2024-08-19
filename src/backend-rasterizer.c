@@ -2812,8 +2812,9 @@ ctx_rasterizer_stroke (CtxRasterizer *rasterizer)
           (entry1->y1 == entry2->y1) &
           (entry2->x1 == entry3->x1)
 #if CTX_ENABLE_SHADOW_BLUR
-           & !rasterizer->in_shadow
+           & (!rasterizer->in_shadow)
 #endif
+	   & (rasterizer->state->gstate.source_fill.type != CTX_SOURCE_TEXTURE)
          )
        {
         float x0 = entry3->x1 * 1.0f / CTX_SUBDIV;
