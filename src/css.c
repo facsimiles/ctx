@@ -7696,7 +7696,7 @@ void css_xml_render (Css *mrg,
 	break;
       case t_endtag:
 	{
-        int i;
+        //int i;
         uint32_t data_hash = ctx_strhash (data);
      // for (i = 0; data[i]; i++)
      //   data[i] = tolower (data[i]);
@@ -8610,9 +8610,6 @@ int css_xml_extent (Css *mrg, uint8_t *contents, float *width, float *height, fl
   CssXml *xmltok;
   int pos             = 0;
   int type            = t_none;
-  int in_style        = 0;
-  int in_defs         = 0;
-  int tagpos          = 0;
 
   float c_width = 0.0f;
   float c_height = 0.0f;
@@ -8622,7 +8619,6 @@ int css_xml_extent (Css *mrg, uint8_t *contents, float *width, float *height, fl
 
   type = t_none;
   unsigned int att = 0;
-  in_style = 0;
   xmltok = xmltok_buf_new ((char*)contents);
 
   while (type != t_eof)
@@ -8648,7 +8644,6 @@ int css_xml_extent (Css *mrg, uint8_t *contents, float *width, float *height, fl
         //ctx_save (mrg->ctx);
 	{
           uint32_t data_hash = ctx_strhash (data);
-          tagpos = pos;
 
 	  in_svg = 0;
 	  if (data_hash == SQZ_html)
