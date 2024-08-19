@@ -748,7 +748,7 @@ static void ctx_draw_svg_clipped (Ctx *ctx, const char *path, float x, float y, 
     }
 #endif
 
-    int path_id = ctx_strhash (path);
+    uint32_t path_id = ctx_strhash (path);
     CtxSvgCache *cached = NULL;
 
     for(cached = ctx_svg_cache; cached; cached = cached->next)
@@ -798,7 +798,7 @@ static void ctx_draw_svg_clipped (Ctx *ctx, const char *path, float x, float y, 
         cached->next = ctx_svg_cache;
         cached->drawlist = ctx_new_drawlist (-1, -1);
         Css *css= css_new (cached->drawlist);
-        float width, height;
+        //float width, height;
         css_xml_extent (css, contents, &cached->width, &cached->height, &cached->viewbox[0], &cached->viewbox[1], &cached->viewbox[2], &cached->viewbox[3]);
         css_xml_render (css, NULL/*uri*/, NULL /* http(s) fetch cb*/, NULL, NULL, NULL, (char*)contents);
         css_destroy (css);

@@ -6903,6 +6903,7 @@ again:
             s++;
             goto again;
           }
+	  /* FALLTHROUGH */
         case 'A':
           if (numbers == 7)
           {
@@ -6910,7 +6911,7 @@ again:
             s++;
             goto again;
           }
-          /* fallthrough */
+	  /* FALLTHROUGH */
         case 'm':
           if (numbers == 2)
           {
@@ -7787,8 +7788,8 @@ void css_xml_render (Css *mrg,
 	      // SQZ_fr,
 	      if (id)
 	      {
-	      GRAD_PROP_STR(gradientUnits, "userSpaceOnUse");
-	      GRAD_PROP_STR(spreadMethod, "pad");
+	   // GRAD_PROP_STR(gradientUnits, "userSpaceOnUse");
+	   // GRAD_PROP_STR(spreadMethod, "pad");
 	        const char *transform = ctx_get_string (mrg->ctx, SQZ_gradientTransform);
 
 	      GRAD_PROP_X(cx, "50%");
@@ -7827,8 +7828,8 @@ void css_xml_render (Css *mrg,
 
 	      if (id)
 	      {
-	        GRAD_PROP_STR(gradientUnits, "userSpaceOnUse");
-	        GRAD_PROP_STR(spreadMethod, "pad");
+	        //GRAD_PROP_STR(gradientUnits, "userSpaceOnUse");
+	        //GRAD_PROP_STR(spreadMethod, "pad");
 	        const char *transform = ctx_get_string (mrg->ctx, SQZ_gradientTransform);
 	        GRAD_PROP_X(x1, "0%");
 	        GRAD_PROP_Y(y1, "0%");

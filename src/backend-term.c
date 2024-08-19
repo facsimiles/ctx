@@ -644,7 +644,7 @@ static void ctx_term_output_buf_braille (uint8_t *pixels,
             rgba[1][2] = 0;
           }
 
-          int pixels_set = 0;
+          //int pixels_set = 0;
           for (int x = 0; x < 2; x++)
             for (int y = 0; y < 3; y++)
               {
@@ -657,7 +657,7 @@ static void ctx_term_output_buf_braille (uint8_t *pixels,
                 if (reverse) { set = !set; }
                 if (set)
                   { unicode |=  (1<< (bitno) ); 
-                    pixels_set ++; 
+           //       pixels_set ++; 
                   }
                 bitno++;
               }
@@ -669,8 +669,8 @@ static void ctx_term_output_buf_braille (uint8_t *pixels,
             no = (row * 4 + y) * stride + (col*2+x+1) * 4;
             int setB = CHECK_IS_SET;
 
-            pixels_set += setA;
-            pixels_set += setB;
+            //pixels_set += setA;
+            //pixels_set += setB;
 #undef CHECK_IS_SET
             if (reverse) { setA = !setA; }
             if (reverse) { setB = !setB; }
