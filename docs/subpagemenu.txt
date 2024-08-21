@@ -13,7 +13,7 @@
                 <a href='https://ctx.graphics/.git/'>git</a>
                 <a href='../#license'>license</a>
                 <br/>
-                <a href='../mcu/'>mcu</a>
+		<!--<a href='../mcu/'>mcu</a>-->
                 <a href='../tests/'>tests</a>
                 <a href='../glitch/'>glitch</a>
         </div>

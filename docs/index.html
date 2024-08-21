@@ -19,15 +19,13 @@
               <a href='terminal/'>terminal</a>
               <a href='protocol/'>protocol</a>
               <a href='sdk/'>sdk</a>
-              <a href='uctx/'>uctx</a>
-              <a href='rasterizer/'>rasterizer</a>
-              <a href='compositing/'>compositing</a>
+              <a href='internals/'>internals</a>
               <a href='performance/'>performance</a>
               <br/>
               <a href='https://ctx.graphics/.git/'>git</a>
               <a href='#license'>license</a>
               <br/>
-              <a href='mcu/'>mcu</a>
+	      <!--<a href='mcu/'>mcu</a>-->
               <a href='tests/'>tests</a>
               <a href='glitch/'>glitch</a>
       </div>
@@ -36,45 +34,63 @@
 
       <h1>compact, portable and performant 2D vector graphics</h1>
 
-      ctx is an implementation and serialization format of HTML5 Canvas' 2D
-      context, with a configurable build making it scale from microcontroller
-	      user interfaces with embedded fonts to 32bit floating point RGBA
-	      and CMYKA compositing for use in <a
-      href='https://www.gimp.org/'>GIMP</a>.
+      <p>
+      ctx is a renderer and serialization format for 2D vector graphics,
+      aiming for compatibility with HTML5 Canvas' 2D context. It leverages portable C
+      code and auto-vectorization capabilities of modern compilers to target
+      everything from microcontrollers to color managed RGB and CMYK compositing with
+      32bit floating point.
+      </p>
+      
 
-
+<!--
       Demo UIs experiments and tests are included in the <a
       href='https://ctx.graphics/.git'>git monorepo</a>. The most elaborate test
       is <a href='/s0il/'>s0il</a> a graphical UNIX like OS for microcontrollers, with interpreted userland.</a> and <a href='https://social.librem.one/@dos/111478238181935805'>Petal Hero</a> for the <a href='https://flow3r.garden/'>flow3r badge/instrument</a>.
+-->
+      <p>
+
+	The motivation behind ctx was having a portable vector graphics library
+	with a serialization protocol for use in a <a href='terminal/'>terminal
+		emulator</a>, while also covering the needs of <a
+									       href='https://www.gimp.org/'>GIMP</a>
+	and <a href='https://gegl.org/'>GEGL</a>.
+	
+	To keep resource usage down; the prototyping platforms for ctx has
+	been microcontrollers with SPI displays which is how it ended up
+	in the firmwares of the following hacker-camp badges:
+
+	<a href='https://card10.badge.events.ccc.de/'>card10</a>, <a
+	href='https://flow3r.garden'>flow3r</a> and <a href='https://tildagon.badge.emfcamp.org/'>tildagon</a>.
+      </p>
+
 
       <p>ctx as an interactive 2D vector graphics protocol provides remote
       backends and process multiplexing integrated with a terminal
       emulator/window manager; providing an end-to-end vector rendering
-      framework suitable for serial links. The serialization of the rendering
+      framework suitable for serial links. The serialization of the renderingT
       model is a superset of SVG path d attribute syntax. Internally (as well
       as for backends extending ctx; by appearing after the
       CTX_IMPLEMENTATION), a compact binary serialization of this syntax is
       used.
       </p>
 
-      <p> The <a href='rasterizer/'>ctx rasterizer</a> is
-      fast, portable and compact with a wide range of supported pixel encodings
-      from 1bit to 32bit per pixel, in grayscale, RGB and CMYK.
+      <p> 
+      Pixel encodings supported range from 1bit to 32bit per pixel, in grayscale, RGB and CMYK.
+      <!--
       For <a href='mcu/'>microcontrollers</a> using <a href='sdk/'>C</a> or <a
-              href='uctx'>micropython</a>. ctx renders to lower bitdepth
+      href='uctx'>micropython</a>. -->ctx can renders to lower bitdepth
       RGB332, RGB565 variants as well as 1,2 and 4 bit per pixel grayscale is
-      handled. Combined with floating point pixel encoding support and color
-             management ctx scales to meet <a href='https://gegl.org/'>GEGL</a>
-             and <a href='https://www.gimp.org.'>GIMP</a>s needs.</p>
+      handled.</p>
 
       <dl>
-        <dt>x86-64</dt><dd>Runtime choice of 3 different levels of SIMD support.</dd>
-        <dt>arm32</dt><dd>both mcu and cpu's tested on rp2040</dd>
+        <dt>arm32</dt><dd>tested on rp2040 and rpi2</dd>
         <dt>aarch64</dt><dd>tested on a mediatek based chromebook</dd>
+        <dt>x86-64</dt><dd>Automatic runtime choice of 3 different levels of SIMD support.</dd>
         <dt>tensilica</dt><dd>tested on esp32 and esp32s3</dd>
-        <dt>riscv</dt><dd>tested on esp32c3</dd>
+        <dt>risc-v</dt><dd>tested on esp32c3</dd>
         <dt>wasm</dt><dd>built with emscripten</dd>
-        <dt>?</dt><dd>if it is a 32bit or 64bit arch; with a C compiler it probably works.</dd>
+        <dt>?</dt><dd>if it is a 32bit or 64bit platform; with a C compiler it probably works.</dd>
       </dl>
 
 
@@ -166,7 +182,7 @@
 	      <dt>strokeText<dd></dd>
       </dl>
 
-      Non HTML5-Canvas features desired:
+      Non HTML5-Canvas features desired, some for SVG capabilities:
       <dl>
 	      <dt>stroke to path</dt><dd>for implementing strokeText</dd>
 	      <dt>text along path baseline</dt>
