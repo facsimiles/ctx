@@ -107,7 +107,7 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
       memcpy (copy, state->stringpool, state->gstate.stringpool_pos);
       ctx_free (state->stringpool);
     }
-    state->stringpool = copy;
+    state->stringpool = (char*)copy;
     state->stringpool_size = desired;
   }
 

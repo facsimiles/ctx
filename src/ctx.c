@@ -507,7 +507,7 @@ static void ctx_define_texture_full (Ctx *ctx,
     {
        ctx_rasterizer_define_texture (
 		(CtxRasterizer*)ctx->texture_cache->backend,
-		eid, width, height, format, data, steal_data);
+		eid, width, height, format, (unsigned char*)data, steal_data);
        do_texture = 1;
     }
     else
