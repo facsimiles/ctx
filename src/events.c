@@ -3259,7 +3259,7 @@ static int evsource_kb_raw_init ()
         // Grab input
         if( -1 == ioctl( kb_fd, EVIOCGRAB, (void*)1 ))
         {
-            fprintf(stderr, "Failed to grab input %s: (%i) %m", name, errno );
+           // fprintf(stderr, "Failed to grab input %s: (%i) %m", name, errno );
             kb_fd = 0;
             return -1;
         }

@@ -56,10 +56,10 @@ struct _CtxKMS
   #define fbdrmuint_t uint64_t
 #endif
 
-void *ctx_fbkms_new (CtxKMS *fb, int *width, int *height)
+static void *ctx_fbkms_new_int (CtxKMS *fb, int *width, int *height, const char *path)
 {
    int got_master = 0;
-   fb->fb_fd = open("/dev/dri/card0", O_RDWR | O_CLOEXEC);
+   fb->fb_fd = open(path, O_RDWR | O_CLOEXEC);
    if (!fb->fb_fd)
      return NULL;
    static fbdrmuint_t res_conn_buf[20]={0}; // this is static since its contents
@@ -170,6 +170,14 @@ cleanup:
      ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
    fb->fb_fd = 0;
    return NULL;
+}
+
+void *ctx_fbkms_new (CtxKMS *fb, int *width, int *height)
+{
+   void *ret = ctx_fbkms_new_int (fb, width, height, "/dev/dri/card0");
+   if (!ret)
+     ret = ctx_fbkms_new_int (fb, width, height, "/dev/dri/card1");
+   return ret;
 }
 
 void ctx_fbkms_flip (CtxKMS *fb)
