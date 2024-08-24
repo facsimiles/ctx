@@ -3214,55 +3214,67 @@ static void evsource_kb_raw_destroy (int sign)
   kb_fd = 0;
 }
 
+static int ctx_kb_raw_open (void)
+{
+  char path[64]="";
+  int fd = -1;
+  for (int i = 0; i < 10; i++)
+  {
+    sprintf (path, "/dev/input/event%i", i);
+    fd = open(path, O_RDONLY | O_CLOEXEC );
+    unsigned long evbits = 0;
+    if (fd != -1)
+    {
+      if (ioctl (fd, EVIOCGBIT(0, sizeof (unsigned long)), &evbits)<0)
+      {
+        printf ("error on event%i\n", i);
+      }
+      else
+      {
+        if ((evbits & (1<<EV_KEY)))
+        {
+	  int got_a = 0;
+	  int got_z = 0;
+          size_t nchar = KEY_MAX/8+1;
+          unsigned char bits[nchar];
+          if (ioctl (fd, EVIOCGBIT(EV_KEY, sizeof (bits)), &bits)>=0)
+          {
+            got_a = bits[KEY_A/8] & (1 << (KEY_A & 7));
+            got_z = bits[KEY_Z/8] & (1 << (KEY_Z & 7));
+          }
+	  if (got_a && got_z)
+            return fd;
+        }
+      }
+      close (fd);
+    }
+
+  }
+  return -1;
+}
 
 static int evsource_kb_raw_init ()
 {
-#if 0
-//  ioctl(STDIN_FILENO, KDSKBMODE, K_RAW);
-  //atexit ((void*) real_evsource_kb_term_destroy);
-  signal (SIGSEGV, (void*) real_evsource_kb_raw_destroy);
-  signal (SIGABRT, (void*) real_evsource_kb_raw_destroy);
-  signal (SIGBUS,  (void*) real_evsource_kb_raw_destroy);
-  signal (SIGKILL, (void*) real_evsource_kb_raw_destroy);
-  signal (SIGINT,  (void*) real_evsource_kb_raw_destroy);
-  signal (SIGTERM, (void*) real_evsource_kb_raw_destroy);
-  signal (SIGQUIT, (void*) real_evsource_kb_raw_destroy);
+   kb_fd = ctx_kb_raw_open ();
 
-  struct termios raw;
-  if (tcgetattr (STDIN_FILENO, &orig_attr) == -1)
-    {
-      fprintf (stderr, "error initializing keyboard\n");
-      return -1;
-    }
-  raw = orig_attr;
+   if( -1 == kb_fd )
+   {
+     kb_fd = 0;
+     return -1;
+   }
 
-  cfmakeraw (&raw);
+   char name[ 32 ];
+   if( -1 == ioctl( kb_fd, EVIOCGNAME( sizeof( name )), name ))
+   {
+     kb_fd = 0;
+     return -1;
+   }
 
-  raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
-  if (tcsetattr (STDIN_FILENO, TCSAFLUSH, &raw) < 0)
-    return 0; // XXX? return other value?
-#endif
-
-   kb_fd = open( "/dev/input/event0", O_RDONLY | O_CLOEXEC );
-        if( -1 == kb_fd )
-        {
-            kb_fd = 0;
-            return -1;
-        }
-        char name[ 32 ];
-        if( -1 == ioctl( kb_fd, EVIOCGNAME( sizeof( name )), name ))
-        {
-            kb_fd = 0;
-            return -1;
-        }
-
-        // Grab input
-        if( -1 == ioctl( kb_fd, EVIOCGRAB, (void*)1 ))
-        {
-           // fprintf(stderr, "Failed to grab input %s: (%i) %m", name, errno );
-            kb_fd = 0;
-            return -1;
-        }
+   if( -1 == ioctl( kb_fd, EVIOCGRAB, (void*)1 ))
+   {
+     kb_fd = 0;
+     return -1;
+   }
 
   return 0;
 }
