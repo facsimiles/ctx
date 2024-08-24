@@ -312,9 +312,11 @@ static inline int ctx_is_in_cursor (int x, int y, int size, CtxCursor shape)
   return 0;
 }
 
+#define CTX_CURSOR_SIZE_VH   2.0f
+
 static void ctx_tiled_undraw_cursor (CtxTiled *tiled)
 {
-    int cursor_size = ctx_height (tiled->backend.ctx) / 28;
+    int cursor_size = (ctx_height (tiled->backend.ctx) * CTX_CURSOR_SIZE_VH) / 100.0f;
 
     if (ctx_tiled_cursor_drawn)
     {
@@ -347,7 +349,7 @@ static inline void ctx_tiled_draw_cursor (CtxTiled *tiled)
 {
     int cursor_x = (int)ctx_pointer_x (tiled->backend.ctx);
     int cursor_y = (int)ctx_pointer_y (tiled->backend.ctx);
-    int cursor_size = ctx_height (tiled->backend.ctx) / 28;
+    int cursor_size = (ctx_height (tiled->backend.ctx) * CTX_CURSOR_SIZE_VH) / 100.0f;
     CtxCursor cursor_shape = tiled->backend.ctx->cursor;
     int no = 0;
 
