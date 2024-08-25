@@ -58,7 +58,7 @@ struct _CtxKMS
 
 static void *ctx_fbkms_new_int (CtxKMS *fb, int *width, int *height, const char *path)
 {
-   int got_master = 0;
+   struct drm_mode_modeinfo *conn_mode_buf = NULL;
    fb->fb_fd = open(path, O_RDWR | O_CLOEXEC);
    if (!fb->fb_fd)
      return NULL;
@@ -70,8 +70,10 @@ static void *ctx_fbkms_new_int (CtxKMS *fb, int *width, int *height, const char 
    struct   drm_mode_card_res res={0};
 
    if (ioctl(fb->fb_fd, DRM_IOCTL_SET_MASTER, 0))
-     goto cleanup;
-   got_master = 1;
+   {
+     fb->fb_fd = 0;
+     return NULL;
+   }
 
    if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETRESOURCES, &res))
      goto cleanup;
@@ -84,9 +86,9 @@ static void *ctx_fbkms_new_int (CtxKMS *fb, int *width, int *height, const char 
 
 
    unsigned int i;
+   conn_mode_buf = ctx_calloc(20, sizeof(struct drm_mode_modeinfo));
    for (i=0;i<res.count_connectors;i++)
    {
-     struct drm_mode_modeinfo conn_mode_buf[20]={0};
      fbdrmuint_t conn_prop_buf[20]={0},
                      conn_propval_buf[20]={0},
                      conn_enc_buf[20]={0};
@@ -106,13 +108,10 @@ static void *ctx_fbkms_new_int (CtxKMS *fb, int *width, int *height, const char 
      if (ioctl(fb->fb_fd, DRM_IOCTL_MODE_GETCONNECTOR, &conn))
        goto cleanup;
 
-     //Check if the connector is OK to use (connected to something)
+     //Check if connector is connected to a display
      if (conn.count_encoders<1 || conn.count_modes<1 || !conn.encoder_id || !conn.connection)
        continue;
 
-//------------------------------------------------------------------------------
-//Creating a dumb buffer
-//------------------------------------------------------------------------------
      struct drm_mode_create_dumb create_dumb={0};
      struct drm_mode_map_dumb    map_dumb={0};
      struct drm_mode_fb_cmd      cmd_dumb={0};
@@ -163,11 +162,13 @@ static void *ctx_fbkms_new_int (CtxKMS *fb, int *width, int *height, const char 
      fb->crtc.count_connectors=1;
      fb->crtc.mode=conn_mode_buf[0];
      fb->crtc.mode_valid=1;
+     if (conn_mode_buf) ctx_free (conn_mode_buf);
      return base;
    }
 cleanup:
-   if (got_master)
-     ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
+   if (conn_mode_buf)
+     ctx_free (conn_mode_buf);
+   ioctl(fb->fb_fd, DRM_IOCTL_DROP_MASTER, 0);
    fb->fb_fd = 0;
    return NULL;
 }
