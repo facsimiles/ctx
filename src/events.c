@@ -3442,6 +3442,231 @@ static inline EvSource *evsource_kb_raw_new (void)
 }
 #endif
 
+#if CTX_RAW_KB_EVENTS
+
+static int evsource_linux_ts_has_event (void);
+static char *evsource_linux_ts_get_event (void);
+static void evsource_linux_ts_destroy (int sign);
+static int evsource_linux_ts_get_fd (void);
+
+
+/* kept out of struct to be reachable by atexit */
+static EvSource ctx_ev_src_linux_ts = {
+  NULL,
+  (void*)evsource_linux_ts_has_event,
+  (void*)evsource_linux_ts_get_event,
+  (void*)evsource_linux_ts_destroy,
+  (void*)evsource_linux_ts_get_fd,
+  NULL
+};
+
+#if 0
+static void real_evsource_linux_ts_destroy (int sign)
+{
+  static int done = 0;
+
+  if (sign == 0)
+    return;
+
+  if (done)
+    return;
+  done = 1;
+
+  switch (sign)
+  {
+    case  -11:break; /* will be called from atexit with sign==-11 */
+    case   SIGSEGV: break;//fprintf (stderr, " SIGSEGV\n");break;
+    case   SIGABRT: fprintf (stderr, " SIGABRT\n");break;
+    case   SIGBUS:  fprintf (stderr, " SIGBUS\n");break;
+    case   SIGKILL: fprintf (stderr, " SIGKILL\n");break;
+    case   SIGINT:  fprintf (stderr, " SIGINT\n");break;
+    case   SIGTERM: fprintf (stderr, " SIGTERM\n");break;
+    case   SIGQUIT: fprintf (stderr, " SIGQUIT\n");break;
+    default: fprintf (stderr, "sign: %i\n", sign);
+             fprintf (stderr, "%i %i %i %i %i %i %i\n", SIGSEGV, SIGABRT, SIGBUS, SIGKILL, SIGINT, SIGTERM, SIGQUIT);
+  }
+  tcsetattr (STDIN_FILENO, TCSAFLUSH, &orig_attr);
+  //fprintf (stderr, "evsource kb destroy\n");
+}
+#endif
+
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <sys/ioctl.h>
+#include <errno.h>
+
+
+#include <linux/input.h>
+
+static int ctx_ts_fd = -1;
+static void evsource_linux_ts_destroy (int sign)
+{
+#if 0
+  real_evsource_linux_ts_destroy (-11);
+#endif
+  if (ctx_ts_fd)
+    close (ctx_ts_fd);
+  ctx_ts_fd = 0;
+}
+
+static struct input_absinfo ctx_linux_ts_abs_x;
+static struct input_absinfo ctx_linux_ts_abs_y;
+
+static int ctx_linux_ts_open (void)
+{
+  char path[64]="";
+  int fd = -1;
+  for (int i = 0; i < 10; i++)
+  {
+    sprintf (path, "/dev/input/event%i", i);
+    fd = open(path, O_RDONLY | O_CLOEXEC );
+    unsigned long evbits = 0;
+    unsigned long absbits = 0;
+    unsigned long propbits = 0;
+    if (fd != -1)
+    {
+      if (ioctl (fd, EVIOCGBIT(EV_ABS, sizeof(unsigned long)), &absbits) != -1)
+      if (ioctl (fd, EVIOCGPROP(sizeof (unsigned long)), &propbits) != -1)
+      if (ioctl (fd, EVIOCGBIT(0, sizeof (unsigned long)), &evbits) != -1)
+      {
+        if ((evbits & (1<<EV_ABS)))
+        {
+	  int got_touch = 0;
+          size_t nchar = KEY_MAX/8+1;
+          unsigned char bits[nchar];
+          if (ioctl (fd, EVIOCGBIT(EV_KEY, sizeof (bits)), &bits)>=0)
+          {
+            got_touch = bits[BTN_TOUCH/8] & (1 << (BTN_TOUCH & 7));
+          }
+	  int got_pointer = propbits & (1<<INPUT_PROP_POINTER);
+	  //int got_direct = propbits & (1<<INPUT_PROP_DIRECT);
+	  int got_x_axis = absbits &(1<<ABS_X);
+	  int got_y_axis = absbits &(1<<ABS_Y);
+
+	  if (got_touch && !got_pointer && got_x_axis && got_y_axis)
+	  {
+            ioctl(fd, EVIOCGABS(ABS_X), &ctx_linux_ts_abs_x);
+            ioctl(fd, EVIOCGABS(ABS_Y), &ctx_linux_ts_abs_y);
+            return fd;
+	  }
+        }
+      }
+      close (fd);
+    }
+
+  }
+  return -1;
+}
+
+static int evsource_linux_ts_init ()
+{
+   ctx_ts_fd = ctx_linux_ts_open ();
+
+   if( -1 == ctx_ts_fd )
+   {
+     ctx_ts_fd = 0;
+     return -1;
+   }
+
+   char name[ 32 ];
+   if( -1 == ioctl( ctx_ts_fd, EVIOCGNAME( sizeof( name )), name ))
+   {
+     ctx_ts_fd = 0;
+     return -1;
+   }
+
+   if( -1 == ioctl( ctx_ts_fd, EVIOCGRAB, (void*)1 ))
+   {
+     ctx_ts_fd = 0;
+     return -1;
+   }
+
+  return 0;
+}
+static int evsource_linux_ts_has_event (void)
+{
+  struct timeval tv;
+  int retval;
+
+  fd_set rfds;
+  FD_ZERO (&rfds);
+  FD_SET(ctx_ts_fd, &rfds);
+  tv.tv_sec = 0; tv.tv_usec = 0;
+  retval = select (ctx_ts_fd+1, &rfds, NULL, NULL, &tv);
+  return retval == 1;
+}
+
+int ts_x = 0;
+int ts_y = 0;
+
+static char *evsource_linux_ts_get_event (void)
+{
+  struct input_event ev;
+  static int down_count = 0;
+  if (!ctx_fb_global) return NULL;
+  memset (&ev, 0, sizeof (ev));
+  if (-1==read(ctx_ts_fd, &ev, sizeof(ev)))
+  {
+    return NULL;
+  }
+  if (ev.type == EV_KEY)
+  {
+     if (ev.code == BTN_TOUCH ||
+         ev.code == BTN_LEFT)
+     {
+	int prev_down_count = down_count;
+
+	switch (ev.value)
+	{
+            case 0: /* up */
+	      down_count--;
+	      break;
+            case 1: /* down */
+	      down_count++;
+	      break;
+	}
+	if ( (prev_down_count!=0) != (down_count!=0))
+	{
+	   if (down_count)
+	     ctx_pointer_press (ctx_fb_global, ts_x, ts_y, 0, 0);
+	   else
+	     ctx_pointer_release (ctx_fb_global, ts_x, ts_y, 0, 0);
+	}
+     }
+  }
+  else if (ev.type == EV_ABS)
+  {
+     if (ev.code == ABS_X)
+     {
+       ts_x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx_fb_global) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
+     }
+     else if (ev.code == ABS_Y)
+     {
+       ts_y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx_fb_global) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
+       ctx_pointer_motion (ctx_fb_global, ts_x, ts_y, 0, 0);
+     }
+  }
+  return NULL;
+}
+
+static int evsource_linux_ts_get_fd (void)
+{
+  if (ctx_ts_fd >= 0)
+    return ctx_ts_fd;
+  return 0;
+}
+
+static inline EvSource *evsource_linux_ts_new (void)
+{
+  if (evsource_linux_ts_init() == 0)
+  {
+    return &ctx_ev_src_linux_ts;
+  }
+  return NULL;
+}
+#endif
+
 
 static inline int event_check_pending (CtxTiled *tiled)
 {

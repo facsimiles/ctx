@@ -597,8 +597,11 @@ Ctx *ctx_new_kms (int width, int height)
     kb->priv = fb;
   }
   EvSource *mice  = NULL;
+
+  mice = evsource_linux_ts_new ();
 #if CTX_PTY
-  mice = evsource_mice_new ();
+  if (!mice)
+    mice = evsource_mice_new ();
 #endif
   if (mice)
   {
