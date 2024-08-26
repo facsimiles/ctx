@@ -209,21 +209,21 @@ KeyBoard en_intl = {
      { {"Tab","Tab",NULL,NULL,1.3f,"tab","tab",NULL,NULL,0},
        {"q","Q",NULL,NULL,1.0f,"q","Q",NULL,NULL,0},
        {"w","W",NULL,NULL,1.0f,"w","W",NULL,NULL,0},
-       {"e","E",NULL,NULL,1.0f,"e","E",NULL,NULL,0},
+       {"e","E","æ","Æ",  1.0f,"e","E","æ","Æ",0},
        {"r","R",NULL,NULL,1.0f,"r","R",NULL,NULL,0},
        {"t","T",NULL,NULL,1.0f,"t","T",NULL,NULL,0},
        {"y","Y",NULL,NULL,1.0f,"y","Y",NULL,NULL,0},
        {"u","U",NULL,NULL,1.0f,"u","U",NULL,NULL,0},
        {"i","I",NULL,NULL,1.0f,"i","I",NULL,NULL,0},
-       {"o","O",NULL,NULL,1.0f,"o","O",NULL,NULL,0},
+       {"o","O","ø","Ø",  1.0f,"o","O","ø","Ø",0},
        {"p","P",NULL,NULL,1.0f,"p","P",NULL,NULL,0},
        {"[","{",NULL,NULL,1.0f,"[","{",NULL,NULL,0},
        {"]","}",NULL,NULL,1.0f,"]","}",NULL,NULL,0},
        {"\\","|",NULL,NULL,1.0f,"\\","|",NULL,NULL,0},
        {NULL} },
      { {"Fn","Fn",NULL,NULL,1.5f," "," ",NULL,NULL,1},
-       {"a","A",NULL,NULL,1.0f,"a","A",NULL,NULL,0},
-       {"s","S",NULL,NULL,1.0f,"s","S",NULL,NULL,0},
+       {"a","A","å","Å", 1.0f,"a","A","å","Å",0},
+       {"s","S","ß",NULL,1.0f,"s","S","ß",NULL,0},
        {"d","D",NULL,NULL,1.0f,"d","D",NULL,NULL,0},
        {"f","F",NULL,NULL,1.0f,"f","F",NULL,NULL,0},
        {"g","G",NULL,NULL,1.0f,"g","G",NULL,NULL,0},
@@ -270,9 +270,15 @@ void ctx_osk_draw (Ctx *ctx)
   static float fade = 0.0;
   KeyBoard *kb = &en_intl;
 
-  fade = 0.2;
   if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
      fade = 0.9;
+  else {
+     fade *= 0.95;
+     if (fade < 0.05)
+     {
+        fade = 0.0;
+     }
+  }
 
   float h = ctx_height (ctx);
   float w = ctx_width (ctx);
@@ -287,13 +293,15 @@ void ctx_osk_draw (Ctx *ctx)
     m = w;
       
   ctx_save (ctx);
-  ctx_round_rectangle (ctx, 0,
-                            y0,
-                            w,
-                            c * rows,
-                            c * 0.0);
+  ctx_rectangle (ctx, 0, y0, w, c * rows);
   ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, &en_intl);
-  ctx_rgba (ctx, 0,0,0, 0.5 * fade);
+  ctx_rgba (ctx, 0,0,0, 0.6 * fade);
+  if (fade < 0.05)
+  {
+    ctx_restore (ctx);
+    ctx_begin_path (ctx);
+    return;
+  }
   ctx_preserve (ctx);
   if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
     ctx_fill (ctx);
@@ -355,7 +363,6 @@ void ctx_osk_draw (Ctx *ctx)
                                 c * (cap->wfactor-0.1),
                                 c * 0.9,
                                 c * 0.1);
-      //ctx_listen (ctx, CTX_MOTION|CTX_PRESS|CTX_RELEASE|CTX_ENTER|CTX_LEAVE, ctx_on_screen_key_event, cap, &en_intl);
       
       if (cap->down || (cap->hovered && kb->down))
       {
@@ -379,17 +386,12 @@ void ctx_osk_draw (Ctx *ctx)
       ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
       ctx_text_baseline (ctx, CTX_TEXT_BASELINE_MIDDLE);
 
-#if 0
-      ctx_move_to (ctx, x + cap->wfactor * c*0.5, y + c * 0.5);
-      ctx_text_stroke (ctx, label);
-#endif
-
       ctx_move_to (ctx, x + cap->wfactor * c*0.5, y + c * 0.5);
 
       if (cap->down || (cap->hovered && kb->down))
         ctx_rgba (ctx, 0,0,0, fade);
       else
-        ctx_rgba (ctx, 1,0,0, fade);
+        ctx_rgba (ctx, 1,0,0, 0.5f);
 
       ctx_text (ctx, label);
 
