@@ -99,7 +99,6 @@ static void ctx_state_set_blob (CtxState *state, uint32_t key, uint8_t *data, in
   {
     int desired = idx + len + 1 + 1024;
    // ctx_log ("blowing varpool size [%c..]\n", data[0]);
-    //fprintf (stderr, "blowing varpool size [%c%c%c..]\n", data[0],data[1], data[1]?data[2]:0);
     void *copy = ctx_malloc (desired);
     if (!copy) return;
     if (state->stringpool)

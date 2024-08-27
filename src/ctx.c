@@ -2220,7 +2220,11 @@ void ctx_colorspace_babl (CtxState   *state,
 CTX_STATIC void
 ctx_state_init (CtxState *state)
 {
+  char *stringpool = state->stringpool;
+  int stringpool_size = state->stringpool_size;
   memset (state, 0, sizeof (CtxState) );
+  state->stringpool = stringpool;
+  state->stringpool_size = stringpool_size;
   state->gstate.global_alpha_u8 = 255;
   state->gstate.global_alpha_u8 = 255;
   state->gstate.global_alpha_f  = 1.0;

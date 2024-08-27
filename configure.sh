@@ -67,7 +67,7 @@ while test $# -gt 0
 do
     case "$1" in
      "--debug") CFLAGS=' -g ' ; HAVE_SIMD=0   ;;
-     "--static") CFLAGS='-Os' HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 ;;
+     "--static") CFLAGS='-O2' HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 ;;
      "--asan") CFLAGS=" -fsanitize=address -g";LIBS=' -lasan -g '  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined -g";LIBS=' -lasan -g '  ;;
      "--enable-kms") HAVE_KMS=1 ;;

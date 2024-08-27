@@ -1068,7 +1068,7 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
   char *cargv[32];
   int   cargc;
   char *rest, *copy;
-  copy = ctx_calloc (strlen (command)+2, 1);
+  copy = ctx_calloc (strlen (command)+2, 1); // XXX leaked!
   strcpy (copy, command);
   rest = copy;
   cargc = 0;
