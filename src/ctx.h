@@ -1392,6 +1392,7 @@ int   ctx_client_resize        (Ctx *ctx, int id, int width, int height);
 void  ctx_client_set_font_size (Ctx *ctx, int id, float font_size);
 float ctx_client_get_font_size (Ctx *ctx, int id);
 void  ctx_client_maximize      (Ctx *ctx, int id);
+void ctx_client_focus          (Ctx *ctx, int id);
 
 
 #if 1 // CTX_VT

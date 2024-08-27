@@ -715,7 +715,7 @@ ctx_pdf_process (Ctx *ctx, const CtxCommand *c)
 void ctx_pdf_destroy (CtxPDF *pdf)
 {
   FILE *f = fopen (pdf->path, "w");
-  char buf[12];
+  char buf[13];
 
   pdf_end_page (pdf);
 
@@ -726,12 +726,12 @@ void ctx_pdf_destroy (CtxPDF *pdf)
 
 
   // patch-back the value in pages earlier
-  snprintf (buf, 11, "% 10d", pdf->page_count);
+  snprintf (buf, 12, "% 10d", pdf->page_count);
   memcpy   (&pdf->document->str[pdf->page_count_offset], buf, 10);
 
   // patch-back the value in pages earlier
   int kids = pdf_add_object (pdf); 
-  snprintf (buf, 11, "% 10d", kids);
+  snprintf (buf, 12, "% 10d", kids);
   memcpy   (&pdf->document->str[pdf->kids_offset], buf, 10);
 
   ctx_pdf_print ("[");

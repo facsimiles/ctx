@@ -18,7 +18,7 @@
 #endif
 #include "ctx.h"
 
-int   on_screen_keyboard = 0;
+int   on_screen_keyboard = 1;
 
 typedef struct KeyCap {
   char *label;
@@ -61,6 +61,8 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
     return;
 
   key = NULL;
+
+  ctx_event_stop_propagate(event);
 
   for (int row = 0; kb->keys[row][0].label; row++)
   {

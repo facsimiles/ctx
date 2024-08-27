@@ -87,8 +87,8 @@
 //#define CTX_FONT0 CTX_STATIC_FONT("sans-ctx", ascii)
 #if CTX_STATIC_FONTS
 #include "Cousine-Regular.h"
-#include "Arimo-Regular.h"
-//#include "Roboto-Regular.h"
+//#include "Arimo-Regular.h"
+#include "Roboto-Regular.h"
 #if 0  // build more static fonts and uncomment these..
 #include "Carlito-Regular.h"
 #include "Carlito-Bold.h"
@@ -106,8 +106,8 @@
 #include "Tinos-BoldItalic.h"
 #endif
 
-#define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
-//#define CTX_FONT_0   CTX_STATIC_FONT(Roboto_Regular)
+//#define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
+#define CTX_FONT_0   CTX_STATIC_FONT(Roboto_Regular)
 #if 0
 #define CTX_FONT_1   CTX_STATIC_FONT(Arimo_Bold)
 #define CTX_FONT_2   CTX_STATIC_FONT(Arimo_Italic)

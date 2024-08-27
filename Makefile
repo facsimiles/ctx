@@ -79,10 +79,9 @@ fonts/%.h: tools/ctx-fontgen
 
 fonts/ctx-font-ascii.h: tools/ctx-fontgen Makefile
 	make -C fonts ctx-font-ascii.h \
-		Arimo-Regular.h \
+		Roboto-Regular.h \
 		Cousine-Regular.h 
 # \
-		Roboto-Regular.h \
 		Arimo-Regular.h \
 		Arimo-Italic.h \
 		Arimo-BoldItalic.h \

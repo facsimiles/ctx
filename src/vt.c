@@ -8088,6 +8088,7 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
   int device_no = event->device_no;
   char buf[128]="";
 
+
   if (vt)
   {
   if ((!vt->in_alt_screen) &&
@@ -8146,6 +8147,7 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
         ctx_client_lock (client);
         vt_feed_keystring (vt, event, buf);
         ctx_client_unlock (client);
+        ctx_client_focus (event->ctx, vt->id);
       break;
     default:
       // we should not stop propagation

@@ -414,6 +414,18 @@ int ctx_client_y (Ctx *ctx, int id)
   return client->y;
 }
 
+void ctx_client_focus (Ctx *ctx, int id)
+{
+  CtxClient *client = ctx_client_by_id (ctx, id);
+  if (!client) return;
+
+  if (ctx->events.active != client)
+  {
+    ctx->events.active = client;
+    ctx_queue_draw (ctx);
+  }
+}
+
 void ctx_client_raise_top (Ctx *ctx, int id)
 {
   CtxClient *client = ctx_client_by_id (ctx, id);
@@ -1329,10 +1341,14 @@ int ctx_clients_need_redraw (Ctx *ctx)
    CtxClient *client = find_active (ctx, ctx_pointer_x (ctx),
                                     ctx_pointer_y (ctx));
 
-   if (follow_mouse || ctx_pointer_is_down (ctx, 0) ||
-#if CTX_MAX_DEVICES>1
-       ctx_pointer_is_down (ctx, 1) ||
-#endif
+    // this should be osk - keyboard height dependent
+// if (ctx_pointer_y (ctx) > ctx_height (ctx) * 0.5f)
+//   client = NULL; 
+
+   if (follow_mouse || //ctx_pointer_is_down (ctx, 0) ||
+//#if CTX_MAX_DEVICES>1
+//       ctx_pointer_is_down (ctx, 1) ||
+//#endif
         (ctx->events.active==NULL))
    {
         if (client)
