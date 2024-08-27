@@ -143,6 +143,9 @@ int main (int argc, char **argv)
 
   const char *font_name = ctx_get_font_name (NULL, font_no);
 
+  if (!strcmp (font_name, "Roboto"))
+    font_name = "Roboto Regular";
+
   if (strstr (subsets, "all"))
   for (int glyph = 0; glyph < 65536*8; glyph++) add_glyph (ctx, glyph);
 
