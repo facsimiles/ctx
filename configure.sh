@@ -60,14 +60,14 @@ esac
 
 
 CFLAGS='-O2 -g'
-
+HAVE_STATIC=0
 CFLAGS_BACKEND=''
 
 while test $# -gt 0
 do
     case "$1" in
      "--debug") CFLAGS=' -g ' ; HAVE_SIMD=0   ;;
-     "--static") CFLAGS='-O2' HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 ;;
+     "--static") CFLAGS='-O2' HAVE_STB_TT=0 HAVE_PL_MPEG=0 HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 HAVE_STATIC=1;;
      "--asan") CFLAGS=" -fsanitize=address -g";LIBS=' -lasan -g '  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined -g";LIBS=' -lasan -g '  ;;
      "--enable-kms") HAVE_KMS=1 ;;
@@ -327,6 +327,10 @@ fi
 #rm -f build.deps
 #echo "Generating build.deps"
 #make build.deps 2>/dev/null
+
+if [ $HAVE_STATIC = 1 ]; then
+  echo "CTX_EXTRA_STATIC = -static" >> build.conf
+fi
 
 echo -n "configuration summary, architecture $(arch)"
 [ $HAVE_SIMD = 1 ]  && echo " SIMD multi-pass"

@@ -18,7 +18,7 @@
 #define CTX_EVENTS 1
 #define CTX_FONTS_FROM_FILE 1
 #define CTX_PARSER 1
-#include "ctx-nofont.h"
+#include "ctx.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 

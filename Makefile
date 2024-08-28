@@ -105,7 +105,8 @@ test: ctx
 distclean: clean
 	rm -f build.*
 clean:
-	rm -f ctx-nofont.h ctx.h ctx ctx.static ctx.O0 *.o highlight.css
+	rm -rf nofont #
+	rm -f ctx.h ctx ctx.static ctx.O0 *.o highlight.css
 	rm -f libctx.a libctx.so
 	rm -f ctx.pc ctx-wasm.pc
 	rm -f $(CLIENTS_BINS)
@@ -176,8 +177,9 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/graphics.ctx.terminal.desktop
 	rm -f $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/graphics.ctx.terminal.svg
 
-tools/%: tools/%.c ctx-nofont.h 
-	$(CCC) $< -o $@ -g -lm -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS -DCTX_STB_TT=1 -DCTX_HARFBUZZ=1 `pkg-config harfbuzz --cflags --libs`
+tools/%: tools/%.c
+	make nofont/ctx.h #
+	$(CCC) $< -o $@ -g -lm -Inofont -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS -DCTX_STB_TT=1 -DCTX_HARFBUZZ=1 `pkg-config harfbuzz --cflags --libs`
 
 ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
@@ -211,62 +213,65 @@ libctx.so: $(CTX_OBJS) deps.o build.conf Makefile
 	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS)
+	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS) $(CTX_EXTRA_STATIC)
 
-ctx.static: main.c ctx.h  build.conf Makefile $(MEDIA_HANDLERS_OBJS) $(CTX_SIMD_OBJS) ctx.o deps.o terminal/*.[ch] 
-	$(CCC) main.c terminal/*.c $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) $(CTX_CFLAGS) ctx.o $(CTX_SIMD_OBJS) deps.o $(LIBS) -static 
-	strip -s -x $@
+updateweb: all ctx test  #
+	git repack #
+	(cd docs ; stagit .. ) #
+	cat tests/index.html | sed 's/.*script.*//' > tmp #
+	mv tmp tests/index.html #
+	git update-server-info #
+	cp -ru tests/* ~/pgo/ctx.graphics/tests #
+	cp -fru .git/* /home/pippin/pgo/ctx.graphics/.git #
+	cp -ru docs/* ~/pgo/ctx.graphics/ #
+	cp ctx.h ~/pgo/ctx.graphics/ #
 
+afl/ctx: ctx.h #
+	make clean #
+	CC=../afl/afl-2.52b/afl-gcc make ctx -j5 #
+	cp ctx afl/ctx #
 
-#git gc
-
-foo: ctx
-updateweb: all ctx.static test
-	#make -C docs/uctx
-	git repack
-	(cd docs ; stagit .. )
-	cat tests/index.html | sed 's/.*script.*//' > tmp
-	mv tmp tests/index.html
-	git update-server-info
-	strip -s -x ctx ctx.static
-	cp -f ctx docs/binaries/ctx-x86_64-SDL2
-	cp -f ctx.static docs/binaries/ctx-x86_64-static
-	cp -ru tests/* ~/pgo/ctx.graphics/tests
-	#make clean
-	#proot -r /home/pippin/src/isthmus/i486 -b /dev -b /proc -b /sys -b /home/pippin/src/ctx ./configure.sh
-	#proot -r /home/pippin/src/isthmus/i486 -b /dev -b /proc -b /sys -b /home/pippin/src/ctx make ctx.static 
-	#cp -f ctx.static docs/binaries/ctx-i486-static
-	#upx docs/binaries/ctx-i486-static
-	cp -fru .git/* /home/pippin/pgo/ctx.graphics/.git
-	cp -ru docs/* ~/pgo/ctx.graphics/
-	cp ctx.h ~/pgo/ctx.graphics/
-
-afl/ctx: ctx.h
-	make clean
-	CC=../afl/afl-2.52b/afl-gcc make ctx -j5
-	cp ctx afl/ctx
-
-flatpak:
-	rm -rf build-dir;flatpak-builder --user build-dir meta/graphics.ctx.terminal.yml
-	flatpak-builder --collection-id=graphics.ctx --repo=docs/flatpak --force-clean build-dir meta/graphics.ctx.terminal.yml
+flatpak: #
+	rm -rf build-dir;flatpak-builder --user build-dir meta/graphics.ctx.terminal.yml #
+	flatpak-builder --collection-id=graphics.ctx --repo=docs/flatpak --force-clean build-dir meta/graphics.ctx.terminal.yml #
 	
-flatpak-install:
-	rm -rf build-dir;flatpak-builder --install --user build-dir meta/graphics.ctx.terminal.yml
+flatpak-install: #
+	rm -rf build-dir;flatpak-builder --install --user build-dir meta/graphics.ctx.terminal.yml #
 
-ctx.h: src/*.[ch] squoze/squoze.h src/index $(FONT_STAMP) tools/ctx-fontgen src/constants.h
-	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@)
+ctx.h: src/*.[ch] squoze/squoze.h src/index $(FONT_STAMP) tools/ctx-fontgen src/constants.h #
+	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@) #
+#
+nofont/ctx.h: src/*.c src/*.h src/index #
+	rm -rf nofont #
+	mkdir nofont #
+	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@) #
 
-ctx-nofont.h: src/*.c src/*.h src/index
-	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@)
+squoze/squoze: squoze/*.[ch]  #
+	make -C squoze squoze #
 
-squoze/squoze: squoze/*.[ch]
-	make -C squoze squoze
+src/constants.h: src/*.c Makefile squoze/squoze #
+	echo '#ifndef __CTX_CONSTANTS' > $@     #
+	echo '#define __CTX_CONSTANTS' >> $@    #
+	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -33 $$b`u // \"$$b\"";done >> $@ #
+	echo '#endif' >> $@ #
 
-src/constants.h: src/*.c Makefile squoze/squoze
-	echo '#ifndef __CTX_CONSTANTS' > $@
-	echo '#define __CTX_CONSTANTS' >> $@
-	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -33 $$b`u // \"$$b\"";done \
-               >> $@
-	echo '#endif' >> $@
-static.inc: static/* static/*/* tools/gen_fs.sh
-	./tools/gen_fs.sh static > $@
+static.inc: static/* static/*/* tools/gen_fs.sh #
+	./tools/gen_fs.sh static > $@           #
+
+dist: ctx Makefile #
+	rm -rf dist #
+	mkdir dist #
+	cp ctx.h main.c configure.sh dist #
+	mkdir dist/fonts #
+	cp fonts/*.h dist/fonts #
+	mkdir dist/terminal #
+	cp terminal/*.[ch] dist/terminal #
+	mkdir dist/deps #
+	cp deps/*.[ch] dist/deps #
+	cp deps.c dist #
+	cp ctx.c dist #
+	mkdir dist/tools #
+	cp tools/*.[ch] dist/tools #
+	mkdir dist/media-handlers #
+	cp media-handlers/*.[ch] dist/media-handlers #
+	grep -v '.*#$$' Makefile > dist/Makefile #
