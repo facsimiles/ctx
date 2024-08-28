@@ -8094,8 +8094,8 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
   if ((!vt->in_alt_screen) &&
       (event->x > vt->width - vt->cw * 3.5 || scrollbar_down) &&
       (event->type == CTX_DRAG_MOTION ||
-      event->type == CTX_DRAG_PRESS ||
-      event->type == CTX_DRAG_RELEASE))
+       event->type == CTX_DRAG_PRESS ||
+       event->type == CTX_DRAG_RELEASE))
   {
     scrollbar_drag (event, vt, data2);
     return;
@@ -8112,6 +8112,12 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
         vt_feed_keystring (vt, event, buf);
         ctx_client_unlock (client);
 //      vt->rev++;
+      }
+      break;
+    case CTX_TAP_AND_HOLD:
+      {
+	 //printf("got tap and hold!\n");
+         //terminal_long_tap (event->ctx, vt);
       }
       break;
     case CTX_DRAG_PRESS:
@@ -8368,6 +8374,7 @@ void ctx_client_register_events (CtxClient *client, Ctx *ctx, double x0, double 
   ctx_translate (ctx, x0, y0);
   ctx_rectangle (ctx, 0, 0, client->width, client->height);
   ctx_listen (ctx, CTX_DRAG,   ctx_client_mouse_event, client, NULL);
+  //ctx_listen (ctx, CTX_TAP_AND_HOLD, ctx_client_mouse_event, client, NULL);
   ctx_listen (ctx, CTX_MOTION, ctx_client_mouse_event, client, NULL);
   ctx_begin_path (ctx);
   ctx_restore (ctx);

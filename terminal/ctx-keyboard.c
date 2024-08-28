@@ -18,7 +18,7 @@
 #endif
 #include "ctx.h"
 
-int   on_screen_keyboard = 1;
+int   on_screen_keyboard = 0;
 
 typedef struct KeyCap {
   char *label;
@@ -119,6 +119,8 @@ static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
         ctx_queue_draw (event->ctx);
        if (!key)
          return;
+       if (!on_screen_keyboard)
+	 return;
 
       if (key->sticky)
       {
@@ -269,17 +271,18 @@ void ctx_osk_draw (Ctx *ctx)
 {
   if (!on_screen_keyboard)
     return;
-  static float fade = 0.0;
+  static float fade = 0.9;
   KeyBoard *kb = &en_intl;
 
-  if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
+  if (//kb->down || 
+      kb->alt || kb->control || kb->fn || kb->shifted)
      fade = 0.9;
   else {
-     fade *= 0.95;
-     if (fade < 0.05)
-     {
-        fade = 0.0;
-     }
+     //fade *= 0.95;
+     //if (fade < 0.05)
+     //{
+     //   fade = 0.0;
+     //}
   }
 
   float h = ctx_height (ctx);
@@ -297,13 +300,15 @@ void ctx_osk_draw (Ctx *ctx)
   ctx_save (ctx);
   ctx_rectangle (ctx, 0, y0, w, c * rows);
   ctx_listen (ctx, CTX_DRAG, ctx_on_screen_key_event, NULL, &en_intl);
-  ctx_rgba (ctx, 0,0,0, 0.6 * fade);
+  ctx_rgba (ctx, 0,0,0, 0.8 * fade);
+#if 0
   if (fade < 0.05)
   {
     ctx_restore (ctx);
     ctx_begin_path (ctx);
     return;
   }
+#endif
   ctx_preserve (ctx);
   if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
     ctx_fill (ctx);

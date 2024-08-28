@@ -418,6 +418,25 @@ extern int _ctx_enable_hash_cache;
 void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
                                float x, float y, float width, float titlebar_height);
 
+void draw_mini_panel (Ctx *ctx)
+{
+  float titlebar_height = font_size;
+
+  ctx_save (ctx);
+  ctx_font_size (ctx, titlebar_height * 0.9);
+  float w = ctx_width (ctx);
+
+  ctx_rectangle (ctx, w - titlebar_height * 5, 0, titlebar_height * 4, titlebar_height);
+  ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
+  ctx_move_to (ctx, w - titlebar_height * 5/2, titlebar_height * 0.8);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+  ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
+  ctx_text (ctx, "[add tab]");
+
+  ctx_restore (ctx);
+}
+
+
 void draw_panel (Css *itk, Ctx *ctx)
 {
   struct tm local_time_res;
@@ -433,12 +452,15 @@ void draw_panel (Css *itk, Ctx *ctx)
   ctx_gray (ctx, 0.0);
   ctx_fill (ctx);
   ctx_font_size (ctx, titlebar_height * 1.0);
+
+#if 0
   ctx_move_to (ctx, ctx_width (ctx), titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_END);
   ctx_gray (ctx, 0.9);
   char buf[128];
   sprintf (buf, "%02i:%02i:%02i", local_time_res.tm_hour, local_time_res.tm_min, local_time_res.tm_sec);
   ctx_text (ctx, buf);
+#endif
 
   ctx_begin_path (ctx);
   ctx_rectangle (ctx, ctx_width(ctx)-titlebar_height * 10, 0, titlebar_height * 10, titlebar_height);
@@ -456,14 +478,17 @@ void draw_panel (Css *itk, Ctx *ctx)
   tab_width /= tabs;
 
   ctx_begin_path (ctx);
+#if 0
   ctx_rectangle (ctx, 0, 0, titlebar_height * 1.5, titlebar_height);
   ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
   ctx_move_to (ctx, titlebar_height * 1.5/2, titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_gray (ctx, 0.9);
   ctx_text (ctx, "+");
-
   float x = titlebar_height * 1.5;
+#else
+  float x = titlebar_height * 0.0;
+#endif
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
@@ -476,23 +501,7 @@ void draw_panel (Css *itk, Ctx *ctx)
     x += tab_width;
   }
   ctx_restore (ctx);
-}
-
-void draw_mini_panel (Ctx *ctx)
-{
-  float titlebar_height = font_size;
-
-  ctx_save (ctx);
-  ctx_font_size (ctx, titlebar_height * 0.9);
-
-  ctx_rectangle (ctx, 0, 0, titlebar_height * 1.5, titlebar_height);
-  ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
-  ctx_move_to (ctx, titlebar_height * 1.5/2, titlebar_height * 0.8);
-  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-  ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
-  ctx_text (ctx, "+");
-
-  ctx_restore (ctx);
+  draw_mini_panel (ctx);
 }
 
 static char *set_title = NULL;
@@ -517,12 +526,9 @@ terminal_update_title (const char *title)
 
 int ctx_input_pending (Ctx *ctx, int timeout);
 
-void terminal_long_tap (Ctx *ctx, VT *vt)
+void terminal_long_tap (CtxEvent *event, void *a, void *b)
 {
-  //fprintf (stderr, "long tap\n");
-  //
-  //  need deghosting or something on fbdev?
-  //
+  Ctx *ctx = event->ctx;
   on_screen_keyboard = !on_screen_keyboard;
   ctx_queue_draw (ctx);
 }
@@ -681,6 +687,11 @@ int terminal_main (int argc, char **argv)
         ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
+
+     ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+     ctx_listen (ctx, CTX_TAP_AND_HOLD, terminal_long_tap, NULL, NULL);
+     ctx_begin_path (ctx);
+
         ctx_end_frame (ctx);
       }
 
@@ -693,6 +704,7 @@ int terminal_main (int argc, char **argv)
 
      ctx_handle_events (ctx);
     }
+
 
   ctx_remove_idle (ctx, mt);
 

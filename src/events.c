@@ -426,7 +426,8 @@ void _ctx_events_init (Ctx *ctx)
   events->tap_delay_max  = 8000000; /* quick reflexes needed making it hard for some is an argument against very short values  */
 
   events->tap_delay_hold = 1000;
-  events->tap_hysteresis = 32;  /* XXX: should be ppi dependent */
+  events->tap_hysteresis = 34;  /* XXX: should be ppi dependent */
+  //events->tap_hysteresis = 64;  /* XXX: should be ppi dependent */
 }
 
 void _ctx_toggle_in_idle_dispatch (Ctx *ctx)
@@ -3446,6 +3447,8 @@ static inline EvSource *evsource_kb_raw_new (void)
 
 #if CTX_RAW_KB_EVENTS
 
+static int ts_is_mt = 0;
+
 static int evsource_linux_ts_has_event (void);
 static char *evsource_linux_ts_get_event (void);
 static void evsource_linux_ts_destroy (int sign);
@@ -3524,11 +3527,12 @@ static int ctx_linux_ts_open (void)
     sprintf (path, "/dev/input/event%i", i);
     fd = open(path, O_RDONLY | O_CLOEXEC );
     unsigned long evbits = 0;
-    unsigned long absbits = 0;
+    size_t nabs  = ABS_MAX/8+1;
+    unsigned char absbits[nabs];
     unsigned long propbits = 0;
     if (fd != -1)
     {
-      if (ioctl (fd, EVIOCGBIT(EV_ABS, sizeof(unsigned long)), &absbits) != -1)
+      if (ioctl (fd, EVIOCGBIT(EV_ABS, sizeof(absbits)), &absbits) != -1)
       if (ioctl (fd, EVIOCGPROP(sizeof (unsigned long)), &propbits) != -1)
       if (ioctl (fd, EVIOCGBIT(0, sizeof (unsigned long)), &evbits) != -1)
       {
@@ -3543,8 +3547,19 @@ static int ctx_linux_ts_open (void)
           }
 	  int got_pointer = propbits & (1<<INPUT_PROP_POINTER);
 	  //int got_direct = propbits & (1<<INPUT_PROP_DIRECT);
-	  int got_x_axis = absbits &(1<<ABS_X);
-	  int got_y_axis = absbits &(1<<ABS_Y);
+	  int got_x_axis = absbits[ABS_X/8] & (1 << (ABS_X & 7));
+	  int got_y_axis = absbits[ABS_Y/8] & (1 << (ABS_Y & 7));
+	  int got_x_axis_mt = absbits[ABS_MT_POSITION_X/8] & (1 << (ABS_MT_POSITION_X & 7));
+	  int got_y_axis_mt = absbits[ABS_MT_POSITION_Y/8] & (1 << (ABS_MT_POSITION_Y & 7));
+
+	  // we prefer the ABS_X / ABS_Y code path if available
+	  if (!got_pointer && (got_x_axis_mt && got_y_axis_mt) && !(got_touch && got_x_axis && got_y_axis))
+	  {
+            ioctl(fd, EVIOCGABS(ABS_MT_POSITION_X), &ctx_linux_ts_abs_x);
+            ioctl(fd, EVIOCGABS(ABS_MT_POSITION_Y), &ctx_linux_ts_abs_y);
+	    ts_is_mt = 1;
+            return fd;
+	  }
 
 	  if (got_touch && !got_pointer && got_x_axis && got_y_axis)
 	  {
@@ -3606,16 +3621,19 @@ static char *evsource_linux_ts_get_event (void)
 {
   struct input_event ev;
   static int down_count = 0;
+  static int down = 0;
   if (!ctx_fb_global) return NULL;
   memset (&ev, 0, sizeof (ev));
   if (-1==read(ctx_ts_fd, &ev, sizeof(ev)))
   {
     return NULL;
   }
-  if (ev.type == EV_KEY)
+  if (ev.type == EV_KEY && (ts_is_mt == 0))
   {
-     if (ev.code == BTN_TOUCH ||
-         ev.code == BTN_LEFT)
+     if (
+         (ts_is_mt==0) &&
+         (ev.code == BTN_TOUCH ||
+         ev.code == BTN_LEFT))
      {
 	int prev_down_count = down_count;
 
@@ -3639,16 +3657,41 @@ static char *evsource_linux_ts_get_event (void)
   }
   else if (ev.type == EV_ABS)
   {
-     if (ev.code == ABS_X)
+     switch (ev.code)
      {
+       // we sheepisly expect to get first x then y - they probably do come in pairs and probably in that order...
+       case ABS_X:
+       case ABS_MT_POSITION_X:
        ts_x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx_fb_global) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
-     }
-     else if (ev.code == ABS_Y)
-     {
+       //down = 1;
+       break;
+       case ABS_Y:
+       case ABS_MT_POSITION_Y:
        ts_y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx_fb_global) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
-       ctx_pointer_motion (ctx_fb_global, ts_x, ts_y, 0, 0);
+
+       if (ts_is_mt && down == 0)
+	  ctx_pointer_press (ctx_fb_global, ts_x, ts_y, 0, 0);
+       else
+          ctx_pointer_motion (ctx_fb_global, ts_x, ts_y, 0, 0);
+       down = 1;
+       break;
+       case ABS_MT_TRACKING_ID:
+       {
+	 if (ts_is_mt && ev.value == -1 && (down != 0))
+	 {
+	    ctx_pointer_release (ctx_fb_global, ts_x, ts_y, 0, 0);
+	    down = 0;
+	 }
+       }
+       break;
      }
+     }
+  else if (ts_is_mt && ev.type == EV_SYN && ev.code == SYN_MT_REPORT && (down != 0))
+  {
+     ctx_pointer_release (ctx_fb_global, ts_x, ts_y, 0, 0);
+     down = 0;
   }
+
   return NULL;
 }
 
