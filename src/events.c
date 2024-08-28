@@ -254,9 +254,11 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
   }
   else
   {
-    _ctx_max_threads = 2;
+    _ctx_max_threads = 1;
+#if 0
 #ifdef _SC_NPROCESSORS_ONLN
     _ctx_max_threads = sysconf (_SC_NPROCESSORS_ONLN) / 2;
+#endif
 #endif
   }
   
