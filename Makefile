@@ -12,7 +12,9 @@ CCACHE=`command -v ccache`
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
-all: build.conf ctx-wasm.pc ctx-wasm-simd.pc ctx.pc libctx.so ctx.h tools/ctx-fontgen ctx $(CLIENTS_BINS)
+all: build.conf ctx-wasm.pc ctx-wasm-simd.pc ctx.pc libctx.so ctx.h ctx $(CLIENTS_BINS) \
+      tools/ctx-fontgen	  #
+	
 include build.conf
 
 CFLAGS_warnings= -Wall \
@@ -99,7 +101,8 @@ clean:
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(MEDIA_HANDLERS_OBJS)
 	rm -f $(SRC_OBJS) #
-	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
+	rm -f tests/index.html
+	rm -f fonts/*.h fonts/ctxf/* tools/ctx-fontgen #
 
 ctx.pc: Makefile
 	@echo "prefix=$(PREFIX)" > $@
@@ -163,9 +166,9 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/graphics.ctx.terminal.desktop
 	rm -f $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/graphics.ctx.terminal.svg
 
-tools/%: tools/%.c
+tools/%: tools/%.c  #
 	make nofont/ctx.h #
-	$(CCC) $< -o $@ -g -lm -Inofont -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS -DCTX_STB_TT=1 -DCTX_HARFBUZZ=1 `pkg-config harfbuzz --cflags --libs`
+	$(CCC) $< -o $@ -g -lm -Inofont -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS -DCTX_STB_TT=1 -DCTX_HARFBUZZ=1 `pkg-config harfbuzz --cflags --libs` #
 
 ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
@@ -252,8 +255,6 @@ ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	cp deps/*.[ch] dist/deps #
 	cp deps.c dist #
 	cp ctx.c dist #
-	mkdir dist/tools #
-	cp tools/*.[ch] dist/tools #
 	mkdir dist/media-handlers #
 	cp media-handlers/*.[ch] dist/media-handlers #
 	mkdir dist/meta #
@@ -264,9 +265,6 @@ ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	cp -r tests/*.ctx dist/tests/ #
 	grep -v '.*#$$' tests/Makefile > dist/tests/Makefile #
 	grep -v '.*#$$' Makefile > dist/Makefile #
-	rm dist/tools/ctx-info.c #
-	rm dist/tools/vtfuzz.c #
-	rm dist/tools/ctx-font-split.c #
 	rm dist/fonts/ctx-font-ascii.h #
 	#
 	mv dist ctx-$(CTX_VERSION) #
