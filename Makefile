@@ -1,7 +1,7 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
-CTX_VERSION=0.1.0
+CTX_VERSION=0.0.0
 
 # hack to prefer clang when available
 #CC=`command -v clang-16 || echo cc`
@@ -75,8 +75,8 @@ build.conf:
 demos/c/%: demos/c/%.c build.conf Makefile build.conf libctx.a 
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
-fonts/%.h: tools/ctx-fontgen
-	make -C fonts `echo $@|sed s:fonts/::` 
+fonts/%.h: tools/ctx-fontgen #
+	make -C fonts `echo $@|sed s:fonts/::`  #
 
 fonts/Roboto-Regular.h: tools/ctx-fontgen Makefile #
 	make -C fonts ctx-font-ascii.h #
@@ -147,7 +147,7 @@ install: ctx libctx.so ctx.h ctx.pc ctx-wasm.pc ctx-wasm-simd.pc
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx-wasm-simd.pc
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/include ctx.h
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib libctx.so
-	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin tools/ctx-audioplayer
+	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin tools/ctx-audioplayer #
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/appdata meta/graphics.ctx.terminal.appdata.xml
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/applications meta/graphics.ctx.terminal.desktop
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps meta/graphics.ctx.terminal.svg
@@ -237,9 +237,6 @@ src/constants.h: src/*.c Makefile squoze/squoze #
 	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -33 $$b`u // \"$$b\"";done >> $@ #
 	echo '#endif' >> $@ #
 #
-static.inc: static/* static/*/* tools/gen_fs.sh #
-	./tools/gen_fs.sh static > $@           #
-#
 #
 #
 ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
@@ -259,12 +256,19 @@ ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	cp tools/*.[ch] dist/tools #
 	mkdir dist/media-handlers #
 	cp media-handlers/*.[ch] dist/media-handlers #
+	mkdir dist/meta #
+	cp meta/* dist/meta #
 	mkdir dist/tests #
 	mkdir dist/tests/reference #
 	cp -r tests/reference/* dist/tests/reference #
 	cp -r tests/*.ctx dist/tests/ #
 	grep -v '.*#$$' tests/Makefile > dist/tests/Makefile #
 	grep -v '.*#$$' Makefile > dist/Makefile #
+	rm dist/tools/ctx-info.c #
+	rm dist/tools/vtfuzz.c #
+	rm dist/tools/ctx-font-split.c #
+	rm dist/fonts/ctx-font-ascii.h #
+	#
 	mv dist ctx-$(CTX_VERSION) #
 	tar cjf ctx-$(CTX_VERSION).tar.bz2 ctx-$(CTX_VERSION) #
 	rm -rf ctx-$(CTX_VERSION) #
