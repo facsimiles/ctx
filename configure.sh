@@ -33,6 +33,7 @@ ENABLE_FORMATTER=1
 ENABLE_CMYK=1
 ENABLE_ONLY_RGBA8=0
 ENABLE_DITHER=0
+ENABLE_CSS=1
 ENABLE_EVENTS=1
 ENABLE_FRAGMENT_SPECIALIZE=1
 ENABLE_FAST_FILL_RECT=1
@@ -101,6 +102,7 @@ do
      "--enable-fonts_from_file") ENABLE_FONTS_FROM_FILE=1 ;;
      "--enable-font_ctx_fs") ENABLE_FONT_CTX_FS=1 ;;
      "--enable-dither") ENABLE_DITHER=1 ;;
+     "--enable-css") ENABLE_CSS=1 ;;
      "--enable-events") ENABLE_EVENTS=1 ;;
      "--enable-term") ENABLE_TERM=1 ;;
      "--enable-termimg") ENABLE_TERMIMG=1 ;;
@@ -128,6 +130,7 @@ do
      "--disable-fonts_from_file") ENABLE_FONTS_FROM_FILE=0 ;;
      "--disable-font-ctx-fs") ENABLE_FONT_CTX_FS=0 ;;
      "--disable-dither") ENABLE_DITHER=0 ;;
+     "--disable-css") ENABLE_CSS=0 ;;
      "--disable-events") ENABLE_EVENTS=0 ;;
      "--disable-kms") HAVE_KMS=0 ;;
      "--disable-vt") ENABLE_VT=0 ;;
@@ -168,6 +171,7 @@ do
         #ENABLE_FONTS_FROM_FILE=0 
         ENABLE_FONT_CTX_FS=0 
         ENABLE_DITHER=0 
+        ENABLE_CSS=0 
         ENABLE_TERM=0 
         ENABLE_TERMIMG=0 
         HAVE_BABL=0 
@@ -239,6 +243,7 @@ echo -n "#define CTX_FONT_ENGINE_CTX_FS " >> local.conf; if [ $ENABLE_FONT_CTX_F
 echo -n "#define CTX_TERM " >> local.conf; if [ $ENABLE_TERM = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_TERMIMG " >> local.conf; if [ $ENABLE_TERMIMG = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_DITHER " >> local.conf; if [ $ENABLE_DITHER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
+echo -n "#define CTX_CSS " >> local.conf; if [ $ENABLE_CSS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_EVENTS " >> local.conf; if [ $ENABLE_EVENTS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_RASTERIZER " >> local.conf; if [ $ENABLE_RASTERIZER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_PARSER " >> local.conf; if [ $ENABLE_PARSER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
@@ -332,6 +337,7 @@ if [ $HAVE_STATIC = 1 ]; then
   echo "CTX_EXTRA_STATIC = -static" >> build.conf
 fi
 
+
 echo -n "configuration summary, architecture $(arch)"
 [ $HAVE_SIMD = 1 ]  && echo " SIMD multi-pass"
 echo ""
@@ -374,7 +380,8 @@ echo "   tinyvg viewer"
 echo -n " CMYK            "; [ $ENABLE_CMYK = 1 ] && echo -n "yes" || echo -n "no" ; 
 echo "  extra code for handling CMYK color space"
 echo -n " dither          "; [ $ENABLE_DITHER = 1 ] && echo "yes" || echo "no"
-echo -n " events          "; [ $ENABLE_EVENTS = 1 ] && echo "yes" || echo "no"
+echo -n " css             "; [ $ENABLE_CSS = 1 ] && echo -n "yes" || echo -n "no" ; echo "  SVG/epub parsing"
+echo -n " events          "; [ $ENABLE_EVENTS = 1 ] && echo -n "yes" || echo -n "no" ; echo "  build (lib) without event handling"
 echo -n " font_ctx_fs     "; [ $ENABLE_FONT_CTX_FS = 1 ] && echo "yes" || echo "no"
 echo -n " fonts_from_file "; [ $ENABLE_FONTS_FROM_FILE = 1 ] && echo "yes" || echo "no"
 echo -n " rasterizer      "; [ $ENABLE_RASTERIZER = 1 ] && echo "yes" || echo "no"

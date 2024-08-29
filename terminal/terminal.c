@@ -629,10 +629,14 @@ int terminal_main (int argc, char **argv)
   if (font_size < 0)
     font_size = floorf (width / cols  * 2 / 1.5);
 
+#if CTX_CSS
   Css *itk = css_new (ctx);
-
   css_set_scale (itk, 1.0);
   css_set_font_size (itk, font_size);
+#else
+  void *itk = NULL;
+#endif
+
   start_font_size = font_size;
   ctx_font_size (ctx, font_size);
 
@@ -669,12 +673,17 @@ int terminal_main (int argc, char **argv)
 #endif
       if (ctx_need_redraw(ctx))
       {
+#if CTX_CSS
         css_reset (itk);
-        ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         css_style_bg (itk, "wallpaper");
-	//ctx_rgb (ctx, 0,0,0);
-        ctx_fill (ctx);
         ctx_font_size (ctx, css_em (itk));
+#else
+	ctx_start_frame (ctx);
+	ctx_rgb (ctx, 0,0,0);
+        ctx_font_size (ctx, 13.0f);
+#endif
+        ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+        ctx_fill (ctx);
         ctx_clients_draw (ctx, 0);
         if ((n_clients != 1) || (ctx_clients (ctx) &&
                                  !flag_is_set(
@@ -708,7 +717,9 @@ int terminal_main (int argc, char **argv)
 
   ctx_remove_idle (ctx, mt);
 
+#if CTX_CSS
   css_destroy (itk);
+#endif
   ctx_destroy (ctx);
 
   if (getpid () == 1)

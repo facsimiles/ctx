@@ -1,6 +1,7 @@
 DESTDIR ?=
 PREFIX  ?= /usr/local
 
+CTX_VERSION=0.1.0
 
 # hack to prefer clang when available
 #CC=`command -v clang-16 || echo cc`
@@ -77,27 +78,12 @@ demos/c/%: demos/c/%.c build.conf Makefile build.conf libctx.a
 fonts/%.h: tools/ctx-fontgen
 	make -C fonts `echo $@|sed s:fonts/::` 
 
-fonts/ctx-font-ascii.h: tools/ctx-fontgen Makefile
-	make -C fonts ctx-font-ascii.h \
-		Roboto-Regular.h \
-		Cousine-Regular.h 
-# \
-		Arimo-Regular.h \
-		Arimo-Italic.h \
-		Arimo-BoldItalic.h \
-		Arimo-Bold.h \
-		Carlito-Regular.h \
-		Carlito-Italic.h \
-		Carlito-BoldItalic.h \
-		Carlito-Bold.h \
-		Cousine-Italic.h \
-		Cousine-BoldItalic.h \
-		Cousine-Bold.h \
-		Tinos-Regular.h \
-		Tinos-Italic.h \
-		Tinos-BoldItalic.h \
-		Tinos-Bold.h
-FONT_STAMP=fonts/ctx-font-ascii.h
+fonts/Roboto-Regular.h: tools/ctx-fontgen Makefile #
+	make -C fonts ctx-font-ascii.h #
+	make -C fonts Roboto-Regular.h #
+	make -C fonts Cousine-Regular.h  #
+
+FONT_STAMP=fonts/Roboto-Regular.h
 
 
 test: ctx
@@ -199,9 +185,6 @@ ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CTX_CFLAGS) $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
-src/%.o: src/%.c split/*.h
-	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS)
-
 terminal/%.o: terminal/%.c ctx.h terminal/*.h Makefile build.conf
 	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 media-handlers/%.o: media-handlers/%.c ctx.h Makefile build.conf
@@ -258,8 +241,9 @@ src/constants.h: src/*.c Makefile squoze/squoze #
 static.inc: static/* static/*/* tools/gen_fs.sh #
 	./tools/gen_fs.sh static > $@           #
 
-dist: ctx Makefile #
+dist: ctx.h Makefile #
 	rm -rf dist #
+	rm -rf ctx-$(CTX_VERSION)
 	mkdir dist #
 	cp ctx.h main.c configure.sh dist #
 	mkdir dist/fonts #
@@ -275,3 +259,7 @@ dist: ctx Makefile #
 	mkdir dist/media-handlers #
 	cp media-handlers/*.[ch] dist/media-handlers #
 	grep -v '.*#$$' Makefile > dist/Makefile #
+	mv dist ctx-$(CTX_VERSION) #
+	tar cjf ctx-$(CTX_VERSION).tar.bz2 ctx-$(CTX_VERSION) #
+	rm -rf ctx-$(CTX_VERSION) #
+	

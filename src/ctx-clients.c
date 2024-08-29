@@ -1102,14 +1102,25 @@ void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
     ctx_rgba (ctx, 1, 1,0.4, 1.0);
   else
     ctx_rgba (ctx, 1, 1,1, 0.8);
+  ctx_move_to (ctx, x + width * 0.5, y - titlebar_height * 0.22);
+  ctx_save (ctx);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_text (ctx, client->title);
+  ctx_restore (ctx);
 #else
   ctx_rectangle (ctx, x, y - titlebar_height,
                  width, titlebar_height);
+#if CTX_CSS
   if (client == ctx->events.active)
      css_style_color (ctx, "titlebar-focused-bg");
   else
      css_style_color (ctx, "titlebar-bg");
+#else
+  if (client == ctx->events.active)
+    ctx_rgba (ctx, 0.2, 0.2,0.2, 1.0);
+  else
+    ctx_rgba (ctx, 0, 0,0, 1.0);
+#endif
 
   if (flag_is_set(client->flags, CSS_CLIENT_MAXIMIZED) || y == titlebar_height)
   {
@@ -1137,17 +1148,33 @@ void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
   //ctx_fill (ctx);
   ctx_begin_path (ctx);
   ctx_move_to (ctx, x + width - titlebar_height * 0.8, y - titlebar_height * 0.22);
+
+#if CTX_CSS
   if (client == ctx->events.active)
     css_style_color (ctx, "titlebar-focused-close");
   else
     css_style_color (ctx, "titlebar-close");
+#else
+  if (client == ctx->events.active)
+    ctx_rgba (ctx, 1, 0.2,0.2, 1.0);
+  else
+    ctx_rgba (ctx, 1, 1,1, 0.8);
+#endif
   ctx_text (ctx, "X");
 
   ctx_move_to (ctx, x +  width/2, y - titlebar_height * 0.22);
+#if CTX_CSS
   if (client == ctx->events.active)
     css_style_color (ctx, "titlebar-focused-fg");
   else
     css_style_color (ctx, "titlebar-fg");
+#else
+  if (client == ctx->events.active)
+    ctx_rgba (ctx, 1, 1,1.0, 1.0);
+  else
+    ctx_rgba (ctx, 0.7, 0.7,0.7, 1.0);
+
+#endif
 
   ctx_save (ctx);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
@@ -1235,10 +1262,10 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
          !flag_is_set(client->flags, CSS_CLIENT_MAXIMIZED) &&
          flag_is_set(client->flags, CSS_CLIENT_UI_RESIZABLE))
       {
-#if CTX_PTY
+#if CTX_CSS
         css_style_color (ctx, "titlebar-focused-bg");
 #else
-        ctx_rgb(ctx,0.1,0.2,0.3);
+        ctx_rgba(ctx,0.2,0.2,0.2, 1.0);
 #endif
 
         ctx_rectangle (ctx,

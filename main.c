@@ -345,11 +345,13 @@ int main (int argc, char **argv)
       return ctx_mpg_main (argc, argv);
     }
 #endif
+#if CTX_CSS
     if (   !strcmp (media_type, "image/svg+xml") 
         || !strcmp (media_type, "text/html"))
     {
       return browser_main (argc, argv);
     }
+#endif
 
     return -1;
   }

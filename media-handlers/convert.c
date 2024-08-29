@@ -5,13 +5,17 @@
 #include "local.conf"
 #include "ctx.h"
 
-#define CTX_SVG 1
 
 typedef struct _Css Css;
 Css *css_new (Ctx *ctx);
 void mrg_destroy (Css *mrg);
 
+#if CTX_CSS
+#define CTX_SVG 1
 void css_print_xml (Css *mrg, const char *str);
+#else
+#define CTX_SVG 0
+#endif
 
 int ctx_terminal_rows (void);
 int ctx_terminal_cols (void);
@@ -529,7 +533,9 @@ static void ui_drag (CtxEvent *event, void *data1, void *data2)
   dirty++;
 }
 
+#if CTX_CSS
 int css_xml_extent (Css *itk, uint8_t *contents, float *width, float *height, float *vb_x, float *vb_y, float *vb_width, float *vb_height);
+#endif
 
 int convert_main (int argc, char **argv)
 {

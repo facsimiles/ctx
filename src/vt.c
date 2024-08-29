@@ -8324,7 +8324,7 @@ static void test_popup (Ctx *ctx, void *data)
 }
 #endif
 
-void css_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
+//void css_style_color (Ctx *ctx, const char *name); // only itk fun used in vt
 
 void vt_use_images (VT *vt, Ctx *ctx)
 {

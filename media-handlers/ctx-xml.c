@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
+#include "local.conf"
+#if CTX_CSS
 
 #include <string.h>
 #include <stdio.h>
@@ -275,3 +277,5 @@ int browser_main (int argc, char **argv)
   free (mr);
   return 0;
 }
+
+#endif
