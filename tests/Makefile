@@ -53,7 +53,7 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile ../ctx.h
 	#echo "<script>setTimeout(function(){location.reload();},8000);</script>" >> $@
 	echo "</head>" >> $@ 
 	echo "<body>" >> $@ 
-	cat ../docs/subpagemenu.txt >> $@
+	cat ../docs/subpagemenu.txt >> $@ || true
 	echo "<div id='page'>" >> $@ 
 	echo "<p><a href='https://pippin.gimp.org/ctx/'>ctx</a> renderings tests, the ones where the source entry are blank are renderings of SVG/HTML/CSS files using parsers based on <a href='https://github.com/hodefoting/mrg'>microraptor gui</a>.</p>, the SVG and HTML missteps are not the fault of ctx, but provide additional surface for monitoring regressions and advances in ctx." >> $@ 
 	echo "<div id='index'>" >> $@ 
@@ -89,8 +89,8 @@ index.html: $(TEST_CTX) $(TEST_SVG) Makefile ../ctx.h
 clean:
 	rm -rf gray1 png gray8 png-640x240 png-480x480 png-320x240
 
-../ctx: ../ctx.h ../src/*.[ch]
-	make -C .. ctx
+../ctx: ../ctx.h ../src/*.[ch] #
+	make -C .. ctx         #
 
 
 gray1/%: %.ctx ../ctx Makefile

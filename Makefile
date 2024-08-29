@@ -98,7 +98,7 @@ clean:
 	rm -f $(CLIENTS_BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(MEDIA_HANDLERS_OBJS)
-	rm -f $(SRC_OBJS)
+	rm -f $(SRC_OBJS) #
 	rm -f tests/index.html fonts/*.h fonts/ctxf/* tools/ctx-fontgen
 
 ctx.pc: Makefile
@@ -193,7 +193,6 @@ libctx.a: deps.o $(CTX_OBJS) build.conf Makefile
 	$(AR) rcs $@ $(CTX_OBJS) deps.o 
 libctx.so: $(CTX_OBJS) deps.o build.conf Makefile
 	$(CCC) -shared $(LIBS) $(CTX_OBJS) deps.o $(CTX_LIBS) -o $@
-	#$(LD) --retain-symbols-file=symbols -shared $(LIBS) $? $(CTX_LIBS)  -o $@
 
 ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
 	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS) $(CTX_EXTRA_STATIC)
@@ -208,19 +207,19 @@ updateweb: all ctx test  #
 	cp -fru .git/* /home/pippin/pgo/ctx.graphics/.git #
 	cp -ru docs/* ~/pgo/ctx.graphics/ #
 	cp ctx.h ~/pgo/ctx.graphics/ #
-
+#
 afl/ctx: ctx.h #
 	make clean #
 	CC=../afl/afl-2.52b/afl-gcc make ctx -j5 #
 	cp ctx afl/ctx #
-
+#
 flatpak: #
 	rm -rf build-dir;flatpak-builder --user build-dir meta/graphics.ctx.terminal.yml #
 	flatpak-builder --collection-id=graphics.ctx --repo=docs/flatpak --force-clean build-dir meta/graphics.ctx.terminal.yml #
-	
+#	
 flatpak-install: #
 	rm -rf build-dir;flatpak-builder --install --user build-dir meta/graphics.ctx.terminal.yml #
-
+#
 ctx.h: src/*.[ch] squoze/squoze.h src/index $(FONT_STAMP) tools/ctx-fontgen src/constants.h #
 	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@) #
 #
@@ -228,22 +227,24 @@ nofont/ctx.h: src/*.c src/*.h src/index #
 	rm -rf nofont #
 	mkdir nofont #
 	(cd src;cat `cat index|grep -v font` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' > ../$@) #
-
+#
 squoze/squoze: squoze/*.[ch]  #
 	make -C squoze squoze #
-
+#
 src/constants.h: src/*.c Makefile squoze/squoze #
 	echo '#ifndef __CTX_CONSTANTS' > $@     #
 	echo '#define __CTX_CONSTANTS' >> $@    #
 	for a in `cat src/*.[ch] | tr ';' ' ' | tr ',' ' ' | tr ')' ' '|tr ':' ' ' | tr '{' ' ' | tr ' ' '\n' | grep 'SQZ_[a-z][0-9a-zA-Z_]*'| sort | uniq`;do b=`echo $$a|tail -c+5|tr '_' '-'`;echo "#define $$a `./squoze/squoze -33 $$b`u // \"$$b\"";done >> $@ #
 	echo '#endif' >> $@ #
-
+#
 static.inc: static/* static/*/* tools/gen_fs.sh #
 	./tools/gen_fs.sh static > $@           #
-
-dist: ctx.h Makefile #
+#
+#
+#
+ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	rm -rf dist #
-	rm -rf ctx-$(CTX_VERSION)
+	rm -rf ctx-$(CTX_VERSION) #
 	mkdir dist #
 	cp ctx.h main.c configure.sh dist #
 	mkdir dist/fonts #
@@ -258,8 +259,19 @@ dist: ctx.h Makefile #
 	cp tools/*.[ch] dist/tools #
 	mkdir dist/media-handlers #
 	cp media-handlers/*.[ch] dist/media-handlers #
+	mkdir dist/tests #
+	mkdir dist/tests/reference #
+	cp -r tests/reference/* dist/tests/reference #
+	cp -r tests/*.ctx dist/tests/ #
+	grep -v '.*#$$' tests/Makefile > dist/tests/Makefile #
 	grep -v '.*#$$' Makefile > dist/Makefile #
 	mv dist ctx-$(CTX_VERSION) #
 	tar cjf ctx-$(CTX_VERSION).tar.bz2 ctx-$(CTX_VERSION) #
 	rm -rf ctx-$(CTX_VERSION) #
+#
+dist: ctx-$(CTX_VERSION).tar.bz2 #
 	
+distcheck: dist #
+	tar xvf ctx-$(CTX_VERSION).tar.bz2 #
+	(cd ctx-$(CTX_VERSION); ./configure.sh --static && make ctx && make test ) #
+
