@@ -8,7 +8,7 @@ HAVE_ALSA=0
 HAVE_KMS=0
 
 HAVE_PL_MPEG=1
-HAVE_STB_TT=1
+HAVE_STB_TT=0          # deprecated in favor of harfbuzz for font building
 HAVE_STB_IMAGE=1
 ENABLE_IMAGE_WRITE=1
 

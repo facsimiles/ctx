@@ -7,12 +7,15 @@ CTX_VERSION=0.0.0
 #CC=`command -v clang-16 || echo cc`
 #CC=musl-gcc
 
-
 CCACHE=`command -v ccache`
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
 
-all: build.conf ctx-wasm.pc ctx-wasm-simd.pc ctx.pc libctx.so ctx.h ctx $(CLIENTS_BINS) \
+BINS_CFILES = $(wildcard bin/*.c)
+BINS   = $(BINS_CFILES:.c=)
+
+
+all: build.conf ctx-wasm.pc ctx-wasm-simd.pc ctx.pc libctx.so ctx.h ctx $(CLIENTS_BINS) $(BINS)\
       tools/ctx-fontgen	  #
 	
 include build.conf
@@ -74,6 +77,11 @@ build.conf:
 	@echo "!! now run make again !!";
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
+bin/%: bin/%.c build.conf Makefile build.conf libctx.so libctx.a
+	if [ x"$(CTX_EXTRA_STATIC)" = x"" ]; then \
+	$(CCC) -g $< -o $@ $(CFLAGS) libctx.so $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT) -rpath `pwd`  \
+	; else $(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT) -static && strip $@ ; fi
+
 demos/c/%: demos/c/%.c build.conf Makefile build.conf libctx.a 
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
@@ -98,6 +106,7 @@ clean:
 	rm -f libctx.a libctx.so
 	rm -f ctx.pc ctx-wasm.pc
 	rm -f $(CLIENTS_BINS)
+	rm -f $(BINS)
 	rm -f $(TERMINAL_OBJS)
 	rm -f $(MEDIA_HANDLERS_OBJS)
 	rm -f $(SRC_OBJS) #
@@ -276,4 +285,5 @@ dist: ctx-$(CTX_VERSION).tar.bz2 #
 distcheck: dist #
 	tar xvf ctx-$(CTX_VERSION).tar.bz2 #
 	(cd ctx-$(CTX_VERSION); ./configure.sh --static && make ctx && make test ) #
+	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 
