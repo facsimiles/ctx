@@ -3538,33 +3538,34 @@ static int ctx_linux_ts_open (void)
       {
         if ((evbits & (1<<EV_ABS)))
         {
-	  int got_touch = 0;
+	  int touch = 0;
           size_t nchar = KEY_MAX/8+1;
           unsigned char bits[nchar];
+#define CHECK_BIT(bits,bitno)   bits[(bitno)/8] & (1 << ((bitno) & 7));
           if (ioctl (fd, EVIOCGBIT(EV_KEY, sizeof (bits)), &bits)>=0)
-          {
-            got_touch = bits[BTN_TOUCH/8] & (1 << (BTN_TOUCH & 7));
-          }
-	  int got_pointer = propbits & (1<<INPUT_PROP_POINTER);
-	  //int got_direct = propbits & (1<<INPUT_PROP_DIRECT);
-	  int got_x_axis = absbits[ABS_X/8] & (1 << (ABS_X & 7));
-	  int got_y_axis = absbits[ABS_Y/8] & (1 << (ABS_Y & 7));
-	  int got_x_axis_mt = absbits[ABS_MT_POSITION_X/8] & (1 << (ABS_MT_POSITION_X & 7));
-	  int got_y_axis_mt = absbits[ABS_MT_POSITION_Y/8] & (1 << (ABS_MT_POSITION_Y & 7));
+            touch = CHECK_BIT(bits, BTN_TOUCH);
+	  int pointer = propbits & (1<<INPUT_PROP_POINTER);
+	  int x_axis         = CHECK_BIT(absbits, ABS_X);
+	  int y_axis         = CHECK_BIT(absbits, ABS_Y);
+	  int slot           = CHECK_BIT(absbits,ABS_MT_SLOT);
+	  int x_axis_mt      = CHECK_BIT(absbits,ABS_MT_POSITION_X);
+	  int y_axis_mt      = CHECK_BIT(absbits,ABS_MT_POSITION_Y);
+	  int mt_tracking_id = CHECK_BIT(absbits,ABS_MT_TRACKING_ID);
+#undef CHECK_BIT
 
-	  // we prefer the ABS_X / ABS_Y code path if available
-	  if (!got_pointer && (got_x_axis_mt && got_y_axis_mt) && !(got_touch && got_x_axis && got_y_axis))
-	  {
+	  if (!pointer && 
+	      (x_axis_mt && y_axis_mt && mt_tracking_id && slot))
+	  { // multi-touch, protocol-B
             ioctl(fd, EVIOCGABS(ABS_MT_POSITION_X), &ctx_linux_ts_abs_x);
             ioctl(fd, EVIOCGABS(ABS_MT_POSITION_Y), &ctx_linux_ts_abs_y);
 	    ts_is_mt = 1;
             return fd;
 	  }
-
-	  if (got_touch && !got_pointer && got_x_axis && got_y_axis)
+	  if (touch && !pointer && x_axis && y_axis)
 	  {
             ioctl(fd, EVIOCGABS(ABS_X), &ctx_linux_ts_abs_x);
             ioctl(fd, EVIOCGABS(ABS_Y), &ctx_linux_ts_abs_y);
+	    ts_is_mt = 0;
             return fd;
 	  }
         }
@@ -3617,23 +3618,60 @@ static int evsource_linux_ts_has_event (void)
 int ts_x = 0;
 int ts_y = 0;
 
+typedef struct MtMtSlot {
+  int x;
+  int y;
+  int id;
+
+  int reported_x;
+  int reported_y;
+  int reported_id;
+} MtMtSlot;
+
+static int mt_slot = 0;
+
+
+MtMtSlot ctx_mt[CTX_MAX_DEVICES];
+
 static char *evsource_linux_ts_get_event (void)
 {
   struct input_event ev;
   static int down_count = 0;
-  static int down = 0;
   if (!ctx_fb_global) return NULL;
   memset (&ev, 0, sizeof (ev));
   if (-1==read(ctx_ts_fd, &ev, sizeof(ev)))
   {
     return NULL;
   }
-  if (ev.type == EV_KEY && (ts_is_mt == 0))
+
+  if (ts_is_mt)
   {
-     if (
-         (ts_is_mt==0) &&
-         (ev.code == BTN_TOUCH ||
-         ev.code == BTN_LEFT))
+    if (ev.type == EV_ABS)
+    {
+       switch (ev.code)
+       {
+          case ABS_MT_POSITION_X:
+            ctx_mt[mt_slot].x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx_fb_global) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
+            break;
+          case ABS_MT_POSITION_Y:
+            ctx_mt[mt_slot].y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx_fb_global) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
+            break;
+          case ABS_MT_SLOT:
+            mt_slot = ev.value;
+            if (mt_slot >= CTX_MAX_DEVICES)
+	      mt_slot = CTX_MAX_DEVICES-1;
+            break;
+          case ABS_MT_TRACKING_ID:
+	    ctx_mt[mt_slot].id = ev.value;
+            break;
+       }
+    }
+  }
+  else
+  {
+    if (ev.type == EV_KEY)
+    {
+     if (ev.code == BTN_TOUCH || ev.code == BTN_LEFT)
      {
 	int prev_down_count = down_count;
 
@@ -3649,49 +3687,46 @@ static char *evsource_linux_ts_get_event (void)
 	if ( (prev_down_count!=0) != (down_count!=0))
 	{
 	   if (down_count)
-	     ctx_pointer_press (ctx_fb_global, ts_x, ts_y, 0, 0);
+	     ctx_mt[0].id = 23;
 	   else
-	     ctx_pointer_release (ctx_fb_global, ts_x, ts_y, 0, 0);
+	     ctx_mt[0].id = -1;
 	}
      }
-  }
-  else if (ev.type == EV_ABS)
-  {
-     switch (ev.code)
-     {
-       // we sheepisly expect to get first x then y - they probably do come in pairs and probably in that order...
-       case ABS_X:
-       case ABS_MT_POSITION_X:
-       ts_x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx_fb_global) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
-       //down = 1;
-       break;
-       case ABS_Y:
-       case ABS_MT_POSITION_Y:
-       ts_y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx_fb_global) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
-
-       if (ts_is_mt && down == 0)
-	  ctx_pointer_press (ctx_fb_global, ts_x, ts_y, 0, 0);
-       else
-          ctx_pointer_motion (ctx_fb_global, ts_x, ts_y, 0, 0);
-       down = 1;
-       break;
-       case ABS_MT_TRACKING_ID:
-       {
-	 if (ts_is_mt && ev.value == -1 && (down != 0))
-	 {
-	    ctx_pointer_release (ctx_fb_global, ts_x, ts_y, 0, 0);
-	    down = 0;
-	 }
-       }
-       break;
-     }
-     }
-  else if (ts_is_mt && ev.type == EV_SYN && ev.code == SYN_MT_REPORT && (down != 0))
-  {
-     ctx_pointer_release (ctx_fb_global, ts_x, ts_y, 0, 0);
-     down = 0;
+    }
+    else if (ev.type == EV_ABS)
+    {
+      switch (ev.code)
+      {
+        case ABS_X: ctx_mt[0].x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx_fb_global) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
+        break;
+        case ABS_Y: ctx_mt[0].y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx_fb_global) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
+        break;
+      }
+    }
   }
 
+  if (ev.type == EV_SYN && ev.code == SYN_REPORT)
+  { 
+    for (int i = 0; i < (ts_is_mt?CTX_MAX_DEVICES:1); i++)
+    {
+      if ((ctx_mt[i].id != ctx_mt[i].reported_id) ||
+          (ctx_mt[i].id >= 0 && (
+             ctx_mt[i].x != ctx_mt[i].reported_x ||
+            ctx_mt[i].y != ctx_mt[i].reported_y)))
+      {
+         if (ctx_mt[i].id == -1)
+            ctx_pointer_release (ctx_fb_global, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
+	 else if (ctx_mt[i].id != ctx_mt[i].reported_id)
+            ctx_pointer_press (ctx_fb_global, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
+	 else
+            ctx_pointer_motion (ctx_fb_global, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
+
+	 ctx_mt[i].reported_id = ctx_mt[i].id;
+	 ctx_mt[i].reported_x  = ctx_mt[i].x;
+	 ctx_mt[i].reported_y  = ctx_mt[i].y;
+      }
+    }
+  }
   return NULL;
 }
 
@@ -3704,6 +3739,8 @@ static int evsource_linux_ts_get_fd (void)
 
 static inline EvSource *evsource_linux_ts_new (void)
 {
+  for (int i = 0; i < CTX_MAX_DEVICES; i++) ctx_mt[i].id=ctx_mt[i].reported_id=-1;
+
   if (evsource_linux_ts_init() == 0)
   {
     return &ctx_ev_src_linux_ts;
