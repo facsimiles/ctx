@@ -3,10 +3,6 @@ PREFIX  ?= /usr/local
 
 CTX_VERSION=0.0.0
 
-# hack to prefer clang when available
-#CC=`command -v clang-16 || echo cc`
-#CC=musl-gcc
-
 CCACHE=`command -v ccache`
 CLIENTS_CFILES = $(wildcard demos/c/*.c)
 CLIENTS_BINS   = $(CLIENTS_CFILES:.c=)
@@ -81,12 +77,13 @@ FONT_STAMP=fonts/Roboto-Regular.h
 test: ctx
 	make -C tests
 distclean: clean
-	rm -f build.*
+	rm -f build.* local.conf
 clean:
 	rm -rf nofont #
-	rm -f ctx.h ctx ctx.static ctx.O0 *.o highlight.css
+	rm -f ctx.h #
+	rm -f ctx *.o highlight.css
 	rm -f libctx.a libctx.so
-	rm -f ctx.pc ctx-wasm.pc
+	rm -f ctx.pc ctx-wasm.pc ctx-wasm-simd.pc
 	rm -f $(CLIENTS_BINS)
 	rm -f $(BINS)
 	rm -f $(TERMINAL_OBJS)
@@ -176,13 +173,10 @@ ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_ARM_NEON -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
-deps.o: deps.c build.conf Makefile 
-	$(CCC) deps.c -c -o $@ $(CTX_CFLAGS) $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
-
-libctx.a: deps.o $(CTX_OBJS) build.conf Makefile
-	$(AR) rcs $@ $(CTX_OBJS) deps.o 
-libctx.so: $(CTX_OBJS) deps.o build.conf Makefile
-	$(CCC) -shared $(LIBS) $(CTX_OBJS) deps.o $(CTX_LIBS) -o $@
+libctx.a: $(CTX_OBJS) build.conf Makefile
+	$(AR) rcs $@ $(CTX_OBJS) 
+libctx.so: $(CTX_OBJS) build.conf Makefile
+	$(CCC) -shared $(LIBS) $(CTX_OBJS) $(CTX_LIBS) -o $@
 
 ctx: bin/ctx
 	cp $< $@
@@ -239,7 +233,6 @@ ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	cp fonts/*.h dist/fonts #
 	mkdir dist/deps #
 	cp deps/*.[ch] dist/deps #
-	cp deps.c dist #
 	cp ctx.c dist #
 	mkdir dist/meta #
 	cp meta/* dist/meta #
@@ -263,5 +256,6 @@ dist: ctx-$(CTX_VERSION).tar.bz2 #
 distcheck: dist #
 	tar xvf ctx-$(CTX_VERSION).tar.bz2 #
 	(cd ctx-$(CTX_VERSION); ./configure.sh --static && make ctx && make test ) #
+	(cd ctx-$(CTX_VERSION); make clean ; ./configure.sh && make ) #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 
