@@ -194,7 +194,7 @@ do
        echo ""
        echo "  --disable-all      disable all features, to be used before enabling"
        echo "                     features individually"
-       echo "  --static           configure for a static build (for use with the ctx.static build target)"
+       echo "  --static           configure for a static build (makes the binaries built statically linked)"
        echo "  --asan             do an asan build"
        echo "  --ubsan            do an ubsan build"
        echo "  --debug            do a debug build (faster)"

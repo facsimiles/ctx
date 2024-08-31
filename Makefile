@@ -56,12 +56,9 @@ build.conf:
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!";false
 
 bin/%: bin/%.c build.conf Makefile build.conf libctx.so libctx.a
-	if [ x"$(CTX_EXTRA_STATIC)" = x"" ]; then \
+	@echo CC $@;if [ x"$(CTX_EXTRA_STATIC)" = x"" ]; then \
 	$(CCC) -g $< -o $@ $(CFLAGS) libctx.so $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT) -rpath `pwd`  \
 	; else $(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT) -static && strip $@ ; fi
-
-demos/c/%: demos/c/%.c build.conf Makefile build.conf libctx.a 
-	$(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)
 
 fonts/%.h: tools/ctx-fontgen #
 	make -C fonts `echo $@|sed s:fonts/::`  #
@@ -71,8 +68,7 @@ fonts/Roboto-Regular.h: tools/ctx-fontgen Makefile #
 	make -C fonts Roboto-Regular.h #
 	make -C fonts Cousine-Regular.h  #
 
-FONT_STAMP=fonts/Roboto-Regular.h
-
+FONT_STAMP=fonts/Roboto-Regular.h #
 
 test: ctx
 	make -C tests
@@ -158,25 +154,33 @@ tools/%: tools/%.c  #
 	make nofont/ctx.h #
 	$(CCC) $< -o $@ -g -lm -Inofont -I. -Ifonts -lpthread -Wall -lm -Ideps $(CFLAGS_warnings) -DCTX_NO_FONTS -DCTX_STB_TT=1 -DCTX_HARFBUZZ=1 `pkg-config harfbuzz --cflags --libs` #
 
-ctx.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
-	$(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
+ctx.o: ctx.c ctx.h build.conf Makefile build.conf \
+	                  $(FONT_STAMP) #
 
-ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
+	@echo CC $@; $(CCC) $< -c -o $@ $(CFLAGS) $(CTX_CFLAGS) $(OFLAGS_LIGHT)
+
+ctx-x86-64-v2.o: ctx.c ctx.h build.conf Makefile build.conf \
+	                  $(FONT_STAMP) #
+
 	rm -f vec.missed
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_X86_64_V2 -momit-leaf-frame-pointer -ftree-vectorize -mfpmath=sse -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 $(CTX_CFLAGS) $(OFLAGS_LIGHT) \
 	#-fopt-info-vec-missed=vec.missed
-ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
+ctx-x86-64-v3.o: ctx.c ctx.h build.conf Makefile build.conf \
+	    $(FONT_STAMP)#
+
 	rm -f vec.optimized
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_X86_64_V3 -mmovbe -momit-leaf-frame-pointer -mxsave -mxsaveopt -ftree-vectorize -mmmx -msse -msse2 -msse4.1 -msse4.2 -mpopcnt -mssse3 -mavx -mavx2 -mfma -mmovbe $(CTX_CFLAGS) $(OFLAGS_LIGHT) \
 	#-fopt-info-vec-optimized=vec.optimized
 
-ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
+ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile build.conf \
+	    $(FONT_STAMP) #
+
 	$(CCC) $< -c -o $@ $(CFLAGS) -DCTX_SIMD_ARM_NEON -ftree-vectorize -ffast-math -march=armv7 -mfpu=neon-vfpv4 $(CTX_CFLAGS) $(OFLAGS_LIGHT)
 
 libctx.a: $(CTX_OBJS) build.conf Makefile
-	$(AR) rcs $@ $(CTX_OBJS) 
+	@echo AR $@;$(AR) rcs $@ $(CTX_OBJS)
 libctx.so: $(CTX_OBJS) build.conf Makefile
-	$(CCC) -shared $(LIBS) $(CTX_OBJS) $(CTX_LIBS) -o $@
+	@echo CCLD $@;$(CCC) -shared $(LIBS) $(CTX_OBJS) $(CTX_LIBS) -o $@
 
 ctx: bin/ctx
 	cp $< $@
@@ -242,6 +246,7 @@ ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	cp -r tests/*.ctx dist/tests/ #
 	mkdir dist/bin #
 	cp bin/ctx*.c dist/bin #
+	cp bin/mt-test.c dist/bin #
 	cp bin/terminal-keyboard.h dist/bin #
 	grep -v '.*#$$' tests/Makefile > dist/tests/Makefile #
 	grep -v '.*#$$' Makefile > dist/Makefile #
