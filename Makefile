@@ -15,7 +15,7 @@ BINS_CFILES = $(wildcard bin/*.c)
 BINS   = $(BINS_CFILES:.c=)
 
 
-all: build.conf ctx-wasm.pc ctx-wasm-simd.pc ctx.pc libctx.so ctx.h ctx $(CLIENTS_BINS) $(BINS)\
+all: build.conf ctx-wasm.pc ctx-wasm-simd.pc ctx.pc libctx.so ctx.h ctx $(BINS)\
       tools/ctx-fontgen	  #
 	
 include build.conf
@@ -32,26 +32,8 @@ CFLAGS+= -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=600 \
 
 CFLAGS += -ffinite-math-only -fno-trapping-math -fno-signed-zeros -fno-math-errno
 
-CFLAGS+= -I. -Ifonts -Ideps -Imedia-handlers
+CFLAGS+= -I. -Ifonts -Ideps
 LIBS  += -lm -lpthread  
-
-
-#TERMINAL_CFILES = $(wildcard terminal/*.c)
-#TERMINAL_OBJS   = $(TERMINAL_CFILES:.c=.o)
-TERMINAL_OBJS = terminal/terminal.o terminal/ctx-keyboard.o
-
-
-#MEDIA_HANDLERS_CFILES = $(wildcard media-handlers/*.c)
-#MEDIA_HANDLERS_OBJS   = $(MEDIA_HANDLERS_CFILES:.c=.o)
-MEDIA_HANDLERS_OBJS = \
-  media-handlers/ctx-gif.o \
-  media-handlers/ctx-img.o \
-  media-handlers/ctx-mpg.o \
-  media-handlers/ctx-xml.o \
-  media-handlers/ctx-tinyvg.o \
-  media-handlers/ctx-hexview.o \
-  media-handlers/convert.o
-
 
 SRC_CFILES = $(wildcard src/*.c)
 SRC_OBJS   = $(SRC_CFILES:.c=.o)
@@ -197,17 +179,13 @@ ctx-arm-neon.o: ctx.c ctx.h build.conf Makefile $(FONT_STAMP) build.conf
 deps.o: deps.c build.conf Makefile 
 	$(CCC) deps.c -c -o $@ $(CTX_CFLAGS) $(CFLAGS) -Wno-sign-compare $(OFLAGS_LIGHT)
 
-terminal/%.o: terminal/%.c ctx.h terminal/*.h Makefile build.conf
-	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
-media-handlers/%.o: media-handlers/%.c ctx.h Makefile build.conf
-	$(CCC) -c $< -o $@ $(CTX_CFLAGS) $(OFLAGS_LIGHT) $(CFLAGS) 
 libctx.a: deps.o $(CTX_OBJS) build.conf Makefile
 	$(AR) rcs $@ $(CTX_OBJS) deps.o 
 libctx.so: $(CTX_OBJS) deps.o build.conf Makefile
 	$(CCC) -shared $(LIBS) $(CTX_OBJS) deps.o $(CTX_LIBS) -o $@
 
-ctx: main.c ctx.h  build.conf Makefile $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) libctx.a
-	$(CCC) main.c $(TERMINAL_OBJS) $(MEDIA_HANDLERS_OBJS) -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS)  $(OFLAGS_LIGHT) -lpthread  $(CTX_LIBS) $(CTX_EXTRA_STATIC)
+ctx: bin/ctx
+	cp $< $@
 
 updateweb: all ctx test  #
 	git repack #
@@ -251,27 +229,27 @@ src/constants.h: src/*.c Makefile squoze/squoze #
 #
 #
 #
+#
 ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	rm -rf dist #
 	rm -rf ctx-$(CTX_VERSION) #
 	mkdir dist #
-	cp ctx.h main.c configure.sh dist #
+	cp ctx.h configure.sh dist #
 	mkdir dist/fonts #
 	cp fonts/*.h dist/fonts #
-	mkdir dist/terminal #
-	cp terminal/*.[ch] dist/terminal #
 	mkdir dist/deps #
 	cp deps/*.[ch] dist/deps #
 	cp deps.c dist #
 	cp ctx.c dist #
-	mkdir dist/media-handlers #
-	cp media-handlers/*.[ch] dist/media-handlers #
 	mkdir dist/meta #
 	cp meta/* dist/meta #
 	mkdir dist/tests #
 	mkdir dist/tests/reference #
 	cp -r tests/reference/* dist/tests/reference #
 	cp -r tests/*.ctx dist/tests/ #
+	mkdir dist/bin #
+	cp bin/ctx*.c dist/bin #
+	cp bin/terminal-keyboard.h dist/bin #
 	grep -v '.*#$$' tests/Makefile > dist/tests/Makefile #
 	grep -v '.*#$$' Makefile > dist/Makefile #
 	rm dist/fonts/ctx-font-ascii.h #
