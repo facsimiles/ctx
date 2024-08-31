@@ -233,7 +233,7 @@ flatpak-install: #
 	rm -rf build-dir;flatpak-builder --install --user build-dir meta/graphics.ctx.terminal.yml #
 #
 ctx.h: src/*.[ch] squoze/squoze.h src/index $(FONT_STAMP) tools/ctx-fontgen src/constants.h #
-	(cd src; echo "/* ctx git commit: `git rev-parse --short HEAD` */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@) #
+	(cd src; echo "/* ctx-$(CTX_VERSION) */"> ../$@ ;   cat `cat index` | grep -v ctx-split.h | sed 's/CTX_STATIC/static/g' >> ../$@) #
 #
 nofont/ctx.h: src/*.c src/*.h src/index #
 	rm -rf nofont #
