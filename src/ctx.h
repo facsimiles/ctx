@@ -135,7 +135,11 @@ int  ctx_append_drawlist    (Ctx *ctx, void *data, int length);
  */
 void  ctx_drawlist_clear (Ctx *ctx);
 
-
+/**
+ * ctx_get_font_name:
+ *
+ * Get the name a font is registered under, substrings are often sufficient for specifying.
+ */
 const char *ctx_get_font_name (Ctx *ctx, int no);
 
 /* by default both are 0.0 which makes wrapping disabled
@@ -233,25 +237,38 @@ void ctx_image_smoothing  (Ctx *ctx, int enabled);
 
 /**
  * ctx_line_to:
+ *
+ * Add a straight line segment to the current path.
  */
 void  ctx_line_to         (Ctx *ctx, float x, float y);
+\
 /**
  * ctx_move_to:
+ *
+ * Move the tip of the virtual pen, starting a new sub-path.
  */
 void  ctx_move_to         (Ctx *ctx, float x, float y);
+
 /**
  * ctx_curve_to:
+ *
+ * Add a cubic bezier segment to x, y with control points cx0,cy0  and cx1,cy1
  */
 void  ctx_curve_to        (Ctx *ctx, float cx0, float cy0,
                            float cx1, float cy1,
                            float x, float y);
 /**
  * ctx_quad_to:
+ *
+ * Add a quadratic bezier segment to x, y with curve control point at cx,cy
  */
 void  ctx_quad_to         (Ctx *ctx, float cx, float cy,
                            float x, float y);
 /**
  * ctx_arc:
+ *
+ * Add an arc segment for a circle centered at x,y with radius fromg angle1 to angle2 in radians,
+ * XXX : look into specification of direcion on other APIs
  */
 void  ctx_arc             (Ctx  *ctx,
                            float x, float y,
@@ -354,7 +371,6 @@ void ctx_preserve         (Ctx *ctx);
  */
 void ctx_identity       (Ctx *ctx);
 
-
 /**
  * ctx_scale:
  *
@@ -443,7 +459,12 @@ ctx_font_extents (Ctx   *ctx,
                   float *ascent,
                   float *descent,
                   float *line_gap);
-
+/**
+ * ctx_parse:
+ *
+ * Parse ctx-syntax interpreting the commands in ctx.
+ *
+ */
 void ctx_parse            (Ctx *ctx, const char *string);
 
 /**
@@ -589,8 +610,8 @@ int  ctx_in_stroke  (Ctx *ctx, float x, float y);
 
 /**
  * ctx_linear_gradient:
- * Change the source to a linear gradient from x0,y0 to x1 y1, by default an empty gradient
- * from black to white exist, add stops with ctx_gradient_add_stop to specify a custom gradient.
+ * Change the source to a linear gradient from x0,y0 to x1 y1, an empty gradient
+ * is interpreted as grayscale from black to white, add stops with ctx_gradient_add_stop to specify a custom gradient.
  */
 void ctx_linear_gradient (Ctx *ctx, float x0, float y0, float x1, float y1);
 
@@ -604,10 +625,11 @@ void ctx_radial_gradient (Ctx *ctx, float x0, float y0, float r0,
 /**
  * ctx_conic_gradient:
  * Change the source to a conic/conic gradient cenetered at cx,cy with gradient starting at angle start_angle.
- * TODO: add repeat-count?
  */
 void ctx_conic_gradient (Ctx *ctx, float cx, float cy, float start_angle, float cycles);
 
+
+// XXX : defal with CMYK gradients
 /* ctx_graident_add_stop:
  *
  * Add an RGBA gradient stop to the current gradient at position pos.
@@ -624,7 +646,7 @@ void ctx_gradient_add_stop_u8 (Ctx *ctx, float pos, uint8_t r, uint8_t g, uint8_
 
 /* ctx_define_texture:
  */
-void ctx_define_texture (Ctx *ctx,
+void ctx_define_texture (Ctx        *ctx,
                          const char *eid,
                          int         width,
                          int         height,
@@ -648,31 +670,101 @@ typedef struct _CtxMatrix     CtxMatrix;
 void
 ctx_source_transform_matrix (Ctx *ctx, CtxMatrix *matrix);
 
-
-
+/**
+ * ctx_width:
+ *
+ * Returns the width of the ctx canvas in pixels.
+ */
 int   ctx_width                (Ctx *ctx);
+
+/**
+ * ctx_height:
+ *
+ * Returns the height of the ctx canvas in pixels.
+ */
 int   ctx_height               (Ctx *ctx);
+
+/**
+ * ctx_x:
+ *
+ * Returns the current path append x-coordinate.
+ */
 float ctx_x                    (Ctx *ctx);
+
+/**
+ * ctx_y:
+ *
+ * Returns the current path append y-coordinate.
+ */
 float ctx_y                    (Ctx *ctx);
+
+/**
+ * ctx_get_global_alpha:
+ *
+ * Returns the current global_alpha value.
+ */
 float ctx_get_global_alpha     (Ctx *ctx);
+/**
+ * ctx_get_font_size:
+ *
+ * Returns the current font_size.
+ */
 float ctx_get_font_size        (Ctx *ctx);
+/**
+ * ctx_get_miter_limit:
+ *
+ * Returns the current miter limit.
+ */
 float ctx_get_miter_limit      (Ctx *ctx);
-int   ctx_get_image_smoothing   (Ctx *ctx);
+/**
+ * ctx_get_image_smoothing:
+ *
+ * Returns the current setting for image_smoothing.
+ */
+int   ctx_get_image_smoothing  (Ctx *ctx);
+/**
+ * ctx_get_line_dash_offset:
+ *
+ * Returns the current setting for image_smoothing.
+ */
 float ctx_get_line_dash_offset (Ctx *ctx);
 
 float ctx_get_wrap_left        (Ctx *ctx);
 float ctx_get_wrap_right       (Ctx *ctx);
 float ctx_get_line_height      (Ctx *ctx);
 
+/**
+ * ctx_get_font:
+ *
+ * Returns the currently set font.
+ */
 const char *ctx_get_font       (Ctx *ctx);
 float ctx_get_line_width       (Ctx *ctx);
+
+/**
+ * ctx_get_current_point:
+ *
+ * Returns the same value as ctx_x() and ctx_y()
+ */
 void  ctx_current_point        (Ctx *ctx, float *x, float *y);
+
+/**
+ * ctx_get_transform:
+ *
+ * Returns the currently set transform matrix coefficients in a..i.
+ */
 void  ctx_get_transform        (Ctx *ctx, float *a, float *b,
                                 float *c, float *d,
                                 float *e, float *f,
                                 float *g, float *h,
                                 float *i);
 
+/**
+ * ctx_clip_extents::
+ *
+ * Returns the upper-left, x0,y0  and lower-right x1,y1 coordinates for the currently set clip bounding box,
+ * useful for getting culling bounds.
+ */
 void
 ctx_clip_extents (Ctx *ctx, float *x0, float *y0,
                             float *x1, float *y1);
@@ -916,9 +1008,7 @@ void ctx_render_ctx     (Ctx *ctx, Ctx *d_ctx);
 void ctx_render_ctx_textures (Ctx *ctx, Ctx *d_ctx); /* cycles through all
                                                         used texture eids
                                                       */
-
 void ctx_start_move     (Ctx *ctx);
-
 
 int ctx_add_single      (Ctx *ctx, void *entry);
 
@@ -2472,9 +2562,6 @@ void ctx_colorspace (Ctx                 *ctx,
                      const unsigned char *data,
                      int                  data_length);
 
-
-
-
 void
 ctx_parser_set_size (CtxParser *parser,
                      int        width,
@@ -2506,7 +2593,6 @@ ctx_base642bin (const char    *ascii,
                 int           *length,
                 unsigned char *bin);
 
-
 struct
   _CtxMatrix
 {
@@ -2524,7 +2610,6 @@ void ctx_matrix_translate (CtxMatrix *matrix, float x, float y);
 void ctx_matrix_multiply (CtxMatrix       *result,
                           const CtxMatrix *t,
                           const CtxMatrix *s);
-
 
 /* we already have the start of the file available which disambiguates some
  * of our important supported formats, give preference to magic, then extension
