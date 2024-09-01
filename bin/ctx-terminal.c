@@ -139,7 +139,6 @@ int add_tab_argv (Ctx  *ctx, char **argv, int can_launch)
   int flags = CSS_CLIENT_UI_RESIZABLE |  CSS_CLIENT_TITLEBAR;
   if (can_launch) flags |= CSS_CLIENT_CAN_LAUNCH;
 
-  //ctx_font_size (ctx, start_font_size); // we pass it as arg instead
   CtxClient *active = ctx_client_new_argv (ctx, argv, add_x, add_y,
                     ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
                     start_font_size,

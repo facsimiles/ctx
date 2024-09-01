@@ -30,15 +30,11 @@ static int usage_main (int argc, char **argv)
 #include "ctx-convert.c"
 #include "ctx-img.c"
 #include "ctx-gif.c"
-#include "ctx-mpg.c"
 #include "ctx-xml.c"
 #include "ctx-tinyvg.c"
-#include "ctx-hexview.c"
-
-int ctx_img_main (int argc, char **argv);
-int ctx_gif_main (int argc, char **argv);
-int ctx_mpg_main (int argc, char **argv);
-int ctx_hexview_main (int argc, char **argv);
+#include "ctx-font-list.c"
+//#include "ctx-mpg.c"
+//#include "ctx-hexview.c"
 
 int launch_main (int argc, char **argv)
 {
@@ -257,25 +253,16 @@ int file_main (int argc, char **argv)
   return 0;
 }
 
-static int lsfonts_main (int argc, char **argv)
-{
-  Ctx *ctx = ctx_new (0,0,NULL);
-
-  for (int i = 0; i < CTX_MAX_FONTS; i++)
-  {
-    const char *name = ctx_get_font_name (ctx, i);
-    if (name)
-      printf ("%s\n", name);
-  }
-  return 0;
-}
 
 int main (int argc, char **argv)
 {
-  if (!strcmp (basename(argv[1]), "lsfonts"))
-    return lsfonts_main (argc-1, argv+1);
+  if (!strcmp (basename(argv[1]), "font-list") ||
+      !strcmp (basename(argv[1]), "fontlist"))
+    return ctx_font_list_main (argc-1, argv+1);
+#if 0
   if (!strcmp (basename(argv[1]), "hexview"))
     return ctx_hexview_main (argc-1, argv+1);
+#endif
   for (int i = 1; argv[i]; i++)
   {
     char *a = argv[i];
@@ -343,11 +330,13 @@ int main (int argc, char **argv)
       return ctx_img_main (argc, argv);
     }
 #endif
+#if 0
 #if CTX_PL_MPEG
     if (!strcmp (media_type, "video/mpeg"))
     {
       return ctx_mpg_main (argc, argv);
     }
+#endif
 #endif
 #if CTX_CSS
     if (   !strcmp (media_type, "image/svg+xml") 

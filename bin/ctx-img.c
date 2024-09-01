@@ -296,6 +296,7 @@ int main(int argc, char *argv[])
 {
   Ctx *ctx;
   path = argv[1];
+  if (!argv[1]) return -1;
 
   if (strchr (path, ':') && (strchr(path,':')-path) < 6)
   {
