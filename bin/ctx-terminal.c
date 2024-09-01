@@ -26,11 +26,6 @@
 
 static Ctx *ctx = NULL; // initialized in main
 
-int ctx_renderer_is_sdl  (Ctx *ctx);
-int ctx_renderer_is_fb   (Ctx *ctx);
-int ctx_renderer_is_kms  (Ctx *ctx);
-int ctx_renderer_is_term (Ctx *ctx);
-
 typedef struct _CtxClient CtxClient;
 
 void ctx_screenshot (Ctx *ctx, const char *path);
@@ -44,6 +39,7 @@ void ctx_client_lock (CtxClient *client);
 void ctx_client_unlock (CtxClient *client);
 
 #define VT_RECORD 0
+static int terminal_no_new_tab = 0;
 
 static char *execute_self = NULL;
 
@@ -237,13 +233,15 @@ int add_settings_tab (const char *commandline, int can_launch)
 static void add_tab_cb (CtxEvent *event, void *data, void *data2)
 {
   event->stop_propagate = 1;
-  add_tab (event->ctx, ctx_find_shell_command(), 1);
+  if (!terminal_no_new_tab)
+    add_tab (event->ctx, ctx_find_shell_command(), 1);
 }
 
 static void add_settings_tab_cb (CtxEvent *event, void *data, void *data2)
 {
   event->stop_propagate = 1;
-  add_settings_tab (ctx_find_shell_command(), 1);
+  if (!terminal_no_new_tab)
+    add_settings_tab (ctx_find_shell_command(), 1);
 }
 
 int ctx_clients_tab_to_id (Ctx *ctx, int tab_no);
@@ -317,10 +315,14 @@ static void handle_event (Ctx        *ctx,
             backend_type == CTX_BACKEND_KMS)
            &&   !strcmp (event, "control-t") ))
   {
-    add_tab (ctx, ctx_find_shell_command(), 1);
+    if (!terminal_no_new_tab)
+      add_tab (ctx, ctx_find_shell_command(), 1);
   }
   else if (!strcmp (event, "shift-control-n") )
     {
+      if (!terminal_no_new_tab)
+      {
+	       // XXX : we should also avoid this when running with kms/fb !
       pid_t pid;
       if ( (pid=fork() ) ==0)
         { 
@@ -329,6 +331,7 @@ static void handle_event (Ctx        *ctx,
           execlp (execute_self, execute_self, NULL);
           exit (0);
         }
+      }
     }
 
 
@@ -613,8 +616,8 @@ int main (int argc, char **argv)
       {
         i++;
         commandline_argv_start = i;
-        fprintf (stderr, "%s\n", argv[i]);
       }
+      terminal_no_new_tab = 1;
     }
     else if (!strcmp (argv[i], "--width"))
         width = consume_float (argv, &i);
@@ -732,10 +735,10 @@ int main (int argc, char **argv)
       }
 
      {
-     int active_id = ctx_clients_active (ctx);
-     CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
-     if (active)
-       terminal_update_title (ctx_client_title (active));
+       int active_id = ctx_clients_active (ctx);
+       CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
+       if (active)
+         terminal_update_title (ctx_client_title (active));
      }
 
      ctx_handle_events (ctx);
