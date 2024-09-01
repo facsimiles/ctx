@@ -45,7 +45,7 @@ typedef struct KeyBoard {
 } KeyBoard;
 
 
-int handle_on_down = 1;  /// XXX probably better for multi-touch, worse for
+int handle_on_down = 0;  /// XXX probably better for multi-touch, worse for
 			 /// sliding to find right key on tiny displays
 
 static void ctx_on_screen_key_event (CtxEvent *event, void *data1, void *data2)
