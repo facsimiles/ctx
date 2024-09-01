@@ -805,7 +805,7 @@ void ctx_client_close (CtxEvent *event, void *data, void *data2)
 
 /********************/
 void vt_use_images (VT *vt, Ctx *ctx);
-float _ctx_green = 0.5;
+//float _ctx_green = 0.5;
 
 static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
 {

@@ -50,8 +50,6 @@ float font_size    = -1;
 float line_spacing = 2.0;
 
 /********************/
-extern float _ctx_green;
-
 static float start_font_size = 22.0;
 
 float add_x = 10;
@@ -547,15 +545,6 @@ int main (int argc, char **argv)
   int width = -1;
   int height = -1;
   int cols = -1;
-
-  const char *env_val = getenv ("CTX_GREEN");
-  if (env_val)
-  {
-    float val = atof (env_val);
-    _ctx_green = val;
-    if (_ctx_green > 1.0) _ctx_green = 1.0;
-    if (_ctx_green < 0.0) _ctx_green = 0.0;
-  }
 
   if (getpid () == 1)
   {
