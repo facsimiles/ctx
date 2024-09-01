@@ -684,7 +684,7 @@ int main (int argc, char **argv)
 #else
 	ctx_start_frame (ctx);
 	ctx_rgb (ctx, 0,0,0);
-        ctx_font_size (ctx, 13.0f);
+        ctx_font_size (ctx, font_size);
 #endif
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         ctx_fill (ctx);
