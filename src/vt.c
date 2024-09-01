@@ -5723,58 +5723,6 @@ void vt_paste (VT *vt, const char *str)
     }
 }
 
-const char *ctx_find_shell_command (void)
-{
-#if CTX_PTY
-#ifdef EMSCRIPTEN
-  return NULL;  
-#else
-  if (access ("/.flatpak-info", F_OK) != -1)
-  {
-    static char ret[512];
-    char buf[256];
-    FILE *fp = popen("flatpak-spawn --host getent passwd $USER|cut -f 7 -d :", "r");
-    if (fp)
-    {
-      while (fgets (buf, sizeof(buf), fp) != NULL)
-      {
-        if (buf[strlen(buf)-1]=='\n')
-          buf[strlen(buf)-1]=0;
-        sprintf (ret, "flatpak-spawn --env=TERM=xterm --host %s", buf);
-      }
-      pclose (fp);
-      return ret;
-    }
-  }
-
-  if (getenv ("SHELL"))
-  {
-    return getenv ("SHELL");
-  }
-  int i;
-  const char *command = NULL;
-  struct stat stat_buf;
-  static const char *alts[][2] =
-  {
-    {"/bin/bash",     "/bin/bash"},
-    {"/usr/bin/bash", "/usr/bin/bash"},
-    {"/bin/sh",       "/bin/sh"},
-    {"/usr/bin/sh",   "/usr/bin/sh"},
-    {NULL, NULL}
-  };
-  for (i = 0; alts[i][0] && !command; i++)
-    {
-      lstat (alts[i][0], &stat_buf);
-      if (S_ISREG (stat_buf.st_mode) || S_ISLNK (stat_buf.st_mode) )
-        { command = alts[i][1]; }
-    }
-  return command;
-#endif
-#else
-  return NULL;
-#endif
-}
-
 
 
 #if CTX_PTY

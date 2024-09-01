@@ -17,6 +17,7 @@
 #include <math.h>
 //#include <malloc.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <time.h>
 #endif
 
@@ -55,7 +56,50 @@ static float start_font_size = 22.0;
 float add_x = 10;
 float add_y = 100;
 
-const char *ctx_find_shell_command (void);
+static const char *ctx_find_shell_command (void)
+{
+  if (access ("/.flatpak-info", F_OK) != -1)
+  {
+    static char ret[512];
+    char buf[256];
+    FILE *fp = popen("flatpak-spawn --host getent passwd $USER|cut -f 7 -d :", "r");
+    if (fp)
+    {
+      while (fgets (buf, sizeof(buf), fp) != NULL)
+      {
+        if (buf[strlen(buf)-1]=='\n')
+          buf[strlen(buf)-1]=0;
+        sprintf (ret, "flatpak-spawn --env=TERM=xterm --host %s", buf);
+      }
+      pclose (fp);
+      return ret;
+    }
+  }
+
+  if (getenv ("SHELL"))
+  {
+    return getenv ("SHELL");
+  }
+  int i;
+  const char *command = NULL;
+  struct stat stat_buf;
+  static const char *alts[][2] =
+  {
+    {"/bin/bash",     "/bin/bash"},
+    {"/usr/bin/bash", "/usr/bin/bash"},
+    {"/bin/sh",       "/bin/sh"},
+    {"/usr/bin/sh",   "/usr/bin/sh"},
+    {NULL, NULL}
+  };
+  for (i = 0; alts[i][0] && !command; i++)
+    {
+      lstat (alts[i][0], &stat_buf);
+      if (S_ISREG (stat_buf.st_mode) || S_ISLNK (stat_buf.st_mode) )
+        { command = alts[i][1]; }
+    }
+  return command;
+}
+
 /*****************/
 
 #define flag_is_set(a, f) (((a) & (f))!=0)
@@ -71,9 +115,9 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
 
   //ctx_font_size (ctx, start_font_size); // we pass it as arg instead
   CtxClient *active = ctx_client_new (ctx, commandline, add_x, add_y,
-                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
-                    start_font_size,
-                    flags, NULL, NULL);
+    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
+    start_font_size,
+    flags, NULL, NULL);
   add_y += ctx_height (ctx) / 20;
   add_x += ctx_height (ctx) / 20;
 
@@ -434,7 +478,6 @@ void draw_mini_panel (Ctx *ctx)
   ctx_restore (ctx);
 }
 
-
 void draw_panel (Css *itk, Ctx *ctx)
 {
   struct tm local_time_res;
@@ -463,6 +506,8 @@ void draw_panel (Css *itk, Ctx *ctx)
   ctx_begin_path (ctx);
   ctx_rectangle (ctx, ctx_width(ctx)-titlebar_height * 10, 0, titlebar_height * 10, titlebar_height);
   ctx_listen (ctx, CTX_PRESS, add_settings_tab_cb, NULL, NULL);
+  ctx_rgba(ctx, 1,0,1,1);
+  ctx_fill(ctx);
 
   int tabs = 0;
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
@@ -504,7 +549,6 @@ void draw_panel (Css *itk, Ctx *ctx)
 
 static char *set_title = NULL;
 void vt_audio_task (VT *vt, int click);
-
 
 void
 terminal_update_title (const char *title)
@@ -648,22 +692,12 @@ int main (int argc, char **argv)
 
   //int sleep_time = 1000000/10;
 
-#if 0
-  int print_shape_cache_rate = 0;
-  if (getenv ("CTX_DEBUG_SHAPE_CACHE"))
-    print_shape_cache_rate = 1;
-#endif
-
   while (ctx_clients (ctx) && !ctx_has_exited (ctx))
     {
       //int changes = 0;
       int n_clients = ctx_list_length (ctx_clients (ctx));
       //ensure_layout (ctx);
 
-#if 0
-      if (print_shape_cache_rate)
-        fprintf (stderr, "\r%f ", ctx_shape_cache_rate);
-#endif
       if (ctx_need_redraw(ctx))
       {
 #if CTX_CSS
@@ -690,9 +724,9 @@ int main (int argc, char **argv)
         ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
 
-     ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
-     ctx_listen (ctx, CTX_TAP_AND_HOLD, terminal_long_tap, NULL, NULL);
-     ctx_begin_path (ctx);
+        ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+        ctx_listen (ctx, CTX_TAP_AND_HOLD, terminal_long_tap, NULL, NULL);
+        ctx_begin_path (ctx);
 
         ctx_end_frame (ctx);
       }

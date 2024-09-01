@@ -274,8 +274,6 @@ void        vt_set_font_size      (VT *vt, float font_size);
 float       vt_get_font_size      (VT *vt);
 void        vt_set_line_spacing   (VT *vt, float line_spacing);
 
-const char *ctx_find_shell_command (void);
-
 int         vt_keyrepeat          (VT *vt);
 
 int         vt_get_result         (VT *vt);
