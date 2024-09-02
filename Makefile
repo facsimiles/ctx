@@ -248,6 +248,7 @@ ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	mkdir dist/bin #
 	cp bin/ctx*.c dist/bin #
 	cp bin/mt-test.c dist/bin #
+	cp bin/*.sh dist/bin #
 	cp bin/terminal-keyboard.h dist/bin #
 	grep -v '.*#$$' tests/Makefile > dist/tests/Makefile #
 	grep -v '.*#$$' Makefile > dist/Makefile #

@@ -17,8 +17,7 @@ terminal.js: terminal.c Makefile  /usr/local/include/ctx.h
 	make -C ../../ ctx.h
 
 %.html: %.c Makefile template.html
-	cp template.html $@
-	rpl file `echo $<|sed s/\.c//` $@
+	cat template.html | sed -e 's/file/'`echo $<|sed s/\.c//`'/' > $@ 
 
 index.html: Makefile *.c
 	echo "<html><body>" > $@

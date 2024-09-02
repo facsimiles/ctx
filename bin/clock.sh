@@ -8,15 +8,13 @@ function cleanup {
   echo -ne "\e[?1049l"  # alt-screen off
   echo -ne "\e[?25h"    # text-cursor on
 }
-
 trap cleanup EXIT # restore terminal state on ctrl+c and regular exit
 
 while [ 1 == 1 ]; do # infinite loop
 
 hour_radians=`bc <<<"scale=3;(($(date +%H|sed 's/^0//')+($(date +%M|sed s'/^6//')/60.0))/12.0+0.75)*3.14152*2"`
 minute_radians=`bc <<<"scale=3;($(date +%M|sed 's/^0//')/60.0+0.75)*3.14152*2"`
-#second_radians=`bc <<<"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.14152*2"`  # use this for "jumpy" second hand
-second_radians=`bc <<<"scale=3;(($(date +%N)/1000000000.0+$(date +%S|sed 's/^0//'))/60.0+0.75)*3.14152*2"`
+second_radians=`bc <<<"scale=3;($(date +%S|sed 's/^0//')/60.0+0.75)*3.14152*2"`  # use this for "jumpy" second hand
 radius=45
 
 echo -ne "\e[H\e[?200h
@@ -39,6 +37,7 @@ stroke
 endFrame
 done ";
 
+sleep 0.4  
 echo -ne "\e[5n" # query terminal status, expect \e[0n back, wait for the n
 foo=x; while [ "x$foo" != "xn" ] ;do read -s -n 1 foo; done 
 

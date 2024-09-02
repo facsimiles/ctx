@@ -40,15 +40,11 @@
                     ctx_font_##font,       \
                     sizeof (ctx_font_##font))
 #include <stdint.h>
-#include "Arimo-Regular.h"
+#include "Roboto-Regular.h"
 #include "Cousine-Regular.h"
-//#include "Cousine-Bold.h"
-//#include "Cousine-Italic.h"
 
-#define CTX_FONT_0   CTX_STATIC_FONT(Arimo_Regular)
+#define CTX_FONT_0   CTX_STATIC_FONT(Roboto_Regular)
 #define CTX_FONT_8   CTX_STATIC_FONT(Cousine_Regular)
-//#define CTX_FONT_9   CTX_STATIC_FONT(Cousine_Italic)
-//#define CTX_FONT_10  CTX_STATIC_FONT(Cousine_Bold)
 
 
 #define CTX_IMPLEMENTATION 1
@@ -314,6 +310,8 @@ typedef struct PushKey
 } PushKey;
 
 PushKey keys[8];
+
+void set_sys_clock_khz(int, int);
 
 Ctx *ctx_pico_init (void)
 {
