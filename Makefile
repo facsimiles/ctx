@@ -245,6 +245,7 @@ ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile configure.sh bin/*.[ch] #
 	mkdir dist/tests/reference #
 	cp -r tests/reference/* dist/tests/reference #
 	cp -r tests/*.ctx dist/tests/ #
+	cp -r tests/*.svg dist/tests/ #
 	mkdir dist/bin #
 	cp bin/ctx*.c dist/bin #
 	cp bin/touch-test.c dist/bin #
@@ -264,6 +265,6 @@ distcheck: dist #
 	tar xvf ctx-$(CTX_VERSION).tar.bz2 #
 	(cd ctx-$(CTX_VERSION); CFLAGS=-O1 ./configure.sh --static && make ctx -j && make test ) #
 	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-O1 ./configure.sh && make -j ) #
-	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-Oz ./configure.sh --static --disable-all && make -j ) #
+	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-Oz ./configure.sh --static --disable-all --enable-vt && make -j ) #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 
