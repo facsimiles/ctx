@@ -48,7 +48,7 @@ struct _CtxClient {
 #if CTX_THREADS
   mtx_t    mtx;
 #endif
-#if VT_RECORD
+#if CTX_VT_DRAWLIST
   Ctx     *recording;
 #endif
 };

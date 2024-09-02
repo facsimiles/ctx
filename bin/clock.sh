@@ -37,7 +37,7 @@ stroke
 endFrame
 done ";
 
-sleep 0.4  
+sleep 0.2  
 echo -ne "\e[5n" # query terminal status, expect \e[0n back, wait for the n
 foo=x; while [ "x$foo" != "xn" ] ;do read -s -n 1 foo; done 
 

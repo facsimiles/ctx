@@ -27,7 +27,6 @@ float ctx_target_fps = 100.0; /* this might end up being the resolution of our
 #include <time.h>
 #endif
 
-#define VT_RECORD 0
 extern Ctx *ctx;
 #define flag_is_set(a, f) (((a) & (f))!=0)
 #define flag_set(a, f)    ((a) |= (f));
@@ -357,7 +356,7 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
   if (client->title)
     ctx_free (client->title);
 
-#if VT_RECORD
+#if CTX_VT_DRAWLIST
   if (client->recording)
     ctx_destroy (client->recording);
 #endif
@@ -847,7 +846,7 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
        {
 
       int rev = ctx_client_rev (client);
-#if VT_RECORD
+#if CTX_VT_DRAWLIST
       if (client->drawn_rev != rev)
       {
         if (!client->recording)
@@ -866,8 +865,8 @@ static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
           ctx_global_alpha (ctx, client->opacity);
         }
         ctx_render_ctx (client->recording, ctx);
-        vt_register_events (client->vt, ctx, 0.0, 0.0);
         ctx_restore (ctx);
+        ctx_client_register_events (client, ctx, x, y);
       }
 #else
       if (client->opacity != 1.0)
@@ -893,7 +892,7 @@ static void ctx_client_use_images (Ctx *ctx, CtxClient *client)
   if (!client->internal)
   {
       uint32_t rev = ctx_client_rev (client);
-#if VT_RECORD
+#if CTX_VT_DRAWLIST
       if (client->drawn_rev != rev)
       {
         if (!client->recording)
@@ -1111,6 +1110,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
     ctx_client_draw (ctx, ctx->events.active, 0, 0);
     return 0;
   }
+  if (!layer2)
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;

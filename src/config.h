@@ -926,3 +926,12 @@
 #define CTX_SVG_FREE_AGE 62
 #endif
 
+
+/* whether we keep a drawlist per terminal-tab, this causes more memory
+ * usage, but should be faster with many tabs with graphical clients
+ */
+#ifndef CTX_VT_DRAWLIST
+#define CTX_VT_DRAWLIST 0
+#endif
+
+
