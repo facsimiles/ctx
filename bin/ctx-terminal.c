@@ -203,17 +203,6 @@ int add_settings_tab (const char *commandline, int can_launch)
   float titlebar_h = ctx_height (ctx)/40;
   int was_maximized = ctx_client_is_maximized (ctx, ctx_clients_active (ctx));
   int flags = CSS_CLIENT_UI_RESIZABLE |  CSS_CLIENT_TITLEBAR;
-  if (can_launch) flags |= CSS_CLIENT_CAN_LAUNCH;
-
-  CtxClient *active = ctx_client_new_thread (ctx, settings_thread, add_x, add_y,
-                    ctx_width(ctx)/2, (ctx_height (ctx) - titlebar_h)/2,
-                    start_font_size,
-                    flags, NULL, NULL);
-
-  add_y += ctx_height (ctx) / 20;
-  add_x += ctx_height (ctx) / 20;
-
-  if (was_maximized)
   {
     ctx_client_maximize (ctx, ctx_client_id (active));
   }
@@ -506,10 +495,12 @@ void draw_panel (Css *itk, Ctx *ctx)
 #endif
 
   ctx_begin_path (ctx);
+#if 0
   ctx_rectangle (ctx, ctx_width(ctx)-titlebar_height * 10, 0, titlebar_height * 10, titlebar_height);
   ctx_listen (ctx, CTX_PRESS, add_settings_tab_cb, NULL, NULL);
   ctx_rgba(ctx, 1,0,1,1);
-  ctx_fill(ctx);
+  //ctx_fill(ctx);
+#endif
 
   int tabs = 0;
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)

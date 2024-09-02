@@ -59,8 +59,6 @@ ctx_ticks (void)
   return _ctx_ticks ();
 }
 
-
-
 int _ctx_enable_hash_cache = 1;
 
 int _ctx_max_threads = 1;
