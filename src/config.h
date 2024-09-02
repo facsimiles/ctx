@@ -934,4 +934,10 @@
 #define CTX_VT_DRAWLIST 0
 #endif
 
+/* when enabled, tabs that have the capability to launch sub-clients can do
+ * so with an APC sequence
+ */
+#ifndef CTX_VT_LAUNCH
+#define CTX_VT_LAUNCH 0
+#endif
 

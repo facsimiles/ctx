@@ -4977,7 +4977,10 @@ static void vt_state_apc_generic (VT *vt, int byte)
             }
             else
             {
-          //  add_tab (ctx, sep + 1, can_launch);
+
+#if CTX_VT_LAUNCH
+              add_tab (ctx, sep + 1, can_launch);
+#endif
             }
           }
         }
