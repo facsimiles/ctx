@@ -59,16 +59,18 @@ case "$ARCH" in
    *)         HAVE_SIMD=0 ;; 
 esac
 
-
-CFLAGS='-O2 -g'
 HAVE_STATIC=0
 CFLAGS_BACKEND=''
+
+if [ x"$CFLAGS" = x"" ];then
+  CFLAGS='-O2 -g'
+fi
 
 while test $# -gt 0
 do
     case "$1" in
      "--debug") CFLAGS=' -g ' ; HAVE_SIMD=0   ;;
-     "--static") CFLAGS='-O2' HAVE_STB_TT=0 HAVE_PL_MPEG=0 HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 HAVE_STATIC=1;;
+     "--static") HAVE_STB_TT=0 HAVE_PL_MPEG=0 HAVE_SIMD=0 HAVE_SDL=0 HAVE_BABL=0 HAVE_LIBCURL=0 HAVE_ALSA=0 HAVE_HARFBUZZ=0 HAVE_STATIC=1;;
      "--asan") CFLAGS=" -fsanitize=address -g";LIBS=' -lasan -g '  ;;
      "--ubsan") CFLAGS=" -fsanitize=undefined -g";LIBS=' -lasan -g '  ;;
      "--enable-kms") HAVE_KMS=1 ;;
@@ -205,7 +207,8 @@ do
 done
 
 echo > build.conf
-echo > local.conf
+echo "#ifndef CTX_LOCAL_CONF" > local.conf
+echo "#define CTX_LOCAL_CONF" >> local.conf
 
 if [ $HAVE_SDL = 1 ];then
   echo "#define CTX_SDL 1 " >> local.conf
@@ -336,6 +339,8 @@ fi
 if [ $HAVE_STATIC = 1 ]; then
   echo "CTX_EXTRA_STATIC = -static" >> build.conf
 fi
+
+echo "#endif" >> local.conf
 
 
 echo -n "configuration summary, architecture $(arch)"

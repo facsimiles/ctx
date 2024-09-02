@@ -229,7 +229,7 @@ src/constants.h: src/*.c Makefile squoze/squoze #
 #
 #
 #
-ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
+ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile configure.sh bin/*.[ch] #
 	rm -rf dist #
 	rm -rf ctx-$(CTX_VERSION) #
 	mkdir dist #
@@ -264,5 +264,6 @@ distcheck: dist #
 	tar xvf ctx-$(CTX_VERSION).tar.bz2 #
 	(cd ctx-$(CTX_VERSION); ./configure.sh --static && make ctx -j && make test ) #
 	(cd ctx-$(CTX_VERSION); make clean ; ./configure.sh && make -j ) #
+	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-Oz ./configure.sh --disable-all && make -j ) #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 

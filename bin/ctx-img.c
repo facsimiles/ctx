@@ -312,4 +312,12 @@ int main(int argc, char *argv[])
 }
 
 
+#else
+#if CTX_BIN_BUNDLE
+int ctx_img_main (int argc, char *argv[])
+#else
+int main (int argc, char *argv[])
+#endif
+{return -1;}
+
 #endif

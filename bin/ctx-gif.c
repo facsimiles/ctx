@@ -322,5 +322,13 @@ int main (int argc, char *argv[])
   ctx_destroy (ctx);
   return 0;
 }
+#else
+
+#if CTX_BIN_BUNDLE
+int ctx_gif_main (int argc, char *argv[])
+#else
+int main (int argc, char *argv[])
+#endif
+{return -1;}
 
 #endif

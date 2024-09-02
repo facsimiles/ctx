@@ -11,8 +11,8 @@ static int usage_main (int argc, char **argv)
     "  launch a terminal, if no command is specified a new instance of\n"
     "  the users shell is invoked.\n"
     "\n"
-    "or: ctx [options] <source.ctx|source.svg> -o <destination>\n"
-    "  convert source file of type ctx or svg to destination, where destination is a\n"
+    "or: ctx [options] <source.ctx%s> -o <destination>\n"
+    "  convert source file to destination, where destination is a\n"
     "  path with a .png, .pdf, .ctx or .ctxc suffix or one of the\n"
     "  strings GRAY1, GRAY2, GRAY4, GRAY8, RGBA8, RGB332 or RGB565 to generate\n"
     "  a terminal visualization of the corresponding pixel encoding.\n"
@@ -21,7 +21,15 @@ static int usage_main (int argc, char **argv)
     "  --width  pixels sets width of canvas (default:auto)\n"
     "  --height pixels sets height of canvas (deault:auto)\n"
     "  --rows   rows   configures number of em-rows, when interpreting\n"
-    "  --cols   cols   configures number of em-cols, when interpreting\n");
+    "  --cols   cols   configures number of em-cols, when interpreting\n",
+
+#if CTX_CSS
+    "|source.svg"
+#else
+    ""
+#endif
+
+    );
   return 0;
 }
 

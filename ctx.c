@@ -16,7 +16,6 @@
 #undef CTX_FORMATTER
 #define CTX_FORMATTER 1
 
-//#define CTX_STB_TTF            1
 #define CTX_DAMAGE_CONTROL       1// visualize damage in fb/sdl/wasm backends
 #define CTX_MATH                 1
 #define CTX_32BIT_SEGMENTS       1

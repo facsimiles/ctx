@@ -253,4 +253,11 @@ int main(int argc, char *argv[])
   return 0;
 }
 
+#else
+#if CTX_BIN_BUNDLE
+int ctx_tinyvg_main(int argc, char *argv[])
+#else
+int main(int argc, char *argv[])
+#endif
+{return -1;}
 #endif
