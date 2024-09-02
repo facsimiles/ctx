@@ -262,8 +262,8 @@ dist: ctx-$(CTX_VERSION).tar.bz2 #
 	
 distcheck: dist #
 	tar xvf ctx-$(CTX_VERSION).tar.bz2 #
-	(cd ctx-$(CTX_VERSION); ./configure.sh --static && make ctx -j && make test ) #
-	(cd ctx-$(CTX_VERSION); make clean ; ./configure.sh && make -j ) #
-	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-Oz ./configure.sh --disable-all && make -j ) #
+	(cd ctx-$(CTX_VERSION); CFLAGS=-O1 ./configure.sh --static && make ctx -j && make test ) #
+	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-O1 ./configure.sh && make -j ) #
+	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-Oz ./configure.sh --static --disable-all && make -j ) #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 

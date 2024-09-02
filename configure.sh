@@ -64,6 +64,8 @@ CFLAGS_BACKEND=''
 
 if [ x"$CFLAGS" = x"" ];then
   CFLAGS='-O2 -g'
+else
+  ADD_VECTORIZE=0
 fi
 
 while test $# -gt 0
