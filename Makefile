@@ -262,7 +262,7 @@ dist: ctx-$(CTX_VERSION).tar.bz2 #
 	
 distcheck: dist #
 	tar xvf ctx-$(CTX_VERSION).tar.bz2 #
-	(cd ctx-$(CTX_VERSION); ./configure.sh --static && make ctx && make test ) #
-	(cd ctx-$(CTX_VERSION); make clean ; ./configure.sh && make ) #
+	(cd ctx-$(CTX_VERSION); ./configure.sh --static && make ctx -j && make test ) #
+	(cd ctx-$(CTX_VERSION); make clean ; ./configure.sh && make -j ) #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 
