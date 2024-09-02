@@ -6203,7 +6203,7 @@ ctx_fragment_linear_gradient_GRAYA8 (CtxRasterizer *rasterizer, float u0, float 
 
 #if CTX_DITHER
   int scan = rasterizer->scanline / CTX_FULL_AA;
-  int ox = (int)x;
+  int ox = (int)u0;
 #endif
   for (int i = 0; i < count;i ++)
   {
