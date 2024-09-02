@@ -74,7 +74,7 @@ FONT_STAMP=fonts/Roboto-Regular.h #
 test: ctx
 	make -C tests
 distclean: clean
-	rm -f build.* local.conf
+	rm -f *.conf
 clean:
 	rm -rf nofont #
 	rm -f ctx.h #
@@ -247,7 +247,7 @@ ctx-$(CTX_VERSION).tar.bz2: ctx.h Makefile #
 	cp -r tests/*.ctx dist/tests/ #
 	mkdir dist/bin #
 	cp bin/ctx*.c dist/bin #
-	cp bin/mt-test.c dist/bin #
+	cp bin/touch-test.c dist/bin #
 	cp bin/*.sh dist/bin #
 	cp bin/terminal-keyboard.h dist/bin #
 	grep -v '.*#$$' tests/Makefile > dist/tests/Makefile #
