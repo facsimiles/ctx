@@ -50,12 +50,11 @@ pkg-config harfbuzz && HAVE_HARFBUZZ=1
 
 ARCH=`uname -m`
 
-ADD_VECTORIZE=0
 
 case "$ARCH" in
    "x86_64")  HAVE_SIMD=1 ;;
    "armv7l")  HAVE_SIMD=1 ;;
-   "aarch64")  HAVE_SIMD=0; ADD_VECTORIZE=1 ;;
+   "aarch64")  HAVE_SIMD=0; ;;
    *)         HAVE_SIMD=0 ;; 
 esac
 
@@ -64,8 +63,10 @@ CFLAGS_BACKEND=''
 
 if [ x"$CFLAGS" = x"" ];then
   CFLAGS='-O2 -g'
-else
-  ADD_VECTORIZE=0
+  case "$ARCH" in
+     "aarch64")  CFLAGS="$CFLAGS -ftree-vectorize" ;;
+     *)   
+  esac
 fi
 
 while test $# -gt 0
@@ -328,9 +329,6 @@ echo "CTX_ARCH=$ARCH" >>  build.conf
 echo "CFLAGS=$CFLAGS" >> build.conf
 echo "LIBS=$LIBS" >> build.conf
 
-if [ $ADD_VECTORIZE = 1 ];then
-  echo "CTX_CFLAGS+= -ftree-vectorize " >> build.conf
-fi
 
 #echo CCACHE=`command -v ccache` >> build.conf
 
