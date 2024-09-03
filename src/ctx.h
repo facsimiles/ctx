@@ -1257,6 +1257,7 @@ float ctx_get_float (Ctx *ctx, uint32_t hash);
 void ctx_set_float (Ctx *ctx, uint32_t hash, float value);
 
 unsigned long ctx_ticks (void);
+uint32_t ctx_ms (Ctx *ctx);
 void ctx_end_frame (Ctx *ctx);
 
 void ctx_set_clipboard (Ctx *ctx, const char *text);
@@ -1457,7 +1458,6 @@ void  ctx_freeze (Ctx *ctx);
 void  ctx_thaw   (Ctx *ctx);
 int   ctx_events_frozen (Ctx *ctx);
 void  ctx_events_clear_items (Ctx *ctx);
-
 /* The following functions drive the event delivery, registered callbacks
  * are called in response to these being called.
  */

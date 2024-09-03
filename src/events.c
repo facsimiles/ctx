@@ -139,7 +139,7 @@ void ctx_list_backends(void)
 #endif
 }
 
-static uint32_t ctx_ms (Ctx *ctx)
+uint32_t ctx_ms (Ctx *ctx)
 {
   return _ctx_ticks () / 1000;
 }

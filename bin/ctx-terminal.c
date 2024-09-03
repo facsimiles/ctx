@@ -24,9 +24,16 @@
 #include "ctx.h"
 #include "terminal-keyboard.h"
 
+#define OVERVIEW_TRANSITION_LENGTH  0.4f
 static Ctx *ctx = NULL; // initialized in main
 
 typedef struct _CtxClient CtxClient;
+CtxList *ctx_clients(Ctx *ctx);
+
+int ctx_client_get_width (Ctx *ctx, int id);
+int ctx_client_get_height (Ctx *ctx, int id);
+int ctx_client_get_x (Ctx *ctx, int id);
+int ctx_client_get_y (Ctx *ctx, int id);
 
 void ctx_screenshot (Ctx *ctx, const char *path);
 void
@@ -46,6 +53,8 @@ static char *execute_self = NULL;
 float font_size    = -1;
 float line_spacing = 2.0;
 
+float leave_overview = 0.0f;
+float overview_t = 0.0f;
 /********************/
 static float start_font_size = 22.0;
 
@@ -95,6 +104,7 @@ static const char *ctx_find_shell_command (void)
     }
   return command;
 }
+static int in_overview = 0;
 
 /*****************/
 
@@ -245,6 +255,7 @@ CtxClient *ctx_client_by_id (Ctx *ctx, int id);
 
 CtxEvent *ctx_event_copy (CtxEvent *event);
 
+
 static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
@@ -305,6 +316,23 @@ static void handle_event (Ctx        *ctx,
   {
     if (!terminal_no_new_tab)
       add_tab (ctx, ctx_find_shell_command(), 1);
+  }
+  else if (!strcmp (event, "shift-control-o") ||
+           ((backend_type == CTX_BACKEND_FB ||  // workaround for not having
+            backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
+            backend_type == CTX_BACKEND_KMS)
+           &&   !strcmp (event, "control-o") ))
+  {
+     in_overview = !in_overview;
+     if (in_overview)
+     {
+       overview_t = 0.0f;
+     }
+     else
+     {
+       leave_overview = OVERVIEW_TRANSITION_LENGTH;
+     }
+     ctx_queue_draw (ctx);
   }
   else if (!strcmp (event, "shift-control-n") )
     {
@@ -570,6 +598,95 @@ void terminal_long_tap (CtxEvent *event, void *a, void *b)
 
 int commandline_argv_start = 0;
 
+
+static void overview_select_client (CtxEvent *event, void *client, void *data2)
+{
+  in_overview = 0;
+  leave_overview = OVERVIEW_TRANSITION_LENGTH;
+  event->stop_propagate =1;
+  ctx_client_focus (event->ctx, ctx_client_id (client));
+  ctx_queue_draw (event->ctx);
+}
+
+void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y);
+
+static void overview (Ctx *ctx, float anim_t)
+{
+  CtxList *clients = ctx_clients (ctx);
+  float em = ctx_get_font_size (ctx);
+  int n_clients         = ctx_list_length (clients);
+
+
+  float screen_width = ctx_width (ctx) - 3 * em;
+  float screen_height = ctx_height (ctx);
+
+
+  {
+    ctx_rgb(ctx,0.4,0.4,0.4);ctx_paint(ctx);
+    int rows = 1;
+    int cols = 1;
+
+    //ctx_rgb(ctx,0,1,0);ctx_rectangle (ctx, 0,0, screen_width * anim_pos, screen_height);
+    //ctx_fill(ctx);
+
+    if (n_clients <= 4) { rows = 2; cols = 2;}
+
+    while ( n_clients > cols * rows)
+    {
+      if (cols > rows * 1.66)
+      {
+	 rows++;
+      } else cols++;
+    }
+
+    int row = 0, col = 0;
+
+    float col_width = screen_width / cols;
+    float row_height = screen_height / rows;
+
+    float icon_width = col_width - em;
+    float icon_height = row_height - em;
+     
+    for (CtxList *l = clients; l; l = l->next)
+    {
+      CtxClient *client = l->data;
+      int client_id = ctx_client_id (client);
+      float x0 = ctx_client_get_x (ctx, client_id);
+      float y0 = ctx_client_get_y (ctx, client_id);
+      float w0 = ctx_client_get_width(ctx, client_id);
+      float h0 = ctx_client_get_height(ctx, client_id);
+      float x1 = col * col_width + em;
+      float y1 = row * row_height + em;
+
+      float scale0 = 1.0f;
+      float scale1 = icon_width/w0;
+
+      float x = x0 * (1.0-anim_t) + anim_t * x1;
+      float y = y0 * (1.0-anim_t) + anim_t * y1;
+      float scale = scale0 * (1.0-anim_t) + anim_t * scale1;
+      float w = w0 * (1.0-anim_t) + anim_t * icon_width;
+      float h = h0 * (1.0-anim_t) + anim_t * icon_height;
+
+      ctx_rectangle (ctx, x, y, w, h);
+      ctx_save(ctx);
+      ctx_clip(ctx);
+      //ctx_paint(ctx);
+      ctx_scale (ctx, scale, scale);
+      ctx_client_draw (ctx, client, x / scale, y / scale);
+      ctx_restore(ctx);
+      ctx_rectangle (ctx, x, y, w, h);
+      ctx_listen (ctx, CTX_DRAG_PRESS, overview_select_client, client, NULL);
+      ctx_begin_path (ctx);
+      col ++;
+      if (col >= cols)
+      {
+	 col = 0; row++;
+      }
+    }
+  }
+}
+
+
 #if CTX_BIN_BUNDLE
 int ctx_terminal_main (int argc, char **argv)
 #else
@@ -685,11 +802,17 @@ int main (int argc, char **argv)
 
   //int sleep_time = 1000000/10;
 
+
+  float prev_ms = ctx_ms (ctx);
+
   while (ctx_clients (ctx) && !ctx_has_exited (ctx))
     {
       //int changes = 0;
       int n_clients = ctx_list_length (ctx_clients (ctx));
       //ensure_layout (ctx);
+      float ms = ctx_ms (ctx);
+      float delta_s = (ms - prev_ms)/1000.0f;
+      prev_ms = ms;
 
       if (ctx_need_redraw(ctx))
       {
@@ -704,13 +827,41 @@ int main (int argc, char **argv)
 #endif
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         ctx_fill (ctx);
+
+	if (in_overview || leave_overview > 0.0f)
+	{
+	  if (leave_overview > 0.0f)
+	  {
+	    leave_overview -= delta_s;
+            overview (ctx, leave_overview / OVERVIEW_TRANSITION_LENGTH);
+	      ctx_queue_draw (ctx);
+	  }
+	  else
+	  {
+	    leave_overview = 0.0f;
+	    overview_t += delta_s;
+	    if (overview_t >= OVERVIEW_TRANSITION_LENGTH)
+	      overview_t = OVERVIEW_TRANSITION_LENGTH;
+	    else
+	      ctx_queue_draw (ctx);
+            overview (ctx, overview_t / OVERVIEW_TRANSITION_LENGTH);
+	  }
+	  
+	}
+	else
+	{
+
+
         ctx_clients_draw (ctx, 0);
+
         if ((n_clients != 1) || (ctx_clients (ctx) &&
                                  !flag_is_set(
                                          ctx_client_flags (((CtxClient*)ctx_clients(ctx)->data)), CSS_CLIENT_MAXIMIZED)))
           draw_panel (itk, ctx);
         else
           draw_mini_panel (ctx);
+
+	}
         ctx_osk_draw (ctx);
         //ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);

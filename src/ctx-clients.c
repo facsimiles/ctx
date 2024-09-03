@@ -421,6 +421,10 @@ void ctx_client_focus (Ctx *ctx, int id)
   if (ctx->events.active != client)
   {
     ctx->events.active = client;
+
+   if ((client->flags &  CSS_CLIENT_MAXIMIZED))
+      ctx->events.active_tab = client;
+    ctx_client_raise_top (ctx, id);
     ctx_queue_draw (ctx);
   }
 }
@@ -599,10 +603,38 @@ void ctx_client_set_font_size (Ctx *ctx, int id, float font_size)
    }
 }
 
+int ctx_client_get_x (Ctx *ctx, int id)
+{
+   CtxClient *client = ctx_client_by_id (ctx, id);
+   if (client) return client->x;
+   return 0;
+}
+
+int ctx_client_get_y (Ctx *ctx, int id)
+{
+   CtxClient *client = ctx_client_by_id (ctx, id);
+   if (client) return client->y;
+   return 0;
+}
+
+int ctx_client_get_width (Ctx *ctx, int id)
+{
+   CtxClient *client = ctx_client_by_id (ctx, id);
+   if (client) return client->width;
+   return 0;
+}
+
+int ctx_client_get_height (Ctx *ctx, int id)
+{
+   CtxClient *client = ctx_client_by_id (ctx, id);
+   if (client) return client->height;
+   return 0;
+}
+
 float ctx_client_get_font_size (Ctx *ctx, int id)
 {
    CtxClient *client = ctx_client_by_id (ctx, id);
-   if (client->vt)
+   if (client && client->vt)
      return vt_get_font_size (client->vt);
    return 14.0;
 }
@@ -806,7 +838,7 @@ void ctx_client_close (CtxEvent *event, void *data, void *data2)
 void vt_use_images (VT *vt, Ctx *ctx);
 //float _ctx_green = 0.5;
 
-static void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
+void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
 {
 #if 0
     if (client->tid)
@@ -1104,6 +1136,61 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
   _ctx_font_size = ctx_get_font_size (ctx);
   float titlebar_height = _ctx_font_size;
   int n_clients         = ctx_list_length (clients);
+
+  float em = _ctx_font_size;
+  float screen_width = ctx_width (ctx) - 3 * em;
+  float screen_height = ctx_height (ctx);
+
+  if (layer2==23)
+  {
+    ctx_rgb(ctx,0,0,0);ctx_paint(ctx);
+    int rows = 1;
+    int cols = 1;
+
+    if (n_clients <= 4) { rows = 2; cols = 2;}
+
+
+    while ( n_clients > cols * rows)
+    {
+      if (cols > rows * 2)
+      {
+	 rows++;
+      } else cols++;
+    }
+
+
+    int row = 0, col = 0;
+
+    float col_width = screen_width / cols;
+    float row_height = screen_height / rows;
+
+    float icon_width = col_width - 2 * em;
+    float icon_height = row_height - 2 * em;
+     
+    for (CtxList *l = clients; l; l = l->next)
+    {
+      CtxClient *client = l->data;
+      ctx_rgba(ctx,1,1,1,0.5);
+      float x = col * col_width + em;
+      float y = row * row_height + em;
+
+      float scale = icon_width/client->width;
+
+      ctx_rectangle (ctx, x, y, icon_width, icon_height);
+      ctx_save(ctx);
+      ctx_clip(ctx);
+      ctx_paint(ctx);
+      ctx_scale (ctx, scale, scale);
+      ctx_client_draw (ctx, client, x / scale, y / scale);
+      ctx_restore(ctx);
+      col ++;
+      if (col >= cols)
+      {
+	 col = 0; row++;
+      }
+    }
+    return 0;
+  }
 
   if (ctx->events.active && flag_is_set(ctx->events.active->flags, CSS_CLIENT_MAXIMIZED) && n_clients == 1)
   {
