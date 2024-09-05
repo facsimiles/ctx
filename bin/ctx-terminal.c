@@ -24,7 +24,7 @@
 #include "ctx.h"
 #include "terminal-keyboard.h"
 
-#define OVERVIEW_TRANSITION_LENGTH  0.4f
+#define OVERVIEW_TRANSITION_LENGTH  0.3f
 static Ctx *ctx = NULL; // initialized in main
 
 typedef struct _CtxClient CtxClient;
@@ -256,6 +256,8 @@ CtxClient *ctx_client_by_id (Ctx *ctx, int id);
 CtxEvent *ctx_event_copy (CtxEvent *event);
 
 
+static void overview_init (Ctx *ctx);
+
 static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
@@ -318,7 +320,7 @@ static void handle_event (Ctx        *ctx,
       add_tab (ctx, ctx_find_shell_command(), 1);
   }
   else if (!strcmp (event, "shift-control-o") ||
-           ((backend_type == CTX_BACKEND_FB ||  // workaround for not having
+           ((backend_type == CTX_BACKEND_FB  ||  // workaround for not having
             backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
             backend_type == CTX_BACKEND_KMS)
            &&   !strcmp (event, "control-o") ))
@@ -326,6 +328,7 @@ static void handle_event (Ctx        *ctx,
      in_overview = !in_overview;
      if (in_overview)
      {
+       overview_init (ctx);
        overview_t = 0.0f;
      }
      else
@@ -367,7 +370,10 @@ static void handle_event (Ctx        *ctx,
     }
   else if (!strcmp (event, "shift-control-w") )
     {
-      ctx_client_quit (active);
+      ctx_client_unlock (client);
+      ctx_client_remove (ctx, client);
+      ctx_queue_draw (ctx);
+      return;
     }
   else if (!strcmp (event, "shift-control-s") )
     {
@@ -599,41 +605,66 @@ void terminal_long_tap (CtxEvent *event, void *a, void *b)
 int commandline_argv_start = 0;
 
 
-static void overview_select_client (CtxEvent *event, void *client, void *data2)
-{
-  in_overview = 0;
-  leave_overview = OVERVIEW_TRANSITION_LENGTH;
-  event->stop_propagate =1;
-  ctx_client_focus (event->ctx, ctx_client_id (client));
-  ctx_queue_draw (event->ctx);
-}
 
 void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y);
 
-static void overview (Ctx *ctx, float anim_t)
+typedef struct OverviewPos {
+  int id;
+  CtxClient *client;
+  float x0;
+  float y0;
+  float w0;
+  float h0;
+  float x1;
+  float y1;
+  float scale0;  /// is always 1.0f
+  float scale1;
+
+} OverviewPos;
+
+static OverviewPos  *opos           = NULL;
+static int           opos_count = 0;
+
+
+static void overview_cleanup (Ctx *ctx)
 {
+  if (opos)
+  {
+    ctx_free (opos);
+    opos = NULL;
+  }
+  opos_count = 0;
+}
+
+int ctx_client_is_active_tab (Ctx *ctx, CtxClient *client);
+
+static void overview_init (Ctx *ctx)
+{
+  if (opos)
+  {
+    //return;
+    overview_cleanup (ctx);
+  }
+
   CtxList *clients = ctx_clients (ctx);
   float em = ctx_get_font_size (ctx);
   int n_clients         = ctx_list_length (clients);
 
-
   float screen_width = ctx_width (ctx) - 3 * em;
   float screen_height = ctx_height (ctx);
 
+  opos_count = n_clients;
+  opos = (OverviewPos*)ctx_calloc(opos_count, sizeof(OverviewPos));
 
   {
-    ctx_rgb(ctx,0.4,0.4,0.4);ctx_paint(ctx);
     int rows = 1;
     int cols = 1;
-
-    //ctx_rgb(ctx,0,1,0);ctx_rectangle (ctx, 0,0, screen_width * anim_pos, screen_height);
-    //ctx_fill(ctx);
 
     if (n_clients <= 4) { rows = 2; cols = 2;}
 
     while ( n_clients > cols * rows)
     {
-      if (cols > rows * 1.66)
+      if (cols > rows * 1.2)
       {
 	 rows++;
       } else cols++;
@@ -646,43 +677,165 @@ static void overview (Ctx *ctx, float anim_t)
 
     float icon_width = col_width - em;
     float icon_height = row_height - em;
-     
+    
+    int i = n_clients - 1;
+
     for (CtxList *l = clients; l; l = l->next)
     {
       CtxClient *client = l->data;
       int client_id = ctx_client_id (client);
-      float x0 = ctx_client_get_x (ctx, client_id);
-      float y0 = ctx_client_get_y (ctx, client_id);
-      float w0 = ctx_client_get_width(ctx, client_id);
-      float h0 = ctx_client_get_height(ctx, client_id);
-      float x1 = col * col_width + em;
-      float y1 = row * row_height + em;
 
-      float scale0 = 1.0f;
-      float scale1 = icon_width/w0;
+      col = i % cols;
+      row = i / cols;
 
-      float x = x0 * (1.0-anim_t) + anim_t * x1;
-      float y = y0 * (1.0-anim_t) + anim_t * y1;
-      float scale = scale0 * (1.0-anim_t) + anim_t * scale1;
-      float w = w0 * (1.0-anim_t) + anim_t * icon_width;
-      float h = h0 * (1.0-anim_t) + anim_t * icon_height;
+      int j = n_clients - i - 1;
 
-      ctx_rectangle (ctx, x, y, w, h);
-      ctx_save(ctx);
-      ctx_clip(ctx);
-      //ctx_paint(ctx);
-      ctx_scale (ctx, scale, scale);
-      ctx_client_draw (ctx, client, x / scale, y / scale);
-      ctx_restore(ctx);
-      ctx_rectangle (ctx, x, y, w, h);
-      ctx_listen (ctx, CTX_DRAG_PRESS, overview_select_client, client, NULL);
-      ctx_begin_path (ctx);
-      col ++;
-      if (col >= cols)
+      opos[j].client = client;
+      opos[j].id = client_id;
+      opos[j].x0 = ctx_client_get_x (ctx, client_id);
+      opos[j].y0 = ctx_client_get_y (ctx, client_id) - em * (n_clients > 1);
+      opos[j].w0 = ctx_client_get_width(ctx, client_id);
+      opos[j].h0 = ctx_client_get_height(ctx, client_id);
+      opos[j].x1 = col * col_width + em;
+      opos[j].y1 = row * row_height + em;
+
+      opos[j].scale0 = 1.0f;
+      opos[j].scale1 = icon_width/opos[j].w0;
+    
+      if ((ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED) && !ctx_client_is_active_tab (ctx, client))
       {
-	 col = 0; row++;
+	 opos[j].x0 = opos[j].x1;
+	 opos[j].y0 = opos[j].y1;
+	 opos[j].scale0 = opos[j].scale1;
+         opos[j].w0 = icon_width;
+         opos[j].h0 = icon_height;
       }
+
+
+      i--;
     }
+  }
+}
+
+static void overview_select_client (CtxEvent *event, void *client, void *data2)
+{
+  in_overview = 0;
+  leave_overview = OVERVIEW_TRANSITION_LENGTH;
+
+  int i;
+  int old_active = 0;
+  int new_active = 0;
+
+  for (i = 0; i < opos_count; i++)
+  {
+    if (ctx_client_is_active_tab (event->ctx, opos[i].client))
+      old_active = i;
+    if (opos[i].client == client)
+      new_active = i;
+  }
+  if (new_active != old_active)
+  {
+    opos[new_active].x0 = opos[old_active].x0;
+    opos[new_active].y0 = opos[old_active].y0;
+    opos[new_active].scale0 = 1.0f;
+    opos[new_active].w0 = opos[old_active].w0;
+    opos[new_active].h0 = opos[old_active].h0;
+
+    opos[old_active].x0 = opos[old_active].x1;
+    opos[old_active].y0 = opos[old_active].y1;
+    opos[old_active].scale0 = opos[old_active].scale1;
+
+
+    OverviewPos temp = opos[new_active];
+    opos[new_active] = opos[old_active];
+    opos[old_active] = temp;
+
+  }
+
+
+  event->stop_propagate =1;
+  ctx_client_focus (event->ctx, ctx_client_id (client));
+  ctx_queue_draw (event->ctx);
+}
+
+
+static void overview (Ctx *ctx, float anim_t)
+{
+  CtxList *clients = ctx_clients (ctx);
+  float em = ctx_get_font_size (ctx);
+  int n_clients         = ctx_list_length (clients);
+
+  float screen_width = ctx_width (ctx) - 3 * em;
+  float screen_height = ctx_height (ctx);
+
+  static int dirty_count = 0;
+  if (n_clients != opos_count)
+  {
+    dirty_count = 2;
+  }
+
+  if (!opos || dirty_count > 0)
+  {
+    if (dirty_count > 0)
+      dirty_count--;
+    overview_init (ctx);
+  }
+
+  int rows = 1;
+  int cols = 1;
+
+  if (n_clients <= 4) { rows = 2; cols = 2;}
+
+  while ( n_clients > cols * rows)
+  {
+    if (cols > rows * 1.2)
+    {
+       rows++;
+    } else cols++;
+  }
+
+  int row = 0, col = 0;
+
+  float col_width  = screen_width / cols;
+  float row_height = screen_height / rows;
+  float icon_width  = col_width - em;
+  float icon_height = row_height - em;
+  
+  int i = 0;
+
+
+  ctx_rgb(ctx,0.4,0.4,0.4);ctx_paint(ctx);
+
+  for (i = 0; i < opos_count; i++)
+  {
+     CtxClient *client = opos[i].client;
+    float x0 = opos[i].x0;
+    float y0 = opos[i].y0;
+    float x1 = opos[i].x1;
+    float y1 = opos[i].y1;
+    float w0 = opos[i].w0;
+    float h0 = opos[i].h0;
+    float scale0 = opos[i].scale0;
+    float scale1 = opos[i].scale1;
+
+    float x = x0 * (1.0-anim_t) + anim_t * x1;
+    float y = y0 * (1.0-anim_t) + anim_t * y1;
+    float scale = scale0 * (1.0-anim_t) + anim_t * scale1;
+    float w = w0 * (1.0-anim_t) + anim_t * icon_width;
+    float h = h0 * (1.0-anim_t) + anim_t * icon_height;
+
+    //ctx_rectangle (ctx, x-1, y-1, w+2, h+2);
+    //ctx_rgb (ctx,0,0,0);ctx_fill(ctx);
+    //ctx_rectangle (ctx, x, y, w, h);
+    ctx_save(ctx);
+    //ctx_clip(ctx);
+    //ctx_paint(ctx);
+    ctx_scale (ctx, scale, scale);
+    ctx_client_draw (ctx, client, x / scale, y / scale);
+    ctx_restore(ctx);
+    ctx_rectangle (ctx, x, y, w, h);
+    ctx_listen (ctx, CTX_DRAG_PRESS, overview_select_client, client, NULL);
+    ctx_begin_path (ctx);
   }
 }
 

@@ -251,6 +251,11 @@ extern int _ctx_max_threads;
 
 static int focus_follows_mouse = 0;
 
+int ctx_client_is_active_tab (Ctx *ctx, CtxClient *client)
+{
+  return ((client->flags & CSS_CLIENT_MAXIMIZED) && client == ctx->events.active_tab);
+}
+
 static CtxClient *find_active (Ctx *ctx, int x, int y)
 {
   CtxClient *ret = NULL;
