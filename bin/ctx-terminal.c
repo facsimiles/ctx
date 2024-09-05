@@ -248,7 +248,9 @@ void switch_to_tab (Ctx *ctx, int tab_no)
 {
   int id = ctx_clients_tab_to_id (ctx, tab_no);
   if (id >= 0)
+  {
     ctx_client_maximize (ctx, id);
+  }
 }
 
 CtxClient *ctx_client_by_id (Ctx *ctx, int id);
@@ -670,8 +672,6 @@ static void overview_init (Ctx *ctx)
       } else cols++;
     }
 
-    int row = 0, col = 0;
-
     float col_width = screen_width / cols;
     float row_height = screen_height / rows;
 
@@ -685,8 +685,8 @@ static void overview_init (Ctx *ctx)
       CtxClient *client = l->data;
       int client_id = ctx_client_id (client);
 
-      col = i % cols;
-      row = i / cols;
+      int col = i % cols;
+      int row = i / cols;
 
       int j = n_clients - i - 1;
 
@@ -793,8 +793,6 @@ static void overview (Ctx *ctx, float anim_t)
        rows++;
     } else cols++;
   }
-
-  int row = 0, col = 0;
 
   float col_width  = screen_width / cols;
   float row_height = screen_height / rows;
