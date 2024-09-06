@@ -58,7 +58,7 @@ build.conf:
 bin/ctx: bin/ctx-*.c bin/ctx.c
 bin/%: bin/%.c build.conf Makefile build.conf libctx.so libctx.a
 	@echo CC $@;if [ x"$(CTX_EXTRA_STATIC)" = x"" ]; then \
-	$(CCC) -g $< -o $@ $(CFLAGS) libctx.so $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT) -rpath `pwd`  \
+	$(CCC) -g $< -o $@ $(CFLAGS) libctx.so $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT)  \
 	; else $(CCC) -g $< -o $@ $(CFLAGS) libctx.a $(LIBS) $(CTX_CFLAGS) $(CTX_LIBS) $(OFLAGS_LIGHT) -static && strip $@ ; fi
 
 fonts/%.h: tools/ctx-fontgen #

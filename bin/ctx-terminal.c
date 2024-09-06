@@ -399,8 +399,6 @@ static void handle_event (Ctx        *ctx,
   else if (!strcmp (event, "shift-control-tab") )
     {
        CtxList *l = ctx_clients (ctx);
-       int found = 0;
-       CtxClient *next = NULL;
        CtxClient *prev = NULL;
        if (l->data == active)
        {
@@ -409,12 +407,13 @@ static void handle_event (Ctx        *ctx,
        }
        else
        {
-       for (; l; l = l->next)
-       {
-	 CtxClient *client = l->data;
-	 if (client == active) break;
-	 prev = client;
-       }
+         for (; l; l = l->next)
+         {
+	   CtxClient *client = l->data;
+	   if (client == active)
+	     break;
+	   prev = client;
+         }
        }
        ctx_client_focus (ctx, ctx_client_id (prev));
        ctx_queue_draw (ctx);
