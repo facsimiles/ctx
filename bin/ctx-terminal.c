@@ -260,6 +260,22 @@ CtxEvent *ctx_event_copy (CtxEvent *event);
 
 static void overview_init (Ctx *ctx);
 
+static void overview_event (CtxEvent *event, void *a, void *b)
+{
+     in_overview = !in_overview;
+     overview_init (event->ctx);
+     if (in_overview)
+     {
+       overview_t = 0.0f;
+     }
+     else
+     {
+       leave_overview = OVERVIEW_TRANSITION_LENGTH;
+     }
+     ctx_queue_draw (event->ctx);
+     ctx_event_stop_propagate (event);
+}
+
 static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
@@ -327,17 +343,8 @@ static void handle_event (Ctx        *ctx,
             backend_type == CTX_BACKEND_KMS)
            &&   !strcmp (event, "control-o") ))
   {
-     in_overview = !in_overview;
-     if (in_overview)
-     {
-       overview_init (ctx);
-       overview_t = 0.0f;
-     }
-     else
-     {
-       leave_overview = OVERVIEW_TRANSITION_LENGTH;
-     }
-     ctx_queue_draw (ctx);
+     CtxEvent dummy;dummy.ctx=ctx;
+     overview_event (&dummy, NULL, NULL);
   }
   else if (!strcmp (event, "shift-control-n") )
     {
@@ -495,12 +502,22 @@ void draw_mini_panel (Ctx *ctx)
   ctx_font_size (ctx, titlebar_height * 0.9);
   float w = ctx_width (ctx);
 
+#if 0
   ctx_rectangle (ctx, w - titlebar_height * 5, 0, titlebar_height * 4, titlebar_height);
   ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
   ctx_move_to (ctx, w - titlebar_height * 5/2, titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
   ctx_text (ctx, "[add tab]");
+#else
+
+  ctx_rectangle (ctx, w - titlebar_height * 5, 0, titlebar_height * 4, titlebar_height);
+  ctx_listen (ctx, CTX_PRESS, overview_event, NULL, NULL);
+  ctx_move_to (ctx, w - titlebar_height * 5/2, titlebar_height * 0.8);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+  ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
+  ctx_text (ctx, "[overview]");
+#endif
 
   ctx_restore (ctx);
 }
@@ -658,6 +675,12 @@ static void overview_init (Ctx *ctx)
   opos_count = n_clients;
   opos = (OverviewPos*)ctx_calloc(opos_count, sizeof(OverviewPos));
 
+
+  int active_id = ctx_clients_active (ctx);
+  int active_no = 0;
+  CtxClient *active = NULL;
+
+  int top_of_class = 0;
   {
     int rows = 1;
     int cols = 1;
@@ -678,7 +701,7 @@ static void overview_init (Ctx *ctx)
     float icon_width = col_width - em;
     float icon_height = row_height - em;
     
-    int i = n_clients - 1;
+    int i = 0;
 
     for (CtxList *l = clients; l; l = l->next)
     {
@@ -688,32 +711,47 @@ static void overview_init (Ctx *ctx)
       int col = i % cols;
       int row = i / cols;
 
-      int j = n_clients - i - 1;
+      opos[i].client = client;
+      opos[i].id = client_id;
+      opos[i].x0 = ctx_client_get_x (ctx, client_id);
+      opos[i].y0 = ctx_client_get_y (ctx, client_id) - em * (n_clients > 1);
+      opos[i].w0 = ctx_client_get_width(ctx, client_id);
+      opos[i].h0 = ctx_client_get_height(ctx, client_id);
+      opos[i].x1 = col * col_width + em;
+      opos[i].y1 = row * row_height + em;
 
-      opos[j].client = client;
-      opos[j].id = client_id;
-      opos[j].x0 = ctx_client_get_x (ctx, client_id);
-      opos[j].y0 = ctx_client_get_y (ctx, client_id) - em * (n_clients > 1);
-      opos[j].w0 = ctx_client_get_width(ctx, client_id);
-      opos[j].h0 = ctx_client_get_height(ctx, client_id);
-      opos[j].x1 = col * col_width + em;
-      opos[j].y1 = row * row_height + em;
-
-      opos[j].scale0 = 1.0f;
-      opos[j].scale1 = icon_width/opos[j].w0;
+      opos[i].scale0 = 1.0f;
+      opos[i].scale1 = icon_width/opos[i].w0;
     
-      if ((ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED) && !ctx_client_is_active_tab (ctx, client))
+      if ((ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED))
       {
-	 opos[j].x0 = opos[j].x1;
-	 opos[j].y0 = opos[j].y1;
-	 opos[j].scale0 = opos[j].scale1;
-         opos[j].w0 = icon_width;
-         opos[j].h0 = icon_height;
+	 if (!ctx_client_is_active_tab (ctx, client))
+	 {
+           opos[i].x0 = opos[i].x1;
+           opos[i].y0 = opos[i].y1;
+           opos[i].scale0 = opos[i].scale1;
+	 }
+	 top_of_class = i;
+      }
+      if (client_id == active_id){
+	      active_no = i;
+	      active = client;
       }
 
-
-      i--;
+      i++;
     }
+  }
+
+
+  if (!(ctx_client_flags (active) & CSS_CLIENT_MAXIMIZED))
+    top_of_class = n_clients - 1;
+
+
+  if (active_no != top_of_class)
+  {
+    OverviewPos temp = opos[top_of_class];
+    opos[top_of_class] = opos[active_no];
+    opos[active_no] = temp;
   }
 }
 
@@ -755,6 +793,7 @@ static void overview_select_client (CtxEvent *event, void *client, void *data2)
 
   event->stop_propagate =1;
   ctx_client_focus (event->ctx, ctx_client_id (client));
+  overview_init (ctx);
   ctx_queue_draw (event->ctx);
 }
 
@@ -797,16 +836,16 @@ static void overview (Ctx *ctx, float anim_t)
   float col_width  = screen_width / cols;
   float row_height = screen_height / rows;
   float icon_width  = col_width - em;
-  float icon_height = row_height - em;
+  //float icon_height = row_height - em;
   
   int i = 0;
 
-
-  ctx_rgb(ctx,0.4,0.4,0.4);ctx_paint(ctx);
+  ctx_rgb(ctx,0.1,0.1,0.1);
+  ctx_paint(ctx);
 
   for (i = 0; i < opos_count; i++)
   {
-     CtxClient *client = opos[i].client;
+    CtxClient *client = opos[i].client;
     float x0 = opos[i].x0;
     float y0 = opos[i].y0;
     float x1 = opos[i].x1;
@@ -820,19 +859,20 @@ static void overview (Ctx *ctx, float anim_t)
     float y = y0 * (1.0-anim_t) + anim_t * y1;
     float scale = scale0 * (1.0-anim_t) + anim_t * scale1;
     float w = w0 * (1.0-anim_t) + anim_t * icon_width;
-    float h = h0 * (1.0-anim_t) + anim_t * icon_height;
+    float h = h0 * (w / w0);
 
-    //ctx_rectangle (ctx, x-1, y-1, w+2, h+2);
-    //ctx_rgb (ctx,0,0,0);ctx_fill(ctx);
-    //ctx_rectangle (ctx, x, y, w, h);
     ctx_save(ctx);
-    //ctx_clip(ctx);
-    //ctx_paint(ctx);
     ctx_scale (ctx, scale, scale);
     ctx_client_draw (ctx, client, x / scale, y / scale);
     ctx_restore(ctx);
-    ctx_rectangle (ctx, x, y, w, h);
+    ctx_rectangle (ctx, x-2, y-2, w+4, h+4);
     ctx_listen (ctx, CTX_DRAG_PRESS, overview_select_client, client, NULL);
+
+    if (opos[i].id == ctx_clients_active (ctx))
+	{ ctx_rgba(ctx,1,1,1,1);
+          ctx_stroke(ctx);
+	}
+    else
     ctx_begin_path (ctx);
   }
 }
