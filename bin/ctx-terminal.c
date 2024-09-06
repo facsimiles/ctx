@@ -276,6 +276,10 @@ static void overview_event (CtxEvent *event, void *a, void *b)
      ctx_event_stop_propagate (event);
 }
 
+
+int         vt_get_scroll           (VT *vt);
+void        vt_set_scroll           (VT *vt, int scroll);
+
 static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
@@ -418,6 +422,23 @@ static void handle_event (Ctx        *ctx,
        ctx_client_focus (ctx, ctx_client_id (prev));
        ctx_queue_draw (ctx);
     }
+  else if (!strcmp (event, "shift-control-up") )
+  {
+    if (vt)
+    {
+      vt_set_scroll (vt, vt_get_scroll (vt)+1);
+      ctx_queue_draw (ctx);
+    }
+  }
+  else if (!strcmp (event, "shift-control-down") )
+  {
+    if (vt)
+    {
+      vt_set_scroll (vt, vt_get_scroll (vt)-1);
+      ctx_queue_draw (ctx);
+    }
+
+  }
   else if (!strcmp (event, "shift-control-w") )
     {
       ctx_client_unlock (client);
