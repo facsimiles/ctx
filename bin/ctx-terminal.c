@@ -24,7 +24,7 @@
 #include "ctx.h"
 #include "terminal-keyboard.h"
 
-#define OVERVIEW_TRANSITION_LENGTH  0.3f
+#define OVERVIEW_TRANSITION_LENGTH  0.25f
 static Ctx *ctx = NULL; // initialized in main
 
 typedef struct _CtxClient CtxClient;
@@ -377,6 +377,48 @@ static void handle_event (Ctx        *ctx,
     {
       ctx_exit (ctx);
     }
+  else if (!strcmp (event, "control-tab") )
+    {
+       CtxList *l = ctx_clients (ctx);
+       int found = 0;
+       CtxClient *next = NULL;
+       for (; l; l = l->next)
+       {
+	 CtxClient *client = l->data;
+	 if (found)
+	 {
+           if (!next) next = client;
+	 }
+	 if (client == active) found = 1;
+       }
+       if (!next)
+	 next = ctx_clients (ctx)->data;
+       ctx_client_focus (ctx, ctx_client_id (next));
+       ctx_queue_draw (ctx);
+    }
+  else if (!strcmp (event, "shift-control-tab") )
+    {
+       CtxList *l = ctx_clients (ctx);
+       int found = 0;
+       CtxClient *next = NULL;
+       CtxClient *prev = NULL;
+       if (l->data == active)
+       {
+         for (; l; l = l->next)
+	   prev = l->data;
+       }
+       else
+       {
+       for (; l; l = l->next)
+       {
+	 CtxClient *client = l->data;
+	 if (client == active) break;
+	 prev = client;
+       }
+       }
+       ctx_client_focus (ctx, ctx_client_id (prev));
+       ctx_queue_draw (ctx);
+    }
   else if (!strcmp (event, "shift-control-w") )
     {
       ctx_client_unlock (client);
@@ -699,7 +741,7 @@ static void overview_init (Ctx *ctx)
     float row_height = screen_height / rows;
 
     float icon_width = col_width - em;
-    float icon_height = row_height - em;
+    //float icon_height = row_height - em;
     
     int i = 0;
 
@@ -805,7 +847,7 @@ static void overview (Ctx *ctx, float anim_t)
   int n_clients         = ctx_list_length (clients);
 
   float screen_width = ctx_width (ctx) - 3 * em;
-  float screen_height = ctx_height (ctx);
+  //float screen_height = ctx_height (ctx);
 
   static int dirty_count = 0;
   if (n_clients != opos_count)
@@ -834,7 +876,7 @@ static void overview (Ctx *ctx, float anim_t)
   }
 
   float col_width  = screen_width / cols;
-  float row_height = screen_height / rows;
+  //float row_height = screen_height / rows;
   float icon_width  = col_width - em;
   //float icon_height = row_height - em;
   
