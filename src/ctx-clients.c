@@ -429,7 +429,8 @@ void ctx_client_focus (Ctx *ctx, int id)
 
    if ((client->flags &  CSS_CLIENT_MAXIMIZED))
       ctx->events.active_tab = client;
-    ctx_client_raise_top (ctx, id);
+   else
+      ctx_client_raise_top (ctx, id);
     ctx_queue_draw (ctx);
   }
 }
