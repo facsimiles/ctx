@@ -12,6 +12,7 @@
 // not that large
 
 #if defined(PICO_BUILD)
+#include <pico/stdlib.h>
   // what for sockets etc?
 #define DT_DIR 4
 #define DT_REG 8

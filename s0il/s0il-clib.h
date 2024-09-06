@@ -228,7 +228,7 @@ int s0il_glob (const char *pattern, int flags, int(*errfunc)(char*,int),
 #endif
 
 #if PICO_BUILD
-#define usleep(us) sleep_us(us)
+#define usleep(us) (sleep_us(us),0)
 #endif
 
 #endif

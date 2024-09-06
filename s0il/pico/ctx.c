@@ -1,7 +1,6 @@
-
 #define CTX_PTY                 0
 #define CTX_1BIT_CLIP           1
-#define CTX_RASTERIZER_AA       3
+#define CTX_RASTERIZER_AA       15
 #define CTX_RASTERIZER_FORCE_AA 0
 #define CTX_SHAPE_CACHE         0
 #define CTX_SHAPE_CACHE_DIM     16*18
@@ -19,21 +18,21 @@
 #define CTX_ENABLE_RGB565_BYTESWAPPED 1
 #define CTX_BITPACK_PACKER      0
 #define CTX_COMPOSITING_GROUPS  0
+#define CTX_RENDERSTREAM_STATIC 0
 #define CTX_GRADIENT_CACHE      1
 #define CTX_ENABLE_CLIP         1
+#define CTX_BLOATY_FAST_PATHS   0
 
-#define CTX_CLIENTS         1
-#define CTX_VT              1
-#define CTX_VT_STYLE_SIZE   32
-#define CTX_PARSER          1
+#define CTX_VT         1
+#define CTX_PARSER     1
 #define CTX_PARSER_MAXLEN   (3 *1024)
-#define CTX_RASTERIZER      1
-#define CTX_EVENTS          1
+#define CTX_RASTERIZER 1
+#define CTX_EVENTS     1
+#define CTX_RAW_KB_EVENTS 0
 #define CTX_STRINGPOOL_SIZE 512
-#define CTX_FORMATTER       0
+#define CTX_FORMATTER 0
 #define CTX_TERMINAL_EVENTS 1
 #define CTX_FONTS_FROM_FILE 0
-#define CTX_MAX_FONTS       3
 
 #define CTX_STATIC_FONT(font) \
   ctx_load_font_ctx(ctx_font_##font##_name, \
@@ -42,9 +41,13 @@
 #include <stdint.h>
 #include "Roboto-Regular.h"
 #include "Cousine-Regular.h"
+//include "Cousine-Bold.h"
+//#include "Cousine-Italic.h"
 
 #define CTX_FONT_0   CTX_STATIC_FONT(Roboto_Regular)
 #define CTX_FONT_8   CTX_STATIC_FONT(Cousine_Regular)
+//#define CTX_FONT_9   CTX_STATIC_FONT(Cousine_Italic)
+//#define CTX_FONT_10  CTX_STATIC_FONT(Cousine_Bold)
 
 
 #define CTX_IMPLEMENTATION 1
@@ -54,13 +57,17 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 #include "hardware/gpio.h"
-#include "hardware/uart.h"
-
+#include "hardware/clocks.h"
+#include "hardware/vreg.h"
 #include "st7789_lcd.pio.h"
 
-// usb
 
-uint8_t scratch[32*1024]; // perhaps too small, but for a flexible terminal
+
+// usb
+//#include "bsp/board.h"
+//#include "tusb.h"
+
+uint8_t scratch[64*1024]; // perhaps too small, but for a flexible terminal
                           // we need all the memory possible for terminal
                           // and its scrollback
 
@@ -79,7 +86,7 @@ uint8_t scratch[32*1024]; // perhaps too small, but for a flexible terminal
 #define PIN_CLK 10
 #define PIN_CS 9
 #define PIN_DC 8
-#define PIN_RESET 15
+#define PIN_RESET 12
 #define PIN_BL 13
 #define ORIENTATION 2
 #define SCREEN_WIDTH   320
@@ -158,8 +165,11 @@ static inline void st7789_start_pixels(PIO pio, uint sm) {
 
 #include "ctx.h"
 
-PIO pio = pio0;
-uint sm = 0;
+
+
+    PIO pio = pio0;
+    uint sm = 0;
+
 
 static inline void st7789_set_window(PIO pio, uint sm, int x0, int y0, int x1, int y1) {
    uint8_t caset_cmd[] =
@@ -188,13 +198,12 @@ void ctx_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void
     st7789_start_pixels(pio, sm);
     for (int i = 0; i < w*h*2;i+=2)
     {
-      st7789_lcd_put(pio, sm, pixels[i+1]); // < we do the byteswap here
       st7789_lcd_put(pio, sm, pixels[i]);
+      st7789_lcd_put(pio, sm, pixels[i+1]);
     }
 }
 
 #if 0
-
 
 extern void hid_app_task(void);
 void cdc_task(void)
@@ -243,6 +252,7 @@ static int ctx_usb_task (Ctx *ctx, void *data)
   return 1;
 }
 #endif
+
 static void ghostbuster(Ctx *ctx)
 {
     float width = ctx_width (ctx);
@@ -265,26 +275,28 @@ Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
                            int pin_din, int pin_clk, int pin_cs, int pin_dc,
                            int pin_reset, int pin_backlight, float clk_div)
 {
-    gpio_init(pin_backlight);
-    gpio_set_dir(pin_backlight, GPIO_OUT);
-    gpio_put(pin_backlight, 1);
-
     uint offset = pio_add_program(pio, &st7789_lcd_program);
     st7789_lcd_program_init(pio, sm, offset, pin_din, pin_clk, clk_div);
 
     gpio_init(pin_cs);
     gpio_init(pin_dc);
     gpio_init(pin_reset);
+    gpio_init(pin_backlight);
     gpio_set_dir(pin_cs, GPIO_OUT);
     gpio_set_dir(pin_dc, GPIO_OUT);
     gpio_set_dir(pin_reset, GPIO_OUT);
+    gpio_set_dir(pin_backlight, GPIO_OUT);
 
     gpio_put(pin_cs, 1);
     gpio_put(pin_reset, 1);
 
     spi_run_commands (pio, sm, st7789_init_seq);
 
-    Ctx *ctx = ctx_new_cb(fb_width, fb_height, CTX_FORMAT_RGB565,
+
+    gpio_put(pin_backlight, 1);
+
+
+    Ctx *ctx = ctx_new_cb(fb_width, fb_height, CTX_FORMAT_RGB565_BYTESWAPPED,
                           ctx_set_pixels,
                           NULL,
                           NULL, // update_fb
@@ -292,11 +304,9 @@ Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
                           sizeof(scratch), scratch, CTX_FLAG_HASH_CACHE);
     ghostbuster(ctx);
 
-#if 0
-    board_init();
-    tusb_init();
-    ctx_add_idle (ctx, ctx_usb_task, ctx); 
-#endif
+    //board_init();
+    //tusb_init();
+    //ctx_add_idle (ctx, ctx_usb_task, ctx); 
     return ctx;
 }
 
@@ -311,13 +321,12 @@ typedef struct PushKey
 
 PushKey keys[8];
 
-void set_sys_clock_khz(int, int);
-
 Ctx *ctx_pico_init (void)
 {
   if (!pico_ctx){
-     stdio_init_all();
-     set_sys_clock_khz(270000, true); // overclock by default
+     //stdio_init_all();
+     //vreg_set_voltage(VREG_VOLTAGE_1_35);
+     //set_sys_clock_khz(360000, true); // overclock by default
      pico_ctx = ctx_pico_st7789_init (SCREEN_WIDTH, SCREEN_HEIGHT,
                                PIN_DIN,
                                PIN_CLK,
@@ -325,8 +334,7 @@ Ctx *ctx_pico_init (void)
                                PIN_DC,
                                PIN_RESET,
                                PIN_BL,
-                               2.0f); // 1.0 without overclock, 2.0 with
-#if 0
+                               2.0f); // 1.0 without overclock
      keys[0].gpio=2;keys[0].name="up";
      keys[1].gpio=18;keys[1].name="down";
      keys[2].gpio=16;keys[2].name="left";
@@ -335,6 +343,7 @@ Ctx *ctx_pico_init (void)
      keys[5].gpio=15;keys[5].name="a";
      keys[6].gpio=19;keys[6].name="x";
      keys[7].gpio=21;keys[7].name="y";
+#if 0
      for (int i = 0; i <8;i++)
      {
        gpio_init(keys[i].gpio);
@@ -345,7 +354,10 @@ Ctx *ctx_pico_init (void)
   }
   return pico_ctx;
 }
-Ctx *ctx_host(void)
+
+Ctx *ctx_host (void)
 {
-  return ctx_pico_init();
+  return ctx_pico_init ();
 }
+
+

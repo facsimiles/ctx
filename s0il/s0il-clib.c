@@ -3,6 +3,7 @@
 extern void *_s0il_main_thread;
 
 #if defined(PICO_BUILD)
+#include "pico/stdlib.h"
 #define S0IL_HAVE_FS 0
 // the APIs still work but only target the ram-disk,
 // this permits running in isolation in RAM in a process
@@ -753,7 +754,9 @@ FILE *s0il_fopen(const char *pathname, const char *mode) {
 
       s0il_fclose(cached_file);
 #else
+#ifndef PICO_BUILD
       emscripten_wget(pathname, cached_path);
+#endif
 #endif
     }
 
@@ -1704,7 +1707,11 @@ pid_t s0il_wait(int *stat_loc) {
 }
 
 int s0il_ioctl(int fd, unsigned long request, void *arg) {
+#if PICO_BUILD
+  return 0;
+#else
   return ioctl(fd, request, arg);
+#endif
 }
 
 #if 0

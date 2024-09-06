@@ -553,8 +553,11 @@ void draw_mini_panel (Ctx *ctx)
   ctx_text (ctx, "[add tab]");
 #else
 
-  ctx_rectangle (ctx, w - titlebar_height * 5, 0, titlebar_height * 4, titlebar_height);
+  ctx_rectangle (ctx, w - titlebar_height * 5, 0, titlebar_height * 5, titlebar_height * 2);
   ctx_listen (ctx, CTX_PRESS, overview_event, NULL, NULL);
+  ctx_rgba (ctx, 1,0,0,0.4);
+  ctx_fill (ctx);
+
   ctx_move_to (ctx, w - titlebar_height * 5/2, titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);

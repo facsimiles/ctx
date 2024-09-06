@@ -6,7 +6,7 @@
 #define S0IL_DEFINES
 #define S0IL_BUNDLE
 
-#define BUNDLE_LUA   1
+#define BUNDLE_LUA   0
 #define BUNDLE_QJS   0
 #define BUNDLE_HTTPD 0
 #define BUNDLE_PICOC 1
@@ -35,7 +35,7 @@
 //#include "bin-src/demo-pcm_audio.c"
 #include "bin-src/demo-setpixels.c"
 #include "bin-src/demo-tsr.c"
-#include "bin-src/demo-ui.c"
+#include "bin-src/demo-ui-c.c"
 #include "bin-src/demo-ctx_host.c"
 #if BUNDLE_WIFI
 #include "bin-src/wifi.c"
