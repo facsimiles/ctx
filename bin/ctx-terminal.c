@@ -228,6 +228,17 @@ int add_settings_tab (const char *commandline, int can_launch)
   return 0;
 }
 
+static void remove_tab_cb (CtxEvent *event, void *data, void *data2)
+{
+  event->stop_propagate = 1;
+  Ctx *ctx = event->ctx;
+  int active_id = ctx_clients_active (ctx);
+  CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
+  if (active)
+     ctx_client_remove (ctx, active);
+  ctx_queue_draw (ctx);
+}
+
 static void add_tab_cb (CtxEvent *event, void *data, void *data2)
 {
   event->stop_propagate = 1;
@@ -540,6 +551,37 @@ extern int _ctx_enable_hash_cache;
 void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
                                float x, float y, float width, float titlebar_height);
 
+static void icon_overview (Ctx *ctx, float x, float y, float w, float h)
+{
+  float em = w / 3.0;
+  ctx_save (ctx);
+  ctx_rectangle (ctx, x + 0.25 * em, y + 0.25 * em, em, em);
+  ctx_translate (ctx, 1.5 * em, 0);
+  ctx_rectangle (ctx, x + 0.25 * em, y + 0.25 * em, em, em);
+  ctx_translate (ctx, -1.5 * em, 1.5 * em);
+  ctx_rectangle (ctx, x + 0.25 * em, y + 0.25 * em, em, em);
+  ctx_translate (ctx, 1.5 * em, 0);
+  ctx_rectangle (ctx, x + 0.25 * em, y + 0.25 * em, em, em);
+  ctx_restore (ctx);
+}
+
+static void icon_add_tab (Ctx *ctx, float x, float y, float w, float h)
+{
+  ctx_rectangle (ctx, x + 0.4 * w, y + 0.1 * h, 0.2 * w, 0.8 * h);
+  ctx_rectangle (ctx, x + 0.1 * w, y + 0.4 * h, 0.8 * w, 0.2 * h);
+}
+
+static void icon_remove_tab (Ctx *ctx, float x, float y, float w, float h)
+{
+  ctx_save (ctx);
+  ctx_translate (ctx, (x + 0.5 * w), (y + 0.5 * w));
+  ctx_rotate (ctx, M_PI/4);
+  ctx_translate (ctx, -0.5 * w, -0.5 * w);
+  ctx_rectangle (ctx, 0.4 * w, 0.1 * h, 0.2 * w, 0.8 * h);
+  ctx_rectangle (ctx, 0.1 * w, 0.4 * h, 0.8 * w, 0.2 * h);
+  ctx_restore (ctx);
+}
+
 void draw_mini_panel (Ctx *ctx)
 {
   float em = font_size;
@@ -548,27 +590,45 @@ void draw_mini_panel (Ctx *ctx)
   ctx_font_size (ctx, em * 0.9);
   float w = ctx_width (ctx);
 
-#if 0
-  ctx_rectangle (ctx, w - em * 5, 0, em * 4, em);
-  ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
-  ctx_move_to (ctx, w - em * 5/2, em * 0.8);
-  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-  ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
-  ctx_text (ctx, "[add tab]");
-#else
 
   ctx_rectangle (ctx, w - em * 3, 0, em * 3, em * 3);
   ctx_listen (ctx, CTX_PRESS, overview_event, NULL, NULL);
+  if (in_overview)
+  ctx_rgba (ctx, 0,0.0,0.2,0.5);
+  else
+  ctx_rgba (ctx, 0,0.0,0.2,0.1);
+
+  ctx_fill (ctx);
+  if (in_overview)
+  ctx_rgba (ctx, 1,1,1,0.25);
+  else
+  ctx_rgba (ctx, 1,1,1,0.15);
+
+  icon_overview (ctx, w - em * 3, 0, 3 * em, 3 * em);
+  ctx_fill (ctx);
+
+  if (!in_overview)
+  {
+    ctx_restore (ctx);
+    return;
+  }
+
+  ctx_rectangle (ctx, w - em * 3, 3 * em * 1, em * 3, em * 3);
+  ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
   ctx_rgba (ctx, 0,0.0,0.2,0.5);
   ctx_fill (ctx);
   ctx_rgba (ctx, 1,1,1,0.25);
-  ctx_rectangle (ctx, w - em * 3 + 0.25 * em, 0.25 * em, em, em);
-  ctx_translate (ctx, 1.5 * em, 0);
-  ctx_rectangle (ctx, w - em * 3 + 0.25 * em, 0.25 * em, em, em);
-  ctx_translate (ctx, -1.5 * em, 1.5 * em);
-  ctx_rectangle (ctx, w - em * 3 + 0.25 * em, 0.25 * em, em, em);
-  ctx_translate (ctx, 1.5 * em, 0);
-  ctx_rectangle (ctx, w - em * 3 + 0.25 * em, 0.25 * em, em, em);
+  icon_add_tab (ctx, w - em * 3, 3 * em * 1, 3 * em, 3 * em);
+  ctx_fill (ctx);
+
+
+#if 1
+  ctx_rectangle (ctx, w - em * 3, 3 * em * 2, em * 3, em * 3);
+  ctx_listen (ctx, CTX_PRESS, remove_tab_cb, NULL, NULL);
+  ctx_rgba (ctx, 0,0.0,0.2,0.5);
+  ctx_fill (ctx);
+  ctx_rgba (ctx, 1,1,1,0.25);
+  icon_remove_tab (ctx, w - em * 3, 3 * em * 2, 3 * em, 3 * em);
   ctx_fill (ctx);
 #endif
 
@@ -810,8 +870,6 @@ static void overview_init (Ctx *ctx)
 
 static void overview_select_client (CtxEvent *event, void *client, void *data2)
 {
-  in_overview = 0;
-  leave_overview = OVERVIEW_TRANSITION_LENGTH;
 
   int i;
   int old_active = 0;
@@ -841,6 +899,11 @@ static void overview_select_client (CtxEvent *event, void *client, void *data2)
     opos[new_active] = opos[old_active];
     opos[old_active] = temp;
 
+  }
+  else
+  {
+    in_overview = 0;
+    leave_overview = OVERVIEW_TRANSITION_LENGTH;
   }
 
 
