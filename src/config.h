@@ -941,3 +941,7 @@
 #define CTX_VT_LAUNCH 0
 #endif
 
+
+#ifndef CTX_VT_LOG
+#define CTX_VT_LOG 0
+#endif

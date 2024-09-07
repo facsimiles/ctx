@@ -107,6 +107,15 @@ static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
     }
   string->style[pos] = style;
 }
+static inline void vt_line_clear_style (VtLine *string)
+{
+  if (string->string.is_line==0)
+    return;
+  if (string->style)
+  {
+    memset (string->style, 0, string->style_size * sizeof (uint64_t) );
+  }
+}
 
 VtLine *vt_line_new_with_size (const char *initial, int initial_size);
 VtLine *vt_line_new (const char *initial);
@@ -161,6 +170,7 @@ static inline void        vt_line_clear          (VtLine *line)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_clear (string);
+  vt_line_clear_style (string);
 }
 static inline void        vt_line_append_str     (VtLine *line, const char *str)
 {
@@ -216,6 +226,8 @@ static inline void vt_line_replace_utf8   (VtLine *line, int pos, const char *ne
   CtxString *string = (CtxString*)line;
   ctx_string_replace_utf8 (string, pos, new_glyph);
 }
+
+
 static inline void vt_line_insert_utf8    (VtLine *line, int pos, const char *new_glyph)
 {
   CtxString *string = (CtxString*)line;

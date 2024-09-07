@@ -2343,7 +2343,7 @@ static void vtcmd_delete_n_lines (VT *vt, const char *sequence)
       int i;
       CtxList *l;
       VtLine *string = vt->current_line;
-      vt_line_set (string, "");
+      vt_line_clear (string);
       ctx_list_remove (&vt->lines, vt->current_line);
       for (i=vt->rows, l = vt->lines; l; l=l->next, i--)
         {
@@ -3723,11 +3723,13 @@ static int _vt_handle_control (VT *vt, int byte)
     }
 }
 
+#if CTX_VT_LOG
 void vt_open_log (VT *vt, const char *path)
 {
   unlink (path);
   vt->log = fopen (path, "w");
 }
+#endif
 
 /* the function shared by sixels, kitty mode and iterm2 mode for
  * doing inline images. it attaches an image to the current line
@@ -5219,7 +5221,10 @@ int vt_poll (VT *vt, int timeout)
       len = vt_read (vt, vt->buf, read_size);
       if (len >0)
       {
-     // fwrite (vt->buf, len, 1, vt->log);
+#if CTX_VT_LOG
+	if (vt->log)
+          fwrite (vt->buf, len, 1, vt->log);
+#endif
      // fwrite (vt->buf, len, 1, stdout);
       }
       for (int i = 0; i < len; i++)
@@ -5541,11 +5546,13 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
 
       return;
     }
-  else if (!strcmp (str, "shift-control-r") )
+#if CTX_VT_LOG
+  else if (!strcmp (str, "control-r") )
     {
       vt_open_log (vt, "/tmp/ctx-vt");
       return;
     }
+#endif
   else if (!strcmp (str, "shift-control-l") )
     {
       vt_set_local (vt, !vt_get_local (vt) );
