@@ -782,7 +782,7 @@ static void overview_init (Ctx *ctx)
   float em = ctx_get_font_size (ctx);
   int n_clients         = ctx_list_length (clients);
 
-  float screen_width = ctx_width (ctx) - 3 * em;
+  float screen_width = ctx_width (ctx) - 3.5 * em;
   float screen_height = ctx_height (ctx);
 
   opos_count = n_clients;
@@ -920,7 +920,7 @@ static void overview (Ctx *ctx, float anim_t)
   float em = ctx_get_font_size (ctx);
   int n_clients         = ctx_list_length (clients);
 
-  float screen_width = ctx_width (ctx) - 4.0 * em;
+  float screen_width = ctx_width (ctx) - 3.5 * em;
   //float screen_height = ctx_height (ctx);
 
   static int dirty_count = 0;
@@ -1170,15 +1170,19 @@ int main (int argc, char **argv)
           draw_mini_panel (ctx);
 
 	}
-        ctx_osk_draw (ctx);
+	if (!in_overview)
+          ctx_osk_draw (ctx);
         //ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
         ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
         ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
 
-        ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
-        ctx_listen (ctx, CTX_TAP_AND_HOLD, terminal_long_tap, NULL, NULL);
-        ctx_begin_path (ctx);
+	if (!in_overview)
+	{
+          ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+          ctx_listen (ctx, CTX_TAP_AND_HOLD, terminal_long_tap, NULL, NULL);
+          ctx_begin_path (ctx);
+	}
 
         ctx_end_frame (ctx);
       }
