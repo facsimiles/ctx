@@ -373,6 +373,8 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
   if (client == ctx->events.active_tab)
   {
     ctx->events.active_tab = NULL;
+    if (ctx->events.clients)
+       ctx->events.active_tab = ctx->events.clients->data;
   }
 
   if (ctx)
