@@ -3551,7 +3551,12 @@ static int ctx_linux_ts_open (void)
 	  int mt_tracking_id = CHECK_BIT(absbits,ABS_MT_TRACKING_ID);
 #undef CHECK_BIT
 
-	  if (!pointer && 
+          int touchpad_touchscreen = 0;
+
+	  if (getenv("CTX_TOUCHPAD_TOUCHSCREN")) touchpad_touchscreen = 
+		  atoi(getenv("CTX_TOUCHPAD_TOUCHSCREEN"));
+
+	  if (   ( !pointer || touchpad_touchscreen) && 
 	      (x_axis_mt && y_axis_mt && mt_tracking_id && slot))
 	  { // multi-touch, protocol-B
             ioctl(fd, EVIOCGABS(ABS_MT_POSITION_X), &ctx_linux_ts_abs_x);
