@@ -1344,7 +1344,7 @@ struct _CtxEvent {
   int     device_no; /* 0 = left mouse button / virtual focus */
                      /* 1 = middle mouse button */
                      /* 2 = right mouse button */
-                     /* 3 = first multi-touch .. (NYI) */
+                     /* 4 = first multi-touch .. (NYI) */
 
   float   device_x; /* untransformed (device) coordinates  */
   float   device_y;
@@ -1374,7 +1374,6 @@ struct _CtxEvent {
                          */
   int owns_string; /* if 1 call free.. */
   CtxScrollDirection scroll_direction;
-
 
   // would be nice to add the bounding box of the hit-area causing
   // the event, making for instance scissored enter/leave repaint easier.

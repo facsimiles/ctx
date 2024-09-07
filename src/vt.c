@@ -8612,7 +8612,7 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
 
   ctx_restore (ctx);
 //#define SCROLL_SPEED 0.25;
-#define SCROLL_SPEED 0.001;
+#define SCROLL_SPEED 0.01;
   if (vt->in_smooth_scroll)
    {
      if (vt->in_smooth_scroll<0)

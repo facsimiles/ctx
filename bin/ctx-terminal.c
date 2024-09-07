@@ -469,22 +469,6 @@ static void handle_event (Ctx        *ctx,
   ctx_client_unlock (client);
 }
 
-static void ctx_client_close (CtxEvent *event, void *data, void *data2)
-{
-  Ctx *ctx = event->ctx;
-  CtxList *clients = ctx_clients (ctx);
-  CtxClient *client = data;
-
- // client->do_quit = 1;
-  
-  ctx_client_remove (ctx, client);
-  if (clients == NULL)
-    ctx_exit (ctx);//
-
-  ctx_queue_draw (ctx);
-  event->stop_propagate = 1;
-}
-
 static float consume_float (char **argv, int *i)
 {
  float ret = 0.0;
@@ -767,7 +751,7 @@ static void overview_init (Ctx *ctx)
     float col_width = screen_width / cols;
     float row_height = screen_height / rows;
 
-    float icon_width = col_width - em;
+    float icon_width = col_width - 0.5f * em;
     //float icon_height = row_height - em;
     
     int i = 0;
@@ -786,8 +770,8 @@ static void overview_init (Ctx *ctx)
       opos[i].y0 = ctx_client_get_y (ctx, client_id) - em * (n_clients > 1);
       opos[i].w0 = ctx_client_get_width(ctx, client_id);
       opos[i].h0 = ctx_client_get_height(ctx, client_id);
-      opos[i].x1 = col * col_width + em;
-      opos[i].y1 = row * row_height + em;
+      opos[i].x1 = col * col_width + 0.5f * em;
+      opos[i].y1 = row * row_height + 0.5f * em;
 
       opos[i].scale0 = 1.0f;
       opos[i].scale1 = icon_width/opos[i].w0;
@@ -904,7 +888,7 @@ static void overview (Ctx *ctx, float anim_t)
 
   float col_width  = screen_width / cols;
   //float row_height = screen_height / rows;
-  float icon_width  = col_width - em;
+  float icon_width  = col_width - 0.5f * em;
   //float icon_height = row_height - em;
   
   int i = 0;
