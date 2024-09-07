@@ -558,30 +558,34 @@ void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
 
 void draw_mini_panel (Ctx *ctx)
 {
-  float titlebar_height = font_size;
+  float em = font_size;
 
   ctx_save (ctx);
-  ctx_font_size (ctx, titlebar_height * 0.9);
+  ctx_font_size (ctx, em * 0.9);
   float w = ctx_width (ctx);
 
 #if 0
-  ctx_rectangle (ctx, w - titlebar_height * 5, 0, titlebar_height * 4, titlebar_height);
+  ctx_rectangle (ctx, w - em * 5, 0, em * 4, em);
   ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
-  ctx_move_to (ctx, w - titlebar_height * 5/2, titlebar_height * 0.8);
+  ctx_move_to (ctx, w - em * 5/2, em * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
   ctx_text (ctx, "[add tab]");
 #else
 
-  ctx_rectangle (ctx, w - titlebar_height * 5, 0, titlebar_height * 5, titlebar_height * 2);
+  ctx_rectangle (ctx, w - em * 3, 0, em * 3, em * 3);
   ctx_listen (ctx, CTX_PRESS, overview_event, NULL, NULL);
-  ctx_rgba (ctx, 1,0,0,0.4);
+  ctx_rgba (ctx, 0,0.0,0.2,0.5);
   ctx_fill (ctx);
-
-  ctx_move_to (ctx, w - titlebar_height * 5/2, titlebar_height * 0.8);
-  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-  ctx_rgba (ctx, 0.9, 0.9, 0.9, 0.5);
-  ctx_text (ctx, "[overview]");
+  ctx_rgba (ctx, 1,1,1,0.25);
+  ctx_rectangle (ctx, w - em * 3 + 0.25 * em, 0.25 * em, em, em);
+  ctx_translate (ctx, 1.5 * em, 0);
+  ctx_rectangle (ctx, w - em * 3 + 0.25 * em, 0.25 * em, em, em);
+  ctx_translate (ctx, -1.5 * em, 1.5 * em);
+  ctx_rectangle (ctx, w - em * 3 + 0.25 * em, 0.25 * em, em, em);
+  ctx_translate (ctx, 1.5 * em, 0);
+  ctx_rectangle (ctx, w - em * 3 + 0.25 * em, 0.25 * em, em, em);
+  ctx_fill (ctx);
 #endif
 
   ctx_restore (ctx);
@@ -869,7 +873,7 @@ static void overview (Ctx *ctx, float anim_t)
   float em = ctx_get_font_size (ctx);
   int n_clients         = ctx_list_length (clients);
 
-  float screen_width = ctx_width (ctx) - 3 * em;
+  float screen_width = ctx_width (ctx) - 4.0 * em;
   //float screen_height = ctx_height (ctx);
 
   static int dirty_count = 0;
@@ -940,6 +944,7 @@ static void overview (Ctx *ctx, float anim_t)
     else
     ctx_begin_path (ctx);
   }
+  draw_mini_panel (ctx);
 }
 
 

@@ -8025,6 +8025,9 @@ static char *primary = NULL;
 static void scrollbar_drag (CtxEvent *event, void *data, void *data2);
 static int scrollbar_down = 0;
 
+float ctx_vt_scrollbar_width_visible = 2.0f;
+float ctx_vt_scrollbar_width_event   = 4.0f;
+
 void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
 {
   CtxClient *client = data;
@@ -8044,7 +8047,7 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
   if (vt)
   {
   if ((!vt->in_alt_screen) &&
-      (event->x > vt->width - vt->cw * 3.5 || scrollbar_down) &&
+      (event->x > vt->width - vt->cw * ctx_vt_scrollbar_width_event || scrollbar_down) &&
       (event->type == CTX_DRAG_MOTION ||
        event->type == CTX_DRAG_PRESS ||
        event->type == CTX_DRAG_RELEASE))
@@ -8136,7 +8139,7 @@ void vt_mouse_event (CtxEvent *event, void *data, void *data2)
   int device_no = event->device_no;
   char buf[128]="";
   if ((!vt->in_alt_screen) &&
-      (event->x > vt->width - vt->cw * 3.5 || scrollbar_down) &&
+      (event->x > vt->width - vt->cw * ctx_vt_scrollbar_width_event || scrollbar_down) &&
       (event->type == CTX_DRAG_MOTION ||
       event->type == CTX_DRAG_PRESS ||
       event->type == CTX_DRAG_RELEASE))
@@ -8650,8 +8653,8 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       ctx_fill (ctx);
 #endif
 
-      ctx_rectangle (ctx, (vt->width) - vt->cw * 1.5,
-                     0, 1.5 * vt->cw,
+      ctx_rectangle (ctx, (vt->width) - vt->cw * ctx_vt_scrollbar_width_visible,
+                     0, ctx_vt_scrollbar_width_visible * vt->cw,
                      vt->rows * vt->ch);
       //ctx_listen (ctx, CTX_DRAG,  scrollbar_drag, vt, NULL);
       //ctx_listen (ctx, CTX_ENTER, scrollbar_enter, vt, NULL);
@@ -8661,10 +8664,11 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
       else
         ctx_rgba (ctx, 0.5, 0.5, 0.5, .10);
       ctx_fill (ctx);
-      ctx_round_rectangle (ctx, (vt->width) - vt->cw * 1.5,
-                           offset * vt->rows * vt->ch, (1.5-0.2) * vt->cw,
+      ctx_round_rectangle (ctx, (vt->width) - vt->cw * ctx_vt_scrollbar_width_visible,
+                           offset * vt->rows * vt->ch,
+			   (ctx_vt_scrollbar_width_visible) * vt->cw,
                            win_len * vt->rows * vt->ch,
-                           vt->cw * 1.5 /2);
+                           vt->cw * ctx_vt_scrollbar_width_visible /2);
       //ctx_listen (ctx, CTX_DRAG, scroll_handle_drag, vt, NULL);
       if (vt->scroll != 0 || scrollbar_focused)
         ctx_rgba (ctx, 1, 1, 1, .25);
