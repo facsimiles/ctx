@@ -135,7 +135,6 @@ install: ctx libctx.so ctx.h ctx.pc ctx-wasm.pc ctx-wasm-simd.pc
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib/pkgconfig ctx-wasm-simd.pc
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/include ctx.h
 	install -D -m755 -t $(DESTDIR)$(PREFIX)/lib libctx.so
-	install -D -m755 -t $(DESTDIR)$(PREFIX)/bin tools/ctx-audioplayer #
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/appdata meta/graphics.ctx.terminal.appdata.xml
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/applications meta/graphics.ctx.terminal.desktop
 	install -D -m644 -t $(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps meta/graphics.ctx.terminal.svg

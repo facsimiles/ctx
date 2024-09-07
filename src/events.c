@@ -3215,7 +3215,7 @@ static void evsource_kb_raw_destroy (int sign)
   kb_fd = 0;
 }
 
-static int ctx_kb_raw_open (void)
+static int ctx_kb_raw_open (int skip)
 {
   char path[64]="";
   int fd = -1;
@@ -3244,7 +3244,11 @@ static int ctx_kb_raw_open (void)
             got_z = bits[KEY_Z/8] & (1 << (KEY_Z & 7));
           }
 	  if (got_a && got_z)
-            return fd;
+	  {
+	    if (skip == 0)
+              return fd;
+	    skip--;
+	  }
         }
       }
       close (fd);
@@ -3256,28 +3260,32 @@ static int ctx_kb_raw_open (void)
 
 static int evsource_kb_raw_init ()
 {
-   kb_fd = ctx_kb_raw_open ();
+   for (int skip = 0; skip < 4; skip++)
+   {
+   kb_fd = ctx_kb_raw_open (skip);
 
    if( -1 == kb_fd )
    {
      kb_fd = 0;
-     return -1;
+     continue;
    }
 
    char name[ 32 ];
    if( -1 == ioctl( kb_fd, EVIOCGNAME( sizeof( name )), name ))
    {
      kb_fd = 0;
-     return -1;
+     continue;
    }
 
    if( -1 == ioctl( kb_fd, EVIOCGRAB, (void*)1 ))
    {
      kb_fd = 0;
-     return -1;
+     continue;
    }
 
-  return 0;
+     return 0;
+   }
+   return -1;
 }
 static int evsource_kb_raw_has_event (void)
 {
