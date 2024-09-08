@@ -9013,10 +9013,12 @@ void css_init (Css *mrg, Ctx *ctx, int width, int height)
   }
 
   mrg->ddpx = 1;
+#if 0
   if (getenv ("MRG_DDPX"))
   {
     mrg->ddpx = strtod (getenv ("MRG_DDPX"), NULL);
   }
+#endif
   mrg_set_size (mrg, width, height);
   _mrg_text_init (mrg);
 
@@ -9045,7 +9047,6 @@ void css_init (Css *mrg, Ctx *ctx, int width, int height)
     }
   }
 
-  css_stylesheet_clear (mrg);
   _mrg_clear_text_closures (mrg);
 }
 
@@ -9266,6 +9267,9 @@ Css *css_new (Ctx *ctx)
 
   Css *mrg = (Css*)itk;
   css_init (mrg, ctx, ctx_width(ctx), ctx_height(ctx));
+
+
+  //css_stylesheet_clear (mrg);
   ctx_style_defaults (mrg);
 
   //printf ("%f %i %i\n", mrg->state->style.font_size, mrg_width(mrg), mrg_height(mrg));
@@ -9387,11 +9391,14 @@ void css_reset (Css *itk)
     free (choice);
   }
   itk->control_no = 0;
+
   css_init ((Css*)itk, ctx, ctx_width (itk->ctx), ctx_height (itk->ctx));
   //mrg_clear (itk);
   ctx_clear_bindings (itk->ctx);
-  //css_stylesheet_clear ((Css*)itk);
+#if 0
+  css_stylesheet_clear ((Css*)itk);
   ctx_style_defaults ((Css*)itk);
+#endif
 }
 
 CssPanel *add_panel (Css *itk, const char *label, float x, float y, float width, float height)

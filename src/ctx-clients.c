@@ -927,7 +927,7 @@ void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
     }
 }
 
-static void ctx_client_use_images (Ctx *ctx, CtxClient *client)
+void ctx_client_use_images (Ctx *ctx, CtxClient *client)
 {
   if (!client->internal)
   {
