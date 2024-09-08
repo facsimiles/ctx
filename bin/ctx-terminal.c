@@ -637,11 +637,6 @@ void draw_mini_panel (Ctx *ctx)
 
 void draw_panel (Css *itk, Ctx *ctx)
 {
-  struct tm local_time_res;
-  struct timeval tv;
-  gettimeofday (&tv, NULL);
-  localtime_r (&tv.tv_sec, &local_time_res);
-
   float titlebar_height = font_size;
   float tab_width = ctx_width (ctx) - titlebar_height * 4 - titlebar_height * 2;
 
@@ -652,6 +647,10 @@ void draw_panel (Css *itk, Ctx *ctx)
   ctx_font_size (ctx, titlebar_height * 1.0);
 
 #if 0
+  struct tm local_time_res;
+  struct timeval tv;
+  gettimeofday (&tv, NULL);
+  localtime_r (&tv.tv_sec, &local_time_res);
   ctx_move_to (ctx, ctx_width (ctx), titlebar_height * 0.8);
   ctx_text_align (ctx, CTX_TEXT_ALIGN_END);
   ctx_gray (ctx, 0.9);
@@ -736,8 +735,6 @@ void terminal_long_tap (CtxEvent *event, void *a, void *b)
 
 int commandline_argv_start = 0;
 
-
-
 void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y);
 
 typedef struct OverviewPos {
@@ -756,7 +753,6 @@ typedef struct OverviewPos {
 
 static OverviewPos  *opos           = NULL;
 static int           opos_count = 0;
-
 
 static void overview_cleanup (Ctx *ctx)
 {
@@ -913,7 +909,6 @@ static void overview_select_client (CtxEvent *event, void *client, void *data2)
   ctx_queue_draw (event->ctx);
 }
 
-
 static void overview (Ctx *ctx, float anim_t)
 {
   CtxList *clients = ctx_clients (ctx);
@@ -993,7 +988,6 @@ static void overview (Ctx *ctx, float anim_t)
   }
   draw_mini_panel (ctx);
 }
-
 
 #if CTX_BIN_BUNDLE
 int ctx_terminal_main (int argc, char **argv)
@@ -1109,6 +1103,7 @@ int main (int argc, char **argv)
   int mt = ctx_add_timeout (ctx, 1000 * 20, malloc_trim_cb, NULL);
 
   //int sleep_time = 1000000/10;
+  static int locked = 0;
 
 
   float prev_ms = ctx_ms (ctx);
@@ -1121,6 +1116,25 @@ int main (int argc, char **argv)
       float ms = ctx_ms (ctx);
       float delta_s = (ms - prev_ms)/1000.0f;
       prev_ms = ms;
+
+      {
+	static int lock_control = 0;
+	lock_control--;
+
+	if (lock_control < 0)
+	{
+          if (access("/tmp/ctx.lock", R_OK) == F_OK)
+	  {
+	    locked = 1;
+	  }
+	  else
+	  {
+	    locked = 0;
+	  }
+	  lock_control = 50;
+	}
+
+      }
 
       if (ctx_need_redraw(ctx))
       {
@@ -1135,6 +1149,19 @@ int main (int argc, char **argv)
 #endif
         ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
         ctx_fill (ctx);
+
+	if (locked)
+	{
+	  ctx_rgb (ctx, 0,0.2,0);
+	  ctx_paint (ctx);
+	  ctx_rgb (ctx, 1,0,0);
+	  ctx_move_to (ctx, ctx_width (ctx)/2, font_size);
+          ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+	  ctx_text (ctx, "locked");
+	}
+	else
+	{
+
 
 	if (in_overview || leave_overview > 0.0f)
 	{
@@ -1170,12 +1197,17 @@ int main (int argc, char **argv)
           draw_mini_panel (ctx);
 
 	}
+	}
+
 	if (!in_overview)
           ctx_osk_draw (ctx);
         //ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
-        ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
-        ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
-        ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
+	if (!locked)
+	{
+          ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
+          ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
+          ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
+	}
 
 	if (!in_overview)
 	{
