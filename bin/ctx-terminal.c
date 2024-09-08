@@ -27,6 +27,8 @@
 #define OVERVIEW_TRANSITION_LENGTH  0.25f
 static Ctx *ctx = NULL; // initialized in main
 
+static int locked = 0;
+
 typedef struct _CtxClient CtxClient;
 CtxList *ctx_clients(Ctx *ctx);
 
@@ -317,6 +319,13 @@ static void handle_event (Ctx        *ctx,
 
   ctx_client_lock (client);
 
+  if (locked)
+  {
+    ctx_client_feed_keystring (active, ctx_event, event);
+  }
+  else
+  {
+
   if (!strcmp (event, "F11"))
   {
     ctx_set_fullscreen (ctx, !ctx_get_fullscreen (ctx));
@@ -477,6 +486,7 @@ static void handle_event (Ctx        *ctx,
     {
       ctx_client_feed_keystring (active, ctx_event, event);
     }
+  }
   ctx_client_unlock (client);
 }
 
@@ -989,6 +999,39 @@ static void overview (Ctx *ctx, float anim_t)
   draw_mini_panel (ctx);
 }
 
+
+#define CTX_TERM_UNLOCK_SH   "sh -c \"while [ -f /tmp/ctx.lock ];do su `whoami` -c 'rm /tmp/ctx.lock'; done\""
+
+
+void ctx_client_use_images (Ctx *ctx, CtxClient *client);
+
+
+void ctx_term_lock_screen (Ctx *ctx)
+{
+  ctx_rgb (ctx, 0,0.2,0);
+  ctx_paint (ctx);
+  ctx_rgb (ctx, 1,0,0);
+  ctx_move_to (ctx, ctx_width (ctx)/2, font_size);
+  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+  ctx_text (ctx, "locked");
+
+  CtxList *clients = ctx_clients (ctx);
+
+  CtxClient *last = NULL;
+
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    if (l->next)
+      ctx_client_use_images (ctx, client);
+    last = client;
+  }
+
+  if (last)
+    ctx_client_draw (ctx, last, 0, font_size * 4);
+}
+
+
 #if CTX_BIN_BUNDLE
 int ctx_terminal_main (int argc, char **argv)
 #else
@@ -1102,9 +1145,6 @@ int main (int argc, char **argv)
 
   int mt = ctx_add_timeout (ctx, 1000 * 20, malloc_trim_cb, NULL);
 
-  //int sleep_time = 1000000/10;
-  static int locked = 0;
-
 
   float prev_ms = ctx_ms (ctx);
 
@@ -1123,6 +1163,7 @@ int main (int argc, char **argv)
 
 	if (lock_control < 0)
 	{
+	  int lastval = locked;
           if (access("/tmp/ctx.lock", R_OK) == F_OK)
 	  {
 	    locked = 1;
@@ -1130,6 +1171,14 @@ int main (int argc, char **argv)
 	  else
 	  {
 	    locked = 0;
+	  }
+	  if (locked != lastval)
+	  {
+	    ctx_queue_draw (ctx);
+	    if (locked)
+	    {
+              add_tab (ctx, CTX_TERM_UNLOCK_SH, 0);
+	    }
 	  }
 	  lock_control = 50;
 	}
@@ -1152,12 +1201,7 @@ int main (int argc, char **argv)
 
 	if (locked)
 	{
-	  ctx_rgb (ctx, 0,0.2,0);
-	  ctx_paint (ctx);
-	  ctx_rgb (ctx, 1,0,0);
-	  ctx_move_to (ctx, ctx_width (ctx)/2, font_size);
-          ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-	  ctx_text (ctx, "locked");
+	  ctx_term_lock_screen (ctx);
 	}
 	else
 	{
@@ -1202,7 +1246,7 @@ int main (int argc, char **argv)
 	if (!in_overview)
           ctx_osk_draw (ctx);
         //ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
-	if (!locked)
+  	//if (!locked)
 	{
           ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
           ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
