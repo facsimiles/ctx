@@ -29,8 +29,8 @@ float ctx_target_fps = 100.0; /* this might end up being the resolution of our
 
 extern Ctx *ctx;
 #define flag_is_set(a, f) (((a) & (f))!=0)
-#define flag_set(a, f)    ((a) |= (f));
-#define flag_unset(a, f)  ((a) &= ~(f));
+//#define flag_set(a, f)    ((a) |= (f));
+//#define flag_unset(a, f)  ((a) &= ~(f));
 
 
 void terminal_update_title    (const char *title);
@@ -1059,7 +1059,8 @@ void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
     ctx_rgba (ctx, 0, 0,0, 1.0);
 #endif
 
-  if (flag_is_set(client->flags, CSS_CLIENT_MAXIMIZED) || y == titlebar_height)
+  int flags = ctx_client_flags (client);
+  if (flag_is_set(flags, CSS_CLIENT_MAXIMIZED) || y == titlebar_height)
   {
     ctx_listen (ctx, CTX_DRAG, ctx_client_titlebar_drag_maximized, client, NULL);
     ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_ALL);
@@ -1073,7 +1074,7 @@ void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
   //ctx_font_size (ctx, itk->font_size);//titlebar_height);// * 0.85);
 
   if (client == ctx->events.active &&
-      (flag_is_set(client->flags, CSS_CLIENT_MAXIMIZED) || y != titlebar_height))
+      (flag_is_set(flags, CSS_CLIENT_MAXIMIZED) || y != titlebar_height))
 #if 1
   ctx_rectangle (ctx, x + width - titlebar_height,
                   y - titlebar_height, titlebar_height,
@@ -1141,75 +1142,30 @@ static void key_press (CtxEvent *event, void *data1, void *data2)
 int ctx_clients_draw (Ctx *ctx, int layer2)
 {
   CtxList *clients = ctx_clients (ctx);
+  int n_clients         = ctx_list_length (clients);
+
+  {
+    CtxClient *client = ctx->events.active;
+    int flags = ctx_client_flags (client);
+    if (client && flag_is_set(flags, CSS_CLIENT_MAXIMIZED) && n_clients == 1)
+    {
+      ctx_client_draw (ctx, client, 0, 0);
+      return 0;
+    }
+  }
   _ctx_font_size = ctx_get_font_size (ctx);
   float titlebar_height = _ctx_font_size;
-  int n_clients         = ctx_list_length (clients);
 
   float em = _ctx_font_size;
   float screen_width = ctx_width (ctx) - 3 * em;
   float screen_height = ctx_height (ctx);
 
-  if (layer2==23)
-  {
-    ctx_rgb(ctx,0,0,0);ctx_paint(ctx);
-    int rows = 1;
-    int cols = 1;
-
-    if (n_clients <= 4) { rows = 2; cols = 2;}
-
-
-    while ( n_clients > cols * rows)
-    {
-      if (cols > rows * 2)
-      {
-	 rows++;
-      } else cols++;
-    }
-
-
-    int row = 0, col = 0;
-
-    float col_width = screen_width / cols;
-    float row_height = screen_height / rows;
-
-    float icon_width = col_width - 2 * em;
-    float icon_height = row_height - 2 * em;
-     
-    for (CtxList *l = clients; l; l = l->next)
-    {
-      CtxClient *client = l->data;
-      ctx_rgba(ctx,1,1,1,0.5);
-      float x = col * col_width + em;
-      float y = row * row_height + em;
-
-      float scale = icon_width/client->width;
-
-      ctx_rectangle (ctx, x, y, icon_width, icon_height);
-      ctx_save(ctx);
-      ctx_clip(ctx);
-      ctx_paint(ctx);
-      ctx_scale (ctx, scale, scale);
-      ctx_client_draw (ctx, client, x / scale, y / scale);
-      ctx_restore(ctx);
-      col ++;
-      if (col >= cols)
-      {
-	 col = 0; row++;
-      }
-    }
-    return 0;
-  }
-
-  if (ctx->events.active && flag_is_set(ctx->events.active->flags, CSS_CLIENT_MAXIMIZED) && n_clients == 1)
-  {
-    ctx_client_draw (ctx, ctx->events.active, 0, 0);
-    return 0;
-  }
   if (!layer2)
   for (CtxList *l = clients; l; l = l->next)
   {
     CtxClient *client = l->data;
-    if (flag_is_set(client->flags, CSS_CLIENT_MAXIMIZED))
+    int flags = ctx_client_flags (client);
+    if (flag_is_set(flags, CSS_CLIENT_MAXIMIZED))
     {
       if (client == ctx->events.active_tab)
       {
@@ -1227,21 +1183,22 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
   {
     CtxClient *client = l->data;
     VT *vt = client->vt;
+    int flags = ctx_client_flags (client);
 
     if (layer2)
     {
-      if (!flag_is_set (client->flags, CSS_CLIENT_LAYER2))
+      if (!flag_is_set (flags, CSS_CLIENT_LAYER2))
         continue;
     }
     else
     {
-      if (flag_is_set (client->flags, CSS_CLIENT_LAYER2))
+      if (flag_is_set (flags, CSS_CLIENT_LAYER2))
         continue;
     }
 
-    if (vt && !flag_is_set(client->flags, CSS_CLIENT_MAXIMIZED))
+    if (vt && !flag_is_set(flags, CSS_CLIENT_MAXIMIZED))
     {
-      if (flag_is_set(client->flags, CSS_CLIENT_SHADED))
+      if (flag_is_set(flags, CSS_CLIENT_SHADED))
       {
         ctx_client_use_images (ctx, client);
       }
@@ -1251,9 +1208,9 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
 
       // resize regions
       if (client == ctx->events.active &&
-         !flag_is_set(client->flags, CSS_CLIENT_SHADED) &&
-         !flag_is_set(client->flags, CSS_CLIENT_MAXIMIZED) &&
-         flag_is_set(client->flags, CSS_CLIENT_UI_RESIZABLE))
+         !flag_is_set(flags, CSS_CLIENT_SHADED) &&
+         !flag_is_set(flags, CSS_CLIENT_MAXIMIZED) &&
+         flag_is_set(flags, CSS_CLIENT_UI_RESIZABLE))
       {
 #if CTX_CSS
         css_style_color (ctx, "titlebar-focused-bg");
@@ -1329,7 +1286,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
 
       }
 
-      if (client->flags & CSS_CLIENT_TITLEBAR)
+      if (flags & CSS_CLIENT_TITLEBAR)
         ctx_client_titlebar_draw (ctx, client, client->x, client->y, client->width, titlebar_height);
     }
   }
