@@ -141,6 +141,7 @@ int add_tab (Ctx  *ctx, const char *commandline, int can_launch)
   }
 //  ensure_layout (ctx);
   ctx_queue_draw (ctx);
+  ctx_client_focus (ctx, ctx_client_id (active));
   return ctx_client_id (active);
 }
 
@@ -592,6 +593,22 @@ static void icon_remove_tab (Ctx *ctx, float x, float y, float w, float h)
   ctx_restore (ctx);
 }
 
+static void icon_padlock (Ctx *ctx, float x, float y, float w, float h)
+{
+  ctx_rectangle (ctx, x, y, w, h);
+  ctx_save (ctx);
+  ctx_rgba (ctx, 1,0,0,1);
+  ctx_fill (ctx);
+  ctx_restore (ctx);
+  ctx_rectangle (ctx, x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6);
+}
+
+static void lock_cb (CtxEvent *event, void *a, void *b)
+{
+  system ("touch /tmp/ctx.lock");
+  ctx_queue_draw (event->ctx);
+}
+
 void draw_mini_panel (Ctx *ctx)
 {
   float em = font_size;
@@ -600,8 +617,11 @@ void draw_mini_panel (Ctx *ctx)
   ctx_font_size (ctx, em * 0.9);
   float w = ctx_width (ctx);
 
+  float y = 0;
+  float tile_dim = em * 3;
+  float x = w - tile_dim;
 
-  ctx_rectangle (ctx, w - em * 3, 0, em * 3, em * 3);
+  ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
   ctx_listen (ctx, CTX_PRESS, overview_event, NULL, NULL);
   if (in_overview)
   ctx_rgba (ctx, 0,0.0,0.2,0.5);
@@ -614,7 +634,7 @@ void draw_mini_panel (Ctx *ctx)
   else
   ctx_rgba (ctx, 1,1,1,0.15);
 
-  icon_overview (ctx, w - em * 3, 0, 3 * em, 3 * em);
+  icon_overview (ctx, x, 0, tile_dim, tile_dim);
   ctx_fill (ctx);
 
   if (!in_overview)
@@ -623,22 +643,36 @@ void draw_mini_panel (Ctx *ctx)
     return;
   }
 
-  ctx_rectangle (ctx, w - em * 3, 3 * em * 1, em * 3, em * 3);
+  y += em * 3;
+
+  ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
   ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
   ctx_rgba (ctx, 0,0.0,0.2,0.5);
   ctx_fill (ctx);
   ctx_rgba (ctx, 1,1,1,0.25);
-  icon_add_tab (ctx, w - em * 3, 3 * em * 1, 3 * em, 3 * em);
+  icon_add_tab (ctx, x, y, tile_dim, tile_dim);
   ctx_fill (ctx);
 
 
 #if 1
-  ctx_rectangle (ctx, w - em * 3, 3 * em * 2, em * 3, em * 3);
+  y += em * 3;
+  ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
+  ctx_listen (ctx, CTX_PRESS, lock_cb, NULL, NULL);
+  ctx_rgba (ctx, 0,0.0,0.2,0.5);
+  ctx_fill (ctx);
+  ctx_rgba (ctx, 1,1,1,0.25);
+  icon_padlock (ctx, x, y, tile_dim, tile_dim);
+  ctx_fill (ctx);
+#endif
+
+#if 1
+  y += em * 3;
+  ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
   ctx_listen (ctx, CTX_PRESS, remove_tab_cb, NULL, NULL);
   ctx_rgba (ctx, 0,0.0,0.2,0.5);
   ctx_fill (ctx);
   ctx_rgba (ctx, 1,1,1,0.25);
-  icon_remove_tab (ctx, w - em * 3, 3 * em * 2, 3 * em, 3 * em);
+  icon_remove_tab (ctx, x, y, tile_dim, tile_dim);
   ctx_fill (ctx);
 #endif
 
@@ -1000,7 +1034,7 @@ static void overview (Ctx *ctx, float anim_t)
 }
 
 
-#define CTX_TERM_UNLOCK_SH   "sh -c \"while [ -f /tmp/ctx.lock ];do su `whoami` -c 'rm /tmp/ctx.lock'; done\""
+#define CTX_TERM_UNLOCK_SH   "sh -c \"while [ -f /tmp/ctx.lock ];do su `whoami` -c 'rm /tmp/ctx.lock';done\""
 
 
 void ctx_client_use_images (Ctx *ctx, CtxClient *client);
@@ -1008,12 +1042,9 @@ void ctx_client_use_images (Ctx *ctx, CtxClient *client);
 
 void ctx_term_lock_screen (Ctx *ctx)
 {
-  ctx_rgb (ctx, 0,0.2,0);
+  ctx_rgb (ctx, 0,0.0,0);
   ctx_paint (ctx);
-  ctx_rgb (ctx, 1,0,0);
-  ctx_move_to (ctx, ctx_width (ctx)/2, font_size);
-  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-  ctx_text (ctx, "locked");
+  ctx_rgb (ctx, 1,1,1);
 
   CtxList *clients = ctx_clients (ctx);
 
@@ -1028,7 +1059,7 @@ void ctx_term_lock_screen (Ctx *ctx)
   }
 
   if (last)
-    ctx_client_draw (ctx, last, 0, font_size * 4);
+    ctx_client_draw (ctx, last, 0, 0);
 }
 
 
@@ -1243,7 +1274,7 @@ int main (int argc, char **argv)
 	}
 	}
 
-	if (!in_overview)
+	if (!in_overview || locked)
           ctx_osk_draw (ctx);
         //ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
   	//if (!locked)
@@ -1253,7 +1284,7 @@ int main (int argc, char **argv)
           ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
 	}
 
-	if (!in_overview)
+	if (!in_overview || locked)
 	{
           ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
           ctx_listen (ctx, CTX_TAP_AND_HOLD, terminal_long_tap, NULL, NULL);
