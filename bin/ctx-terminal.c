@@ -402,7 +402,8 @@ static void handle_event (Ctx        *ctx,
     {
       ctx_exit (ctx);
     }
-  else if (!strcmp (event, "control-tab") )
+  else if (!strcmp (event, "control-tab") ||
+           !strcmp (event, "alt-tab"))
     {
        CtxList *l = ctx_clients (ctx);
        int found = 0;
@@ -421,7 +422,8 @@ static void handle_event (Ctx        *ctx,
        ctx_client_focus (ctx, ctx_client_id (next));
        ctx_queue_draw (ctx);
     }
-  else if (!strcmp (event, "shift-control-tab") )
+  else if (!strcmp (event, "shift-control-tab") ||
+           !strcmp (event, "shift-alt-tab"))
     {
        CtxList *l = ctx_clients (ctx);
        CtxClient *prev = NULL;
