@@ -24,8 +24,10 @@
 #include "ctx.h"
 #include "terminal-keyboard.h"
 
-#define OVERVIEW_TRANSITION_LENGTH  0.25f
+static float animation_duration = 0.25f;
 static Ctx *ctx = NULL; // initialized in main
+
+#define ENABLE_ROTATE 0
 
 static int locked = 0;
 
@@ -284,7 +286,7 @@ static void overview_event (CtxEvent *event, void *a, void *b)
      }
      else
      {
-       leave_overview = OVERVIEW_TRANSITION_LENGTH;
+       leave_overview = animation_duration;
      }
      ctx_queue_draw (event->ctx);
      ctx_event_stop_propagate (event);
@@ -293,6 +295,16 @@ static void overview_event (CtxEvent *event, void *a, void *b)
 
 int         vt_get_scroll           (VT *vt);
 void        vt_set_scroll           (VT *vt, int scroll);
+
+#if ENABLE_ROTATE
+static float global_rotation = 0.0f;
+
+static void rotate_cb (CtxEvent *event, void *a, void *b)
+{
+  global_rotation += M_PI / 2;
+  ctx_queue_draw (event->ctx);
+}
+#endif
 
 static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
@@ -335,6 +347,13 @@ static void handle_event (Ctx        *ctx,
   {
     ctx_client_feed_keystring (active, ctx_event, "return");
   }
+#if ENABLE_ROTATE
+  else if (!strcmp (event, "shift-control-r") )
+  {
+     CtxEvent dummy;dummy.ctx=ctx;
+     rotate_cb (&dummy, NULL, NULL);
+  }
+#endif
   else if (!strcmp (event, "shift-control-v") )
     {
       char *text = ctx_get_clipboard (ctx);
@@ -605,11 +624,21 @@ static void icon_padlock (Ctx *ctx, float x, float y, float w, float h)
   ctx_rectangle (ctx, x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6);
 }
 
+#if ENABLE_ROTATE
+static void icon_rotate (Ctx *ctx, float x, float y, float w, float h)
+{
+  ctx_fill (ctx);
+  ctx_restore (ctx);
+  ctx_arc (ctx, x + w * 0.5, y + h * 0.5, w * 0.5, 0.0, M_PI * 2, 0);
+}
+#endif
+
 static void lock_cb (CtxEvent *event, void *a, void *b)
 {
   system ("touch /tmp/ctx.lock");
   ctx_queue_draw (event->ctx);
 }
+
 
 void draw_mini_panel (Ctx *ctx)
 {
@@ -656,6 +685,17 @@ void draw_mini_panel (Ctx *ctx)
   ctx_fill (ctx);
 
 
+#if ENABLE_ROTATE
+  y += em * 3;
+  ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
+  ctx_listen (ctx, CTX_PRESS, rotate_cb, NULL, NULL);
+  ctx_rgba (ctx, 0,1.0,0.2,0.5);
+  ctx_fill (ctx);
+  ctx_rgba (ctx, 1,1,1,0.25);
+  icon_rotate (ctx, x, y, tile_dim, tile_dim);
+  ctx_fill (ctx);
+#endif
+
 #if 1
   y += em * 3;
   ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
@@ -666,6 +706,7 @@ void draw_mini_panel (Ctx *ctx)
   icon_padlock (ctx, x, y, tile_dim, tile_dim);
   ctx_fill (ctx);
 #endif
+
 
 #if 1
   y += em * 3;
@@ -945,7 +986,7 @@ static void overview_select_client (CtxEvent *event, void *client, void *data2)
   else
   {
     in_overview = 0;
-    leave_overview = OVERVIEW_TRANSITION_LENGTH;
+    leave_overview = animation_duration;
   }
 
 
@@ -1064,6 +1105,44 @@ void ctx_term_lock_screen (Ctx *ctx)
     ctx_client_draw (ctx, last, 0, 0);
 }
 
+static int clients_draw (Ctx *ctx, int layer2)
+{
+  CtxList *clients = ctx_clients (ctx);
+  int n_clients         = ctx_list_length (clients);
+
+  if (n_clients == 1) {
+    CtxClient *client = clients->data;
+    int flags = ctx_client_flags (client);
+    if (client && flag_is_set(flags, CSS_CLIENT_MAXIMIZED))
+    {
+      ctx_client_draw (ctx, client, 0, 0);
+      return 0;
+    }
+  }
+  float em = ctx_get_font_size (ctx);
+  float titlebar_height = em;
+#if 0
+  float screen_width = ctx_width (ctx) - 3 * em;
+  float screen_height = ctx_height (ctx);
+#endif
+  int active_id = ctx_clients_active (ctx);
+  CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
+
+  for (CtxList *l = clients; l; l = l->next)
+  {
+    CtxClient *client = l->data;
+    int flags = ctx_client_flags (client);
+    if (flag_is_set(flags, CSS_CLIENT_MAXIMIZED))
+    {
+      if (client == active)
+        ctx_client_draw (ctx, client, 0, titlebar_height);
+      else
+        ctx_client_use_images (ctx, client);
+    }
+  }
+
+  return 0;
+}
 
 #if CTX_BIN_BUNDLE
 int ctx_terminal_main (int argc, char **argv)
@@ -1229,8 +1308,15 @@ int main (int argc, char **argv)
 	ctx_rgb (ctx, 0,0,0);
         ctx_font_size (ctx, font_size);
 #endif
-        ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
-        ctx_fill (ctx);
+	ctx_save (ctx);
+#if ENABLE_ROTATE
+	ctx_translate (ctx, ctx_width(ctx)/2, ctx_height(ctx)/2);
+	ctx_rotate (ctx, global_rotation);
+	ctx_translate (ctx, -ctx_width(ctx)/2, -ctx_height(ctx)/2);
+#endif
+        //ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
+        //ctx_fill (ctx);
+	ctx_paint (ctx);
 
 	if (locked)
 	{
@@ -1238,53 +1324,47 @@ int main (int argc, char **argv)
 	}
 	else
 	{
-
-
-	if (in_overview || leave_overview > 0.0f)
-	{
-	  if (leave_overview > 0.0f)
+	  if (in_overview || leave_overview > 0.0f)
 	  {
-	    leave_overview -= delta_s;
-            overview (ctx, leave_overview / OVERVIEW_TRANSITION_LENGTH);
+	    if (leave_overview > 0.0f)
+	    {
+	      leave_overview -= delta_s;
+              overview (ctx, leave_overview / animation_duration);
 	      ctx_queue_draw (ctx);
-	  }
-	  else
-	  {
-	    leave_overview = 0.0f;
-	    overview_t += delta_s;
-	    if (overview_t >= OVERVIEW_TRANSITION_LENGTH)
-	      overview_t = OVERVIEW_TRANSITION_LENGTH;
+	    }
 	    else
-	      ctx_queue_draw (ctx);
-            overview (ctx, overview_t / OVERVIEW_TRANSITION_LENGTH);
+	    {
+	      leave_overview = 0.0f;
+	      overview_t += delta_s;
+	      if (overview_t >= animation_duration)
+	        overview_t = animation_duration;
+	      else
+	        ctx_queue_draw (ctx);
+              overview (ctx, overview_t / animation_duration);
+	    }
 	  }
-	  
-	}
 	else
-	{
-
-
-        ctx_clients_draw (ctx, 0);
-
-        if ((n_clients != 1) || (ctx_clients (ctx) &&
+	  {
+            clients_draw (ctx, 0);
+#if 1
+            if ((n_clients != 1) || (ctx_clients (ctx) &&
                                  !flag_is_set(
                                          ctx_client_flags (((CtxClient*)ctx_clients(ctx)->data)), CSS_CLIENT_MAXIMIZED)))
-          draw_panel (itk, ctx);
-        else
-          draw_mini_panel (ctx);
+              draw_panel (itk, ctx);
+            else
+#endif
+              draw_mini_panel (ctx);
 
-	}
+	  }
 	}
 
 	if (!in_overview || locked)
           ctx_osk_draw (ctx);
-        //ctx_add_key_binding (ctx, "unhandled", NULL, "", terminal_key_any, NULL);
-  	//if (!locked)
-	{
-          ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
-          ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
-          ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
-	}
+	ctx_restore (ctx);
+
+        ctx_listen (ctx, CTX_KEY_PRESS, terminal_key_any, NULL, NULL);
+        ctx_listen (ctx, CTX_KEY_DOWN,  terminal_key_any, NULL, NULL);
+        ctx_listen (ctx, CTX_KEY_UP,    terminal_key_any, NULL, NULL);
 
 	if (!in_overview || locked)
 	{
