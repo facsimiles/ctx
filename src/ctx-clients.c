@@ -1164,8 +1164,8 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
   float titlebar_height = _ctx_font_size;
 
   float em = _ctx_font_size;
-  float screen_width = ctx_width (ctx) - 3 * em;
-  float screen_height = ctx_height (ctx);
+  //float screen_width = ctx_width (ctx) - 3 * em;
+  //float screen_height = ctx_height (ctx);
 
   if (!layer2)
   for (CtxList *l = clients; l; l = l->next)

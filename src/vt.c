@@ -5706,8 +5706,9 @@ mice:{
 done:
   if (strlen (str) )
     {
-      //if (ctx_utf8_strlen(str)>1)  //  remove this to get some unhandled
-      //  return;                    //  things verbosely in input stream
+      //if (ctx_utf8_strlen(str)>1 && str[0]!='\033')
+//              //  remove this to get some unhandled
+  //      return;       //  things verbosely in input stream
       if (vt->local_editing)
         {
           for (int i = 0; str[i]; i++)
@@ -8033,6 +8034,7 @@ int vt_has_blink (VT *vt)
 static char *primary = NULL;
 static void scrollbar_drag (CtxEvent *event, void *data, void *data2);
 static int scrollbar_down = 0;
+static void mt_drag (CtxEvent *event, void *data, void *data2);
 
 float ctx_vt_scrollbar_width_visible = 2.0f;
 float ctx_vt_scrollbar_width_event   = 4.0f;
@@ -8068,6 +8070,17 @@ void ctx_client_mouse_event (CtxEvent *event, void *data, void *data2)
   {
     case CTX_MOTION:
     case CTX_DRAG_MOTION:
+      if (event->device_no > 4)
+      {
+        vt->select_start_col = 
+        vt->select_end_col = vt->select_begin_col;
+        vt->select_active = 0;
+
+        mt_drag (event, vt, data2);
+        return;
+      }
+
+
       //if (event->device_no==1)
       {
         sprintf (buf, "pm %.0f %.0f %i", x, y, device_no);
@@ -8232,6 +8245,21 @@ int ctx_vt_had_alt_screen (VT *vt)
 {
   return vt?vt->had_alt_screen:0;
 }
+
+static void mt_drag (CtxEvent *event, void *data, void *data2)
+{
+  VT *vt = data;
+
+  vt->scroll += event->delta_y / vt->ch;
+
+  if (vt->scroll < 0) { vt->scroll = 0.0; }
+  if (vt->scroll > vt->scrollback_count) { vt->scroll = vt->scrollback_count; }
+
+  ctx_client_rev_inc (vt->client);
+  ctx_queue_draw (event->ctx);
+  event->stop_propagate = 1;
+}
+
 
 static void scrollbar_drag (CtxEvent *event, void *data, void *data2)
 {

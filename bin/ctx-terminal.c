@@ -1066,8 +1066,8 @@ static void overview (Ctx *ctx, float anim_t)
 	  float title_width = ctx_text_width (ctx, title);
 
 	  ctx_round_rectangle (ctx, x+w/2 - title_width/2 - 0.5 * em,
-			      ty - 0.8 * em, title_width + 1.0 * em,
-			      em, 0.3 * em);
+			      ty - 1.0 * em, title_width + 1.0 * em,
+			      1.4 * em, 1.4 * em);
 	  ctx_rgba (ctx, 0,0,0,0.5);
 	  ctx_fill (ctx);
 
@@ -1123,7 +1123,7 @@ static int clients_draw (Ctx *ctx, int layer2)
       return 0;
     }
   }
-  float em = ctx_get_font_size (ctx);
+  //float em = ctx_get_font_size (ctx);
 #if 0
   float screen_width = ctx_width (ctx) - 3 * em;
   float screen_height = ctx_height (ctx);

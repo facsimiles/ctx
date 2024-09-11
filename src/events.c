@@ -3561,7 +3561,7 @@ static int ctx_linux_ts_open (void)
 
           int touchpad_touchscreen = 0;
 
-	  if (getenv("CTX_TOUCHPAD_TOUCHSCREN")) touchpad_touchscreen = 
+	  if (getenv("CTX_TOUCHPAD_TOUCHSCREEN")) touchpad_touchscreen = 
 		  atoi(getenv("CTX_TOUCHPAD_TOUCHSCREEN"));
 
 	  if (   ( !pointer || touchpad_touchscreen) && 
