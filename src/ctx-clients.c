@@ -328,9 +328,8 @@ static void ctx_clients_ensure_layout (Ctx *ctx)
     CtxClient *client = l->data;
     if (client->flags & CSS_CLIENT_MAXIMIZED)
     {
-      ctx_client_move (ctx, client->id, 0, ctx_client_min_y_pos (ctx));
-      ctx_client_resize (ctx, client->id, ctx_width (ctx), ctx_height(ctx) -
-                      ctx_client_min_y_pos (ctx) / 2);   // /2 to counter the double titlebar of non-maximized
+      ctx_client_move (ctx, client->id, 0, 0);//ctx_client_min_y_pos (ctx));
+      ctx_client_resize (ctx, client->id, ctx_width (ctx), ctx_height(ctx));
       if (ctx->events.active_tab == NULL)
         ctx->events.active_tab = client;
     }

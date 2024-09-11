@@ -24,7 +24,7 @@
 #include "ctx.h"
 #include "terminal-keyboard.h"
 
-static float animation_duration = 0.25f;
+static float animation_duration = 0.175f;//25f;
 static Ctx *ctx = NULL; // initialized in main
 
 #define ENABLE_ROTATE 0
@@ -58,7 +58,7 @@ float font_size    = -1;
 float line_spacing = 2.0;
 
 float leave_overview = 0.0f;
-float overview_t = 0.0f;
+float overview_t     = 0.0f;
 /********************/
 static float start_font_size = 22.0;
 
@@ -500,10 +500,6 @@ static void handle_event (Ctx        *ctx,
         }
       }
     }
-  else if (!strncmp (event, "shift-control-", 14))
-    {
-      ctx_client_feed_keystring (active, ctx_event, event + 6);
-    }
   else
     {
       ctx_client_feed_keystring (active, ctx_event, event);
@@ -722,69 +718,51 @@ void draw_mini_panel (Ctx *ctx)
   ctx_restore (ctx);
 }
 
+int ctx_client_is_active_tab (Ctx *ctx, CtxClient *client);
 void draw_panel (Css *itk, Ctx *ctx)
 {
-  float titlebar_height = font_size;
-  float tab_width = ctx_width (ctx) - titlebar_height * 4 - titlebar_height * 2;
+  float em = font_size;
+  float tab_width = ctx_width (ctx) - 4 * em;
 
   ctx_save (ctx);
-  ctx_rectangle (ctx, 0, 0, ctx_width (ctx), titlebar_height);
-  ctx_gray (ctx, 0.0);
-  ctx_fill (ctx);
-  ctx_font_size (ctx, titlebar_height * 1.0);
-
-#if 0
-  struct tm local_time_res;
-  struct timeval tv;
-  gettimeofday (&tv, NULL);
-  localtime_r (&tv.tv_sec, &local_time_res);
-  ctx_move_to (ctx, ctx_width (ctx), titlebar_height * 0.8);
-  ctx_text_align (ctx, CTX_TEXT_ALIGN_END);
-  ctx_gray (ctx, 0.9);
-  char buf[128];
-  sprintf (buf, "%02i:%02i:%02i", local_time_res.tm_hour, local_time_res.tm_min, local_time_res.tm_sec);
-  ctx_text (ctx, buf);
-#endif
 
   ctx_begin_path (ctx);
-#if 0
-  ctx_rectangle (ctx, ctx_width(ctx)-titlebar_height * 10, 0, titlebar_height * 10, titlebar_height);
-  ctx_listen (ctx, CTX_PRESS, add_settings_tab_cb, NULL, NULL);
-  ctx_rgba(ctx, 1,0,1,1);
-  //ctx_fill(ctx);
-#endif
 
   int tabs = 0;
+  int active_tab = -1;
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
     if (ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED)
-    tabs ++;
+    {
+      if (ctx_client_is_active_tab (ctx, client))
+	active_tab = tabs;
+      tabs ++;
+    }
   }
 
   if (tabs)
   tab_width /= tabs;
 
   ctx_begin_path (ctx);
-#if 0
-  ctx_rectangle (ctx, 0, 0, titlebar_height * 1.5, titlebar_height);
-  ctx_listen (ctx, CTX_PRESS, add_tab_cb, NULL, NULL);
-  ctx_move_to (ctx, titlebar_height * 1.5/2, titlebar_height * 0.8);
-  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-  ctx_gray (ctx, 0.9);
-  ctx_text (ctx, "+");
-  float x = titlebar_height * 1.5;
-#else
-  float x = titlebar_height * 0.0;
-#endif
+  float x = 0.0f;
+
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
     if (ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED)
     {
       ctx_begin_path (ctx);
-      ctx_client_titlebar_draw (ctx, client, x, titlebar_height,
-                     tab_width, titlebar_height);
+      if (ctx_client_is_active_tab (ctx, client))
+      {
+        ctx_rectangle (ctx, x + 0.2 * em, 0.0 * em,
+                       tab_width - 0.4 * em, 0.15 * em);
+	ctx_rgba (ctx, 1,1,1,0.5);
+	ctx_fill (ctx);
+      }
+      else
+      {
+      }
     }
     x += tab_width;
   }
@@ -851,7 +829,6 @@ static void overview_cleanup (Ctx *ctx)
   opos_count = 0;
 }
 
-int ctx_client_is_active_tab (Ctx *ctx, CtxClient *client);
 
 static void overview_init (Ctx *ctx)
 {
@@ -1077,7 +1054,7 @@ static void overview (Ctx *ctx, float anim_t)
 }
 
 
-#define CTX_TERM_UNLOCK_SH   "sh -c \"while [ -f /tmp/ctx.lock ];do su `whoami` -c 'rm /tmp/ctx.lock';done\""
+#define CTX_TERM_UNLOCK_SH   "sh -c \"echo 'ctx is locked'; while [ -f /tmp/ctx.lock ];do su `whoami` -c 'rm /tmp/ctx.lock';done\""
 
 
 void ctx_client_use_images (Ctx *ctx, CtxClient *client);
@@ -1135,7 +1112,7 @@ static int clients_draw (Ctx *ctx, int layer2)
     if (flag_is_set(flags, CSS_CLIENT_MAXIMIZED))
     {
       if (client == active)
-        ctx_client_draw (ctx, client, 0, titlebar_height);
+        ctx_client_draw (ctx, client, 0, 0);
       else
         ctx_client_use_images (ctx, client);
     }
@@ -1262,9 +1239,7 @@ int main (int argc, char **argv)
 
   while (ctx_clients (ctx) && !ctx_has_exited (ctx))
     {
-      //int changes = 0;
       int n_clients = ctx_list_length (ctx_clients (ctx));
-      //ensure_layout (ctx);
       float ms = ctx_ms (ctx);
       float delta_s = (ms - prev_ms)/1000.0f;
       prev_ms = ms;

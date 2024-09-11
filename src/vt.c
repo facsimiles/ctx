@@ -5706,6 +5706,8 @@ mice:{
 done:
   if (strlen (str) )
     {
+      if (ctx_utf8_strlen(str)>1)  //  remove this to get some unhandled
+        return;                    //  things verbosely in input stream
       if (vt->local_editing)
         {
           for (int i = 0; str[i]; i++)
