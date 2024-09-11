@@ -704,7 +704,7 @@ void draw_mini_panel (Ctx *ctx)
 #endif
 
 
-#if 1
+#if 0
   y += em * 3;
   ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
   ctx_listen (ctx, CTX_PRESS, remove_tab_cb, NULL, NULL);
@@ -729,14 +729,11 @@ void draw_panel (Css *itk, Ctx *ctx)
   ctx_begin_path (ctx);
 
   int tabs = 0;
-  int active_tab = -1;
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
   {
     CtxClient *client = l->data;
     if (ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED)
     {
-      if (ctx_client_is_active_tab (ctx, client))
-	active_tab = tabs;
       tabs ++;
     }
   }
@@ -759,9 +756,7 @@ void draw_panel (Css *itk, Ctx *ctx)
                        tab_width - 0.4 * em, 0.15 * em);
 	ctx_rgba (ctx, 1,1,1,0.5);
 	ctx_fill (ctx);
-      }
-      else
-      {
+
       }
     }
     x += tab_width;
@@ -930,7 +925,6 @@ static void overview_init (Ctx *ctx)
 
 static void overview_select_client (CtxEvent *event, void *client, void *data2)
 {
-
   int i;
   int old_active = 0;
   int new_active = 0;
@@ -980,7 +974,7 @@ static void overview (Ctx *ctx, float anim_t)
   int n_clients         = ctx_list_length (clients);
 
   float screen_width = ctx_width (ctx) - 3.5 * em;
-  //float screen_height = ctx_height (ctx);
+  float screen_height = ctx_height (ctx);
 
   static int dirty_count = 0;
   if (n_clients != opos_count)
@@ -1009,7 +1003,7 @@ static void overview (Ctx *ctx, float anim_t)
   }
 
   float col_width  = screen_width / cols;
-  //float row_height = screen_height / rows;
+  float row_height = screen_height / rows;
   float icon_width  = col_width - 0.5f * em;
   //float icon_height = row_height - em;
   
@@ -1042,13 +1036,45 @@ static void overview (Ctx *ctx, float anim_t)
     ctx_restore(ctx);
     ctx_rectangle (ctx, x-2, y-2, w+4, h+4);
     ctx_listen (ctx, CTX_DRAG_PRESS, overview_select_client, client, NULL);
+    ctx_begin_path (ctx);
+
 
     if (opos[i].id == ctx_clients_active (ctx))
-	{ ctx_rgba(ctx,1,1,1,1);
+    {
+          ctx_round_rectangle (ctx, x-2, y-2, w+4, h+4, 0.3 * em);
+	  ctx_rgba(ctx,1,1,1,1);
           ctx_stroke(ctx);
-	}
-    else
-    ctx_begin_path (ctx);
+	  ctx_rgba(ctx,1,0,0,0.6);
+          ctx_rectangle (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
+          ctx_listen (ctx, CTX_PRESS, remove_tab_cb, NULL, NULL);
+	  ctx_begin_path (ctx);
+	  icon_remove_tab (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
+	  ctx_fill (ctx);
+
+	  if (anim_t > 0.9)
+          {
+
+	  float ty = y + row_height - em;
+	  if (y + h + 1.2 * em < ty)
+	     ty = y + h + 1.2 * em;
+	  
+
+	  const char *title = ctx_client_title (client);
+
+	  float title_width = ctx_text_width (ctx, title);
+
+	  ctx_round_rectangle (ctx, x+w/2 - title_width/2 - 0.5 * em,
+			      ty - 0.8 * em, title_width + 1.0 * em,
+			      em, 0.3 * em);
+	  ctx_rgba (ctx, 0,0,0,0.5);
+	  ctx_fill (ctx);
+
+	  ctx_move_to (ctx, x+w/2, ty);
+	  ctx_rgba (ctx, 1,1,1,1);
+	  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+	  ctx_text (ctx, ctx_client_title (client));
+	  }
+    }
   }
   draw_mini_panel (ctx);
 }
@@ -1058,7 +1084,6 @@ static void overview (Ctx *ctx, float anim_t)
 
 
 void ctx_client_use_images (Ctx *ctx, CtxClient *client);
-
 
 void ctx_term_lock_screen (Ctx *ctx)
 {
@@ -1097,7 +1122,6 @@ static int clients_draw (Ctx *ctx, int layer2)
     }
   }
   float em = ctx_get_font_size (ctx);
-  float titlebar_height = em;
 #if 0
   float screen_width = ctx_width (ctx) - 3 * em;
   float screen_height = ctx_height (ctx);
