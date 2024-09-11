@@ -367,24 +367,32 @@ void ctx_client_remove (Ctx *ctx, CtxClient *client)
   if (client->finalize)
      client->finalize (client, client->user_data);
 
+  CtxClient *next = NULL;
+  CtxClient *last = NULL;
+  for (CtxList *l = ctx->events.clients; l; l = l->next)
+  {
+    if (l->data == client)
+    {
+       if (l->next)
+	 next = l->next->data;
+    }
+    else
+      last = l->data;
+  }
+  if (!next) next = last;
+
   ctx_list_remove (&ctx->events.clients, client);
 
   if (client == ctx->events.active_tab)
   {
-    ctx->events.active_tab = NULL;
-    if (ctx->events.clients)
-       ctx->events.active_tab = ctx->events.clients->data;
+    ctx->events.active_tab = next;
   }
 
-  if (ctx)
   if (client == ctx->events.active)
   {
     ctx->events.active = find_active (ctx, ctx_pointer_x (ctx), ctx_pointer_y (ctx));
     if (!ctx->events.active)
-    {
-      if (ctx->events.clients)
-        ctx->events.active = ctx->events.clients->data;
-    }
+      ctx->events.active = next;
   }
 
   ctx_client_unlock (client);

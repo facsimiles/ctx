@@ -339,7 +339,8 @@ static void handle_event (Ctx        *ctx,
   else
   {
 
-  if (!strcmp (event, "F11"))
+  if (!strcmp (event, "F11") ||
+      !strcmp (event, "shift-control-f"))
   {
     ctx_set_fullscreen (ctx, !ctx_get_fullscreen (ctx));
   }
@@ -1009,7 +1010,8 @@ static void overview (Ctx *ctx, float anim_t)
   
   int i = 0;
 
-  ctx_rgb(ctx,0.1,0.1,0.1);
+  //ctx_rgb(ctx,0.1,0.1,0.1);
+  ctx_rgb (ctx, 0.086,0.086,0.113);
   ctx_paint(ctx);
 
   for (i = 0; i < opos_count; i++)
@@ -1304,7 +1306,7 @@ int main (int argc, char **argv)
         ctx_font_size (ctx, css_em (itk));
 #else
 	ctx_start_frame (ctx);
-	ctx_rgb (ctx, 0,0,0);
+	ctx_rgb (ctx, 0.086,0.086,0.113);
         ctx_font_size (ctx, font_size);
 #endif
 	ctx_save (ctx);

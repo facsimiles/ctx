@@ -1681,7 +1681,7 @@ const char * html_css =
 "hr{font-size:1px;border-bottom: 1px solid red;display:block;}\n"
 
 ".scroll{background:blue;}\n"
-".wallpaper, .itk{background:#124;color:#f43}\n"
+".wallpaper, .itk{background:#16161d;color:#f43}\n"
 ".focused{background:#fff;color:#000}\n"
 
 " .children{ border:1px solid green;padding-left:3em; }\n"
