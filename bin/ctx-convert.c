@@ -962,8 +962,8 @@ again:
       uint8_t pixels_565[stride_565*height];
       uint8_t pixels[stride*height];
       Ctx *dctx = ctx_new_for_framebuffer (&pixels_565[0], width, height, stride_565, CTX_FORMAT_RGB565);
-      memset (pixels, 0, sizeof (pixels) );
-      memset (pixels_565, 0, sizeof (pixels_565) );
+      memset (&pixels[0], 0, sizeof (pixels) );
+      memset (&pixels_565[0], 0, sizeof (pixels_565) );
       ctx_render_ctx (ctx, dctx);
       ctx_destroy (dctx);
 

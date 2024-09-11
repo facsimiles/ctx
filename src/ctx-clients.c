@@ -1163,7 +1163,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
   _ctx_font_size = ctx_get_font_size (ctx);
   float titlebar_height = _ctx_font_size;
 
-  float em = _ctx_font_size;
+  //float em = _ctx_font_size;
   //float screen_width = ctx_width (ctx) - 3 * em;
   //float screen_height = ctx_height (ctx);
 

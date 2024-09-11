@@ -170,7 +170,7 @@ static inline void        vt_line_clear          (VtLine *line)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_clear (string);
-  vt_line_clear_style (string);
+  vt_line_clear_style ((VtLine*)string);
 }
 static inline void        vt_line_append_str     (VtLine *line, const char *str)
 {

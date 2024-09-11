@@ -214,6 +214,10 @@ ctx_parser_init (CtxParser *parser,
   parser->set_prop         = set_prop;
   parser->get_prop         = get_prop;
   parser->prop_data        = prop_data;
+  
+  int new_len = 512;
+  parser->holding = (uint8_t*)ctx_realloc (parser->holding, parser->hold_len, new_len);
+  parser->hold_len = new_len;
   return parser;
 }
 

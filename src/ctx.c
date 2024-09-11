@@ -3222,7 +3222,7 @@ ctx_pixel_format_info (CtxPixelFormat format)
           return &ctx_pixel_formats[i];
         }
     }
-  assert (0);
+  //assert (0);
   return NULL;
 }
 

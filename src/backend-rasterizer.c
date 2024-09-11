@@ -1826,7 +1826,7 @@ ctx_rasterizer_close_path (CtxRasterizer *rasterizer)
   if (rasterizer->first_edge>=0)
     {
         CtxSegment *segment = & ((CtxSegment*)rasterizer->edge_list.entries)[rasterizer->first_edge];
-	if (segment->code == CTX_NEW_EDGE)
+	if (segment && segment->code == CTX_NEW_EDGE)
 	{
           CtxSegment entry = {{CTX_EDGE, 0, 0, 0, 0, 0}};
           int x1 = segment->x0;
