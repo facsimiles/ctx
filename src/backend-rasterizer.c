@@ -2275,6 +2275,11 @@ ctx_rasterizer_fill (CtxRasterizer *rasterizer)
          float x1 = entry1->x1 * (1.0f / CTX_SUBDIV);
          float y1 = entry1->y1 * (1.0f / CTX_FULL_AA);
 
+	 x0 = ctx_maxf (x0, blit_x);
+	 y0 = ctx_maxf (y0, blit_y);
+	 x1 = ctx_minf (x1, blit_x + blit_width);
+	 y1 = ctx_minf (y1, blit_y + blit_height);
+
          if ((x1 > x0) & (y1 > y0))
          {
            ctx_composite_fill_rect (rasterizer, x0, y0, x1, y1, 255);
