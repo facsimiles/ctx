@@ -885,7 +885,7 @@ struct _CtxHasher
 
 #if CTX_RASTERIZER
 void ctx_rasterizer_deinit (CtxRasterizer *rasterizer);
-void ctx_rasterizer_destroy (CtxRasterizer *rasterizer);
+void ctx_rasterizer_destroy (void *rasterizer);
 #endif
 
 enum {
