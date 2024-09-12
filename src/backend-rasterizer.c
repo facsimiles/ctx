@@ -1239,8 +1239,11 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
  
   int pixs = maxx - minx + 1;
   if (pixs < 0)
+  {
+    assert(0);
     return;
-  uint8_t _coverage[pixs+16]; // XXX this might hide some valid asan warnings
+  }
+  uint8_t _coverage[pixs]; // XXX this might hide some valid asan warnings
   uint8_t *coverage = &_coverage[0];
   ctx_apply_coverage_fun apply_coverage = rasterizer->apply_coverage;
 
@@ -3185,7 +3188,7 @@ ctx_rasterizer_clip_apply (CtxRasterizer *rasterizer,
   }
   rasterizer->clip_rectangle = 0;
 
-  if ((minx == maxx) | (miny == maxy)) // XXX : reset hack
+  if ((minx == maxx) | (miny == maxy) || count < 2) // XXX : reset hack
   {
     ctx_rasterizer_clip_reset (rasterizer);
     return;
