@@ -5,7 +5,7 @@ void ctx_drawlist_clear (Ctx *ctx)
   ctx->drawlist.bitpack_pos = 0;
 }
 
-static void ctx_drawlist_backend_destroy (CtxBackend *backend)
+static void ctx_drawlist_backend_destroy (void *backend)
 {
   ctx_free (backend);
 }
@@ -76,7 +76,7 @@ static CtxBackend *ctx_drawlist_backend_new (void)
                        // often be a false report - we ass slack since it is
                        // "only" ~ 40 bytes per instance.
   backend->process = ctx_drawlist_process;
-  backend->destroy = (void(*)(void *a))ctx_drawlist_backend_destroy;
+  backend->destroy = ctx_drawlist_backend_destroy;
   backend->type = CTX_BACKEND_DRAWLIST;
   return backend;
 }
