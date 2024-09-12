@@ -285,7 +285,7 @@
  * faster.
  */
 #ifndef CTX_NATIVE_GRAYA8
-#define CTX_NATIVE_GRAYA8       1
+#define CTX_NATIVE_GRAYA8       0
 #endif
 
 /* enable CMYK rasterization targets
