@@ -1238,9 +1238,11 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
   minx *= (minx>0);
  
   int pixs = maxx - minx + 1;
-  if (pixs < 0)
+  if (pixs <= 0)
   {
-    assert(0);
+    //assert(0);
+    //
+    // sometimes reached by stroking code
     return;
   }
   uint8_t _coverage[pixs]; // XXX this might hide some valid asan warnings
@@ -4059,9 +4061,9 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
                   is_down = 1;
                   ctx_rasterizer_move_to (rasterizer, prev_x, prev_y);
                 }
-
+   int max_again = 1000;
 again:
-
+   max_again--;
               x = segment->x1 * 1.0f / CTX_SUBDIV;
               y = segment->y1 * 1.0f / CTX_FULL_AA;
               float dx = x - prev_x;
@@ -4088,7 +4090,8 @@ again:
                 dash_no++;
                 dash_lpos=0;
                 if (dash_no >= n_dashes) dash_no = 0;
-                goto again;
+		if (max_again > 0)
+                  goto again;
               }
               else
               {
