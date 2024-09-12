@@ -266,4 +266,9 @@ distcheck: dist #
 	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-O1 ./configure.sh && make -j ) #
 	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-Oz ./configure.sh --static --disable-all --enable-vt && make -j ) #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
-
+#
+fuzzer: tools/fuzz.c ctx.h #
+	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
+	#$(CCACHE) afl-clang-fast -fsanitize=fuzzer,addressundefined $< -o $@ -I. #
+fuzz: fuzzer #
+	afl-fuzz -G 8192  -a text -i afl/in/ -o afl -- ./fuzzer @@ -o RGB565 #
