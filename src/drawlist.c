@@ -1052,3 +1052,7 @@ uint8_t *ctx_define_texture_pixel_data (const CtxEntry *entry)
   return (uint8_t*)&entry[2 + 1 + 1 + ctx_conts_for_entry (&entry[2])].data.u8[0];
 }
 
+uint32_t ctx_define_texture_pixel_data_length (const CtxEntry *entry)
+{
+  return entry[2 + 1 + ctx_conts_for_entry (&entry[2])].data.u32[0];
+}

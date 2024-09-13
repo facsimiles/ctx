@@ -272,8 +272,8 @@ fuzzer: tools/fuzz.c ctx.h #
 fuzzer-asan: tools/fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
 fuzz: fuzzer #
-	afl-fuzz -G 1024 -a text -i afl/in/ -o afl -- ./fuzzer @@ -o RGB565 #
+	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer @@ -o RGB565 #
 fuzz-asan: fuzzer-asan #
-	afl-fuzz -G 1024 -a text -i afl/in/ -o afl -- ./fuzzer-asan @@ -o RGB565 #
+	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer-asan @@ -o RGB565 #
 fuzz-cont: fuzzer #
 	afl-fuzz -i- -o afl -- ./fuzzer @@ -o RGB565 #

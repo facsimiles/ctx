@@ -1245,7 +1245,7 @@ ctx_rasterizer_rasterize_edges2 (CtxRasterizer *rasterizer, const int fill_rule,
     // sometimes reached by stroking code
     return;
   }
-  uint8_t _coverage[pixs]; // XXX this might hide some valid asan warnings
+  uint8_t _coverage[pixs + 32]; // XXX this might hide some valid asan warnings
   uint8_t *coverage = &_coverage[0];
   ctx_apply_coverage_fun apply_coverage = rasterizer->apply_coverage;
 
@@ -3890,10 +3890,18 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
       case CTX_DEFINE_TEXTURE:
         {
           uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
+          uint32_t pixel_data_length = ctx_define_texture_pixel_data_length (entry);
+
+	  if (ctx_pixel_format_info (c->define_texture.format) &&
+	      pixel_data_length >=
+	      ctx_pixel_format_get_stride (c->define_texture.format, c->define_texture.width)*
+	      c->define_texture.height)
+	  {
           ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
                                          c->define_texture.width, c->define_texture.height,
                                          c->define_texture.format,
                                          pixel_data, 0);
+	  }
           rasterizer->comp_op = NULL;
           rasterizer->fragment = NULL;
         }

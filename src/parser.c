@@ -677,6 +677,13 @@ static void ctx_parser_get_color_rgba (CtxParser *parser, int offset, float *red
     }
 }
 
+static inline int ctx_clamp (int val, int min, int max)
+{
+  if (val < min) return min;
+  if (val > max) return max;
+  return val;
+}
+
 static void ctx_parser_dispatch_command (CtxParser *parser)
 {
   CtxCode cmd = parser->command;
@@ -736,7 +743,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_COLOR_SPACE:
         if (parser->n_numbers == 1)
         {
-          parser->color_space_slot = (CtxColorSpace) arg(0);
+          parser->color_space_slot = (CtxColorSpace) ctx_clamp(arg(0), 0, CTX_COLOR_SPACE_LAST);
           parser->command = CTX_COLOR_SPACE; // did this work without?
         }
         else
@@ -1142,35 +1149,40 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_shadow_offset_y (ctx, arg(0) );
         break;
       case CTX_LINE_JOIN:
-        ctx_line_join (ctx, (CtxLineJoin) arg(0) );
+        ctx_line_join (ctx, (CtxLineJoin) ctx_clamp (arg(0), 0, 2));
         break;
       case CTX_LINE_CAP:
-        ctx_line_cap (ctx, (CtxLineCap) arg(0) );
+        ctx_line_cap (ctx, (CtxLineCap) ctx_clamp (arg(0), 0, 2));
         break;
       case CTX_COMPOSITING_MODE:
-        ctx_compositing_mode (ctx, (CtxCompositingMode) arg(0) );
+	{
+	  int val = (int)arg(0);
+	  val = ctx_clamp (val, 0, CTX_COMPOSITE_LAST);
+          ctx_compositing_mode (ctx, (CtxCompositingMode) val );
+	}
         break;
       case CTX_BLEND_MODE:
         {
           int blend_mode = (int)arg(0);
           if (blend_mode == CTX_COLOR) blend_mode = CTX_BLEND_COLOR;
+	  blend_mode = ctx_clamp (blend_mode, 0, CTX_BLEND_LAST);
           ctx_blend_mode (ctx, (CtxBlend)blend_mode);
         }
         break;
       case CTX_EXTEND:
-        ctx_extend (ctx, (CtxExtend)arg(0));
+        ctx_extend (ctx, (CtxExtend)ctx_clamp(arg(0), 0, CTX_EXTEND_LAST));
         break;
       case CTX_FILL_RULE:
-        ctx_fill_rule (ctx, (CtxFillRule) arg(0));
+        ctx_fill_rule (ctx, (CtxFillRule) ctx_clamp(arg(0), 0, 1));
         break;
       case CTX_TEXT_ALIGN:
-        ctx_text_align (ctx, (CtxTextAlign) arg(0));
+        ctx_text_align (ctx, (CtxTextAlign) ctx_clamp(arg(0), 0, CTX_TEXT_ALIGN_RIGHT));
         break;
       case CTX_TEXT_BASELINE:
-        ctx_text_baseline (ctx, (CtxTextBaseline) arg(0));
+        ctx_text_baseline (ctx, (CtxTextBaseline) ctx_clamp(arg(0), 0, CTX_TEXT_BASELINE_BOTTOM));
         break;
       case CTX_TEXT_DIRECTION:
-        ctx_text_direction (ctx, (CtxTextDirection) arg(0));
+        ctx_text_direction (ctx, (CtxTextDirection) ctx_clamp(arg(0), 0, CTX_TEXT_DIRECTION_RTL));
         break;
       case CTX_IDENTITY:
         ctx_identity (ctx);

@@ -1219,6 +1219,7 @@ int ctx_sha1_done(CtxSHA1 * sha1, unsigned char *out);
 void _ctx_texture_lock (void);
 void _ctx_texture_unlock (void);
 uint8_t *ctx_define_texture_pixel_data (const CtxEntry *entry);
+uint32_t ctx_define_texture_pixel_data_length (const CtxEntry *entry);
 void ctx_buffer_pixels_free (void *pixels, void *userdata);
 
 /*ctx_texture_init:

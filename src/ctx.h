@@ -1055,6 +1055,7 @@ typedef enum
   CTX_COMPOSITE_XOR              ,
 #endif
 } CtxCompositingMode;
+#define CTX_COMPOSITE_LAST CTX_COMPOSITE_XOR
 
 typedef enum
 {
@@ -1078,6 +1079,7 @@ typedef enum
   CTX_BLEND_ADDITION,
   CTX_BLEND_SUBTRACT,    // 18
 } CtxBlend;
+#define CTX_BLEND_LAST CTX_BLEND_SUBTRACT
 
 void ctx_blend_mode (Ctx *ctx, CtxBlend mode);
 
@@ -1102,6 +1104,7 @@ typedef enum
   CTX_EXTEND_REFLECT = 2,
   CTX_EXTEND_PAD     = 3
 } CtxExtend;
+#define CTX_EXTEND_LAST CTX_EXTEND_PAD
 
 void ctx_extend (Ctx *ctx, CtxExtend extend);
 
@@ -2546,6 +2549,7 @@ enum _CtxColorSpace
 };
 typedef enum _CtxColorSpace CtxColorSpace;
 
+#define CTX_COLOR_SPACE_LAST CTX_COLOR_SPACE_TEXTURE
 
 /* sets the color space for a slot, the space is either a string of
  * "sRGB" "rec2020" .. etc or an icc profile.
