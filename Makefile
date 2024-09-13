@@ -268,7 +268,12 @@ distcheck: dist #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 #
 fuzzer: tools/fuzz.c ctx.h #
+	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. #
+fuzzer-asan: tools/fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
-	#$(CCACHE) afl-clang-fast -fsanitize=fuzzer,addressundefined $< -o $@ -I. #
 fuzz: fuzzer #
-	afl-fuzz -G 8192  -a text -i afl/in/ -o afl -- ./fuzzer @@ -o RGB565 #
+	afl-fuzz -G 1024 -a text -i afl/in/ -o afl -- ./fuzzer @@ -o RGB565 #
+fuzz-asan: fuzzer-asan #
+	afl-fuzz -G 1024 -a text -i afl/in/ -o afl -- ./fuzzer-asan @@ -o RGB565 #
+fuzz-cont: fuzzer #
+	afl-fuzz -i- -o afl -- ./fuzzer @@ -o RGB565 #
