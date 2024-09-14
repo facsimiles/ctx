@@ -3892,7 +3892,6 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
       case CTX_DEFINE_TEXTURE:
         {
           uint8_t *pixel_data = ctx_define_texture_pixel_data (entry);
-          uint32_t pixel_data_length = ctx_define_texture_pixel_data_length (entry);
 
           ctx_rasterizer_define_texture (rasterizer, c->define_texture.eid,
                                          c->define_texture.width, c->define_texture.height,
