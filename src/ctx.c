@@ -1884,9 +1884,19 @@ ctx_interpret_transforms (CtxState *state, const CtxEntry *entry, void *data)
         _ctx_transform_prime (state);
         break;
       case CTX_SCALE:
-        ctx_matrix_scale (&state->gstate.transform,
-                          ctx_arg_float (0), ctx_arg_float (1) );
-        _ctx_transform_prime (state);
+	{
+          float sx = ctx_arg_float (0);
+          float sy = ctx_arg_float (1);
+
+	  // XXX: move these checks to parser - to reduce overhead with
+	  //      data that is not untrusted?
+	  if (ctx_fabsf(sx) < 0.000001f)
+	    sx = 0.000001f;
+	  if (ctx_fabsf(sy) < 0.000001f)
+	    sy = 0.000001f;
+          ctx_matrix_scale (&state->gstate.transform, sx, sy);
+          _ctx_transform_prime (state);
+	}
         break;
       case CTX_ROTATE:
         ctx_matrix_rotate (&state->gstate.transform, ctx_arg_float (0) );
