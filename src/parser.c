@@ -801,7 +801,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
              int width  = (int)arg(0);
              int height = (int)arg(1);
              CtxPixelFormat format = (CtxPixelFormat)arg(2);
-	     if (width > 0 && height > 0 && ctx_pixel_format_info (format))
+	     if (width > 0 && height > 0 && width < 65536 && height < 65536 && ctx_pixel_format_info (format))
              {
              int stride = ctx_pixel_format_get_stride (format, width);
              int data_len = stride * height;
