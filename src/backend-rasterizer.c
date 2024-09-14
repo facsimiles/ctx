@@ -2117,6 +2117,8 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
                         &rasterizer->state->gstate.source_fill;
   rasterizer->state->source = 0;
 
+  source->type = CTX_SOURCE_COLOR;
+  source->texture.buffer = NULL;
   int no = ctx_rasterizer_find_texture (rasterizer, eid);
   if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
   if (rasterizer->texture_source->texture[no].data == NULL)
@@ -2132,7 +2134,6 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   ctx_matrix_identity (&source->set_transform);
   ctx_matrix_translate (&source->set_transform, x, y);
 }
-
 
 static void
 ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
