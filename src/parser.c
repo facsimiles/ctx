@@ -801,10 +801,13 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
              int width  = (int)arg(0);
              int height = (int)arg(1);
              CtxPixelFormat format = (CtxPixelFormat)arg(2);
+	     if (ctx_pixel_format_info (format))
+             {
              int stride = ctx_pixel_format_get_stride (format, width);
              int data_len = stride * height;
              if (format == CTX_FORMAT_YUV420)
                  data_len = height * width + 2*(height/2) * (width/2);
+	  {
 
 
              if (parser->pos != data_len)
@@ -820,6 +823,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
              }
              else
              ctx_define_texture (ctx, eid, width, height, stride, format, parser->holding, NULL);
+	     }
+	     }
           }
         }
         else
