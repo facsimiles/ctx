@@ -383,6 +383,9 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
 
   int width = buffer->width;
   int height = buffer->height;
+  int image_smoothing = rasterizer->state->gstate.image_smoothing;
+  if (width == 1 || height == 1)
+    image_smoothing=0;
   for (int i = 0; i < count; i ++)
   {
 
