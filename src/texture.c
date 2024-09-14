@@ -167,7 +167,7 @@ const char* ctx_texture_init (Ctx           *ctx,
 
   if (freefunc == ctx_buffer_pixels_free && user_data == (void*)23)
   {
-     uint8_t *tmp = (uint8_t*)ctx_malloc (data_len);
+     uint8_t *tmp = (uint8_t*)ctx_malloc (data_len + 8); // XXX : padding should not be needed
      memcpy (tmp, pixels, data_len);
      pixels = tmp;
   }
