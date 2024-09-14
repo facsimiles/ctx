@@ -396,7 +396,7 @@ ctx_fragment_image_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
   else
     {
       int bpp = buffer->format->bpp/8;
-      if (rasterizer->state->gstate.image_smoothing)
+      if (image_smoothing)
       {
         uint8_t *src00 = (uint8_t *) buffer->data;
         src00 += v * buffer->stride + u * bpp;
@@ -878,9 +878,18 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
                                float z,
                                void *out, int count, float dx, float dy, float dz)
 {
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+#if CTX_ENABLE_CM
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
+#else
+  CtxBuffer *buffer = g->texture.buffer;
+#endif
+  int image_smoothing = gstate->image_smoothing;
+  if (buffer->width == 1 || buffer->height == 1)
+	image_smoothing = 0;
   if (rasterizer->swap_red_green)
   {
-    if (rasterizer->state->gstate.image_smoothing)
+    if (image_smoothing)
     {
       float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
       if (factor <= 0.50f)
@@ -902,7 +911,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
   }
   else
   {
-    if (rasterizer->state->gstate.image_smoothing)
+    if (image_smoothing)
     {
       float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
       if (factor <= 0.50f)
@@ -2565,7 +2574,16 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
                                 float x, float y, float z,
                                 void *out, int count, float dx, float dy, float dz)
 {
-  if (rasterizer->state->gstate.image_smoothing)
+  CtxSource *g = &rasterizer->state->gstate.source_fill;
+#if CTX_ENABLE_CM
+  CtxBuffer *buffer = g->texture.buffer->color_managed?g->texture.buffer->color_managed:g->texture.buffer;
+#else
+  CtxBuffer *buffer = g->texture.buffer;
+#endif
+  int image_smoothing = gstate->image_smoothing;
+  if (buffer->width == 1 || buffer->height == 1)
+	image_smoothing = 0;
+  if (image_smoothing)
   {
     float factor = ctx_matrix_get_scale (&rasterizer->state->gstate.transform);
     if (factor <= 0.50f)
