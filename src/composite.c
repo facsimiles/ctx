@@ -3074,6 +3074,9 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #else
          CtxBuffer *buffer = g->texture.buffer;
 #endif
+	 int image_smoothing = gstate->image_smoothing;
+	 if (buffer->width == 1 || buffer->height == 1)
+	   image_smoothing = 0;
 
         if (!buffer || !buffer->format)
           return ctx_fragment_color_RGBA8;
@@ -3090,7 +3093,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #if 1
             case 24: 
               {
-                if (gstate->image_smoothing)
+                if (image_smoothing)
                 {
                   float factor = ctx_matrix_get_scale (&gstate->transform);
                           //fprintf (stderr, "{%.3f}", factor);
@@ -3128,7 +3131,7 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
               {
                 CtxMatrix *transform = &gstate->source_fill.transform;
                 CtxExtend extend = rasterizer->state->gstate.extend;
-                if (gstate->image_smoothing)
+                if (image_smoothing)
                 {
                   float factor = ctx_matrix_get_scale (&gstate->transform);
                           //fprintf (stderr, "[%.3f]", factor);
