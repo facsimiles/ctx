@@ -1027,7 +1027,9 @@ _ctx_shape (Ctx         *ctx,
 #endif
   {
     float font_size = state->gstate.font_size;
-    glyphs = ctx_glyph_allocate (ctx_utf8_strlen (string) * 2);
+
+    // XXX : the following allocation might need rethinking
+    glyphs = ctx_glyph_allocate (ctx_utf8_strlen (string) * 2 + 4);
     for (const char *utf8 = string; *utf8; utf8 = ctx_utf8_skip (utf8, 1) )
     {
       uint32_t unichar = ctx_utf8_to_unichar (utf8); 
