@@ -2,6 +2,7 @@
 #include <termios.h>
 #include <unistd.h>
 
+#define CTX_ENABLE_FLOAT 1
 #define CTX_IMPLEMENTATION
 #include "ctx.h"
 

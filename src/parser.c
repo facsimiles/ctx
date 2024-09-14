@@ -812,6 +812,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
 
              if (parser->pos != data_len)
              {
+#if 0
              fprintf (stderr, "unexpected datasize for define texture %s %ix%i\n size:%i != expected:%i - start of data: %i %i %i %i\n", eid, width, height,
                                parser->pos,
                                stride * height,
@@ -820,6 +821,7 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
                                parser->holding[2],
                                parser->holding[3]
                                );
+#endif
              }
              else
              ctx_define_texture (ctx, eid, width, height, stride, format, parser->holding, NULL);

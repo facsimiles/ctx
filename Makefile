@@ -277,8 +277,8 @@ fuzz-asan: fuzzer-asan #
 	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer-asan #
 fuzz-cont: fuzzer #
 	afl-fuzz -i- -o afl -- ./fuzzer #
-fuzz-min: ctx fuzzer #
+fuzz-min: #
 	@rm -rf afl/min #
 	@mkdir afl/min #
 	(cd afl/default/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer;done) #
-	(cd afl/min;for a in *;do ../../ctx $$a -o $$a.ctx;done) #
+	(cd afl/min;for a in *;do mv $$a tmp.ctx ; ../../ctx tmp.ctx -o $$a.ctx;rm tmp.ctx;done) #
