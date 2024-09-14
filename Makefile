@@ -272,13 +272,13 @@ fuzzer: tools/fuzz.c ctx.h #
 fuzzer-asan: tools/fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
 fuzz: fuzzer #
-	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer @@ -o RGB565 #
+	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer #
 fuzz-asan: fuzzer-asan #
-	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer-asan @@ -o RGB565 #
+	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer-asan #
 fuzz-cont: fuzzer #
-	afl-fuzz -i- -o afl -- ./fuzzer @@ -o RGB565 #
-fuzz-min: #
+	afl-fuzz -i- -o afl -- ./fuzzer #
+fuzz-min: ctx fuzzer #
 	@rm -rf afl/min #
 	@mkdir afl/min #
-	(cd afl/default/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer @@;done) #
-	(cd afl/min;for a in *;do ../../fuzzer $$a -o $$a.ctx;done) #
+	(cd afl/default/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer;done) #
+	(cd afl/min;for a in *;do ../../ctx $$a -o $$a.ctx;done) #
