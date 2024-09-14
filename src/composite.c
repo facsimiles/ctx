@@ -884,7 +884,7 @@ ctx_fragment_image_rgb8_RGBA8 (CtxRasterizer *rasterizer,
 #else
   CtxBuffer *buffer = g->texture.buffer;
 #endif
-  int image_smoothing = gstate->image_smoothing;
+  int image_smoothing = rasterizer->state->gstate.image_smoothing;
   if (buffer->width == 1 || buffer->height == 1)
 	image_smoothing = 0;
   if (rasterizer->swap_red_green)
@@ -2580,7 +2580,7 @@ ctx_fragment_image_rgba8_RGBA8 (CtxRasterizer *rasterizer,
 #else
   CtxBuffer *buffer = g->texture.buffer;
 #endif
-  int image_smoothing = gstate->image_smoothing;
+  int image_smoothing = rasterizer->state->gstate.image_smoothing;
   if (buffer->width == 1 || buffer->height == 1)
 	image_smoothing = 0;
   if (image_smoothing)
