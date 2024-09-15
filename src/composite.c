@@ -7447,10 +7447,10 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   ctx_apply_coverage_fun apply_coverage = 
     rasterizer->apply_coverage;
 
-  x0 = ctx_maxf (x0, blit_x);
-  y0 = ctx_maxf (y0, blit_y);
-  x1 = ctx_minf (x1, blit_x + blit_width);
-  y1 = ctx_minf (y1, blit_y + blit_height);
+  x0 = ctx_maxi (x0, blit_x);
+  x1 = ctx_mini (x1, blit_x + blit_width - 1);
+  y0 = ctx_maxi (y0, blit_y);
+  y1 = ctx_mini (y1, blit_y + blit_height - 1);
 
   uint8_t left = (int)(255-x0_fm * 255);
   uint8_t top  = (int)(255-y0_fm * 255);
@@ -7459,20 +7459,20 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
 
   x0 = ctx_floorf (x0);
   y0 = ctx_floorf (y0);
-  x1 = ctx_floorf (x1+7/8.0f);
-  y1 = ctx_floorf (y1+15/15.0f);
+  x1 = ctx_floorf (x1 +  7 / 8.0f);
+  y1 = ctx_floorf (y1 + 14 / 15.0f);
 
   int has_top    = (top < 255);
-  int has_bottom = (bottom <255);
-  int has_right  = (right >0);
-  int has_left   = (left >0);
+  int has_bottom = (bottom < 255);
+  int has_right  = (right > 0);
+  int has_left   = (left > 0);
 
   has_right *= !(x1 >= blit_x + blit_width);
   has_bottom *= !(y1 >= blit_y + blit_height);
 
   int width = (int)(x1 - x0);
 
-  if ((width >0))
+  if (width >0)
   {
      uint8_t *dst = ( (uint8_t *) rasterizer->buf);
      uint8_t coverage[width+2];
