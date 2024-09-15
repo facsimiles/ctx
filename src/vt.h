@@ -293,7 +293,7 @@ void        vt_paste              (VT *vt, const char *str);
  * run, but could be used for injecting commands, or
  * output from stored shell commands/sessions to display
  */
-//void        vt_feed_byte          (VT *vt, int byte);
+void        vt_feed_byte          (VT *vt, int byte);
 
 //)#define DEFAULT_SCROLLBACK   (1<<16)
 

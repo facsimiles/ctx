@@ -3078,6 +3078,9 @@ ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix)
   return ctx_matrix_no_perspective (matrix);
 }
 
+static inline float
+ctx_matrix_determinant (const CtxMatrix *m);
+
 
 static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 {
@@ -3092,11 +3095,15 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #else
          CtxBuffer *buffer = g->texture.buffer;
 #endif
+#if CTX_FRAGMENT_SPECIALIZE
 	 int image_smoothing = gstate->image_smoothing;
 	 if (buffer->width == 1 || buffer->height == 1)
 	   image_smoothing = 0;
-
+#endif
         if (!buffer || !buffer->format)
+          return ctx_fragment_color_RGBA8;
+  
+	if (ctx_fabsf(ctx_matrix_determinant (&gstate->transform)) <= 0.000001f)
           return ctx_fragment_color_RGBA8;
 
         if (buffer->format->pixel_format == CTX_FORMAT_YUV420)

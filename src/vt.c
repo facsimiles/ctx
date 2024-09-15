@@ -3781,7 +3781,7 @@ void vt_gfx (VT *vt, const char *command)
       vt->gfx.action='t';
       vt->gfx.transmission='d';
     }
-  while (command[pos] != ';')
+  while (command[pos] && command[pos] != ';')
     {
       pos ++; // G or ,
       if (command[pos] == ';') { break; }
@@ -4627,6 +4627,7 @@ static void vt_state_osc (VT *vt, int byte)
 #if 0
     {"]0;New_title\033\",  0, , }, /* id: set window title */ "
 #endif
+	    if (strlen (vt->argument_buf)>3)
             vt_set_title (vt, vt->argument_buf + 3);
             break;
           case 4: // set palette entry
