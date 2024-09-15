@@ -700,7 +700,6 @@ ctx_cb_end_frame (Ctx *ctx)
   }
   if (cb_backend->update_fb)
     cb_backend->update_fb (ctx, cb_backend->update_fb_user_data);
-  
 }
 
 static void ctx_cb_destroy (void *data)
@@ -724,7 +723,7 @@ Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
   CtxCbBackend  *cb_backend  = (CtxCbBackend*)backend;
   backend->start_frame       = ctx_cb_start_frame;
   backend->end_frame         = ctx_cb_end_frame;
-  backend->destroy        = ctx_cb_destroy;
+  backend->destroy           = ctx_cb_destroy;
   cb_backend->format         = format;
   cb_backend->fb             = (uint16_t*)scratch_fb;
   cb_backend->set_pixels     = set_pixels;

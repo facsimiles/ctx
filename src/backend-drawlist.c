@@ -2,7 +2,6 @@
 void ctx_drawlist_clear (Ctx *ctx)
 {
   ctx->drawlist.count = 0;
-  ctx->drawlist.bitpack_pos = 0;
 }
 
 static void ctx_drawlist_backend_destroy (void *backend)
@@ -73,7 +72,7 @@ static CtxBackend *ctx_drawlist_backend_new (void)
                        // the sizeof(CtxCtx) should actually be sizeof(CtxBackend)
                        // but static analysis complains about event code
                        // initializing the extra members - which might most
-                       // often be a false report - we ass slack since it is
+                       // often be a false report - we add slack since it is
                        // "only" ~ 40 bytes per instance.
   backend->process = ctx_drawlist_process;
   backend->destroy = ctx_drawlist_backend_destroy;

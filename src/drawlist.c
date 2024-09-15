@@ -52,24 +52,11 @@ ctx_conts_for_entry (const CtxEntry *entry)
     }
 }
 
-// expanding arc_to to arc can be the job
-// of a layer in front of backend?
-//   doing:
-//     rectangle
-//     arc
-//     ... etc reduction to beziers
-//     or even do the reduction to
-//     polylines directly here...
-//     making the rasterizer able to
-//     only do poly-lines? will that be faster?
-
 /* the iterator - should decode bitpacked data as well -
  * making the rasterizers simpler, possibly do unpacking
  * all the way to absolute coordinates.. unless mixed
  * relative/not are wanted.
  */
-
-
 void
 ctx_iterator_init (CtxIterator  *iterator,
                    CtxDrawlist  *drawlist,
@@ -514,7 +501,6 @@ int ctx_append_drawlist (Ctx *ctx, void *data, int length)
   dl.count = length/9;
   dl.size = length;
   dl.flags = CTX_DRAWLIST_DOESNT_OWN_ENTRIES;
-  dl.bitpack_pos = 0;
 
   CtxIterator it;
   ctx_iterator_init (&it, &dl, 0, 0);
@@ -809,8 +795,8 @@ ctx_drawlist_bitpack (CtxDrawlist *drawlist, unsigned int start_pos)
   unsigned int i = 0;
   if ( (drawlist->flags & CTX_TRANSFORMATION_BITPACK) == 0)
     { return; }
-  ctx_drawlist_remove_tiny_curves (drawlist, drawlist->bitpack_pos);
-  i = drawlist->bitpack_pos;
+  ctx_drawlist_remove_tiny_curves (drawlist, 0);
+  i = 0;
   if (start_pos > i)
     { i = start_pos; }
   while (i < drawlist->count - 4) /* the -4 is to avoid looking past
@@ -1006,8 +992,8 @@ ctx_drawlist_bitpack (CtxDrawlist *drawlist, unsigned int start_pos)
       i += (ctx_conts_for_entry (entry) + 1);
     }
 
-  unsigned int source = drawlist->bitpack_pos;
-  unsigned int target = drawlist->bitpack_pos;
+  unsigned int source = 0;
+  unsigned int target = 0;
   int removed = 0;
   /* remove nops that have been inserted as part of shortenings
    */
@@ -1027,7 +1013,6 @@ ctx_drawlist_bitpack (CtxDrawlist *drawlist, unsigned int start_pos)
       target ++;
     }
   drawlist->count -= removed;
-  drawlist->bitpack_pos = drawlist->count;
 #endif
 }
 

@@ -300,13 +300,15 @@ typedef enum
 #define CTX_DRAWLIST_CURRENT_PATH         512
 // BITPACK
 
+#define CTX_DOUBLE_BUFFER 1
+
 struct _CtxDrawlist
 {
-  CtxEntry *entries;
-  unsigned int count;
-  int size;
-  uint32_t  flags;
-  int       bitpack_pos;  // stream is bitpacked up to this offset
+  CtxEntry     *entries;
+  unsigned int  count;
+  int           size;
+  uint32_t      flags;
+//  int           bitpack_pos;  // stream is bitpacked up to this offset
 };
 
 // the keydb consists of keys set to floating point values,
