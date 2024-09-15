@@ -107,7 +107,9 @@ static void vt_state_esc          (VT *vt, int byte);
 static void vt_state_osc          (VT *vt, int byte);
 static void vt_state_apc          (VT *vt, int byte);
 static void vt_state_apc_generic  (VT *vt, int byte);
+#if CTX_VT_SIXELS
 static void vt_state_sixel        (VT *vt, int byte);
+#endif
 static void vt_state_esc_sequence (VT *vt, int byte);
 static void vt_state_esc_foo      (VT *vt, int byte);
 static void vt_state_swallow      (VT *vt, int byte);
@@ -4185,6 +4187,8 @@ static void vt_state_vt52 (VT *vt, int byte)
     }
 }
 
+
+#if CTX_VT_SIXELS
 static void vt_sixels (VT *vt, const char *sixels)
 {
   uint8_t colors[256][3];
@@ -4372,6 +4376,7 @@ static void vt_sixels (VT *vt, const char *sixels)
     }
   ctx_client_rev_inc (vt->client);
 }
+#endif
 
 #if CTX_PARSER
 static void vt_state_ctx (VT *vt, int byte)
@@ -4922,7 +4927,7 @@ static void vt_state_osc (VT *vt, int byte)
     }
 }
 
-
+#if CTX_VT_SIXELS
 static void vt_state_sixel (VT *vt, int byte)
 {
   // https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html
@@ -4946,6 +4951,7 @@ static void vt_state_sixel (VT *vt, int byte)
       //fprintf (stderr, "\r%i ", vt->argument_buf_len);
     }
 }
+#endif
 
 //void add_tab (Ctx *ctx, const char *commandline, int can_launch);
 //void vt_screenshot (const char *output_path);
@@ -5105,6 +5111,7 @@ static void vt_state_esc (VT *vt, int byte)
     {"Psixel_data\033\",  0, , }, /* id: sixels */ "
 #endif
 
+#if CTX_VT_SIXELS
         case 'P':
           {
             char tmp[]= {byte, '\0'};
@@ -5112,6 +5119,7 @@ static void vt_state_esc (VT *vt, int byte)
             vt->state = vt_state_sixel;
           }
           break;
+#endif
         case ']':
           {
             char tmp[]= {byte, '\0'};

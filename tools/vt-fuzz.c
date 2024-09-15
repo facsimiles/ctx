@@ -1,5 +1,6 @@
 
 #define CTX_VT  1
+#define CTX_VT_SIXELS 0
 #define CTX_PTY 1
 #define CTX_IMPLEMENTATION
 
