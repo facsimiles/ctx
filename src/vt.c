@@ -3316,7 +3316,7 @@ static void vtcmd_justify (VT *vt, const char *sequence)
 
 static void vtcmd_sixel_related_req (VT *vt, const char *sequence)
 {
-  fprintf (stderr, "it happens!\n");
+  //fprintf (stderr, "it happens!\n");
 }
 
 static void vtcmd_set_charmap (VT *vt, const char *sequence)
@@ -3794,6 +3794,7 @@ void vt_gfx (VT *vt, const char *command)
   const char *payload = NULL;
   char key = 0;
   int  value;
+  int  len = vt->argument_buf_len;
   int  pos = 1;
   if (vt->gfx.multichunk == 0)
     {
@@ -3801,20 +3802,23 @@ void vt_gfx (VT *vt, const char *command)
       vt->gfx.action='t';
       vt->gfx.transmission='d';
     }
-  while (command[pos] && command[pos] != ';')
+  while (pos < len && command[pos] != ';')
     {
       pos ++; // G or ,
       if (command[pos] == ';') { break; }
       key = command[pos];
+      if (pos < len)
       pos++;
       if (command[pos] == ';') { break; }
+      if (pos < len)
       pos ++; // =
       if (command[pos] == ';') { break; }
       if (command[pos] >= '0' && command[pos] <= '9')
         { value = atoi (&command[pos]); }
       else
         { value = command[pos]; }
-      while (command[pos] &&
+      while (pos < len && 
+	     command[pos] &&
              command[pos] != ',' &&
              command[pos] != ';') { pos++; }
       switch (key)
@@ -3878,6 +3882,8 @@ void vt_gfx (VT *vt, const char *command)
             break;
         }
     }
+  if (pos + 1 >= len)
+    goto cleanup;
   payload = &command[pos+1];
   {
     int chunk_size = strlen (payload);
@@ -4346,9 +4352,9 @@ static void vt_sixels (VT *vt, const char *sixels)
                         }
                     }
                 }
+             x   += repeat;
+             dst += (repeat * 4);
             }
-          x   += repeat;
-          dst += (repeat * 4);
           repeat = 1;
         }
     }
