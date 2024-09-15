@@ -950,3 +950,7 @@
 #define CTX_VT_SIXELS 1
 #endif
 
+#ifndef CTX_VT_GFX
+#define CTX_VT_GFX  1
+#endif
+

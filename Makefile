@@ -302,5 +302,5 @@ fuzz-vt-min: #
 fuzz-min: #
 	@rm -rf afl/min #
 	@mkdir afl/min #
-	for b in 0 1 2 3 4; do (cd afl/worker$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer || true;done) ; done #
+	for b in default worker0 worker1 worker2 worker3 worker4; do (cd afl/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer-asan || true;done) ; done #
 	(cd afl/min;for a in *;do mv $$a tmp.ctx ; ../../ctx tmp.ctx -o $$a.ctx;rm tmp.ctx;done) #

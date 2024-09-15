@@ -3791,6 +3791,8 @@ static void display_image (VT *vt, Image *image,
 
 static int vt_gfx_pending=0;
 
+
+#if CTX_VT_GFX
 void vt_gfx (VT *vt, const char *command)
 {
   const char *payload = NULL;
@@ -4104,6 +4106,7 @@ cleanup:
   else
      vt_gfx_pending = 1;
 }
+#endif
 
 static void vt_state_vt52 (VT *vt, int byte)
 {
@@ -4960,11 +4963,14 @@ static void vt_state_apc_generic (VT *vt, int byte)
 {
   if ( (byte < 32) && ( (byte < 8) || (byte > 13) ) )
     {
+#if CTX_VT_GFX
       if (vt->argument_buf[1] == 'G') /* graphics - from kitty */
         {
           vt_gfx (vt, vt->argument_buf);
         }
-      else if (vt->argument_buf[1] == 'C') /* launch command */
+      else
+#endif
+      if (vt->argument_buf[1] == 'C') /* launch command */
       {
         if (vt->can_launch)
         {
