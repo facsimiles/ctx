@@ -22,17 +22,17 @@ static inline int
 determine_transform_type (const CtxMatrix *m)
 {
   // XXX : does not set 4 - which is perspective
-  if (m->m[2][0] != 0.0f ||
-      m->m[2][1] != 0.0f ||
-      m->m[2][2] != 1.0f)
+  if ((m->m[2][0] != 0.0f) |
+      (m->m[2][1] != 0.0f) |
+      (m->m[2][2] != 1.0f))
     return 3;
-  if (m->m[0][1] != 0.0f ||
-      m->m[1][0] != 0.0f)
+  if ((m->m[0][1] != 0.0f) |
+      (m->m[1][0] != 0.0f))
     return 3;
-  if (m->m[0][2] != 0.0f ||
-      m->m[1][2] != 0.0f ||
-      m->m[0][0] != 1.0f ||
-      m->m[1][1] != 1.0f)
+  if ((m->m[0][2] != 0.0f) |
+      (m->m[1][2] != 0.0f) |
+      (m->m[0][0] != 1.0f) |
+      (m->m[1][1] != 1.0f))
     return 2;
   return 1;
 }
@@ -416,7 +416,7 @@ void ctx_rotate (Ctx *ctx, float x)
 
 void ctx_scale (Ctx *ctx, float x, float y)
 {
-  if (x == 1.0f && y == 1.0f)
+  if (((x == 1.0f) & (y == 1.0f)) | (x == 0.0f) | (y == 0.0f))
     return;
   CTX_PROCESS_F (CTX_SCALE, x, y);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
@@ -425,7 +425,7 @@ void ctx_scale (Ctx *ctx, float x, float y)
 
 void ctx_translate (Ctx *ctx, float x, float y)
 {
-  if (x == 0.0f && y == 0.0f)
+  if ((x == 0.0f) & (y == 0.0f))
     return;
   CTX_PROCESS_F (CTX_TRANSLATE, x, y);
   if (ctx->transformation & CTX_TRANSFORMATION_SCREEN_SPACE)
