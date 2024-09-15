@@ -1402,8 +1402,10 @@ void ctx_line_join (Ctx *ctx, CtxLineJoin join)
 
 void ctx_blend_mode (Ctx *ctx, CtxBlend mode)
 {
+#if CTX_BLENDING_AND_COMPOSITING
   if (ctx->state.gstate.blend_mode != mode)
     CTX_PROCESS_U32 (CTX_BLEND_MODE, mode, 0);
+#endif
 }
 
 void ctx_extend (Ctx *ctx, CtxExtend extend)
@@ -1670,9 +1672,11 @@ ctx_interpret_style (CtxState *state, const CtxEntry *entry, void *data)
       case CTX_COMPOSITING_MODE:
         state->gstate.compositing_mode = (CtxCompositingMode) ctx_arg_u32 (0);
         break;
+#if CTX_BLENDING_AND_COMPOSITING
       case CTX_BLEND_MODE:
         state->gstate.blend_mode = (CtxBlend) ctx_arg_u32 (0);
         break;
+#endif
       case CTX_EXTEND:
         state->gstate.extend = (CtxExtend) ctx_arg_u32 (0);
         break;

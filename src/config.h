@@ -238,7 +238,7 @@
  *  size and possibly in severely constrained ROMs.
  */
 #ifndef CTX_BLENDING_AND_COMPOSITING
-#define CTX_BLENDING_AND_COMPOSITING 1
+#define CTX_BLENDING_AND_COMPOSITING 0
 #endif
 
 /*  this forces the inlining of some performance
@@ -830,11 +830,7 @@
 #endif
 
 #ifndef CTX_ENABLE_CM
-#if CTX_BAREMETAL
 #define CTX_ENABLE_CM           0
-#else
-#define CTX_ENABLE_CM           1
-#endif
 #endif
 
 #if CTX_IMPLEMENTATION
