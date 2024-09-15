@@ -1209,8 +1209,18 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
         ctx_round_rectangle (ctx, arg(0), arg(1), arg(2), arg(3), arg(4));
         break;
       case CTX_VIEW_BOX:
-        ctx_view_box (ctx, arg(0), arg(1), arg(2), arg(3) );
-        ctx_parser_set_size (parser, (int)arg(2), (int)arg(3), 0, 0);
+	{
+	  float x = arg(0);
+	  float y = arg(1);
+	  float w = arg(2);
+	  float h = arg(3);
+
+	  if (w > 1 && h > 1)
+	  {
+            ctx_view_box (ctx, x, y, w, h);
+            ctx_parser_set_size (parser, w, h, 0, 0);
+	  }
+	}
         break;
       case CTX_LINEAR_GRADIENT:
         ctx_linear_gradient (ctx, arg(0), arg(1), arg(2), arg(3));

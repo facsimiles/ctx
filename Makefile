@@ -293,11 +293,11 @@ vt-fuzzer: tools/vt-fuzz.c ctx.h #
 vt-fuzzer-asan: tools/vt-fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
 fuzz-vt: #
-	afl-fuzz -i afl/in/ -o afl-vt -G 512  -- ./vt-fuzzer #
+	afl-fuzz -i afl/in/ -o afl-vt -G 512  -- ./vt-fuzzer-asan #
 fuzz-vt-min: #
 	@rm -rf afl-vt/min #
 	@mkdir afl-vt/min #
-	for b in default; do (cd afl-vt/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../vt-fuzzer || true;done) ; done #
+	for b in default; do (cd afl-vt/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../vt-fuzzer-asan || true;done) ; done #
 #
 fuzz-min: #
 	@rm -rf afl/min #
