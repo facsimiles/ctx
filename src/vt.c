@@ -1657,6 +1657,7 @@ static void vtcmd_goto_row (VT *vt, const char *sequence)
 static void vtcmd_cursor_forward (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n>vt->cols)n=vt->cols;
   if (n==0) { n = 1; }
   for (int i = 0; i < n; i++)
     {
@@ -1669,6 +1670,7 @@ static void vtcmd_cursor_forward (VT *vt, const char *sequence)
 static void vtcmd_cursor_backward (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n>vt->cols)n=vt->cols;
   if (n==0) { n = 1; }
   for (int i = 0; i < n; i++)
     {
@@ -1684,6 +1686,7 @@ static void vtcmd_cursor_backward (VT *vt, const char *sequence)
 static void vtcmd_reverse_index (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n>vt->rows)n=vt->rows;
   if (n==0) { n = 1; }
   for (int i = 0; i < n; i++)
     {
@@ -1702,6 +1705,7 @@ static void vtcmd_reverse_index (VT *vt, const char *sequence)
 static void vtcmd_cursor_up (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n>vt->rows)n=vt->rows;
   if (n==0) { n = 1; }
   for (int i = 0; i < n; i++)
     {
@@ -1729,6 +1733,7 @@ static void vtcmd_forward_index (VT *vt, const char *sequence)
 static void vtcmd_index (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n>vt->rows)n=vt->rows;
   if (n==0) { n = 1; }
   for (int i = 0; i < n; i++)
     {
@@ -1747,6 +1752,7 @@ static void vtcmd_index (VT *vt, const char *sequence)
 static void vtcmd_cursor_down (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n>vt->rows)n=vt->rows;
   if (n==0) { n = 1; }
   for (int i = 0; i < n; i++)
     {
@@ -1779,6 +1785,7 @@ static void vtcmd_cursor_preceding_line (VT *vt, const char *sequence)
 static void vtcmd_erase_in_line (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 0);
+  if (n>vt->cols)n=vt->cols;
   switch (n)
     {
       case 0: // clear to end of line
@@ -2318,7 +2325,9 @@ static void vtcmd_restore_cursor (VT *vt, const char *sequence)
 static void vtcmd_erase_n_chars (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
-  while (n--)
+  if (n < 0) n = 0;
+  if (n > vt->cols) n = vt->cols;
+  while (n--) 
     {
       vt_line_replace_utf8 (vt->current_line, vt->cursor_x - 1 + n, " ");
       vt_line_set_style (vt->current_line, vt->cursor_x + n - 1, vt->cstyle);
@@ -2328,6 +2337,8 @@ static void vtcmd_erase_n_chars (VT *vt, const char *sequence)
 static void vtcmd_delete_n_chars (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n < 0) n = 0;
+  if (n > vt->cols) n = vt->cols;
   int count = n;
   while (count--)
     {
@@ -2338,6 +2349,7 @@ static void vtcmd_delete_n_chars (VT *vt, const char *sequence)
 static void vtcmd_delete_n_lines (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n > vt->rows) n = vt->rows;
   for (int a = 0; a < n; a++)
     {
       int i;
@@ -2361,6 +2373,7 @@ static void vtcmd_delete_n_lines (VT *vt, const char *sequence)
 static void vtcmd_insert_character (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n > vt->cols * vt->rows) n = vt->rows * vt->cols;
   while (n--)
     {
       vt_line_insert_utf8 (vt->current_line, vt->cursor_x-1, " ");
@@ -2373,6 +2386,7 @@ static void vtcmd_insert_character (VT *vt, const char *sequence)
 static void vtcmd_scroll_up (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n > vt->rows) n = vt->rows;
   if (n == 0) { n = 1; }
   while (n--)
     { vt_scroll (vt, -1); }
@@ -2381,6 +2395,7 @@ static void vtcmd_scroll_up (VT *vt, const char *sequence)
 static void vtcmd_scroll_down (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n > vt->rows) n = vt->rows;
   if (n == 0) { n = 1; }
   while (n--)
     { vt_scroll (vt, 1); }
@@ -2389,6 +2404,7 @@ static void vtcmd_scroll_down (VT *vt, const char *sequence)
 static void vtcmd_insert_blank_lines (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n > vt->rows) n = vt->rows;
   if (n == 0) { n = 1; }
   {
     int st = vt->margin_top;
@@ -3029,6 +3045,8 @@ static void _vt_rev_htab (VT *vt)
 static void vtcmd_insert_n_tabs (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n <0) n = 0;
+  if (n > vt->cols) n = vt->cols;
   while (n--)
     {
       _vt_htab (vt);
@@ -3038,6 +3056,8 @@ static void vtcmd_insert_n_tabs (VT *vt, const char *sequence)
 static void vtcmd_rev_n_tabs (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
+  if (n <0) n = 0;
+  if (n > vt->cols) n = vt->cols;
   while (n--)
     {
       _vt_rev_htab (vt);
