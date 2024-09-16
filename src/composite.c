@@ -2926,7 +2926,7 @@ ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, 
     rgba_out[0] = rgba_out[2];
     rgba_out[2] = tmp;
   }
-  for (int i = 1; i < count; i++, rgba_out+=4)
+  for (int i = 1; i < count; i++)
     memcpy (rgba_out + count * 4, rgba_out, 4);
 }
 #if CTX_ENABLE_FLOAT
