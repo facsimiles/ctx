@@ -1838,7 +1838,7 @@ static void vtcmd_erase_in_display (VT *vt, const char *sequence)
         {
           CtxList *l;
           int no = vt->rows;
-          for (l = vt->lines; l->data != vt->current_line; l = l->next, no--)
+          for (l = vt->lines; l && l->data != vt->current_line; l = l->next, no--)
             {
               VtLine *buf = l->data;
               buf->string.str[0] = 0;
