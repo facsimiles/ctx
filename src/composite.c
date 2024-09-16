@@ -3081,6 +3081,15 @@ ctx_matrix_no_skew_or_rotate (CtxMatrix *matrix)
 static inline float
 ctx_matrix_determinant (const CtxMatrix *m);
 
+static int ctx_sane_transform(CtxMatrix *transform)
+{
+  if ((int)(ctx_fabsf (transform->m[0][0]) < 0.0001f) |
+      (int)(ctx_fabsf (transform->m[1][1]) < 0.0001f) |
+      (int)(ctx_fabsf (transform->m[2][2]) < 0.0001f))
+	  return 0;
+  return 1;
+  //return (ctx_fabsf(ctx_matrix_determinant (&gstate->transform)) >= 0.0001f);
+}
 
 static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 {
@@ -3103,8 +3112,9 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
         if (!buffer || !buffer->format)
           return ctx_fragment_color_RGBA8;
   
-	if (ctx_fabsf(ctx_matrix_determinant (&gstate->transform)) <= 0.000001f)
+	if (!ctx_sane_transform(&gstate->source_fill.transform))
           return ctx_fragment_color_RGBA8;
+
 
         if (buffer->format->pixel_format == CTX_FORMAT_YUV420)
         {

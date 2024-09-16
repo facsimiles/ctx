@@ -292,15 +292,15 @@ vt-fuzzer: tools/vt-fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. #
 vt-fuzzer-asan: tools/vt-fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
-fuzz-vt: #
-	afl-fuzz -i afl/in/ -o afl-vt -G 512  -- ./vt-fuzzer-asan #
+fuzz-vt: vt-fuzzer #
+	afl-fuzz -i afl/in/ -o afl-vt -G 512  -- ./vt-fuzzer #
 fuzz-vt-min: #
 	@rm -rf afl-vt/min #
 	@mkdir afl-vt/min #
-	for b in default; do (cd afl-vt/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../vt-fuzzer-asan || true;done) ; done #
+	for b in default; do (cd afl-vt/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../vt-fuzzer || true;done) ; done #
 #
 fuzz-min: #
 	@rm -rf afl/min #
 	@mkdir afl/min #
-	for b in default worker0 worker1 worker2 worker3 worker4; do (cd afl/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer-asan || true;done) ; done #
+	for b in default worker0 worker1 worker2 worker3 worker4; do (cd afl/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer || true;done) ; done #
 	(cd afl/min;for a in *;do mv $$a tmp.ctx ; ../../ctx tmp.ctx -o $$a.ctx;rm tmp.ctx;done) #
