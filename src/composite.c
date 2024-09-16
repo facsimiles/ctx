@@ -2502,6 +2502,12 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       int u = ix >> 16;
       int v = iy >> 16;
 
+      if ((v < 0) | (v >= bheight) | 
+	  (u < 0) | (u >= bwidth) |
+          ((v + ((ideltay * count)>>16)) < 0) | ((v + ((ideltay *count)>>16)) >= bheight) | 
+          ((u + ((ideltax * count)>>16)) < 0) | ((u + ((ideltax *count)>>16)) >= bwidth))
+	return;
+
 #if CTX_DITHER
        if (bits < 24)
        {
