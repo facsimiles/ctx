@@ -1346,6 +1346,7 @@ _vt_move_to (VT *vt, int y, int x)
   vt->cursor_y = y;
   i = vt->rows - y;
   CtxList *l;
+  vt->current_line = vt->lines->data;
   for (l = vt->lines; l && i >= 1; l = l->next, i--);
   if (l)
     {
@@ -1392,6 +1393,7 @@ static void _vt_add_str (VT *vt, const char *str)
           if (vt->cursor_y == vt->margin_bottom)
             {
               vt_scroll (vt, -1);
+              old_line = vt->current_line;
             }
           else
             {
@@ -1608,6 +1610,7 @@ static void vt_scroll (VT *vt, int amount)
     vt->select_end_row += amount;
     vt->select_start_row += amount;
   }
+  _vt_move_to (vt, vt->cursor_y, vt->cursor_x);
 }
 
 typedef struct Sequence
@@ -2374,8 +2377,8 @@ static void vtcmd_delete_n_lines (VT *vt, const char *sequence)
 		     //       this keeps expectations of valid current_line
         ctx_list_insert_before (&vt->lines, vt->lines, string);
 	
-      _vt_move_to (vt, vt->cursor_y, vt->cursor_x); // updates current_line
     }
+  _vt_move_to (vt, vt->cursor_y, vt->cursor_x); // updates current_line
 }
 
 static void vtcmd_insert_character (VT *vt, const char *sequence)
