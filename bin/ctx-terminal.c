@@ -1029,10 +1029,26 @@ static void overview (Ctx *ctx, float anim_t)
     float x = x0 * (1.0-anim_t) + anim_t * x1;
     float y = y0 * (1.0-anim_t) + anim_t * y1;
     float scale = scale0 * (1.0-anim_t) + anim_t * scale1;
-    float w = w0 * (1.0-anim_t) + anim_t * icon_width;
-    float h = h0 * (w / w0);
+    float w = 0;
+    float h;
+
+    if (opos[i].id == ctx_clients_active (ctx))
+    {
+      w = w0 * (1.0-anim_t) + anim_t * icon_width;
+      h = h0 * (w / w0);
+    }
+    else
+    {
+      w = icon_width;
+      h = h0 * (w / w0);
+    }
 
     ctx_save(ctx);
+#if 1
+    ctx_rectangle (ctx, x, y, w, h);
+    ctx_rgb (ctx, 0,0,0);
+    ctx_fill (ctx);
+#endif
     ctx_scale (ctx, scale, scale);
     ctx_client_draw (ctx, client, x / scale, y / scale);
     ctx_restore(ctx);
