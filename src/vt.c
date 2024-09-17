@@ -2358,16 +2358,22 @@ static void vtcmd_delete_n_lines (VT *vt, const char *sequence)
       CtxList *l;
       VtLine *string = vt->current_line;
       vt_line_clear (string);
-      ctx_list_remove (&vt->lines, vt->current_line);
+      ctx_list_remove (&vt->lines, string);
+      int inserted = 0;
       for (i=vt->rows, l = vt->lines; l; l=l->next, i--)
         {
           if (i == vt->margin_bottom)
             {
               vt->current_line = string;
               ctx_list_insert_before (&vt->lines, l, string);
+	      inserted = 1;
               break;
             }
         }
+      if (!inserted) // XXX : probably not happening in normal use - but
+		     //       this keeps expectations of valid current_line
+        ctx_list_insert_before (&vt->lines, vt->lines, string);
+	
       _vt_move_to (vt, vt->cursor_y, vt->cursor_x); // updates current_line
     }
 }
