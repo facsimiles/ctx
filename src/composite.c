@@ -2914,6 +2914,15 @@ ctx_fragment_linear_gradient_RGBA8 (CtxRasterizer *rasterizer, float x, float y,
 #endif
 
 static void
+ctx_fragment_none_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
+{
+  uint8_t *rgba_out = (uint8_t *) out;
+  uint32_t blank = 0;
+  for (int i = 0; i < count; i++)
+    memcpy (rgba_out + count * 4, &blank, 4);
+}
+
+static void
 ctx_fragment_color_RGBA8 (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
   uint8_t *rgba_out = (uint8_t *) out;
@@ -3007,6 +3016,15 @@ ctx_fragment_conic_gradient_RGBAF (CtxRasterizer *rasterizer, float x, float y, 
   
 #endif
 
+static void
+ctx_fragment_none_RGBAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
+{
+  float *rgba = (float *) out;
+  for (int i = 0; i < count * 4; i++)
+  {
+    rgba[i] = 0.0f;
+  }
+}
 
 static void
 ctx_fragment_color_RGBAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
@@ -3055,13 +3073,14 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBAF (CtxRasterizer *rasterizer)
     {
       case CTX_SOURCE_TEXTURE:         return ctx_fragment_image_RGBAF;
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_RGBAF;
+      case CTX_SOURCE_NONE:            return ctx_fragment_none_RGBAF;
 #if CTX_GRADIENTS
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_RGBAF;
       case CTX_SOURCE_RADIAL_GRADIENT: return ctx_fragment_radial_gradient_RGBAF;
       case CTX_SOURCE_CONIC_GRADIENT: return ctx_fragment_conic_gradient_RGBAF;
 #endif
     }
-  return ctx_fragment_color_RGBAF;
+  return ctx_fragment_none_RGBAF;
 }
 #endif
 
@@ -3116,10 +3135,10 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 	   image_smoothing = 0;
 #endif
         if (!buffer || !buffer->format)
-          return ctx_fragment_color_RGBA8;
+          return ctx_fragment_none_RGBA8;
   
 	if (!ctx_sane_transform(&gstate->source_fill.transform))
-          return ctx_fragment_color_RGBA8;
+          return ctx_fragment_none_RGBA8;
 
 
         if (buffer->format->pixel_format == CTX_FORMAT_YUV420)
@@ -3294,13 +3313,14 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
       }
 
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_RGBA8;
+      case CTX_SOURCE_NONE:            return ctx_fragment_none_RGBA8;
 #if CTX_GRADIENTS
       case CTX_SOURCE_CONIC_GRADIENT: return ctx_fragment_conic_gradient_RGBA8;
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_RGBA8;
       case CTX_SOURCE_RADIAL_GRADIENT: return ctx_fragment_radial_gradient_RGBA8;
 #endif
     }
-  return ctx_fragment_color_RGBA8;
+  return ctx_fragment_none_RGBA8;
 }
 
 static inline void
@@ -4195,6 +4215,11 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
   int blend_mode       = gstate->blend_mode;
   int compositing_mode = gstate->compositing_mode;
 
+  if (source_type == CTX_SOURCE_NONE)
+  {
+    ctx_setup_apply_coverage (rasterizer);
+    return;
+  }
   if (source_type == CTX_SOURCE_COLOR)
     {
       ctx_fragment_color_RGBA8 (rasterizer, 0,0, 1,rasterizer->color, 1, 0,0,0);
@@ -4281,9 +4306,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
           case CTX_SOURCE_TEXTURE:
             rasterizer->comp_op = ctx_RGBA8_porter_duff_image;
             break;
-          default:
-            rasterizer->comp_op = ctx_RGBA8_porter_duff_generic;
-            break;
         }
         break;
     }
@@ -4292,7 +4314,6 @@ ctx_setup_RGBA8 (CtxRasterizer *rasterizer)
 
   if (source_type == CTX_SOURCE_COLOR)
     {
-
       if (blend_mode == CTX_BLEND_NORMAL)
       {
         if(compositing_mode == CTX_COMPOSITE_COPY)
@@ -5013,9 +5034,16 @@ ctx_setup_RGBAF (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 4;
+
+  rasterizer->comp_op  = ctx_RGBAF_porter_duff_generic;
   rasterizer->fragment = ctx_rasterizer_get_fragment_RGBAF (rasterizer);
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
 #if 1
+  if (gstate->source_fill.type == CTX_SOURCE_NONE)
+  {
+    ctx_setup_apply_coverage (rasterizer);
+    return;
+  }
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_RGBAF_porter_duff_color;
@@ -5166,6 +5194,14 @@ ctx_fragment_radial_gradient_GRAYAF (CtxRasterizer *rasterizer, float x, float y
 #endif
 
 static void
+ctx_fragment_none_GRAYAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
+{
+  float *ga = (float*)out;
+  for (int i = 0; i < count * 2; i++)
+    ga[i] = 0.0f;
+}
+
+static void
 ctx_fragment_color_GRAYAF (CtxRasterizer *rasterizer, float x, float y, float z, void *out, int count, float dx, float dy, float dz)
 {
   CtxSource *g = &rasterizer->state->gstate.source_fill;
@@ -5212,12 +5248,13 @@ static CtxFragment ctx_rasterizer_get_fragment_GRAYAF (CtxRasterizer *rasterizer
     {
       case CTX_SOURCE_TEXTURE:           return ctx_fragment_image_GRAYAF;
       case CTX_SOURCE_COLOR:           return ctx_fragment_color_GRAYAF;
+      case CTX_SOURCE_NONE:            return ctx_fragment_none_GRAYAF;
 #if CTX_GRADIENTS
       case CTX_SOURCE_LINEAR_GRADIENT: return ctx_fragment_linear_gradient_GRAYAF;
       case CTX_SOURCE_RADIAL_GRADIENT: return ctx_fragment_radial_gradient_GRAYAF;
 #endif
     }
-  return ctx_fragment_color_GRAYAF;
+  return ctx_fragment_none_GRAYAF;
 }
 
 ctx_float_porter_duff(GRAYAF, 2,color,   rasterizer->fragment, rasterizer->state->gstate.blend_mode)
@@ -5251,8 +5288,16 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
 {
   CtxGState *gstate = &rasterizer->state->gstate;
   int components = 2;
+
+  rasterizer->comp_op = ctx_GRAYAF_porter_duff_generic;
   rasterizer->fragment = ctx_rasterizer_get_fragment_GRAYAF (rasterizer);
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
+  if (gstate->source_fill.type == CTX_SOURCE_NONE)
+  {
+    ctx_setup_apply_coverage (rasterizer);
+    return;
+  }
+
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_GRAYAF_porter_duff_color;
@@ -5267,10 +5312,6 @@ ctx_setup_GRAYAF (CtxRasterizer *rasterizer)
           &rasterizer->color_native,
           1);
     }
-  else
-  {
-    rasterizer->comp_op = ctx_GRAYAF_porter_duff_generic;
-  }
 
 #if CTX_INLINED_NORMAL
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
@@ -5425,6 +5466,9 @@ ctx_fragment_other_CMYKAF (CtxRasterizer *rasterizer, float x, float y, float z,
       case CTX_SOURCE_COLOR:
         ctx_fragment_color_RGBAF (rasterizer, x, y, z, rgba, count, dx, dy, dz);
         break;
+      case CTX_SOURCE_NONE:
+        ctx_fragment_none_RGBAF (rasterizer, x, y, z, rgba, count, dx, dy, dz);
+        break;
 #if CTX_GRADIENTS
       case CTX_SOURCE_CONIC_GRADIENT:
         ctx_fragment_conic_gradient_RGBAF (rasterizer, x, y, z, rgba, count, dx, dy, dz);
@@ -5511,6 +5555,13 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
   int components = 5;
   rasterizer->fragment = ctx_rasterizer_get_fragment_CMYKAF (rasterizer);
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
+  rasterizer->comp_op = ctx_CMYKAF_porter_duff_generic;
+  if (gstate->source_fill.type == CTX_SOURCE_NONE)
+  {
+    ctx_setup_apply_coverage (rasterizer);
+    return;
+  }
+
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       rasterizer->comp_op = ctx_CMYKAF_porter_duff_color;
@@ -5525,10 +5576,6 @@ ctx_setup_CMYKAF (CtxRasterizer *rasterizer)
           &rasterizer->color_native,
           1);
     }
-  else
-  {
-    rasterizer->comp_op = ctx_CMYKAF_porter_duff_generic;
-  }
 
 #if CTX_INLINED_NORMAL
   if (gstate->compositing_mode == CTX_COMPOSITE_CLEAR)
@@ -6419,6 +6466,11 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
   rasterizer->fragment = ctx_rasterizer_get_fragment_GRAYA8 (rasterizer);
   rasterizer->comp_op  = ctx_GRAYA8_porter_duff_generic;
   rasterizer->comp = CTX_COV_PATH_FALLBACK;
+  if (gstate->source_fill.type == CTX_SOURCE_NONE)
+  {
+    ctx_setup_apply_coverage (rasterizer);
+    return;
+  }
   if (gstate->source_fill.type == CTX_SOURCE_COLOR)
     {
       ctx_fragment_color_GRAYA8 (rasterizer, 0,0, 1,rasterizer->color, 1, 0,0,0);
@@ -6472,9 +6524,6 @@ ctx_setup_GRAYA8 (CtxRasterizer *rasterizer)
             rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic_normal;
             break;
         }
-        break;
-      default:
-        rasterizer->comp_op = ctx_GRAYA8_porter_duff_generic;
         break;
     }
 #else
