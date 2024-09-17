@@ -40,7 +40,7 @@ int main (int argc, char **argv)
       for (int i = 0; i < len; i++) {
         ctx_vt_write (ctx, buf[i]);
       }
-      vt_poll (vt, 10);
+      vt_poll (vt, 100000);
       ctx_queue_draw (ctx);
     }
     else if (len <= 0)
