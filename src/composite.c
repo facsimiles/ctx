@@ -2404,8 +2404,11 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   int dither_green  = rasterizer->format->dither_green;
 #endif
 
+  if (isinf(dx) | isnan(dx) | isnan (dy) | isinf (dy))
+    return;
+
   if (!src)
-          return;
+    return;
 
   {
     int i = 0;
@@ -2466,6 +2469,12 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
       uint32_t y  = v * bwidth;
       uint32_t uv = (v / 2) * bwidth_div_2;
 
+      if ((v < 0) | (v >= bheight) | 
+	  (u < 0) | (u >= bwidth) |
+          (((iy + ideltay * count)>>16) < 0) | (((iy + ideltay *count)>>16) >= bheight) | 
+          (((ix + ideltax * count)>>16) < 0) | (((ix + ideltax *count)>>16) >= bwidth))
+	return;
+
       if ((v >= 0) & (v < bheight))
       {
 #if CTX_DITHER
@@ -2504,8 +2513,8 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
 
       if ((v < 0) | (v >= bheight) | 
 	  (u < 0) | (u >= bwidth) |
-          ((v + ((ideltay * count)>>16)) < 0) | ((v + ((ideltay *count)>>16)) >= bheight) | 
-          ((u + ((ideltax * count)>>16)) < 0) | ((u + ((ideltax *count)>>16)) >= bwidth))
+          (((iy + ideltay * count)>>16) < 0) | (((iy + ideltay *count)>>16) >= bheight) | 
+          (((ix + ideltax * count)>>16) < 0) | (((ix + ideltax *count)>>16) >= bwidth))
 	return;
 
 #if CTX_DITHER
