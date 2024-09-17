@@ -431,7 +431,13 @@ int main (int argc, char **argv)
   int len;
 
   CtxParser *ctxp = ctx_parser_new (ctx, width, height, width/cols, height/rows, 1, 1, NULL, NULL, NULL, NULL, NULL);
-  while ((len = fread(buf, 1, 64, stdin)) > 0)
+
+  FILE *file = stdin;
+
+  if (argv[1]) file = fopen (argv[1], "r");
+  if (!file) return -1;
+
+  while ((len = fread(buf, 1, 64, file)) > 0)
   {
     ctx_parser_feed_bytes (ctxp, buf, len);
   }
