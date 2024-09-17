@@ -287,7 +287,7 @@ fuzz-worker4: fuzzer #
 	afl-fuzz -S worker4 -G 128 -a text -i afl/in/ -o afl -- ./fuzzer #
 fuzz-cont: fuzzer #
 	afl-fuzz -i- -o afl -- ./fuzzer #
-
+#
 vt-fuzzer: tools/vt-fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. #
 vt-fuzzer-asan: tools/vt-fuzz.c ctx.h #
@@ -304,3 +304,7 @@ fuzz-min: #
 	@mkdir afl/min #
 	for b in default worker0 worker1 worker2 worker3 worker4; do (cd afl/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer || true;done) ; done #
 	(cd afl/min;for a in *;do mv $$a tmp.ctx ; ../../ctx tmp.ctx -o $$a.ctx;rm tmp.ctx;done) #
+fuzz-plot: #
+	afl-plot afl-vt/default afl-vt/plot #
+	afl-plot afl/default afl/plot #
+
