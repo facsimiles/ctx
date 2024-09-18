@@ -2404,7 +2404,7 @@ ctx_fragment_image_yuv420_RGBA8_nearest (CtxRasterizer *rasterizer,
   int dither_green  = rasterizer->format->dither_green;
 #endif
 
-  if (isinf(dx) | isnan(dx) | isnan (dy) | isinf (dy))
+  if (isinf(dx) || isnan(dx) || isnan (dy) || isinf (dy))
     return;
 
   if (!src)
@@ -7521,6 +7521,7 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   ctx_apply_coverage_fun apply_coverage = 
     rasterizer->apply_coverage;
 
+  y1 += 1.0f;
   x0 = ctx_maxi (x0, blit_x);
   x1 = ctx_mini (x1, blit_x + blit_width - 1);
   y0 = ctx_maxi (y0, blit_y);
@@ -7534,7 +7535,7 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   x0 = ctx_floorf (x0);
   y0 = ctx_floorf (y0);
   x1 = ctx_floorf (x1 +  7 / 8.0f);
-  y1 = ctx_floorf (y1 + 14 / 15.0f);
+  //y1 = ctx_floorf (y1 + 15 / 15.0f);
 
   int has_top    = (top < 255);
   int has_bottom = (bottom < 255);
