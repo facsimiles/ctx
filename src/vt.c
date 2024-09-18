@@ -2347,7 +2347,8 @@ static void vtcmd_delete_n_chars (VT *vt, const char *sequence)
   int count = n;
   while (count--)
     {
-      vt_line_remove (vt->current_line, vt->cursor_x - 1);
+      if (vt->cursor_x>0)
+        vt_line_remove (vt->current_line, vt->cursor_x - 1);
     }
 }
 
