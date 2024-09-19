@@ -4069,7 +4069,7 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
                   is_down = 1;
                   ctx_rasterizer_move_to (rasterizer, prev_x, prev_y);
                 }
-   int max_again = 20;
+   int max_again = 40;
 again:
    max_again--;
               x = segment->x1 * 1.0f / CTX_SUBDIV;
