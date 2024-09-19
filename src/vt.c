@@ -56,6 +56,11 @@ int ctx_dummy_in_len = 0;
 #define CTX_VT_USE_FRAMEDIFF 0  // is a larger drain than neccesary when everything is per-byte?
                                 // is anyways currently disabled also in ctx
 
+
+
+#define CTX_VT_132COL 0  // disabled - can cause hangs at least in fuzzer rig
+
+
 //#define STB_IMAGE_IMPLEMENTATION
 //#include "stb_image.h"
 
@@ -2549,12 +2554,14 @@ qagain:
             if (set==0)
               { vt->state = vt_state_vt52; }
             break;
+#if CTX_VT_132COL
           case 3: /*MODE;DECCOLM;Column mode;132 columns;80 columns;*/
             vtcmd_set_132_col (vt, set);
             break; // set 132 col
+#endif
           case 4: /*MODE;DECSCLM;Scrolling mode;smooth;jump;*/
             vt->smooth_scroll = set;
-            break; // set 132 col
+            break;
           case 5: /*MODE;DECSCNM;Screen mode;Reverse;Normal;*/
             vt->reverse_video = set;
             break;
