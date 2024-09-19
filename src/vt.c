@@ -1514,6 +1514,7 @@ static inline int parse_int (const char *arg, int def_val)
 static void vtcmd_set_line_home (VT *vt, const char *sequence)
 {
   int val = parse_int (sequence, 1);
+  if (val < 0) val = 0;
   char buf[256];
   vt->left_right_margin_mode = 1;
   sprintf (buf, "[%i;%it", val, vt->margin_right);
@@ -2386,6 +2387,7 @@ static void vtcmd_insert_character (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
   if (n > vt->cols * vt->rows) n = vt->rows * vt->cols;
+  if (n <= 0) n = 1;
   while (n--)
     {
       vt_line_insert_utf8 (vt->current_line, vt->cursor_x-1, " ");
@@ -2399,7 +2401,7 @@ static void vtcmd_scroll_up (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
   if (n > vt->rows) n = vt->rows;
-  if (n == 0) { n = 1; }
+  if (n <= 0) { n = 1; }
   while (n--)
     { vt_scroll (vt, -1); }
 }
@@ -2408,7 +2410,7 @@ static void vtcmd_scroll_down (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
   if (n > vt->rows) n = vt->rows;
-  if (n == 0) { n = 1; }
+  if (n <= 0) { n = 1; }
   while (n--)
     { vt_scroll (vt, 1); }
 }
@@ -2417,7 +2419,9 @@ static void vtcmd_insert_blank_lines (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
   if (n > vt->rows) n = vt->rows;
-  if (n == 0) { n = 1; }
+  if (n <= 0)
+  { n = 1;
+  }
   {
     int st = vt->margin_top;
     int sb = vt->margin_bottom;
@@ -3057,7 +3061,7 @@ static void _vt_rev_htab (VT *vt)
 static void vtcmd_insert_n_tabs (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
-  if (n <0) n = 0;
+  if (n < 0) n = 0;
   if (n > vt->cols) n = vt->cols;
   while (n--)
     {
@@ -3068,7 +3072,7 @@ static void vtcmd_insert_n_tabs (VT *vt, const char *sequence)
 static void vtcmd_rev_n_tabs (VT *vt, const char *sequence)
 {
   int n = parse_int (sequence, 1);
-  if (n <0) n = 0;
+  if (n < 0) n = 0;
   if (n > vt->cols) n = vt->cols;
   while (n--)
     {
