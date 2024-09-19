@@ -4033,6 +4033,7 @@ ctx_rasterizer_process (Ctx *ctx, const CtxCommand *c)
       int   dash_no  = 0.0;
       float dash_lpos = state->gstate.line_dash_offset * factor;
       int   is_down = 0;
+      float lr = state->gstate.line_width * factor / 2;
 
           while (start < count)
           {
@@ -4083,16 +4084,29 @@ again:
                 float p = (dashes[dash_no] * factor - dash_lpos) / length;
                 float splitx = x * p + (1.0f - p) * prev_x;
                 float splity = y * p + (1.0f - p) * prev_y;
-                if (is_down)
-                {
-                  ctx_rasterizer_line_to (rasterizer, splitx, splity);
-                  is_down = 0;
-                }
-                else
-                {
-                  ctx_rasterizer_move_to (rasterizer, splitx, splity);
-                  is_down = 1;
-                }
+
+		/* TODO : check for intersection rather than just end points being in raster-rect */
+		if ( ((splitx - lr >= rasterizer->blit_x) &
+		      (prev_x - lr >= rasterizer->blit_x) &
+		      (splity - lr >= rasterizer->blit_y) &
+		      (prev_y - lr >= rasterizer->blit_y)) |
+
+		     ((splitx + lr < rasterizer->blit_x + rasterizer->blit_width) &
+		      (prev_x + lr < rasterizer->blit_x + rasterizer->blit_width) &
+		      (splity + lr < rasterizer->blit_y + rasterizer->blit_height) &
+		      (prev_y + lr < rasterizer->blit_y + rasterizer->blit_height)))
+		{
+                  if (is_down)
+                  {
+                    ctx_rasterizer_line_to (rasterizer, splitx, splity);
+                    is_down = 0;
+                  }
+                  else
+                  {
+                    ctx_rasterizer_move_to (rasterizer, splitx, splity);
+                    is_down = 1;
+                  }
+		}
                 prev_x = splitx;
                 prev_y = splity;
                 dash_no++;
