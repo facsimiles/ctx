@@ -1553,6 +1553,7 @@ static inline void ctx_parser_finish_number (CtxParser *parser)
 {
   if (parser->state == CTX_PARSER_NEGATIVE_NUMBER)
      { parser->numbers[parser->n_numbers] *= -1; }
+  if (parser->exp > 100) parser->exp = 100;
   if (parser->exponent < 0)
   {
     for (int i = 0; i < parser->exp; i++)
