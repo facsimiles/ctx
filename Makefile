@@ -268,7 +268,7 @@ distcheck: dist #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 #
 fuzzer: tools/fuzz.c ctx.h #
-	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. #
+	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -O2 -o $@ -I. #
 fuzzer-asan: tools/fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
 fuzz-asan: fuzzer-asan #
