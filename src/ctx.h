@@ -981,23 +981,6 @@ Ctx *ctx_new_tft (TFT_eSPI *tft, int memory_budget, void *scratch_fb, int flags)
 
 #endif
 
-
-#if CTX_CAIRO
-#ifndef CAIRO_H
-typedef struct _cairo_t cairo_t;
-#endif
-
-/* render the deferred commands of a ctx context to a cairo
- * context
- */
-void  ctx_render_cairo  (Ctx *ctx, cairo_t *cr);
-
-/* create a ctx context that directly renders to the specified
- * cairo context
- */
-Ctx * ctx_new_for_cairo (cairo_t *cr);
-#endif
-
 char *ctx_render_string (Ctx *ctx, int longform, int *retlen);
 
 void ctx_render_stream  (Ctx *ctx, FILE *stream, int longform);

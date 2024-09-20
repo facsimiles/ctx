@@ -22,9 +22,8 @@ struct _CtxSDL
    SDL_Texture  *texture;
 
    int           fullscreen;
+
 };
-
-
 
 int ctx_show_fps = 1;
 void ctx_sdl_set_title (void *self, const char *new_title)
@@ -433,7 +432,9 @@ void ctx_sdl_destroy (CtxSDL *sdl)
   {
     SDL_DestroyWindow (sdl->window);
   }
-  sdl->texture = NULL;sdl->backend = NULL;sdl->window = NULL;
+  sdl->texture = NULL;
+  sdl->backend = NULL;
+  sdl->window = NULL;
 
   ctx_tiled_destroy ((CtxTiled*)sdl);
 }
@@ -461,6 +462,8 @@ int ctx_sdl_get_fullscreen (Ctx *ctx)
 
 Ctx *ctx_new_sdl (int width, int height)
 {
+
+
 #if CTX_RASTERIZER
 
   CtxSDL *sdl = (CtxSDL*)ctx_calloc (1, sizeof (CtxSDL));

@@ -121,7 +121,7 @@ void ctx_list_backends(void)
     fprintf (stderr, "possible values for CTX_BACKEND:\n");
     fprintf (stderr, " ctx");
 #if CTX_SDL
-    fprintf (stderr, " SDL");
+    fprintf (stderr, " SDL SDLcb");
 #endif
 #if CTX_KMS
     fprintf (stderr, " kms");
@@ -196,6 +196,9 @@ static int is_in_ctx (void)
 }
 #endif
 
+#if CTX_SDL
+Ctx *ctx_new_sdl_cb (int width, int height);
+#endif
 
 #if EMSCRIPTEN
 CTX_EXPORT
@@ -310,10 +313,17 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #endif
 
 #if CTX_SDL
+
   if (!ret && getenv ("DISPLAY"))
   {
     if ((backend==NULL) || (!ctx_strcmp (backend, "SDL")))
       ret = ctx_new_sdl (width, height);
+  }
+
+  if (!ret && getenv ("DISPLAY"))
+  {
+    if ((backend==NULL) || (!ctx_strcmp (backend, "SDLcb")))
+      ret = ctx_new_sdl_cb (width, height);
   }
 #endif
 

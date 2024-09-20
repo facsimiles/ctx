@@ -118,32 +118,6 @@ static void ctx_tiled_end_frame (Ctx *ctx)
 
     tiled->render_frame = ++tiled->frame;
 
-#if 0
-
-          //if (tiled->tile_affinity[hno]==no)
-          {
-            int x0 = ((tiled->width)/CTX_HASH_COLS) * 0;
-            int y0 = ((tiled->height)/CTX_HASH_ROWS) * 0;
-            int width = tiled->width / CTX_HASH_COLS;
-            int height = tiled->height / CTX_HASH_ROWS;
-            Ctx *host = tiled->host[0];
-
-            CtxRasterizer *rasterizer = (CtxRasterizer*)host->backend;
-            int swap_red_green = ((CtxRasterizer*)(host->backend))->swap_red_green;
-            ctx_rasterizer_init (rasterizer,
-                                 host, tiled->backend.ctx, &host->state,
-                                 &tiled->pixels[tiled->width * 4 * y0 + x0 * 4],
-                                 0, 0, 1, 1,
-                                 tiled->width*4, CTX_FORMAT_BGRA8,
-                                 tiled->antialias);
-            ((CtxRasterizer*)(host->backend))->swap_red_green = swap_red_green;
-            if (sdl_icc_length)
-              ctx_colorspace (host, CTX_COLOR_SPACE_DEVICE_RGB, sdl_icc, sdl_icc_length);
-
-            ctx_translate (host, -x0, -y0);
-            ctx_render_ctx (tiled->ctx_copy, host);
-          }
-#endif
     cnd_broadcast (&tiled->cond);
   }
   else

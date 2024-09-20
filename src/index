@@ -49,6 +49,7 @@ backend-headless.c
 backend-fb.c
 backend-kms.c
 backend-sdl.c
+backend-sdl-cb.c
 backend-term.c
 backend-termimg.c
 backend-cb.c
