@@ -904,14 +904,6 @@ void ctx_resolve              (Ctx *ctx, const char *name,
 #endif
 #endif
 
-#ifndef CTX_TFT_ESPI
-#ifdef _TFT_eSPIH_
-#define CTX_TFT_ESPI 1
-#else
-#define CTX_TFT_ESPI 0
-#endif
-#endif
-
 #ifndef CTX_SDL
 #ifdef SDL_h_
 #define CTX_SDL 1
@@ -958,10 +950,38 @@ typedef enum CtxFlags {
   CTX_FLAG_KEEP_DATA    = 1 << 8, // keep existing fb-data instead of doing an initial clear
   CTX_FLAG_INTRA_UPDATE = 1 << 9,
   CTX_FLAG_STAY_LOW     = 1 << 10,  // stay with the color fidelity drop in lowfi
+  CTX_FLAG_DOUBLE_BUFFER= 1 << 11,  // 
 } CtxFlags;
 
+typedef struct CtxCbConfig {
+   void (*set_pixels)     (Ctx *ctx, void *user_data, 
+                           int x, int y, int w, int h, void *buf);
+                                                       // if CTX_FLAG_DOUBLE_BUFFER then this is ru in renderer thread.
+   int (*update_fb)       (Ctx *ctx, void *user_data); // runs after all subregion updates in renderer thread
+   void (*consume_events) (Ctx *ctx, void *user_data); // runs in the main (not renderer thread)
+   int  (*renderer_init)  (Ctx *ctx, void *user_data); // return non 0 on failure to init
+						       // if present FLAG_DOUBLE_BUFFER is implied
+   void (*renderer_idle)  (Ctx *ctx, void *user_data);
+   void (*renderer_stop)  (Ctx *ctx, void *user_data);
+   // TODO : we also need a shutdown cb for our user_data
+   //        possibly not freed but just deinited
 
-Ctx *ctx_new_cb (int width, int height, CtxPixelFormat format,
+   void (*set_fullscreen)  (Ctx *ctx, void *user_data, int fullscreen);
+   int  (*get_fullscreen)  (Ctx *ctx, void *user_data);
+   void (*windowtitle)     (Ctx *ctx, void *user_data, const char *utf8);
+   void (*set_clipboard)  (Ctx *ctx, void *user_data, const char *text);
+   char *(*get_clipboard) (Ctx *ctx, void *user_data);
+
+   CtxPixelFormat format;
+   int   memory_budget;
+   void *scratch_fb;
+   int   flags;
+   void *user_data;
+} CtxCbConfig;
+
+Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config);
+
+Ctx *ctx_new_cb_old (int width, int height, CtxPixelFormat format,
                  void (*set_pixels) (Ctx *ctx, void *user_data, 
                                      int x, int y, int w, int h, void *buf),
                  void *set_pixels_user_data,
@@ -975,11 +995,6 @@ int ctx_cb_get_flags  (Ctx *ctx);
 void ctx_cb_set_memory_budget (Ctx *ctx, int memory_budget);
 void
 ctx_cb_extent (Ctx *ctx, float *x0, float *y0, float *x1, float *y1);
-
-#if CTX_TFT_ESPI
-Ctx *ctx_new_tft (TFT_eSPI *tft, int memory_budget, void *scratch_fb, int flags);
-
-#endif
 
 char *ctx_render_string (Ctx *ctx, int longform, int *retlen);
 
@@ -1023,7 +1038,7 @@ typedef enum
   CTX_COMPOSITE_XOR              = 352,
   CTX_COMPOSITE_ALL              = (32+64+128+256)
 #else
-  CTX_COMPOSITE_SOURCE_OVER      =0,
+  CTX_COMPOSITE_SOURCE_OVER      = 0,
   CTX_COMPOSITE_COPY             ,
   CTX_COMPOSITE_SOURCE_IN        ,
   CTX_COMPOSITE_SOURCE_OUT       ,
@@ -1126,24 +1141,24 @@ _CtxGlyph
   float    y;
 };
 
-CtxTextAlign       ctx_get_text_align (Ctx *ctx);
-CtxTextBaseline    ctx_get_text_baseline (Ctx *ctx);
-CtxTextDirection   ctx_get_text_direction (Ctx *ctx);
-CtxFillRule        ctx_get_fill_rule (Ctx *ctx);
-CtxLineCap         ctx_get_line_cap (Ctx *ctx);
-CtxLineJoin        ctx_get_line_join (Ctx *ctx);
+CtxTextAlign       ctx_get_text_align       (Ctx *ctx);
+CtxTextBaseline    ctx_get_text_baseline    (Ctx *ctx);
+CtxTextDirection   ctx_get_text_direction   (Ctx *ctx);
+CtxFillRule        ctx_get_fill_rule        (Ctx *ctx);
+CtxLineCap         ctx_get_line_cap         (Ctx *ctx);
+CtxLineJoin        ctx_get_line_join        (Ctx *ctx);
 CtxCompositingMode ctx_get_compositing_mode (Ctx *ctx);
-CtxBlend           ctx_get_blend_mode (Ctx *ctx);
-CtxExtend          ctx_get_extend     (Ctx *ctx);
+CtxBlend           ctx_get_blend_mode       (Ctx *ctx);
+CtxExtend          ctx_get_extend           (Ctx *ctx);
 
 void ctx_gradient_add_stop_string (Ctx *ctx, float pos, const char *color);
 
-void ctx_text_align           (Ctx *ctx, CtxTextAlign      align);
-void ctx_text_baseline        (Ctx *ctx, CtxTextBaseline   baseline);
-void ctx_text_direction       (Ctx *ctx, CtxTextDirection  direction);
-void ctx_fill_rule            (Ctx *ctx, CtxFillRule       fill_rule);
-void ctx_line_cap             (Ctx *ctx, CtxLineCap        cap);
-void ctx_line_join            (Ctx *ctx, CtxLineJoin       join);
+void ctx_text_align           (Ctx *ctx, CtxTextAlign       align);
+void ctx_text_baseline        (Ctx *ctx, CtxTextBaseline    baseline);
+void ctx_text_direction       (Ctx *ctx, CtxTextDirection   direction);
+void ctx_fill_rule            (Ctx *ctx, CtxFillRule        fill_rule);
+void ctx_line_cap             (Ctx *ctx, CtxLineCap         cap);
+void ctx_line_join            (Ctx *ctx, CtxLineJoin        join);
 void ctx_compositing_mode     (Ctx *ctx, CtxCompositingMode mode);
 /* we only care about the tight packing for this specific
  * struct as we do indexing across members in arrays of it,
@@ -1756,7 +1771,7 @@ typedef enum
   CTX_CLOSE_PATH       = 'z', //
   CTX_START_GROUP      = '{',
   CTX_END_GROUP        = '}',
-
+  CTX_ROUND_RECTANGLE  = '|', // x y width height radius
 
   /* though expressed as two chars in serialization we have
    * dedicated byte commands for the setters to keep the dispatch
@@ -1806,7 +1821,6 @@ typedef enum
 
   CTX_STROKE_RECT      = 200, // strokeRect - only exist in long form
   CTX_FILL_RECT        = 201, // fillRect   - only exist in long form
-  CTX_ROUND_RECTANGLE  = '|', // x y width height radius
 } CtxCode;
 
 

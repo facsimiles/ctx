@@ -3200,9 +3200,19 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 void ctx_set_fullscreen (Ctx *ctx, int val)
 {
 #if CTX_SDL
-    if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
-      ctx_sdl_set_fullscreen (ctx, val);
+  if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
+    ctx_sdl_set_fullscreen (ctx, val);
 #endif
+  if (ctx_backend_type (ctx) == CTX_BACKEND_CB)
+  {
+    CtxBackend  * backend = (CtxBackend*)ctx->backend;
+    CtxCbBackend* cb      = (CtxCbBackend*)backend;
+    if (cb->config.set_fullscreen)
+    {
+        cb->config.set_fullscreen (ctx, backend->user_data, val);
+	ctx_queue_draw (ctx);
+    }
+  }
 }
 
 int ctx_get_fullscreen (Ctx *ctx)
@@ -3211,7 +3221,14 @@ int ctx_get_fullscreen (Ctx *ctx)
     if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
       return ctx_sdl_get_fullscreen (ctx);
 #endif
-    return 0;
+  if (ctx_backend_type (ctx) == CTX_BACKEND_CB)
+  {
+    CtxBackend  * backend = (CtxBackend*)ctx->backend;
+    CtxCbBackend* cb      = (CtxCbBackend*)backend;
+    if (cb->config.get_fullscreen)
+        return cb->config.get_fullscreen (ctx, backend->user_data);
+  }
+  return 0;
 }
 
 const CtxPixelFormatInfo *ctx_pixel_formats =

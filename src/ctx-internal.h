@@ -301,15 +301,12 @@ typedef enum
 #define CTX_DRAWLIST_CURRENT_PATH         512
 // BITPACK
 
-#define CTX_DOUBLE_BUFFER 1
-
 struct _CtxDrawlist
 {
   CtxEntry     *entries;
   unsigned int  count;
   int           size;
   uint32_t      flags;
-//  int           bitpack_pos;  // stream is bitpacked up to this offset
 };
 
 // the keydb consists of keys set to floating point values,
@@ -1320,6 +1317,38 @@ struct _CtxTiled
 #endif
 #endif
 };
+
+
+typedef struct CtxCbBackend
+{
+  CtxBackend     backend;
+
+  Ctx           *drawlist_copy;
+  int            rendering;
+
+  CtxCbConfig    config;
+  //int            flags;
+  //int            memory_budget;
+  int            min_col; // hasher cols and rows
+  int            min_row; // hasher cols and rows
+  int            max_col; // hasher cols and rows
+  int            max_row; // hasher cols and rows
+  uint16_t      *fb;
+  Ctx           *ctx;
+
+#if 0
+  void (*set_pixels) (Ctx *ctx, void *user_data, 
+                      int x, int y, int w, int h, void *buf);
+  void   *set_pixels_user_data;
+  int  (*update_fb) (Ctx *ctx, void *user_data);
+  void   *update_fb_user_data;
+#endif
+
+  uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
+
+  CtxHasher     rasterizer;
+  uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS]; // when non-0 we have non-full res rendered
+} CtxCbBackend;
 
 static inline Ctx *ctx_backend_get_ctx (void *backend)
 {

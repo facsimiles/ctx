@@ -414,7 +414,6 @@ static char *ctx_sdl_get_clipboard (Ctx *ctx)
   return SDL_GetClipboardText ();
 }
 
-
 inline static void ctx_sdl_start_frame (Ctx *ctx)
 {
   CtxSDL  *sdl = (CtxSDL*)ctx->backend;

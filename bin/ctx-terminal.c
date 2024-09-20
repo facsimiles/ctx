@@ -883,7 +883,7 @@ static void overview_init (Ctx *ctx)
       opos[i].client = client;
       opos[i].id = client_id;
       opos[i].x0 = ctx_client_get_x (ctx, client_id);
-      opos[i].y0 = ctx_client_get_y (ctx, client_id) - em * (n_clients > 1);
+      opos[i].y0 = ctx_client_get_y (ctx, client_id);
       opos[i].w0 = ctx_client_get_width(ctx, client_id);
       opos[i].h0 = ctx_client_get_height(ctx, client_id);
       opos[i].x1 = col * col_width + 0.5f * em;
