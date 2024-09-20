@@ -2385,13 +2385,11 @@ struct _CtxBackend
   /* for interactive/event-handling backends */
   void  (*start_frame)     (Ctx *ctx);
   void  (*end_frame)       (Ctx *ctx);
+  void  (*consume_events)  (Ctx *ctx);
+  void  (*get_event_fds)   (Ctx *ctx, int *fd, int *count);
 
   void  (*set_windowtitle) (Ctx *ctx, const char *text);
 
-  char *(*get_event)       (Ctx *ctx, int timout_ms);
-
-  void  (*consume_events)  (Ctx *ctx);
-  void  (*get_event_fds)   (Ctx *ctx, int *fd, int *count);
   char *(*get_clipboard)   (Ctx *ctx);
   void  (*set_clipboard)   (Ctx *ctx, const char *text);
   void  (*destroy)         (void *backend); /* the free pointers are abused as the differentiatior
