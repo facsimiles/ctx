@@ -2384,8 +2384,8 @@ static void vtcmd_delete_n_lines (VT *vt, const char *sequence)
 		     //       this keeps expectations of valid current_line
         ctx_list_insert_before (&vt->lines, vt->lines, string);
 	
+      _vt_move_to (vt, vt->cursor_y, vt->cursor_x); // updates current_line
     }
-  _vt_move_to (vt, vt->cursor_y, vt->cursor_x); // updates current_line
 }
 
 static void vtcmd_insert_character (VT *vt, const char *sequence)
