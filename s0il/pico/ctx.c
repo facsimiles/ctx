@@ -296,7 +296,7 @@ Ctx *ctx_pico_st7789_init (int fb_width, int fb_height,
     gpio_put(pin_backlight, 1);
 
 
-    Ctx *ctx = ctx_new_cb(fb_width, fb_height, CTX_FORMAT_RGB565_BYTESWAPPED,
+    Ctx *ctx = ctx_new_cb_old(fb_width, fb_height, CTX_FORMAT_RGB565_BYTESWAPPED,
                           ctx_set_pixels,
                           NULL,
                           NULL, // update_fb

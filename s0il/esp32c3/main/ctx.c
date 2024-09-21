@@ -263,7 +263,7 @@ Ctx *ctx_host(void) {
   usb_serial_jtag_init();
   lcd_init();
   touch_init();
-  ctx = ctx_new_cb(DISPLAY_WIDTH, DISPLAY_HEIGHT, CTX_FORMAT_RGB565_BYTESWAPPED,
+  ctx = ctx_new_cb_old(DISPLAY_WIDTH, DISPLAY_HEIGHT, CTX_FORMAT_RGB565_BYTESWAPPED,
                    ctx_set_pixels, NULL, frame_done_ctx, NULL, sizeof(scratch),
                    scratch,
                    // CTX_FLAG_HASH_CACHE|CTX_FLAG_LOWFI
