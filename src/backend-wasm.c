@@ -247,7 +247,7 @@ EM_ASM(
 
 
    if (!em_ctx){
-      em_ctx = ctx_new_cb (width, height, CTX_FORMAT_RGB565_BYTESWAPPED,
+      em_ctx = ctx_new_cb_old (width, height, CTX_FORMAT_RGB565_BYTESWAPPED,
                            wctx_set_pixels, 
                            NULL,
                            update_fb,
