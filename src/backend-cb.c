@@ -654,9 +654,27 @@ ctx_cb_render_frame (Ctx *ctx)
     cb_backend->config.update_fb (ctx, cb_backend->backend.user_data);
 }
 
+
+#if CTX_PICO
+#include "pico/multicore.h"
+#define CTX_MB()  do{ __dmb(); __dsb(); __isb(); } while(0)
+#else
+#define CTX_MB()  do{ ; } while(0)
+#endif
+
+#if CTX_PICO
+void *core1_arg = NULL;
+static void
+ctx_cb_render_thread ()
+#else
 static void
 ctx_cb_render_thread (CtxCbBackend *cb_backend)
+#endif
 {
+#if CTX_PICO
+  multicore_fifo_push_blocking (42);
+  CtxCbBackend *cb_backend = core1_arg;
+#endif
   Ctx *ctx = cb_backend->backend.ctx;
 
   if (cb_backend->config.renderer_init &&
@@ -666,17 +684,22 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
   cb_backend->rendering = 0;
 
   while (cb_backend->rendering >= 0){
+    CTX_MB();
     while (cb_backend->rendering == 0)
     {
+      CTX_MB();
       if (cb_backend->config.renderer_idle)
         cb_backend->config.renderer_idle (ctx, cb_backend->backend.user_data);
-      usleep (2000);
+      int start = ctx_ms (ctx);
+      while (ctx_ms (ctx) - start < 2) {};
     }
 
+      CTX_MB();
     if (cb_backend->rendering == 1)
     {
       ctx_cb_render_frame (ctx);
       cb_backend->rendering = 0;
+      CTX_MB();
     }
   }
 
@@ -731,8 +754,12 @@ ctx_cb_end_frame (Ctx *ctx)
 
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
+    CTX_MB();
     while (cb_backend->rendering)
+    {
       ctx_handle_events (ctx);
+      CTX_MB();
+    }
 
     CtxDrawlist temp = ctx->drawlist;
     ctx->drawlist = cb_backend->drawlist_copy->drawlist;
@@ -740,6 +767,7 @@ ctx_cb_end_frame (Ctx *ctx)
     ctx_set_size (cb_backend->drawlist_copy, ctx_width (ctx), ctx_height (ctx));
 
     cb_backend->rendering = 1;
+    CTX_MB();
   }
   else
   {
@@ -753,7 +781,8 @@ static void ctx_cb_destroy (void *data)
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
     cb_backend->rendering = -1;
-    usleep (1000 * 200);
+    int start = ctx_ms (cb_backend->backend.ctx);
+    while (ctx_ms (cb_backend->backend.ctx) - start < 250) {};
     ctx_destroy (cb_backend->drawlist_copy);
   }
   else
@@ -788,6 +817,7 @@ static char *ctx_cb_get_clipboard (Ctx *ctx)
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
   return backend_cb->config.get_clipboard (ctx, backend_cb->backend.user_data);
 }
+
 
 Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
 {
@@ -827,28 +857,54 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
     ctx_cb_set_memory_budget (ctx, config->memory_budget);
   }
 
-  if (config->renderer_init)
-    cb_backend->config.flags |= CTX_FLAG_DOUBLE_BUFFER;
+  //if (config->renderer_init)
+  //  cb_backend->config.flags |= CTX_FLAG_DOUBLE_BUFFER;
 
+#if CTX_THREADS | CTX_PICO
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
     cb_backend->drawlist_copy = ctx_new_drawlist (width, height); // TODO : keep size in sync
-    thrd_t tid;
     cb_backend->rendering = -1;
+
+#if CTX_PICO
+    core1_arg = cb_backend;
+    CTX_MB();
+    multicore_launch_core1(ctx_cb_render_thread);
+    multicore_fifo_pop_blocking ();
+#else
+    thrd_t tid;
     thrd_create(&tid, (void*)ctx_cb_render_thread, (void*) cb_backend);
+#endif
 
     if (cb_backend->config.renderer_init)
     {
        int n = 150;
        while (cb_backend->rendering == -1 && n-- > 0){
-	  usleep (1000 * 20);
+
+          int start = ctx_ms (ctx);
+	  while (ctx_ms (ctx) - start < 20) {};
        }
        if (cb_backend->rendering == -1)
        {
 	 ctx_destroy (ctx);
 	 return NULL;
        }
+    } else
+    {
+       cb_backend->rendering = 0;
     }
+  }
+  else
+#endif
+  {
+    if (cb_backend->config.renderer_init)
+      {
+	 if (cb_backend->config.renderer_init (ctx, cb_backend->backend.user_data))
+	 {
+	   ctx_destroy (ctx);
+	   return NULL;
+	 }
+      }
   }
 
 #if CTX_EVENTS
