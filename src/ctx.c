@@ -3174,9 +3174,6 @@ static CtxBackendType __ctx_backend_type (Ctx *ctx)
 #if CTX_CAIRO
   else if (backend->destroy == (void*) ctx_cairo_destroy) return CTX_BACKEND_CAIRO;
 #endif
-#if CTX_TERMIMG
-  else if (backend->destroy == (void*) ctx_termimg_destroy) return CTX_BACKEND_TERMIMG;
-#endif
   return CTX_BACKEND_NONE;
 }
 

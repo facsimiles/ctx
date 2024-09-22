@@ -132,9 +132,6 @@ void ctx_list_backends(void)
 #if CTX_TERM
     fprintf (stderr, " term");
 #endif
-#if CTX_TERMIMG
-    fprintf (stderr, " termimg");
-#endif
     fprintf (stderr, "\n");
 #endif
 }
@@ -354,13 +351,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     ret = ctx_new_term (width, height);
   }
 #endif
-#if CTX_TERMIMG
-  if (!ret)
-  {
-    if ((backend==NULL) || (!ctx_strcmp (backend, "termimg")))
-    ret = ctx_new_termimg (width, height);
-  }
-#endif
 #endif
 #endif
   if (!ret)
@@ -396,7 +386,6 @@ void ctx_set_size (Ctx *ctx, int width, int height)
     {
       case CTX_BACKEND_CTX:
       case CTX_BACKEND_TERM:
-      case CTX_BACKEND_TERMIMG:
         {CtxCtx *ctxctx = (CtxCtx*)ctx->backend;
          ctxctx->width = width;
          ctxctx->height = height;

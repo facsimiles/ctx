@@ -928,7 +928,6 @@ Ctx *ctx_new_headless (int width, int height);
 Ctx *ctx_new_kms (int width, int height);
 Ctx *ctx_new_sdl (int width, int height);
 Ctx *ctx_new_term (int width, int height);
-Ctx *ctx_new_termimg (int width, int height);
 
 int ctx_resolve_font (const char *name);
 
