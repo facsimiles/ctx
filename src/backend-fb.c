@@ -14,8 +14,8 @@
 #if CTX_KMS || CTX_FB
 
 static int ctx_fb_single_buffer = 0;  // used with the framebuffer this
-                               // causes flicker, but brings single
-                               // threaded memory use <2mb 
+                                      // causes flicker, but brings single
+                                      // threaded memory use <2mb 
 
 static int ctx_fb_get_mice_fd (Ctx *ctx)
 {
@@ -66,12 +66,12 @@ static void ctx_fb_get_event_fds (Ctx *ctx, int *fd, int *count)
 typedef struct _CtxFb CtxFb;
 struct _CtxFb
 {
-   CtxTiled tiled;
-   int           key_balance;
-   int           key_repeat;
-   int           lctrl;
-   int           lalt;
-   int           rctrl;
+   CtxTiled     tiled;
+   int          key_balance;
+   int          key_repeat;
+   int          lctrl;
+   int          lalt;
+   int          rctrl;
 
 
    int          fb_fd;
@@ -158,8 +158,8 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
           pre_skip = 0;
           post_skip = 0;
 #ifdef __linux__
-           __u32 dummy = 0;
-          ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
+           //__u32 dummy = 0;
+          //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
 #endif
           ctx_tiled_undraw_cursor (tiled);
        }
@@ -305,9 +305,6 @@ static void ctx_fb_show_frame (CtxFb *fb, int block)
 
 void ctx_fb_consume_events (Ctx *ctx)
 {
-#if CTX_RAW_KB_EVENTS
-  ctx_fb_global = ctx;
-#endif
   CtxFb *fb = (void*)ctx->backend;
   ctx_fb_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
@@ -606,7 +603,7 @@ Ctx *ctx_new_fb (int width, int height)
   if (kb)
   {
     tiled->evsource[tiled->evsource_count++] = kb;
-    kb->priv = fb;
+    kb->priv = backend->ctx;
   }
   EvSource *mice  = NULL;
   mice = evsource_linux_ts_new ();
@@ -617,7 +614,7 @@ Ctx *ctx_new_fb (int width, int height)
   if (mice)
   {
     tiled->evsource[tiled->evsource_count++] = mice;
-    mice->priv = fb;
+    mice->priv = backend->ctx;
   }
 
   tiled->vt_active = 1;

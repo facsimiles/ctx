@@ -950,3 +950,8 @@
 #define CTX_VT_GFX  1
 #endif
 
+#ifndef CTX_FB_KDSETMODE
+#define CTX_FB_KDSETMODE 0
+#endif
+
+

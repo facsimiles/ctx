@@ -3178,8 +3178,24 @@ static void ctx_show_frame (Ctx *ctx, int block)
 
 static void ctx_wait_frame (Ctx *ctx, VT *vt)
 {
+  if (ctx_backend_type (ctx) == CTX_BACKEND_CB)
+  {
+    CtxCbBackend *cb = (CtxCbBackend*)(ctx->backend);
+    int max_wait    = 500;
+    int wait_frame  = cb->frame_no - cb->rendering;
+    while (wait_frame < cb->frame_no &&
+           max_wait-- > 0)
+    {
+#if CTX_AUDIO
+      usleep (10);
+      vt_audio_task (vt, 0);
+#else
+      usleep (10);
+#endif
+    }
+  }
 #if CTX_TILED
-  if (ctx_backend_is_tiled (ctx))
+  else if (ctx_backend_is_tiled (ctx))
   {
     CtxTiled *tiled = (CtxTiled*)(ctx->backend);
     int max_wait    = 500;

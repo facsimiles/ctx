@@ -1,1 +1,2 @@
-../terminal/Makefile
+all:
+	make -C ..

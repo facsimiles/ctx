@@ -419,7 +419,6 @@ static void ctx_kms_show_frame (CtxKMS *fb, int block)
 
 void ctx_kms_consume_events (Ctx *ctx)
 {
-  ctx_fb_global = ctx;
   CtxKMS *fb = (void*)ctx->backend;
   ctx_kms_show_frame (fb, 0);
   event_check_pending (&fb->tiled);
@@ -594,7 +593,7 @@ Ctx *ctx_new_kms (int width, int height)
   if (kb)
   {
     tiled->evsource[tiled->evsource_count++] = kb;
-    kb->priv = fb;
+    kb->priv = backend->ctx;
   }
   EvSource *mice  = NULL;
 
@@ -606,7 +605,7 @@ Ctx *ctx_new_kms (int width, int height)
   if (mice)
   {
     tiled->evsource[tiled->evsource_count++] = mice;
-    mice->priv = fb;
+    mice->priv = backend->ctx;
   }
 
   tiled->vt_active = 1;

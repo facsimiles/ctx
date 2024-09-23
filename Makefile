@@ -269,6 +269,8 @@ distcheck: dist #
 #
 fuzzer: tools/fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -O2 -o $@ -I. #
+fuzzer-O0: tools/fuzz.c ctx.h #
+	$(CCACHE) clang -g $< -O0 -o $@ -I. #
 fuzzer-asan: tools/fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
 fuzz-asan: fuzzer-asan #
@@ -289,7 +291,7 @@ fuzz-cont: fuzzer #
 	afl-fuzz -i- -o afl -- ./fuzzer #
 #
 vt-fuzzer: tools/vt-fuzz.c ctx.h #
-	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. #
+	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. -O2 #
 vt-fuzzer-asan: tools/vt-fuzz.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
 fuzz-vt: vt-fuzzer #

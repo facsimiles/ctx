@@ -127,6 +127,7 @@ void ctx_list_backends(void)
     fprintf (stderr, " kms");
 #endif
 #if CTX_FB
+    fprintf (stderr, " fbcb");
     fprintf (stderr, " fb");
 #endif
 #if CTX_TERM
@@ -193,6 +194,9 @@ static int is_in_ctx (void)
 }
 #endif
 
+#if CTX_FB
+Ctx *ctx_new_fb_cb (int width, int height);
+#endif
 #if CTX_SDL
 Ctx *ctx_new_sdl_cb (int width, int height);
 #endif
@@ -334,6 +338,11 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 
 
 #if CTX_FB
+  if (!ret && !getenv ("DISPLAY"))
+    {
+      if ((backend==NULL) || (!ctx_strcmp (backend, "fbcb")))
+        ret = ctx_new_fb_cb (width, height);
+    }
   if (!ret && !getenv ("DISPLAY"))
     {
       if ((backend==NULL) || (!ctx_strcmp (backend, "fb")))
@@ -2596,12 +2605,15 @@ static char *mice_get_event (void)
   double relx, rely;
   signed char buf[3];
   int n_read = 0;
-  CtxTiled *tiled = (void*)ctx_ev_src_mice.priv;
   n_read = read (mrg_mice_this->fd, buf, 3);
   if (n_read == 0)
      return ctx_strdup ("");
   relx = buf[1];
   rely = -buf[2];
+
+  Ctx *ctx = (void*)ctx_ev_src_mice.priv;
+  int width = ctx_width (ctx);
+  int height = ctx_height (ctx);
 
   if (relx < 0)
   {
@@ -2640,10 +2652,10 @@ static char *mice_get_event (void)
     mrg_mice_this->x = 0;
   if (mrg_mice_this->y < 0)
     mrg_mice_this->y = 0;
-  if (mrg_mice_this->x >= tiled->width)
-    mrg_mice_this->x = tiled->width -1;
-  if (mrg_mice_this->y >= tiled->height)
-    mrg_mice_this->y = tiled->height -1;
+  if (mrg_mice_this->x >= width)
+    mrg_mice_this->x = width -1;
+  if (mrg_mice_this->y >= height)
+    mrg_mice_this->y = height -1;
   int button = 0;
   
   if ((mrg_mice_this->prev_state & 1) != (buf[0] & 1))
@@ -3392,12 +3404,12 @@ static const CtxRawKey raw_key_map[]=
    {KEY_RIGHTBRACE, "]", "}"}
 };
 
-static Ctx*ctx_fb_global = NULL;
 
 static char *evsource_kb_raw_get_event (void)
 {
   struct input_event ev;
-  if (!ctx_fb_global) return NULL;
+  Ctx *ctx = (void*)ctx_ev_src_mice.priv;
+
   memset (&ev, 0, sizeof (ev));
   if (-1==read(kb_fd, &ev, sizeof(ev)))
   {
@@ -3413,16 +3425,16 @@ static char *evsource_kb_raw_get_event (void)
           switch (ev.value)
           {
             case 0: /* up */
-              ctx_key_up (ctx_fb_global, 0, name, 0);
+              ctx_key_up (ctx, 0, name, 0);
               break;
             case 1: /* down */
-              ctx_key_down (ctx_fb_global, 0, name, 0);
+              ctx_key_down (ctx, 0, name, 0);
               /*FALLTHROUGH*/
             case 2: /* repeat */
               if (strcmp(name,"shift") &&
                   strcmp(name,"control") &&
                   strcmp(name,"alt"))
-              ctx_key_press (ctx_fb_global, 0, name, 0);
+              ctx_key_press (ctx, 0, name, 0);
               break;
           }
           return NULL;
@@ -3647,8 +3659,8 @@ static char *evsource_linux_ts_get_event (void)
 {
   struct input_event ev;
   static int down_count = 0;
-  if (!ctx_fb_global) return NULL;
   memset (&ev, 0, sizeof (ev));
+  Ctx *ctx = (void*)ctx_ev_src_mice.priv;
   if (-1==read(ctx_ts_fd, &ev, sizeof(ev)))
   {
     return NULL;
@@ -3661,10 +3673,10 @@ static char *evsource_linux_ts_get_event (void)
        switch (ev.code)
        {
           case ABS_MT_POSITION_X:
-            ctx_mt[mt_slot].x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx_fb_global) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
+            ctx_mt[mt_slot].x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
             break;
           case ABS_MT_POSITION_Y:
-            ctx_mt[mt_slot].y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx_fb_global) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
+            ctx_mt[mt_slot].y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
             break;
           case ABS_MT_SLOT:
             mt_slot = ev.value;
@@ -3707,9 +3719,9 @@ static char *evsource_linux_ts_get_event (void)
     {
       switch (ev.code)
       {
-        case ABS_X: ctx_mt[0].x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx_fb_global) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
+        case ABS_X: ctx_mt[0].x = (ev.value - ctx_linux_ts_abs_x.minimum) * ctx_width (ctx) / (ctx_linux_ts_abs_x.maximum- ctx_linux_ts_abs_x.minimum + 1);
         break;
-        case ABS_Y: ctx_mt[0].y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx_fb_global) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
+        case ABS_Y: ctx_mt[0].y = (ev.value - ctx_linux_ts_abs_y.minimum) * ctx_height (ctx) / (ctx_linux_ts_abs_y.maximum- ctx_linux_ts_abs_y.minimum + 1);
         break;
       }
     }
@@ -3725,11 +3737,11 @@ static char *evsource_linux_ts_get_event (void)
             ctx_mt[i].y != ctx_mt[i].reported_y)))
       {
          if (ctx_mt[i].id == -1)
-            ctx_pointer_release (ctx_fb_global, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
+            ctx_pointer_release (ctx, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
 	 else if (ctx_mt[i].id != ctx_mt[i].reported_id)
-            ctx_pointer_press (ctx_fb_global, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
+            ctx_pointer_press (ctx, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
 	 else
-            ctx_pointer_motion (ctx_fb_global, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
+            ctx_pointer_motion (ctx, ctx_mt[i].x, ctx_mt[i].y, 4+i, 0);
 
 	 ctx_mt[i].reported_id = ctx_mt[i].id;
 	 ctx_mt[i].reported_x  = ctx_mt[i].x;

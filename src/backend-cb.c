@@ -1,4 +1,12 @@
 
+// the callback backend, 
+//
+// only set_pixels need implementing, 
+//
+//bugs:
+// lowfi modes only work in 16bpp scanout mode
+// random lockups, use mutexes?
+//
 
 
 void ctx_cb_set_flags (Ctx *ctx, int flags)
@@ -394,7 +402,7 @@ static void
 ctx_cb_start_frame (Ctx *ctx)
 {
 #if CTX_EVENTS
-  ctx_handle_events (ctx);
+  // ctx_handle_events (ctx);
 #endif
 }
 
@@ -690,8 +698,12 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
       CTX_MB();
       if (cb_backend->config.renderer_idle)
         cb_backend->config.renderer_idle (ctx, cb_backend->backend.user_data);
+#if 0
       int start = ctx_ms (ctx);
       while (ctx_ms (ctx) - start < 2) {};
+#else
+      usleep (2 * 1000);
+#endif
     }
 
       CTX_MB();
@@ -720,7 +732,7 @@ ctx_cb_end_frame (Ctx *ctx)
     if (prev_time)
     {
       char buf[22];
-      float  ms = ((cur_time-prev_time));///1000.0f);
+      float  ms = ((cur_time-prev_time));
       float fps = 1000.0f/ms;
       static float dfps = 0.0f;
       dfps = dfps * 0.9f + fps * 0.1f;
@@ -757,7 +769,9 @@ ctx_cb_end_frame (Ctx *ctx)
     CTX_MB();
     while (cb_backend->rendering)
     {
+#if CTX_EVENTS
       ctx_handle_events (ctx);
+#endif
       CTX_MB();
     }
 
@@ -767,12 +781,16 @@ ctx_cb_end_frame (Ctx *ctx)
     ctx_set_size (cb_backend->drawlist_copy, ctx_width (ctx), ctx_height (ctx));
 
     cb_backend->rendering = 1;
+    cb_backend->frame_no ++;
     CTX_MB();
   }
   else
   {
     ctx_cb_render_frame (ctx);
   }
+#if CTX_EVENTS
+  ctx_handle_events (ctx);
+#endif
 }
 
 static void ctx_cb_destroy (void *data)
@@ -878,7 +896,7 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
 
     if (cb_backend->config.renderer_init)
     {
-       int n = 150;
+       int n = 250;
        while (cb_backend->rendering == -1 && n-- > 0){
 
           int start = ctx_ms (ctx);
@@ -908,7 +926,7 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
   }
 
 #if CTX_EVENTS
-  ctx_get_event (ctx);
+  //ctx_get_event (ctx);
 #endif
   return ctx;
 }

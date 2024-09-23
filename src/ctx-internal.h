@@ -1324,6 +1324,7 @@ typedef struct CtxCbBackend
 
   Ctx           *drawlist_copy;
   int            rendering;
+  int            frame_no;
 
   CtxCbConfig    config;
   //int            flags;
@@ -1342,6 +1343,8 @@ typedef struct CtxCbBackend
   int  (*update_fb) (Ctx *ctx, void *user_data);
   void   *update_fb_user_data;
 #endif
+   EvSource    *evsource[4];
+   int          evsource_count;
 
   uint32_t hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
 

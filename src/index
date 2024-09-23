@@ -53,6 +53,7 @@ backend-fb.c
 backend-kms.c
 backend-sdl.c
 backend-term.c
+backend-fb-cb.c
 text.c
 formatter.c
 ctx.c

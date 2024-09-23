@@ -481,25 +481,27 @@ Ctx *ctx_new_sdl_cb (int width, int height)
     .format         = CTX_FORMAT_RGBA8,
     .flags          = CTX_FLAG_HASH_CACHE | CTX_FLAG_DOUBLE_BUFFER 
 	           ,
-    .memory_budget  = width * height * 4,
+    .memory_budget  = 1920 * 1100 * 4,
     .renderer_init  = sdl_cb_renderer_init,
     .renderer_idle  = sdl_cb_renderer_idle,
     .set_pixels     = sdl_cb_set_pixels,
     .update_fb      = sdl_cb_frame_done,
     .renderer_stop  = sdl_cb_renderer_stop,
-    .user_data      = sdl,
     .consume_events = sdl_cb_consume_events,
+
     .get_fullscreen = sdl_cb_get_fullscreen,
     .set_fullscreen = sdl_cb_set_fullscreen,
     .get_clipboard  = sdl_cb_get_clipboard,
     .set_clipboard  = sdl_cb_set_clipboard,
     .windowtitle    = sdl_cb_windowtitle,
+    .user_data      = sdl,
   };
 
 
-  sdl->ctx = ctx_new_cb (width, height, &config);
-  if (!sdl->ctx)
+  Ctx *ctx = ctx_new_cb (width, height, &config);
+  if (!ctx)
     return NULL;
+  sdl->ctx = ctx;
   return sdl->ctx;
 }
 
