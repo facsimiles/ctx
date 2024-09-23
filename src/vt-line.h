@@ -113,7 +113,7 @@ static inline void vt_line_clear_style (VtLine *string)
     return;
   if (string->style)
   {
-    memset (string->style, 0, string->style_size * sizeof (uint64_t) );
+    memset (string->style, 0, string->style_size * sizeof (vt_style_t) );
   }
 }
 
