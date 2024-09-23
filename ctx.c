@@ -172,20 +172,13 @@ void ctx_simd_setup (void)
 #endif
 
 
-#ifdef CTX_SIMD_X86_64_V2
+#if defined(CTX_SIMD_X86_64_V2)
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v2
-#endif
-#ifdef CTX_SIMD_X86_64_V3
+#elif defined(CTX_SIMD_X86_64_V3)
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_x86_64_v3
-#endif
-#ifdef CTX_SIMD_ARM_NEON
+#elif defined(CTX_SIMD_ARM_NEON)
 #define CTX_SIMD_SUFFIX(symbol)  symbol##_armv7l_neon
-#endif
-
-#endif
-
-#include "ctx.h"
-
+#else
 
 #if CTX_STB_TT
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -196,3 +189,10 @@ void ctx_simd_setup (void)
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #endif
+
+
+#endif
+
+#endif
+
+#include "ctx.h"
