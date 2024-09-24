@@ -212,10 +212,10 @@ static void epicfb_stb_gif_blit (Ctx *ctx,
   ctx_translate (ctx, (ctx_width(ctx)-ctx_gif_stb_w*scale)/2.0, 
                       (ctx_height(ctx)-ctx_gif_stb_h*scale)/2.0);
   ctx_scale (ctx, scale, scale);
-  //ctx_image_smoothing (ctx, 0);
+  ctx_image_smoothing (ctx, 0);
   ctx_define_texture (ctx, NULL, ctx_gif_stb_w, ctx_gif_stb_h, ctx_gif_stb_w * 4, CTX_FORMAT_RGBA8,
                       gifbuf, eid);
-  ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
+  //ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
   ctx_fill (ctx);
   ctx_restore (ctx);
   ctx_end_frame (ctx);
