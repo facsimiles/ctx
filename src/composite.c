@@ -7547,8 +7547,9 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
   has_bottom *= !(y1 >= blit_y + blit_height);
 
   int width = (int)(x1 - x0);
+  int height = (int)(y1 - y0);
 
-  if (width >0)
+  if ((width >0) & (height>0))
   {
      uint8_t *dst = ( (uint8_t *) rasterizer->buf);
      uint8_t coverage[width+2];

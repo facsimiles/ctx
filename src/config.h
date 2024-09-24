@@ -85,7 +85,7 @@
 #endif
 
 #ifndef CTX_FAST_STROKE_RECT
-#define CTX_FAST_STROKE_RECT 0
+#define CTX_FAST_STROKE_RECT 1
 #endif
 
 
