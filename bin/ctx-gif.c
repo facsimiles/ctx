@@ -296,26 +296,32 @@ int main (int argc, char *argv[])
 
     CtxEvent *event;
    
-    while ((event = ctx_get_event (ctx)))
+    if (delay == 0)
+      delay = 100;
+    while (delay>=0)
     {
-      switch (event->type)
+      int now = ctx_ticks ();
+      if (1000 * (delay) - (now-frame_start) > 0)
       {
+        usleep (1000 * (delay) - (now-frame_start)/2 );
+        delay -= (1000 * (delay) - (now-frame_start)/2 )/1000 + 100;
+      }
+
+      while ((event = ctx_get_event (ctx)))
+      {
+        switch (event->type)
+        {
         case CTX_KEY_PRESS:
           if (!strcmp (event->string, "q"))
             quit = 1;
           break;
         default:
           break;
+        }
       }
     }
 
-    if (delay>=0) /* only gifs set it non-0 */
-    {
-      int now = ctx_ticks ();
-      if (delay == 0) delay = 100;
-      if (1000 * (delay) - (now-frame_start) > 0)
-        usleep (1000 * (delay) - (now-frame_start) );
-    }
+
     frame_start = ctx_ticks ();
   }
   liberate_resources (); /* to please valgrind */
