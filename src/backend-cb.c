@@ -670,6 +670,8 @@ ctx_cb_render_frame (Ctx *ctx)
 #define CTX_MB()  do{ ; } while(0)
 #endif
 
+#if CTX_PICO | CTX_THREADS
+
 #if CTX_PICO
 void *core1_arg = NULL;
 static void
@@ -718,6 +720,7 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
   if (cb_backend->config.renderer_stop)
      cb_backend->config.renderer_stop (ctx, cb_backend->backend.user_data);
 }
+#endif
 
 static void
 ctx_cb_end_frame (Ctx *ctx)
@@ -740,7 +743,9 @@ ctx_cb_end_frame (Ctx *ctx)
 
       if (cb_backend->config.windowtitle)
       {
+#if CTX_EVENTS
 	ctx_windowtitle (ctx, buf);
+#endif
       }
       else
       {
@@ -799,8 +804,12 @@ static void ctx_cb_destroy (void *data)
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
     cb_backend->rendering = -1;
+#if CTX_EVENTS
     int start = ctx_ms (cb_backend->backend.ctx);
     while (ctx_ms (cb_backend->backend.ctx) - start < 250) {};
+#else
+    usleep (1000 * 1000 * 10);
+#endif
     ctx_destroy (cb_backend->drawlist_copy);
   }
   else
@@ -898,9 +907,12 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
     {
        int n = 250;
        while (cb_backend->rendering == -1 && n-- > 0){
-
+#if CTX_EVENTS
           int start = ctx_ms (ctx);
 	  while (ctx_ms (ctx) - start < 20) {};
+#else
+	  usleep(20 * 1000);
+#endif
        }
        if (cb_backend->rendering == -1)
        {
