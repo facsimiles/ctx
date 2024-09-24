@@ -7508,7 +7508,12 @@ CTX_SIMD_SUFFIX (ctx_composite_fill_rect) (CtxRasterizer *rasterizer,
      ((int)(y1_fm < 0.01f) | (y1_fm > 0.99f)))
   {
     /* best-case scenario axis aligned rectangle */
-    ctx_composite_fill_rect_aligned (rasterizer, (int)x0, (int)y0, (int)(x1-1), (int)(y1-1), 255);
+    int ix0 = (int)x0;
+    int iy0 = (int)y0;
+    int ix1 = (int)x1-1;
+    int iy1 = (int)y1-1;
+    if ((ix1 >= ix0) & (iy1 >= iy0))
+      ctx_composite_fill_rect_aligned (rasterizer, ix0, iy0, ix1, iy1, 255);
     return;
   }
 
