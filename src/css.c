@@ -4264,15 +4264,15 @@ static void mrg_path_fill_stroke (Css *mrg, ItkCssDef **defs)
     if (id)
     {
       id ++;
+      if (*id && id[strlen(id)-1]==')')
+        id[strlen(id)-1]=0;
+      if (*id && id[strlen(id)-1]=='\'')
+        id[strlen(id)-1]=0;
+      if (*id && id[strlen(id)-1]=='"')
+        id[strlen(id)-1]=0;
+      CtxString *str = css_svg_add_def (defs, ctx_strhash(id));
+      ctx_parse (ctx, str->str);
     }
-    if (id[strlen(id)-1]==')')
-      id[strlen(id)-1]=0;
-    if (id[strlen(id)-1]=='\'')
-      id[strlen(id)-1]=0;
-    if (id[strlen(id)-1]=='"')
-      id[strlen(id)-1]=0;
-    CtxString *str = css_svg_add_def (defs, ctx_strhash(id));
-    ctx_parse (ctx, str->str);
 
     if (has_stroke)
       ctx_preserve (ctx);
@@ -6799,10 +6799,14 @@ mrg_parse_transform (Css *mrg, CtxMatrix *matrix, const char *str_in)
       switch (*s)
       {
         case '+':case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
+        {
+	char *prevs = s;
         number[numbers] = strtod (s, &s);
-        s--;
+	if (prevs > s + 1)
+          s--;
 	if (numbers < 11)
           numbers++;
+        }
       }
     }
     if (numbers == 3)
@@ -6826,7 +6830,7 @@ mrg_parse_transform (Css *mrg, CtxMatrix *matrix, const char *str_in)
         while (*str == ' ')str++;
     }
   }
-  while (strchr (str, '('));
+  while (str && strchr (str, '('));
   return 1;
 }
 
