@@ -267,11 +267,11 @@ distcheck: dist #
 	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-Oz ./configure.sh --static --disable-all --enable-vt && make -j ) #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 #
-fuzzer: tools/fuzz.c ctx.h #
+fuzzer: tools/fuzz-ctx.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -O2 -o $@ -I. #
-fuzzer-O0: tools/fuzz.c ctx.h #
+fuzzer-O0: tools/fuzz-ctx.c ctx.h #
 	$(CCACHE) clang -g $< -O0 -o $@ -I. #
-fuzzer-asan: tools/fuzz.c ctx.h #
+fuzzer-asan: tools/fuzz-ctx.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
 fuzz-asan: fuzzer-asan #
 	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer-asan #
@@ -290,9 +290,9 @@ fuzz-worker4: fuzzer #
 fuzz-cont: fuzzer #
 	afl-fuzz -i- -o afl -- ./fuzzer #
 #
-vt-fuzzer: tools/vt-fuzz.c ctx.h #
+vt-fuzzer: tools/fuzz-vt.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. -O2 #
-vt-fuzzer-asan: tools/vt-fuzz.c ctx.h #
+vt-fuzzer-asan: tools/fuzz-vt.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
 fuzz-vt: vt-fuzzer #
 	afl-fuzz -i afl/in/ -o afl-vt -G 512  -- ./vt-fuzzer #
