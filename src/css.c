@@ -1502,11 +1502,13 @@ static void ctx_parse_style_id (Css          *mrg,
         }
         if (*p == 0)
           return;
-        temp[temp_l++] = *p;  // XXX: added to make reported fallthrough
+	if (temp_l < sizeof(temp) -2)
+          temp[temp_l++] = *p;  // XXX: added to make reported fallthrough
         temp[temp_l]=0;       //      not be reported - butexplicit
         break;
       default:
-        temp[temp_l++] = *p;
+	if (temp_l < sizeof(temp) -2)
+          temp[temp_l++] = *p;
         temp[temp_l]=0;
     }
   }
