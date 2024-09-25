@@ -2082,7 +2082,8 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css
             break;
           case ',':
             ps->state = NEUTRAL;
-            ps->rule_no++;
+	    if (ps->rule_no + 1 < CTX_MAX_CSS_RULES)
+              ps->rule_no++;
             break;
           case ';':
           case '}':
