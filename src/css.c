@@ -1010,7 +1010,7 @@ xmltok_get (CssXml *t, char **data, int *pos)
 
   init_statetable ();
   ctx_string_clear (t->curdata);
-  while (1)
+  while (t->state != s_error && t->state != s_eof)
     {
       if (!t->c_held)
         {
@@ -1067,7 +1067,7 @@ xmltok_get (CssXml *t, char **data, int *pos)
           return t_dtd;
         }
       s = &state_table[t->state][0];
-      while (s->state)
+      while (s->state && s->state != s_error && s->state != s_eof)
         {
           if (s->return_type != t_none)
             {
@@ -1103,6 +1103,8 @@ xmltok_get (CssXml *t, char **data, int *pos)
     }
   if (pos)
     *pos = t->inbufpos;
+  //if (t->state == s_error)
+  //  return t_eof;
   return t_eof;
 }
 
@@ -3394,7 +3396,8 @@ static void css_parse_properties (Css *mrg, const char *style,
           case '\r':
             break;
           default:
-            name[name_l++]=*p;
+            if (name_l < CTX_MAX_CSS_STRINGLEN - 1)
+              name[name_l++]=*p;
             name[name_l]=0;
             state = MRG_CSS_PROPERTY_PARSER_STATE_IN_NAME;
             break;
@@ -3419,7 +3422,8 @@ static void css_parse_properties (Css *mrg, const char *style,
             break;
 #endif
           default:
-            name[name_l++]=*p;
+            if (name_l < CTX_MAX_CSS_STRINGLEN - 1)
+              name[name_l++]=*p;
             name[name_l]=0;
             break;
         }
@@ -3443,7 +3447,8 @@ static void css_parse_properties (Css *mrg, const char *style,
           case '\t':
             break;
           default:
-            string[string_l++]=*p;
+            if (string_l < CTX_MAX_CSS_STRINGLEN - 1)
+              string[string_l++]=*p;
             string[string_l]=0;
             state = MRG_CSS_PROPERTY_PARSER_STATE_IN_VAL;
             break;
@@ -3465,7 +3470,8 @@ static void css_parse_properties (Css *mrg, const char *style,
             string[0] = 0;
             break;
           default:
-            string[string_l++]=*p;
+            if (string_l < CTX_MAX_CSS_STRINGLEN - 1)
+              string[string_l++]=*p;
             string[string_l]=0;
             break;
         }
@@ -4306,15 +4312,15 @@ static void mrg_path_fill_stroke (Css *mrg, ItkCssDef **defs)
       if (id)
       {
         id ++;
+        if (*id && id[strlen(id)-1]==')')
+          id[strlen(id)-1]=0;
+        if (*id && id[strlen(id)-1]=='\'')
+          id[strlen(id)-1]=0;
+        if (*id && id[strlen(id)-1]=='"')
+          id[strlen(id)-1]=0;
+        CtxString *str = css_svg_add_def (defs, ctx_strhash(id));
+        ctx_parse (ctx, str->str);
       }
-      if (id[strlen(id)-1]==')')
-        id[strlen(id)-1]=0;
-      if (id[strlen(id)-1]=='\'')
-        id[strlen(id)-1]=0;
-      if (id[strlen(id)-1]=='"')
-        id[strlen(id)-1]=0;
-      CtxString *str = css_svg_add_def (defs, ctx_strhash(id));
-      ctx_parse (ctx, str->str);
     }
     else
     {
@@ -6707,6 +6713,8 @@ mrg_parse_transform (Css *mrg, CtxMatrix *matrix, const char *str_in)
 
   const char *str = str_in;
 
+  //int panic = 500;
+
   do {
 
   if (!strncmp (str, "matrix", 5))
@@ -6724,7 +6732,13 @@ mrg_parse_transform (Css *mrg, CtxMatrix *matrix, const char *str_in)
       switch (*s)
       {
         case '+':case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
+        {
+		char *olds = s;
         number[numbers] = strtod (s, &s);
+	if (s == olds) return 0;
+	//panic--;
+	//if (panic < 0) return 0;
+        }
         s--;
         numbers++;
       }
@@ -6752,7 +6766,10 @@ mrg_parse_transform (Css *mrg, CtxMatrix *matrix, const char *str_in)
       switch (*s)
       {
         case '+':case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
+        {char *olds=s;
         number[numbers] = strtod (s, &s);
+	if (s == olds) return 0;
+        }
         s--;
 	if (numbers<11)
           numbers++;
@@ -6778,8 +6795,12 @@ mrg_parse_transform (Css *mrg, CtxMatrix *matrix, const char *str_in)
       switch (*s)
       {
         case '+':case '-':case '.':case '0':case '1':case '2':case '3':case '4':case '5':case '6':case '7': case '8': case '9':
-        number[numbers] = strtod (s, &s);
-        s--;
+         {
+	   char *olds = s;
+           number[numbers] = strtod (s, &s);
+	   if (s == olds) return 0;
+           s--;
+	}
 	if (numbers < 11)
         numbers++;
       }
@@ -6804,8 +6825,7 @@ mrg_parse_transform (Css *mrg, CtxMatrix *matrix, const char *str_in)
         {
 	char *prevs = s;
         number[numbers] = strtod (s, &s);
-	if (prevs > s + 1)
-          s--;
+	if (prevs == s) return 0;
 	if (numbers < 11)
           numbers++;
         }
@@ -7675,7 +7695,7 @@ void css_xml_render (Css *mrg,
   xmltok = xmltok_buf_new (html_);
 
   ctx_save (mrg->ctx);
-  while (type != t_eof)
+  while (type != t_eof && type != t_error)
   {
     char *data = NULL;
     type = xmltok_get (xmltok, &data, &pos);
@@ -7929,7 +7949,7 @@ void css_xml_render (Css *mrg,
   //css_start (mrg, "fjo", NULL);
   //ctx_stylesheet_add (mrg, style_sheets->str, uri_base, CTX_STYLE_XML, NULL);
 
-  while (type != t_eof)
+  while (type != t_eof && type != t_error)
   {
     char *data = NULL;
     type = xmltok_get (xmltok, &data, &pos);
