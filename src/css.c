@@ -21,7 +21,7 @@
 #define CTX_MAX_FLOATS           16
 #define CTX_MAX_SELECTOR_LENGTH  64
 #define CTX_MAX_CSS_STRINGLEN    512
-#define CTX_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
+#define CTX_MAX_CSS_RULELEN      32 
 #define CTX_MAX_CSS_RULES        128
 
 /* other important maximums */
@@ -29,10 +29,10 @@
 #define CTX_XML_INBUF_SIZE       1024
 #else
 
-#define CTX_MAX_FLOATS           3
+#define CTX_MAX_FLOATS           8
 #define CTX_MAX_SELECTOR_LENGTH  64
 #define CTX_MAX_CSS_STRINGLEN    256
-#define CTX_MAX_CSS_RULELEN      32   // XXX doesnt have overflow protection
+#define CTX_MAX_CSS_RULELEN      32
 #define CTX_MAX_CSS_RULES        64
 
 /* other important maximums */
@@ -6396,8 +6396,8 @@ void _mrg_layout_post (Css *mrg, CtxFloatRectangle *ret_rect)
   if (style->float_)
   {
     CtxFloatData *float_data = &mrg->float_data[mrg->floats];
-    // XXX protect against overflow
-    mrg->floats++;
+    if (mrg->floats + 1 < CTX_MAX_FLOATS)
+      mrg->floats++;
 
     float_data->type = style->float_;
     float_data->x = 
