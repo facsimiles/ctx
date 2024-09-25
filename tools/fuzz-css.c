@@ -449,6 +449,8 @@ int main (int argc, char **argv)
   css_print_xml (css, str->str);
   mrg_destroy (css);
 
+  return 0;
+
   if (dest_path == NULL || !strcmp (dest_path, "RGB565") )
     {
       int reverse = 0;

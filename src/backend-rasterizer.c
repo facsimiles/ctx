@@ -2112,12 +2112,13 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
                             float y)
 {
   int is_stroke = (rasterizer->state->source != 0);
-  CtxSource *source = is_stroke && (rasterizer->state->gstate.source_stroke.type != CTX_SOURCE_INHERIT_FILL)?
+  CtxSource *source = is_stroke?
                         &rasterizer->state->gstate.source_stroke:
                         &rasterizer->state->gstate.source_fill;
-  rasterizer->state->source = 0;
+  rasterizer->state->source = is_stroke ? 2 : 0;
 
-  source->type = CTX_SOURCE_COLOR;
+
+  source->type = CTX_SOURCE_NONE;
   source->texture.buffer = NULL;
   int no = ctx_rasterizer_find_texture (rasterizer, eid);
   if (no < 0 || no >= CTX_MAX_TEXTURES) { no = 0; }
@@ -2129,10 +2130,13 @@ ctx_rasterizer_set_texture (CtxRasterizer *rasterizer,
   {
     rasterizer->texture_source->texture[no].frame = rasterizer->texture_source->frame;
   }
-  source->type = CTX_SOURCE_TEXTURE;
   source->texture.buffer = &rasterizer->texture_source->texture[no];
-  ctx_matrix_identity (&source->set_transform);
-  ctx_matrix_translate (&source->set_transform, x, y);
+  if (source->texture.buffer)
+  {
+    source->type = CTX_SOURCE_TEXTURE;
+    ctx_matrix_identity (&source->set_transform);
+    ctx_matrix_translate (&source->set_transform, x, y);
+  }
 }
 
 static void
@@ -2144,6 +2148,7 @@ ctx_rasterizer_define_texture (CtxRasterizer *rasterizer,
                                char unsigned *data,
 			       int            steal_data)
 {
+
   _ctx_texture_lock (); // we're using the same texture_source from all threads, keeping allocaitons down
                         // need synchronizing (it could be better to do a pre-pass)
   ctx_texture_init (rasterizer->texture_source,
@@ -3058,7 +3063,11 @@ foo:
       rasterizer->preserve = 0;
     }
   if (gstate->source_stroke.type != CTX_SOURCE_INHERIT_FILL)
+  {
     gstate->source_fill = source_backup;
+    rasterizer->comp_op = NULL;
+    rasterizer->fragment = NULL;
+  }
 }
 
 #if CTX_1BIT_CLIP

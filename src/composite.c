@@ -1027,6 +1027,8 @@ ctx_fragment_image_rgba8_RGBA8_nearest_copy (CtxRasterizer *rasterizer,
 #else
   CtxBuffer *buffer = g->texture.buffer;
 #endif
+  //if (!buffer) // XXX : this should happen in setup
+  //  return;
   uint32_t *dst = (uint32_t*)out;
   int bwidth  = buffer->width;
   int bheight = buffer->height;
@@ -3138,13 +3140,16 @@ static CtxFragment ctx_rasterizer_get_fragment_RGBA8 (CtxRasterizer *rasterizer)
 #else
          CtxBuffer *buffer = g->texture.buffer;
 #endif
+
+
+        if (!buffer || !buffer->format)
+          return ctx_fragment_none_RGBA8;
+
 #if CTX_FRAGMENT_SPECIALIZE
 	 int image_smoothing = gstate->image_smoothing;
 	 if (buffer->width == 1 || buffer->height == 1)
 	   image_smoothing = 0;
 #endif
-        if (!buffer || !buffer->format)
-          return ctx_fragment_none_RGBA8;
   
 	if (!ctx_sane_transform(&gstate->source_fill.transform))
           return ctx_fragment_none_RGBA8;
