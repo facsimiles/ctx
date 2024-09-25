@@ -2056,7 +2056,8 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css
             break;
           default:
             ps->state = IN_IMPORT;
-            ps->val[ps->val_l++] = *p;
+	    if (ps->val_l + 1 < CTX_MAX_CSS_STRINGLEN)
+              ps->val[ps->val_l++] = *p;
             ps->val[ps->val_l] = 0;
             break;
 
@@ -2161,7 +2162,8 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css
             break;
           default:
             ps->state = IN_VAL;
-            ps->val[ps->val_l++] = *p;
+	    if (ps->val_l + 1 < CTX_MAX_CSS_STRINGLEN)
+              ps->val[ps->val_l++] = *p;
             ps->val[ps->val_l] = 0;
             break;
 

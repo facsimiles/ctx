@@ -267,46 +267,50 @@ distcheck: dist #
 	(cd ctx-$(CTX_VERSION); make clean ;CFLAGS=-Oz ./configure.sh --static --disable-all --enable-vt && make -j ) #
 	cp ctx-$(CTX_VERSION).tar.bz2 docs/tar #
 #
-fuzzer: tools/fuzz-ctx.c ctx.h #
-	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -O2 -o $@ -I. #
-fuzzer-O0: tools/fuzz-ctx.c ctx.h #
-	$(CCACHE) clang -g $< -O0 -o $@ -I. #
-fuzzer-asan: tools/fuzz-ctx.c ctx.h #
-	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
-fuzz-asan: fuzzer-asan #
-	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer-asan #
-fuzz: fuzzer #
-	afl-fuzz -G 128 -a text -i afl/in/ -o afl -- ./fuzzer #
-fuzz-worker0: fuzzer #
-	afl-fuzz -M worker0 -G 128 -a text -i afl/in/ -o afl -- ./fuzzer #
-fuzz-worker1: fuzzer #
-	afl-fuzz -S worker1 -G 128 -a text -i afl/in/ -o afl -- ./fuzzer #
-fuzz-worker2: fuzzer #
-	afl-fuzz -S worker2 -G 128 -a text -i afl/in/ -o afl -- ./fuzzer #
-fuzz-worker3: fuzzer #
-	afl-fuzz -S worker3 -G 128 -a text -i afl/in/ -o afl -- ./fuzzer #
-fuzz-worker4: fuzzer #
-	afl-fuzz -S worker4 -G 128 -a text -i afl/in/ -o afl -- ./fuzzer #
-fuzz-cont: fuzzer #
-	afl-fuzz -i- -o afl -- ./fuzzer #
 #
-vt-fuzzer: tools/fuzz-vt.c ctx.h #
+#
+fuzz-css: tools/fuzz-css.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. -O2 #
-vt-fuzzer-asan: tools/fuzz-vt.c ctx.h #
+afl-css: fuzz-css #
+	afl-fuzz -G 3048 -a text -o afl-css -i /home/pippin/media/svg/tests/  -- ./fuzz-css #
+fuzz-ctx: tools/fuzz-ctx.c ctx.h #
+	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -O2 -o $@ -I. #
+fuzz-ctx-O0: tools/fuzz-ctx.c ctx.h #
+	$(CCACHE) clang -g $< -O0 -o $@ -I. #
+fuzz-ctx-asan: tools/fuzz-ctx.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
-fuzz-vt: vt-fuzzer #
-	afl-fuzz -i afl/in/ -o afl-vt -G 512  -- ./vt-fuzzer #
-fuzz-vt-min: #
+afl-ctx-asan: fuzz-ctz-asan #
+	afl-fuzz -G 512 -a text -i afl/in/ -o afl -- ./fuzz-ctx-asan #
+afl-ctx: fuzz-ctx #
+	afl-fuzz -G 512 -a text -i afl/in/ -o afl -- ./fuzz-ctx #
+afl-master: fuzz-ctx #
+	afl-fuzz -M default -G 128 -a text -i afl/in/ -o afl -- ./fuzz-ctx #
+afl-worker: fuzz-ctx #
+	afl-fuzz -S $(AFL_ID) -G 128 -a text -i afl/in/ -o afl -- ./fuzz-ctx #
+#
+fuzz-vt: tools/fuzz-vt.c ctx.h #
+	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. -O2 #
+fuzz-vt-asan: tools/fuzz-vt.c ctx.h #
+	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. #
+afl-vt: fuzz-vt #
+	afl-fuzz -i afl/in/ -o afl-vt -G 512  -- ./fuzz-vt #
+afl-css-min: #
+	@rm -rf afl-css/min #
+	@mkdir afl-css/min #
+	for b in default; do (cd afl-css/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzz-css || true;done) ; done #
+#
+afl-vt-min: #
 	@rm -rf afl-vt/min #
 	@mkdir afl-vt/min #
-	for b in default; do (cd afl-vt/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../vt-fuzzer || true;done) ; done #
+	for b in default; do (cd afl-vt/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzz-vt || true;done) ; done #
 #
-fuzz-min: #
+afl-ctx-min: #
 	@rm -rf afl/min #
 	@mkdir afl/min #
-	for b in default worker0 worker1 worker2 worker3 worker4; do (cd afl/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzzer || true;done) ; done #
+	for b in default worker0 worker1 worker2 worker3 worker4; do (cd afl/$$b/crashes; for a in id*;do afl-tmin -i $$a -o ../../min/$$b-`echo $$a|sed -e 's/,.*//' -e 's/id://'` -- ../../../fuzz-ctx || true;done) ; done #
 	(cd afl/min;for a in *;do mv $$a tmp.ctx ; ../../ctx tmp.ctx -o $$a.ctx;rm tmp.ctx;done) #
-fuzz-plot: #
-	afl-plot afl-vt/default afl-vt/plot #
-	afl-plot afl/default afl/plot #
+afl-plot: #
+	afl-plot afl-vt/default afl-vt/plot || true #
+	afl-plot afl/default afl/plot || true #
+	afl-plot afl-css/default afl-css/plot || true #
 
