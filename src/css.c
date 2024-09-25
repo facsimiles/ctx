@@ -1958,12 +1958,14 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css
             return;
           case '@':
             ps->state = IN_ARULE;
-            ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = *p;
+	    if (ps->rule_l[ps->rule_no]+1 < CTX_MAX_CSS_RULELEN)
+              ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = *p;
             ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]] = 0;
             break;
           default:
             ps->state = IN_RULE;
-            ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = *p;
+	    if (ps->rule_l[ps->rule_no]+1 < CTX_MAX_CSS_RULELEN)
+              ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = *p;
             ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]] = 0;
             break;
         }
@@ -1994,7 +1996,8 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css
             return;
           default:
             ps->state = IN_ARULE;
-            ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = *p;
+            if (ps->rule_l[ps->rule_no]+ 1 < CTX_MAX_CSS_RULELEN)
+              ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = *p;
             ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]] = 0;
             break;
         }
@@ -2073,7 +2076,8 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css
           case '\n':
           case '\r':
           case '\t':
-            ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = ' ';
+	    if (ps->rule_l[ps->rule_no]+1 < CTX_MAX_CSS_RULELEN)
+              ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = ' ';
             ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]] = 0;
             break;
           case ',':
@@ -2086,7 +2090,8 @@ static void _ctx_stylesheet_add (CtxCssParseState *ps, Css *mrg, const char *css
             return;
           default:
             ps->state = IN_RULE;
-            ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = *p;
+	    if (ps->rule_l[ps->rule_no]+1 < CTX_MAX_CSS_RULELEN)
+              ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]++] = *p;
             ps->rule[ps->rule_no][ps->rule_l[ps->rule_no]] = 0;
             break;
         }
