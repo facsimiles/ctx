@@ -271,6 +271,8 @@ distcheck: dist #
 #
 fuzz-css: tools/fuzz-css.c ctx.h #
 	$(CCACHE) afl-clang-fast -fsanitize=fuzzer $< -o $@ -I. -O2 #
+fuzz-css-O0: tools/fuzz-css.c ctx.h #
+	$(CCACHE) afl-clang-fast -fsanitize=fuzzer,address $< -o $@ -I. -O0 #
 afl-css: fuzz-css #
 	afl-fuzz -G 3048 -a text -o afl-css -i /home/pippin/media/svg/tests/  -- ./fuzz-css #
 fuzz-ctx: tools/fuzz-ctx.c ctx.h #

@@ -1479,16 +1479,16 @@ static void ctx_parse_style_id (Css          *mrg,
             case '.':
               {
                 int i = 0;
-                for (i = 0; node->classes_hash[i]; i++);
+                for (i = 0; i < CTX_STYLE_MAX_CLASSES && node->classes_hash[i]; i++);
                 node->classes_hash[i] = ctx_strhash (&temp[1]);
               }
               break;
             case ':':
               {
                 int i = 0;
-                for (i = 0; node->pseudo[i]; i++);
+                for (i = 0; i < CTX_STYLE_MAX_PSEUDO && node->pseudo[i]; i++);
                 node->pseudo[i] = mrg_intern_string (&temp[1]);
-                for (i = 0; node->pseudo_hash[i]; i++);
+                for (i = 0; i < CTX_STYLE_MAX_PSEUDO && node->pseudo_hash[i]; i++);
                 node->pseudo_hash[i] = ctx_strhash (&temp[1]);
               }
               break;
@@ -1504,12 +1504,12 @@ static void ctx_parse_style_id (Css          *mrg,
         }
         if (*p == 0)
           return;
-	if (temp_l < sizeof(temp) -2)
+	if (temp_l + 1 < sizeof(temp))
           temp[temp_l++] = *p;  // XXX: added to make reported fallthrough
         temp[temp_l]=0;       //      not be reported - butexplicit
         break;
       default:
-	if (temp_l < sizeof(temp) -2)
+	if (temp_l + 1 < sizeof(temp))
           temp[temp_l++] = *p;
         temp[temp_l]=0;
     }
@@ -2276,6 +2276,7 @@ static inline int _ctx_nth_match (const char *selector, int child_no)
 
 int _ctx_child_no (Css *mrg)
 {
+  if (mrg->state_no <= 0) return 0;
   return mrg->states[mrg->state_no-1].children;
 }
 
@@ -2291,10 +2292,10 @@ static inline int match_nodes (Css *mrg, CtxStyleNode *sel_node, CtxStyleNode *s
       sel_node->id != subject->id)
     return 0;
 
-  for (j = 0; sel_node->classes_hash[j]; j++)
+  for (j = 0; j < CTX_STYLE_MAX_CLASSES && sel_node->classes_hash[j]; j++)
   {
     int found = 0;
-    for (k = 0; subject->classes_hash[k] && !found; k++)
+    for (k = 0; k < CTX_STYLE_MAX_CLASSES && subject->classes_hash[k] && !found; k++)
     {
       if (sel_node->classes_hash[j] == subject->classes_hash[k])
         found = 1;
@@ -2302,7 +2303,7 @@ static inline int match_nodes (Css *mrg, CtxStyleNode *sel_node, CtxStyleNode *s
     if (!found)
       return 0;
   }
-  for (j = 0; sel_node->pseudo[j]; j++)
+  for (j = 0; j < CTX_STYLE_MAX_PSEUDO && sel_node->pseudo[j]; j++)
   {
     if (ctx_strhash (sel_node->pseudo[j]) == SQZ_first_child)
     {
@@ -2318,7 +2319,7 @@ static inline int match_nodes (Css *mrg, CtxStyleNode *sel_node, CtxStyleNode *s
     {
       int found = 0;
 
-      for (k = 0; subject->pseudo[k] && !found; k++)
+      for (k = 0; k < CTX_STYLE_MAX_PSEUDO && subject->pseudo[k] && !found; k++)
       {
         if (sel_node->pseudo_hash[j] == subject->pseudo_hash[k])
           found = 1;
@@ -4147,11 +4148,10 @@ void css_start_with_style (Css        *mrg,
   mrg->states[mrg->state_no].children++;
   if (mrg->state_no+1 >= CTX_MAX_STATES)
     return;
-  mrg->state_no++; // XXX bounds check!
+  mrg->state_no++; 
   mrg->state = &mrg->states[mrg->state_no];
   *mrg->state = mrg->states[mrg->state_no-1];
   mrg->states[mrg->state_no].children = 0;
-
   mrg->state->style_id = style_id ? strdup (style_id) : NULL;
 
   ctx_parse_style_id (mrg, mrg->state->style_id, &mrg->state->style_node);
@@ -5824,7 +5824,7 @@ int css_print (Css *mrg, const char *string)
   mrg->y = ceil (mrg->y / em) * em;
 #endif
 
-  if (mrg->text_edited)
+  if (mrg->text_edited && mrg->edited_str)
     ctx_string_append_str (mrg->edited_str, string);
 
   if (style->display == CTX_DISPLAY_NONE)
