@@ -5608,6 +5608,8 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
       return;
     }
   else if (!strcmp (str, "shift-control-=") ||
+           !strcmp (str, "shift-control-+") ||
+           !strcmp (str, "control-+") ||
            !strcmp (str, "control-=") )
     {
       float font_size = vt_get_font_size (vt);
