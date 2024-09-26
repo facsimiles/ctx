@@ -769,6 +769,23 @@ ctx_cb_end_frame (Ctx *ctx)
     prev_time = cur_time;
   }
 
+  if (cb_backend->config.flags & CTX_FLAG_POINTER)
+  {
+    ctx_save(ctx);
+    ctx_translate (ctx, ctx_pointer_x(ctx), ctx_pointer_y(ctx));
+    ctx_move_to (ctx, 0,0);
+    ctx_line_to (ctx, 20, 40);
+    ctx_line_to (ctx, 0, 40);
+    ctx_rgba (ctx, 0, 0, 0, 0.5);
+    ctx_close_path (ctx);
+    ctx_preserve (ctx);
+    ctx_fill (ctx);
+    ctx_rgba (ctx, 1, 1, 1, 0.5);
+    ctx_line_width (ctx, 2.0);
+    ctx_stroke (ctx);
+    ctx_restore(ctx);
+  }
+
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
     CTX_MB();

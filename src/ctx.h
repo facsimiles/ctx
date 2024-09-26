@@ -951,6 +951,7 @@ typedef enum CtxFlags {
   CTX_FLAG_INTRA_UPDATE = 1 << 9,
   CTX_FLAG_STAY_LOW     = 1 << 10,  // stay with the color fidelity drop in lowfi
   CTX_FLAG_DOUBLE_BUFFER= 1 << 11,  // 
+  CTX_FLAG_POINTER      = 1 << 12,  // 
 } CtxFlags;
 
 typedef struct CtxCbConfig {
