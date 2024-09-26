@@ -954,4 +954,7 @@
 #define CTX_FB_KDSETMODE 0
 #endif
 
+#ifndef CTX_TYPING_POINTER_IGNORE_MS
+#define CTX_TYPING_POINTER_IGNORE_MS 600
+#endif
 

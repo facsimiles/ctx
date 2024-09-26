@@ -1189,6 +1189,7 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
   CtxEvent transformed_event;
   int i;
 
+  ctx->events.event_depth++;
 
   if (!event)
   {
@@ -1241,9 +1242,13 @@ _ctx_emit_cb_item (Ctx *ctx, CtxItem *item, CtxEvent *event, CtxEventType type, 
       item->cb[i].cb (&transformed_event, item->cb[i].data1, item->cb[i].data2);
       event->stop_propagate = transformed_event.stop_propagate; /* copy back the response */
       if (event->stop_propagate)
+      {
+	ctx->events.event_depth--;
         return event->stop_propagate;
+      }
     }
   }
+  ctx->events.event_depth--;
   return 0;
 }
 #endif
@@ -1495,6 +1500,7 @@ ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
   if (time == 0)
     time = ctx_ms (ctx);
 
+
   event->x = event->start_x = event->prev_x = x;
   event->y = event->start_y = event->prev_y = y;
 
@@ -1512,6 +1518,15 @@ ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
   }
   /* doing just one of these two should be enough? */
   events->pointer_down[device_no] = 1;
+
+
+  int typing_ignore = 0;
+  if (events->last_key_time + CTX_TYPING_POINTER_IGNORE_MS > time)
+  {
+    typing_ignore = 1;
+    return 0;
+  }
+
   switch (device_no)
   {
     case 1:
@@ -1529,6 +1544,8 @@ ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
 
   CtxGrab *grab = NULL;
   CtxList *l;
+
+
 
   _ctx_update_item (ctx, device_no, x, y, 
       CTX_PRESS | CTX_DRAG_PRESS | CTX_TAP | CTX_TAP_AND_HOLD, &hitlist);
@@ -2189,6 +2206,11 @@ ctx_key_press (Ctx *ctx, unsigned int keyval,
 
     for (i = 0; i < item->cb_count; i++)
     {
+      if (ctx->events.event_depth == 0)
+      {
+	 // it is a real key-press , not a synthetic / on-screen one
+         ctx->events.last_key_time = time;
+      }
       if (item->cb[i].types & (CTX_KEY_PRESS))
       {
         event.state = ctx->events.modifier_state;

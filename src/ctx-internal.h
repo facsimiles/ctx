@@ -526,6 +526,8 @@ struct _CtxEvents
   float            pointer_x[CTX_MAX_DEVICES];
   float            pointer_y[CTX_MAX_DEVICES];
   unsigned char    pointer_down[CTX_MAX_DEVICES];
+  int              event_depth; // dispatch-level depth - for detecting syntetic events
+  uint64_t         last_key_time;
   unsigned int     in_idle_dispatch:1;
   unsigned int     ctx_get_event_enabled:1;
   CtxModifierState modifier_state;
