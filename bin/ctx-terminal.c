@@ -274,6 +274,8 @@ CtxClient *ctx_client_by_id (Ctx *ctx, int id);
 CtxEvent *ctx_event_copy (CtxEvent *event);
 
 
+static float full_time = 0.0f;
+
 static void overview_init (Ctx *ctx);
 
 static void overview_event (CtxEvent *event, void *a, void *b)
@@ -287,6 +289,7 @@ static void overview_event (CtxEvent *event, void *a, void *b)
      else
      {
        leave_overview = animation_duration;
+       full_time = 0.0f;
      }
      ctx_queue_draw (event->ctx);
      ctx_event_stop_propagate (event);
@@ -534,13 +537,13 @@ static float consume_float (char **argv, int *i)
 extern int on_screen_keyboard;
 void ctx_osk_draw (Ctx *ctx);
 
+#if GNU_C
 static int malloc_trim_cb (Ctx *ctx, void *data)
 {
-#if GNU_C
   malloc_trim (64*1024);
-#endif
   return 1;
 }
+#endif
 
 static void terminal_key_any (CtxEvent *event, void *userdata, void *userdata2)
 {
@@ -651,19 +654,23 @@ void draw_mini_panel (Ctx *ctx)
 
   ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
   ctx_listen (ctx, CTX_PRESS, overview_event, NULL, NULL);
-  if (in_overview)
-  ctx_rgba (ctx, 0,0.0,0.2,0.5);
-  else
-  ctx_rgba (ctx, 0,0.0,0.2,0.1);
 
-  ctx_fill (ctx);
   if (in_overview)
-  ctx_rgba (ctx, 1,1,1,0.25);
-  else
-  ctx_rgba (ctx, 1,1,1,0.15);
+  {
+    ctx_rgba (ctx, 0,0.0,0.2,0.5);
+    ctx_fill (ctx);
+    ctx_rgba (ctx, 1,1,1,0.25);
+    icon_overview (ctx, x, 0, tile_dim, tile_dim);
+    ctx_fill (ctx);
+  }
+  else if (full_time < 4.0f)
+  {
+    ctx_begin_path (ctx);
+    ctx_rgba (ctx, 1,1,1,0.15);
+    icon_overview (ctx, x, 0, tile_dim, tile_dim);
+    ctx_fill (ctx);
+  }
 
-  icon_overview (ctx, x, 0, tile_dim, tile_dim);
-  ctx_fill (ctx);
 
   if (!in_overview)
   {
@@ -1059,38 +1066,43 @@ static void overview (Ctx *ctx, float anim_t)
 
     if (opos[i].id == ctx_clients_active (ctx))
     {
-          ctx_round_rectangle (ctx, x-2, y-2, w+4, h+4, 0.3 * em);
-	  ctx_rgba(ctx,1,1,1,1);
-          ctx_stroke(ctx);
-	  ctx_rgba(ctx,1,0,0,0.6);
-          ctx_rectangle (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
-          ctx_listen (ctx, CTX_PRESS, remove_tab_cb, NULL, NULL);
-	  ctx_begin_path (ctx);
-	  icon_remove_tab (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
-	  ctx_fill (ctx);
+	  if (anim_t > 0.5)
+	  {
+            ctx_round_rectangle (ctx, x-2, y-2, w+4, h+4, 0.3 * em);
+	    ctx_rgba(ctx,1,1,1,1);
+            ctx_stroke(ctx);
+	    ctx_rgba(ctx,1,0,0,0.6);
+            ctx_rectangle (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
+            ctx_listen (ctx, CTX_PRESS, remove_tab_cb, NULL, NULL);
+	  }
+
+	  if (anim_t > 0.8)
+	  {
+	    ctx_begin_path (ctx);
+	    icon_remove_tab (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
+	    ctx_fill (ctx);
+	  }
 
 	  if (anim_t > 0.9)
           {
-
-	  float ty = y + row_height - em;
-	  if (y + h + 1.2 * em < ty)
-	     ty = y + h + 1.2 * em;
+	    float ty = y + row_height - em;
+	    if (y + h + 1.2 * em < ty)
+	       ty = y + h + 1.2 * em;
 	  
+	    const char *title = ctx_client_title (client);
 
-	  const char *title = ctx_client_title (client);
+	    float title_width = ctx_text_width (ctx, title);
 
-	  float title_width = ctx_text_width (ctx, title);
-
-	  ctx_round_rectangle (ctx, x+w/2 - title_width/2 - 0.5 * em,
+	    ctx_round_rectangle (ctx, x+w/2 - title_width/2 - 0.5 * em,
 			      ty - 1.0 * em, title_width + 1.0 * em,
 			      1.4 * em, 1.4 * em);
-	  ctx_rgba (ctx, 0,0,0,0.5);
-	  ctx_fill (ctx);
+	    ctx_rgba (ctx, 0,0,0,0.8);
+	    ctx_fill (ctx);
 
-	  ctx_move_to (ctx, x+w/2, ty);
-	  ctx_rgba (ctx, 1,1,1,1);
-	  ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
-	  ctx_text (ctx, ctx_client_title (client));
+	    ctx_move_to (ctx, x+w/2, ty);
+	    ctx_rgba (ctx, 1,1,1,1);
+	    ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
+	    ctx_text (ctx, ctx_client_title (client));
 	  }
     }
   }
@@ -1098,7 +1110,8 @@ static void overview (Ctx *ctx, float anim_t)
 }
 
 
-#define CTX_TERM_UNLOCK_SH   "sh -c \"echo 'ctx is locked'; while [ -f /tmp/ctx.lock ];do su `whoami` -c 'rm /tmp/ctx.lock';done\""
+#define CTX_TERM_UNLOCK_SH   \
+	"sh -c \"echo 'ctx is locked'; while [ -f /tmp/ctx.lock ];do su `whoami` -c 'rm /tmp/ctx.lock';done\""
 
 
 void ctx_client_use_images (Ctx *ctx, CtxClient *client);
@@ -1179,8 +1192,7 @@ int main (int argc, char **argv)
   if (getpid () == 1)
   {
     int ign;
-    ign = system ("pkill plymouth"); // needed to enable keyboard input.. with the initrd that
-                               // gets used with systemd
+    ign = system ("pkill plymouth"); // might be hogging stdin
     ign = system ("mount -o remount,rw /");
     ign = system ("mount -a");
     if (ign) {};
@@ -1190,6 +1202,8 @@ int main (int argc, char **argv)
   {
     if (!strcmp (argv[i], "--help"))
     {
+      printf ("ctx-terminal [--width px] [--height px] [--cols target columns] [--font-size size] [-e [--] command]\n");
+      return 0;
     }
     else if (!strcmp (argv[i], "-e"))
     {
@@ -1274,7 +1288,9 @@ int main (int argc, char **argv)
     ctx_client_maximize (ctx, add_tab (ctx, commandline, 1));
   }
 
+#if GNU_C
   int mt = ctx_add_timeout (ctx, 1000 * 20, malloc_trim_cb, NULL);
+#endif
 
 
   float prev_ms = ctx_ms (ctx);
@@ -1285,6 +1301,8 @@ int main (int argc, char **argv)
       float ms = ctx_ms (ctx);
       float delta_s = (ms - prev_ms)/1000.0f;
       prev_ms = ms;
+
+      full_time += delta_s;
 
       {
 	static int lock_control = 0;
@@ -1403,8 +1421,9 @@ int main (int argc, char **argv)
      ctx_handle_events (ctx);
     }
 
-
+#if GNU_C
   ctx_remove_idle (ctx, mt);
+#endif
 
 #if CTX_CSS
   css_destroy (itk);
