@@ -314,6 +314,11 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #endif
 
 #if CTX_SDL
+  if (!ret && getenv ("DISPLAY"))
+  {
+    if ((backend==NULL) || (!ctx_strcmp (backend, "SDLcb")))
+      ret = ctx_new_sdl_cb (width, height);
+  }
 
   if (!ret && getenv ("DISPLAY"))
   {
@@ -321,11 +326,14 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
       ret = ctx_new_sdl (width, height);
   }
 
-  if (!ret && getenv ("DISPLAY"))
-  {
-    if ((backend==NULL) || (!ctx_strcmp (backend, "SDLcb")))
-      ret = ctx_new_sdl_cb (width, height);
-  }
+#endif
+
+#if CTX_FB
+  if (!ret && !getenv ("DISPLAY"))
+    {
+      if ((backend==NULL) || (!ctx_strcmp (backend, "fbcb")))
+        ret = ctx_new_fb_cb (width, height);
+    }
 #endif
 
 #if CTX_KMS
@@ -338,11 +346,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 
 
 #if CTX_FB
-  if (!ret && !getenv ("DISPLAY"))
-    {
-      if ((backend==NULL) || (!ctx_strcmp (backend, "fbcb")))
-        ret = ctx_new_fb_cb (width, height);
-    }
   if (!ret && !getenv ("DISPLAY"))
     {
       if ((backend==NULL) || (!ctx_strcmp (backend, "fb")))

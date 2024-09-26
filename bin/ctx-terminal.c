@@ -338,10 +338,10 @@ static void handle_event (Ctx        *ctx,
   if (locked)
   {
     ctx_client_feed_keystring (active, ctx_event, event);
+    ctx_client_unlock (client);
+    return;
   }
-  else
-  {
-
+  
   if (!strcmp (event, "F11") ||
       !strcmp (event, "shift-control-f"))
   {
@@ -359,58 +359,56 @@ static void handle_event (Ctx        *ctx,
   }
 #endif
   else if (!strcmp (event, "shift-control-v") )
-    {
-      char *text = ctx_get_clipboard (ctx);
-      if (text)
-        {
-          ctx_client_paste (ctx, active_id, text);
-          free (text);
-        }
-    }
-  else if (!strcmp (event, "shift-control-c") && vt)
-    {
-      char *text = ctx_client_get_selection (ctx, active_id);
-      if (text)
-        {
-          ctx_set_clipboard (ctx, text);
-          free (text);
-        }
-    }
-  else if (!strcmp (event, "shift-control-t") ||
-           ((backend_type == CTX_BACKEND_FB ||  // workaround for not having
-            backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
-            backend_type == CTX_BACKEND_KMS)
-           &&   !strcmp (event, "control-t") ))
   {
-    if (!terminal_no_new_tab)
-      add_tab (ctx, ctx_find_shell_command(), 1);
+    char *text = ctx_get_clipboard (ctx);
+    if (text)
+      {
+        ctx_client_paste (ctx, active_id, text);
+        free (text);
+      }
+  }
+  else if (!strcmp (event, "shift-control-c") && vt)
+  {
+    char *text = ctx_client_get_selection (ctx, active_id);
+    if (text)
+      {
+        ctx_set_clipboard (ctx, text);
+        free (text);
+      }
+  }
+  else if (!strcmp (event, "shift-control-t") ||
+         ((backend_type == CTX_BACKEND_FB ||  // workaround for not having
+          backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
+          backend_type == CTX_BACKEND_KMS)
+         &&   !strcmp (event, "control-t") ))
+  {
+  if (!terminal_no_new_tab)
+    add_tab (ctx, ctx_find_shell_command(), 1);
   }
   else if (!strcmp (event, "shift-control-o") ||
-           ((backend_type == CTX_BACKEND_FB  ||  // workaround for not having
-            backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
-            backend_type == CTX_BACKEND_KMS)
-           &&   !strcmp (event, "control-o") ))
+         ((backend_type == CTX_BACKEND_FB  ||  // workaround for not having
+          backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
+          backend_type == CTX_BACKEND_KMS)
+         &&   !strcmp (event, "control-o") ))
   {
-     CtxEvent dummy;dummy.ctx=ctx;
-     overview_event (&dummy, NULL, NULL);
+   CtxEvent dummy;dummy.ctx=ctx;
+   overview_event (&dummy, NULL, NULL);
   }
   else if (!strcmp (event, "shift-control-n") )
+  {
+    if (!terminal_no_new_tab)
     {
-      if (!terminal_no_new_tab)
-      {
-	       // XXX : we should also avoid this when running with kms/fb !
-      pid_t pid;
-      if ( (pid=fork() ) ==0)
-        { 
-          unsetenv ("CTX_VERSION");
-          unsetenv ("CTX_BACKEND");
-          execlp (execute_self, execute_self, NULL);
-          exit (0);
-        }
+             // XXX : we should also avoid this when running with kms/fb !
+    pid_t pid;
+    if ( (pid=fork() ) ==0)
+      { 
+        unsetenv ("CTX_VERSION");
+        unsetenv ("CTX_BACKEND");
+        execlp (execute_self, execute_self, NULL);
+        exit (0);
       }
     }
-
-
+  }
   else if (!strcmp (event, "alt-1"))   switch_to_tab(ctx, 0);
   else if (!strcmp (event, "alt-2"))   switch_to_tab(ctx, 1);
   else if (!strcmp (event, "alt-3"))   switch_to_tab(ctx, 2);
@@ -422,52 +420,52 @@ static void handle_event (Ctx        *ctx,
   else if (!strcmp (event, "alt-9"))   switch_to_tab(ctx, 8);
   else if (!strcmp (event, "alt-0"))   switch_to_tab(ctx, 9);
   else if (!strcmp (event, "shift-control-q") )
-    {
-      ctx_exit (ctx);
-    }
+  {
+    ctx_exit (ctx);
+  }
   else if (!strcmp (event, "control-tab") ||
            !strcmp (event, "alt-tab"))
-    {
-       CtxList *l = ctx_clients (ctx);
-       int found = 0;
-       CtxClient *next = NULL;
-       for (; l; l = l->next)
+  {
+     CtxList *l = ctx_clients (ctx);
+     int found = 0;
+     CtxClient *next = NULL;
+     for (; l; l = l->next)
+     {
+       CtxClient *client = l->data;
+       if (found)
        {
-	 CtxClient *client = l->data;
-	 if (found)
-	 {
-           if (!next) next = client;
-	 }
-	 if (client == active) found = 1;
+         if (!next) next = client;
        }
-       if (!next)
-	 next = ctx_clients (ctx)->data;
-       ctx_client_focus (ctx, ctx_client_id (next));
-       ctx_queue_draw (ctx);
-    }
+       if (client == active) found = 1;
+     }
+     if (!next)
+       next = ctx_clients (ctx)->data;
+     ctx_client_focus (ctx, ctx_client_id (next));
+     ctx_queue_draw (ctx);
+  }
   else if (!strcmp (event, "shift-control-tab") ||
            !strcmp (event, "shift-alt-tab"))
-    {
-       CtxList *l = ctx_clients (ctx);
-       CtxClient *prev = NULL;
-       if (l->data == active)
+  {
+     CtxList *l = ctx_clients (ctx);
+     CtxClient *prev = NULL;
+     if (l->data == active)
+     {
+       for (; l; l = l->next)
+         prev = l->data;
+     }
+     else
+     {
+       for (; l; l = l->next)
        {
-         for (; l; l = l->next)
-	   prev = l->data;
+         CtxClient *client = l->data;
+         if (client == active)
+           break;
+         prev = client;
        }
-       else
-       {
-         for (; l; l = l->next)
-         {
-	   CtxClient *client = l->data;
-	   if (client == active)
-	     break;
-	   prev = client;
-         }
-       }
-       ctx_client_focus (ctx, ctx_client_id (prev));
-       ctx_queue_draw (ctx);
-    }
+     }
+     ctx_client_focus (ctx, ctx_client_id (prev));
+     ctx_queue_draw (ctx);
+  }
   else if (!strcmp (event, "shift-control-up") )
   {
     if (vt)
@@ -483,32 +481,31 @@ static void handle_event (Ctx        *ctx,
       vt_set_scroll (vt, vt_get_scroll (vt)-1);
       ctx_queue_draw (ctx);
     }
-
   }
   else if (!strcmp (event, "shift-control-w") )
-    {
-      ctx_client_unlock (client);
-      ctx_client_remove (ctx, client);
-      ctx_queue_draw (ctx);
-      return;
-    }
+  {
+    ctx_client_unlock (client);
+    ctx_client_remove (ctx, client);
+    ctx_queue_draw (ctx);
+    return;
+  }
   else if (!strcmp (event, "shift-control-s") )
+  {
+    if (vt)
     {
-      if (vt)
+      char *sel = ctx_client_get_selection (ctx, ctx_client_id (active));
+      if (sel)
       {
-        char *sel = ctx_client_get_selection (ctx, ctx_client_id (active));
-        if (sel)
-        {
-          ctx_client_feed_keystring (active, ctx_event, sel);
-          free (sel);
-        }
+        ctx_client_feed_keystring (active, ctx_event, sel);
+        free (sel);
       }
     }
-  else
-    {
-      ctx_client_feed_keystring (active, ctx_event, event);
-    }
   }
+  else
+  {
+    ctx_client_feed_keystring (active, ctx_event, event);
+  }
+  
   ctx_client_unlock (client);
 }
 

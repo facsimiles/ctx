@@ -479,7 +479,10 @@ Ctx *ctx_new_sdl_cb (int width, int height)
 
   CtxCbConfig config = {
     .format         = CTX_FORMAT_RGBA8,
-    .flags          = CTX_FLAG_HASH_CACHE | CTX_FLAG_DOUBLE_BUFFER 
+    .flags          = 0
+	            | CTX_FLAG_HASH_CACHE 
+	            | CTX_FLAG_DOUBLE_BUFFER 
+		    | CTX_FLAG_POINTER
 	           ,
     .memory_budget  = 1920 * 1100 * 4,
     .renderer_init  = sdl_cb_renderer_init,
