@@ -886,6 +886,10 @@ void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
     {
        ctx_client_lock (client);
 
+#if CTX_GSTATE_PROTECT
+       ctx_gstate_protect (ctx);
+#endif
+
        int found = 0;
        for (CtxList *l2 = ctx_clients (ctx); l2; l2 = l2->next)
          if (l2->data == client) found = 1;
@@ -929,6 +933,11 @@ void ctx_client_draw (Ctx *ctx, CtxClient *client, float x, float y)
       ctx_client_register_events (client, ctx, x, y);
 #endif
       client->drawn_rev = rev;
+
+#if CTX_GSTATE_PROTECT
+       ctx_gstate_unprotect (ctx);
+#endif
+
       ctx_client_unlock (client);
       }
     }
