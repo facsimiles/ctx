@@ -774,8 +774,8 @@ ctx_cb_end_frame (Ctx *ctx)
     ctx_save(ctx);
     ctx_translate (ctx, ctx_pointer_x(ctx), ctx_pointer_y(ctx));
     ctx_move_to (ctx, 0,0);
-    ctx_line_to (ctx, 20, 40);
-    ctx_line_to (ctx, 0, 40);
+    ctx_line_to (ctx, 30, 40);
+    ctx_line_to (ctx, 10, 45);
     ctx_rgba (ctx, 0, 0, 0, 0.5);
     ctx_close_path (ctx);
     ctx_preserve (ctx);

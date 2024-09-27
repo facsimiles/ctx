@@ -372,7 +372,6 @@ static int fb_cb_renderer_init (Ctx *ctx, void *user_data)
     fprintf (stderr, "failed opening fb\n");
     return -1;
   }
-  for (int i = 0; i < 800 * 800; i++) fb->fb[i] = i;
 
   switch (fb->fb_bits)
   {
@@ -392,35 +391,33 @@ static int fb_cb_renderer_init (Ctx *ctx, void *user_data)
 
   if (fb->is_kms == 0)
   {
-  signal (SIGUSR1, fb_cb_vt_switch_cb);
-  signal (SIGUSR2, fb_cb_vt_switch_cb);
+    signal (SIGUSR1, fb_cb_vt_switch_cb);
+    signal (SIGUSR2, fb_cb_vt_switch_cb);
 
-  struct vt_stat st;
-  if (ioctl (0, VT_GETSTATE, &st) == -1)
-  {
-    ctx_log ("VT_GET_MODE failed\n");
-    return -1;
-  }
+    struct vt_stat st;
+    if (ioctl (0, VT_GETSTATE, &st) == -1)
+    {
+      ctx_log ("VT_GET_MODE failed\n");
+      return -1;
+    }
 
-  fb->vt = st.v_active;
-  struct vt_mode mode;
-  mode.mode   = VT_PROCESS;
-  mode.relsig = SIGUSR1;
-  mode.acqsig = SIGUSR2;
-  if (ioctl (0, VT_SETMODE, &mode) < 0)
-  {
-    fprintf (stderr, "VT_SET_MODE on vt %i failed\n", fb->vt);
-    return -1;
-  }
+    fb->vt = st.v_active;
+    struct vt_mode mode;
+    mode.mode   = VT_PROCESS;
+    mode.relsig = SIGUSR1;
+    mode.acqsig = SIGUSR2;
+    if (ioctl (0, VT_SETMODE, &mode) < 0)
+    {
+      fprintf (stderr, "VT_SET_MODE on vt %i failed\n", fb->vt);
+      return -1;
+    }
 #if CTX_FB_KDSETMODE
 #ifdef __linux__
     ioctl (0, KDSETMODE, KD_GRAPHICS);
 #endif
 #endif
   }
-  return 0;
 #endif
-
 
   return 0;
 }
