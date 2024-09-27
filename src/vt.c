@@ -2484,8 +2484,11 @@ static void vt_ctx_frame_done (void *data)
   vt->current_line->ctx = vt->current_line->ctx_copy;
   vt->current_line->ctx_copy = tmp;
 
-  ctx_set_textureclock (vt->current_line->ctx, ctx_textureclock (vt->current_line->ctx) + 1);
-  ctx_set_textureclock (vt->current_line->ctx_copy, ctx_textureclock (vt->current_line->ctx));
+  if (vt->current_line->ctx && vt->current_line->ctx_copy)
+  {
+    ctx_set_textureclock (vt->current_line->ctx, ctx_textureclock (vt->current_line->ctx) + 1);
+    ctx_set_textureclock (vt->current_line->ctx_copy, ctx_textureclock (vt->current_line->ctx));
+  }
 #if 1
   if (vt->ctxp) // XXX: ugly hack to aid double buffering
     ((void**)vt->ctxp)[0]= vt->current_line->ctx;
