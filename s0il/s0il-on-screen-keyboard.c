@@ -246,18 +246,18 @@ void captouch_keyboard(Ctx *ctx) {
   ctx_save(ctx);
   ctx_rectangle(ctx, width * 0.7, height * 0.25, width * 0.3, height * 0.2);
   ctx_listen(ctx, CTX_PRESS, ui_cb_do, ui_host(ctx), (void *)"return");
-  ctx_begin_path(ctx);
+  ctx_reset_path(ctx);
 
   ctx_rectangle(ctx, width * 0.0, height * 0.25, width * 0.15, height * 0.2);
   ctx_listen(ctx, CTX_PRESS, ui_cb_do, ui_host(ctx), (void *)"backspace");
-  ctx_begin_path(ctx);
+  ctx_reset_path(ctx);
   ctx_rectangle(ctx, width * 0.15, height * 0.25, width * 0.15, height * 0.2);
   ctx_listen(ctx, CTX_PRESS, ui_cb_do, ui_host(ctx), (void *)"space");
-  ctx_begin_path(ctx);
+  ctx_reset_path(ctx);
 
   ctx_rectangle(ctx, width * 0.4, height * 0.45, width * 0.2, height * 0.2);
   ctx_listen(ctx, CTX_DRAG, kb_cursor_drag, NULL, NULL);
-  ctx_begin_path(ctx);
+  ctx_reset_path(ctx);
 
   ctx_restore(ctx);
 #endif

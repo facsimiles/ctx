@@ -173,11 +173,13 @@ void ctx_end_frame      (Ctx *ctx);
 
 
 /**
- * ctx_begin_path:
+ * ctx_reset_path:
  *
- * Clears the current path if any.
+ * Clears the current path if any, fill and stroke commands without a preceding preserve do an implicit reset_path.
  */
-void ctx_begin_path     (Ctx *ctx);
+void ctx_reset_path     (Ctx *ctx);
+
+#define ctx_begin_path(ctx) ctx_reset_path(ctx) // compatibility with old API
 
 /**
  * ctx_save:
@@ -1719,7 +1721,7 @@ typedef enum
   CTX_COLOR            = 'K', // model, c1 c2 c3 ca - variable arg count
   CTX_LINE_TO          = 'L', // x y
   CTX_MOVE_TO          = 'M', // x y
-  CTX_BEGIN_PATH       = 'N', //
+  CTX_RESET_PATH       = 'N', //
   CTX_SCALE            = 'O', // xscale yscale
   CTX_NEW_PAGE         = 'P', // - NYI - optional page-size
   CTX_QUAD_TO          = 'Q', // cx cy x y

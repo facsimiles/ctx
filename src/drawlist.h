@@ -220,7 +220,7 @@ static inline int ctx_arguments_for_code (CtxCode code)
       case CTX_END_GROUP:
       case CTX_IDENTITY:
       case CTX_CLOSE_PATH:
-      case CTX_BEGIN_PATH:
+      case CTX_RESET_PATH:
       case CTX_START_FRAME:
       case CTX_END_FRAME:
       case CTX_RESTORE:

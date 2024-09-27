@@ -1160,7 +1160,7 @@ CtxList *_ctx_detect_list (Ctx *ctx, float x, float y, CtxEventType type)
         {
           ctx_list_prepend (&ret, item);
         }
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
       }
       else
       {

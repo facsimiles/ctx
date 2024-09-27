@@ -184,7 +184,7 @@ ctx_glyph_stb (CtxFont *font, Ctx *ctx, int glyph, int stroke)
   float origin_y = baseline;
   float scale    = stbtt_ScaleForPixelHeight (ttf_info, font_size);;
   stbtt_vertex *vertices = NULL;
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   int num_verts = stbtt_GetGlyphShape (ttf_info, glyph, &vertices);
   for (int i = 0; i < num_verts; i++)
     {
@@ -421,7 +421,7 @@ ctx_glyph_drawlist (CtxFont *font, Ctx *ctx, CtxDrawlist *drawlist, int unichar,
           ctx_save (ctx);
           ctx_translate (ctx, origin_x, origin_y);
           ctx_move_to (ctx, 0, 0);
-          ctx_begin_path (ctx);
+          ctx_reset_path (ctx);
           ctx_scale (ctx, font_size / CTX_BAKE_FONT_SIZE,
                      font_size / CTX_BAKE_FONT_SIZE);
         }

@@ -380,8 +380,9 @@ static int ctx_parser_resolve_command (CtxParser *parser, const uint8_t *str)
           case SQZ_exit:
           case SQZ_done:           ret = CTX_EXIT; break;
           case SQZ_closePath:      ret = CTX_CLOSE_PATH; break;
+          case SQZ_resetPath:
           case SQZ_beginPath:
-          case SQZ_newPath:        ret = CTX_BEGIN_PATH; break;
+          case SQZ_newPath:        ret = CTX_RESET_PATH; break;
           case SQZ_relArcTo:       ret = CTX_REL_ARC_TO; break;
           case SQZ_clip:           ret = CTX_CLIP; break;
           case SQZ_relCurveTo:     ret = CTX_REL_CURVE_TO; break;
@@ -1242,8 +1243,8 @@ static void ctx_parser_dispatch_command (CtxParser *parser)
       case CTX_GLOBAL_ALPHA:
         ctx_global_alpha (ctx, arg(0) );
         break;
-      case CTX_BEGIN_PATH:
-        ctx_begin_path (ctx);
+      case CTX_RESET_PATH:
+        ctx_reset_path (ctx);
         break;
       case CTX_GLYPH:
         ctx_glyph (ctx, (uint32_t)arg(0), 0);

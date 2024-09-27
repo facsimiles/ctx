@@ -265,7 +265,7 @@ again:
         case CTX_SHADOW_OFFSET_Y:
         case CTX_START_FRAME:
         case CTX_EXIT:
-        case CTX_BEGIN_PATH:
+        case CTX_RESET_PATH:
         case CTX_CLOSE_PATH:
         case CTX_SAVE:
         case CTX_CLIP:

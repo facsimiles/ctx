@@ -484,7 +484,7 @@ ctx_hasher_process (Ctx *ctx, const CtxCommand *command)
       case CTX_FONT:
         ctx_rasterizer_set_font (rasterizer, ctx_arg_string() );
         break;
-      case CTX_BEGIN_PATH:
+      case CTX_RESET_PATH:
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_CLOSE_PATH:

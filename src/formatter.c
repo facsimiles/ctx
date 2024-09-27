@@ -189,7 +189,7 @@ const char *_ctx_code_to_name (int code)
           case CTX_VIEW_BOX:             return "viewBox"; break;
           case CTX_MOVE_TO:              return "moveTo"; break;
           case CTX_LINE_TO:              return "lineTo"; break;
-          case CTX_BEGIN_PATH:           return "beginPath"; break;
+          case CTX_RESET_PATH:           return "resetPath"; break;
           case CTX_REL_MOVE_TO:          return "relMoveTo"; break;
           case CTX_REL_LINE_TO:          return "relLineTo"; break;
           case CTX_FILL:                 return "fill"; break;
@@ -883,7 +883,7 @@ ctx_formatter_process (void *user_data, CtxCommand *c)
       case CTX_STROKE:
       case CTX_IDENTITY:
       case CTX_CLIP:
-      case CTX_BEGIN_PATH:
+      case CTX_RESET_PATH:
       case CTX_CLOSE_PATH:
       case CTX_SAVE:
       case CTX_PRESERVE:

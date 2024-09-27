@@ -306,6 +306,7 @@
 #define SQZ_relSmoothqTo 2960208730u // "relSmoothqTo"
 #define SQZ_relVerLineTo 1112835164u // "relVerLineTo"
 #define SQZ_relative 979899102u // "relative"
+#define SQZ_resetPath 2864022032u // "resetPath"
 #define SQZ_restore 1405984258u // "restore"
 #define SQZ_reverse 2464792996u // "reverse"
 #define SQZ_rgb 6449125u // "rgb"

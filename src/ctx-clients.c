@@ -1091,7 +1091,7 @@ void ctx_client_titlebar_draw (Ctx *ctx, CtxClient *client,
   ctx_listen (ctx, CTX_PRESS, ctx_client_close, client, NULL);
   ctx_listen_set_cursor (ctx, CTX_CURSOR_ARROW);
   //ctx_fill (ctx);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   ctx_move_to (ctx, x + width - titlebar_height * 0.8, y - titlebar_height * 0.22);
 
 #if CTX_CSS
@@ -1231,7 +1231,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
                        client->width, titlebar_height);
         ctx_listen (ctx, CTX_DRAG, ctx_client_resize_n, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_N);
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x,
@@ -1239,7 +1239,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
                        client->width, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, ctx_client_resize_s, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_S);
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x + client->width,
@@ -1247,7 +1247,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
                        titlebar_height, client->height + titlebar_height);
         ctx_listen (ctx, CTX_DRAG, ctx_client_resize_e, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_E);
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x - titlebar_height,
@@ -1255,7 +1255,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
                        titlebar_height, client->height + titlebar_height);
         ctx_listen (ctx, CTX_DRAG, ctx_client_resize_w, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_W);
-        ctx_begin_path (ctx); 
+        ctx_reset_path (ctx); 
 
         ctx_rectangle (ctx,
                        client->x + client->width - titlebar_height,
@@ -1263,7 +1263,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
                        titlebar_height * 2, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, ctx_client_resize_ne, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_NE);
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x - titlebar_height,
@@ -1271,7 +1271,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
                        titlebar_height * 2, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, ctx_client_resize_nw, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_NW);
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x - titlebar_height,
@@ -1279,7 +1279,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
                        titlebar_height * 2, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, ctx_client_resize_sw, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SW);
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
 
         ctx_rectangle (ctx,
                        client->x + client->width - titlebar_height,
@@ -1287,7 +1287,7 @@ int ctx_clients_draw (Ctx *ctx, int layer2)
                        titlebar_height * 2, titlebar_height * 2);
         ctx_listen (ctx, CTX_DRAG, ctx_client_resize_se, client, NULL);
         ctx_listen_set_cursor (ctx, CTX_CURSOR_RESIZE_SE);
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
 
       }
 

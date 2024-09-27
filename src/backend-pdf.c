@@ -597,7 +597,7 @@ ctx_pdf_process (Ctx *ctx, const CtxCommand *c)
           ctx_pdf_print("W\n");
         }
         break;
-      case CTX_BEGIN_PATH:  ctx_pdf_print("n\n"); break;
+      case CTX_RESET_PATH:  ctx_pdf_print("n\n"); break;
       case CTX_CLOSE_PATH:  ctx_pdf_print("h\n"); break;
       case CTX_SAVE:        ctx_pdf_print("q\n"); break;
       case CTX_RESTORE:     ctx_pdf_print("Q\n"); break;

@@ -762,7 +762,7 @@ ctx_cb_end_frame (Ctx *ctx)
         ctx_move_to (ctx, ctx_width (ctx) * 0.5f, y);
         ctx_text_align (ctx, CTX_TEXT_ALIGN_CENTER);
         ctx_text (ctx, buf);
-        ctx_begin_path (ctx);
+        ctx_reset_path (ctx);
         ctx_restore(ctx);
       }
     }

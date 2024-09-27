@@ -1011,9 +1011,9 @@ ctx_start_frame (Ctx *ctx)
 #endif
 }
 
-void ctx_begin_path (Ctx *ctx)
+void ctx_reset_path (Ctx *ctx)
 {
-  CTX_PROCESS_VOID (CTX_BEGIN_PATH);
+  CTX_PROCESS_VOID (CTX_RESET_PATH);
 }
 
 void ctx_clip (Ctx *ctx)
@@ -2125,7 +2125,7 @@ ctx_interpret_pos_bare (CtxState *state, const CtxEntry *entry, void *data)
         state->has_moved = 0;
         break;
       case CTX_CLIP:
-      case CTX_BEGIN_PATH:
+      case CTX_RESET_PATH:
       case CTX_FILL:
       case CTX_STROKE:
         state->has_moved = 0;
@@ -3299,7 +3299,7 @@ ctx_logo (Ctx *ctx, float x, float y, float dim)
      
      ctx_scale (ctx, dim, dim);
      ctx_translate (ctx, -0.5f, -0.5f);
-     ctx_begin_path (ctx);
+     ctx_reset_path (ctx);
      ctx_rgba(ctx,1,1,1,0.4f);
      ctx_move_to(ctx,0.43956786f,0.90788066f);
      ctx_rel_curve_to(ctx,0.0195929f,0.0102943f,0.0716181f,0.0218038f,0.10361884f,-0.0167646f);

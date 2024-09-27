@@ -592,14 +592,14 @@ static void ctx_tvg_rectangles (CtxTinyVG *tvg, int item_count,
    //  printf ("%f %f %f %f\n", x, y, w, h);
      if (fill)
      {
-       ctx_begin_path (ctx);
+       ctx_reset_path (ctx);
        ctx_rectangle (ctx, x, y, w, h);
        ctx_tvg_set_style (tvg, &tvg->fill);
        ctx_fill (ctx);
      }
      if (stroke)
      {
-       ctx_begin_path (ctx);
+       ctx_reset_path (ctx);
        ctx_rectangle (ctx, x, y, w, h);
        ctx_tvg_set_style (tvg, &tvg->stroke);
        ctx_stroke (ctx);

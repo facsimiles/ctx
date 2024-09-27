@@ -314,7 +314,7 @@ void ctx_osk_draw (Ctx *ctx)
   if (fade < 0.05)
   {
     ctx_restore (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     return;
   }
 #endif
@@ -322,7 +322,7 @@ void ctx_osk_draw (Ctx *ctx)
   if (kb->down || kb->alt || kb->control || kb->fn || kb->shifted)
     ctx_fill (ctx);
   //ctx_line_width (ctx, m * 0.01);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
 #if 0
   ctx_rgba (ctx, 1,1,1, 0.5);
   ctx_stroke (ctx);
@@ -374,7 +374,7 @@ void ctx_osk_draw (Ctx *ctx)
         }
       }
 
-      ctx_begin_path (ctx);
+      ctx_reset_path (ctx);
       ctx_round_rectangle (ctx, x, y,
                                 c * (cap->wfactor-0.1),
                                 c * 0.9,

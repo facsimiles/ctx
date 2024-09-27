@@ -33,7 +33,7 @@ int main (int argc, char **argv)
   ctx_fill (ctx);
   ctx_move_to (ctx, 10, 9);
   ctx_text (ctx, utf8);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
 
 #ifndef REALLY_TINY
   static char *utf8_gray_scale[]={" ","░","▒","▓","█","█", NULL};

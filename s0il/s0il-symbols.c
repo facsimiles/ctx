@@ -322,7 +322,7 @@ const struct esp_elfsym g_customer_elfsyms[] = {
     ELFSYM_EXPORT(ctx_apply_transform),
     ELFSYM_EXPORT(ctx_arc),
     ELFSYM_EXPORT(ctx_arc_to),
-    ELFSYM_EXPORT(ctx_begin_path),
+    ELFSYM_EXPORT(ctx_reset_path),
     ELFSYM_EXPORT(ctx_blend_mode),
     ELFSYM_EXPORT(ctx_clear_bindings),
     ELFSYM_EXPORT(ctx_clip),

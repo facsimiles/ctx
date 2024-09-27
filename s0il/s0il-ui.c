@@ -727,7 +727,7 @@ void ui_overlay_button(Ui *ui, float x, float y, float w, float h,
   ctx_rectangle(ctx, x, y, w, h);
   ctx_listen(ctx, CTX_PRESS, ui_cb_do, ui, (void *)action);
   if (ui->overlay_fade <= 0.0f) {
-    ctx_begin_path(ctx);
+    ctx_reset_path(ctx);
   } else {
     ctx_queue_draw(ctx);
     ctx_rgba(ctx, 0, 0, 0, ui->overlay_fade);
@@ -1281,7 +1281,7 @@ float ui_slider_coords(Ui *ui, void *id, float x, float y, float width,
       ui_set_color(ctx, ui->style.interactive_bg);
       ctx_fill(ctx);
     } else {
-      ctx_begin_path(ctx);
+      ctx_reset_path(ctx);
     }
     ctx_restore(ctx);
   }
@@ -1343,14 +1343,14 @@ int ui_button_coords(Ui *ui, float x, float y, float width, float height,
     ctx_move_to(ctx, x + width / 2, y + em);
     ctx_text(ctx, label);
 
-    ctx_begin_path(ctx);
+    ctx_reset_path(ctx);
     ctx_rectangle(ctx, x, y, width, height);
     ctx_listen(ctx, CTX_DRAG, ui_button_drag, ui, widget->id);
     if (ui->interactive_debug) {
       ui_set_color(ctx, ui->style.interactive_bg);
       ctx_fill(ctx);
     } else {
-      ctx_begin_path(ctx);
+      ctx_reset_path(ctx);
     }
     ctx_restore(ctx);
   }
@@ -1547,7 +1547,7 @@ void ui_start_frame(Ui *ui) {
   ctx_rectangle(ctx, 0, 0, ui->width, ui->height);
   ctx_listen(ctx, CTX_DRAG, ui_pan, &ui->scroll_offset, ui);
   ctx_listen(ctx, CTX_DRAG, ui_pan, &ui->scroll_offset_target, ui);
-  ctx_begin_path(ctx);
+  ctx_reset_path(ctx);
   ctx_text_align(ctx, CTX_TEXT_ALIGN_CENTER);
   ctx_font_size(ctx, ui_get_font_size(ui));
   ctx_font(ctx, "Regular");
@@ -1734,14 +1734,14 @@ char *ui_entry_coords(Ui *ui, void *id, float x, float y, float w, float h,
       ctx_restore(ctx);
     }
 
-    ctx_begin_path(ctx);
+    ctx_reset_path(ctx);
     ctx_rectangle(ctx, x, y, w, h);
     ctx_listen(ctx, CTX_DRAG, ui_entry_drag, ui, widget->id);
     if (ui->interactive_debug) {
       ui_set_color(ctx, ui->style.interactive_bg);
       ctx_fill(ctx);
     } else {
-      ctx_begin_path(ctx);
+      ctx_reset_path(ctx);
     }
 
     ctx_restore(ctx);

@@ -857,7 +857,7 @@ again:
         ctx_render_ctx (ctx, ui);
         ctx_restore (ui);
 #if 1
-        ctx_begin_path (ui);
+        ctx_reset_path (ui);
         ctx_rectangle (ui, 0, 0, width, height);
         ctx_listen (ui, CTX_DRAG_MOTION, ui_drag, NULL, NULL);
 #endif

@@ -469,7 +469,7 @@ fun_void__ptr(ctx_restore);
 fun_void__ptr(ctx_queue_draw);
 fun_void__ptr(ctx_exit);
 fun_void__ptr(ctx_new_page);
-fun_void__ptr(ctx_begin_path);
+fun_void__ptr(ctx_reset_path);
 fun_void__ptr(ctx_stroke_source);
 fun_void__ptr(ctx_close_path);
 fun_void__ptr_float_float_float_float(ctx_rgba);
@@ -594,7 +594,7 @@ const struct LibraryFunction CtxFunctions[] =
     {Cctx_restore,          "void ctx_restore(Ctx*);"},
     {Cctx_queue_draw,       "void ctx_queue_draw(Ctx*);"},
     {Cctx_exit,             "void ctx_exit(Ctx*);"},
-    {Cctx_begin_path,     "void ctx_begin_path(Ctx*);"},
+    {Cctx_reset_path,     "void ctx_reset_path(Ctx*);"},
     {Cctx_stroke_source,  "void ctx_stroke_source(Ctx*);"},
     {Cctx_close_path,     "void ctx_close_path(Ctx*);"},
     {Cctx_gray,    "void ctx_gray(Ctx*,float);"},

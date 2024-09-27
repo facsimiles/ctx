@@ -4117,7 +4117,7 @@ void _mrg_layout_pre (Css *mrg)
     mrg_ctx_set_source_color (mrg->ctx, background_color);
     if (is_block_item (style))
     {
-      ctx_begin_path (mrg->ctx); // XXX : this should not need be here!
+      ctx_reset_path (mrg->ctx); // XXX : this should not need be here!
       ctx_deferred_rectangle (mrg->ctx, name,
          mrg->state->block_start_x - padding_left,
          mrg->state->block_start_y - padding_top,
@@ -4351,7 +4351,7 @@ void _mrg_border_top (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x - PROP(padding_left) - PROP(border_left_width),
                        y - PROP(padding_top) - border_top_width);
     ctx_rel_line_to (ctx, width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width), 0);
@@ -4377,7 +4377,7 @@ void _mrg_border_bottom (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, PROP(border_right_width), border_bottom_width);
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
@@ -4403,7 +4403,7 @@ void _mrg_border_top_r (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (cr);
-    ctx_begin_path (cr);
+    ctx_reset_path (cr);
     ctx_move_to (cr, x, y - PROP(padding_top) - border_top_width);
     ctx_rel_line_to (cr, width + PROP(padding_right) + PROP(border_right_width), 0);
     ctx_rel_line_to (cr, -PROP(border_right_width), border_top_width);
@@ -4427,7 +4427,7 @@ void _mrg_border_bottom_r (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, PROP(border_right_width), border_bottom_width);
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width) + PROP(border_right_width)), 0);
@@ -4453,7 +4453,7 @@ void _mrg_border_top_l (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x - PROP(padding_left) - PROP(border_left_width),
                        y - PROP(padding_top) - border_top_width);
     ctx_rel_line_to (ctx, width + PROP(padding_left) + PROP(padding_right) + PROP(border_left_width), 0);
@@ -4478,7 +4478,7 @@ void _mrg_border_bottom_l (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x + width, y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, 0, border_bottom_width);
     ctx_rel_line_to (ctx, - (width + PROP(padding_left) + PROP(border_left_width)), 0);
@@ -4505,7 +4505,7 @@ void _mrg_border_top_m (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x,
                        y - PROP(padding_top) - border_top_width);
     ctx_rel_line_to (ctx, width, 0);
@@ -4530,7 +4530,7 @@ void _mrg_border_bottom_m (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
     ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x + width, y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, 0, border_bottom_width);
     ctx_rel_line_to (ctx, - width, 0);
@@ -4555,7 +4555,7 @@ void _mrg_border_left (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x - PROP(padding_left) - border_left_width,
                        y - PROP(padding_top) - PROP(border_top_width));
     ctx_rel_line_to (ctx, border_left_width, PROP(border_top_width));
@@ -4581,7 +4581,7 @@ void _mrg_border_right (Css *mrg, int x, int y, int width, int height)
   if (!ctx_color_is_transparent (color))
   {
   ctx_save (ctx);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x + width + PROP(padding_right), y + height + PROP(padding_bottom));
     ctx_rel_line_to (ctx, border_right_width, PROP(border_bottom_width));
     ctx_rel_line_to (ctx, 0, - (height + PROP(padding_top) + PROP(padding_bottom) + PROP(border_top_width) + PROP(border_bottom_width)));
@@ -4620,7 +4620,7 @@ static void mrg_box_fill (Css *mrg, CtxStyle *style, float x, float y, float wid
 
   ctx_save (ctx);
   {
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_move_to (ctx, x,
                        y);
     ctx_rel_line_to (ctx, 0, height );
@@ -4990,7 +4990,7 @@ float mrg_draw_string (Css *mrg, CtxStyle *style,
       CtxColor *color = ctx_color_new ();
       ctx_get_color (cr, SQZ_text_stroke_color, color);
       mrg_ctx_set_source_color (cr, color);
-      ctx_begin_path (cr);
+      ctx_reset_path (cr);
       ctx_move_to   (cr, x, y - _mrg_text_shift (mrg));
       ctx_line_width (cr, PROP(text_stroke_width));
       ctx_line_join (cr, CTX_JOIN_ROUND);
@@ -5060,7 +5060,7 @@ float mrg_draw_string (Css *mrg, CtxStyle *style,
 
     ctx_current_point (cr, &x, &y);
 
-    ctx_begin_path (cr);
+    ctx_reset_path (cr);
     ctx_rectangle (cr,
         old_x, y - em, new_x - old_x + 1, em * mrg->state->style.line_height);
     ctx_listen (cr,
@@ -5068,7 +5068,7 @@ float mrg_draw_string (Css *mrg, CtxStyle *style,
                 mrg->text_listen_cb[no],
                 mrg->text_listen_data1[no],
                 mrg->text_listen_data2[no]);
-    ctx_begin_path (cr);
+    ctx_reset_path (cr);
     ctx_move_to (cr, x, y);
   }
 
@@ -6881,7 +6881,7 @@ mrg_parse_svg_path (Css *mrg, const char *str)
   ctx_parse (ctx, str);
   return 0;
   //ctx_move_to (ctx, 0, 0);
-  //ctx_begin_path (ctx);
+  //ctx_reset_path (ctx);
   cx = 0; cy = 0;
   pcx = cx; pcy = cy;
 
@@ -8315,7 +8315,7 @@ void css_xml_render (Css *mrg,
         else if (data_hash == SQZ_path)
         {
           const char *transform;
-	  ctx_begin_path (mrg_ctx (mrg)); // XXX: eeeek!
+	  ctx_reset_path (mrg_ctx (mrg)); // XXX: eeeek!
           if ((transform = PROPS(transform)))
             {
               CtxMatrix matrix;
@@ -9660,7 +9660,7 @@ void css_titlebar (Css *itk, const char *label)
   ctx_rectangle (ctx, itk->x, itk->y, itk->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_DRAG, titlebar_drag, itk->panel, itk, NULL, NULL);
 
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   itk->line_no = 0;
   itk->lines_drawn = 0;
   //css_base (itk, label, control->x, control->y, control->width - em * itk->rel_hmargin, em * itk->rel_ver_advance, itk->focus_no == control->no);
@@ -9678,7 +9678,7 @@ void css_scroll_start (Css *itk, float height)
   itk->panel->scroll_start_y = itk->y;
   ctx_rectangle (ctx, itk->edge_left - itk->rel_hmargin*css_em(itk), itk->y, panel->width, panel->height - (itk->y - panel->y));
   ctx_clip (ctx);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   ctx_translate (ctx, 0.0, -panel->scroll);
 }
 
@@ -9738,7 +9738,7 @@ void css_scroll_end (Css *itk)
   float scrollbar_width = em;
 
 #if 1
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   ctx_rectangle (ctx, panel->x + panel->width- scrollbar_width,
                       panel->scroll_start_y,
                       scrollbar_width,
@@ -9748,7 +9748,7 @@ void css_scroll_end (Css *itk)
   ctx_fill (ctx);
 #endif
 
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   float th = scrollbar_height * (scrollbar_height /  (panel->max_y-panel->scroll_start_y));
   if (th > scrollbar_height) th = scrollbar_height;
 
@@ -9791,7 +9791,7 @@ CssPanel *css_panel_start (Css *itk, const char *title,
   itk->panel = panel;
 
   css_style_fg (itk, "itk");
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   ctx_rectangle (ctx, panel->x, panel->y, panel->width, panel->height);
   ctx_line_width (ctx, 2);
   ctx_stroke (ctx);
@@ -9831,7 +9831,7 @@ void css_panel_end (Css *itk)
                       em);
   ctx_listen (ctx, CTX_DRAG, css_panel_resize_drag, panel, itk);
   css_style_fg (itk, "wallpaper");
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   ctx_move_to (ctx, panel->x + panel->width,
                     panel->y + panel->height);
 #if 1
@@ -9917,7 +9917,7 @@ float css_slider (Css *itk, const char *label, float value, double min, double m
   control_ref (control);
   ctx_rectangle (ctx, itk->x, itk->y, control->width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_DRAG, css_slider_cb_drag, control, itk, control_finalize, NULL);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
 
   double fval = value;
 
@@ -10203,7 +10203,7 @@ char *css_entry (Css        *itk,
     control_ref (control);
   }
 
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   ctx_move_to (ctx, itk->x, itk->y + em);
   if (itk->active &&
       itk->entry_copy && itk->focus_no == control->no)
@@ -10331,7 +10331,7 @@ int css_toggle (Css *itk, const char *label, int input_val)
   control->type = UI_TOGGLE;
   ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
 
   if (control->no == itk->focus_no && itk->return_value)
   {
@@ -10377,7 +10377,7 @@ int css_radio (Css *itk, const char *label, int set)
   control->type = UI_TOGGLE;
   ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
 
   if (control->no == itk->focus_no && itk->return_value)
   {
@@ -10443,7 +10443,7 @@ int css_button (Css *itk, const char *label)
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
   ctx_rgb (ctx, 1,1,0);
   ctx_fill (ctx);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
 
   //css_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
@@ -10465,7 +10465,7 @@ int css_button (Css *itk, const char *label)
                              itk->x, itk->y, width, em * itk->rel_ver_advance);
 
   css_style_color (itk->ctx, "itk-button-shadow");
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   ctx_round_rectangle (ctx, itk->x + em * 0.1, itk->y + em * 0.1, width, em * itk->rel_ver_advance, em*0.33);
   ctx_fill (ctx);
 
@@ -10498,7 +10498,7 @@ int css_button (Css *itk, const char *label)
   control->type = UI_BUTTON;
   ctx_rectangle (ctx, itk->x, itk->y, width, em * itk->rel_ver_advance);
   ctx_listen_with_finalize (ctx, CTX_CLICK, button_clicked, control, itk, control_finalize, NULL);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
 
 //  css_newline (itk);
   if (control->no == itk->focus_no && itk->return_value)
@@ -10553,7 +10553,7 @@ int css_choice (Css *itk, const char *label, int val)
 
   ctx_rectangle (ctx, extent.x, extent.y, extent.width, extent.height);
   ctx_listen_with_finalize (ctx, CTX_CLICK, css_choice_clicked, control, itk, control_finalize, NULL);
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   if (itk->focus_no == itk->control_no-1)
   {
     Css *mrg = (Css*)itk;

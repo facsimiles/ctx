@@ -662,7 +662,7 @@ void draw_mini_panel (Ctx *ctx)
   }
   else if (full_time < 4.0f)
   {
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
     ctx_rgba (ctx, 1,1,1,0.15);
     icon_overview (ctx, x, 0, tile_dim, tile_dim);
     ctx_fill (ctx);
@@ -731,7 +731,7 @@ void draw_panel (Css *itk, Ctx *ctx)
 
   ctx_save (ctx);
 
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
 
   int tabs = 0;
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
@@ -746,7 +746,7 @@ void draw_panel (Css *itk, Ctx *ctx)
   if (tabs)
   tab_width /= tabs;
 
-  ctx_begin_path (ctx);
+  ctx_reset_path (ctx);
   float x = 0.0f;
 
   for (CtxList *l = ctx_clients (ctx); l; l = l->next)
@@ -754,7 +754,7 @@ void draw_panel (Css *itk, Ctx *ctx)
     CtxClient *client = l->data;
     if (ctx_client_flags (client) & CSS_CLIENT_MAXIMIZED)
     {
-      ctx_begin_path (ctx);
+      ctx_reset_path (ctx);
       if (ctx_client_is_active_tab (ctx, client))
       {
         ctx_rectangle (ctx, x + 0.2 * em, 0.0 * em,
@@ -1058,7 +1058,7 @@ static void overview (Ctx *ctx, float anim_t)
     ctx_restore(ctx);
     ctx_rectangle (ctx, x-2, y-2, w+4, h+4);
     ctx_listen (ctx, CTX_DRAG_PRESS, overview_select_client, client, NULL);
-    ctx_begin_path (ctx);
+    ctx_reset_path (ctx);
 
 
     if (opos[i].id == ctx_clients_active (ctx))
@@ -1075,7 +1075,7 @@ static void overview (Ctx *ctx, float anim_t)
 
 	  if (anim_t > 0.8)
 	  {
-	    ctx_begin_path (ctx);
+	    ctx_reset_path (ctx);
 	    icon_remove_tab (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
 	    ctx_fill (ctx);
 	  }
@@ -1402,7 +1402,7 @@ int main (int argc, char **argv)
 	{
           ctx_rectangle (ctx, 0, 0, ctx_width (ctx), ctx_height (ctx));
           ctx_listen (ctx, CTX_TAP_AND_HOLD, terminal_long_tap, NULL, NULL);
-          ctx_begin_path (ctx);
+          ctx_reset_path (ctx);
 	}
 
         ctx_end_frame (ctx);

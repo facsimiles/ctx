@@ -105,7 +105,7 @@ void ctx_handle_img (Ctx *ctx, const char *path)
       ctx_listen (ctx, CTX_SCROLL, image_scroll, NULL, NULL);
       ctx_gray (ctx, 0.0f);
       ctx_fill (ctx);
-      //ctx_begin_path (ctx);
+      //ctx_reset_path (ctx);
       if (image_smoothing == 0)
         ctx_image_smoothing (ctx, 0);
       if (repeat)

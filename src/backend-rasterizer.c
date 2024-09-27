@@ -4202,7 +4202,7 @@ foo:
         }
         break;
       case CTX_START_FRAME:
-      case CTX_BEGIN_PATH:
+      case CTX_RESET_PATH:
         ctx_rasterizer_reset (rasterizer);
         break;
       case CTX_CLIP:

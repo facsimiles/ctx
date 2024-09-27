@@ -94,7 +94,7 @@ void ctx_handle_tvg (Ctx *ctx, const char *path)
       ctx_listen (ctx, CTX_SCROLL, tvg_scroll, NULL, NULL);
       ctx_gray (ctx, 0.0f);
       ctx_fill (ctx);
-      //ctx_begin_path (ctx);
+      //ctx_reset_path (ctx);
       //ctx_compositing_mode (ctx, CTX_COMPOSITE_COPY);
       //ctx_rectangle (ctx, 0,0, ctx_width(ctx), ctx_height(ctx));
       ctx_save (ctx);
