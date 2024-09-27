@@ -315,4 +315,9 @@ afl-plot: #
 	afl-plot afl-vt/default afl-vt/plot || true #
 	afl-plot afl/default afl/plot || true #
 	afl-plot afl-css/default afl-css/plot || true #
-
+afl-resume-vt: #
+	afl-fuzz -i- -o afl-vt  -- ./fuzz-vt #
+afl-resume-ctx: #
+	afl-fuzz -i- -o afl  -- ./fuzz-ctx #
+afl-resume-css: #
+	afl-fuzz -i- -o afl-css  -- ./fuzz-css #

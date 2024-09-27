@@ -13,8 +13,16 @@
 #if !__COSMOPOLITAN__
 
 #if CTX_PICO
+
 #include "pico/stdlib.h"
+#include "pico/time.h"
 #include "hardware/timer.h"
+
+
+#ifdef PICO_BUILD
+#define usleep(us)   sleep_us(us)
+#endif
+
 static uint64_t pico_get_time(void) {
     // Reading low latches the high value
     uint32_t lo = timer_hw->timelr;
@@ -1522,11 +1530,8 @@ ctx_pointer_press (Ctx *ctx, float x, float y, int device_no, uint32_t time)
   /* doing just one of these two should be enough? */
   events->pointer_down[device_no] = 1;
 
-
-  int typing_ignore = 0;
   if (events->last_key_time + CTX_TYPING_POINTER_IGNORE_MS > time)
   {
-    typing_ignore = 1;
     return 0;
   }
 
