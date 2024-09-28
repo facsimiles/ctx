@@ -972,17 +972,10 @@ CTX_EXPORT void
 ctx_start_frame (Ctx *ctx)
 {
   ctx_drawlist_clear (ctx);
-        /* we do the callback reset first - maybe we need two cbs,
-         * one for before and one after default impl?
-         *
-         * tiled fb and sdl needs to sync
-         */
+
   if (ctx->backend && ctx->backend->start_frame)
     ctx->backend->start_frame (ctx);
 
-  //CTX_PROCESS_VOID (CTX_START_FRAME);
-  //if (ctx->transformation & CTX_TRANSFORMATION_STORE_CLEAR)
-  //  { return; }
   ctx_state_init (&ctx->state);
 #if CTX_EVENTS
   ctx_list_free (&ctx->events.items);
@@ -1116,7 +1109,6 @@ void ctx_image_smoothing (Ctx *ctx, int enabled)
   if (ctx_get_image_smoothing (ctx) != enabled)
     CTX_PROCESS_U8 (CTX_IMAGE_SMOOTHING, enabled);
 }
-
 
 void ctx_line_dash (Ctx *ctx, const float *dashes, int count)
 {

@@ -49,51 +49,12 @@ ctx_cb_set_memory_budget (Ctx *ctx, int memory_budget)
   backend_cb->config.memory_budget = memory_budget;
   if (backend_cb->fb)
   {
-    ctx_free (backend_cb->fb);
+    if (backend_cb->allocated_fb)
+      ctx_free (backend_cb->fb);
+    backend_cb->allocated_fb = 0;
     backend_cb->fb = NULL;
   }
 }
-
-#define CTX_MEMDEBUG 0  // by setting this to 1 we get reports about
-                        // scratch buffer overflows into the 1kb buffer
-                        // area
-                        //
-#if CTX_MEMDEBUG
-#define CTX_SCRATCH_PAD  512
-
-static void
-ctx_memdebug (CtxCbBackend *cb_backend, int line_no)
-{
-  int started = 0;
-  int last = 0;
-  int first = 0;
-  if (!cb_backend->fb)
-    return;
-  for (int i = cb_backend->config.memory_budget/2; i < cb_backend->config.memory_budget/2 + CTX_SCRATCH_PAD/2;i++)
-  {
-    if (cb_backend->fb[i] != 42)
-    {
-      if (!started)
-      {
-        first = i;
-        started = 1;
-      }
-      last = i;
-      cb_backend->fb[i] = 42;
-    }
-  }
-  if (started)
-  fprintf (stderr, "%i scratch overreach - first wrong byte at buf + %i last: %i\n",
-                  line_no,
-                  first - cb_backend->config.memory_budget/2,
-                                                                          last - cb_backend->config.memory_budget/2);
-}
-                        
-#define CTX_VERIFY_MEM()  do{ctx_memdebug(backend_cb, __LINE__);}while(0)
-#else
-#define CTX_SCRATCH_PAD   0
-#define CTX_VERIFY_MEM()  do{}while(0)
-#endif
 
 static int ctx_render_cb (CtxCbBackend *backend_cb, 
                           int x0, int y0,
@@ -118,11 +79,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
 
   if (!backend_cb->fb)
   {
-    backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget + CTX_SCRATCH_PAD);
-#if CTX_MEMDEBUG
-    for (int i = memory_budget/2; i < memory_budget/2 + CTX_SCRATCH_PAD/2;i++)
-      backend_cb->fb[i] = 42;
-#endif
+    backend_cb->allocated_fb = 1;
+    backend_cb->fb = (uint16_t*)ctx_malloc (memory_budget);
   }
   fb = backend_cb->fb;
 
@@ -805,7 +763,14 @@ void ctx_draw_pointer (Ctx *ctx, float x, float y, CtxCursor cursor)
 #endif
         break;
       case CTX_CURSOR_CROSSHAIR:
+
+	drawing = "rectangle 10 -2 40 4 rectangle -50 -2 40 4 rectangle -2 -50 4 40 rectangle -2 10 4 40 z rgba 0 0 0 0.5 preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke ";
+
+	break;
       case CTX_CURSOR_WAIT:
+	drawing = "M -50 -50 L 50 -50 L -50 50 L 50 50 z rgba 0 0 0 0.5 preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke ";
+
+	break;
       case CTX_CURSOR_HAND:
       case CTX_CURSOR_IBEAM:
       case CTX_CURSOR_MOVE:
@@ -979,6 +944,8 @@ static void ctx_cb_destroy (void *data)
     if (cb_backend->config.renderer_stop)
       cb_backend->config.renderer_stop (cb_backend->backend.ctx, cb_backend->backend.user_data);
   }
+  if (cb_backend->allocated_fb)
+    ctx_free (cb_backend->fb);
   // XXX leaking ->fb if it was dynamically allocated
   free (data);
 }
@@ -1024,7 +991,6 @@ static char *ctx_cb_get_clipboard (Ctx *ctx)
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
   return backend_cb->config.get_clipboard (ctx, backend_cb->backend.user_data);
 }
-
 
 Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
 {
@@ -1148,7 +1114,8 @@ Ctx *ctx_new_cb_old (int width, int height, CtxPixelFormat format,
   };
   if (update_fb_user_data && update_fb_user_data != set_pixels_user_data)
   {
-    assert(0);exit(0);
+    assert(0);
+    exit(0);
   }
   return ctx_new_cb (width, height, &config);
 }

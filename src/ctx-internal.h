@@ -1337,6 +1337,7 @@ typedef struct CtxCbBackend
   int            max_col; // hasher cols and rows
   int            max_row; // hasher cols and rows
   uint16_t      *fb;
+  int            allocated_fb;
   Ctx           *ctx;
 
 #if 0
