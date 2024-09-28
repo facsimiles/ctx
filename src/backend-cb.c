@@ -841,7 +841,25 @@ static void ctx_cb_destroy (void *data)
 static void ctx_cb_consume_events (Ctx *ctx)
 {
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
-  backend_cb->config.consume_events (ctx, backend_cb->backend.user_data);
+  int old_pointer_x = 0;
+  int old_pointer_y = 0;
+  if (backend_cb->config.flags & CTX_FLAG_POINTER)
+  {
+    old_pointer_x = ctx_pointer_x (ctx);
+    old_pointer_y = ctx_pointer_y (ctx);
+  }
+  if (backend_cb->config.consume_events)
+  {
+    backend_cb->config.consume_events (ctx, backend_cb->backend.user_data);
+  }
+  if (backend_cb->config.flags & CTX_FLAG_POINTER)
+  {
+    int pointer_x = ctx_pointer_x (ctx);
+    int pointer_y = ctx_pointer_y (ctx);
+    if ((pointer_x != old_pointer_x) |
+        (pointer_y != old_pointer_y))
+      ctx_queue_draw (ctx);
+  }
 }
 
 static void ctx_cb_windowtitle (Ctx *ctx, const char *utf8)
@@ -885,8 +903,7 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
      cb_backend->config.flags |= CTX_FLAG_SHOW_FPS;
   cb_backend->ctx = ctx;
 
-  if (config->consume_events)
-    backend->consume_events = ctx_cb_consume_events;
+  backend->consume_events = ctx_cb_consume_events;
   if (config->windowtitle)
     backend->set_windowtitle = ctx_cb_windowtitle;
 
