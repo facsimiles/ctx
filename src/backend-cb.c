@@ -197,6 +197,47 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
        backend_cb->config.update_fb (ctx, backend_cb->backend.user_data);
 
     int yo = 0;
+    if (format == CTX_FORMAT_RGBA8)
+    {
+
+    do
+    {
+      render_height = ctx_mini (render_height, y1-y0+1);
+      int off = 0;
+      for (int y = 0; y < render_height; y++)
+      {
+        int sbase = (small_stride * ((yo+y)/scale_factor));
+        off = y * width;
+        switch (tformat)
+        {
+          default:
+          case CTX_FORMAT_RGBA8:
+            {
+              int sx = 0;
+              for (int x = 0; x < width;)
+              {
+                uint32_t val = ((uint32_t*)fb)[sbase/4+(sx++)];
+                for (int i = 0; i < scale_factor && x < width; i++, x++)
+                  ((uint32_t*)scaled)[off++]  = val;
+              }
+            }
+            break;
+        }
+        for (int ty = 1; ty < scale_factor && y + 1< render_height; ty++)
+        {
+           memcpy (&scaled[off*2], &scaled[((off-width)*2)], 4 * width);
+           off += width ;
+           y++;
+        }
+      }
+      set_pixels (ctx, backend_cb->backend.user_data,
+                  x0, y0, width, render_height, (uint16_t*)scaled);
+      y0 += render_height;
+      yo += render_height;
+    } while (y0 < y1);
+
+    }
+    else
     do
     {
       render_height = ctx_mini (render_height, y1-y0+1);
