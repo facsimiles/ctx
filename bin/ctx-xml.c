@@ -270,7 +270,7 @@ int main (int argc, char **argv)
     render_ui (itk, mr);
     fprintf (stdout, "\n\e[?200h");
     ctx_render_stream (ctx, stdout, 0);
-    fprintf (stdout, " done\n\n\n");
+    fprintf (stdout, " done\n");
 #endif
   }
 

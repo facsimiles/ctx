@@ -722,6 +722,112 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 }
 #endif
 
+void ctx_draw_pointer (Ctx *ctx, float x, float y, CtxCursor cursor)
+{
+    const char *drawing = "M 0 0 L 30 40 L 10 50 rgba 0 0 0 0.5 z preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke";
+    ctx_save(ctx);
+    ctx_translate (ctx, x, y);
+
+    switch (cursor)
+    {
+      case CTX_CURSOR_UNSET: // XXX: document how this differs from none
+                             //      perhaps falling back to arrow?
+        break;
+      case CTX_CURSOR_NONE:
+	ctx_restore (ctx);
+	return;
+        drawing = "";
+        break;
+      case CTX_CURSOR_ARROW:
+#if 1
+        drawing = "M 0 0 L 30 40 L 10 50 rgba 0 0 0 0.5 z preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke";
+#else
+        ctx_move_to (ctx, 0,0);
+        ctx_line_to (ctx, 30, 40);
+        ctx_line_to (ctx, 10, 45);
+        ctx_rgba (ctx, 0, 0, 0, 0.5);
+        ctx_close_path (ctx);
+        ctx_preserve (ctx);
+        ctx_fill (ctx);
+        ctx_rgba (ctx, 1, 1, 1, 0.5);
+        ctx_line_width (ctx, 2.0);
+        ctx_stroke (ctx);
+	ctx_restore (ctx);
+	return;
+#endif
+        break;
+      case CTX_CURSOR_CROSSHAIR:
+      case CTX_CURSOR_WAIT:
+      case CTX_CURSOR_HAND:
+      case CTX_CURSOR_IBEAM:
+      case CTX_CURSOR_MOVE:
+      case CTX_CURSOR_RESIZE_ALL:
+      case CTX_CURSOR_RESIZE_N:
+      case CTX_CURSOR_RESIZE_S:
+      case CTX_CURSOR_RESIZE_E:
+      case CTX_CURSOR_RESIZE_W:
+      case CTX_CURSOR_RESIZE_NE:
+      case CTX_CURSOR_RESIZE_SW:
+      case CTX_CURSOR_RESIZE_NW:
+      case CTX_CURSOR_RESIZE_SE:
+        drawing = "M 0 0 L 50 0 L 50 50 L 0 50 rgba 1 0 0 0.5 fill";
+        break;
+    }
+
+    ctx_parse (ctx, drawing);
+    ctx_restore(ctx);
+#if 0
+  if (tiled->shown_cursor != backend->ctx->cursor)
+  {
+    tiled->shown_cursor = backend->ctx->cursor;
+    SDL_Cursor *new_cursor =  NULL;
+    switch (tiled->shown_cursor)
+    {
+      case CTX_CURSOR_UNSET: // XXX: document how this differs from none
+                             //      perhaps falling back to arrow?
+        break;
+      case CTX_CURSOR_NONE:
+        new_cursor = NULL;
+        break;
+      case CTX_CURSOR_ARROW:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+        break;
+      case CTX_CURSOR_CROSSHAIR:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+        break;
+      case CTX_CURSOR_WAIT:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
+        break;
+      case CTX_CURSOR_HAND:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+        break;
+      case CTX_CURSOR_IBEAM:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+        break;
+      case CTX_CURSOR_MOVE:
+      case CTX_CURSOR_RESIZE_ALL:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+        break;
+      case CTX_CURSOR_RESIZE_N:
+      case CTX_CURSOR_RESIZE_S:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+        break;
+      case CTX_CURSOR_RESIZE_E:
+      case CTX_CURSOR_RESIZE_W:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+        break;
+      case CTX_CURSOR_RESIZE_NE:
+      case CTX_CURSOR_RESIZE_SW:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+        break;
+      case CTX_CURSOR_RESIZE_NW:
+      case CTX_CURSOR_RESIZE_SE:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+        break;
+    }
+#endif
+}
+
 static void
 ctx_cb_end_frame (Ctx *ctx)
 {
@@ -770,21 +876,7 @@ ctx_cb_end_frame (Ctx *ctx)
   }
 
   if (cb_backend->config.flags & CTX_FLAG_POINTER)
-  {
-    ctx_save(ctx);
-    ctx_translate (ctx, ctx_pointer_x(ctx), ctx_pointer_y(ctx));
-    ctx_move_to (ctx, 0,0);
-    ctx_line_to (ctx, 30, 40);
-    ctx_line_to (ctx, 10, 45);
-    ctx_rgba (ctx, 0, 0, 0, 0.5);
-    ctx_close_path (ctx);
-    ctx_preserve (ctx);
-    ctx_fill (ctx);
-    ctx_rgba (ctx, 1, 1, 1, 0.5);
-    ctx_line_width (ctx, 2.0);
-    ctx_stroke (ctx);
-    ctx_restore(ctx);
-  }
+    ctx_draw_pointer (ctx, ctx_pointer_x(ctx), ctx_pointer_y(ctx), ctx->cursor);
 
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {

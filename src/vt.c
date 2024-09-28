@@ -5736,7 +5736,14 @@ mice:{
           // queue-draw
         }
       return;
-    }}
+    }
+  }
+  else if ((!strncmp (str, "alt-p", 5)))
+  {
+    // or should we handle alt + mouse as if alt was not down?
+    return;
+  }
+
 
   if (vt->scroll_on_input)
   {
