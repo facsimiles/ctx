@@ -197,7 +197,8 @@ static int ctx_render_cb (CtxCbBackend *backend_cb,
        backend_cb->config.update_fb (ctx, backend_cb->backend.user_data);
 
     int yo = 0;
-    if (format == CTX_FORMAT_RGBA8)
+    if ((format == CTX_FORMAT_RGBA8) ||
+	(format == CTX_FORMAT_BGRA8))
     {
 
     do
