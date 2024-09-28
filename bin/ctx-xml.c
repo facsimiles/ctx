@@ -218,6 +218,10 @@ static int render_ui (Css *itk, void *data)
   return 1;
 }
 
+int ctx_terminal_width (void);
+int ctx_terminal_height (void);
+int ctx_terminal_cols (void);
+int ctx_terminal_rows (void);
 
 #if CTX_BIN_BUNDLE
 int ctx_xml_main (int argc, char **argv)
@@ -266,11 +270,17 @@ int main (int argc, char **argv)
     css_run_ui (itk, render_ui, mr);
   else
   {
+
+   // we need to be able to get font size from terminal..
+   // to figure out how much to skip
+   //
+   // best done through existing terminal sequence
+
 #if CTX_FORMATTER
     render_ui (itk, mr);
     fprintf (stdout, "\n\e[?200h");
     ctx_render_stream (ctx, stdout, 0);
-    fprintf (stdout, " done\n");
+    fprintf (stdout, " done\n\e[%iE", (int)(480.0f/(ctx_terminal_height()/ctx_terminal_rows())));
 #endif
   }
 
