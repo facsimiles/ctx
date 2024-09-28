@@ -881,12 +881,17 @@ ctx_cb_end_frame (Ctx *ctx)
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
     CTX_MB();
-    while (cb_backend->rendering)
+    if (cb_backend->rendering)
     {
+       // TODO : make it possible to steal chunks off render threads
+       //        work here - making renderer dual core
+       while (cb_backend->rendering)
+      {
 #if CTX_EVENTS
-      ctx_handle_events (ctx);
+        ctx_handle_events (ctx);
 #endif
-      CTX_MB();
+        CTX_MB();
+      }
     }
 
     CtxDrawlist temp = ctx->drawlist;
