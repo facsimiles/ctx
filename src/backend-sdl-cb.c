@@ -481,11 +481,11 @@ Ctx *ctx_new_sdl_cb (int width, int height)
     .format         = CTX_FORMAT_RGBA8,
     .flags          = 0
 	            | CTX_FLAG_HASH_CACHE 
-	            | CTX_FLAG_LOWFI
+	         // | CTX_FLAG_LOWFI
 	            | CTX_FLAG_DOUBLE_BUFFER 
 		 // | CTX_FLAG_POINTER
 	           ,
-    .memory_budget  = 1920 * 256 * 4,
+    .memory_budget  = 1920 * 1080 * 4 / 3,
     .renderer_init  = sdl_cb_renderer_init,
     .renderer_idle  = sdl_cb_renderer_idle,
     .set_pixels     = sdl_cb_set_pixels,

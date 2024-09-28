@@ -1326,6 +1326,7 @@ typedef struct CtxCbBackend
 
   Ctx           *drawlist_copy;
   int            rendering;
+  int            re_render;
   int            frame_no;
 
   CtxCbConfig    config;

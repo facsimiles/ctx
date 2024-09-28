@@ -442,6 +442,8 @@ ctx_cb_extent (Ctx *ctx, float *x0, float *y0, float *x1, float *y1)
 static void
 ctx_cb_start_frame (Ctx *ctx)
 {
+  CtxCbBackend *cb_backend = (CtxCbBackend*)ctx->backend;
+  cb_backend->re_render = 0;
 #if CTX_EVENTS
   // ctx_handle_events (ctx);
 #endif
@@ -595,6 +597,7 @@ ctx_cb_render_frame (Ctx *ctx)
 
          if (in_low_res)
          {
+	     cb_backend->re_render = 1;
              abort = ctx_render_cb (cb_backend, x0, y0, x1, y1, active_mask);
              for (int row = cb_backend->min_row; row <= cb_backend->max_row; row++)
                for (int col = cb_backend->min_col; col <= cb_backend->max_col; col++)
@@ -615,6 +618,7 @@ ctx_cb_render_frame (Ctx *ctx)
          else // full res
          {
            tile_no = 0;
+	   cb_backend->re_render = 0;
 
            if (width * height * bpp <= cb_backend->config.memory_budget)
            {
@@ -753,6 +757,8 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
     if (cb_backend->rendering == 1)
     {
       ctx_cb_render_frame (ctx);
+      if (cb_backend->re_render)
+        ctx_cb_render_frame (ctx);
       cb_backend->rendering = 0;
       CTX_MB();
     }
