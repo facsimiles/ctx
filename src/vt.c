@@ -8412,6 +8412,15 @@ void vt_use_images (VT *vt, Ctx *ctx)
   ctx_restore (ctx);
 }
 
+static void ctx_client_scroll_event (CtxEvent *event, void *c, void *u)
+{
+  CtxClient *client = (CtxClient*)c;
+  VT *vt = client->vt;
+  int new_scroll = vt_get_scroll (vt) + event->scroll_direction;
+  vt_set_scroll (vt, new_scroll);
+  ctx_client_rev_inc (vt->client);
+}
+
 
 void ctx_client_register_events (CtxClient *client, Ctx *ctx, double x0, double y0)
 {
@@ -8422,6 +8431,7 @@ void ctx_client_register_events (CtxClient *client, Ctx *ctx, double x0, double 
   ctx_listen (ctx, CTX_DRAG,   ctx_client_mouse_event, client, NULL);
   //ctx_listen (ctx, CTX_TAP_AND_HOLD, ctx_client_mouse_event, client, NULL);
   ctx_listen (ctx, CTX_MOTION, ctx_client_mouse_event, client, NULL);
+  ctx_listen (ctx, CTX_SCROLL, ctx_client_scroll_event, client, NULL);
   ctx_reset_path (ctx);
   ctx_restore (ctx);
 }
