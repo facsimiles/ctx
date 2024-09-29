@@ -47,6 +47,18 @@ static void image_drag (CtxEvent *event, void *data0, void *data1)
 
 static void image_scroll (CtxEvent *event, void *data0, void *data1)
 {
+   Ctx *ctx = event->ctx;
+   ox0 -=  (ctx_width (ctx) / 2) / img_scale;
+   oy0 -=  (ctx_height (ctx) / 2) / img_scale;
+
+   if (event->scroll_direction == -1)
+      img_scale *= 1.1;
+   else
+      img_scale /= 1.1;
+   ox0 +=  (ctx_width (ctx) / 2) / img_scale;
+   oy0 +=  (ctx_height (ctx) / 2) / img_scale;
+   auto_size = 0;
+   img_dirty=1;ctx_queue_draw (ctx);
 #if 0
    ox0 += event->delta_x / img_scale;
    oy0 += event->delta_y / img_scale;
