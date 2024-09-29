@@ -40,7 +40,6 @@ struct _CtxFbCb
    struct       fb_fix_screeninfo finfo;
 #endif
 
-
 #if 0
    char         *title;
    const char   *prev_title;
@@ -76,7 +75,6 @@ static void fb_cb_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, in
   }
   //Fb_Rect r = {x, y, w, h};
   //Fb_UpdateTexture (((CtxFbCb*)user_data)->texture, &r, buf, w * 4);
-
 }
 
 static void fb_cb_renderer_idle (Ctx *ctx, void *user_data)
@@ -132,7 +130,6 @@ static void fb_cb_consume_events (Ctx *ctx, void *user_data)
   }
 }
 
-
 static void ctx_fb_cb_get_event_fds (Ctx *ctx, int *fd, int *count)
 {
   int mice_fd = _ctx_mice_fd;
@@ -152,6 +149,11 @@ static void fb_cb_renderer_stop (Ctx *ctx, void *user_data)
 {
   CtxFbCb *fb = (CtxFbCb*)user_data;
 
+#if CTX_FB_KDSETMODE
+#ifdef __linux__
+  ioctl (0, KDSETMODE, KD_TEXT);  
+#endif
+#endif
   if (fb->is_kms)
   {
      ctx_fbkms_flip (&fb->kms);
@@ -159,22 +161,16 @@ static void fb_cb_renderer_stop (Ctx *ctx, void *user_data)
   else
   {
 
-#if CTX_FB_KDSETMODE
-#ifdef __linux__
-  ioctl (0, KDSETMODE, KD_TEXT);  
-#endif
-#endif
 #ifdef __NetBSD__
-  {  
-   int mode = WSDISPLAYIO_MODE_EMUL;  
-   ioctl (fb->fb_fd, WSDISPLAYIO_SMODE, &mode);  
-  }  
+    {  
+     int mode = WSDISPLAYIO_MODE_EMUL;  
+     ioctl (fb->fb_fd, WSDISPLAYIO_SMODE, &mode);  
+    }  
 #endif
-  munmap (fb->fb, fb->fb_mapped_size);
-  close (fb->fb_fd);  
-  if (system("stty sane")){};
+    munmap (fb->fb, fb->fb_mapped_size);
+    close (fb->fb_fd);  
+    if (system("stty sane")){};
   }
-
 }
 
 #ifdef __linux__
@@ -210,18 +206,22 @@ static void fb_cb_vt_switch_cb (int sig)
 }
 #endif
 
-
-
 static int fb_cb_renderer_init (Ctx *ctx, void *user_data)
 {
-  CtxFbCb *fb = (CtxFbCb*)user_data;
+  CtxFbCb *fb      = (CtxFbCb*)user_data;
   CtxCbBackend *cb = ctx_get_backend (ctx);
 
   ctx_fb = (CtxFb*)fb;
 
-  int kms_w = 0; int kms_h = 0;
+  int kms_w = 0;
+  int kms_h = 0;
   uint8_t *base = NULL;
-  if (0 && (base = ctx_fbkms_new(&fb->kms, &kms_w, &kms_h)))
+
+  int try_kms = 0;
+  if (getenv ("CTX_BACKEND") && !strcmp (getenv ("CTX_BACKEND"), "kms"))
+    try_kms = 1;
+
+  if (try_kms && (base = ctx_fbkms_new(&fb->kms, &kms_w, &kms_h)))
   {
      fb->fb = base;
      fb->width = kms_w;
@@ -232,53 +232,53 @@ static int fb_cb_renderer_init (Ctx *ctx, void *user_data)
      fb->fb_mapped_size = fb->width * 4 * fb->height;
   }
   else
-    {  
-#ifdef __linux__
-  const char *dev_path = "/dev/fb0";  
-#endif
-#ifdef __NetBSD__
-  const char *dev_path = "/dev/ttyE0";  
-#endif
-#ifdef __OpenBSD__
-  const char *dev_path = "/dev/ttyC0";  
-#endif
-  fb->fb_fd = open (dev_path, O_RDWR);  
-  if (fb->fb_fd > 0)  
-    fb->fb_path = ctx_strdup (dev_path);  
-  else  
   {  
 #ifdef __linux__
-    fb->fb_fd = open ("/dev/graphics/fb0", O_RDWR);  
-    if (fb->fb_fd > 0)  
-    {  
-      fb->fb_path = ctx_strdup ("/dev/graphics/fb0");  
-    }  
-    else  
+    const char *dev_path = "/dev/fb0";  
 #endif
+#ifdef __NetBSD__
+    const char *dev_path = "/dev/ttyE0";  
+#endif
+#ifdef __OpenBSD__
+    const char *dev_path = "/dev/ttyC0";  
+#endif
+    fb->fb_fd = open (dev_path, O_RDWR);  
+    if (fb->fb_fd > 0)  
+      fb->fb_path = ctx_strdup (dev_path);  
+    else  
     {  
-      ctx_free (fb);  
-      return -1;  
-    }  
-  }  
+#ifdef __linux__
+      fb->fb_fd = open ("/dev/graphics/fb0", O_RDWR);  
+      if (fb->fb_fd > 0)  
+      {  
+        fb->fb_path = ctx_strdup ("/dev/graphics/fb0");  
+      }  
+      else  
+#endif
+      {  
+        ctx_free (fb);  
+        return -1;  
+      }  
+    }
 
 #ifdef __linux__
   if (ioctl(fb->fb_fd, FBIOGET_FSCREENINFO, &fb->finfo))
-    {
-      fprintf (stderr, "error getting fbinfo\n");
-      close (fb->fb_fd);
-      ctx_free (fb->fb_path);
-      ctx_free (fb);
-      return -1;
-    }
+  {
+    fprintf (stderr, "error getting fbinfo\n");
+    close (fb->fb_fd);
+    ctx_free (fb->fb_path);
+    ctx_free (fb);
+    return -1;
+  }
 
-   if (ioctl(fb->fb_fd, FBIOGET_VSCREENINFO, &fb->vinfo))
-     {
-       fprintf (stderr, "error getting fbinfo\n");
-      close (fb->fb_fd);
-      ctx_free (fb->fb_path);
-      ctx_free (fb);
-      return -1;
-     }
+  if (ioctl(fb->fb_fd, FBIOGET_VSCREENINFO, &fb->vinfo))
+  {
+     fprintf (stderr, "error getting fbinfo\n");
+     close (fb->fb_fd);
+     ctx_free (fb->fb_path);
+     ctx_free (fb);
+     return -1;
+  }
 
   fb->width = fb->vinfo.xres;
   fb->height = fb->vinfo.yres;
@@ -343,28 +343,25 @@ static int fb_cb_renderer_init (Ctx *ctx, void *user_data)
   fb->fb_mapped_size = fb->width * fb->height * fb->fb_bpp;
 
 
-  if (fb->fb_bits == 8)
-  {
-    uint8_t red[256],  green[256],  blue[256];
-    struct wsdisplay_cmap cmap;
-    cmap.red = red;
-    cmap.green = green;
-    cmap.blue = blue;
-    cmap.count = 256;
-    cmap.index = 0;
-    for (int i = 0; i < 256; i++)
+    if (fb->fb_bits == 8)
     {
-      red[i]   = ((( i >> 5) & 0x7) << 5);
-      green[i] = ((( i >> 2) & 0x7) << 5);
-      blue[i]  = ((( i >> 0) & 0x3) << 6);
+      uint8_t red[256],  green[256],  blue[256];
+      struct wsdisplay_cmap cmap;
+      cmap.red = red;
+      cmap.green = green;
+      cmap.blue = blue;
+      cmap.count = 256;
+      cmap.index = 0;
+      for (int i = 0; i < 256; i++)
+      {
+        red[i]   = ((( i >> 5) & 0x7) << 5);
+        green[i] = ((( i >> 2) & 0x7) << 5);
+        blue[i]  = ((( i >> 0) & 0x3) << 6);
+      }
+      ioctl (fb->fb_fd, WSDISPLAYIO_PUTCMAP, &cmap);
     }
-
-    ioctl (fb->fb_fd, WSDISPLAYIO_PUTCMAP, &cmap);
-  }
 #endif
-
-
-  fb->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
+    fb->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
   }
 
   if (!fb->fb)
@@ -411,12 +408,12 @@ static int fb_cb_renderer_init (Ctx *ctx, void *user_data)
       fprintf (stderr, "VT_SET_MODE on vt %i failed\n", fb->vt);
       return -1;
     }
+  }
 #if CTX_FB_KDSETMODE
 #ifdef __linux__
     ioctl (0, KDSETMODE, KD_GRAPHICS);
 #endif
 #endif
-  }
 #endif
 
   return 0;

@@ -125,6 +125,12 @@ static void sdl_cb_consume_events (Ctx *ctx, void *user_data)
         SDL_CaptureMouse (0);
         ctx_pointer_release (ctx, event.button.x, event.button.y, event.button.button, 0);
         break;
+      case SDL_MOUSEWHEEL:
+	if (event.wheel.y < 0)
+	  ctx_scrolled (ctx, event.wheel.mouseX, event.wheel.mouseY, -1, 0);
+	else if (event.wheel.y > 0)
+	  ctx_scrolled (ctx, event.wheel.mouseX, event.wheel.mouseY, 1, 0);
+	break;
       case SDL_MOUSEMOTION:
         //  XXX : look at mask and generate motion for each pressed
         //        button

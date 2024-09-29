@@ -129,14 +129,14 @@ void ctx_list_backends(void)
     fprintf (stderr, "possible values for CTX_BACKEND:\n");
     fprintf (stderr, " ctx");
 #if CTX_SDL
-    fprintf (stderr, " SDL SDLcb");
+    fprintf (stderr, " sdl sdl-tiled");
 #endif
 #if CTX_KMS
     fprintf (stderr, " kms");
 #endif
 #if CTX_FB
-    fprintf (stderr, " fbcb");
     fprintf (stderr, " fb");
+    fprintf (stderr, " fb-tiled");
 #endif
 #if CTX_TERM
     fprintf (stderr, " term");
@@ -311,26 +311,16 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #endif
 #endif
 
-#if CTX_TERMINAL_EVENTS
-#if CTX_HEADLESS
-  if (!ret)
-    {
-      if (backend && !ctx_strcmp (backend, "headless"))
-        ret = ctx_new_headless (width, height);
-    }
-#endif
-#endif
-
 #if CTX_SDL
   if (!ret && getenv ("DISPLAY"))
   {
-    if ((backend==NULL) || (!ctx_strcmp (backend, "SDLcb")))
+    if ((backend==NULL) || (!ctx_strcmp (backend, "sdl")))
       ret = ctx_new_sdl_cb (width, height);
   }
 
   if (!ret && getenv ("DISPLAY"))
   {
-    if ((backend==NULL) || (!ctx_strcmp (backend, "SDL")))
+    if ((backend==NULL) || (!ctx_strcmp (backend, "sdl-tiled")))
       ret = ctx_new_sdl (width, height);
   }
 
@@ -339,7 +329,9 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_FB
   if (!ret && !getenv ("DISPLAY"))
     {
-      if ((backend==NULL) || (!ctx_strcmp (backend, "fbcb")))
+      if ((backend==NULL) ||
+          (!ctx_strcmp (backend, "fb") ||
+	  (!ctx_strcmp (backend, "kms"))))
         ret = ctx_new_fb_cb (width, height);
     }
 #endif
@@ -347,7 +339,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_KMS
   if (!ret && !getenv ("DISPLAY"))
   {
-    if ((backend==NULL) || (!ctx_strcmp (backend, "kms")))
+    if ((backend==NULL) || (!ctx_strcmp (backend, "kms-tiled")))
       ret = ctx_new_kms (width, height);
   }
 #endif
@@ -356,7 +348,7 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
 #if CTX_FB
   if (!ret && !getenv ("DISPLAY"))
     {
-      if ((backend==NULL) || (!ctx_strcmp (backend, "fb")))
+      if ((backend==NULL) || (!ctx_strcmp (backend, "fb-tiled")))
         ret = ctx_new_fb (width, height);
     }
 #endif
@@ -1290,7 +1282,7 @@ void ctx_get_event_fds (Ctx *ctx, int *fd, int *count)
 }
 
 
-static CtxEvent *ctx_get_event2 (Ctx *ctx, int internal)
+static CtxEvent *ctx_get_event_full (Ctx *ctx, int internal)
 {
   if (ctx->events.events)
     {
@@ -1324,7 +1316,7 @@ static CtxEvent *ctx_get_event2 (Ctx *ctx, int internal)
 
 CtxEvent *ctx_get_event (Ctx *ctx)
 {
-  return ctx_get_event2 (ctx, 0);
+  return ctx_get_event_full (ctx, 0);
 }
 
 static int
@@ -1600,7 +1592,7 @@ void _ctx_resized (Ctx *ctx, int width, int height, long time)
   
   event.ctx = ctx;
   event.time = time;
-  event.string = "resize-event"; /* gets delivered to clients as a key_down event, maybe message shouldbe used instead?
+  event.string = "resize-event"; /* gets delivered to clients as a key_down event, maybe message shouldbe used instead? and also transmit the new size instead of clients having to ask
    */
 
   if (item)
@@ -1618,8 +1610,10 @@ ctx_pointer_release (Ctx *ctx, float x, float y, int device_no, uint32_t time)
   if (time == 0)
     time = ctx_ms (ctx);
 
-  if (device_no < 0) device_no = 0;
-  if (device_no >= CTX_MAX_DEVICES) device_no = CTX_MAX_DEVICES-1;
+  if (device_no < 0)
+    device_no = 0;
+  if (device_no >= CTX_MAX_DEVICES)
+    device_no = CTX_MAX_DEVICES-1;
   CtxEvent *event = &events->drag_event[device_no];
 
   event->time = time;
@@ -2527,7 +2521,7 @@ void ctx_handle_events (Ctx *ctx)
 #if CTX_VT
   ctx_clients_handle_events (ctx);
 #endif
-  while (ctx_get_event2 (ctx, 1)){}
+  while (ctx_get_event_full (ctx, 1)){}
 }
 
 

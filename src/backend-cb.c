@@ -666,7 +666,6 @@ ctx_cb_render_frame (Ctx *ctx)
     cb_backend->config.update_fb (ctx, cb_backend->backend.user_data);
 }
 
-
 #if CTX_PICO
 #include "pico/multicore.h"
 #define CTX_MB()  do{ __dmb(); __dsb(); __isb(); } while(0)
@@ -712,7 +711,7 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 #endif
     }
 
-      CTX_MB();
+    CTX_MB();
     if (cb_backend->rendering == 1)
     {
       ctx_cb_render_frame (ctx);
@@ -730,7 +729,8 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 
 void ctx_draw_pointer (Ctx *ctx, float x, float y, CtxCursor cursor)
 {
-    const char *drawing = "M 0 0 L 30 40 L 10 50 rgba 0 0 0 0.5 z preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke";
+#define CURSOR_POST " rgba 0 0 0 0.5 z preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke"
+    const char *drawing = "M 0 0 L 30 40 L 10 50 z" CURSOR_POST;
     ctx_save(ctx);
     ctx_translate (ctx, x, y);
 
@@ -746,7 +746,7 @@ void ctx_draw_pointer (Ctx *ctx, float x, float y, CtxCursor cursor)
         break;
       case CTX_CURSOR_ARROW:
 #if 1
-        drawing = "M 0 0 L 30 40 L 10 50 rgba 0 0 0 0.5 z preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke";
+        drawing = "M 0 0 L 30 40 L 10 50 z" CURSOR_POST;
 #else
         ctx_move_to (ctx, 0,0);
         ctx_line_to (ctx, 30, 40);
@@ -764,15 +764,19 @@ void ctx_draw_pointer (Ctx *ctx, float x, float y, CtxCursor cursor)
         break;
       case CTX_CURSOR_CROSSHAIR:
 
-	drawing = "rectangle 10 -2 40 4 rectangle -50 -2 40 4 rectangle -2 -50 4 40 rectangle -2 10 4 40 z rgba 0 0 0 0.5 preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke ";
+	drawing = "rectangle 10 -2 40 4 rectangle -50 -2 40 4 rectangle -2 -50 4 40 rectangle -2 10 4 40 z"
+		   CURSOR_POST;
 
 	break;
       case CTX_CURSOR_WAIT:
-	drawing = "M -50 -50 L 50 -50 L -50 50 L 50 50 z rgba 0 0 0 0.5 preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke ";
+	drawing = "M -50 -50 L 50 -50 L -50 50 L 50 50 z" CURSOR_POST;
 
 	break;
-      case CTX_CURSOR_HAND:
       case CTX_CURSOR_IBEAM:
+	drawing = "M -5 -50 L 5 -50 5 -45 2.5 -45 2.5 45 5 45  5 50 -5 50 -5 45 -2.5 45 -2.5 -45 -5 -45 z "
+		  CURSOR_POST;
+	break;
+      case CTX_CURSOR_HAND:
       case CTX_CURSOR_MOVE:
       case CTX_CURSOR_RESIZE_ALL:
       case CTX_CURSOR_RESIZE_N:
@@ -789,56 +793,6 @@ void ctx_draw_pointer (Ctx *ctx, float x, float y, CtxCursor cursor)
 
     ctx_parse (ctx, drawing);
     ctx_restore(ctx);
-#if 0
-  if (tiled->shown_cursor != backend->ctx->cursor)
-  {
-    tiled->shown_cursor = backend->ctx->cursor;
-    SDL_Cursor *new_cursor =  NULL;
-    switch (tiled->shown_cursor)
-    {
-      case CTX_CURSOR_UNSET: // XXX: document how this differs from none
-                             //      perhaps falling back to arrow?
-        break;
-      case CTX_CURSOR_NONE:
-        new_cursor = NULL;
-        break;
-      case CTX_CURSOR_ARROW:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-        break;
-      case CTX_CURSOR_CROSSHAIR:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-        break;
-      case CTX_CURSOR_WAIT:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
-        break;
-      case CTX_CURSOR_HAND:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-        break;
-      case CTX_CURSOR_IBEAM:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-        break;
-      case CTX_CURSOR_MOVE:
-      case CTX_CURSOR_RESIZE_ALL:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-        break;
-      case CTX_CURSOR_RESIZE_N:
-      case CTX_CURSOR_RESIZE_S:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-        break;
-      case CTX_CURSOR_RESIZE_E:
-      case CTX_CURSOR_RESIZE_W:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-        break;
-      case CTX_CURSOR_RESIZE_NE:
-      case CTX_CURSOR_RESIZE_SW:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-        break;
-      case CTX_CURSOR_RESIZE_NW:
-      case CTX_CURSOR_RESIZE_SE:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-        break;
-    }
-#endif
 }
 
 static void
@@ -945,8 +899,9 @@ static void ctx_cb_destroy (void *data)
       cb_backend->config.renderer_stop (cb_backend->backend.ctx, cb_backend->backend.user_data);
   }
   if (cb_backend->allocated_fb)
+  {
     ctx_free (cb_backend->fb);
-  // XXX leaking ->fb if it was dynamically allocated
+  }
   free (data);
 }
 
@@ -1004,8 +959,8 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
   backend->ctx         = ctx;
   backend->user_data   = config->user_data;
 
-  cb_backend->config = *config;
-  cb_backend->fb     = (uint16_t*)config->scratch_fb;
+  cb_backend->config   = *config;
+  cb_backend->fb       = (uint16_t*)config->scratch_fb;
 
   ctx_set_backend (ctx, backend);
 
@@ -1081,10 +1036,6 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
 	 }
       }
   }
-
-#if CTX_EVENTS
-  //ctx_get_event (ctx);
-#endif
   return ctx;
 }
 
