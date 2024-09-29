@@ -295,6 +295,19 @@ static void overview_event (CtxEvent *event, void *a, void *b)
      ctx_event_stop_propagate (event);
 }
 
+static void overview_corner_event (CtxEvent *event, void *a, void *b)
+{
+  int width = ctx_width (event->ctx);
+  static int prev_corner = 0;
+
+  int in_corner = (((int)event->x) == width -1) && (((int)event->y) == 0);
+
+  if (in_corner && !prev_corner)
+  {
+    overview_event (event, a, b);
+  }
+  prev_corner = in_corner;
+}
 
 int         vt_get_scroll           (VT *vt);
 void        vt_set_scroll           (VT *vt, int scroll);
@@ -641,6 +654,7 @@ void draw_mini_panel (Ctx *ctx)
   float x = w - tile_dim;
 
   ctx_rectangle (ctx, x, y, tile_dim, tile_dim);
+  ctx_listen (ctx, CTX_MOTION, overview_corner_event, NULL, NULL);
   ctx_listen (ctx, CTX_PRESS, overview_event, NULL, NULL);
 
   if (in_overview)
