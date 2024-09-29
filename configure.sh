@@ -19,7 +19,6 @@ ENABLE_BRAILLE_TEXT=1
 ENABLE_PDF=1
 ENABLE_INLINED_NORMAL=1
 ENABLE_STATIC_FONTS=1
-ENABLE_HEADLESS=1
 ENABLE_FONTS_FROM_FILE=1
 ENABLE_FONT_CTX_FS=0
 ENABLE_TINYVG=1
@@ -103,7 +102,6 @@ do
      "--enable-rasterizer") ENABLE_RASTERIZER=1 ;;
      "--enable-parser") ENABLE_PARSER=1 ;;
      "--enable-formatter") ENABLE_FORMATTER=1 ;;
-     "--enable-headless") ENABLE_HEADLESS=1 ;;
      "--enable-fonts_from_file") ENABLE_FONTS_FROM_FILE=1 ;;
      "--enable-font_ctx_fs") ENABLE_FONT_CTX_FS=1 ;;
      "--enable-dither") ENABLE_DITHER=1 ;;
@@ -131,7 +129,6 @@ do
      "--disable-rasterizer") ENABLE_RASTERIZER=0 ;;
      "--disable-parser") ENABLE_PARSER=0 ;;
      "--disable-formatter") ENABLE_FORMATTER=0 ;;
-     "--disable-headless") ENABLE_HEADLESS=0 ;;
      "--disable-fonts_from_file") ENABLE_FONTS_FROM_FILE=0 ;;
      "--disable-font-ctx-fs") ENABLE_FONT_CTX_FS=0 ;;
      "--disable-dither") ENABLE_DITHER=0 ;;
@@ -169,7 +166,6 @@ do
         ENABLE_FAST_FILL_RECT=0 
 	ENABLE_SWITCH_DISPATCH=0 
         ENABLE_ONLY_RGBA8=0 
-        ENABLE_HEADLESS=0 
         ENABLE_FORMATTER=0 
         ENABLE_PARSER=1 
         #ENABLE_RASTERIZER=0 
@@ -254,7 +250,6 @@ echo -n "#define CTX_EVENTS " >> local.conf; if [ $ENABLE_EVENTS = 1 ];then echo
 echo -n "#define CTX_RASTERIZER " >> local.conf; if [ $ENABLE_RASTERIZER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_PARSER " >> local.conf; if [ $ENABLE_PARSER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 echo -n "#define CTX_FORMATTER " >> local.conf; if [ $ENABLE_FORMATTER = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
-echo -n "#define CTX_HEADLESS " >> local.conf; if [ $ENABLE_HEADLESS = 1 ];then echo "1" >> local.conf; else echo "0" >> local.conf; fi
 
 echo -n "CTX_CFLAGS+= -DCTX_PL_MPEG=" >> build.conf; if [ $HAVE_PL_MPEG = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
 echo -n "CTX_CFLAGS+= -DCTX_STB_TT=" >> build.conf; if [ $HAVE_STB_TT = 1 ];then echo "1" >> build.conf; else echo "0" >> build.conf; fi
@@ -353,7 +348,6 @@ echo -n " SDL2     "; [ $HAVE_SDL = 1 ]        && echo "yes" || echo "no (libsdl
 echo -n " pdf      "; [ $ENABLE_PDF = 1 ]      && echo "yes" || echo "no"
 echo -n " term     "; [ $ENABLE_TERM = 1 ]     && echo "yes" || echo "no"
 echo -n " termimg  "; [ $ENABLE_TERMIMG = 1 ]  && echo "yes" || echo "no"
-echo -n " headless "; [ $ENABLE_HEADLESS = 1 ] && echo "yes" || echo "no"
 echo ""
 echo "External libraries:"
 echo -n " babl            "; [ $HAVE_BABL = 1 ]     && echo "yes" || echo "no (libbabl-dev)"
