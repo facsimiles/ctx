@@ -114,6 +114,7 @@ static snd_pcm_t *alsa_open (char *dev, int rate, int channels)
 static  snd_pcm_t *h = NULL;
 static void *ctx_alsa_audio_start(Ctx *ctx)
 {
+  static int16_t pcm_data[81920*8]={0,};
 //  Lyd *lyd = aux;
   int c;
 
@@ -125,7 +126,6 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
   {
     int client_channels = ctx_pcm_channels (ctx_client_format);
     int is_float = 0;
-    int16_t data[81920*8]={0,};
 
     if (ctx_client_format == CTX_F32 ||
         ctx_client_format == CTX_F32S)
@@ -171,8 +171,8 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
             if (client_channels > 1)
               right = packet[1];
           }
-          data[i * 2 + 0] = left;
-          data[i * 2 + 1] = right;
+          pcm_data[i * 2 + 0] = left;
+          pcm_data[i * 2 + 1] = right;
 
           ctx_pcm_cur_left--;
           ctx_pcm_queued --;
@@ -196,12 +196,12 @@ static void *ctx_alsa_audio_start(Ctx *ctx)
       for (;i < c; i ++)
       {
          /* slight click protection in case we were not left at dc */
-         data[i * 2 + 0] = (left *= 0.5f);
-         data[i * 2 + 1] = (right *= 0.5f);
+         pcm_data[i * 2 + 0] = (left *= 0.5f);
+         pcm_data[i * 2 + 1] = (right *= 0.5f);
       }
 
 
-    c = snd_pcm_writei(h, data, c);
+    c = snd_pcm_writei(h, pcm_data, c);
     if (c < 0)
       c = snd_pcm_recover (h, c, 0);
      }else{
@@ -341,6 +341,9 @@ int ctx_host_audio_init (int hz, CtxPCM format);
 
 int ctx_pcm_init (Ctx *ctx)
 {
+   static int inited = 0;
+   if (inited) return 0;
+
    pthread_mutex_init (&ctx_audio_mutex, NULL);
 #if 0
   if (!strcmp (ctx->backend->name, "mmm") ||
@@ -373,15 +376,18 @@ int ctx_pcm_init (Ctx *ctx)
             ctx_pcm_channels (ctx_host_format), ctx_host_freq);
     return -1;
   }
+  pthread_mutex_lock (&ctx_audio_mutex);
+  pthread_mutex_unlock (&ctx_audio_mutex);
+
   pthread_create(&tid, NULL, (void*)ctx_alsa_audio_start, ctx);
 #endif
   }
+  inited = 1;
   return 0;
 }
 
 int ctx_pcm_queue (Ctx *ctx, const int8_t *data, int frames)
 {
-  static int inited = 0;
 #if 0
   if (!strcmp (ctx->backend->name, "mmm") ||
       !strcmp (ctx->backend->name, "mmm-client"))
@@ -391,11 +397,7 @@ int ctx_pcm_queue (Ctx *ctx, const int8_t *data, int frames)
   else
 #endif
   {
-    if (!inited)
-    {
-      ctx_pcm_init (ctx);
-      inited = 1;
-    }
+    ctx_pcm_init (ctx);
     float factor = client_freq * 1.0 / ctx_host_freq;
     int   scaled_frames = frames / factor;
     int   bpf = ctx_pcm_bytes_per_frame (ctx_client_format);
