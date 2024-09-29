@@ -1054,7 +1054,7 @@ static void overview (Ctx *ctx, float anim_t)
 
     if (opos[i].id == ctx_clients_active (ctx))
     {
-	  if (anim_t > 0.5)
+	  if (anim_t > 0.95)
 	  {
             ctx_round_rectangle (ctx, x-2, y-2, w+4, h+4, 0.3 * em);
 	    ctx_rgba(ctx,1,1,1,1);
@@ -1062,17 +1062,11 @@ static void overview (Ctx *ctx, float anim_t)
 	    ctx_rgba(ctx,1,0,0,0.6);
             ctx_rectangle (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
             ctx_listen (ctx, CTX_PRESS, remove_tab_cb, NULL, NULL);
-	  }
 
-	  if (anim_t > 0.8)
-	  {
 	    ctx_reset_path (ctx);
 	    icon_remove_tab (ctx, x+w-em*2.5, y, em *2.5, em *2.5);
 	    ctx_fill (ctx);
-	  }
 
-	  if (anim_t > 0.9)
-          {
 	    float ty = y + row_height - em;
 	    if (y + h + 1.2 * em < ty)
 	       ty = y + h + 1.2 * em;
