@@ -313,7 +313,6 @@ static void handle_event (Ctx        *ctx,
                           CtxEvent   *ctx_event,
                           const char *event)
 {
-  CtxBackendType backend_type = ctx_backend_type (ctx);
   int active_id = ctx_clients_active (ctx);
   CtxClient *active = active_id>=0?ctx_client_by_id (ctx, active_id):NULL;
   if (!active)
@@ -376,20 +375,12 @@ static void handle_event (Ctx        *ctx,
         free (text);
       }
   }
-  else if (!strcmp (event, "shift-control-t") ||
-         ((backend_type == CTX_BACKEND_FB ||  // workaround for not having
-          backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
-          backend_type == CTX_BACKEND_KMS)
-         &&   !strcmp (event, "control-t") ))
+  else if (!strcmp (event, "shift-control-t"))
   {
   if (!terminal_no_new_tab)
     add_tab (ctx, ctx_find_shell_command(), 1);
   }
-  else if (!strcmp (event, "shift-control-o") ||
-         ((backend_type == CTX_BACKEND_FB  ||  // workaround for not having
-          backend_type == CTX_BACKEND_TERM ||  // raw keyboard acces
-          backend_type == CTX_BACKEND_KMS)
-         &&   !strcmp (event, "control-o") ))
+  else if (!strcmp (event, "shift-control-o"))
   {
    CtxEvent dummy;dummy.ctx=ctx;
    overview_event (&dummy, NULL, NULL);

@@ -117,8 +117,6 @@ int ctx_count (Ctx *ctx)
 }
 #endif
 
-extern int _ctx_damage_control;
-
 static int _ctx_depth = 0;
 
 #if CTX_EVENTS
@@ -129,14 +127,13 @@ void ctx_list_backends(void)
     fprintf (stderr, "possible values for CTX_BACKEND:\n");
     fprintf (stderr, " ctx");
 #if CTX_SDL
-    fprintf (stderr, " sdl sdl-tiled");
+    fprintf (stderr, " sdl ");
 #endif
 #if CTX_KMS
     fprintf (stderr, " kms");
 #endif
 #if CTX_FB
     fprintf (stderr, " fb");
-    fprintf (stderr, " fb-tiled");
 #endif
 #if CTX_TERM
     fprintf (stderr, " term");
@@ -232,19 +229,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     return ret;
   }
 
-
-#if CTX_TILED
-  if (getenv ("CTX_DAMAGE_CONTROL"))
-  {
-    const char * val = getenv ("CTX_DAMAGE_CONTROL");
-    if (!ctx_strcmp (val, "0") ||
-        !ctx_strcmp (val, "off"))
-      _ctx_damage_control = 0;
-    else
-      _ctx_damage_control = 1;
-  }
-#endif
-
 #if CTX_BAREMETAL==0
   if (getenv ("CTX_HASH_CACHE"))
   {
@@ -317,13 +301,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
     if ((backend==NULL) || (!ctx_strcmp (backend, "sdl")))
       ret = ctx_new_sdl_cb (width, height);
   }
-
-  if (!ret && getenv ("DISPLAY"))
-  {
-    if ((backend==NULL) || (!ctx_strcmp (backend, "sdl-tiled")))
-      ret = ctx_new_sdl (width, height);
-  }
-
 #endif
 
 #if CTX_FB
@@ -333,23 +310,6 @@ static Ctx *ctx_new_ui (int width, int height, const char *backend)
           (!ctx_strcmp (backend, "fb") ||
 	  (!ctx_strcmp (backend, "kms"))))
         ret = ctx_new_fb_cb (width, height);
-    }
-#endif
-
-#if CTX_KMS
-  if (!ret && !getenv ("DISPLAY"))
-  {
-    if ((backend==NULL) || (!ctx_strcmp (backend, "kms-tiled")))
-      ret = ctx_new_kms (width, height);
-  }
-#endif
-
-
-#if CTX_FB
-  if (!ret && !getenv ("DISPLAY"))
-    {
-      if ((backend==NULL) || (!ctx_strcmp (backend, "fb-tiled")))
-        ret = ctx_new_fb (width, height);
     }
 #endif
 
@@ -3795,28 +3755,6 @@ static inline EvSource *evsource_linux_ts_new (void)
 }
 #endif
 
-
-static inline int event_check_pending (CtxTiled *tiled)
-{
-  int events = 0;
-  for (int i = 0; i < tiled->evsource_count; i++)
-  {
-    while (evsource_has_event (tiled->evsource[i]))
-    {
-      char *event = evsource_get_event (tiled->evsource[i]);
-      if (event)
-      {
-        if (tiled->vt_active)
-        {
-          ctx_key_press (tiled->backend.ctx, 0, event, 0); // we deliver all events as key-press, the key_press handler disambiguates
-          events++;
-        }
-        ctx_free (event);
-      }
-    }
-  }
-  return events;
-}
 
 #endif
 

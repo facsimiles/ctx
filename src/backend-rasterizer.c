@@ -4260,13 +4260,6 @@ ctx_rasterizer_destroy (void *r)
 
 CtxAntialias ctx_get_antialias (Ctx *ctx)
 {
-#if CTX_EVENTS
-  if (ctx_backend_is_tiled (ctx))
-  {
-     CtxTiled *fb = (CtxTiled*)(ctx->backend);
-     return fb->antialias;
-  }
-#endif
   if (ctx_backend_type (ctx) != CTX_BACKEND_RASTERIZER) return CTX_ANTIALIAS_DEFAULT;
 
   switch (((CtxRasterizer*)(ctx->backend))->aa)
@@ -4300,22 +4293,6 @@ static int _ctx_antialias_to_aa (CtxAntialias antialias)
 void
 ctx_set_antialias (Ctx *ctx, CtxAntialias antialias)
 {
-#if CTX_TERMINAL_EVENTS
-  if (ctx_backend_is_tiled (ctx))
-  {
-     CtxTiled *fb = (CtxTiled*)(ctx->backend);
-     fb->antialias = antialias;
-#if CTX_THREADS
-     for (int i = 0; i < _ctx_max_threads; i++)
-#else
-     int i = 0;
-#endif
-     {
-       ctx_set_antialias (fb->host[i], antialias);
-     }
-     return;
-  }
-#endif
   if (ctx_backend_type (ctx) != CTX_BACKEND_RASTERIZER) return;
 
   ((CtxRasterizer*)(ctx->backend))->aa = 

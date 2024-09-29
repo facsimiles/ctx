@@ -4,11 +4,9 @@
 
 /**/
 
-typedef struct _CtxSDL CtxSDL;
-struct _CtxSDL
+typedef struct _CtxSDLCb CtxSDLCb;
+struct _CtxSDLCb
 {
-   CtxTiled  tiled;
-   /* where we diverge from fb*/
    int           key_balance;
    int           key_repeat;
    int           lctrl;
@@ -22,184 +20,101 @@ struct _CtxSDL
    SDL_Texture  *texture;
 
    int           fullscreen;
+   int           prev_fullscreen;
 
+   Ctx          *ctx;
+
+   int           width;
+   int           height;
+
+   char         *title;
+   const char   *prev_title;
+
+
+   int   clipboard_requested;
+   char *clipboard;
+
+   char *clipboard_pasted;
+
+   CtxCursor shown_cursor;
 };
 
-int ctx_show_fps = 1;
-void ctx_sdl_set_title (void *self, const char *new_title)
+static const char *ctx_sdl_keysym_to_name (unsigned int sym, int *r_keycode)
 {
-   Ctx *ctx = (Ctx*)self;
-   CtxSDL *sdl = (CtxSDL*)ctx->backend;
-   if (!ctx_show_fps)
-   SDL_SetWindowTitle (sdl->window, new_title);
+  static char buf[16]="";
+  buf[ctx_unichar_to_utf8 (sym, (void*)buf)]=0;
+  int scan_code = sym;
+  const char *name = &buf[0];
+   switch (sym)
+   {
+     case SDLK_RSHIFT: name="shift";scan_code = 16 ; break;
+     case SDLK_LSHIFT: name="shift";scan_code = 16 ; break;
+     case SDLK_LCTRL: name="control";scan_code = 17 ; break;
+     case SDLK_RCTRL: name="control";scan_code = 17 ; break;
+     case SDLK_LALT:  name="alt";scan_code = 18 ; break;
+     case SDLK_RALT:  name="alt";scan_code = 18 ; break;
+     case SDLK_CAPSLOCK: name = "capslock"; scan_code = 20 ; break;
+     //case SDLK_NUMLOCK: name = "numlock"; scan_code = 144 ; break;
+     //case SDLK_SCROLLLOCK: name = "scrollock"; scan_code = 145 ; break;
+
+     case SDLK_F1:     name = "F1"; scan_code = 112; break;
+     case SDLK_F2:     name = "F2"; scan_code = 113; break;
+     case SDLK_F3:     name = "F3"; scan_code = 114; break;
+     case SDLK_F4:     name = "F4"; scan_code = 115; break;
+     case SDLK_F5:     name = "F5"; scan_code = 116; break;
+     case SDLK_F6:     name = "F6"; scan_code = 117; break;
+     case SDLK_F7:     name = "F7"; scan_code = 118; break;
+     case SDLK_F8:     name = "F8"; scan_code = 119; break;
+     case SDLK_F9:     name = "F9"; scan_code = 120; break;
+     case SDLK_F10:    name = "F10"; scan_code = 121; break;
+     case SDLK_F11:    name = "F11"; scan_code = 122; break;
+     case SDLK_F12:    name = "F12"; scan_code = 123; break;
+     case SDLK_ESCAPE: name = "escape"; break;
+     case SDLK_DOWN:   name = "down"; scan_code = 40; break;
+     case SDLK_LEFT:   name = "left"; scan_code = 37; break;
+     case SDLK_UP:     name = "up"; scan_code = 38;  break;
+     case SDLK_RIGHT:  name = "right"; scan_code = 39; break;
+     case SDLK_BACKSPACE: name = "backspace"; break;
+     case SDLK_SPACE:  name = "space"; break;
+     case SDLK_TAB:    name = "tab"; break;
+     case SDLK_DELETE: name = "delete"; scan_code = 46; break;
+     case SDLK_INSERT: name = "insert"; scan_code = 45; break;
+     case SDLK_RETURN:
+       //if (key_repeat == 0) // return never should repeat
+       name = "return";   // on a DEC like terminal
+       break;
+     case SDLK_HOME:     name = "home"; scan_code = 36; break;
+     case SDLK_END:      name = "end"; scan_code = 35; break;
+     case SDLK_PAGEDOWN: name = "page-down"; scan_code = 34; break;
+     case SDLK_PAGEUP:   name = "page-up"; scan_code = 33; break;
+     case ',': scan_code = 188; break;
+     case '.': scan_code = 190; break;
+     case '/': scan_code = 191; break;
+     case '`': scan_code = 192; break;
+     case '[': scan_code = 219; break;
+     case '\\': scan_code = 220; break;
+     case ']':  scan_code = 221; break;
+     case '\'': scan_code = 222; break;
+     default:
+       ;
+   }
+   if (sym >= 'a' && sym <='z') scan_code -= 32;
+   if (r_keycode)
+   {
+     *r_keycode = scan_code;
+   }
+   return name;
 }
 
-static long ctx_sdl_start_time = 0;
-
-static void ctx_sdl_show_frame (CtxSDL *sdl, int block)
-{
-  CtxTiled *tiled = &sdl->tiled;
-  CtxBackend *backend = (CtxBackend*)tiled;
-  if (tiled->shown_cursor != backend->ctx->cursor)
-  {
-    tiled->shown_cursor = backend->ctx->cursor;
-    SDL_Cursor *new_cursor =  NULL;
-    switch (tiled->shown_cursor)
-    {
-      case CTX_CURSOR_UNSET: // XXX: document how this differs from none
-                             //      perhaps falling back to arrow?
-        break;
-      case CTX_CURSOR_NONE:
-        new_cursor = NULL;
-        break;
-      case CTX_CURSOR_ARROW:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-        break;
-      case CTX_CURSOR_CROSSHAIR:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-        break;
-      case CTX_CURSOR_WAIT:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
-        break;
-      case CTX_CURSOR_HAND:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-        break;
-      case CTX_CURSOR_IBEAM:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-        break;
-      case CTX_CURSOR_MOVE:
-      case CTX_CURSOR_RESIZE_ALL:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-        break;
-      case CTX_CURSOR_RESIZE_N:
-      case CTX_CURSOR_RESIZE_S:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-        break;
-      case CTX_CURSOR_RESIZE_E:
-      case CTX_CURSOR_RESIZE_W:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-        break;
-      case CTX_CURSOR_RESIZE_NE:
-      case CTX_CURSOR_RESIZE_SW:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-        break;
-      case CTX_CURSOR_RESIZE_NW:
-      case CTX_CURSOR_RESIZE_SE:
-        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-        break;
-    }
-    if (new_cursor)
-    {
-      SDL_Cursor *old_cursor = SDL_GetCursor();
-      SDL_SetCursor (new_cursor);
-      SDL_ShowCursor (1);
-      if (old_cursor)
-        SDL_FreeCursor (old_cursor);
-    }
-    else
-    {
-      SDL_ShowCursor (0);
-    }
-  }
-
-  if (tiled->shown_frame == tiled->render_frame)
-  {
-    return;
-  }
-
-  if (block)
-  {
-    int count = 0;
-    while (ctx_tiled_threads_done (tiled) != _ctx_max_threads)
-    {
-      usleep (500);
-      count ++;
-      if (count > 900)
-      {
-        tiled->shown_frame = tiled->render_frame;
-        fprintf (stderr, "[drop]");
-        return;
-      }
-    }
-  }
-  else
-  {
-    if (ctx_tiled_threads_done (tiled) != _ctx_max_threads)
-      return;
-  }
-
-
-  if (tiled->min_row == 100)
-  {
-  }
-  else
-  {
-    int x = tiled->min_col * tiled->width/CTX_HASH_COLS;
-    int y = tiled->min_row * tiled->height/CTX_HASH_ROWS;
-    int x1 = (tiled->max_col+1) * tiled->width/CTX_HASH_COLS;
-    int y1 = (tiled->max_row+1) * tiled->height/CTX_HASH_ROWS;
-
-    if (_ctx_damage_control)
-    {
-      x = 0;
-      y = 0;
-      x1 = tiled->width;
-      y1 = tiled->height;
-    }
-
-    int width = x1 - x;
-    int height = y1 - y;
-    tiled->min_row = 100;
-    tiled->max_row = 0;
-    tiled->min_col = 100;
-    tiled->max_col = 0;
-
-    SDL_Rect r = {x, y, width, height};
-    SDL_UpdateTexture (sdl->texture, &r,
-                      (void*)(tiled->pixels + y * tiled->width * 4 + x * 4),
-                      tiled->width * 4);
-    SDL_RenderClear (sdl->backend);
-    SDL_RenderCopy (sdl->backend, sdl->texture, NULL, NULL);
-    SDL_RenderPresent (sdl->backend);
-
-
-  if (ctx_show_fps)
-  {
-    static char tmp_title[1024];
-    static uint64_t prev_time = 0;
-    uint64_t time = ctx_ticks ();
-    float fps = 1000000.0f/  (time - ctx_sdl_start_time);
-    float fps2 = 1000000.0f/  (time - prev_time);
-    prev_time = time;
-    static float fps_avg = 0.0f;
-
-    if (time - prev_time < 1000 * 1000 * 0.05f)
-    fps_avg = (fps_avg * 0.9f + fps2 *  0.1f);
-
-    sprintf (tmp_title, "FPS: %.1f %.1f %.1f", (double)(fps2*0.75f+fps_avg*0.25f), (double)fps2, (double)fps);
-
-    SDL_SetWindowTitle (sdl->window, tmp_title);
-  }
-  }
-  tiled->shown_frame = tiled->render_frame;
-}
-
-
-void ctx_sdl_consume_events (Ctx *ctx)
+static void sdl_cb_consume_events (Ctx *ctx, void *user_data)
 {
   static float x = 0.0f;
   static float y = 0.0f;
-  CtxBackend *backend = (void*)ctx->backend;
-  CtxTiled    *tiled = (void*)backend;
-  CtxSDL      *sdl = (void*)backend;
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
   SDL_Event event;
-  //int got_events = 0;
-
-  ctx_sdl_show_frame (sdl, 0);
 
   while (SDL_PollEvent (&event))
   {
-    //got_events ++;
     switch (event.type)
     {
       case SDL_MOUSEBUTTONDOWN:
@@ -210,6 +125,12 @@ void ctx_sdl_consume_events (Ctx *ctx)
         SDL_CaptureMouse (0);
         ctx_pointer_release (ctx, event.button.x, event.button.y, event.button.button, 0);
         break;
+      case SDL_MOUSEWHEEL:
+	if (event.wheel.y < 0)
+	  ctx_scrolled (ctx, event.wheel.mouseX, event.wheel.mouseY, -1, 0);
+	else if (event.wheel.y > 0)
+	  ctx_scrolled (ctx, event.wheel.mouseX, event.wheel.mouseY, 1, 0);
+	break;
       case SDL_MOUSEMOTION:
         //  XXX : look at mask and generate motion for each pressed
         //        button
@@ -218,7 +139,7 @@ void ctx_sdl_consume_events (Ctx *ctx)
         y = event.motion.y;
         break;
       case SDL_FINGERMOTION:
-        ctx_pointer_motion (ctx, event.tfinger.x * tiled->width, event.tfinger.y * tiled->height,
+        ctx_pointer_motion (ctx, event.tfinger.x * sdl->width, event.tfinger.y * sdl->height,
             (event.tfinger.fingerId%10) + 4, 0);
         break;
       case SDL_FINGERDOWN:
@@ -229,13 +150,13 @@ void ctx_sdl_consume_events (Ctx *ctx)
                         // mirrored as mouse events, later ones not - at
                         // least under wayland
         {
-          ctx_pointer_press (ctx, event.tfinger.x * tiled->width, event.tfinger.y * tiled->height, 
+          ctx_pointer_press (ctx, event.tfinger.x * sdl->width, event.tfinger.y * sdl->height, 
           (event.tfinger.fingerId%10) + 4, 0);
         }
         }
         break;
       case SDL_FINGERUP:
-        ctx_pointer_release (ctx, event.tfinger.x * tiled->width, event.tfinger.y * tiled->height,
+        ctx_pointer_release (ctx, event.tfinger.x * sdl->width, event.tfinger.y * sdl->height,
           (event.tfinger.fingerId%10) + 4, 0);
         break;
 #if 1
@@ -318,186 +239,280 @@ void ctx_sdl_consume_events (Ctx *ctx)
       case SDL_WINDOWEVENT:
         if (event.window.event == SDL_WINDOWEVENT_RESIZED)
         {
-          ctx_sdl_show_frame (sdl, 1);
           int width = event.window.data1;
           int height = event.window.data2;
-          SDL_DestroyTexture (sdl->texture);
-          sdl->texture = SDL_CreateTexture (sdl->backend, SDL_PIXELFORMAT_ABGR8888,
-                          SDL_TEXTUREACCESS_STREAMING, width, height);
-          ctx_free (tiled->pixels);
-          tiled->pixels = ctx_calloc (width * height, 4);
-
-          tiled->width  = width;
-          tiled->height = height;
-          ctx_set_size (backend->ctx, width, height);
-          ctx_set_size (tiled->ctx_copy, width, height);
+          sdl->width  = width;
+          sdl->height = height;
         }
         break;
     }
   }
 }
 
-static void ctx_sdl_set_clipboard (Ctx *ctx, const char *text)
+static void sdl_cb_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
 {
-  if (text)
-    SDL_SetClipboardText (text);
+  SDL_Rect r = {x, y, w, h};
+  SDL_UpdateTexture (((CtxSDLCb*)user_data)->texture, &r, buf, w * 4);
 }
 
-static char *ctx_sdl_get_clipboard (Ctx *ctx)
+static void sdl_cb_renderer_idle (Ctx *ctx, void *user_data)
 {
-  return SDL_GetClipboardText ();
-}
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
 
-inline static void ctx_sdl_start_frame (Ctx *ctx)
-{
-  CtxSDL  *sdl = (CtxSDL*)ctx->backend;
-  ctx_sdl_show_frame (sdl, 1);
-  ctx_sdl_start_time = ctx_ticks ();
-}
+  if (sdl->clipboard_requested)
+  {
+    char *tmp = SDL_GetClipboardText ();
+    sdl->clipboard = ctx_strdup (tmp);
+    SDL_free (tmp);
+    sdl->clipboard_requested = 0;
+  }
+  if (sdl->clipboard_pasted)
+  {
+    SDL_SetClipboardText (sdl->clipboard_pasted);
+    ctx_free (sdl->clipboard_pasted);
+    sdl->clipboard_pasted = NULL;
+  }
 
-void ctx_sdl_destroy (CtxSDL *sdl)
-{
-  if (sdl->texture)
+  if (ctx_width(ctx) != sdl->width ||
+      ctx_height(ctx) != sdl->height)
+  {
     SDL_DestroyTexture (sdl->texture);
-  if (sdl->backend)
-    SDL_DestroyRenderer (sdl->backend);
-  if (sdl->window)
-  {
-    SDL_DestroyWindow (sdl->window);
+    sdl->texture = SDL_CreateTexture (sdl->backend, SDL_PIXELFORMAT_ABGR8888,
+                          SDL_TEXTUREACCESS_STREAMING, sdl->width, sdl->height);
+    ctx_set_size (ctx, sdl->width, sdl->height);
   }
-  sdl->texture = NULL;
-  sdl->backend = NULL;
-  sdl->window = NULL;
 
-  ctx_tiled_destroy ((CtxTiled*)sdl);
+  if (sdl->fullscreen != sdl->prev_fullscreen)
+  {
+    if (sdl->fullscreen)
+    {
+      SDL_SetWindowFullscreen (sdl->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    }
+    else
+    {
+      SDL_SetWindowFullscreen (sdl->window, 0);
+    }
+    sdl->prev_fullscreen = sdl->fullscreen;
+  }
+
+  if (sdl->prev_title != sdl->title)
+  {
+    SDL_SetWindowTitle (sdl->window, sdl->title);
+    sdl->prev_title = sdl->title;
+  }
+
 }
 
-void ctx_sdl_set_fullscreen (Ctx *ctx, int val)
+static int sdl_cb_frame_done (Ctx *ctx, void *user_data)
 {
-  CtxSDL *sdl = (void*)ctx->backend;
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
+  //SDL_RenderClear (sdl->backend);
+  SDL_RenderCopy (sdl->backend, sdl->texture, NULL, NULL);
+  SDL_RenderPresent (sdl->backend);
 
-  if (val)
+  sdl_cb_renderer_idle (ctx, user_data);
+
+  if (sdl->shown_cursor != ctx->cursor)
   {
-    SDL_SetWindowFullscreen (sdl->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    sdl->shown_cursor = ctx->cursor;
+
+    SDL_Cursor *new_cursor =  NULL;
+    switch (sdl->shown_cursor)
+    {
+      case CTX_CURSOR_UNSET: // XXX: document how this differs from none
+                             //      perhaps falling back to arrow?
+        break;
+      case CTX_CURSOR_NONE:
+        new_cursor = NULL;
+        break;
+      case CTX_CURSOR_ARROW:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+        break;
+      case CTX_CURSOR_CROSSHAIR:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+        break;
+      case CTX_CURSOR_WAIT:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
+        break;
+      case CTX_CURSOR_HAND:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+        break;
+      case CTX_CURSOR_IBEAM:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+        break;
+      case CTX_CURSOR_MOVE:
+      case CTX_CURSOR_RESIZE_ALL:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+        break;
+      case CTX_CURSOR_RESIZE_N:
+      case CTX_CURSOR_RESIZE_S:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+        break;
+      case CTX_CURSOR_RESIZE_E:
+      case CTX_CURSOR_RESIZE_W:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+        break;
+      case CTX_CURSOR_RESIZE_NE:
+      case CTX_CURSOR_RESIZE_SW:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+        break;
+      case CTX_CURSOR_RESIZE_NW:
+      case CTX_CURSOR_RESIZE_SE:
+        new_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+        break;
+    }
+    if (new_cursor)
+    {
+      SDL_Cursor *old_cursor = SDL_GetCursor();
+      SDL_SetCursor (new_cursor);
+      SDL_ShowCursor (1);
+      if (old_cursor)
+        SDL_FreeCursor (old_cursor);
+    }
+    else
+    {
+      SDL_ShowCursor (0);
+    }
   }
-  else
-  {
-    SDL_SetWindowFullscreen (sdl->window, 0);
-  }
-  // XXX we're presuming success
-  sdl->fullscreen = val;
+
+  return 0;
 }
-int ctx_sdl_get_fullscreen (Ctx *ctx)
+
+static int sdl_cb_renderer_init (Ctx *ctx, void *user_data)
 {
-  CtxSDL *sdl = (void*)ctx->backend;
-  return sdl->fullscreen;
-}
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
 
-Ctx *ctx_new_sdl (int width, int height)
-{
-
-
-#if CTX_RASTERIZER
-
-  CtxSDL *sdl = (CtxSDL*)ctx_calloc (1, sizeof (CtxSDL));
-  CtxTiled *tiled = (void*)sdl;
-  CtxBackend *backend = (CtxBackend*)sdl;
-#if CTX_BABL
-  ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
-#endif
-  if (width <= 0 || height <= 0)
-  {
-    width  = 1920;
-    height = 1080;
-  }
-  sdl->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
+  sdl->window = SDL_CreateWindow("ctx", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		                 sdl->width, sdl->height, SDL_WINDOW_SHOWN |SDL_WINDOW_RESIZABLE);
   //sdl->backend = SDL_CreateRenderer (sdl->window, -1, SDL_RENDERER_SOFTWARE);
   sdl->backend = SDL_CreateRenderer (sdl->window, -1, 0);
   if (!sdl->backend)
   {
-     ctx_destroy (backend->ctx);
      ctx_free (sdl);
-     return NULL;
+     return -1;
   }
   sdl->fullscreen = 0;
-
-
-  ctx_show_fps = getenv ("CTX_SHOW_FPS")!=NULL;
 
   sdl->texture = SDL_CreateTexture (sdl->backend,
         SDL_PIXELFORMAT_ABGR8888,
         SDL_TEXTUREACCESS_STREAMING,
-        width, height);
+        sdl->width, sdl->height);
+  if (!sdl->texture)
+  {
+     ctx_free (sdl);
+     return -1;
+  }
 
   SDL_StartTextInput ();
   SDL_EnableScreenSaver ();
   SDL_GL_SetSwapInterval (1);
 
-  backend->type = CTX_BACKEND_SDL;
-  backend->ctx      = _ctx_new_drawlist (width, height);
-  tiled->ctx_copy = _ctx_new_drawlist (width, height);
-  tiled->width    = width;
-  tiled->height   = height;
-  tiled->cols     = 80;
-  tiled->rows     = 20;
-  ctx_set_backend (backend->ctx, sdl);
-  ctx_set_backend (tiled->ctx_copy, sdl);
-
-  tiled->pixels = (uint8_t*)ctx_malloc (width * height * 4);
-  tiled->show_frame = (void*)ctx_sdl_show_frame;
-
-
-  backend->set_windowtitle = (void*)ctx_sdl_set_title;
-  backend->end_frame = ctx_tiled_end_frame;
-  backend->process = (void*)ctx_drawlist_process;
-  backend->start_frame = ctx_sdl_start_frame;
-  backend->destroy = (void*)ctx_sdl_destroy;
-  backend->consume_events = ctx_sdl_consume_events;
-
-  backend->set_clipboard = ctx_sdl_set_clipboard;
-  backend->get_clipboard = ctx_sdl_get_clipboard;
-
-  for (int i = 0; i < _ctx_max_threads; i++)
-  {
-    tiled->host[i] = ctx_new_for_framebuffer (tiled->pixels,
-                     tiled->width/CTX_HASH_COLS, tiled->height/CTX_HASH_ROWS,
-                     tiled->width * 4, CTX_FORMAT_RGBA8);
-    ctx_set_texture_source (tiled->host[i], backend->ctx);
-  }
-
-  ctx_set_texture_cache (tiled->ctx_copy, tiled->host[0]);
-  ctx_set_texture_cache (backend->ctx, tiled->host[0]);
-  mtx_init (&tiled->mtx, mtx_plain);
-  cnd_init (&tiled->cond);
-
-#define start_thread(no)\
-  if(_ctx_max_threads>no){ \
-    static void *args[2]={(void*)no, };\
-    thrd_t tid;\
-    args[1]=sdl;\
-    thrd_create (&tid, (void*)ctx_tiled_render_fun, args);\
-  }
-  start_thread(0);
-  start_thread(1);
-  start_thread(2);
-  start_thread(3);
-  start_thread(4);
-  start_thread(5);
-  start_thread(6);
-  start_thread(7);
-  start_thread(8);
-  start_thread(9);
-  start_thread(10);
-  start_thread(11);
-  start_thread(12);
-  start_thread(13);
-  start_thread(14);
-  start_thread(15);
-#undef start_thread
-
-  return backend->ctx;
-#else
-  return NULL;
-#endif
+  return 0;
 }
+
+static void sdl_cb_renderer_stop (Ctx *ctx, void *user_data)
+{
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
+  if (sdl->texture)
+    SDL_DestroyTexture (sdl->texture);
+  if (sdl->backend)
+    SDL_DestroyRenderer (sdl->backend);
+  if (sdl->window)
+    SDL_DestroyWindow (sdl->window);
+  sdl->texture = NULL;
+  sdl->backend = NULL;
+  sdl->window  = NULL;
+}
+
+static void sdl_cb_set_fullscreen (Ctx *ctx, void *user_data, int fullscreen)
+{
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
+  sdl->fullscreen = fullscreen;
+}
+
+static int sdl_cb_get_fullscreen (Ctx *ctx, void *user_data)
+{
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
+  return sdl->fullscreen;
+}
+
+static char *sdl_cb_get_clipboard (Ctx *ctx, void *user_data)
+{
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
+#if 0
+  if (sdl->clipboard)
+     ctx_free (sdl->clipboard);
+  sdl->clipboard = NULL;
+#endif
+  sdl->clipboard_requested = 1;
+  while (sdl->clipboard_requested)
+	  usleep (1000);
+  return sdl->clipboard?sdl->clipboard:"";
+}
+
+static void sdl_cb_set_clipboard (Ctx *ctx, void *user_data, const char *utf8)
+{
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
+  if (sdl->clipboard_pasted)
+    {
+       fprintf (stderr, "still contents in clipboard - leaking\n");
+    }
+  sdl->clipboard_pasted = ctx_strdup (utf8);
+}
+
+static void sdl_cb_windowtitle (Ctx *ctx, void *user_data, const char *utf8)
+{
+  CtxSDLCb *sdl = (CtxSDLCb*)user_data;
+  if (!sdl->title || strcmp(sdl->title, utf8))
+  {
+    if (sdl->title)
+       ctx_free (sdl->title);
+    sdl->title = ctx_strdup (utf8);
+  }
+}
+
+Ctx *ctx_new_sdl_cb (int width, int height)
+{
+  CtxSDLCb *sdl = (CtxSDLCb*)ctx_calloc (1, sizeof (CtxSDLCb));
+  if (width <= 0 || height <= 0)
+  {
+    width  = 1920;
+    height = 1080;
+  }
+
+  sdl->width = width;
+  sdl->height = height;
+
+  CtxCbConfig config = {
+    .format         = CTX_FORMAT_RGBA8,
+    .flags          = 0
+	            | CTX_FLAG_HASH_CACHE 
+	         // | CTX_FLAG_LOWFI
+	            | CTX_FLAG_DOUBLE_BUFFER 
+		 // | CTX_FLAG_POINTER
+	           ,
+    .memory_budget  = 1920 * 1080 * 4 / 3,
+    .renderer_init  = sdl_cb_renderer_init,
+    .renderer_idle  = sdl_cb_renderer_idle,
+    .set_pixels     = sdl_cb_set_pixels,
+    .update_fb      = sdl_cb_frame_done,
+    .renderer_stop  = sdl_cb_renderer_stop,
+    .consume_events = sdl_cb_consume_events,
+
+    .get_fullscreen = sdl_cb_get_fullscreen,
+    .set_fullscreen = sdl_cb_set_fullscreen,
+    .get_clipboard  = sdl_cb_get_clipboard,
+    .set_clipboard  = sdl_cb_set_clipboard,
+    .windowtitle    = sdl_cb_windowtitle,
+    .user_data      = sdl,
+  };
+
+
+  Ctx *ctx = ctx_new_cb (width, height, &config);
+  if (!ctx)
+    return NULL;
+  sdl->ctx = ctx;
+  return sdl->ctx;
+}
+
 #endif

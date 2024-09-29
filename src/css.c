@@ -1456,7 +1456,7 @@ static void ctx_parse_style_id (Css          *mrg,
 {
   const char *p;
   char temp[128] = "";
-  int  temp_l = 0;
+  unsigned int  temp_l = 0;
   if (!style_id)
   {
     return; // XXX: why does this happen?
@@ -11438,8 +11438,6 @@ void css_done (Css *itk)
 int ctx_renderer_is_sdl (Ctx *ctx);
 int ctx_renderer_is_fb  (Ctx *ctx);
 
-extern int ctx_show_fps;
-
 void
 css_ctx_settings (Css *itk)
 {
@@ -11451,8 +11449,6 @@ css_ctx_settings (Css *itk)
   Ctx *ctx = itk->ctx;
 
   if (!inited){
-    if (!ctx_backend_is_tiled (ctx))
-       return;
     inited = 1;
     threads = ctx_get_render_threads (ctx);
     //hash_cache_enabled = ctx_get_hash_cache (ctx);
@@ -11466,9 +11462,6 @@ css_ctx_settings (Css *itk)
     }
 #endif
     
-#if CTX_SDL
-    ctx_show_fps = css_toggle (itk, "fps debug", ctx_show_fps);
-#endif
     threads = css_slider (itk, "threads", threads, 1, CTX_MAX_THREADS, 1);
     if (threads != ctx_get_render_threads (ctx))
     {

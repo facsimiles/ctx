@@ -3171,14 +3171,6 @@ static void vtcmd_graphics (VT *vt, const char *sequence)
 }
 void vt_audio_task (VT *vt, int click);
 
-#if CTX_TILED
-static void ctx_show_frame (Ctx *ctx, int block)
-{
-  CtxTiled *tiled = (CtxTiled*)(ctx->backend);
-  tiled->show_frame (tiled, block);
-}
-#endif
-
 static void ctx_wait_frame (Ctx *ctx, VT *vt)
 {
   if (ctx_backend_type (ctx) == CTX_BACKEND_CB)
@@ -3197,34 +3189,6 @@ static void ctx_wait_frame (Ctx *ctx, VT *vt)
 #endif
     }
   }
-#if CTX_TILED
-  else if (ctx_backend_is_tiled (ctx))
-  {
-    CtxTiled *tiled = (CtxTiled*)(ctx->backend);
-    int max_wait    = 500;
-    //int wait_frame  = tiled->frame;  // tiled->frame and tiled->render_frame are expected
-                                       // to be equal, unless something else has timed out
-    int wait_frame  = tiled->render_frame;
-    ctx_show_frame (ctx, 0);
-    while (wait_frame > tiled->shown_frame &&
-           max_wait-- > 0)
-    {
-#if CTX_AUDIO
-      usleep (10);
-      vt_audio_task (vt, 0);
-#else
-      usleep (10);
-#endif
-      ctx_show_frame (ctx, 0);
-    }
-#if 1
-    if (max_wait > 0)
-    {}//fprintf (stderr, "[%i]", max_wait);
-    else
-      fprintf (stderr, "[wait-drop]");
-#endif
-  }
-#endif
 }
 
 static void vtcmd_report (VT *vt, const char *sequence)

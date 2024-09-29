@@ -189,6 +189,7 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
                     CtxPixelFormat format, int dst_stride,
                     uint8_t *dst_data)
 {
+   // XXX : TODO implement for cb - backend
    if (0)
    {
    }
@@ -214,40 +215,6 @@ ctx_get_image_data (Ctx *ctx, int sx, int sy, int sw, int sh,
      }
    }
 #endif
-   else if ((format == CTX_FORMAT_RGBA8 ||
-             format == CTX_FORMAT_BGRA8)
-                   && ctx_backend_is_tiled (ctx))
-   {
-     /* synchronize */
-     CtxTiled *tiled = (CtxTiled*)ctx->backend;
-     {
-       if (dst_stride <= 0) dst_stride = ctx_pixel_format_get_stride (format, sw);
-       int bytes_per_pix = 4;
-       int y = 0;
-       int count = 0;
-       for (int v = sy; v < sy + sh; v++, y++)
-       {
-         int x = 0;
-         for (int u = sx; u < sx + sw; u++, x++)
-         {
-            uint8_t* src_buf = (uint8_t*)tiled->pixels;
-            memcpy (&dst_data[y * dst_stride + x * bytes_per_pix], &src_buf[v * tiled->width * bytes_per_pix + u * bytes_per_pix], bytes_per_pix);
-            count++;
-         }
-       }
-       if (format == CTX_FORMAT_RGBA8) // XXX does this vary between tiled
-                                       // backends?
-       {
-         for (int i = 0; i < count; i++)
-         {
-           uint32_t tmp = dst_data[i*4+0];
-           dst_data[i*4+0] = dst_data[i*4+2];
-           dst_data[i*4+2] = tmp;
-         }
-       }
-       return;
-     }
-   }
 #if CTX_RASTERIZER
    else
    {
@@ -2648,6 +2615,25 @@ CtxCursor    ctx_get_cursor (Ctx *ctx)
   return ctx->cursor;
 }
 
+static char *ctx_fb_clipboard = NULL;
+static void ctx_headless_set_clipboard (Ctx *ctx, const char *text)
+{
+  if (ctx_fb_clipboard)
+    ctx_free (ctx_fb_clipboard);
+  ctx_fb_clipboard = NULL;
+  if (text)
+  {
+    ctx_fb_clipboard = ctx_strdup (text);
+  }
+}
+
+static char *ctx_headless_get_clipboard (Ctx *ctx)
+{
+  if (ctx_fb_clipboard) return ctx_strdup (ctx_fb_clipboard);
+  return ctx_strdup ("");
+}
+
+
 void ctx_set_clipboard (Ctx *ctx, const char *text)
 {
   if (ctx->backend && ctx->backend->set_clipboard)
@@ -2655,6 +2641,7 @@ void ctx_set_clipboard (Ctx *ctx, const char *text)
     ctx->backend->set_clipboard (ctx, text);
     return;
   }
+  ctx_headless_set_clipboard (ctx, text);
 }
 
 void ctx_windowtitle (Ctx *ctx, const char *text)
@@ -2672,7 +2659,7 @@ char *ctx_get_clipboard (Ctx *ctx)
   {
     return ctx->backend->get_clipboard (ctx);
   }
-  return ctx_strdup ("");
+  return ctx_headless_get_clipboard (ctx);
 }
 
 
@@ -3139,9 +3126,6 @@ static CtxBackendType __ctx_backend_type (Ctx *ctx)
   else if (backend->destroy == (void*) ctx_cb_destroy) return CTX_BACKEND_CB;
 #if CTX_FORMATTER
   else if (backend->destroy == (void*) ctx_ctx_destroy) return CTX_BACKEND_CTX;
-#if CTX_HEADLESS
-  else if (backend->destroy == (void*) ctx_headless_destroy) return CTX_BACKEND_HEADLESS;
-#endif
 #endif
 #if CTX_TERMINAL_EVENTS
 #if CTX_TERM
@@ -3153,15 +3137,6 @@ static CtxBackendType __ctx_backend_type (Ctx *ctx)
 #endif
 #if CTX_RASTERIZER
   else if (backend->destroy == (void*) ctx_rasterizer_destroy) return CTX_BACKEND_RASTERIZER;
-#endif
-#if CTX_KMS
-  else if (backend->destroy == (void*) ctx_kms_destroy) return CTX_BACKEND_KMS;
-#endif
-#if CTX_FB
-  else if (backend->destroy == (void*) ctx_fb_destroy) return CTX_BACKEND_FB;
-#endif
-#if CTX_SDL
-  else if (backend->destroy == (void*) ctx_sdl_destroy) return CTX_BACKEND_SDL;
 #endif
 #if CTX_CAIRO
   else if (backend->destroy == (void*) ctx_cairo_destroy) return CTX_BACKEND_CAIRO;
@@ -3188,10 +3163,6 @@ CtxBackendType ctx_backend_type (Ctx *ctx)
 
 void ctx_set_fullscreen (Ctx *ctx, int val)
 {
-#if CTX_SDL
-  if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
-    ctx_sdl_set_fullscreen (ctx, val);
-#endif
   if (ctx_backend_type (ctx) == CTX_BACKEND_CB)
   {
     CtxBackend  * backend = (CtxBackend*)ctx->backend;
@@ -3206,10 +3177,6 @@ void ctx_set_fullscreen (Ctx *ctx, int val)
 
 int ctx_get_fullscreen (Ctx *ctx)
 {
-#if CTX_SDL
-    if (ctx_backend_type (ctx) == CTX_BACKEND_SDL)
-      return ctx_sdl_get_fullscreen (ctx);
-#endif
   if (ctx_backend_type (ctx) == CTX_BACKEND_CB)
   {
     CtxBackend  * backend = (CtxBackend*)ctx->backend;

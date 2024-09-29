@@ -32,7 +32,6 @@
 #define CTX_EVENTS 1
 #define CTX_FORCE_INLINES 1
 #define CTX_THREADS 0
-#define CTX_TILED 0
 #define CTX_BAREMETAL 1
 #define CTX_ONE_FONT_ENGINE 1
 

@@ -1520,32 +1520,13 @@ typedef enum CtxBackendType {
   CTX_BACKEND_CTX,
   CTX_BACKEND_RASTERIZER,
   CTX_BACKEND_HASHER,
-  CTX_BACKEND_HEADLESS,
   CTX_BACKEND_TERM,
-  CTX_BACKEND_FB,
-  CTX_BACKEND_KMS,
-  CTX_BACKEND_CAIRO,
-  CTX_BACKEND_SDL,
   CTX_BACKEND_DRAWLIST,
   CTX_BACKEND_PDF,
   CTX_BACKEND_CB,
 } CtxBackendType;
 
 CtxBackendType ctx_backend_type (Ctx *ctx);
-
-static inline int ctx_backend_is_tiled (Ctx *ctx)
-{
-  switch (ctx_backend_type (ctx))
-  {
-    case CTX_BACKEND_FB:
-    case CTX_BACKEND_SDL:
-    case CTX_BACKEND_KMS:
-    case CTX_BACKEND_HEADLESS:
-      return 1;
-    default:
-      return 0;
-  }
-}
 
 #endif
 

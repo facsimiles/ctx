@@ -671,32 +671,6 @@
 #define CTX_CURL 0
 #endif
 
-#ifndef CTX_TILED
-#if CTX_SDL || CTX_FB || CTX_KMS || CTX_HEADLESS
-#define CTX_TILED 1
-#else
-#define CTX_TILED 0
-#endif
-#if !CTX_RASTERIZER
-#undef CTX_RASTERIZER
-#define CTX_RASTERIZER 1
-#endif
-#endif
-
-
-#ifndef CTX_TILED_MERGE_HORIZONTAL_NEIGHBORS
-#define CTX_TILED_MERGE_HORIZONTAL_NEIGHBORS 1
-#endif
-
-
-#ifndef CTX_THREADS
-#if CTX_TILED
-#define CTX_THREADS 1
-#else
-#define CTX_THREADS 0
-#endif
-#endif
-
 #if CTX_THREADS
 #include <pthread.h>
 #define mtx_lock pthread_mutex_lock
@@ -778,8 +752,6 @@
 #define CTX_THREADS 0
 #undef CTX_HEADLESS
 #define CTX_HEADLESS 0
-#undef CTX_TILED
-#define CTX_TILED 0
 #undef CTX_EVENTS
 #define CTX_EVENTS 1
 #undef CTX_PARSER

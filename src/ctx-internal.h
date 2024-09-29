@@ -1239,14 +1239,6 @@ const char *ctx_texture_init (
                       void (*freefunc) (void *pixels, void *user_data),
                       void *user_data);
 
-#if CTX_TILED
-#if !__COSMOPOLITAN__
-//#include <threads.h>
-#endif
-#endif
-typedef struct _CtxTiled CtxTiled;
-
-
 typedef struct _EvSource EvSource;
 struct _EvSource
 {
@@ -1272,53 +1264,6 @@ struct _EvSource
 
   /* if this returns non-0 select can be used for non-blocking.. */
 };
-
-struct _CtxTiled
-{
-   CtxBackend backend;
-   void (*show_frame) (void *backend, int block);
-   int           width;
-   int           height;
-   int           cols;
-   int           rows;
-   int           was_down;
-   uint8_t      *pixels;
-   Ctx          *ctx_copy;
-   Ctx          *host[CTX_MAX_THREADS];
-   CtxAntialias  antialias;
-   int           quit;
-#if CTX_TILED
-   //_Atomic 
-           int   thread_quit;
-#endif
-   int           shown_frame;
-   int           render_frame;
-   int           rendered_frame[CTX_MAX_THREADS];
-   int           frame;
-   int       min_col; // hasher cols and rows
-   int       min_row;
-   int       max_col;
-   int       max_row;
-   uint32_t  hashes[CTX_HASH_ROWS * CTX_HASH_COLS];
-   int8_t    tile_affinity[CTX_HASH_ROWS * CTX_HASH_COLS]; // which render thread no is
-                                                           // responsible for a tile
-                                                           //
-
-   int           pointer_down[3];
-
-   CtxCursor     shown_cursor;
-   int          vt_active;
-   EvSource    *evsource[4];
-   int          evsource_count;
-   uint8_t      *fb;
-#if CTX_THREADS
-#if CTX_TILED
-   cnd_t  cond;
-   mtx_t  mtx;
-#endif
-#endif
-};
-
 
 typedef struct CtxCbBackend
 {

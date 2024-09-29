@@ -1,6 +1,7 @@
 #include "ctx-split.h"
 
-#if CTX_TERMINAL_EVENTS
+#if CTX_FB
+
 
 #if !__COSMOPOLITAN__
 #include <fcntl.h>
@@ -9,39 +10,6 @@
 #endif
 #include <signal.h>
 #endif
-
-
-#if CTX_KMS || CTX_FB
-
-static int ctx_fb_single_buffer = 0;  // used with the framebuffer this
-                                      // causes flicker, but brings single
-                                      // threaded memory use <2mb 
-
-static int ctx_fb_get_mice_fd (Ctx *ctx)
-{
-#if CTX_PTY
-  //CtxFb *fb = (void*)ctx->backend;
-  return _ctx_mice_fd;
-#endif
-}
-
-static void ctx_fb_get_event_fds (Ctx *ctx, int *fd, int *count)
-{
-  int mice_fd = ctx_fb_get_mice_fd (ctx);
-  fd[0] = STDIN_FILENO;
-  if (mice_fd)
-  {
-    fd[1] = mice_fd;
-    *count = 2;
-  }
-  else
-  {
-    *count = 1;
-  }
-}
-#endif
-
-#if CTX_FB
 
 #ifdef __linux__
   #include <linux/fb.h>
@@ -63,381 +31,291 @@ static void ctx_fb_get_event_fds (Ctx *ctx, int *fd, int *count)
 
   #include <sys/mman.h>
 
-typedef struct _CtxFb CtxFb;
-struct _CtxFb
+
+/**/
+
+typedef struct _CtxFbCb CtxFbCb;
+struct _CtxFbCb
 {
-   CtxTiled     tiled;
-   int          key_balance;
-   int          key_repeat;
-   int          lctrl;
-   int          lalt;
-   int          rctrl;
+   Ctx          *ctx;
+
+   int           key_balance;
+   int           key_repeat;
+   int lctrl;
+   int lalt;
+   int rctrl;
 
 
-   int          fb_fd;
-   char        *fb_path;
-   int          fb_bits;
-   int          fb_bpp;
-   int          fb_mapped_size;
-   int          vt;
-   int          tty;
-   cnd_t        cond;
-   mtx_t        mtx;
+   int           width;
+   int           height;
+
+
+   uint8_t*      fb;
+
+   char         *fb_path;
+   int           fb_fd;
+
+   int           fb_bits;
+   int           fb_bpp;
+   int           fb_mapped_size;
+
+   int vt;
+   int tty;
+
+
+   int vt_active;
+
 #if __linux__
    struct       fb_var_screeninfo vinfo;
    struct       fb_fix_screeninfo finfo;
 #endif
+
+#if 0
+   char         *title;
+   const char   *prev_title;
+   int           clipboard_requested;
+   char         *clipboard;
+   char         *clipboard_pasted;
+#endif
+
+   CtxCursor shown_cursor;
+
+   int     is_kms;
+   CtxKMS  kms;
 };
 
-#if UINTPTR_MAX == 0xffFFffFF
-  #define fbdrmuint_t uint32_t
-#elif UINTPTR_MAX == 0xffFFffFFffFFffFF
-  #define fbdrmuint_t uint64_t
-#endif
+static CtxFbCb *ctx_fb = NULL;
 
-
-static void ctx_fb_flip (CtxFb *fb)
+static void fb_cb_set_pixels (Ctx *ctx, void *user_data, int x, int y, int w, int h, void *buf)
 {
-#ifdef __linux__
-  ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);
-#endif
+  CtxFbCb *fb = (CtxFbCb*)user_data;
+
+  if (fb->vt_active == 0)
+	  return;
+
+  int bpp = fb->fb_bpp;
+  int ws = w * bpp;
+  int stride = fb->width * bpp;
+
+  uint8_t *src = (uint8_t*)buf;
+  uint8_t *dst = fb->fb + stride * y + x * bpp;
+  for (int scan = 0; scan < h; scan++)
+  {
+    memcpy (dst, src, ws);
+    src += ws;
+    dst += stride;
+  }
+  //Fb_Rect r = {x, y, w, h};
+  //Fb_UpdateTexture (((CtxFbCb*)user_data)->texture, &r, buf, w * 4);
 }
 
-static void ctx_fb_show_frame (CtxFb *fb, int block)
+static void fb_cb_renderer_idle (Ctx *ctx, void *user_data)
 {
-  CtxTiled *tiled = (void*)fb;
-  if (tiled->shown_frame == tiled->render_frame)
-  {
-    if (block == 0) // consume event call
-    {
-      ctx_tiled_draw_cursor (tiled);
-      ctx_fb_flip (fb);
-    }
-    return;
-  }
+//CtxFbCb *fb = (CtxFbCb*)user_data;
+}
 
-  if (block)
+void *ctx_fbkms_new (CtxKMS *fb, int *width, int *height);
+void ctx_fbkms_flip (CtxKMS *fb);
+void ctx_fbkms_close (CtxKMS *fb);
+
+static int fb_cb_frame_done (Ctx *ctx, void *user_data)
+{
+  CtxFbCb *fb = (CtxFbCb*)user_data;
+
+  if (fb->is_kms)
   {
-    int count = 0;
-    while (ctx_tiled_threads_done (tiled) != _ctx_max_threads)
-    {
-      usleep (500);
-      count ++;
-      if (count > 2000)
-      {
-        tiled->shown_frame = tiled->render_frame;
-        return;
-      }
-    }
+     ctx_fbkms_flip (&fb->kms);
   }
   else
   {
-    if (ctx_tiled_threads_done (tiled) != _ctx_max_threads)
-      return;
+#ifdef __linux__
+  // doing the following... and fps drops
+  //__u32 dummy = 0;  
+  //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);  
+    ioctl (fb->fb_fd, FBIOPAN_DISPLAY, &fb->vinfo);  
+#endif
   }
 
-    if (tiled->vt_active)
-    {
-       int pre_skip = tiled->min_row * tiled->height/CTX_HASH_ROWS * tiled->width;
-       int post_skip = (CTX_HASH_ROWS-tiled->max_row-1) * tiled->height/CTX_HASH_ROWS * tiled->width;
+  fb_cb_renderer_idle (ctx, user_data);
 
-       int rows = ((tiled->width * tiled->height) - pre_skip - post_skip)/tiled->width;
-
-       int col_pre_skip = tiled->min_col * tiled->width/CTX_HASH_COLS;
-       int col_post_skip = (CTX_HASH_COLS-tiled->max_col-1) * tiled->width/CTX_HASH_COLS;
-       if (_ctx_damage_control)
-       {
-         pre_skip = post_skip = col_pre_skip = col_post_skip = 0;
-       }
-
-       if (pre_skip < 0) pre_skip = 0;
-       if (post_skip < 0) post_skip = 0;
-
-
-       if (tiled->min_row == 100){
-          pre_skip = 0;
-          post_skip = 0;
-#ifdef __linux__
-           //__u32 dummy = 0;
-          //ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
-#endif
-          ctx_tiled_undraw_cursor (tiled);
-       }
-       else
-       {
-
-      tiled->min_row = 100;
-      tiled->max_row = 0;
-      tiled->min_col = 100;
-      tiled->max_col = 0;
-#ifdef __linux__
-    {
-     __u32 dummy = 0;
-     ioctl (fb->fb_fd, FBIO_WAITFORVSYNC, &dummy);
-    }
-#endif
-     ctx_tiled_undraw_cursor (tiled);
-     if (!ctx_fb_single_buffer)
-     switch (fb->fb_bits)
-     {
-       case 32:
-#if 1
-         {
-           uint8_t *dst = tiled->fb + pre_skip * 4;
-           uint8_t *src = tiled->pixels + pre_skip * 4;
-           int pre = col_pre_skip * 4;
-           int post = col_post_skip * 4;
-           int core = tiled->width * 4 - pre - post;
-           for (int i = 0; i < rows; i++)
-           {
-             dst  += pre;
-             src  += pre;
-             memcpy (dst, src, core);
-             src  += core;
-             dst  += core;
-             dst  += post;
-             src  += post;
-           }
-         }
-#else
-         { int count = tiled->width * tiled->height;
-           const uint32_t *src = (void*)tiled->pixels;
-           uint32_t *dst = (void*)tiled->fb;
-           count-= pre_skip;
-           src+= pre_skip;
-           dst+= pre_skip;
-           count-= post_skip;
-           while (count -- > 0)
-           {
-             dst[0] = ctx_swap_red_green2 (src[0]);
-             src++;
-             dst++;
-           }
-         }
-#endif
-         break;
-         /* XXX  :  note: converting a scanline (or all) to target and
-          * then doing a bulk memcpy be faster (at least with som /dev/fbs)  */
-       case 24:
-         { int count = tiled->width * tiled->height;
-           const uint8_t *src = tiled->pixels;
-           uint8_t *dst = tiled->fb;
-           count-= pre_skip;
-           src+= pre_skip * 4;
-           dst+= pre_skip * 3;
-           count-= post_skip;
-           while (count -- > 0)
-           {
-             dst[0] = src[0];
-             dst[1] = src[1];
-             dst[2] = src[2];
-             dst+=3;
-             src+=4;
-           }
-         }
-         break;
-       case 16:
-         { int count = tiled->width * tiled->height;
-           const uint8_t *src = tiled->pixels;
-           uint8_t *dst = tiled->fb;
-           count-= post_skip;
-           count-= pre_skip;
-           src+= pre_skip * 4;
-           dst+= pre_skip * 2;
-           while (count -- > 0)
-           {
-             int big = ((src[0] >> 3)) +
-                ((src[1] >> 2)<<5) +
-                ((src[2] >> 3)<<11);
-             dst[0] = big & 255;
-             dst[1] = big >>  8;
-             dst+=2;
-             src+=4;
-           }
-         }
-         break;
-       case 15:
-         { int count = tiled->width * tiled->height;
-           const uint8_t *src = tiled->pixels;
-           uint8_t *dst = tiled->fb;
-           count-= post_skip;
-           count-= pre_skip;
-           src+= pre_skip * 4;
-           dst+= pre_skip * 2;
-           while (count -- > 0)
-           {
-             int big = ((src[2] >> 3)) +
-                       ((src[1] >> 2)<<5) +
-                       ((src[0] >> 3)<<10);
-             dst[0] = big & 255;
-             dst[1] = big >>  8;
-             dst+=2;
-             src+=4;
-           }
-         }
-         break;
-       case 8:
-         { int count = tiled->width * tiled->height;
-           const uint8_t *src = tiled->pixels;
-           uint8_t *dst = tiled->fb;
-           count-= post_skip;
-           count-= pre_skip;
-           src+= pre_skip * 4;
-           dst+= pre_skip;
-           while (count -- > 0)
-           {
-             dst[0] = ((src[0] >> 5)) +
-                      ((src[1] >> 5)<<3) +
-                      ((src[2] >> 6)<<6);
-             dst+=1;
-             src+=4;
-           }
-         }
-         break;
-     }
-    }
-    ctx_tiled_cursor_drawn = 0;
-    ctx_tiled_draw_cursor (tiled);
-    ctx_fb_flip (fb);
-    tiled->shown_frame = tiled->render_frame;
-  }
+  return 0;
 }
 
-void ctx_fb_consume_events (Ctx *ctx)
+static void fb_cb_consume_events (Ctx *ctx, void *user_data)
 {
-  CtxFb *fb = (void*)ctx->backend;
-  ctx_fb_show_frame (fb, 0);
-  event_check_pending (&fb->tiled);
-}
-
-inline static void ctx_fb_start_frame (Ctx *ctx)
-{
-  // show pending frame if any
-  ctx_fb_show_frame ((CtxFb*)ctx->backend, 1);
-}
-
-void ctx_fb_destroy (CtxFb *fb)
-{
-  CtxTiled*tiled=(CtxTiled*)fb;
-
-//#ifdef __linux__
-  ioctl (0, KDSETMODE, KD_TEXT);
-//#endif
-#ifdef __NetBSD__
+  CtxFbCb *fb = (CtxFbCb*)user_data;
+  CtxCbBackend *cb = ctx_get_backend (ctx);
+  for (int i = 0; i < cb->evsource_count; i++)
   {
-   int mode = WSDISPLAYIO_MODE_EMUL;
-   ioctl (fb->fb_fd, WSDISPLAYIO_SMODE, &mode);
+    while (evsource_has_event (cb->evsource[i]))
+    {
+      char *event = evsource_get_event (cb->evsource[i]);
+      if (event)
+      {
+        if (fb->vt_active)
+        {
+          ctx_key_press (ctx, 0, event, 0); // we deliver all events as key-press, the key_press handler   disambiguates
+        }
+        ctx_free (event);
+      }
+    }
   }
-#endif
-  munmap (tiled->fb, fb->fb_mapped_size);
-  if (!ctx_fb_single_buffer)
-    ctx_free (tiled->pixels);
-  close (fb->fb_fd);
-  if (system("stty sane")){};
-  ctx_tiled_destroy ((CtxTiled*)fb);
-  //ctx_free (fb);
 }
 
-//static unsigned char *fb_icc = NULL;
-//static long fb_icc_length = 0;
-
-static CtxFb *ctx_fb = NULL;
-#ifdef __linux__
-static void fb_vt_switch_cb (int sig)
+static void ctx_fb_cb_get_event_fds (Ctx *ctx, int *fd, int *count)
 {
-  CtxTiled *tiled = (void*)ctx_fb;
-  CtxBackend *backend = (void*)ctx_fb;
+  int mice_fd = _ctx_mice_fd;
+  fd[0] = STDIN_FILENO;
+  if (mice_fd)
+  {
+    fd[1] = mice_fd;
+    *count = 2;
+  }
+  else
+  {
+    *count = 1;
+  }
+}
+
+static void fb_cb_renderer_stop (Ctx *ctx, void *user_data)
+{
+  CtxFbCb *fb = (CtxFbCb*)user_data;
+
+#if CTX_FB_KDSETMODE
+#ifdef __linux__
+  ioctl (0, KDSETMODE, KD_TEXT);  
+#endif
+#endif
+  if (fb->is_kms)
+  {
+     ctx_fbkms_flip (&fb->kms);
+  }
+  else
+  {
+
+#ifdef __NetBSD__
+    {  
+     int mode = WSDISPLAYIO_MODE_EMUL;  
+     ioctl (fb->fb_fd, WSDISPLAYIO_SMODE, &mode);  
+    }  
+#endif
+    munmap (fb->fb, fb->fb_mapped_size);
+    close (fb->fb_fd);  
+    if (system("stty sane")){};
+  }
+}
+
+#ifdef __linux__
+static void fb_cb_vt_switch_cb (int sig)
+{
+
+  CtxFbCb  *fb = (void*)ctx_fb;
+  CtxBackend *backend = ctx_get_backend(fb->ctx);
+  CtxCbBackend *cb = (CtxCbBackend*)backend;
   if (sig == SIGUSR1)
   {
     ioctl (0, VT_RELDISP, 1);
-    tiled->vt_active = 0;
-    ioctl (0, KDSETMODE, KD_TEXT);
+    fb->vt_active = 0;
+#if CTX_FB_KDSETMODE
+#ifdef __linux__
+    ioctl (0, KDSETMODE, KD_TEXT);  
+#endif
+#endif
   }
   else
   {
     ioctl (0, VT_RELDISP, VT_ACKACQ);
-    tiled->vt_active = 1;
-    // queue draw
-    tiled->render_frame = ++tiled->frame;
+    fb->vt_active = 1;
+#if CTX_FB_KDSETMODE
+#ifdef __linux__
     ioctl (0, KDSETMODE, KD_GRAPHICS);
-    {
-      backend->ctx->dirty=1;
-
-      for (int row = 0; row < CTX_HASH_ROWS; row++)
-      for (int col = 0; col < CTX_HASH_COLS; col++)
-      {
-        tiled->hashes[(row * CTX_HASH_COLS + col)] += 1;
-      }
-    }
+#endif
+#endif
+    ctx_queue_draw (fb->ctx);
+    for (int i =0; i<CTX_HASH_COLS * CTX_HASH_ROWS; i++)
+      cb->hashes[i] = 0;
   }
 }
 #endif
 
-
-Ctx *ctx_new_fb (int width, int height)
+static int fb_cb_renderer_init (Ctx *ctx, void *user_data)
 {
-#if CTX_RASTERIZER
-  if (getenv ("CTX_FB_SINGLE_BUFFER"))
-    ctx_fb_single_buffer = atoi (getenv ("CTX_FB_SINGLE_BUFFER"));
-  CtxFb *fb = ctx_calloc (1, sizeof (CtxFb));
-  CtxTiled *tiled = (void*)fb;
-  CtxBackend *backend = (void*)fb;
-  ctx_fb = fb;
+  CtxFbCb *fb      = (CtxFbCb*)user_data;
+  CtxCbBackend *cb = ctx_get_backend (ctx);
+
+  ctx_fb = (CtxFbCb*)fb;
+
+  int kms_w = 0;
+  int kms_h = 0;
+  uint8_t *base = NULL;
+
+  int try_kms = 0;
+  if (getenv ("CTX_BACKEND") && !strcmp (getenv ("CTX_BACKEND"), "kms"))
+    try_kms = 1;
+
+  if (try_kms && (base = ctx_fbkms_new(&fb->kms, &kms_w, &kms_h)))
   {
+     fb->fb = base;
+     fb->width = kms_w;
+     fb->height = kms_h;
+     fb->is_kms = 1;
+     fb->fb_bits = 32;
+     fb->fb_bpp = 4;
+     fb->fb_mapped_size = fb->width * 4 * fb->height;
+  }
+  else
+  {  
 #ifdef __linux__
-  const char *dev_path = "/dev/fb0";
+    const char *dev_path = "/dev/fb0";  
 #endif
 #ifdef __NetBSD__
-  const char *dev_path = "/dev/ttyE0";
+    const char *dev_path = "/dev/ttyE0";  
 #endif
 #ifdef __OpenBSD__
-  const char *dev_path = "/dev/ttyC0";
+    const char *dev_path = "/dev/ttyC0";  
 #endif
-  fb->fb_fd = open (dev_path, O_RDWR);
-  if (fb->fb_fd > 0)
-    fb->fb_path = ctx_strdup (dev_path);
-  else
-  {
+    fb->fb_fd = open (dev_path, O_RDWR);  
+    if (fb->fb_fd > 0)  
+      fb->fb_path = ctx_strdup (dev_path);  
+    else  
+    {  
 #ifdef __linux__
-    fb->fb_fd = open ("/dev/graphics/fb0", O_RDWR);
-    if (fb->fb_fd > 0)
-    {
-      fb->fb_path = ctx_strdup ("/dev/graphics/fb0");
-    }
-    else
+      fb->fb_fd = open ("/dev/graphics/fb0", O_RDWR);  
+      if (fb->fb_fd > 0)  
+      {  
+        fb->fb_path = ctx_strdup ("/dev/graphics/fb0");  
+      }  
+      else  
 #endif
-    {
-      ctx_free (fb);
-      return NULL;
+      {  
+        ctx_free (fb);  
+        return -1;  
+      }  
     }
-  }
 
 #ifdef __linux__
   if (ioctl(fb->fb_fd, FBIOGET_FSCREENINFO, &fb->finfo))
-    {
-      fprintf (stderr, "error getting fbinfo\n");
-      close (fb->fb_fd);
-      ctx_free (fb->fb_path);
-      ctx_free (fb);
-      return NULL;
-    }
+  {
+    fprintf (stderr, "error getting fbinfo\n");
+    close (fb->fb_fd);
+    ctx_free (fb->fb_path);
+    ctx_free (fb);
+    return -1;
+  }
 
-   if (ioctl(fb->fb_fd, FBIOGET_VSCREENINFO, &fb->vinfo))
-     {
-       fprintf (stderr, "error getting fbinfo\n");
-      close (fb->fb_fd);
-      ctx_free (fb->fb_path);
-      ctx_free (fb);
-      return NULL;
-     }
-  ioctl (0, KDSETMODE, KD_GRAPHICS);
+  if (ioctl(fb->fb_fd, FBIOGET_VSCREENINFO, &fb->vinfo))
+  {
+     fprintf (stderr, "error getting fbinfo\n");
+     close (fb->fb_fd);
+     ctx_free (fb->fb_path);
+     ctx_free (fb);
+     return -1;
+  }
 
-//fprintf (stderr, "%s\n", fb->fb_path);
-  width = tiled->width = fb->vinfo.xres;
-  height = tiled->height = fb->vinfo.yres;
+  fb->width = fb->vinfo.xres;
+  fb->height = fb->vinfo.yres;
 
   fb->fb_bits = fb->vinfo.bits_per_pixel;
-//fprintf (stderr, "fb bits: %i\n", fb->fb_bits);
 
   if (fb->fb_bits == 16)
     fb->fb_bits =
@@ -467,7 +345,7 @@ Ctx *ctx_new_fb (int width, int height)
       blue[i]  = ((( i >> 0) & 0x3) << 6) << 8;
     }
 
-    if (ioctl (fb->fb_fd, FBIOPUTCMAP, &cmap) == -1)
+        if (ioctl (fb->fb_fd, FBIOPUTCMAP, &cmap) == -1)
     {
       fprintf (stderr, "palette initialization problem %i\n", __LINE__);
     }
@@ -483,127 +361,141 @@ Ctx *ctx_new_fb (int width, int height)
   int mode = WSDISPLAYIO_MODE_DUMBFB;
   //int mode = WSDISPLAYIO_MODE_MAPPED;
   if (ioctl (fb->fb_fd, WSDISPLAYIO_SMODE, &mode)) {
-    return NULL;
+    return -1;
   }
   if (ioctl (fb->fb_fd, WSDISPLAYIO_GINFO, &finfo)) {
     fprintf (stderr, "ioctl: WSIDSPLAYIO_GINFO failed\n");
-    return NULL;
+    return -1;
   }
 
-  width = tiled->width = finfo.width;
-  height = tiled->height = finfo.height;
+  fb->width = finfo.width;
+  fb->height = finfo.height;
   fb->fb_bits = finfo.depth;
   fb->fb_bpp = (fb->fb_bits + 1) / 8;
-  fb->fb_mapped_size = width * height * fb->fb_bpp;
+  fb->fb_mapped_size = fb->width * fb->height * fb->fb_bpp;
 
 
-  if (fb->fb_bits == 8)
-  {
-    uint8_t red[256],  green[256],  blue[256];
-    struct wsdisplay_cmap cmap;
-    cmap.red = red;
-    cmap.green = green;
-    cmap.blue = blue;
-    cmap.count = 256;
-    cmap.index = 0;
-    for (int i = 0; i < 256; i++)
+    if (fb->fb_bits == 8)
     {
-      red[i]   = ((( i >> 5) & 0x7) << 5);
-      green[i] = ((( i >> 2) & 0x7) << 5);
-      blue[i]  = ((( i >> 0) & 0x3) << 6);
+      uint8_t red[256],  green[256],  blue[256];
+      struct wsdisplay_cmap cmap;
+      cmap.red = red;
+      cmap.green = green;
+      cmap.blue = blue;
+      cmap.count = 256;
+      cmap.index = 0;
+      for (int i = 0; i < 256; i++)
+      {
+        red[i]   = ((( i >> 5) & 0x7) << 5);
+        green[i] = ((( i >> 2) & 0x7) << 5);
+        blue[i]  = ((( i >> 0) & 0x3) << 6);
+      }
+      ioctl (fb->fb_fd, WSDISPLAYIO_PUTCMAP, &cmap);
     }
-
-    ioctl (fb->fb_fd, WSDISPLAYIO_PUTCMAP, &cmap);
-  }
 #endif
-
-                                              
-  tiled->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
+    fb->fb = mmap (NULL, fb->fb_mapped_size, PROT_READ|PROT_WRITE, MAP_SHARED, fb->fb_fd, 0);
   }
-  if (!tiled->fb)
-    return NULL;
-  if (ctx_fb_single_buffer)
-    tiled->pixels = tiled->fb;
-  else
-    tiled->pixels = ctx_calloc (1, fb->fb_mapped_size);
-  tiled->show_frame = (void*)ctx_fb_show_frame;
+
+  if (!fb->fb)
+  {
+    fprintf (stderr, "failed opening fb\n");
+    return -1;
+  }
+
+  switch (fb->fb_bits)
+  {
+    case 32: cb->config.format = CTX_FORMAT_BGRA8; break;
+    case 24: cb->config.format = CTX_FORMAT_RGB8; break;
+    case 16: cb->config.format = CTX_FORMAT_RGB565; break;
+    case 8: cb->config.format = CTX_FORMAT_RGB332; break;
+  }
 
 #if CTX_BABL
-  ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);
+  ctx_get_contents ("file:///tmp/ctx.icc", &sdl_icc, &sdl_icc_length);  
 #endif
 
-  backend->type   = CTX_BACKEND_FB;
-  backend->ctx    = _ctx_new_drawlist (width, height);
-  tiled->ctx_copy = _ctx_new_drawlist (width, height);
-  tiled->width    = width;
-  tiled->height   = height;
 
-  ctx_set_backend (backend->ctx, fb);
-  ctx_set_backend (tiled->ctx_copy, fb);
+  ctx_set_size (ctx, fb->width, fb->height);
+#ifdef __linux__
 
-  backend->end_frame = ctx_tiled_end_frame;
-  backend->process = (void*)ctx_drawlist_process;
-
-  backend->start_frame = ctx_fb_start_frame;
-  backend->destroy = (void*)ctx_fb_destroy;
-  backend->set_clipboard = ctx_headless_set_clipboard;
-  backend->get_clipboard = ctx_headless_get_clipboard;
-  backend->consume_events = ctx_fb_consume_events;
-  backend->get_event_fds = ctx_fb_get_event_fds;
-
-  ctx_set_size (backend->ctx, width, height);
-  ctx_set_size (tiled->ctx_copy, width, height);
-
-  for (int i = 0; i < _ctx_max_threads; i++)
+  if (fb->is_kms == 0)
   {
-    tiled->host[i] = ctx_new_for_framebuffer (tiled->pixels,
-                   tiled->width/CTX_HASH_COLS, tiled->height/CTX_HASH_ROWS,
-                   tiled->width * 4, CTX_FORMAT_BGRA8); // this format
-                                  // is overriden in  thread
-    ((CtxRasterizer*)(tiled->host[i]->backend))->swap_red_green = 1;
-    ctx_set_texture_source (tiled->host[i], backend->ctx);
+    signal (SIGUSR1, fb_cb_vt_switch_cb);
+    signal (SIGUSR2, fb_cb_vt_switch_cb);
+
+    struct vt_stat st;
+    if (ioctl (0, VT_GETSTATE, &st) == -1)
+    {
+      ctx_log ("VT_GET_MODE failed\n");
+      return -1;
+    }
+
+    fb->vt = st.v_active;
+    struct vt_mode mode;
+    mode.mode   = VT_PROCESS;
+    mode.relsig = SIGUSR1;
+    mode.acqsig = SIGUSR2;
+    if (ioctl (0, VT_SETMODE, &mode) < 0)
+    {
+      fprintf (stderr, "VT_SET_MODE on vt %i failed\n", fb->vt);
+      return -1;
+    }
   }
-  ctx_set_texture_cache (tiled->ctx_copy, tiled->host[0]);
-  ctx_set_texture_cache (backend->ctx, tiled->host[0]);
+#if CTX_FB_KDSETMODE
+#ifdef __linux__
+    ioctl (0, KDSETMODE, KD_GRAPHICS);
+#endif
+#endif
+#endif
 
-  mtx_init (&tiled->mtx, mtx_plain);
-  cnd_init (&tiled->cond);
+  return 0;
+}
 
-#define start_thread(no)\
-  if(_ctx_max_threads>no){ \
-    static void *args[2]={(void*)no, };\
-    thrd_t tid;\
-    args[1]=fb;\
-    thrd_create (&tid, (void*)ctx_tiled_render_fun, args);\
-  }
-  start_thread(0);
-  start_thread(1);
-  start_thread(2);
-  start_thread(3);
-  start_thread(4);
-  start_thread(5);
-  start_thread(6);
-  start_thread(7);
-  start_thread(8);
-  start_thread(9);
-  start_thread(10);
-  start_thread(11);
-  start_thread(12);
-  start_thread(13);
-  start_thread(14);
-  start_thread(15);
-#undef start_thread
 
+Ctx *ctx_new_fb_cb (int width, int height)
+{
+  CtxFbCb *fb = (CtxFbCb*)ctx_calloc (1, sizeof (CtxFbCb));
+
+
+  CtxCbConfig config = {
+    .format         = CTX_FORMAT_RGBA8,
+    .flags          = 0
+	            | CTX_FLAG_HASH_CACHE
+	            | CTX_FLAG_DOUBLE_BUFFER
+		    | CTX_FLAG_POINTER
+	           ,
+    .memory_budget  = 1920*1200*4,
+    .renderer_init  = fb_cb_renderer_init,
+    .renderer_idle  = fb_cb_renderer_idle,
+    .set_pixels     = fb_cb_set_pixels,
+    .update_fb      = fb_cb_frame_done,
+    .renderer_stop  = fb_cb_renderer_stop,
+    .consume_events = fb_cb_consume_events,
+    //.get_clipboard  = fb_cb_get_clipboard,
+    //.set_clipboard  = fb_cb_set_clipboard,
+    
+    .user_data      = fb,
+  };
+
+  Ctx *ctx = ctx_new_cb (width, height, &config);
+  if (!ctx)
+    return NULL;
+  fb->ctx = ctx;
+
+  CtxCbBackend *cb = ctx_get_backend (ctx);
   EvSource *kb = NULL;
- 
+
+  CtxBackend *backend = (void*)cb;
+  backend->get_event_fds = ctx_fb_cb_get_event_fds;
+
 #if CTX_RAW_KB_EVENTS
   if (!kb) kb = evsource_kb_raw_new ();
 #endif
   if (!kb) kb = evsource_kb_term_new ();
   if (kb)
   {
-    tiled->evsource[tiled->evsource_count++] = kb;
-    kb->priv = backend->ctx;
+    cb->evsource[cb->evsource_count++] = kb;
+    kb->priv = fb->ctx;
   }
   EvSource *mice  = NULL;
   mice = evsource_linux_ts_new ();
@@ -613,40 +505,13 @@ Ctx *ctx_new_fb (int width, int height)
 #endif
   if (mice)
   {
-    tiled->evsource[tiled->evsource_count++] = mice;
-    mice->priv = backend->ctx;
+    cb->evsource[cb->evsource_count++] = mice;
+    mice->priv = fb->ctx;
   }
+  fb->vt_active = 1;
 
-  tiled->vt_active = 1;
-#ifdef __linux__
-  ioctl(0, KDSETMODE, KD_GRAPHICS);
-  signal (SIGUSR1, fb_vt_switch_cb);
-  signal (SIGUSR2, fb_vt_switch_cb);
 
-  struct vt_stat st;
-  if (ioctl (0, VT_GETSTATE, &st) == -1)
-  {
-    ctx_log ("VT_GET_MODE on vt %i failed\n", fb->vt);
-    return NULL;
-  }
-
-  fb->vt = st.v_active;
-
-  struct vt_mode mode;
-  mode.mode   = VT_PROCESS;
-  mode.relsig = SIGUSR1;
-  mode.acqsig = SIGUSR2;
-  if (ioctl (0, VT_SETMODE, &mode) < 0)
-  {
-    ctx_log ("VT_SET_MODE on vt %i failed\n", fb->vt);
-    return NULL;
-  }
-#endif
-
-  return backend->ctx;
-#else
-  return NULL;
-#endif
+  return fb->ctx;
 }
-#endif
+
 #endif
