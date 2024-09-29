@@ -1375,8 +1375,7 @@ static void vt_scroll (VT *vt, int amount);
 static void _vt_add_str (VT *vt, const char *str)
 {
   int logical_margin_right = VT_MARGIN_RIGHT;
-  if (vt->cstyle & STYLE_PROPORTIONAL)
-    { vt->current_line->contains_proportional = 1; }
+  vt->current_line->contains_proportional |= ((vt->cstyle & STYLE_PROPORTIONAL)==STYLE_PROPORTIONAL);
   if (vt->cursor_x > logical_margin_right)
     {
       if (vt->autowrap)
@@ -2473,7 +2472,6 @@ static void vt_ctx_frame_done (void *data)
   if (vt->current_line->frame)
   {
     vt->current_line->prev = vt->current_line->frame->str;
-    vt->current_line->prev_length = vt->current_line->frame->length;
 
     ctx_string_free (vt->current_line->frame, 0);
     vt->current_line->frame = NULL;

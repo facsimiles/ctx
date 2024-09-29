@@ -48,7 +48,6 @@ struct _VtLine
   void     *ctx; // each line can have an attached ctx context;
   char     *prev;
   int       style_size;
-  int       prev_length;
   CtxString *frame;
 
 
@@ -101,12 +100,13 @@ static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
   if (pos >= string->style_size)
     {
       int new_size = pos + 8;
-      string->style = ctx_realloc (string->style, string->style_size, new_size * sizeof (uint64_t) );
-      memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (uint64_t) );
+      string->style = ctx_realloc (string->style, string->style_size, new_size * sizeof (vt_style_t) );
+      memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (vt_style_t) );
       string->style_size = new_size;
     }
   string->style[pos] = style;
 }
+
 static inline void vt_line_clear_style (VtLine *string)
 {
   if (string->string.is_line==0)
@@ -242,7 +242,7 @@ static inline void vt_line_insert_unichar (VtLine *line, int pos, uint32_t new_g
   CtxString *string = (CtxString*)line;
   ctx_string_insert_unichar (string, pos, new_glyph);
   int len = vt_line_get_length (line);
-  for (int i = 1; i < len; i++)
+  for (int i = pos; i < len; i++)
     vt_line_set_style (line, i, vt_line_get_style (line, i-1));
 }
 static inline void vt_line_replace_unichar (VtLine *line, int pos, uint32_t unichar)
