@@ -5,7 +5,7 @@
 #define CTX_BACKEND_TEXT 0 // we keep then non-backend code paths
                            // for code handling aroud, this should
                            // be run-time to permit doing text_to_path
-#define CTX_RASTERIZER         0
+#define CTX_RASTERIZER         1
 
 #define CTX_BITPACK_PACKER     1  // pack vectors
 #define CTX_BITPACK            1
