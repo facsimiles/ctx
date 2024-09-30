@@ -581,8 +581,8 @@ struct _Ctx
   CtxBackend       *backend_pushed;
   CtxBuffer         texture[CTX_MAX_TEXTURES];
   int               exit;
-#if CTX_EVENTS 
   CtxCursor         cursor;
+#if CTX_EVENTS 
   CtxEvents         events;
   int               mouse_fd;
   int               mouse_x;

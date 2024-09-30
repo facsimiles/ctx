@@ -1377,7 +1377,6 @@ static void _vt_add_str (VT *vt, const char *str)
         {
           int chars = 0;
           int old_x = vt->cursor_x;
-	  char *copy = NULL;
           VtLine *old_line = vt->current_line;
           if (vt->justify && str[0] != ' ')
             {
@@ -7658,10 +7657,10 @@ static void vt_flush_bg (VT *vt, Ctx *ctx)
     vt->bg_active = 0;
     if (on_white)
     {
-      if (vt->bg_rgba[0] == 255 & vt->bg_rgba[1] == 255 && vt->bg_rgba[2] == 255)
+      if (vt->bg_rgba[0] == 255 && vt->bg_rgba[1] == 255 && vt->bg_rgba[2] == 255)
         return;
     }
-    if (vt->bg_rgba[0] == 0 & vt->bg_rgba[1] == 0 && vt->bg_rgba[2] == 0)
+    if (vt->bg_rgba[0] == 0 && vt->bg_rgba[1] == 0 && vt->bg_rgba[2] == 0)
       return;
 
     ctx_rgba8 (ctx, vt->bg_rgba[0], vt->bg_rgba[1], vt->bg_rgba[2], vt->bg_rgba[3]);
@@ -8084,12 +8083,10 @@ static float vt_draw_cell_bg (VT      *vt, Ctx *ctx,
                        int      in_smooth_scroll,
                        int      in_select)
 {
-  int is_fg = 0;
   int on_white = vt->reverse_video;
   int color = 0;
   int bold = (style & STYLE_BOLD) != 0;
   int dim = (style & STYLE_DIM) != 0;
-  int is_hidden = (style & STYLE_HIDDEN) != 0;
   int proportional = (style & STYLE_PROPORTIONAL) != 0;
   int fg_set = (style & STYLE_FG_COLOR_SET) != 0;
   int bg_intensity = 0;
@@ -8125,15 +8122,10 @@ static float vt_draw_cell_bg (VT      *vt, Ctx *ctx,
         }
     }
   float scale_x  = 1.0f;
-  float scale_y  = 1.0f;
   float offset_y = 0.0f;
   if (dw)
     {
       scale_x = 2.0f;
-    }
-  if (dh)
-    {
-      scale_y = 2.0f;
     }
   if (dh == 1)
     {

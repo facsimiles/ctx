@@ -1954,8 +1954,6 @@ ctx_rasterizer_bezier_divide (CtxRasterizer *rasterizer,
   }
 }
 
-#define CTX_FIX_SCALE 1024
-#define CTX_FIX_SHIFT 10
                       
 
 CTX_INLINE static int

@@ -216,8 +216,12 @@ ctx_parser_init (CtxParser *parser,
   parser->prop_data        = prop_data;
   
   int new_len = 512;
+#if CTX_PARSER_FIXED_TEMP
+  parser->hold_len = CTX_PARSER_MAXLEN;
+#else
   parser->holding = (uint8_t*)ctx_realloc (parser->holding, parser->hold_len, new_len);
   parser->hold_len = new_len;
+#endif
   return parser;
 }
 

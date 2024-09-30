@@ -238,7 +238,7 @@
  *  size and possibly in severely constrained ROMs.
  */
 #ifndef CTX_BLENDING_AND_COMPOSITING
-#define CTX_BLENDING_AND_COMPOSITING 0
+#define CTX_BLENDING_AND_COMPOSITING 1
 #endif
 
 /*  this forces the inlining of some performance
@@ -929,4 +929,10 @@
 #ifndef CTX_TYPING_POINTER_IGNORE_MS
 #define CTX_TYPING_POINTER_IGNORE_MS 700
 #endif
+
+
+#define CTX_FIX_SCALE 1024
+#define CTX_FIX_SHIFT 10
+
+
 

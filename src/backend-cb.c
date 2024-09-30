@@ -733,6 +733,7 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 }
 #endif
 
+#if CTX_PARSER
 void ctx_draw_pointer (Ctx *ctx, float x, float y, CtxCursor cursor)
 {
 #define CURSOR_POST " rgba 0 0 0 0.5 z preserve fill rgba 1 1 1 0.5 lineWidth 2 stroke"
@@ -800,6 +801,7 @@ void ctx_draw_pointer (Ctx *ctx, float x, float y, CtxCursor cursor)
     ctx_parse (ctx, drawing);
     ctx_restore(ctx);
 }
+#endif
 
 static void
 ctx_cb_end_frame (Ctx *ctx)
@@ -848,8 +850,10 @@ ctx_cb_end_frame (Ctx *ctx)
     prev_time = cur_time;
   }
 
+#if CTX_PARSER
   if (cb_backend->config.flags & CTX_FLAG_POINTER)
     ctx_draw_pointer (ctx, ctx_pointer_x(ctx), ctx_pointer_y(ctx), ctx->cursor);
+#endif
 
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
@@ -918,15 +922,18 @@ static void ctx_cb_consume_events (Ctx *ctx)
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
   int old_pointer_x = 0;
   int old_pointer_y = 0;
+#if CTX_PARSER
   if (backend_cb->config.flags & CTX_FLAG_POINTER)
   {
     old_pointer_x = ctx_pointer_x (ctx);
     old_pointer_y = ctx_pointer_y (ctx);
   }
+#endif
   if (backend_cb->config.consume_events)
   {
     backend_cb->config.consume_events (ctx, backend_cb->backend.user_data);
   }
+#if CTX_PARSER
   if (backend_cb->config.flags & CTX_FLAG_POINTER)
   {
     int pointer_x = ctx_pointer_x (ctx);
@@ -935,6 +942,7 @@ static void ctx_cb_consume_events (Ctx *ctx)
         (pointer_y != old_pointer_y))
       ctx_queue_draw (ctx);
   }
+#endif
 }
 
 static void ctx_cb_windowtitle (Ctx *ctx, const char *utf8)

@@ -188,7 +188,7 @@ static void fb_cb_renderer_stop (Ctx *ctx, void *user_data)
 #endif
   if (fb->is_kms)
   {
-     ctx_fbkms_flip (&fb->kms);
+     ctx_fbkms_close (&fb->kms);
   }
   else
   {
