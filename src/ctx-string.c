@@ -249,8 +249,6 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
   string->length += new_len;
   string->length -= prev_len;
   ctx_free (rest);
-  //string->length = ctx_strlen (string->str);
-  //string->utf8_length = ctx_utf8_strlen (string->str);
 }
 
 void ctx_string_replace_unichar (CtxString *string, int pos, uint32_t unichar)

@@ -100,7 +100,7 @@ static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
   if (pos >= string->style_size)
     {
       int new_size = pos + 8;
-      string->style = ctx_realloc (string->style, string->style_size, new_size * sizeof (vt_style_t) );
+      string->style = ctx_realloc (string->style, string->style_size * sizeof (vt_style_t), new_size * sizeof (vt_style_t) );
       memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (vt_style_t) );
       string->style_size = new_size;
     }
@@ -172,13 +172,13 @@ static inline void        vt_line_clear          (VtLine *line)
   ctx_string_clear (string);
   vt_line_clear_style ((VtLine*)string);
 }
+#if 0
 static inline void        vt_line_append_str     (VtLine *line, const char *str)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_append_str (string, str);
 }
 
-#if 0
 static inline void _ctx_string_append_byte (CtxString *string, char  val)
 {
   if (CTX_LIKELY((val & 0xC0) != 0x80))
@@ -194,6 +194,7 @@ static inline void _ctx_string_append_byte (CtxString *string, char  val)
 }
 #endif
 
+#if 0
 static inline void        vt_line_append_byte    (VtLine *line, char  val)
 {
   CtxString *string = (CtxString*)line;
@@ -204,12 +205,15 @@ static inline void        vt_line_append_string  (VtLine *line, CtxString *strin
   CtxString *string = (CtxString*)line;
   ctx_string_append_string (string, string2);
 }
+#endif
+
 static inline void        vt_line_append_unichar (VtLine *line, unsigned int unichar)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_append_unichar (string, unichar);
 }
 
+#if 0
 
 static inline void vt_line_append_data    (VtLine *line, const char *data, int len)
 {
@@ -221,18 +225,15 @@ static inline void vt_line_append_utf8char (VtLine *line, const char *str)
   CtxString *string = (CtxString*)line;
   ctx_string_append_utf8char (string, str);
 }
-static inline void vt_line_replace_utf8   (VtLine *line, int pos, const char *new_glyph)
-{
-  CtxString *string = (CtxString*)line;
-  ctx_string_replace_utf8 (string, pos, new_glyph);
-}
-
+#endif
 
 static inline void vt_line_insert_utf8    (VtLine *line, int pos, const char *new_glyph)
 {
   CtxString *string = (CtxString*)line;
   ctx_string_insert_utf8 (string, pos, new_glyph);
-  int len = vt_line_get_length (line);
+  int len = vt_line_get_utf8length (line);
+
+  // TODO : do a memmove instead?
   for (int i = pos; i < len; i++)
     vt_line_set_style (line, i, vt_line_get_style (line, i-1));
 }
@@ -241,7 +242,8 @@ static inline void vt_line_insert_unichar (VtLine *line, int pos, uint32_t new_g
 {
   CtxString *string = (CtxString*)line;
   ctx_string_insert_unichar (string, pos, new_glyph);
-  int len = vt_line_get_length (line);
+  int len = vt_line_get_utf8length (line);
+  // TODO : do a memmove instead?
   for (int i = pos; i < len; i++)
     vt_line_set_style (line, i, vt_line_get_style (line, i-1));
 }
@@ -250,6 +252,12 @@ static inline void vt_line_replace_unichar (VtLine *line, int pos, uint32_t unic
   CtxString *string = (CtxString*)line;
   ctx_string_replace_unichar (string, pos, unichar);
 }
+static inline void vt_line_replace_utf8   (VtLine *line, int pos, const char *new_glyph)
+{
+  CtxString *string = (CtxString*)line;
+  ctx_string_replace_utf8 (string, pos, new_glyph);
+}
+
 
 static inline void vt_line_remove (VtLine *line, int pos)
 { 
