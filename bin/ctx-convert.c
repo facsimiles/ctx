@@ -758,7 +758,7 @@ again:
       ctx_restore (ctx);
       free (contents);
       }
-      mrg_destroy (mrg);
+      css_destroy (mrg);
     }
   else if (!strcmp (get_suffix (source_path), ".ctxf"))
     {
