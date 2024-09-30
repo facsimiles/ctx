@@ -296,10 +296,9 @@ void        vt_paste              (VT *vt, const char *str);
  */
 void        vt_feed_byte          (VT *vt, int byte);
 
-//)#define DEFAULT_SCROLLBACK   (1<<16)
 
 #if CTX_PTY
-#define DEFAULT_SCROLLBACK   (1<<13)
+#define DEFAULT_SCROLLBACK   (1<<10)
 #else
 #define DEFAULT_SCROLLBACK   (1)
 #endif

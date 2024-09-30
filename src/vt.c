@@ -2180,7 +2180,8 @@ static void vtcmd_set_graphics_rendition (VT *vt, const char *sequence)
               vt->cstyle ^= (vt->cstyle & STYLE_FG_COLOR_SET);
               break;
             case 40: /* SGR@@black background color@@ */
-              set_bg_idx (0);
+              set_bg_idx (0);  // XXX XXX why|where does 0,0,1 work, when idx 0 and 0,0,0 does not?
+              //set_bg_rgb(0, 0, 1); //
               break;
             case 41: /* SGR@@red background color@@ */
               set_bg_idx (1);
@@ -7676,7 +7677,7 @@ static void vt_draw_bg (VT *vt, Ctx *ctx,
    }
 }
 
-float vt_draw_cell (VT      *vt, Ctx *ctx,
+static float vt_draw_cell (VT      *vt, Ctx *ctx,
                     int      row, int col, // pass 0 to force draw - like
                     float    x0, float y0, // for scrollback visible
                     uint64_t style,
@@ -7932,16 +7933,7 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
     }
   }
 
-  if (is_fg ||
-      ((!on_white) && bg_rgb[0]==0 && bg_rgb[1]==0 && bg_rgb[2]==0) ||
-      ((on_white) && bg_rgb[0]==255 && bg_rgb[1]==255 && bg_rgb[2]==255))
-          /* these comparisons are not entirely correct, when on dark background we assume black to
-           * be default and non-set, even when theme might differ
-           */
-  {
-    /* skipping draw of background */
-  }
-  else
+  if (!is_fg)
   {
     if (dh)
     {
@@ -7952,10 +7944,8 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
     {
       vt_draw_bg (vt, ctx, x0, y0 - ch + ch * offset_y, cw, ch, bg_rgb);
     }
-  }
-
-  if (!is_fg)
     return cw;
+  }
 
   int italic        = (style & STYLE_ITALIC) != 0;
   int strikethrough = (style & STYLE_STRIKETHROUGH) != 0;
@@ -8052,6 +8042,30 @@ float vt_draw_cell (VT      *vt, Ctx *ctx,
         }
     }
   return cw;
+}
+
+static float vt_draw_cell_fg (VT      *vt, Ctx *ctx,
+                       int      row, int col, // pass 0 to force draw - like
+                       float    x0, float y0, // for scrollback visible
+                       uint64_t style,
+                       uint32_t unichar,
+                       int      dw, int dh,
+                       int      in_smooth_scroll,
+                       int      in_select)
+{
+  return vt_draw_cell (vt, ctx, row, col, x0, y0, style, unichar, dw, dh, in_smooth_scroll, in_select, 1);
+}
+
+static float vt_draw_cell_bg (VT      *vt, Ctx *ctx,
+                       int      row, int col, // pass 0 to force draw - like
+                       float    x0, float y0, // for scrollback visible
+                       uint64_t style,
+                       uint32_t unichar,
+                       int      dw, int dh,
+                       int      in_smooth_scroll,
+                       int      in_select)
+{
+  return vt_draw_cell (vt, ctx, row, col, x0, y0, style, unichar, dw, dh, in_smooth_scroll, in_select, 0);
 }
 
 int vt_has_blink (VT *vt)
@@ -8540,12 +8554,20 @@ void vt_draw (VT *vt, Ctx *ctx, double x0, double y0)
                    if (vt->cursor_x == col && vt->cursor_y == vt->rows - row && vt->cursor_visible)
                       is_cursor = 1;
   
-                   real_cw=vt_draw_cell (vt, ctx, r, c, x, y, style, unichar,
-                                         line->double_width,
-                                         line->double_height_top?1:
-                                         line->double_height_bottom?-1:0,
-                                         in_scrolling_region,
-                                         in_selected_region ^ is_cursor, is_fg);
+		   if (is_fg)
+                     real_cw=vt_draw_cell_fg (vt, ctx, r, c, x, y, style, unichar,
+                                            line->double_width,
+                                            line->double_height_top?1:
+                                            line->double_height_bottom?-1:0,
+                                            in_scrolling_region,
+                                            in_selected_region ^ is_cursor);
+		   else
+                     real_cw=vt_draw_cell_bg (vt, ctx, r, c, x, y, style, unichar,
+                                              line->double_width,
+                                              line->double_height_top?1:
+                                              line->double_height_bottom?-1:0,
+                                              in_scrolling_region,
+                                              in_selected_region ^ is_cursor);
                    if (r == vt->cursor_y && col == vt->cursor_x)
                      {
 #if 0
