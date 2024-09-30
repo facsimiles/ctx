@@ -5543,12 +5543,20 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
       ctx_client_rev_inc (vt->client);
       return;
     }
+  else if (!strcmp (str, "control-0") ||
+           !strcmp (str, "shift-control-0"))
+  {
+      float font_size = 16.0;
+      vt_set_font_size (vt, font_size);
+      vt_set_px_size (vt, vt->width, vt->height);
+      return;
+  }
   else if (!strcmp (str, "shift-control--") ||
            !strcmp (str, "control--") )
     {
       float font_size = vt_get_font_size (vt);
       //font_size /= 1.15;
-      font_size -=2;//= roundf (font_size);
+      font_size -=1;//= roundf (font_size);
       if (font_size < 2) { font_size = 2; }
       vt_set_font_size (vt, font_size);
       vt_set_px_size (vt, vt->width, vt->height);
@@ -5561,10 +5569,7 @@ void vt_feed_keystring (VT *vt, CtxEvent *event, const char *str)
     {
       float font_size = vt_get_font_size (vt);
       float old = font_size;
-      //font_size *= 1.15;
-      //
-      //font_size = roundf (font_size);
-      font_size+=2;
+      font_size+=1;
 
       if (old == font_size) { font_size = old+1; }
       if (font_size > 200) { font_size = 200; }
@@ -5685,6 +5690,10 @@ mice:{
   else if ((!strncmp (str, "alt-p", 5)))
   {
     // or should we handle alt + mouse as if alt was not down?
+    return;
+  }
+  else if ((!strncmp (str, "shift-control-p", 15)))
+  {
     return;
   }
 
