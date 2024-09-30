@@ -866,7 +866,7 @@
 #endif
 
 #ifndef CTX_VT_STYLE_SIZE
-#define CTX_VT_STYLE_SIZE 64
+#define CTX_VT_STYLE_SIZE   64
 #endif
 
 #ifndef CTX_ASSERT

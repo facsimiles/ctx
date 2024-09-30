@@ -53,13 +53,7 @@ int ctx_dummy_in_len = 0;
 #include "ctx.h"
 
 
-#define CTX_VT_USE_FRAMEDIFF 0  // is a larger drain than neccesary when everything is per-byte?
-                                // is anyways currently disabled also in ctx
-
-
-
-#define CTX_VT_132COL 0  // disabled - can cause hangs at least in fuzzer rig
-
+#define CTX_VT_132COL 1  // disabled - can cause hangs at least in fuzzer rig
 
 //#define STB_IMAGE_IMPLEMENTATION
 //#include "stb_image.h"
@@ -67,7 +61,6 @@ int ctx_dummy_in_len = 0;
 //#include "vt-line.h"
 //#include "vt.h"
 //#include "ctx-clients.h"
-
 
 #define VT_LOG_INFO     (1<<0)
 #define VT_LOG_CURSOR   (1<<1)
@@ -2298,12 +2291,12 @@ static void vtcmd_clear_all_tabs (VT *vt, const char *sequence)
 
 static void vtcmd_clear_current_tab (VT *vt, const char *sequence)
 {
-  vt->tabs[ (int) (vt->cursor_x-1)] = 0;
+  vt->tabs[ vt->cursor_x-1] = 0;
 }
 
 static void vtcmd_horizontal_tab_set (VT *vt, const char *sequence)
 {
-  vt->tabs[ (int) vt->cursor_x-1] = 1;
+  vt->tabs[ vt->cursor_x-1] = 1;
 }
 
 static void vtcmd_save_cursor_position (VT *vt, const char *sequence)
@@ -2399,10 +2392,10 @@ static void vtcmd_insert_character (VT *vt, const char *sequence)
   while (n--)
     {
       vt_line_insert_utf8 (vt->current_line, vt->cursor_x-1, " ");
+      vt_line_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
     }
   while (vt->current_line->string.utf8_length > vt->cols)
     { vt_line_remove (vt->current_line, vt->cols); }
-  // XXX update style
 }
 
 static void vtcmd_scroll_up (VT *vt, const char *sequence)
@@ -2467,19 +2460,6 @@ static void vt_ctx_frame_done (void *data)
   fprintf (stderr, "---prev(%i)----\n%s", (int)strlen(vt->current_line->prev),vt->current_line->prev);
   fprintf (stderr, "---new(%i)----\n%s", (int)strlen(vt->current_line->frame->str),vt->current_line->frame->str);
   fprintf (stderr, "--------\n");
-#endif
-
-#if CTX_VT_USE_FRAME_DIFF
-  if (vt->current_line->prev)
-    free (vt->current_line->prev);
-  vt->current_line->prev = NULL;
-  if (vt->current_line->frame)
-  {
-    vt->current_line->prev = vt->current_line->frame->str;
-
-    ctx_string_free (vt->current_line->frame, 0);
-    vt->current_line->frame = NULL;
-  }
 #endif
 
   void *tmp = vt->current_line->ctx;
@@ -2704,9 +2684,6 @@ qagain:
 
                     //ctx_set_texture_cache (vt->current_line->ctx, vt->current_line->ctx_copy);
                     //ctx_set_texture_cache (vt->current_line->ctx_copy, vt->current_line->ctx);
-#if CTX_VT_USE_FRAME_DIFF
-                    vt->current_line->frame = ctx_string_new ("");
-#endif
                   }
 
                 //if (!vt->ctxp)
