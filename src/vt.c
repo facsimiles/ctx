@@ -7644,10 +7644,20 @@ static void vt_flush_bg (VT *vt, Ctx *ctx)
 {
   if (vt->bg_active)
   {
-    ctx_rgba8 (ctx, vt->bg_rgba[0], vt->bg_rgba[1], vt->bg_rgba[2], vt->bg_rgba[3]);
-    ctx_rectangle (ctx, vt->bg_x0, vt->bg_y0, vt->bg_width, vt->bg_height);
-    ctx_fill (ctx);
+    int on_white = vt->reverse_video;
+
     vt->bg_active = 0;
+    if (on_white)
+    {
+      if (vt->bg_rgba[0] == 255 & vt->bg_rgba[1] == 255 && vt->bg_rgba[2] == 255)
+        return;
+    }
+    if (vt->bg_rgba[0] == 0 & vt->bg_rgba[1] == 0 && vt->bg_rgba[2] == 0)
+      return;
+
+    ctx_rgba8 (ctx, vt->bg_rgba[0], vt->bg_rgba[1], vt->bg_rgba[2], vt->bg_rgba[3]);
+    ctx_rectangle (ctx, vt->bg_x0, vt->bg_y0 - 1, vt->bg_width, vt->bg_height + 2);
+    ctx_fill (ctx);
   }
 }
 
@@ -8065,7 +8075,261 @@ static float vt_draw_cell_bg (VT      *vt, Ctx *ctx,
                        int      in_smooth_scroll,
                        int      in_select)
 {
-  return vt_draw_cell (vt, ctx, row, col, x0, y0, style, unichar, dw, dh, in_smooth_scroll, in_select, 0);
+  int is_fg = 0;
+  int on_white = vt->reverse_video;
+  int color = 0;
+  int bold = (style & STYLE_BOLD) != 0;
+  int dim = (style & STYLE_DIM) != 0;
+  int is_hidden = (style & STYLE_HIDDEN) != 0;
+  int proportional = (style & STYLE_PROPORTIONAL) != 0;
+  int fg_set = (style & STYLE_FG_COLOR_SET) != 0;
+  int bg_intensity = 0;
+  int fg_intensity = 2;
+  int reverse = ( (style & STYLE_REVERSE) != 0) ^ in_select;
+  int blink = ( (style & STYLE_BLINK) != 0);
+  int blink_fast = ( (style & STYLE_BLINK_FAST) != 0);
+  int cw = vt->cw;
+  int ch = vt->ch;
+  if (proportional)
+    {
+      if (vt->font_is_mono)
+        {
+          ctx_font (ctx, "Regular");
+          vt->font_is_mono = 0;
+        }
+      cw = ctx_glyph_width (ctx, unichar);
+    }
+  else
+    {
+      if (vt->font_is_mono == 0)
+        {
+          ctx_font (ctx, "Mono");
+          vt->font_is_mono = 1;
+          if (col > 1)
+            {
+              int x = x0;
+              int new_cw = cw - ( (x % cw) );
+              if (new_cw < cw*3/2)
+                { new_cw += cw; }
+              cw = new_cw;
+            }
+        }
+    }
+  float scale_x  = 1.0f;
+  float scale_y  = 1.0f;
+  float offset_y = 0.0f;
+  if (dw)
+    {
+      scale_x = 2.0f;
+    }
+  if (dh)
+    {
+      scale_y = 2.0f;
+    }
+  if (dh == 1)
+    {
+      offset_y = 0.5f;
+    }
+  else if (dh == -1)
+    {
+      offset_y =  0.0f;
+    }
+  if (in_smooth_scroll)
+    {
+      offset_y -= vt->scroll_offset / (dh?2:1);
+    }
+  cw *= scale_x;
+  if (blink_fast)
+    {
+      if ( (vt->blink_state % 2) == 0)
+        { blink = 1; }
+      else
+        { blink = 0; }
+    }
+  else if (blink)
+    {
+      if ( (vt->blink_state % 10) < 5)
+        { blink = 1; }
+      else
+        { blink = 0; }
+    }
+  /*
+     from the vt100 technical-manual:
+
+     "Reverse characters [..] normally have dim backgrounds with
+     black characters so that large white spaces have the same impact
+     on the viewer's eye as the smaller brighter white areas of
+     normal characters. Bold and reverse asserted together give a
+     background of normal intensity. Blink applied to nonreverse
+     characters causes them to alternate between their usual
+     intensity and the next lower intensity. (Normal characters vary
+     between normal and dim intensity. Bold characters vary between
+     bright and normal intensity.) Blink applied to a reverse
+     character causes that character to alternate between normal and
+     reverse video representations of that character."
+
+     This is in contrast with how the truth table appears to be
+     meant used, since it uses a reverse computed as the xor of
+     the global screen reverse and the reverse attribute of the
+     cell.
+
+     To fulfil the more asthethic resulting from implementing the
+     text, and would be useful to show how the on_bright background
+     mode of the vt100 actually displays the vttest.
+
+     */
+  if (on_white)
+    {
+          if (bold)
+            {
+              bg_intensity =           2;
+              fg_intensity = blink?1:  0;
+            }
+          else if (dim)
+            {
+              bg_intensity =           2;
+              fg_intensity = blink?3:  1;
+            }
+          else
+            {
+              bg_intensity =           2;
+              fg_intensity = blink?1:  0;
+            }
+          if (fg_set)
+            {
+              fg_intensity = blink?2:3;
+            }
+    }
+  else /* bright on dark */
+    {
+          if (bold)
+            {
+              bg_intensity =           0;
+              fg_intensity = blink?2:  3;
+            }
+          else if (dim)
+            {
+              bg_intensity =           0;
+              fg_intensity = blink?0:  1;
+            }
+          else
+            {
+              bg_intensity =           0;
+              fg_intensity = blink?1:  2;
+            }
+    }
+  uint8_t bg_rgb[4]= {0,0,0,255};
+  uint8_t fg_rgb[4]= {255,255,255,255};
+  {
+      //ctx_reset_path (ctx);
+      if (style &  STYLE_BG24_COLOR_SET)
+        {
+          uint64_t temp = style >> 40;
+          bg_rgb[0] = temp & 0xff;
+          temp >>= 8;
+          bg_rgb[1] = temp & 0xff;
+          temp >>= 8;
+          bg_rgb[2] = temp & 0xff;
+#if 0
+          if (dh)
+          {
+             bg_rgb[0] = 
+             bg_rgb[1] =
+             bg_rgb[2] = 30;
+          }
+#endif
+        }
+      else
+        {
+          if (style & STYLE_BG_COLOR_SET)
+            {
+              color = (style >> 40) & 255;
+              bg_intensity = -1;
+              vt_ctx_get_color (vt, color, bg_intensity, bg_rgb);
+            }
+          else
+            {
+              switch (bg_intensity)
+                {
+                  case 0:
+                    for (int i = 0; i <3 ; i++)
+                      { bg_rgb[i] = vt->bg_color[i]; }
+                    break;
+                  case 1:
+                    for (int i = 0; i <3 ; i++)
+                      { bg_rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
+                    break;
+                  case 2:
+                    for (int i = 0; i <3 ; i++)
+                      { bg_rgb[i] = vt->bg_color[i] * 0.05 + vt->fg_color[i] * 0.95; }
+                    break;
+                  case 3:
+                    for (int i = 0; i <3 ; i++)
+                      { bg_rgb[i] = vt->fg_color[i]; }
+                    break;
+                }
+            }
+        }
+  }
+  if (style & STYLE_FG24_COLOR_SET)
+    {
+      uint64_t temp = style >> 16;
+      fg_rgb[0] = temp & 0xff;
+      temp >>= 8;
+      fg_rgb[1] = temp & 0xff;
+      temp >>= 8;
+      fg_rgb[2] = temp & 0xff;
+    }
+  else
+    if (reverse) {
+      if ( (style & STYLE_FG_COLOR_SET) == 0)
+        {
+          switch (fg_intensity)
+            {
+              case 0:
+                for (int i = 0; i <3 ; i++)
+                  { fg_rgb[i] = vt->bg_color[i] * 0.7 + vt->fg_color[i] * 0.3; }
+                break;
+              case 1:
+                for (int i = 0; i <3 ; i++)
+                  { fg_rgb[i] = vt->bg_color[i] * 0.5 + vt->fg_color[i] * 0.5; }
+                break;
+              case 2:
+                for (int i = 0; i <3 ; i++)
+                  { fg_rgb[i] = vt->bg_color[i] * 0.20 + vt->fg_color[i] * 0.80; }
+                break;
+              case 3:
+                for (int i = 0; i <3 ; i++)
+                  { fg_rgb[i] = vt->fg_color[i]; }
+            }
+        }
+      else
+        {
+          color = (style >> 16) & 255;
+          vt_ctx_get_color (vt, color, fg_intensity, fg_rgb);
+        }
+  }
+
+  if (reverse)
+  {
+    for (int c = 0; c < 3; c ++)
+    {
+      int t = bg_rgb[c];
+      bg_rgb[c] = fg_rgb[c];
+      fg_rgb[c] = t;
+    }
+  }
+
+  if (dh)
+  {
+    vt_draw_bg (vt, ctx, ctx_floorf(x0),
+       ctx_floorf(y0 - ch - ch * (vt->scroll_offset)), cw, ch, bg_rgb);
+  }
+  else
+  {
+    vt_draw_bg (vt, ctx, x0, y0 - ch + ch * offset_y, cw, ch, bg_rgb);
+  }
+  return cw;
 }
 
 int vt_has_blink (VT *vt)
