@@ -48,8 +48,6 @@ struct _VtLine
   void     *ctx; // each line can have an attached ctx context;
   char     *prev;
   int       style_size;
-  CtxString *frame;
-
 
   void     *ctx_copy; // each line can have an attached ctx context;
   // clearing should be brutal enough to unset the context of the current
@@ -99,7 +97,7 @@ static inline void vt_line_set_style (VtLine *string, int pos, uint64_t style)
     return;
   if (pos >= string->style_size)
     {
-      int new_size = pos + 8;
+      int new_size = pos + 16;
       string->style = ctx_realloc (string->style, string->style_size * sizeof (vt_style_t), new_size * sizeof (vt_style_t) );
       memset (&string->style[string->style_size], 0, (new_size - string->style_size) * sizeof (vt_style_t) );
       string->style_size = new_size;
@@ -128,8 +126,6 @@ static inline void        vt_line_free           (VtLine *line, int freealloc)
   //if (string->is_line)
   {
     VtLine *line = (VtLine*)string;
-    if (line->frame)
-      ctx_string_free (line->frame, 1);
     if (line->style)
       { ctx_free (line->style); }
     if (line->ctx)
@@ -264,7 +260,7 @@ static inline void vt_line_remove (VtLine *line, int pos)
   CtxString *string = (CtxString*)line;
   ctx_string_remove (string, pos);
 
-  for (int i = pos; i < line->style_size-1; i++)
+  for (int i = pos; i < line->style_size-2; i++)
   {
     line->style[i] = line->style[i+1];
   }
