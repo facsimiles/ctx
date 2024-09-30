@@ -178,7 +178,7 @@ struct _VT
   int        insert_mode;
   int        autowrap;
   int        justify;
-  float      cursor_x;
+  int        cursor_x;
   int        cursor_y;
   int        cols;
   int        rows;
