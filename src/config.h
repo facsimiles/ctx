@@ -593,7 +593,7 @@
 
 
 #ifndef CTX_MAX_CBS
-#define CTX_MAX_CBS              128
+#define CTX_MAX_CBS              64 // was 128 - each kb is kind of big
 #endif
 
 #ifndef CTX_STATIC_OPAQUE // causes a CTX_MAX_SCANLINE_LENGTH
