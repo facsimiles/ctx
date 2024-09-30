@@ -1085,7 +1085,9 @@ VT *vt_new (const char *command, int width, int height, float font_size, float l
     rest = string_chop_head (rest);
   }
   cargv[cargc] = NULL;
-  return vt_new_argv ((char**)cargv, width, height, font_size, line_spacing, id, can_launch);
+  VT *ret = vt_new_argv ((char**)cargv, width, height, font_size, line_spacing, id, can_launch);
+  ret->arg_copy = copy;
+  return ret;
 }
 
 
@@ -1378,10 +1380,11 @@ static void _vt_add_str (VT *vt, const char *str)
   vt->current_line->contains_proportional |= ((vt->cstyle & STYLE_PROPORTIONAL)==STYLE_PROPORTIONAL);
   if (vt->cursor_x > logical_margin_right)
     {
-      if (vt->autowrap)
+      if (vt->autowrap) // XXX : needs revisiting old_line is messed up after fuzz fixes
         {
           int chars = 0;
           int old_x = vt->cursor_x;
+	  char *copy = NULL;
           VtLine *old_line = vt->current_line;
           if (vt->justify && str[0] != ' ')
             {
@@ -1427,14 +1430,15 @@ static void _vt_add_str (VT *vt, const char *str)
   if (vt->insert_mode)
     {
       vt_line_insert_utf8 (vt->current_line, vt->cursor_x - 1, str);
+      vt_line_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
       while (vt->current_line->string.utf8_length > logical_margin_right)
         { vt_line_remove (vt->current_line, logical_margin_right); }
     }
   else
     {
+      vt_line_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
       vt_line_replace_utf8 (vt->current_line, vt->cursor_x - 1, str);
     }
-  vt_line_set_style (vt->current_line, vt->cursor_x-1, vt->cstyle);
   vt->cursor_x += 1;
   vt->at_line_home = 0;
   ctx_client_rev_inc (vt->client);
@@ -5856,6 +5860,8 @@ void vt_destroy (VT *vt)
   if (vt->title)
     free (vt->title);
 #endif
+  if (vt->arg_copy)
+    ctx_free (vt->arg_copy);
   free (vt);
 }
 

@@ -422,6 +422,10 @@ static void sdl_cb_renderer_stop (Ctx *ctx, void *user_data)
   sdl->texture = NULL;
   sdl->backend = NULL;
   sdl->window  = NULL;
+  if (sdl->title)
+    ctx_free (sdl->title);
+  sdl->title = NULL;
+  ctx_free (sdl);
 }
 
 static void sdl_cb_set_fullscreen (Ctx *ctx, void *user_data, int fullscreen)

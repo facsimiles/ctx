@@ -9,6 +9,8 @@
 //
 
 
+static int ctx_cb_kill = 0;
+
 void ctx_cb_set_flags (Ctx *ctx, int flags)
 {
   CtxCbBackend *backend_cb = (CtxCbBackend*)ctx->backend;
@@ -696,7 +698,8 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 
   cb_backend->rendering = 0;
 
-  while (cb_backend->rendering >= 0){
+  while (!ctx_cb_kill)
+  {
     CTX_MB();
     while (cb_backend->rendering == 0)
     {
@@ -709,6 +712,8 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 #else
       usleep (2 * 1000);
 #endif
+      if (ctx_cb_kill)
+	continue;
     }
 
     CTX_MB();
@@ -724,6 +729,7 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 
   if (cb_backend->config.renderer_stop)
      cb_backend->config.renderer_stop (ctx, cb_backend->backend.user_data);
+  ctx_cb_kill = 0;
 }
 #endif
 
@@ -884,10 +890,12 @@ static void ctx_cb_destroy (void *data)
   CtxCbBackend *cb_backend = (CtxCbBackend*)data;
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
+    Ctx *ctx = cb_backend->backend.ctx;
+    ctx_cb_kill = 1;
     cb_backend->rendering = -1;
 #if CTX_EVENTS
-    int start = ctx_ms (cb_backend->backend.ctx);
-    while (ctx_ms (cb_backend->backend.ctx) - start < 250) {};
+    int start = ctx_ms (ctx);
+    while (ctx_ms (ctx) - start < 250) {};
 #else
     usleep (1000 * 1000 * 10);
 #endif

@@ -107,6 +107,7 @@ struct _VT
   int       in_alt_screen;
   int       had_alt_screen;
   int       saved_line_count;
+  char      *arg_copy;
   CtxList   *lines;
   int       line_count;
   CtxList   *scrollback;
