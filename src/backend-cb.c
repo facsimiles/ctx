@@ -684,7 +684,6 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 #endif
 {
 #if CTX_PICO
-  multicore_fifo_push_blocking (42);
   CtxCbBackend *cb_backend = core1_arg;
 #endif
   Ctx *ctx = cb_backend->backend.ctx;
@@ -705,12 +704,7 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
       mtx_unlock (&cb_backend->mtx);
       if (cb_backend->config.renderer_idle)
         cb_backend->config.renderer_idle (ctx, cb_backend->backend.user_data);
-#if 0
-      int start = ctx_ms (ctx);
-      while (ctx_ms (ctx) - start < 2) {};
-#else
-      usleep (2 * 1000);
-#endif
+      usleep (1000);
       mtx_lock (&cb_backend->mtx);
       if (ctx_cb_kill)
 	break;
@@ -722,12 +716,15 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
     if (cb_backend->rendering == 1)
     {
       mtx_unlock (&cb_backend->mtx);
+
       ctx_cb_render_frame (ctx);
       if (cb_backend->re_render)
         ctx_cb_render_frame (ctx);
+
       mtx_lock (&cb_backend->mtx);
       cb_backend->rendering = 0;
       mtx_unlock (&cb_backend->mtx);
+
     }
     else
       mtx_unlock (&cb_backend->mtx);
@@ -1010,12 +1007,11 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
 
   if (!config->scratch_fb)
   {
+    int mb = config->memory_budget;
     cb_backend->config.memory_budget = 0;
-    ctx_cb_set_memory_budget (ctx, config->memory_budget);
+    if (mb <= 0) mb = width * height * ctx_pixel_format_bits_per_pixel (config->format);
+    ctx_cb_set_memory_budget (ctx, mb);
   }
-
-  //if (config->renderer_init)
-  //  cb_backend->config.flags |= CTX_FLAG_DOUBLE_BUFFER;
 
 #if CTX_THREADS | CTX_PICO
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
@@ -1029,12 +1025,11 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
     mtx_init (&cb_backend->mtx, mtx_plain);
 #if CTX_PICO
     multicore_launch_core1(ctx_cb_render_thread);
-    multicore_fifo_pop_blocking ();
 #else
     thrd_t tid;
     thrd_create(&tid, (void*)ctx_cb_render_thread, (void*) cb_backend);
 #endif
-    usleep (1000 * 1000 * 20);
+    usleep (1000 * 2);
 
     mtx_lock (&cb_backend->mtx);
     if (cb_backend->config.renderer_init)

@@ -464,15 +464,12 @@ Ctx *ctx_new_fb_cb (int width, int height)
 	            | CTX_FLAG_DOUBLE_BUFFER
 		    | CTX_FLAG_POINTER
 	           ,
-    .memory_budget  = 1920*1200*4,
     .renderer_init  = fb_cb_renderer_init,
     .renderer_idle  = fb_cb_renderer_idle,
     .set_pixels     = fb_cb_set_pixels,
     .update_fb      = fb_cb_frame_done,
     .renderer_stop  = fb_cb_renderer_stop,
     .consume_events = fb_cb_consume_events,
-    //.get_clipboard  = fb_cb_get_clipboard,
-    //.set_clipboard  = fb_cb_set_clipboard,
     
     .user_data      = fb,
   };
