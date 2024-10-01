@@ -225,6 +225,7 @@ static inline void vt_line_append_utf8char (VtLine *line, const char *str)
 
 static inline void vt_line_insert_utf8    (VtLine *line, int pos, const char *new_glyph)
 {
+  if (pos < 0) return;
   CtxString *string = (CtxString*)line;
   ctx_string_insert_utf8 (string, pos, new_glyph);
   int len = vt_line_get_utf8length (line);
@@ -236,6 +237,7 @@ static inline void vt_line_insert_utf8    (VtLine *line, int pos, const char *ne
 
 static inline void vt_line_insert_unichar (VtLine *line, int pos, uint32_t new_glyph)
 {
+  if (pos < 0) return;
   CtxString *string = (CtxString*)line;
   ctx_string_insert_unichar (string, pos, new_glyph);
   int len = vt_line_get_utf8length (line);
