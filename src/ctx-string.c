@@ -198,6 +198,8 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
 #else
   int old_len = ctx_utf8_strlen (string->str);// string->utf8_length;
 #endif
+  if (pos < 0) return;
+
   if (CTX_LIKELY(pos == old_len))
     {
       _ctx_string_append_str (string, new_glyph);
@@ -223,7 +225,7 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
     {
       char *tmp;
       char *defer;
-      string->allocated_length = string->length + new_len + 2;
+      string->allocated_length = string->length + new_len + 10;
       tmp = (char*) ctx_calloc (1, string->allocated_length + 1 + 8);
       strcpy (tmp, string->str);
       defer = string->str;
@@ -246,8 +248,22 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
     }
   memcpy (p, new_glyph, new_len);
   memcpy (p + new_len, rest, ctx_strlen (rest) + 1);
+
+#if 1
   string->length += new_len;
   string->length -= prev_len;
+#else
+  if (string->length + new_len - prev_len != strlen (string->str))
+  {
+      printf ("owww: pos:%i olen:%i new_len:%i prev_len:%i actual:%i computed:%i\n",
+			  pos, string->length, new_len, prev_len, strlen(string->str),
+      string->length + new_len - prev_len != strlen (string->str)
+			  );
+  }
+  //  XXX : fixing these to be update correctly - would speed up terminals
+  string->length = strlen (string->str);
+  //string->utf8_length = ctx_utf8_strlen (string->str);
+#endif
   ctx_free (rest);
 }
 
@@ -271,6 +287,8 @@ void ctx_string_insert_utf8 (CtxString *string, int pos, const char *new_glyph)
   int new_len = ctx_utf8_len (*new_glyph);
   int old_len = string->utf8_length;
   char tmpg[3]=" ";
+  if (pos < 0)
+    return;
   if (old_len == pos && 0)
     {
       ctx_string_append_str (string, new_glyph);
@@ -327,6 +345,8 @@ void ctx_string_insert_unichar (CtxString *string, int pos, uint32_t unichar)
 void ctx_string_remove (CtxString *string, int pos)
 {
   int old_len = string->utf8_length;
+  if (pos < 0)
+    return;
   {
     for (int i = old_len; i <= pos; i++)
       {
