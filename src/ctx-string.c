@@ -191,7 +191,7 @@ ctx_string_set (CtxString *string, const char *new_string)
 }
 
 
-void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
+static inline void ctx_string_replace_utf8_ (CtxString *string, int pos, const char *new_glyph)
 {
 #if 1
   int old_len = string->utf8_length;
@@ -265,6 +265,11 @@ void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
   //string->utf8_length = ctx_utf8_strlen (string->str);
 #endif
   ctx_free (rest);
+}
+
+void ctx_string_replace_utf8 (CtxString *string, int pos, const char *new_glyph)
+{
+  ctx_string_replace_utf8_ (string, pos, new_glyph);
 }
 
 void ctx_string_replace_unichar (CtxString *string, int pos, uint32_t unichar)

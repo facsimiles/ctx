@@ -253,7 +253,7 @@ static inline void vt_line_replace_unichar (VtLine *line, int pos, uint32_t unic
 static inline void vt_line_replace_utf8   (VtLine *line, int pos, const char *new_glyph)
 {
   CtxString *string = (CtxString*)line;
-  ctx_string_replace_utf8 (string, pos, new_glyph);
+  ctx_string_replace_utf8_ (string, pos, new_glyph);
 }
 
 
