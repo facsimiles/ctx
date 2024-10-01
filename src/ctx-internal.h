@@ -1301,6 +1301,8 @@ typedef struct CtxCbBackend
 
   CtxHasher     rasterizer;
   uint8_t res[CTX_HASH_ROWS * CTX_HASH_COLS]; // when non-0 we have non-full res rendered
+					   
+  mtx_t mtx;
 } CtxCbBackend;
 
 static inline Ctx *ctx_backend_get_ctx (void *backend)

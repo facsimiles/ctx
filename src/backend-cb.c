@@ -670,9 +670,6 @@ ctx_cb_render_frame (Ctx *ctx)
 
 #if CTX_PICO
 #include "pico/multicore.h"
-#define CTX_MB()  do{ __dmb(); __dsb(); __isb(); } while(0)
-#else
-#define CTX_MB()  do{ ; } while(0)
 #endif
 
 #if CTX_PICO | CTX_THREADS
@@ -692,18 +689,20 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 #endif
   Ctx *ctx = cb_backend->backend.ctx;
 
+  mtx_lock (&cb_backend->mtx);
   if (cb_backend->config.renderer_init &&
       cb_backend->config.renderer_init (ctx, cb_backend->backend.user_data))
     return;
 
   cb_backend->rendering = 0;
+  mtx_unlock (&cb_backend->mtx);
 
   while (!ctx_cb_kill)
   {
-    CTX_MB();
+    mtx_lock (&cb_backend->mtx);
     while (cb_backend->rendering == 0)
     {
-      CTX_MB();
+      mtx_unlock (&cb_backend->mtx);
       if (cb_backend->config.renderer_idle)
         cb_backend->config.renderer_idle (ctx, cb_backend->backend.user_data);
 #if 0
@@ -712,19 +711,26 @@ ctx_cb_render_thread (CtxCbBackend *cb_backend)
 #else
       usleep (2 * 1000);
 #endif
+      mtx_lock (&cb_backend->mtx);
       if (ctx_cb_kill)
-	continue;
+	break;
     }
+    mtx_unlock (&cb_backend->mtx);
 
-    CTX_MB();
+
+    mtx_lock (&cb_backend->mtx);
     if (cb_backend->rendering == 1)
     {
+      mtx_unlock (&cb_backend->mtx);
       ctx_cb_render_frame (ctx);
       if (cb_backend->re_render)
         ctx_cb_render_frame (ctx);
+      mtx_lock (&cb_backend->mtx);
       cb_backend->rendering = 0;
-      CTX_MB();
+      mtx_unlock (&cb_backend->mtx);
     }
+    else
+      mtx_unlock (&cb_backend->mtx);
   }
 
   if (cb_backend->config.renderer_stop)
@@ -857,7 +863,7 @@ ctx_cb_end_frame (Ctx *ctx)
 
   if (cb_backend->config.flags & CTX_FLAG_DOUBLE_BUFFER)
   {
-    CTX_MB();
+    mtx_lock (&cb_backend->mtx);
     if (cb_backend->rendering)
     {
        // TODO : make it possible to steal chunks off render threads
@@ -865,12 +871,20 @@ ctx_cb_end_frame (Ctx *ctx)
        while (cb_backend->rendering)
       {
 #if CTX_EVENTS
+        mtx_unlock (&cb_backend->mtx);
         ctx_handle_events (ctx);
+        mtx_lock (&cb_backend->mtx);
 #endif
-        CTX_MB();
       }
+      mtx_unlock (&cb_backend->mtx);
     }
+    else
+      mtx_unlock (&cb_backend->mtx);
 
+
+    ///////////////
+
+    mtx_lock (&cb_backend->mtx);
     CtxDrawlist temp = ctx->drawlist;
     ctx->drawlist = cb_backend->drawlist_copy->drawlist;
     cb_backend->drawlist_copy->drawlist = temp;
@@ -878,7 +892,7 @@ ctx_cb_end_frame (Ctx *ctx)
 
     cb_backend->rendering = 1;
     cb_backend->frame_no ++;
-    CTX_MB();
+    mtx_unlock (&cb_backend->mtx);
   }
   else
   {
@@ -1008,28 +1022,38 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
   {
     cb_backend->drawlist_copy = ctx_new_drawlist (width, height); // TODO : keep size in sync
     cb_backend->rendering = -1;
-
 #if CTX_PICO
     core1_arg = cb_backend;
-    CTX_MB();
+#endif
+
+    mtx_init (&cb_backend->mtx, mtx_plain);
+#if CTX_PICO
     multicore_launch_core1(ctx_cb_render_thread);
     multicore_fifo_pop_blocking ();
 #else
     thrd_t tid;
     thrd_create(&tid, (void*)ctx_cb_render_thread, (void*) cb_backend);
 #endif
+    usleep (1000 * 1000 * 20);
 
+    mtx_lock (&cb_backend->mtx);
     if (cb_backend->config.renderer_init)
     {
+       mtx_unlock (&cb_backend->mtx);
+       usleep (20 * 1000);
        int n = 250;
+       mtx_lock (&cb_backend->mtx);
        while (cb_backend->rendering == -1 && n-- > 0){
+          mtx_unlock (&cb_backend->mtx);
 #if CTX_EVENTS
           int start = ctx_ms (ctx);
 	  while (ctx_ms (ctx) - start < 20) {};
 #else
 	  usleep(20 * 1000);
 #endif
+          mtx_lock (&cb_backend->mtx);
        }
+       mtx_unlock (&cb_backend->mtx);
        if (cb_backend->rendering == -1)
        {
 	 ctx_destroy (ctx);
@@ -1038,6 +1062,7 @@ Ctx *ctx_new_cb (int width, int height, CtxCbConfig *config)
     } else
     {
        cb_backend->rendering = 0;
+       mtx_unlock (&cb_backend->mtx);
     }
   }
   else
