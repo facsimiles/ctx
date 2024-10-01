@@ -5,6 +5,7 @@
 // #define CTX_FAST_STROKE_RECT 1
 //
 
+#define CTX_RASTERIZER      1
 #define CTX_CSS             1
 #define CTX_ENABLE_FLOAT    0
 #define CTX_ENABLE_CM       0
